@@ -100,7 +100,8 @@ class Network {
   char hostname[32] = {};
 
   bool sslEnabled = true;
-  char *rootCACert = nullptr;
+  unsigned char *rootCACert = nullptr;
+  unsigned int rootCACertSize = 0;
 };
 
 // Method passed to SRPC as a callback to read raw data from network interface

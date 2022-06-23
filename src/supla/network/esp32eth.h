@@ -125,6 +125,8 @@ class ESPETH : public Supla::Network {
       if (caCert.length() > 0) {
         message += " with certificate matching";
         clientSec->setCACert(caCert.c_str());
+      } else if (rootCACert) {
+        clientSec->setCACert(reinterpret_cast<char*>(rootCACert));
       } else {
         message += " without certificate matching";
         clientSec->setInsecure();

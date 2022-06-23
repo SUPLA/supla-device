@@ -32,7 +32,7 @@
 #include <supla/control/rgbw_leds.h>
 #include <supla/control/button.h>
 
-#include <supla/network/Supla_espeth.h>
+#include <supla/network/esp32eth.h>
  Supla::ESPETH Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
 
 

@@ -87,7 +87,9 @@ class ESPWifi : public Supla::Wifi {
 
 #ifdef ARDUINO_ARCH_ESP8266
         clientSec->setBufferSizes(2048, 512);  // EXPERIMENTAL
-        if (fingerprint.length() > 0) {
+        if (rootCACert) {
+          // TODO(klew): add CA cert verification for ESP8266
+        } else if (fingerprint.length() > 0) {
           message += " with certificate matching";
           clientSec->setFingerprint(fingerprint.c_str());
         } else {
@@ -95,7 +97,11 @@ class ESPWifi : public Supla::Wifi {
           clientSec->setInsecure();
         }
 #else
-        clientSec->setInsecure();
+        if (rootCACert) {
+          // TODO(klew): add CA cert verification for ESP32
+        } else {
+          clientSec->setInsecure();
+        }
 #endif
       } else {
         message = "unsecured connection";

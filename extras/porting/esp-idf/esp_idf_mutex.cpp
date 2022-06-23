@@ -34,6 +34,6 @@ void Supla::EspIdfMutex::lock() {
 }
 
 void Supla::EspIdfMutex::unlock() {
-    xSemaphoreGive(mutex);
+  xSemaphoreGive(mutex);
 }
 

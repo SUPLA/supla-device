@@ -163,6 +163,10 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
             connectionPort);
 
   client = esp_tls_init();
+  if (!client) {
+    supla_log(LOG_ERR, "ESP TLS INIT FAILED");
+    return 0;
+  }
   int result = esp_tls_conn_new_sync(
       server, strlen(server), connectionPort, &cfg, client);
   if (result == 1) {
@@ -181,8 +185,9 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
     logConnReason(client->error_handle->last_error,
                   client->error_handle->esp_tls_error_code,
                   client->error_handle->esp_tls_flags);
-    autoLock.unlock();
-    disconnect();
+    isServerConnected = false;
+    esp_tls_conn_destroy(client);
+    client = nullptr;
   }
 
   // SuplaDevice expects 1 on success, which is the same
@@ -267,6 +272,7 @@ static void eventHandler(void *arg,
 }
 
 void Supla::EspIdfWifi::setup() {
+  Supla::AutoLock autoLock(mutex);
   setWifiConnected(false);
   setIpReady(false);
   if (!initDone) {
@@ -296,7 +302,9 @@ void Supla::EspIdfWifi::setup() {
 
   } else {
     supla_log(LOG_DEBUG, "WiFi: resetting WiFi connection");
+    autoLock.unlock();
     disconnect();
+    autoLock.lock();
     esp_wifi_disconnect();
     ESP_ERROR_CHECK(esp_wifi_stop());
   }
@@ -428,10 +436,11 @@ void Supla::EspIdfWifi::logWifiReason(int reason) {
       break;
     }
   }
-  lastReasons[lastReasonIdx++] = reason;
+
   if (lastReasonIdx >= sizeof(lastReasons)) {
     lastReasonIdx = 0;
   }
+  lastReasons[lastReasonIdx++] = reason;
 
   if (!reasonAlreadyReported && sdc) {
     switch (reason) {

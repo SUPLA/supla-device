@@ -62,6 +62,7 @@ class EspIdfWifi : public Supla::Wifi {
   void logConnReason(int, int, int);
 
  protected:
+  Supla::Mutex *mutex = nullptr;
   bool initDone = false;
   bool isWifiConnected = false;
   bool isIpReady = false;
@@ -74,7 +75,6 @@ class EspIdfWifi : public Supla::Wifi {
   int lastReasonIdx = 0;
   int lastConnErr = 0;
   int lastTlsErr = 0;
-  Supla::Mutex *mutex = nullptr;
 #ifdef SUPLA_DEVICE_ESP32
   esp_netif_t *staNetIf = nullptr;
   esp_netif_t *apNetIf = nullptr;

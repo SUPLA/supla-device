@@ -29,6 +29,7 @@ class AutoLock {
 
  protected:
   Mutex* mutex;
+  bool locked = false;
 };
 
 };  // namespace Supla

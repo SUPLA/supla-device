@@ -26,13 +26,15 @@ Supla::AutoLock::~AutoLock() {
 }
 
 void Supla::AutoLock::lock() {
-  if (mutex) {
+  if (mutex && !locked) {
+    locked = true;
     mutex->lock();
   }
 }
 
 void Supla::AutoLock::unlock() {
-  if (mutex) {
+  if (mutex && locked) {
+    locked = false;
     mutex->unlock();
   }
 }

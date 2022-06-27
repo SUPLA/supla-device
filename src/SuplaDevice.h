@@ -144,6 +144,8 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   void setLastStateLogger(Supla::Device::LastStateLogger *logger);
 
+  void setSuplaCACert(const char *);
+
  protected:
   void *srpc = nullptr;
   int8_t registered = 0;
@@ -174,6 +176,8 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   Supla::Uptime uptime;
   Supla::Clock *clock = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
+
+  const char *suplaCACert = nullptr;
 
   bool isSrpcInitialized(bool msg);
   // used to indicate if begin() method was called - it will be set to

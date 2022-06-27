@@ -34,9 +34,13 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
+#include <supla/network/html/security_certificate.h>
 #include <supla/time.h>
 
 extern "C" void cpp_main(void*);
+
+extern const uint8_t suplaOrgCertPemStart[] asm(
+    "_binary_supla_org_cert_pem_start");
 
 void cpp_main(void* param) {
   new Supla::EspIdfWifi;
@@ -51,6 +55,7 @@ void cpp_main(void* param) {
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
   new Supla::Html::StatusLedParameters;
+  new Supla::Html::SecurityCertificate;
 
   auto r1 = new Supla::Control::Relay(12);
   auto r2 = new Supla::Control::VirtualRelay();
@@ -66,6 +71,8 @@ void cpp_main(void* param) {
   supla_log(
       LOG_DEBUG, "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SuplaDevice.setName("SUPLA-Example");
+  SuplaDevice.setSuplaCACert(
+      reinterpret_cast<const char*>(suplaOrgCertPemStart));
   SuplaDevice.begin();
   supla_log(
       LOG_DEBUG, "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));

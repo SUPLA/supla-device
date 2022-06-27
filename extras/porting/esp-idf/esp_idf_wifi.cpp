@@ -39,13 +39,18 @@
 // delete name variant is deprecated in ESP-IDF, however ESP8266 RTOS still
 // use it.
 #define esp_tls_conn_destroy esp_tls_conn_delete
+
+// Latest ESP-IDF moved definition of esp_tls_t to private section and added
+// methods to access members. This change is missing in esp8266, so below
+// method is added to keep the same functionality
+void esp_tls_get_error_handle(esp_tls_t *client,
+                              esp_tls_error_handle_t *errorHandle) {
+  *errorHandle = client->error_handle;
+}
+
 #endif
 
 static Supla::EspIdfWifi *netIntfPtr = nullptr;
-
-extern const uint8_t suplaOrgCertPemStart[] asm(
-    "_binary_supla_org_cert_pem_start");
-extern const uint8_t suplaOrgCertPemEnd[] asm("_binary_supla_org_cert_pem_end");
 
 Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
                               const char *wifiPassword,
@@ -67,7 +72,9 @@ int Supla::EspIdfWifi::read(void *buf, int count) {
 
   esp_tls_conn_read(client, nullptr, 0);
   int tlsErr = 0;
-  esp_tls_get_and_clear_last_error(client->error_handle, &tlsErr, nullptr);
+  esp_tls_error_handle_t errorHandle;
+  esp_tls_get_error_handle(client, &errorHandle);
+  esp_tls_get_and_clear_last_error(errorHandle, &tlsErr, nullptr);
   autoLock.unlock();
   if (tlsErr != 0 && -tlsErr != ESP_TLS_ERR_SSL_WANT_READ &&
       -tlsErr != ESP_TLS_ERR_SSL_WANT_WRITE) {
@@ -146,9 +153,14 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
   }
 
   esp_tls_cfg_t cfg = {};
-  cfg.cacert_pem_buf = suplaOrgCertPemStart;
-  cfg.cacert_pem_bytes =
-      static_cast<unsigned int>(suplaOrgCertPemEnd - suplaOrgCertPemStart);
+  if (rootCACert) {
+    cfg.cacert_pem_buf = reinterpret_cast<const unsigned char *>(rootCACert);
+    int len = strlen(rootCACert);
+    cfg.cacert_pem_bytes = len + 1;
+  } else {
+    supla_log(LOG_WARNING,
+              "Connecting without certificate validation (INSECURE)");
+  }
   cfg.timeout_ms = timeoutMs;
   cfg.non_block = false;
 
@@ -177,14 +189,17 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
     }
 
   } else {
+    esp_tls_error_handle_t errorHandle;
+    esp_tls_get_error_handle(client, &errorHandle);
+
     supla_log(LOG_DEBUG,
               "last errors %d %d %d",
-              client->error_handle->last_error,
-              client->error_handle->esp_tls_error_code,
-              client->error_handle->esp_tls_flags);
-    logConnReason(client->error_handle->last_error,
-                  client->error_handle->esp_tls_error_code,
-                  client->error_handle->esp_tls_flags);
+              errorHandle->last_error,
+              errorHandle->esp_tls_error_code,
+              errorHandle->esp_tls_flags);
+    logConnReason(errorHandle->last_error,
+                  errorHandle->esp_tls_error_code,
+                  errorHandle->esp_tls_flags);
     isServerConnected = false;
     esp_tls_conn_destroy(client);
     client = nullptr;
@@ -546,6 +561,11 @@ void Supla::EspIdfWifi::logConnReason(int error, int tlsError, int tlsFlags) {
             break;
           }
         }
+        break;
+      }
+      case ESP_ERR_MBEDTLS_X509_CRT_PARSE_FAILED: {
+        sdc->addLastStateLog(
+            "CA certificate parsing error - please provide correct one");
         break;
       }
       default: {

@@ -133,6 +133,7 @@ bool SuplaDeviceClass::begin(unsigned char version) {
     }
   }
 
+  auto cfg = Supla::Storage::ConfigInstance();
 
   // Pefrorm dry run of write state to validate stored state section with
   // current device configuration
@@ -236,6 +237,57 @@ bool SuplaDeviceClass::begin(unsigned char version) {
   char hostname[32] = {};
   generateHostname(hostname, 3);
   Supla::Network::SetHostname(hostname);
+  if (cfg) {
+    uint8_t securityLevel = 0;
+    cfg->getUInt8("security_level", &securityLevel);
+    if (securityLevel > 2) {
+      securityLevel = 0;
+    }
+    auto network = Supla::Network::Instance();
+    network->setSSLEnabled(true);
+    supla_log(LOG_DEBUG, "Security level: %d", securityLevel);
+    switch (securityLevel) {
+      default:
+      case 0: {
+        // in case of default security level it is required to use Supla CA
+        // certificate. It should be set on application level before
+        // SuplaDevice.begin() is called.
+        // If it is null, we just assign "SUPLA" as a certificate value, which
+        // will of course fail the certificate validation (which is intended).
+        if (suplaCACert == nullptr) {
+          supla_log(LOG_ERR,
+            "Supla CA ceritificate is selected, but it is not set. Connection "
+            "will fail");
+          auto cert = new char[6];
+          strncpy(cert, "SUPLA", 6);
+          suplaCACert = cert;
+        }
+        network->setCACert(suplaCACert);
+        break;
+      }
+      case 1: {
+        // custom CA from Config
+        int len = cfg->getStringSize("custom_ca");
+        if (len > 0) {
+          len++;
+          auto cert = new char[len];
+          cfg->getString("custom_ca", cert, len);
+          network->setCACert(cert);
+        } else {
+          supla_log(LOG_ERR, "Custom CA is selected, but certificate is"
+              " missing in config. Connect will fail");
+          auto cert = new char[6];
+          strncpy(cert, "SUPLA", 6);
+          network->setCACert(cert);
+        }
+        break;
+      }
+      case 2: {
+        // Skip certificate validation (INSECURE)
+        break;
+      }
+    }
+  }
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
     enterConfigMode();
   } else {
@@ -257,7 +309,6 @@ bool SuplaDeviceClass::begin(unsigned char version) {
   supla_log(LOG_INFO, "Using Supla protocol version %d", version);
 
   if (generateGuidAndAuthkey) {
-    auto cfg = Supla::Storage::ConfigInstance();
     if (cfg && cfg->generateGuidAndAuthkey()) {
       supla_log(LOG_INFO, "Successfully generated GUID and AuthKey");
       char buf[512] = {};
@@ -1107,6 +1158,10 @@ void SuplaDeviceClass::setLastStateLogger(
 
 void SuplaDeviceClass::setActivityTimeout(_supla_int_t newActivityTimeout) {
   activityTimeout = newActivityTimeout;
+}
+
+void SuplaDeviceClass::setSuplaCACert(const char *cert) {
+  suplaCACert = cert;
 }
 
 SuplaDeviceClass SuplaDevice;

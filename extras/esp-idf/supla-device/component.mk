@@ -43,6 +43,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/custom_sw_update.o \
   ../../../src/supla/network/html/sw_update_beta.o \
   ../../../src/supla/network/html/sw_update.o \
+  ../../../src/supla/network/html/security_certificate.o \
   \
   ../../../src/supla/clock/clock.o \
 	\

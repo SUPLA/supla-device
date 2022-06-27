@@ -166,6 +166,11 @@ void Supla::WebServer::parsePost(const char *postContent,
     return;
   }
 
+  if (!value) {
+    value = new char[HTML_VAL_LENGTH];
+    memset(value, 0, HTML_VAL_LENGTH);
+  }
+
   const char *startPtr = postContent;
   const char *endPtr = &postContent[size + 1];
 
@@ -233,5 +238,6 @@ void Supla::WebServer::resetParser() {
   partialSize = 0;
   keyFound = false;
   memset(key, 0, HTML_KEY_LENGTH);
-  memset(value, 0, HTML_VAL_LENGTH);
+  delete [] value;
+  value = nullptr;
 }

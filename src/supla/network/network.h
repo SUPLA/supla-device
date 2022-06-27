@@ -100,7 +100,7 @@ class Network {
   char hostname[32] = {};
 
   bool sslEnabled = true;
-  unsigned char *rootCACert = nullptr;
+  const char *rootCACert = nullptr;
   unsigned int rootCACertSize = 0;
 };
 

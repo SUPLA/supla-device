@@ -24,7 +24,7 @@
 class SuplaDeviceClass;
 
 #define HTML_KEY_LENGTH 16
-#define HTML_VAL_LENGTH 500
+#define HTML_VAL_LENGTH 4000
 
 namespace Supla {
 
@@ -53,7 +53,7 @@ class WebServer {
   bool keyFound = false;
   int partialSize = 0;
   char key[HTML_KEY_LENGTH] = {};
-  char value[HTML_VAL_LENGTH] = {};
+  char *value = nullptr;
 };
 
 };  // namespace Supla

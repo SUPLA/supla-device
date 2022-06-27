@@ -439,7 +439,7 @@ void Network::setSSLEnabled(bool enabled) {
 
 void Network::setCACert(const char *rootCA) {
   (void)(rootCA);
-  // TODO(klew): implement
+  rootCACert = rootCA;
 }
 
 };  // namespace Supla

@@ -25,6 +25,7 @@
 #include <nvs_flash.h>
 #include <supla-common/log.h>
 #include <supla-common/proto.h>
+#include <cstring>
 
 namespace Supla {
 
@@ -36,7 +37,15 @@ NvsConfig::~NvsConfig() {
 
 bool NvsConfig::init() {
   supla_log(LOG_DEBUG, "NvsConfig: initializing nvs based config storage");
-  ESP_ERROR_CHECK(nvs_flash_init());
+  esp_err_t err = nvs_flash_init();
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+    nvs_flash_erase();
+    err = nvs_flash_init();
+    if (err != ESP_OK) {
+      supla_log(LOG_ERR, "NvsConfig: failed to init NVS storage");
+      return false;
+    }
+  }
   nvs_stats_t nvs_stats;
   nvs_get_stats(NULL, &nvs_stats);
   supla_log(
@@ -69,6 +78,12 @@ bool NvsConfig::getString(const char* key, char* value, size_t maxSize) {
 }
 
 int NvsConfig::getStringSize(const char* key) {
+  auto buf = new char[4000];
+  if (getString(key, buf, 4000)) {
+    int len = strnlen(buf, 4000);
+    delete [] buf;
+    return len;
+  }
   return -1;
 }
 

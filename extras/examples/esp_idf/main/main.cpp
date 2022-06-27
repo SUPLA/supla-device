@@ -38,10 +38,10 @@
 #include <spiffs_storage.h>
 
 // HTML generation
-#include "supla/network/html/device_info.h"
-#include "supla/network/html/protocol_parameters.h"
-#include "supla/network/html/status_led_parameters.h"
-#include "supla/network/html/wifi_parameters.h"
+#include <supla/network/html/device_info.h>
+#include <supla/network/html/protocol_parameters.h>
+#include <supla/network/html/status_led_parameters.h>
+#include <supla/network/html/wifi_parameters.h>
 #include <supla/network/html/security_certificate.h>
 
 extern "C" void cpp_main(void*);

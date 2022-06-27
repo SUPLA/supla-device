@@ -109,7 +109,7 @@ class WT32_ETH01 : public Supla::Network {
         message += " with certificate matching";
         clientSec->setCACert(caCert.c_str());
       } else if (rootCACert) {
-        clientSec->setCACert(reinterpret_cast<char*>(rootCACert));
+        clientSec->setCACert(rootCACert);
       } else {
         message += " without certificate matching";
         clientSec->setInsecure();

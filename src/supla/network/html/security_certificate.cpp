@@ -29,7 +29,8 @@ namespace Supla {
 
 namespace Html {
 
-SecurityCertificate::SecurityCertificate() : HtmlElement(HTML_SECTION_PROTOCOL) {
+SecurityCertificate::SecurityCertificate()
+    : HtmlElement(HTML_SECTION_PROTOCOL) {
 }
 
 SecurityCertificate::~SecurityCertificate() {
@@ -39,13 +40,13 @@ void SecurityCertificate::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     sender->send(
-  "<script>"
-  "function securityChange(){"
-  "var e=document.getElementById(\"sec\"),"
-  "c=document.getElementById(\"custom_ca\"),"
-  "l=\"1\"==e.value?\"block\":\"none\";"
-  "c.style.display=l;}"
-  "</script>");
+        "<script>"
+        "function securityChange(){"
+        "var e=document.getElementById(\"sec\"),"
+        "c=document.getElementById(\"custom_ca\"),"
+        "l=\"1\"==e.value?\"block\":\"none\";"
+        "c.style.display=l;}"
+        "</script>");
 
     uint8_t securityLevel = 0;
     cfg->getUInt8("security_level", &securityLevel);
@@ -62,29 +63,29 @@ void SecurityCertificate::send(Supla::WebSender* sender) {
         ">Custom CA</option>"
         "<option value=\"2\"");
     sender->send(selected(securityLevel == 2));
-    sender->send(
-        ">Skip certificate verification (INSECURE)</option>");
+    sender->send(">Skip certificate verification (INSECURE)</option>");
 
     sender->send(
         "</select>"
         "<label>Certificate verification</label>"
         "</i>");
-    sender->send(
-        "<i id=\"custom_ca\" style=\"display:");
+    sender->send("<i id=\"custom_ca\" style=\"display:");
     if (securityLevel == 1) {
       sender->send("block");
     } else {
       sender->send("none");
     }
-    sender->send("\">"
+    sender->send(
+        "\">"
         "<textarea name=\"custom_ca\" maxlength=\"4000\">");
-    char *buf = new char[4000];
+    char* buf = new char[4000];
     if (cfg->getString("custom_ca", buf, 4000)) {
       sender->send(buf);
     }
-    delete [] buf;
+    delete[] buf;
     sender->send(
-        "</textarea><label>Custom CA (paste here CA certificate in PEM format)</label>"
+        "</textarea><label>Custom CA (paste here CA certificate in PEM "
+        "format)</label>"
         "</i>"
         "</div>");
   }

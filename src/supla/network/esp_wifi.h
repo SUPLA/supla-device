@@ -82,7 +82,9 @@ class ESPWifi : public Supla::Wifi {
   int connect(const char *server, int port = -1) {
     String message;
     WiFiClientSecure *clientSec = nullptr;
+#ifdef ARDUINO_ARCH_ESP8266
     X509List *caCert = nullptr;
+#endif
 
     if (client) {
       client->stop();
@@ -146,6 +148,7 @@ class ESPWifi : public Supla::Wifi {
         connectionPort);
 
     bool result = client->connect(server, connectionPort);
+#ifdef ARDUINO_ARCH_ESP8266
     if (clientSec) {
       char buf[200];
       int lastErr = clientSec->getLastSSLError(buf, sizeof(buf));
@@ -157,6 +160,7 @@ class ESPWifi : public Supla::Wifi {
       delete caCert;
       caCert = nullptr;
     }
+#endif
 
     return result;
   }

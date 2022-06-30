@@ -107,7 +107,6 @@ void Supla::LittleFsConfig::commit() {
 }
 
 bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
-
   if (!initLittleFs()) {
     return false;
   }

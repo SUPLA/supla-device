@@ -185,7 +185,7 @@ bool Supla::LittleFsConfig::setCustomCA(const char* customCA) {
     return false;
   }
 
-  file.write(customCA, dataSize);
+  file.write(reinterpret_cast<const uint8_t*>(customCA), dataSize);
   file.close();
   LittleFS.end();
   return true;

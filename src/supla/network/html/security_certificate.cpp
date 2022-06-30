@@ -79,7 +79,8 @@ void SecurityCertificate::send(Supla::WebSender* sender) {
         "\">"
         "<textarea name=\"custom_ca\" maxlength=\"4000\">");
     char* buf = new char[4000];
-    if (cfg->getString("custom_ca", buf, 4000)) {
+    memset(buf, 0, 4000);
+    if (cfg->getCustomCA(buf, 4000)) {
       sender->send(buf);
     }
     delete[] buf;
@@ -101,7 +102,7 @@ bool SecurityCertificate::handleResponse(const char* key, const char* value) {
     cfg->setUInt8("security_level", securityLevel);
     return true;
   } else if (strcmp(key, "custom_ca") == 0) {
-    cfg->setString("custom_ca", value);
+    cfg->setCustomCA(value);
     return true;
   }
 

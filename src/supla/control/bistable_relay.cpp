@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include "bistable_relay.h"
@@ -141,8 +141,7 @@ bool BistableRelay::isStatusUnknown() {
 }
 
 void BistableRelay::internalToggle() {
-  supla_log(
-      LOG_INFO, "BistableRelay[%d] toggle relay", channel.getChannelNumber());
+  SUPLA_LOG_INFO("BistableRelay[%d] toggle relay", channel.getChannelNumber());
   busy = true;
   disarmTimeMs = millis();
   Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue());

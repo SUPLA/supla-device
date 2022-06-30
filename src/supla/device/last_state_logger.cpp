@@ -17,7 +17,7 @@
 */
 
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/auto_lock.h>
 #include <supla/mutex.h>
 
@@ -55,7 +55,7 @@ void LastStateLogger::log(const char *state) {
   buffer[LAST_STATE_LOGGER_BUFFER_SIZE - 2] = '.';
   buffer[LAST_STATE_LOGGER_BUFFER_SIZE - 1] = '\0';
 
-  supla_log(LOG_INFO, "LAST STATE ADDED: %s", buffer);
+  SUPLA_LOG_INFO("LAST STATE ADDED: %s", buffer);
 }
 
 char *LastStateLogger::getLog() {

@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include "action_trigger.h"
 
@@ -149,7 +149,7 @@ void Supla::Control::ActionTrigger::handleChannelConfig(
     TSD_ChannelConfig_ActionTrigger *config =
         reinterpret_cast<TSD_ChannelConfig_ActionTrigger *>(result->Config);
     activeActionsFromServer = config->ActiveActions;
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "AT[%d] received config with active actions: %d",
               channel.getChannelNumber(),
               activeActionsFromServer);

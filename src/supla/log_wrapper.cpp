@@ -17,10 +17,40 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 
+#include <supla-common/log.h>
+#include "log_wrapper.h"
+
 extern "C" void serialPrintLn(const char *);
 
 void serialPrintLn(const char *message) {
   Serial.println(message);
+}
+
+void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...) {
+  va_list ap;
+  char *buffer = NULL;
+  int size = 0;
+
+  if (__fmt == NULL) return;
+
+  String fmt(__fmt);
+
+
+  while (1) {
+    va_start(ap, __fmt);
+    if (0 == supla_log_string(&buffer, &size, ap, fmt.c_str())) {
+      va_end(ap);
+      break;
+    } else {
+      va_end(ap);
+    }
+    va_end(ap);
+  }
+
+  if (buffer == NULL) return;
+
+  supla_vlog(__pri, buffer);
+  free(buffer);
 }
 
 #endif /*ARDUINO*/

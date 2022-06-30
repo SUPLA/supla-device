@@ -16,6 +16,8 @@
 
 #include <SuplaDevice.h>
 
+#include <supla/log_wrapper.h>
+
 #include "timer.h"
 
 #ifdef ARDUINO
@@ -136,19 +138,19 @@ void initTimers() {
   slowerTimer = xTimerCreate(
       "SuplaSlowerTm", pdMS_TO_TICKS(10), pdTRUE, nullptr, &slowerTimerCb);
   if (xTimerStart(slowerTimer, 100) != pdPASS) {
-    supla_log(LOG_ERR, "Slower Timer start error");
+    SUPLA_LOG_ERROR("Slower Timer start error");
   }
 
   fasterTimer = xTimerCreate(
       "SuplaFasterTm", pdMS_TO_TICKS(1), pdTRUE, nullptr, &fasterTimerCb);
   if (xTimerStart(fasterTimer, 100) != pdPASS) {
-    supla_log(LOG_ERR, "Faster Timer start error");
+    SUPLA_LOG_ERROR("Faster Timer start error");
   }
 
 #elif defined(SUPLA_LINUX)
   Supla::Linux::Timers::init();
 #elif defined(SUPLA_FREERTOS)
-  supla_log(LOG_ERR, "Timers initialication: TODO");
+  SUPLA_LOG_ERROR("Timers initialication: TODO");
 #else
 #error Please implement timers
 #endif

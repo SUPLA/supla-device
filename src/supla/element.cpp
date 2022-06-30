@@ -14,7 +14,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include "time.h"
 #include "element.h"
@@ -147,8 +147,8 @@ Element & Element::disableChannelState() {
 
 void Element::handleChannelConfig(TSD_ChannelConfig *result) {
   (void)(result);
-  supla_log(LOG_DEBUG,
-      "Channel[%d]: received channel config reply, but handling is missing");
+  SUPLA_LOG_DEBUG(
+      "Element: received channel config reply, but handling is missing");
 }
 
 };  // namespace Supla

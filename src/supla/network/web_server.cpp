@@ -18,7 +18,7 @@
 
 #include <SuplaDevice.h>
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
@@ -201,7 +201,7 @@ void Supla::WebServer::parsePost(const char *postContent,
         // are provided by user, so those have to be decoded
         urlDecodeInplace(value, HTML_VAL_LENGTH);
         // handle key value here
-        supla_log(LOG_DEBUG, "SERVER: key %s, value %s", key, value);
+        SUPLA_LOG_DEBUG("SERVER: key %s, value %s", key, value);
         for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
              htmlElement = htmlElement->next()) {
           if (htmlElement->handleResponse(key, value)) {
@@ -210,7 +210,7 @@ void Supla::WebServer::parsePost(const char *postContent,
         }
         if (strcmp(key, "rbt") == 0) {
           int reboot = stringToUInt(value);
-          supla_log(LOG_DEBUG, "rbt found %d", reboot);
+          SUPLA_LOG_DEBUG("rbt found %d", reboot);
           if (reboot == 2) {
             sdc->scheduleSoftRestart(2500);
           } else if (reboot) {

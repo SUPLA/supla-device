@@ -16,8 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
 #include <supla-common/srpc.h>
+#include <supla/log_wrapper.h>
 
 #include "../time.h"
 #include "clock.h"
@@ -91,7 +91,7 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
 
   isClockReady = true;
 
-  supla_log(LOG_DEBUG,
+  SUPLA_LOG_DEBUG(
             "Current local time: %d-%d-%d %d:%d:%d",
             getYear(),
             getMonth(),
@@ -115,7 +115,7 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
 #elif defined(ARDUINO_ARCH_AVR)
   set_system_time(mktime(&timeinfo));
 #endif
-  supla_log(LOG_DEBUG,
+  SUPLA_LOG_DEBUG(
             "Received local time from server: %d-%d-%d %d:%d:%d",
             getYear(),
             getMonth(),

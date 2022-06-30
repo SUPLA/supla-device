@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include "light_relay.h"
@@ -74,7 +74,7 @@ void LightRelay::onLoadState() {
     lifespan = data.lifespan;
     turnOnSecondsCumulative = data.turnOnSecondsCumulative;
 
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "LightRelay[%d] settings restored from storage. Total lifespan: "
               "%d h; current operating time: %d s",
               channel.getChannelNumber(),

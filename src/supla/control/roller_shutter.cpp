@@ -16,7 +16,7 @@
 
 #include "roller_shutter.h"
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include <supla/storage/storage.h>
 #include <supla/time.h>
@@ -86,7 +86,7 @@ int RollerShutter::handleNewValueFromServer(
   setOpenCloseTime(newClosingTime, newOpeningTime);
 
   char task = newValue->value[0];
-  supla_log(LOG_DEBUG, "RollerShutter[%d] new value from server: %d",
+  SUPLA_LOG_DEBUG("RollerShutter[%d] new value from server: %d",
       channel.getChannelNumber(), task);
   if (task == 0) {
     stop();
@@ -115,7 +115,7 @@ void RollerShutter::setOpenCloseTime(uint32_t newClosingTimeMs,
     openingTimeMs = newOpeningTimeMs;
     calibrate = true;
     currentPosition = UNKNOWN_POSITION;
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
         "RollerShutter[%d] new time settings received. Opening time: %d ms; "
         "closing time: %d ms. Starting calibration...",
         channel.getChannelNumber(),
@@ -340,7 +340,7 @@ void RollerShutter::onTimer() {
         if (currentDirection == UP_DIR) {
           stopMovement();
         } else if (currentDirection == STOP_DIR) {
-          supla_log(LOG_DEBUG, ("Calibration: closing"));
+          SUPLA_LOG_DEBUG("Calibration: closing");
           calibrationTime = closingTimeMs;
           lastMovementStartTime = millis();
           if (calibrationTime == 0) {
@@ -352,7 +352,7 @@ void RollerShutter::onTimer() {
         if (currentDirection == DOWN_DIR) {
           stopMovement();
         } else if (currentDirection == STOP_DIR) {
-          supla_log(LOG_DEBUG, ("Calibration: opening"));
+          SUPLA_LOG_DEBUG("Calibration: opening");
           calibrationTime = openingTimeMs;
           lastMovementStartTime = millis();
           if (calibrationTime == 0) {
@@ -365,13 +365,13 @@ void RollerShutter::onTimer() {
       // Time used for calibaration is 10% higher then requested by user
       calibrationTime *= 1.1;
       if (calibrationTime > 0) {
-        supla_log(LOG_DEBUG, ("Calibration time: %d"), calibrationTime);
+        SUPLA_LOG_DEBUG("Calibration time: %d", calibrationTime);
       }
     }
 
     if (calibrationTime != 0 &&
         millis() - lastMovementStartTime > calibrationTime) {
-      supla_log(LOG_DEBUG, "Calibration done");
+      SUPLA_LOG_DEBUG("Calibration done");
       calibrationTime = 0;
       calibrate = false;
       if (currentDirection == UP_DIR) {
@@ -486,7 +486,7 @@ void RollerShutter::onLoadState() {
     if (currentPosition >= 0) {
       calibrate = false;
     }
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
         "RollerShutter[%d] settings restored from storage. Opening time: %d "
         "ms; closing time: %d ms. Position: %d",
         channel.getChannelNumber(),

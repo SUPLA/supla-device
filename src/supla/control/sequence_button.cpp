@@ -17,7 +17,7 @@
 */
 
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include "sequence_button.h"
@@ -63,12 +63,12 @@ void Supla::Control::SequenceButton::onTimer() {
   if (!stateChanged) {
     if (clickCounter > 0 && stateResult == RELEASED) {
       if (timeDelta > longestSequenceTimeDeltaWithMargin) {
-        supla_log(LOG_DEBUG, "Recorded sequence: ");
+        SUPLA_LOG_DEBUG("Recorded sequence: ");
         if (clickCounter > 31) {
           clickCounter = 31;
         }
         for (int i = 0; i < clickCounter - 1; i++) {
-          supla_log(LOG_DEBUG, "%d", currentSequence.data[i]);
+          SUPLA_LOG_DEBUG("%d", currentSequence.data[i]);
         }
 
         int matchSequenceSize = 0;
@@ -78,7 +78,7 @@ void Supla::Control::SequenceButton::onTimer() {
           }
         }
         if (matchSequenceSize != clickCounter - 1) {
-          supla_log(LOG_DEBUG, "Sequence size doesn't match");
+          SUPLA_LOG_DEBUG("Sequence size doesn't match");
           runAction(ON_SEQUENCE_DOESNT_MATCH);
         } else {
           bool match = true;
@@ -93,10 +93,10 @@ void Supla::Control::SequenceButton::onTimer() {
             }
           }
           if (match) {
-            supla_log(LOG_DEBUG, "Sequence match");
+            SUPLA_LOG_DEBUG("Sequence match");
             runAction(ON_SEQUENCE_MATCH);
           } else {
-            supla_log(LOG_DEBUG, "Sequence doesn't match");
+            SUPLA_LOG_DEBUG("Sequence doesn't match");
             runAction(ON_SEQUENCE_DOESNT_MATCH);
           }
         }

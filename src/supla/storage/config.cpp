@@ -376,4 +376,15 @@ bool Config::setSwUpdateBeta(bool enabled) {
   return setInt8("swupdatebeta", value);
 }
 
+bool Config::getCustomCA(char* result, int size) {
+  return getString("custom_ca", result, size);
+}
+
+int Config::getCustomCASize() {
+  return getStringSize("custom_ca");
+}
+
+bool Config::setCustomCA(const char* customCA) {
+  return setString("custom_ca", customCA);
+}
 }  // namespace Supla

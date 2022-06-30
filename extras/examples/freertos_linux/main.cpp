@@ -21,7 +21,7 @@
 */
 
 #include <FreeRTOS.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <task.h>
 
@@ -54,7 +54,7 @@ class TaskWrap {
 class TestTask1 : public TaskWrap {
  private:
   void loop() override {
-    supla_log(LOG_DEBUG, "task1 test: %d", millis());
+    SUPLA_LOG_DEBUG("task1 test: %d", millis());
     vTaskDelay(100);
   }
 };
@@ -62,13 +62,13 @@ class TestTask1 : public TaskWrap {
 class TestTask2 : public TaskWrap {
  private:
   void loop() override {
-    supla_log(LOG_DEBUG, "task2 test: %d", millis());
+    SUPLA_LOG_DEBUG("task2 test: %d", millis());
     vTaskDelay(550);
   }
 };
 
 int main() {
-  supla_log(LOG_DEBUG, "Hello FreeRTOS with Supla!");
+  SUPLA_LOG_DEBUG("Hello FreeRTOS with Supla!");
 
   TestTask1 task1;
   TestTask2 task2;

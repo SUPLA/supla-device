@@ -16,8 +16,9 @@
 
 #include <string.h>
 
-#include "supla/channel.h"
-#include "supla-common/log.h"
+#include <supla/log_wrapper.h>
+
+#include "channel.h"
 #include "supla-common/srpc.h"
 #include "tools.h"
 #include "events.h"
@@ -62,7 +63,7 @@ void Channel::setNewValue(double dbl) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    supla_log(LOG_DEBUG, "Channel(%d) value changed to %d.%d", channelNumber,
+    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d.%d", channelNumber,
         static_cast<int>(dbl), static_cast<int>(dbl*100)%100);
   }
 }
@@ -82,7 +83,7 @@ void Channel::setNewValue(double temp, double humi) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Channel(%d) value changed to temp(%f), humi(%f)",
               channelNumber,
               temp,
@@ -99,7 +100,7 @@ void Channel::setNewValue(unsigned _supla_int64_t value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    supla_log(LOG_DEBUG, "Channel(%d) value changed to %d", channelNumber,
+    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber,
         static_cast<int>(value));
   }
 }
@@ -113,8 +114,7 @@ void Channel::setNewValue(_supla_int_t value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    supla_log(
-        LOG_DEBUG, "Channel(%d) value changed to %d", channelNumber, value);
+    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber, value);
   }
 }
 
@@ -133,8 +133,7 @@ void Channel::setNewValue(bool value) {
     runAction(Supla::ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
 
-    supla_log(
-        LOG_DEBUG, "Channel(%d) value changed to %d", channelNumber, value);
+    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber, value);
   }
 }
 
@@ -221,7 +220,7 @@ _supla_int_t Channel::getFuncList() {
 }
 
 void Channel::setActionTriggerCaps(_supla_int_t caps) {
-  supla_log(LOG_DEBUG, "Channel[%d] setting func list: %d", channelNumber,
+  SUPLA_LOG_DEBUG("Channel[%d] setting func list: %d", channelNumber,
       caps);
   setFuncList(caps);
 }
@@ -286,8 +285,7 @@ void Channel::setNewValue(const TDSC_RollerShutterValue &value) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    supla_log(
-        LOG_DEBUG, "Channel(%d) value changed to %d", channelNumber,
+    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber,
         value.position);
   }
 }
@@ -307,7 +305,7 @@ void Channel::setNewValue(uint8_t red,
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
         "Channel(%d) value changed to RGB(%d, %d, %d), colBr(%d), bright(%d)",
         channelNumber, red, green, blue, colorBrightness, brightness);
   }

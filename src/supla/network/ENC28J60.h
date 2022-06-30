@@ -22,6 +22,8 @@
 #include <Arduino.h>
 #include <UIPEthernet.h>
 
+#include <supla/log_wrapper.h>
+
 #include "../supla_lib_config.h"
 #include "network.h"
 
@@ -69,7 +71,7 @@ class ENC28J60 : public Supla::Network {
 
   int connect(const char *server, int port = -1) {
     int connectionPort = (port == -1 ? 2015 : port);
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Establishing connection with: %s (port: %d)",
               server,
               connectionPort);

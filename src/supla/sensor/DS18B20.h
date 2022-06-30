@@ -23,7 +23,8 @@
 #include <DallasTemperature.h>
 #include <OneWire.h>
 
-#include "supla-common/log.h"
+#include <supla/log_wrapper.h>
+
 #include "supla/sensor/thermometer.h"
 
 namespace Supla {
@@ -33,16 +34,16 @@ class OneWireBus {
  public:
   explicit OneWireBus(uint8_t pinNumber)
       : pin(pinNumber), nextBus(nullptr), lastReadTime(0), oneWire(pinNumber) {
-    supla_log(LOG_DEBUG, "Initializing OneWire bus at pin %d", pinNumber);
+    SUPLA_LOG_DEBUG("Initializing OneWire bus at pin %d", pinNumber);
     sensors.setOneWire(&oneWire);
     sensors.begin();
     if (sensors.isParasitePowerMode()) {
-      supla_log(LOG_DEBUG, "OneWire(pin %d) Parasite power is ON", pinNumber);
+      SUPLA_LOG_DEBUG("OneWire(pin %d) Parasite power is ON", pinNumber);
     } else {
-      supla_log(LOG_DEBUG, "OneWire(pin %d) Parasite power is OFF", pinNumber);
+      SUPLA_LOG_DEBUG("OneWire(pin %d) Parasite power is OFF", pinNumber);
     }
 
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "OneWire(pin %d) Found %d devices:",
               pinNumber,
               sensors.getDeviceCount());
@@ -53,7 +54,7 @@ class OneWireBus {
     char strAddr[64];
     for (int i = 0; i < sensors.getDeviceCount(); i++) {
       if (!sensors.getAddress(address, i)) {
-        supla_log(LOG_DEBUG, "Unable to find address for Device %d", i);
+        SUPLA_LOG_DEBUG("Unable to find address for Device %d", i);
       } else {
         snprintf(
             strAddr, sizeof(strAddr),
@@ -66,7 +67,7 @@ class OneWireBus {
             address[5],
             address[6],
             address[7]);
-        supla_log(LOG_DEBUG, "Index %d - address %s", i, strAddr);
+        SUPLA_LOG_DEBUG("Index %d - address %s", i, strAddr);
         sensors.setResolution(address, 12);
       }
       delay(0);
@@ -125,7 +126,7 @@ class DS18B20 : public Thermometer {
 
     // There is no OneWire bus created yet for this pin
     if (!bus) {
-      supla_log(LOG_DEBUG, "Creating OneWire bus for pin: %d", pin);
+      SUPLA_LOG_DEBUG("Creating OneWire bus for pin: %d", pin);
       myBus = new OneWireBus(pin);
       if (prevBus) {
         prevBus->nextBus = myBus;
@@ -134,7 +135,7 @@ class DS18B20 : public Thermometer {
       }
     }
     if (deviceAddress == nullptr) {
-      supla_log(LOG_DEBUG,
+      SUPLA_LOG_DEBUG(
                 "Device address not provided. Using device from index 0");
     } else {
       memcpy(address, deviceAddress, 8);

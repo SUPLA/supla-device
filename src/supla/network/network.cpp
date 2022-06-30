@@ -18,8 +18,9 @@
 #include <string.h>
 #include <supla/time.h>
 
-#include "SuplaDevice.h"
-#include "supla-common/log.h"
+#include <SuplaDevice.h>
+#include <supla/log_wrapper.h>
+
 #include "supla-common/srpc.h"
 #include "supla/element.h"
 #include "supla/network/network.h"
@@ -183,7 +184,7 @@ void message_received(void *_srpc,
                 actionResult);
           }
         } else {
-          supla_log(LOG_DEBUG,
+          SUPLA_LOG_DEBUG(
                     "Error: couldn't find element for a requested channel [%d]",
                     rd.data.sd_channel_new_value->ChannelNumber);
         }
@@ -222,7 +223,7 @@ void message_received(void *_srpc,
         result.Command = rd.data.sd_device_calcfg_request->Command;
         result.Result = SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
         result.DataSize = 0;
-        supla_log(LOG_DEBUG,
+        SUPLA_LOG_DEBUG(
                   "CALCFG CMD received: senderId %d, ch %d, cmd %d, suauth %d, "
                   "datatype %d, datasize %d, ",
                   rd.data.sd_device_calcfg_request->SenderID,
@@ -247,8 +248,7 @@ void message_received(void *_srpc,
               result.Result = element->handleCalcfgFromServer(
                   rd.data.sd_device_calcfg_request);
             } else {
-              supla_log(
-                  LOG_DEBUG,
+              SUPLA_LOG_DEBUG(
                   "Error: couldn't find element for a requested channel [%d]",
                   rd.data.sd_channel_new_value->ChannelNumber);
             }
@@ -265,8 +265,7 @@ void message_received(void *_srpc,
           if (element) {
             element->handleChannelConfig(result);
           } else {
-            supla_log(
-                LOG_DEBUG,
+            SUPLA_LOG_DEBUG(
                 "Error: couldn't find element for a requested channel [%d]",
                 result->ChannelNumber);
           }
@@ -288,8 +287,7 @@ void message_received(void *_srpc,
                 newValue.value, groupNewValue->value, SUPLA_CHANNELVALUE_SIZE);
             element->handleNewValueFromServer(&newValue);
           } else {
-            supla_log(
-                LOG_DEBUG,
+            SUPLA_LOG_DEBUG(
                 "Error: couldn't find element for a requested channel [%d]",
                 rd.data.sd_channel_new_value->ChannelNumber);
           }
@@ -297,14 +295,14 @@ void message_received(void *_srpc,
         break;
       }
       default:
-        supla_log(LOG_DEBUG, "Received unknown message from server!");
+        SUPLA_LOG_WARNING("Received unknown message from server!");
         break;
     }
 
     srpc_rd_free(&rd);
 
   } else if (getDataResult == SUPLA_RESULT_DATA_ERROR) {
-    supla_log(LOG_DEBUG, "DATA ERROR!");
+    SUPLA_LOG_WARNING("DATA ERROR!");
   }
 }
 
@@ -369,12 +367,12 @@ void Network::setActivityTimeout(_supla_int_t activityTimeoutSec) {
 
 void Network::setTimeout(int timeoutMs) {
   (void)(timeoutMs);
-  supla_log(LOG_DEBUG, "setTimeout is not implemented for this interface");
+  SUPLA_LOG_DEBUG("setTimeout is not implemented for this interface");
 }
 
 void Network::fillStateData(TDSC_ChannelState *channelState) {
   (void)(channelState);
-  supla_log(LOG_DEBUG, "fillStateData is not implemented for this interface");
+  SUPLA_LOG_DEBUG("fillStateData is not implemented for this interface");
 }
 
 #ifdef ARDUINO
@@ -391,7 +389,7 @@ void Network::printData(const char *prefix, const void *buf, const int count) {
         "%02X ",
         static_cast<unsigned int>(static_cast<const unsigned char *>(buf)[i]));
   }
-  supla_log(LOG_DEBUG, "%s: [%s]", prefix, tmp);
+  SUPLA_LOG_DEBUG("%s: [%s]", prefix, tmp);
 }
 
 void Network::setSsid(const char *wifiSsid) {
@@ -422,7 +420,7 @@ bool Network::getMacAddr(uint8_t *buf) {
 
 void Network::setHostname(const char *buf) {
   strncpy(hostname, buf, 32);
-  supla_log(LOG_DEBUG, "Network AP/hostname: %s", hostname);
+  SUPLA_LOG_DEBUG("Network AP/hostname: %s", hostname);
 }
 
 void Network::setSuplaDeviceClass(SuplaDeviceClass *ptr) {

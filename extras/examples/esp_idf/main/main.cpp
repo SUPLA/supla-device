@@ -22,7 +22,7 @@
 #include <esp_heap_caps.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/control/button.h>
 #include <supla/control/relay.h>
 #include <supla/control/roller_shutter.h>
@@ -97,14 +97,12 @@ void cpp_main(void* param) {
   r2->setDefaultStateRestore();
   r3->setDefaultStateRestore();
 
-  supla_log(
-      LOG_DEBUG, "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+  SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SuplaDevice.setSuplaCACert(
       reinterpret_cast<const char*>(suplaOrgCertPemStart));
   SuplaDevice.begin();
-  supla_log(
-      LOG_DEBUG, "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
-  supla_log(LOG_DEBUG, "port tick period %d", portTICK_PERIOD_MS);
+  SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+  SUPLA_LOG_DEBUG("port tick period %d", portTICK_PERIOD_MS);
 
   unsigned int lastTime = 0;
   unsigned int lastTimeHeap = 0;
@@ -123,8 +121,7 @@ void cpp_main(void* param) {
       if (lastFreeHeap != curHeap) {
         lastFreeHeap = curHeap;
         lastTimeHeap = millis();
-        supla_log(LOG_DEBUG,
-                  "Free heap: %d",
+        SUPLA_LOG_DEBUG("Free heap: %d",
                   heap_caps_get_free_size(MALLOC_CAP_8BIT));
       }
     }

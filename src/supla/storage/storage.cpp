@@ -17,7 +17,7 @@
 */
 
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include "config.h"
@@ -43,12 +43,12 @@ bool Storage::Init() {
   if (Instance()) {
     result = Instance()->init();
   } else {
-    supla_log(LOG_DEBUG, "Main storage not configured");
+    SUPLA_LOG_DEBUG("Main storage not configured");
   }
   if (ConfigInstance()) {
     result = ConfigInstance()->init();
   } else {
-    supla_log(LOG_DEBUG, "Config storage not configured");
+    SUPLA_LOG_DEBUG("Config storage not configured");
   }
   return result;
 }
@@ -133,7 +133,7 @@ bool Storage::prepareState(bool performDryRun) {
 bool Storage::readState(unsigned char *buf, int size) {
   if (elementStateOffset + sizeof(SectionPreamble) + elementStateSize <
       currentStateOffset + size) {
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Warning! Attempt to read state outside of section size");
     return false;
   }
@@ -151,10 +151,9 @@ bool Storage::writeState(const unsigned char *buf, int size) {
   if (elementStateSize > 0 &&
       elementStateOffset + sizeof(SectionPreamble) + elementStateSize <
           currentStateOffset + size) {
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Warning! Attempt to write state outside of section size.");
-    supla_log(
-        LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
         "Storage: rewriting element state section. All data will be lost.");
     elementStateSize = 0;
     elementStateOffset = 0;
@@ -175,7 +174,7 @@ bool Storage::writeState(const unsigned char *buf, int size) {
     if (elementConfigOffset != 0) {
       elementStateOffset += sizeof(SectionPreamble) + elementConfigSize;
     }
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Initialization of elementStateOffset: %d",
               elementStateOffset);
 
@@ -184,7 +183,7 @@ bool Storage::writeState(const unsigned char *buf, int size) {
     sectionsCount++;
 
     // Update Storage preamble with new section count
-    supla_log(LOG_DEBUG, "Updating Storage preamble");
+    SUPLA_LOG_DEBUG("Updating Storage preamble");
     unsigned char suplaTag[] = {'S', 'U', 'P', 'L', 'A'};
     Preamble preamble;
     memcpy(preamble.suplaTag, suplaTag, 5);
@@ -204,7 +203,7 @@ bool Storage::finalizeSaveState() {
   if (dryRun) {
     dryRun = false;
     if (elementStateSize != newSectionSize) {
-      supla_log(LOG_DEBUG,
+      SUPLA_LOG_DEBUG(
                 "Element state section size doesn't match current device "
                 "configuration");
       elementStateOffset = 0;
@@ -229,7 +228,7 @@ bool Storage::finalizeSaveState() {
 }
 
 bool Storage::init() {
-  supla_log(LOG_DEBUG, "Storage initialization");
+  SUPLA_LOG_DEBUG("Storage initialization");
   unsigned int currentOffset = storageStartingOffset;
   Preamble preamble = {};
   currentOffset +=
@@ -238,7 +237,7 @@ bool Storage::init() {
   unsigned char suplaTag[] = {'S', 'U', 'P', 'L', 'A'};
 
   if (memcmp(suplaTag, preamble.suplaTag, 5)) {
-    supla_log(LOG_DEBUG, "Storage: missing Supla tag. Rewriting...");
+    SUPLA_LOG_DEBUG("Storage: missing Supla tag. Rewriting...");
 
     memcpy(preamble.suplaTag, suplaTag, 5);
     preamble.version = SUPLA_STORAGE_VERSION;
@@ -249,14 +248,13 @@ bool Storage::init() {
     commit();
 
   } else if (preamble.version != SUPLA_STORAGE_VERSION) {
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Storage: storage version [%d] is not supported. Storage not "
               "initialized",
               preamble.version);
     return false;
   } else {
-    supla_log(
-        LOG_DEBUG, "Storage: Number of sections %d", preamble.sectionsCount);
+    SUPLA_LOG_DEBUG("Storage: Number of sections %d", preamble.sectionsCount);
   }
 
   if (preamble.sectionsCount == 0) {
@@ -264,20 +262,19 @@ bool Storage::init() {
   }
 
   for (int i = 0; i < preamble.sectionsCount; i++) {
-    supla_log(LOG_DEBUG, "Reading section: %d", i);
+    SUPLA_LOG_DEBUG("Reading section: %d", i);
     SectionPreamble section;
     unsigned int sectionOffset = currentOffset;
     currentOffset +=
         readStorage(currentOffset, (unsigned char *)&section, sizeof(section));
 
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Section type: %d; size: %d",
               static_cast<int>(section.type),
               section.size);
 
     if (section.crc1 != section.crc2) {
-      supla_log(
-          LOG_DEBUG,
+      SUPLA_LOG_DEBUG(
           "Warning! CRC copies on section doesn't match. Please check your "
           "storage hardware");
     }
@@ -299,7 +296,7 @@ bool Storage::init() {
         break;
       }
       default: {
-        supla_log(LOG_DEBUG, "Warning! Unknown section type");
+        SUPLA_LOG_DEBUG("Warning! Unknown section type");
         break;
       }
     }

@@ -16,7 +16,7 @@
 
 
 #include "io.h"
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -82,7 +82,7 @@ int Io::digitalRead(int channelNumber, uint8_t pin) {
 
 void Io::digitalWrite(int channelNumber, uint8_t pin, uint8_t val) {
   if (channelNumber >= 0) {
-    supla_log(LOG_DEBUG, " **** Digital write[%d], gpio: %d; value %d",
+    SUPLA_LOG_VERBOSE(" **** Digital write[%d], gpio: %d; value %d",
         channelNumber, pin, val);
   }
 
@@ -119,7 +119,7 @@ void Io::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
 }
 
 void Io::analogWrite(int channelNumber, uint8_t pin, int val) {
-  supla_log(LOG_DEBUG, " **** Analog write[%d], gpio: %d; value %d",
+  SUPLA_LOG_VERBOSE(" **** Analog write[%d], gpio: %d; value %d",
       channelNumber, pin, val);
 
   if (ioInstance) {

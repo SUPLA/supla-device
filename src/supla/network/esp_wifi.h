@@ -21,6 +21,8 @@
 
 #include <Arduino.h>
 
+#include <supla/log_wrapper.h>
+
 #ifdef ARDUINO_ARCH_ESP8266
 #include <ESP8266WiFi.h>
 
@@ -79,16 +81,39 @@ class ESPWifi : public Supla::Wifi {
 
   int connect(const char *server, int port = -1) {
     String message;
+    WiFiClientSecure *clientSec = nullptr;
+    X509List *caCert = nullptr;
+
+    if (client) {
+      client->stop();
+      delete client;
+      client = nullptr;
+    }
+
     if (client == NULL) {
       if (sslEnabled) {
         message = "Secured connection";
-        auto clientSec = new WiFiClientSecure();
+        clientSec = new WiFiClientSecure();
         client = clientSec;
 
 #ifdef ARDUINO_ARCH_ESP8266
-        clientSec->setBufferSizes(2048, 512);  // EXPERIMENTAL
+        clientSec->setBufferSizes(1024, 512);  // EXPERIMENTAL
         if (rootCACert) {
-          // TODO(klew): add CA cert verification for ESP8266
+          // Set time via NTP, as required for x.509 validation
+          static bool timeConfigured = false;
+
+          if (!timeConfigured) {
+            configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
+            SUPLA_LOG_DEBUG("Waiting for NTP time sync");
+            time_t now = time(nullptr);
+            while (now < 8 * 3600 * 2) { 
+              delay(100);
+              now = time(nullptr);
+            }
+          }
+
+          caCert = new BearSSL::X509List(rootCACert);
+          clientSec->setTrustAnchors(caCert);
         } else if (fingerprint.length() > 0) {
           message += " with certificate matching";
           clientSec->setFingerprint(fingerprint.c_str());
@@ -114,13 +139,24 @@ class ESPWifi : public Supla::Wifi {
       connectionPort = port;
     }
 
-    supla_log(LOG_DEBUG,
-              "Establishing %s with: %s (port: %d)",
-              message.c_str(),
-              server,
-              connectionPort);
+    SUPLA_LOG_DEBUG(
+        "Establishing %s with: %s (port: %d)",
+        message.c_str(),
+        server,
+        connectionPort);
 
     bool result = client->connect(server, connectionPort);
+    if (clientSec) {
+      char buf[200];
+      int lastErr = clientSec->getLastSSLError(buf, sizeof(buf));
+      if (lastErr) {
+        SUPLA_LOG_ERROR("SSL error: %d, %s", lastErr, buf);
+      }
+    }
+    if (caCert) {
+      delete caCert;
+      caCert = nullptr;
+    }
 
     return result;
   }
@@ -147,7 +183,7 @@ class ESPWifi : public Supla::Wifi {
       wifiConfigured = true;
 #ifdef ARDUINO_ARCH_ESP8266
       gotIpEventHandler =
-          WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
+        WiFi.onStationModeGotIP([](const WiFiEventStationModeGotIP &event) {
             (void)(event);
             Serial.print(F("local IP: "));
             Serial.println(WiFi.localIP());
@@ -159,25 +195,25 @@ class ESPWifi : public Supla::Wifi {
             Serial.print(F("Signal strength (RSSI): "));
             Serial.print(rssi);
             Serial.println(F(" dBm"));
-          });
+            });
       disconnectedEventHandler = WiFi.onStationModeDisconnected(
           [](const WiFiEventStationModeDisconnected &event) {
-            (void)(event);
-            Serial.println(F("WiFi station disconnected"));
+          (void)(event);
+          Serial.println(F("WiFi station disconnected"));
           });
 #else
       WiFiEventId_t event_gotIP = WiFi.onEvent(
           [](WiFiEvent_t event, WiFiEventInfo_t info) {
-            Serial.print(F("local IP: "));
-            Serial.println(WiFi.localIP());
-            Serial.print(F("subnetMask: "));
-            Serial.println(WiFi.subnetMask());
-            Serial.print(F("gatewayIP: "));
-            Serial.println(WiFi.gatewayIP());
-            int rssi = WiFi.RSSI();
-            Serial.print(F("Signal Strength (RSSI): "));
-            Serial.print(rssi);
-            Serial.println(F(" dBm"));
+          Serial.print(F("local IP: "));
+          Serial.println(WiFi.localIP());
+          Serial.print(F("subnetMask: "));
+          Serial.println(WiFi.subnetMask());
+          Serial.print(F("gatewayIP: "));
+          Serial.println(WiFi.gatewayIP());
+          int rssi = WiFi.RSSI();
+          Serial.print(F("Signal Strength (RSSI): "));
+          Serial.print(rssi);
+          Serial.println(F(" dBm"));
           },
           WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
 
@@ -185,7 +221,7 @@ class ESPWifi : public Supla::Wifi {
 
       WiFiEventId_t event_disconnected = WiFi.onEvent(
           [](WiFiEvent_t event, WiFiEventInfo_t info) {
-            Serial.println(F("WiFi Station disconnected"));
+          Serial.println(F("WiFi Station disconnected"));
             // ESP32 doesn't reconnect automatically after lost connection
             WiFi.reconnect();
           },

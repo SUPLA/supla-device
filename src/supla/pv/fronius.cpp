@@ -18,7 +18,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include "fronius.h"
@@ -51,7 +51,7 @@ Fronius::Fronius(IPAddress ip, int port, int deviceId)
 void Fronius::iterateAlways() {
   if (dataFetchInProgress) {
     if (millis() - connectionTimeoutMs > 30000) {
-      supla_log(LOG_DEBUG,
+      SUPLA_LOG_DEBUG(
                 "Fronius: connection timeout. Remote host is not responding");
       pvClient.stop();
       dataFetchInProgress = false;
@@ -59,13 +59,12 @@ void Fronius::iterateAlways() {
       return;
     }
     if (!pvClient.connected()) {
-      supla_log(LOG_DEBUG, "Fronius fetch completed");
+      SUPLA_LOG_DEBUG("Fronius fetch completed");
       dataFetchInProgress = false;
       dataIsReady = true;
     }
     if (pvClient.available()) {
-      supla_log(
-          LOG_DEBUG, "Reading data from Fronius: %d", pvClient.available());
+      SUPLA_LOG_DEBUG("Reading data from Fronius: %d", pvClient.available());
     }
     while (pvClient.available()) {
       char c;
@@ -158,7 +157,7 @@ bool Fronius::iterateConnected(void *srpc) {
   if (!dataFetchInProgress) {
     if (lastReadTime == 0 || millis() - lastReadTime > refreshRateSec * 1000) {
       lastReadTime = millis();
-      supla_log(LOG_DEBUG, "Fronius connecting %d", deviceId);
+      SUPLA_LOG_DEBUG("Fronius connecting %d", deviceId);
       if (pvClient.connect(ip, port)) {
         retryCounter = 0;
         dataFetchInProgress = true;
@@ -181,7 +180,7 @@ bool Fronius::iterateConnected(void *srpc) {
 
       } else {  // if connection wasn't successful, try few times. If it fails,
                 // then assume that inverter is off during the night
-        supla_log(LOG_DEBUG, "Failed to connect to Fronius");
+        SUPLA_LOG_DEBUG("Failed to connect to Fronius");
         retryCounter++;
         if (retryCounter > 3) {
           currentPower = 0;

@@ -21,7 +21,7 @@
 #include <SuplaDevice.h>
 #include <stddef.h>
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
 #include <supla/network/html_generator.h>
 #include <supla/time.h>
@@ -32,7 +32,7 @@
 static Supla::EspWebServer *serverInstance = nullptr;
 
 void getFavicon() {
-  supla_log(LOG_DEBUG, "SERVER: get favicon.ico");
+  SUPLA_LOG_DEBUG("SERVER: get favicon.ico");
   if (serverInstance) {
     serverInstance->notifyClientConnected();
     auto svr = serverInstance->getServerPtr();
@@ -44,7 +44,7 @@ void getFavicon() {
 }
 
 void getHandler() {
-  supla_log(LOG_DEBUG, "SERVER: get request");
+  SUPLA_LOG_DEBUG("SERVER: get request");
 
   if (serverInstance && serverInstance->htmlGenerator) {
     Supla::EspSender sender(serverInstance->getServerPtr());
@@ -55,7 +55,7 @@ void getHandler() {
 }
 
 void getBetaHandler() {
-  supla_log(LOG_DEBUG, "SERVER: get beta request");
+  SUPLA_LOG_DEBUG("SERVER: get beta request");
 
   if (serverInstance && serverInstance->htmlGenerator) {
     Supla::EspSender sender(serverInstance->getServerPtr());
@@ -67,7 +67,7 @@ void getBetaHandler() {
 }
 
 void postHandler() {
-  supla_log(LOG_DEBUG, "SERVER: post request");
+  SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost()) {
       getHandler();
@@ -76,7 +76,7 @@ void postHandler() {
 }
 
 void postBetaHandler() {
-  supla_log(LOG_DEBUG, "SERVER: post request");
+  SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost()) {
       getBetaHandler();
@@ -102,7 +102,7 @@ bool Supla::EspWebServer::handlePost() {
   resetParser();
 
   for (int i = 0; i < server.args(); i++) {
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "SERVER: key %s, value %s",
               server.argName(i).c_str(),
               server.arg(i).c_str());
@@ -115,7 +115,7 @@ bool Supla::EspWebServer::handlePost() {
     }
     if (strcmp(server.argName(i).c_str(), "rbt") == 0) {
       int reboot = stringToUInt(server.arg(i).c_str());
-      supla_log(LOG_DEBUG, "rbt found %d", reboot);
+      SUPLA_LOG_DEBUG("rbt found %d", reboot);
       if (reboot == 2) {
         sdc->scheduleSoftRestart(2500);
       } else if (reboot) {
@@ -137,7 +137,7 @@ void Supla::EspWebServer::start() {
 
   started = true;
 
-  supla_log(LOG_INFO, "Starting local web server");
+  SUPLA_LOG_INFO("Starting local web server");
 
   server.on("/", HTTP_GET, getHandler);
   server.on("/beta", HTTP_GET, getBetaHandler);
@@ -149,7 +149,7 @@ void Supla::EspWebServer::start() {
 }
 
 void Supla::EspWebServer::stop() {
-  supla_log(LOG_INFO, "Stopping local web server");
+  SUPLA_LOG_INFO("Stopping local web server");
   if (started) {
     server.stop();
     started = false;

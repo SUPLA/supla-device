@@ -29,6 +29,13 @@ class LittleFsConfig : public KeyValue {
   virtual ~LittleFsConfig();
   bool init() override;
   void commit() override;
+
+  bool getCustomCA(char* result, int maxSize) override;
+  int getCustomCASize() override;
+  bool setCustomCA(const char* customCA) override;
+
+ protected:
+  bool initLittleFs();
 };
 };  // namespace Supla
 

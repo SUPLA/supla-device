@@ -14,7 +14,6 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
 #include <supla-common/tools.h>
 #include <linux_network.h>
 #include <unistd.h>
@@ -30,6 +29,7 @@
 #include <supla/control/virtual_relay.h>
 #include <supla/time.h>
 #include <supla/version.h>
+#include <supla/log_wrapper.h>
 
 // Below includes are added just for CI compilation check. Some of them
 // are not used in any cpp file, so they would not be compiled otherwise.
@@ -120,20 +120,20 @@ int main(int argc, char* argv[]) {
     if (result.count("daemon")) {
       runAsDaemon = 1;
       if (!st_try_fork()) {
-        supla_log(LOG_ERR, "Can't start daemon");
+        SUPLA_LOG_ERROR("Can't start daemon");
         exit(1);
       }
     }
 
     if (result.count("service") && result.count("daemon")) {
-      supla_log(LOG_ERR, "Can't use daemon and service mode at the same time");
+      SUPLA_LOG_ERROR("Can't use daemon and service mode at the same time");
       exit(1);
     }
 
     if (result.count("service")) {
       runAsDaemon = true;  // just for using syslog
       if ((chdir("/")) < 0) {
-        supla_log(LOG_ERR, "Can't start as a service");
+        SUPLA_LOG_ERROR("Can't start as a service");
         exit(1);
       }
 
@@ -156,13 +156,13 @@ int main(int argc, char* argv[]) {
       logLevel = LOG_VERBOSE;
     }
 
-    supla_log(LOG_INFO, " *** Starting supla-device ***");
-    supla_log(LOG_INFO, "Using config file %s", cfgFile.c_str());
+    SUPLA_LOG_INFO(" *** Starting supla-device ***");
+    SUPLA_LOG_INFO("Using config file %s", cfgFile.c_str());
 
     st_hook_signals();
 
     if (!config->loadChannels()) {
-      supla_log(LOG_ERR, "Loading channels failed. Exit");
+      SUPLA_LOG_ERROR("Loading channels failed. Exit");
       exit(1);
     }
 
@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
     SuplaDevice.begin();
 
     if (SuplaDevice.getCurrentStatus() != STATUS_INITIALIZED) {
-      supla_log(LOG_INFO,
+      SUPLA_LOG_INFO(
                 "Incomplete configuration. Please fix it and try again");
       exit(1);
     }
@@ -182,7 +182,7 @@ int main(int argc, char* argv[]) {
       SuplaDevice.iterate();
       delay(10);
     }
-    supla_log(LOG_INFO, "Exit");
+    SUPLA_LOG_INFO("Exit");
 
     exit(0);
   } catch (const cxxopts::OptionException& e) {

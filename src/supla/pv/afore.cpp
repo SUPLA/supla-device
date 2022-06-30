@@ -18,7 +18,7 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include "afore.h"
@@ -50,7 +50,7 @@ Afore::Afore(IPAddress ip, int port, const char *loginAndPass)
 void Afore::iterateAlways() {
   if (dataFetchInProgress) {
     if (millis() - connectionTimeoutMs > 30000) {
-      supla_log(LOG_DEBUG,
+      SUPLA_LOG_DEBUG(
                 "AFORE: connection timeout. Remote host is not responding");
       pvClient.stop();
       dataFetchInProgress = false;
@@ -58,12 +58,12 @@ void Afore::iterateAlways() {
       return;
     }
     if (!pvClient.connected()) {
-      supla_log(LOG_DEBUG, "AFORE fetch completed");
+      SUPLA_LOG_DEBUG("AFORE fetch completed");
       dataFetchInProgress = false;
       dataIsReady = true;
     }
     if (pvClient.available()) {
-      supla_log(LOG_DEBUG, "Reading data from afore: %d", pvClient.available());
+      SUPLA_LOG_DEBUG("Reading data from afore: %d", pvClient.available());
     }
     while (pvClient.available()) {
       char c;
@@ -119,7 +119,7 @@ bool Afore::iterateConnected(void *srpc) {
   if (!dataFetchInProgress) {
     if (lastReadTime == 0 || millis() - lastReadTime > refreshRateSec * 1000) {
       lastReadTime = millis();
-      supla_log(LOG_DEBUG, "AFORE connecting");
+      SUPLA_LOG_DEBUG("AFORE connecting");
       if (pvClient.connect(ip, port)) {
         retryCounter = 0;
         dataFetchInProgress = true;
@@ -132,7 +132,7 @@ bool Afore::iterateConnected(void *srpc) {
 
       } else {  // if connection wasn't successful, try few times. If it fails,
                 // then assume that inverter is off during the night
-        supla_log(LOG_DEBUG, "Failed to connect to Afore");
+        SUPLA_LOG_DEBUG("Failed to connect to Afore");
         retryCounter++;
         if (retryCounter > 3) {
           currentPower = 0;

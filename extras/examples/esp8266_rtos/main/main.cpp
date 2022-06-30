@@ -25,7 +25,7 @@
 #include <esp_idf_wifi.h>
 #include <nvs_config.h>
 #include <spiffs_storage.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/control/button.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/control/virtual_relay.h>
@@ -68,18 +68,16 @@ void cpp_main(void* param) {
       Supla::RESET_TO_FACTORY_SETTINGS, SuplaDevice, Supla::ON_CLICK_5);
   b1->addAction(Supla::TOGGLE_CONFIG_MODE, SuplaDevice, Supla::ON_HOLD);
 
-  supla_log(
-      LOG_DEBUG, "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+  SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SuplaDevice.setName("SUPLA-Example");
   SuplaDevice.setSuplaCACert(
       reinterpret_cast<const char*>(suplaOrgCertPemStart));
   SuplaDevice.begin();
-  supla_log(
-      LOG_DEBUG, "Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
+  SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
   unsigned int lastTime = 0;
   unsigned int lastTimeHeap = 0;
-  supla_log(LOG_DEBUG, "Starting main loop");
+  SUPLA_LOG_DEBUG("Starting main loop");
   while (true) {
     SuplaDevice.iterate();
     if (millis() - lastTime > 10) {
@@ -92,7 +90,7 @@ void cpp_main(void* param) {
       int curHeap = heap_caps_get_free_size(MALLOC_CAP_8BIT);
       if (lastFreeHeap != curHeap) {
         lastFreeHeap = curHeap;
-        supla_log(LOG_DEBUG, "Free heap: %d", lastFreeHeap);
+        SUPLA_LOG_DEBUG("Free heap: %d", lastFreeHeap);
       }
     }
   }

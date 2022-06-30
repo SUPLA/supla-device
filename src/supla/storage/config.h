@@ -79,6 +79,9 @@ class Config {
   virtual bool isSwUpdateBeta();
   virtual bool setSwUpdateServer(const char* url);
   virtual bool setSwUpdateBeta(bool enabled);
+  virtual bool getCustomCA(char* result, int maxSize);
+  virtual int getCustomCASize();
+  virtual bool setCustomCA(const char* customCA);
 
   // Supla protocol config
   virtual bool setSuplaCommProtocolEnabled(bool enabled);

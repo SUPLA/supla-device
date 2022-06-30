@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/actions.h>
 #include <supla/io.h>
 #include <supla/storage/storage.h>
@@ -41,13 +41,13 @@ ImpulseCounter::ImpulseCounter(int _impulsePin,
 
   prevState = (detectLowToHigh == true ? LOW : HIGH);
 
-  supla_log(LOG_DEBUG,
+  SUPLA_LOG_DEBUG(
             "Creating Impulse Counter: impulsePin(%d), "
             "delay(%d ms)",
             impulsePin,
             debounceDelay);
   if (impulsePin <= 0) {
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "SuplaImpulseCounter ERROR - incorrect impulse pin number");
     return;
   }
@@ -79,7 +79,7 @@ void ImpulseCounter::onLoadState() {
 void ImpulseCounter::setCounter(unsigned _supla_int64_t value) {
   counter = value;
   channel.setNewValue(value);
-  supla_log(LOG_DEBUG,
+  SUPLA_LOG_DEBUG(
             "ImpulseCounter[%d] - set counter to %d",
             channel.getChannelNumber(),
             static_cast<int>(counter));

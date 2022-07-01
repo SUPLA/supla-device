@@ -56,7 +56,9 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
     }
     currentStatus = newStatus;
     showLog = true;
-    addLastStateLog(msg);
+    if (newStatus != STATUS_INITIALIZED) {
+      addLastStateLog(msg);
+    }
   }
   if (alwaysLog || showLog) {
     SUPLA_LOG_INFO("Current status: [%d] %s", newStatus, msg);
@@ -792,7 +794,8 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
   }
 
   if (!Supla::Network::IsReady()) {
-    if (connectionFailCounter > 0) {
+if (connectionFailCounter > 0 &&
+    lastConnectionResetCounter != connectionFailCounter) {
       status(STATUS_NETWORK_DISCONNECTED, "No connection to network");
       uptime.setConnectionLostCause(
           SUPLA_LASTCONNECTIONRESETCAUSE_WIFI_CONNECTION_LOST);

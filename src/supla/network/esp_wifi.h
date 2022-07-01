@@ -50,7 +50,7 @@ class ESPWifi : public Supla::Wifi {
       : Wifi(wifiSsid, wifiPassword, ip) {
   }
 
-  int read(void *buf, int count) {
+  int read(void *buf, int count) override {
     if (client) {
       _supla_int_t size = client->available();
 
@@ -67,7 +67,7 @@ class ESPWifi : public Supla::Wifi {
     return -1;
   }
 
-  int write(void *buf, int count) {
+  int write(void *buf, int count) override {
     if (client) {
 #ifdef SUPLA_COMM_DEBUG
       printData("Send", buf, count);
@@ -79,7 +79,7 @@ class ESPWifi : public Supla::Wifi {
     return 0;
   }
 
-  int connect(const char *server, int port = -1) {
+  int connect(const char *server, int port = -1) override {
     String message;
     WiFiClientSecure *clientSec = nullptr;
 #ifdef ARDUINO_ARCH_ESP8266
@@ -117,21 +117,22 @@ class ESPWifi : public Supla::Wifi {
           caCert = new BearSSL::X509List(rootCACert);
           clientSec->setTrustAnchors(caCert);
         } else if (fingerprint.length() > 0) {
-          message += " with certificate matching";
+          message += " with certificate fingerprint matching";
           clientSec->setFingerprint(fingerprint.c_str());
         } else {
-          message += " without certificate matching";
+          message += " without certificate validation (INSECURE)";
           clientSec->setInsecure();
         }
 #else
         if (rootCACert) {
-          // TODO(klew): add CA cert verification for ESP32
+          clientSec->setCACert(rootCACert);
         } else {
+          message += " without certificate validation (INSECURE)";
           clientSec->setInsecure();
         }
 #endif
       } else {
-        message = "unsecured connection";
+        message = "not encrypted connection (VERY INSECURE)";
         client = new WiFiClient();
       }
     }
@@ -148,14 +149,20 @@ class ESPWifi : public Supla::Wifi {
         connectionPort);
 
     bool result = client->connect(server, connectionPort);
-#ifdef ARDUINO_ARCH_ESP8266
     if (clientSec) {
       char buf[200];
-      int lastErr = clientSec->getLastSSLError(buf, sizeof(buf));
+      int lastErr = 0;
+#ifdef ARDUINO_ARCH_ESP8266
+      lastErr = clientSec->getLastSSLError(buf, sizeof(buf));
+#elif defined(ARDUINO_ARCH_ESP32)
+      lastErr = clientSec->lastError(buf, sizeof(buf));
+#endif
+
       if (lastErr) {
         SUPLA_LOG_ERROR("SSL error: %d, %s", lastErr, buf);
       }
     }
+#ifdef ARDUINO_ARCH_ESP8266
     if (caCert) {
       delete caCert;
       caCert = nullptr;
@@ -165,22 +172,22 @@ class ESPWifi : public Supla::Wifi {
     return result;
   }
 
-  bool connected() {
+  bool connected() override {
     return (client != NULL) && client->connected();
   }
 
-  bool isReady() {
+  bool isReady() override {
     return WiFi.status() == WL_CONNECTED;
   }
 
-  void disconnect() {
+  void disconnect() override {
     if (client != nullptr) {
       client->stop();
     }
   }
 
   // TODO(klew): add handling of custom local ip
-  void setup() {
+  void setup() override {
     if (!wifiConfigured) {
       // ESP32 requires setHostname to be called before begin...
       WiFi.setHostname(hostname);
@@ -275,13 +282,13 @@ class ESPWifi : public Supla::Wifi {
     fingerprint = value;
   }
 
-  void setTimeout(int timeoutMs) {
+  void setTimeout(int timeoutMs) override {
     if (client) {
       client->setTimeout(timeoutMs);
     }
   }
 
-  void fillStateData(TDSC_ChannelState *channelState) {
+  void fillStateData(TDSC_ChannelState *channelState) override {
     channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_IPV4 |
                             SUPLA_CHANNELSTATE_FIELD_MAC |
                             SUPLA_CHANNELSTATE_FIELD_WIFIRSSI |

@@ -48,16 +48,18 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
     return;
   }
 
-  if (currentStatus != newStatus &&
-      !(newStatus == STATUS_REGISTER_IN_PROGRESS &&
-        currentStatus > STATUS_REGISTER_IN_PROGRESS)) {
-    if (impl_arduino_status != nullptr) {
-      impl_arduino_status(newStatus, msg);
-    }
-    currentStatus = newStatus;
-    showLog = true;
-    if (newStatus != STATUS_INITIALIZED) {
-      addLastStateLog(msg);
+  if (currentStatus != newStatus) {
+    if (!((newStatus == STATUS_SERVER_DISCONNECTED ||
+            newStatus == STATUS_REGISTER_IN_PROGRESS)
+          && currentStatus > STATUS_REGISTER_IN_PROGRESS)) {
+      if (impl_arduino_status != nullptr) {
+        impl_arduino_status(newStatus, msg);
+      }
+      currentStatus = newStatus;
+      showLog = true;
+      if (newStatus != STATUS_INITIALIZED) {
+        addLastStateLog(msg);
+      }
     }
   }
   if (alwaysLog || showLog) {
@@ -413,6 +415,7 @@ void SuplaDeviceClass::iterate(void) {
   switch (deviceMode) {
     default: {
       if (!iterateNetworkSetup()) {
+        registered = 0;
         return;
       }
 
@@ -612,8 +615,8 @@ void SuplaDeviceClass::onRegisterResult(
   }
 
   Supla::Network::Disconnect();
-  lastIterateTime = millis();
-  waitForIterate = 10000;
+  // server rejected registration
+  registered = 2;
 }
 
 void SuplaDeviceClass::channelSetActivityTimeoutResult(
@@ -788,14 +791,14 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
       connectionFailCounter % 6 == 0) {
     lastConnectionResetCounter = connectionFailCounter;
     SUPLA_LOG_WARNING(
-              "Connection fail counter overflow. Trying to setup network "
-              "interface again");
+        "Connection fail counter overflow. Trying to setup network "
+        "interface again");
     Supla::Network::Setup();
   }
 
   if (!Supla::Network::IsReady()) {
-if (connectionFailCounter > 0 &&
-    lastConnectionResetCounter != connectionFailCounter) {
+    if (connectionFailCounter > 0 &&
+        lastConnectionResetCounter != connectionFailCounter) {
       status(STATUS_NETWORK_DISCONNECTED, "No connection to network");
       uptime.setConnectionLostCause(
           SUPLA_LASTCONNECTIONRESETCAUSE_WIFI_CONNECTION_LOST);
@@ -860,6 +863,11 @@ bool SuplaDeviceClass::iterateSuplaProtocol(uint64_t _millis) {
     }
 
     return true;
+  } else if (registered == 2) {
+    // Server rejected registration
+    registered = 0;
+    lastIterateTime = millis();
+    waitForIterate = 10000;
   }
   return false;
 }

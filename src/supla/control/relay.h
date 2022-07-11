@@ -58,13 +58,13 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual bool isOn();
   virtual void toggle(_supla_int_t duration = 0);
 
-  void handleAction(int event, int action);
+  void handleAction(int event, int action) override;
 
-  void onInit();
-  void onLoadState();
-  void onSaveState();
-  void iterateAlways();
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue);
+  void onInit() override;
+  void onLoadState() override;
+  void onSaveState() override;
+  void iterateAlways() override;
+  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   unsigned _supla_int_t getStoredTurnOnDurationMs();
 
  protected:

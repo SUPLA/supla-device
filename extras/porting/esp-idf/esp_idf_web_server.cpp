@@ -70,7 +70,7 @@ esp_err_t postHandler(httpd_req_t *req) {
     if (serverInstance->handlePost(req)) {
       httpd_resp_set_status(req, "303 See Other");
       httpd_resp_set_hdr(req, "Location", "/");
-      httpd_resp_send(req, "Supla", HTTPD_RESP_USE_STRLEN);
+      httpd_resp_send(req, "Supla", 5);
 
       return ESP_OK;
     }
@@ -84,7 +84,7 @@ esp_err_t postBetaHandler(httpd_req_t *req) {
     if (serverInstance->handlePost(req)) {
       httpd_resp_set_status(req, "303 See Other");
       httpd_resp_set_hdr(req, "Location", "/beta");
-      httpd_resp_send(req, "Supla", HTTPD_RESP_USE_STRLEN);
+      httpd_resp_send(req, "Supla", 5);
 
       return ESP_OK;
     }

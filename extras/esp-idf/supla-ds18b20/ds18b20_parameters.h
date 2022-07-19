@@ -16,27 +16,28 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_SENSOR_THERMOMETER_H_
-#define SRC_SUPLA_SENSOR_THERMOMETER_H_
+#ifndef _SRC_SUPLA_NETWORK_HTML_DS18B20_PARAMETERS_H_
+#define _SRC_SUPLA_NETWORK_HTML_DS18B20_PARAMETERS_H_
 
-#include "supla/channel_element.h"
-
-#define TEMPERATURE_NOT_AVAILABLE -275.0
+#include <supla/network/html_element.h>
 
 namespace Supla {
-namespace Sensor {
-class Thermometer : public ChannelElement {
+
+namespace Html {
+
+class DS18B20Parameters : public HtmlElement {
  public:
-  Thermometer();
-  virtual double getValue();
-  void onInit() override;
-  void iterateAlways() override;
+  DS18B20Parameters(int channel);
+  virtual ~DS18B20Parameters();
+  void send(Supla::WebSender* sender) override;
+  bool handleResponse(const char* key, const char* value) override;
+
 
  protected:
-  uint64_t lastReadTime;
+  int channel = -1;
 };
 
-};  // namespace Sensor
+};  // namespace Html
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_SENSOR_THERMOMETER_H_
+#endif  // _SRC_SUPLA_NETWORK_HTML_DS18B20_PARAMETERS_H_

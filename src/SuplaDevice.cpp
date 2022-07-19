@@ -383,6 +383,11 @@ void SuplaDeviceClass::iterate(void) {
     return;
   }
 
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    cfg->saveIfNeeded();
+  }
+
   uint64_t _millis = millis();
   checkIfRestartIsNeeded(_millis);
   handleLocalActionTriggers();

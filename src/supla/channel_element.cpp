@@ -50,3 +50,4 @@ void Supla::ChannelElement::addAction(int action,
     Supla::Condition *condition) {
   addAction(action, *client, condition);
 }
+

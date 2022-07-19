@@ -20,7 +20,7 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #else
-#include <cstdint>
+#include <stdint.h>
 
 uint64_t millis(void);
 void delay(uint64_t);

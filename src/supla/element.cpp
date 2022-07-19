@@ -15,6 +15,7 @@
 */
 
 #include <supla/log_wrapper.h>
+#include <supla/storage/config.h>
 
 #include "time.h"
 #include "element.h"
@@ -149,6 +150,10 @@ void Element::handleChannelConfig(TSD_ChannelConfig *result) {
   (void)(result);
   SUPLA_LOG_DEBUG(
       "Element: received channel config reply, but handling is missing");
+}
+
+void Element::generateKey(char *output, const char *key) {
+  Supla::Config::generateKey(output, getChannelNumber(), key);
 }
 
 };  // namespace Supla

@@ -23,9 +23,11 @@
  * provide some key-value based interface.
  */
 
+#include <stdio.h>
 #include <string.h>
 #include <supla-common/proto.h>
 #include <supla/device/sw_update.h>
+#include <supla/time.h>
 
 #include "config.h"
 
@@ -387,4 +389,26 @@ int Config::getCustomCASize() {
 bool Config::setCustomCA(const char* customCA) {
   return setString("custom_ca", customCA);
 }
+
+void Config::saveWithDelay(uint32_t delayMs) {
+  if (saveDelayMs == 0) {
+    saveDelayMs = delayMs;
+    saveDelayTimestamp = millis();
+  }
+}
+
+void Config::saveIfNeeded() {
+  if (saveDelayMs) {
+    if (millis() - saveDelayTimestamp > saveDelayMs) {
+      commit();
+      saveDelayMs = 0;
+      saveDelayTimestamp = 0;
+    }
+  }
+}
+
+void Config::generateKey(char *output, int number, const char *key) {
+  snprintf(output, SUPLA_CONFIG_MAX_KEY_SIZE, "%d_%s", number, key);
+}
+
 }  // namespace Supla

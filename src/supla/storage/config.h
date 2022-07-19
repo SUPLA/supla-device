@@ -24,6 +24,8 @@
 
 #include "storage.h"
 
+#define SUPLA_CONFIG_MAX_KEY_SIZE 16
+
 #define MAX_SSID_SIZE          32
 #define MAX_WIFI_PASSWORD_SIZE 64
 #define MQTT_CLIENTID_MAX_SIZE 23
@@ -65,7 +67,11 @@ class Config {
   virtual bool setInt32(const char* key, const int32_t value) = 0;
   virtual bool setUInt32(const char* key, const uint32_t value) = 0;
 
+  static void generateKey(char *, int, const char *);
+
   virtual void commit();
+  virtual void saveWithDelay(uint32_t delayMs);
+  virtual void saveIfNeeded();
 
   // Device generic config
   virtual bool generateGuidAndAuthkey();
@@ -128,6 +134,10 @@ class Config {
   virtual bool getWiFiPassword(char* result);
   virtual bool getAltWiFiSSID(char* result);
   virtual bool getAltWiFiPassword(char* result);
+
+ protected:
+  uint64_t saveDelayTimestamp = 0;
+  uint32_t saveDelayMs = 0;
 };
 };  // namespace Supla
 

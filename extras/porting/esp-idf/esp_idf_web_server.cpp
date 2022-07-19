@@ -68,7 +68,11 @@ esp_err_t postHandler(httpd_req_t *req) {
   supla_log(LOG_DEBUG, "SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost(req)) {
-      return getHandler(req);
+      httpd_resp_set_status(req, "303 See Other");
+      httpd_resp_set_hdr(req, "Location", "/");
+      httpd_resp_send(req, "Supla", HTTPD_RESP_USE_STRLEN);
+
+      return ESP_OK;
     }
   }
   return ESP_FAIL;
@@ -78,19 +82,23 @@ esp_err_t postBetaHandler(httpd_req_t *req) {
   supla_log(LOG_DEBUG, "SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost(req)) {
-      return getBetaHandler(req);
+      httpd_resp_set_status(req, "303 See Other");
+      httpd_resp_set_hdr(req, "Location", "/beta");
+      httpd_resp_send(req, "Supla", HTTPD_RESP_USE_STRLEN);
+
+      return ESP_OK;
     }
   }
   return ESP_FAIL;
 }
 
 httpd_uri_t uriGet = {
-    .uri = "/", .method = HTTP_GET, .handler = getHandler, .user_ctx = NULL};
+  .uri = "/", .method = HTTP_GET, .handler = getHandler, .user_ctx = NULL};
 
 httpd_uri_t uriGetBeta = {.uri = "/beta",
-                          .method = HTTP_GET,
-                          .handler = getBetaHandler,
-                          .user_ctx = NULL};
+  .method = HTTP_GET,
+  .handler = getBetaHandler,
+  .user_ctx = NULL};
 
 httpd_uri_t uriFavicon = {.uri = "/favicon.ico",
                           .method = HTTP_GET,

@@ -22,6 +22,7 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
+#include <supla/element.h>
 #include <esp_ds18b20.h>
 
 #include "ds18b20_parameters.h"
@@ -75,6 +76,19 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
     } else {
       sender->send("Not configured");
     }
+    sender->send(
+        "<br>Value: "
+        );
+
+    auto element = Supla::Element::getElementByChannelNumber(channel);
+    if (element && element->getChannel()) {
+      auto channelPtr = element->getChannel();
+      snprintf(tmp, sizeof(tmp), "%.1f", channelPtr->getValueDouble());
+      sender->send(tmp);
+    } else {
+      sender->send("---");
+    }
+
     sender->send(
         "</span><i><select name=\""
         );

@@ -37,6 +37,7 @@ steps:
   commands:
   - pwd
   - echo $SUPLA_DEVICE_PATH
+  - git submodule update --init --recursive
   - ls -al
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/

@@ -42,7 +42,8 @@ void WifiParameters::send(Supla::WebSender* sender) {
       sender->send(buf);
     }
     sender->send("\"><label>Network name</label></i>");
-    sender->send("<i><input name=\"wpw\"><label>Password</label></i>");
+    sender->send("<i><input type=\"password\" name=\"wpw\">"
+        "<label>Password</label></i>");
   }
 }
 

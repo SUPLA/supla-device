@@ -24,11 +24,11 @@
 #include <esp_task_wdt.h>
 #include <stdio.h>
 #include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/rsa_verificator.h>
 #include <supla/sha256.h>
 #include <supla/time.h>
 #include <supla/tools.h>
-#include <supla/log_wrapper.h>
 
 #include <cerrno>
 
@@ -60,8 +60,9 @@ void Supla::EspIdfOta::start() {
   int v = 0;
 
   while (1) {
-    v = stringAppend(
-        urlWithParams + curPos, "/check-updates?manufacturerId=", URL_SIZE - curPos - 1);
+    v = stringAppend(urlWithParams + curPos,
+                     "/check-updates?manufacturerId=",
+                     URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
@@ -70,7 +71,8 @@ void Supla::EspIdfOta::start() {
     if (v == 0) break;
     curPos += v;
 
-    v = stringAppend(urlWithParams + curPos, "&productId=", URL_SIZE - curPos - 1);
+    v = stringAppend(
+        urlWithParams + curPos, "&productId=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
@@ -78,7 +80,6 @@ void Supla::EspIdfOta::start() {
     v = stringAppend(urlWithParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-
 
     v = stringAppend(urlWithParams + curPos, "&name=", URL_SIZE - curPos - 1);
     if (v == 0) break;
@@ -99,7 +100,8 @@ void Supla::EspIdfOta::start() {
     if (v == 0) break;
     curPos += v;
 
-    v = stringAppend(urlWithParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
+    v = stringAppend(
+        urlWithParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
@@ -233,7 +235,8 @@ void Supla::EspIdfOta::start() {
     cJSON *url = cJSON_GetObjectItemCaseSensitive(latestUpdate, "updateUrl");
     if (cJSON_IsString(version) && (version->valuestring != NULL) &&
         cJSON_IsString(url) && (url->valuestring != NULL)) {
-      snprintf(buf, BUF_SIZE, "SW update new version: %s", version->valuestring);
+      snprintf(
+          buf, BUF_SIZE, "SW update new version: %s", version->valuestring);
       SUPLA_LOG_INFO("%s", buf);
       log(buf);
       snprintf(buf, BUF_SIZE, "SW update url: \"%s\"", url->valuestring);
@@ -248,7 +251,6 @@ void Supla::EspIdfOta::start() {
     fail("SW update: no new update available");
     return;
   }
-
 
   err = esp_http_client_open(client, 0);
   cJSON_Delete(json);
@@ -267,10 +269,9 @@ void Supla::EspIdfOta::start() {
     fail("SW update: failed to get next update partition");
     return;
   }
-  SUPLA_LOG_DEBUG(
-      "Used ota partition subtype %d, offset 0x%x",
-      updatePartition->subtype,
-      updatePartition->address);
+  SUPLA_LOG_DEBUG("Used ota partition subtype %d, offset 0x%x",
+                  updatePartition->subtype,
+                  updatePartition->address);
 
   int binSize = 0;
 
@@ -363,21 +364,21 @@ bool Supla::EspIdfOta::verifyRsaSignature(
   // produce only one footer, so here we hardcode it. Please check
   // supla-esp-signtool for details.
   const uint8_t expectedFooter[RSA_FOOTER_SIZE] = {0xBA,
-    0xBE,
-    0x2B,
-    0xED,
-    0x00,
-    0x01,
-    0x02,
-    0x00,
-    0x10,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00,
-    0x00};
+                                                   0xBE,
+                                                   0x2B,
+                                                   0xED,
+                                                   0x00,
+                                                   0x01,
+                                                   0x02,
+                                                   0x00,
+                                                   0x10,
+                                                   0x00,
+                                                   0x00,
+                                                   0x00,
+                                                   0x00,
+                                                   0x00,
+                                                   0x00,
+                                                   0x00};
 
   Supla::Sha256 hash;
 
@@ -394,7 +395,7 @@ bool Supla::EspIdfOta::verifyRsaSignature(
       sizeToRead = appSize - i;
     }
     esp_err_t err =
-      esp_partition_read(updatePartition, i, otaBuffer, sizeToRead);
+        esp_partition_read(updatePartition, i, otaBuffer, sizeToRead);
 
     if (err != ESP_OK) {
       SUPLA_LOG_ERROR("Fail: error reading app");
@@ -418,9 +419,9 @@ bool Supla::EspIdfOta::verifyRsaSignature(
   }
 
   err = esp_partition_read(updatePartition,
-      binSize - RSA_FOOTER_SIZE - RSA_NUM_BYTES,
-      otaBuffer,
-      RSA_NUM_BYTES);
+                           binSize - RSA_FOOTER_SIZE - RSA_NUM_BYTES,
+                           otaBuffer,
+                           RSA_NUM_BYTES);
 
   if (err != ESP_OK) {
     SUPLA_LOG_ERROR("Fail: error reading signature");
@@ -437,8 +438,7 @@ bool Supla::EspIdfOta::verifyRsaSignature(
       return false;
     }
   } else {
-    SUPLA_LOG_ERROR(
-        "Fail: RSA public key not set in SuplaDevice instance");
+    SUPLA_LOG_ERROR("Fail: RSA public key not set in SuplaDevice instance");
     return false;
   }
   return false;

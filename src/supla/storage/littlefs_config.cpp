@@ -205,4 +205,15 @@ bool Supla::LittleFsConfig::initLittleFs() {
 
   return result;
 }
+
+void Supla::LittleFsConfig::removeAll() {
+  if (!initLittleFs()) {
+    return;
+  }
+
+  LittleFS.remove(CustomCAFileName);
+  LittleFS.remove(ConfigFileName);
+
+  LittleFS.end();
+}
 #endif

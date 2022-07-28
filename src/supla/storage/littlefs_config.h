@@ -29,6 +29,7 @@ class LittleFsConfig : public KeyValue {
   virtual ~LittleFsConfig();
   bool init() override;
   void commit() override;
+  void removeAll() override;
 
   bool getCustomCA(char* result, int maxSize) override;
   int getCustomCASize() override;

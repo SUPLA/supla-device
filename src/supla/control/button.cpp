@@ -32,7 +32,7 @@ Supla::Control::Button::Button(int pin, bool pullUp, bool invertLogic)
 }
 
 void Supla::Control::Button::onTimer() {
-  unsigned int timeDelta = millis() - lastStateChangeMs;
+  uint64_t timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
   int stateResult = state.update();
   if (stateResult == TO_PRESSED) {
@@ -52,7 +52,7 @@ void Supla::Control::Button::onTimer() {
     }
   }
 
-  if (!stateChanged) {
+  if (!stateChanged && lastStateChangeMs) {
     if (!bistable && stateResult == PRESSED) {
       if (clickCounter <= 1 && holdTimeMs > 0 &&
           timeDelta > (holdTimeMs + holdSend * repeatOnHoldMs) &&

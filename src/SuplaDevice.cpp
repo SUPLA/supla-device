@@ -1100,9 +1100,10 @@ void SuplaDeviceClass::handleAction(int event, int action) {
     }
     case Supla::LEAVE_CONFIG_MODE_AND_RESET: {
       if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
-        // TODO(klew): add check if configuration is complete, otherwise
-        // don't allow to reset
-        scheduleSoftRestart(0);
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (cfg && cfg->isMinimalConfigReady()) {
+          scheduleSoftRestart(0);
+        }
       }
       break;
     }

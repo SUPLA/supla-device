@@ -28,6 +28,7 @@
 #include <supla-common/proto.h>
 #include <supla/device/sw_update.h>
 #include <supla/time.h>
+#include <supla/log_wrapper.h>
 
 #include "config.h"
 
@@ -409,6 +410,39 @@ void Config::saveIfNeeded() {
 
 void Config::generateKey(char *output, int number, const char *key) {
   snprintf(output, SUPLA_CONFIG_MAX_KEY_SIZE, "%d_%s", number, key);
+}
+
+bool Config::isMinimalConfigReady() {
+  char buf[SUPLA_SERVER_NAME_MAXSIZE] = {};
+
+  // Common part
+  memset(buf, 0, sizeof(buf));
+  if (!getWiFiSSID(buf) || strlen(buf) == 0) {
+    SUPLA_LOG_DEBUG("Wi-Fi SSID missing");
+    return false;
+  }
+  memset(buf, 0, sizeof(buf));
+  if (!getWiFiPassword(buf) || strlen(buf) == 0) {
+    SUPLA_LOG_DEBUG("Wi-Fi password missing");
+    return false;
+  }
+  // Supla protocol part
+  if (isSuplaCommProtocolEnabled()) {
+    if (!getSuplaServer(buf) || strlen(buf) == 0) {
+      SUPLA_LOG_DEBUG("Supla server missing");
+      return false;
+    }
+    memset(buf, 0, sizeof(buf));
+    if (!getEmail(buf) || strlen(buf) == 0) {
+      SUPLA_LOG_DEBUG("Mail address missing");
+      return false;
+    }
+    return true;
+  }
+
+  // TODO(klew): add MQTT minimal config check
+
+  return false;
 }
 
 }  // namespace Supla

@@ -242,7 +242,7 @@ bool SuplaDeviceClass::begin(unsigned char version) {
 
   SUPLA_LOG_DEBUG("Initializing network layer");
   char hostname[32] = {};
-  generateHostname(hostname, 3);
+  generateHostname(hostname, 6);
   Supla::Network::SetHostname(hostname);
   if (cfg) {
     uint8_t securityLevel = 0;
@@ -1086,6 +1086,23 @@ void SuplaDeviceClass::handleAction(int event, int action) {
     case Supla::CHECK_SW_UPDATE: {
       if (deviceMode != Supla::DEVICE_MODE_SW_UPDATE) {
         triggerCheckSwUpdate = true;
+      }
+      break;
+    }
+    case Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY: {
+      if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
+        goToConfigModeAsap = true;
+      } else {
+        resetToFactorySettings();
+        scheduleSoftRestart(0);
+      }
+      break;
+    }
+    case Supla::LEAVE_CONFIG_MODE_AND_RESET: {
+      if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
+        // TODO(klew): add check if configuration is complete, otherwise
+        // don't allow to reset
+        scheduleSoftRestart(0);
       }
       break;
     }

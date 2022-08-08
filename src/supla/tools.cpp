@@ -213,3 +213,38 @@ int stringAppend(char *output, const char *input, int maxSize) {
   return 0;
 }
 
+int strncmpInsensitive(const char *s1, const char *s2, int size) {
+  if (s1 == s2) {
+    return 0;
+  }
+  if (s1 == nullptr) {
+    return -1;
+  }
+  if (s2 == nullptr) {
+    return 1;
+  }
+
+  for (int i = 0; i < size; i++) {
+    char c1 = s1[i];
+    char c2 = s2[i];
+
+    if (c1 >= 97 && c1 <= 122) {
+      c1 -= 32;
+    }
+
+    if (c2 >= 97 && c2 <= 122) {
+      c2 -= 32;
+    }
+
+    if (c1 < c2) {
+      return -1;
+    }
+
+    if (c1 > c2) {
+      return 1;
+    }
+  }
+
+  return 0;
+}
+

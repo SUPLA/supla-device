@@ -66,6 +66,8 @@ int urlEncode(char *input, char *output, int outputMaxSize);
 
 int stringAppend(char *output, const char *input, int maxSize);
 
+int strncmpInsensitive(const char *s1, const char *s2, int size);
+
 // This method should be implemented in platform specific cpp file
 void deviceSoftwareReset();
 

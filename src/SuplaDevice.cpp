@@ -210,11 +210,31 @@ bool SuplaDeviceClass::begin(unsigned char version) {
     }
   }
 
+  bool usePublicServer = false;
   if (Supla::Channel::reg_dev.ServerName[0] == '\0') {
     status(STATUS_UNKNOWN_SERVER_ADDRESS, "Missing server address");
     if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
       return false;
     }
+  } else {
+    const int serverLength = strlen(Supla::Channel::reg_dev.ServerName);
+    const char suplaPublicServerSuffix[] = ".supla.org";
+    const int suplaPublicServerSuffixLength = strlen(suplaPublicServerSuffix);
+
+    if (serverLength > suplaPublicServerSuffixLength) {
+      if (strncmpInsensitive(Supla::Channel::reg_dev.ServerName + serverLength -
+            suplaPublicServerSuffixLength,
+            suplaPublicServerSuffix,
+            suplaPublicServerSuffixLength) == 0) {
+        usePublicServer = true;
+      }
+    }
+  }
+
+  // Public Supla server use different root CA for server certificate
+  // validation then CA used for private servers
+  if (!usePublicServer) {
+    suplaCACert = supla3rdPartyCACert;
   }
 
   if (Supla::Channel::reg_dev.Email[0] == '\0') {
@@ -1196,6 +1216,10 @@ void SuplaDeviceClass::setActivityTimeout(_supla_int_t newActivityTimeout) {
 
 void SuplaDeviceClass::setSuplaCACert(const char *cert) {
   suplaCACert = cert;
+}
+
+void SuplaDeviceClass::setSupla3rdPartyCACert(const char *cert) {
+  supla3rdPartyCACert = cert;
 }
 
 SuplaDeviceClass SuplaDevice;

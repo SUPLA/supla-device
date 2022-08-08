@@ -123,6 +123,7 @@ void setup() {
 
   // configure defualt Supla CA certificate
   SuplaDevice.setSuplaCACert(suplaCACert);
+  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   SuplaDevice.begin();
 }

@@ -21,7 +21,8 @@ RUN mkdir esp && \
     ./install.sh all
 
 # Download supla-device
-RUN git clone https://github.com/SUPLA/supla-device.git && mkdir projects
+RUN git clone --recursive https://github.com/SUPLA/supla-device.git && \
+      mkdir projects
 WORKDIR /supla/projects
 
 ENV SUPLA_DEVICE_PATH="/supla/supla-device"

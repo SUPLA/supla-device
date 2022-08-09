@@ -127,7 +127,16 @@ idf_component_register(SRCS
   ${NETTLE_SRCS}
   ${SUPLA_DEVICE_PORTING_SRCS}
   INCLUDE_DIRS "../../../src/" "../../porting/esp-idf"
-  REQUIRES esp-tls nvs_flash spiffs esp_http_server app_update esp_http_client json
+  REQUIRES
+    esp-tls
+    nvs_flash
+    spiffs
+    esp_http_server
+    app_update
+    esp_http_client
+    json
+    esp_wifi
+    driver
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )
 

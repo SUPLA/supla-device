@@ -26,6 +26,7 @@
 #include <WiFiClientSecure.h>
 #include <supla/network/network.h>
 #include <supla/supla_lib_config.h>
+#include <supla/log_wrapper.h>
 
 #ifdef ETH_CLK_MODE
 #undef ETH_CLK_MODE

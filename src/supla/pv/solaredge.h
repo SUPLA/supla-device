@@ -68,10 +68,10 @@ class SolarEdge : public Supla::Sensor::ElectricityMeter {
   bool headerFound;
   uint64_t connectionTimeoutMs;
 
-  char apiKey[APIKEY_MAX_LENGTH];
-  char siteId[PARAMETER_MAX_LENGTH];
-  char inverterSerialNumber[PARAMETER_MAX_LENGTH];
-  Supla::Clock *clock;
+  char apiKey[APIKEY_MAX_LENGTH] = {};
+  char siteId[PARAMETER_MAX_LENGTH] = {};
+  char inverterSerialNumber[PARAMETER_MAX_LENGTH] = {};
+  Supla::Clock *clock = nullptr;
   Supla::Channel temperatureChannel;
 };
 };  // namespace PV

@@ -41,22 +41,7 @@ SolarEdge::SolarEdge(const char *apiKeyValue,
                      const char *siteIdValue,
                      const char *inverterSerialNumberValue,
                      Supla::Clock *clock)
-    : buf{},
-      temperature(TEMPERATURE_NOT_AVAILABLE),
-      totalGeneratedEnergy(0),
-      currentCurrent{},
-      currentVoltage{},
-      currentFreq(0),
-      currentApparentPower{},
-      currentActivePower{},
-      currentReactivePower{},
-      bytesCounter(0),
-      retryCounter(0),
-      dataIsReady(false),
-      dataFetchInProgress(false),
-      headerFound(false),
-      connectionTimeoutMs(0),
-      clock(clock) {
+    : clock(clock) {
   // SolarEdge api allows 300 requests daily, so it is one request per almost 5
   // min
   refreshRateSec = 6 * 60;  // refresh every 6 min

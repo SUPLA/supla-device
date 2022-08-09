@@ -124,7 +124,7 @@ class WT32_ETH01 : public Supla::Network {
       connectionPort = port;
     }
 
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "Establishing %s with: %s (port: %d)",
               message.c_str(),
               server,

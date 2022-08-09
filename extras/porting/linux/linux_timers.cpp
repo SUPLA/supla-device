@@ -17,7 +17,7 @@
 */
 
 #include <SuplaDevice.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla/time.h>
 
 #include <thread>  // NOLINT(build/c++11)
@@ -39,7 +39,7 @@ void supla1msTimer() {
 }
 
 void Supla::Linux::Timers::init() {
-  supla_log(LOG_DEBUG, "Starting linux timers...");
+  SUPLA_LOG_DEBUG("Starting linux timers...");
   std::thread standardTimer(supla10msTimer);
   standardTimer.detach();
 

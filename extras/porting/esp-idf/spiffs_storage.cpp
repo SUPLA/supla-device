@@ -19,7 +19,7 @@
 #include <esp_spiffs.h>
 #include <stdio.h>
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include <cstdlib>
 
@@ -48,7 +48,7 @@ SpiffsStorage::~SpiffsStorage() {
 
 bool SpiffsStorage::init() {
   if (!buffer) {
-    supla_log(LOG_ERR, "Storage: failed to allocate storage memory");
+    SUPLA_LOG_ERROR("Storage: failed to allocate storage memory");
     return false;
   }
   // init spiffs
@@ -61,12 +61,11 @@ bool SpiffsStorage::init() {
 
   if (ret != ESP_OK) {
     if (ret == ESP_FAIL) {
-      supla_log(LOG_WARNING, "Failed to mount or format filesystem");
+      SUPLA_LOG_WARNING("Failed to mount or format filesystem");
     } else if (ret == ESP_ERR_NOT_FOUND) {
-      supla_log(LOG_ERR, "Failed to find SPIFFS partition");
+      SUPLA_LOG_ERROR("Failed to find SPIFFS partition");
     } else {
-      supla_log(
-          LOG_ERR, "Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
+      SUPLA_LOG_ERROR("Failed to initialize SPIFFS (%s)", esp_err_to_name(ret));
     }
     return false;
   }
@@ -75,11 +74,11 @@ bool SpiffsStorage::init() {
   size_t used = 0;
   ret = esp_spiffs_info(conf.partition_label, &total, &used);
   if (ret != ESP_OK) {
-    supla_log(LOG_ERR,
+    SUPLA_LOG_ERROR(
               "Failed to get SPIFFS partition information (%s)",
               esp_err_to_name(ret));
   } else {
-    supla_log(LOG_INFO, "Partition size: total: %d, used: %d", total, used);
+    SUPLA_LOG_INFO("Partition size: total: %d, used: %d", total, used);
   }
 
   FILE *file = fopen("/spiffs/storage.bin", "rb");
@@ -90,12 +89,11 @@ bool SpiffsStorage::init() {
     rewind(file);
 
     if (fileSize != bufferSize) {
-      supla_log(
-          LOG_WARNING,
+      SUPLA_LOG_WARNING(
           "Storage: storage file size differs from configured buffer size. "
           "Rewritting...");
     } else {
-      supla_log(LOG_DEBUG, "Storage: reading file to internal buffer");
+      SUPLA_LOG_DEBUG("Storage: reading file to internal buffer");
       fread(buffer, 1, bufferSize, file);
     }
 
@@ -114,7 +112,7 @@ int SpiffsStorage::readStorage(unsigned int offset,
   }
 
   if (offset + size > bufferSize) {
-    supla_log(LOG_ERR, "Storage: attempt to read out of storage size");
+    SUPLA_LOG_ERROR("Storage: attempt to read out of storage size");
     return 0;
   }
 
@@ -130,7 +128,7 @@ int SpiffsStorage::writeStorage(unsigned int offset,
   dataChanged = true;
 
   if (offset + size > bufferSize) {
-    supla_log(LOG_ERR, "Storage: attempt to write out of storage size");
+    SUPLA_LOG_ERROR("Storage: attempt to write out of storage size");
     return 0;
   }
 
@@ -144,19 +142,19 @@ int SpiffsStorage::writeStorage(unsigned int offset,
 void SpiffsStorage::commit() {
   if (dataChanged) {
     // write to file
-    supla_log(LOG_DEBUG, "Storage: commit");
+    SUPLA_LOG_DEBUG("Storage: commit");
     FILE *file = fopen("/spiffs/storage.bin", "wb");
     if (file) {
       uint32_t bytesWritten = fwrite(buffer, 1, bufferSize, file);
       if (bufferSize != bytesWritten) {
-        supla_log(LOG_ERR, "Storage: file write error");
+        SUPLA_LOG_ERROR("Storage: file write error");
       } else {
-        supla_log(LOG_DEBUG, "Storage: file saved");
+        SUPLA_LOG_DEBUG("Storage: file saved");
       }
 
       fclose(file);
     } else {
-      supla_log(LOG_ERR, "Storage: failed to open storage file");
+      SUPLA_LOG_ERROR("Storage: failed to open storage file");
     }
   }
   dataChanged = false;

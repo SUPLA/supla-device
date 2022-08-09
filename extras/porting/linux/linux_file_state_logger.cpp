@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include <ctime>
 #include <filesystem>
@@ -34,7 +34,7 @@ Supla::Device::FileStateLogger::FileStateLogger(const std::string &path) {
   if (!std::filesystem::exists(path)) {
     std::error_code err;
     if (!std::filesystem::create_directories(path, err)) {
-      supla_log(LOG_WARNING,
+      SUPLA_LOG_WARNING(
                 "Config: failed to create folder for last state file");
       return;
     }

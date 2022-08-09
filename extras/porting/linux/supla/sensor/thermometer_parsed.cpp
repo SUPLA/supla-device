@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include "thermometer_parsed.h"
 
@@ -39,7 +39,7 @@ double Supla::Sensor::ThermometerParsed::getValue() {
     if (!parser->isValid()) {
       if (!isDataErrorLogged) {
         isDataErrorLogged = true;
-        supla_log(LOG_WARNING, "ThermometerParsed: source data error");
+        SUPLA_LOG_WARNING("ThermometerParsed: source data error");
       }
       return TEMPERATURE_NOT_AVAILABLE;
     }

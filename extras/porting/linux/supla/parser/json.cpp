@@ -14,7 +14,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include <stdexcept>
 
@@ -36,11 +36,11 @@ bool Supla::Parser::Json::refreshSource() {
       return valid;
     }
 
-    supla_log(LOG_VERBOSE, "Source: %s", sourceContent.c_str());
+    SUPLA_LOG_VERBOSE("Source: %s", sourceContent.c_str());
     try {
       json = nlohmann::json::parse(sourceContent);
     } catch (nlohmann::json::parse_error& ex) {
-      supla_log(LOG_ERR, "JSON parsing error at byte %d", ex.byte);
+      SUPLA_LOG_ERROR("JSON parsing error at byte %d", ex.byte);
       return valid;
     }
 
@@ -57,7 +57,7 @@ double Supla::Parser::Json::getValue(const std::string& key) {
   try {
     return json[key].get<double>();
   } catch (nlohmann::json::type_error& ex) {
-    supla_log(LOG_ERR, "JSON key \"%s\" not found", key.c_str());
+    SUPLA_LOG_ERROR("JSON key \"%s\" not found", key.c_str());
     valid = false;
   }
   return 0;

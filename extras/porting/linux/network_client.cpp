@@ -21,7 +21,7 @@
 #include <netdb.h>
 #include <poll.h>
 #include <string.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <sys/ioctl.h>
 #include <unistd.h>
 
@@ -36,8 +36,7 @@ Supla::NetworkClient::~NetworkClient() {
 }
 
 int Supla::NetworkClient::connect(const char *server, uint16_t port) {
-  supla_log(
-      LOG_DEBUG, "Establishing connection with: %s (port: %d)", server, port);
+  SUPLA_LOG_DEBUG("Establishing connection with: %s (port: %d)", server, port);
 
   struct addrinfo hints = {0};
   struct addrinfo *addresses;
@@ -50,7 +49,7 @@ int Supla::NetworkClient::connect(const char *server, uint16_t port) {
 
   const int status = getaddrinfo(server, portStr, &hints, &addresses);
   if (status != 0) {
-    supla_log(LOG_ERR, "%s: %s", server, gai_strerror(status));
+    SUPLA_LOG_ERROR("%s: %s", server, gai_strerror(status));
     return 0;
   }
 
@@ -100,7 +99,7 @@ int Supla::NetworkClient::connect(const char *server, uint16_t port) {
   freeaddrinfo(addresses);
 
   if (connectionFd == -1) {
-    supla_log(LOG_ERR, "%s: %s", server, strerror(err));
+    SUPLA_LOG_ERROR("%s: %s", server, strerror(err));
     return 0;
   }
 
@@ -180,13 +179,13 @@ int Supla::NetworkClient::read(uint8_t *buf, std::size_t size) {
   ssize_t response = ::read(connectionFd, buf, size);
 
   if (response == 0) {
-    supla_log(LOG_DEBUG, "read response == 0");
+    SUPLA_LOG_DEBUG("read response == 0");
     stop();
     return -1;
   }
 
   if (response < 0) {
-    supla_log(LOG_DEBUG, "read response == %d", response);
+    SUPLA_LOG_DEBUG("read response == %d", response);
     if (errno == EAGAIN || errno == EWOULDBLOCK) {
       return 0;
     }

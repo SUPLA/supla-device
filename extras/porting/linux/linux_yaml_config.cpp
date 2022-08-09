@@ -17,7 +17,7 @@
  */
 
 #include <IPAddress.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla-common/proto.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/parser/json.h>
@@ -63,7 +63,7 @@ bool Supla::LinuxYamlConfig::init() {
       config = YAML::LoadFile(file);
       loadGuidAuthFromPath(getStateFilesPath());
     } catch (const YAML::Exception& ex) {
-      supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+      SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
       return false;
     }
   }
@@ -79,7 +79,7 @@ bool Supla::LinuxYamlConfig::isDebug() {
       }
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
@@ -93,7 +93,7 @@ bool Supla::LinuxYamlConfig::isVerbose() {
       }
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
@@ -120,11 +120,11 @@ bool Supla::LinuxYamlConfig::generateGuidAndAuthkey() {
   }
 
   if (isArrayEmpty(guid, SUPLA_GUID_SIZE)) {
-    supla_log(LOG_ERR, "Failed to generate GUID");
+    SUPLA_LOG_ERROR("Failed to generate GUID");
     return false;
   }
   if (isArrayEmpty(authkey, SUPLA_AUTHKEY_SIZE)) {
-    supla_log(LOG_ERR, "Failed to generate AUTHKEY");
+    SUPLA_LOG_ERROR("Failed to generate AUTHKEY");
     return false;
   }
 
@@ -136,7 +136,7 @@ bool Supla::LinuxYamlConfig::generateGuidAndAuthkey() {
 
 // Generic getters and setters
 bool Supla::LinuxYamlConfig::setString(const char* key, const char* value) {
-  supla_log(LOG_WARNING, "Config setters are not supported (setString)");
+  SUPLA_LOG_WARNING("Config setters are not supported (setString)");
   return false;
 }
 bool Supla::LinuxYamlConfig::getString(const char* key,
@@ -151,7 +151,7 @@ int Supla::LinuxYamlConfig::getStringSize(const char* key) {
 bool Supla::LinuxYamlConfig::setBlob(const char* key,
                                      const char* value,
                                      size_t blobSize) {
-  supla_log(LOG_WARNING, "Config setters are not supported (setBlob)");
+  SUPLA_LOG_WARNING("Config setters are not supported (setBlob)");
   return false;
 }
 
@@ -179,19 +179,19 @@ bool Supla::LinuxYamlConfig::getUInt32(const char* key, uint32_t* result) {
 }
 
 bool Supla::LinuxYamlConfig::setInt8(const char* key, const int8_t value) {
-  supla_log(LOG_WARNING, "Config setters are not supported (setInt8)");
+  SUPLA_LOG_WARNING("Config setters are not supported (setInt8)");
   return false;
 }
 bool Supla::LinuxYamlConfig::setUInt8(const char* key, const uint8_t value) {
-  supla_log(LOG_WARNING, "Config setters are not supported (setUInt8)");
+  SUPLA_LOG_WARNING("Config setters are not supported (setUInt8)");
   return false;
 }
 bool Supla::LinuxYamlConfig::setInt32(const char* key, const int32_t value) {
-  supla_log(LOG_WARNING, "Config setters are not supported (setInt32)");
+  SUPLA_LOG_WARNING("Config setters are not supported (setInt32)");
   return false;
 }
 bool Supla::LinuxYamlConfig::setUInt32(const char* key, const uint32_t value) {
-  supla_log(LOG_WARNING, "Config setters are not supported (setUInt32)");
+  SUPLA_LOG_WARNING("Config setters are not supported (setUInt32)");
   return false;
 }
 
@@ -199,26 +199,26 @@ void Supla::LinuxYamlConfig::commit() {
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {
-  supla_log(LOG_WARNING, "setDeviceName is not supported on this platform");
+  SUPLA_LOG_WARNING("setDeviceName is not supported on this platform");
   return false;
 }
 
 bool Supla::LinuxYamlConfig::setSuplaCommProtocolEnabled(bool enabled) {
-  supla_log(LOG_WARNING,
+  SUPLA_LOG_WARNING(
             "setSuplaCommProtocolEnabled is not supported on this platform");
   return false;
 }
 bool Supla::LinuxYamlConfig::setSuplaServer(const char* server) {
-  supla_log(LOG_WARNING, "setSuplaServer is not supported on this platform");
+  SUPLA_LOG_WARNING("setSuplaServer is not supported on this platform");
   return false;
 }
 bool Supla::LinuxYamlConfig::setSuplaServerPort(int32_t port) {
-  supla_log(LOG_WARNING,
+  SUPLA_LOG_WARNING(
             "setSuplaServerPort is not supported on this platform");
   return false;
 }
 bool Supla::LinuxYamlConfig::setEmail(const char* email) {
-  supla_log(LOG_WARNING, "setEmail is not supported on this platform");
+  SUPLA_LOG_WARNING("setEmail is not supported on this platform");
   return false;
 }
 
@@ -230,7 +230,7 @@ bool Supla::LinuxYamlConfig::getDeviceName(char* result) {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
@@ -247,7 +247,7 @@ bool Supla::LinuxYamlConfig::getSuplaServer(char* result) {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
@@ -259,7 +259,7 @@ int32_t Supla::LinuxYamlConfig::getSuplaServerPort() {
       return port;
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return 2016;
 }
@@ -272,7 +272,7 @@ bool Supla::LinuxYamlConfig::getEmail(char* result) {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
@@ -314,22 +314,22 @@ bool Supla::LinuxYamlConfig::loadChannels() {
       int channelCount = 0;
       for (auto it : channels) {
         if (!parseChannel(it, channelCount)) {
-          supla_log(LOG_ERR, "Config: parsing channel %d failed", channelCount);
+          SUPLA_LOG_ERROR("Config: parsing channel %d failed", channelCount);
           return false;
         }
         channelCount++;
       }
       if (channelCount == 0) {
-        supla_log(LOG_ERR, "Config: \"channels\" section missing in file");
+        SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
         return false;
       }
       return true;
     } else {
-      supla_log(LOG_ERR, "Config: \"channels\" section missing in file");
+      SUPLA_LOG_ERROR("Config: \"channels\" section missing in file");
       return false;
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
@@ -347,7 +347,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     if (ch["source"]) {
       paramCount++;
       if (!(source = addSource(ch["source"]))) {
-        supla_log(LOG_ERR, "Adding source failed");
+        SUPLA_LOG_ERROR("Adding source failed");
         return false;
       }
     }
@@ -355,7 +355,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     if (ch["parser"]) {
       paramCount++;
       if (!(parser = addParser(ch["parser"], source))) {
-        supla_log(LOG_ERR, "Adding parser failed");
+        SUPLA_LOG_ERROR("Adding parser failed");
         return false;
       }
       parserCount++;
@@ -375,33 +375,33 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     }
     if (type == "ThermometerParsed") {
       if (!parser) {
-        supla_log(LOG_ERR, "Channel[%d] config: missing parser", channelNumber);
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addThermometerParsed(ch, channelNumber, parser);
     }
     if (type == "ImpulseCounterParsed") {
       if (!parser) {
-        supla_log(LOG_ERR, "Channel[%d] config: missing parser", channelNumber);
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addImpulseCounterParsed(ch, channelNumber, parser);
     }
     if (type == "ElectricityMeterParsed") {
       if (!parser) {
-        supla_log(LOG_ERR, "Channel[%d] config: missing parser", channelNumber);
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addElectricityMeterParsed(ch, channelNumber, parser);
     }
     if (type == "BinaryParsed") {
       if (!parser) {
-        supla_log(LOG_ERR, "Channel[%d] config: missing parser", channelNumber);
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addBinaryParsed(ch, channelNumber, parser);
     } else {
-      supla_log(LOG_ERR,
+      SUPLA_LOG_ERROR(
                 "Channel[%d] config: unknown type \"%s\"",
                 channelNumber,
                 type.c_str());
@@ -409,14 +409,14 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     }
 
     if (ch.size() > paramCount) {
-      supla_log(LOG_WARNING,
+      SUPLA_LOG_WARNING(
                 "Channel[%d] config: too many parameters",
                 channelNumber);
     }
     return true;
 
   } else {
-    supla_log(LOG_ERR,
+    SUPLA_LOG_ERROR(
               "Channel[%d] config: missing mandatory \"type\" parameter",
               channelNumber);
   }
@@ -425,7 +425,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
                                              int channelNumber) {
-  supla_log(LOG_INFO, "Channel[%d] config: adding VirtualRelay", channelNumber);
+  SUPLA_LOG_INFO("Channel[%d] config: adding VirtualRelay", channelNumber);
   new Supla::Control::VirtualRelay();
   return true;
 }
@@ -446,8 +446,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
   if (ch["ip"]) {  // mandatory
     paramCount++;
     std::string ip = ch["ip"].as<std::string>();
-    supla_log(
-        LOG_INFO,
+    SUPLA_LOG_INFO(
         "Channel[%d] config: adding Fronius with IP %s, port: %d, deviceId: %d",
         channelNumber,
         ip.c_str(),
@@ -465,8 +464,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::addThermometerParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
-  supla_log(
-      LOG_INFO, "Channel[%d] config: adding ThremometerParsed", channelNumber);
+  SUPLA_LOG_INFO("Channel[%d] config: adding ThremometerParsed", channelNumber);
   auto therm = new Supla::Sensor::ThermometerParsed(parser);
   if (ch[Supla::Parser::Temperature]) {
     paramCount++;
@@ -478,7 +476,7 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
       therm->setMapping(Supla::Parser::Temperature, key);
     }
   } else {
-    supla_log(LOG_ERR,
+    SUPLA_LOG_ERROR(
               "Channel[%d] config: missing \"%s\" parameter",
               channelNumber,
               Supla::Parser::Temperature);
@@ -495,7 +493,7 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
 
 bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
-  supla_log(LOG_INFO,
+  SUPLA_LOG_INFO(
             "Channel[%d] config: adding ImpulseCounterParsed",
             channelNumber);
   auto ic = new Supla::Sensor::ImpulseCounterParsed(parser);
@@ -509,7 +507,7 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
       ic->setMapping(Supla::Parser::Counter, key);
     }
   } else {
-    supla_log(LOG_ERR,
+    SUPLA_LOG_ERROR(
               "Channel[%d] config: missing \"%s\" parameter",
               channelNumber,
               Supla::Parser::Counter);
@@ -526,7 +524,7 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
 
 bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
-  supla_log(LOG_INFO,
+  SUPLA_LOG_INFO(
             "Channel[%d] config: adding ElectricityMeterParsed",
             channelNumber);
   auto em = new Supla::Sensor::ElectricityMeterParsed(parser);
@@ -595,7 +593,7 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
 bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
                                              int channelNumber,
                                              Supla::Parser::Parser* parser) {
-  supla_log(LOG_INFO, "Channel[%d] config: adding BinaryParsed", channelNumber);
+  SUPLA_LOG_INFO("Channel[%d] config: adding BinaryParsed", channelNumber);
   auto binary = new Supla::Sensor::BinaryParsed(parser);
   if (ch[Supla::Parser::State]) {
     paramCount++;
@@ -607,7 +605,7 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
       binary->setMapping(Supla::Parser::State, key);
     }
   } else {
-    supla_log(LOG_ERR,
+    SUPLA_LOG_ERROR(
               "Channel[%d] config: missing \"%s\" parameter",
               channelNumber,
               Supla::Parser::State);
@@ -626,13 +624,13 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
       prs = parsers[parserNames[use]];
     }
     if (!prs) {
-      supla_log(LOG_ERR,
+      SUPLA_LOG_ERROR(
                 "Config: can't find parser with \"name\"=\"%s\"",
                 use.c_str());
       return nullptr;
     }
     if (parser["name"]) {
-      supla_log(LOG_ERR,
+      SUPLA_LOG_ERROR(
                 "Config: can't use \"name\" for parser with \"use\" parameter");
       return nullptr;
     }
@@ -645,7 +643,7 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
   }
 
   if (!src) {
-    supla_log(LOG_ERR, "Config: parser used without source");
+    SUPLA_LOG_ERROR("Config: parser used without source");
     return nullptr;
   }
 
@@ -656,7 +654,7 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
     } else if (type == "Json") {
       prs = new Supla::Parser::Json(src);
     } else {
-      supla_log(LOG_ERR, "Config: unknown parser type \"%s\"", type.c_str());
+      SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
       return nullptr;
     }
     if (parser["refresh_time_ms"]) {
@@ -664,7 +662,7 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
       prs->setRefreshTime(timeMs);
     }
   } else {
-    supla_log(LOG_ERR, "Config: type not defined for parser");
+    SUPLA_LOG_ERROR("Config: type not defined for parser");
     return nullptr;
   }
 
@@ -682,13 +680,13 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       src = sources[sourceNames[use]];
     }
     if (!src) {
-      supla_log(LOG_ERR,
+      SUPLA_LOG_ERROR(
                 "Config: can't find source with \"name\"=\"%s\"",
                 use.c_str());
       return nullptr;
     }
     if (source["name"]) {
-      supla_log(LOG_ERR,
+      SUPLA_LOG_ERROR(
                 "Config: can't use \"name\" for source with \"use\" parameter");
       return nullptr;
     }
@@ -713,12 +711,12 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       std::string cmd = source["command"].as<std::string>();
       src = new Supla::Source::Cmd(cmd.c_str());
     } else {
-      supla_log(LOG_ERR, "Config: unknown source type \"%s\"", type.c_str());
+      SUPLA_LOG_ERROR("Config: unknown source type \"%s\"", type.c_str());
       return nullptr;
     }
 
   } else {
-    supla_log(LOG_ERR, "Config: type not defined for source");
+    SUPLA_LOG_ERROR("Config: type not defined for source");
     return nullptr;
   }
 
@@ -735,10 +733,10 @@ std::string Supla::LinuxYamlConfig::getStateFilesPath() {
       path = config["state_files_path"].as<std::string>();
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Config file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   if (path.empty()) {
-    supla_log(LOG_DEBUG, "Config: missing state files path - using default");
+    SUPLA_LOG_DEBUG("Config: missing state files path - using default");
     path = "var/lib/supla-device";
   }
   return path;
@@ -747,32 +745,32 @@ std::string Supla::LinuxYamlConfig::getStateFilesPath() {
 void Supla::LinuxYamlConfig::loadGuidAuthFromPath(const std::string& path) {
   try {
     std::string file = path + Supla::GuidAuthFileName;
-    supla_log(LOG_INFO, "GUID and AUTHKEY: loading from file %s", file.c_str());
+    SUPLA_LOG_INFO("GUID and AUTHKEY: loading from file %s", file.c_str());
     auto guidAuthYaml = YAML::LoadFile(file);
     std::string guidHex;
     std::string authHex;
     if (guidAuthYaml[Supla::GuidKey]) {
       guidHex = guidAuthYaml[Supla::GuidKey].as<std::string>();
       if (guidHex.length() != SUPLA_GUID_HEXSIZE - 1) {
-        supla_log(LOG_WARNING, "GUID: invalid guid value length");
+        SUPLA_LOG_WARNING("GUID: invalid guid value length");
         guidHex = "";
       }
       guid = guidHex;
     } else {
-      supla_log(LOG_WARNING, "GUID: missing guid key in yaml file");
+      SUPLA_LOG_WARNING("GUID: missing guid key in yaml file");
     }
     if (guidAuthYaml[Supla::AuthKeyKey]) {
       authHex = guidAuthYaml[Supla::AuthKeyKey].as<std::string>();
       if (authHex.length() != SUPLA_AUTHKEY_HEXSIZE - 1) {
-        supla_log(LOG_WARNING, "AUTHKEY: invalid authkey value length");
+        SUPLA_LOG_WARNING("AUTHKEY: invalid authkey value length");
         authHex = "";
       }
       authkey = authHex;
     } else {
-      supla_log(LOG_WARNING, "AUTHKEY: missing authkey key in yaml file");
+      SUPLA_LOG_WARNING("AUTHKEY: missing authkey key in yaml file");
     }
   } catch (const YAML::Exception& ex) {
-    supla_log(LOG_ERR, "Guid/auth file YAML error: %s", ex.what());
+    SUPLA_LOG_ERROR("Guid/auth file YAML error: %s", ex.what());
   }
 }
 
@@ -780,7 +778,7 @@ bool Supla::LinuxYamlConfig::saveGuidAuth(const std::string& path) {
   if (!std::filesystem::exists(path)) {
     std::error_code err;
     if (!std::filesystem::create_directories(path, err)) {
-      supla_log(LOG_WARNING, "Config: failed to create folder for state files");
+      SUPLA_LOG_WARNING("Config: failed to create folder for state files");
       return false;
     }
   }
@@ -792,7 +790,7 @@ bool Supla::LinuxYamlConfig::saveGuidAuth(const std::string& path) {
   out << outputYaml;
   out.close();
   if (out.fail()) {
-    supla_log(LOG_ERR, "Config: failed to write guid/authkey to file");
+    SUPLA_LOG_ERROR("Config: failed to write guid/authkey to file");
     return false;
   }
 

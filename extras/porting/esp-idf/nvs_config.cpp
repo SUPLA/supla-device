@@ -23,7 +23,7 @@
 #include <esp_system.h>
 #include <nvs.h>
 #include <nvs_flash.h>
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 #include <supla-common/proto.h>
 #include <cstring>
 
@@ -36,20 +36,19 @@ NvsConfig::~NvsConfig() {
 }
 
 bool NvsConfig::init() {
-  supla_log(LOG_DEBUG, "NvsConfig: initializing nvs based config storage");
+  SUPLA_LOG_DEBUG("NvsConfig: initializing nvs based config storage");
   esp_err_t err = nvs_flash_init();
   if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
     nvs_flash_erase();
     err = nvs_flash_init();
     if (err != ESP_OK) {
-      supla_log(LOG_ERR, "NvsConfig: failed to init NVS storage");
+      SUPLA_LOG_ERROR("NvsConfig: failed to init NVS storage");
       return false;
     }
   }
   nvs_stats_t nvs_stats;
   nvs_get_stats(NULL, &nvs_stats);
-  supla_log(
-      LOG_DEBUG,
+  SUPLA_LOG_DEBUG(
       "NVS Count: UsedEntries = (%d), FreeEntries = (%d), AllEntries = (%d)",
       nvs_stats.used_entries,
       nvs_stats.free_entries,
@@ -61,7 +60,7 @@ bool NvsConfig::init() {
 void NvsConfig::removeAll() {
   esp_err_t err = nvs_erase_all(nvsHandle);
   if (err != ESP_OK) {
-    supla_log(LOG_ERR, "Failed to erase NVS storage (%d)", err);
+    SUPLA_LOG_ERROR("Failed to erase NVS storage (%d)", err);
   }
   nvs_commit(nvsHandle);
 }

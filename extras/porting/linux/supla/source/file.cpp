@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 #include <chrono>  // NOLINT(build/c++11)
 #include <fstream>
@@ -42,7 +42,7 @@ std::string Supla::Source::File::getContent() {
     if (fileTime + std::chrono::seconds(fileExpirationSec) < now) {
       if (!fileIsTooOldLog) {
         fileIsTooOldLog = true;
-        supla_log(LOG_DEBUG, "File: file \"%s\" is too old", filePath.c_str());
+        SUPLA_LOG_DEBUG("File: file \"%s\" is too old", filePath.c_str());
       }
       // file is too old
       return result;

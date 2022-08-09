@@ -15,7 +15,7 @@
 */
 
 #include "electricity_meter_parsed.h"
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
 
 Supla::Sensor::ElectricityMeterParsed::ElectricityMeterParsed(
     Supla::Parser::Parser *parser) :
@@ -200,7 +200,7 @@ void Supla::Sensor::ElectricityMeterParsed::readValuesFromDevice() {
   } else {
     if (!isDataErrorLogged) {
       isDataErrorLogged = true;
-      supla_log(LOG_WARNING, "ElectricityMeterParsed: data source error");
+      SUPLA_LOG_WARNING("ElectricityMeterParsed: data source error");
     }
     resetReadParameters();
   }

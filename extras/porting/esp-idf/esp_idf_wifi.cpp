@@ -30,6 +30,7 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/supla_lib_config.h>
+#include <supla/log_wrapper.h>
 
 #include <cstring>
 
@@ -78,7 +79,7 @@ int Supla::EspIdfWifi::read(void *buf, int count) {
   autoLock.unlock();
   if (tlsErr != 0 && -tlsErr != ESP_TLS_ERR_SSL_WANT_READ &&
       -tlsErr != ESP_TLS_ERR_SSL_WANT_WRITE) {
-    supla_log(LOG_ERR, "Connection error %d", tlsErr);
+    SUPLA_LOG_ERROR("Connection error %d", tlsErr);
     Disconnect();
     return 0;
   }
@@ -89,7 +90,7 @@ int Supla::EspIdfWifi::read(void *buf, int count) {
   _supla_int_t size = esp_tls_get_bytes_avail(client);
   autoLock.unlock();
   if (size < 0) {
-    supla_log(LOG_ERR, "error in esp tls get bytes avail %d", size);
+    SUPLA_LOG_ERROR("error in esp tls get bytes avail %d", size);
     Disconnect();
     return 0;
   }
@@ -109,12 +110,12 @@ int Supla::EspIdfWifi::read(void *buf, int count) {
         continue;
       }
       if (ret < 0) {
-        supla_log(LOG_ERR, "esp_tls_conn_read  returned -0x%x", -ret);
+        SUPLA_LOG_ERROR("esp_tls_conn_read  returned -0x%x", -ret);
         ret = 0;
         break;
       }
       if (ret == 0) {
-        supla_log(LOG_INFO, "connection closed");
+        SUPLA_LOG_INFO("connection closed");
         Disconnect();
         return 0;
       }
@@ -148,7 +149,7 @@ int Supla::EspIdfWifi::write(void *buf, int count) {
 int Supla::EspIdfWifi::connect(const char *server, int port) {
   Supla::AutoLock autoLock(mutex);
   if (client != nullptr) {
-    supla_log(LOG_ERR, "client ptr should be null when trying to connect");
+    SUPLA_LOG_ERROR("client ptr should be null when trying to connect");
     return 0;
   }
 
@@ -158,7 +159,7 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
     int len = strlen(rootCACert);
     cfg.cacert_pem_bytes = len + 1;
   } else {
-    supla_log(LOG_WARNING,
+    SUPLA_LOG_WARNING(
               "Connecting without certificate validation (INSECURE)");
   }
   cfg.timeout_ms = timeoutMs;
@@ -169,14 +170,14 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
     connectionPort = port;
   }
 
-  supla_log(LOG_INFO,
+  SUPLA_LOG_INFO(
             "Establishing connection with: %s (port: %d)",
             server,
             connectionPort);
 
   client = esp_tls_init();
   if (!client) {
-    supla_log(LOG_ERR, "ESP TLS INIT FAILED");
+    SUPLA_LOG_ERROR("ESP TLS INIT FAILED");
     return 0;
   }
   int result = esp_tls_conn_new_sync(
@@ -192,7 +193,7 @@ int Supla::EspIdfWifi::connect(const char *server, int port) {
     esp_tls_error_handle_t errorHandle;
     esp_tls_get_error_handle(client, &errorHandle);
 
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "last errors %d %d %d",
               errorHandle->last_error,
               errorHandle->esp_tls_error_code,
@@ -234,7 +235,7 @@ static void eventHandler(void *arg,
   if (eventBase == WIFI_EVENT) {
     switch (eventId) {
       case WIFI_EVENT_STA_START: {
-        supla_log(LOG_DEBUG, "Starting connection to AP");
+        SUPLA_LOG_DEBUG("Starting connection to AP");
         esp_wifi_connect();
         break;
       }
@@ -242,7 +243,7 @@ static void eventHandler(void *arg,
         if (netIntfPtr) {
           netIntfPtr->setWifiConnected(true);
         }
-        supla_log(LOG_DEBUG, "Connected to AP");
+        SUPLA_LOG_DEBUG("Connected to AP");
         break;
       }
       case WIFI_EVENT_STA_DISCONNECTED: {
@@ -256,7 +257,7 @@ static void eventHandler(void *arg,
         }
         if (!netIntfPtr->isInConfigMode()) {
           esp_wifi_connect();
-          supla_log(LOG_DEBUG,
+          SUPLA_LOG_DEBUG(
                     "connect to the AP fail (reason %d). Trying again",
                     data->reason);
         }
@@ -271,7 +272,7 @@ static void eventHandler(void *arg,
           netIntfPtr->setIpReady(true);
           netIntfPtr->setIpv4Addr(event->ip_info.ip.addr);
         }
-        supla_log(LOG_INFO, "got ip " IPSTR, IP2STR(&event->ip_info.ip));
+        SUPLA_LOG_INFO("got ip " IPSTR, IP2STR(&event->ip_info.ip));
         break;
       }
       case IP_EVENT_STA_LOST_IP: {
@@ -279,7 +280,7 @@ static void eventHandler(void *arg,
           netIntfPtr->setIpReady(false);
           netIntfPtr->setIpv4Addr(0);
         }
-        supla_log(LOG_DEBUG, "lost ip");
+        SUPLA_LOG_DEBUG("lost ip");
         break;
       }
     }
@@ -316,7 +317,7 @@ void Supla::EspIdfWifi::setup() {
     esp_wifi_set_ps(WIFI_PS_NONE);
 
   } else {
-    supla_log(LOG_DEBUG, "WiFi: resetting WiFi connection");
+    SUPLA_LOG_DEBUG("WiFi: resetting WiFi connection");
     autoLock.unlock();
     disconnect();
     autoLock.lock();
@@ -336,8 +337,7 @@ void Supla::EspIdfWifi::setup() {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
   } else {
-    supla_log(
-        LOG_INFO, "Wi-Fi: establishing connection with SSID: \"%s\"", ssid);
+    SUPLA_LOG_INFO("Wi-Fi: establishing connection with SSID: \"%s\"", ssid);
     wifi_config_t wifi_config = {};
     memcpy(wifi_config.sta.ssid, ssid, MAX_SSID_SIZE);
     memcpy(wifi_config.sta.password, password, MAX_WIFI_PASSWORD_SIZE);
@@ -366,7 +366,7 @@ void Supla::EspIdfWifi::uninit() {
   setIpReady(false);
   disconnect();
   if (initDone) {
-    supla_log(LOG_DEBUG, "Wi-Fi: stopping WiFi connection");
+    SUPLA_LOG_DEBUG("Wi-Fi: stopping WiFi connection");
     esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, eventHandler);
     esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_LOST_IP, eventHandler);
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, eventHandler);

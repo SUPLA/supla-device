@@ -21,6 +21,7 @@
 #include <supla-common/log.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+#include <supla/log_wrapper.h>
 
 #include "esp_idf_web_server.h"
 #include "supla/network/html_generator.h"
@@ -28,7 +29,7 @@
 static Supla::EspIdfWebServer *serverInstance = nullptr;
 
 esp_err_t getFavicon(httpd_req_t *req) {
-  supla_log(LOG_DEBUG, "SERVER: get favicon.ico");
+  SUPLA_LOG_DEBUG("SERVER: get favicon.ico");
   if (serverInstance) {
     serverInstance->notifyClientConnected();
   }
@@ -38,7 +39,7 @@ esp_err_t getFavicon(httpd_req_t *req) {
 }
 
 esp_err_t getHandler(httpd_req_t *req) {
-  supla_log(LOG_DEBUG, "SERVER: get request");
+  SUPLA_LOG_DEBUG("SERVER: get request");
   Supla::EspIdfSender sender(req);
 
   if (serverInstance && serverInstance->htmlGenerator) {
@@ -51,7 +52,7 @@ esp_err_t getHandler(httpd_req_t *req) {
 }
 
 esp_err_t getBetaHandler(httpd_req_t *req) {
-  supla_log(LOG_DEBUG, "SERVER: get beta request");
+  SUPLA_LOG_DEBUG("SERVER: get beta request");
   Supla::EspIdfSender sender(req);
 
   if (serverInstance && serverInstance->htmlGenerator) {
@@ -65,7 +66,7 @@ esp_err_t getBetaHandler(httpd_req_t *req) {
 }
 
 esp_err_t postHandler(httpd_req_t *req) {
-  supla_log(LOG_DEBUG, "SERVER: post request");
+  SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost(req)) {
       httpd_resp_set_status(req, "303 See Other");
@@ -79,7 +80,7 @@ esp_err_t postHandler(httpd_req_t *req) {
 }
 
 esp_err_t postBetaHandler(httpd_req_t *req) {
-  supla_log(LOG_DEBUG, "SERVER: post request");
+  SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost(req)) {
       httpd_resp_set_status(req, "303 See Other");
@@ -127,7 +128,7 @@ bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req) {
   resetParser();
 
   size_t contentLen = req->content_len;
-  supla_log(LOG_DEBUG, "SERVER: content length %d B", contentLen);
+  SUPLA_LOG_DEBUG("SERVER: content length %d B", contentLen);
 
   char content[500];
   size_t recvSize = req->content_len;
@@ -140,7 +141,7 @@ bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req) {
   while (contentLen > 0) {
     ret = httpd_req_recv(req, content, recvSize);
     content[ret] = '\0';
-    supla_log(LOG_DEBUG,
+    SUPLA_LOG_DEBUG(
               "SERVER: received %d B (cl %d): %s",
               ret,
               contentLen,
@@ -177,7 +178,7 @@ void Supla::EspIdfWebServer::start() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.lru_purge_enable = true;
 
-  supla_log(LOG_INFO, "Starting local web server");
+  SUPLA_LOG_INFO("Starting local web server");
 
   if (httpd_start(&server, &config) == ESP_OK) {
     httpd_register_uri_handler(server, &uriGet);
@@ -189,7 +190,7 @@ void Supla::EspIdfWebServer::start() {
 }
 
 void Supla::EspIdfWebServer::stop() {
-  supla_log(LOG_INFO, "Stopping local web server");
+  SUPLA_LOG_INFO("Stopping local web server");
   if (server) {
     httpd_stop(server);
     server = nullptr;

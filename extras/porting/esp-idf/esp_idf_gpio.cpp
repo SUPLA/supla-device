@@ -20,13 +20,14 @@
 #include <supla-common/log.h>
 #include <supla/definitions.h>
 #include <supla/io.h>
+#include <supla/log_wrapper.h>
 
 #ifndef ESP_PLATFORM
 #error This file is for ESP-IDF platform
 #endif
 
 void pinMode(uint8_t pin, uint8_t mode) {
-  supla_log(LOG_DEBUG, " *** GPIO %d set mode %d", pin, mode);
+  SUPLA_LOG_DEBUG(" *** GPIO %d set mode %d", pin, mode);
 
   gpio_config_t cfg = {};
   cfg.pin_bit_mask = (1ULL << pin);
@@ -47,7 +48,7 @@ void pinMode(uint8_t pin, uint8_t mode) {
       break;
     }
     default: {
-      supla_log(LOG_ERR, "GPIO pinMode: mode %d is not implemented", mode);
+      SUPLA_LOG_ERROR("GPIO pinMode: mode %d is not implemented", mode);
       break;
     }
   }
@@ -64,11 +65,11 @@ void digitalWrite(uint8_t pin, uint8_t val) {
 }
 
 void analogWrite(uint8_t pin, int val) {
-  supla_log(
-      LOG_ERR, " *** NOT IMPLEMENTED *** GPIO %d analog write %d", pin, val);
+  SUPLA_LOG_ERROR(
+      " *** NOT IMPLEMENTED *** GPIO %d analog write %d", pin, val);
 }
 
 unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {
-  supla_log(LOG_ERR, " *** NOT IMPLEMENTED *** GPIO %d pulse in %d", pin, val);
+  SUPLA_LOG_ERROR(" *** NOT IMPLEMENTED *** GPIO %d pulse in %d", pin, val);
   return 0;
 }

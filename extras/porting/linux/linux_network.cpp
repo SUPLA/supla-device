@@ -26,6 +26,7 @@
 #include <string.h>
 #include <supla/supla_lib_config.h>
 #include <unistd.h>
+#include <supla/log_wrapper.h>
 
 #include <iostream>
 
@@ -38,31 +39,31 @@ int32_t print_ssl_error(SSL *ssl, int ret_code) {
 
   switch (ssl_error) {
     case SSL_ERROR_NONE:
-      supla_log(LOG_ERR, "SSL_ERROR_NONE");
+      SUPLA_LOG_ERROR("SSL_ERROR_NONE");
       break;
     case SSL_ERROR_SSL:
-      supla_log(LOG_ERR, "SSL_ERROR_SSL");
+      SUPLA_LOG_ERROR("SSL_ERROR_SSL");
       break;
     case SSL_ERROR_WANT_READ:
-      supla_log(LOG_ERR, "SSL_ERROR_WANT_READ");
+      SUPLA_LOG_ERROR("SSL_ERROR_WANT_READ");
       break;
     case SSL_ERROR_WANT_WRITE:
-      supla_log(LOG_ERR, "SSL_ERROR_WANT_WRITE");
+      SUPLA_LOG_ERROR("SSL_ERROR_WANT_WRITE");
       break;
     case SSL_ERROR_WANT_X509_LOOKUP:
-      supla_log(LOG_ERR, "SSL_ERROR_WANT_X509_LOOKUP");
+      SUPLA_LOG_ERROR("SSL_ERROR_WANT_X509_LOOKUP");
       break;
     case SSL_ERROR_SYSCALL:
-      supla_log(LOG_ERR, "SSL_ERROR_SYSCALL");
+      SUPLA_LOG_ERROR("SSL_ERROR_SYSCALL");
       break;
     case SSL_ERROR_ZERO_RETURN:
-      supla_log(LOG_ERR, "SSL_ERROR_ZERO_RETURN");
+      SUPLA_LOG_ERROR("SSL_ERROR_ZERO_RETURN");
       break;
     case SSL_ERROR_WANT_CONNECT:
-      supla_log(LOG_ERR, "SSL_ERROR_WANT_CONNECT");
+      SUPLA_LOG_ERROR("SSL_ERROR_WANT_CONNECT");
       break;
     case SSL_ERROR_WANT_ACCEPT:
-      supla_log(LOG_ERR, "SSL_ERROR_WANT_ACCEPT");
+      SUPLA_LOG_ERROR("SSL_ERROR_WANT_ACCEPT");
       break;
   }
 
@@ -75,16 +76,16 @@ void print_ssl_certs(SSL *ssl) {
 
   cert = SSL_get_peer_certificate(ssl);
   if (cert != NULL) {
-    supla_log(LOG_DEBUG, "Server certificates:");
+    SUPLA_LOG_DEBUG("Server certificates:");
     line = X509_NAME_oneline(X509_get_subject_name(cert), 0, 0);
-    supla_log(LOG_DEBUG, "Subject: %s", line);
+    SUPLA_LOG_DEBUG("Subject: %s", line);
     free(line);
     line = X509_NAME_oneline(X509_get_issuer_name(cert), 0, 0);
-    supla_log(LOG_DEBUG, "Issuer: %s", line);
+    SUPLA_LOG_DEBUG("Issuer: %s", line);
     free(line);
     X509_free(cert);
   } else {
-    supla_log(LOG_DEBUG, "No certificates.");
+    SUPLA_LOG_DEBUG("No certificates.");
   }
 }
 
@@ -113,7 +114,7 @@ int Supla::LinuxNetwork::read(void *buf, int count) {
         break;
       }
       case SSL_ERROR_ZERO_RETURN: {
-        supla_log(LOG_INFO, "Connection closed by peer");
+        SUPLA_LOG_INFO("Connection closed by peer");
         Disconnect();
         break;
       }
@@ -140,25 +141,25 @@ int Supla::LinuxNetwork::write(void *buf, int count) {
 int Supla::LinuxNetwork::connect(const char *server, int port) {
   ssl = SSL_new(ctx);
   if (ssl == nullptr) {
-    supla_log(LOG_ERR, "SSL_new() failed");
+    SUPLA_LOG_ERROR("SSL_new() failed");
     return 0;
   }
 
   int connectionPort = (port == -1 ? 2015 : port);
   if (connectionPort != 2016) {
-    supla_log(LOG_WARNING,
+    SUPLA_LOG_WARNING(
               "Server port is not 2016. Trying to establish secured connection "
               "anyway");
   }
 
-  supla_log(LOG_INFO,
+  SUPLA_LOG_INFO(
             "Establishing connection with: %s (port: %d)",
             server,
             connectionPort);
 
   struct hostent *host = gethostbyname(server);
   if (host == nullptr) {
-    supla_log(LOG_ERR, "gethostbyname failed (%s)", server);
+    SUPLA_LOG_ERROR("gethostbyname failed (%s)", server);
     return 0;
   }
 
@@ -173,7 +174,7 @@ int Supla::LinuxNetwork::connect(const char *server, int port) {
 
   const int status = getaddrinfo(server, portStr, &hints, &addresses);
   if (status != 0) {
-    supla_log(LOG_ERR, "%s: %s", server, gai_strerror(status));
+    SUPLA_LOG_ERROR("%s: %s", server, gai_strerror(status));
     return 0;
   }
 
@@ -223,7 +224,7 @@ int Supla::LinuxNetwork::connect(const char *server, int port) {
   freeaddrinfo(addresses);
 
   if (connectionFd == -1) {
-    supla_log(LOG_ERR, "%s: %s", server, strerror(err));
+    SUPLA_LOG_ERROR("%s: %s", server, strerror(err));
     return 0;
   }
 
@@ -233,7 +234,7 @@ int Supla::LinuxNetwork::connect(const char *server, int port) {
   SSL_connect(ssl);
 
   fcntl(connectionFd, F_SETFL, O_NONBLOCK);
-  supla_log(LOG_DEBUG, "Connected with %s encryption", SSL_get_cipher(ssl));
+  SUPLA_LOG_DEBUG("Connected with %s encryption", SSL_get_cipher(ssl));
   SSL_get_cipher(ssl);
   print_ssl_certs(ssl);
 
@@ -265,7 +266,7 @@ void Supla::LinuxNetwork::setup() {
     ctx = SSL_CTX_new(method);
 
     if (ctx == nullptr) {
-      supla_log(LOG_ERR, "SSL_CTX_new failed");
+      SUPLA_LOG_ERROR("SSL_CTX_new failed");
       return;
     }
   }

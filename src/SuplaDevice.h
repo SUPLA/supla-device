@@ -187,7 +187,6 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void handleLocalActionTriggers();
   void checkIfRestartIsNeeded(uint64_t _millis);
   void createSrpcLayerIfNeeded();
-
 };
 
 extern SuplaDeviceClass SuplaDevice;

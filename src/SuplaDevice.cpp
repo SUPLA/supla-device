@@ -15,34 +15,32 @@
 */
 
 #include <string.h>
-
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla/protocol/supla_srpc.h>
 
 #include "SuplaDevice.h"
-#include "supla/version.h"
+#include "supla/actions.h"
 #include "supla/channel.h"
 #include "supla/device/last_state_logger.h"
+#include "supla/device/sw_update.h"
 #include "supla/element.h"
 #include "supla/io.h"
 #include "supla/network/network.h"
 #include "supla/network/web_server.h"
-#include "supla/storage/storage.h"
-#include "supla/timer.h"
-#include "supla/time.h"
 #include "supla/storage/config.h"
+#include "supla/storage/storage.h"
+#include "supla/time.h"
+#include "supla/timer.h"
 #include "supla/tools.h"
-#include "supla/actions.h"
-#include "supla/device/sw_update.h"
+#include "supla/version.h"
 
 void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
   bool showLog = false;
 
-  if (currentStatus == STATUS_CONFIG_MODE
-      && newStatus != STATUS_SOFTWARE_RESET
-      && newStatus != STATUS_INVALID_GUID
-      && newStatus != STATUS_INVALID_AUTHKEY) {
+  if (currentStatus == STATUS_CONFIG_MODE &&
+      newStatus != STATUS_SOFTWARE_RESET && newStatus != STATUS_INVALID_GUID &&
+      newStatus != STATUS_INVALID_AUTHKEY) {
     // Config mode is final state and the only exit goes through reset
     // with exception for invalid GUID and AUTHKEY
     return;
@@ -50,8 +48,8 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
 
   if (currentStatus != newStatus) {
     if (!((newStatus == STATUS_SERVER_DISCONNECTED ||
-            newStatus == STATUS_REGISTER_IN_PROGRESS)
-          && currentStatus > STATUS_REGISTER_IN_PROGRESS)) {
+           newStatus == STATUS_REGISTER_IN_PROGRESS) &&
+          currentStatus > STATUS_REGISTER_IN_PROGRESS)) {
       if (impl_arduino_status != nullptr) {
         impl_arduino_status(newStatus, msg);
       }
@@ -81,7 +79,8 @@ bool SuplaDeviceClass::prepareLastStateLog() {
   return false;
 }
 
-SuplaDeviceClass::SuplaDeviceClass() {}
+SuplaDeviceClass::SuplaDeviceClass() {
+}
 
 SuplaDeviceClass::~SuplaDeviceClass() {
   if (srpcLayer) {
@@ -137,7 +136,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
     // Load protocol layer configuration
     for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-        proto = proto->next()) {
+         proto = proto->next()) {
       if (!proto->onLoadConfig()) {
         configComplete = false;
       }
@@ -151,7 +150,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
-        element = element->next()) {
+         element = element->next()) {
       element->onLoadConfig();
       delay(0);
     }
@@ -243,8 +242,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
       }
       generateHexString(Supla::Channel::reg_dev.GUID, buf, SUPLA_GUID_SIZE);
       SUPLA_LOG_INFO("New GUID: %s", buf);
-      generateHexString(Supla::Channel::reg_dev.AuthKey, buf,
-          SUPLA_AUTHKEY_SIZE);
+      generateHexString(
+          Supla::Channel::reg_dev.AuthKey, buf, SUPLA_AUTHKEY_SIZE);
       SUPLA_LOG_DEBUG("New AuthKey: %s", buf);
     } else {
       SUPLA_LOG_ERROR("Failed to generate GUID and AuthKey");
@@ -289,7 +288,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
 
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-      proto = proto->next()) {
+       proto = proto->next()) {
     proto->onInit();
     delay(0);
   }
@@ -318,7 +317,7 @@ void SuplaDeviceClass::setString(char *dst, const char *src, int max_size) {
 
 void SuplaDeviceClass::onTimer(void) {
   for (auto element = Supla::Element::begin(); element != nullptr;
-      element = element->next()) {
+       element = element->next()) {
     element->onTimer();
   }
 }
@@ -329,7 +328,7 @@ void SuplaDeviceClass::onFastTimer(void) {
   // values) and before any other operation like connection to Supla cloud
   // (because we want to count impulses even when we have connection issues.
   for (auto element = Supla::Element::begin(); element != nullptr;
-      element = element->next()) {
+       element = element->next()) {
     element->onFastTimer();
   }
 }
@@ -369,8 +368,9 @@ void SuplaDeviceClass::iterate(void) {
     // Normal mode
     default: {
       // When network is ready iterate over protocol layers
-      for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-          proto = proto->next()) {
+      for (auto proto = Supla::Protocol::ProtocolLayer::first();
+           proto != nullptr;
+           proto = proto->next()) {
         proto->iterate(_millis);
         if (proto->isNetworkRestartRequested()) {
           requestNetworkLayerRestart = true;
@@ -396,8 +396,8 @@ void SuplaDeviceClass::iterate(void) {
           cfg->getSwUpdateServer(url);
         }
         if (strlen(url) == 0) {
-          swUpdate = Supla::Device::SwUpdate::Create(this,
-              "http://update.supla.org");
+          swUpdate =
+              Supla::Device::SwUpdate::Create(this, "http://update.supla.org");
         } else {
           swUpdate = Supla::Device::SwUpdate::Create(this, url);
         }
@@ -432,10 +432,8 @@ void SuplaDeviceClass::iterate(void) {
       }
       break;
     }
-
   }
 }
-
 
 void SuplaDeviceClass::setServerPort(int value) {
   createSrpcLayerIfNeeded();
@@ -452,7 +450,7 @@ int SuplaDeviceClass::getCurrentStatus() {
 
 void SuplaDeviceClass::fillStateData(TDSC_ChannelState *channelState) {
   channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_UPTIME |
-                         SUPLA_CHANNELSTATE_FIELD_CONNECTIONUPTIME;
+                          SUPLA_CHANNELSTATE_FIELD_CONNECTIONUPTIME;
 
   channelState->Uptime = uptime.getUptime();
   channelState->ConnectionUptime = uptime.getConnectionUptime();
@@ -541,7 +539,7 @@ void SuplaDeviceClass::iterateAlwaysElements(uint64_t _millis) {
 
   // Iterate all elements
   for (auto element = Supla::Element::begin(); element != nullptr;
-      element = element->next()) {
+       element = element->next()) {
     element->iterateAlways();
     delay(0);
   }
@@ -551,7 +549,6 @@ void SuplaDeviceClass::iterateAlwaysElements(uint64_t _millis) {
     saveStateToStorage();
   }
 }
-
 
 bool SuplaDeviceClass::iterateNetworkSetup() {
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
@@ -566,7 +563,7 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
         "Network layer restart requested. Trying to setup network "
         "interface again");
     for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-        proto = proto->next()) {
+         proto = proto->next()) {
       proto->disconnect();
       delay(0);
     }
@@ -595,7 +592,6 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
   Supla::Network::Iterate();
   return true;
 }
-
 
 void SuplaDeviceClass::enterConfigMode() {
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
@@ -680,7 +676,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
 void SuplaDeviceClass::saveStateToStorage() {
   Supla::Storage::PrepareState();
   for (auto element = Supla::Element::begin(); element != nullptr;
-      element = element->next()) {
+       element = element->next()) {
     element->onSaveState();
     delay(0);
   }
@@ -698,7 +694,7 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
 
   int appendixSize = 0;
   if (macSize > 0) {
-    appendixSize = 1 + 2*macSize;
+    appendixSize = 1 + 2 * macSize;
   }
 
   char *srcName = Supla::Channel::reg_dev.Name;
@@ -737,8 +733,8 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
     uint8_t mac[6] = {};
     if (Supla::Network::GetMacAddr(mac)) {
       name[destIdx++] = '-';
-      destIdx += generateHexString(mac + (6 - macSize), &(name[destIdx]),
-          macSize);
+      destIdx +=
+          generateHexString(mac + (6 - macSize), &(name[destIdx]), macSize);
     }
   }
 
@@ -792,15 +788,15 @@ void SuplaDeviceClass::handleAction(int event, int action) {
       break;
     }
     case Supla::RESET_TO_FACTORY_SETTINGS: {
-      triggerResetToFacotrySettings = true;;
+      triggerResetToFacotrySettings = true;
       break;
     }
     case Supla::START_LOCAL_WEB_SERVER: {
-      triggerStartLocalWebServer = true;;
+      triggerStartLocalWebServer = true;
       break;
     }
     case Supla::STOP_LOCAL_WEB_SERVER: {
-      triggerStopLocalWebServer = true;;
+      triggerStopLocalWebServer = true;
       break;
     }
     case Supla::CHECK_SW_UPDATE: {
@@ -888,7 +884,7 @@ void SuplaDeviceClass::checkIfRestartIsNeeded(uint64_t _millis) {
   if (resetOnConnectionFailTimeoutSec) {
     uint32_t longestConnectionFailTime = networkIsNotReadyCounter / 10;
     for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-        proto = proto->next()) {
+         proto = proto->next()) {
       if (proto->getConnectionFailTime() > longestConnectionFailTime) {
         longestConnectionFailTime = proto->getConnectionFailTime();
       }
@@ -896,7 +892,7 @@ void SuplaDeviceClass::checkIfRestartIsNeeded(uint64_t _millis) {
 
     if (longestConnectionFailTime >= resetOnConnectionFailTimeoutSec) {
       SUPLA_LOG_INFO("Connection fail timeout %d s - software reset",
-          longestConnectionFailTime);
+                     longestConnectionFailTime);
       softRestart();
     }
   }

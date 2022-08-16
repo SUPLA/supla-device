@@ -23,7 +23,7 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 
-#include <cstring>
+#include <string.h>
 
 #include "supla_srpc.h"
 

@@ -45,6 +45,10 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/sw_update.o \
   ../../../src/supla/network/html/security_certificate.o \
   \
+  ../../../src/supla/protocol/protocol_layer.o \
+  ../../../src/supla/protocol/mqtt.o \
+  ../../../src/supla/protocol/supla_srpc.o \
+  \
   ../../../src/supla/clock/clock.o \
 	\
   ../../../src/supla/control/action_trigger.o \
@@ -125,6 +129,7 @@ COMPONENT_SRCDIRS := ../../../src/supla-common \
 										 ../../../src \
 										 ../../../src/supla/network \
 										 ../../../src/supla/network/html \
+										 ../../../src/supla/protocol \
 										 ../../porting/esp-idf \
 										 ../../../src/nettle
 

@@ -17,13 +17,14 @@
 #ifndef SRC_SUPLADEVICE_H_
 #define SRC_SUPLADEVICE_H_
 
-#include "supla-common/proto.h"
-#include "supla/network/network.h"
-#include "supla/storage/config.h"
-#include "supla/uptime.h"
-#include "supla/clock/clock.h"
-#include "supla/device/last_state_logger.h"
-#include "supla/action_handler.h"
+#include <supla-common/proto.h>
+#include <supla/network/network.h>
+#include <supla/storage/config.h>
+#include <supla/uptime.h>
+#include <supla/clock/clock.h>
+#include <supla/device/last_state_logger.h>
+#include <supla/action_handler.h>
+#include <supla/protocol/supla_srpc.h>
 
 #define STATUS_UNKNOWN                   -1
 #define STATUS_ALREADY_INITIALIZED       1
@@ -79,9 +80,9 @@ class SuplaDeviceClass : public Supla::ActionHandler {
              const char *Server,
              const char *email,
              const char authkey[SUPLA_AUTHKEY_SIZE],
-             unsigned char version = 16);
+             unsigned char protoVersion = 16);
 
-  bool begin(unsigned char version = 16);
+  bool begin(unsigned char protoVersion = 16);
 
   // Use ASCII only in name
   void setName(const char *Name);
@@ -104,14 +105,10 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void onFastTimer(void);
   void iterate(void);
 
+  void status(int status, const char *msg, bool alwaysLog = false);
   void setStatusFuncImpl(_impl_arduino_status impl_arduino_status);
   void setServerPort(int value);
 
-  void onVersionError(TSDC_SuplaVersionError *version_error);
-  void onRegisterResult(TSD_SuplaRegisterDeviceResult *register_device_result);
-  void channelSetActivityTimeoutResult(
-      TSDC_SuplaSetActivityTimeoutResult *result);
-  void onGetUserLocaltimeResult(TSDC_UserLocalTimeResult *result);
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
 
   void enterConfigMode();
@@ -125,12 +122,13 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void resetToFactorySettings();
 
   int getCurrentStatus();
-  void loadDeviceConfig();
+  bool loadDeviceConfig();
   bool prepareLastStateLog();
   char *getLastStateLog();
   void addLastStateLog(const char*);
   void setRsaPublicKeyPtr(const uint8_t *ptr);
   const uint8_t *getRsaPublicKey();
+  enum Supla::DeviceMode getDeviceMode();
 
   void setActivityTimeout(_supla_int_t newActivityTimeout);
 
@@ -147,20 +145,18 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
 
+  Supla::Uptime uptime;
+
+  Supla::Protocol::SuplaSrpc *getSrpcLayer();
+
  protected:
-  void *srpc = nullptr;
-  int8_t registered = 0;
-  int port = -1;
-  unsigned int connectionFailCounter = 0;
-  unsigned int lastConnectionResetCounter = 0;
   int networkIsNotReadyCounter = 0;
 
-  uint64_t lastIterateTime = 0;
-  uint64_t waitForIterate = 0;
   uint64_t deviceRestartTimeoutTimestamp = 0;
+  uint64_t waitForIterate = 0;
+  uint64_t lastIterateTime = 0;
   unsigned int forceRestartTimeMs = 0;
-  unsigned int resetOnConnectionFailCounter = 0;
-  _supla_int_t activityTimeout = 30;
+  unsigned int resetOnConnectionFailTimeoutSec = 0;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
   int currentStatus = STATUS_UNKNOWN;
@@ -169,19 +165,16 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   bool triggerStartLocalWebServer = false;
   bool triggerStopLocalWebServer = false;
   bool triggerCheckSwUpdate = false;
+  bool requestNetworkLayerRestart = false;
+  Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;
 
   _impl_arduino_status impl_arduino_status = nullptr;
 
-  Supla::Uptime uptime;
   Supla::Clock *clock = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
 
-  const char *suplaCACert = nullptr;
-  const char *supla3rdPartyCACert = nullptr;
-
-  bool isSrpcInitialized(bool msg);
   // used to indicate if begin() method was called - it will be set to
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
@@ -193,9 +186,8 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   bool iterateSuplaProtocol(uint64_t _millis);
   void handleLocalActionTriggers();
   void checkIfRestartIsNeeded(uint64_t _millis);
+  void createSrpcLayerIfNeeded();
 
- private:
-  void status(int status, const char *msg, bool alwaysLog = false);
 };
 
 extern SuplaDeviceClass SuplaDevice;

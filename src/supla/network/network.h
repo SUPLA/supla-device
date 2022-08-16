@@ -40,7 +40,6 @@ class Network {
   static void Uninit();
   static bool IsReady();
   static bool Iterate();
-  static bool Ping(void *srpc);
   static void SetConfigMode();
   static void SetNormalMode();
   static bool GetMacAddr(uint8_t *);
@@ -65,7 +64,6 @@ class Network {
 
   virtual bool isReady() = 0;
   virtual bool iterate();
-  virtual bool ping(void *);
 
   virtual void fillStateData(TDSC_ChannelState *channelState);
 
@@ -78,19 +76,11 @@ class Network {
   virtual void setSSLEnabled(bool enabled);
   void setCACert(const char *rootCA);
 
-  void updateLastSent();
-  void updateLastResponse();
   void clearTimeCounters();
-  void setActivityTimeout(_supla_int_t activityTimeoutSec);
   void setSuplaDeviceClass(SuplaDeviceClass *);
 
  protected:
   static Network *netIntf;
-  _supla_int64_t lastSentMs;
-  _supla_int64_t lastResponseMs;
-  _supla_int64_t lastPingTimeMs;
-  _supla_int_t serverActivityTimeoutS;
-  void *srpc;
   SuplaDeviceClass *sdc = nullptr;
 
   enum DeviceMode mode = DEVICE_MODE_NORMAL;
@@ -103,17 +93,6 @@ class Network {
   const char *rootCACert = nullptr;
   unsigned int rootCACertSize = 0;
 };
-
-// Method passed to SRPC as a callback to read raw data from network interface
-_supla_int_t data_read(void *buf, _supla_int_t count, void *sdc);
-// Method passed to SRPC as a callback to write raw data to network interface
-_supla_int_t data_write(void *buf, _supla_int_t count, void *sdc);
-// Method passed to SRPC as a callback to handle response from Supla server
-void message_received(void *_srpc,
-                      unsigned _supla_int_t rr_id,
-                      unsigned _supla_int_t call_type,
-                      void *_sdc,
-                      unsigned char proto_version);
 
 };  // namespace Supla
 

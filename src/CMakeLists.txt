@@ -55,6 +55,10 @@ set(SRCS
   supla/network/html_generator.cpp
   supla/clock/clock.cpp
 
+  supla/protocol/protocol_layer.cpp
+  supla/protocol/supla_srpc.cpp
+  supla/protocol/mqtt.cpp
+
   supla/sensor/therm_hygro_press_meter.cpp
   supla/sensor/therm_hygro_meter.cpp
   supla/sensor/thermometer.cpp

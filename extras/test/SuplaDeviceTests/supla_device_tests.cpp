@@ -23,6 +23,7 @@
 #include <supla/clock/clock.h>
 #include <supla/storage/storage.h>
 #include <element_mock.h>
+#include <supla/protocol/supla_srpc.h>
 
 using ::testing::Return;
 using ::testing::_;
@@ -65,17 +66,18 @@ class ClockMock : public Supla::Clock {
 
 TEST_F(SuplaDeviceTests, ClockMethods) {
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
   ClockMock clock;
 
   ASSERT_EQ(sd.getClock(), nullptr);
-  sd.onGetUserLocaltimeResult(nullptr);
+  srpcLayer.onGetUserLocaltimeResult(nullptr);
 
   sd.addClock(&clock);
   ASSERT_EQ(sd.getClock(), &clock);
 
   EXPECT_CALL(clock, parseLocaltimeFromServer(nullptr)).Times(1);
 
-  sd.onGetUserLocaltimeResult(nullptr);
+  srpcLayer.onGetUserLocaltimeResult(nullptr);
 }
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElements) {
@@ -203,7 +205,6 @@ class NetworkMockWithMac : public Supla::Network {
 
     MOCK_METHOD(bool, isReady, (), (override));
     MOCK_METHOD(bool, iterate, (), (override));
-    MOCK_METHOD(bool, ping, (void *), (override));
     MOCK_METHOD(bool, getMacAddr, (uint8_t*), (override));
 };
 
@@ -391,9 +392,11 @@ TEST_F(SuplaDeviceTests, OnVersionErrorShouldCallDisconnect) {
   EXPECT_CALL(net, disconnect()).Times(1);
 
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
+
   TSDC_SuplaVersionError versionError{};
 
-  sd.onVersionError(&versionError);
+  srpcLayer.onVersionError(&versionError);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_PROTOCOL_VERSION_ERROR);
 }
 
@@ -402,6 +405,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultOK) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
 
@@ -411,7 +415,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultOK) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
 }
@@ -421,6 +425,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultBadCredentials) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -431,7 +436,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultBadCredentials) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_BAD_CREDENTIALS);
 }
@@ -441,6 +446,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultTemporairlyUnavailable) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -451,7 +457,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultTemporairlyUnavailable) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_TEMPORARILY_UNAVAILABLE);
 }
@@ -461,6 +467,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultLocationConflict) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -471,7 +478,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultLocationConflict) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_LOCATION_CONFLICT);
 }
@@ -481,6 +488,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultChannelConflict) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -491,7 +499,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultChannelConflict) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_CHANNEL_CONFLICT);
 }
@@ -501,6 +509,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultDeviceDisabled) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -511,7 +520,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultDeviceDisabled) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_DEVICE_IS_DISABLED);
 }
@@ -521,6 +530,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultLocationDisabled) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -531,7 +541,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultLocationDisabled) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_LOCATION_IS_DISABLED);
 }
@@ -541,6 +551,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultDeviceLimitExceeded) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -551,7 +562,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultDeviceLimitExceeded) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_DEVICE_LIMIT_EXCEEDED);
 }
@@ -561,6 +572,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultGuidError) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -571,7 +583,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultGuidError) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INVALID_GUID);
 }
@@ -581,6 +593,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultAuthKeyError) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -591,7 +604,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultAuthKeyError) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INVALID_AUTHKEY);
 }
@@ -601,6 +614,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultRegistrationDisabled) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -611,7 +625,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultRegistrationDisabled) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTRATION_DISABLED);
 }
@@ -621,6 +635,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultNoLocationAvailable) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -631,7 +646,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultNoLocationAvailable) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_NO_LOCATION_AVAILABLE);
 }
@@ -641,6 +656,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultUnknownError) {
   SrpcMock srpc;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
+  Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
   EXPECT_CALL(net, disconnect()).Times(1);
@@ -651,7 +667,7 @@ TEST_F(SuplaDeviceTests, OnRegisterResultUnknownError) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  srpcLayer.onRegisterResult(&register_device_result);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_UNKNOWN_ERROR);
 }

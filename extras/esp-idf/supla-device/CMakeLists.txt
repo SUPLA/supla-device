@@ -45,6 +45,10 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/sw_update.cpp
   ../../../src/supla/network/html/security_certificate.cpp
 
+  ../../../src/supla/protocol/protocol_layer.cpp
+  ../../../src/supla/protocol/supla_srpc.cpp
+  ../../../src/supla/protocol/mqtt.cpp
+
   ../../../src/supla/clock/clock.cpp
 
   ../../../src/supla/control/action_trigger.cpp

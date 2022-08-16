@@ -54,6 +54,10 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/sw_update.cpp
   src/supla/network/html/custom_sw_update.cpp
 
+  src/supla/protocol/protocol_layer.cpp
+  src/supla/protocol/supla_srpc.cpp
+  src/supla/protocol/mqtt.cpp
+
   src/supla/control/action_trigger.cpp
   src/supla/control/bistable_relay.cpp
   src/supla/control/bistable_roller_shutter.cpp

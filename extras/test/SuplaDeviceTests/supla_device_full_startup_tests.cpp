@@ -83,7 +83,6 @@ class NetworkMock : public Supla::Network {
 
   MOCK_METHOD(bool, isReady, (), (override));
   MOCK_METHOD(bool, iterate, (), (override));
-  MOCK_METHOD(bool, ping, (void *), (override));
 
 };
 
@@ -218,8 +217,9 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
 
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
-  EXPECT_CALL(net, ping(_)).WillRepeatedly(Return(true));
+//  EXPECT_CALL(net, ping(_)).WillRepeatedly(Return(true));
   EXPECT_CALL(el1, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
 
@@ -236,7 +236,8 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   register_device_result.version = 16;
   register_device_result.version_min = 1;
 
-  sd.onRegisterResult(&register_device_result);
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
   time.advance(100);
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
@@ -254,8 +255,10 @@ TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgainAndResetDev) {
   EXPECT_CALL(net, setup()).Times(1);
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  // In tests we can't reast board, so this method will be called few times
+  // In tests we can't reset board, so this method will be called few times
   EXPECT_CALL(board, deviceSoftwareReset()).Times(AtLeast(1));
+  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
   sd.setAutomaticResetOnConnectionProblem(100);
 
   for (int i = 0; i < 102*10; i++) {
@@ -263,6 +266,6 @@ TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgainAndResetDev) {
     time.advance(100);
   }
 
-  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NETWORK_DISCONNECTED);
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_SOFTWARE_RESET);
 }
 

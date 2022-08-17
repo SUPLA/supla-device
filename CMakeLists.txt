@@ -93,6 +93,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/therm_hygro_press_meter.cpp
   src/supla/sensor/thermometer.cpp
   src/supla/sensor/virtual_binary.cpp
+  src/supla/sensor/ntc10k.cpp
 )
 
 set(NETTLE_SRCS

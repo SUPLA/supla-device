@@ -36,6 +36,7 @@ class Io {
   static int digitalRead(uint8_t pin);
   static void digitalWrite(uint8_t pin, uint8_t val);
   static void analogWrite(uint8_t pin, int value);
+  static int analogRead(uint8_t pin);
   static unsigned int pulseIn(uint8_t pin,
       uint8_t value,
       uint64_t timeoutMicro);
@@ -44,6 +45,7 @@ class Io {
   static int digitalRead(int channelNumber, uint8_t pin);
   static void digitalWrite(int channelNumber, uint8_t pin, uint8_t val);
   static void analogWrite(int channelNumber, uint8_t pin, int value);
+  static int analogRead(int channelNumber, uint8_t pin);
   static unsigned int pulseIn(int channelNumber,
       uint8_t pin,
       uint8_t value,
@@ -61,6 +63,7 @@ class Io {
       uint64_t timeoutMicro);
   virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
   virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
+  virtual int customAnalogRead(int channelNumber, uint8_t pin);
 };
 };  // namespace Supla
 

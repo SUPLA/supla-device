@@ -44,6 +44,11 @@ void analogWrite(uint8_t pin, int val) {
   (void)(val);
 }
 
+int analogRead(uint8_t pin) {
+  (void)(pin);
+  (void)(val);
+}
+
 unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {
   (void)(pin);
   (void)(val);
@@ -137,6 +142,23 @@ void Io::customAnalogWrite(int channelNumber, uint8_t pin, int val) {
   (void)(channelNumber);
   ::analogWrite(pin, val);
 }
+
+int Io::analogRead(int channelNumber, uint8_t pin) {
+  if (ioInstance) {
+    return ioInstance->customAnalogRead(channelNumber, pin);
+  }
+  return ::analogRead(pin);
+}
+
+int Io::analogRead(uint8_t pin) {
+  return analogRead(-1, pin);
+}
+
+int Io::customAnalogRead(int channelNumber, uint8_t pin) {
+  (void)(channelNumber);
+  return ::analogRead(pin);
+}
+
 
 unsigned int Io::pulseIn(uint8_t pin, uint8_t value, uint64_t timeoutMicro) {
   return pulseIn(-1, pin, value, timeoutMicro);

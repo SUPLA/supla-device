@@ -69,6 +69,13 @@ void analogWrite(uint8_t pin, int val) {
       " *** NOT IMPLEMENTED *** GPIO %d analog write %d", pin, val);
 }
 
+int analogRead(uint8_t pin) {
+  SUPLA_LOG_ERROR(
+      " *** NOT IMPLEMENTED *** GPIO %d analog read", pin);
+  return 0;
+}
+
+
 unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {
   SUPLA_LOG_ERROR(" *** NOT IMPLEMENTED *** GPIO %d pulse in %d", pin, val);
   return 0;

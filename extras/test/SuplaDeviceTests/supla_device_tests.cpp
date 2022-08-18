@@ -741,4 +741,64 @@ TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
   */
 }
 
+TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {
+  NetworkMockWithMac net;
+  SuplaDeviceClass sd;
+  char buf[200];
+  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "");
+  sd.setName("Amazing Device");
+
+  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(true));
+
+  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "Amazing Device");
+
+  sd.generateHostname(buf, 6);
+  EXPECT_STREQ(buf, "AMAZING-DEVICE-000000000000");
+
+  char prefix[] = "My prefix";
+  sd.setCustomHostnamePrefix(prefix);
+
+  sd.generateHostname(buf, 6);
+  EXPECT_STREQ(buf, "MY-PREFIX-000000000000");
+
+  sd.generateHostname(buf, 7);
+  EXPECT_STREQ(buf, "MY-PREFIX-000000000000");
+
+  sd.generateHostname(buf, 0);
+  EXPECT_STREQ(buf, "MY-PREFIX");
+
+  sd.generateHostname(buf, -1);
+  EXPECT_STREQ(buf, "MY-PREFIX");
+
+  sd.setName("SuPlA Is SuPeR");
+  sd.generateHostname(buf, -1);
+  EXPECT_STREQ(buf, "MY-PREFIX");
+
+  sd.setCustomHostnamePrefix(nullptr);
+
+  sd.generateHostname(buf, 6);
+  EXPECT_STREQ(buf, "SUPLA-IS-SUPER-000000000000");
+
+  char emptyPrefix[1] = {};
+  sd.setCustomHostnamePrefix(emptyPrefix);
+
+  sd.generateHostname(buf, 6);
+  EXPECT_STREQ(buf, "SUPLA-IS-SUPER-000000000000");
+
+  memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  sd.generateHostname(buf, 2);
+  EXPECT_STREQ(buf, "SUPLA-DEVICE-0000");
+
+  /*
+  sd.setName("SuplaDevice 3.14");
+  sd.generateHostname(buf, 2);
+  EXPECT_STREQ(buf, "SUPLA-DEVICE-3-14-0000");
+
+  sd.setName("My Device 2.54");
+  sd.generateHostname(buf, 2);
+  EXPECT_STREQ(buf, "SUPLA-MY-DEVICE-2-54-0000");
+  */
+}
+
+
 

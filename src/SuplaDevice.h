@@ -149,6 +149,8 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   Supla::Protocol::SuplaSrpc *getSrpcLayer();
 
+  void setCustomHostnamePrefix(char *prefix);
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -174,6 +176,8 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   Supla::Clock *clock = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
+
+  char *customHostnamePrefix = nullptr;
 
   // used to indicate if begin() method was called - it will be set to
   // true even if initialization procedure failed for some reason

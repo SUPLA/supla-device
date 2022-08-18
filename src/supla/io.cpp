@@ -46,7 +46,7 @@ void analogWrite(uint8_t pin, int val) {
 
 int analogRead(uint8_t pin) {
   (void)(pin);
-  (void)(val);
+  return 0;
 }
 
 unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {

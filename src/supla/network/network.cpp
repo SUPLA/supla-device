@@ -21,6 +21,7 @@
 
 #include <SuplaDevice.h>
 #include <supla/log_wrapper.h>
+#include <supla/protocol/protocol_layer.h>
 
 #include "supla/element.h"
 #include "supla/network/network.h"
@@ -64,6 +65,10 @@ int Network::Connect(const char *server, int port) {
 }
 
 void Network::Disconnect() {
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+      proto = proto->next()) {
+    proto->disconnect();
+  }
   if (Instance() != nullptr) {
     return Instance()->disconnect();
   }

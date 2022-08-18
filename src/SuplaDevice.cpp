@@ -562,11 +562,7 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
     SUPLA_LOG_WARNING(
         "Network layer restart requested. Trying to setup network "
         "interface again");
-    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-         proto = proto->next()) {
-      proto->disconnect();
-      delay(0);
-    }
+    Supla::Network::Disconnect();
     Supla::Network::Setup();
   }
 
@@ -697,9 +693,12 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
     appendixSize = 1 + 2 * macSize;
   }
 
-  char *srcName = Supla::Channel::reg_dev.Name;
+  char *srcName = customHostnamePrefix;
+  if (srcName == nullptr || strlen(srcName) == 0) {
+    srcName = Supla::Channel::reg_dev.Name;
+  }
 
-  int nameLength = strlen(Supla::Channel::reg_dev.Name);
+  int nameLength = strlen(srcName);
 
   if (nameLength + appendixSize > 31) {
     nameLength = 31 - appendixSize;
@@ -707,7 +706,7 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
 
   if (nameLength == 0) {
     setName("SUPLA-DEVICE");
-    nameLength = strlen(Supla::Channel::reg_dev.Name);
+    nameLength = strlen(srcName);
   }
 
   int destIdx = 0;
@@ -943,6 +942,20 @@ enum Supla::DeviceMode SuplaDeviceClass::getDeviceMode() {
 
 Supla::Protocol::SuplaSrpc *SuplaDeviceClass::getSrpcLayer() {
   return srpcLayer;
+}
+
+void SuplaDeviceClass::setCustomHostnamePrefix(char *prefix) {
+  if (prefix == nullptr) {
+    if (customHostnamePrefix != nullptr) {
+      delete[] customHostnamePrefix;
+      customHostnamePrefix = nullptr;
+    }
+    return;
+  }
+
+  int len = strlen(prefix);
+  customHostnamePrefix = new char[len + 1];
+  strncpy(customHostnamePrefix, prefix, len + 1);
 }
 
 SuplaDeviceClass SuplaDevice;

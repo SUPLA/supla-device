@@ -78,8 +78,8 @@ void Supla::Sensor::SHT40::readSensor() {
   }
   double temperature = 0;
   double humidity = 0;
-  int16_t tempRaw = buff[0] << 8 | buff[1];
-  int16_t humiRaw = buff[3] << 8 | buff[4];
+  uint16_t tempRaw = buff[0] << 8 | buff[1];
+  uint16_t humiRaw = buff[3] << 8 | buff[4];
   temperature = -45 + 175.0 * tempRaw / 65535.0;
   humidity = -6 + 125.0 * humiRaw / 65535.0;
   if (humidity < 0) {

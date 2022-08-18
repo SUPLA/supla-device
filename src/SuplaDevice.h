@@ -149,7 +149,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   Supla::Protocol::SuplaSrpc *getSrpcLayer();
 
-  void setCustomHostnamePrefix(char *prefix);
+  void setCustomHostnamePrefix(const char *prefix);
 
  protected:
   int networkIsNotReadyCounter = 0;

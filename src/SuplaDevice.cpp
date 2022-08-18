@@ -87,6 +87,10 @@ SuplaDeviceClass::~SuplaDeviceClass() {
     delete srpcLayer;
     srpcLayer = nullptr;
   }
+  if (customHostnamePrefix) {
+    delete[] customHostnamePrefix;
+    customHostnamePrefix = nullptr;
+  }
 }
 
 void SuplaDeviceClass::setStatusFuncImpl(
@@ -944,7 +948,7 @@ Supla::Protocol::SuplaSrpc *SuplaDeviceClass::getSrpcLayer() {
   return srpcLayer;
 }
 
-void SuplaDeviceClass::setCustomHostnamePrefix(char *prefix) {
+void SuplaDeviceClass::setCustomHostnamePrefix(const char *prefix) {
   if (prefix == nullptr) {
     if (customHostnamePrefix != nullptr) {
       delete[] customHostnamePrefix;

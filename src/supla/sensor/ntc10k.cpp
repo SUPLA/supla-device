@@ -21,8 +21,7 @@
 
 #include "ntc10k.h"
 
-Supla::Sensor::NTC10k::NTC10k()
-{
+Supla::Sensor::NTC10k::NTC10k() {
 }
 
 void Supla::Sensor::NTC10k::onInit() {

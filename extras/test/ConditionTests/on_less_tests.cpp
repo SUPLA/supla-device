@@ -42,7 +42,7 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   const int action2 = 16;
   const int action3 = 17;
 
-  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(4);
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(5);
   EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action3)).Times(5);
 
   Supla::ChannelElement channelElement;
@@ -126,25 +126,25 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   // DIMMER use int type on channel value
   channel->setType(SUPLA_CHANNELTYPE_DIMMER);
 
-  channel->setNewValue(0.0);
+  channel->setNewValue(-1, -1, -1, -1, 0);
   // channel should be initialized to 0, so condition should be met
   cond->handleAction(Supla::ON_CHANGE, action1);
 
-  channel->setNewValue(100.0);
+  channel->setNewValue(-1, -1, -1, -1, 100);
 
   // 100 is not less than 15.1, so nothing should happen
   cond->handleAction(Supla::ON_CHANGE, action2);
 
   // Values below 0 should be ignored
-  channel->setNewValue(-0.2);
+  channel->setNewValue(-1, -1, -1, -1, -1);
   cond->handleAction(Supla::ON_CHANGE, action2);
 
-  channel->setNewValue(15.0);
+  channel->setNewValue(-1, -1, -1, -1, 15);
   // 15 is less than 15.1
   cond->handleAction(Supla::ON_CHANGE, action3);
 
   // nothing should happen
-  channel->setNewValue(25.0);
+  channel->setNewValue(-1, -1, -1, -1, 25);
   cond->handleAction(Supla::ON_CHANGE, action1);
 
   // WEIGHT sensor use int type on channel value

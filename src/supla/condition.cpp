@@ -68,9 +68,9 @@ void Supla::Condition::handleAction(int event, int action) {
             ? source->getChannel()->getValueDoubleSecond()
             : source->getChannel()->getValueDoubleFirst();
           break;
-		case SUPLA_CHANNELTYPE_DIMMER:
-		  value = source->getChannel()->getValueBrightness();
-		  break;
+        case SUPLA_CHANNELTYPE_DIMMER:
+          value = source->getChannel()->getValueBrightness();
+          break;
           /* case SUPLA_CHANNELTYPE_ELECTRICITY_METER: */
 
         default:

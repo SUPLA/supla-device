@@ -43,7 +43,7 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   const int action3 = 17;
 
   EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(4);
-  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action3)).Times(4);
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action3)).Times(5);
 
   Supla::ChannelElement channelElement;
   auto channel = channelElement.getChannel();

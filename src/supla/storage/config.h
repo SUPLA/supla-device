@@ -48,6 +48,7 @@ class Config {
   virtual bool init() = 0;
   virtual void removeAll() = 0;
   virtual bool isMinimalConfigReady();
+  virtual bool isConfigModeSupported();
 
   // Generic getters and setters
   virtual bool setString(const char* key, const char* value) = 0;

@@ -19,7 +19,11 @@
 #ifndef SRC_SUPLA_DEVICE_SUPLA_CA_CERT_H_
 #define SRC_SUPLA_DEVICE_SUPLA_CA_CERT_H_
 
+#ifdef ARDUINO
 #include <Arduino.h>
+#else
+#define PROGMEM
+#endif
 
 // CA used for public Supla servers
 const char suplaCACert[] PROGMEM = R"SUPLACERT(

@@ -85,6 +85,7 @@ class LinuxYamlConfig : public Config {
   void removeAll() override;
 
   bool generateGuidAndAuthkey() override;
+  bool isConfigModeSupported() override;
 
   // Generic getters and setters
   bool setString(const char* key, const char* value) override;

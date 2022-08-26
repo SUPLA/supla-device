@@ -21,7 +21,7 @@
 #include <string.h>
 
 #include <supla-common/log.h>
-#include <supla/network/html/device_info.h>
+#include <supla/network/html_element.h>
 #include <SuplaDevice.h>
 
 #include "web_sender.h"

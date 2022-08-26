@@ -27,10 +27,9 @@ set(SUPLA_DEVICE_LINUX_SRCS
   linux_yaml_config.cpp
   linux_platform.cpp
   linux_file_state_logger.cpp
-  IPAddress.cpp
+  linux_client.cpp
 
   linux_timers.cpp
-  network_client.cpp
 
   supla/source/cmd.cpp
   supla/source/file.cpp

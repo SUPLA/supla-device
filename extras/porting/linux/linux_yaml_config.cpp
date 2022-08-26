@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <IPAddress.h>
+#include <supla/network/ip_address.h>
 #include <supla/log_wrapper.h>
 #include <supla-common/proto.h>
 #include <supla/control/virtual_relay.h>
@@ -169,6 +169,14 @@ bool Supla::LinuxYamlConfig::getInt8(const char* key, int8_t* result) {
   return false;
 }
 bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
+  try {
+    if (config[key]) {
+      *result = config[key].as<uint8_t>();
+      return true;
+    }
+  } catch (const YAML::Exception& ex) {
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+  }
   return false;
 }
 bool Supla::LinuxYamlConfig::getInt32(const char* key, int32_t* result) {
@@ -796,3 +804,8 @@ bool Supla::LinuxYamlConfig::saveGuidAuth(const std::string& path) {
 
   return true;
 }
+
+bool Supla::LinuxYamlConfig::isConfigModeSupported() {
+  return false;
+}
+

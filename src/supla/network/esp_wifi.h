@@ -34,8 +34,6 @@
 #include <WiFi.h>
 #endif
 
-#include <WiFiClientSecure.h>
-
 #include "../supla_lib_config.h"
 #include "netif_wifi.h"
 
@@ -50,140 +48,9 @@ class ESPWifi : public Supla::Wifi {
       : Wifi(wifiSsid, wifiPassword, ip) {
   }
 
-  int read(void *buf, int count) override {
-    if (client) {
-      _supla_int_t size = client->available();
-
-      if (size > 0) {
-        if (size > count) size = count;
-        int readSize = client->read(reinterpret_cast<uint8_t *>(buf), size);
-#ifdef SUPLA_COMM_DEBUG
-        printData("Recv", buf, readSize);
-#endif
-
-        return readSize;
-      }
-    }
-    return -1;
-  }
-
-  int write(void *buf, int count) override {
-    if (client) {
-#ifdef SUPLA_COMM_DEBUG
-      printData("Send", buf, count);
-#endif
-      int sendSize =
-          client->write(reinterpret_cast<const uint8_t *>(buf), count);
-      return sendSize;
-    }
-    return 0;
-  }
-
-  int connect(const char *server, int port = -1) override {
-    String message;
-    WiFiClientSecure *clientSec = nullptr;
-#ifdef ARDUINO_ARCH_ESP8266
-    X509List *caCert = nullptr;
-#endif
-
-    if (client) {
-      client->stop();
-      delete client;
-      client = nullptr;
-    }
-
-    if (client == NULL) {
-      if (sslEnabled) {
-        message = "Secured connection";
-        clientSec = new WiFiClientSecure();
-        client = clientSec;
-
-#ifdef ARDUINO_ARCH_ESP8266
-        clientSec->setBufferSizes(1024, 512);  // EXPERIMENTAL
-        if (rootCACert) {
-          // Set time via NTP, as required for x.509 validation
-          static bool timeConfigured = false;
-
-          if (!timeConfigured) {
-            configTime(3 * 3600, 0, "pool.ntp.org", "time.nist.gov");
-            SUPLA_LOG_DEBUG("Waiting for NTP time sync");
-            time_t now = time(nullptr);
-            while (now < 8 * 3600 * 2) {
-              delay(100);
-              now = time(nullptr);
-            }
-          }
-
-          caCert = new BearSSL::X509List(rootCACert);
-          clientSec->setTrustAnchors(caCert);
-        } else if (fingerprint.length() > 0) {
-          message += " with certificate fingerprint matching";
-          clientSec->setFingerprint(fingerprint.c_str());
-        } else {
-          message += " without certificate validation (INSECURE)";
-          clientSec->setInsecure();
-        }
-#else
-        if (rootCACert) {
-          clientSec->setCACert(rootCACert);
-        } else {
-          message += " without certificate validation (INSECURE)";
-          clientSec->setInsecure();
-        }
-#endif
-      } else {
-        message = "not encrypted connection (VERY INSECURE)";
-        client = new WiFiClient();
-      }
-    }
-
-    int connectionPort = (sslEnabled ? 2016 : 2015);
-    if (port != -1) {
-      connectionPort = port;
-    }
-
-    SUPLA_LOG_DEBUG(
-        "Establishing %s with: %s (port: %d)",
-        message.c_str(),
-        server,
-        connectionPort);
-
-    bool result = client->connect(server, connectionPort);
-    if (clientSec) {
-      char buf[200];
-      int lastErr = 0;
-#ifdef ARDUINO_ARCH_ESP8266
-      lastErr = clientSec->getLastSSLError(buf, sizeof(buf));
-#elif defined(ARDUINO_ARCH_ESP32)
-      lastErr = clientSec->lastError(buf, sizeof(buf));
-#endif
-
-      if (lastErr) {
-        SUPLA_LOG_ERROR("SSL error: %d, %s", lastErr, buf);
-      }
-    }
-#ifdef ARDUINO_ARCH_ESP8266
-    if (caCert) {
-      delete caCert;
-      caCert = nullptr;
-    }
-#endif
-
-    return result;
-  }
-
-  bool connected() override {
-    return (client != NULL) && client->connected();
-  }
 
   bool isReady() override {
     return WiFi.status() == WL_CONNECTED;
-  }
-
-  void disconnect() override {
-    if (client != nullptr) {
-      client->stop();
-    }
   }
 
   // TODO(klew): add handling of custom local ip
@@ -247,23 +114,17 @@ class ESPWifi : public Supla::Wifi {
         WiFi.mode(WIFI_MODE_STA);
       }
       Serial.println(F("WiFi: resetting WiFi connection"));
-      if (client) {
-        delete client;
-        client = nullptr;
-      }
+      Disconnect();
       WiFi.disconnect();
     }
 
     if (mode == Supla::DEVICE_MODE_CONFIG) {
-      Serial.print("WiFi: enter config mode with SSID: ");
-      Serial.println(hostname);
+      SUPLA_LOG_INFO("WiFi: enter config mode with SSID: \"%s\"", hostname);
       WiFi.mode(WIFI_MODE_AP);
       WiFi.softAP(hostname, nullptr, 6);
 
     } else {
-      Serial.print(F("WiFi: establishing connection with SSID: \""));
-      Serial.print(ssid);
-      Serial.println(F("\""));
+      SUPLA_LOG_INFO("WiFi: establishing connection with SSID: \"%s\"", ssid);
       WiFi.mode(WIFI_MODE_STA);
       WiFi.begin(ssid, password);
       // ESP8266 requires setHostname to be called after begin...
@@ -276,16 +137,6 @@ class ESPWifi : public Supla::Wifi {
   // DEPRECATED, use setSSLEnabled instead
   void enableSSL(bool value) {
     setSSLEnabled(value);
-  }
-
-  void setServersCertFingerprint(String value) {
-    fingerprint = value;
-  }
-
-  void setTimeout(int timeoutMs) override {
-    if (client) {
-      client->setTimeout(timeoutMs);
-    }
   }
 
   void fillStateData(TDSC_ChannelState *channelState) override {
@@ -317,9 +168,7 @@ class ESPWifi : public Supla::Wifi {
   }
 
  protected:
-  WiFiClient *client = nullptr;
   bool wifiConfigured = false;
-  String fingerprint;
 
 #ifdef ARDUINO_ARCH_ESP8266
   WiFiEventHandler gotIpEventHandler, disconnectedEventHandler;

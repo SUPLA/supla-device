@@ -24,11 +24,15 @@
 #include "protocol_layer.h"
 
 namespace Supla {
+
+class Client;
+
 namespace Protocol {
 
 class SuplaSrpc : public ProtocolLayer {
  public:
   explicit SuplaSrpc(SuplaDeviceClass *sdc, int version = 16);
+  ~SuplaSrpc();
 
   void onInit() override;
   bool onLoadConfig() override;
@@ -52,6 +56,8 @@ class SuplaSrpc : public ProtocolLayer {
   void setVersion(int value);
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
+
+  Supla::Client *client = nullptr;
 
  protected:
   bool ping();

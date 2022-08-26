@@ -52,22 +52,22 @@ void Afore::iterateAlways() {
     if (millis() - connectionTimeoutMs > 30000) {
       SUPLA_LOG_DEBUG(
                 "AFORE: connection timeout. Remote host is not responding");
-      pvClient.stop();
+      client->stop();
       dataFetchInProgress = false;
       dataIsReady = false;
       return;
     }
-    if (!pvClient.connected()) {
+    if (!client->connected()) {
       SUPLA_LOG_DEBUG("AFORE fetch completed");
       dataFetchInProgress = false;
       dataIsReady = true;
     }
-    if (pvClient.available()) {
-      SUPLA_LOG_DEBUG("Reading data from afore: %d", pvClient.available());
+    if (client->available()) {
+      SUPLA_LOG_DEBUG("Reading data from afore: %d", client->available());
     }
-    while (pvClient.available()) {
+    while (client->available()) {
       char c;
-      c = pvClient.read();
+      c = client->read();
       if (c == '\n') {
         if (varFound) {
           if (bytesCounter > 79) bytesCounter = 79;
@@ -103,8 +103,8 @@ void Afore::iterateAlways() {
         }
       }
     }
-    if (!pvClient.connected()) {
-      pvClient.stop();
+    if (!client->connected()) {
+      client->stop();
     }
   }
   if (dataIsReady) {
@@ -120,15 +120,15 @@ bool Afore::iterateConnected(void *srpc) {
     if (lastReadTime == 0 || millis() - lastReadTime > refreshRateSec * 1000) {
       lastReadTime = millis();
       SUPLA_LOG_DEBUG("AFORE connecting");
-      if (pvClient.connect(ip, port)) {
+      if (client->connect(ip, port)) {
         retryCounter = 0;
         dataFetchInProgress = true;
         connectionTimeoutMs = lastReadTime;
 
-        pvClient.print("GET /status.html HTTP/1.1\nAuthorization: Basic ");
-        pvClient.println(loginAndPassword);
-        pvClient.println("Connection: close");
-        pvClient.println();
+        client->print("GET /status.html HTTP/1.1\nAuthorization: Basic ");
+        client->println(loginAndPassword);
+        client->println("Connection: close");
+        client->println();
 
       } else {  // if connection wasn't successful, try few times. If it fails,
                 // then assume that inverter is off during the night

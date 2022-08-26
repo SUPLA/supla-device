@@ -130,7 +130,10 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     if (!lastStateLogger) {
       lastStateLogger = new Supla::Device::LastStateLogger();
     }
-    addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg->isConfigModeSupported()) {
+      addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
+    }
 
     bool configComplete = true;
     // Load device and network related configuration

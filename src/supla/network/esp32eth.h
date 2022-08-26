@@ -37,7 +37,6 @@
 
 #include <Arduino.h>
 #include <ETH.h>
-#include <WiFiClientSecure.h>
 #include <supla/network/network.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
@@ -72,7 +71,7 @@ namespace Supla {
 class ESPETH : public Supla::Network {
  public:
   explicit ESPETH(uint8_t ethmode, unsigned char *ip = nullptr)
-      : Network(ip), client(nullptr) {
+      : Network(ip) {
     if (ethmode == 0) {
       ETH_ADDRESS = 0;
     } else {
@@ -80,90 +79,8 @@ class ESPETH : public Supla::Network {
     }
   }
 
-  int read(void *buf, int count) {
-    _supla_int_t size = client->available();
-    if (size > 0) {
-      if (size > count) size = count;
-      int readSize = client->read(reinterpret_cast<uint8_t *>(buf), size);
-#ifdef SUPLA_COMM_DEBUG
-      Serial.print(F("Received: ["));
-      for (int i = 0; i < readSize; i++) {
-        Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
-        Serial.print(F(" "));
-        delay(0);
-      }
-      Serial.println(F("]"));
-#endif
-      return readSize;
-    }
-    return -1;
-  }
-
-  int write(void *buf, int count) {
-#ifdef SUPLA_COMM_DEBUG
-    Serial.print(F("Sending: ["));
-    for (int i = 0; i < count; i++) {
-      Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
-      Serial.print(F(" "));
-      delay(0);
-    }
-    Serial.println(F("]"));
-#endif
-    int sendSize = client->write(reinterpret_cast<const uint8_t *>(buf), count);
-    return sendSize;
-  }
-
-  int connect(const char *server, int port = -1) {
-    String message;
-    if (client) {
-      delete client;
-      client = nullptr;
-    }
-    if (sslEnabled) {
-      message = "Secured connection";
-      auto clientSec = new WiFiClientSecure();
-      client = clientSec;
-      if (caCert.length() > 0) {
-        message += " with certificate matching";
-        clientSec->setCACert(caCert.c_str());
-      } else if (rootCACert) {
-        clientSec->setCACert(rootCACert);
-      } else {
-        message += " without certificate matching";
-        clientSec->setInsecure();
-      }
-    } else {
-      message = "unsecured connection";
-      client = new WiFiClient();
-    }
-
-    int connectionPort = (sslEnabled ? 2016 : 2015);
-    if (port != -1) {
-      connectionPort = port;
-    }
-
-    SUPLA_LOG_DEBUG(
-              "Establishing %s with: %s (port: %d)",
-              message.c_str(),
-              server,
-              connectionPort);
-
-    bool result = client->connect(server, connectionPort);
-    return result;
-  }
-
-  bool connected() {
-    return (client != NULL) && client->connected();
-  }
-
   bool isReady() {
     return eth_connected;
-  }
-
-  void disconnect() {
-    if (client != nullptr) {
-      client->stop();
-    }
   }
 
   void setup() {
@@ -202,16 +119,6 @@ class ESPETH : public Supla::Network {
               ETH_CLK_MODE);
   }
 
-  void setServersCACert(String value) {
-    caCert = value;
-  }
-
-  void setTimeout(int timeoutMs) {
-    if (client) {
-      client->setTimeout(timeoutMs);
-    }
-  }
-
   void fillStateData(TDSC_ChannelState *channelState) {
     channelState->Fields |=
         SUPLA_CHANNELSTATE_FIELD_IPV4 | SUPLA_CHANNELSTATE_FIELD_MAC;
@@ -220,9 +127,7 @@ class ESPETH : public Supla::Network {
   }
 
  protected:
-  WiFiClient *client = NULL;
   uint8_t ETH_ADDRESS;
-  String caCert;
 };
 };  // namespace Supla
 

@@ -53,6 +53,8 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/sw_update_beta.cpp
   src/supla/network/html/sw_update.cpp
   src/supla/network/html/custom_sw_update.cpp
+  src/supla/network/client.cpp
+  src/supla/network/ip_address.cpp
 
   src/supla/protocol/protocol_layer.cpp
   src/supla/protocol/supla_srpc.cpp

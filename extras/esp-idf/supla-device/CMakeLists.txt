@@ -44,6 +44,8 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/sw_update_beta.cpp
   ../../../src/supla/network/html/sw_update.cpp
   ../../../src/supla/network/html/security_certificate.cpp
+  ../../../src/supla/network/client.cpp
+  ../../../src/supla/network/ip_address.cpp
 
   ../../../src/supla/protocol/protocol_layer.cpp
   ../../../src/supla/protocol/supla_srpc.cpp
@@ -97,6 +99,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/sensor/distance.cpp
   ../../../src/supla/sensor/HC_SR04.cpp
   ../../../src/supla/sensor/ntc10k.cpp
+  ../../../src/supla/pv/fronius.cpp
 )
 
 set(NETTLE_SRCS
@@ -123,6 +126,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_idf_web_server.cpp
   ../../porting/esp-idf/esp_idf_mutex.cpp
   ../../porting/esp-idf/esp_idf_ota.cpp
+  ../../porting/esp-idf/esp_idf_client.cpp
 )
 
 

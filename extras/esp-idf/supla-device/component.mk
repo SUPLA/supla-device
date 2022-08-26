@@ -44,6 +44,8 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/sw_update_beta.o \
   ../../../src/supla/network/html/sw_update.o \
   ../../../src/supla/network/html/security_certificate.o \
+  ../../../src/supla/network/client.o \
+  ../../../src/supla/network/ip_address.o \
   \
   ../../../src/supla/protocol/protocol_layer.o \
   ../../../src/supla/protocol/mqtt.o \
@@ -116,6 +118,7 @@ COMPONENT_OBJS := \
   ../../porting/esp-idf/esp_idf_web_server.o \
   ../../porting/esp-idf/esp_idf_mutex.o \
   ../../porting/esp-idf/esp_idf_ota.o \
+  ../../porting/esp-idf/esp_idf_client.o \
 
 
 COMPONENT_SRCDIRS := ../../../src/supla-common \

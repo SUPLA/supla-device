@@ -21,12 +21,7 @@
 
 #include <IPAddress.h>
 #include <supla/sensor/one_phase_electricity_meter.h>
-
-#if defined(ARDUINO_ARCH_AVR)
-#include <Ethernet.h>
-#else
-#include <WiFiClient.h>
-#endif
+#include <supla/network/client.h>
 
 #define LOGIN_AND_PASSOWORD_MAX_LENGTH 100
 
@@ -40,11 +35,7 @@ class Afore : public Supla::Sensor::OnePhaseElectricityMeter {
   bool iterateConnected(void *srpc);
 
  protected:
-#if defined(ARDUINO_ARCH_AVR)
-  EthernetClient pvClient;
-#else
-  WiFiClient pvClient;
-#endif
+  ::Supla::Client *client = nullptr;
   IPAddress ip;
   int port;
   char loginAndPassword[LOGIN_AND_PASSOWORD_MAX_LENGTH];

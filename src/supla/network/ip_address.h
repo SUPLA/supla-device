@@ -5,27 +5,43 @@
  modify it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2
  of the License, or (at your option) any later version.
+
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
+
  You should have received a copy of the GNU General Public License
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "IPAddress.h"
-#include <arpa/inet.h>
+#ifndef SRC_SUPLA_NETWORK_IP_ADDRESS_H_
+#define SRC_SUPLA_NETWORK_IP_ADDRESS_H_
 
-IPAddress::IPAddress() {}
+#ifdef ARDUINO
+#include <IPAddress.h>
+#else
 
-IPAddress::IPAddress(uint8_t ip1, uint8_t ip2, uint8_t ip3, uint8_t ip4) {
-    addr[0] = ip1;
-    addr[1] = ip2;
-    addr[2] = ip3;
-    addr[3] = ip4;
-}
+#include <stdint.h>
 
-IPAddress::IPAddress(const std::string &ip) {
-  full = inet_addr(ip.c_str());
-}
+#include <string>
+
+class IPAddress {
+ public:
+  IPAddress();
+  IPAddress(uint8_t ip1, uint8_t ip2, uint8_t ip3, uint8_t ip4);
+  explicit IPAddress(const std::string &ip);
+
+  uint8_t operator[](int index) const;
+  uint8_t& operator[](int index);
+
+ protected:
+  union {
+    uint8_t addr[4] = {};
+    uint32_t full;
+  };
+};
+#endif
+
+#endif  // SRC_SUPLA_NETWORK_IP_ADDRESS_H_

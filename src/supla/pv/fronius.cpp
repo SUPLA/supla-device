@@ -22,6 +22,7 @@
 #include <supla/time.h>
 
 #include "fronius.h"
+#include "supla/network/client.h"
 
 namespace Supla {
 namespace PV {
@@ -46,6 +47,12 @@ Fronius::Fronius(IPAddress ip, int port, int deviceId)
       dataFetchInProgress(false),
       connectionTimeoutMs(0) {
   refreshRateSec = 15;
+  client = Supla::ClientBuilder();
+}
+
+Fronius::~Fronius() {
+  delete client;
+  client = nullptr;
 }
 
 void Fronius::iterateAlways() {
@@ -53,22 +60,22 @@ void Fronius::iterateAlways() {
     if (millis() - connectionTimeoutMs > 30000) {
       SUPLA_LOG_DEBUG(
                 "Fronius: connection timeout. Remote host is not responding");
-      pvClient.stop();
+      client->stop();
       dataFetchInProgress = false;
       dataIsReady = false;
       return;
     }
-    if (!pvClient.connected()) {
+    if (!client->connected()) {
       SUPLA_LOG_DEBUG("Fronius fetch completed");
       dataFetchInProgress = false;
       dataIsReady = true;
     }
-    if (pvClient.available()) {
-      SUPLA_LOG_DEBUG("Reading data from Fronius: %d", pvClient.available());
+    if (client->available()) {
+      SUPLA_LOG_DEBUG("Reading data from Fronius: %d", client->available());
     }
-    while (pvClient.available()) {
+    while (client->available()) {
       char c;
-      c = pvClient.read();
+      c = client->read();
       if (c == '\n') {
         if (startCharFound) {
           if (bytesCounter > 79) bytesCounter = 79;
@@ -138,8 +145,8 @@ void Fronius::iterateAlways() {
         bytesCounter++;
       }
     }
-    if (!pvClient.connected()) {
-      pvClient.stop();
+    if (!client->connected()) {
+      client->stop();
     }
   }
   if (dataIsReady) {
@@ -158,7 +165,7 @@ bool Fronius::iterateConnected(void *srpc) {
     if (lastReadTime == 0 || millis() - lastReadTime > refreshRateSec * 1000) {
       lastReadTime = millis();
       SUPLA_LOG_DEBUG("Fronius connecting %d", deviceId);
-      if (pvClient.connect(ip, port)) {
+      if (client->connect(ip, port)) {
         retryCounter = 0;
         dataFetchInProgress = true;
         connectionTimeoutMs = lastReadTime;
@@ -173,10 +180,10 @@ bool Fronius::iterateConnected(void *srpc) {
         strcat(buf, idBuf);  // NOLINT(runtime/printf)
         strcat(buf,          // NOLINT(runtime/printf)
             "&DataCollection=CommonInverterData HTTP/1.1");
-        pvClient.println(buf);
-        pvClient.println("Host: localhost");
-        pvClient.println("Connection: close");
-        pvClient.println();
+        client->println(buf);
+        client->println("Host: localhost");
+        client->println("Connection: close");
+        client->println();
 
       } else {  // if connection wasn't successful, try few times. If it fails,
                 // then assume that inverter is off during the night

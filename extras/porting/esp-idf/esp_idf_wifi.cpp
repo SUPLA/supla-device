@@ -36,21 +36,6 @@
 
 #include "esp_idf_wifi.h"
 
-#ifndef SUPLA_DEVICE_ESP32
-// delete name variant is deprecated in ESP-IDF, however ESP8266 RTOS still
-// use it.
-#define esp_tls_conn_destroy esp_tls_conn_delete
-
-// Latest ESP-IDF moved definition of esp_tls_t to private section and added
-// methods to access members. This change is missing in esp8266, so below
-// method is added to keep the same functionality
-void esp_tls_get_error_handle(esp_tls_t *client,
-                              esp_tls_error_handle_t *errorHandle) {
-  *errorHandle = client->error_handle;
-}
-
-#endif
-
 static Supla::EspIdfWifi *netIntfPtr = nullptr;
 
 Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
@@ -63,165 +48,6 @@ Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
 
 Supla::EspIdfWifi::~EspIdfWifi() {
   netIntfPtr = nullptr;
-}
-
-int Supla::EspIdfWifi::read(void *buf, int count) {
-  Supla::AutoLock autoLock(mutex);
-  if (client == nullptr) {
-    return 0;
-  }
-
-  esp_tls_conn_read(client, nullptr, 0);
-  int tlsErr = 0;
-  esp_tls_error_handle_t errorHandle;
-  esp_tls_get_error_handle(client, &errorHandle);
-  esp_tls_get_and_clear_last_error(errorHandle, &tlsErr, nullptr);
-  autoLock.unlock();
-  if (tlsErr != 0 && -tlsErr != ESP_TLS_ERR_SSL_WANT_READ &&
-      -tlsErr != ESP_TLS_ERR_SSL_WANT_WRITE) {
-    SUPLA_LOG_ERROR("Connection error %d", tlsErr);
-    Disconnect();
-    return 0;
-  }
-  autoLock.lock();
-  if (client == nullptr) {
-    return 0;
-  }
-  _supla_int_t size = esp_tls_get_bytes_avail(client);
-  autoLock.unlock();
-  if (size < 0) {
-    SUPLA_LOG_ERROR("error in esp tls get bytes avail %d", size);
-    Disconnect();
-    return 0;
-  }
-  if (size > 0) {
-    int ret = 0;
-    do {
-      autoLock.lock();
-      if (client == nullptr) {
-        return 0;
-      }
-      ret = esp_tls_conn_read(client, buf, count);
-      autoLock.unlock();
-
-      if (ret == ESP_TLS_ERR_SSL_WANT_READ ||
-          ret == ESP_TLS_ERR_SSL_WANT_WRITE) {
-        vTaskDelay(1);
-        continue;
-      }
-      if (ret < 0) {
-        SUPLA_LOG_ERROR("esp_tls_conn_read  returned -0x%x", -ret);
-        ret = 0;
-        break;
-      }
-      if (ret == 0) {
-        SUPLA_LOG_INFO("connection closed");
-        Disconnect();
-        return 0;
-      }
-      break;
-    } while (1);
-
-#ifdef SUPLA_COMM_DEBUG
-    printData("Recv", buf, ret);
-#endif
-    return ret;
-  }
-
-  return -1;
-}
-
-int Supla::EspIdfWifi::write(void *buf, int count) {
-  Supla::AutoLock autoLock(mutex);
-  if (client == nullptr) {
-    return 0;
-  }
-#ifdef SUPLA_COMM_DEBUG
-  printData("Send", buf, count);
-#endif
-  int sendSize = esp_tls_conn_write(client, buf, count);
-  if (sendSize == 0) {
-    isServerConnected = false;
-  }
-  return sendSize;
-}
-
-int Supla::EspIdfWifi::connect(const char *server, int port) {
-  Supla::AutoLock autoLock(mutex);
-  if (client != nullptr) {
-    SUPLA_LOG_ERROR("client ptr should be null when trying to connect");
-    return 0;
-  }
-
-  esp_tls_cfg_t cfg = {};
-  if (rootCACert) {
-    cfg.cacert_pem_buf = reinterpret_cast<const unsigned char *>(rootCACert);
-    int len = strlen(rootCACert);
-    cfg.cacert_pem_bytes = len + 1;
-  } else {
-    SUPLA_LOG_WARNING(
-              "Connecting without certificate validation (INSECURE)");
-  }
-  cfg.timeout_ms = timeoutMs;
-  cfg.non_block = false;
-
-  int connectionPort = (sslEnabled ? 2016 : 2015);
-  if (port != -1) {
-    connectionPort = port;
-  }
-
-  SUPLA_LOG_INFO(
-            "Establishing connection with: %s (port: %d)",
-            server,
-            connectionPort);
-
-  client = esp_tls_init();
-  if (!client) {
-    SUPLA_LOG_ERROR("ESP TLS INIT FAILED");
-    return 0;
-  }
-  int result = esp_tls_conn_new_sync(
-      server, strlen(server), connectionPort, &cfg, client);
-  if (result == 1) {
-    isServerConnected = true;
-    int socketFd = 0;
-    if (esp_tls_get_conn_sockfd(client, &socketFd) == ESP_OK) {
-      fcntl(socketFd, F_SETFL, O_NONBLOCK);
-    }
-
-  } else {
-    esp_tls_error_handle_t errorHandle;
-    esp_tls_get_error_handle(client, &errorHandle);
-
-    SUPLA_LOG_DEBUG(
-              "last errors %d %d %d",
-              errorHandle->last_error,
-              errorHandle->esp_tls_error_code,
-              errorHandle->esp_tls_flags);
-    logConnReason(errorHandle->last_error,
-                  errorHandle->esp_tls_error_code,
-                  errorHandle->esp_tls_flags);
-    isServerConnected = false;
-    esp_tls_conn_destroy(client);
-    client = nullptr;
-  }
-
-  // SuplaDevice expects 1 on success, which is the same
-  // as esp_tls_conn_new_sync returned values
-  return result;
-}
-
-bool Supla::EspIdfWifi::connected() {
-  return isServerConnected;
-}
-
-void Supla::EspIdfWifi::disconnect() {
-  Supla::AutoLock autoLock(mutex);
-  isServerConnected = false;
-  if (client != nullptr) {
-    esp_tls_conn_destroy(client);
-    client = nullptr;
-  }
 }
 
 bool Supla::EspIdfWifi::isReady() {
@@ -253,7 +79,7 @@ static void eventHandler(void *arg,
           netIntfPtr->setIpReady(false);
           netIntfPtr->setWifiConnected(false);
           netIntfPtr->logWifiReason(data->reason);
-          netIntfPtr->disconnect();
+          netIntfPtr->Disconnect();
         }
         if (!netIntfPtr->isInConfigMode()) {
           esp_wifi_connect();
@@ -288,8 +114,6 @@ static void eventHandler(void *arg,
 }
 
 void Supla::EspIdfWifi::setup() {
-  Supla::AutoLock autoLock(mutex);
-  setWifiConnected(false);
   setIpReady(false);
   if (!initDone) {
     nvs_flash_init();
@@ -318,9 +142,7 @@ void Supla::EspIdfWifi::setup() {
 
   } else {
     SUPLA_LOG_DEBUG("WiFi: resetting WiFi connection");
-    autoLock.unlock();
-    disconnect();
-    autoLock.lock();
+    Disconnect();
     esp_wifi_disconnect();
     ESP_ERROR_CHECK(esp_wifi_stop());
   }
@@ -364,7 +186,7 @@ void Supla::EspIdfWifi::setup() {
 void Supla::EspIdfWifi::uninit() {
   setWifiConnected(false);
   setIpReady(false);
-  disconnect();
+  Disconnect();
   if (initDone) {
     SUPLA_LOG_DEBUG("Wi-Fi: stopping WiFi connection");
     esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, eventHandler);
@@ -391,12 +213,6 @@ void Supla::EspIdfWifi::uninit() {
 
     vEventGroupDelete(wifiEventGroup);
     esp_event_loop_delete_default();
-  }
-}
-
-void Supla::EspIdfWifi::setTimeout(int newTimeoutMs) {
-  if (newTimeoutMs > 0) {
-    timeoutMs = newTimeoutMs;
   }
 }
 
@@ -524,61 +340,3 @@ void Supla::EspIdfWifi::logWifiReason(int reason) {
   }
 }
 
-void Supla::EspIdfWifi::logConnReason(int error, int tlsError, int tlsFlags) {
-  if (sdc && (lastConnErr != error || lastTlsErr != tlsError)) {
-    lastConnErr = error;
-    lastTlsErr = tlsError;
-    switch (error) {
-      case ESP_ERR_ESP_TLS_CANNOT_RESOLVE_HOSTNAME: {
-        sdc->addLastStateLog("Connection: can't resolve hostname");
-        break;
-      }
-      case ESP_ERR_ESP_TLS_FAILED_CONNECT_TO_HOST: {
-        sdc->addLastStateLog("Connection: failed connect to host");
-        break;
-      }
-      case ESP_ERR_ESP_TLS_CONNECTION_TIMEOUT: {
-        sdc->addLastStateLog("Connection: connection timeout");
-        break;
-      }
-      case ESP_ERR_MBEDTLS_SSL_HANDSHAKE_FAILED: {
-        switch (tlsError) {
-          case -MBEDTLS_ERR_X509_CERT_VERIFY_FAILED: {
-            sdc->addLastStateLog(
-                "Connection TLS: handshake fail - server "
-                "certificate verification error");
-            break;
-          }
-          default: {
-            char buf[100] = {};
-            snprintf(buf,
-                     100,
-                     "Connection TLS: handshake fail (TLS 0x%X "
-                     "flags 0x%x)",
-                     tlsError,
-                     tlsFlags);
-            sdc->addLastStateLog(buf);
-            break;
-          }
-        }
-        break;
-      }
-      case ESP_ERR_MBEDTLS_X509_CRT_PARSE_FAILED: {
-        sdc->addLastStateLog(
-            "CA certificate parsing error - please provide correct one");
-        break;
-      }
-      default: {
-        char buf[100] = {};
-        snprintf(buf,
-                 100,
-                 "Connection: error 0x%X (TLS 0x%X flags 0x%x)",
-                 error,
-                 tlsError,
-                 tlsFlags);
-        sdc->addLastStateLog(buf);
-        break;
-      }
-    }
-  }
-}

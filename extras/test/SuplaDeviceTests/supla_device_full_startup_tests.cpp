@@ -50,7 +50,7 @@ class SimpleTime : public TimeInterface {
   public:
     SimpleTime() : value(0) {}
 
-    virtual unsigned long millis() override {
+    virtual uint64_t millis() override {
       return value;
     }
 
@@ -58,7 +58,7 @@ class SimpleTime : public TimeInterface {
       value += advanceMs;
     }
 
-    unsigned long value;
+    uint64_t value;
 };
 
 class StorageMock2: public Supla::Storage {

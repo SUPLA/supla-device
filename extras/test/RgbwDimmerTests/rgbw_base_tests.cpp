@@ -30,8 +30,8 @@ class RgbwBaseForTest : public Supla::Control::RGBWBase {
 
 class TimeInterfaceStub : public TimeInterface {
   public:
-    virtual unsigned long millis() override {
-      static unsigned long value = 0;
+    virtual uint64_t millis() override {
+      static uint64_t value = 0;
       value += 1000;
       return value;
     }
@@ -1112,7 +1112,7 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
 
 class StorageMock: public Supla::Storage {
  public:
-  MOCK_METHOD(void, scheduleSave, (unsigned long), (override));
+  MOCK_METHOD(void, scheduleSave, (uint64_t), (override));
   MOCK_METHOD(void, commit, (), (override));
   MOCK_METHOD(int, readStorage, (unsigned int, unsigned char *, int, bool), (override));
   MOCK_METHOD(int, writeStorage, (unsigned int, const unsigned char *, int), (override));

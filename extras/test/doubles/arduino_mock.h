@@ -36,7 +36,7 @@ class TimeInterface {
   public:
     TimeInterface();
     virtual ~TimeInterface();
-    virtual unsigned long millis() = 0;
+    virtual uint64_t millis() = 0;
     
     static TimeInterface *instance;
 };
@@ -53,7 +53,7 @@ class DigitalInterfaceMock : public DigitalInterface {
 
 class TimeInterfaceMock : public TimeInterface {
   public:
-    MOCK_METHOD(unsigned long, millis, (), (override));
+    MOCK_METHOD(uint64_t, millis, (), (override));
 };
 
 #endif

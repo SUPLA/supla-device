@@ -30,7 +30,7 @@ class TimeInterfaceStub2 : public TimeInterface {
   public:
     TimeInterfaceStub2() : value(0) {}
 
-    virtual unsigned long millis() override {
+    virtual uint64_t millis() override {
       return value;
     }
 
@@ -38,7 +38,7 @@ class TimeInterfaceStub2 : public TimeInterface {
       value += advanceMs;
     }
 
-    unsigned long value;
+    uint64_t value;
 };
 
 TEST(ButtonTests, OnPressAndOnRelease) {

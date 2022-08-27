@@ -42,8 +42,8 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   const int action2 = 16;
   const int action3 = 17;
 
-  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(5);
-  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action3)).Times(5);
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(6);
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action3)).Times(6);
 
   Supla::ChannelElement channelElement;
   auto channel = channelElement.getChannel();
@@ -145,6 +145,30 @@ TEST(ConditionTests, handleActionTestsForDouble) {
 
   // nothing should happen
   channel->setNewValue(-1, -1, -1, -1, 25);
+  cond->handleAction(Supla::ON_CHANGE, action1);
+  
+  // RGB use int type on channel value
+  channel->setType(SUPLA_CHANNELTYPE_RGBLEDCONTROLLER);
+
+  channel->setNewValue(-1, -1, -1, -0, -1);
+  // channel should be initialized to 0, so condition should be met
+  cond->handleAction(Supla::ON_CHANGE, action1);
+
+  channel->setNewValue(-1, -1, -1, 100, -1);
+
+  // 100 is not less than 15, so nothing should happen
+  cond->handleAction(Supla::ON_CHANGE, action2);
+
+  // Values below 0 should be ignored
+  channel->setNewValue(-1, -1, -1, -1, -1);
+  cond->handleAction(Supla::ON_CHANGE, action2);
+
+  channel->setNewValue(-1, -1, -1, 15, -1);
+  // 15 is less than 16
+  cond->handleAction(Supla::ON_CHANGE, action3);
+
+  // nothing should happen
+  channel->setNewValue(-1, -1, -1, 25, -1);
   cond->handleAction(Supla::ON_CHANGE, action1);
 
   // WEIGHT sensor use int type on channel value

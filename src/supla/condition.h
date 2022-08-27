@@ -26,7 +26,7 @@ class Element;
 
 class Condition : public ActionHandler {
  public:
-  Condition(double threshold, bool useAlternativeMeasurement);
+  Condition(double threshold, bool useAlternativeValue);
   Condition(double threshold, ConditionGetter *getter);
 
   virtual ~Condition();
@@ -45,7 +45,7 @@ class Condition : public ActionHandler {
   virtual bool condition(double val, bool isValid = true) = 0;
 
   double threshold = 0;
-  bool useAlternativeMeasurement = false;
+  bool useAlternativeValue = false;
   bool alreadyFired = false;
   Supla::Element *source = nullptr;
   Supla::ActionHandler *client = nullptr;
@@ -55,22 +55,22 @@ class Condition : public ActionHandler {
 };  // namespace Supla
 
 Supla::Condition *OnLess(double threshold,
-    bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
 Supla::Condition *OnLessEq(double threshold,
-    bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
 Supla::Condition *OnGreater(double threshold,
-    bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
 Supla::Condition *OnGreaterEq(double threshold,
-    bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
 Supla::Condition *OnBetween(double threshold1,
     double threshold2,
-    bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
 Supla::Condition *OnBetweenEq(double threshold1,
     double threshold2,
-    bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
 Supla::Condition *OnEqual(double threshold,
-    bool useAlternativeMeasurement = false);
-Supla::Condition *OnInvalid(bool useAlternativeMeasurement = false);
+    bool useAlternativeValue = false);
+Supla::Condition *OnInvalid(bool useAlternativeValue = false);
 
 Supla::Condition *OnLess(double threshold, Supla::ConditionGetter *);
 Supla::Condition *OnLessEq(double threshold, Supla::ConditionGetter *);

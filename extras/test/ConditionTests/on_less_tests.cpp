@@ -150,7 +150,7 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   // RGB use int type on channel value
   channel->setType(SUPLA_CHANNELTYPE_RGBLEDCONTROLLER);
 
-  channel->setNewValue(-1, -1, -1, -0, -1);
+  channel->setNewValue(-1, -1, -1, 0, -1);
   // channel should be initialized to 0, so condition should be met
   cond->handleAction(Supla::ON_CHANGE, action1);
 
@@ -159,7 +159,7 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   // 100 is not less than 15, so nothing should happen
   cond->handleAction(Supla::ON_CHANGE, action2);
 
-  // Values below 0 should be ignored
+  // RGBW values -1 doesn't change actual value on channel, so it won't trigger action
   channel->setNewValue(-1, -1, -1, -1, -1);
   cond->handleAction(Supla::ON_CHANGE, action2);
 

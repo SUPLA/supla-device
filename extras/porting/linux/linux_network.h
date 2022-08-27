@@ -19,7 +19,6 @@
 #ifndef EXTRAS_PORTING_LINUX_LINUX_NETWORK_H_
 #define EXTRAS_PORTING_LINUX_LINUX_NETWORK_H_
 
-#include <openssl/ssl.h>
 #include <supla/network/network.h>
 
 namespace Supla {
@@ -29,11 +28,6 @@ class LinuxNetwork : public Network {
   LinuxNetwork();
   ~LinuxNetwork() override;
 
-  int read(void *buf, int count) override;
-  int write(void *buf, int count) override;
-  int connect(const char *server, int port = -1) override;
-  bool connected() override;
-  void disconnect() override;
   bool isReady() override;
   void setup() override;
   bool iterate() override;
@@ -41,9 +35,6 @@ class LinuxNetwork : public Network {
 
  protected:
   bool isDeviceReady = false;
-  SSL_CTX *ctx = nullptr;
-  SSL *ssl = nullptr;
-  int connectionFd = -1;
 };
 
 };  // namespace Supla

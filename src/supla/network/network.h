@@ -21,7 +21,6 @@
 
 #include <stdint.h>
 
-#include "supla-common/log.h"
 #include "supla-common/proto.h"
 #include "supla/storage/config.h"
 
@@ -31,10 +30,6 @@ namespace Supla {
 class Network {
  public:
   static Network *Instance();
-  static bool Connected();
-  static int Read(void *buf, int count);
-  static int Write(void *buf, int count);
-  static int Connect(const char *server, int port = -1);
   static void Disconnect();
   static void Setup();
   static void Uninit();
@@ -49,14 +44,8 @@ class Network {
 
   explicit Network(uint8_t ip[4]);
   virtual ~Network();
-  virtual int read(void *buf, int count) = 0;
-  virtual int write(void *buf, int count) = 0;
-  virtual int connect(const char *server, int port = -1) = 0;
-  virtual bool connected() = 0;
-  virtual void disconnect() = 0;
   virtual void setup() = 0;
   virtual void uninit();
-  virtual void setTimeout(int);
   virtual void setConfigMode();
   virtual void setNormalMode();
   virtual bool getMacAddr(uint8_t *);

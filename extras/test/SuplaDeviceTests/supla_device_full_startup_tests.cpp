@@ -24,6 +24,8 @@
 #include <supla/storage/storage.h>
 #include <element_mock.h>
 #include <board_mock.h>
+#include "supla/protocol/supla_srpc.h"
+#include <network_client_mock.h>
 
 using ::testing::Return;
 using ::testing::_;
@@ -73,13 +75,7 @@ class StorageMock2: public Supla::Storage {
 class NetworkMock : public Supla::Network {
   public:
     NetworkMock() : Supla::Network(nullptr) {};
-  MOCK_METHOD(int, read, (void *, int ), (override));
-  MOCK_METHOD(int, write, (void *, int ), (override));
-  MOCK_METHOD(int, connect, (const char *, int), (override));
-  MOCK_METHOD(bool, connected, (), (override));
-  MOCK_METHOD(void, disconnect, (), (override));
   MOCK_METHOD(void, setup, (), (override));
-  MOCK_METHOD(void, setTimeout, (int), (override));
 
   MOCK_METHOD(bool, isReady, (), (override));
   MOCK_METHOD(bool, iterate, (), (override));
@@ -96,8 +92,11 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
     ElementMock el1;
     ElementMock el2;
     BoardMock board;
+    NetworkClientMock *client = nullptr;
 
     virtual void SetUp() {
+      client = new NetworkClientMock;  // it will be destroyed in
+                                       // Supla::Protocol::SuplaSrpc
       SuplaDeviceTests::SetUp();
 
       int dummy;
@@ -127,6 +126,7 @@ using ::testing::AtLeast;
 TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgain) {
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(false));
   EXPECT_CALL(net, setup()).Times(2);
+  EXPECT_CALL(*client, stop()).Times(2);
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
 
@@ -139,9 +139,9 @@ TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgain) {
 
 TEST_F(SuplaDeviceTestsFullStartup, FailedConnectionShouldSetupNetworkAgain) {
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
-  EXPECT_CALL(net, connected()).WillRepeatedly(Return(false));
-  EXPECT_CALL(net, connect(_, _)).WillRepeatedly(Return(0));
-  EXPECT_CALL(net, disconnect()).Times(AtLeast(1));
+  EXPECT_CALL(*client, connected()).WillRepeatedly(Return(false));
+  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(Return(0));
+  EXPECT_CALL(*client, stop()).Times(AtLeast(1));
   EXPECT_CALL(net, iterate()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(net, setup()).Times(1);
@@ -157,12 +157,12 @@ TEST_F(SuplaDeviceTestsFullStartup, FailedConnectionShouldSetupNetworkAgain) {
 
 TEST_F(SuplaDeviceTestsFullStartup, SrpcFailureShouldCallDisconnect) {
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
-  EXPECT_CALL(net, connected()).WillOnce(Return(false)).WillRepeatedly(Return(false));
-  EXPECT_CALL(net, connect(_, _)).WillRepeatedly(Return(1));
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false)).WillRepeatedly(Return(false));
+  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(Return(1));
   EXPECT_CALL(net, iterate()).Times(1);
   EXPECT_CALL(srpc, srpc_iterate(_)).WillOnce(Return(SUPLA_RESULT_FALSE));
 
-  EXPECT_CALL(net, disconnect()).Times(1);
+  EXPECT_CALL(*client, stop()).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -174,8 +174,8 @@ TEST_F(SuplaDeviceTestsFullStartup, SrpcFailureShouldCallDisconnect) {
 TEST_F(SuplaDeviceTestsFullStartup, NoReplyForDeviceRegistrationShoudResetConnection) {
   bool isConnected = false;
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
-  EXPECT_CALL(net, connected()).WillRepeatedly(ReturnPointee(&isConnected));
-  EXPECT_CALL(net, connect(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
+  EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));
+  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
 
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
@@ -183,7 +183,7 @@ TEST_F(SuplaDeviceTestsFullStartup, NoReplyForDeviceRegistrationShoudResetConnec
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
 
-  EXPECT_CALL(net, disconnect()).WillOnce(Assign(&isConnected, false));
+  EXPECT_CALL(*client, stop()).WillOnce(Assign(&isConnected, false));
 
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(2);
 
@@ -203,8 +203,8 @@ TEST_F(SuplaDeviceTestsFullStartup, NoReplyForDeviceRegistrationShoudResetConnec
 TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   bool isConnected = false;
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
-  EXPECT_CALL(net, connected()).WillRepeatedly(ReturnPointee(&isConnected));
-  EXPECT_CALL(net, connect(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
+  EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));
+  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
 
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
@@ -253,6 +253,7 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
 TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgainAndResetDev) {
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(false));
   EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(*client, stop()).Times(1);
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
   // In tests we can't reset board, so this method will be called few times

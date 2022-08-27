@@ -30,6 +30,7 @@
 #include <supla/time.h>
 #include <supla/version.h>
 #include <supla/log_wrapper.h>
+#include <supla/device/supla_ca_cert.h>
 
 // Below includes are added just for CI compilation check. Some of them
 // are not used in any cpp file, so they would not be compiled otherwise.
@@ -169,6 +170,10 @@ int main(int argc, char* argv[]) {
     SuplaDevice.setLastStateLogger(
         new Supla::Device::FileStateLogger(config->getStateFilesPath()));
     Supla::LinuxNetwork network;
+
+    // configure defualt Supla CA certificate
+    SuplaDevice.setSuplaCACert(suplaCACert);
+    SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
     SuplaDevice.begin();
 

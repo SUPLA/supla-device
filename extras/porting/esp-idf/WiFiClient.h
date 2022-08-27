@@ -16,11 +16,11 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_WIFICLIENT_H_
-#define EXTRAS_PORTING_LINUX_WIFICLIENT_H_
+#ifndef EXTRAS_PORTING_ESP_IDF_WIFICLIENT_H_
+#define EXTRAS_PORTING_ESP_IDF_WIFICLIENT_H_
 
-#include "network_client.h"
+#include "esp_idf_client.h"
 
-typedef class Supla::NetworkClient WiFiClient;
+typedef class Supla::EspIdfClient WiFiClient;
 
-#endif  // EXTRAS_PORTING_LINUX_WIFICLIENT_H_
+#endif  // EXTRAS_PORTING_ESP_IDF_WIFICLIENT_H_

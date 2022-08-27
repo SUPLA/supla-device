@@ -16,9 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef EXTRAS_PORTING_LINUX_IPADDRESS_H_
-#define EXTRAS_PORTING_LINUX_IPADDRESS_H_
+#include <supla/network/client.h>
 
-#include <supla/network/ip_address.h>
-
-#endif  // EXTRAS_PORTING_LINUX_IPADDRESS_H_
+Supla::Client *Supla::ClientBuilder() {
+  // TODO(klew): implement network client for freertos
+  return nullptr;
+}

@@ -15,38 +15,45 @@
 */
 
 #include <supla-common/srpc.h>
+
 #include "srpc_mock.h"
 
-_supla_int_t  srpc_ds_async_channel_extendedvalue_changed(
-    void *_srpc, unsigned char channel_number,
+_supla_int_t srpc_ds_async_channel_extendedvalue_changed(
+    void *_srpc,
+    unsigned char channel_number,
     TSuplaChannelExtendedValue *value) {
   return 0;
 }
 
-_supla_int_t  srpc_ds_async_action_trigger(
-    void *_srpc, TDS_ActionTrigger *at) {
+_supla_int_t srpc_ds_async_action_trigger(void *_srpc, TDS_ActionTrigger *at) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->actionTrigger(at->ChannelNumber, at->ActionTrigger);
+  return SrpcInterface::instance->actionTrigger(at->ChannelNumber,
+                                                at->ActionTrigger);
 }
 
-_supla_int_t srpc_ds_async_get_channel_config(void *_srpc, 
-    TDS_GetChannelConfigRequest *request) {
+_supla_int_t srpc_ds_async_get_channel_config(
+    void *_srpc, TDS_GetChannelConfigRequest *request) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->getChannelConfig(request->ChannelNumber);
 }
-         
-_supla_int_t  srpc_ds_async_channel_value_changed_c(
-    void *_srpc, unsigned char channel_number, char *value,
-    unsigned char offline, unsigned _supla_int_t validity_time_sec) {
+
+_supla_int_t srpc_ds_async_channel_value_changed_c(void *_srpc,
+                                                   unsigned char channel_number,
+                                                   char *value,
+                                                   unsigned char offline,
+                                                   unsigned _supla_int_t
+                                                       validity_time_sec) {
   assert(SrpcInterface::instance);
   std::vector<char> vec(value, value + 8);
-  return SrpcInterface::instance->valueChanged(_srpc, channel_number, vec, offline, validity_time_sec);
+  return SrpcInterface::instance->valueChanged(
+      _srpc, channel_number, vec, offline, validity_time_sec);
 }
 
-_supla_int_t  srpc_dcs_async_set_activity_timeout(
+_supla_int_t srpc_dcs_async_set_activity_timeout(
     void *_srpc, TDCS_SuplaSetActivityTimeout *dcs_set_activity_timeout) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_dcs_async_set_activity_timeout(_srpc, dcs_set_activity_timeout);
+  return SrpcInterface::instance->srpc_dcs_async_set_activity_timeout(
+      _srpc, dcs_set_activity_timeout);
 }
 
 void srpc_params_init(TsrpcParams *params) {
@@ -54,14 +61,20 @@ void srpc_params_init(TsrpcParams *params) {
   SrpcInterface::instance->srpc_params_init(params);
 }
 
-_supla_int_t srpc_ds_async_set_channel_result(void *_srpc, unsigned char ChannelNumber, _supla_int_t SenderID, char Success) {
+_supla_int_t srpc_ds_async_set_channel_result(void *_srpc,
+                                              unsigned char ChannelNumber,
+                                              _supla_int_t SenderID,
+                                              char Success) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_ds_async_set_channel_result(_srpc, ChannelNumber, SenderID, Success);
+  return SrpcInterface::instance->srpc_ds_async_set_channel_result(
+      _srpc, ChannelNumber, SenderID, Success);
 }
 
-_supla_int_t  srpc_ds_async_device_calcfg_result(void *_srpc, TDS_DeviceCalCfgResult *result) {
+_supla_int_t srpc_ds_async_device_calcfg_result(
+    void *_srpc, TDS_DeviceCalCfgResult *result) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_ds_async_device_calcfg_result(_srpc, result);
+  return SrpcInterface::instance->srpc_ds_async_device_calcfg_result(_srpc,
+                                                                     result);
 }
 
 void *srpc_init(TsrpcParams *params) {
@@ -74,7 +87,9 @@ void srpc_rd_free(TsrpcReceivedData *rd) {
   SrpcInterface::instance->srpc_rd_free(rd);
 }
 
-char srpc_getdata(void *_srpc, TsrpcReceivedData *rd, unsigned _supla_int_t rr_id) {
+char srpc_getdata(void *_srpc,
+                  TsrpcReceivedData *rd,
+                  unsigned _supla_int_t rr_id) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->srpc_getdata(_srpc, rd, rr_id);
 }
@@ -89,9 +104,11 @@ void srpc_set_proto_version(void *_srpc, unsigned char version) {
   SrpcInterface::instance->srpc_set_proto_version(_srpc, version);
 }
 
-_supla_int_t srpc_ds_async_registerdevice_e(void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) {
+_supla_int_t srpc_ds_async_registerdevice_e(
+    void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_ds_async_registerdevice_e(_srpc, registerdevice);
+  return SrpcInterface::instance->srpc_ds_async_registerdevice_e(
+      _srpc, registerdevice);
 }
 
 _supla_int_t srpc_dcs_async_ping_server(void *_srpc) {
@@ -99,9 +116,11 @@ _supla_int_t srpc_dcs_async_ping_server(void *_srpc) {
   return SrpcInterface::instance->srpc_dcs_async_ping_server(_srpc);
 }
 
-_supla_int_t srpc_csd_async_channel_state_result(void *_srpc, TDSC_ChannelState *state) {
+_supla_int_t srpc_csd_async_channel_state_result(void *_srpc,
+                                                 TDSC_ChannelState *state) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_csd_async_channel_state_result(_srpc, state);
+  return SrpcInterface::instance->srpc_csd_async_channel_state_result(_srpc,
+                                                                      state);
 }
 
 _supla_int_t srpc_dcs_async_get_user_localtime(void *_srpc) {
@@ -142,4 +161,3 @@ _supla_int_t srpc_evtool_v2_emextended2extended(
   ev->size = 0;
   return 0;
 }
-

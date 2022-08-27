@@ -22,13 +22,22 @@
 #include <supla/network/network.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+#include <supla/network/client.h>
 
 #include <string.h>
 
 #include "supla_srpc.h"
 
+
 Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
     : Supla::Protocol::ProtocolLayer(sdc), version(version) {
+  client = Supla::ClientBuilder();
+  client->setDebugLogs(true);
+}
+
+Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
+  delete client;
+  client = nullptr;
 }
 
 bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
@@ -92,8 +101,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       securityLevel = 0;
     }
 
-    auto network = Supla::Network::Instance();
-    network->setSSLEnabled(true);  // TODO(klew): move ssl to proto layer level
+    client->setSSLEnabled(true);
     SUPLA_LOG_DEBUG("Security level: %d", securityLevel);
     switch (securityLevel) {
       default:
@@ -111,7 +119,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
           strncpy(cert, "SUPLA", 6);  // Some dummy value for CA cert
           suplaCACert = cert;
         }
-        network->setCACert(suplaCACert);  // TODO(klew): move to proto layer
+        client->setCACert(suplaCACert);
         break;
       }
       case 1: {
@@ -121,14 +129,14 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
           len++;
           auto cert = new char[len];
           cfg->getCustomCA(cert, len);
-          network->setCACert(cert);  // TODO(klew): move to proto layer
+          client->setCACert(cert);
         } else {
           SUPLA_LOG_ERROR(
               "Custom CA is selected, but certificate is"
               " missing in config. Connect will fail");
           auto cert = new char[6];
           strncpy(cert, "SUPLA", 6);  // some dummy value
-          network->setCACert(cert);
+          client->setCACert(cert);
         }
         break;
       }
@@ -163,17 +171,16 @@ void *Supla::Protocol::SuplaSrpc::getSrpcPtr() {
 }
 
 _supla_int_t Supla::dataRead(void *buf, _supla_int_t count, void *userParams) {
-  (void)(userParams);
-  return Supla::Network::Read(buf, count);
+  auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc*>(userParams);
+  return srpcLayer->client->read(reinterpret_cast<uint8_t*>(buf), count);
 }
 
 _supla_int_t Supla::dataWrite(void *buf, _supla_int_t count, void *userParams) {
-  _supla_int_t r = Supla::Network::Write(buf, count);
+  auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
+  _supla_int_t r =
+      srpcLayer->client->write(reinterpret_cast<uint8_t *>(buf), count);
   if (r > 0) {
-    Supla::Protocol::SuplaSrpc *suplaSrpc =
-        reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
-
-    suplaSrpc->updateLastSentTime();
+    srpcLayer->updateLastSentTime();
   }
   return r;
 }
@@ -340,12 +347,13 @@ void Supla::messageReceived(void *srpc,
 
 void Supla::Protocol::SuplaSrpc::onVersionError(
     TSDC_SuplaVersionError *versionError) {
+  (void)(versionError);
   sdc->status(STATUS_PROTOCOL_VERSION_ERROR, "Protocol version error");
   SUPLA_LOG_ERROR("Protocol version error. Server min: %d; Server version: %d",
                   versionError->server_version_min,
                   versionError->server_version);
 
-  Supla::Network::Disconnect();
+  disconnect();
 
   lastIterateTime = millis();
   waitForIterate = 15000;
@@ -439,7 +447,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       break;
   }
 
-  Supla::Network::Disconnect();
+  disconnect();
   // server rejected registration
   registered = 2;
 }
@@ -485,12 +493,15 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
   }
 
   // Establish connection with Supla server
-  if (!Supla::Network::Connected()) {
+  if (!client->connected()) {
     sdc->uptime.setConnectionLostCause(
         SUPLA_LASTCONNECTIONRESETCAUSE_SERVER_CONNECTION_LOST);
     registered = 0;
-    int result =
-        Supla::Network::Connect(Supla::Channel::reg_dev.ServerName, port);
+    if (port == -1) {
+      // TODO(klew): add ssl handling
+      port = 2015;
+    }
+    int result = client->connect(Supla::Channel::reg_dev.ServerName, port);
     if (1 == result) {
       sdc->uptime.resetConnectionUptime();
       connectionFailCounter = 0;
@@ -502,7 +513,7 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
       SUPLA_LOG_DEBUG("Connection fail (%d). Server: %s",
                       result,
                       Supla::Channel::reg_dev.ServerName);
-      Supla::Network::Disconnect();
+      disconnect();
       waitForIterate = 10000;
       connectionFailCounter++;
       if (connectionFailCounter % 6 == 0) {
@@ -514,7 +525,7 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
 
   if (srpc_iterate(srpc) == SUPLA_RESULT_FALSE) {
     sdc->status(STATUS_ITERATE_FAIL, "Communication failure");
-    Supla::Network::Disconnect();
+    disconnect();
 
     lastIterateTime = _millis;
     waitForIterate = 5000;
@@ -535,7 +546,7 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
       SUPLA_LOG_DEBUG(
           "No reply to registration message. Resetting connection.");
       sdc->status(STATUS_SERVER_DISCONNECTED, "Not connected to Supla server");
-      Supla::Network::Disconnect();
+      disconnect();
 
       lastIterateTime = _millis;
       waitForIterate = 2000;
@@ -549,7 +560,7 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
           SUPLA_LASTCONNECTIONRESETCAUSE_ACTIVITY_TIMEOUT);
       SUPLA_LOG_DEBUG("TIMEOUT - lost connection with server");
       sdc->status(STATUS_SERVER_DISCONNECTED, "Not connected to Supla server");
-      Supla::Network::Disconnect();
+      disconnect();
     }
 
     // Iterate all elements
@@ -572,7 +583,7 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
 
 void Supla::Protocol::SuplaSrpc::disconnect() {
   registered = 0;
-  // TODO(klew): implement
+  client->stop();
 }
 
 void Supla::Protocol::SuplaSrpc::updateLastResponseTime() {

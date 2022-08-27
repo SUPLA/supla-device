@@ -445,4 +445,8 @@ bool Config::isMinimalConfigReady() {
   return false;
 }
 
+bool Config::isConfigModeSupported() {
+  return true;
+}
+
 }  // namespace Supla

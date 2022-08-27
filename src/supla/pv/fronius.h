@@ -21,28 +21,20 @@
 
 #include <IPAddress.h>
 #include <supla/sensor/one_phase_electricity_meter.h>
-
-#if defined(ARDUINO_ARCH_AVR)
-#include <Ethernet.h>
-#else
-#include <WiFiClient.h>
-#endif
+#include <supla/network/client.h>
 
 namespace Supla {
 namespace PV {
 class Fronius : public Supla::Sensor::OnePhaseElectricityMeter {
  public:
   explicit Fronius(IPAddress ip, int port = 80, int deviceId = 1);
+  ~Fronius();
   void readValuesFromDevice();
   void iterateAlways();
   bool iterateConnected(void *srpc);
 
  protected:
-#if defined(ARDUINO_ARCH_AVR)
-  EthernetClient pvClient;
-#else
-  WiFiClient pvClient;
-#endif
+  ::Supla::Client *client = nullptr;
   IPAddress ip;
   int port;
   char buf[80];

@@ -35,42 +35,19 @@ Network *Network::Instance() {
   return netIntf;
 }
 
-bool Network::Connected() {
-  if (Instance() != nullptr) {
-    return Instance()->connected();
-  }
-  return false;
-}
-
-int Network::Read(void *buf, int count) {
-  if (Instance() != nullptr) {
-    return Instance()->read(buf, count);
-  }
-  return -1;
-}
-
-int Network::Write(void *buf, int count) {
-  if (Instance() != nullptr) {
-    return Instance()->write(buf, count);
-  }
-  return -1;
-}
-
-int Network::Connect(const char *server, int port) {
+/*int Network::Connect(const char *server, int port) {
   if (Instance() != nullptr) {
     Instance()->clearTimeCounters();
     return Instance()->connect(server, port);
   }
   return 0;
 }
+ */
 
 void Network::Disconnect() {
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
       proto = proto->next()) {
     proto->disconnect();
-  }
-  if (Instance() != nullptr) {
-    return Instance()->disconnect();
   }
   return;
 }
@@ -154,11 +131,6 @@ bool Network::iterate() {
 void Network::clearTimeCounters() {
 }
 
-void Network::setTimeout(int timeoutMs) {
-  (void)(timeoutMs);
-  SUPLA_LOG_DEBUG("setTimeout is not implemented for this interface");
-}
-
 void Network::fillStateData(TDSC_ChannelState *channelState) {
   (void)(channelState);
   SUPLA_LOG_DEBUG("fillStateData is not implemented for this interface");
@@ -225,7 +197,6 @@ void Network::setSSLEnabled(bool enabled) {
 }
 
 void Network::setCACert(const char *rootCA) {
-  (void)(rootCA);
   rootCACert = rootCA;
 }
 

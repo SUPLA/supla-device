@@ -35,20 +35,31 @@ class SrpcInterface {
                                     unsigned _supla_int_t
                                         validity_time_sec) = 0;
 
-  virtual _supla_int_t actionTrigger(unsigned char channel_number, int actionTrigger) = 0;
+  virtual _supla_int_t actionTrigger(unsigned char channel_number,
+                                     int actionTrigger) = 0;
 
-  virtual _supla_int_t srpc_dcs_async_set_activity_timeout(void *_srpc, TDCS_SuplaSetActivityTimeout *dcs_set_activity_timeout) = 0;
+  virtual _supla_int_t srpc_dcs_async_set_activity_timeout(
+      void *_srpc, TDCS_SuplaSetActivityTimeout *dcs_set_activity_timeout) = 0;
   virtual void srpc_params_init(TsrpcParams *params) = 0;
-  virtual _supla_int_t srpc_ds_async_set_channel_result(void *_srpc, unsigned char ChannelNumber, _supla_int_t SenderID, char Success) = 0;
-  virtual _supla_int_t srpc_ds_async_device_calcfg_result(void *_srpc, TDS_DeviceCalCfgResult *result) = 0;
+  virtual _supla_int_t srpc_ds_async_set_channel_result(
+      void *_srpc,
+      unsigned char ChannelNumber,
+      _supla_int_t SenderID,
+      char Success) = 0;
+  virtual _supla_int_t srpc_ds_async_device_calcfg_result(
+      void *_srpc, TDS_DeviceCalCfgResult *result) = 0;
   virtual void *srpc_init(TsrpcParams *params) = 0;
   virtual void srpc_rd_free(TsrpcReceivedData *rd) = 0;
-  virtual char srpc_getdata(void *_srpc, TsrpcReceivedData *rd, unsigned _supla_int_t rr_id) = 0;
+  virtual char srpc_getdata(void *_srpc,
+                            TsrpcReceivedData *rd,
+                            unsigned _supla_int_t rr_id) = 0;
   virtual char srpc_iterate(void *_srpc) = 0;
   virtual void srpc_set_proto_version(void *_srpc, unsigned char version) = 0;
-  virtual _supla_int_t srpc_ds_async_registerdevice_e(void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) = 0;
+  virtual _supla_int_t srpc_ds_async_registerdevice_e(
+      void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) = 0;
   virtual _supla_int_t srpc_dcs_async_ping_server(void *_srpc) = 0;
-  virtual _supla_int_t srpc_csd_async_channel_state_result(void *_srpc, TDSC_ChannelState *state) = 0;
+  virtual _supla_int_t srpc_csd_async_channel_state_result(
+      void *_srpc, TDSC_ChannelState *state) = 0;
   virtual _supla_int_t srpc_dcs_async_get_user_localtime(void *_srpc) = 0;
   virtual _supla_int_t getChannelConfig(unsigned char channelNumber) = 0;
 
@@ -65,21 +76,51 @@ class SrpcMock : public SrpcInterface {
                unsigned char,
                unsigned _supla_int_t),
               (override));
-  MOCK_METHOD(_supla_int_t, srpc_dcs_async_set_activity_timeout, (void *, TDCS_SuplaSetActivityTimeout *), (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_dcs_async_set_activity_timeout,
+              (void *, TDCS_SuplaSetActivityTimeout *),
+              (override));
   MOCK_METHOD(void, srpc_params_init, (TsrpcParams *), (override));
-  MOCK_METHOD(_supla_int_t, srpc_ds_async_set_channel_result, (void *, unsigned char, _supla_int_t, char), (override));
-  MOCK_METHOD(_supla_int_t, srpc_ds_async_device_calcfg_result, (void *, TDS_DeviceCalCfgResult *), (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_ds_async_set_channel_result,
+              (void *, unsigned char, _supla_int_t, char),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_ds_async_device_calcfg_result,
+              (void *, TDS_DeviceCalCfgResult *),
+              (override));
   MOCK_METHOD((void *), srpc_init, (TsrpcParams *), (override));
   MOCK_METHOD(void, srpc_rd_free, (TsrpcReceivedData *), (override));
-  MOCK_METHOD(char, srpc_getdata, (void *, TsrpcReceivedData *, unsigned _supla_int_t), (override));
+  MOCK_METHOD(char,
+              srpc_getdata,
+              (void *, TsrpcReceivedData *, unsigned _supla_int_t),
+              (override));
   MOCK_METHOD(char, srpc_iterate, (void *), (override));
-  MOCK_METHOD(void, srpc_set_proto_version, (void *, unsigned char), (override));
-  MOCK_METHOD(_supla_int_t, srpc_ds_async_registerdevice_e, (void *, TDS_SuplaRegisterDevice_E *), (override));
+  MOCK_METHOD(void,
+              srpc_set_proto_version,
+              (void *, unsigned char),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_ds_async_registerdevice_e,
+              (void *, TDS_SuplaRegisterDevice_E *),
+              (override));
   MOCK_METHOD(_supla_int_t, srpc_dcs_async_ping_server, (void *), (override));
-  MOCK_METHOD(_supla_int_t, srpc_csd_async_channel_state_result, (void *, TDSC_ChannelState *), (override));
-  MOCK_METHOD(_supla_int_t, srpc_dcs_async_get_user_localtime, (void *), (override));
-  MOCK_METHOD(_supla_int_t, actionTrigger, (unsigned char channel_number, int actionTrigger), (override));
-  MOCK_METHOD(_supla_int_t, getChannelConfig, (unsigned char channelNumber), (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_csd_async_channel_state_result,
+              (void *, TDSC_ChannelState *),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_dcs_async_get_user_localtime,
+              (void *),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              actionTrigger,
+              (unsigned char channel_number, int actionTrigger),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              getChannelConfig,
+              (unsigned char channelNumber),
+              (override));
 };
 
 #endif

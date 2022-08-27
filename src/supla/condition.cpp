@@ -71,14 +71,14 @@ void Supla::Condition::handleAction(int event, int action) {
         case SUPLA_CHANNELTYPE_DIMMER:
           value = source->getChannel()->getValueBrightness();
           break;
-		case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER:
-		  value = source->getChannel()->getValueColorBrightness();
-		  break;
-		case SUPLA_CHANNELTYPE_DIMMERANDRGBLED:
-		  value = useAlternativeValue
+        case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER:
+          value = source->getChannel()->getValueColorBrightness();
+          break;
+        case SUPLA_CHANNELTYPE_DIMMERANDRGBLED:
+          value = useAlternativeValue
             ? source->getChannel()->getValueColorBrightness()
             : source->getChannel()->getValueBrightness();
-		  break;
+          break;
           /* case SUPLA_CHANNELTYPE_ELECTRICITY_METER: */
 
         default:

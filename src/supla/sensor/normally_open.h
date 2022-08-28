@@ -26,7 +26,7 @@ namespace Sensor {
 class NormallyOpen : public Binary {
  public:
   explicit NormallyOpen(int pin, bool pullUp = false, bool invertLogic = false)
-      : Binary(pin, pullUp, invertLogic) 
+      : Binary(pin, pullUp, invertLogic) {
   }
 };
 

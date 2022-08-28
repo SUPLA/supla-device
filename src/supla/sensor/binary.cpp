@@ -26,8 +26,9 @@ Supla::Sensor::Binary::Binary(int pin, bool pullUp = false, bool invertLogic)
 }
 
 bool Supla::Sensor::Binary::getValue() {
-  int value = Supla::Io::digitalRead(channel.getChannelNumber(), pin) == LOW ?
-                                                                 false : true;
+  int value =
+    Supla::Io::digitalRead(channel.getChannelNumber(), pin) == LOW ? false
+                                                                   : true;
   value = !invertLogic ? value : !value;
   return value;
 }

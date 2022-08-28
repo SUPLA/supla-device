@@ -21,13 +21,13 @@
 #include "../io.h"
 
 Supla::Sensor::Binary::Binary(int pin, bool pullUp = false, bool invertLogic)
-    : pin(pin), pullUp(pullUp), invertLogic(invertLogic) ,lastReadTime(0) {
+    : pin(pin), pullUp(pullUp), invertLogic(invertLogic), lastReadTime(0) {
   channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
 }
 
 bool Supla::Sensor::Binary::getValue() {
-  int value = Supla::Io::digitalRead(channel.getChannelNumber(), pin) == LOW ? false
-                                                                             : true;
+  int value = Supla::Io::digitalRead(channel.getChannelNumber(), pin) == LOW ?
+                                                                 false : true;
   value = !invertLogic ? value : !value;
   return value;
 }

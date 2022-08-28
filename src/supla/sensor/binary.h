@@ -25,7 +25,7 @@ namespace Supla {
 namespace Sensor {
 class Binary : public ChannelElement {
  public:
-  Binary(int pin, bool pullUp);
+  Binary(int pin, bool pullUp, bool invertLogic = false);
   bool getValue();
   void iterateAlways();
   void onInit();
@@ -33,6 +33,7 @@ class Binary : public ChannelElement {
  protected:
   int pin;
   bool pullUp;
+  bool invertLogic;
   uint64_t lastReadTime;
 };
 

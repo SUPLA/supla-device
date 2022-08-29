@@ -25,7 +25,7 @@ namespace Supla {
 namespace Sensor {
 class Binary : public ChannelElement {
  public:
-  Binary(int pin, bool pullUp = false, bool invertLogic = false);
+  explicit Binary(int pin, bool pullUp = false, bool invertLogic = false);
   bool getValue();
   void iterateAlways();
   void onInit();

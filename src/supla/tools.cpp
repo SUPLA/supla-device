@@ -248,3 +248,33 @@ int strncmpInsensitive(const char *s1, const char *s2, int size) {
   return 0;
 }
 
+// Converts float with the precision specified by decLimit to int multiplied by
+// 10 raised to the power of decLimit, so if decLimit == 2 then "3.1415" -> 314
+int32_t floatStringToInt(const char *str, int precision) {
+  int32_t result = 0;
+  int decimalPlaces = -1;
+  for (int i = 0; str[i] != 0; i++) {
+    if (str[i] >= '0' && str[i] <= '9') {
+      result = result * 10 + str[i] - '0';
+      if (decimalPlaces >= 0) {
+        decimalPlaces++;
+      }
+    } else if (str[i] == '.' || str[i] == ',') {
+      decimalPlaces++;
+    }
+    if (decimalPlaces >= precision) {
+      break;
+    }
+  }
+
+  if (decimalPlaces < 0) {
+    decimalPlaces = 0;
+  }
+
+  while (decimalPlaces < precision) {
+    result *= 10;
+    decimalPlaces++;
+  }
+
+  return result;
+}

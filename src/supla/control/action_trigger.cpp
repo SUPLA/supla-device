@@ -182,7 +182,6 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
       }
     }
   }
-
 }
 
 void Supla::Control::ActionTrigger::handleChannelConfig(

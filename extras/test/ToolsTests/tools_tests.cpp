@@ -282,3 +282,8 @@ TEST(ToolsTest, strncmpInsensitiveTests) {
   }
 }
 
+TEST(ToolsTests, floatStringToIntTests) {
+  EXPECT_EQ(floatStringToInt("10", 2), 1000);
+  EXPECT_EQ(floatStringToInt("3,1415", 3), 3141);
+  EXPECT_EQ(floatStringToInt("3,1415", 4), 31415);
+}

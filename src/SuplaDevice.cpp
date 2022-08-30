@@ -597,6 +597,10 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
 }
 
 void SuplaDeviceClass::enterConfigMode() {
+  if (enterConfigModeTimestamp == 0) {
+    enterConfigModeTimestamp = millis();
+  }
+
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
     // if we enter cfg mode with deviceMode already set to cfgmode, then
     // configuration is incomplete, so there is no timeout to leave config
@@ -814,7 +818,7 @@ void SuplaDeviceClass::handleAction(int event, int action) {
     case Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY: {
       if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
         goToConfigModeAsap = true;
-      } else {
+      } else if (millis() - enterConfigModeTimestamp > 2000) {
         resetToFactorySettings();
         scheduleSoftRestart(0);
       }

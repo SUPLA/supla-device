@@ -17,6 +17,9 @@
 */
 
 #include <supla/time.h>
+#include <supla/storage/storage.h>
+#include <supla/storage/config.h>
+#include <supla/network/html/button_multiclick_parameters.h>
 
 #include "button.h"
 
@@ -170,3 +173,16 @@ void Supla::Control::Button::repeatOnHoldEvery(unsigned int timeMs) {
 bool Supla::Control::Button::isBistable() const {
   return bistable;
 }
+
+void Supla::Control::Button::onLoadConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint32_t value = 300;
+    if (cfg->getUInt32(Supla::Html::BtnMulticlickTag, &value)) {
+      if (value >= 300 && value <= 10000) {
+        setMulticlickTime(value, isBistable());
+      }
+    }
+  }
+}
+

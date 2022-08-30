@@ -157,6 +157,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   uint64_t deviceRestartTimeoutTimestamp = 0;
   uint64_t waitForIterate = 0;
   uint64_t lastIterateTime = 0;
+  uint64_t enterConfigModeTimestamp = 0;
   unsigned int forceRestartTimeMs = 0;
   unsigned int resetOnConnectionFailTimeoutSec = 0;
 

@@ -54,6 +54,9 @@ uint32_t hexStringToInt(const char *str, int len);
 // Converts hex string value to integer
 uint32_t stringToUInt(const char *str, int len = -1);
 
+// Convers float value from string to integer with given precision
+int32_t floatStringToInt(const char *str, int precision);
+
 // Decode url string from buffer into buffer (inplace)
 // Replace '+' with ' '.
 // Replace %xy with proper byte.

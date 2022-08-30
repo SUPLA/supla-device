@@ -23,9 +23,25 @@
 #include <supla/channel.h>
 #include <supla/channel_element.h>
 #include <supla/control/virtual_relay.h>
+#include <supla/storage/storage.h>
 
-using testing::ElementsAreArray;
 using testing::_;
+using ::testing::SetArgPointee;
+using ::testing::DoAll;
+using ::testing::Pointee;
+using ::testing::Return;
+
+class StorageMock: public Supla::Storage {
+ public:
+  MOCK_METHOD(void, scheduleSave, (uint64_t), (override));
+  MOCK_METHOD(void, commit, (), (override));
+  MOCK_METHOD(int, readStorage, (unsigned int, unsigned char *, int, bool), (override));
+  MOCK_METHOD(int, writeStorage, (unsigned int, const unsigned char *, int), (override));
+  MOCK_METHOD(bool, readState, (unsigned char *, int), (override));
+  MOCK_METHOD(bool, writeState, (const unsigned char *, int), (override));
+
+};
+
 
 class ActionTriggerTests : public ::testing::Test {
   protected:
@@ -941,8 +957,9 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
 
 }
 
-TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttach) {
+TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   SrpcMock srpc;
+  StorageMock storage;
   TimeInterfaceStub time;
   Supla::Control::Button b1(10);
   Supla::Control::ActionTrigger at;
@@ -952,7 +969,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttach) {
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);
   b1.addAction(Supla::TURN_OFF, ah, Supla::ON_HOLD, true); // always enabled
   at.attach(b1);
-
+  at.enableStateStorage();
   at.disableATCapability(SUPLA_ACTION_CAP_HOLD);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x2);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x4);
@@ -961,8 +978,23 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttach) {
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_PRESS));
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_RELEASE));
 
+  EXPECT_CALL(storage, scheduleSave(2000));
+
+  // onLoadState expectations
+  uint32_t storedActionsFromServer = 0;
+  EXPECT_CALL(storage, readState(_, 4))
+     .WillOnce(DoAll(SetArgPointee<0>(storedActionsFromServer), Return(true)))
+     ;
+
+  // onSaveState expectations
+  EXPECT_CALL(storage, writeState(Pointee(storedActionsFromServer), 4));
+
+
   // on init call is executed in SuplaDevice.setup()
+  at.onLoadConfig();
+  at.onLoadState();
   at.onInit();
+  at.onSaveState();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1));
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());

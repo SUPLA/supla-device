@@ -63,20 +63,22 @@ Supla::Channel *Supla::Sensor::ThermHygroPressMeter::getSecondaryChannel() {
 
 void Supla::Sensor::ThermHygroPressMeter::addAction(int action,
                                             ActionHandler &client,
-                                            int event) {
+                                            int event,
+                                            bool alwaysEnabled) {
   // delegate secondary channel event registration to secondary channel
   switch (event) {
     case Supla::ON_SECONDARY_CHANNEL_CHANGE: {
-      getSecondaryChannel()->addAction(action, client, event);
+      getSecondaryChannel()->addAction(action, client, event, alwaysEnabled);
       return;
     }
   }
   // delegate all other events to primary channel
-  channel.addAction(action, client, event);
+  channel.addAction(action, client, event, alwaysEnabled);
 }
 
 void Supla::Sensor::ThermHygroPressMeter::addAction(int action,
                                             ActionHandler *client,
-                                            int event) {
-  addAction(action, *client, event);
+                                            int event,
+                                            bool alwaysEnabled) {
+  addAction(action, *client, event, alwaysEnabled);
 }

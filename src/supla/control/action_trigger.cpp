@@ -269,18 +269,33 @@ void Supla::Control::ActionTrigger::onInit() {
       disablesLocalOperation |= SUPLA_ACTION_CAP_TOGGLE_x5;
     }
 
-    attachedButton->addAction(Supla::SEND_AT_TURN_ON, this, Supla::ON_PRESS);
-    attachedButton->addAction(Supla::SEND_AT_TURN_OFF, this, Supla::ON_RELEASE);
-    attachedButton->addAction(
-        Supla::SEND_AT_TOGGLE_x1, this, Supla::ON_CLICK_1);
-    attachedButton->addAction(
-        Supla::SEND_AT_TOGGLE_x2, this, Supla::ON_CLICK_2);
-    attachedButton->addAction(
-        Supla::SEND_AT_TOGGLE_x3, this, Supla::ON_CLICK_3);
-    attachedButton->addAction(
-        Supla::SEND_AT_TOGGLE_x4, this, Supla::ON_CLICK_4);
-    attachedButton->addAction(
-        Supla::SEND_AT_TOGGLE_x5, this, Supla::ON_CLICK_5);
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TURN_ON)) {
+      attachedButton->addAction(Supla::SEND_AT_TURN_ON, this, Supla::ON_PRESS);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TURN_OFF)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_TURN_OFF, this, Supla::ON_RELEASE);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TOGGLE_x1)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_TOGGLE_x1, this, Supla::ON_CLICK_1);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TOGGLE_x2)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_TOGGLE_x2, this, Supla::ON_CLICK_2);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TOGGLE_x3)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_TOGGLE_x3, this, Supla::ON_CLICK_3);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TOGGLE_x4)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_TOGGLE_x4, this, Supla::ON_CLICK_4);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_TOGGLE_x5)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_TOGGLE_x5, this, Supla::ON_CLICK_5);
+    }
   }
 
   // Configure default actions for monostable button
@@ -304,18 +319,34 @@ void Supla::Control::ActionTrigger::onInit() {
       disablesLocalOperation |= SUPLA_ACTION_CAP_SHORT_PRESS_x5;
     }
 
-    attachedButton->addAction(Supla::SEND_AT_HOLD, this, Supla::ON_HOLD);
-    attachedButton->addAction(
-        Supla::SEND_AT_SHORT_PRESS_x1, this, Supla::ON_CLICK_1);
-    attachedButton->addAction(
-        Supla::SEND_AT_SHORT_PRESS_x2, this, Supla::ON_CLICK_2);
-    attachedButton->addAction(
-        Supla::SEND_AT_SHORT_PRESS_x3, this, Supla::ON_CLICK_3);
-    attachedButton->addAction(
-        Supla::SEND_AT_SHORT_PRESS_x4, this, Supla::ON_CLICK_4);
-    attachedButton->addAction(
-        Supla::SEND_AT_SHORT_PRESS_x5, this, Supla::ON_CLICK_5);
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_HOLD)) {
+      attachedButton->addAction(Supla::SEND_AT_HOLD, this, Supla::ON_HOLD);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_SHORT_PRESS_x1)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_SHORT_PRESS_x1, this, Supla::ON_CLICK_1);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_SHORT_PRESS_x2)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_SHORT_PRESS_x2, this, Supla::ON_CLICK_2);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_SHORT_PRESS_x3)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_SHORT_PRESS_x3, this, Supla::ON_CLICK_3);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_SHORT_PRESS_x4)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_SHORT_PRESS_x4, this, Supla::ON_CLICK_4);
+    }
+    if (!(disabledCapabilities & SUPLA_ACTION_CAP_SHORT_PRESS_x5)) {
+      attachedButton->addAction(
+          Supla::SEND_AT_SHORT_PRESS_x5, this, Supla::ON_CLICK_5);
+    }
   }
 
   channel.setDisablesLocalOperation(disablesLocalOperation);
+}
+
+void Supla::Control::ActionTrigger::disableATCapability(uint32_t capToDisable) {
+  disabledCapabilities |= capToDisable;
 }

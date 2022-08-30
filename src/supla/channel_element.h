@@ -34,15 +34,19 @@ class ChannelElement : public Element, public LocalAction {
   // Override local action methods in order to delegate execution to Channel
   void addAction(int action,
       ActionHandler &client,  // NOLINT(runtime/references)
-      int event) override;
-  void addAction(int action, ActionHandler *client, int event) override;
+      int event,
+      bool alwaysEnabled = false) override;
+  void addAction(int action, ActionHandler *client, int event,
+      bool alwaysEnabled = false) override;
   bool isEventAlreadyUsed(int event) override;
 
   virtual void addAction(int action,
       ActionHandler &client,  // NOLINT(runtime/references)
-      Supla::Condition *condition);
+      Supla::Condition *condition,
+      bool alwaysEnabled = false);
   virtual void addAction(int action, ActionHandler *client,
-      Supla::Condition *condition);
+      Supla::Condition *condition,
+      bool alwaysEnabled = false);
 
  protected:
   Channel channel;

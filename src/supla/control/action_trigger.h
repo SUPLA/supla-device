@@ -56,6 +56,8 @@ class ActionTrigger : public Element, public ActionHandler {
   void onRegistered() override;
   void handleChannelConfig(TSD_ChannelConfig *result) override;
 
+  void disableATCapability(uint32_t capToDisable);
+
   static int actionTriggerCapToButtonEvent(uint32_t actionCap);
   static int getActionTriggerCap(int action);
 
@@ -64,6 +66,7 @@ class ActionTrigger : public Element, public ActionHandler {
   Supla::Control::Button *attachedButton = nullptr;
   uint32_t activeActionsFromServer = 0;
   uint32_t disablesLocalOperation = 0;
+  uint32_t disabledCapabilities = 0;
 
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;

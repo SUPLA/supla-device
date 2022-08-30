@@ -53,7 +53,14 @@ void ActionHandlerClient::enable() {
 }
 
 void ActionHandlerClient::disable() {
-  enabled = false;
+  if (!alwaysEnabled) {
+    enabled = false;
+  }
+}
+
+void ActionHandlerClient::setAlwaysEnabled() {
+  alwaysEnabled = true;
+  enabled = true;
 }
 
 ActionHandlerClient *ActionHandlerClient::begin = nullptr;
@@ -74,17 +81,22 @@ LocalAction::~LocalAction() {
   }
 }
 
-void LocalAction::addAction(int action, ActionHandler &client, int event) {
+void LocalAction::addAction(int action, ActionHandler &client, int event,
+    bool alwaysEnabled) {
   auto ptr = new ActionHandlerClient;
   ptr->trigger = this;
   ptr->client = &client;
   ptr->onEvent = event;
   ptr->action = action;
   ptr->client->activateAction(action);
+  if (alwaysEnabled) {
+    ptr->setAlwaysEnabled();
+  }
 }
 
-void LocalAction::addAction(int action, ActionHandler *client, int event) {
-  addAction(action, *client, event);
+void LocalAction::addAction(int action, ActionHandler *client, int event,
+    bool alwaysEnabled) {
+  addAction(action, *client, event, alwaysEnabled);
 }
 
 void LocalAction::runAction(int event) {

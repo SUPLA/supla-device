@@ -39,11 +39,14 @@ class ActionHandlerClient {
   static ActionHandlerClient *begin;
 
   bool isEnabled();
+
+  virtual void setAlwaysEnabled();
   virtual void enable();
   virtual void disable();
 
  protected:
   bool enabled = true;
+  bool alwaysEnabled = false;
 };
 
 class LocalAction {
@@ -51,8 +54,10 @@ class LocalAction {
   virtual ~LocalAction();
   virtual void addAction(int action,
       ActionHandler &client,   // NOLINT(runtime/references)
-      int event);
-  virtual void addAction(int action, ActionHandler *client, int event);
+      int event,
+      bool alwaysEnabled = false);
+  virtual void addAction(int action, ActionHandler *client, int event,
+      bool alwaysEnabled = false);
 
   virtual void runAction(int event);
 

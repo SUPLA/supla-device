@@ -23,14 +23,16 @@ Supla::Channel *Supla::ChannelElement::getChannel() {
 
 void Supla::ChannelElement::addAction(int action,
     ActionHandler &client,
-    int event) {
-  channel.addAction(action, client, event);
+    int event,
+    bool alwaysEnabled) {
+  channel.addAction(action, client, event, alwaysEnabled);
 }
 
 void Supla::ChannelElement::addAction(int action,
     ActionHandler *client,
-    int event) {
-  addAction(action, *client, event);
+    int event,
+    bool alwaysEnabled) {
+  addAction(action, *client, event, alwaysEnabled);
 }
 
 bool Supla::ChannelElement::isEventAlreadyUsed(int event) {
@@ -39,15 +41,17 @@ bool Supla::ChannelElement::isEventAlreadyUsed(int event) {
 
 void Supla::ChannelElement::addAction(int action,
     ActionHandler &client,
-    Supla::Condition *condition) {
+    Supla::Condition *condition,
+    bool alwaysEnabled) {
   condition->setClient(client);
   condition->setSource(this);
-  channel.addAction(action, condition, Supla::ON_CHANGE);
+  channel.addAction(action, condition, Supla::ON_CHANGE, alwaysEnabled);
 }
 
 void Supla::ChannelElement::addAction(int action,
     ActionHandler *client,
-    Supla::Condition *condition) {
-  addAction(action, *client, condition);
+    Supla::Condition *condition,
+    bool alwaysEnabled) {
+  addAction(action, *client, condition, alwaysEnabled);
 }
 

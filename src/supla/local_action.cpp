@@ -44,6 +44,18 @@ ActionHandlerClient::~ActionHandlerClient() {
   ptr->next = ptr->next->next;
 }
 
+bool ActionHandlerClient::isEnabled() {
+  return enabled;
+}
+
+void ActionHandlerClient::enable() {
+  enabled = true;
+}
+
+void ActionHandlerClient::disable() {
+  enabled = false;
+}
+
 ActionHandlerClient *ActionHandlerClient::begin = nullptr;
 
 LocalAction::~LocalAction() {
@@ -78,7 +90,7 @@ void LocalAction::addAction(int action, ActionHandler *client, int event) {
 void LocalAction::runAction(int event) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
-    if (ptr->trigger == this && ptr->onEvent == event && ptr->enabled) {
+    if (ptr->trigger == this && ptr->onEvent == event && ptr->isEnabled()) {
       ptr->client->handleAction(event, ptr->action);
     }
     ptr = ptr->next;
@@ -113,7 +125,7 @@ void LocalAction::disableOtherClients(const ActionHandler *client, int event) {
   while (ptr) {
     if (ptr->trigger == this && ptr->onEvent == event &&
         ptr->client != client) {
-      ptr->enabled = false;
+      ptr->disable();
     }
     ptr = ptr->next;
   }
@@ -124,7 +136,7 @@ void LocalAction::enableOtherClients(const ActionHandler *client, int event) {
   while (ptr) {
     if (ptr->trigger == this && ptr->onEvent == event &&
         ptr->client != client) {
-      ptr->enabled = true;
+      ptr->enable();
     }
     ptr = ptr->next;
   }

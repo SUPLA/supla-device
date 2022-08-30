@@ -162,15 +162,15 @@ void Supla::Control::ActionTrigger::handleChannelConfig(
         // disable on_press, on_release, on_change local actions and enable
         // on_click_1
         if (localHandlerForDisabledAt && localHandlerForEnabledAt) {
-          localHandlerForDisabledAt->enabled = false;
-          localHandlerForEnabledAt->enabled = true;
+          localHandlerForDisabledAt->disable();
+          localHandlerForEnabledAt->enable();
         }
       } else {
         // enable on_press, on_release, on_change local actions and
         // disable on_click_1
         if (localHandlerForDisabledAt && localHandlerForEnabledAt) {
-          localHandlerForDisabledAt->enabled = true;
-          localHandlerForEnabledAt->enabled = false;
+          localHandlerForDisabledAt->enable();
+          localHandlerForEnabledAt->disable();
           makeSureThatOnClick1IsDisabled = true;
         }
       }
@@ -186,7 +186,7 @@ void Supla::Control::ActionTrigger::handleChannelConfig(
           if (makeSureThatOnClick1IsDisabled &&
               eventToEnable == Supla::ON_CLICK_1) {
             makeSureThatOnClick1IsDisabled = false;
-            localHandlerForEnabledAt->enabled = false;
+            localHandlerForEnabledAt->disable();
           }
         }
       }
@@ -241,7 +241,7 @@ void Supla::Control::ActionTrigger::onInit() {
                                 Supla::ON_CLICK_1);
       localHandlerForEnabledAt =
           attachedButton->getHandlerForFirstClient(Supla::ON_CLICK_1);
-      localHandlerForEnabledAt->enabled = false;
+      localHandlerForEnabledAt->disable();
     }
   }
 

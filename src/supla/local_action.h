@@ -29,15 +29,21 @@ class ActionHandlerClient {
  public:
   ActionHandlerClient();
 
-  ~ActionHandlerClient();
+  virtual ~ActionHandlerClient();
 
   LocalAction *trigger = nullptr;
   ActionHandler *client = nullptr;
   ActionHandlerClient *next = nullptr;
   uint8_t onEvent = 0;
   uint8_t action = 0;
-  bool enabled = true;
   static ActionHandlerClient *begin;
+
+  bool isEnabled();
+  virtual void enable();
+  virtual void disable();
+
+ protected:
+  bool enabled = true;
 };
 
 class LocalAction {

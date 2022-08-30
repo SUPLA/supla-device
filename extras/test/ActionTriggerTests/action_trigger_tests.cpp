@@ -336,8 +336,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   at.onInit();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1));
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   at.iterateConnected(0);
 
@@ -379,8 +379,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   // ON_CLICK_1 should be executed on local ah element
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);   // this one should be disabled
   b1.runAction(Supla::ON_CLICK_1); // local execution
@@ -409,8 +409,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_CLICK_1);
@@ -425,8 +425,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_CLICK_1);
@@ -440,8 +440,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_CLICK_1);
@@ -471,8 +471,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   at.onInit();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1));
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   at.iterateConnected(0);
 
@@ -514,8 +514,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   // ON_CLICK_1 should be executed on local ah element
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_RELEASE);   // this one should be disabled
   b1.runAction(Supla::ON_CLICK_1); // local execution
@@ -544,8 +544,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_RELEASE);
   b1.runAction(Supla::ON_CLICK_1);
@@ -560,8 +560,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_RELEASE);
   b1.runAction(Supla::ON_CLICK_1);
@@ -575,8 +575,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_RELEASE);
   b1.runAction(Supla::ON_CLICK_1);
@@ -608,8 +608,8 @@ TEST_F(ActionTriggerTests,
   at.onInit();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1));
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
 
   at.iterateConnected(0);
 
@@ -651,8 +651,8 @@ TEST_F(ActionTriggerTests,
 
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_RELEASE);
@@ -681,8 +681,8 @@ TEST_F(ActionTriggerTests,
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_RELEASE);
@@ -698,8 +698,8 @@ TEST_F(ActionTriggerTests,
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_RELEASE);
@@ -714,8 +714,8 @@ TEST_F(ActionTriggerTests,
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_RELEASE);
@@ -746,8 +746,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   at.onInit();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1));
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   at.iterateConnected(0);
 
@@ -785,8 +785,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   // ON_CLICK_1 should be executed on local ah element
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_CHANGE);   // this one should be disabled
   b1.runAction(Supla::ON_CLICK_1); // local execution
@@ -812,8 +812,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_CHANGE);
   b1.runAction(Supla::ON_CLICK_1);
@@ -827,8 +827,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->enabled);
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_CHANGE);
   b1.runAction(Supla::ON_CLICK_1);
@@ -842,8 +842,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->enabled);
-  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->enabled);
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
+  EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
   b1.runAction(Supla::ON_CHANGE);
   b1.runAction(Supla::ON_CLICK_1);

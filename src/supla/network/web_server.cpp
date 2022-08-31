@@ -214,7 +214,7 @@ void Supla::WebServer::parsePost(const char *postContent,
           if (reboot == 2) {
             sdc->scheduleSoftRestart(2500);
           } else if (reboot) {
-            sdc->scheduleSoftRestart();
+            sdc->scheduleSoftRestart(1000);
           }
         }
         partialSize = 0;
@@ -229,6 +229,7 @@ void Supla::WebServer::parsePost(const char *postContent,
   if (lastChunk) {
     if (Supla::Storage::ConfigInstance()) {
       Supla::Storage::ConfigInstance()->commit();
+      sdc->disableLocalActionsIfNeeded();
     }
     resetParser();
   }

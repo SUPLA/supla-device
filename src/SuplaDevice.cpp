@@ -601,6 +601,8 @@ void SuplaDeviceClass::enterConfigMode() {
     enterConfigModeTimestamp = millis();
   }
 
+  disableLocalActionsIfNeeded();
+
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
     // if we enter cfg mode with deviceMode already set to cfgmode, then
     // configuration is incomplete, so there is no timeout to leave config
@@ -967,6 +969,21 @@ void SuplaDeviceClass::setCustomHostnamePrefix(const char *prefix) {
   int len = strlen(prefix);
   customHostnamePrefix = new char[len + 1];
   strncpy(customHostnamePrefix, prefix, len + 1);
+}
+
+void SuplaDeviceClass::disableLocalActionsIfNeeded() {
+  // Disable local actions/buttons if minimal config is ready.
+  // This is required to have buttons working for device with empty
+  // configuration, instead of handling device reset
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg && cfg->isMinimalConfigReady()) {
+    auto ptr = Supla::ActionHandlerClient::begin;
+    while (ptr) {
+      ptr->disable();  // some actions can be created with "alwaysEnabled" flag
+                       // in such case, disable() has no effect
+      ptr = ptr->next;
+    }
+  }
 }
 
 SuplaDeviceClass SuplaDevice;

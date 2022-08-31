@@ -120,6 +120,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void saveStateToStorage();
   void disableCfgModeTimeout();
   void resetToFactorySettings();
+  void disableLocalActionsIfNeeded();
 
   int getCurrentStatus();
   bool loadDeviceConfig();

@@ -157,5 +157,5 @@ class HX711 : public Weight {
 
 };  // namespace Sensor
 };  // namespace Supla
-  
+
 #endif  // SRC_SUPLA_SENSOR_HX711_H_

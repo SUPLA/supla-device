@@ -26,6 +26,18 @@
 #error This file is for ESP-IDF platform
 #endif
 
+#ifndef SUPLA_DEVICE_ESP32
+// ESP8266 RTOS SDK doesn't provide some methods, so we add empty implementation
+
+void gpio_hold_en(gpio_num_t gpio) {
+  (void)(gpio);
+}
+
+void gpio_hold_dis(gpio_num_t gpio) {
+  (void)(gpio);
+}
+#endif
+
 void pinMode(uint8_t pin, uint8_t mode) {
   SUPLA_LOG_DEBUG(" *** GPIO %d set mode %d", pin, mode);
 

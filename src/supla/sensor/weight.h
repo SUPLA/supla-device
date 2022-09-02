@@ -40,9 +40,9 @@ class Weight : public ChannelElement, public ActionHandler {
   virtual double getValue() {
     return WEIGHT_NOT_AVAILABLE;
   }
-  
+
   virtual void tareScales() = 0;
-  
+
   void handleAction(int event, int action) {
   (void) (event);
   switch (action) {

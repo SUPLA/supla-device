@@ -31,7 +31,7 @@ namespace Sensor {
 
 #pragma pack(push, 1)
 struct HX711ConfigData {
-  long tareOffset;
+  uint32_t tareOffset;
   float calValue;
 };
 #pragma pack(pop)
@@ -66,7 +66,7 @@ class HX711 : public Weight {
       hx711Sensor.setCalFactor(calFactor);
       SUPLA_LOG_DEBUG("HX711 startup is complete");
     }
-    while (!hx711Sensor.update());
+    while (!hx711Sensor.update()) {}
     SUPLA_LOG_INFO("HX711 calibration value: %.2f", hx711Sensor.getCalFactor());
     SUPLA_LOG_INFO(
         "HX711 measured conversion time ms: %.2f",
@@ -148,15 +148,14 @@ class HX711 : public Weight {
   int sdaPin;
   int sclPin;
   float value = 0;
-  long tareOffset = 0;
+  uint32_t tareOffset = 0;
   float calFactor;
   float defCalValue;
   float calValue = 0;
   bool readyToCalibration = false;
-
 };
 
-}; // namespace Sensor
-}; // namespace Supla
+};  // namespace Sensor
+};  // namespace Supla
   
 #endif  // SRC_SUPLA_SENSOR_HX711_H_

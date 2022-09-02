@@ -20,10 +20,10 @@
 namespace Supla {
 namespace Sensor {
 class AHT : public ThermHygroMeter {
- public:
-  void onInit (){
-      aht.begin();
-  }
+	public:
+	void onInit (){
+		aht.begin();
+	}
   double getTemp() {
     double value = TEMPERATURE_NOT_AVAILABLE;
     aht.getEvent(&humidity, &temp);
@@ -70,14 +70,14 @@ class AHT : public ThermHygroMeter {
     }
   }
  protected:
-  Adafruit_AHTX0 aht;
-  double lastValidTemp=TEMPERATURE_NOT_AVAILABLE;
-  double lastValidHumi=HUMIDITY_NOT_AVAILABLE;
-  int8_t retryCountTemp=0;
-  int8_t retryCountHumi=0;
-  sensors_event_t temp;
-  sensors_event_t humidity;
+	Adafruit_AHTX0 aht;
+	double lastValidTemp=TEMPERATURE_NOT_AVAILABLE;
+	double lastValidHumi=HUMIDITY_NOT_AVAILABLE;
+	int8_t retryCountTemp=0;
+	int8_t retryCountHumi=0;
+	sensors_event_t temp;
+	sensors_event_t humidity;
 };
-};  // namespace Sensor
-};  // namespace Supla
-#endif  // SRC_SUPLA_SENSOR_AHT_H_
+};// namespace Sensor
+};// namespace Supla
+#endif//SRC_SUPLA_SENSOR_AHT_H_

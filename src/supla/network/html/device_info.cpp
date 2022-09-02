@@ -22,6 +22,7 @@
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
 #include <supla/tools.h>
+#include <supla/log_wrapper.h>
 
 namespace Supla {
 
@@ -38,7 +39,6 @@ void DeviceInfo::send(Supla::WebSender *sender) {
   sender->send(Supla::Channel::reg_dev.Name);
   sender->send("</h1><span>");
   if (sdc && sdc->prepareLastStateLog()) {
-    // sender->send("LAST STATE:<ul>");
     sender->send("LAST STATE: ");
 
     bool firstElemenet = true;
@@ -48,11 +48,8 @@ void DeviceInfo::send(Supla::WebSender *sender) {
       }
       firstElemenet = false;
 
-      // sender->send("<li>");
       sender->send(lastState);
-      // sender->send("</li>");
     }
-    // sender->send("</ul>");
   }
   sender->send("<br>Firmware: ");
   sender->send(Supla::Channel::reg_dev.SoftVer);

@@ -413,7 +413,7 @@ void Config::generateKey(char *output, int number, const char *key) {
 }
 
 bool Config::isMinimalConfigReady() {
-  char buf[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  char buf[SUPLA_EMAIL_MAXSIZE] = {};
 
   // Common part
   memset(buf, 0, sizeof(buf));

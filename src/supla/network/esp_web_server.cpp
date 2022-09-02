@@ -30,6 +30,7 @@
 #include "esp_web_server.h"
 
 static Supla::EspWebServer *serverInstance = nullptr;
+static int reboot = 0;
 
 void getFavicon() {
   SUPLA_LOG_DEBUG("SERVER: get favicon.ico");
@@ -70,7 +71,14 @@ void postHandler() {
   SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost()) {
-      getHandler();
+      // rtb/reboot == 1 is send by mobile applications. After such message
+      // they disconnect from device's Wi-Fi, however ESP32 WebServer
+      // implementation will try to send each chunk of HTML from getHanlder
+      // with very long timeout. In order to prevent app from hanging, we
+      // skip getHandler in such case.
+      if (reboot != 1) {
+        getHandler();
+      }
     }
   }
 }
@@ -114,15 +122,20 @@ bool Supla::EspWebServer::handlePost() {
       }
     }
     if (strcmp(server.argName(i).c_str(), "rbt") == 0) {
-      int reboot = stringToUInt(server.arg(i).c_str());
+      reboot = stringToUInt(server.arg(i).c_str());
       SUPLA_LOG_DEBUG("rbt found %d", reboot);
       if (reboot == 2) {
         sdc->scheduleSoftRestart(2500);
       } else if (reboot) {
-        sdc->scheduleSoftRestart();
+        sdc->scheduleSoftRestart(1000);
       }
     }
     delay(1);
+  }
+
+  if (Supla::Storage::ConfigInstance()) {
+    Supla::Storage::ConfigInstance()->commit();
+    sdc->disableLocalActionsIfNeeded();
   }
 
   // call getHandler to generate config html page
@@ -168,6 +181,11 @@ void Supla::EspSender::send(const char *buf, int size) {
   if (error || !buf || !reqHandler) {
     return;
   }
+  if (!reqHandler->client().connected()) {
+    error = true;
+    return;
+  }
+
   if (size == -1) {
     size = strlen(buf);
   }

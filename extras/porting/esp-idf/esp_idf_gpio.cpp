@@ -34,6 +34,8 @@ void pinMode(uint8_t pin, uint8_t mode) {
   switch (mode) {
     case INPUT: {
       cfg.mode = GPIO_MODE_INPUT;
+      gpio_num_t gpio = static_cast<gpio_num_t>(pin);
+      gpio_hold_dis(gpio);
       break;
     }
     case OUTPUT: {
@@ -45,6 +47,8 @@ void pinMode(uint8_t pin, uint8_t mode) {
     case INPUT_PULLUP: {
       cfg.mode = GPIO_MODE_INPUT;
       cfg.pull_up_en = GPIO_PULLUP_ENABLE;
+      gpio_num_t gpio = static_cast<gpio_num_t>(pin);
+      gpio_hold_dis(gpio);
       break;
     }
     default: {
@@ -61,7 +65,10 @@ int digitalRead(uint8_t pin) {
 }
 
 void digitalWrite(uint8_t pin, uint8_t val) {
-  gpio_set_level(static_cast<gpio_num_t>(pin), val);
+  gpio_num_t gpio = static_cast<gpio_num_t>(pin);
+  gpio_hold_dis(gpio);
+  gpio_set_level(gpio, val);
+  gpio_hold_en(gpio);
 }
 
 void analogWrite(uint8_t pin, int val) {

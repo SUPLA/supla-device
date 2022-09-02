@@ -22,3 +22,8 @@ void deviceSoftwareReset() {
   std::exit(1);
 }
 
+bool isLastResetSoft() {
+  // TODO(klew): implement
+  return false;
+}
+

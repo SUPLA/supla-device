@@ -21,12 +21,15 @@
 
 #include "supla/channel_element.h"
 #include "supla/element.h"
+#include "../action_handler.h"
+#include "../local_action.h"
+#include "../actions.h"
 
 #define WEIGHT_NOT_AVAILABLE -1
 
 namespace Supla {
 namespace Sensor {
-class Weight : public ChannelElement {
+class Weight : public ChannelElement, public ActionHandler {
  public:
   Weight() {
     channel.setType(SUPLA_CHANNELTYPE_WEIGHTSENSOR);
@@ -37,9 +40,21 @@ class Weight : public ChannelElement {
   virtual double getValue() {
     return WEIGHT_NOT_AVAILABLE;
   }
+  
+  virtual void tareScales() = 0;
+  
+  void handleAction(int event, int action) {
+  (void) (event);
+  switch (action) {
+    case Supla::TARE_SCALES: {
+      tareScales();
+      break;
+    }
+  }
+  }
 
   void iterateAlways() {
-    if (lastReadTime + 10000 < millis()) {
+    if (millis() - lastReadTime > 10000) {
       lastReadTime = millis();
       channel.setNewValue(getValue());
     }

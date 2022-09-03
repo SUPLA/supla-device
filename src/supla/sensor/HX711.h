@@ -46,7 +46,9 @@ class HX711 : public Weight {
   double getValue() {
     if ((hx711Sensor.getSPS() < 7) || (hx711Sensor.getSPS() > 100)) {
       value = WEIGHT_NOT_AVAILABLE;
-      SUPLA_LOG_DEBUG("HX711 sampling rate is abnormal, check connection");
+      SUPLA_LOG_DEBUG(
+          "HX711 measured sampling rate: %.2f HZ is abnormal, check connection"
+           , hx711Sensor.getSPS());
     } else {
       value = (value < 0 && value > -1) ? 0 : value;
     }
@@ -73,7 +75,7 @@ class HX711 : public Weight {
         "HX711 measured conversion time ms: %.2f",
          hx711Sensor.getConversionTime());
     SUPLA_LOG_DEBUG(
-        "HX711 measured sampling rate HZ: %.2f", hx711Sensor.getSPS());
+        "HX711 measured sampling rate: %.2f HZ", hx711Sensor.getSPS());
     SUPLA_LOG_INFO(
         "HX711 measured settling time ms: %d", hx711Sensor.getSettlingTime());
     channel.setNewValue(getValue());
@@ -105,11 +107,11 @@ class HX711 : public Weight {
   }
 
   void iterateAlways() {
+    if (hx711Sensor.update()) {
+      value = hx711Sensor.getData();
+    }
     if (millis() - lastReadTime > 500) {
       lastReadTime = millis();
-      if (hx711Sensor.update()) {
-       value = hx711Sensor.getData();
-      }
       channel.setNewValue(getValue());
     }
   }
@@ -143,6 +145,8 @@ class HX711 : public Weight {
 
  protected:
   ::HX711_ADC hx711Sensor;
+  int sdaPin;
+  int sclPin;
   float value = 0;
   uint32_t tareOffset = 0;
   float calFactor = 0;

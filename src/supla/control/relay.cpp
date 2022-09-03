@@ -21,6 +21,7 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <supla/tools.h>
 
 #include "../actions.h"
 #include "../io.h"
@@ -51,16 +52,28 @@ uint8_t Relay::pinOffValue() {
 }
 
 void Relay::onInit() {
+  bool stateOn = false;
   if (stateOnInit == STATE_ON_INIT_ON ||
       stateOnInit == STATE_ON_INIT_RESTORED_ON) {
-    turnOn();
-  } else {
-    turnOff();
+    stateOn = true;
+  }
+  if (!isLastResetSoft()) {
+    if (stateOn) {
+      turnOn();
+    } else {
+      turnOff();
+    }
   }
 
   // pin mode is set after setting pin value in order to
   // avoid problems with LOW trigger relays
   Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT);
+
+  if (stateOn) {
+    turnOn();
+  } else {
+    turnOff();
+  }
 }
 
 void Relay::iterateAlways() {

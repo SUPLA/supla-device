@@ -397,7 +397,6 @@ void SuplaDeviceClass::iterate(void) {
     case Supla::DEVICE_MODE_SW_UPDATE: {
       auto cfg = Supla::Storage::ConfigInstance();
       if (swUpdate == nullptr) {
-        status(STATUS_SW_DOWNLOAD, "SW update in progress...");
         char url[SUPLA_MAX_URL_LENGTH] = {};
         if (cfg) {
           cfg->getSwUpdateServer(url);
@@ -412,7 +411,10 @@ void SuplaDeviceClass::iterate(void) {
           swUpdate->useBeta();
         }
       }
-      if (!swUpdate->isStarted()) {
+      if (swUpdate == nullptr) {
+        SUPLA_LOG_WARNING("Failed to create SW update instance");
+      } else if (!swUpdate->isStarted()) {
+        status(STATUS_SW_DOWNLOAD, "SW update in progress...");
         SUPLA_LOG_INFO("Starting SW update");
         Supla::Network::Disconnect();
         swUpdate->start();
@@ -428,13 +430,13 @@ void SuplaDeviceClass::iterate(void) {
           swUpdate = nullptr;
           scheduleSoftRestart();
         }
-        if (swUpdate == nullptr) {
-          deviceMode = Supla::DEVICE_MODE_NORMAL;
-          if (cfg) {
-            cfg->setDeviceMode(Supla::DEVICE_MODE_NORMAL);
-            cfg->setSwUpdateBeta(false);
-            cfg->commit();
-          }
+      }
+      if (swUpdate == nullptr) {
+        deviceMode = Supla::DEVICE_MODE_NORMAL;
+        if (cfg) {
+          cfg->setDeviceMode(Supla::DEVICE_MODE_NORMAL);
+          cfg->setSwUpdateBeta(false);
+          cfg->commit();
         }
       }
       break;

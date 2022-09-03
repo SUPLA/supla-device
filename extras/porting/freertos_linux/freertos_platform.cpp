@@ -20,3 +20,8 @@ void deviceSoftwareReset() {
   // TODO(klew): implement device sw reset for freeRTOS
 }
 
+bool isLastResetSoft() {
+  // TODO(klew): implement
+  return false;
+}
+

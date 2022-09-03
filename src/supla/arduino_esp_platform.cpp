@@ -158,6 +158,11 @@ void deviceSoftwareReset() {
   ESP.restart();
 }
 
+bool isLastResetSoft() {
+  // TODO(klew): implement
+  return false;
+}
+
 Supla::Client *Supla::ClientBuilder() {
   return new Supla::ArduinoEspClient;
 }

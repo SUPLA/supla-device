@@ -73,5 +73,6 @@ int strncmpInsensitive(const char *s1, const char *s2, int size);
 
 // This method should be implemented in platform specific cpp file
 void deviceSoftwareReset();
+bool isLastResetSoft();
 
 #endif  // SRC_SUPLA_TOOLS_H_

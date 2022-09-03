@@ -67,6 +67,11 @@ void deviceSoftwareReset() {
   // TODO(klew): implement software reset for Arduino IDE based targets
 }
 
+bool isLastResetSoft() {
+  // TODO(klew): implement
+  return false;
+}
+
 Supla::Client *Supla::ClientBuilder() {
   return new Supla::ArduinoMegaClient;
 }

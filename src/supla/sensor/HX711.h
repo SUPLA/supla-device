@@ -51,6 +51,9 @@ class HX711 : public Weight {
            , hx711Sensor.getSPS());
     } else {
       value = (value < 0 && value > -1) ? 0 : value;
+      // Displaying one decimal in Cloud
+      int tmp = static_cast<int>(value*10);
+      value = static_cast<double>(tmp/10.0);
     }
     return value;
   }
@@ -107,6 +110,8 @@ class HX711 : public Weight {
   }
 
   void iterateAlways() {
+    // According to the library, the sampling frequency
+    // must be in the range 7 - 100 Hz. Now, it's around 10.5 Hz.
     if (hx711Sensor.update()) {
       value = hx711Sensor.getData();
     }
@@ -147,7 +152,7 @@ class HX711 : public Weight {
   ::HX711_ADC hx711Sensor;
   int sdaPin;
   int sclPin;
-  float value = 0;
+  double value = 0;
   uint32_t tareOffset = 0;
   float calFactor = 0;
   float defCalValue;

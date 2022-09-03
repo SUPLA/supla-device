@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #elif defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
   // ESP8266 and ESP32 based board:
   #include <supla/network/esp_wifi.h>
-  Supla::ESPWifi wifi(WIFI_SSID,WIFI_PWD);
+  Supla::ESPWifi wifi("your_wifi_ssid", "your_wifi_password");
 #endif
 
 /*

@@ -39,8 +39,7 @@ struct HX711ConfigData {
 class HX711 : public Weight {
  public:
   HX711(int sdaPin, int sclPin, float defCalValue = 696.0)
-      : sdaPin(sdaPin), sclPin(sclPin), defCalValue(defCalValue),
-          hx711Sensor(sdaPin, sclPin) {
+      : defCalValue(defCalValue), hx711Sensor(sdaPin, sclPin) {
   }
 
   double getValue() {
@@ -150,8 +149,6 @@ class HX711 : public Weight {
 
  protected:
   ::HX711_ADC hx711Sensor;
-  int sdaPin;
-  int sclPin;
   double value = 0;
   uint32_t tareOffset = 0;
   float calFactor = 0;

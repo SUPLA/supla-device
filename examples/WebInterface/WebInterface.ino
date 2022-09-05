@@ -106,10 +106,8 @@ void setup() {
   buttonClose->setHoldTime(1000);
   buttonClose->setMulticlickTime(300);
 
-  buttonCfgRelay->setHoldTime(1000);
-  buttonCfgRelay->setMulticlickTime(300);
+  buttonCfgRelay->configureAsConfigButton();
   buttonCfgRelay->addAction(Supla::TOGGLE, r1, Supla::ON_CLICK_1);
-  buttonCfgRelay->addAction(Supla::TOGGLE_CONFIG_MODE, SuplaDevice, Supla::ON_HOLD);
 
   // Action trigger configuration
   at1->setRelatedChannel(rs);

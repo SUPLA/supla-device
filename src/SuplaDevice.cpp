@@ -403,7 +403,8 @@ void SuplaDeviceClass::iterate(void) {
         }
         if (strlen(url) == 0) {
           swUpdate =
-              Supla::Device::SwUpdate::Create(this, "http://update.supla.org");
+              Supla::Device::SwUpdate::Create(
+                  this, "https://updates.supla.org/check-updates");
         } else {
           swUpdate = Supla::Device::SwUpdate::Create(this, url);
         }
@@ -981,8 +982,10 @@ void SuplaDeviceClass::disableLocalActionsIfNeeded() {
   if (cfg && cfg->isMinimalConfigReady()) {
     auto ptr = Supla::ActionHandlerClient::begin;
     while (ptr) {
-      ptr->disable();  // some actions can be created with "alwaysEnabled" flag
-                       // in such case, disable() has no effect
+      if (ptr->trigger && ptr->trigger->disableActionsInConfigMode()) {
+        ptr->disable();  // some actions can be created with "alwaysEnabled"
+                         // flag in such case, disable() has no effect
+      }
       ptr = ptr->next;
     }
   }

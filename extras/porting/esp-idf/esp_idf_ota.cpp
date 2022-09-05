@@ -36,6 +36,12 @@
 
 #define BUFFER_SIZE 4096
 
+#ifndef SUPLA_DEVICE_ESP32
+// ESP8266 RTOS doesn't have OTA_WITH_SEQUENTIAL_WRITES, so we replace it with
+// default OTA_SIZE_UNKNOWN for ESP8266 target.
+#define OTA_WITH_SEQUENTIAL_WRITES OTA_SIZE_UNKNOWN
+#endif
+
 Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(SuplaDeviceClass *sdc,
                                                          const char *newUrl) {
   return new Supla::EspIdfOta(sdc, newUrl);
@@ -47,61 +53,68 @@ Supla::EspIdfOta::EspIdfOta(SuplaDeviceClass *sdc, const char *newUrl)
 
 void Supla::EspIdfOta::start() {
   Supla::Device::SwUpdate::start();
+}
+
+void Supla::EspIdfOta::iterate() {
+  if (!isStarted()) {
+    return;
+  }
+
   finished = true;
 
 #define URL_SIZE 512
 #define BUF_SIZE 512
 
-  char urlWithParams[URL_SIZE] = {};
+  char queryParams[URL_SIZE] = {};
   char buf[BUF_SIZE] = {};
-  strncpy(urlWithParams, url, URL_SIZE - 1);
-  int curPos = strlen(urlWithParams);
+  int curPos = 0;
 
   int v = 0;
 
   while (1) {
-    v = stringAppend(urlWithParams + curPos,
-                     "/check-updates?manufacturerId=",
+    v = stringAppend(queryParams + curPos,
+                     "manufacturerId=",
                      URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     snprintf(buf, sizeof(buf), "%d", Supla::Channel::reg_dev.ManufacturerID);
-    v = stringAppend(urlWithParams + curPos, buf, URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     v = stringAppend(
-        urlWithParams + curPos, "&productId=", URL_SIZE - curPos - 1);
+        queryParams + curPos, "&productId=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     snprintf(buf, sizeof(buf), "%d", Supla::Channel::reg_dev.ProductID);
-    v = stringAppend(urlWithParams + curPos, buf, URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
-    v = stringAppend(urlWithParams + curPos, "&name=", URL_SIZE - curPos - 1);
+    v = stringAppend(
+        queryParams + curPos, "&productName=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     urlEncode(Supla::Channel::reg_dev.Name, buf, BUF_SIZE);
-    v = stringAppend(urlWithParams + curPos, buf, URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     v = stringAppend(
-        urlWithParams + curPos, "&version=", URL_SIZE - curPos - 1);
+        queryParams + curPos, "&version=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     urlEncode(Supla::Channel::reg_dev.SoftVer, buf, BUF_SIZE);
-    v = stringAppend(urlWithParams + curPos, buf, URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
     v = stringAppend(
-        urlWithParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
+        queryParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
 
@@ -114,7 +127,7 @@ void Supla::EspIdfOta::start() {
       hash.digest(sha);
 
       if (curPos < URL_SIZE - 1 - 32 * 2) {
-        curPos += generateHexString(sha, urlWithParams + curPos, 32);
+        curPos += generateHexString(sha, queryParams + curPos, 32);
       } else {
         v = 0;
         break;
@@ -123,7 +136,7 @@ void Supla::EspIdfOta::start() {
 
     if (strlen(Supla::Channel::reg_dev.Email) > 0) {
       v = stringAppend(
-          urlWithParams + curPos, "&userEmailHash=", URL_SIZE - curPos - 1);
+          queryParams + curPos, "&userEmailHash=", URL_SIZE - curPos - 1);
       if (v == 0) break;
       curPos += v;
 
@@ -143,7 +156,7 @@ void Supla::EspIdfOta::start() {
       hash.digest(sha);
 
       if (curPos < URL_SIZE - 1 - 32 * 2) {
-        curPos += generateHexString(sha, urlWithParams + curPos, 32);
+        curPos += generateHexString(sha, queryParams + curPos, 32);
       } else {
         v = 0;
         break;
@@ -152,7 +165,7 @@ void Supla::EspIdfOta::start() {
 
     if (beta) {
       v = stringAppend(
-          urlWithParams + curPos, "&beta=true", URL_SIZE - curPos - 1);
+          queryParams + curPos, "&beta=true", URL_SIZE - curPos - 1);
       if (v == 0) break;
       curPos += v;
     }
@@ -163,23 +176,33 @@ void Supla::EspIdfOta::start() {
     fail("SW update: fail - too long request url");
     return;
   }
-  SUPLA_LOG_INFO("SW update: checking updates from url: %s", urlWithParams);
+  SUPLA_LOG_INFO(
+      "SW update: checking updates from url: \"%s\", with query: \"%s\"",
+      url, queryParams);
+
+  int querySize = strlen(queryParams);
 
   esp_http_client_config_t configCheckUpdate = {};
-  configCheckUpdate.url = urlWithParams;
+  configCheckUpdate.url = url;
   configCheckUpdate.timeout_ms = 5000;
 
   client = esp_http_client_init(&configCheckUpdate);
+  esp_http_client_set_method(client, HTTP_METHOD_POST);
+  esp_http_client_set_header(client,
+                             "Content-Type",
+                             "application/x-www-form-urlencoded");
   if (client == NULL) {
     fail("SW update: failed initialize connection with update server");
     return;
   }
   esp_err_t err;
-  err = esp_http_client_open(client, 0);
+  err = esp_http_client_open(client, querySize);
   if (err != ESP_OK) {
     fail("SW update: failed to open connection with update server");
     return;
   }
+  esp_http_client_write(client, queryParams, querySize);
+
   esp_http_client_fetch_headers(client);
 
   // Start fetching bin file and perform update
@@ -252,6 +275,7 @@ void Supla::EspIdfOta::start() {
     return;
   }
 
+  esp_http_client_set_method(client, HTTP_METHOD_GET);
   err = esp_http_client_open(client, 0);
   cJSON_Delete(json);
   if (err != ESP_OK) {
@@ -259,8 +283,9 @@ void Supla::EspIdfOta::start() {
     return;
   }
   err = esp_http_client_fetch_headers(client);
-  if (err != ESP_OK) {
+  if (err < 0) {
     fail("SW update: failed to read file from url");
+    SUPLA_LOG_DEBUG("SW update: result %d", err);
     return;
   }
 
@@ -275,7 +300,8 @@ void Supla::EspIdfOta::start() {
 
   int binSize = 0;
 
-  err = esp_ota_begin(updatePartition, OTA_SIZE_UNKNOWN, &updateHandle);
+  err =
+    esp_ota_begin(updatePartition, OTA_WITH_SEQUENTIAL_WRITES, &updateHandle);
   if (err != ESP_OK) {
     fail("SW update: OTA begin failed");
     return;
@@ -347,9 +373,6 @@ void Supla::EspIdfOta::start() {
   delete[] otaBuffer;
   otaBuffer = nullptr;
   return;
-}
-
-void Supla::EspIdfOta::iterate() {
 }
 
 bool Supla::EspIdfOta::isFinished() {

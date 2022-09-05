@@ -165,4 +165,8 @@ ActionHandlerClient *LocalAction::getHandlerForFirstClient(int event) {
   return nullptr;
 }
 
+bool LocalAction::disableActionsInConfigMode() {
+  return false;
+}
+
 };  // namespace Supla

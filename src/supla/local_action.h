@@ -69,6 +69,8 @@ class LocalAction {
   virtual void disableOtherClients(const ActionHandler *client, int event);
   virtual void enableOtherClients(const ActionHandler *client, int event);
 
+  virtual bool disableActionsInConfigMode();
+
   static ActionHandlerClient *getClientListPtr();
 };
 

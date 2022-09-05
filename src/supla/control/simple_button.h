@@ -57,8 +57,8 @@ class SimpleButton : public Element, public LocalAction {
  public:
   explicit SimpleButton(int pin, bool pullUp = false, bool invertLogic = false);
 
-  void onTimer();
-  void onInit();
+  void onTimer() override;
+  void onInit() override;
   void setSwNoiseFilterDelay(unsigned int newDelayMs);
   void setDebounceDelay(unsigned int newDelayMs);
 

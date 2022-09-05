@@ -22,6 +22,7 @@ use library manager to install it
 */
 
 #include <HX711_ADC.h>
+#include <supla/log_wrapper.h>
 
 #include "weight.h"
 #include "../storage/storage.h"
@@ -39,7 +40,7 @@ struct HX711ConfigData {
 class HX711 : public Weight {
  public:
   HX711(int sdaPin, int sclPin, float defCalValue = 696.0)
-      : defCalValue(defCalValue), hx711Sensor(sdaPin, sclPin) {
+      : hx711Sensor(sdaPin, sclPin), defCalValue(defCalValue) {
   }
 
   double getValue() {

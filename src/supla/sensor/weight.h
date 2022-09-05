@@ -25,7 +25,7 @@
 #include "../local_action.h"
 #include "../actions.h"
 
-#define WEIGHT_NOT_AVAILABLE -1
+#define WEIGHT_NOT_AVAILABLE -1.0
 
 namespace Supla {
 namespace Sensor {

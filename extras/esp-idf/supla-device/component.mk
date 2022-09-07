@@ -45,6 +45,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/sw_update.o \
   ../../../src/supla/network/html/security_certificate.o \
   ../../../src/supla/network/html/button_multiclick_parameters.o \
+  ../../../src/supla/network/html/custom_parameter.o \
   ../../../src/supla/network/client.o \
   ../../../src/supla/network/ip_address.o \
   \

@@ -51,5 +51,5 @@ int Supla::getPlatformId() {
       return 0;
   }
 #endif
-  return 1; // ESP8266
+  return 1;  // ESP8266
 }

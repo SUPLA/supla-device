@@ -76,4 +76,8 @@ Supla::Client *Supla::ClientBuilder() {
   return new Supla::ArduinoMegaClient;
 }
 
+int Supla::getPlatformId() {
+  return 0;
+}
+
 #endif

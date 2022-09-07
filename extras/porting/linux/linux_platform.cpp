@@ -17,6 +17,7 @@
  */
 
 #include <cstdlib>
+#include <supla/tools.h>
 
 void deviceSoftwareReset() {
   std::exit(1);
@@ -27,3 +28,7 @@ bool isLastResetSoft() {
   return false;
 }
 
+int Supla::getPlatformId() {
+  // TODO(klew): do we need platfom id for linux SW?
+  return 0;
+}

@@ -148,6 +148,36 @@ uint32_t stringToUInt(const char *str, int len) {
   return result;
 }
 
+int32_t stringToInt(const char *str, int len) {
+  if (len == -1) {
+    len = strlen(str);
+  }
+
+  int32_t result = 0;
+  bool minusFound = false;
+
+  for (int i = 0; i < len; i++) {
+    if (str[i] == '-') {
+      if (i == 0) {
+        minusFound = true;
+        continue;
+      } else {
+        return 0;
+      }
+    }
+    if (str[i] < '0' || str[i] > '9') {
+      return 0;
+    }
+    if (i) {
+      result *= 10;
+    }
+
+    result += static_cast<uint8_t>(str[i]-'0');
+  }
+
+  return minusFound ? -result : result;
+}
+
 void urlDecodeInplace(char *buffer, int size) {
   auto insertPtr = buffer;
   auto parserPtr = buffer;

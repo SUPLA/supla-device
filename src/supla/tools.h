@@ -51,8 +51,11 @@ void hexStringToArray(const char *input, char *output, int outputLength);
 // Converts hex string value to integer
 uint32_t hexStringToInt(const char *str, int len);
 
-// Converts hex string value to integer
+// Converts decimal string value to unsigned integer
 uint32_t stringToUInt(const char *str, int len = -1);
+
+// Converts decimal string value to signed integer
+int32_t stringToInt(const char *str, int len = -1);
 
 // Convers float value from string to integer with given precision
 int32_t floatStringToInt(const char *str, int precision);
@@ -74,5 +77,9 @@ int strncmpInsensitive(const char *s1, const char *s2, int size);
 // This method should be implemented in platform specific cpp file
 void deviceSoftwareReset();
 bool isLastResetSoft();
+
+namespace Supla {
+int getPlatformId();
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_TOOLS_H_

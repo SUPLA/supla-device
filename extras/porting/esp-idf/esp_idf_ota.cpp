@@ -77,7 +77,6 @@ void Supla::EspIdfOta::iterate() {
                      URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-
     snprintf(buf, sizeof(buf), "%d", Supla::Channel::reg_dev.ManufacturerID);
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
@@ -87,7 +86,6 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&productId=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-
     snprintf(buf, sizeof(buf), "%d", Supla::Channel::reg_dev.ProductID);
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
@@ -97,8 +95,16 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&productName=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-
     urlEncode(Supla::Channel::reg_dev.Name, buf, BUF_SIZE);
+    v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
+    if (v == 0) break;
+    curPos += v;
+
+    v = stringAppend(
+        queryParams + curPos, "&platform=", URL_SIZE - curPos - 1);
+    if (v == 0) break;
+    curPos += v;
+    snprintf(buf, sizeof(buf), "%d", Supla::getPlatformId());
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
@@ -107,7 +113,6 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&version=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-
     urlEncode(Supla::Channel::reg_dev.SoftVer, buf, BUF_SIZE);
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
@@ -117,7 +122,6 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-
     {
       Supla::Sha256 hash;
       hash.update(reinterpret_cast<uint8_t *>(Supla::Channel::reg_dev.GUID),
@@ -139,7 +143,6 @@ void Supla::EspIdfOta::iterate() {
           queryParams + curPos, "&userEmailHash=", URL_SIZE - curPos - 1);
       if (v == 0) break;
       curPos += v;
-
       Supla::Sha256 hash;
       strncpy(buf, Supla::Channel::reg_dev.Email, BUF_SIZE);
       auto bufPtr = buf;
@@ -149,12 +152,9 @@ void Supla::EspIdfOta::iterate() {
         bufPtr++;
         size++;
       }
-
       hash.update(reinterpret_cast<uint8_t *>(buf), size);
-
       uint8_t sha[32] = {};
       hash.digest(sha);
-
       if (curPos < URL_SIZE - 1 - 32 * 2) {
         curPos += generateHexString(sha, queryParams + curPos, 32);
       } else {

@@ -167,4 +167,9 @@ Supla::Client *Supla::ClientBuilder() {
   return new Supla::ArduinoEspClient;
 }
 
+int Supla::getPlatformId() {
+  // TODO(klew): do we need platfom id for Arduino based ESP SW?
+  return 0;
+}
+
 #endif

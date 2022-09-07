@@ -25,8 +25,6 @@
 #include <SuplaDevice.h>
 #include <fcntl.h>
 #include <nvs_flash.h>
-#include <supla/auto_lock.h>
-#include <supla/mutex.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/supla_lib_config.h>
@@ -43,7 +41,6 @@ Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
                               unsigned char *ip)
     : Wifi(wifiSsid, wifiPassword, ip) {
   netIntfPtr = this;
-  mutex = Supla::Mutex::Create();
 }
 
 Supla::EspIdfWifi::~EspIdfWifi() {
@@ -79,7 +76,6 @@ static void eventHandler(void *arg,
           netIntfPtr->setIpReady(false);
           netIntfPtr->setWifiConnected(false);
           netIntfPtr->logWifiReason(data->reason);
-          netIntfPtr->Disconnect();
         }
         if (!netIntfPtr->isInConfigMode()) {
           esp_wifi_connect();

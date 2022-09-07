@@ -31,7 +31,6 @@
 #include <supla/network/netif_wifi.h>
 
 namespace Supla {
-class Mutex;
 
 class EspIdfWifi : public Supla::Wifi {
  public:
@@ -55,7 +54,6 @@ class EspIdfWifi : public Supla::Wifi {
   void logWifiReason(int);
 
  protected:
-  Supla::Mutex *mutex = nullptr;
   bool initDone = false;
   bool isWifiConnected = false;
   bool isIpReady = false;

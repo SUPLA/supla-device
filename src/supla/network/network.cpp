@@ -35,15 +35,6 @@ Network *Network::Instance() {
   return netIntf;
 }
 
-/*int Network::Connect(const char *server, int port) {
-  if (Instance() != nullptr) {
-    Instance()->clearTimeCounters();
-    return Instance()->connect(server, port);
-  }
-  return 0;
-}
- */
-
 void Network::Disconnect() {
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
       proto = proto->next()) {

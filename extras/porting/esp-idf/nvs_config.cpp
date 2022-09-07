@@ -53,7 +53,11 @@ bool NvsConfig::init() {
       nvs_stats.used_entries,
       nvs_stats.free_entries,
       nvs_stats.total_entries);
-  ESP_ERROR_CHECK(nvs_open("supla", NVS_READWRITE, &nvsHandle));
+  err = nvs_open("supla", NVS_READWRITE, &nvsHandle);
+  if (err != ESP_OK) {
+    SUPLA_LOG_ERROR("NvsConfig: failed to open NVS storage");
+    return false;
+  }
   return true;
 }
 

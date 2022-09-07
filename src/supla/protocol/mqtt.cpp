@@ -20,12 +20,12 @@
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
 #include <SuplaDevice.h>
+#include <supla/mutex.h>
+#include <supla/auto_lock.h>
+#include <supla/time.h>
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc) :
   Supla::Protocol::ProtocolLayer(sdc) {
-}
-
-void Supla::Protocol::Mqtt::onInit() {
 }
 
 bool Supla::Protocol::Mqtt::onLoadConfig() {
@@ -41,14 +41,6 @@ bool Supla::Protocol::Mqtt::onLoadConfig() {
   }
 
   return configComplete;
-}
-
-void Supla::Protocol::Mqtt::disconnect() {
-}
-
-void Supla::Protocol::Mqtt::iterate(uint64_t _millis) {
-  (void)(_millis);
-  return;
 }
 
 bool Supla::Protocol::Mqtt::isNetworkRestartRequested() {

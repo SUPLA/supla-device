@@ -170,6 +170,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   bool triggerStopLocalWebServer = false;
   bool triggerCheckSwUpdate = false;
   bool requestNetworkLayerRestart = false;
+  bool isNetworkSetupOk = false;
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;

@@ -128,6 +128,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_idf_mutex.cpp
   ../../porting/esp-idf/esp_idf_ota.cpp
   ../../porting/esp-idf/esp_idf_client.cpp
+  ../../porting/esp-idf/esp_mqtt.cpp
 )
 
 
@@ -147,6 +148,7 @@ idf_component_register(SRCS
     json
     esp_wifi
     driver
+    mqtt
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )
 

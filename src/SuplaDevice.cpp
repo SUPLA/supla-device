@@ -368,8 +368,13 @@ void SuplaDeviceClass::iterate(void) {
 
   // Establish and maintain network link
   if (!iterateNetworkSetup()) {
+    if (isNetworkSetupOk) {
+      Supla::Network::Disconnect();
+    }
+    isNetworkSetupOk = false;
     return;
   }
+  isNetworkSetupOk = true;
 
   switch (deviceMode) {
     // Normal mode

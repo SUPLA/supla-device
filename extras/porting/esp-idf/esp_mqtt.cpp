@@ -16,27 +16,32 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include "esp_mqtt.h"
-
-#include <supla/storage/config.h>
-#include <supla/log_wrapper.h>
 #include <SuplaDevice.h>
-#include <supla/mutex.h>
 #include <supla/auto_lock.h>
+#include <supla/log_wrapper.h>
+#include <supla/mutex.h>
+#include <supla/storage/config.h>
 #include <supla/time.h>
+
+#include "esp_mqtt.h"
 
 Supla::Mutex *Supla::Protocol::EspMqtt::mutex = nullptr;
 
-static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_t event_id, void *event_data)
-{
+static void mqtt_event_handler(void *handler_args,
+                               esp_event_base_t base,
+                               int32_t event_id,
+                               void *event_data) {
   // TODO(klew): rewrite
   SUPLA_LOG_DEBUG(" *** MQTT event handler enter");
   Supla::AutoLock autoLock(Supla::Protocol::EspMqtt::mutex);
-  SUPLA_LOG_DEBUG(" *** MQTT Event dispatched from event loop base=%s, event_id=%d", base, event_id);
+  SUPLA_LOG_DEBUG(
+      " *** MQTT Event dispatched from event loop base=%s, event_id=%d",
+      base,
+      event_id);
 }
 
-Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc) :
-  Supla::Protocol::Mqtt(sdc) {
+Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
+    : Supla::Protocol::Mqtt(sdc) {
   mutex = Supla::Mutex::Create();
 }
 
@@ -49,7 +54,8 @@ void Supla::Protocol::EspMqtt::onInit() {
   mqttCfg.session.keepalive = 5;
 
   client = esp_mqtt_client_init(&mqttCfg);
-  esp_mqtt_client_register_event(client, MQTT_EVENT_ANY, mqtt_event_handler, nullptr);
+  esp_mqtt_client_register_event(
+      client, MQTT_EVENT_ANY, mqtt_event_handler, nullptr);
 }
 
 void Supla::Protocol::EspMqtt::disconnect() {
@@ -75,4 +81,3 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
     esp_mqtt_client_start(client);
   }
 }
-

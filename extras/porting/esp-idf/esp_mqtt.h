@@ -19,8 +19,8 @@
 #ifndef EXTRAS_PORTING_ESP_IDF_ESP_MQTT_H_
 #define EXTRAS_PORTING_ESP_IDF_ESP_MQTT_H_
 
-#include <supla/protocol/mqtt.h>
 #include <mqtt_client.h>
+#include <supla/protocol/mqtt.h>
 
 namespace Supla {
 
@@ -33,13 +33,14 @@ class EspMqtt : public Mqtt {
   explicit EspMqtt(SuplaDeviceClass *sdc);
 
   void onInit() override;
-//  bool onLoadConfig() override;
+  //  bool onLoadConfig() override;
   void disconnect() override;
   void iterate(uint64_t _millis) override;
- // bool isNetworkRestartRequested() override;
- // uint32_t getConnectionFailTime() override;
+  // bool isNetworkRestartRequested() override;
+  // uint32_t getConnectionFailTime() override;
 
   static Supla::Mutex *mutex;
+
  protected:
   bool connected = false;
   esp_mqtt_client_handle_t client = {};

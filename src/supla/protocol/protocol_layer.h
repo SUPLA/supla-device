@@ -38,6 +38,8 @@ class ProtocolLayer {
 
   virtual void onInit() = 0;
   virtual bool onLoadConfig() = 0;
+  virtual bool verifyConfig() = 0;
+  virtual bool isEnabled() = 0;
   virtual void disconnect() = 0;
   virtual void iterate(uint64_t _millis) = 0;
   virtual bool isNetworkRestartRequested() = 0;

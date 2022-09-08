@@ -35,6 +35,7 @@
 #define STATUS_SERVER_DISCONNECTED       6
 #define STATUS_ITERATE_FAIL              7
 #define STATUS_NETWORK_DISCONNECTED      8
+#define STATUS_ALL_PROTOCOLS_DISABLED    9
 
 #define STATUS_REGISTER_IN_PROGRESS      10  // Don't change
 #define STATUS_REGISTERED_AND_READY      17  // Don't change

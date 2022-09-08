@@ -36,6 +36,8 @@ class SuplaSrpc : public ProtocolLayer {
 
   void onInit() override;
   bool onLoadConfig() override;
+  bool verifyConfig() override;
+  bool isEnabled() override;
   void disconnect() override;
   void iterate(uint64_t _millis) override;
   bool isNetworkRestartRequested() override;
@@ -74,6 +76,7 @@ class SuplaSrpc : public ProtocolLayer {
   uint64_t lastResponseMs = 0;
   uint64_t lastSentMs = 0;
   uint16_t connectionFailCounter = 0;
+  bool enabled = true;
 
   int port = -1;
 

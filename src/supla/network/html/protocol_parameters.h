@@ -29,10 +29,14 @@ namespace Html {
 
 class ProtocolParameters : public HtmlElement {
  public:
-  ProtocolParameters();
+  ProtocolParameters(bool addMqttParams = true, bool concurrentProtocols = true);
   virtual ~ProtocolParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
+
+ protected:
+  bool addMqtt = true;
+  bool concurrent = true;
 };
 
 };  // namespace Html

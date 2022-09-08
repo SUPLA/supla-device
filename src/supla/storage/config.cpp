@@ -70,7 +70,7 @@ bool Config::isSuplaCommProtocolEnabled() {
 }
 
 bool Config::isMqttCommProtocolEnabled() {
-  // by default MQTT communication protocol is enabled
+  // by default MQTT communication protocol is disabled
   int8_t result = 0;
   getInt8("mqttcommproto", &result);
   return result == 1;
@@ -104,7 +104,7 @@ bool Config::setMqttRetainEnabled(bool enabled) {
 }
 
 bool Config::isMqttRetainEnabled() {
-  int8_t result = 1;
+  int8_t result = 0;
   getInt8("mqttretain", &result);
   return result == 1;
 }
@@ -165,13 +165,17 @@ int32_t Config::getMqttServerPort() {
   int32_t result = -1;
   getInt32("mqttport", &result);
   if (result <= 0 || result > 65536) {
-    result = 1883;
+    if (isMqttTlsEnabled()) {
+      result = 8883;
+    } else {
+      result = 1883;
+    }
   }
   return result;
 }
 
 bool Config::getMqttUser(char* result) {
-  return getString("mqttuser", result, MQTT_CLIENTID_MAX_SIZE);
+  return getString("mqttuser", result, MQTT_USERNAME_MAX_SIZE);
 }
 
 bool Config::getMqttPassword(char* result) {
@@ -181,15 +185,6 @@ bool Config::getMqttPassword(char* result) {
 int32_t Config::getMqttQos() {
   int32_t result = -1;
   getInt32("mqttqos", &result);
-  if (result < 0) {
-    result = 0;
-  }
-  return result;
-}
-
-int32_t Config::getMqttPoolPublicationDelay() {
-  int32_t result = -1;
-  getInt32("mqttpooldelay", &result);
   if (result < 0) {
     result = 0;
   }
@@ -306,7 +301,7 @@ bool Config::setMqttServerPort(int32_t port) {
 }
 
 bool Config::setMqttUser(const char* user) {
-  if (strlen(user) > MQTT_CLIENTID_MAX_SIZE - 1) {
+  if (strlen(user) > MQTT_USERNAME_MAX_SIZE - 1) {
     return false;
   }
   return setString("mqttuser", user);
@@ -326,15 +321,6 @@ bool Config::setMqttQos(int32_t qos) {
     qos = 2;
   }
   return setInt32("mqttqos", qos);
-}
-
-bool Config::setMqttPoolPublicationDelay(int32_t poolDelay) {
-  if (poolDelay < 0) {
-    poolDelay = 0;
-  } else if (poolDelay > 3600) {
-    poolDelay = 3600;
-  }
-  return setInt32("mqttpooldelay", poolDelay);
 }
 
 bool Config::setMqttPrefix(const char* prefix) {

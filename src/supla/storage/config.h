@@ -29,7 +29,8 @@
 #define MAX_SSID_SIZE          32
 #define MAX_WIFI_PASSWORD_SIZE 64
 #define MQTT_CLIENTID_MAX_SIZE 23
-#define MQTT_PASSWORD_MAX_SIZE 33
+#define MQTT_USERNAME_MAX_SIZE 65
+#define MQTT_PASSWORD_MAX_SIZE 65
 
 namespace Supla {
 
@@ -110,7 +111,6 @@ class Config {
   virtual bool setMqttUser(const char* user);
   virtual bool setMqttPassword(const char* password);
   virtual bool setMqttQos(int32_t qos);
-  virtual bool setMqttPoolPublicationDelay(int32_t poolDelay);
   virtual bool isMqttCommProtocolEnabled();
   virtual bool setMqttTlsEnabled(bool enabled);
   virtual bool isMqttTlsEnabled();
@@ -123,7 +123,6 @@ class Config {
   virtual bool getMqttUser(char* result);
   virtual bool getMqttPassword(char* result);
   virtual int32_t getMqttQos();
-  virtual int32_t getMqttPoolPublicationDelay();
   virtual bool setMqttPrefix(const char* prefix);
   virtual bool getMqttPrefix(char* result);
 

@@ -19,6 +19,9 @@
 #ifndef SRC_SUPLA_PROTOCOL_MQTT_H_
 #define SRC_SUPLA_PROTOCOL_MQTT_H_
 
+#include <supla/storage/config.h>
+#include <supla-common/proto.h>
+
 #include "protocol_layer.h"
 
 namespace Supla {
@@ -31,10 +34,23 @@ class Mqtt : public ProtocolLayer {
 
 //  void onInit() override;
   bool onLoadConfig() override;
+  bool verifyConfig() override;
+  bool isEnabled() override;
 //  void disconnect() override;
 //  void iterate(uint64_t _millis) override;
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
+
+ protected:
+  char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  int32_t port = -1;
+  char user[MQTT_USERNAME_MAX_SIZE] = {};
+  char password[MQTT_PASSWORD_MAX_SIZE] = {};
+  uint8_t qos = 0;
+  bool useTls = false;
+  bool useAuth = true;
+  bool retain = false;
+  bool enabled = true;
 };
 }  // namespace Protocol
 }  // namespace Supla

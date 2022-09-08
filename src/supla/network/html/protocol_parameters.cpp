@@ -29,7 +29,10 @@ namespace Supla {
 
 namespace Html {
 
-ProtocolParameters::ProtocolParameters() : HtmlElement(HTML_SECTION_PROTOCOL) {
+ProtocolParameters::ProtocolParameters(bool addMqttParams,
+                                       bool concurrentProtocols)
+    : HtmlElement(HTML_SECTION_PROTOCOL), addMqtt(addMqttParams),
+      concurrent(concurrentProtocols) {
 }
 
 ProtocolParameters::~ProtocolParameters() {
@@ -38,29 +41,57 @@ ProtocolParameters::~ProtocolParameters() {
 void ProtocolParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    // Protocol selector
-    sender->send(
-        "<div class=\"w\">"
-        "<i><select name=\"pro\" onchange=\"protocolChanged();\" "
-        "id=\"protocol\">"
-        "<option value=\"0\"");
-    sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
+    if (!concurrent) {
+      // Protocol selector
+      sender->send(
+          "<div class=\"w\">"
+          "<i><select name=\"pro\" onchange=\"protocolChanged();\" "
+          "id=\"protocol\">"
+          "<option value=\"0\"");
+      sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
 
-    sender->send(
-        ">Supla</option>"
-        "<option value=\"1\"");
-    sender->send(selected(cfg->isMqttCommProtocolEnabled()));
-    sender->send(
-        ">MQTT</option>"
-        "</select>"
-        "<label>Protocol</label>"
-        "</i>"
-        "</div>");
+      sender->send(
+          ">Supla</option>"
+          "<option value=\"1\"");
+      sender->send(selected(cfg->isMqttCommProtocolEnabled()));
+      sender->send(
+          ">MQTT</option>"
+          "</select>"
+          "<label>Protocol</label>"
+          "</i>"
+          "</div>");
+    }
 
+    if (concurrent) {
+      sender->send(
+          "<div class=\"w\">");
+      sender->send(
+          "<h3>Supla Settings</h3>");
+      sender->send(
+          "<i><select name=\"protocol_supla\" id=\"protocol_supla\" "
+          "onchange=\"protocolChanged();\">"
+          "<option value=\"0\""
+          );
+      sender->send(selected(!cfg->isSuplaCommProtocolEnabled()));
+      sender->send(
+          ">DISABLED</option>"
+          "<option value=\"1\""
+          );
+      sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
+      sender->send(
+          ">ENABLED</option>"
+          "</select>"
+          "<label>Supla protocol</label>");
+      sender->send(
+          "<div id=\"proto_supla\">");
+    } else {
+      sender->send(
+          "<div class=\"w\" id=\"proto_supla\">");
+      sender->send(
+          "<h3>Supla Settings</h3>");
+    }
     // Parameters for Supla protocol
     sender->send(
-        "<div class=\"w\" id=\"proto_supla\">"
-        "<h3>Supla Settings</h3>"
         "<i><input name=\"svr\" maxlength=\"64\" value=\"");
     char buf[512];
     if (cfg->getSuplaServer(buf)) {
@@ -76,84 +107,124 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         "\"><label>E-mail</label></i>"
         "</div>");
 
-    // Parameters for MQTT protocol
-    sender->send(
-        "<div class=\"w mqtt\">"
-        "<h3>MQTT Settings</h3>"
-        "<i><input name=\"mqttserver\" maxlength=\"64\" value=\"");
-    if (cfg->getMqttServer(buf)) {
-      sender->send(buf);
+    if (concurrent) {
+      sender->send("</div>");
     }
-    sender->send(
-        "\"><label>Server</label></i>"
-        "<i><input name=\"mqttport\" min=\"1\" max=\"65535\" type=\"number\""
-        " value=\"");
-    sender->send(cfg->getMqttServerPort());
-    sender->send(
-        "\"><label>Port</label></i>"
-        "<i><select name=\"mqtttls\">"
-        "<option value=\"0\" ");
-    sender->send(selected(!cfg->isMqttTlsEnabled()));
-    sender->send(
-        ">NO</option>"
-        "<option value=\"1\" ");
-    sender->send(selected(cfg->isMqttTlsEnabled()));
-    sender->send(
-        ">YES</option></select>"
-        "<label>TLS</label></i>"
-        "<i>"
-        "<select name=\"mqttauth\" id=\"sel_mauth\" "
-        "onchange=\"mAuthChanged();\">"
-        "<option value=\"0\" ");
-    sender->send(selected(!cfg->isMqttAuthEnabled()));
-    sender->send(
-        ">NO</option>"
-        "<option value=\"1\" ");
-    sender->send(selected(cfg->isMqttAuthEnabled()));
-    sender->send(
-        ">YES</option></select>"
-        "<label>Auth</label>"
-        "</i>"
-        "<i id=\"mauth_usr\"><input name=\"mqttuser\" maxlength=\"22\" "
-        "value=\"");
-    if (cfg->getMqttUser(buf)) {
-      sender->send(buf);
+
+    if (addMqtt) {
+      if (concurrent) {
+        sender->send(
+            "<div class=\"w\">");
+        sender->send(
+            "<h3>MQTT Settings</h3>");
+        sender->send(
+            "<i><select name=\"protocol_mqtt\" id=\"protocol_mqtt\" "
+            "onchange=\"protocolChanged();\">"
+            "<option value=\"0\""
+            );
+        sender->send(selected(!cfg->isMqttCommProtocolEnabled()));
+        sender->send(
+            ">DISABLED</option>"
+            "<option value=\"1\""
+            );
+        sender->send(selected(cfg->isMqttCommProtocolEnabled()));
+        sender->send(
+            ">ENABLED</option>"
+            "</select>"
+            "<label>MQTT protocol</label>");
+        sender->send(
+            "<div class=\"mqtt\">");
+      } else {
+        sender->send(
+            "<div class=\"w\" class=\"mqtt\">");
+        sender->send(
+            "<h3>MQTT Settings</h3>");
+      }
+      // Parameters for MQTT protocol
+      sender->send(
+          "<i><input name=\"mqttserver\" maxlength=\"64\" value=\"");
+      if (cfg->getMqttServer(buf)) {
+        sender->send(buf);
+      }
+      sender->send(
+          "\"><label>Server</label></i>");
+      sender->send(
+          "<script>"
+            "function mqttTlsChange(){"
+              "var port=document.getElementById(\"mqtt_port\"),"
+              "value=document.getElementById(\"mqtt_tls\");"
+              "if(mqtt_tls.value==\"0\")"
+              "{port.value=1883;}else"
+              "{port.value=8883;}"
+            "}"
+          "</script>"
+          "<i><select name=\"mqtttls\" onchange=\"mqttTlsChange();\""
+          " id=\"mqtt_tls\">"
+          "<option value=\"0\" ");
+      sender->send(selected(!cfg->isMqttTlsEnabled()));
+      sender->send(
+          ">NO</option>"
+          "<option value=\"1\" ");
+      sender->send(selected(cfg->isMqttTlsEnabled()));
+      sender->send(
+          ">YES</option></select>"
+          "<label>TLS</label></i>"
+          "<i><input name=\"mqttport\" min=\"1\" max=\"65535\" type=\"number\""
+          " value=\"");
+      sender->send(cfg->getMqttServerPort());
+      sender->send(
+          "\" id=\"mqtt_port\"><label>Port</label></i>"
+          "<i>"
+          "<select name=\"mqttauth\" id=\"sel_mauth\" "
+          "onchange=\"mAuthChanged();\">"
+          "<option value=\"0\" ");
+      sender->send(selected(!cfg->isMqttAuthEnabled()));
+      sender->send(
+          ">NO</option>"
+          "<option value=\"1\" ");
+      sender->send(selected(cfg->isMqttAuthEnabled()));
+      sender->send(
+          ">YES</option></select>"
+          "<label>Auth</label>"
+          "</i>"
+          "<i id=\"mauth_usr\"><input name=\"mqttuser\" maxlength=\"64\" "
+          "value=\"");
+      if (cfg->getMqttUser(buf)) {
+        sender->send(buf);
+      }
+      sender->send(
+          "\">"
+          "<label>Username</label></i>"
+          "<i id=\"mauth_pwd\">"
+          "<input name=\"mqttpasswd\" maxlength=\"64\">"
+          "<label>Password (Required. Max 64)</label></i>"
+          "<i><input name=\"mqttprefix\" maxlength=\"48\" value=\"");
+      if (cfg->getMqttPrefix(buf)) {
+        sender->send(buf);
+      }
+      sender->send(
+          "\">"
+          "<label>Topic prefix</label></i>"
+          "<i><input name=\"mqttqos\" min=\"0\" max=\"2\" type=\"number\" "
+          "value=\"");
+      sender->send(cfg->getMqttQos());
+      sender->send(
+          "\"><label>QoS</label></i>"
+          "<i><select name=\"mqttretain\">"
+          "<option value=\"0\" ");
+      sender->send(selected(!cfg->isMqttRetainEnabled()));
+      sender->send(
+          ">NO</option>"
+          "<option value=\"1\" ");
+      sender->send(selected(cfg->isMqttRetainEnabled()));
+      sender->send(
+          ">YES</option></select>"
+          "<label>Retain</label></i>"
+          "</div>");
+      if (concurrent) {
+        sender->send("</div>");
+      }
     }
-    sender->send(
-        "\" maxlength=\"45\">"
-        "<label>Username</label></i>"
-        "<i id=\"mauth_pwd\">"
-        "<input name=\"mqttpasswd\" maxlength=\"32\">"
-        "<label>Password (Required. Max 32)</label></i>"
-        "<i><input name=\"mqttprefix\" maxlength=\"48\" value=\"");
-    if (cfg->getMqttPrefix(buf)) {
-      sender->send(buf);
-    }
-    sender->send(
-        "\" maxlength=\"49\">"
-        "<label>Topic prefix</label></i>"
-        "<i><input name=\"mqttqos\" min=\"0\" max=\"2\" type=\"number\" "
-        "value=\"");
-    sender->send(cfg->getMqttQos());
-    sender->send(
-        "\"><label>QoS</label></i>"
-        "<i><select name=\"mqttretain\">"
-        "<option value=\"0\" ");
-    sender->send(selected(!cfg->isMqttRetainEnabled()));
-    sender->send(
-        ">NO</option>"
-        "<option value=\"1\" ");
-    sender->send(selected(cfg->isMqttRetainEnabled()));
-    sender->send(
-        ">YES</option></select>"
-        "<label>Retain</label></i>"
-        "<i>"
-        "<input name=\"mqttpooldelay\" min=\"0\" max=\"3600\" type=\"number\" "
-        "value=\"");
-    sender->send(cfg->getMqttPoolPublicationDelay());
-    sender->send(
-        "\"><label>Pool publication delay (sec.)</label></i>"
-        "</div>");
   }
 }
 
@@ -174,6 +245,14 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
         break;
       }
     }
+    return true;
+  } else if (strcmp(key, "protocol_supla") == 0) {
+    int enabled = stringToUInt(value);
+    cfg->setSuplaCommProtocolEnabled(enabled == 1);
+    return true;
+  } else if (strcmp(key, "protocol_mqtt") == 0) {
+    int enabled = stringToUInt(value);
+    cfg->setMqttCommProtocolEnabled(enabled == 1);
     return true;
   } else if (strcmp(key, "svr") == 0) {
     cfg->setSuplaServer(value);
@@ -214,10 +293,6 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
   } else if (strcmp(key, "mqttretain") == 0) {
     int enabled = stringToUInt(value);
     cfg->setMqttRetainEnabled(enabled == 1);
-    return true;
-  } else if (strcmp(key, "mqttpooldelay") == 0) {
-    int poolDelay = stringToUInt(value);
-    cfg->setMqttPoolPublicationDelay(poolDelay);
     return true;
   }
 

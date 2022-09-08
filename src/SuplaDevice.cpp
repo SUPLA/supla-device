@@ -142,12 +142,21 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
 
     // Load protocol layer configuration
+    bool atLeastOneProtoIsEnabled = false;
     for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
          proto = proto->next()) {
       if (!proto->onLoadConfig()) {
         configComplete = false;
       }
+      if (proto->isEnabled()) {
+        atLeastOneProtoIsEnabled = true;
+      }
       delay(0);
+    }
+    if (!atLeastOneProtoIsEnabled) {
+      status(STATUS_ALL_PROTOCOLS_DISABLED,
+          "All communication protocols are disabled");
+      configComplete = false;
     }
 
     if (!configComplete) {
@@ -229,11 +238,17 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
   }
 
-  if (Supla::Channel::reg_dev.ServerName[0] == '\0') {
-    status(STATUS_UNKNOWN_SERVER_ADDRESS, "Missing server address");
-    if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
-      return false;
+  // Verify if configuration is complete for each protocol
+  bool verificationSuccess = true;
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
+    if (!proto->verifyConfig()) {
+      verificationSuccess = false;
     }
+    delay(0);
+  }
+  if (verificationSuccess == false) {
+    return false;
   }
 
   if (generateGuidAndAuthkey) {
@@ -256,13 +271,6 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
       SUPLA_LOG_ERROR("Failed to generate GUID and AuthKey");
       status(STATUS_INVALID_GUID, "Missing GUID");
       status(STATUS_INVALID_AUTHKEY, "Missing AuthKey");
-      return false;
-    }
-  }
-
-  if (Supla::Channel::reg_dev.Email[0] == '\0') {
-    status(STATUS_MISSING_CREDENTIALS, "Missing email address");
-    if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
       return false;
     }
   }
@@ -516,6 +524,11 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   memset(buf, 0, sizeof(buf));
   if (cfg->getGUID(buf)) {
     setGUID(buf);
+  }
+
+  memset(buf, 0, sizeof(buf));
+  if (cfg->getAuthKey(buf)) {
+    setAuthKey(buf);
   }
 
   deviceMode = cfg->getDeviceMode();

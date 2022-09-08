@@ -37,6 +37,7 @@ class HtmlElement {
   static HtmlElement *last();
 
   static const char *selected(bool isSelected);
+  static const char *checked(bool isChecked);
 
   HtmlElement *next();
 

@@ -23,25 +23,84 @@
 #include <supla/mutex.h>
 #include <supla/auto_lock.h>
 #include <supla/time.h>
+#include <string.h>
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc) :
   Supla::Protocol::ProtocolLayer(sdc) {
 }
 
 bool Supla::Protocol::Mqtt::onLoadConfig() {
-  bool configComplete = true;
   // MQTT protocol specific config
   auto cfg = Supla::Storage::ConfigInstance();
 
+  if (cfg == nullptr) {
+    return false;
+  }
+
+  bool configComplete = true;
+
   if (cfg->isMqttCommProtocolEnabled()) {
-    // TODO(klew): add MQTT config
-    sdc->addLastStateLog("MQTT protocol is not supported yet");
-    configComplete = false;
-    SUPLA_LOG_ERROR("MQTT support not implemented yet");
+    enabled = true;
+    if (!cfg->getMqttServer(server) || strlen(server) <= 0) {
+      SUPLA_LOG_INFO("Config incomplete: missing MQTT server");
+      configComplete = false;
+    }
+
+    useTls = cfg->isMqttTlsEnabled();
+    port = cfg->getMqttServerPort();
+    retain = cfg->isMqttRetainEnabled();
+    qos = cfg->getMqttQos();
+    useAuth = cfg->isMqttAuthEnabled();
+
+    if (useAuth) {
+      if (!cfg->getMqttUser(user) || strlen(user) <= 0) {
+        SUPLA_LOG_INFO("Config incomplete: missing MQTT username");
+        configComplete = false;
+      }
+      if (!cfg->getMqttPassword(password) || strlen(password) <= 0) {
+        SUPLA_LOG_INFO("Config incomplete: missing MQTT password");
+        configComplete = false;
+      }
+    }
+  } else {
+    enabled = false;
   }
 
   return configComplete;
 }
+
+bool Supla::Protocol::Mqtt::verifyConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+
+  if (cfg && !cfg->isMqttCommProtocolEnabled()) {
+    // skip verification of Mqtt protocol if it is disabled
+    return true;
+  }
+
+  if (strlen(server) <= 0) {
+    sdc->status(STATUS_UNKNOWN_SERVER_ADDRESS, "MQTT: Missing server address");
+    if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
+      return false;
+    }
+  }
+
+  if (useAuth) {
+    if (strlen(user) <= 0) {
+      sdc->status(STATUS_MISSING_CREDENTIALS, "MQTT: Missing username");
+      if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
+        return false;
+      }
+    }
+    if (strlen(password) <= 0) {
+      sdc->status(STATUS_MISSING_CREDENTIALS, "MQTT: Missing password");
+      if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 
 bool Supla::Protocol::Mqtt::isNetworkRestartRequested() {
   return false;
@@ -50,3 +109,11 @@ bool Supla::Protocol::Mqtt::isNetworkRestartRequested() {
 uint32_t Supla::Protocol::Mqtt::getConnectionFailTime() {
   return 0;
 }
+
+// By default MQTT protocol is enabled.
+// It can be disabled if we have config class instance and when it is
+// disabled there.
+bool Supla::Protocol::Mqtt::isEnabled() {
+  return enabled;
+}
+

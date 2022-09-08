@@ -52,6 +52,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
 
   // Supla protocol specific config
   if (cfg->isSuplaCommProtocolEnabled()) {
+    enabled = true;
     memset(buf, 0, sizeof(buf));
     if (cfg->getSuplaServer(buf) && strlen(buf) > 0) {
       sdc->setServer(buf);
@@ -67,11 +68,6 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
     } else {
       SUPLA_LOG_INFO("Config incomplete: missing email");
       configComplete = false;
-    }
-
-    memset(buf, 0, sizeof(buf));
-    if (cfg->getAuthKey(buf)) {
-      sdc->setAuthKey(buf);
     }
 
     bool usePublicServer = false;
@@ -145,12 +141,18 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
         break;
       }
     }
+  } else {
+    enabled = false;
   }
 
   return configComplete;
 }
 
 void Supla::Protocol::SuplaSrpc::onInit() {
+  if (!isEnabled()) {
+    return;
+  }
+
   TsrpcParams srpcParams;
   srpc_params_init(&srpcParams);
   srpcParams.data_read = &Supla::dataRead;
@@ -479,6 +481,10 @@ bool Supla::Protocol::SuplaSrpc::ping() {
 }
 
 void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
+  if (!isEnabled()) {
+    return;
+  }
+
   requestNetworkRestart = false;
   if (waitForIterate != 0 && _millis - lastIterateTime < waitForIterate) {
     return;
@@ -582,6 +588,10 @@ void Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
 }
 
 void Supla::Protocol::SuplaSrpc::disconnect() {
+  if (!isEnabled()) {
+    return;
+  }
+
   registered = 0;
   client->stop();
 }
@@ -626,3 +636,36 @@ uint32_t Supla::Protocol::SuplaSrpc::getConnectionFailTime() {
   // connectionFailCounter is incremented every 10 s
   return connectionFailCounter * 10;
 }
+
+bool Supla::Protocol::SuplaSrpc::verifyConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+
+  if (cfg && !cfg->isSuplaCommProtocolEnabled()) {
+    // skip verification of Supla protocol if it is disabled
+    return true;
+  }
+
+  if (Supla::Channel::reg_dev.ServerName[0] == '\0') {
+    sdc->status(STATUS_UNKNOWN_SERVER_ADDRESS, "Missing server address");
+    if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
+      return false;
+    }
+  }
+
+  if (Supla::Channel::reg_dev.Email[0] == '\0') {
+    sdc->status(STATUS_MISSING_CREDENTIALS, "Missing email address");
+    if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// By default Supla protocol is enabled.
+// It can be disabled if we have config class instance and when it is
+// disabled there.
+bool Supla::Protocol::SuplaSrpc::isEnabled() {
+  return enabled;
+}
+

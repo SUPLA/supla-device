@@ -414,7 +414,6 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_TRUE(kvStorage.setMqttUser("mqtt user"));
   EXPECT_TRUE(kvStorage.setMqttPassword("mqtt pass"));
   EXPECT_TRUE(kvStorage.setMqttQos(2));
-  EXPECT_TRUE(kvStorage.setMqttPoolPublicationDelay(11));
   EXPECT_TRUE(kvStorage.setMqttTlsEnabled(true));
   EXPECT_TRUE(kvStorage.setMqttAuthEnabled(false));
   EXPECT_TRUE(kvStorage.setMqttRetainEnabled(true));
@@ -433,7 +432,6 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_TRUE(kvStorage.getMqttPassword(buf));
   EXPECT_STREQ(buf, "mqtt pass");
   EXPECT_EQ(kvStorage.getMqttQos(), 2);
-  EXPECT_EQ(kvStorage.getMqttPoolPublicationDelay(), 11);
   EXPECT_TRUE(kvStorage.getMqttPrefix(buf));
   EXPECT_STREQ(buf, "supla test");
 

@@ -46,6 +46,10 @@ Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
 }
 
 void Supla::Protocol::EspMqtt::onInit() {
+  if (!isEnabled()) {
+    return;
+  }
+
   esp_mqtt_client_config_t mqttCfg = {};
   const char uri[] = "mqtt://192.168.8.226";
   mqttCfg.broker.address.uri = uri;
@@ -59,6 +63,10 @@ void Supla::Protocol::EspMqtt::onInit() {
 }
 
 void Supla::Protocol::EspMqtt::disconnect() {
+  if (!isEnabled()) {
+    return;
+  }
+
   if (connected) {
     esp_mqtt_client_disconnect(client);
     mutex->unlock();
@@ -70,6 +78,10 @@ void Supla::Protocol::EspMqtt::disconnect() {
 
 void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
   (void)(_millis);
+  if (!isEnabled()) {
+    return;
+  }
+
   if (connected) {
     // this is used to synchronize event loop handling with SuplaDevice.iterate
     mutex->unlock();

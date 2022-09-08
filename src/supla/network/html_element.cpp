@@ -66,7 +66,6 @@ const char *HtmlElement::selected(bool isSelected) {
 
 const char *HtmlElement::checked(bool isChecked) {
   return isChecked ? " checked" : "";
-
 }
 
 bool HtmlElement::handleResponse(const char *key, const char *value) {

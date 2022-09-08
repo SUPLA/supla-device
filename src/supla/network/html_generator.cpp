@@ -162,7 +162,7 @@ const char styles[] =
         "margin-top:80px"
       "}"
     "}"
-    "@media all {" // and (max-width:640px){"
+    "@media all {"  // and (max-width:640px){"
       ".s{"
         "width:calc(100% - 20px);"
         "margin-top:40px;"

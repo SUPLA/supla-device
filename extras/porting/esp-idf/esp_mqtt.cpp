@@ -38,6 +38,52 @@ static void mqtt_event_handler(void *handler_args,
       " *** MQTT Event dispatched from event loop base=%s, event_id=%d",
       base,
       event_id);
+  esp_mqtt_event_handle_t event =
+      reinterpret_cast<esp_mqtt_event_handle_t>(event_data);
+  switch ((esp_mqtt_event_id_t)event_id) {
+    case MQTT_EVENT_CONNECTED:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_CONNECTED");
+      break;
+    case MQTT_EVENT_DISCONNECTED:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_DISCONNECTED");
+      break;
+
+    case MQTT_EVENT_SUBSCRIBED:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
+      break;
+    case MQTT_EVENT_UNSUBSCRIBED:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
+      break;
+    case MQTT_EVENT_PUBLISHED:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
+      break;
+    case MQTT_EVENT_DATA:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_DATA");
+      break;
+    case MQTT_EVENT_ERROR:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_ERROR");
+      if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+        SUPLA_LOG_DEBUG("Last error code reported from esp-tls: 0x%x",
+                        event->error_handle->esp_tls_last_esp_err);
+        SUPLA_LOG_DEBUG("Last tls stack error number: 0x%x",
+                        event->error_handle->esp_tls_stack_err);
+        SUPLA_LOG_DEBUG(
+            "Last captured errno : %d (%s)",
+            event->error_handle->esp_transport_sock_errno,
+            strerror(event->error_handle->esp_transport_sock_errno));
+      } else if (event->error_handle->error_type ==
+                 MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
+        SUPLA_LOG_DEBUG("Connection refused error: 0x%x",
+                        event->error_handle->connect_return_code);
+      } else {
+        SUPLA_LOG_DEBUG("Unknown error type: 0x%x",
+                        event->error_handle->error_type);
+      }
+      break;
+    default:
+      SUPLA_LOG_DEBUG("Other event id:%d", event->event_id);
+      break;
+  }
 }
 
 Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
@@ -51,11 +97,20 @@ void Supla::Protocol::EspMqtt::onInit() {
   }
 
   esp_mqtt_client_config_t mqttCfg = {};
-  const char uri[] = "mqtt://192.168.8.226";
-  mqttCfg.broker.address.uri = uri;
-  mqttCfg.credentials.username = "test";
-  mqttCfg.credentials.authentication.password = "test";
+  mqttCfg.broker.address.hostname = server;
+  mqttCfg.broker.address.port = port;
+  if (useAuth) {
+    mqttCfg.credentials.username = user;
+    mqttCfg.credentials.authentication.password = password;
+  }
+  if (useTls) {
+    mqttCfg.broker.address.transport = MQTT_TRANSPORT_OVER_SSL;
+  } else {
+    mqttCfg.broker.address.transport = MQTT_TRANSPORT_OVER_TCP;
+  }
   mqttCfg.session.keepalive = 5;
+
+  // TODO(klew): mqttCfg.session.last_will
 
   client = esp_mqtt_client_init(&mqttCfg);
   esp_mqtt_client_register_event(

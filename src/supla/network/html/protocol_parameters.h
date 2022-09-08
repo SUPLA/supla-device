@@ -29,7 +29,8 @@ namespace Html {
 
 class ProtocolParameters : public HtmlElement {
  public:
-  ProtocolParameters(bool addMqttParams = true, bool concurrentProtocols = true);
+  explicit ProtocolParameters(
+      bool addMqttParams = true, bool concurrentProtocols = true);
   virtual ~ProtocolParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;

@@ -70,13 +70,11 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->send(
           "<i><select name=\"protocol_supla\" id=\"protocol_supla\" "
           "onchange=\"protocolChanged();\">"
-          "<option value=\"0\""
-          );
+          "<option value=\"0\"");
       sender->send(selected(!cfg->isSuplaCommProtocolEnabled()));
       sender->send(
           ">DISABLED</option>"
-          "<option value=\"1\""
-          );
+          "<option value=\"1\"");
       sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
       sender->send(
           ">ENABLED</option>"
@@ -120,13 +118,11 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         sender->send(
             "<i><select name=\"protocol_mqtt\" id=\"protocol_mqtt\" "
             "onchange=\"protocolChanged();\">"
-            "<option value=\"0\""
-            );
+            "<option value=\"0\"");
         sender->send(selected(!cfg->isMqttCommProtocolEnabled()));
         sender->send(
             ">DISABLED</option>"
-            "<option value=\"1\""
-            );
+            "<option value=\"1\"");
         sender->send(selected(cfg->isMqttCommProtocolEnabled()));
         sender->send(
             ">ENABLED</option>"

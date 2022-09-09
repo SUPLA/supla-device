@@ -67,5 +67,13 @@ SuplaDeviceClass *ProtocolLayer::getSdc() {
   return sdc;
 }
 
+bool ProtocolLayer::isConnectionError() {
+  return false;
+}
+
+bool ProtocolLayer::isConnecting() {
+  return false;
+}
+
 }  // namespace Protocol
 }  // namespace Supla

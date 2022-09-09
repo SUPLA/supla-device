@@ -31,6 +31,7 @@ namespace Protocol {
 class EspMqtt : public Mqtt {
  public:
   explicit EspMqtt(SuplaDeviceClass *sdc);
+  virtual ~EspMqtt();
 
   void onInit() override;
   //  bool onLoadConfig() override;
@@ -40,6 +41,9 @@ class EspMqtt : public Mqtt {
   // uint32_t getConnectionFailTime() override;
 
   static Supla::Mutex *mutex;
+  void setConnecting();
+  void setConnectionError();
+  void setRegisteredAndReady();
 
  protected:
   bool connected = false;

@@ -44,6 +44,8 @@ class ProtocolLayer {
   virtual void iterate(uint64_t _millis) = 0;
   virtual bool isNetworkRestartRequested() = 0;
   virtual uint32_t getConnectionFailTime() = 0;
+  virtual bool isConnectionError();
+  virtual bool isConnecting();
 
  protected:
   static ProtocolLayer *firstPtr;

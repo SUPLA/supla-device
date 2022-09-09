@@ -31,6 +31,12 @@ enum LedMode {
   LED_ALWAYS_OFF
 };
 
+// States SERVER_CONNECTING, REGISTERED_AND_READY, PACZKOW_WE_HAVE_A_PROBLEM
+// may be different in multiprotocol scenario. We consider error as highest
+// priority LED status, then SERVER_CONNECTING, and lowest priority has
+// REGISTERED_AND_READY state. So for all states where Supla protocol has
+// SERVER_CONNECTING and REGISTERED_AND_READY we check also other protocol
+// layers state if they doesn't have any higher priority state.
 enum LedSequence {
   NETWORK_CONNECTING /* initial state 2000/2000 ms */,
   SERVER_CONNECTING /* flashing 500/500 ms */,
@@ -79,7 +85,6 @@ class StatusLed : public Element {
   unsigned int offDuration = 1000;
   uint64_t lastUpdate = 0;
   LedState state = NOT_INITIALIZED;
-  int lastDeviceStatus = -1;
   LedSequence currentSequence = NETWORK_CONNECTING;
   LedMode ledMode = LED_ON_WHEN_CONNECTED;
 };

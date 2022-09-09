@@ -26,6 +26,7 @@
 #include "esp_mqtt.h"
 
 Supla::Mutex *Supla::Protocol::EspMqtt::mutex = nullptr;
+static Supla::Protocol::EspMqtt *espMqtt = nullptr;
 
 static void mqtt_event_handler(void *handler_args,
                                esp_event_base_t base,
@@ -41,11 +42,17 @@ static void mqtt_event_handler(void *handler_args,
   esp_mqtt_event_handle_t event =
       reinterpret_cast<esp_mqtt_event_handle_t>(event_data);
   switch ((esp_mqtt_event_id_t)event_id) {
+    case MQTT_EVENT_BEFORE_CONNECT:
+      SUPLA_LOG_DEBUG("MQTT_EVENT_BEFORE_CONNECT");
+      espMqtt->setConnecting();
+      break;
     case MQTT_EVENT_CONNECTED:
       SUPLA_LOG_DEBUG("MQTT_EVENT_CONNECTED");
+      espMqtt->setRegisteredAndReady();
       break;
     case MQTT_EVENT_DISCONNECTED:
       SUPLA_LOG_DEBUG("MQTT_EVENT_DISCONNECTED");
+      espMqtt->setConnecting();
       break;
 
     case MQTT_EVENT_SUBSCRIBED:
@@ -62,6 +69,7 @@ static void mqtt_event_handler(void *handler_args,
       break;
     case MQTT_EVENT_ERROR:
       SUPLA_LOG_DEBUG("MQTT_EVENT_ERROR");
+      espMqtt->setConnectionError();
       if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
         SUPLA_LOG_DEBUG("Last error code reported from esp-tls: 0x%x",
                         event->error_handle->esp_tls_last_esp_err);
@@ -89,6 +97,11 @@ static void mqtt_event_handler(void *handler_args,
 Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
     : Supla::Protocol::Mqtt(sdc) {
   mutex = Supla::Mutex::Create();
+  espMqtt = this;
+}
+
+Supla::Protocol::EspMqtt::~EspMqtt() {
+  espMqtt = nullptr;
 }
 
 void Supla::Protocol::EspMqtt::onInit() {
@@ -147,4 +160,17 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
     connected = true;
     esp_mqtt_client_start(client);
   }
+}
+
+void Supla::Protocol::EspMqtt::setConnecting() {
+  connecting = true;
+}
+
+void Supla::Protocol::EspMqtt::setConnectionError() {
+  error = true;
+}
+
+void Supla::Protocol::EspMqtt::setRegisteredAndReady() {
+  connecting = false;
+  error = false;
 }

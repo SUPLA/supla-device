@@ -40,6 +40,8 @@ class Mqtt : public ProtocolLayer {
 //  void iterate(uint64_t _millis) override;
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
+  bool isConnectionError() override;
+  bool isConnecting() override;
 
  protected:
   char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
@@ -51,6 +53,8 @@ class Mqtt : public ProtocolLayer {
   bool useAuth = true;
   bool retain = false;
   bool enabled = true;
+  bool connecting = false;
+  bool error = false;
 };
 }  // namespace Protocol
 }  // namespace Supla

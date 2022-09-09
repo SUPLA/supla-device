@@ -117,3 +117,10 @@ bool Supla::Protocol::Mqtt::isEnabled() {
   return enabled;
 }
 
+bool Supla::Protocol::Mqtt::isConnectionError() {
+  return error;
+}
+
+bool Supla::Protocol::Mqtt::isConnecting() {
+  return connecting;
+}

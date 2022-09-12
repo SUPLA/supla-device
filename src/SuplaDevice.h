@@ -59,6 +59,7 @@
 #define STATUS_CONFIG_MODE               40
 #define STATUS_SOFTWARE_RESET            41
 #define STATUS_SW_DOWNLOAD               50
+#define STATUS_SUPLA_PROTOCOL_DISABLED   60
 
 typedef void (*_impl_arduino_status)(int status, const char *msg);
 

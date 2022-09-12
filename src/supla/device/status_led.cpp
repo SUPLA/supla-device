@@ -101,6 +101,11 @@ void Supla::Device::StatusLed::iterateAlways() {
       currentSequence = SW_DOWNLOAD;
       break;
 
+    case STATUS_SUPLA_PROTOCOL_DISABLED:
+      currentSequence = REGISTERED_AND_READY;
+      checkProtocolsStatus = true;
+      break;
+
     case STATUS_UNKNOWN:
     case STATUS_ALREADY_INITIALIZED:
     case STATUS_MISSING_NETWORK_INTERFACE:

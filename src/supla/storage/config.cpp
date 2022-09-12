@@ -399,7 +399,9 @@ void Config::generateKey(char *output, int number, const char *key) {
 }
 
 bool Config::isMinimalConfigReady() {
-  char buf[SUPLA_EMAIL_MAXSIZE] = {};
+  char buf[512] = {};
+  // TODO(klew): minimal config check for protocol related params shoud be
+  // moved to protocol layer level.
 
   // Common part
   memset(buf, 0, sizeof(buf));
@@ -412,7 +414,9 @@ bool Config::isMinimalConfigReady() {
     SUPLA_LOG_DEBUG("Wi-Fi password missing");
     return false;
   }
+
   // Supla protocol part
+  // TODO(klew): move to supla srpc layer
   if (isSuplaCommProtocolEnabled()) {
     if (!getSuplaServer(buf) || strlen(buf) == 0) {
       SUPLA_LOG_DEBUG("Supla server missing");
@@ -423,12 +427,31 @@ bool Config::isMinimalConfigReady() {
       SUPLA_LOG_DEBUG("Mail address missing");
       return false;
     }
-    return true;
   }
 
-  // TODO(klew): add MQTT minimal config check
+  // TODO(klew): move to MQTT layer
+  if (isMqttCommProtocolEnabled()) {
+    memset(buf, 0, sizeof(buf));
+    if (!getMqttServer(buf) || strlen(buf) == 0) {
+      SUPLA_LOG_DEBUG("MQTT: Missing server address");
+      return false;
+    }
 
-  return false;
+    if (isMqttAuthEnabled()) {
+      memset(buf, 0, sizeof(buf));
+      if (!getMqttUser(buf) || strlen(buf) == 0) {
+        SUPLA_LOG_DEBUG("MQTT: Missing username");
+        return false;
+      }
+
+      memset(buf, 0, sizeof(buf));
+      if (!getMqttPassword(buf) || strlen(buf) == 0) {
+        SUPLA_LOG_DEBUG("MQTT: Missing password");
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 bool Config::isConfigModeSupported() {

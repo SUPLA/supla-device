@@ -28,6 +28,22 @@
 Supla::Mutex *Supla::Protocol::EspMqtt::mutex = nullptr;
 static Supla::Protocol::EspMqtt *espMqtt = nullptr;
 
+namespace Supla {
+  enum EspMqttStatus {
+    EspMqttStatus_none,
+    EspMqttStatus_transportError,
+    EspMqttStatus_badProtocol,
+    EspMqttStatus_serverUnavailable,
+    EspMqttStatus_badUsernameOrPassword,
+    EspMqttStatus_notAuthorized,
+    EspMqttStatus_connectionRefused,
+    EspMqttStatus_unknownConnectionError,
+    EspMqttStatus_connected
+  };
+}  // namespace Supla
+
+static Supla::EspMqttStatus lastError = Supla::EspMqttStatus_none;
+
 static void mqtt_event_handler(void *handler_args,
                                esp_event_base_t base,
                                int32_t event_id,
@@ -48,6 +64,10 @@ static void mqtt_event_handler(void *handler_args,
       break;
     case MQTT_EVENT_CONNECTED:
       SUPLA_LOG_DEBUG("MQTT_EVENT_CONNECTED");
+      if (lastError != Supla::EspMqttStatus_connected) {
+        lastError = Supla::EspMqttStatus_connected;
+        espMqtt->getSdc()->addLastStateLog("MQTT: connected");
+      }
       espMqtt->setRegisteredAndReady();
       break;
     case MQTT_EVENT_DISCONNECTED:
@@ -71,8 +91,13 @@ static void mqtt_event_handler(void *handler_args,
       SUPLA_LOG_DEBUG("MQTT_EVENT_ERROR");
       espMqtt->setConnectionError();
       if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+        if (lastError != Supla::EspMqttStatus_transportError) {
+          lastError = Supla::EspMqttStatus_transportError;
+          espMqtt->getSdc()->addLastStateLog(
+              "MQTT: failed to establish connection");
+        }
         SUPLA_LOG_DEBUG("Last error code reported from esp-tls: 0x%x",
-                        event->error_handle->esp_tls_last_esp_err);
+            event->error_handle->esp_tls_last_esp_err);
         SUPLA_LOG_DEBUG("Last tls stack error number: 0x%x",
                         event->error_handle->esp_tls_stack_err);
         SUPLA_LOG_DEBUG(
@@ -81,11 +106,51 @@ static void mqtt_event_handler(void *handler_args,
             strerror(event->error_handle->esp_transport_sock_errno));
       } else if (event->error_handle->error_type ==
                  MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
+        switch (event->error_handle->connect_return_code) {
+          case MQTT_CONNECTION_REFUSE_PROTOCOL:
+            if (lastError != Supla::EspMqttStatus_badProtocol) {
+              lastError = Supla::EspMqttStatus_badProtocol;
+              espMqtt->getSdc()->addLastStateLog(
+                  "MQTT: connection refused (bad protocol)");
+            }
+            break;
+          case MQTT_CONNECTION_REFUSE_SERVER_UNAVAILABLE:
+            if (lastError != Supla::EspMqttStatus_serverUnavailable) {
+              lastError = Supla::EspMqttStatus_serverUnavailable;
+              espMqtt->getSdc()->addLastStateLog(
+                  "MQTT: connection refused (server unavailable)");
+            }
+            break;
+          case MQTT_CONNECTION_REFUSE_BAD_USERNAME:
+            if (lastError != Supla::EspMqttStatus_badUsernameOrPassword) {
+              lastError = Supla::EspMqttStatus_badUsernameOrPassword;
+              espMqtt->getSdc()->addLastStateLog(
+                  "MQTT: connection refused (bad username or password)");
+            }
+            break;
+          case MQTT_CONNECTION_REFUSE_NOT_AUTHORIZED:
+            if (lastError != Supla::EspMqttStatus_notAuthorized) {
+              lastError = Supla::EspMqttStatus_notAuthorized;
+              espMqtt->getSdc()->addLastStateLog(
+                  "MQTT: connection refused (not authorized)");
+            }
+            break;
+          default:
+            if (lastError != Supla::EspMqttStatus_connectionRefused) {
+              lastError = Supla::EspMqttStatus_connectionRefused;
+              espMqtt->getSdc()->addLastStateLog("MQTT: connection refused");
+            }
+            break;
+        }
         SUPLA_LOG_DEBUG("Connection refused error: 0x%x",
-                        event->error_handle->connect_return_code);
+            event->error_handle->connect_return_code);
       } else {
+        if (lastError != Supla::EspMqttStatus_unknownConnectionError) {
+          lastError = Supla::EspMqttStatus_unknownConnectionError;
+          espMqtt->getSdc()->addLastStateLog("MQTT: other connection error");
+        }
         SUPLA_LOG_DEBUG("Unknown error type: 0x%x",
-                        event->error_handle->error_type);
+            event->error_handle->error_type);
       }
       break;
     default:
@@ -95,10 +160,10 @@ static void mqtt_event_handler(void *handler_args,
 }
 
 Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
-    : Supla::Protocol::Mqtt(sdc) {
-  mutex = Supla::Mutex::Create();
-  espMqtt = this;
-}
+  : Supla::Protocol::Mqtt(sdc) {
+    mutex = Supla::Mutex::Create();
+    espMqtt = this;
+  }
 
 Supla::Protocol::EspMqtt::~EspMqtt() {
   espMqtt = nullptr;
@@ -136,11 +201,25 @@ void Supla::Protocol::EspMqtt::disconnect() {
   }
 
   if (connected) {
-    esp_mqtt_client_disconnect(client);
-    mutex->unlock();
-    SUPLA_LOG_DEBUG("MQTT layer disconnect requested");
-    esp_mqtt_client_stop(client);
-    connected = false;
+    // Sometimes when Wi-Fi reconnects, mqtt client is not
+    // shutting down correctly (stop or disconnect doesn't have any effect)
+    // and in result mqtt_start results in "Client has started" message (with
+    // ESP_FAIL return code). As a workaround we completly reinitialize
+    // mqtt client instead of stopping and starting...
+    if (lastError == Supla::EspMqttStatus_connected) {
+      mutex->unlock();
+      SUPLA_LOG_DEBUG("MQTT layer stop requested");
+      esp_mqtt_client_stop(client);
+      connected = false;
+    } else {
+      esp_mqtt_client_disconnect(client);
+      mutex->unlock();
+      SUPLA_LOG_DEBUG("MQTT layer disconnect requested");
+      esp_mqtt_client_stop(client);
+      connected = false;
+    }
+    esp_mqtt_client_destroy(client);
+    onInit();
   }
 }
 

@@ -55,12 +55,12 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
       }
       currentStatus = newStatus;
       showLog = true;
-      if (newStatus != STATUS_INITIALIZED) {
+      if (newStatus != STATUS_INITIALIZED && msg != nullptr) {
         addLastStateLog(msg);
       }
     }
   }
-  if (alwaysLog || showLog) {
+  if ((alwaysLog || showLog) && msg != nullptr) {
     SUPLA_LOG_INFO("Current status: [%d] %s", newStatus, msg);
   }
 }
@@ -610,6 +610,10 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
       }
     }
     return false;
+  } else {
+    if (!getSrpcLayer()->isEnabled()) {
+      status(STATUS_SUPLA_PROTOCOL_DISABLED, nullptr);
+    }
   }
 
   networkIsNotReadyCounter = 0;

@@ -145,6 +145,14 @@ void *SRPC_ICACHE_FLASH srpc_init(TsrpcParams *params) {
   return srpc;
 }
 
+void SRPC_ICACHE_FLASH srpc_lock(void *_srpc) {
+  lck_lock(((Tsrpc *)_srpc)->lck);
+}
+
+void SRPC_ICACHE_FLASH srpc_unlock(void *_srpc) {
+  lck_unlock(((Tsrpc *)_srpc)->lck);
+}
+
 void SRPC_ICACHE_FLASH srpc_queue_free(Tsrpc_Queue *queue) {
   _supla_int_t a;
   for (a = 0; a < SRPC_QUEUE_SIZE; a++) {
@@ -1604,10 +1612,11 @@ srpc_call_min_version_required(void *_srpc, unsigned _supla_int_t call_type) {
       return 17;
     case SUPLA_SC_CALL_SCENE_PACK_UPDATE:
     case SUPLA_SC_CALL_SCENE_STATE_PACK_UPDATE:
+      return 18;
     case SUPLA_CS_CALL_EXECUTE_ACTION:
     case SUPLA_CS_CALL_AUTH_AND_EXECUTE_ACTION:
     case SUPLA_SC_CALL_ACTION_EXECUTION_RESULT:
-      return 18;
+      return 19;
   }
 
   return 255;
@@ -1745,7 +1754,7 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_dcs_async_ping_server(void *_srpc) {
 _supla_int_t SRPC_ICACHE_FLASH srpc_sdc_async_ping_server_result(void *_srpc) {
   (void)(_srpc);
 #if !defined(ESP8266) && !defined(__AVR__) && !defined(ESP32) && \
-  !defined(SUPLA_DEVICE)
+    !defined(SUPLA_DEVICE)
   TSDC_SuplaPingServerResult ps;
 
   struct timeval now;

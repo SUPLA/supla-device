@@ -41,6 +41,7 @@ extern unsigned char st_app_terminate;
 
 unsigned char st_file_exists(const char *fp);
 void st_hook_signals(void);
+void st_hook_critical_signals(void);
 char st_try_fork(void);
 char st_set_ug_id(int uid, int gid);
 char st_setpidfile(char *pidfile_path);
@@ -85,8 +86,8 @@ char *st_get_authkey_hash_hex(const char AuthKey[SUPLA_AUTHKEY_SIZE]);
 #endif
 
 #ifdef __OPENSSL_TOOLS
-char *st_openssl_base64_encode(char *src, int src_len);
-char *st_openssl_base64_decode(char *src, int src_len, int *dst_len);
+char *st_openssl_base64_encode(const char *src, int src_len);
+char *st_openssl_base64_decode(const char *src, int src_len, int *dst_len);
 #endif
 
 #ifdef __cplusplus

@@ -28,7 +28,6 @@
 #define _supla_int64_t __int64
 #define _supla_timeval timeval
 
-
 #elif defined(__AVR__)
 // *** ARDUINO MEGA ***
 
@@ -69,7 +68,7 @@ struct _supla_timeval {
 #define _supla_int_t int
 #define _supla_int64_t long long
 #elif defined(__arm__)
-// *** ARM - RPI? *** 
+// *** ARM - RPI? ***
 
 struct _supla_timeval {
   long long tv_sec;
@@ -125,7 +124,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #if defined(ARDUINO_ARCH_AVR)     // Arduino IDE for Arduino HW
 #define SUPLA_MAX_DATA_SIZE 1248  // Registration header + 32 channels x 21 B
 #elif defined(ARDUINO) || \
-    defined(SUPLA_DEVICE)   // Other Arduino compilations and SUPLA_DEVICE
+    defined(SUPLA_DEVICE)         // Other Arduino compilations and SUPLA_DEVICE
 #define SUPLA_MAX_DATA_SIZE 3264  // Registration header + 128 channels x 21 B
 #elif defined(ESP8266)
 #define SUPLA_MAX_DATA_SIZE 1536
@@ -261,9 +260,9 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CS_CALL_TIMER_ARM 800                           // ver. >= 17
 #define SUPLA_SC_CALL_SCENE_PACK_UPDATE 900                   // ver. >= 18
 #define SUPLA_SC_CALL_SCENE_STATE_PACK_UPDATE 910             // ver. >= 18
-#define SUPLA_CS_CALL_EXECUTE_ACTION 1000                     // ver. >= 18
-#define SUPLA_CS_CALL_AUTH_AND_EXECUTE_ACTION 1010            // ver. >= 18
-#define SUPLA_SC_CALL_ACTION_EXECUTION_RESULT 1020            // ver. >= 18
+#define SUPLA_CS_CALL_EXECUTE_ACTION 1000                     // ver. >= 19
+#define SUPLA_CS_CALL_AUTH_AND_EXECUTE_ACTION 1010            // ver. >= 19
+#define SUPLA_SC_CALL_ACTION_EXECUTION_RESULT 1020            // ver. >= 19
 
 #define SUPLA_RESULT_CALL_NOT_ALLOWED -5
 #define SUPLA_RESULT_DATA_TOO_LARGE -4
@@ -486,6 +485,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_MFR_COMELIT 14
 
 #define SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE 0x0010  // ver. >= 17
+#define SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED 0x0020     // ver. >= 18
 
 #define SUPLA_CHANNEL_FLAG_ZWAVE_BRIDGE 0x0001  // ver. >= 12
 #define SUPLA_CHANNEL_FLAG_IR_BRIDGE 0x0002     // ver. >= 12
@@ -512,8 +512,9 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNEL_FLAG_ZIGBEE_BRIDGE 0x00800000                // ver. >= 12
 #define SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED 0x01000000    // ver. >= 12
 #define SUPLA_CHANNEL_FLAG_LIGHTSOURCELIFESPAN_SETTABLE \
-  0x02000000                                               // ver. >= 12
-#define SUPLA_CHANNEL_FLAG_POSSIBLE_SLEEP_MODE 0x04000000  // ver. >= 12
+  0x02000000  // ver. >= 12
+#define SUPLA_CHANNEL_FLAG_POSSIBLE_SLEEP_MODE_deprecated \
+  0x04000000  // ver. >= 12
 
 #pragma pack(push, 1)
 
@@ -1134,8 +1135,13 @@ typedef struct {
 #define ACTION_UP_OR_STOP 140
 #define ACTION_DOWN_OR_STOP 150
 #define ACTION_STEP_BY_STEP 160
+#define ACTION_READ 1000
+#define ACTION_SET 2000
 #define ACTION_EXECUTE 3000
 #define ACTION_INTERRUPT 3001
+#define ACTION_INTERRUPT_AND_EXECUTE 3002
+#define ACTION_COPY 10100
+#define ACTION_FORWARD_OUTSIDE 10000
 
 typedef struct {
   _supla_int_t ActionId;
@@ -1358,7 +1364,7 @@ typedef struct {
 #define EM_VAR_REVERSE_ACTIVE_ENERGY_BALANCED 0x4000
 #define EM_VAR_ALL 0xFFFF
 
-#define EM_VAR_POWER_ACTIVE_KWH 0x100000
+#define EM_VAR_POWER_ACTIVE_KW 0x100000
 #define EM_VAR_POWER_REACTIVE_KVAR 0x200000
 #define EM_VAR_POWER_APPARENT_KVA 0x400000
 

@@ -44,9 +44,10 @@ void delayMicroseconds(uint64_t delayMicro) {
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <unistd.h>
+#include <esp_timer.h>
 
 uint64_t millis(void) {
-  return xTaskGetTickCount() * portTICK_PERIOD_MS;
+  return esp_timer_get_time() / 1000;
 }
 
 void delay(uint64_t delayMs) {

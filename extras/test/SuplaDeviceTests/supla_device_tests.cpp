@@ -203,6 +203,7 @@ class NetworkMockWithMac : public Supla::Network {
   public:
     NetworkMockWithMac() : Supla::Network(nullptr) {};
     MOCK_METHOD(void, setup, (), (override));
+    MOCK_METHOD(void, disable, (), (override));
 
     MOCK_METHOD(bool, isReady, (), (override));
     MOCK_METHOD(bool, iterate, (), (override));
@@ -280,17 +281,18 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyEmail) {
 
 
 TEST_F(SuplaDeviceTests, SuccessfulBegin) {
-  ::testing::InSequence seq;
   SrpcMock srpc;
   NetworkMockWithMac net;
   TimerMock timer;
 
+  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
+
+  ::testing::InSequence seq;
   NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   int dummy;
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(net, setup());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
   EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 16));
@@ -308,17 +310,17 @@ TEST_F(SuplaDeviceTests, SuccessfulBegin) {
 
 
 TEST_F(SuplaDeviceTests, SuccessfulBeginAlternative) {
-  ::testing::InSequence seq;
   SrpcMock srpc;
   NetworkMockWithMac net;
   TimerMock timer;
+  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
 
+  ::testing::InSequence seq;
   NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   int dummy;
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(net, setup());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
   EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 16));
@@ -351,6 +353,7 @@ TEST_F(SuplaDeviceTests, FailedBeginAlternativeOnEmptyAUTHKEY) {
 TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   SrpcMock srpc;
   NetworkMockWithMac net;
+  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
   StorageMock2 storage;
   TimerMock timer;
   TimeInterfaceStub time;

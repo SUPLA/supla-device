@@ -137,6 +137,7 @@ int Supla::Control::ActionTrigger::actionTriggerCapToButtonEvent(
 
 void Supla::Control::ActionTrigger::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  Supla::Element::onRegistered(suplaSrpc);
   // cleanup actions to be send
   while (channel.popAction()) {
   }

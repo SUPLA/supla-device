@@ -25,7 +25,7 @@ class ElementMock : public Supla::Element {
   MOCK_METHOD(void, onInit, (), (override));
   MOCK_METHOD(void, onLoadState, (), (override));
   MOCK_METHOD(void, onSaveState, (), (override));
-  MOCK_METHOD(void, onRegistered, (), (override));
+  MOCK_METHOD(void, onRegistered, (Supla::Protocol::SuplaSrpc *), (override));
   MOCK_METHOD(void, iterateAlways, (), (override));
   MOCK_METHOD(bool, iterateConnected, (void *), (override));
   MOCK_METHOD(void, onTimer, (), (override));
@@ -33,7 +33,6 @@ class ElementMock : public Supla::Element {
   MOCK_METHOD(int, handleNewValueFromServer, (TSD_SuplaChannelNewValue *), (override));
   MOCK_METHOD(void, handleGetChannelState, (TDSC_ChannelState *), (override));
   MOCK_METHOD(int, handleCalcfgFromServer, (TSD_DeviceCalCfgRequest *), (override));
-    
 };
 
 #endif /*_supla_element_mock_h*/

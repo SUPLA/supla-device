@@ -150,6 +150,7 @@ idf_component_register(SRCS
     esp_wifi
     driver
     mqtt
+    esp_timer
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )
 

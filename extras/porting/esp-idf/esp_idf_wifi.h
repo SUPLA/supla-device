@@ -41,6 +41,7 @@ class EspIdfWifi : public Supla::Wifi {
 
   bool isReady() override;
   void setup() override;
+  void disable() override;
   void uninit() override;
   bool getMacAddr(uint8_t *out) override;
 
@@ -59,6 +60,7 @@ class EspIdfWifi : public Supla::Wifi {
   bool isIpReady = false;
   EventGroupHandle_t wifiEventGroup;
   unsigned _supla_int_t ipv4 = 0;
+  uint8_t lastChannel = 0;
   int lastReasons[2] = {};
   int lastReasonIdx = 0;
 #ifdef SUPLA_DEVICE_ESP32

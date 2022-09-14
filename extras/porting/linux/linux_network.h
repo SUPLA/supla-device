@@ -31,6 +31,7 @@ class LinuxNetwork : public Network {
   bool isReady() override;
   void setup() override;
   bool iterate() override;
+  void disable() override;
   void fillStateData(TDSC_ChannelState *channelState) override;
 
  protected:

@@ -33,66 +33,19 @@ namespace Supla {
 class EthernetShield : public Supla::Network {
  public:
   explicit EthernetShield(uint8_t mac[6], unsigned char *ip = NULL)
-      : Network(ip), isDeviceReady(false) {
+      : Network(ip) {
     memcpy(this->mac, mac, 6);
     sslEnabled = false;  // SSL is not supported on Arduino MEGA target
   }
 
-  int read(void *buf, int count) {
-    _supla_int_t size = client.available();
-    if (size > 0) {
-      if (size > count) size = count;
-      int readSize = client.read(reinterpret_cast<uint8_t *>(buf), size);
-#ifdef SUPLA_COMM_DEBUG
-      Serial.print(F("Received: ["));
-      for (int i = 0; i < readSize; i++) {
-        Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
-        Serial.print(F(" "));
-      }
-      Serial.println(F("]"));
-#endif
-      return readSize;
-    }
-
-    return -1;
+  void disable() override {
   }
 
-  int write(void *buf, int count) {
-#ifdef SUPLA_COMM_DEBUG
-    Serial.print(F("Sending: ["));
-    for (int i = 0; i < count; i++) {
-      Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
-      Serial.print(F(" "));
-    }
-    Serial.println(F("]"));
-#endif
-    int sendSize = client.write(reinterpret_cast<const uint8_t *>(buf), count);
-    return sendSize;
-  }
-
-  int connect(const char *server, int port = -1) {
-    int connectionPort = (port == -1 ? 2015 : port);
-    SUPLA_LOG_DEBUG(
-              "Establishing connection with: %s (port: %d)",
-              server,
-              connectionPort);
-
-    return client.connect(server, connectionPort);
-  }
-
-  bool connected() {
-    return client.connected();
-  }
-
-  void disconnect() {
-    client.stop();
-  }
-
-  bool isReady() {
+  bool isReady() override {
     return isDeviceReady;
   }
 
-  void setup() {
+  void setup() override {
     Serial.println(F("Connecting to network..."));
     if (useLocalIp) {
       Ethernet.begin(mac, localIp);
@@ -132,9 +85,8 @@ class EthernetShield : public Supla::Network {
   };
 
  protected:
-  EthernetClient client;
-  uint8_t mac[6];
-  bool isDeviceReady;
+  uint8_t mac[6] = {};
+  bool isDeviceReady = false;
 };
 
 };  // namespace Supla

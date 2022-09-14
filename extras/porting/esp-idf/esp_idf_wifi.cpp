@@ -137,13 +137,8 @@ void Supla::EspIdfWifi::setup() {
     esp_wifi_set_ps(WIFI_PS_NONE);
 
   } else {
-    SUPLA_LOG_DEBUG("WiFi: resetting WiFi connection");
-    Disconnect();
-    esp_wifi_disconnect();
-    ESP_ERROR_CHECK(esp_wifi_stop());
+    disable();
   }
-
-  initDone = true;
 
   if (mode == Supla::DEVICE_MODE_CONFIG) {
     wifi_config_t wifi_config = {};
@@ -160,7 +155,12 @@ void Supla::EspIdfWifi::setup() {
     memcpy(wifi_config.sta.ssid, ssid, MAX_SSID_SIZE);
     memcpy(wifi_config.sta.password, password, MAX_WIFI_PASSWORD_SIZE);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-    wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+    if (!initDone) {
+      wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
+    } else {
+      wifi_config.sta.scan_method = WIFI_FAST_SCAN;
+      wifi_config.sta.channel = lastChannel;
+    }
     wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
 
     if (strlen(reinterpret_cast<char *>(wifi_config.sta.password))) {
@@ -172,6 +172,7 @@ void Supla::EspIdfWifi::setup() {
   }
   ESP_ERROR_CHECK(esp_wifi_start());
 
+  initDone = true;
 #ifndef SUPLA_DEVICE_ESP32
   // ESP8266 hostname settings have to be done after esp_wifi_start
   tcpip_adapter_set_hostname(TCPIP_ADAPTER_IF_STA, hostname);
@@ -179,10 +180,23 @@ void Supla::EspIdfWifi::setup() {
 #endif
 }
 
+void Supla::EspIdfWifi::disable() {
+  SUPLA_LOG_DEBUG("WiFi: disabling WiFi connection");
+  DisconnectProtocols();
+  uint8_t channel = 0;
+  wifi_second_chan_t secondChannel = {};
+  if (esp_wifi_get_channel(&channel, &secondChannel) == ESP_OK) {
+    SUPLA_LOG_DEBUG("Storing Wi-Fi channel %d (%d)", channel, secondChannel);
+    lastChannel = channel;
+  }
+  esp_wifi_disconnect();
+  ESP_ERROR_CHECK(esp_wifi_stop());
+}
+
 void Supla::EspIdfWifi::uninit() {
   setWifiConnected(false);
   setIpReady(false);
-  Disconnect();
+  DisconnectProtocols();
   if (initDone) {
     SUPLA_LOG_DEBUG("Wi-Fi: stopping WiFi connection");
     esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, eventHandler);

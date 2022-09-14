@@ -74,6 +74,7 @@ class Channel : public LocalAction {
   virtual void sendUpdate(void *srpc);
   virtual TSuplaChannelExtendedValue *getExtValue();
   void setCorrection(double correction, bool forSecondaryValue = false);
+  bool isSleepingEnabled();
 
   void requestChannelConfig();
 

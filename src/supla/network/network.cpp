@@ -35,7 +35,7 @@ Network *Network::Instance() {
   return netIntf;
 }
 
-void Network::Disconnect() {
+void Network::DisconnectProtocols() {
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
       proto = proto->next()) {
     proto->disconnect();
@@ -46,6 +46,13 @@ void Network::Disconnect() {
 void Network::Setup() {
   if (Instance() != nullptr) {
     return Instance()->setup();
+  }
+  return;
+}
+
+void Network::Disable() {
+  if (Instance() != nullptr) {
+    return Instance()->disable();
   }
   return;
 }
@@ -83,6 +90,19 @@ void Network::SetNormalMode() {
     Instance()->setNormalMode();
   }
   return;
+}
+
+void Network::SetSetupNeeded() {
+  if (Instance() != nullptr) {
+    Instance()->setSetupNeeded();
+  }
+}
+
+bool Network::PopSetupNeeded() {
+  if (Instance() != nullptr) {
+    return Instance()->popSetupNeeded();
+  }
+  return false;
 }
 
 bool Network::GetMacAddr(uint8_t *buf) {
@@ -154,12 +174,12 @@ void Network::setPassword(const char *wifiPassword) {
 
 void Network::setConfigMode() {
   mode = Supla::DEVICE_MODE_CONFIG;
-  modeChanged = true;
+  setupNeeded = true;
 }
 
 void Network::setNormalMode() {
   mode = Supla::DEVICE_MODE_NORMAL;
-  modeChanged = true;
+  setupNeeded = true;
 }
 
 void Network::uninit() {
@@ -189,6 +209,18 @@ void Network::setSSLEnabled(bool enabled) {
 
 void Network::setCACert(const char *rootCA) {
   rootCACert = rootCA;
+}
+
+bool Network::popSetupNeeded() {
+  if (setupNeeded) {
+    setupNeeded = false;
+    return true;
+  }
+  return false;
+}
+
+void Network::setSetupNeeded() {
+  setupNeeded = true;
 }
 
 };  // namespace Supla

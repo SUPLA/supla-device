@@ -17,6 +17,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 
+#include "supla/network/network.h"
 #include "time.h"
 #include "element.h"
 
@@ -66,6 +67,18 @@ Element *Element::getElementByChannelNumber(int channelNumber) {
   return element;
 }
 
+bool Element::IsAnyUpdatePending() {
+  Element *element = begin();
+  while (element != nullptr) {
+    auto ch = element->getChannel();
+    if (ch && ch->isUpdateReady()) {
+      return true;
+    }
+    element = element->next();
+  }
+  return false;
+}
+
 Element *Element::next() {
   return nextPtr;
 }
@@ -78,7 +91,19 @@ void Element::onLoadState() {}
 
 void Element::onSaveState() {}
 
-void Element::onRegistered() {}
+void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  if (suplaSrpc == nullptr) {
+    return;
+  }
+  auto ch = getChannel();
+
+  while (ch != nullptr) {
+    if (ch->isSleepingEnabled()) {
+      suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
+    }
+    ch = getSecondaryChannel();
+  }
+}
 
 void Element::iterateAlways() {}
 

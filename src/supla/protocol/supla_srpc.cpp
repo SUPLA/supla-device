@@ -236,18 +236,9 @@ void Supla::messageReceived(void *srpc,
             rd.data.sdc_set_activity_timeout_result);
         break;
       case SUPLA_CSD_CALL_GET_CHANNEL_STATE: {
-        TDSC_ChannelState state;
-        memset(&state, 0, sizeof(TDSC_ChannelState));
-        state.ReceiverID = rd.data.csd_channel_state_request->SenderID;
-        state.ChannelNumber = rd.data.csd_channel_state_request->ChannelNumber;
-        Supla::Network::Instance()->fillStateData(&state);
-        suplaSrpc->getSdc()->fillStateData(&state);
-        auto element = Supla::Element::getElementByChannelNumber(
+        suplaSrpc->sendChannelStateResult(
+            rd.data.csd_channel_state_request->SenderID,
             rd.data.csd_channel_state_request->ChannelNumber);
-        if (element) {
-          element->handleGetChannelState(&state);
-        }
-        srpc_csd_async_channel_state_result(srpc, &state);
         break;
       }
       case SUPLA_SDC_CALL_PING_SERVER_RESULT:
@@ -388,7 +379,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
 
       for (auto element = Supla::Element::begin(); element != nullptr;
            element = element->next()) {
-        element->onRegistered();
+        element->onRegistered(this);
         delay(0);
       }
 
@@ -441,6 +432,11 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
     case SUPLA_RESULTCODE_CHANNEL_CONFLICT:
       sdc->status(STATUS_CHANNEL_CONFLICT, "Channel conflict!", true);
       break;
+
+    case SUPLA_RESULTCODE_CFG_MODE_REQUESTED:
+      SUPLA_LOG_INFO("Registration result: CFG mode requested");
+      sdc->requestCfgMode(Supla::Device::WithTimeout);
+      return;
 
     default:
       sdc->status(STATUS_UNKNOWN_ERROR, "Unknown registration error", true);
@@ -669,3 +665,17 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
   return enabled;
 }
 
+
+void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
+                                                        uint8_t channelNo) {
+  TDSC_ChannelState state = {};
+  state.ReceiverID = receiverId;
+  state.ChannelNumber = channelNo;
+  Supla::Network::Instance()->fillStateData(&state);
+  getSdc()->fillStateData(&state);
+  auto element = Supla::Element::getElementByChannelNumber(channelNo);
+  if (element) {
+    element->handleGetChannelState(&state);
+  }
+  srpc_csd_async_channel_state_result(srpc, &state);
+}

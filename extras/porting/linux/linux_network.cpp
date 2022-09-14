@@ -28,7 +28,7 @@ Supla::LinuxNetwork::LinuxNetwork() : Network(nullptr) {
 }
 
 Supla::LinuxNetwork::~LinuxNetwork() {
-  Disconnect();
+  DisconnectProtocols();
 }
 
 bool Supla::LinuxNetwork::isReady() {
@@ -37,6 +37,9 @@ bool Supla::LinuxNetwork::isReady() {
 
 void Supla::LinuxNetwork::setup() {
   isDeviceReady = true;
+}
+
+void Supla::LinuxNetwork::disable() {
 }
 
 bool Supla::LinuxNetwork::iterate() {

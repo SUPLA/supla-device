@@ -26,6 +26,7 @@
 #include "../at_channel.h"
 #include "../element.h"
 #include "button.h"
+#include "supla/protocol/supla_srpc.h"
 
 namespace Supla {
 namespace Control {
@@ -53,7 +54,7 @@ class ActionTrigger : public Element, public ActionHandler {
   void activateAction(int action) override;
   Supla::Channel *getChannel() override;
   void onInit() override;
-  void onRegistered() override;
+  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
   void handleChannelConfig(TSD_ChannelConfig *result) override;
   void onLoadState() override;
   void onSaveState() override;

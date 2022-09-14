@@ -30,13 +30,16 @@ namespace Supla {
 class Network {
  public:
   static Network *Instance();
-  static void Disconnect();
+  static void DisconnectProtocols();
   static void Setup();
+  static void Disable();
   static void Uninit();
   static bool IsReady();
   static bool Iterate();
   static void SetConfigMode();
   static void SetNormalMode();
+  static void SetSetupNeeded();
+  static bool PopSetupNeeded();
   static bool GetMacAddr(uint8_t *);
   static void SetHostname(const char *);
 
@@ -45,6 +48,7 @@ class Network {
   explicit Network(uint8_t ip[4]);
   virtual ~Network();
   virtual void setup() = 0;
+  virtual void disable() = 0;
   virtual void uninit();
   virtual void setConfigMode();
   virtual void setNormalMode();
@@ -68,12 +72,15 @@ class Network {
   void clearTimeCounters();
   void setSuplaDeviceClass(SuplaDeviceClass *);
 
+  void setSetupNeeded();
+  bool popSetupNeeded();
+
  protected:
   static Network *netIntf;
   SuplaDeviceClass *sdc = nullptr;
 
   enum DeviceMode mode = DEVICE_MODE_NORMAL;
-  bool modeChanged = false;
+  bool setupNeeded = false;
   bool useLocalIp;
   unsigned char localIp[4];
   char hostname[32] = {};

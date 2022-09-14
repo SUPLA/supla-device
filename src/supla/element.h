@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_ELEMENT_H_
 #define SRC_SUPLA_ELEMENT_H_
 
+#include <supla/protocol/supla_srpc.h>
+
 #include "channel.h"
 
 namespace Supla {
@@ -28,6 +30,7 @@ class Element {
   static Element *begin();
   static Element *last();
   static Element *getElementByChannelNumber(int channelNumber);
+  static bool IsAnyUpdatePending();
   Element *next();
 
   // First method called on element in SuplaDevice.begin()
@@ -50,7 +53,7 @@ class Element {
   virtual void onSaveState();
 
   // method called each time when device successfully registers to server
-  virtual void onRegistered();
+  virtual void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr);
 
   // method called on each SuplaDevice iteration (before Network layer
   // iteration). When Device is connected, both iterateAlways() and

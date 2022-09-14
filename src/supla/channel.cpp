@@ -382,7 +382,10 @@ uint8_t Channel::getValueBrightness() {
 
 void Channel::setValidityTimeSec(unsigned _supla_int_t timeSec) {
   validityTimeSec = timeSec;
-  if (validityTimeSec > 0) unsetFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
+}
+
+bool Channel::isSleepingEnabled() {
+  return validityTimeSec > 0;
 }
 
 void Channel::setCorrection(double correction, bool forSecondaryValue) {

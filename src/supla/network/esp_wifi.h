@@ -114,7 +114,7 @@ class ESPWifi : public Supla::Wifi {
         WiFi.mode(WIFI_MODE_STA);
       }
       Serial.println(F("WiFi: resetting WiFi connection"));
-      Disconnect();
+      DisconnectProtocols();
       WiFi.disconnect();
     }
 
@@ -132,6 +132,9 @@ class ESPWifi : public Supla::Wifi {
     }
 
     yield();
+  }
+
+  void disable() override {
   }
 
   // DEPRECATED, use setSSLEnabled instead

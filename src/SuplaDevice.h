@@ -65,6 +65,11 @@ typedef void (*_impl_arduino_status)(int status, const char *msg);
 
 namespace Supla {
 namespace Device {
+  enum RequestConfigModeType {
+    None,
+    WithTimeout,
+    WithoutTimeout
+  };
 class SwUpdate;
 };
 };
@@ -98,6 +103,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void setProductId(_supla_int16_t);
   void addFlags(_supla_int_t);
   void removeFlags(_supla_int_t);
+  bool isSleepingDeviceEnabled();
 
   int generateHostname(char*, int macSize = 6);
 
@@ -123,6 +129,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   void disableCfgModeTimeout();
   void resetToFactorySettings();
   void disableLocalActionsIfNeeded();
+  void requestCfgMode(Supla::Device::RequestConfigModeType);
 
   int getCurrentStatus();
   bool loadDeviceConfig();
@@ -154,6 +161,9 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   void setCustomHostnamePrefix(const char *prefix);
 
+  void enableNetwork();
+  void disableNetwork();
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -166,13 +176,14 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
   int currentStatus = STATUS_UNKNOWN;
-  bool goToConfigModeAsap = false;
+  Supla::Device::RequestConfigModeType goToConfigModeAsap = Supla::Device::None;
   bool triggerResetToFacotrySettings = false;
   bool triggerStartLocalWebServer = false;
   bool triggerStopLocalWebServer = false;
   bool triggerCheckSwUpdate = false;
   bool requestNetworkLayerRestart = false;
   bool isNetworkSetupOk = false;
+  bool skipNetwork = false;
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;

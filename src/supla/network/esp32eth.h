@@ -79,11 +79,11 @@ class ESPETH : public Supla::Network {
     }
   }
 
-  bool isReady() {
+  bool isReady() override {
     return eth_connected;
   }
 
-  void setup() {
+  void setup() override {
     WiFiEventId_t event_gotIP = WiFi.onEvent(
         [](WiFiEvent_t event, WiFiEventInfo_t info) {
           Serial.print(F("local IP: "));
@@ -119,7 +119,10 @@ class ESPETH : public Supla::Network {
               ETH_CLK_MODE);
   }
 
-  void fillStateData(TDSC_ChannelState *channelState) {
+  void disable() override {
+  }
+
+  void fillStateData(TDSC_ChannelState *channelState) override {
     channelState->Fields |=
         SUPLA_CHANNELSTATE_FIELD_IPV4 | SUPLA_CHANNELSTATE_FIELD_MAC;
     channelState->IPv4 = ETH.localIP();
@@ -127,7 +130,7 @@ class ESPETH : public Supla::Network {
   }
 
  protected:
-  uint8_t ETH_ADDRESS;
+  uint8_t ETH_ADDRESS = {};
 };
 };  // namespace Supla
 

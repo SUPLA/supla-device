@@ -48,10 +48,11 @@ file(GLOB TEST_SRC
   ButtonTests/*.cpp
   StorageTests/*.cpp
   SuplaDeviceTests/*.cpp
-  CorrectionTests/*cpp
-  ActionTriggerTests/*cpp
-  ElectricityMeterTests/*cpp
-  ToolsTests/*cpp
+  CorrectionTests/*.cpp
+  ActionTriggerTests/*.cpp
+  ElectricityMeterTests/*.cpp
+  ToolsTests/*.cpp
+  Mqtt/*.cpp
   )
 
 file(GLOB DOUBLE_SRC doubles/*.cpp)

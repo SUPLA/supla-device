@@ -44,7 +44,7 @@ namespace Supla {
 
 static Supla::EspMqttStatus lastError = Supla::EspMqttStatus_none;
 
-static void mqtt_event_handler(void *handler_args,
+static void mqttEventHandler(void *handler_args,
                                esp_event_base_t base,
                                int32_t event_id,
                                void *event_data) {
@@ -173,6 +173,7 @@ void Supla::Protocol::EspMqtt::onInit() {
   if (!isEnabled()) {
     return;
   }
+  Supla::Protocol::Mqtt::onInit();
 
   esp_mqtt_client_config_t mqttCfg = {};
   mqttCfg.broker.address.hostname = server;
@@ -192,7 +193,7 @@ void Supla::Protocol::EspMqtt::onInit() {
 
   client = esp_mqtt_client_init(&mqttCfg);
   esp_mqtt_client_register_event(
-      client, MQTT_EVENT_ANY, mqtt_event_handler, nullptr);
+      client, MQTT_EVENT_ANY, mqttEventHandler, nullptr);
 }
 
 void Supla::Protocol::EspMqtt::disconnect() {
@@ -200,7 +201,7 @@ void Supla::Protocol::EspMqtt::disconnect() {
     return;
   }
 
-  if (connected) {
+  if (started) {
     // Sometimes when Wi-Fi reconnects, mqtt client is not
     // shutting down correctly (stop or disconnect doesn't have any effect)
     // and in result mqtt_start results in "Client has started" message (with
@@ -210,17 +211,18 @@ void Supla::Protocol::EspMqtt::disconnect() {
       mutex->unlock();
       SUPLA_LOG_DEBUG("MQTT layer stop requested");
       esp_mqtt_client_stop(client);
-      connected = false;
+      started = false;
     } else {
       esp_mqtt_client_disconnect(client);
       mutex->unlock();
       SUPLA_LOG_DEBUG("MQTT layer disconnect requested");
       esp_mqtt_client_stop(client);
-      connected = false;
+      started = false;
     }
     esp_mqtt_client_destroy(client);
     onInit();
   }
+  enterRegisteredAndReady = false;
 }
 
 void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
@@ -229,27 +231,46 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
     return;
   }
 
-  if (connected) {
+  if (started) {
     // this is used to synchronize event loop handling with SuplaDevice.iterate
     mutex->unlock();
     delay(1);
     mutex->lock();
+
+    // below code is executed after mqtt event loop from ...
+    if (!connected) {
+      return;
+    }
+
+    if (enterRegisteredAndReady) {
+    // subscribe
+    }
+
+    // send channel state updates
+
   } else {
     mutex->lock();
-    connected = true;
+    started = true;
+    enterRegisteredAndReady = false;
     esp_mqtt_client_start(client);
   }
 }
 
 void Supla::Protocol::EspMqtt::setConnecting() {
   connecting = true;
+  connected = false;
+  enterRegisteredAndReady = false;
 }
 
 void Supla::Protocol::EspMqtt::setConnectionError() {
   error = true;
+  connected = false;
+  enterRegisteredAndReady = false;
 }
 
 void Supla::Protocol::EspMqtt::setRegisteredAndReady() {
   connecting = false;
+  connected = true;
   error = false;
+  enterRegisteredAndReady = true;
 }

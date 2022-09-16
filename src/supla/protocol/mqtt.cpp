@@ -17,16 +17,27 @@
  */
 
 #include "mqtt.h"
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
 #include <SuplaDevice.h>
 #include <supla/mutex.h>
 #include <supla/auto_lock.h>
 #include <supla/time.h>
-#include <string.h>
+#include <supla/channel.h>
+#include <supla/network/network.h>
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc) :
   Supla::Protocol::ProtocolLayer(sdc) {
+}
+
+Supla::Protocol::Mqtt::~Mqtt() {
+  if (prefix) {
+    delete[] prefix;
+    prefix = nullptr;
+  }
 }
 
 bool Supla::Protocol::Mqtt::onLoadConfig() {
@@ -123,4 +134,65 @@ bool Supla::Protocol::Mqtt::isConnectionError() {
 
 bool Supla::Protocol::Mqtt::isConnecting() {
   return connecting;
+}
+
+void Supla::Protocol::Mqtt::generateClientId(
+    char result[MQTT_CLIENTID_MAX_SIZE]) {
+  memset(result, 0, MQTT_CLIENTID_MAX_SIZE);
+
+  // GUID is truncated here, because of client_id parameter limitation
+  snprintf(
+      result, MQTT_CLIENTID_MAX_SIZE,
+      "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[0]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[1]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[2]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[3]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[4]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[5]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[6]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[7]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[8]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[9]),
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[10]));
+}
+
+void Supla::Protocol::Mqtt::onInit() {
+  auto cfg = Supla::Storage::ConfigInstance();
+
+  char customPrefix[49] = {};
+  if (cfg != nullptr) {
+    cfg->getMqttPrefix(customPrefix);
+  }
+  int customPrefixLength = strnlen(customPrefix, 48);
+  if (customPrefixLength > 0) {
+    customPrefixLength++;  // add one char for '/'
+  }
+  char hostname[32] = {};
+  sdc->generateHostname(hostname, 3);
+  for (int i = 0; i < 32; i++) {
+    hostname[i] = static_cast<char>(tolower(hostname[i]));
+  }
+  int hostnameLength = strlen(hostname);
+  char suplaTopic[] = "supla/devices/";
+  uint8_t mac[6] = {};
+  Supla::Network::GetMacAddr(mac);
+  // 1 + 6 + 1: 1 byte for -, 6 for MAC address appendix and 1 bytes for '\0'
+  int length = customPrefixLength + hostnameLength
+    + strlen(suplaTopic) + 1 + 6 + 1;
+  if (prefix) {
+    delete[] prefix;
+    prefix = nullptr;
+  }
+  prefix = new char[length];
+  if (prefix) {
+    snprintf(prefix, length - 1, "%s%s%s%s",
+        customPrefix,
+        customPrefixLength > 0 ? "/" : "",
+        suplaTopic,
+        hostname);
+    SUPLA_LOG_DEBUG("Mqtt: generated prefix \"%s\"", prefix);
+  } else {
+    SUPLA_LOG_ERROR("Mqtt: failed to generate prefix");
+  }
 }

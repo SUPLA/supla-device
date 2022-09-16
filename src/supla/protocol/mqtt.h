@@ -24,6 +24,9 @@
 
 #include "protocol_layer.h"
 
+// max client id length limit in mqtt 3.1
+#define MQTT_CLIENTID_MAX_SIZE 23
+
 namespace Supla {
 
 namespace Protocol {
@@ -31,8 +34,9 @@ namespace Protocol {
 class Mqtt : public ProtocolLayer {
  public:
   explicit Mqtt(SuplaDeviceClass *sdc);
+  ~Mqtt();
 
-//  void onInit() override;
+  void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;
   bool isEnabled() override;
@@ -44,6 +48,8 @@ class Mqtt : public ProtocolLayer {
   bool isConnecting() override;
 
  protected:
+  void generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]);
+
   char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
   int32_t port = -1;
   char user[MQTT_USERNAME_MAX_SIZE] = {};
@@ -55,6 +61,7 @@ class Mqtt : public ProtocolLayer {
   bool enabled = true;
   bool connecting = false;
   bool error = false;
+  char *prefix = nullptr;
 };
 }  // namespace Protocol
 }  // namespace Supla

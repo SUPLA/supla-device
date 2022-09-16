@@ -25,6 +25,7 @@
 #include <element_mock.h>
 #include <supla/protocol/supla_srpc.h>
 #include <network_client_mock.h>
+#include <network_with_mac_mock.h>
 
 using ::testing::Return;
 using ::testing::_;
@@ -198,17 +199,6 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElementsWithStorage) {
   EXPECT_FALSE(sd.begin());
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_NETWORK_INTERFACE);
 }
-
-class NetworkMockWithMac : public Supla::Network {
-  public:
-    NetworkMockWithMac() : Supla::Network(nullptr) {};
-    MOCK_METHOD(void, setup, (), (override));
-    MOCK_METHOD(void, disable, (), (override));
-
-    MOCK_METHOD(bool, isReady, (), (override));
-    MOCK_METHOD(bool, iterate, (), (override));
-    MOCK_METHOD(bool, getMacAddr, (uint8_t*), (override));
-};
 
 TEST_F(SuplaDeviceTests, BeginStopsAtEmptyGUID) {
   ::testing::InSequence seq;

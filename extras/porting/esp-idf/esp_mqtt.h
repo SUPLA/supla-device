@@ -46,7 +46,9 @@ class EspMqtt : public Mqtt {
   void setRegisteredAndReady();
 
  protected:
+  bool started = false;
   bool connected = false;
+  bool enterRegisteredAndReady = false;
   esp_mqtt_client_handle_t client = {};
 };
 

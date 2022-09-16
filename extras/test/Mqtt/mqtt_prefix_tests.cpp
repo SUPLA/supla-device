@@ -76,6 +76,8 @@ TEST(ToolsTests, mqttgeneratePrefixNoNetworkNoConfig) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
 
+  sd.setName("Supla device");
+
   mqtt.onInit();  // onInit generates prefix
 
   ASSERT_NE(mqtt.test_getPrefix(), nullptr);

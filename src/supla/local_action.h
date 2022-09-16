@@ -43,6 +43,7 @@ class ActionHandlerClient {
   virtual void setAlwaysEnabled();
   virtual void enable();
   virtual void disable();
+  virtual bool isAlwaysEnabled();
 
  protected:
   bool enabled = true;
@@ -63,6 +64,8 @@ class LocalAction {
 
   virtual bool isEventAlreadyUsed(int event);
   virtual ActionHandlerClient *getHandlerForFirstClient(int event);
+  virtual ActionHandlerClient *getHandlerForClient(ActionHandler *client,
+                                                   int event);
 
   virtual void disableOtherClients(const ActionHandler &client, int event);
   virtual void enableOtherClients(const ActionHandler &client, int event);

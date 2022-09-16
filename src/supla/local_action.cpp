@@ -63,6 +63,10 @@ void ActionHandlerClient::setAlwaysEnabled() {
   enabled = true;
 }
 
+bool ActionHandlerClient::isAlwaysEnabled() {
+  return alwaysEnabled;
+}
+
 ActionHandlerClient *ActionHandlerClient::begin = nullptr;
 
 LocalAction::~LocalAction() {
@@ -158,6 +162,19 @@ ActionHandlerClient *LocalAction::getHandlerForFirstClient(int event) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
     if (ptr->trigger == this && ptr->onEvent == event) {
+      return ptr;
+    }
+    ptr = ptr->next;
+  }
+  return nullptr;
+}
+
+ActionHandlerClient *LocalAction::getHandlerForClient(ActionHandler *client,
+                                                   int event) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    if (ptr->trigger == this && ptr->client == client
+        && ptr->onEvent == event) {
       return ptr;
     }
     ptr = ptr->next;

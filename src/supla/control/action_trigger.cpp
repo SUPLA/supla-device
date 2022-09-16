@@ -228,8 +228,7 @@ void Supla::Control::ActionTrigger::setRelatedChannel(Channel &relatedChannel) {
 void Supla::Control::ActionTrigger::onInit() {
   // handle automatic switch from on_press, on_release, on_change
   // events to on_click_1 for local actions on relays, roller shutters, etc.
-  if (attachedButton &&
-      !attachedButton->isEventAlreadyUsed(Supla::ON_CLICK_1)) {
+  if (attachedButton) {
     if (attachedButton->isBistable() &&
         attachedButton->isEventAlreadyUsed(Supla::ON_CHANGE)) {
       // for bistable button use on_change <-> on_click_1
@@ -240,6 +239,7 @@ void Supla::Control::ActionTrigger::onInit() {
       // for monostable button use on_press/on_release <-> on_click_1
       bool onPress = attachedButton->isEventAlreadyUsed(Supla::ON_PRESS);
       bool onRelease = attachedButton->isEventAlreadyUsed(Supla::ON_RELEASE);
+
       if (onPress != onRelease) {
         localHandlerForDisabledAt = attachedButton->getHandlerForFirstClient(
             onPress ? Supla::ON_PRESS : Supla::ON_RELEASE);
@@ -251,7 +251,8 @@ void Supla::Control::ActionTrigger::onInit() {
                                 localHandlerForDisabledAt->client,
                                 Supla::ON_CLICK_1);
       localHandlerForEnabledAt =
-          attachedButton->getHandlerForFirstClient(Supla::ON_CLICK_1);
+          attachedButton->getHandlerForClient(
+              localHandlerForDisabledAt->client, Supla::ON_CLICK_1);
       localHandlerForEnabledAt->disable();
     }
   }

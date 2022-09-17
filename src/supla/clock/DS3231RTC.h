@@ -14,8 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_CLOCK_DS3231_H_
-#define SRC_SUPLA_CLOCK_DS3231_H_
+#ifndef SRC_SUPLA_CLOCK_DS3231RTC_H_
+#define SRC_SUPLA_CLOCK_DS3231RTC_H_
 
 /*
 Dependency: https://github.com/adafruit/RTClib,
@@ -33,7 +33,7 @@ namespace Supla {
 class DS3231RTC : public Clock {
  public:
   DS3231RTC() {}
-  
+
   void onInit() {
     if (!rtc.begin()) {
       SUPLA_LOG_DEBUG("Unable to find RTC");
@@ -67,7 +67,7 @@ class DS3231RTC : public Clock {
               getSec());
     }
   }
-  
+
   bool rtcIsReady() {
     return isRTCReady;
   }
@@ -111,9 +111,9 @@ class DS3231RTC : public Clock {
               getSec());
 
     //  Update RTC if minutes or seconds are different
-	//  from the time obtained from the server
+    //  from the time obtained from the server
     if (isRTCReady) {
-	  DateTime now = rtc.now();
+      DateTime now = rtc.now();
       if ((now.minute() != getMin()) ||
         (now.second() - getSec() > 5) || (now.second() - getSec() < -5)) {
         rtc.adjust(DateTime(getYear(), getMonth(), getDay(),
@@ -131,4 +131,4 @@ class DS3231RTC : public Clock {
 
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_CLOCK_DS3231_RTC_H_
+#endif  // SRC_SUPLA_CLOCK_DS3231RTC_H_

@@ -126,7 +126,6 @@ class DS3231RTC : public Clock {
  protected:
   RTC_DS3231 rtc;
   bool isRTCReady = false;
-
 };
 
 };  // namespace Supla

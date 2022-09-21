@@ -27,6 +27,8 @@
 
 namespace Supla {
 
+static bool storageInitDone = false;
+static bool configInitDone = false;
 Storage *Storage::instance = nullptr;
 Config *Storage::configInstance = nullptr;
 
@@ -41,12 +43,18 @@ Config *Storage::ConfigInstance() {
 bool Storage::Init() {
   bool result = false;
   if (Instance()) {
-    result = Instance()->init();
+    if (!storageInitDone) {
+      storageInitDone = true;
+      result = Instance()->init();
+    }
   } else {
     SUPLA_LOG_DEBUG("Main storage not configured");
   }
   if (ConfigInstance()) {
-    result = ConfigInstance()->init();
+    if (!configInitDone) {
+      configInitDone = true;
+      result = ConfigInstance()->init();
+    }
   } else {
     SUPLA_LOG_DEBUG("Config storage not configured");
   }
@@ -96,6 +104,7 @@ void Storage::ScheduleSave(uint64_t delayMs) {
 
 void Storage::SetConfigInstance(Config *instance) {
   configInstance = instance;
+  configInitDone = false;
 }
 
 bool Storage::IsConfigStorageAvailable() {
@@ -121,6 +130,7 @@ Storage::Storage(unsigned int storageStartingOffset)
 
 Storage::~Storage() {
   instance = nullptr;
+  storageInitDone = false;
 }
 
 bool Storage::prepareState(bool performDryRun) {

@@ -71,7 +71,7 @@ class DS3231RTC : public Clock {
   bool rtcIsReady() {
     return isRTCReady;
   }
-  
+
   bool rtcLostPower() {
     return rtc.lostPower();
   }

@@ -18,8 +18,8 @@
 
 #include "mqtt_topic.h"
 
-#include <cstring>
-#include <cstdio>
+#include <string.h>
+#include <stdio.h>
 
 Supla::Protocol::MqttTopic::MqttTopic(const char *prefix) {
   append(prefix);

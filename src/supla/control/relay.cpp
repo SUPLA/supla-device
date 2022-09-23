@@ -100,6 +100,16 @@ int Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   return result;
 }
 
+void Relay::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
+  if (value == nullptr) {
+    return;
+  }
+
+  if (keepTurnOnDurationMs) {
+    value->DurationMS = storedTurnOnDurationMs;
+  }
+}
+
 void Relay::turnOn(_supla_int_t duration) {
   SUPLA_LOG_INFO(
             "Relay[%d] turn ON (duration %d ms)",

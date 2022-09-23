@@ -176,8 +176,8 @@ TEST_F(ElementTests, ChannelElementMethods) {
     .WillOnce(Return(250)) // #3 value changed, however not enough time passed
     .WillOnce(Return(250)) // #4 value changed, however not enough time passed
     .WillOnce(Return(400)) // #5 two calls after value changed and another >100 ms passed
-    .WillOnce(Return(600)) 
-    .WillOnce(Return(800)); 
+    .WillOnce(Return(600))
+    .WillOnce(Return(800));
 
   char array0[SUPLA_CHANNELVALUE_SIZE] = {};
   char array1[SUPLA_CHANNELVALUE_SIZE] = {};

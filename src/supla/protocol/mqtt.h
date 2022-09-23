@@ -21,11 +21,15 @@
 
 #include <supla/storage/config.h>
 #include <supla-common/proto.h>
+#include <supla/uptime.h>
+#include <supla/protocol/mqtt_topic.h>
+#include <supla/element.h>
 
 #include "protocol_layer.h"
 
 // max client id length limit in mqtt 3.1
 #define MQTT_CLIENTID_MAX_SIZE 23
+#define MQTT_MAX_PAYLOAD_LEN 50
 
 namespace Supla {
 
@@ -46,22 +50,65 @@ class Mqtt : public ProtocolLayer {
   uint32_t getConnectionFailTime() override;
   bool isConnectionError() override;
   bool isConnecting() override;
+  void publish(const char *topic,
+               const char *payload,
+               int qos = -1,
+               int retain = -1,
+               bool ignorePrefix = false);
+  void publishInt(const char *topic,
+               int payload,
+               int qos = -1,
+               int retain = -1);
+  void publishBool(const char *topic,
+               bool payload,
+               int qos = -1,
+               int retain = -1);
+  void publishDouble(const char *topic,
+               double payload,
+               int qos = -1,
+               int retain = -1);
+  void publishChannelState(int channel);
+  void subscribeChannel(int channel);
+  void subscribe(const char *topic, int qos = -1);
+  void notifyChannelChange(int channel) override;
+  bool isUpdatePending() override;
+
+  bool processData(const char *topic, const char *payload);
 
  protected:
   void generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]);
+  void generateObjectId(char result[30], int channelNumber, int subId);
+  MqttTopic getHADiscoveryTopic(const char *sensor, char *objectId);
+  void publishDeviceStatus(bool onRegistration = false);
+  void publishHADiscovery(int channel);
+  void publishHADiscoveryRelay(Supla::Element *);
+  void publishHADiscoveryThermometer(Supla::Element *);
+  void publishHADiscoveryHumidity(Supla::Element *);
+  virtual void publishImp(const char *topic,
+                          const char *payload,
+                          int qos,
+                          bool retain) = 0;
+  virtual void subscribeImp(const char *topic, int qos) = 0;
+
+  bool isPayloadOn(const char *);
 
   char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
   int32_t port = -1;
   char user[MQTT_USERNAME_MAX_SIZE] = {};
   char password[MQTT_PASSWORD_MAX_SIZE] = {};
-  uint8_t qos = 0;
+  char hostname[32] = {};
+  uint8_t qosCfg = 0;
   bool useTls = false;
   bool useAuth = true;
-  bool retain = false;
+  bool retainCfg = false;
   bool enabled = true;
   bool connecting = false;
   bool error = false;
   char *prefix = nullptr;
+  int prefixLen = 0;
+  Supla::Uptime uptime;
+  bool *channelChangedFlag = nullptr;
+  int channelsCount = 0;
 };
 }  // namespace Protocol
 }  // namespace Supla

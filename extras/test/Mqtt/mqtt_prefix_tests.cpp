@@ -33,6 +33,13 @@ class MqttUT : public Supla::Protocol::Mqtt {
     explicit MqttUT(SuplaDeviceClass *sdc) : Supla::Protocol::Mqtt(sdc) {}
     void disconnect() override {}
     void iterate(uint64_t millis) override {}
+    void publishImp(const char *topic,
+                          const char *payload,
+                          int qos,
+                          bool retain) override {}
+    void subscribeImp(const char *topic,
+                      int qos) override {}
+
 
     void test_generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]) {
       generateClientId(result);
@@ -43,7 +50,7 @@ class MqttUT : public Supla::Protocol::Mqtt {
     }
 };
 
-TEST(ToolsTests, mqttgenerateClientId) {
+TEST(MqttPrefixTests, mqttgenerateClientId) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
 
@@ -57,14 +64,14 @@ TEST(ToolsTests, mqttgenerateClientId) {
   }
 
   mqtt.test_generateClientId(clientId);
-  EXPECT_STREQ(clientId, "0102030405060708090A0B");
+  EXPECT_STREQ(clientId, "SUPLA-0102030405060708");
 
   for (int i = 0; i <  16; i++) {
     Supla::Channel::reg_dev.GUID[i] = 16 - i;
   }
 
   mqtt.test_generateClientId(clientId);
-  EXPECT_STREQ(clientId, "100F0E0D0C0B0A09080706");
+  EXPECT_STREQ(clientId, "SUPLA-100F0E0D0C0B0A09");
 
   for (int i = 0; i <  16; i++) {
     Supla::Channel::reg_dev.GUID[i] = 0;
@@ -72,7 +79,7 @@ TEST(ToolsTests, mqttgenerateClientId) {
 }
 
 
-TEST(ToolsTests, mqttgeneratePrefixNoNetworkNoConfig) {
+TEST(MqttPrefixTests, mqttgeneratePrefixNoNetworkNoConfig) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
 
@@ -84,7 +91,7 @@ TEST(ToolsTests, mqttgeneratePrefixNoNetworkNoConfig) {
   EXPECT_STREQ(mqtt.test_getPrefix(), "supla/devices/supla-device");
 }
 
-TEST(ToolsTests, mqttgeneratePrefixCustomName) {
+TEST(MqttPrefixTests, mqttgeneratePrefixCustomName) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
   sd.setName("My Device");
@@ -103,7 +110,7 @@ TEST(ToolsTests, mqttgeneratePrefixCustomName) {
 }
 
 
-TEST(ToolsTests, mqttgeneratePrefix) {
+TEST(MqttPrefixTests, mqttgeneratePrefix) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
   ConfigMock config;

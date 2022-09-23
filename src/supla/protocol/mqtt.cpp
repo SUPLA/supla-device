@@ -28,6 +28,9 @@
 #include <supla/time.h>
 #include <supla/channel.h>
 #include <supla/network/network.h>
+#include <supla/tools.h>
+#include <supla/element.h>
+#include <supla/protocol/mqtt_topic.h>
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc) :
   Supla::Protocol::ProtocolLayer(sdc) {
@@ -37,6 +40,11 @@ Supla::Protocol::Mqtt::~Mqtt() {
   if (prefix) {
     delete[] prefix;
     prefix = nullptr;
+    prefixLen = 0;
+  }
+  if (channelChangedFlag) {
+    delete[] channelChangedFlag;
+    channelChangedFlag = nullptr;
   }
 }
 
@@ -59,8 +67,8 @@ bool Supla::Protocol::Mqtt::onLoadConfig() {
 
     useTls = cfg->isMqttTlsEnabled();
     port = cfg->getMqttServerPort();
-    retain = cfg->isMqttRetainEnabled();
-    qos = cfg->getMqttQos();
+    retainCfg = cfg->isMqttRetainEnabled();
+    qosCfg = cfg->getMqttQos();
     useAuth = cfg->isMqttAuthEnabled();
 
     if (useAuth) {
@@ -143,7 +151,7 @@ void Supla::Protocol::Mqtt::generateClientId(
   // GUID is truncated here, because of client_id parameter limitation
   snprintf(
       result, MQTT_CLIENTID_MAX_SIZE,
-      "%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X%02X",
+      "SUPLA-%02X%02X%02X%02X%02X%02X%02X%02X",
       static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[0]),
       static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[1]),
       static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[2]),
@@ -151,10 +159,7 @@ void Supla::Protocol::Mqtt::generateClientId(
       static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[4]),
       static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[5]),
       static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[6]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[7]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[8]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[9]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[10]));
+      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[7]));
 }
 
 void Supla::Protocol::Mqtt::onInit() {
@@ -168,31 +173,675 @@ void Supla::Protocol::Mqtt::onInit() {
   if (customPrefixLength > 0) {
     customPrefixLength++;  // add one char for '/'
   }
-  char hostname[32] = {};
   sdc->generateHostname(hostname, 3);
   for (int i = 0; i < 32; i++) {
     hostname[i] = static_cast<char>(tolower(hostname[i]));
   }
   int hostnameLength = strlen(hostname);
   char suplaTopic[] = "supla/devices/";
-  uint8_t mac[6] = {};
-  Supla::Network::GetMacAddr(mac);
-  // 1 + 6 + 1: 1 byte for -, 6 for MAC address appendix and 1 bytes for '\0'
   int length = customPrefixLength + hostnameLength
-    + strlen(suplaTopic) + 1 + 6 + 1;
+    + strlen(suplaTopic) + 1;
   if (prefix) {
     delete[] prefix;
     prefix = nullptr;
+    prefixLen = 0;
   }
   prefix = new char[length];
+  prefixLen = length - 1;
   if (prefix) {
-    snprintf(prefix, length - 1, "%s%s%s%s",
+    snprintf(prefix, length, "%s%s%s%s",
         customPrefix,
         customPrefixLength > 0 ? "/" : "",
         suplaTopic,
         hostname);
-    SUPLA_LOG_DEBUG("Mqtt: generated prefix \"%s\"", prefix);
+    SUPLA_LOG_DEBUG("Mqtt: generated prefix (%d) \"%s\"", prefixLen, prefix);
   } else {
     SUPLA_LOG_ERROR("Mqtt: failed to generate prefix");
   }
+
+  if (channelChangedFlag) {
+    delete[] channelChangedFlag;
+    channelChangedFlag = nullptr;
+  }
+
+  channelsCount = Supla::Channel::reg_dev.channel_count;
+  channelChangedFlag = new bool[channelsCount];
+  for (int i = 0; i < channelsCount; i++) {
+    channelChangedFlag[i] = false;
+  }
+}
+
+void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
+  TDSC_ChannelState channelState = {};
+  Supla::Network::Instance()->fillStateData(&channelState);
+
+  if (onRegistration) {
+    publishBool("state/connected", true, -1, 1);
+    uint8_t mac[6] = {};
+    char macStr[12 + 6] = {};
+    if (Supla::Network::GetMacAddr(mac)) {
+      generateHexString(mac, macStr, 6, ':');
+    }
+
+    publish("state/mac", macStr);
+
+    char ipStr[17] = {};
+    uint8_t ip[4] = {};
+    memcpy(ip, &channelState.IPv4, 4);
+    snprintf(ipStr, sizeof(ipStr), "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+    publish("state/ip", ipStr);
+  }
+
+  publishInt("state/uptime", uptime.getUptime());
+  if (!sdc->isSleepingDeviceEnabled()) {
+    publishInt("state/connection_uptime", uptime.getConnectionUptime());
+  }
+
+  int8_t rssi = 0;
+  memcpy(&rssi, &channelState.WiFiRSSI, 1);
+  publishInt("state/rssi", rssi);
+  publishInt("state/wifi_signal_strength", channelState.WiFiSignalStrength);
+}
+
+void Supla::Protocol::Mqtt::publish(const char *topic,
+                                    const char *payload,
+                                    int qos,
+                                    int retain,
+                                    bool ignorePrefix) {
+  if (prefix == nullptr) {
+    SUPLA_LOG_ERROR("Mqtt: publish error, prefix not initialized");
+    return;
+  }
+
+  bool retainValue = retain == 1 ? true : false;
+  if (retain == -1) {
+    retainValue = retainCfg;
+  }
+
+  if (qos == -1) {
+    qos = qosCfg;
+  }
+
+  MqttTopic mqttTopic;
+  if (!ignorePrefix) {
+    mqttTopic.append(prefix);
+    mqttTopic = mqttTopic / topic;
+  } else {
+    mqttTopic.append(topic);
+  }
+
+  SUPLA_LOG_DEBUG("MQTT publish(qos: %d, retain: %d): \"%s\" - \"%s\"",
+      qos,
+      retainValue,
+      mqttTopic.c_str(),
+      payload);
+  publishImp(mqttTopic.c_str(), payload, qos, retainValue);
+}
+
+void Supla::Protocol::Mqtt::publishInt(const char *topic,
+                                    int payload,
+                                    int qos,
+                                    int retain) {
+  char buf[100] = {};
+  snprintf(buf, sizeof(buf), "%d", payload);
+  publish(topic, buf, qos, retain);
+}
+
+void Supla::Protocol::Mqtt::publishBool(const char *topic,
+                                    bool payload,
+                                    int qos,
+                                    int retain) {
+  char buf[6] = {};
+  snprintf(buf, sizeof(buf), "%s", payload ? "true" : "false");
+  publish(topic, buf, qos, retain);
+}
+
+void Supla::Protocol::Mqtt::publishDouble(const char *topic,
+                                    double payload,
+                                    int qos,
+                                    int retain) {
+  char buf[100] = {};
+  snprintf(buf, sizeof(buf), "%.2f", payload);
+  publish(topic, buf, qos, retain);
+}
+
+void Supla::Protocol::Mqtt::subscribe(const char *topic, int qos) {
+  if (prefix == nullptr) {
+    SUPLA_LOG_ERROR("Mqtt: publish error, prefix not initialized");
+    return;
+  }
+
+  if (qos == -1) {
+    qos = qosCfg;
+  }
+
+  MqttTopic mqttTopic(prefix);
+  mqttTopic = mqttTopic / topic;
+  SUPLA_LOG_DEBUG("MQTT subscribe(qos: %d): \"%s\"",
+      qos,
+      mqttTopic.c_str());
+  subscribeImp(mqttTopic.c_str(), qos);
+}
+
+void Supla::Protocol::Mqtt::notifyChannelChange(int channel) {
+  if (channel >= 0 && channel < channelsCount) {
+    channelChangedFlag[channel] = true;
+  }
+}
+
+
+void Supla::Protocol::Mqtt::publishChannelState(int channel) {
+  SUPLA_LOG_DEBUG("Mqtt: publish channel %d state", channel);
+  if (channel < 0 || channel >= channelsCount) {
+    SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
+    return;
+  }
+
+  channelChangedFlag[channel] = false;
+
+  auto topic = MqttTopic("channels") / channel / "state";
+
+  auto element = Supla::Element::getElementByChannelNumber(channel);
+  if (element == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
+    return;
+  }
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
+    return;
+  }
+
+  switch (ch->getChannelType()) {
+    case SUPLA_CHANNELTYPE_RELAY: {
+      // publish relay state
+      publishBool((topic / "on").c_str(), ch->getValueBool(), -1, 1);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_THERMOMETER: {
+      // publish thermometer state
+      if (ch->getValueDouble() > -273) {
+        publishDouble((topic / "temperature").c_str(), ch->getValueDouble(),
+            -1, 1);
+      }
+      break;
+    }
+    case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR: {
+      // publish thermometer state
+      if (ch->getValueDoubleFirst() > -273) {
+        publishDouble((topic / "temperature").c_str(),
+            ch->getValueDoubleFirst(), -1, 1);
+      }
+      if (ch->getValueDoubleSecond() >= 0) {
+        publishDouble((topic / "humidity").c_str(), ch->getValueDoubleSecond(),
+            -1, 1);
+      }
+      break;
+    }
+    default:
+      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+          ch->getChannelType());
+      break;
+  }
+}
+
+void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
+  SUPLA_LOG_DEBUG("Mqtt: subscribe channel %d", channel);
+  if (channel < 0 || channel >= channelsCount) {
+    SUPLA_LOG_WARNING("Mqtt: invalid channel %d for subscribe", channel);
+    return;
+  }
+
+  auto topic = MqttTopic("channels") / channel;
+
+  auto element = Supla::Element::getElementByChannelNumber(channel);
+  if (element == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
+    return;
+  }
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
+    return;
+  }
+
+  switch (ch->getChannelType()) {
+    case SUPLA_CHANNELTYPE_RELAY: {
+      subscribe((topic / "set" / "on").c_str());
+      subscribe((topic / "execute_action").c_str());
+      break;
+    }
+    default:
+      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+          ch->getChannelType());
+      break;
+  }
+}
+
+bool Supla::Protocol::Mqtt::processData(const char *topic,
+                                        const char *payload) {
+  if (topic == nullptr) {
+    return false;
+  }
+
+  if (payload == nullptr) {
+    return false;
+  }
+
+  SUPLA_LOG_DEBUG("Mqtt data received, topic: \"%s\", payload: \"%s\"", topic,
+      payload);
+
+  int topicLen = strlen(topic);
+  char channelsString[] = "/channels/";
+  int channelsStringLen = strlen(channelsString);
+
+  if (topicLen <= prefixLen || strncmp(topic, prefix, prefixLen) != 0) {
+    SUPLA_LOG_DEBUG("Mqtt: topic doesn't match device's prefix");
+    return false;
+  }
+
+  if (topicLen <= prefixLen + channelsStringLen ||
+      strncmp(topic + prefixLen, channelsString, channelsStringLen) != 0) {
+    SUPLA_LOG_DEBUG("Mqtt: topic doesn't contain channels path");
+    return false;
+  }
+
+  char topicCopy[MAX_TOPIC_LEN] = {};
+  strncpy(topicCopy, topic, MAX_TOPIC_LEN);
+
+  char *savePtr;
+  char *part =
+    strtok_r(topicCopy + prefixLen + channelsStringLen, "/", &savePtr);
+  int channel = -1;
+  if (part == nullptr) {
+    return false;
+  }
+  channel = stringToInt(part);
+  auto element = Supla::Element::getElementByChannelNumber(channel);
+  if (element == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
+    return false;
+  }
+
+  part = strtok_r(nullptr, "", &savePtr);
+  if (part == nullptr) {
+    return false;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
+    return false;
+  }
+
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+
+  switch (ch->getChannelType()) {
+    // Relay
+    case SUPLA_CHANNELTYPE_RELAY: {
+      if (strcmp(part, "set/on") == 0) {
+        if (isPayloadOn(payload)) {
+          newValue.value[0] = 1;
+        } else {
+          newValue.value[0] = 0;
+        }
+        element->handleNewValueFromServer(&newValue);
+      } else if (strcmp(part, "execute_action") == 0) {
+        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+          newValue.value[0] = 1;
+          element->handleNewValueFromServer(&newValue);
+        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+          newValue.value[0] = 0;
+          element->handleNewValueFromServer(&newValue);
+        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+          newValue.value[0] = ch->getValueBool() ? 0 : 1;
+          element->handleNewValueFromServer(&newValue);
+        } else {
+          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+        }
+      } else {
+        SUPLA_LOG_DEBUG("Mqtt: received unsupported topic %s", part);
+      }
+      break;
+    }
+    // TODO(klew): add here more channel types
+
+    // Not supported
+    default:
+      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+          ch->getChannelType());
+      break;
+  }
+  return true;
+}
+
+bool Supla::Protocol::Mqtt::isPayloadOn(const char *payload) {
+  if (payload == nullptr) {
+    return false;
+  }
+
+  // compare 2 bytes, i.e. it has to match "1\0"
+  if (strncmpInsensitive(payload, "1", 2) == 0) {
+    return true;
+  }
+
+  if (strncmpInsensitive(payload, "yes", 4) == 0) {
+    return true;
+  }
+
+  if (strncmpInsensitive(payload, "true", 5) == 0) {
+    return true;
+  }
+
+  return false;
+}
+
+void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
+  SUPLA_LOG_DEBUG("Mqtt: publish HA discovery for channel %d", channel);
+  if (channel < 0 || channel >= channelsCount) {
+    SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
+    return;
+  }
+
+  auto element = Supla::Element::getElementByChannelNumber(channel);
+  if (element == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
+    return;
+  }
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
+    return;
+  }
+
+  switch (ch->getChannelType()) {
+    case SUPLA_CHANNELTYPE_RELAY: {
+      // publish relay state
+      publishHADiscoveryRelay(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_THERMOMETER: {
+      publishHADiscoveryThermometer(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR: {
+      publishHADiscoveryThermometer(element);
+      publishHADiscoveryHumidity(element);
+      break;
+    }
+    default:
+      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+          ch->getChannelType());
+      break;
+  }
+}
+
+void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  bool lightType = true;
+
+  if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_POWERSWITCH) {
+    lightType = false;
+  }
+
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), 0);
+
+  auto topic = getHADiscoveryTopic(lightType ? "light" : "switch", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i %s switch\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"stat_t\":\"~/state/on\","
+      "\"cmd_t\":\"~/set/on\","
+      "\"pl_on\":\"true\","
+      "\"pl_off\":\"false\""
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            element->getChannelNumber(),
+            lightType ? "Light" : "Power",
+            objectId)
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
+void Supla::Protocol::Mqtt::publishHADiscoveryThermometer(
+    Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  char objectId[30] = {};
+  int subId = ch->getChannelType() == SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR ?
+    1 : 0;
+  generateObjectId(objectId, element->getChannelNumber(), subId);
+
+  auto topic = getHADiscoveryTopic("sensor", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i Temperature\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"dev_cla\":\"temperature\","
+      "\"unit_of_meas\":\"°C\","
+      "\"stat_cla\":\"measurement\","
+      "\"expire_after\":%d,"
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"stat_t\":\"~/state/temperature\""
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            element->getChannelNumber(),
+            objectId,
+            static_cast<int>(sdc->getActivityTimeout())
+            )
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
+void Supla::Protocol::Mqtt::generateObjectId(char *result, int channelNumber,
+    int subId) {
+  uint8_t mac[6] = {};
+  if (channelNumber >= 100 || subId >= 100
+      || channelNumber < 0 || subId < 0) {
+    SUPLA_LOG_DEBUG("Mqtt: invalid channel number");
+    return;
+  }
+  Supla::Network::GetMacAddr(mac);
+  generateHexString(mac, result, 6);
+  for (int i = 0; i < 12; i++) {
+    result[i] = static_cast<char>(tolower(result[i]));
+  }
+  int size = 7;
+
+  snprintf(result + 12, size, "_%d_%d", channelNumber, subId);
+}
+
+Supla::Protocol::MqttTopic Supla::Protocol::Mqtt::getHADiscoveryTopic(
+    const char *type, char *objectId) {
+  // "homeassistant/%s/supla/%02x%02x%02x%02x%02x%02x_%i_%i/config";
+  MqttTopic topic("homeassistant");
+  topic = topic / type / "supla" / objectId / "config";
+  return topic;
+}
+
+void Supla::Protocol::Mqtt::publishHADiscoveryHumidity(
+    Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), 0);
+
+  auto topic = getHADiscoveryTopic("sensor", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i Humidity\","
+      "\"dev_cla\":\"humidity\","
+      "\"stat_cla\":\"measurement\","
+      "\"unit_of_meas\":\"%%\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"expire_after\":%d,"
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"stat_t\":\"~/state/humidity\""
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            element->getChannelNumber(),
+            objectId,
+            static_cast<int>(sdc->getActivityTimeout()))
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
+bool Supla::Protocol::Mqtt::isUpdatePending() {
+  if (channelChangedFlag == nullptr) {
+    return false;
+  }
+
+  for (int i = 0; i < channelsCount; i++) {
+    if (channelChangedFlag[i]) {
+      return true;
+    }
+  }
+
+  return false;
 }

@@ -46,10 +46,16 @@ class EspMqtt : public Mqtt {
   void setRegisteredAndReady();
 
  protected:
+  void publishImp(const char *topic,
+                          const char *payload,
+                          int qos,
+                          bool retain) override;
+  void subscribeImp(const char *topic, int qos) override;
   bool started = false;
   bool connected = false;
   bool enterRegisteredAndReady = false;
   esp_mqtt_client_handle_t client = {};
+  uint32_t lastStatusUpdateSec = 0;
 };
 
 }  // namespace Protocol

@@ -51,6 +51,7 @@ COMPONENT_OBJS := \
   \
   ../../../src/supla/protocol/protocol_layer.o \
   ../../../src/supla/protocol/mqtt.o \
+  ../../../src/supla/protocol/mqtt_topic.o \
   ../../../src/supla/protocol/supla_srpc.o \
   \
   ../../../src/supla/clock/clock.o \

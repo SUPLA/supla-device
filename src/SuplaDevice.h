@@ -141,6 +141,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   enum Supla::DeviceMode getDeviceMode();
 
   void setActivityTimeout(_supla_int_t newActivityTimeout);
+  uint32_t getActivityTimeout();
 
   void handleAction(int event, int action) override;
 

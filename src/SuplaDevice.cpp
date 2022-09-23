@@ -1050,4 +1050,9 @@ bool SuplaDeviceClass::isSleepingDeviceEnabled() {
           SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED) != 0;
 }
 
+uint32_t SuplaDeviceClass::getActivityTimeout() {
+  createSrpcLayerIfNeeded();
+  return srpcLayer->getActivityTimeout();
+}
+
 SuplaDeviceClass SuplaDevice;

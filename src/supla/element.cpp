@@ -137,6 +137,10 @@ int Element::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   return -1;
 }
 
+void Element::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
+  (void)(value);
+}
+
 int Element::getChannelNumber() {
   int result = -1;
   Channel *channel = getChannel();

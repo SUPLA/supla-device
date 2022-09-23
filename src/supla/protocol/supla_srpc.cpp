@@ -679,3 +679,11 @@ void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
   }
   srpc_csd_async_channel_state_result(srpc, &state);
 }
+
+uint32_t Supla::Protocol::SuplaSrpc::getActivityTimeout() {
+  return activityTimeoutS;
+}
+
+bool Supla::Protocol::SuplaSrpc::isUpdatePending() {
+  return Supla::Element::IsAnyUpdatePending();
+}

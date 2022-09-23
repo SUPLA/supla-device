@@ -50,6 +50,7 @@ class SuplaSrpc : public ProtocolLayer {
   void onSetActivityTimeoutResult(
       TSDC_SuplaSetActivityTimeoutResult *result);
   void setActivityTimeout(uint32_t activityTimeoutSec);
+  uint32_t getActivityTimeout();
   void updateLastResponseTime();
   void updateLastSentTime();
   void onGetUserLocaltimeResult(TSDC_UserLocalTimeResult *result);
@@ -59,6 +60,7 @@ class SuplaSrpc : public ProtocolLayer {
   void setVersion(int value);
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
+  bool isUpdatePending() override;
 
   Supla::Client *client = nullptr;
 

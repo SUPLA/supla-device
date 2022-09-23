@@ -59,6 +59,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/protocol/protocol_layer.cpp
   src/supla/protocol/supla_srpc.cpp
   src/supla/protocol/mqtt.cpp
+  src/supla/protocol/mqtt_topic.cpp
 
   src/supla/control/action_trigger.cpp
   src/supla/control/bistable_relay.cpp

@@ -65,6 +65,12 @@ class Relay : public ChannelElement, public ActionHandler {
   void onSaveState() override;
   void iterateAlways() override;
   int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
+
+  // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
+  // value for specific channel type (i.e. to prefill durationMS field when
+  // required)
+  void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
+
   unsigned _supla_int_t getStoredTurnOnDurationMs();
 
  protected:

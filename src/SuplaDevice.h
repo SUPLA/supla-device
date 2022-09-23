@@ -55,6 +55,7 @@
 #define STATUS_INVALID_AUTHKEY           33
 #define STATUS_NO_LOCATION_AVAILABLE     34
 #define STATUS_UNKNOWN_ERROR             35
+#define STATUS_COUNTRY_REJECTED          36
 
 #define STATUS_CONFIG_MODE               40
 #define STATUS_SOFTWARE_RESET            41

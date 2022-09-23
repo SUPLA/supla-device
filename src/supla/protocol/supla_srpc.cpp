@@ -204,7 +204,7 @@ void Supla::messageReceived(void *srpc,
   suplaSrpc->updateLastResponseTime();
 
   if (SUPLA_RESULT_TRUE == (getDataResult = srpc_getdata(srpc, &rd, 0))) {
-    switch (rd.call_type) {
+    switch (rd.call_id) {
       case SUPLA_SDC_CALL_VERSIONERROR:
         suplaSrpc->onVersionError(rd.data.sdc_version_error);
         break;
@@ -431,6 +431,10 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
 
     case SUPLA_RESULTCODE_CHANNEL_CONFLICT:
       sdc->status(STATUS_CHANNEL_CONFLICT, "Channel conflict!", true);
+      break;
+
+    case SUPLA_RESULTCODE_COUNTRY_REJECTED:
+      sdc->status(STATUS_COUNTRY_REJECTED, "Country rejected!", true);
       break;
 
     case SUPLA_RESULTCODE_CFG_MODE_REQUESTED:

@@ -79,7 +79,7 @@ class DS3231RTC : public Clock {
 
   void resetRTCLostPowerFlag() {
     RTCLostPower = false;
-  } 
+  }
 
   void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
     struct tm timeinfo {};

@@ -17,7 +17,8 @@
  */
 
 #include "tools.h"
-#include "string.h"
+#include <string.h>
+#include <supla-common/proto.h>
 
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder) {
   (void)(byteOrder);
@@ -307,4 +308,53 @@ int32_t floatStringToInt(const char *str, int precision) {
   }
 
   return result;
+}
+
+const char *getManufacturer(int16_t id) {
+  switch (id) {
+    case SUPLA_MFR_ACSOFTWARE: {
+      return "AC Software";
+    }
+    case SUPLA_MFR_TRANSCOM: {
+      return "Transcom";
+    }
+    case SUPLA_MFR_LOGI: {
+      return "Logi";
+    }
+    case SUPLA_MFR_ZAMEL: {
+      return "Zamel";
+    }
+    case SUPLA_MFR_NICE: {
+      return "Nice";
+    }
+    case SUPLA_MFR_ITEAD: {
+      return "ITEAD";
+    }
+    case SUPLA_MFR_DOYLETRATT: {
+      return "Varilight";
+    }
+    case SUPLA_MFR_HEATPOL: {
+      return "Heatpol";
+    }
+    case SUPLA_MFR_FAKRO: {
+      return "Fakro";
+    }
+    case SUPLA_MFR_PEVEKO: {
+      return "Peveko";
+    }
+    case SUPLA_MFR_WEKTA: {
+      return "Wekta";
+    }
+    case SUPLA_MFR_STA_SYSTEM: {
+      return "STA System";
+    }
+    case SUPLA_MFR_DGF: {
+      return "DGF";
+    }
+    case SUPLA_MFR_COMELIT: {
+      return "Comelit";
+    }
+  }
+
+  return "Unknown";
 }

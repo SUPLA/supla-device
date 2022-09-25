@@ -78,6 +78,8 @@ int strncmpInsensitive(const char *s1, const char *s2, int size);
 void deviceSoftwareReset();
 bool isLastResetSoft();
 
+const char *getManufacturer(int16_t id);
+
 namespace Supla {
 int getPlatformId();
 }  // namespace Supla

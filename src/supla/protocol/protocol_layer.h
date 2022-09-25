@@ -33,6 +33,7 @@ class ProtocolLayer {
   virtual ~ProtocolLayer();
   static ProtocolLayer *first();
   static ProtocolLayer *last();
+  static bool IsAnyUpdatePending();
   ProtocolLayer *next();
   SuplaDeviceClass *getSdc();
 
@@ -46,6 +47,8 @@ class ProtocolLayer {
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();
   virtual bool isConnecting();
+  virtual void notifyChannelChange(int channel);
+  virtual bool isUpdatePending();
 
  protected:
   static ProtocolLayer *firstPtr;

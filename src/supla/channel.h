@@ -62,6 +62,7 @@ class Channel : public LocalAction {
 
   void setType(_supla_int_t type);
   void setDefault(_supla_int_t value);
+  int32_t getDefaultFunction();
   void setFlag(_supla_int_t flag);
   void unsetFlag(_supla_int_t flag);
   void setFuncList(_supla_int_t functions);

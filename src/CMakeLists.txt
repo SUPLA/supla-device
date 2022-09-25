@@ -60,6 +60,7 @@ set(SRCS
   supla/protocol/protocol_layer.cpp
   supla/protocol/supla_srpc.cpp
   supla/protocol/mqtt.cpp
+  supla/protocol/mqtt_topic.cpp
 
   supla/sensor/therm_hygro_press_meter.cpp
   supla/sensor/therm_hygro_meter.cpp

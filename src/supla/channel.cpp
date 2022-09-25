@@ -17,6 +17,7 @@
 #include <string.h>
 
 #include <supla/log_wrapper.h>
+#include <supla/protocol/protocol_layer.h>
 
 #include "channel.h"
 #include "supla-common/srpc.h"
@@ -194,6 +195,13 @@ void Channel::setDefault(_supla_int_t value) {
   }
 }
 
+int32_t Channel::getDefaultFunction() {
+  if (channelNumber >= 0) {
+    return reg_dev.channels[channelNumber].Default;
+  }
+  return 0;
+}
+
 void Channel::setFlag(_supla_int_t flag) {
   if (channelNumber >= 0) {
     reg_dev.channels[channelNumber].Flags |= flag;
@@ -268,6 +276,10 @@ TSuplaChannelExtendedValue *Channel::getExtValue() {
 
 void Channel::setUpdateReady() {
   valueChanged = true;
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
+    proto->notifyChannelChange(channelNumber);
+  }
 }
 
 bool Channel::isUpdateReady() {

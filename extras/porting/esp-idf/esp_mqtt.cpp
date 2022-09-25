@@ -44,20 +44,41 @@ namespace Supla {
 
 static Supla::EspMqttStatus lastError = Supla::EspMqttStatus_none;
 
+void mqttEventDataProcess(esp_mqtt_event_handle_t event) {
+  if (event == nullptr) {
+    return;
+  }
+
+  char topic[MAX_TOPIC_LEN] = {};
+  char payload[MQTT_MAX_PAYLOAD_LEN] = {};
+  int topicLen = MAX_TOPIC_LEN;
+  if (event->topic_len < topicLen) {
+    topicLen = event->topic_len;
+  }
+  int payloadLen = MQTT_MAX_PAYLOAD_LEN - 1;
+  if (event->data_len < payloadLen) {
+    payloadLen = event->data_len;
+  }
+
+  strncpy(topic, event->topic, topicLen);
+  strncpy(payload, event->data, payloadLen);
+
+  espMqtt->processData(topic, payload);
+}
+
 static void mqttEventHandler(void *handler_args,
                                esp_event_base_t base,
-                               int32_t event_id,
-                               void *event_data) {
-  // TODO(klew): rewrite
+                               int32_t eventId,
+                               void *eventData) {
   SUPLA_LOG_DEBUG(" *** MQTT event handler enter");
   Supla::AutoLock autoLock(Supla::Protocol::EspMqtt::mutex);
   SUPLA_LOG_DEBUG(
-      " *** MQTT Event dispatched from event loop base=%s, event_id=%d",
+      " *** MQTT Event dispatched from event loop base=%s, eventId=%d",
       base,
-      event_id);
+      eventId);
   esp_mqtt_event_handle_t event =
-      reinterpret_cast<esp_mqtt_event_handle_t>(event_data);
-  switch ((esp_mqtt_event_id_t)event_id) {
+      reinterpret_cast<esp_mqtt_event_handle_t>(eventData);
+  switch (static_cast<esp_mqtt_event_id_t>(eventId)) {
     case MQTT_EVENT_BEFORE_CONNECT:
       SUPLA_LOG_DEBUG("MQTT_EVENT_BEFORE_CONNECT");
       espMqtt->setConnecting();
@@ -75,18 +96,11 @@ static void mqttEventHandler(void *handler_args,
       espMqtt->setConnecting();
       break;
 
-    case MQTT_EVENT_SUBSCRIBED:
-      SUPLA_LOG_DEBUG("MQTT_EVENT_SUBSCRIBED, msg_id=%d", event->msg_id);
-      break;
-    case MQTT_EVENT_UNSUBSCRIBED:
-      SUPLA_LOG_DEBUG("MQTT_EVENT_UNSUBSCRIBED, msg_id=%d", event->msg_id);
-      break;
-    case MQTT_EVENT_PUBLISHED:
-      SUPLA_LOG_DEBUG("MQTT_EVENT_PUBLISHED, msg_id=%d", event->msg_id);
-      break;
     case MQTT_EVENT_DATA:
       SUPLA_LOG_DEBUG("MQTT_EVENT_DATA");
+      mqttEventDataProcess(event);
       break;
+
     case MQTT_EVENT_ERROR:
       SUPLA_LOG_DEBUG("MQTT_EVENT_ERROR");
       espMqtt->setConnectionError();
@@ -154,7 +168,6 @@ static void mqttEventHandler(void *handler_args,
       }
       break;
     default:
-      SUPLA_LOG_DEBUG("Other event id:%d", event->event_id);
       break;
   }
 }
@@ -187,13 +200,28 @@ void Supla::Protocol::EspMqtt::onInit() {
   } else {
     mqttCfg.broker.address.transport = MQTT_TRANSPORT_OVER_TCP;
   }
-  mqttCfg.session.keepalive = 5;
+  mqttCfg.session.keepalive = sdc->getActivityTimeout();
 
-  // TODO(klew): mqttCfg.session.last_will
+  MqttTopic lastWill(prefix);
+  lastWill = lastWill / "state" / "connected";
+  mqttCfg.session.last_will.topic = lastWill.c_str();
+  mqttCfg.session.last_will.msg = "false";
+  mqttCfg.session.last_will.retain = 1;
+
+  char clientId[MQTT_CLIENTID_MAX_SIZE] = {};
+  generateClientId(clientId);
+
+  mqttCfg.credentials.client_id = clientId;
 
   client = esp_mqtt_client_init(&mqttCfg);
   esp_mqtt_client_register_event(
       client, MQTT_EVENT_ANY, mqttEventHandler, nullptr);
+/*MQTT_EVENT_BEFORE_CONNECT
+  MQTT_EVENT_CONNECTED
+  MQTT_EVENT_DISCONNECTED
+  MQTT_EVENT_DATA
+  MQTT_EVENT_ERROR
+  */
 }
 
 void Supla::Protocol::EspMqtt::disconnect() {
@@ -231,10 +259,12 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
     return;
   }
 
+  uptime.iterate(_millis);
+
   if (started) {
     // this is used to synchronize event loop handling with SuplaDevice.iterate
     mutex->unlock();
-    delay(1);
+    delay(0);
     mutex->lock();
 
     // below code is executed after mqtt event loop from ...
@@ -242,14 +272,34 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
       return;
     }
 
+
     if (enterRegisteredAndReady) {
-    // subscribe
+      enterRegisteredAndReady = false;
+      publishDeviceStatus(true);
+      lastStatusUpdateSec = uptime.getConnectionUptime();
+
+      for (int i = 0; i < channelsCount; i++) {
+        publishHADiscovery(i);
+        subscribeChannel(i);
+        publishChannelState(i);
+      }
+    }
+
+    // send device status update
+    if (uptime.getConnectionUptime() - lastStatusUpdateSec >= 5) {
+      lastStatusUpdateSec = uptime.getConnectionUptime();
+      publishDeviceStatus(false);
     }
 
     // send channel state updates
+    for (int i = 0; i < channelsCount; i++) {
+      if (channelChangedFlag[i]) {
+        publishChannelState(i);
+      }
+    }
+
 
   } else {
-    mutex->lock();
     started = true;
     enterRegisteredAndReady = false;
     esp_mqtt_client_start(client);
@@ -273,4 +323,29 @@ void Supla::Protocol::EspMqtt::setRegisteredAndReady() {
   connected = true;
   error = false;
   enterRegisteredAndReady = true;
+  uptime.resetConnectionUptime();
+  lastStatusUpdateSec = 0;
+}
+
+void Supla::Protocol::EspMqtt::publishImp(const char *topic,
+                                          const char *payload,
+                                          int qos,
+                                          bool retain) {
+  if (!connected) {
+    return;
+  }
+
+  mutex->unlock();
+  esp_mqtt_client_publish(client, topic, payload, 0, qos, retain ? 1 : 0);
+  mutex->lock();
+}
+
+void Supla::Protocol::EspMqtt::subscribeImp(const char *topic, int qos) {
+  if (!connected) {
+    return;
+  }
+
+  mutex->unlock();
+  esp_mqtt_client_subscribe(client, topic, qos);
+  mutex->lock();
 }

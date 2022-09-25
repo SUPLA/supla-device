@@ -40,6 +40,7 @@ class DS3231RTC : public Clock {
     } else {
       struct tm timeinfo {};
       isRTCReady = true;
+      RTCLostPower = (rtc.lostPower()) ? true : false;
       DateTime now = rtc.now();
 
       timeinfo.tm_year = now.year() - 1900;
@@ -72,9 +73,13 @@ class DS3231RTC : public Clock {
     return isRTCReady;
   }
 
-  bool rtcLostPower() {
-    return rtc.lostPower();
+  bool getRTCLostPowerFlag() {
+    return RTCLostPower;
   }
+
+  void resetRTCLostPowerFlag() {
+    RTCLostPower = false;
+  } 
 
   void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
     struct tm timeinfo {};
@@ -129,6 +134,7 @@ class DS3231RTC : public Clock {
 
  protected:
   RTC_DS3231 rtc;
+  bool RTCLostPower = false;
   bool isRTCReady = false;
 };
 

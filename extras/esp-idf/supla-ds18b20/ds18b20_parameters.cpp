@@ -51,7 +51,7 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
     cfg->getBlob(key, reinterpret_cast<char*>(dsAddress), DS_ADDRESS_SIZE);
 
     sender->send(
-        "</div><div class=w><h3>External thermometer #"
+        "<h3>External thermometer #"
         );
 
     snprintf(tmp, sizeof(tmp), "%d", channel);

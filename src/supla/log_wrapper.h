@@ -43,6 +43,8 @@ void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...);
 
 #endif
 
+// #define SUPLA_DISABLE_LOGS
+
 #ifdef SUPLA_DISABLE_LOGS
 // uncomment below lines to disable certain logs
 #define SUPLA_LOG_VERBOSE(arg_format, ...) {};

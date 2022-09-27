@@ -256,7 +256,6 @@ const char javascript[] =
       "null!=e&&(e.style.visibility=\"hidden\")"
     "},"
   "3200)"
-
   "</script>";
 
 const char headerEnd[] = "</head>";

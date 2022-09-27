@@ -32,7 +32,6 @@ class DS18B20Parameters : public HtmlElement {
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
 
-
  protected:
   int channel = -1;
 };

@@ -102,8 +102,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->send(buf);
     }
     sender->send(
-        "\"><label>E-mail</label></i>"
-        "</div>");
+        "\"><label>E-mail</label></i>");
 
     sender->send(
         "<script>"
@@ -152,7 +151,8 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
     sender->send(
         "</textarea><label>Custom CA (paste here CA certificate in PEM "
         "format)</label>"
-        "</i>");
+        "</i>"
+        "</div>");
 
     if (concurrent) {
       sender->send("</div>");

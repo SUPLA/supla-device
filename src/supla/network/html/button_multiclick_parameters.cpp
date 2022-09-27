@@ -48,9 +48,7 @@ void ButtonMulticlickParameters::send(Supla::WebSender* sender) {
     sender->send(BtnMulticlickTag);
 
     sender->send("\" value=\"");
-    sender->send(value / 1000);
-    sender->send(".");
-    sender->send((value / 100) % 10);
+    sender->send(value, 3);
     sender->send(
       "\">"
       "<label>Multiclick detection time [s]</label>"

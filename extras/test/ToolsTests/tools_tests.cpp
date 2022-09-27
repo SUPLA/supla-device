@@ -286,6 +286,15 @@ TEST(ToolsTests, floatStringToIntTests) {
   EXPECT_EQ(floatStringToInt("10", 2), 1000);
   EXPECT_EQ(floatStringToInt("3,1415", 3), 3141);
   EXPECT_EQ(floatStringToInt("3,1415", 4), 31415);
+  EXPECT_EQ(floatStringToInt("-3,1415", 4), -31415);
+  EXPECT_EQ(floatStringToInt("-3,1415", 3), -3141);
+  EXPECT_EQ(floatStringToInt("-100", 2), -10000);
+  EXPECT_EQ(floatStringToInt("-1", 1), -10);
+  EXPECT_EQ(floatStringToInt("-1", 0), -1);
+  EXPECT_EQ(floatStringToInt("0", 0), 0);
+  EXPECT_EQ(floatStringToInt("0", 3), 0);
+  EXPECT_EQ(floatStringToInt("1", 3), 1000);
+
 }
 
 TEST(ToolsTests, stringToIntTests) {

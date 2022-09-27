@@ -49,7 +49,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/network/html/security_certificate.h>
 #include <supla/device/supla_ca_cert.h>
 #include <supla/events.h>
 
@@ -73,7 +72,6 @@ Supla::Html::DeviceInfo htmlDeviceInfo(&SuplaDevice);
 Supla::Html::WifiParameters htmlWifi;
 Supla::Html::ProtocolParameters htmlProto;
 Supla::Html::StatusLedParameters htmlStatusLed;
-Supla::Html::SecurityCertificate htmlSec;
 
 void setup() {
 

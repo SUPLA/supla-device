@@ -17,6 +17,10 @@
 #include "thermometer.h"
 
 #include <supla/time.h>
+#include <supla/storage/config.h>
+#include <supla/log_wrapper.h>
+
+#include <stdio.h>
 
 Supla::Sensor::Thermometer::Thermometer() : lastReadTime(0) {
   channel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
@@ -38,3 +42,17 @@ void Supla::Sensor::Thermometer::iterateAlways() {
   }
 }
 
+void Supla::Sensor::Thermometer::onLoadConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t value = 0;
+    char key[16] = {};
+    snprintf(key, sizeof(key), "corr_%d_0", getChannelNumber());
+    if (cfg->getInt32(key, &value)) {
+      double correction = 1.0 * value / 10.0;
+      getChannel()->setCorrection(correction);
+      SUPLA_LOG_DEBUG("Channel[%d] temperature correction %f",
+          getChannelNumber(), correction);
+    }
+  }
+}

@@ -15,7 +15,13 @@
 */
 
 #include "therm_hygro_meter.h"
+
 #include <supla/time.h>
+#include <supla/storage/config.h>
+#include <supla/sensor/thermometer.h>
+#include <supla/log_wrapper.h>
+
+#include <stdio.h>
 
 Supla::Sensor::ThermHygroMeter::ThermHygroMeter() {
   channel.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
@@ -38,5 +44,24 @@ void Supla::Sensor::ThermHygroMeter::iterateAlways() {
   if (millis() - lastReadTime > 10000) {
     lastReadTime = millis();
     channel.setNewValue(getTemp(), getHumi());
+  }
+}
+
+void Supla::Sensor::ThermHygroMeter::onLoadConfig() {
+  // set temperature correction
+  Supla::Sensor::Thermometer::onLoadConfig();
+
+  // set humidity correction:
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t value = 0;
+    char key[16] = {};
+    snprintf(key, sizeof(key), "corr_%d_1", getChannelNumber());
+    if (cfg->getInt32(key, &value)) {
+      double correction = 1.0 * value / 10.0;
+      getChannel()->setCorrection(correction, true);
+      SUPLA_LOG_DEBUG("Channel[%d] humidity correction %f",
+          getChannelNumber(), correction);
+    }
   }
 }

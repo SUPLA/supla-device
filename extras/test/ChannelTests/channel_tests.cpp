@@ -23,6 +23,18 @@
 #include <supla/actions.h>
 #include <supla/correction.h>
 
+class ChannelTestsFixture : public ::testing::Test {
+  protected:
+    virtual void SetUp() {
+      Supla::Channel::lastCommunicationTimeMs = 0;
+      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    }
+    virtual void TearDown() {
+      Supla::Channel::lastCommunicationTimeMs = 0;
+      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    }
+
+};
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:
@@ -507,6 +519,78 @@ TEST(ChannelTests, SetNewValueWithCorrection) {
   channel2.setNewValue(pi, e);
   EXPECT_NEAR(channel2.getValueDoubleFirst(), pi, 0.001);
   EXPECT_NEAR(channel2.getValueDoubleSecond(), e + 2, 0.001); // value with correction
+
+  Supla::Correction::clear(); // cleanup
+}
+
+TEST_F(ChannelTestsFixture, SetNewTemperatureHumidityWithCorrection) {
+  Supla::Channel channel1;
+  Supla::Channel channel2;
+  Supla::Channel channel3;
+
+  channel1.setType(SUPLA_CHANNELTYPE_THERMOMETER);
+  channel2.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
+  channel2.setType(SUPLA_CHANNELTYPE_HUMIDITYSENSOR);
+
+  EXPECT_DOUBLE_EQ(channel1.getValueDouble(), 0);
+
+  channel1.setNewValue(20.0);
+  EXPECT_DOUBLE_EQ(channel1.getValueDouble(), 20);
+
+  channel1.setCorrection(30.0);
+  EXPECT_DOUBLE_EQ(channel1.getValueDouble(), 20);
+
+  // Now correction should be applied
+  channel1.setNewValue(20.0);
+  EXPECT_DOUBLE_EQ(channel1.getValueDouble(), 20 + 30);
+
+  // correction shouldn't be applied invalid temperature magic value
+  channel1.setNewValue(-275.0);
+  EXPECT_DOUBLE_EQ(channel1.getValueDouble(), -275);
+
+  // channel 2 - temp+humi
+  channel2.setCorrection(10);
+  channel2.setCorrection(40, true);
+
+  channel2.setNewValue(20.0, 30.0);
+  EXPECT_NEAR(channel2.getValueDoubleFirst(), 30, 0.001);
+  EXPECT_NEAR(
+      channel2.getValueDoubleSecond(), 70, 0.001);  // value with correction
+
+  channel2.setNewValue(25.0, 80.0);
+  EXPECT_NEAR(channel2.getValueDoubleFirst(), 35, 0.001);
+  EXPECT_NEAR(
+      channel2.getValueDoubleSecond(), 100, 0.001); // value with correction
+                                                    // limitted to 100 %
+
+  channel2.setNewValue(-50.0, -1.0);
+  EXPECT_NEAR(channel2.getValueDoubleFirst(), -40, 0.001);
+  EXPECT_NEAR(
+      channel2.getValueDoubleSecond(), -1, 0.001); // no correctio
+
+  channel2.setNewValue(-275.0, -1.0);
+  EXPECT_NEAR(channel2.getValueDoubleFirst(), -275, 0.001);
+  EXPECT_NEAR(
+      channel2.getValueDoubleSecond(), -1, 0.001); // no correctio
+
+  // channel 3 - humidity
+  channel3.setCorrection(-40, true);
+
+  channel3.setNewValue(-275.0, 80.0);
+  EXPECT_NEAR(channel3.getValueDoubleFirst(), -275, 0.001);
+  EXPECT_NEAR(
+      channel3.getValueDoubleSecond(), 40, 0.001);  // value with correction
+
+  channel3.setNewValue(-275.0, 30.0);
+  EXPECT_NEAR(channel3.getValueDoubleFirst(), -275, 0.001);
+  EXPECT_NEAR(
+      channel3.getValueDoubleSecond(), 0, 0.001); // value with correction
+                                                    // limitted to 100 %
+  channel3.setNewValue(-275.0, 230.0);
+  EXPECT_NEAR(channel3.getValueDoubleFirst(), -275, 0.001);
+  EXPECT_NEAR(
+      channel3.getValueDoubleSecond(), 100, 0.001); // value with correction
+                                                    // limitted to 100 %
 
   Supla::Correction::clear(); // cleanup
 }

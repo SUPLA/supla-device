@@ -105,6 +105,55 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         "\"><label>E-mail</label></i>"
         "</div>");
 
+    sender->send(
+        "<script>"
+        "function securityChange(){"
+        "var e=document.getElementById(\"sec\"),"
+        "c=document.getElementById(\"custom_ca\"),"
+        "l=\"1\"==e.value?\"block\":\"none\";"
+        "c.style.display=l;}"
+        "</script>");
+
+    uint8_t securityLevel = 0;
+    cfg->getUInt8("security_level", &securityLevel);
+    sender->send(
+        "<i><select name=\"sec\" id=\"sec\" onchange=\"securityChange();\">"
+        "<option value=\"0\"");
+    sender->send(selected(securityLevel == 0));
+    sender->send(
+        ">Supla CA</option>"
+        "<option value=\"1\"");
+    sender->send(selected(securityLevel == 1));
+    sender->send(
+        ">Custom CA</option>"
+        "<option value=\"2\"");
+    sender->send(selected(securityLevel == 2));
+    sender->send(">Skip certificate verification (INSECURE)</option>");
+
+    sender->send(
+        "</select>"
+        "<label>Certificate verification</label>"
+        "</i>");
+    sender->send("<i id=\"custom_ca\" style=\"display:");
+    if (securityLevel == 1) {
+      sender->send("block");
+    } else {
+      sender->send("none");
+    }
+    sender->send(
+        "\">"
+        "<textarea name=\"custom_ca\" maxlength=\"4000\">");
+    char* bufCert = new char[4000];
+    memset(bufCert, 0, 4000);
+    if (cfg->getCustomCA(bufCert, 4000)) {
+      sender->send(bufCert);
+    }
+    delete[] bufCert;
+    sender->send(
+        "</textarea><label>Custom CA (paste here CA certificate in PEM "
+        "format)</label>"
+        "</i>");
+
     if (concurrent) {
       sender->send("</div>");
     }
@@ -255,6 +304,16 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
     return true;
   } else if (strcmp(key, "eml") == 0) {
     cfg->setEmail(value);
+    return true;
+  } else if (strcmp(key, "sec") == 0) {
+    uint8_t securityLevel = stringToUInt(value);
+    if (securityLevel > 2) {
+      securityLevel = 0;
+    }
+    cfg->setUInt8("security_level", securityLevel);
+    return true;
+  } else if (strcmp(key, "custom_ca") == 0) {
+    cfg->setCustomCA(value);
     return true;
   } else if (strcmp(key, "mqttserver") == 0) {
     cfg->setMqttServer(value);

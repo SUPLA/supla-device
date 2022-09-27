@@ -30,6 +30,7 @@ class Thermometer : public ChannelElement {
   Thermometer();
   virtual double getValue();
   void onInit() override;
+  void onLoadConfig() override;
   void iterateAlways() override;
 
  protected:

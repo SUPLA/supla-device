@@ -34,7 +34,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/network/html/security_certificate.h>
 #include <supla/time.h>
 
 extern "C" void cpp_main(void*);
@@ -55,7 +54,6 @@ void cpp_main(void* param) {
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
   new Supla::Html::StatusLedParameters;
-  new Supla::Html::SecurityCertificate;
 
   auto r1 = new Supla::Control::Relay(12);
   auto r2 = new Supla::Control::VirtualRelay();

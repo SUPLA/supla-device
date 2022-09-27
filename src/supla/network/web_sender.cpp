@@ -29,4 +29,20 @@ void WebSender::send(int number) {
   snprintf(buf, sizeof(buf), "%d", number);
   send(buf);
 }
+
+void WebSender::send(int number, int precision) {
+  if (precision < 0) {
+    precision = 0;
+  }
+  char buf[100];
+  int divider = 1;
+  for (int i = 0; i < precision; i++) {
+    divider *= 10;
+  }
+
+  snprintf(buf, sizeof(buf),
+      "%.*f", precision, static_cast<float>(number) / divider);
+  send(buf);
+}
+
 };  // namespace Supla

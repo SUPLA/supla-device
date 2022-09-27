@@ -42,7 +42,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/network/html/security_certificate.h>
 
 extern "C" void cpp_main(void*);
 
@@ -58,7 +57,6 @@ void cpp_main(void* param) {
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
   new Supla::Html::StatusLedParameters;
-  new Supla::Html::SecurityCertificate;
 
   // Device status LED
   // Supla::Device::StatusLed statusLed(2, false); // esp-wroom-32 GPIO2

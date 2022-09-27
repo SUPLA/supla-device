@@ -52,8 +52,17 @@ Channel::~Channel() {
 }
 
 void Channel::setNewValue(double dbl) {
-  // Apply channel value correction
-  dbl += Correction::get(getChannelNumber());
+  bool skipCorrection = false;
+  if (getChannelType() == SUPLA_CHANNELTYPE_THERMOMETER) {
+    if (dbl <= -273) {
+      skipCorrection = true;
+    }
+  }
+
+  if (!skipCorrection) {
+    // Apply channel value correction
+    dbl += Correction::get(getChannelNumber());
+  }
 
   char newValue[SUPLA_CHANNELVALUE_SIZE];
   if (sizeof(double) == 8) {
@@ -70,9 +79,35 @@ void Channel::setNewValue(double dbl) {
 }
 
 void Channel::setNewValue(double temp, double humi) {
-  // Apply channel value corrections
-  temp += Correction::get(getChannelNumber());
-  humi += Correction::get(getChannelNumber(), true);
+  bool skipTempCorrection = false;
+  bool skipHumiCorrection = false;
+  if (getChannelType() == SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR
+      || getChannelType() == SUPLA_CHANNELTYPE_HUMIDITYSENSOR) {
+    if (temp <= -273) {
+      skipTempCorrection = true;
+    }
+    if (humi < 0) {
+      skipHumiCorrection = true;
+    }
+  }
+
+  if (!skipTempCorrection) {
+    // Apply channel value corrections
+    temp += Correction::get(getChannelNumber());
+  }
+
+  if (!skipHumiCorrection) {
+    double humiCorr = Correction::get(getChannelNumber(), true);
+    humi += humiCorr;
+    if (humiCorr > 0.01 || humiCorr < -0.01) {
+      if (humi < 0) {
+        humi = 0;
+      }
+      if (humi > 100) {
+        humi = 100;
+      }
+    }
+  }
 
   char newValue[SUPLA_CHANNELVALUE_SIZE];
   _supla_int_t t = temp * 1000.00;

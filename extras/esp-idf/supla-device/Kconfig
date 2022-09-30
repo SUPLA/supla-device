@@ -1,0 +1,12 @@
+config SUPLA_DEBUG_BUILD
+    bool "Supla debug build"
+    help
+      Configures project to build in production mode. SUPLA_DEBUG flag is
+      not added and SUPLA_DISABLE_LOGS is added"
+
+config SUPLA_DISABLE_LOGS
+    bool "Disable logs in debug mode"
+    depends on SUPLA_DEBUG_BUILD
+    help
+      Disables Supla logs in debug mode. In production mode they are always
+      disabled.

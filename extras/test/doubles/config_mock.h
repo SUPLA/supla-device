@@ -26,7 +26,7 @@ class ConfigMock : public Supla::Config {
   public:
   MOCK_METHOD(bool, init, (), (override));
   MOCK_METHOD(void, removeAll, (), (override));
-  MOCK_METHOD(bool, isMinimalConfigReady, (), (override));
+//  MOCK_METHOD(bool, isMinimalConfigReady, (), (override));
   MOCK_METHOD(bool, isConfigModeSupported, (), (override));
   MOCK_METHOD(bool, setString, (const char* key, const char* value), (override));
   MOCK_METHOD(bool, getString, (const char* key, char* value, size_t maxSize), (override));

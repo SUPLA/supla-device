@@ -23,6 +23,7 @@
 class ElementMock : public Supla::Element {
   public:
   MOCK_METHOD(void, onInit, (), (override));
+  MOCK_METHOD(void, onLoadConfig, (), (override));
   MOCK_METHOD(void, onLoadState, (), (override));
   MOCK_METHOD(void, onSaveState, (), (override));
   MOCK_METHOD(void, onRegistered, (Supla::Protocol::SuplaSrpc *), (override));

@@ -119,6 +119,12 @@ void Network::SetHostname(const char *buf) {
   return;
 }
 
+bool Network::IsSuplaSSLEnabled() {
+  if (Instance() != nullptr) {
+    return Instance()->isSuplaSSLEnabled();
+  }
+  return false;
+}
 
 Network::Network(unsigned char *ip) {
   netIntf = this;
@@ -221,6 +227,10 @@ bool Network::popSetupNeeded() {
 
 void Network::setSetupNeeded() {
   setupNeeded = true;
+}
+
+bool Network::isSuplaSSLEnabled() {
+  return sslEnabled;
 }
 
 };  // namespace Supla

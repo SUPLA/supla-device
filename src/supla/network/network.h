@@ -42,6 +42,7 @@ class Network {
   static bool PopSetupNeeded();
   static bool GetMacAddr(uint8_t *);
   static void SetHostname(const char *);
+  static bool IsSuplaSSLEnabled();
 
   static void printData(const char *prefix, const void *buf, const int count);
 
@@ -54,6 +55,7 @@ class Network {
   virtual void setNormalMode();
   virtual bool getMacAddr(uint8_t *);
   virtual void setHostname(const char *);
+  virtual bool isSuplaSSLEnabled();
 
   virtual bool isReady() = 0;
   virtual bool iterate();
@@ -67,6 +69,7 @@ class Network {
 
   // SSL configuration
   virtual void setSSLEnabled(bool enabled);
+  bool isSSLEnabled();
   void setCACert(const char *rootCA);
 
   void clearTimeCounters();

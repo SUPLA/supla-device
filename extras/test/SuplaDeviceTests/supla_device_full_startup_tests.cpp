@@ -26,6 +26,7 @@
 #include <board_mock.h>
 #include "supla/protocol/supla_srpc.h"
 #include <network_client_mock.h>
+#include <config_mock.h>
 
 using ::testing::Return;
 using ::testing::_;
@@ -113,6 +114,29 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
       char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
       EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
       EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+    }
+
+    virtual void TearDown() {
+      SuplaDeviceTests::TearDown();
+    }
+};
+
+class SuplaDeviceTestsFullStartupManual : public SuplaDeviceTests {
+  protected:
+    SrpcMock srpc;
+    NetworkMock net;
+    TimerMock timer;
+    SimpleTime time;
+    SuplaDeviceClass sd;
+    ElementMock el1;
+    ElementMock el2;
+    BoardMock board;
+    NetworkClientMock *client = nullptr;
+
+    virtual void SetUp() {
+      client = new NetworkClientMock;  // it will be destroyed in
+                                       // Supla::Protocol::SuplaSrpc
+      SuplaDeviceTests::SetUp();
     }
 
     virtual void TearDown() {
@@ -272,3 +296,1391 @@ TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgainAndResetDev) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_SOFTWARE_RESET);
 }
 
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslDisabledNoConfig) {
+  net.setSSLEnabled(false);
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  // SSL disabled, port should be 2015
+  EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), nullptr);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslDisabledCAConfiguredNoConfig) {
+  net.setSSLEnabled(false);
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  // SSL disabled, port should be 2015
+  EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), nullptr);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslEnabledNoCANoConfig) {
+  net.setSSLEnabled(true);
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  // Port should be 2016
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), nullptr);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslEnabledSuplaCANoConfig) {
+  net.setSSLEnabled(true);
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "ok.supla.org", "superman@supla.org", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA1);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslEnabledSuplaCAPrivateServerNoConfig) {
+  net.setSSLEnabled(true);
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.priv", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA2);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslEnabledOnlyOnceCASetNoConfig) {
+  net.setSSLEnabled(true);
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+//  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.priv", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA1);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    SslEnabledOnlyOnceCASetv2NoConfig) {
+  net.setSSLEnabled(true);
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+//  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(0);
+  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  char GUID[SUPLA_GUID_SIZE] = {1};
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(sd.begin(GUID, "test.supla.org", "superman@supla.org", AUTHKEY, 18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA2);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslDisabled) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl disabled in config is realized by setting port to 2015
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level")) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), nullptr);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslEnabledManually) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl enabled in config is realized by setting port to 2016
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level")) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA1);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslEnabled) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl enabled in config is realized by setting port to -1 (auto/default)
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level")) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA1);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslEnabledPrivateServer) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.priv";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl enabled in config is realized by setting port to -1 (auto/default)
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level")) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), myCA2);
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslEnabledCustomCA) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl enabled in config is realized by setting port to -1 (auto/default)
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level") == 0) {
+        *buf = 1;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+  EXPECT_CALL(cfg, getCustomCASize())
+    .WillRepeatedly(Return(strlen("custom ca")));
+  EXPECT_CALL(cfg, getCustomCA(_, _)).WillRepeatedly(
+    [] (char *ca, int maxSize) {
+      char temp[] = "custom ca";
+      EXPECT_GE(maxSize, strlen(temp));
+      memcpy(ca, temp, strlen(temp));
+      return true;
+    });
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_STREQ(client->getRootCACert(), "custom ca");
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslEnabledCustomCASelectedButMissing) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl enabled in config is realized by setting port to -1 (auto/default)
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level") == 0) {
+        *buf = 1;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+  EXPECT_CALL(cfg, getCustomCASize())
+    .WillRepeatedly(Return(0));
+  EXPECT_CALL(cfg, getCustomCA(_, _)).WillRepeatedly(Return(false));
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  // "SUPLA" string is set as a dummy CA value (invalid), so connection in
+  // production code will fail
+  EXPECT_STREQ(client->getRootCACert(), "SUPLA");
+}
+
+TEST_F(SuplaDeviceTestsFullStartupManual,
+    WithConfigSslEnabledInsecure) {
+  ConfigMock cfg;
+  const char myCA1[] = "test CA1";
+  const char myCA2[] = "test CA2";
+  sd.setSuplaCACert(myCA1);
+  sd.setSupla3rdPartyCACert(myCA2);
+
+  EXPECT_NE(Supla::Storage::ConfigInstance(), nullptr);
+  int dummy = 0;
+  sd.setActivityTimeout(45);
+
+
+  EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+  EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  // ssl enabled in config is realized by setting port to -1 (auto/default)
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level") == 0) {
+        *buf = 2;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(el1, onLoadConfig()).Times(1);
+  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+
+  EXPECT_TRUE(sd.begin(18));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(0);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
+//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 10; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+  EXPECT_EQ(client->getRootCACert(), nullptr);
+}

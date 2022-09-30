@@ -37,7 +37,9 @@ class NetworkClientMock : public Supla::Client {
     MOCK_METHOD(size_t, writeImp, (const uint8_t *buf, size_t size), (override));
     MOCK_METHOD(int, readImp, (uint8_t *buf, size_t size), (override));
 
-
+    const char *getRootCACert() {
+      return rootCACert;
+    }
 };
 
 

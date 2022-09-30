@@ -139,7 +139,7 @@ int32_t Config::getSuplaServerPort() {
   int32_t result = -1;
   getInt32("suplaport", &result);
   if (result <= 0 || result > 65536) {
-    result = 2016;
+    result = -1;
   }
 
   return result;

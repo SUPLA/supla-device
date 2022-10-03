@@ -52,8 +52,6 @@ RGBWBase::RGBWBase()
       hwBlue(0),
       hwColorBrightness(0),
       hwBrightness(0),
-      lastTick(0),
-      lastMsgReceivedMs(0),
       stateOnInit(RGBW_STATE_ON_INIT_RESTORE),
       minIterationBrightness(5) {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
@@ -106,7 +104,7 @@ void RGBWBase::setRGBW(int red,
 }
 
 void RGBWBase::iterateAlways() {
-  if (lastMsgReceivedMs != 0 && millis() - lastMsgReceivedMs > 400) {
+  if (lastMsgReceivedMs != 0 && millis() - lastMsgReceivedMs >= 400) {
     lastMsgReceivedMs = 0;
     // Send to Supla server new values
     channel.setNewValue(
@@ -287,6 +285,27 @@ void RGBWBase::iterateDimmerRGBW(int rgbStep, int wStep) {
   if (rgbStep > 0 && wStep > 0) {
     curBrightness = curColorBrightness;
   }
+
+  // change iteration direction if there was no action in last 0.5 s
+  if (millis() - lastIterateDimmerTimestamp >= 500) {
+    dimIterationDirection = !dimIterationDirection;
+    iterationDelayCounter = 0;
+    if (curBrightness <= 5) {
+      dimIterationDirection = false;
+    } else if (curBrightness >= 95) {
+      dimIterationDirection = true;
+    }
+    if (millis() - lastIterateDimmerTimestamp >= 10000) {
+      if (curBrightness <= 40) {
+        dimIterationDirection = false;
+      } else if (curBrightness >= 60) {
+        dimIterationDirection = true;
+      }
+    }
+  }
+
+  lastIterateDimmerTimestamp = millis();
+
   if (rgbStep > 0) {
     if (curColorBrightness <= minIterationBrightness &&
         dimIterationDirection == true) {

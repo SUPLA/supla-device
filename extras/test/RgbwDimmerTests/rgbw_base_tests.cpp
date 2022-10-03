@@ -22,6 +22,24 @@
 #include <supla/storage/storage.h>
 
 using ::testing::Return;
+using ::testing::_;
+using ::testing::AtLeast;
+
+class SimpleTime : public TimeInterface {
+  public:
+    SimpleTime() : value(0) {}
+
+    virtual uint64_t millis() override {
+      return value;
+    }
+
+    void advance(int advanceMs) {
+      value += advanceMs;
+    }
+
+    uint64_t value;
+};
+
 
 class RgbwBaseForTest : public Supla::Control::RGBWBase {
   public:
@@ -393,15 +411,16 @@ TEST(RgbwDimmerTests, TurnOnOffToggleTests) {
 }
 
 TEST(RgbwDimmerTests, HandleActionTests) {
-  // time stub will return +1000 ms on each call to millis
-  TimeInterfaceStub time;
+  SimpleTime time;
 
   RgbwBaseForTest rgb;
 
   auto ch = rgb.getChannel();
 
+  time.advance(1000);
   rgb.setStep(10);
   rgb.onInit();
+  time.advance(1000);
   rgb.iterateAlways();
 
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -410,6 +429,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
+  time.advance(1000);
   rgb.handleAction(1, Supla::TURN_ON);
   // channel values should be changed only after some time passed
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -418,7 +438,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
+  time.advance(1000);
   rgb.iterateAlways();
+  //rgb.onTimer();
 
   // a little bit later, values are set to channel
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -428,6 +450,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::TURN_OFF);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -436,6 +459,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::BRIGHTEN_ALL);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -444,6 +468,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 10);
 
   rgb.handleAction(1, Supla::BRIGHTEN_ALL);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -452,6 +477,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   rgb.handleAction(1, Supla::TOGGLE);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -460,6 +486,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::TOGGLE);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -468,6 +495,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   rgb.handleAction(1, Supla::DIM_ALL);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -476,6 +504,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 10);
 
   rgb.handleAction(1, Supla::DIM_ALL);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -484,6 +513,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::DIM_ALL);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -492,6 +522,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::TURN_ON);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -500,8 +531,10 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 10);
 
   for (int i = 0; i < 20; i++) {
+    time.advance(100);
     rgb.handleAction(1, Supla::BRIGHTEN_ALL);
   };
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -510,7 +543,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::BRIGHTEN_R);
+  time.advance(1000);
   rgb.handleAction(1, Supla::BRIGHTEN_R);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 20);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -519,6 +554,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::DIM_R);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -527,7 +563,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::DIM_G);
+  time.advance(1000);
   rgb.handleAction(1, Supla::DIM_G);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 235);
@@ -536,6 +574,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::BRIGHTEN_G);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -545,7 +584,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
 
   rgb.handleAction(1, Supla::BRIGHTEN_B);
+  time.advance(1000);
   rgb.handleAction(1, Supla::BRIGHTEN_B);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -554,6 +595,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::DIM_B);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -562,6 +604,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::DIM_W);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -570,6 +613,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::DIM_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -578,6 +622,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::BRIGHTEN_W);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -586,6 +631,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::BRIGHTEN_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -594,7 +640,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 100);
 
   rgb.handleAction(1, Supla::DIM_ALL);
+  time.advance(1000);
   rgb.handleAction(1, Supla::TURN_OFF_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -603,6 +651,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TURN_ON_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -611,6 +660,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TURN_OFF_W);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -619,6 +669,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::TURN_ON_W);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -627,6 +678,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TOGGLE_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -635,6 +687,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TOGGLE_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -643,6 +696,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TOGGLE_W);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -651,6 +705,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::TOGGLE_W);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -659,6 +714,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TURN_ON_RGB_DIMMED);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -667,6 +723,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TURN_ON_W_DIMMED);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -675,6 +732,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TURN_ON_ALL_DIMMED);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -683,7 +741,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 90);
 
   rgb.handleAction(1, Supla::TURN_OFF);
+  time.advance(1000);
   rgb.handleAction(1, Supla::TURN_ON_RGB_DIMMED);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -692,6 +752,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::TURN_ON_W_DIMMED);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -700,7 +761,9 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   rgb.handleAction(1, Supla::TURN_OFF);
+  time.advance(1000);
   rgb.handleAction(1, Supla::TURN_ON_ALL_DIMMED);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -709,35 +772,28 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
-  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueBlue(), 10);     ////////////
   EXPECT_EQ(ch->getValueColorBrightness(), 30);
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
   EXPECT_EQ(ch->getValueBlue(), 10);
-  EXPECT_EQ(ch->getValueColorBrightness(), 40);
+  EXPECT_EQ(ch->getValueColorBrightness(), 20);
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
-  for (int i = 0; i < 6; i++) {
+  for (int i = 0; i < 8; i++) {
+    time.advance(100);
     rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
   }
-  rgb.iterateAlways();
-  EXPECT_EQ(ch->getValueRed(), 10);
-  EXPECT_EQ(ch->getValueGreen(), 245);
-  EXPECT_EQ(ch->getValueBlue(), 10);
-  EXPECT_EQ(ch->getValueColorBrightness(), 100);
-  EXPECT_EQ(ch->getValueBrightness(), 20);
-
-  // after hitting 100%, iterate should stay 4 iterations before it goes down
-  for (int i = 0; i < 4; i++) {
-    rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
-  }
+  time.advance(2000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -747,8 +803,10 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   // next five iterations should change brightness to 50
   for (int i = 0; i < 5; i++) {
+    time.advance(50);
     rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
   }
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -758,8 +816,10 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   // next six iterations should change brightness to 5
   for (int i = 0; i < 6; i++) {
+    time.advance(50);
     rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
   }
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -769,8 +829,10 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   // next four iterations should keep 5
   for (int i = 0; i < 4; i++) {
+    time.advance(50);
     rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
   }
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -779,6 +841,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -788,6 +851,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   // turn off
   rgb.handleAction(1, Supla::TURN_OFF);
+  time.advance(1000);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -797,6 +861,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   // after turn off, it should start from dimmed value
   rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -805,6 +870,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_RGB);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -813,6 +879,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_W);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -821,6 +888,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 10);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_W);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -829,8 +897,10 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBrightness(), 20);
 
   for (int i = 0; i < 12; i++) {
+    time.advance(50);
     rgb.handleAction(1, Supla::ITERATE_DIM_W);
   }
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -840,14 +910,16 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   // if we iterate all, colorBrightness is copied to brightness and it operated on both values in sync
   rgb.handleAction(1, Supla::ITERATE_DIM_ALL);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
   EXPECT_EQ(ch->getValueBlue(), 10);
   EXPECT_EQ(ch->getValueColorBrightness(), 30);
   EXPECT_EQ(ch->getValueBrightness(), 30);
-  
+
   rgb.handleAction(1, Supla::ITERATE_DIM_ALL);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 10);
   EXPECT_EQ(ch->getValueGreen(), 245);
@@ -901,15 +973,16 @@ TEST(RgbwDimmerTests, DefaultDimmedValue) {
 }
 
 TEST(RgbwDimmerTests, IterationSteps) {
-  // time stub will return +1000 ms on each call to millis
-  TimeInterfaceStub time;
+  SimpleTime time;
 
   RgbwBaseForTest rgb;
   rgb.setStep(10);
 
   auto ch = rgb.getChannel();
 
+  time.advance(1000);
   rgb.onInit();
+  time.advance(1000);
   rgb.iterateAlways();
 
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -919,7 +992,9 @@ TEST(RgbwDimmerTests, IterationSteps) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
   rgb.handleAction(1, Supla::ITERATE_DIM_ALL);
+  time.advance(400);
   rgb.handleAction(1, Supla::ITERATE_DIM_ALL);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -929,6 +1004,7 @@ TEST(RgbwDimmerTests, IterationSteps) {
 
   rgb.setStep(5);
   rgb.handleAction(1, Supla::ITERATE_DIM_ALL);
+  time.advance(400);
   rgb.iterateAlways();
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -977,8 +1053,7 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithoutFading) {
 }
 
 TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
-  // time stub will return +1000 ms on each call to millis
-  TimeInterfaceStub time;
+  SimpleTime time;
   ::testing::InSequence seq;
 
   RgbwBaseForTest rgb;
@@ -993,8 +1068,7 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
 
   // fade effect 10000 ms, time step 1000 ms
-  // because turnOn calls millis once, we actually do 2 s step in first shot
-  // that is why (0, 255, 0, 10, 10) is missing
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 102, (10*1023/100)));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 204, (20*1023/100)));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 306, (20*1023/100)));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 408, (20*1023/100)));
@@ -1007,55 +1081,83 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023, (20*1023/100)));
 
   // fade effect 10000 ms, time step 1000 ms
-  // because turnOn calls millis once, we actually do 2 s step in first shot
-  // setting rgb values
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(204, 818, 0, (100*1023/100), (20*1023/100)));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(102, 920, 0, (100*1023/100), (20*1023/100)));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(204, 817, 0, (100*1023/100), (20*1023/100)));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(306, 802, 0, (100*1023/100), (20*1023/100)));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(401, (1023*200/255), 0, (100*1023/100), (20*1023/100)));
 
   auto ch = rgb.getChannel();
 
-  // time stub gives +1000 ms on each call to millis, and fade time is 1000 ms,
+  // time stub gives +1000 ms on each call, and fade time is 1000 ms,
   // so it should set value on device as it is
   rgb.onInit();
+  time.advance(1000);
   rgb.onTimer();
   rgb.turnOn();
+  time.advance(1000);
   rgb.onTimer();
   rgb.toggle();
+  time.advance(1000);
   rgb.onTimer();
   rgb.handleAction(1, Supla::TURN_ON_W_DIMMED);
+  time.advance(1000);
   rgb.onTimer();
   rgb.turnOff();
+  time.advance(1000);
   rgb.onTimer();
   rgb.turnOn();
+  time.advance(1000);
   rgb.onTimer();
   rgb.turnOff();
+  time.advance(1000);
   rgb.onTimer();
 
   // change fade effect to 10000 ms, so we'll get 1/10 steps
   rgb.setFadeEffectTime(10000);
   rgb.turnOn();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
+  rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
 
   rgb.setRGBW(100, 200, 0, -1, -1, false);
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
+  time.advance(1000);
   rgb.onTimer();
 
   EXPECT_EQ(ch->getValueRed(), 0);

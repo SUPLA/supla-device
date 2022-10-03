@@ -97,8 +97,9 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   int maxBrightness = 1023;
   int minColorBrightness = 0;
   int maxColorBrightness = 1023;
-  uint64_t lastTick;
-  uint64_t lastMsgReceivedMs;
+  uint64_t lastTick = 0;
+  uint64_t lastMsgReceivedMs = 0;
+  uint64_t lastIterateDimmerTimestamp = 0;
   int8_t stateOnInit;
   uint8_t minIterationBrightness;
 };

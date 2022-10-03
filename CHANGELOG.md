@@ -26,6 +26,7 @@
   - Add: Button: multiclick time setting to HTML config
   - Add: Button: configureAsConfigButton method for simplified button configuration
   - Add: support for sending channel state info (i) for sleeping devices
+  - Add: support for enter to config mode as device registration result for sleeping devices
   - Add: (ESP-IDF) support for MQTT for thermometers, thermometers with humidity, relays with Home Assistant MQTT autodiscovery.
   - Fix: selecting between raw and encrypted connection and between encyrpted with/without certficate verification.
 

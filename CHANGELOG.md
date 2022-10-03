@@ -1,5 +1,34 @@
 # CHANGELOG.md
 
+## 22.10.01 (2022-10-03)
+
+  - Change: versioning format changed to year.month.number
+  - Change: startup procedure and iterate methods adjusted to support concurrent multiprotocol scenarios (i.e. concurrent Supla and MQTT mode, MQTT only)
+  - Change: device hostname/Wi-Fi AP name use 6 bytes of MAC address instead of 3
+  - Change: ability to exit config mode depends on whether minimum configuration is provided
+  - Change: logging improvement. All logs from supla-device use now SUPLA_LOG_ macros. It is recommended method to logging. It will optimize RAM usage (similar to F() macro in Arduino) and it is possible to remove all logs from binary file (please check log_wrapper.h) to reduce binary file size.
+  - Change: LocalActions (like button handling) are now disabled when device enters config mode and it has minimum config fullfiled.
+  - Change: (ESP-IDF) adjusted GPIO handling, so SW reset will not affect Relay's GPIO state
+  - Change: (ESP-IDF) adjust OTA procedure for new updates server
+  - Change: RGBW, Dimmer: dimming via button will change direction on each button press
+  - Add: add SuplaDevice.setCustomHostnamePrefix method that override DHCP hostname and Wi-Fi SSID in CFG mode to user defined value (instead of using device name)
+  - Add: support for conditional triggers in dimmers and RGB channels (thanks @lukfud)
+  - Add: invert logic support for Binary sensor (thanks @lukfud)
+  - Add: (Arduino ESPx, Arduino Mega) AHT sensor support (thanks @milanos)
+  - Add: (Arduino ESPx, Arduino Mega) support for HX711 weight sensor (thanks @lukfud)
+  - Add: (Arduino ESPx, Arduino Mega) DS3231 external RTC support (thanks @lukfud)
+  - Add: (Arduino ESPx) add factory reset for configuration storage
+  - Add: (ESP-IDF) SHT4x sensor support
+  - Add: (ESP-IDF) SHT3x sensor support
+  - Add: support for Supla root CA verification. Supla public servers cerficate is verified against Supla CA. Separate root CA is provided for verification of private Supla servers.
+  - Add: ActionTrigger: add option to store list of activated actions from server in order to disable local action after power on reset (if it was disabled by server)
+  - Add: ActionTrigger: option to decide if specific action can be disabled by server (i.e. we don't want to override enter to config mode)
+  - Add: Button: multiclick time setting to HTML config
+  - Add: Button: configureAsConfigButton method for simplified button configuration
+  - Add: support for sending channel state info (i) for sleeping devices
+  - Add: (ESP-IDF) support for MQTT for thermometers, thermometers with humidity, relays with Home Assistant MQTT autodiscovery.
+  - Fix: selecting between raw and encrypted connection and between encyrpted with/without certficate verification.
+
 ## 2.4.2 (2022-06-20)
 
   - Change: (Arduino ESPx) Wi-Fi class handling change to support config mode
@@ -33,8 +62,6 @@
   - Add: (Linux) YAML config file support
   - Add: (Linux) file storage for last state log
   - Add: (Arduino ESPx) WebInterface Arduino example
-
-
 
 ## 2.4.1 (2022-03-23)
 

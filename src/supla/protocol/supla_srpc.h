@@ -60,6 +60,8 @@ class SuplaSrpc : public ProtocolLayer {
   void setVersion(int value);
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
+  const char* getSuplaCACert();
+  const char* getSupla3rdPartyCACert();
   bool isUpdatePending() override;
   bool isSuplaPublicServerConfigured();
 

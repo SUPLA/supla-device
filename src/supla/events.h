@@ -52,6 +52,9 @@ enum Event {
   ON_LONG_CLICK_8,
   ON_LONG_CLICK_9,
   ON_LONG_CLICK_10,
+
+  // SuplaDeviceClass events
+  ON_DEVICE_STATUS_CHANGE
 };
 
 };  // namespace Supla

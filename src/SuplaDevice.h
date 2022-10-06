@@ -25,6 +25,7 @@
 #include <supla/device/last_state_logger.h>
 #include <supla/action_handler.h>
 #include <supla/protocol/supla_srpc.h>
+#include "supla/local_action.h"
 
 #define STATUS_UNKNOWN                   -1
 #define STATUS_ALREADY_INITIALIZED       1
@@ -75,7 +76,8 @@ class SwUpdate;
 };
 };
 
-class SuplaDeviceClass : public Supla::ActionHandler {
+class SuplaDeviceClass : public Supla::ActionHandler,
+  public Supla::LocalAction {
  public:
   SuplaDeviceClass();
   ~SuplaDeviceClass();
@@ -165,6 +167,8 @@ class SuplaDeviceClass : public Supla::ActionHandler {
 
   void enableNetwork();
   void disableNetwork();
+  bool getStorageInitResult();
+  bool isSleepingAllowed();
 
  protected:
   int networkIsNotReadyCounter = 0;
@@ -186,6 +190,7 @@ class SuplaDeviceClass : public Supla::ActionHandler {
   bool requestNetworkLayerRestart = false;
   bool isNetworkSetupOk = false;
   bool skipNetwork = false;
+  bool storageInitResult = false;
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;

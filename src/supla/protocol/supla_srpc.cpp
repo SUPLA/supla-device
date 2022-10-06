@@ -74,11 +74,12 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
         (port == -1 && Supla::Network::IsSuplaSSLEnabled())) {
       client->setSSLEnabled(true);
       bool usePublicServer = isSuplaPublicServerConfigured();
+      auto certificate = suplaCACert;
 
       // Public Supla server use different root CA for server certificate
       // validation then CA used for private servers
       if (!usePublicServer) {
-        suplaCACert = supla3rdPartyCACert;
+        certificate = supla3rdPartyCACert;
       }
 
       cfg->getUInt8("security_level", &securityLevel);
@@ -95,15 +96,15 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
           // SuplaDevice.begin() is called.
           // If it is null, we just assign "SUPLA" as a certificate value, which
           // will of course fail the certificate validation (which is intended).
-          if (suplaCACert == nullptr) {
+          if (certificate == nullptr) {
             SUPLA_LOG_ERROR(
                 "Supla CA ceritificate is selected, but it is not set. "
                 "Connection will fail");
             auto cert = new char[6];
             strncpy(cert, "SUPLA", 6);  // Some dummy value for CA cert
-            suplaCACert = cert;
+            certificate = cert;
           }
-          client->setCACert(suplaCACert);
+          client->setCACert(certificate);
           break;
         }
         case 1: {
@@ -150,21 +151,22 @@ void Supla::Protocol::SuplaSrpc::onInit() {
     auto cfg = Supla::Storage::ConfigInstance();
 
     if (!cfg && (suplaCACert != nullptr || supla3rdPartyCACert != nullptr)) {
+      auto certificate = suplaCACert;
       if (suplaCACert != nullptr && supla3rdPartyCACert != nullptr) {
         bool usePublicServer = isSuplaPublicServerConfigured();
 
         // Public Supla server use different root CA for server certificate
         // validation then CA used for private servers
         if (!usePublicServer) {
-          suplaCACert = supla3rdPartyCACert;
+          certificate = supla3rdPartyCACert;
         }
       }
 
       if (suplaCACert == nullptr) {
-        suplaCACert = supla3rdPartyCACert;
+        certificate = supla3rdPartyCACert;
       }
 
-      client->setCACert(suplaCACert);
+      client->setCACert(certificate);
     }
   }
 
@@ -636,6 +638,14 @@ void Supla::Protocol::SuplaSrpc::setSuplaCACert(const char *cert) {
 
 void Supla::Protocol::SuplaSrpc::setSupla3rdPartyCACert(const char *cert) {
   supla3rdPartyCACert = cert;
+}
+
+const char* Supla::Protocol::SuplaSrpc::getSuplaCACert() {
+  return suplaCACert;
+}
+
+const char* Supla::Protocol::SuplaSrpc::getSupla3rdPartyCACert() {
+  return supla3rdPartyCACert;
 }
 
 void Supla::Protocol::SuplaSrpc::onGetUserLocaltimeResult(

@@ -391,7 +391,6 @@ void SuplaDeviceClass::iterate(void) {
     return;
   }
   isNetworkSetupOk = true;
-//  SUPLA_LOG_DEBUG(" *** DEVICE MODE %d", deviceMode);
 
   switch (deviceMode) {
     // Normal and Test mode

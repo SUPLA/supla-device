@@ -40,11 +40,12 @@
 void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
   bool showLog = false;
 
-  if (currentStatus == STATUS_CONFIG_MODE &&
+  if ((currentStatus == STATUS_CONFIG_MODE ||
+        currentStatus == STATUS_TEST_WAIT_FOR_CFG_BUTTON) &&
       newStatus != STATUS_SOFTWARE_RESET && newStatus != STATUS_INVALID_GUID &&
       newStatus != STATUS_INVALID_AUTHKEY) {
-    // Config mode is final state and the only exit goes through reset
-    // with exception for invalid GUID and AUTHKEY
+    // Config mode and testing is final state and the only exit goes through
+    // reset with exception for invalid GUID and AUTHKEY
     return;
   }
 
@@ -390,7 +391,6 @@ void SuplaDeviceClass::iterate(void) {
     return;
   }
   isNetworkSetupOk = true;
-//  SUPLA_LOG_DEBUG(" *** DEVICE MODE %d", deviceMode);
 
   switch (deviceMode) {
     // Normal and Test mode
@@ -409,7 +409,6 @@ void SuplaDeviceClass::iterate(void) {
 
       if (deviceMode == Supla::DEVICE_MODE_TEST) {
         // Test mode
-        SUPLA_LOG_DEBUG(" *** TEST mode!!!!");
       }
       break;
     }

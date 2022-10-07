@@ -91,6 +91,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/device/status_led.o \
   ../../../src/supla/device/last_state_logger.o \
   ../../../src/supla/device/sw_update.o \
+  ../../../src/supla/device/factory_test.o \
 	\
   ../../../src/supla/sensor/binary.o \
   ../../../src/supla/sensor/electricity_meter.o \

@@ -62,6 +62,7 @@
 #define STATUS_SOFTWARE_RESET            41
 #define STATUS_SW_DOWNLOAD               50
 #define STATUS_SUPLA_PROTOCOL_DISABLED   60
+#define STATUS_TEST_WAIT_FOR_CFG_BUTTON  70
 
 typedef void (*_impl_arduino_status)(int status, const char *msg);
 

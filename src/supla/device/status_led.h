@@ -44,6 +44,7 @@ enum LedSequence {
   CONFIG_MODE /* quick flashing 100/100 ms */,
   SW_DOWNLOAD /* very fast flashing 20/20 ms */,
   PACZKOW_WE_HAVE_A_PROBLEM /* some problem 300/100 ms */,
+  TESTING_PROCEDURE, /* used to indicate almost finished test 50/50 ms */
   CUSTOM_SEQUENCE /* values set manually, state changes ignored */
 };
 

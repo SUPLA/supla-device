@@ -15,6 +15,7 @@
 */
 
 #include <string.h>
+#include <stdio.h>
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla/protocol/supla_srpc.h>
@@ -25,6 +26,7 @@
 #include "supla/device/last_state_logger.h"
 #include "supla/device/sw_update.h"
 #include "supla/element.h"
+#include "supla/events.h"
 #include "supla/io.h"
 #include "supla/network/network.h"
 #include "supla/network/web_server.h"
@@ -38,11 +40,12 @@
 void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
   bool showLog = false;
 
-  if (currentStatus == STATUS_CONFIG_MODE &&
+  if ((currentStatus == STATUS_CONFIG_MODE ||
+        currentStatus == STATUS_TEST_WAIT_FOR_CFG_BUTTON) &&
       newStatus != STATUS_SOFTWARE_RESET && newStatus != STATUS_INVALID_GUID &&
       newStatus != STATUS_INVALID_AUTHKEY) {
-    // Config mode is final state and the only exit goes through reset
-    // with exception for invalid GUID and AUTHKEY
+    // Config mode and testing is final state and the only exit goes through
+    // reset with exception for invalid GUID and AUTHKEY
     return;
   }
 
@@ -58,6 +61,7 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
       if (newStatus != STATUS_INITIALIZED && msg != nullptr) {
         addLastStateLog(msg);
       }
+      runAction(Supla::ON_DEVICE_STATUS_CHANGE);
     }
   }
   if ((alwaysLog || showLog) && msg != nullptr) {
@@ -124,7 +128,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   createSrpcLayerIfNeeded();
   srpcLayer->setVersion(protoVersion);
 
-  Supla::Storage::Init();
+  storageInitResult = Supla::Storage::Init();
 
   if (Supla::Storage::IsConfigStorageAvailable()) {
     if (!lastStateLogger) {
@@ -389,7 +393,8 @@ void SuplaDeviceClass::iterate(void) {
   isNetworkSetupOk = true;
 
   switch (deviceMode) {
-    // Normal mode
+    // Normal and Test mode
+    case Supla::DEVICE_MODE_TEST:
     default: {
       // When network is ready iterate over protocol layers
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
@@ -402,10 +407,13 @@ void SuplaDeviceClass::iterate(void) {
         delay(0);
       }
 
+      if (deviceMode == Supla::DEVICE_MODE_TEST) {
+        // Test mode
+      }
       break;
     }
 
-    // Config mode
+// Config mode
     case Supla::DEVICE_MODE_CONFIG: {
       break;
     }
@@ -541,6 +549,21 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   deviceMode = cfg->getDeviceMode();
   if (deviceMode == Supla::DEVICE_MODE_NOT_SET) {
     deviceMode = Supla::DEVICE_MODE_NORMAL;
+  } else if (deviceMode == Supla::DEVICE_MODE_TEST) {
+    char wifiApName[100] = {};
+    const char test[] = "TEST-";
+    snprintf(wifiApName, sizeof(wifiApName), "%s", test);
+    generateHostname(wifiApName + strlen(test), 0);
+    memset(buf, 0, sizeof(buf));
+    if (!cfg->getWiFiSSID(buf) || strlen(buf) == 0) {
+      cfg->setWiFiSSID(wifiApName);
+    } else {
+      if (strncmp(wifiApName, buf, strlen(wifiApName)) != 0) {
+        SUPLA_LOG_DEBUG("Test mode: leaving. Invalid SSID: %s != %s",
+            wifiApName, buf);
+        deviceMode = Supla::DEVICE_MODE_NORMAL;
+      }
+    }
   }
 
   // WiFi specific config
@@ -1053,6 +1076,18 @@ bool SuplaDeviceClass::isSleepingDeviceEnabled() {
 uint32_t SuplaDeviceClass::getActivityTimeout() {
   createSrpcLayerIfNeeded();
   return srpcLayer->getActivityTimeout();
+}
+
+bool SuplaDeviceClass::getStorageInitResult() {
+  return storageInitResult;
+}
+
+// Sleeping is allowed only in normal and test mode.
+// Additionally sleeping is not allowed, when device restet is requested.
+bool SuplaDeviceClass::isSleepingAllowed() {
+  return (getDeviceMode() == Supla::DEVICE_MODE_NORMAL
+            || getDeviceMode() == Supla::DEVICE_MODE_TEST)
+    && forceRestartTimeMs == 0;
 }
 
 SuplaDeviceClass SuplaDevice;

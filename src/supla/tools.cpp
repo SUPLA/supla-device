@@ -322,10 +322,10 @@ int32_t floatStringToInt(const char *str, int precision) {
 const char *getManufacturer(int16_t id) {
   switch (id) {
     case SUPLA_MFR_ACSOFTWARE: {
-      return "AC Software";
+      return "AC SOFTWARE";
     }
     case SUPLA_MFR_TRANSCOM: {
-      return "Transcom";
+      return "TransCom";
     }
     case SUPLA_MFR_LOGI: {
       return "Logi";
@@ -337,10 +337,10 @@ const char *getManufacturer(int16_t id) {
       return "Nice";
     }
     case SUPLA_MFR_ITEAD: {
-      return "ITEAD";
+      return "Itead";
     }
     case SUPLA_MFR_DOYLETRATT: {
-      return "Varilight";
+      return "Doyle & Tratt";
     }
     case SUPLA_MFR_HEATPOL: {
       return "Heatpol";
@@ -355,7 +355,7 @@ const char *getManufacturer(int16_t id) {
       return "Wekta";
     }
     case SUPLA_MFR_STA_SYSTEM: {
-      return "STA System";
+      return "STA-System";
     }
     case SUPLA_MFR_DGF: {
       return "DGF";

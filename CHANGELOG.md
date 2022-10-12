@@ -1,5 +1,11 @@
 # CHANGELOG.md
 
+## 22.10.03 (2022-10-12)
+
+  - Change: Linux example extended with security_level setting
+  - Add: support for factory test mode
+  - Fix: watchdog timeout when using BME280 sensor or any other element with secondary channel
+
 ## 22.10.01 (2022-10-03)
 
   - Change: versioning format changed to year.month.number

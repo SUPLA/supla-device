@@ -27,6 +27,7 @@
 #include "supla/protocol/supla_srpc.h"
 #include <network_client_mock.h>
 #include <config_mock.h>
+#include <supla/sensor/therm_hygro_press_meter.h>
 
 using ::testing::Return;
 using ::testing::_;
@@ -119,6 +120,11 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
     virtual void TearDown() {
       SuplaDeviceTests::TearDown();
     }
+};
+
+class SuplaDeviceElementWithSecondaryChannel : public SuplaDeviceTestsFullStartup {
+  protected:
+    Supla::Sensor::ThermHygroPressMeter thpm;
 };
 
 class SuplaDeviceTestsFullStartupManual : public SuplaDeviceTests {
@@ -1683,4 +1689,55 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
   EXPECT_EQ(client->getRootCACert(), nullptr);
+}
+
+TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
+  bool isConnected = false;
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));
+  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
+
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+
+  EXPECT_CALL(el1, iterateAlways()).Times(35);
+  EXPECT_CALL(el2, iterateAlways()).Times(35);
+
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
+
+//  EXPECT_CALL(net, ping(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(1000);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 16;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 30; i++) {
+    sd.iterate();
+    time.advance(1000);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
 }

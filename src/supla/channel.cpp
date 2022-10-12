@@ -48,7 +48,9 @@ Channel::Channel() : valueChanged(false), channelConfig(false),
 }
 
 Channel::~Channel() {
-  reg_dev.channel_count--;
+  if (reg_dev.channel_count != 0) {
+    reg_dev.channel_count--;
+  }
 }
 
 void Channel::setNewValue(double dbl) {

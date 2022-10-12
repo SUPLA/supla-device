@@ -97,11 +97,12 @@ void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   }
   auto ch = getChannel();
 
-  while (ch != nullptr) {
-    if (ch->isSleepingEnabled()) {
+  if (ch != nullptr && ch->isSleepingEnabled()) {
       suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
-    }
-    ch = getSecondaryChannel();
+  }
+  ch = getSecondaryChannel();
+  if (ch != nullptr && ch->isSleepingEnabled()) {
+      suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
   }
 }
 

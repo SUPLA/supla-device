@@ -4,6 +4,7 @@
 name: My fancy device
 log_level: debug
 state_files_path: "/var/local/supla-device"
+security_level: 2 # disable certyficate verification
 
 supla:
   server: svr123.supla.org

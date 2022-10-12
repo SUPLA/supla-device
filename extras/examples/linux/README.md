@@ -161,6 +161,19 @@ Example:
 
     state_files_path: "/home/supla_user/.supla-device"
 
+#### Parameter `security_level`
+
+Defines if Supla server ceritficate should be validated against root CA.
+Values:
+ - 0 - Supla root CA is used for validation (default) - not implemented yet
+ - 2 - skip certificate validation - not recommended, however this is the only
+ option for now.
+Parameter is optional. Default value 0.
+
+Example:
+
+    security_level: 2
+
 ### Supla server connection
 
 Below parameters should be defined under `supla` key (as in examples below).

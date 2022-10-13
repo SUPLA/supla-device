@@ -44,7 +44,7 @@ namespace Device {
 
 class FactoryTest : public Supla::ActionHandler, public Supla::Element {
  public:
-  FactoryTest(SuplaDeviceClass *sdc, int timeoutS);
+  FactoryTest(SuplaDeviceClass *sdc, uint32_t timeoutS);
   virtual ~FactoryTest();
 
   void onInit() override;
@@ -61,7 +61,7 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   bool waitForRegisteredAndReady = true;
   bool testingMachineEnabled = true;
   SuplaDeviceClass *sdc = nullptr;
-  int timeoutS = 30;
+  uint32_t timeoutS = 30;
   uint64_t initTimestamp = 0;
   Supla::TestStage testStage = Supla::TestStage_None;
   int testStep = 0;

@@ -27,7 +27,7 @@
 namespace Supla {
 namespace Device {
 
-FactoryTest::FactoryTest(SuplaDeviceClass *sdc, int timeoutS)
+FactoryTest::FactoryTest(SuplaDeviceClass *sdc, uint32_t timeoutS)
     : sdc(sdc), timeoutS(timeoutS) {
 }
 

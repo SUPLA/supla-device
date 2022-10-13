@@ -29,6 +29,13 @@
 #include "supla/protocol/supla_srpc.h"
 
 namespace Supla {
+
+enum ActionHandlingType {
+  ActionHandlingType_RelayOnSuplaServer = 0,
+  ActionHandlingType_PublishAllDisableNone = 1,
+  ActionHandlingType_PublishAllDisableAll = 2
+};
+
 namespace Control {
 
 class ActionTrigger : public Element, public ActionHandler {
@@ -56,6 +63,7 @@ class ActionTrigger : public Element, public ActionHandler {
   void onInit() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
   void handleChannelConfig(TSD_ChannelConfig *result) override;
+  void onLoadConfig() override;
   void onLoadState() override;
   void onSaveState() override;
 
@@ -73,6 +81,8 @@ class ActionTrigger : public Element, public ActionHandler {
   uint32_t disablesLocalOperation = 0;
   uint32_t disabledCapabilities = 0;
   bool storageEnabled = false;
+  ActionHandlingType actionHandlingType =
+    ActionHandlingType_RelayOnSuplaServer;
 
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;

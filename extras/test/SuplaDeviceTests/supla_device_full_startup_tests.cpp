@@ -890,7 +890,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
-      if (strcmp(key, "security_level")) {
+      if (strcmp(key, "security_level") == 0) {
         *buf = 0;
         return true;
       }
@@ -1009,7 +1009,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
-      if (strcmp(key, "security_level")) {
+      if (strcmp(key, "security_level") == 0) {
         *buf = 0;
         return true;
       }
@@ -1128,7 +1128,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
-      if (strcmp(key, "security_level")) {
+      if (strcmp(key, "security_level") == 0) {
         *buf = 0;
         return true;
       }
@@ -1247,7 +1247,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
-      if (strcmp(key, "security_level")) {
+      if (strcmp(key, "security_level") == 0) {
         *buf = 0;
         return true;
       }

@@ -18,8 +18,11 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
+#include <supla/storage/config.h>
+#include <stdio.h>
 
 #include "action_trigger.h"
+
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
@@ -41,7 +44,8 @@ void Supla::Control::ActionTrigger::handleAction(int event, int action) {
   (void)(event);
   uint32_t actionCap = getActionTriggerCap(action);
 
-  if (actionCap & activeActionsFromServer) {
+  if (actionCap & activeActionsFromServer ||
+      actionHandlingType != ActionHandlingType_RelayOnSuplaServer) {
     channel.pushAction(actionCap);
   }
 }
@@ -146,12 +150,17 @@ void Supla::Control::ActionTrigger::onRegistered(
 }
 
 void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
+  if (actionHandlingType == ActionHandlingType_PublishAllDisableAll) {
+    activeActionsFromServer = 0xFFFFFFFF;
+  }
+
   uint32_t actionsToDisable =
     activeActionsFromServer & disablesLocalOperation;
   if (attachedButton) {
     bool makeSureThatOnClick1IsDisabled = false;
 
-    if (activeActionsFromServer) {
+    if (activeActionsFromServer ||
+        actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
       // disable on_press, on_release, on_change local actions and enable
       // on_click_1
       if (localHandlerForDisabledAt && localHandlerForEnabledAt) {
@@ -369,6 +378,41 @@ void Supla::Control::ActionTrigger::onSaveState() {
     Supla::Storage::WriteState(
         reinterpret_cast<unsigned char *>(&activeActionsFromServer),
                              sizeof(activeActionsFromServer));
+  }
+}
+void Supla::Control::ActionTrigger::onLoadConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+
+  if (cfg == nullptr) {
+    return;
+  }
+
+  int32_t value = 0;  // default value
+  char key[16] = {};
+  snprintf(key, sizeof(key), "mqtt_at_%d", getChannelNumber());
+  cfg->getInt32(key, &value);
+
+  switch (value) {
+    case 0:
+    default: {
+      // rely on configuration from Supla server
+      // In MQTT mode only actions enabled on Supla server are published on
+      // MQTT.
+      actionHandlingType = ActionHandlingType_RelayOnSuplaServer;
+      break;
+    }
+    case 1: {
+      // All events will be published to Supla server and/or MQTT.
+      // Local actions are disabled only if it is done on Supla server
+      actionHandlingType = ActionHandlingType_PublishAllDisableNone;
+      break;
+    }
+    case 2: {
+      // disable local input regardless of Supla server config
+      // All events are published
+      actionHandlingType = ActionHandlingType_PublishAllDisableAll;
+      break;
+    }
   }
 }
 

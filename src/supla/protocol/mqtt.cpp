@@ -212,6 +212,7 @@ void Supla::Protocol::Mqtt::onInit() {
 }
 
 void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
+  buttonNumber = 0;
   TDSC_ChannelState channelState = {};
   Supla::Network::Instance()->fillStateData(&channelState);
 
@@ -570,6 +571,10 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
       publishHADiscoveryHumidity(element);
       break;
     }
+    case SUPLA_CHANNELTYPE_ACTIONTRIGGER: {
+      publishHADiscoveryActionTrigger(element);
+      break;
+    }
     default:
       SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
           ch->getChannelType());
@@ -830,6 +835,146 @@ void Supla::Protocol::Mqtt::publishHADiscoveryHumidity(
   publish(topic.c_str(), payload, -1, 1, true);
 
   delete[] payload;
+}
+
+const char *Supla::Protocol::Mqtt::getActionTriggerType(uint8_t actionIdx) {
+  switch (actionIdx) {
+    case 0:
+      return "button_long_press";
+    case 1:
+      return "button_short_press";
+    case 2:
+      return "button_double_press";
+    case 3:
+      return "button_triple_press";
+    case 4:
+      return "button_quadruple_press";
+    case 5:
+      return "button_quintuple_press";
+    case 6:
+      return "button_turn_on";
+    case 7:
+      return "button_turn_off";
+    default:
+      return "undefined";
+  }
+}
+
+bool Supla::Protocol::Mqtt::isActionTriggerEnabled(
+    Supla::Channel *ch, uint8_t actionIdx) {
+  if (ch == nullptr) {
+    return false;
+  }
+  if (actionIdx > 7) {
+    return false;
+  }
+
+  auto atCaps = ch->getActionTriggerCaps();
+
+  switch (actionIdx) {
+    case 0:
+      return (atCaps & SUPLA_ACTION_CAP_HOLD);
+    case 1:
+      return (atCaps & SUPLA_ACTION_CAP_TOGGLE_x1)
+        || (atCaps & SUPLA_ACTION_CAP_SHORT_PRESS_x1);
+    case 2:
+      return (atCaps & SUPLA_ACTION_CAP_TOGGLE_x2)
+        || (atCaps & SUPLA_ACTION_CAP_SHORT_PRESS_x2);
+    case 3:
+      return (atCaps & SUPLA_ACTION_CAP_TOGGLE_x3)
+        || (atCaps & SUPLA_ACTION_CAP_SHORT_PRESS_x3);
+    case 4:
+      return (atCaps & SUPLA_ACTION_CAP_TOGGLE_x4)
+        || (atCaps & SUPLA_ACTION_CAP_SHORT_PRESS_x4);
+    case 5:
+      return (atCaps & SUPLA_ACTION_CAP_TOGGLE_x5)
+        || (atCaps & SUPLA_ACTION_CAP_SHORT_PRESS_x5);
+    case 6:
+      return (atCaps & SUPLA_ACTION_CAP_TURN_ON);
+    case 7:
+      return (atCaps & SUPLA_ACTION_CAP_TURN_OFF);
+  }
+  return false;
+}
+
+void Supla::Protocol::Mqtt::publishHADiscoveryActionTrigger(
+    Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  buttonNumber++;
+
+  for (int actionIdx = 0; actionIdx < 8; actionIdx++) {
+    char objectId[30] = {};
+    generateObjectId(objectId, element->getChannelNumber(), actionIdx);
+
+    auto topic = getHADiscoveryTopic("device_automation", objectId);
+
+    bool enabled = isActionTriggerEnabled(ch, actionIdx);
+
+    if (enabled) {
+      const char cfg[] =
+        "{"
+        "\"dev\":{"
+          "\"ids\":\"%s\","
+          "\"mf\":\"%s\","
+          "\"name\":\"%s\","
+          "\"sw\":\"%s\""
+        "},"
+        "\"automation_type\":\"trigger\","
+        "\"topic\":\"%s/channels/%i/%s\","
+        "\"type\":\"%s\","
+        "\"subtype\":\"button_%i\","
+        "\"payload\":\"%s\","
+        "\"qos\":0,"
+        "\"ret\":false"
+        "}";
+
+      char c = '\0';
+
+      size_t bufferSize = 0;
+      char *payload = {};
+      const char* atType = getActionTriggerType(actionIdx);
+
+      for (int i = 0; i < 2; i++) {
+        bufferSize =
+          snprintf(i ? payload : &c, i ? bufferSize : 1,
+              cfg,
+              hostname,
+              getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+              Supla::Channel::reg_dev.Name,
+              Supla::Channel::reg_dev.SoftVer,
+              prefix,
+              ch->getChannelNumber(),
+              atType,
+              atType,
+              buttonNumber,
+              atType
+              )
+          + 1;
+
+        if (i == 0) {
+          payload = new char[bufferSize];
+          if (payload == nullptr) {
+            return;
+          }
+        }
+      }
+
+      publish(topic.c_str(), payload, -1, 1, true);
+
+      delete[] payload;
+    } else {
+      // disabled action
+      publish(topic.c_str(), "", -1, 1, true);
+    }
+  }
 }
 
 bool Supla::Protocol::Mqtt::isUpdatePending() {

@@ -84,6 +84,9 @@ class Mqtt : public ProtocolLayer {
   void publishHADiscoveryRelay(Supla::Element *);
   void publishHADiscoveryThermometer(Supla::Element *);
   void publishHADiscoveryHumidity(Supla::Element *);
+  void publishHADiscoveryActionTrigger(Supla::Element *);
+  const char *getActionTriggerType(uint8_t actionIdx);
+  bool isActionTriggerEnabled(Supla::Channel *ch, uint8_t actionIdx);
   virtual void publishImp(const char *topic,
                           const char *payload,
                           int qos,
@@ -109,6 +112,13 @@ class Mqtt : public ProtocolLayer {
   Supla::Uptime uptime;
   bool *channelChangedFlag = nullptr;
   int channelsCount = 0;
+  // Button number is incremented on each publishHADiscoveryActionTrigger call
+  // and it is reset on publishDeviceStatus. So we publish button numbers
+  // starting from 1 and incrementing on each ActionTrigger channel found
+  // in current setup.
+  // It is important to call publishDeviceStatus first, then to call
+  // publishHADiscoveryActionTrigger for each AT channel.
+  int buttonNumber = 0;
 };
 }  // namespace Protocol
 }  // namespace Supla

@@ -64,9 +64,6 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
     cfg.cacert_pem_buf = reinterpret_cast<const unsigned char *>(rootCACert);
     int len = strlen(rootCACert);
     cfg.cacert_pem_bytes = len + 1;
-  } else {
-    SUPLA_LOG_WARNING(
-              "Connecting without certificate validation (INSECURE)");
   }
   cfg.timeout_ms = timeoutMs;
   cfg.non_block = false;

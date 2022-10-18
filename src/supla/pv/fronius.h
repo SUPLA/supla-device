@@ -31,7 +31,7 @@ class Fronius : public Supla::Sensor::OnePhaseElectricityMeter {
   ~Fronius();
   void readValuesFromDevice();
   void iterateAlways();
-  bool iterateConnected(void *srpc);
+  bool iterateConnected();
 
  protected:
   ::Supla::Client *client = nullptr;

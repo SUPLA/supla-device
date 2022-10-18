@@ -31,7 +31,7 @@ class ThermHygroPressMeter : public ThermHygroMeter {
   virtual ~ThermHygroPressMeter();
   virtual double getPressure();
   void iterateAlways();
-  bool iterateConnected(void *srpc);
+  bool iterateConnected();
   Element &disableChannelState();
   Channel *getSecondaryChannel();
 

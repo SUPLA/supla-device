@@ -39,9 +39,18 @@ class SuplaSrpc : public ProtocolLayer {
   bool verifyConfig() override;
   bool isEnabled() override;
   void disconnect() override;
-  void iterate(uint64_t _millis) override;
+  bool iterate(uint64_t _millis) override;
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
+  bool isRegisteredAndReady() override;
+
+  void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
+  void getUserLocaltime() override;
+  void sendChannelValueChanged(uint8_t channelNumber, char *value,
+      unsigned char offline, uint32_t validityTimeSec) override;
+  void sendExtendedChannelValueChanged(uint8_t channelNumber,
+    TSuplaChannelExtendedValue *value) override;
+  void getChannelConfig(uint8_t channelNumber) override;
 
   void *getSrpcPtr();
 

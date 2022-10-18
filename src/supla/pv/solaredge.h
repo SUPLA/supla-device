@@ -39,7 +39,7 @@ class SolarEdge : public Supla::Sensor::ElectricityMeter {
             Supla::Clock *clock);
   void readValuesFromDevice();
   void iterateAlways();
-  bool iterateConnected(void *srpc);
+  bool iterateConnected();
   Channel *getSecondaryChannel();
 
  protected:

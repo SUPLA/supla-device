@@ -160,7 +160,7 @@ void Fronius::iterateAlways() {
   }
 }
 
-bool Fronius::iterateConnected(void *srpc) {
+bool Fronius::iterateConnected() {
   if (!dataFetchInProgress) {
     if (lastReadTime == 0 || millis() - lastReadTime > refreshRateSec * 1000) {
       lastReadTime = millis();
@@ -199,7 +199,7 @@ bool Fronius::iterateConnected(void *srpc) {
       }
     }
   }
-  return Element::iterateConnected(srpc);
+  return Element::iterateConnected();
 }
 
 void Fronius::readValuesFromDevice() {

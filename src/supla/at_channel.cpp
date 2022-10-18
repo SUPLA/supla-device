@@ -14,23 +14,27 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <supla/protocol/protocol_layer.h>
+
 #include "at_channel.h"
-#include "supla-common/srpc.h"
 
 namespace Supla {
 
-  void AtChannel::sendUpdate(void *srpc) {
+  void AtChannel::sendUpdate() {
     if (valueChanged) {
-      TDS_ActionTrigger at = {};
-      at.ChannelNumber = getChannelNumber();
-      at.ActionTrigger = popAction();
-      srpc_ds_async_action_trigger(srpc, &at);
+      auto actionId = popAction();
+      if (actionId) {
+        for (auto proto = Supla::Protocol::ProtocolLayer::first();
+            proto != nullptr; proto = proto->next()) {
+          proto->sendActionTrigger(channelNumber, actionId);
+        }
+      }
     } else {
-      Channel::sendUpdate(srpc);
+      Channel::sendUpdate();
     }
   }
 
-  int AtChannel::popAction() {
+  uint32_t AtChannel::popAction() {
     for (int i = 0; i < 32; i++) {
       if (actionToSend & (1 << i)) {
         actionToSend ^= (1 << i);
@@ -43,12 +47,12 @@ namespace Supla {
     return 0;
   }
 
-  void AtChannel::pushAction(int action) {
+  void AtChannel::pushAction(uint32_t action) {
     actionToSend |= action;
     setUpdateReady();
   }
 
-  void AtChannel::activateAction(int action) {
+  void AtChannel::activateAction(uint32_t action) {
     setActionTriggerCaps(getActionTriggerCaps() | action);
   }
 

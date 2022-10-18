@@ -90,8 +90,11 @@ bool ProtocolLayer::isConnecting() {
   return false;
 }
 
-void ProtocolLayer::notifyChannelChange(int channel) {
-  (void)(channel);
+void ProtocolLayer::getUserLocaltime() {
+}
+
+void ProtocolLayer::getChannelConfig(uint8_t channelNumber) {
+  (void)(channelNumber);
 }
 
 }  // namespace Protocol

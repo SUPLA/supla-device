@@ -62,7 +62,10 @@ class Element {
 
   // method called on each Supla::Device iteration when Device is connected and
   // registered to Supla server
-  virtual bool iterateConnected(void *srpc);
+  // ptr parameter is left for compatibility reason with previous interface
+  // version
+  virtual bool iterateConnected(void *ptr);
+  virtual bool iterateConnected();
 
   // method called on timer interupt
   // Include all actions that have to be executed periodically regardless of

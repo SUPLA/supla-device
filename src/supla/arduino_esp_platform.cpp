@@ -102,7 +102,7 @@ class ArduinoEspClient : public Client {
       wifiClient = new WiFiClient();
     }
 
-    bool result = wifiClient->connect(host, port);
+    int result = wifiClient->connect(host, port);
     if (clientSec) {
       char buf[200];
       int lastErr = 0;

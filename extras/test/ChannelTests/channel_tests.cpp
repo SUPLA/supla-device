@@ -22,6 +22,9 @@
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <supla/correction.h>
+#include <SuplaDevice.h>
+#include <supla/protocol/supla_srpc.h>
+#include <network_client_mock.h>
 
 class ChannelTestsFixture : public ::testing::Test {
   protected:
@@ -287,7 +290,23 @@ TEST(ChannelTests, ChannelValueGetters) {
   EXPECT_EQ(channel.getValueBrightness(), bright);
 }
 
+class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
+ public:
+  SuplaSrpcStub(SuplaDeviceClass *sdc) : Supla::Protocol::SuplaSrpc(sdc) {
+  }
+
+  void setRegisteredAndReady() {
+    registered = 1;
+  }
+};
+
 TEST(ChannelTests, SendUpdateTest) {
+  SuplaDeviceClass sd;
+  SuplaSrpcStub *suplaSrpc = nullptr;
+  new NetworkClientMock;  // it will be destroyed in
+                          // Supla::Protocol::SuplaSrpc
+  suplaSrpc = new SuplaSrpcStub(&sd);
+  suplaSrpc->setRegisteredAndReady();
   Supla::Channel channel;
   ::testing::InSequence seq;
   SrpcMock srpc;
@@ -299,11 +318,12 @@ TEST(ChannelTests, SendUpdateTest) {
   EXPECT_CALL(srpc, valueChanged(nullptr, 0, ElementsAreArray(array), 0, 0));
 
   EXPECT_FALSE(channel.isUpdateReady());
-  channel.sendUpdate(nullptr);
+  channel.sendUpdate();
   channel.setNewValue(true);
   EXPECT_TRUE(channel.isUpdateReady());
-  channel.sendUpdate(nullptr);
+  channel.sendUpdate();
   EXPECT_FALSE(channel.isUpdateReady());
+  delete suplaSrpc;
 }
 
 TEST(ChannelTests, BoolChannelWithLocalActions) {

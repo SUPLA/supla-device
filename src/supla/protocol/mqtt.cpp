@@ -42,10 +42,6 @@ Supla::Protocol::Mqtt::~Mqtt() {
     prefix = nullptr;
     prefixLen = 0;
   }
-  if (channelChangedFlag) {
-    delete[] channelChangedFlag;
-    channelChangedFlag = nullptr;
-  }
 }
 
 bool Supla::Protocol::Mqtt::onLoadConfig() {
@@ -199,16 +195,7 @@ void Supla::Protocol::Mqtt::onInit() {
     SUPLA_LOG_ERROR("Mqtt: failed to generate prefix");
   }
 
-  if (channelChangedFlag) {
-    delete[] channelChangedFlag;
-    channelChangedFlag = nullptr;
-  }
-
   channelsCount = Supla::Channel::reg_dev.channel_count;
-  channelChangedFlag = new bool[channelsCount];
-  for (int i = 0; i < channelsCount; i++) {
-    channelChangedFlag[i] = false;
-  }
 }
 
 void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
@@ -324,21 +311,12 @@ void Supla::Protocol::Mqtt::subscribe(const char *topic, int qos) {
   subscribeImp(mqttTopic.c_str(), qos);
 }
 
-void Supla::Protocol::Mqtt::notifyChannelChange(int channel) {
-  if (channel >= 0 && channel < channelsCount) {
-    channelChangedFlag[channel] = true;
-  }
-}
-
-
 void Supla::Protocol::Mqtt::publishChannelState(int channel) {
   SUPLA_LOG_DEBUG("Mqtt: publish channel %d state", channel);
   if (channel < 0 || channel >= channelsCount) {
     SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
     return;
   }
-
-  channelChangedFlag[channel] = false;
 
   auto topic = MqttTopic("channels") / channel / "state";
 
@@ -978,15 +956,85 @@ void Supla::Protocol::Mqtt::publishHADiscoveryActionTrigger(
 }
 
 bool Supla::Protocol::Mqtt::isUpdatePending() {
-  if (channelChangedFlag == nullptr) {
-    return false;
+  return Supla::Element::IsAnyUpdatePending();
+}
+
+void Supla::Protocol::Mqtt::sendActionTrigger(
+    uint8_t channelNumber, uint32_t actionId) {
+  if (!isRegisteredAndReady()) {
+    return;
   }
 
-  for (int i = 0; i < channelsCount; i++) {
-    if (channelChangedFlag[i]) {
-      return true;
-    }
+  uint8_t actionIdx = 0;
+  switch (actionId) {
+    case SUPLA_ACTION_CAP_HOLD:
+      actionIdx = 0;
+      break;
+    case SUPLA_ACTION_CAP_TOGGLE_x1:
+    case SUPLA_ACTION_CAP_SHORT_PRESS_x1:
+      actionIdx = 1;
+      break;
+    case SUPLA_ACTION_CAP_TOGGLE_x2:
+    case SUPLA_ACTION_CAP_SHORT_PRESS_x2:
+      actionIdx = 2;
+      break;
+    case SUPLA_ACTION_CAP_TOGGLE_x3:
+    case SUPLA_ACTION_CAP_SHORT_PRESS_x3:
+      actionIdx = 3;
+      break;
+    case SUPLA_ACTION_CAP_TOGGLE_x4:
+    case SUPLA_ACTION_CAP_SHORT_PRESS_x4:
+      actionIdx = 4;
+      break;
+    case SUPLA_ACTION_CAP_TOGGLE_x5:
+    case SUPLA_ACTION_CAP_SHORT_PRESS_x5:
+      actionIdx = 5;
+      break;
+    case SUPLA_ACTION_CAP_TURN_ON:
+      actionIdx = 6;
+      break;
+    case SUPLA_ACTION_CAP_TURN_OFF:
+      actionIdx = 7;
+      break;
+
+    default:
+      SUPLA_LOG_WARNING("Mqtt: invalid actionId %d", actionId);
+      actionIdx = 8;
+      break;
+  }
+  const char *actionString = getActionTriggerType(actionIdx);
+  auto topic = MqttTopic("channels") / channelNumber / actionString;
+  publish(topic.c_str(), actionString, -1, 0);
+}
+
+bool Supla::Protocol::Mqtt::isRegisteredAndReady() {
+  return connected;
+}
+
+void Supla::Protocol::Mqtt::sendChannelValueChanged(
+    uint8_t channelNumber,
+    char *value,
+    unsigned char offline,
+    uint32_t validityTimeSec) {
+  (void)(value);
+  (void)(offline);
+  (void)(validityTimeSec);
+  if (!isRegisteredAndReady()) {
+    return;
   }
 
-  return false;
+  publishChannelState(channelNumber);
+}
+
+// TODO(klew): implement for EM
+void Supla::Protocol::Mqtt::sendExtendedChannelValueChanged(
+    uint8_t channelNumber,
+    TSuplaChannelExtendedValue *value) {
+  (void)(channelNumber);
+  (void)(value);
+  if (!isRegisteredAndReady()) {
+    return;
+  }
+
+  // send value
 }

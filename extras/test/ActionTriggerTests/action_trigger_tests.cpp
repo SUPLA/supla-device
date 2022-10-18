@@ -18,6 +18,7 @@
 #include <gmock/gmock.h>
 #include <supla/control/action_trigger.h>
 #include <supla/control/button.h>
+#include <network_client_mock.h>
 #include <srpc_mock.h>
 #include <arduino_mock.h>
 #include <supla/channel.h>
@@ -26,6 +27,8 @@
 #include <supla/storage/storage.h>
 #include <SuplaDevice.h>
 #include <config_mock.h>
+#include <mqtt_mock.h>
+#include "supla/protocol/supla_srpc.h"
 
 using testing::_;
 using ::testing::SetArgPointee;
@@ -44,14 +47,31 @@ class StorageMock: public Supla::Storage {
 
 };
 
+class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
+ public:
+  SuplaSrpcStub(SuplaDeviceClass *sdc) : Supla::Protocol::SuplaSrpc(sdc) {
+  }
+
+  void setRegisteredAndReady() {
+    registered = 1;
+  }
+};
 
 class ActionTriggerTests : public ::testing::Test {
   protected:
+    SuplaDeviceClass sd;
+    SuplaSrpcStub *suplaSrpc = nullptr;
+
     virtual void SetUp() {
+      new NetworkClientMock;  // it will be destroyed in
+                              // Supla::Protocol::SuplaSrpc
+      suplaSrpc = new SuplaSrpcStub(&sd);
+      suplaSrpc->setRegisteredAndReady();
       Supla::Channel::lastCommunicationTimeMs = 0;
       memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
     }
     virtual void TearDown() {
+      delete suplaSrpc;
       Supla::Channel::lastCommunicationTimeMs = 0;
       memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
     }
@@ -79,8 +99,9 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   Supla::Control::ActionTrigger at;
   ActionHandlerMock ah;
 
+
   at.attach(b1);
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   b1.addAction(Supla::TURN_ON, ah, Supla::ON_CLICK_1);
   b1.addAction(Supla::TURN_ON, ah, Supla::ON_CLICK_3);
@@ -101,7 +122,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   at.onInit();
@@ -127,7 +148,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -164,7 +185,7 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
   Supla::Control::VirtualRelay relay1(1);
 
   at.attach(b1);
-  at.iterateConnected(0);
+  at.iterateConnected();
   at.setRelatedChannel(ch1);
 
   b1.addAction(Supla::TURN_ON, relay1, Supla::ON_CLICK_1);
@@ -181,7 +202,7 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   at.onInit();
@@ -208,7 +229,7 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -240,22 +261,22 @@ TEST_F(ActionTriggerTests, SendActionOnce) {
 
   at2.handleChannelConfig(&result);
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TURN_ON));
   EXPECT_CALL(srpc, actionTrigger(1, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
 
   at.handleAction(0, Supla::SEND_AT_TURN_ON);
 
-  at.iterateConnected(0);
-  at.iterateConnected(0);
-  at.iterateConnected(0);
+  at.iterateConnected();
+  at.iterateConnected();
+  at.iterateConnected();
 
-  at2.iterateConnected(0);
+  at2.iterateConnected();
   at2.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x1);
 
-  at2.iterateConnected(0);
-  at2.iterateConnected(0);
+  at2.iterateConnected();
+  at2.iterateConnected();
 }
 
 TEST_F(ActionTriggerTests, SendFewActions) {
@@ -270,7 +291,7 @@ TEST_F(ActionTriggerTests, SendFewActions) {
   config.ActiveActions = SUPLA_ACTION_CAP_TURN_ON;
   memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
 
-  at.iterateConnected(0);
+  at.iterateConnected();
   at.handleChannelConfig(&result);
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TURN_ON));
@@ -281,9 +302,9 @@ TEST_F(ActionTriggerTests, SendFewActions) {
   // not activated action - should be ignored
   at.handleAction(0, Supla::SEND_AT_SHORT_PRESS_x2);
 
-  at.iterateConnected(0);
-  at.iterateConnected(0);
-  at.iterateConnected(0);
+  at.iterateConnected();
+  at.iterateConnected();
+  at.iterateConnected();
 }
 
 TEST_F(ActionTriggerTests, ActionsShouldAddCaps) {
@@ -357,7 +378,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
@@ -378,7 +399,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -407,7 +428,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -434,7 +455,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables some actions
@@ -450,7 +471,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables all actions
@@ -465,7 +486,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButton) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 }
 
@@ -492,7 +513,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
@@ -513,7 +534,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -542,7 +563,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -569,7 +590,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables some actions
@@ -585,7 +606,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables all actions
@@ -600,7 +621,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 }
 
@@ -629,7 +650,7 @@ TEST_F(ActionTriggerTests,
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
@@ -652,7 +673,7 @@ TEST_F(ActionTriggerTests,
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -680,7 +701,7 @@ TEST_F(ActionTriggerTests,
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -707,7 +728,7 @@ TEST_F(ActionTriggerTests,
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables some actions
@@ -724,7 +745,7 @@ TEST_F(ActionTriggerTests,
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables all actions
@@ -740,7 +761,7 @@ TEST_F(ActionTriggerTests,
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 }
 
@@ -767,7 +788,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TOGGLE_x1));
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TOGGLE_x5));
@@ -785,7 +806,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -812,7 +833,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -837,7 +858,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables some actions
@@ -852,7 +873,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables all actions
@@ -867,7 +888,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 }
 
@@ -894,7 +915,7 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5));
@@ -914,7 +935,7 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -944,7 +965,7 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -1002,7 +1023,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5));
 
@@ -1021,7 +1042,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -1051,7 +1072,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -1099,7 +1120,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   EXPECT_TRUE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
@@ -1120,7 +1141,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -1149,7 +1170,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   b1.runAction(Supla::ON_CLICK_5);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -1176,7 +1197,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables some actions
@@ -1192,7 +1213,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   // another config from server which disables all actions
@@ -1207,7 +1228,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   b1.runAction(Supla::ON_CLICK_1);
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 }
 
@@ -1267,7 +1288,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5)).Times(2);
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1)).Times(2);
@@ -1288,7 +1309,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   b1.runAction(Supla::ON_CLICK_5);  // published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -1319,7 +1340,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   b1.runAction(Supla::ON_CLICK_5);  // published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TActionTriggerProperties *propInRegister =
@@ -1393,7 +1414,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5)).Times(3);
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x3)).Times(1);
@@ -1416,7 +1437,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   b1.runAction(Supla::ON_CLICK_5);  // published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected(nullptr);
   }
 
   TSD_ChannelConfig result = {};
@@ -1448,7 +1469,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   b1.runAction(Supla::ON_CLICK_4);  // published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   memset(&result, 0, sizeof(result));
@@ -1475,7 +1496,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   b1.runAction(Supla::ON_CLICK_6);  // not published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
   ////
 
@@ -1548,7 +1569,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
 
-  at.iterateConnected(0);
+  at.iterateConnected();
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x4)).Times(1);
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5)).Times(2);
@@ -1570,7 +1591,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   b1.runAction(Supla::ON_CLICK_5);  // not published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -1600,7 +1621,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   b1.runAction(Supla::ON_CLICK_6);  // not published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
   }
 
   memset(&result, 0, sizeof(result));
@@ -1627,7 +1648,109 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   b1.runAction(Supla::ON_CLICK_6);  // not published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(0);
+    at.iterateConnected();
+  }
+}
+
+TEST_F(ActionTriggerTests, MqttSendAtTest) {
+  SrpcMock srpc;
+  MqttMock mqtt(&sd);
+  TimeInterfaceStub time;
+  Supla::Control::Button b1(10);
+  Supla::Control::ActionTrigger at;
+  ActionHandlerMock ah;
+  mqtt.onInit();
+  mqtt.setRegisteredAndReady();
+
+
+  at.attach(b1);
+  at.iterateConnected();
+
+  b1.addAction(Supla::TURN_ON, ah, Supla::ON_CLICK_1);
+  b1.addAction(Supla::TURN_ON, ah, Supla::ON_CLICK_3);
+  b1.addAction(Supla::TURN_ON, ah, Supla::ON_CLICK_5);
+  b1.addAction(Supla::TURN_ON, ah, Supla::ON_HOLD);
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x1));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_HOLD));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_SHORT_PRESS_x5));
+
+  EXPECT_CALL(mqtt, publishTest(
+        "supla/devices/supla-device/channels/0/button_short_press",
+        "button_short_press",
+        0,
+        false));
+
+  EXPECT_CALL(mqtt, publishTest(
+        "supla/devices/supla-device/channels/0/button_long_press",
+        "button_long_press",
+        0,
+        false));
+
+  EXPECT_CALL(mqtt, publishTest(
+        "supla/devices/supla-device/channels/0/button_quintuple_press",
+        "button_quintuple_press",
+        0,
+        false));
+
+  EXPECT_CALL(ah, handleAction(_, 0)).Times(4);
+
+  EXPECT_FALSE(b1.isBistable());
+  b1.runAction(Supla::ON_PRESS);
+  b1.runAction(Supla::ON_CLICK_1);
+  b1.runAction(Supla::ON_HOLD);
+  b1.runAction(Supla::ON_CLICK_6);
+  b1.runAction(Supla::ON_CLICK_5);
+
+  for (int i = 0; i < 10; i++) {
+    at.iterateConnected();
   }
 
+  at.onInit();
+
+  TSD_ChannelConfig result = {};
+  result.ConfigType = 0;
+  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
+  TSD_ChannelConfig_ActionTrigger config = {};
+  config.ActiveActions = SUPLA_ACTION_CAP_HOLD
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x1
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x2
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x3
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x4
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
+
+  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+
+  at.handleChannelConfig(&result);
+  b1.runAction(Supla::ON_PRESS);
+  b1.runAction(Supla::ON_CLICK_1);
+  b1.runAction(Supla::ON_HOLD);
+  b1.runAction(Supla::ON_CLICK_6);
+  b1.runAction(Supla::ON_CLICK_5);
+
+  for (int i = 0; i < 10; i++) {
+    at.iterateConnected();
+  }
+
+  TActionTriggerProperties *propInRegister =
+    reinterpret_cast<TActionTriggerProperties *>
+    (Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+
+  EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
+  EXPECT_EQ(propInRegister->disablesLocalOperation,
+      SUPLA_ACTION_CAP_HOLD
+      | SUPLA_ACTION_CAP_SHORT_PRESS_x1
+      | SUPLA_ACTION_CAP_SHORT_PRESS_x3
+      | SUPLA_ACTION_CAP_SHORT_PRESS_x5
+      );
+
+  // another config from server which disables some actions
+  config.ActiveActions = SUPLA_ACTION_CAP_HOLD
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x2
+    | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
+  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  at.handleChannelConfig(&result);
+
+  // it should be executed on ah mock
+  b1.runAction(Supla::ON_CLICK_1);
 }

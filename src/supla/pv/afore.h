@@ -32,7 +32,7 @@ class Afore : public Supla::Sensor::OnePhaseElectricityMeter {
   Afore(IPAddress ip, int port, const char *loginAndPassword);
   void readValuesFromDevice();
   void iterateAlways();
-  bool iterateConnected(void *srpc);
+  bool iterateConnected();
 
  protected:
   ::Supla::Client *client = nullptr;

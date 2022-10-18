@@ -252,8 +252,8 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
 //  EXPECT_CALL(net, ping(_)).WillRepeatedly(Return(true));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected()).Times(30).WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected()).Times(30).WillRepeatedly(Return(true));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -340,10 +340,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -419,10 +419,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -494,10 +494,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -573,10 +573,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -652,10 +652,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -731,10 +731,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -810,10 +810,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -929,10 +929,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1048,10 +1048,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1167,10 +1167,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1286,10 +1286,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1413,10 +1413,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1534,10 +1534,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1654,10 +1654,10 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(AtLeast(1))
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
         .WillOnce(Return(false))
         .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
@@ -1712,8 +1712,8 @@ TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
 //  EXPECT_CALL(net, ping(_)).WillRepeatedly(Return(true));
-  EXPECT_CALL(el1, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected(_)).Times(30).WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected()).Times(30).WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected()).Times(30).WillRepeatedly(Return(true));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {

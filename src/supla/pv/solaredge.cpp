@@ -299,7 +299,7 @@ void SolarEdge::iterateAlways() {
   }
 }
 
-bool SolarEdge::iterateConnected(void *srpc) {
+bool SolarEdge::iterateConnected() {
   if (clock && clock->isReady()) {
     if (!dataFetchInProgress) {
       bytesCounter = 0;
@@ -376,7 +376,7 @@ bool SolarEdge::iterateConnected(void *srpc) {
       }
     }
   }
-  return Element::iterateConnected(srpc);
+  return Element::iterateConnected();
 }
 
 void SolarEdge::readValuesFromDevice() {

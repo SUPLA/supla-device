@@ -20,6 +20,7 @@
 #define SRC_SUPLA_PROTOCOL_PROTOCOL_LAYER_H_
 
 #include <stdint.h>
+#include <supla-common/proto.h>
 
 class SuplaDeviceClass;
 
@@ -42,13 +43,23 @@ class ProtocolLayer {
   virtual bool verifyConfig() = 0;
   virtual bool isEnabled() = 0;
   virtual void disconnect() = 0;
-  virtual void iterate(uint64_t _millis) = 0;
+  // Return value indicates if specific protocol is ready to handle data
+  // from other elements and if call to Element::iterateConnected should be
+  // done.
+  virtual bool iterate(uint64_t _millis) = 0;
   virtual bool isNetworkRestartRequested() = 0;
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();
   virtual bool isConnecting();
-  virtual void notifyChannelChange(int channel);
   virtual bool isUpdatePending();
+  virtual bool isRegisteredAndReady() = 0;
+  virtual void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) = 0;
+  virtual void getUserLocaltime();
+  virtual void sendChannelValueChanged(uint8_t channelNumber, char *value,
+      unsigned char offline, uint32_t validityTimeSec) = 0;
+  virtual void sendExtendedChannelValueChanged(uint8_t channelNumber,
+    TSuplaChannelExtendedValue *value) = 0;
+  virtual void getChannelConfig(uint8_t channelNumber);
 
  protected:
   static ProtocolLayer *firstPtr;

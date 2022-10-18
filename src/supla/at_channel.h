@@ -23,15 +23,15 @@ namespace Supla {
 
 class AtChannel : public Channel {
  public:
-  void sendUpdate(void *srpc) override;
-  void pushAction(int action);
-  void activateAction(int action);
-  int popAction();
+  void sendUpdate() override;
+  void pushAction(uint32_t action);
+  void activateAction(uint32_t action);
+  uint32_t popAction();
   void setRelatedChannel(uint8_t channelNumber);
   void setDisablesLocalOperation(uint32_t actions);
 
  protected:
-  int actionToSend = 0;
+  uint32_t actionToSend = 0;
 };
 
 };  // namespace Supla

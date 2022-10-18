@@ -36,7 +36,7 @@ class EspMqtt : public Mqtt {
   void onInit() override;
   //  bool onLoadConfig() override;
   void disconnect() override;
-  void iterate(uint64_t _millis) override;
+  bool iterate(uint64_t _millis) override;
   // bool isNetworkRestartRequested() override;
   // uint32_t getConnectionFailTime() override;
 
@@ -52,7 +52,6 @@ class EspMqtt : public Mqtt {
                           bool retain) override;
   void subscribeImp(const char *topic, int qos) override;
   bool started = false;
-  bool connected = false;
   bool enterRegisteredAndReady = false;
   esp_mqtt_client_handle_t client = {};
   uint32_t lastStatusUpdateSec = 0;

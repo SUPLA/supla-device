@@ -397,14 +397,27 @@ void SuplaDeviceClass::iterate(void) {
     case Supla::DEVICE_MODE_TEST:
     default: {
       // When network is ready iterate over protocol layers
+      bool iterateConnected = false;
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
            proto = proto->next()) {
-        proto->iterate(_millis);
+        if (proto->iterate(_millis)) {
+          iterateConnected = true;
+        }
         if (proto->isNetworkRestartRequested()) {
           requestNetworkLayerRestart = true;
         }
         delay(0);
+      }
+      if (iterateConnected) {
+        // Iterate all elements
+        for (auto element = Supla::Element::begin(); element != nullptr;
+            element = element->next()) {
+          if (!element->iterateConnected()) {
+            break;
+          }
+          delay(0);
+        }
       }
 
       if (deviceMode == Supla::DEVICE_MODE_TEST) {

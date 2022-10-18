@@ -36,7 +36,7 @@ class Clock : public Element {
   virtual int getSec();
 
   void onTimer();
-  bool iterateConnected(void *srpc);
+  bool iterateConnected();
 
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 

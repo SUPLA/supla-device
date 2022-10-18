@@ -70,8 +70,14 @@ class Mqtt : public ProtocolLayer {
   void publishChannelState(int channel);
   void subscribeChannel(int channel);
   void subscribe(const char *topic, int qos = -1);
-  void notifyChannelChange(int channel) override;
   bool isUpdatePending() override;
+  bool isRegisteredAndReady() override;
+
+  void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
+  void sendChannelValueChanged(uint8_t channelNumber, char *value,
+      unsigned char offline, uint32_t validityTimeSec) override;
+  void sendExtendedChannelValueChanged(uint8_t channelNumber,
+    TSuplaChannelExtendedValue *value) override;
 
   bool processData(const char *topic, const char *payload);
 
@@ -106,11 +112,11 @@ class Mqtt : public ProtocolLayer {
   bool retainCfg = false;
   bool enabled = true;
   bool connecting = false;
+  bool connected = false;
   bool error = false;
   char *prefix = nullptr;
   int prefixLen = 0;
   Supla::Uptime uptime;
-  bool *channelChangedFlag = nullptr;
   int channelsCount = 0;
   // Button number is incremented on each publishHADiscoveryActionTrigger call
   // and it is reset on publishDeviceStatus. So we publish button numbers

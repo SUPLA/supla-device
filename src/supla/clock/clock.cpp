@@ -16,7 +16,6 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/srpc.h>
 #include <supla/log_wrapper.h>
 
 #include "../time.h"
@@ -141,10 +140,13 @@ void Clock::onTimer() {
   }
 }
 
-bool Clock::iterateConnected(void *srpc) {
+bool Clock::iterateConnected() {
   if (lastServerUpdate == 0 ||
       millis() - lastServerUpdate > 5 * 60000) {  // update every 5 min
-    srpc_dcs_async_get_user_localtime(srpc);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->getUserLocaltime();
+    }
     lastServerUpdate = millis();
     return false;
   }

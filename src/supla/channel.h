@@ -72,7 +72,7 @@ class Channel : public LocalAction {
 
   void setValidityTimeSec(unsigned _supla_int_t);
   void clearUpdateReady();
-  virtual void sendUpdate(void *srpc);
+  virtual void sendUpdate();
   virtual TSuplaChannelExtendedValue *getExtValue();
   void setCorrection(double correction, bool forSecondaryValue = false);
   bool isSleepingEnabled();

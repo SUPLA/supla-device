@@ -282,28 +282,34 @@ void Channel::clearUpdateReady() {
   valueChanged = false;
 }
 
-void Channel::sendUpdate(void *srpc) {
+void Channel::sendUpdate() {
   if (valueChanged) {
     clearUpdateReady();
-    srpc_ds_async_channel_value_changed_c(
-        srpc, channelNumber, reg_dev.channels[channelNumber].value,
-        0, validityTimeSec);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->sendChannelValueChanged(channelNumber,
+          reg_dev.channels[channelNumber].value,
+          0,
+          validityTimeSec);
+    }
 
     // returns null for non-extended channels
     TSuplaChannelExtendedValue *extValue = getExtValue();
     if (extValue) {
-      srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber,
-          extValue);
+      for (auto proto = Supla::Protocol::ProtocolLayer::first();
+          proto != nullptr; proto = proto->next()) {
+        proto->sendExtendedChannelValueChanged(channelNumber, extValue);
+      }
     }
   }
 
   // send channel config request if needed
   if (channelConfig) {
     channelConfig = false;
-    channelConfig = false;
-    TDS_GetChannelConfigRequest request = {};
-    request.ChannelNumber = getChannelNumber();
-    srpc_ds_async_get_channel_config(srpc, &request);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->getChannelConfig(channelNumber);
+    }
   }
 }
 
@@ -313,10 +319,6 @@ TSuplaChannelExtendedValue *Channel::getExtValue() {
 
 void Channel::setUpdateReady() {
   valueChanged = true;
-  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
-       proto = proto->next()) {
-    proto->notifyChannelChange(channelNumber);
-  }
 }
 
 bool Channel::isUpdateReady() {

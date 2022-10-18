@@ -253,10 +253,10 @@ void Supla::Protocol::EspMqtt::disconnect() {
   enterRegisteredAndReady = false;
 }
 
-void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
+bool Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
   (void)(_millis);
   if (!isEnabled()) {
-    return;
+    return false;
   }
 
   uptime.iterate(_millis);
@@ -269,7 +269,7 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
 
     // below code is executed after mqtt event loop from ...
     if (!connected) {
-      return;
+      return false;
     }
 
 
@@ -291,19 +291,14 @@ void Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
       publishDeviceStatus(false);
     }
 
-    // send channel state updates
-    for (int i = 0; i < channelsCount; i++) {
-      if (channelChangedFlag[i]) {
-        publishChannelState(i);
-      }
-    }
-
-
+    // send channel state updates are done in iterateConnected
+    return true;
   } else {
     started = true;
     enterRegisteredAndReady = false;
     esp_mqtt_client_start(client);
   }
+  return false;
 }
 
 void Supla::Protocol::EspMqtt::setConnecting() {

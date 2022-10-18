@@ -16,33 +16,35 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_HUMIDITY_PARSED_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_HUMIDITY_PARSED_H_
+#include <supla/log_wrapper.h>
 
-#include <supla/parser/parser.h>
-#include <supla/sensor/hygro_meter.h>
+#include "wind_parsed.h"
 
-#include <string>
+Supla::Sensor::WindParsed::WindParsed(
+    Supla::Parser::Parser *parser)
+    : SensorParsed(parser) {
+}
 
-#include "sensor_parsed.h"
+void Supla::Sensor::WindParsed::onInit() {
+  channel.setNewValue(getValue());
+}
 
-namespace Supla {
-namespace Parser {
-const char Humidity[] = "humidity";
-};
+double Supla::Sensor::WindParsed::getValue() {
+  double value = WIND_NOT_AVAILABLE;
 
-namespace Sensor {
+  if (isParameterConfigured(Supla::Parser::Wind)) {
+    if (refreshParserSource()) {
+      value = getParameterValue(Supla::Parser::Wind);
+    }
+    if (!parser->isValid()) {
+      if (!isDataErrorLogged) {
+        isDataErrorLogged = true;
+        SUPLA_LOG_WARNING("WindParsed: source data error");
+      }
+      return WIND_NOT_AVAILABLE;
+    }
+    isDataErrorLogged = false;
+  }
+  return value;
+}
 
-class HumidityParsed : public HygroMeter, public SensorParsed {
- public:
-  explicit HumidityParsed(Supla::Parser::Parser *);
-  double getHumi() override;
-  void onInit() override;
-
- protected:
-  bool isDataErrorLogged = false;
-};
-};  // namespace Sensor
-};  // namespace Supla
-
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_SENSOR_HUMIDITY_PARSED_H_

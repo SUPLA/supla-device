@@ -19,9 +19,10 @@
 #ifndef SRC_SUPLA_SENSOR_WIND_H_
 #define SRC_SUPLA_SENSOR_WIND_H_
 
-#include "supla/channel_element.h"
+#include <supla/channel_element.h>
+#include <supla/time.h>
 
-#define WIND_NOT_AVAILABLE -1
+#define WIND_NOT_AVAILABLE -1.0
 
 namespace Supla {
 namespace Sensor {

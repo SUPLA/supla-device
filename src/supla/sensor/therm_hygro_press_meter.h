@@ -21,7 +21,7 @@
 
 #include "therm_hygro_meter.h"
 
-#define PRESSURE_NOT_AVAILABLE -1
+#define PRESSURE_NOT_AVAILABLE -1.0
 
 namespace Supla {
 namespace Sensor {

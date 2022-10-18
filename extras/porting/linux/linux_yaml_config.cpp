@@ -28,6 +28,10 @@
 #include <supla/sensor/electricity_meter_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/thermometer_parsed.h>
+#include <supla/sensor/humidity_parsed.h>
+#include <supla/sensor/pressure_parsed.h>
+#include <supla/sensor/wind_parsed.h>
+#include <supla/sensor/rain_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
 #include <supla/source/source.h>
@@ -42,7 +46,6 @@
 #include <string>
 
 #include "linux_yaml_config.h"
-#include "supla/sensor/humidity_parsed.h"
 
 namespace Supla {
 const char Multiplier[] = "multiplier";
@@ -410,6 +413,26 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addHumidityParsed(ch, channelNumber, parser);
+    } else if (type == "PressureParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addPressureParsed(ch, channelNumber, parser);
+    }
+    if (type == "WindParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addWindParsed(ch, channelNumber, parser);
+    }
+    if (type == "RainParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addRainParsed(ch, channelNumber, parser);
     } else {
       SUPLA_LOG_ERROR(
                 "Channel[%d] config: unknown type \"%s\"",
@@ -835,6 +858,93 @@ bool Supla::LinuxYamlConfig::addHumidityParsed(
     paramCount++;
     double multiplier = ch[Supla::Multiplier].as<double>();
     humi->setMultiplier(Supla::Parser::Humidity, multiplier);
+  }
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addPressureParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding PressureParsed", channelNumber);
+  auto pressure = new Supla::Sensor::PressureParsed(parser);
+  if (ch[Supla::Parser::Pressure]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Pressure].as<int>();
+      pressure->setMapping(Supla::Parser::Pressure, index);
+    } else {
+      std::string key = ch[Supla::Parser::Pressure].as<std::string>();
+      pressure->setMapping(Supla::Parser::Pressure, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing \"%s\" parameter",
+              channelNumber,
+              Supla::Parser::Pressure);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    pressure->setMultiplier(Supla::Parser::Pressure, multiplier);
+  }
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addWindParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding WindParsed", channelNumber);
+  auto wind = new Supla::Sensor::WindParsed(parser);
+  if (ch[Supla::Parser::Wind]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Wind].as<int>();
+      wind->setMapping(Supla::Parser::Wind, index);
+    } else {
+      std::string key = ch[Supla::Parser::Wind].as<std::string>();
+      wind->setMapping(Supla::Parser::Wind, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing \"%s\" parameter",
+              channelNumber,
+              Supla::Parser::Wind);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    wind->setMultiplier(Supla::Parser::Wind, multiplier);
+  }
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addRainParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding RainParsed", channelNumber);
+  auto rain = new Supla::Sensor::RainParsed(parser);
+  if (ch[Supla::Parser::Rain]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Rain].as<int>();
+      rain->setMapping(Supla::Parser::Rain, index);
+    } else {
+      std::string key = ch[Supla::Parser::Rain].as<std::string>();
+      rain->setMapping(Supla::Parser::Rain, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing \"%s\" parameter",
+              channelNumber,
+              Supla::Parser::Rain);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    rain->setMultiplier(Supla::Parser::Rain, multiplier);
   }
 
   return true;

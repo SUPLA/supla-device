@@ -44,6 +44,9 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/sensor/electricity_meter_parsed.cpp
   supla/sensor/binary_parsed.cpp
   supla/sensor/humidity_parsed.cpp
+  supla/sensor/pressure_parsed.cpp
+  supla/sensor/rain_parsed.cpp
+  supla/sensor/wind_parsed.cpp
 
   ../../../src/supla/pv/fronius.cpp
   ../../../src/supla/pv/afore.cpp

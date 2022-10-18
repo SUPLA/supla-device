@@ -16,11 +16,11 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_HUMIDITY_PARSED_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_HUMIDITY_PARSED_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_RAIN_PARSED_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_RAIN_PARSED_H_
 
 #include <supla/parser/parser.h>
-#include <supla/sensor/hygro_meter.h>
+#include <supla/sensor/rain.h>
 
 #include <string>
 
@@ -28,15 +28,15 @@
 
 namespace Supla {
 namespace Parser {
-const char Humidity[] = "humidity";
+const char Rain[] = "rain";
 };
 
 namespace Sensor {
 
-class HumidityParsed : public HygroMeter, public SensorParsed {
+class RainParsed : public Rain, public SensorParsed {
  public:
-  explicit HumidityParsed(Supla::Parser::Parser *);
-  double getHumi() override;
+  explicit RainParsed(Supla::Parser::Parser *);
+  double getValue() override;
   void onInit() override;
 
  protected:
@@ -45,4 +45,4 @@ class HumidityParsed : public HygroMeter, public SensorParsed {
 };  // namespace Sensor
 };  // namespace Supla
 
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_SENSOR_HUMIDITY_PARSED_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_SENSOR_RAIN_PARSED_H_

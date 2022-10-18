@@ -19,9 +19,10 @@
 #ifndef SRC_SUPLA_SENSOR_RAIN_H_
 #define SRC_SUPLA_SENSOR_RAIN_H_
 
-#include "supla/channel_element.h"
+#include <supla/channel_element.h>
+#include <supla/time.h>
 
-#define RAIN_NOT_AVAILABLE -1
+#define RAIN_NOT_AVAILABLE -1.0
 
 namespace Supla {
 namespace Sensor {

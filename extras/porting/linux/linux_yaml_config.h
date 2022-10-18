@@ -153,6 +153,15 @@ class LinuxYamlConfig : public Config {
   bool addHumidityParsed(const YAML::Node& ch,
                             int channelNumber,
                             Supla::Parser::Parser* parser);
+  bool addPressureParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser);
+  bool addRainParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser);
+  bool addWindParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser);
   void loadGuidAuthFromPath(const std::string& path);
   bool saveGuidAuth(const std::string& path);
 

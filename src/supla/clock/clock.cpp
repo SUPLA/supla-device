@@ -18,6 +18,10 @@
 
 #include <supla/log_wrapper.h>
 
+#ifdef ARDUINO_ARCH_ESP8266
+#include <sys/time.h>
+#endif
+
 #include "../time.h"
 #include "clock.h"
 

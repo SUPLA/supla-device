@@ -1,5 +1,11 @@
 # CHANGELOG.md
 
+## 22.10.04 (2022-10-18)
+
+  - Add: ActionTrigger support for publishing Home Assistant MQTT auto discovery
+  - Fix: THW-01: Fixed random hang during encrypted connection establishment on private Supla servers.
+  - Fix: Linux reading of uint8_t from yaml config should use int conversion instead of char (ASCII value)
+
 ## 22.10.03 (2022-10-12)
 
   - Change: Linux example extended with security_level setting

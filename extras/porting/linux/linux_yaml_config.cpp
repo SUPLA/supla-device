@@ -171,7 +171,7 @@ bool Supla::LinuxYamlConfig::getInt8(const char* key, int8_t* result) {
 bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
   try {
     if (config[key]) {
-      *result = config[key].as<uint8_t>();
+      *result = static_cast<uint8_t>(config[key].as<unsigned int>());
       return true;
     }
   } catch (const YAML::Exception& ex) {

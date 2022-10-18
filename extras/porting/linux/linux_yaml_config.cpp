@@ -42,6 +42,7 @@
 #include <string>
 
 #include "linux_yaml_config.h"
+#include "supla/sensor/humidity_parsed.h"
 
 namespace Supla {
 const char Multiplier[] = "multiplier";
@@ -377,37 +378,38 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
     if (type == "VirtualRelay") {
       return addVirtualRelay(ch, channelNumber);
-    }
-    if (type == "Fronius") {
+    } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
-    }
-    if (type == "ThermometerParsed") {
+    } else if (type == "ThermometerParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addThermometerParsed(ch, channelNumber, parser);
-    }
-    if (type == "ImpulseCounterParsed") {
+    } else if (type == "ImpulseCounterParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addImpulseCounterParsed(ch, channelNumber, parser);
-    }
-    if (type == "ElectricityMeterParsed") {
+    } else if (type == "ElectricityMeterParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addElectricityMeterParsed(ch, channelNumber, parser);
-    }
-    if (type == "BinaryParsed") {
+    } else if (type == "BinaryParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addBinaryParsed(ch, channelNumber, parser);
+    } else if (type == "HumidityParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addHumidityParsed(ch, channelNumber, parser);
     } else {
       SUPLA_LOG_ERROR(
                 "Channel[%d] config: unknown type \"%s\"",
@@ -807,5 +809,34 @@ bool Supla::LinuxYamlConfig::saveGuidAuth(const std::string& path) {
 
 bool Supla::LinuxYamlConfig::isConfigModeSupported() {
   return false;
+}
+
+bool Supla::LinuxYamlConfig::addHumidityParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding HumidityParsed", channelNumber);
+  auto humi = new Supla::Sensor::HumidityParsed(parser);
+  if (ch[Supla::Parser::Humidity]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Humidity].as<int>();
+      humi->setMapping(Supla::Parser::Humidity, index);
+    } else {
+      std::string key = ch[Supla::Parser::Humidity].as<std::string>();
+      humi->setMapping(Supla::Parser::Humidity, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing \"%s\" parameter",
+              channelNumber,
+              Supla::Parser::Humidity);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    humi->setMultiplier(Supla::Parser::Humidity, multiplier);
+  }
+
+  return true;
 }
 

@@ -150,6 +150,9 @@ class LinuxYamlConfig : public Config {
   bool addBinaryParsed(const YAML::Node& ch,
                        int channelNumber,
                        Supla::Parser::Parser* parser);
+  bool addHumidityParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser);
   void loadGuidAuthFromPath(const std::string& path);
   bool saveGuidAuth(const std::string& path);
 

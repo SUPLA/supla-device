@@ -316,6 +316,13 @@ bool Storage::init() {
   return true;
 }
 
+void Storage::deleteAll() {
+  char emptyTag[5] = {};
+  writeStorage(
+      storageStartingOffset, (unsigned char *)&emptyTag, sizeof(emptyTag));
+  commit();
+}
+
 int Storage::updateStorage(unsigned int offset,
                            const unsigned char *buf,
                            int size) {

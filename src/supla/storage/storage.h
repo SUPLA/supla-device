@@ -60,6 +60,8 @@ class Storage {
 
   virtual void commit() = 0;
 
+  virtual void deleteAll();
+
  protected:
   virtual int readStorage(unsigned int, unsigned char *, int, bool = true) = 0;
   virtual int writeStorage(unsigned int, const unsigned char *, int) = 0;

@@ -922,7 +922,7 @@ void SuplaDeviceClass::handleAction(int event, int action) {
     case Supla::LEAVE_CONFIG_MODE_AND_RESET: {
       if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
         auto cfg = Supla::Storage::ConfigInstance();
-        if (cfg && cfg->isMinimalConfigReady()) {
+        if (allowOfflineMode || (cfg && cfg->isMinimalConfigReady())) {
           scheduleSoftRestart(0);
         }
       }
@@ -932,12 +932,20 @@ void SuplaDeviceClass::handleAction(int event, int action) {
 }
 
 void SuplaDeviceClass::resetToFactorySettings() {
+  // cleanup device's configuration, but keep GUID and AuthKey
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     cfg->removeAll();
     cfg->setGUID(Supla::Channel::reg_dev.GUID);
     cfg->setAuthKey(Supla::Channel::reg_dev.AuthKey);
     cfg->commit();
+  }
+
+  // cleanup state storage data
+  // TODO(klew): add handling of persistant data (like energy counters)
+  auto storage = Supla::Storage::Instance();
+  if (storage) {
+    storage->deleteAll();
   }
 }
 

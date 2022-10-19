@@ -97,5 +97,9 @@ void ProtocolLayer::getChannelConfig(uint8_t channelNumber) {
   (void)(channelNumber);
 }
 
+bool ProtocolLayer::isConfigEmpty() {
+  return configEmpty;
+}
+
 }  // namespace Protocol
 }  // namespace Supla

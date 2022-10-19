@@ -56,6 +56,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
     memset(buf, 0, sizeof(buf));
     if (cfg->getSuplaServer(buf) && strlen(buf) > 0) {
       sdc->setServer(buf);
+      configEmpty = false;
     } else {
       SUPLA_LOG_INFO("Config incomplete: missing server");
       configComplete = false;
@@ -65,6 +66,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
     memset(buf, 0, sizeof(buf));
     if (cfg->getEmail(buf) && strlen(buf) > 0) {
       sdc->setEmail(buf);
+      configEmpty = false;
     } else {
       SUPLA_LOG_INFO("Config incomplete: missing email");
       configComplete = false;

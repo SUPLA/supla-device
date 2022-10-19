@@ -63,6 +63,7 @@
 #define STATUS_SW_DOWNLOAD               50
 #define STATUS_SUPLA_PROTOCOL_DISABLED   60
 #define STATUS_TEST_WAIT_FOR_CFG_BUTTON  70
+#define STATUS_OFFLINE_MODE              80
 
 typedef void (*_impl_arduino_status)(int status, const char *msg);
 
@@ -171,6 +172,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool getStorageInitResult();
   bool isSleepingAllowed();
 
+  // Call this method if you want to allow device to work in offline mode
+  // without Wi-Fi network configuration
+  void allowWorkInOfflineMode();
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -192,6 +197,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool isNetworkSetupOk = false;
   bool skipNetwork = false;
   bool storageInitResult = false;
+  bool allowOfflineMode = false;
+  bool configEmpty = true;
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;

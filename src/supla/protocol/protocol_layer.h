@@ -43,6 +43,7 @@ class ProtocolLayer {
   virtual bool verifyConfig() = 0;
   virtual bool isEnabled() = 0;
   virtual void disconnect() = 0;
+  virtual bool isConfigEmpty();
   // Return value indicates if specific protocol is ready to handle data
   // from other elements and if call to Element::iterateConnected should be
   // done.
@@ -65,6 +66,7 @@ class ProtocolLayer {
   static ProtocolLayer *firstPtr;
   ProtocolLayer *nextPtr = nullptr;
   SuplaDeviceClass *sdc = nullptr;
+  bool configEmpty = true;
 };
 
 }  // namespace Protocol

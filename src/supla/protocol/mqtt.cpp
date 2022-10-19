@@ -59,6 +59,8 @@ bool Supla::Protocol::Mqtt::onLoadConfig() {
     if (!cfg->getMqttServer(server) || strlen(server) <= 0) {
       SUPLA_LOG_INFO("Config incomplete: missing MQTT server");
       configComplete = false;
+    } else {
+      configEmpty = false;
     }
 
     useTls = cfg->isMqttTlsEnabled();
@@ -71,6 +73,8 @@ bool Supla::Protocol::Mqtt::onLoadConfig() {
       if (!cfg->getMqttUser(user) || strlen(user) <= 0) {
         SUPLA_LOG_INFO("Config incomplete: missing MQTT username");
         configComplete = false;
+      } else {
+        configEmpty = false;
       }
       if (!cfg->getMqttPassword(password) || strlen(password) <= 0) {
         SUPLA_LOG_INFO("Config incomplete: missing MQTT password");

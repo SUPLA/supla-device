@@ -163,6 +163,10 @@ void Supla::Protocol::Mqtt::generateClientId(
 }
 
 void Supla::Protocol::Mqtt::onInit() {
+  if (!enabled) {
+    return;
+  }
+
   auto cfg = Supla::Storage::ConfigInstance();
 
   char customPrefix[49] = {};

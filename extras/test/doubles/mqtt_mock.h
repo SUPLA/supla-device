@@ -44,7 +44,7 @@ class MqttMock : public MqttInterface {
        (std::string topic, std::string payload, int qos, bool retain),
        (override));
    MOCK_METHOD(void, subscribeImp, (const char *topic, int qos), (override));
-   MOCK_METHOD(void,  disconnect, (), (override));
+   MOCK_METHOD(void, disconnect, (), (override));
    MOCK_METHOD(bool, iterate, (uint64_t _millis), (override));
 };
 

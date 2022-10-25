@@ -40,8 +40,12 @@ void SwUpdate::send(Supla::WebSender* sender) {
   if (cfg) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
 
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"upd\">Firmware update</label>");
+    sender->send("<div>");
     sender->send(
-        "<i><select name=\"upd\">"
+        "<select name=\"upd\">"
         "<option value=\"0\"");
     sender->send(selected(!update));
     sender->send(
@@ -50,7 +54,10 @@ void SwUpdate::send(Supla::WebSender* sender) {
     sender->send(selected(update));
     sender->send(
         ">YES</option></select>"
-        "<label>Firmware update</label></i>");
+        "<label></i>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
   }
 }
 

@@ -41,8 +41,12 @@ void SwUpdateBeta::send(Supla::WebSender* sender) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
     bool beta = cfg->isSwUpdateBeta();
 
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"updbeta\">Firmware update</label>");
+    sender->send("<div>");
     sender->send(
-        "<i><select name=\"updbeta\">"
+        "<select name=\"updbeta\">"
         "<option value=\"0\"");
     sender->send(selected(!update));
     sender->send(
@@ -54,11 +58,14 @@ void SwUpdateBeta::send(Supla::WebSender* sender) {
         "<option value=\"2\"");
     sender->send(selected(update && beta));
     sender->send(
-        ">YES - BETA</option></select>"
-        "<label>Firmware update</label></i>");
+        ">YES - BETA</option></select>");
     sender->send(
-        "<p style=\"color:#000;margin:5px 5px;\">Warning: beta SW versions "
-        "may contain bugs and your device may not work properly.</p>");
+        "<div class=\"hint\">"
+        "Warning: beta SW versions may contain bugs and your device may not "
+        "work properly.</div>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
   }
 }
 

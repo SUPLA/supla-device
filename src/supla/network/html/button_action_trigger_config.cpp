@@ -49,7 +49,15 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
         "%s%d", BtnActionTriggerCfgTagPrefix, channelNumber);
     cfg->getInt32(key, &value);
 
-    sender->send("<i><select name=\"");
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"");
+    sender->send(key);
+    sender->send("\">Button #");
+    sender->send(buttonNumber);
+    sender->send(" MQTT action trigger type</label>");
+    sender->send("<div>");
+    sender->send("<select name=\"");
     sender->send(key);
     sender->send("\">"
         "<option value=\"0\"");
@@ -63,10 +71,10 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
         "<option value=\"2\"");
     sender->send(selected(value == 2));
     sender->send(
-        ">Publish all triggers, disable local function</option></select>"
-        "<label>Button #");
-    sender->send(buttonNumber);
-    sender->send(" MQTT action trigger type</label></i>");
+        ">Publish all triggers, disable local function</option></select>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
   }
 }
 

@@ -40,8 +40,12 @@ void StatusLedParameters::send(Supla::WebSender* sender) {
     int8_t value = 0;
     cfg->getInt8("statusled", &value);
 
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"led\">Status LED</label>");
+    sender->send("<div>");
     sender->send(
-        "<i><select name=\"led\">"
+        "<select name=\"led\">"
         "<option value=\"0\"");
     sender->send(selected(value == 0));
     sender->send(
@@ -53,8 +57,10 @@ void StatusLedParameters::send(Supla::WebSender* sender) {
         "<option value=\"2\"");
     sender->send(selected(value == 2));
     sender->send(
-        ">ALWAYS OFF</option></select>"
-        "<label>Status LED</label></i>");
+        ">ALWAYS OFF</option></select>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
   }
 }
 

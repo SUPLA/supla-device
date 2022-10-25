@@ -118,10 +118,7 @@ select {
   width: 100%;
 }
 
-.form-field input[type=text],
-.form-field input[type=email],
-.form-field input[type=password],
-.form-field input[type=number],
+.form-field input,
 .form-field select,
 .form-field textarea {
   width: 100%;

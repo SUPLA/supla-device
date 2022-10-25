@@ -28,193 +28,75 @@
 const char headerBegin[] =
 "<!doctype html>"
 "<html lang=en>"
+"<head>"
 "<meta content=\"text/html;charset=UTF-8\"http-equiv=content-type>"
 "<meta content=\"width=device-width,initial-scale=1,"
                "maximum-scale=1,user-scalable=no\"name=viewport>"
 "<title>Configuration Page</title>";
 
 
+// CSS from minifier tool.
+// Input data is in extras/resources/css_for_cfg_page.css
 const char styles[] =
     "<style>"
-    "body{"
-      "font-size:14px;"
-      "font-family:Helvetica,Tahoma,Geneva,Arial,sans-serif;"
-      "background:#00d151;"
-      "color:#fff;"
-      "line-height:20px;"
-      "padding:0"
-    "}"
-    ".s{"
-      "width:580px;"
-      "margin:0 auto;"
-      "margin-top:calc(50vh - 340px);"
-      "border:solid 3px #fff;"
-      "padding:0 10px 10px;"
-      "border-radius:15px"
-    "}"
-    "#l{"
-      "display:block;"
-      "max-width:150px;"
-      "height:155px;"
-      "margin:-80px auto 20px;"
-      "background:#00d151;"
-      "padding-right:5px"
-    "}"
-    "#l path{"
-      "fill:#000"
-    "}"
-    ".w{"
-      "margin:3px auto 16px;"
-      "padding:5px 0;"
-      "border-radius:10px;"
-      "background:#fff;"
-      "box-shadow:0 5px 6px rgba(0,0,0,.3);"
-      "max-width: 640px"
-    "}"
-    "h1,h3{"
-      "margin:10px 8px;"
-      "font-family:Helvetica,Tahoma,Geneva,Arial,sans-serif;"
-      "font-weight:300;"
-      "color:#000;"
-      "font-size:23px"
-    "}"
-    "h1{"
-      "margin-bottom:14px;"
-      "color:#fff"
-    "}"
-    "span{"
-      "display:block;"
-      "margin:10px 7px 14px"
-    "}"
-    "div.w span{"
-      "color:#000;"
-    "}"
-    "i{"
-      "display:block;"
-      "font-style:normal;"
-      "position:relative;"
-      "border-bottom: solid 1px #00d151;"
-      "height:42px;"
-      "margin-left:auto;"
-      "margin-right:auto;"
-      "max-width:640px;"
-    "}"
-    "i:last-child{"
-      "border:none"
-    "}"
-    "label{"
-      "position:absolute;"
-      "display:inline-block;"
-      "top:5px;"
-      "left:8px;"
-      "color:#00d151;"
-      "pointer-events:none;"
-      "font-size:min(14px,3vw);"
-      "width:180px"
-    "}"
-    "input,select,textarea{"
-      "width:calc(100% - 183px);"
-      "border:none;"
-      "font-size:16px;"
-      "line-height:40px;"
-      "letter-spacing:-.5px;"
-      "background:#fff;"
-      "color:#000;"
-      "padding-left:180px;"
-      "-webkit-appearance:none;"
-      "-moz-appearance:none;"
-      "appearance:none;"
-      "outline:0!important;"
-      "height:40px"
-    "}"
-    "select{"
-      "padding:0;"
-      "float:right;"
-      "margin:1px 3px 1px 2px"
-    "}"
-    "button{"
-      "width:100%;"
-      "border:0;"
-      "background:#000;"
-      "padding:5px 10px;"
-      "font-size:16px;"
-      "line-height:40px;"
-      "color:#fff;"
-      "border-radius:15px;"
-      "box-shadow:0 1px 3px rgba(0,0,0,.3);"
-      "cursor:pointer"
-    "}"
-    ".c{"
-      "background:#ffe836;"
-      "position:fixed;"
-      "width:100%;"
-      "line-height:80px;"
-      "color:#000;"
-      "top:0;"
-      "left:0;"
-      "box-shadow:0 1px 3px rgba(0,0,0,.3);"
-      "text-align:center;"
-      "font-size:26px;"
-      "z-index:100"
-    "}"
-    "@media all and (max-height:660px){"
-      ".s{"
-        "margin-top:80px"
-      "}"
-    "}"
-    "@media all {"  // and (max-width:640px){"
-      ".s{"
-        "width:calc(100% - 20px);"
-        "margin-top:40px;"
-        "border:none;"
-        "padding:0 8px;"
-        "border-radius:0"
-      "}"
-      "#l{"
-        "max-width:80px;"
-        "height:auto;"
-        "margin:10px auto 20px"
-      "}"
-      "h1,h3{"
-        "font-size:19px"
-      "}"
-      "i{"
-        "border:none;"
-        "height:auto"
-      "}"
-      "label{"
-        "display:block;"
-        "margin:4px 0 12px;"
-        "color:#00d151;"
-        "font-size:13px;"
-        "position:relative;"
-        "line-height:18px"
-      "}"
-      "input,select,textarea{"
-        "width:calc(100% - 20px);"
-        "font-size:16px;"
-        "line-height:28px;"
-        "padding:0 5px;"
-        "border-bottom:solid 1px #00d151"
-      "}"
-      "select{"
-        "width:100%;"
-        "float:none;"
-        "margin:0"
-      "}"
-    "}"
-    "#proto_supla{"
-      "display:none"
-    "}"
-    "textarea{"
-      "resize:none;"
-      "font-size:12px;"
-      "line-height:12px"
-    "}"
-  "</style>";
+    ".wrapper,body{min-height:100vh}#logo,body{background:#00d151}.box,button{"
+    "box-shadow:0 5px 6px "
+    "rgba(0,0,0,.3)}#msg,.box{color:#000}#msg,.slider{top:0;left:0}*,::after,::"
+    "before{box-sizing:border-box}html:focus-within{scroll-behavior:smooth}"
+    "body,h1,h2,h3,h4,html,p{font-family:HelveticaNeue,\"Helvetica "
+    "Neue\",HelveticaNeueRoman,HelveticaNeue-Roman,\"Helvetica Neue "
+    "Roman\",TeXGyreHerosRegular,Helvetica,Tahoma,Geneva,Arial,sans-serif;"
+    "margin:0;padding:0}.box,h1,h3{margin:10px "
+    "0}body{text-rendering:optimizeSpeed;line-height:1.5;font-size:14px;font-"
+    "weight:400;color:#fff;font-stretch:normal}h1,h3{font-weight:300;font-size:"
+    "23px}button,input,select,textarea{font:inherit}.wrapper{display:flex;flex-"
+    "direction:column;justify-content:center}.content{text-align:center;"
+    "padding:20px "
+    "10px}#logo{display:inline-block;height:155px}.box{background:#fff;border-"
+    "radius:10px;padding:5px 10px}.box "
+    "h3{margin-top:0;margin-bottom:5px}.form{text-align:left;max-width:500px;"
+    "margin:-80px auto 0;padding:70px 10px "
+    "10px}.form-field{display:flex;align-items:center;padding:8px "
+    "10px;border-bottom:1px solid #00d150;margin:0 "
+    "-10px}.form-field:last-child{border-bottom:0}.form-field "
+    "label{width:120px;margin-right:5px;color:#00d150}a.wide-link,button{"
+    "display:block;color:#fff;font-size:1.3em;text-align:center}@media screen "
+    "and (max-width:530px){.form-field{flex-direction:column}.form-field "
+    "label{width:100%;margin:3px 0}}.form-field>div{width:100%}.form-field "
+    "input,.form-field select,.form-field textarea{width:100%;border:1px solid "
+    "#ccc;border-radius:6px;padding:3px "
+    "8px;background:#fff}textarea{resize:vertical}.form-field "
+    "select{padding-left:3px}.form-field.checkbox "
+    "label{width:100%;text-align:center;color:#000;display:flex;align-items:"
+    "center;justify-content:center;gap:5px}.help-link{cursor:help;color:#"
+    "00d150}.box.collapsible "
+    "h3,.slider,a.wide-link{cursor:pointer}.hint{font-size:.8em;opacity:.8;"
+    "margin-top:2px}button{background:#000;width:100%;border:0;border-radius:"
+    "10px;padding:10px;text-transform:uppercase;margin-top:15px}#msg{"
+    "background:#ffe836;position:fixed;width:100%;padding:40px;box-shadow:0 "
+    "1px 3px "
+    "rgba(0,0,0,.3);text-align:center;font-size:26px}a.wide-link{padding:5px;"
+    "text-decoration:underline}.box.collapsible "
+    "h3:after{content:'↑';float:right}.box.collapsible.collapsed "
+    "h3:after{content:'↓'}.box.collapsible.collapsed "
+    ".form-field{display:none}.switch{position:relative;display:inline-block;"
+    "width:51px;height:25px}.switch "
+    "input{opacity:0;width:0;height:0}.slider{position:absolute;right:0;bottom:"
+    "0;background-color:#ccc;-webkit-transition:.4s;transition:.4s;border-"
+    "radius:34px}.slider:before{position:absolute;content:\"\";height:17px;"
+    "width:17px;left:4px;bottom:4px;background-color:#fff;-webkit-transition:."
+    "4s;transition:.4s;border-radius:50%}input:checked+.slider{background-"
+    "color:#00d151}input:focus+.slider{box-shadow:0 0 1px "
+    "#00d151}input:checked+.slider:before{-webkit-transform:translateX(26px);-"
+    "ms-transform:translateX(26px);transform:translateX(26px)}"
+    "</style>";
 
 const char javascript[] =
   "<script>"
+  "function showHelp(text){"
+    "alert(text);"
+    "return false;"
+  "}"
 
   "function protocolChanged(){"
     "var e=document.getElementById(\"protocol\"),"
@@ -224,6 +106,7 @@ const char javascript[] =
          "show_mqtt=true;"
     "if(e==null){"
       "e=document.getElementById(\"protocol_supla\");"
+      "if(e==null){return false;}"
       "show_supla=\"1\"==e.value;"
       "e=document.getElementById(\"protocol_mqtt\");"
       "show_mqtt=\"1\"==e.value;"
@@ -241,7 +124,7 @@ const char javascript[] =
     "var e=document.getElementById(\"sel_mauth\"),"
          "t=document.getElementById(\"mauth_usr\"),"
          "n=document.getElementById(\"mauth_pwd\");"
-         "e=\"1\"==e.value?\"block\":\"none\";"
+         "e=\"1\"==e.value?\"flex\":\"none\";"
     "t.style.display=e,n.style.display=e"
   "}"
 
@@ -250,21 +133,34 @@ const char javascript[] =
     "e.rbt.value=\"2\",e.submit()"
   "}"
 
-  "setTimeout("
-    "function(){"
-      "var e=document.getElementById(\"msg\");"
-      "null!=e&&(e.style.visibility=\"hidden\")"
-    "},"
-  "3200)"
+  "setTimeout(function(){"
+    "var e=document.getElementById(\"msg\");"
+    "null!=e&&(e.style.visibility=\"hidden\")"
+  "},3200);"
+
+  "protocolChanged();"
+  "mAuthChanged();"
+
+  "var collapsibleBoxes = document.querySelectorAll('.collapsible h3');"
+  "for (var i=0;i<collapsibleBoxes.length;i++){"
+    "collapsibleBoxes[i].addEventListener('click',function(event){"
+      "this.parentNode.classList.toggle('collapsed');"
+    "});"
+  "}"
+
   "</script>";
 
 const char headerEnd[] = "</head>";
 
-const char bodyBegin[] = "<body onload=protocolChanged(),mAuthChanged()>"
-  "<div class=\"s\">";
+const char bodyBegin[] = "<body>";
+
+const char wrapperBegin[] =
+  "<div class=\"wrapper\">"
+    "<div class=\"content\">";
 
 const char logoSvg[] =
-  "<svg id=l version=1.1 viewBox=\"0 0 200 200\"x=0 xml:space=preserve y=0><pat"
+  "<svg id=logo version=1.1 viewBox=\"0 0 200 200\"x=0 xml:space=preserve y=0><"
+  "pat"
   "h d=\"M59.3,2.5c18.1,0.6,31.8,8,40.2,23.5c3.1,5.7,4.3,11.9,4.1,18.3c-0.1,3.6"
   "-0.7,7.1-1.9,10.6c-0.2,0.7-0.1,1.1,0.6,1.5c12.8,7.7,25.5,15.4,38.3,23c2.9,1."
   "7,5.8,3.4,8.7,5.3c1,0.6,1.6,0.6,2.5-0.1c4.5-3.6,9.8-5.3,15.7-5.4c12.5-0.1,22"
@@ -290,7 +186,7 @@ const char logoSvg[] =
 
 const char bodyEnd[] = "</div></body></html>";
 
-const char dataSavedBox[] = "<div id=\"msg\" class=\"c\">Data saved</div>";
+const char dataSavedBox[] = "<div id=\"msg\">Data saved</div>";
 
 Supla::HtmlGenerator::~HtmlGenerator() {}
 
@@ -302,9 +198,14 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender, bool dataSaved) {
   if (dataSaved) {
     sendDataSaved(sender);
   }
+  sender->send(wrapperBegin, strlen(wrapperBegin));
   sendLogo(sender);
+  sender->send("<div class=\"form\">");
   sendDeviceInfo(sender);
   sendForm(sender);
+  sender->send("</div>");  // .form end
+  sender->send("</div>");  // .content end
+  sender->send("</div>");  // .wrapper end
   sendBodyEnd(sender);
 }
 
@@ -317,9 +218,14 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
   if (dataSaved) {
     sendDataSaved(sender);
   }
+  sender->send(wrapperBegin, strlen(wrapperBegin));
   sendLogo(sender);
+  sender->send("<div class=\"form\">");
   sendDeviceInfo(sender);
   sendBetaForm(sender);
+  sender->send("</div>");  // .form end
+  sender->send("</div>");  // .content end
+  sender->send("</div>");  // .wrapper end
   sendBodyEnd(sender);
 }
 
@@ -329,7 +235,6 @@ void Supla::HtmlGenerator::sendHeaderBegin(Supla::WebSender *sender) {
 
 void Supla::HtmlGenerator::sendHeader(Supla::WebSender *sender) {
   sendStyle(sender);
-  sendJavascript(sender);
 }
 
 void Supla::HtmlGenerator::sendHeaderEnd(Supla::WebSender *sender) {
@@ -343,7 +248,6 @@ void Supla::HtmlGenerator::sendBodyBegin(Supla::WebSender *sender) {
 void Supla::HtmlGenerator::sendDataSaved(Supla::WebSender *sender) {
   sender->send(dataSavedBox);
 }
-
 
 void Supla::HtmlGenerator::sendLogo(Supla::WebSender *sender) {
   sender->send(logoSvg, strlen(logoSvg));
@@ -360,7 +264,7 @@ void Supla::HtmlGenerator::sendDeviceInfo(Supla::WebSender *sender) {
 
 void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
   sender->send("<form id=\"cfgform\" method=\"post\">");
-  sender->send("<div class=\"w\">");
+  sender->send("<div class=\"box\">");
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_NETWORK) {
@@ -376,9 +280,8 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
     }
   }
 
-  sender->send(
-      "<div class=\"w\">"
-      "<h3>Additional Settings</h3>");
+  sender->send("<div class=\"box\">");
+  sender->send("<h3>Additional Settings</h3>");
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_FORM) {
@@ -394,9 +297,8 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
 void Supla::HtmlGenerator::sendBetaForm(Supla::WebSender *sender) {
   sender->send("<form id=\"cfgform\" method=\"post\">");
 
-  sender->send(
-      "<div class=\"w\">"
-      "<h3>Additional Settings</h3>");
+  sender->send("<div class=\"box\">");
+  sender->send("<h3>Additional Settings</h3>");
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_BETA_FORM) {
@@ -411,7 +313,6 @@ void Supla::HtmlGenerator::sendBetaForm(Supla::WebSender *sender) {
 
 void Supla::HtmlGenerator::sendSubmitButton(Supla::WebSender* sender) {
   sender->send("<button type=\"submit\">SAVE</button>"
-      "<br><br>"
       "<button type=\"button\" onclick=\"saveAndReboot();\">"
         "SAVE &amp; RESTART"
       "</button>"
@@ -419,6 +320,7 @@ void Supla::HtmlGenerator::sendSubmitButton(Supla::WebSender* sender) {
 }
 
 void Supla::HtmlGenerator::sendBodyEnd(Supla::WebSender *sender) {
+  sendJavascript(sender);
   sender->send(bodyEnd, strlen(bodyEnd));
 }
 

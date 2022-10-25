@@ -43,9 +43,13 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
   if (cfg) {
     if (!concurrent) {
       // Protocol selector
+      sender->send("<div class=\"box\">");
+
+      // form-field BEGIN
+      sender->send("<div class=\"form-field\">");
       sender->send(
-          "<div class=\"w\">"
-          "<i><select name=\"pro\" onchange=\"protocolChanged();\" "
+          "<label for=\"pro\">Protocol</label>"
+          "<div><select name=\"pro\" onchange=\"protocolChanged();\" "
           "id=\"protocol\">"
           "<option value=\"0\"");
       sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
@@ -56,19 +60,25 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->send(selected(cfg->isMqttCommProtocolEnabled()));
       sender->send(
           ">MQTT</option>"
-          "</select>"
-          "<label>Protocol</label>"
-          "</i>"
-          "</div>");
+          "</select></div>");
+
+      sender->send("</div>");
+      // form-field END
+
+      sender->send("</div>");  // close box
     }
 
     if (concurrent) {
-      sender->send(
-          "<div class=\"w\">");
+      sender->send("<div class=\"box\">");
       sender->send(
           "<h3>Supla Settings</h3>");
+
+      // form-field BEGIN
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"protocol_supla\">Supla protocol</label>");
+      sender->send("<div>");
       sender->send(
-          "<i><select name=\"protocol_supla\" id=\"protocol_supla\" "
+          "<select name=\"protocol_supla\" id=\"protocol_supla\" "
           "onchange=\"protocolChanged();\">"
           "<option value=\"0\"");
       sender->send(selected(!cfg->isSuplaCommProtocolEnabled()));
@@ -78,31 +88,42 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
       sender->send(
           ">ENABLED</option>"
-          "</select>"
-          "<label>Supla protocol</label>");
+          "</select>");
+      sender->send("</div>");
+      sender->send("</div>");
+      // form-field END
+
       sender->send(
           "<div id=\"proto_supla\">");
     } else {
       sender->send(
-          "<div class=\"w\" id=\"proto_supla\">");
+          "<div class=\"box\" id=\"proto_supla\">");
       sender->send(
           "<h3>Supla Settings</h3>");
     }
     // Parameters for Supla protocol
-    sender->send(
-        "<i><input name=\"svr\" maxlength=\"64\" value=\"");
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"svr\">Server</label>");
+    sender->send("<input name=\"svr\" maxlength=\"64\" value=\"");
     char buf[512];
     if (cfg->getSuplaServer(buf)) {
       sender->send(buf);
     }
-    sender->send(
-        "\"><label>Server</label></i>"
-        "<i><input name=\"eml\" maxlength=\"255\" value=\"");
+    sender->send("\">");
+    sender->send("</div>");
+    // form-field END
+
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"eml\">E-mail</label>");
+    sender->send("<input name=\"eml\" maxlength=\"255\" value=\"");
     if (cfg->getEmail(buf)) {
       sender->send(buf);
     }
-    sender->send(
-        "\"><label>E-mail</label></i>");
+    sender->send("\">");
+    sender->send("</div>");  // form-field
+    // form-field END
 
     sender->send(
         "<script>"
@@ -113,10 +134,14 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         "c.style.display=l;}"
         "</script>");
 
+    // form-field BEGIN
     uint8_t securityLevel = 0;
     cfg->getUInt8("security_level", &securityLevel);
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"sec\">Certificate verification</label>");
+    sender->send("<div>");
     sender->send(
-        "<i><select name=\"sec\" id=\"sec\" onchange=\"securityChange();\">"
+        "<select name=\"sec\" id=\"sec\" onchange=\"securityChange();\">"
         "<option value=\"0\"");
     sender->send(selected(securityLevel == 0));
     sender->send(
@@ -128,32 +153,37 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         "<option value=\"2\"");
     sender->send(selected(securityLevel == 2));
     sender->send(">Skip certificate verification (INSECURE)</option>");
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");  // form-field
+    // form-field END
 
-    sender->send(
-        "</select>"
-        "<label>Certificate verification</label>"
-        "</i>");
-    sender->send("<i id=\"custom_ca\" style=\"display:");
+    sender->send("<div id=\"custom_ca\" style=\"display:");
     if (securityLevel == 1) {
       sender->send("block");
     } else {
       sender->send("none");
     }
+    sender->send("\">");
+
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
     sender->send(
-        "\">"
-        "<textarea name=\"custom_ca\" maxlength=\"4000\">");
+        "<label for=\"custom_ca\">"
+        "Custom CA (paste here CA certificate in PEM format)</label>");
+    sender->send("<textarea name=\"custom_ca\" maxlength=\"4000\">");
     char* bufCert = new char[4000];
     memset(bufCert, 0, 4000);
     if (cfg->getCustomCA(bufCert, 4000)) {
       sender->send(bufCert);
     }
     delete[] bufCert;
-    sender->send(
-        "</textarea><label>Custom CA (paste here CA certificate in PEM "
-        "format)</label>"
-        "</i>"
-        "</div>");
+    sender->send("</textarea>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
 
+    sender->send("</div>");
     if (concurrent) {
       sender->send("</div>");
     }
@@ -161,11 +191,16 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
     if (addMqtt) {
       if (concurrent) {
         sender->send(
-            "<div class=\"w\">");
+            "<div class=\"box\">");
         sender->send(
             "<h3>MQTT Settings</h3>");
+
+        // form-field START
+        sender->send("<div class=\"form-field\">");
+        sender->send("<label for=\"protocol_mqtt\">MQTT protocol</label>");
+        sender->send("<div>");
         sender->send(
-            "<i><select name=\"protocol_mqtt\" id=\"protocol_mqtt\" "
+            "<select name=\"protocol_mqtt\" id=\"protocol_mqtt\" "
             "onchange=\"protocolChanged();\">"
             "<option value=\"0\"");
         sender->send(selected(!cfg->isMqttCommProtocolEnabled()));
@@ -175,24 +210,32 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
         sender->send(selected(cfg->isMqttCommProtocolEnabled()));
         sender->send(
             ">ENABLED</option>"
-            "</select>"
-            "<label>MQTT protocol</label>");
+            "</select>");
+        sender->send("</div>");
+        sender->send("</div>");
+        // form-field END
+
         sender->send(
             "<div class=\"mqtt\">");
       } else {
         sender->send(
-            "<div class=\"w\" class=\"mqtt\">");
+            "<div class=\"box\" class=\"mqtt\">");
         sender->send(
             "<h3>MQTT Settings</h3>");
       }
       // Parameters for MQTT protocol
-      sender->send(
-          "<i><input name=\"mqttserver\" maxlength=\"64\" value=\"");
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqttserver\">Server</label>");
+      sender->send("<input name=\"mqttserver\" maxlength=\"64\" value=\"");
       if (cfg->getMqttServer(buf)) {
         sender->send(buf);
       }
-      sender->send(
-          "\"><label>Server</label></i>");
+      sender->send("\">");
+      sender->send("</div>");
+      // form-field END
+
       sender->send(
           "<script>"
             "function mqttTlsChange(){"
@@ -202,8 +245,13 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
               "{port.value=1883;}else"
               "{port.value=8883;}"
             "}"
-          "</script>"
-          "<i><select name=\"mqtttls\" onchange=\"mqttTlsChange();\""
+          "</script>");
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqtttls\">TLS</label>");
+      sender->send("<div>");
+      sender->send("<select name=\"mqtttls\" onchange=\"mqttTlsChange();\""
           " id=\"mqtt_tls\">"
           "<option value=\"0\" ");
       sender->send(selected(!cfg->isMqttTlsEnabled()));
@@ -212,15 +260,26 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           "<option value=\"1\" ");
       sender->send(selected(cfg->isMqttTlsEnabled()));
       sender->send(
-          ">YES</option></select>"
-          "<label>TLS</label></i>"
-          "<i><input name=\"mqttport\" min=\"1\" max=\"65535\" type=\"number\""
-          " value=\"");
+          ">YES</option></select>");
+      sender->send("</div>");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqttport\">Port</label>");
+      sender->send("<input name=\"mqttport\" min=\"1\" max=\"65535\""
+          "type=\"number\" value=\"");
       sender->send(cfg->getMqttServerPort());
-      sender->send(
-          "\" id=\"mqtt_port\"><label>Port</label></i>"
-          "<i>"
-          "<select name=\"mqttauth\" id=\"sel_mauth\" "
+      sender->send("\" id=\"mqtt_port\">");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqttauth\">Auth</label>");
+      sender->send("<div>");
+      sender->send("<select name=\"mqttauth\" id=\"sel_mauth\" "
           "onchange=\"mAuthChanged();\">"
           "<option value=\"0\" ");
       sender->send(selected(!cfg->isMqttAuthEnabled()));
@@ -228,34 +287,59 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           ">NO</option>"
           "<option value=\"1\" ");
       sender->send(selected(cfg->isMqttAuthEnabled()));
-      sender->send(
-          ">YES</option></select>"
-          "<label>Auth</label>"
-          "</i>"
-          "<i id=\"mauth_usr\"><input name=\"mqttuser\" maxlength=\"64\" "
-          "value=\"");
+      sender->send(">YES</option></select>");
+      sender->send("</div>");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\" id=\"mauth_usr\">");
+      sender->send("<label for=\"mqttuser\">Username</label>");
+      sender->send("<input name=\"mqttuser\" maxlength=\"64\" value=\"");
       if (cfg->getMqttUser(buf)) {
         sender->send(buf);
       }
+      sender->send("\">");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\" id=\"mauth_pwd\">");
+      sender->send("<label for=\"mqttpasswd\">"
+          "Password (Required. Max 64)</label>");
+      sender->send("<input name=\"mqttpasswd\" maxlength=\"64\">");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqttprefix\">Topic prefix</label>");
       sender->send(
-          "\">"
-          "<label>Username</label></i>"
-          "<i id=\"mauth_pwd\">"
-          "<input name=\"mqttpasswd\" maxlength=\"64\">"
-          "<label>Password (Required. Max 64)</label></i>"
-          "<i><input name=\"mqttprefix\" maxlength=\"48\" value=\"");
+          "<input name=\"mqttprefix\" maxlength=\"48\" value=\"");
       if (cfg->getMqttPrefix(buf)) {
         sender->send(buf);
       }
+      sender->send("\">");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqttqos\">QoS</label>");
       sender->send(
-          "\">"
-          "<label>Topic prefix</label></i>"
-          "<i><input name=\"mqttqos\" min=\"0\" max=\"2\" type=\"number\" "
+          "<input name=\"mqttqos\" min=\"0\" max=\"2\" type=\"number\" "
           "value=\"");
       sender->send(cfg->getMqttQos());
+      sender->send("\">");
+      sender->send("</div>");
+      // form-field END
+
+      // form-field START
+      sender->send("<div class=\"form-field\">");
+      sender->send("<label for=\"mqttretain\">Retain</label>");
+      sender->send("<div>");
       sender->send(
-          "\"><label>QoS</label></i>"
-          "<i><select name=\"mqttretain\">"
+          "<select name=\"mqttretain\">"
           "<option value=\"0\" ");
       sender->send(selected(!cfg->isMqttRetainEnabled()));
       sender->send(
@@ -263,9 +347,12 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           "<option value=\"1\" ");
       sender->send(selected(cfg->isMqttRetainEnabled()));
       sender->send(
-          ">YES</option></select>"
-          "<label>Retain</label></i>"
-          "</div>");
+          ">YES</option></select>");
+      sender->send("</div>");
+      sender->send("</div>");
+      // form-field END
+
+      sender->send("</div>");
       if (concurrent) {
         sender->send("</div>");
       }

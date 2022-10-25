@@ -42,17 +42,20 @@ void ButtonMulticlickParameters::send(Supla::WebSender* sender) {
     uint32_t value = 300;  // default value
     cfg->getUInt32(BtnMulticlickTag, &value);
 
+    // form-field BEGIN
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"");
+    sender->send(BtnMulticlickTag);
+    sender->send("\">Multiclick detection time [s]</label>");
     sender->send(
-        "<i>"
         "<input type=\"number\" min=\"0.3\" max=\"10\" step=\"0.1\" name=\"");
     sender->send(BtnMulticlickTag);
 
     sender->send("\" value=\"");
     sender->send(value, 3);
-    sender->send(
-      "\">"
-      "<label>Multiclick detection time [s]</label>"
-      "</i>");
+    sender->send("\">");
+    sender->send("</div>");
+    // form-field END
   }
 }
 

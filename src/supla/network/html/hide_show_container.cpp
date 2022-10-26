@@ -63,7 +63,7 @@ void HideShowContainerBegin::send(Supla::WebSender* sender) {
       "Show ");
   sender->send(name);
   sender->send(
-      "</button><br><br>"
+      "</button>"
       "</div>"
       "<div id=\"");
   sender->send(idStr);

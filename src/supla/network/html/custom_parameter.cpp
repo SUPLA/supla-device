@@ -64,20 +64,10 @@ void CustomParameter::send(Supla::WebSender* sender) {
     cfg->getInt32(tag, &parameterValue);
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"");
-    if (tag != nullptr) {
-      sender->send(tag);
-    }
-    sender->send("\">");
-    if (label != nullptr) {
-      sender->send(label);
-    }
-    sender->send("</label>");
-    sender->send("<input type=\"number\" step=\"1\" name=\"");
-    if (tag != nullptr) {
-      sender->send(tag);
-    }
-    sender->send("\" value=\"");
+    sender->sendLabelFor(tag, label);
+    sender->send("<input type=\"number\" step=\"1\" ");
+    sender->sendNameAndId(tag);
+    sender->send(" value=\"");
     char buf[100] = {};
     snprintf(buf, sizeof(buf), "%d", static_cast<int>(parameterValue));
     sender->send(buf);

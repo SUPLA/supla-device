@@ -49,17 +49,17 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
         "%s%d", BtnActionTriggerCfgTagPrefix, channelNumber);
     cfg->getInt32(key, &value);
 
+    char label[100] = {};
+    snprintf(label, sizeof(label), "Button #%d MQTT action trigger type",
+        buttonNumber);
+
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"");
-    sender->send(key);
-    sender->send("\">Button #");
-    sender->send(buttonNumber);
-    sender->send(" MQTT action trigger type</label>");
+    sender->sendLabelFor(key, label);
     sender->send("<div>");
-    sender->send("<select name=\"");
-    sender->send(key);
-    sender->send("\">"
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->send(">"
         "<option value=\"0\"");
     sender->send(selected(value == 0));
     sender->send(

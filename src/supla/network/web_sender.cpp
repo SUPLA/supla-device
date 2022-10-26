@@ -45,4 +45,18 @@ void WebSender::send(int number, int precision) {
   send(buf);
 }
 
+void WebSender::sendNameAndId(const char *id) {
+  char buf[100];
+  snprintf(buf, sizeof(buf), " name=\"%s\" id=\"%s\" ",
+      id ? id : "", id ? id : "");
+  send(buf);
+}
+
+void WebSender::sendLabelFor(const char *id, const char *label) {
+  char buf[300];
+  snprintf(buf, sizeof(buf), "<label for=\"%s\">%s</label>", id ? id : "",
+      label ? label : "");
+  send(buf);
+}
+
 };  // namespace Supla

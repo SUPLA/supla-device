@@ -57,22 +57,18 @@ void ChannelCorrection::send(Supla::WebSender* sender) {
     snprintf(key, sizeof(key), "corr_%d_%d", channelNumber, subChannel);
     cfg->getInt32(key, &value);
 
+    char label[100] = {};
+    snprintf(label, sizeof(label), "#%d%s%s correction",
+        channelNumber, displayName ? " " : "", displayName ? displayName : "");
+
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"");
-    sender->send(key);
-    sender->send("\">#");
-    sender->send(channelNumber);
-    if (displayName) {
-      sender->send(" ");
-      sender->send(displayName);
-    }
-    sender->send(" correction</label>");
+    sender->sendLabelFor(key, label);
 
     sender->send(
-        "<input type=\"number\" min=\"-50\" max=\"50\" step=\"0.1\" name=\"");
-    sender->send(key);
-    sender->send("\" value=\"");
+        "<input type=\"number\" min=\"-50\" max=\"50\" step=\"0.1\" ");
+    sender->sendNameAndId(key);
+    sender->send(" value=\"");
     sender->send(value, 1);
     sender->send(
       "\">");

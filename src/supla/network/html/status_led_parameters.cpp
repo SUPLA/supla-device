@@ -42,10 +42,13 @@ void StatusLedParameters::send(Supla::WebSender* sender) {
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"led\">Status LED</label>");
+    const char key[] = "led";
+    sender->sendLabelFor(key, "Status LED");
     sender->send("<div>");
     sender->send(
-        "<select name=\"led\">"
+        "<select ");
+    sender->sendNameAndId(key);
+    sender->send(">"
         "<option value=\"0\"");
     sender->send(selected(value == 0));
     sender->send(

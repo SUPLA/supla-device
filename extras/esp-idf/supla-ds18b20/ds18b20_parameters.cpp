@@ -57,7 +57,7 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
     snprintf(tmp, sizeof(tmp), "%d", channel);
     sender->send(tmp);
     sender->send(
-        "</h3><span>Assigned address: "
+        "</h3><p>Assigned address: "
         );
 
     if (dsAddress[0]) {
@@ -89,22 +89,19 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
       sender->send("---");
     }
 
-    sender->send(
-        "</span><i><select name=\""
-        );
-    sender->send(key);
-    sender->send(
-        "\">"
-        "<option value=\"0\" selected");
-    sender->send(
-        ">NO</option>"
-        "<option value=\"1\"");
-    sender->send(
-        ">YES</option>"
-        );
-    sender->send(
-        "</select>"
-        "<label>Reset assignement?</label></i>");
+    sender->send("</p>");
+
+    sender->send("<div class=\"form-field right-checkbox\">");
+    sender->sendLabelFor(key, "Reset assignement?");
+    sender->send("<label>");
+    sender->send("<div class=\"switch\">");
+    sender->send("<input type=\"checkbox\" value=\"on\"");
+    sender->sendNameAndId(key);
+    sender->send(">");
+    sender->send("<span class=\"slider\"></span>");
+    sender->send("</div>");
+    sender->send("</label>");
+    sender->send("</div>");
   }
 }
 

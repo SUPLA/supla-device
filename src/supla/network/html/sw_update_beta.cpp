@@ -43,10 +43,12 @@ void SwUpdateBeta::send(Supla::WebSender* sender) {
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"updbeta\">Firmware update</label>");
+    const char key[] = "updbeta";
+    sender->sendLabelFor(key, "Firmware update");
     sender->send("<div>");
-    sender->send(
-        "<select name=\"updbeta\">"
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->send(">"
         "<option value=\"0\"");
     sender->send(selected(!update));
     sender->send(

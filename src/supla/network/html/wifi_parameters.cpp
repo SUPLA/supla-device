@@ -39,8 +39,10 @@ void WifiParameters::send(Supla::WebSender* sender) {
 
     // form-field START
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"sid\">Network name</label>");
-    sender->send("<input name=\"sid\" ");
+    const char key[] = "sid";
+    sender->sendLabelFor(key, "Network name");
+    sender->send("<input ");
+    sender->sendNameAndId(key);
     if (cfg->getWiFiSSID(buf)) {
       sender->send("value=\"");
       sender->send(buf);
@@ -51,8 +53,11 @@ void WifiParameters::send(Supla::WebSender* sender) {
 
     // form-field START
     sender->send("<div class=\"form-field\">");
-    sender->send("<label for=\"wpw\">Password</label>");
-    sender->send("<input type=\"password\" name=\"wpw\">");
+    const char keyPass[] = "wpw";
+    sender->sendLabelFor(keyPass, "Password");
+    sender->send("<input type=\"password\" ");
+    sender->sendNameAndId(keyPass);
+    sender->send(">");
     sender->send("</div>");
     // form-field END
   }

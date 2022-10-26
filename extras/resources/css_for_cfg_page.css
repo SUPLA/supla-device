@@ -89,12 +89,12 @@ select {
   display: flex;
   align-items: center;
   padding: 8px 10px;
-  border-bottom: 1px solid #00d150;
+  border-top: 1px solid #00d150;
   margin: 0 -10px;
 }
 
-.form-field:last-child {
-  border-bottom: 0;
+.box > .form-field:first-of-type {
+  border-top: 0;
 }
 
 .form-field label {
@@ -138,12 +138,15 @@ textarea {
 
 .form-field.checkbox label {
   width: 100%;
-  text-align: center;
   color: black;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: 5px;
+}
+
+.form-field.right-checkbox label:last-child {
+  width: 100%;
+  text-align: center;
 }
 
 .help-link {

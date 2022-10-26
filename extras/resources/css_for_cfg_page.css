@@ -83,6 +83,7 @@ select {
   margin-top: -80px;
   padding: 10px;
   padding-top: 70px;
+  display: none;
 }
 
 .form-field {

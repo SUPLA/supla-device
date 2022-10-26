@@ -56,7 +56,7 @@ const char styles[] =
     "radius:10px;padding:5px 10px}.box "
     "h3{margin-top:0;margin-bottom:5px}.form{text-align:left;max-width:500px;"
     "margin:-80px auto 0;padding:70px 10px "
-    "10px}.form-field{display:flex;align-items:center;padding:8px "
+    "10px;display:none}.form-field{display:flex;align-items:center;padding:8px "
     "10px;border-top:1px solid #00d150;margin:0 "
     "-10px}.box>.form-field:first-of-type{border-top:0}.form-field "
     "label{width:120px;margin-right:5px;color:#00d150}a.wide-link,button{"
@@ -149,6 +149,9 @@ const char javascript[] =
     "});"
   "}"
 
+  "document.getElementById(\"loader\").style.display=\"none\";"
+  "document.getElementById(\"form_content\").style.display=\"block\";"
+
   "</script>";
 
 const char headerEnd[] = "</head>";
@@ -201,7 +204,8 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender, bool dataSaved) {
   }
   sender->send(wrapperBegin, strlen(wrapperBegin));
   sendLogo(sender);
-  sender->send("<div class=\"form\">");
+  sender->send("<div id=\"loader\">Loading...</div>");
+  sender->send("<div class=\"form\" id=\"form_content\">");
   sendDeviceInfo(sender);
   sendForm(sender);
   sender->send("</div>");  // .form end
@@ -221,7 +225,8 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
   }
   sender->send(wrapperBegin, strlen(wrapperBegin));
   sendLogo(sender);
-  sender->send("<div class=\"form\">");
+  sender->send("<div id=\"loader\">Loading...</div>");
+  sender->send("<div class=\"form\" id=\"form_content\">");
   sendDeviceInfo(sender);
   sendBetaForm(sender);
   sender->send("</div>");  // .form end

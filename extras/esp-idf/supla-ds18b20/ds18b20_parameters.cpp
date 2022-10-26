@@ -24,6 +24,7 @@
 #include <supla/tools.h>
 #include <supla/element.h>
 #include <esp_ds18b20.h>
+#include <supla/log_wrapper.h>
 
 #include "ds18b20_parameters.h"
 
@@ -109,12 +110,13 @@ bool DS18B20Parameters::handleResponse(const char* key, const char* value) {
   char myKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   Config::generateKey(myKey, channel, "address");
   if (strcmp(key, myKey) == 0) {
-    int reset = stringToUInt(value);
+    bool reset = (strcmp(value, "on") == 0);
     if (reset) {
       auto cfg = Supla::Storage::ConfigInstance();
       uint8_t dsAddress[DS_ADDRESS_SIZE] = {};
       cfg->getBlob(key, reinterpret_cast<char*>(dsAddress), DS_ADDRESS_SIZE);
       Supla::Sensor::DS18B20::clearAssignedAddress(dsAddress);
+      SUPLA_LOG_DEBUG("DS18B20[%d]: resetting address assignement", channel);
     }
     return true;
   }

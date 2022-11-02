@@ -1,5 +1,9 @@
 # CHANGELOG.md
 
+## 22.11.01 (2022-11-02)
+
+  - Change: THW-01 will try to connect for 15 s and then go to sleep in order to prevent internal heating.
+
 ## 22.10.04 (2022-10-18)
 
   - Add: ActionTrigger support for publishing Home Assistant MQTT auto discovery

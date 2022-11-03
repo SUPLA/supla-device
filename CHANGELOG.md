@@ -1,8 +1,21 @@
 # CHANGELOG.md
 
+## 22.11.02 (2022-11-03)
+
+  - Fix: "beta" config HTML page stuck at "Loading..."
+
+
 ## 22.11.01 (2022-11-02)
 
   - Change: THW-01 will try to connect for 15 s and then go to sleep in order to prevent internal heating.
+
+## 22.10.05 (N/A)
+
+  - Change: New CSS and HTML layout for web interface
+  - Add: (Arduino ESPx, Arduino Mega) DS1307 external RTC support (thanks @lukfud)
+  - Add: (ESP-IDF) add sending Action Trigger over MQTT
+  - Add: ability for device to work in offline mode - allow normal functions without Wi-Fi, when Wi-Fi/server configuration is empty.
+
 
 ## 22.10.04 (2022-10-18)
 

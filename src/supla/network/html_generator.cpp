@@ -125,7 +125,10 @@ const char javascript[] =
     "var e=document.getElementById(\"mqttauth\"),"
          "t=document.getElementById(\"mauth_usr\"),"
          "n=document.getElementById(\"mauth_pwd\");"
+         "if(e==null){return;}"
          "e=\"1\"==e.value?\"flex\":\"none\";"
+         "if(t==null){return;}"
+         "if(n==null){return;}"
     "t.style.display=e,n.style.display=e"
   "}"
 

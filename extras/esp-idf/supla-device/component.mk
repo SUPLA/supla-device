@@ -26,6 +26,8 @@ COMPONENT_OBJS := \
   ../../../src/supla/auto_lock.o \
   ../../../src/supla/sha256.o \
   ../../../src/supla/rsa_verificator.o \
+  ../../../src/supla/crc8.o \
+  ../../../src/supla/crc16.o \
 	\
   ../../../src/supla/storage/storage.o \
   ../../../src/supla/storage/config.o \

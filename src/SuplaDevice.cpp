@@ -41,8 +41,9 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
   bool showLog = false;
 
   if ((currentStatus == STATUS_CONFIG_MODE ||
-        currentStatus == STATUS_TEST_WAIT_FOR_CFG_BUTTON) &&
-      newStatus != STATUS_SOFTWARE_RESET && newStatus != STATUS_INVALID_GUID &&
+       currentStatus == STATUS_TEST_WAIT_FOR_CFG_BUTTON) &&
+      newStatus != STATUS_SOFTWARE_RESET &&
+      newStatus != STATUS_INVALID_GUID &&
       newStatus != STATUS_INVALID_AUTHKEY) {
     // Config mode and testing is final state and the only exit goes through
     // reset with exception for invalid GUID and AUTHKEY
@@ -50,8 +51,7 @@ void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
   }
 
   if (currentStatus != newStatus) {
-    if (!((newStatus == STATUS_SERVER_DISCONNECTED ||
-           newStatus == STATUS_REGISTER_IN_PROGRESS) &&
+    if (!(newStatus == STATUS_REGISTER_IN_PROGRESS &&
           currentStatus > STATUS_REGISTER_IN_PROGRESS)) {
       if (impl_arduino_status != nullptr) {
         impl_arduino_status(newStatus, msg);

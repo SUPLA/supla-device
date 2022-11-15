@@ -22,6 +22,7 @@
 #include <supla/supla_lib_config.h>
 #include <string.h>
 #include <supla/log_wrapper.h>
+#include <SuplaDevice.h>
 #include <stdio.h>
 
 Supla::Client::Client() {
@@ -153,3 +154,6 @@ void Supla::Client::setDebugLogs(bool debug) {
   debugLogs = debug;
 }
 
+void Supla::Client::setSdc(SuplaDeviceClass *newSdc) {
+  sdc = newSdc;
+}

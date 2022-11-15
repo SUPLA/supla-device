@@ -24,6 +24,8 @@
 
 #include "ip_address.h"
 
+class SuplaDeviceClass;
+
 namespace Supla {
 
 class Client {
@@ -54,6 +56,7 @@ class Client {
   void setCACert(const char *rootCA);
 
   void setDebugLogs(bool);
+  void setSdc(SuplaDeviceClass *sdc);
 
  protected:
   virtual int connectImp(const char *host, uint16_t port) = 0;
@@ -64,6 +67,7 @@ class Client {
   bool debugLogs = false;
   const char *rootCACert = nullptr;
   unsigned int rootCACertSize = 0;
+  SuplaDeviceClass *sdc = nullptr;
 };
 
 extern Client *ClientBuilder();

@@ -33,6 +33,7 @@ Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
     : Supla::Protocol::ProtocolLayer(sdc), version(version) {
   client = Supla::ClientBuilder();
   client->setDebugLogs(true);
+  client->setSdc(sdc);
 }
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {

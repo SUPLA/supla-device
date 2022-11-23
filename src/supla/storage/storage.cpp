@@ -452,6 +452,11 @@ bool Storage::registerSection(int sectionId,
   ptr->size = size;
   ptr->addCrc = addCrc;
   ptr->addBackupCopy = addBackupCopy;
+
+
+  SUPLA_LOG_DEBUG(
+      "Storage: registered section %d, offset %d, size %d, CRC %d, backup %d",
+      sectionId, offset, size, addCrc, addBackupCopy);
   return true;
 }
 

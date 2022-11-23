@@ -226,7 +226,7 @@ void FactoryTest::waitForConfigButtonPress() {
     testFailed = true;
     return;
   }
-  SUPLA_LOG_ERROR(
+  SUPLA_LOG_INFO(
       "TEST[%d,%d]: waiting for config button press", testStage, testStep);
   // led blink
   testStage = Supla::TestStage_WaitForCfgButton;

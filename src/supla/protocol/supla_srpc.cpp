@@ -91,6 +91,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       }
 
       SUPLA_LOG_DEBUG("Security level: %d", securityLevel);
+      static const char wrongCert[] = "SUPLA";
       switch (securityLevel) {
         default:
         case 0: {
@@ -103,9 +104,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
             SUPLA_LOG_ERROR(
                 "Supla CA ceritificate is selected, but it is not set. "
                 "Connection will fail");
-            auto cert = new char[6];
-            strncpy(cert, "SUPLA", 6);  // Some dummy value for CA cert
-            certificate = cert;
+            certificate = wrongCert;
           }
           client->setCACert(certificate);
           break;
@@ -123,9 +122,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
             SUPLA_LOG_ERROR(
                 "Custom CA is selected, but certificate is"
                 " missing in config. Connect will fail");
-            auto cert = new char[6];
-            strncpy(cert, "SUPLA", 6);  // some dummy value
-            client->setCACert(cert);
+            client->setCACert(wrongCert);
           }
           break;
         }

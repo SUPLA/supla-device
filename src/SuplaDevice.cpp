@@ -95,6 +95,10 @@ SuplaDeviceClass::~SuplaDeviceClass() {
     delete[] customHostnamePrefix;
     customHostnamePrefix = nullptr;
   }
+  if (lastStateLogger) {
+    delete lastStateLogger;
+    lastStateLogger = nullptr;
+  }
 }
 
 void SuplaDeviceClass::setStatusFuncImpl(

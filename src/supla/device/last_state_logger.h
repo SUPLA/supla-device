@@ -26,6 +26,7 @@ namespace Device {
 class LastStateLogger {
  public:
   LastStateLogger();
+  virtual ~LastStateLogger();
   virtual void log(const char *);
   virtual char *getLog();
   virtual bool prepareLastStateLog();

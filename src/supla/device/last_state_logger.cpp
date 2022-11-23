@@ -30,6 +30,12 @@ LastStateLogger::LastStateLogger() {
   mutex = Supla::Mutex::Create();
 }
 
+LastStateLogger::~LastStateLogger() {
+  if (mutex) {
+    delete mutex;
+  }
+}
+
 bool LastStateLogger::prepareLastStateLog() {
   index = 0;
   return true;

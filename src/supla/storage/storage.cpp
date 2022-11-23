@@ -19,6 +19,7 @@
 #include <string.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <supla/crc16.h>
 
 #include "config.h"
 #include "storage.h"
@@ -26,6 +27,17 @@
 #define SUPLA_STORAGE_VERSION 1
 
 namespace Supla {
+
+class SpecialSectionInfo {
+ public:
+  int sectionId = -1;
+  int offset = -1;
+  int size = -1;
+  bool addCrc = false;
+  bool addBackupCopy = false;
+  SpecialSectionInfo *next = nullptr;
+};
+
 
 static bool storageInitDone = false;
 static bool configInitDone = false;
@@ -111,6 +123,39 @@ bool Storage::IsConfigStorageAvailable() {
   return (ConfigInstance() != nullptr);
 }
 
+bool Storage::RegisterSection(int sectionId,
+                              int offset,
+                              int size,
+                              bool addCrc,
+                              bool addBackupCopy) {
+  if (Instance()) {
+    return Instance()->registerSection(sectionId, offset, size, addCrc,
+        addBackupCopy);
+  }
+  return false;
+}
+
+bool Storage::ReadSection(int sectionId, unsigned char *data, int size) {
+  if (Instance()) {
+    return Instance()->readSection(sectionId, data, size);
+  }
+  return false;
+}
+
+bool Storage::WriteSection(int sectionId, const unsigned char *data, int size) {
+  if (Instance()) {
+    return Instance()->writeSection(sectionId, data, size);
+  }
+  return false;
+}
+
+bool Storage::DeleteSection(int sectionId) {
+  if (Instance()) {
+    return Instance()->deleteSection(sectionId);
+  }
+  return false;
+}
+
 Storage::Storage(unsigned int storageStartingOffset)
     : storageStartingOffset(storageStartingOffset),
       deviceConfigOffset(0),
@@ -131,6 +176,13 @@ Storage::Storage(unsigned int storageStartingOffset)
 Storage::~Storage() {
   instance = nullptr;
   storageInitDone = false;
+  auto ptr = firstSectionInfo;
+  firstSectionInfo = nullptr;
+  while (ptr) {
+    auto nextPtr = ptr->next;
+    delete ptr;
+    ptr = nextPtr;
+  }
 }
 
 bool Storage::prepareState(bool performDryRun) {
@@ -363,6 +415,169 @@ void Storage::scheduleSave(uint64_t delayMs) {
   if (currentMs - lastWriteTimestamp < currentMs - newTimestamp) {
     lastWriteTimestamp = newTimestamp;
   }
+}
+
+bool Storage::registerSection(int sectionId,
+                              int offset,
+                              int size,
+                              bool addCrc,
+                              bool addBackupCopy) {
+  if (addBackupCopy && !addCrc) {
+    SUPLA_LOG_ERROR(
+        "Storage: can't add section with backup copy and without CRC");
+    return false;
+  }
+  auto ptr = firstSectionInfo;
+  if (ptr == nullptr) {
+    ptr = new SpecialSectionInfo;
+    firstSectionInfo = ptr;
+  } else {
+    do {
+      if (ptr->sectionId == sectionId) {
+        SUPLA_LOG_ERROR("Storage: section ID %d is already used", sectionId);
+        return false;
+      }
+
+      if (ptr->next == nullptr) {
+        ptr->next = new SpecialSectionInfo;
+        ptr = ptr->next;
+        break;
+      }
+      ptr = ptr->next;
+    } while (1);
+  }
+
+  ptr->sectionId = sectionId;
+  ptr->offset = offset;
+  ptr->size = size;
+  ptr->addCrc = addCrc;
+  ptr->addBackupCopy = addBackupCopy;
+  return true;
+}
+
+bool Storage::readSection(int sectionId, unsigned char *data, int size) {
+  auto ptr = firstSectionInfo;
+  while (ptr) {
+    if (ptr->sectionId != sectionId) {
+      ptr = ptr->next;
+    } else {
+      if (ptr->size != size) {
+        SUPLA_LOG_ERROR("Storage: special section size mismatch %d != %d",
+            ptr->size, size);
+        return false;
+      }
+      for (int entry = 0; entry < (ptr->addBackupCopy ? 2 : 1); entry++) {
+        // offset is set to ptr->offset for first entry;
+        // for backup entry we add section size and crc (if used)
+        int offset = ptr->offset;
+        offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
+
+        SUPLA_LOG_DEBUG("Storage special section[%d]: reading data from"
+            " entry %d at offset %d, size %d",
+            sectionId, entry, offset, ptr->size);
+
+        auto readBytes = readStorage(offset, data, size);
+        if (readBytes != size) {
+          SUPLA_LOG_ERROR("Storage: failed to read special section");
+          return false;
+        }
+        if (ptr->addCrc) {
+          uint16_t readCrc = 0;
+          readStorage(offset + size,
+              reinterpret_cast<unsigned char *>(&readCrc), sizeof(readCrc));
+          uint16_t calcCrc = 0;
+          for (int i = 0; i < size; i++) {
+            calcCrc = crc16_update(calcCrc, data[i]);
+          }
+          if (readCrc != calcCrc) {
+            SUPLA_LOG_WARNING(
+                "Storage: special section crc check failed %d != %d",
+                readCrc, calcCrc);
+            // if there is backup copy, we'll try to read it
+            continue;
+          }
+        }
+        return true;
+      }
+      return false;
+    }
+  }
+  SUPLA_LOG_ERROR("Storage: can't find sectionId %d", sectionId);
+  return false;
+}
+
+bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
+  auto ptr = firstSectionInfo;
+  while (ptr) {
+    if (ptr->sectionId != sectionId) {
+      ptr = ptr->next;
+    } else {
+      if (ptr->size != size) {
+        SUPLA_LOG_ERROR("Storage: special section size mismatch %d != %d",
+            ptr->size, size);
+        return false;
+      }
+      for (int entry = 0; entry < (ptr->addBackupCopy ? 2 : 1); entry++) {
+        // offset is set to ptr->offset for first entry;
+        // for backup entry we add section size and crc (if used)
+        int offset = ptr->offset;
+        offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
+
+        SUPLA_LOG_DEBUG("Storage special section[%d]: writing data to"
+            " entry %d at offset %d, size %d",
+            sectionId, entry, offset, ptr->size);
+        auto wroteBytes = writeStorage(offset, data, size);
+        if (wroteBytes != size) {
+          SUPLA_LOG_ERROR("Storage: failed to write special section");
+          return false;
+        }
+        if (ptr->addCrc) {
+          uint16_t calcCrc = 0;
+          for (int i = 0; i < size; i++) {
+            calcCrc = crc16_update(calcCrc, data[i]);
+          }
+          writeStorage(offset + size,
+              reinterpret_cast<unsigned char *>(&calcCrc), sizeof(calcCrc));
+        }
+      }
+      return true;
+    }
+  }
+  SUPLA_LOG_ERROR("Storage: can't find sectionId %d", sectionId);
+  return false;
+}
+
+bool Storage::deleteSection(int sectionId) {
+  auto ptr = firstSectionInfo;
+  while (ptr) {
+    if (ptr->sectionId != sectionId) {
+      ptr = ptr->next;
+    } else {
+      for (int entry = 0; entry < (ptr->addBackupCopy ? 2 : 1); entry++) {
+        // offset is set to ptr->offset for first entry;
+        // for backup entry we add section size and crc (if used)
+        int offset = ptr->offset;
+        offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
+
+        SUPLA_LOG_DEBUG("Storage special section[%d]: deleting data from"
+            " entry %d at offset %d, size %d",
+            sectionId, entry, offset, ptr->size);
+
+        for (int i = 0; i < ptr->size; i++) {
+          uint8_t zero = 0;
+          writeStorage(offset + i, &zero, sizeof(zero));
+        }
+        if (ptr->addCrc) {
+          uint16_t calcCrc = 0;
+          writeStorage(offset + ptr->size,
+              reinterpret_cast<unsigned char *>(&calcCrc), sizeof(calcCrc));
+        }
+      }
+      return true;
+    }
+  }
+  SUPLA_LOG_ERROR("Storage: can't find sectionId %d", sectionId);
+  return false;
 }
 
 }  // namespace Supla

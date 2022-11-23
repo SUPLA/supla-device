@@ -15,6 +15,7 @@ set(SRCS
   supla/action_handler.cpp
   supla/mutex.cpp
   supla/auto_lock.cpp
+  supla/crc16.cpp
 
   supla/device/last_state_logger.cpp
   supla/device/sw_update.cpp

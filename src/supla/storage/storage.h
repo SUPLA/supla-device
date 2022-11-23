@@ -28,6 +28,7 @@
 namespace Supla {
 
 class Config;
+class SpecialSectionInfo;
 
 class Storage {
  public:
@@ -42,6 +43,24 @@ class Storage {
   static void ScheduleSave(uint64_t delayMs);
   static void SetConfigInstance(Config *instance);
   static bool IsConfigStorageAvailable();
+
+  // Register special section in storage data (outside of State storage)
+  // sectionId - user selected sectionId
+  // offset - storage memory offset - absolute value. Please make sure that it
+  // doesn't overlap with other sections and state section
+  // size - amount of bytes reserved
+  // addCrc - tell if Storage class should add CRC at the end of section
+  // Actual size of section is size + 2 bytes for CRC (if enabled)
+  static bool RegisterSection(int sectionId, int offset, int size,
+      bool addCrc, bool addBackupCopy);
+  // Reads data section. Returns false when size doesn't match and when crc
+  // check failed (if enabled)
+  static bool ReadSection(int sectionId, unsigned char *data, int size);
+  // Writes data section. Returns false when size doesn't match with
+  // registration info
+  static bool WriteSection(int sectionId, const unsigned char *data, int size);
+  // Delete content of section
+  static bool DeleteSection(int sectionId);
 
   explicit Storage(unsigned int storageStartingOffset = 0);
   virtual ~Storage();
@@ -61,6 +80,12 @@ class Storage {
   virtual void commit() = 0;
 
   virtual void deleteAll();
+
+  bool registerSection(int sectionId, int offset, int size, bool addCrc,
+      bool addBackupCopy);
+  bool readSection(int sectionId, unsigned char *data, int size);
+  bool writeSection(int sectionId, const unsigned char *data, int size);
+  bool deleteSection(int sectionId);
 
  protected:
   virtual int readStorage(unsigned int, unsigned char *, int, bool = true) = 0;
@@ -84,6 +109,8 @@ class Storage {
 
   uint64_t saveStatePeriod;
   uint64_t lastWriteTimestamp;
+
+  SpecialSectionInfo *firstSectionInfo = nullptr;
 
   static Storage *instance;
   static Config *configInstance;

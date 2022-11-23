@@ -66,17 +66,6 @@ class SimpleTime : public TimeInterface {
     uint64_t value;
 };
 
-class StorageMock2: public Supla::Storage {
- public:
-  MOCK_METHOD(bool, init, (), (override));
-  MOCK_METHOD(bool, prepareState, (bool), (override));
-  MOCK_METHOD(bool, finalizeSaveState, (), (override));
-  MOCK_METHOD(void, commit, (), (override));
-  MOCK_METHOD(int, readStorage, (unsigned int, unsigned char *, int, bool), (override));
-  MOCK_METHOD(int, writeStorage, (unsigned int, const unsigned char *, int), (override));
-
-};
-
 class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
   protected:
     SrpcMock srpc;

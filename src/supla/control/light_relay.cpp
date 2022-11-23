@@ -50,6 +50,10 @@ void LightRelay::handleGetChannelState(TDSC_ChannelState *channelState) {
 int LightRelay::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
   if (request &&
       request->Command == SUPLA_CALCFG_CMD_SET_LIGHTSOURCE_LIFESPAN) {
+    if (request->SuperUserAuthorized != 1) {
+      return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+    }
+
     if (request->DataSize == sizeof(TCalCfg_LightSourceLifespan)) {
       TCalCfg_LightSourceLifespan *config =
           reinterpret_cast<TCalCfg_LightSourceLifespan *>(request->Data);

@@ -762,6 +762,9 @@ void SuplaDeviceClass::removeFlags(_supla_int_t flags) {
 
 int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
   if (request) {
+    if (request->SuperUserAuthorized != 1) {
+      return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+    }
     switch (request->Command) {
       case SUPLA_CALCFG_CMD_ENTER_CFG_MODE: {
         SUPLA_LOG_INFO("CALCFG ENTER CFGMODE received");

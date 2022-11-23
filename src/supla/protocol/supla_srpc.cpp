@@ -285,25 +285,21 @@ void Supla::messageReceived(void *srpc,
             rd.data.sd_device_calcfg_request->DataType,
             rd.data.sd_device_calcfg_request->DataSize);
 
-        if (rd.data.sd_device_calcfg_request->SuperUserAuthorized != 1) {
-          result.Result = SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+        if (rd.data.sd_device_calcfg_request->ChannelNumber == -1) {
+          // calcfg with channel == -1 are for whole device, so we route
+          // it to SuplaDeviceClass instance
+          result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
+              rd.data.sd_device_calcfg_request);
         } else {
-          if (rd.data.sd_device_calcfg_request->ChannelNumber == -1) {
-            // calcfg with channel == -1 are for whole device, so we route
-            // it to SuplaDeviceClass instance
-            result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
+          auto element = Supla::Element::getElementByChannelNumber(
+              rd.data.sd_device_calcfg_request->ChannelNumber);
+          if (element) {
+            result.Result = element->handleCalcfgFromServer(
                 rd.data.sd_device_calcfg_request);
           } else {
-            auto element = Supla::Element::getElementByChannelNumber(
-                rd.data.sd_device_calcfg_request->ChannelNumber);
-            if (element) {
-              result.Result = element->handleCalcfgFromServer(
-                  rd.data.sd_device_calcfg_request);
-            } else {
-              SUPLA_LOG_ERROR(
-                  "Error: couldn't find element for a requested channel [%d]",
-                  rd.data.sd_channel_new_value->ChannelNumber);
-            }
+            SUPLA_LOG_ERROR(
+                "Error: couldn't find element for a requested channel [%d]",
+                rd.data.sd_channel_new_value->ChannelNumber);
           }
         }
         srpc_ds_async_device_calcfg_result(srpc, &result);

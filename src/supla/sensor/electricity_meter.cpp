@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <supla/time.h>
+#include <supla/log_wrapper.h>
 
 #include "../condition.h"
 #include "../events.h"
@@ -27,6 +28,8 @@ Supla::Sensor::ElectricityMeter::ElectricityMeter()
     : valueChanged(false), lastReadTime(0), refreshRateSec(5) {
   extChannel.setType(SUPLA_CHANNELTYPE_ELECTRICITY_METER);
   extChannel.setDefault(SUPLA_CHANNELFNC_ELECTRICITY_METER);
+  extChannel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
+
   memset(&emValue, 0, sizeof(emValue));
   emValue.period = 5;
   for (int i = 0; i < MAX_PHASES; i++) {
@@ -250,6 +253,7 @@ void Supla::Sensor::ElectricityMeter::iterateAlways() {
 // Implement this method to reset stored energy value (i.e. to set energy
 // counter back to 0 kWh
 void Supla::Sensor::ElectricityMeter::resetStorage() {
+  SUPLA_LOG_DEBUG("EM: reset storage called, but implementation is missing");
 }
 
 Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() {
@@ -374,4 +378,18 @@ _supla_int_t Supla::Sensor::ElectricityMeter::getPhaseAngle(int phase) {
     return emValue.m[0].phase_angle[phase];
   }
   return 0;
+}
+
+int Supla::Sensor::ElectricityMeter::handleCalcfgFromServer(
+    TSD_DeviceCalCfgRequest *request) {
+  if (request) {
+    if (request->Command == SUPLA_CALCFG_CMD_RESET_COUNTERS) {
+      if (!request->SuperUserAuthorized) {
+        return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+      }
+      resetStorage();
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+  }
+  return SUPLA_CALCFG_RESULT_FALSE;
 }

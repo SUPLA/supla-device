@@ -128,6 +128,11 @@ class ElectricityMeter : public Element, public LocalAction {
   // counter back to 0 kWh
   virtual void resetStorage();
 
+  // default calcfg implementation allows to resetStorage remotely.
+  // If you override it please remember to implement this functionality
+  // or call this method from base classs.
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
+
   void setRefreshRate(unsigned int sec);
 
   Channel *getChannel() override;

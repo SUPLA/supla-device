@@ -490,7 +490,7 @@ bool Storage::readSection(int sectionId, unsigned char *data, int size) {
           uint16_t readCrc = 0;
           readStorage(offset + size,
               reinterpret_cast<unsigned char *>(&readCrc), sizeof(readCrc));
-          uint16_t calcCrc = 0;
+          uint16_t calcCrc = 0xFFFF;
           for (int i = 0; i < size; i++) {
             calcCrc = crc16_update(calcCrc, data[i]);
           }
@@ -537,7 +537,7 @@ bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
           return false;
         }
         if (ptr->addCrc) {
-          uint16_t calcCrc = 0;
+          uint16_t calcCrc = 0xFFFF;
           for (int i = 0; i < size; i++) {
             calcCrc = crc16_update(calcCrc, data[i]);
           }

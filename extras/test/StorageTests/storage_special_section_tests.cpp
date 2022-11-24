@@ -148,17 +148,17 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrc) {
   EXPECT_CALL(storage, writeStorage(16, _, 2))
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     ;
@@ -192,20 +192,20 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrc) {
   EXPECT_CALL(storage, readStorage(16, _, 2, true))
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
     // third read with invalid data
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
@@ -290,17 +290,17 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrcAndBackup) {
   EXPECT_CALL(storage, writeStorage(16, _, 2))
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     ;
@@ -308,17 +308,17 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrcAndBackup) {
   EXPECT_CALL(storage, writeStorage(16 + 2 + 6, _, 2))
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     .WillOnce(
         [] (int offset, const unsigned char *data, int size) {
-        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 59616);
+        EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
       })
     ;
@@ -379,20 +379,20 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrcAndBackup) {
   EXPECT_CALL(storage, readStorage(16, _, 2, true))
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
     // third read with invalid data
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
@@ -406,7 +406,7 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrcAndBackup) {
     // fifth read
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
@@ -417,14 +417,14 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrcAndBackup) {
     // ok
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })
   // ok
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
-        uint16_t crc = 59616;
+        uint16_t crc = 62432;
         memcpy(data, &crc, 2);
         return 2;
       })

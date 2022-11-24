@@ -176,10 +176,11 @@ bool Fronius::iterateConnected() {
             "GET "
             "/solar_api/v1/GetInverterRealtimeData.cgi?Scope=Device&DeviceID=");
         char idBuf[20];
-        snprintf(idBuf, sizeof(idBuf), "%d", deviceId);
+        snprintf(idBuf, sizeof(idBuf), "%d&DeviceId=%d", deviceId, deviceId);
         strcat(buf, idBuf);  // NOLINT(runtime/printf)
         strcat(buf,          // NOLINT(runtime/printf)
             "&DataCollection=CommonInverterData HTTP/1.1");
+        SUPLA_LOG_VERBOSE("Fronius query: %s", buf);
         client->println(buf);
         client->println("Host: localhost");
         client->println("Connection: close");

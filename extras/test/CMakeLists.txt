@@ -53,6 +53,7 @@ file(GLOB TEST_SRC
   ElectricityMeterTests/*.cpp
   ToolsTests/*.cpp
   Mqtt/*.cpp
+  Html/*.cpp
   )
 
 file(GLOB DOUBLE_SRC doubles/*.cpp)

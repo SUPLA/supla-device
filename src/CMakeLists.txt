@@ -56,6 +56,8 @@ set(SRCS
   supla/network/html_generator.cpp
   supla/network/client.cpp
   supla/network/ip_address.cpp
+  supla/network/html/text_cmd_input_parameter.cpp
+  supla/network/web_sender.cpp
   supla/clock/clock.cpp
 
   supla/protocol/protocol_layer.cpp

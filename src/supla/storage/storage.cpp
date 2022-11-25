@@ -157,19 +157,7 @@ bool Storage::DeleteSection(int sectionId) {
 }
 
 Storage::Storage(unsigned int storageStartingOffset)
-    : storageStartingOffset(storageStartingOffset),
-      deviceConfigOffset(0),
-      elementConfigOffset(0),
-      elementStateOffset(0),
-      deviceConfigSize(0),
-      elementConfigSize(0),
-      elementStateSize(0),
-      currentStateOffset(0),
-      newSectionSize(0),
-      sectionsCount(0),
-      dryRun(false),
-      saveStatePeriod(1000),
-      lastWriteTimestamp(0) {
+    : storageStartingOffset(storageStartingOffset) {
   instance = this;
 }
 
@@ -230,12 +218,6 @@ bool Storage::writeState(const unsigned char *buf, int size) {
   // Calculation of offset for section data - in case sector is missing
   if (elementStateOffset == 0) {
     elementStateOffset = storageStartingOffset + sizeof(Preamble);
-    if (deviceConfigOffset != 0) {
-      elementStateOffset += sizeof(SectionPreamble) + deviceConfigSize;
-    }
-    if (elementConfigOffset != 0) {
-      elementStateOffset += sizeof(SectionPreamble) + elementConfigSize;
-    }
     SUPLA_LOG_DEBUG(
               "Initialization of elementStateOffset: %d",
               elementStateOffset);
@@ -342,19 +324,15 @@ bool Storage::init() {
     }
 
     switch (section.type) {
-      case STORAGE_SECTION_TYPE_DEVICE_CONFIG: {
-        deviceConfigOffset = sectionOffset;
-        deviceConfigSize = section.size;
-        break;
-      }
-      case STORAGE_SECTION_TYPE_ELEMENT_CONFIG: {
-        elementConfigOffset = sectionOffset;
-        elementConfigSize = section.size;
-        break;
-      }
       case STORAGE_SECTION_TYPE_ELEMENT_STATE: {
         elementStateOffset = sectionOffset;
         elementStateSize = section.size;
+        break;
+      }
+      case STORAGE_SECTION_TYPE_ELEMENT_STATE_BACKUP: {
+        elementStateOffset = sectionOffset;
+        elementStateBackupOffset = sectionOffset;
+        elementStateBackupSize = section.size;
         break;
       }
       default: {

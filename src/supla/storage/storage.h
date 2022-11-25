@@ -23,7 +23,8 @@
 
 #define STORAGE_SECTION_TYPE_DEVICE_CONFIG  1
 #define STORAGE_SECTION_TYPE_ELEMENT_CONFIG 2
-#define STORAGE_SECTION_TYPE_ELEMENT_STATE  3
+#define STORAGE_SECTION_TYPE_ELEMENT_STATE         3
+#define STORAGE_SECTION_TYPE_ELEMENT_STATE_BACKUP  4
 
 namespace Supla {
 
@@ -92,23 +93,21 @@ class Storage {
   virtual int writeStorage(unsigned int, const unsigned char *, int) = 0;
   virtual int updateStorage(unsigned int, const unsigned char *, int);
 
-  unsigned int storageStartingOffset;
-  unsigned int deviceConfigOffset;
-  unsigned int elementConfigOffset;
-  unsigned int elementStateOffset;
+  unsigned int storageStartingOffset = 0;
+  unsigned int elementStateOffset = 0;
+  unsigned int elementStateBackupOffset = 0;
 
-  unsigned int deviceConfigSize;
-  unsigned int elementConfigSize;
-  unsigned int elementStateSize;
+  unsigned int elementStateSize = 0;
+  unsigned int elementStateBackupSize = 0;
 
-  unsigned int currentStateOffset;
+  unsigned int currentStateOffset = 0;
 
-  unsigned int newSectionSize;
-  int sectionsCount;
-  bool dryRun;
+  unsigned int newSectionSize = 0;
+  int sectionsCount = 0;
+  bool dryRun = false;
 
-  uint64_t saveStatePeriod;
-  uint64_t lastWriteTimestamp;
+  uint64_t saveStatePeriod = 1000;
+  uint64_t lastWriteTimestamp = 0;
 
   SpecialSectionInfo *firstSectionInfo = nullptr;
 

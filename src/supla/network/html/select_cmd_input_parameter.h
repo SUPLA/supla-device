@@ -16,41 +16,24 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef SRC_SUPLA_NETWORK_HTML_TEXT_CMD_INPUT_PARAMETER_H_
-#define SRC_SUPLA_NETWORK_HTML_TEXT_CMD_INPUT_PARAMETER_H_
+#ifndef SRC_SUPLA_NETWORK_HTML_SELECT_CMD_INPUT_PARAMETER_H_
+#define SRC_SUPLA_NETWORK_HTML_SELECT_CMD_INPUT_PARAMETER_H_
 
-#include <supla/network/html_element.h>
-#include <supla/local_action.h>
-#include <stdint.h>
+#include <supla/network/html/text_cmd_input_parameter.h>
 
 namespace Supla {
 
 namespace Html {
 
-struct RegisteredCmdActionMap {
-  char *cmd = nullptr;
-  int eventId = 0;
-  RegisteredCmdActionMap *next = nullptr;
-
-  ~RegisteredCmdActionMap();
-};
-
-class TextCmdInputParameter : public HtmlElement, public LocalAction {
+class SelectCmdInputParameter : public TextCmdInputParameter {
  public:
-  TextCmdInputParameter(const char *paramTag, const char *paramLabel);
-  virtual ~TextCmdInputParameter();
+  SelectCmdInputParameter(const char *paramTag, const char *paramLabel);
+  virtual ~SelectCmdInputParameter();
   void send(Supla::WebSender* sender) override;
-  bool handleResponse(const char* key, const char* value) override;
-  void registerCmd(const char *cmdStr, int eventId);
-
- protected:
-  char *tag = nullptr;
-  char *label = nullptr;
-  RegisteredCmdActionMap *firstCmd = nullptr;
 };
 
 };  // namespace Html
 };  // namespace Supla
 
 
-#endif  // SRC_SUPLA_NETWORK_HTML_TEXT_CMD_INPUT_PARAMETER_H_
+#endif  // SRC_SUPLA_NETWORK_HTML_SELECT_CMD_INPUT_PARAMETER_H_

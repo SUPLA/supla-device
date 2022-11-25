@@ -31,18 +31,12 @@ namespace Supla {
 
 namespace Html {
 
-struct RegisteredCmdActionMap {
-  char *cmd = nullptr;
-  int eventId = 0;
-  RegisteredCmdActionMap *next = nullptr;
-
-  ~RegisteredCmdActionMap() {
-    if (cmd) {
-      delete[] cmd;
-    }
-    cmd = nullptr;
+RegisteredCmdActionMap::~RegisteredCmdActionMap() {
+  if (cmd) {
+    delete[] cmd;
   }
-};
+  cmd = nullptr;
+}
 
 TextCmdInputParameter::TextCmdInputParameter(const char *paramTag,
                                              const char *paramLabel)

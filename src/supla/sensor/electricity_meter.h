@@ -20,6 +20,7 @@
 #define SRC_SUPLA_SENSOR_ELECTRICITY_METER_H_
 
 #include <supla-common/srpc.h>
+#include <supla/action_handler.h>
 
 #include "../channel_extended.h"
 #include "../element.h"
@@ -29,7 +30,8 @@
 
 namespace Supla {
 namespace Sensor {
-class ElectricityMeter : public Element, public LocalAction {
+class ElectricityMeter :
+  public Element, public LocalAction, public ActionHandler {
  public:
   ElectricityMeter();
 
@@ -132,6 +134,8 @@ class ElectricityMeter : public Element, public LocalAction {
   // If you override it please remember to implement this functionality
   // or call this method from base classs.
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
+
+  void handleAction(int event, int action) override;
 
   void setRefreshRate(unsigned int sec);
 

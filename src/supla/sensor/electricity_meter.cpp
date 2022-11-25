@@ -19,6 +19,7 @@
 #include <string.h>
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
+#include <supla/actions.h>
 
 #include "../condition.h"
 #include "../events.h"
@@ -392,4 +393,14 @@ int Supla::Sensor::ElectricityMeter::handleCalcfgFromServer(
     }
   }
   return SUPLA_CALCFG_RESULT_FALSE;
+}
+
+void Supla::Sensor::ElectricityMeter::handleAction(int event, int action) {
+  (void)(event);
+  switch (action) {
+    case RESET: {
+      resetStorage();
+      break;
+    }
+  }
 }

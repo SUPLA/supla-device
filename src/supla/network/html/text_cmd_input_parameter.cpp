@@ -47,20 +47,17 @@ struct RegisteredCmdActionMap {
 TextCmdInputParameter::TextCmdInputParameter(const char *paramTag,
                                              const char *paramLabel)
     : HtmlElement(HTML_SECTION_FORM) {
-      SUPLA_LOG_DEBUG("TEST 1!!!!!!");
   int size = strlen(paramTag);
   if (size < 500) {
     tag = new char[size + 1];
     strncpy(tag, paramTag, size + 1);
   }
 
-      SUPLA_LOG_DEBUG("TEST 2!!!!!!");
   size = strlen(paramLabel);
   if (size < 500) {
     label = new char[size + 1];
     strncpy(label, paramLabel, size + 1);
   }
-      SUPLA_LOG_DEBUG("TEST 3!!!!!!");
 }
 
 TextCmdInputParameter::~TextCmdInputParameter() {

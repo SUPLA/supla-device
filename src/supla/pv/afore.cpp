@@ -45,6 +45,7 @@ Afore::Afore(IPAddress ip, int port, const char *loginAndPass)
     len = LOGIN_AND_PASSOWORD_MAX_LENGTH;
   }
   strncpy(loginAndPassword, loginAndPass, len);
+  client = Supla::ClientBuilder();
 }
 
 void Afore::iterateAlways() {

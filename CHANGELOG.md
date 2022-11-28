@@ -1,5 +1,20 @@
 # CHANGELOG.md
 
+## 22.11.03 (2022-11-28)
+
+  - Fix: THW-01: enabled more detailed logging of connection problem in "LAST STATE" field
+  - Fix: allow going back to "server disconnected" device state, when device is in error state
+  - Add: (Arduino ESPx) add log with BSSID on connection to Wi-Fi establishment
+  - Change: CALCFG handling - moved checking of "super user authorized" flag from supla_srpc to individual CALCFG handlers. Note: if your code use CALCFG then you should add checking if received CALCFG message has "authorized" flag set (if required by message).
+  - Change: Storage: removed not used section types "device config" and "element config".
+  - Add: Storage class: add "special storage section" functionality (see [4cf87f516c91](https://github.com/SUPLA/supla-device/commit/4cf87f516c91f2955f4b6eddd9069fa1cddc8112))
+  - Add: ElectricityMeter: add handling of CALCFG reset counters message. Add EM channel flag informing about reset counters capability. It still requires implementation of resetStorage() method to work.
+  - Add: ElectricityMeter: handling of Supla::RESET action
+  - Add: TextCmdInputParameter HTML elements. It creates text input HTML field. You can register any text command that will trigger local action
+when form is saved.
+  - Add: SelectCmdInputParameter HTML element - works in the same way as TextCmdInputParameter, but generates select HTML input type with all available options
+
+
 ## 22.11.02 (2022-11-03)
 
   - Fix: "beta" config HTML page stuck at "Loading..."

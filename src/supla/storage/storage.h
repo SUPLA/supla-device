@@ -24,7 +24,6 @@
 #define STORAGE_SECTION_TYPE_DEVICE_CONFIG  1
 #define STORAGE_SECTION_TYPE_ELEMENT_CONFIG 2
 #define STORAGE_SECTION_TYPE_ELEMENT_STATE         3
-#define STORAGE_SECTION_TYPE_ELEMENT_STATE_BACKUP  4
 
 namespace Supla {
 
@@ -95,10 +94,10 @@ class Storage {
 
   unsigned int storageStartingOffset = 0;
   unsigned int elementStateOffset = 0;
-  unsigned int elementStateBackupOffset = 0;
+
+  bool elementStateCrcCValid = false;
 
   unsigned int elementStateSize = 0;
-  unsigned int elementStateBackupSize = 0;
 
   unsigned int currentStateOffset = 0;
 
@@ -108,6 +107,7 @@ class Storage {
 
   uint64_t saveStatePeriod = 1000;
   uint64_t lastWriteTimestamp = 0;
+  uint16_t crc = 0;
 
   SpecialSectionInfo *firstSectionInfo = nullptr;
 

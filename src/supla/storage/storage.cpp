@@ -177,10 +177,16 @@ bool Storage::prepareState(bool performDryRun) {
   dryRun = performDryRun;
   newSectionSize = 0;
   currentStateOffset = elementStateOffset + sizeof(SectionPreamble);
+  crc = 0xFFFF;
   return true;
 }
 
 bool Storage::readState(unsigned char *buf, int size) {
+  if (!elementStateCrcCValid) {
+    // don't read state if CRC was invalid
+    return false;
+  }
+
   if (elementStateOffset + sizeof(SectionPreamble) + elementStateSize <
       currentStateOffset + size) {
     SUPLA_LOG_DEBUG(
@@ -238,6 +244,10 @@ bool Storage::writeState(const unsigned char *buf, int size) {
         storageStartingOffset, (unsigned char *)&preamble, sizeof(preamble));
   }
 
+  for (int i = 0; i < size; i++) {
+    crc = crc16_update(crc, buf[i]);
+  }
+
   currentStateOffset += updateStorage(currentStateOffset, buf, size);
 
   return true;
@@ -260,14 +270,18 @@ bool Storage::finalizeSaveState() {
   SectionPreamble preamble;
   preamble.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;
   preamble.size = newSectionSize;
-  preamble.crc1 = 0;
-  preamble.crc2 = 0;
-  // TODO(klew): add crc calculation
+  preamble.crc1 = crc;
+  preamble.crc2 = crc;
+
+  crc = 0xFFFF;
 
   updateStorage(
       elementStateOffset, (unsigned char *)&preamble, sizeof(preamble));
 
   commit();
+
+  elementStateCrcCValid = true;
+
   return true;
 }
 
@@ -323,16 +337,29 @@ bool Storage::init() {
           "storage hardware");
     }
 
+    // calculate CRC
+    crc = 0xFFFF;
+    for (int i = 0; i < section.size; i++) {
+      uint8_t buf = 0;
+      readStorage(sectionOffset + sizeof(SectionPreamble) + i, &buf, 1);
+      crc = crc16_update(crc, buf);
+    }
+
+    SUPLA_LOG_DEBUG("CRC1 %d, CRC2 %d, CRC calc %d", section.crc1, section.crc2,
+        crc);
+
+    bool crcValid = true;
+    if (crc != section.crc1 && crc != section.crc2
+        && (section.crc1 != 0 || section.crc2 != 0)) {
+      SUPLA_LOG_ERROR("Storage: invalid CRC for state data");
+      crcValid = false;
+    }
+
     switch (section.type) {
       case STORAGE_SECTION_TYPE_ELEMENT_STATE: {
         elementStateOffset = sectionOffset;
         elementStateSize = section.size;
-        break;
-      }
-      case STORAGE_SECTION_TYPE_ELEMENT_STATE_BACKUP: {
-        elementStateOffset = sectionOffset;
-        elementStateBackupOffset = sectionOffset;
-        elementStateBackupSize = section.size;
+        elementStateCrcCValid = crcValid;
         break;
       }
       default: {

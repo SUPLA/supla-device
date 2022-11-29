@@ -341,7 +341,7 @@ bool Storage::init() {
     crc = 0xFFFF;
     for (int i = 0; i < section.size; i++) {
       uint8_t buf = 0;
-      readStorage(sectionOffset + sizeof(SectionPreamble) + i, &buf, 1);
+      readStorage(sectionOffset + sizeof(SectionPreamble) + i, &buf, 1, false);
       crc = crc16_update(crc, buf);
     }
 
@@ -460,8 +460,10 @@ bool Storage::registerSection(int sectionId,
 
 
   SUPLA_LOG_DEBUG(
-      "Storage: registered section %d, offset %d, size %d, CRC %d, backup %d",
-      sectionId, offset, size, addCrc, addBackupCopy);
+      "Storage: registered section %d, offset %d, size %d, CRC %d, backup %d,"
+      "total size %d",
+      sectionId, offset, size, addCrc, addBackupCopy,
+      (addBackupCopy ? 2 : 1) * (size + (addCrc ? 2 : 0)));
   return true;
 }
 
@@ -517,6 +519,11 @@ bool Storage::readSection(int sectionId, unsigned char *data, int size) {
 }
 
 bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
+  // skip any write during dryRun
+  if (dryRun) {
+    return true;
+  }
+
   auto ptr = firstSectionInfo;
   while (ptr) {
     if (ptr->sectionId != sectionId) {
@@ -533,21 +540,30 @@ bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
         int offset = ptr->offset;
         offset += entry * (ptr->size + (ptr->addCrc ? sizeof(uint16_t) : 0));
 
-        SUPLA_LOG_DEBUG("Storage special section[%d]: writing data to"
-            " entry %d at offset %d, size %d",
-            sectionId, entry, offset, ptr->size);
-        auto wroteBytes = writeStorage(offset, data, size);
-        if (wroteBytes != size) {
-          SUPLA_LOG_ERROR("Storage: failed to write special section");
-          return false;
-        }
-        if (ptr->addCrc) {
-          uint16_t calcCrc = 0xFFFF;
-          for (int i = 0; i < size; i++) {
-            calcCrc = crc16_update(calcCrc, data[i]);
+        // check if stored data is the same as requested to write
+        unsigned char *currentData = new unsigned char[size];
+        readStorage(offset, currentData, size, false);
+
+        auto isDataDifferent = memcmp(currentData, data, size);
+        delete[] currentData;
+
+        if (isDataDifferent) {
+          SUPLA_LOG_DEBUG("Storage special section[%d]: writing data to"
+              " entry %d at offset %d, size %d",
+              sectionId, entry, offset, ptr->size);
+          auto wroteBytes = writeStorage(offset, data, size);
+          if (wroteBytes != size) {
+            SUPLA_LOG_ERROR("Storage: failed to write special section");
+            return false;
           }
-          writeStorage(offset + size,
-              reinterpret_cast<unsigned char *>(&calcCrc), sizeof(calcCrc));
+          if (ptr->addCrc) {
+            uint16_t calcCrc = 0xFFFF;
+            for (int i = 0; i < size; i++) {
+              calcCrc = crc16_update(calcCrc, data[i]);
+            }
+            writeStorage(offset + size,
+                reinterpret_cast<unsigned char *>(&calcCrc), sizeof(calcCrc));
+          }
         }
       }
       return true;

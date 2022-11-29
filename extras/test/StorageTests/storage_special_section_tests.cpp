@@ -76,12 +76,37 @@ TEST(StorageSpecialSecTests, writeAndReadTest) {
         [] (int offset, const unsigned char *data, int size) {
         EXPECT_EQ(strncmp(reinterpret_cast<const char*>(data), "SUPLA", 6), 0);
         return 6;
-      })
-    ;
+      });
 
+  // Each write also calls read in order to check if write is required,
+  // but then last param is set to false
+  EXPECT_CALL(storage, readStorage(10, _, 6, false))
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        // read before write operation - data has to be different in order
+        // to call write
+        snprintf(reinterpret_cast<char*>(data), 6, "supla");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        // read before write operation - data has to be different in order
+        // to call write
+        snprintf(reinterpret_cast<char*>(data), 6, "supla");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        // read before write operation - data has to be different in order
+        // to call write
+        snprintf(reinterpret_cast<char*>(data), 6, "supla");
+        return 6;
+      })
+  ;
   EXPECT_CALL(storage, readStorage(10, _, 6, true))
     .WillOnce(
         [] (int offset, unsigned char *data, int size, bool logs) {
+        // normal read
         snprintf(reinterpret_cast<char*>(data), 6, "SUPLA");
         return 6;
       })
@@ -160,6 +185,25 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrc) {
         [] (int offset, const unsigned char *data, int size) {
         EXPECT_EQ(*reinterpret_cast<const uint16_t *>(data), 62432);
         return 2;
+      })
+    ;
+
+  // reads executed before write operation
+  EXPECT_CALL(storage, readStorage(10, _, 6, false))
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
       })
     ;
 
@@ -286,6 +330,44 @@ TEST(StorageSpecialSecTests, writeAndReadTestWithCrcAndBackup) {
         return 6;
       })
     ;
+
+  // reads executed before write operation
+  EXPECT_CALL(storage, readStorage(10, _, 6, false))
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    ;
+  // reads of backup executed before write operation
+  EXPECT_CALL(storage, readStorage(10 + 6 + 2, _, 6, false))
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    .WillOnce(
+        [] (int offset, unsigned char *data, int size, bool logs) {
+        snprintf(reinterpret_cast<char*>(data), 6, "alpus");
+        return 6;
+      })
+    ;
+
   // crc writes
   EXPECT_CALL(storage, writeStorage(16, _, 2))
     .WillOnce(

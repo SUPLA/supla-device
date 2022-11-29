@@ -30,6 +30,16 @@
 
 namespace Supla {
 namespace Sensor {
+
+#pragma pack(push, 1)
+struct EnergyMeasurmentsStorage {
+  _supla_int64_t totalFwdActEnergy = 0;
+  _supla_int64_t totalRvsActEnergy = 0;
+  _supla_int64_t totalFwdReactEnergy = 0;
+  _supla_int64_t totalRvsReactEnergy = 0;
+};
+#pragma pack(pop)
+
 class ElectricityMeter :
   public Element, public LocalAction, public ActionHandler {
  public:

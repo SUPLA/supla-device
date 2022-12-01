@@ -264,6 +264,13 @@ _supla_int_t Channel::getFuncList() {
   return 0;
 }
 
+_supla_int_t Channel::getFlags() {
+  if (channelNumber >= 0) {
+    return reg_dev.channels[channelNumber].Flags;
+  }
+  return 0;
+}
+
 void Channel::setActionTriggerCaps(_supla_int_t caps) {
   SUPLA_LOG_DEBUG("Channel[%d] setting func list: %d", channelNumber,
       caps);
@@ -315,6 +322,11 @@ void Channel::sendUpdate() {
 
 TSuplaChannelExtendedValue *Channel::getExtValue() {
   return nullptr;
+}
+
+bool Channel::getExtValueAsElectricityMeter(
+      TElectricityMeter_ExtendedValue_V2 *out) {
+  return srpc_evtool_v2_extended2emextended(getExtValue(), out) == 1;
 }
 
 void Channel::setUpdateReady() {

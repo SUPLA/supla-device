@@ -31,6 +31,7 @@
 #include <supla/tools.h>
 #include <supla/element.h>
 #include <supla/protocol/mqtt_topic.h>
+#include "supla/sensor/electricity_meter.h"
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc) :
   Supla::Protocol::ProtocolLayer(sdc) {
@@ -295,9 +296,10 @@ void Supla::Protocol::Mqtt::publishBool(const char *topic,
 void Supla::Protocol::Mqtt::publishDouble(const char *topic,
                                     double payload,
                                     int qos,
-                                    int retain) {
+                                    int retain,
+                                    int precision) {
   char buf[100] = {};
-  snprintf(buf, sizeof(buf), "%.2f", payload);
+  snprintf(buf, sizeof(buf), "%.*f", precision, payload);
   publish(topic, buf, qos, retain);
 }
 
@@ -365,8 +367,142 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
       }
       break;
     }
+    case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
+      // Data for EM is published by publishExtendedChannelState method
+      break;
+    }
     default:
       SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+          ch->getChannelType());
+      break;
+  }
+}
+
+using Supla::Sensor::ElectricityMeter;
+
+void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
+  SUPLA_LOG_DEBUG("Mqtt: publish extended channel %d state", channel);
+  if (channel < 0 || channel >= channelsCount) {
+    SUPLA_LOG_WARNING("Mqtt: invalid channel %d for publish", channel);
+    return;
+  }
+  auto element = Supla::Element::getElementByChannelNumber(channel);
+  if (element == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: can't find element for channel %d", channel);
+    return;
+  }
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
+    return;
+  }
+  auto extCh = ch->getExtValue();
+  if (extCh == nullptr) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to load extended channel object");
+    return;
+  }
+
+  auto topic = MqttTopic("channels") / channel / "state";
+
+  switch (ch->getChannelType()) {
+    case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
+      TElectricityMeter_ExtendedValue_V2 extEMValue = {};
+      if (!ch->getExtValueAsElectricityMeter(&extEMValue)) {
+        SUPLA_LOG_DEBUG("Mqtt: failed to obtain ext EM value");
+        return;
+      }
+
+      if (ElectricityMeter::isFwdActEnergyUsed(extEMValue)) {
+        publishDouble((topic / "total_forward_active_energy").c_str(),
+            ElectricityMeter::getTotalFwdActEnergy(extEMValue) / 10000.0,
+            -1, -1, 4);
+      }
+
+      if (ElectricityMeter::isRvrActEnergyUsed(extEMValue)) {
+        publishDouble((topic / "total_reverse_active_energy").c_str(),
+            ElectricityMeter::getTotalRvrActEnergy(extEMValue) / 10000.0,
+            -1, -1, 4);
+      }
+
+      for (int phase = 0; phase < MAX_PHASES; phase++) {
+        if ((phase == 0 &&
+              ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE1_UNSUPPORTED) ||
+            (phase == 1 &&
+             ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED) ||
+            (phase == 2 &&
+             ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE3_UNSUPPORTED)
+           ) {
+          SUPLA_LOG_DEBUG("Mqtt: phase %d disabled, skipping", phase);
+          continue;
+        }
+        auto phaseTopic = topic / "phases" / (phase + 1);
+        if (ElectricityMeter::isFwdActEnergyUsed(extEMValue)) {
+          publishDouble((phaseTopic / "total_forward_active_energy").c_str(),
+              ElectricityMeter::getFwdActEnergy(extEMValue, phase) / 10000.0,
+              -1, -1, 4);
+        }
+
+        if (ElectricityMeter::isRvrActEnergyUsed(extEMValue)) {
+          publishDouble((phaseTopic / "total_reverse_active_energy").c_str(),
+              ElectricityMeter::getRvrActEnergy(extEMValue, phase) / 10000.0,
+              -1, -1, 4);
+        }
+
+        if (ElectricityMeter::isFwdReactEnergyUsed(extEMValue)) {
+          publishDouble((phaseTopic / "total_forward_reactive_energy").c_str(),
+              ElectricityMeter::getFwdReactEnergy(extEMValue, phase) / 10000.0,
+              -1, -1, 4);
+        }
+
+        if (ElectricityMeter::isRvrReactEnergyUsed(extEMValue)) {
+          publishDouble((phaseTopic / "total_reverse_reactive_energy").c_str(),
+              ElectricityMeter::getRvrReactEnergy(extEMValue, phase) / 10000.0,
+              -1, -1, 4);
+        }
+
+        if (ElectricityMeter::isVoltageUsed(extEMValue)) {
+          publishDouble((phaseTopic / "voltage").c_str(),
+              ElectricityMeter::getVoltage(extEMValue, phase) / 100.0);
+        }
+        if (ElectricityMeter::isCurrentUsed(extEMValue)) {
+          publishDouble((phaseTopic / "current").c_str(),
+              ElectricityMeter::getCurrent(extEMValue, phase) / 1000.0,
+              -1, -1, 3);
+        }
+        if (ElectricityMeter::isPowerActiveUsed(extEMValue)) {
+          publishDouble((phaseTopic / "power_active").c_str(),
+              ElectricityMeter::getPowerActive(extEMValue, phase) / 10000.0,
+              -1, -1, 3);
+        }
+        if (ElectricityMeter::isPowerReactiveUsed(extEMValue)) {
+          publishDouble((phaseTopic / "power_reactive").c_str(),
+              ElectricityMeter::getPowerReactive(extEMValue, phase) / 10000.0,
+              -1, -1, 3);
+        }
+        if (ElectricityMeter::isPowerApparentUsed(extEMValue)) {
+          publishDouble((phaseTopic / "power_apparent").c_str(),
+              ElectricityMeter::getPowerApparent(extEMValue, phase) / 10000.0,
+              -1, -1, 3);
+        }
+        if (ElectricityMeter::isPowerFactorUsed(extEMValue)) {
+          publishDouble((phaseTopic / "power_factor").c_str(),
+              ElectricityMeter::getPowerFactor(extEMValue, phase) / 1000.0);
+        }
+        if (ElectricityMeter::isPhaseAngleUsed(extEMValue)) {
+          publishDouble((phaseTopic / "phase_angle").c_str(),
+              ElectricityMeter::getPhaseAngle(extEMValue, phase) / 10.0,
+              -1, -1, 1);
+        }
+        if (ElectricityMeter::isFreqUsed(extEMValue)) {
+          publishDouble((phaseTopic / "frequency").c_str(),
+              ElectricityMeter::getFreq(extEMValue) / 100.0);
+        }
+      }
+
+      break;
+    }
+    default:
+      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported for extended value",
           ch->getChannelType());
       break;
   }
@@ -559,6 +695,10 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
     }
     case SUPLA_CHANNELTYPE_ACTIONTRIGGER: {
       publishHADiscoveryActionTrigger(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
+      publishHADiscoveryEM(element);
       break;
     }
     default:
@@ -1015,6 +1155,12 @@ void Supla::Protocol::Mqtt::sendActionTrigger(
   publish(topic.c_str(), actionString, -1, 0);
 }
 
+void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
+  (void)(element);
+  // TODO(klew): implement
+}
+
+
 bool Supla::Protocol::Mqtt::isRegisteredAndReady() {
   return connected;
 }
@@ -1034,15 +1180,13 @@ void Supla::Protocol::Mqtt::sendChannelValueChanged(
   publishChannelState(channelNumber);
 }
 
-// TODO(klew): implement for EM
 void Supla::Protocol::Mqtt::sendExtendedChannelValueChanged(
     uint8_t channelNumber,
     TSuplaChannelExtendedValue *value) {
-  (void)(channelNumber);
   (void)(value);
   if (!isRegisteredAndReady()) {
     return;
   }
 
-  // send value
+  publishExtendedChannelState(channelNumber);
 }

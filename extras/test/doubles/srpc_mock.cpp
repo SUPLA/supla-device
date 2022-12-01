@@ -161,3 +161,32 @@ _supla_int_t srpc_evtool_v2_emextended2extended(
   ev->size = 0;
   return 0;
 }
+
+_supla_int_t SRPC_ICACHE_FLASH srpc_evtool_v2_extended2emextended(
+    TSuplaChannelExtendedValue *ev, TElectricityMeter_ExtendedValue_V2 *em_ev) {
+  if (em_ev == NULL || ev == NULL ||
+      ev->type != EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2 || ev->size == 0 ||
+      ev->size > sizeof(TElectricityMeter_ExtendedValue_V2)) {
+    return 0;
+  }
+
+  memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V2));
+  memcpy(em_ev, ev->value, ev->size);
+
+  _supla_int_t expected_size = 0;
+
+  if (em_ev->m_count <= EM_MEASUREMENT_COUNT) {
+    expected_size =
+        sizeof(TElectricityMeter_ExtendedValue_V2) -
+        sizeof(TElectricityMeter_Measurement) * EM_MEASUREMENT_COUNT +
+        sizeof(TElectricityMeter_Measurement) * em_ev->m_count;
+  }
+
+  if (ev->size != expected_size) {
+    memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V2));
+    return 0;
+  }
+
+  return 1;
+}
+

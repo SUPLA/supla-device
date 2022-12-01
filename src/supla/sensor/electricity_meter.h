@@ -34,9 +34,9 @@ namespace Sensor {
 #pragma pack(push, 1)
 struct EnergyMeasurmentsStorage {
   _supla_int64_t totalFwdActEnergy = 0;
-  _supla_int64_t totalRvsActEnergy = 0;
+  _supla_int64_t totalRvrActEnergy = 0;
   _supla_int64_t totalFwdReactEnergy = 0;
-  _supla_int64_t totalRvsReactEnergy = 0;
+  _supla_int64_t totalRvrReactEnergy = 0;
 };
 #pragma pack(pop)
 
@@ -118,6 +118,102 @@ class ElectricityMeter :
 
   // phase angle 1 == 0.1 degree
   _supla_int_t getPhaseAngle(int phase);
+
+  // energy 1 == 0.00001 kWh
+  static unsigned _supla_int64_t
+    getFwdActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+        int phase);
+
+  // energy 1 == 0.00001 kWh
+  static unsigned _supla_int64_t
+    getTotalFwdActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  // energy 1 == 0.00001 kWh
+  static unsigned _supla_int64_t
+    getRvrActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+        int phase);
+
+  // energy 1 == 0.00001 kWh
+  static unsigned _supla_int64_t
+    getTotalRvrActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  // energy 1 == 0.00001 kWh
+  static unsigned _supla_int64_t
+    getFwdReactEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+        int phase);
+
+  // energy 1 == 0.00001 kWh
+  static unsigned _supla_int64_t
+    getRvrReactEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+        int phase);
+
+  // voltage 1 == 0.01 V
+  static unsigned _supla_int16_t
+    getVoltage(const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  // current 1 == 0.001 A
+  static unsigned _supla_int_t
+    getCurrent(const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  // Frequency 1 == 0.01 Hz
+  static unsigned _supla_int16_t
+    getFreq(const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  // power 1 == 0.00001 W
+  static _supla_int_t getPowerActive(
+      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  // power 1 == 0.00001 var
+  static _supla_int_t getPowerReactive(
+      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  // power 1 == 0.00001 VA
+  static _supla_int_t getPowerApparent(
+      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  // power 1 == 0.001
+  static _supla_int_t getPowerFactor(
+      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  // phase angle 1 == 0.1 degree
+  static _supla_int_t getPhaseAngle(
+      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+
+  static bool isFwdActEnergyUsed(
+    const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isRvrActEnergyUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isFwdReactEnergyUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isRvrReactEnergyUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isVoltageUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isCurrentUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isFreqUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isPowerActiveUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isPowerReactiveUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isPowerApparentUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isPowerFactorUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
+
+  static bool isPhaseAngleUsed(
+      const TElectricityMeter_ExtendedValue_V2 &emValue);
 
   void resetReadParameters();
 

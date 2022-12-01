@@ -66,8 +66,10 @@ class Mqtt : public ProtocolLayer {
   void publishDouble(const char *topic,
                double payload,
                int qos = -1,
-               int retain = -1);
+               int retain = -1,
+               int precision = 2);
   void publishChannelState(int channel);
+  void publishExtendedChannelState(int channel);
   void subscribeChannel(int channel);
   void subscribe(const char *topic, int qos = -1);
   bool isUpdatePending() override;
@@ -91,6 +93,7 @@ class Mqtt : public ProtocolLayer {
   void publishHADiscoveryThermometer(Supla::Element *);
   void publishHADiscoveryHumidity(Supla::Element *);
   void publishHADiscoveryActionTrigger(Supla::Element *);
+  void publishHADiscoveryEM(Supla::Element *);
   const char *getActionTriggerType(uint8_t actionIdx);
   bool isActionTriggerEnabled(Supla::Channel *ch, uint8_t actionIdx);
   virtual void publishImp(const char *topic,

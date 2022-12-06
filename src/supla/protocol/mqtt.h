@@ -35,6 +35,31 @@ namespace Supla {
 
 namespace Protocol {
 
+// https://developers.home-assistant.io/docs/core/entity/sensor/
+enum HAStateClass {
+  HAStateClass_None,
+  HAStateClass_Measurement,
+  HAStateClass_Total,
+  HAStateClass_TotalIncreasing
+};
+
+// https://www.home-assistant.io/integrations/sensor/#device-class
+// Not all devices classes are implemented here. Only those which we use are
+// present. Add more if needed.
+// Also not all parameters used in Supla have corresponding device class in
+// HA, so in such case we don't set the device class.
+enum HADeviceClass {
+  HADeviceClass_None,
+  HADeviceClass_ApparentPower,
+  HADeviceClass_Current,
+  HADeviceClass_Energy,
+  HADeviceClass_Frequency,
+  HADeviceClass_PowerFactor,
+  HADeviceClass_Power,
+  HADeviceClass_ReactivePower,
+  HADeviceClass_Voltage
+};
+
 class Mqtt : public ProtocolLayer {
  public:
   explicit Mqtt(SuplaDeviceClass *sdc);
@@ -94,6 +119,15 @@ class Mqtt : public ProtocolLayer {
   void publishHADiscoveryHumidity(Supla::Element *);
   void publishHADiscoveryActionTrigger(Supla::Element *);
   void publishHADiscoveryEM(Supla::Element *);
+
+  // parameterName has to be ASCII string with small caps and underscores
+  // between words i.e. "total_forward_active_energy".
+  // Name of parameter will be generated in following way:
+  // "Total forward active energy"
+  void publishHADiscoveryEMParameter(
+    Supla::Element *element, int parameterId, const char *parameterName,
+    const char *units, Supla::Protocol::HAStateClass stateClass,
+    Supla::Protocol::HADeviceClass deviceClass);
   const char *getActionTriggerType(uint8_t actionIdx);
   bool isActionTriggerEnabled(Supla::Channel *ch, uint8_t actionIdx);
   virtual void publishImp(const char *topic,
@@ -101,6 +135,8 @@ class Mqtt : public ProtocolLayer {
                           int qos,
                           bool retain) = 0;
   virtual void subscribeImp(const char *topic, int qos) = 0;
+  const char *getStateClassStr(Supla::Protocol::HAStateClass stateClass);
+  const char *getDeviceClassStr(Supla::Protocol::HADeviceClass deviceClass);
 
   bool isPayloadOn(const char *);
 

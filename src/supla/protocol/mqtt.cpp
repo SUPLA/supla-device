@@ -414,13 +414,13 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
 
       if (ElectricityMeter::isFwdActEnergyUsed(extEMValue)) {
         publishDouble((topic / "total_forward_active_energy").c_str(),
-            ElectricityMeter::getTotalFwdActEnergy(extEMValue) / 10000.0,
+            ElectricityMeter::getTotalFwdActEnergy(extEMValue) / 100000.0,
             -1, -1, 4);
       }
 
       if (ElectricityMeter::isRvrActEnergyUsed(extEMValue)) {
         publishDouble((topic / "total_reverse_active_energy").c_str(),
-            ElectricityMeter::getTotalRvrActEnergy(extEMValue) / 10000.0,
+            ElectricityMeter::getTotalRvrActEnergy(extEMValue) / 100000.0,
             -1, -1, 4);
       }
 
@@ -438,25 +438,25 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
         auto phaseTopic = topic / "phases" / (phase + 1);
         if (ElectricityMeter::isFwdActEnergyUsed(extEMValue)) {
           publishDouble((phaseTopic / "total_forward_active_energy").c_str(),
-              ElectricityMeter::getFwdActEnergy(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getFwdActEnergy(extEMValue, phase) / 100000.0,
               -1, -1, 4);
         }
 
         if (ElectricityMeter::isRvrActEnergyUsed(extEMValue)) {
           publishDouble((phaseTopic / "total_reverse_active_energy").c_str(),
-              ElectricityMeter::getRvrActEnergy(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getRvrActEnergy(extEMValue, phase) / 100000.0,
               -1, -1, 4);
         }
 
         if (ElectricityMeter::isFwdReactEnergyUsed(extEMValue)) {
           publishDouble((phaseTopic / "total_forward_reactive_energy").c_str(),
-              ElectricityMeter::getFwdReactEnergy(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getFwdReactEnergy(extEMValue, phase) / 100000.0,
               -1, -1, 4);
         }
 
         if (ElectricityMeter::isRvrReactEnergyUsed(extEMValue)) {
           publishDouble((phaseTopic / "total_reverse_reactive_energy").c_str(),
-              ElectricityMeter::getRvrReactEnergy(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getRvrReactEnergy(extEMValue, phase) / 100000.0,
               -1, -1, 4);
         }
 
@@ -471,17 +471,17 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
         }
         if (ElectricityMeter::isPowerActiveUsed(extEMValue)) {
           publishDouble((phaseTopic / "power_active").c_str(),
-              ElectricityMeter::getPowerActive(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getPowerActive(extEMValue, phase) / 100000.0,
               -1, -1, 3);
         }
         if (ElectricityMeter::isPowerReactiveUsed(extEMValue)) {
           publishDouble((phaseTopic / "power_reactive").c_str(),
-              ElectricityMeter::getPowerReactive(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getPowerReactive(extEMValue, phase) / 100000.0,
               -1, -1, 3);
         }
         if (ElectricityMeter::isPowerApparentUsed(extEMValue)) {
           publishDouble((phaseTopic / "power_apparent").c_str(),
-              ElectricityMeter::getPowerApparent(extEMValue, phase) / 10000.0,
+              ElectricityMeter::getPowerApparent(extEMValue, phase) / 100000.0,
               -1, -1, 3);
         }
         if (ElectricityMeter::isPowerFactorUsed(extEMValue)) {
@@ -1155,9 +1155,250 @@ void Supla::Protocol::Mqtt::sendActionTrigger(
   publish(topic.c_str(), actionString, -1, 0);
 }
 
+void Supla::Protocol::Mqtt::publishHADiscoveryEMParameter(
+    Supla::Element *element, int parameterId, const char *parameterName,
+    const char *units, Supla::Protocol::HAStateClass stateClass,
+    Supla::Protocol::HADeviceClass deviceClass) {
+  if (element == nullptr) {
+    return;
+  }
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  int phase = (parameterId + 12 - 4) / 12;
+
+  char phaseStr[11] = {};  // " - Phase x" - 10 chars + null byte
+  if (phase > 0 && phase < 4) {
+    snprintf(phaseStr, sizeof(phaseStr), " - Phase %d", phase);
+  }
+
+  char humanReadableParameterName[200] = {};
+  snprintf(humanReadableParameterName, sizeof(humanReadableParameterName),
+      "%s%s", parameterName, phaseStr);
+  humanReadableParameterName[0] -= 32;  // capitalize first char in name
+  for (int i = 0; humanReadableParameterName[i] != 0; i++) {
+    if (humanReadableParameterName[i] == '_') {
+      humanReadableParameterName[i] = ' ';
+    }
+  }
+
+  char phaseTopicPart[10] = {};  // "phases/x/" - 9 chars + null byte
+  if (phase > 0 && phase < 4) {
+    snprintf(phaseTopicPart, sizeof(phaseTopicPart), "phases/%d/", phase);
+  }
+
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), parameterId);
+
+  auto topic = getHADiscoveryTopic("sensor", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i Electricity Meter (%s)\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"unit_of_meas\": \"%s\","
+      "\"stat_t\":\"~/state/%s%s\""
+      "%s%s"
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            element->getChannelNumber(),
+            humanReadableParameterName,
+            objectId,
+            units,
+            phaseTopicPart,
+            parameterName,
+            getStateClassStr(stateClass),
+            getDeviceClassStr(deviceClass)
+            )
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, -1, true);
+
+  delete[] payload;
+}
+
 void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
-  (void)(element);
-  // TODO(klew): implement
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  TElectricityMeter_ExtendedValue_V2 extEMValue = {};
+
+  if (!ch->getExtValueAsElectricityMeter(&extEMValue)) {
+    SUPLA_LOG_DEBUG("Mqtt: failed to obtain ext EM value");
+    return;
+  }
+
+  int parameterId = 1;
+  if (ElectricityMeter::isFwdActEnergyUsed(extEMValue)) {
+    publishHADiscoveryEMParameter(element, parameterId,
+        "total_forward_active_energy", "kWh",
+        Supla::Protocol::HAStateClass_TotalIncreasing,
+        Supla::Protocol::HADeviceClass_Energy);
+  }
+
+  parameterId++;
+  if (ElectricityMeter::isRvrActEnergyUsed(extEMValue)) {
+    publishHADiscoveryEMParameter(element, parameterId,
+        "total_reverse_active_energy", "kWh",
+        Supla::Protocol::HAStateClass_TotalIncreasing,
+        Supla::Protocol::HADeviceClass_Energy);
+  }
+
+  parameterId += 2;  // we add 2 here, because it is left for meters with
+                     // balanced energy values (not yet implemented here)
+
+  for (int phase = 0; phase < MAX_PHASES; phase++) {
+    if ((phase == 0 &&
+          ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE1_UNSUPPORTED) ||
+        (phase == 1 &&
+         ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED) ||
+        (phase == 2 &&
+         ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE3_UNSUPPORTED)
+       ) {
+      SUPLA_LOG_DEBUG("Mqtt: phase %d disabled, skipping", phase);
+      parameterId += 12;
+      continue;
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isFwdActEnergyUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "total_forward_active_energy", "kWh",
+          Supla::Protocol::HAStateClass_TotalIncreasing,
+          Supla::Protocol::HADeviceClass_Energy);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isRvrActEnergyUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "total_reverse_active_energy", "kWh",
+          Supla::Protocol::HAStateClass_TotalIncreasing,
+          Supla::Protocol::HADeviceClass_Energy);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isFwdReactEnergyUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "total_forward_reactive_energy", "kvarh",
+          Supla::Protocol::HAStateClass_TotalIncreasing,
+          Supla::Protocol::HADeviceClass_Energy);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isRvrReactEnergyUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "total_reverse_reactive_energy", "kvarh",
+          Supla::Protocol::HAStateClass_TotalIncreasing,
+          Supla::Protocol::HADeviceClass_Energy);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isFreqUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "frequency", "Hz",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_Frequency);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isVoltageUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "voltage", "V",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_Voltage);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isCurrentUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "current", "A",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_Current);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isPowerActiveUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "power_active", "W",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_Power);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isPowerReactiveUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "power_reactive", "var",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_ReactivePower);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isPowerApparentUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "power_apparent", "VA",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_ApparentPower);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isPowerFactorUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "power_factor", "%",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_PowerFactor);
+    }
+
+    parameterId++;
+    if (ElectricityMeter::isPhaseAngleUsed(extEMValue)) {
+      publishHADiscoveryEMParameter(element, parameterId,
+          "phase_angle", "°",
+          Supla::Protocol::HAStateClass_Measurement,
+          Supla::Protocol::HADeviceClass_None);
+    }
+  }
 }
 
 
@@ -1190,3 +1431,44 @@ void Supla::Protocol::Mqtt::sendExtendedChannelValueChanged(
 
   publishExtendedChannelState(channelNumber);
 }
+
+const char *Supla::Protocol::Mqtt::getStateClassStr(
+    Supla::Protocol::HAStateClass stateClass) {
+  switch (stateClass) {
+    case  HAStateClass_Measurement:
+      return ",\"stat_cla\":\"measurement\"";
+    case HAStateClass_Total:
+      return ",\"stat_cla\":\"total\"";
+    case HAStateClass_TotalIncreasing:
+      return ",\"stat_cla\":\"total_increasing\"";
+    case HAStateClass_None:
+    default:
+      return "";
+  }
+}
+
+const char *Supla::Protocol::Mqtt::getDeviceClassStr(
+    Supla::Protocol::HADeviceClass deviceClass) {
+  switch (deviceClass) {
+    case  HADeviceClass_Energy:
+      return ",\"dev_cla\":\"energy\"";
+    case HADeviceClass_ApparentPower:
+      return ",\"dev_cla\":\"apparent_power\"";
+    case HADeviceClass_Voltage:
+      return ",\"dev_cla\":\"voltage\"";
+    case HADeviceClass_Current:
+      return ",\"dev_cla\":\"current\"";
+    case HADeviceClass_Frequency:
+      return ",\"dev_cla\":\"frequency\"";
+    case HADeviceClass_PowerFactor:
+      return ",\"dev_cla\":\"power_factor\"";
+    case HADeviceClass_Power:
+      return ",\"dev_cla\":\"power\"";
+    case HADeviceClass_ReactivePower:
+      return ",\"dev_cla\":\"reactive_power\"";
+    case HADeviceClass_None:
+    default:
+      return "";
+  }
+}
+

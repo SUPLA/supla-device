@@ -1167,7 +1167,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEMParameter(
     return;
   }
 
-  int phase = (parameterId + 12 - 4) / 12;
+  int phase = (parameterId + 12 - 5) / 12;
 
   char phaseStr[11] = {};  // " - Phase x" - 10 chars + null byte
   if (phase > 0 && phase < 4) {
@@ -1386,7 +1386,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
     parameterId++;
     if (ElectricityMeter::isPowerFactorUsed(extEMValue)) {
       publishHADiscoveryEMParameter(element, parameterId,
-          "power_factor", "%",
+          "power_factor", "",
           Supla::Protocol::HAStateClass_Measurement,
           Supla::Protocol::HADeviceClass_PowerFactor);
     }

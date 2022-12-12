@@ -509,5 +509,9 @@ int RollerShutter::getCurrentPosition() {
   return currentPosition;
 }
 
+int RollerShutter::getCurrentDirection() {
+  return currentDirection;
+}
+
 };  // namespace Control
 };  // namespace Supla

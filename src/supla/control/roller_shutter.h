@@ -32,7 +32,7 @@
 namespace Supla {
 namespace Control {
 
-enum Directions { STOP_DIR, DOWN_DIR, UP_DIR };
+enum Directions { STOP_DIR = 0, DOWN_DIR = 1, UP_DIR = 2 };
 
 class RollerShutter : public ChannelElement, public ActionHandler {
  public:
@@ -50,6 +50,9 @@ class RollerShutter : public ChannelElement, public ActionHandler {
                     // (keep motor going down)
   void setTargetPosition(int newPosition);
   int getCurrentPosition();
+  // Get current roller shutter movement direction. Returns int value of
+  // enum Supla::Control::Directions
+  int getCurrentDirection();
 
   void configComfortUpValue(uint8_t position);
   void configComfortDownValue(uint8_t position);

@@ -46,9 +46,12 @@
 #include <string>
 
 #include "linux_yaml_config.h"
+#include "supla/sensor/therm_hygro_meter_parsed.h"
 
 namespace Supla {
 const char Multiplier[] = "multiplier";
+const char MultiplierTemp[] = "multiplier_temp";
+const char MultiplierHumi[] = "multiplier_humi";
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
 const char GuidKey[] = "guid";
@@ -433,6 +436,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addRainParsed(ch, channelNumber, parser);
+    } else if (type == "ThermHygroMeterParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addThermHygroMeterParsed(ch, channelNumber, parser);
     } else {
       SUPLA_LOG_ERROR(
                 "Channel[%d] config: unknown type \"%s\"",
@@ -518,6 +527,10 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
   if (ch[Supla::Multiplier]) {
     paramCount++;
     double multiplier = ch[Supla::Multiplier].as<double>();
+    therm->setMultiplier(Supla::Parser::Temperature, multiplier);
+  } else if (ch[Supla::MultiplierTemp]) {
+    paramCount++;
+    double multiplier = ch[Supla::MultiplierTemp].as<double>();
     therm->setMultiplier(Supla::Parser::Temperature, multiplier);
   }
 
@@ -832,6 +845,61 @@ bool Supla::LinuxYamlConfig::saveGuidAuth(const std::string& path) {
 
 bool Supla::LinuxYamlConfig::isConfigModeSupported() {
   return false;
+}
+
+bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding ThermHygroMeterParsed",
+      channelNumber);
+  auto thermHumi = new Supla::Sensor::ThermHygroMeterParsed(parser);
+  if (ch[Supla::Parser::Humidity]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Humidity].as<int>();
+      thermHumi->setMapping(Supla::Parser::Humidity, index);
+    } else {
+      std::string key = ch[Supla::Parser::Humidity].as<std::string>();
+      thermHumi->setMapping(Supla::Parser::Humidity, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing \"%s\" parameter",
+              channelNumber,
+              Supla::Parser::Humidity);
+    return false;
+  }
+
+  if (ch[Supla::MultiplierHumi]) {
+    paramCount++;
+    double multiplier = ch[Supla::MultiplierHumi].as<double>();
+    thermHumi->setMultiplier(Supla::Parser::Humidity, multiplier);
+  }
+
+  if (ch[Supla::Parser::Temperature]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Temperature].as<int>();
+      thermHumi->setMapping(Supla::Parser::Temperature, index);
+    } else {
+      std::string key = ch[Supla::Parser::Temperature].as<std::string>();
+      thermHumi->setMapping(Supla::Parser::Temperature, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing \"%s\" parameter",
+              channelNumber,
+              Supla::Parser::Temperature);
+    return false;
+  }
+
+  if (ch[Supla::MultiplierTemp]) {
+    paramCount++;
+    double multiplier = ch[Supla::MultiplierTemp].as<double>();
+    thermHumi->setMultiplier(Supla::Parser::Temperature, multiplier);
+  }
+
+  return true;
 }
 
 bool Supla::LinuxYamlConfig::addHumidityParsed(

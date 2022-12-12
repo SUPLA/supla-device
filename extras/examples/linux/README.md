@@ -224,6 +224,7 @@ Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `Fronius` - related class `Supla::PV::Fronius`
 * `ThermometerParsed` - related class `Supla::Sensor::ThermometerParsed`
+* `ThermHygroMeterParsed` - related class `Supla::Sensor::ThermHygroMeterParsed`
 * `ImpulseCounterParsed` - related class `Supla::Sensor::ImpulseCounterParsed`
 * `ElectricityMeterParsed` - related class `Supla::Sensor::ElectricityMeterParsed`
 * `BinaryParsed` - related class `Supla::Sensor::BinaryParsed`
@@ -315,6 +316,22 @@ Example channels configuration (details are exaplained later):
         parser:
           use: parser_1
 
+      - type: ThermHygroMeterParsed
+        name: th1
+        source:
+          type: File
+      # use file "temp_humi.txt" from current folder
+          file: "temp_humi.txt"
+        parser:
+          type: Simple
+          refresh_time_ms: 200
+      # temperature is read from first line of txt file
+        temperature: 0
+      # humidity is read from second line of txt file
+        humidity: 1
+        multiplier_temp: 1
+        multiplier_humi: 1
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -394,6 +411,17 @@ Mandatory parameter: `temperature` - defines key/index by which data is fetched
 from `parser`.
 Optional parameter: `multiplier` - defines multiplier for fetched value
 (you can put any floating point number).
+
+### `ThermHygroMeterParsed`
+
+Add channel with "thermometer + hygrometer" type.
+
+Mandatory parameters: `temperature` - defines key/index by which data is fetched
+from `parser` for temperature value, `humidity` - defines key/index by which
+data is fetched from `parser` for humidity value;
+Optional parameter: `multiplier_temp` - defines multiplier for temperatur value
+(you can put any floating point number), `multiplier_humi` - defines multiplier
+for humidity value.
 
 ### `ImpulseCounterParsed`
 

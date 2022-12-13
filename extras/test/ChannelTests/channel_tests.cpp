@@ -492,19 +492,74 @@ TEST(ChannelTests, DoubleFloatChannelWithLocalActions) {
 TEST(ChannelTests, RgbwChannelWithLocalActions) {
   Supla::Channel ch1;
 
-  ::testing::InSequence seq;
   ActionHandlerMock mock1;
   ActionHandlerMock mock2;
   SrpcMock srpc;
 
-  int action1 = 11;
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_CHANGE, Supla::ON_CHANGE)).Times(6);
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_DIMMER_BRIGHTNESS_CHANGE,
+        Supla::ON_DIMMER_BRIGHTNESS_CHANGE)).Times(3);
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_COLOR_BRIGHTNESS_CHANGE,
+        Supla::ON_COLOR_BRIGHTNESS_CHANGE)).Times(2);
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_DIMMER_TURN_ON, Supla::ON_DIMMER_TURN_ON));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_COLOR_TURN_ON, Supla::ON_COLOR_TURN_ON));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_RED_TURN_ON, Supla::ON_RED_TURN_ON));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_GREEN_TURN_ON, Supla::ON_GREEN_TURN_ON));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_GREEN_TURN_OFF, Supla::ON_GREEN_TURN_OFF));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_BLUE_TURN_ON, Supla::ON_BLUE_TURN_ON));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_RED_CHANGE, Supla::ON_RED_CHANGE));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_RED_TURN_OFF, Supla::ON_RED_TURN_OFF));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_GREEN_CHANGE, Supla::ON_GREEN_CHANGE)).Times(3);
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_BLUE_CHANGE, Supla::ON_BLUE_CHANGE)).Times(2);
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_BLUE_TURN_OFF, Supla::ON_BLUE_TURN_OFF));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_TURN_ON, Supla::ON_TURN_ON));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_TURN_OFF, Supla::ON_TURN_OFF)).Times(2);
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_DIMMER_TURN_OFF, Supla::ON_DIMMER_TURN_OFF));
+  EXPECT_CALL(mock1,
+      handleAction(Supla::ON_COLOR_TURN_OFF, Supla::ON_COLOR_TURN_OFF));
 
-  EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));
-  EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));
-  EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));
   EXPECT_CALL(mock2, handleAction).Times(0);
 
-  ch1.addAction(action1, mock1, Supla::ON_CHANGE);
+  // We add action the same as event, just to keep it simpler to read. In
+  // real application events are not used as actions, but since those are
+  // just integers we can use them here.
+  ch1.addAction(Supla::ON_CHANGE, mock1, Supla::ON_CHANGE);
+  ch1.addAction(Supla::ON_DIMMER_TURN_ON, mock1, Supla::ON_DIMMER_TURN_ON);
+  ch1.addAction(Supla::ON_DIMMER_TURN_OFF, mock1, Supla::ON_DIMMER_TURN_OFF);
+  ch1.addAction(Supla::ON_DIMMER_BRIGHTNESS_CHANGE, mock1,
+      Supla::ON_DIMMER_BRIGHTNESS_CHANGE);
+  ch1.addAction(Supla::ON_COLOR_TURN_ON, mock1, Supla::ON_COLOR_TURN_ON);
+  ch1.addAction(Supla::ON_COLOR_TURN_OFF, mock1, Supla::ON_COLOR_TURN_OFF);
+  ch1.addAction(Supla::ON_COLOR_BRIGHTNESS_CHANGE, mock1,
+      Supla::ON_COLOR_BRIGHTNESS_CHANGE);
+  ch1.addAction(Supla::ON_RED_TURN_ON, mock1, Supla::ON_RED_TURN_ON);
+  ch1.addAction(Supla::ON_RED_TURN_OFF, mock1, Supla::ON_RED_TURN_OFF);
+  ch1.addAction(Supla::ON_RED_CHANGE, mock1, Supla::ON_RED_CHANGE);
+  ch1.addAction(Supla::ON_GREEN_TURN_ON, mock1, Supla::ON_GREEN_TURN_ON);
+  ch1.addAction(Supla::ON_GREEN_TURN_OFF, mock1, Supla::ON_GREEN_TURN_OFF);
+  ch1.addAction(Supla::ON_GREEN_CHANGE, mock1, Supla::ON_GREEN_CHANGE);
+  ch1.addAction(Supla::ON_BLUE_TURN_ON, mock1, Supla::ON_BLUE_TURN_ON);
+  ch1.addAction(Supla::ON_BLUE_TURN_OFF, mock1, Supla::ON_BLUE_TURN_OFF);
+  ch1.addAction(Supla::ON_BLUE_CHANGE, mock1, Supla::ON_BLUE_CHANGE);
+  ch1.addAction(Supla::ON_TURN_ON, mock1, Supla::ON_TURN_ON);
+  ch1.addAction(Supla::ON_TURN_OFF, mock1, Supla::ON_TURN_OFF);
 
   ch1.setNewValue(10, 20, 30, 90, 80);
   ch1.setNewValue(10, 20, 30, 90, 80);
@@ -512,6 +567,12 @@ TEST(ChannelTests, RgbwChannelWithLocalActions) {
   ch1.setNewValue(10, 21, 30, 90, 80);
   ch1.setNewValue(10, 20, 30, 90, 81);
   ch1.setNewValue(10, 20, 30, 90, 81);
+
+  ch1.setNewValue(10, 20, 0, 90, 81);
+
+  ch1.setNewValue(10, 20, 0, 90, 0);
+
+  ch1.setNewValue(10, 20, 0, 0, 0);
 }
 
 TEST(ChannelTests, SetNewValueWithCorrection) {

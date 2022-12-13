@@ -365,9 +365,103 @@ void Channel::setNewValue(uint8_t red,
   newValue[2] = blue;
   newValue[3] = green;
   newValue[4] = red;
+  auto prevBright = getValueBrightness();
+  auto prevColorBright = getValueColorBrightness();
+  auto prevRed = getValueRed();
+  auto prevGreen = getValueGreen();
+  auto prevBlue = getValueBlue();
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
+    bool sendTurnOn = false;
+    bool sendTurnOff = false;
+    if (prevBright == 0 && getValueBrightness() != 0) {
+      runAction(ON_DIMMER_TURN_ON);
+      sendTurnOn = true;
+    }
+    if (prevBright != 0 && getValueBrightness() == 0) {
+      runAction(ON_DIMMER_TURN_OFF);
+      sendTurnOff = true;
+    }
+    if (prevBright != getValueBrightness()) {
+      runAction(ON_DIMMER_BRIGHTNESS_CHANGE);
+    }
+    if (prevColorBright == 0 && getValueColorBrightness() != 0) {
+      runAction(ON_COLOR_TURN_ON);
+      if (getValueRed() != 0) {
+        runAction(ON_RED_TURN_ON);
+      }
+      if (getValueGreen() != 0) {
+        runAction(ON_GREEN_TURN_ON);
+      }
+      if (getValueBlue() != 0) {
+        runAction(ON_BLUE_TURN_ON);
+      }
+      sendTurnOn = true;
+    }
+    if (prevColorBright != 0 && getValueColorBrightness() == 0) {
+      runAction(ON_COLOR_TURN_OFF);
+      if (prevRed != 0) {
+        runAction(ON_RED_TURN_OFF);
+      }
+      if (prevGreen != 0) {
+        runAction(ON_GREEN_TURN_OFF);
+      }
+      if (prevBlue != 0) {
+        runAction(ON_BLUE_TURN_OFF);
+      }
+      sendTurnOff = true;
+    }
+    if (prevColorBright != getValueColorBrightness()) {
+      runAction(ON_COLOR_BRIGHTNESS_CHANGE);
+    }
+    if (prevRed == 0 && getValueRed() != 0 && prevColorBright != 0
+        && getValueColorBrightness() != 0) {
+      runAction(ON_RED_TURN_ON);
+    }
+    if (prevRed != 0 && getValueRed() == 0 && prevColorBright != 0
+        && getValueColorBrightness() != 0) {
+      runAction(ON_RED_TURN_OFF);
+    }
+
+    if (prevGreen == 0 && getValueGreen() != 0 && prevColorBright != 0
+        && getValueColorBrightness() != 0) {
+      runAction(ON_GREEN_TURN_ON);
+    }
+    if (prevGreen != 0 && getValueGreen() == 0 && prevColorBright != 0
+        && getValueColorBrightness() != 0) {
+      runAction(ON_GREEN_TURN_OFF);
+    }
+
+    if (prevBlue == 0 && getValueBlue() != 0 && prevColorBright != 0
+        && getValueColorBrightness() != 0) {
+      runAction(ON_BLUE_TURN_ON);
+    }
+    if (prevBlue != 0 && getValueBlue() == 0 && prevColorBright != 0
+        && getValueColorBrightness() != 0) {
+      runAction(ON_BLUE_TURN_OFF);
+    }
+
+    if (prevRed != getValueRed()) {
+      runAction(ON_RED_CHANGE);
+    }
+
+    if (prevGreen != getValueGreen()) {
+      runAction(ON_GREEN_CHANGE);
+    }
+
+    if (prevBlue != getValueBlue()) {
+      runAction(ON_BLUE_CHANGE);
+    }
+
+    if (sendTurnOn) {
+      runAction(ON_TURN_ON);
+    }
+
+    if (sendTurnOff) {
+      runAction(ON_TURN_OFF);
+    }
+
     SUPLA_LOG_DEBUG(
         "Channel(%d) value changed to RGB(%d, %d, %d), colBr(%d), bright(%d)",
         channelNumber, red, green, blue, colorBrightness, brightness);

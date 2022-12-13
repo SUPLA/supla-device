@@ -26,7 +26,9 @@
 
 #define SUPLA_CONFIG_MAX_KEY_SIZE 16
 
-#define MAX_SSID_SIZE          32
+#define MAX_SSID_SIZE          33  // actuall SSID should be at most 32 bytes
+                                   // but we add here extra byte for null
+                                   // termination
 #define MAX_WIFI_PASSWORD_SIZE 64
 #define MQTT_CLIENTID_MAX_SIZE 23
 #define MQTT_USERNAME_MAX_SIZE 65

@@ -21,7 +21,7 @@
 
 #include "network.h"
 
-#define MAX_SSID_SIZE          32
+#define MAX_SSID_SIZE          33
 #define MAX_WIFI_PASSWORD_SIZE 64
 
 namespace Supla {

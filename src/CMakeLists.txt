@@ -37,6 +37,9 @@ set(SRCS
   supla/control/action_trigger.cpp
   supla/control/relay.cpp
   supla/control/virtual_relay.cpp
+  supla/control/roller_shutter.cpp
+  supla/control/bistable_roller_shutter.cpp
+  supla/control/tripple_button_roller_shutter.cpp
 
   supla/condition.cpp
   supla/condition_getter.cpp

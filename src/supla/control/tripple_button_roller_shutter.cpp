@@ -34,6 +34,14 @@ TrippleButtonRollerShutter::TrippleButtonRollerShutter(int pinUp,
 TrippleButtonRollerShutter::~TrippleButtonRollerShutter() {
 }
 
+void TrippleButtonRollerShutter::onInit() {
+  Supla::Io::digitalWrite(
+      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH);
+  Supla::Io::pinMode(channel.getChannelNumber(), pinStop, OUTPUT);
+
+  BistableRollerShutter::onInit();
+}
+
 void TrippleButtonRollerShutter::stopMovement() {
   relayStopOn();
   currentDirection = STOP_DIR;

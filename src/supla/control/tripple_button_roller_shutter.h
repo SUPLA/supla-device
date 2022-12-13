@@ -35,6 +35,8 @@ class TrippleButtonRollerShutter : public BistableRollerShutter {
                              bool highIsOn = true);
   virtual ~TrippleButtonRollerShutter();
 
+  void onInit() override;
+
  protected:
   void stopMovement() override;
   void switchOffRelays() override;

@@ -331,6 +331,8 @@ Example channels configuration (details are exaplained later):
         humidity: 1
         multiplier_temp: 1
         multiplier_humi: 1
+        battery_level: 2
+        multiplier_battery_level: 100
 
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
@@ -512,6 +514,15 @@ AMIplus meter on standard single tariff:
           - voltage: voltage_at_phase_2_v
         phase_3:
           - voltage: voltage_at_phase_3_v
+
+## Battery level information for Parsed channels
+
+Each Parsed channel may have additional `battery_level` and `multiplier_battery_level` field.
+Battery level information is added to channel state response (the (i) button in mobile apps).
+Battery level has to be in 0 to 100 range, otherwise device wont' be reported as battery
+powered. Multiplier parameter allows to do some simple conversion. I.e. if battery level
+in source is in 0 to 1 range, then you can provide multiplier with value 100 to convert it to
+0 to 100 range.
 
 # Running supla-device as a service
 

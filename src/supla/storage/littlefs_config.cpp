@@ -207,13 +207,14 @@ bool Supla::LittleFsConfig::initLittleFs() {
 }
 
 void Supla::LittleFsConfig::removeAll() {
+  SUPLA_LOG_DEBUG("LittleFsConfig remove all called");
+
   if (!initLittleFs()) {
     return;
   }
-
   LittleFS.remove(CustomCAFileName);
-  LittleFS.remove(ConfigFileName);
-
   LittleFS.end();
+
+  Supla::KeyValue::removeAll();
 }
 #endif

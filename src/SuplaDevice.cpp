@@ -940,8 +940,10 @@ void SuplaDeviceClass::handleAction(int event, int action) {
 
 void SuplaDeviceClass::resetToFactorySettings() {
   // cleanup device's configuration, but keep GUID and AuthKey
+  SUPLA_LOG_DEBUG("Reset to factory settings");
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
+    SUPLA_LOG_DEBUG("Clearing configuration...");
     cfg->removeAll();
     cfg->setGUID(Supla::Channel::reg_dev.GUID);
     cfg->setAuthKey(Supla::Channel::reg_dev.AuthKey);
@@ -952,6 +954,7 @@ void SuplaDeviceClass::resetToFactorySettings() {
   // TODO(klew): add handling of persistant data (like energy counters)
   auto storage = Supla::Storage::Instance();
   if (storage) {
+    SUPLA_LOG_DEBUG("Clearing state storage...");
     storage->deleteAll();
   }
 }

@@ -31,7 +31,7 @@
 namespace Supla {
 namespace Sensor {
 
-class ThermHygroMeterParsed : public ThermHygroMeter, public SensorParsed {
+class ThermHygroMeterParsed : public SensorParsed<ThermHygroMeter> {
  public:
   explicit ThermHygroMeterParsed(Supla::Parser::Parser *);
   double getTemp() override;

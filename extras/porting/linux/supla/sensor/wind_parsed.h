@@ -33,7 +33,7 @@ const char Wind[] = "wind";
 
 namespace Sensor {
 
-class WindParsed : public Wind, public SensorParsed {
+class WindParsed : public SensorParsed<Wind> {
  public:
   explicit WindParsed(Supla::Parser::Parser *);
   double getValue() override;

@@ -82,6 +82,14 @@ class Channel : public LocalAction {
   void setCorrection(double correction, bool forSecondaryValue = false);
   bool isSleepingEnabled();
 
+  // Returns true if channel is battery powered (for channel state info)
+  bool isBatteryPowered();
+  // Returns battery level
+  unsigned char getBatteryLevel();
+  // Sets battery level. Setting to 0..100 range will make isBatteryPowered
+  // return true
+  void setBatteryLevel(unsigned char level);
+
   void requestChannelConfig();
 
   static uint64_t lastCommunicationTimeMs;
@@ -94,6 +102,7 @@ class Channel : public LocalAction {
   bool channelConfig;
   int channelNumber;
   unsigned _supla_int_t validityTimeSec;
+  unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
 };
 
 };  // namespace Supla

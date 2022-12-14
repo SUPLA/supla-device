@@ -33,7 +33,7 @@ const char Counter[] = "counter";
 
 namespace Sensor {
 
-class ImpulseCounterParsed : public ChannelElement, public SensorParsed {
+class ImpulseCounterParsed : public SensorParsed<ChannelElement> {
  public:
   explicit ImpulseCounterParsed(Supla::Parser::Parser *);
 

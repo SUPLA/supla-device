@@ -21,13 +21,18 @@
 
 #include <supla/parser/parser.h>
 
+#include <supla-common/proto.h>
 #include <map>
 #include <string>
 
 namespace Supla {
 namespace Sensor {
 
-class SensorParsed {
+const char BatteryLevel[] = "battery_level";
+const char MultiplierBatteryLevel[] = "multiplier_battery_level";
+
+
+template <typename T> class SensorParsed : public T {
  public:
   explicit SensorParsed(Supla::Parser::Parser *);
 
@@ -41,6 +46,8 @@ class SensorParsed {
 
   bool isParameterConfigured(const std::string &parameter);
 
+  void handleGetChannelState(TDSC_ChannelState *channelState) override;
+
  protected:
   double getParameterValue(const std::string &parameter);
 
@@ -49,6 +56,78 @@ class SensorParsed {
   std::map<std::string, double> parameterMultiplier;
   int id;
 };
+template <typename T>
+SensorParsed<T>::SensorParsed(Supla::Parser::Parser *parser)
+    : parser(parser) {
+  static int instanceCounter = 0;
+  id = instanceCounter++;
+}
+
+template <typename T>
+void SensorParsed<T>::setMapping(const std::string &parameter,
+                                                const std::string &key) {
+  parameterToKey[parameter] = key;
+  parser->addKey(key, -1);  // ignore index
+}
+
+template <typename T>
+void SensorParsed<T>::setMapping(const std::string &parameter,
+                                                const int index) {
+  std::string key = parameter;
+  key += "_";
+  key += std::to_string(id);
+  parameterToKey[parameter] = key;
+  parser->addKey(key, index);
+}
+
+template <typename T>
+void SensorParsed<T>::setMultiplier(const std::string &parameter,
+                                                   double multiplier) {
+  parameterMultiplier[parameter] = multiplier;
+}
+
+template <typename T>
+double SensorParsed<T>::getParameterValue(
+    const std::string &parameter) {
+  double multiplier = 1;
+  if (parameterMultiplier.count(parameter)) {
+    multiplier = parameterMultiplier[parameter];
+  }
+  return parser->getValue(parameterToKey[parameter]) * multiplier;
+}
+
+template <typename T>
+bool SensorParsed<T>::refreshParserSource() {
+  if (parser && parser->refreshParserSource()) {
+    return true;
+  }
+  return false;
+}
+
+template <typename T>
+bool SensorParsed<T>::isParameterConfigured(
+    const std::string &parameter) {
+  return parameterToKey.count(parameter) > 0;
+}
+
+template <typename T>
+void SensorParsed<T>::handleGetChannelState(TDSC_ChannelState *channelState) {
+  unsigned char batteryLevel = 255;
+  if (isParameterConfigured(BatteryLevel)) {
+    if (refreshParserSource()) {
+      batteryLevel = getParameterValue(BatteryLevel);
+    }
+    if (T::getChannel()) {
+      T::getChannel()->setBatteryLevel(batteryLevel);
+    }
+    if (T::getSecondaryChannel()) {
+      T::getSecondaryChannel()->setBatteryLevel(batteryLevel);
+    }
+  }
+
+  T::handleGetChannelState(channelState);
+}
+
 };  // namespace Sensor
 };  // namespace Supla
 

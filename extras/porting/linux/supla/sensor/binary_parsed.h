@@ -31,7 +31,7 @@ const char State[] = "state";
 
 namespace Sensor {
 
-class BinaryParsed : public VirtualBinary, public SensorParsed {
+class BinaryParsed : public SensorParsed<VirtualBinary> {
  public:
   explicit BinaryParsed(Supla::Parser::Parser *);
   bool getValue() override;

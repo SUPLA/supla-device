@@ -165,7 +165,24 @@ Channel *Element::getSecondaryChannel() {
 }
 
 void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
-  (void)(channelState);
+  Channel *channel = getChannel();
+  while (channel) {
+    if (channelState->ChannelNumber == channel->getChannelNumber()) {
+      if (channel->isBatteryPowered()) {
+        channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERYLEVEL
+          | SUPLA_CHANNELSTATE_FIELD_BATTERYPOWERED;
+
+        channelState->BatteryPowered = 1;
+        channelState->BatteryLevel = channel->getBatteryLevel();
+      }
+      return;
+    }
+    if (channel != getSecondaryChannel()) {
+      channel = getSecondaryChannel();
+    } else {
+      return;
+    }
+  }
   return;
 }
 

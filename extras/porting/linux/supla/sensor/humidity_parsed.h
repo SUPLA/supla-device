@@ -33,7 +33,7 @@ const char Humidity[] = "humidity";
 
 namespace Sensor {
 
-class HumidityParsed : public HygroMeter, public SensorParsed {
+class HumidityParsed : public SensorParsed<HygroMeter> {
  public:
   explicit HumidityParsed(Supla::Parser::Parser *);
   double getHumi() override;

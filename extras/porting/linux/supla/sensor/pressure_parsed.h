@@ -33,7 +33,7 @@ const char Pressure[] = "pressure";
 
 namespace Sensor {
 
-class PressureParsed : public Pressure, public SensorParsed {
+class PressureParsed : public SensorParsed<Pressure> {
  public:
   explicit PressureParsed(Supla::Parser::Parser *);
   double getValue() override;

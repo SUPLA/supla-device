@@ -94,7 +94,7 @@ const char PowerFactor3[] = "power_factor_3";
 
 namespace Sensor {
 
-class ElectricityMeterParsed : public ElectricityMeter, public SensorParsed {
+class ElectricityMeterParsed : public SensorParsed<ElectricityMeter> {
  public:
   explicit ElectricityMeterParsed(Supla::Parser::Parser *);
 

@@ -553,4 +553,19 @@ void Channel::requestChannelConfig() {
   channelConfig = true;
 }
 
+bool Channel::isBatteryPowered() {
+  return (batteryLevel <= 100);
+}
+
+unsigned char Channel::getBatteryLevel() {
+  if (isBatteryPowered()) {
+    return batteryLevel;
+  }
+  return 255;
+}
+
+void Channel::setBatteryLevel(unsigned char level) {
+  batteryLevel = level;
+}
+
 };  // namespace Supla

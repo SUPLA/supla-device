@@ -19,7 +19,7 @@
 
 Supla::Sensor::ElectricityMeterParsed::ElectricityMeterParsed(
     Supla::Parser::Parser *parser) :
-  Supla::Sensor::SensorParsed(parser) {}
+  Supla::Sensor::SensorParsed<Supla::Sensor::ElectricityMeter>(parser) {}
 
 void Supla::Sensor::ElectricityMeterParsed::onInit() {
   readValuesFromDevice();

@@ -33,7 +33,7 @@ const char Temperature[] = "temperature";
 
 namespace Sensor {
 
-class ThermometerParsed : public Thermometer, public SensorParsed {
+class ThermometerParsed : public SensorParsed<Thermometer> {
  public:
   explicit ThermometerParsed(Supla::Parser::Parser *);
   double getValue() override;

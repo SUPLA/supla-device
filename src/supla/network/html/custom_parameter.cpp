@@ -79,7 +79,7 @@ void CustomParameter::send(Supla::WebSender* sender) {
 
 bool CustomParameter::handleResponse(const char* key, const char* value) {
   if (tag != nullptr && strcmp(key, tag) == 0) {
-    int32_t param = stringToInt(value, 3);
+    int32_t param = stringToInt(value);
     setParameterValue(param);
     return true;
   }

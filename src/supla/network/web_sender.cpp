@@ -17,6 +17,7 @@
 */
 
 #include <stdio.h>
+#include <string.h>
 
 #include "web_sender.h"
 
@@ -57,6 +58,44 @@ void WebSender::sendLabelFor(const char *id, const char *label) {
   snprintf(buf, sizeof(buf), "<label for=\"%s\">%s</label>", id ? id : "",
       label ? label : "");
   send(buf);
+}
+
+void WebSender::sendSafe(const char *buf, int size) {
+  if (size == -1) {
+    size = strnlen(buf, 8000);
+  }
+  int partSize = 0;
+  for (int i = 0; i < size; i++) {
+    if (buf[i] == '\'' || buf[i] == '"' || buf[i] == '<' || buf[i] == '>'
+        || buf[i] == '&') {
+      if (partSize > 0) {
+        send(buf + i - partSize, partSize);
+        partSize = 0;
+      }
+      switch (buf[i]) {
+        case '\'':
+          send("&apos;");
+          break;
+        case '"':
+          send("&quot;");
+          break;
+        case '<':
+          send("&lt;");
+          break;
+        case '>':
+          send("&gt;");
+          break;
+        case '&':
+          send("&amp;");
+          break;
+      }
+    } else {
+      partSize++;
+    }
+  }
+  if (partSize > 0) {
+    send(buf + size - partSize, partSize);
+  }
 }
 
 };  // namespace Supla

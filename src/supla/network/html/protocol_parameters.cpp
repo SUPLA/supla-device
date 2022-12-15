@@ -113,7 +113,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
     sender->send(" maxlength=\"64\" value=\"");
     char buf[512];
     if (cfg->getSuplaServer(buf)) {
-      sender->send(buf);
+      sender->sendSafe(buf);
     }
     sender->send("\">");
     sender->send("</div>");
@@ -127,7 +127,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
     sender->sendNameAndId(keyEml);
     sender->send(" maxlength=\"255\" value=\"");
     if (cfg->getEmail(buf)) {
-      sender->send(buf);
+      sender->sendSafe(buf);
     }
     sender->send("\">");
     sender->send("</div>");  // form-field
@@ -188,7 +188,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
     char* bufCert = new char[4000];
     memset(bufCert, 0, 4000);
     if (cfg->getCustomCA(bufCert, 4000)) {
-      sender->send(bufCert);
+      sender->sendSafe(bufCert);
     }
     delete[] bufCert;
     sender->send("</textarea>");
@@ -248,7 +248,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->sendNameAndId(keyMqttServer);
       sender->send(" maxlength=\"64\" value=\"");
       if (cfg->getMqttServer(buf)) {
-        sender->send(buf);
+        sender->sendSafe(buf);
       }
       sender->send("\">");
       sender->send("</div>");
@@ -325,7 +325,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->sendNameAndId(keyMqttUser);
       sender->send("maxlength=\"64\" value=\"");
       if (cfg->getMqttUser(buf)) {
-        sender->send(buf);
+        sender->sendSafe(buf);
       }
       sender->send("\">");
       sender->send("</div>");
@@ -349,7 +349,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
       sender->sendNameAndId(keyMqttPrefix);
       sender->send(" maxlength=\"48\" value=\"");
       if (cfg->getMqttPrefix(buf)) {
-        sender->send(buf);
+        sender->sendSafe(buf);
       }
       sender->send("\">");
       sender->send("</div>");

@@ -182,6 +182,7 @@ void Supla::EspSender::send(const char *buf, int size) {
     return;
   }
   if (!reqHandler->client().connected()) {
+    SUPLA_LOG_WARNING("WebSender error - lost connection");
     error = true;
     return;
   }

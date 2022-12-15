@@ -26,6 +26,12 @@ namespace Supla {
 
 namespace Html {
 
+/* This HTML Element provides input in config mode for integer value.
+ * You have to provide paramTag under which provided value will be stored
+ * in Supla::Storage::Config.
+ * paramLabel provides label which is displayed next to input in www.
+ */
+
 class CustomParameter : public HtmlElement {
  public:
   CustomParameter(const char *paramTag, const char *paramLabel);

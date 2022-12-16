@@ -472,7 +472,18 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
                                              int channelNumber) {
   SUPLA_LOG_INFO("Channel[%d] config: adding VirtualRelay", channelNumber);
-  new Supla::Control::VirtualRelay();
+  auto vr = new Supla::Control::VirtualRelay();
+  if (ch["initial_state"]) {
+    paramCount++;
+    auto initialState = ch["initial_state"].as<std::string>();
+    if (initialState == "on") {
+      vr->setDefaultStateOn();
+    } else if (initialState == "off") {
+      vr->setDefaultStateOff();
+    } else if (initialState == "restore") {
+      vr->setDefaultStateRestore();
+    }
+  }
   return true;
 }
 

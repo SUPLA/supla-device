@@ -37,6 +37,7 @@
 // Remove them and keep only required one in real application.
 #include <linux_file_state_logger.h>
 #include <linux_yaml_config.h>
+#include <linux_file_storage.h>
 #include <supla/IEEE754tools.h>
 #include <supla/action_handler.h>
 #include <supla/actions.h>
@@ -166,6 +167,8 @@ int main(int argc, char* argv[]) {
       SUPLA_LOG_ERROR("Loading channels failed. Exit");
       exit(1);
     }
+
+    Supla::LinuxFileStorage storage(config->getStateFilesPath());
 
     SuplaDevice.setLastStateLogger(
         new Supla::Device::FileStateLogger(config->getStateFilesPath()));

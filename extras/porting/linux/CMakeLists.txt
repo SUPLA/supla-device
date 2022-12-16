@@ -28,6 +28,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   linux_platform.cpp
   linux_file_state_logger.cpp
   linux_client.cpp
+  linux_file_storage.cpp
 
   linux_timers.cpp
 

@@ -235,9 +235,11 @@ Example channels configuration (details are exaplained later):
     channels:
       - type: VirtualRelay
         name: vr1 # optional, can be used as reference for adding actions (TBD)
+        initial_state: on
 
       - type: VirtualRelay
         name: vr2
+        initial_state: restore
 
       - type: Fronius
         ip: 192.168.1.7
@@ -347,6 +349,23 @@ There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
 channel.
+
+### VirtualRelay
+
+VirtualRelay is pretending to be a relay channel in Supla. You can turn it on
+and off from Supla App, etc.
+
+It is virtual, because it doesn't control anything - it just keeps state that
+was set on it.
+
+There are two optional parameters:
+`name` - name of channel in YAML file - it doesn't have any functional meaning
+so far.
+`initial_state` - allows to define what state should be set on relay when
+supla-device application is started. Following values are allowed:
+on, off, restore.
+"off" is default value.
+"restore" will use state storage file to keep and restore relay state.
 
 ## Parsed channel `source` parameter
 

@@ -1,0 +1,53 @@
+# Example supla-device config file for Linux device
+# https://github.com/SUPLA/supla-device
+
+name: Airly integration
+log_level: debug
+state_files_path: "/var/local/supla-device/airly"
+security_level: 2
+
+supla:
+  server: svr123.supla.org
+  mail: mail@user.com
+
+channels:
+  - type: ThermHygroMeterParsed
+    name: airly_temp_and_humi
+    source:
+      type: File
+# Please provide path to your airly.json file
+      file: "/home/user/supla/airly.json"
+      expiration_time_sec: 1200
+    parser:
+      type: Json
+      name: p1
+    temperature: "/current/values/5/value"
+    humidity: "/current/values/4/value"
+
+  - type: PressureParsed
+    name: airly_pressure
+    parser:
+      use: p1
+    pressure: "/current/values/3/value"
+
+# Supla doesn't provide generic measurement channel yet, so we use thermometer
+# as a workaround
+  - type: ThermometerParsed
+    name: airly_pm1
+    parser:
+      use: p1
+    temperature: "/current/values/0/value"
+
+  - type: ThermometerParsed
+    name: airly_pm25
+    parser:
+      use: p1
+    temperature: "/current/values/1/value"
+
+  - type: ThermometerParsed
+    name: airly_pm10
+    parser:
+      use: p1
+    temperature: "/current/values/2/value"
+
+

@@ -138,6 +138,7 @@ class LinuxYamlConfig : public Config {
 
   bool addVirtualRelay(const YAML::Node& ch, int channelNumber);
   bool addFronius(const YAML::Node& ch, int channelNumber);
+  bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addThermometerParsed(const YAML::Node& ch,
                             int channelNumber,
                             Supla::Parser::Parser* parser);

@@ -223,6 +223,7 @@ if you need something more.
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `Fronius` - related class `Supla::PV::Fronius`
+* `Afore` - related class `Supla::PV::Afore`
 * `ThermometerParsed` - related class `Supla::Sensor::ThermometerParsed`
 * `ThermHygroMeterParsed` - related class `Supla::Sensor::ThermHygroMeterParsed`
 * `ImpulseCounterParsed` - related class `Supla::Sensor::ImpulseCounterParsed`
@@ -242,6 +243,14 @@ Example channels configuration (details are exaplained later):
         ip: 192.168.1.7
         port: 80
         device_id: 1
+
+      - type: Afore
+        ip: 192.168.1.17
+        port: 80
+    # login_and_password is base64 encoded "login:password"
+    # You can use any online base64 encoder to convert your login and password,
+    # i.e. https://www.base64encode.org/
+    login_and_password: "bG9naW46cGFzc3dvcmQ="
 
       - type: ThermometerParsed
         name: t1

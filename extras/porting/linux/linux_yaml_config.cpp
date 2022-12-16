@@ -24,6 +24,7 @@
 #include <supla/parser/parser.h>
 #include <supla/parser/simple.h>
 #include <supla/pv/fronius.h>
+#include <supla/pv/afore.h>
 #include <supla/sensor/binary_parsed.h>
 #include <supla/sensor/electricity_meter_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
@@ -387,6 +388,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addVirtualRelay(ch, channelNumber);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
+    } else if (type == "Afore") {
+      return addAfore(ch, channelNumber);
     } else if (type == "ThermometerParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -499,6 +502,53 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
     IPAddress ipAddr(ip);
     new Supla::PV::Fronius(ipAddr, port, deviceId);
   } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing mandatory \"ip\" parameter",
+              channelNumber);
+    return false;
+  }
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch,
+                                        int channelNumber) {
+  int port = 80;
+  if (ch["port"]) {
+    paramCount++;
+    port = ch["port"].as<int>();
+  }
+
+  std::string loginAndPassword;
+
+  if (ch["login_and_password"]) {
+    paramCount++;
+    loginAndPassword = ch["login_and_password"].as<std::string>();
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing mandatory"
+              " \"login_and_password\" parameter",
+              channelNumber);
+    return false;
+  }
+
+  if (ch["ip"]) {  // mandatory
+    paramCount++;
+    std::string ip = ch["ip"].as<std::string>();
+    SUPLA_LOG_INFO(
+        "Channel[%d] config: adding Afore with IP %s, port: %d,"
+        " login_and_password: %s",
+        channelNumber,
+        ip.c_str(),
+        port,
+        loginAndPassword.c_str());
+
+    IPAddress ipAddr(ip);
+    new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());
+  } else {
+    SUPLA_LOG_ERROR(
+              "Channel[%d] config: missing mandatory \"ip\" parameter",
+              channelNumber);
     return false;
   }
 

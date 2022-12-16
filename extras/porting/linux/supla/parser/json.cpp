@@ -55,11 +55,22 @@ bool Supla::Parser::Json::isValid() {
 
 double Supla::Parser::Json::getValue(const std::string& key) {
   try {
-    return json[key].get<double>();
-  } catch (nlohmann::json::type_error& ex) {
+    if (key[0] == '/') {
+      return json[nlohmann::json::json_pointer(key)].get<double>();
+    } else {
+      return json[key].get<double>();
+    }
+  }
+  catch (nlohmann::json::type_error& ex) {
     SUPLA_LOG_ERROR("JSON key \"%s\" not found", key.c_str());
     valid = false;
   }
+  catch (...) {
+    SUPLA_LOG_ERROR(
+        "JSON exception during getValue for key \"%s\"", key.c_str());
+    valid = false;
+  }
+
   return 0;
 }
 

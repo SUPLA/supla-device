@@ -371,8 +371,10 @@ to a floating point number. Value from each line can be referenced later by
 using line index number (index counting starts with 0). I.e. please take a look
 at `t1` channel above.
 2. `Json` - it takes input from source and parse it as JSON format. Values can
-be referenced in parsed channel by JSON key name and each value is converted to
-a floating point number. I.e. please check `i1` channel above.
+be referenced in parsed channel by JSON key name or by JSON pointer and each
+value is converted to a floating point number. I.e. please check `i1`
+channel above. More details about parsing JSON can be found in JSON parser
+section of this document.
 
 Type of a parser is selected with a `type` parameter. You can provide a name for
 your parser with `name` parameter (named parsers can be reused for different
@@ -388,6 +390,54 @@ update every 200 ms.
 
 If parser was already defined earlier, you can reuse it by providing `use`
 parameter with a parser name.
+
+### JSON parser
+JSON parser takes input from source and parse it as JSON format. Values can
+be referenced in parsed channel by JSON key name or by JSON pointer and each
+value is converted to a floating point number.
+
+JSON pointer is specified in [RFC6901](https://www.rfc-editor.org/rfc/rfc6901).
+
+I.e. consider following JSON:
+
+    {
+      "my_temperature": 23.5,
+      "measurements": [
+        {
+          "name": "humidity",
+          "value": 84.1
+        },
+        {
+          "name": "pressure",
+          "value": 1023
+        }
+      ]
+    }
+
+Temperature value can be accessed by providing key name, because it is directly
+under the root of JSON structure:
+
+    temperature: "my_temperature"
+
+Alternatively you can use JSON pointer to access the same value:
+
+    temperature: "/my_temperature"
+
+All keys are considered as JSON pointer when they start with "/", otherwise
+keys are expected to be name of parameter in the root structure.
+
+In order to access humidity or pressure values, you have to specify JSON
+pointer, becuase they are not in the root:
+
+    pressure: "/measurements/1/value"
+    humidity: "/measurements/0/value"
+
+If you use such JSON with arrays as a source, please make sure that order of
+array elements will not change, because it will change JSON pointer and
+your integration will not work properly.
+
+Above examples show part of YAML configuration file. Each of those lines has
+to be part of a proper channel definition.
 
 ## Parsed channel definition
 

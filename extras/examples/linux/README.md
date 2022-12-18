@@ -381,6 +381,7 @@ There are two supported parser types:
 additionally you can define `expiration_time_sec` parameter. If last modification
 time of a file is older than `expiration_time_sec` then this source will be
 considered as invalid. `expiration_time_sec` is by default set to 10 minutes. 
+In order to disable time expiration check, please set `expiration_time_sec` to 0.
 2. `Cmd` - use Linux command line as an input. Command is provided by `commonad`
 field.
 

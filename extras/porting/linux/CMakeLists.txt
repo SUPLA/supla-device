@@ -50,6 +50,8 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/sensor/wind_parsed.cpp
   supla/sensor/therm_hygro_meter_parsed.cpp
 
+  supla/control/cmd_relay.cpp
+
   ../../../src/supla/pv/fronius.cpp
   ../../../src/supla/pv/afore.cpp
 

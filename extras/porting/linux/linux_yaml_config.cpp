@@ -36,6 +36,7 @@
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
 #include <supla/source/source.h>
+#include <supla/control/cmd_relay.h>
 #include <supla/tools.h>
 #include <yaml-cpp/exceptions.h>
 
@@ -386,6 +387,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
     if (type == "VirtualRelay") {
       return addVirtualRelay(ch, channelNumber);
+    } else if (type == "CmdRelay") {
+      return addCmdRelay(ch, channelNumber);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -483,6 +486,34 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
     } else if (initialState == "restore") {
       vr->setDefaultStateRestore();
     }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
+                                         int channelNumber) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding CmdRelay", channelNumber);
+  auto cr = new Supla::Control::CmdRelay();
+  if (ch["initial_state"]) {
+    paramCount++;
+    auto initialState = ch["initial_state"].as<std::string>();
+    if (initialState == "on") {
+      cr->setDefaultStateOn();
+    } else if (initialState == "off") {
+      cr->setDefaultStateOff();
+    } else if (initialState == "restore") {
+      cr->setDefaultStateRestore();
+    }
+  }
+  if (ch["cmd_on"]) {
+    paramCount++;
+    auto cmdOn = ch["cmd_on"].as<std::string>();
+    cr->setCmdOn(cmdOn);
+  }
+  if (ch["cmd_off"]) {
+    paramCount++;
+    auto cmdOff = ch["cmd_off"].as<std::string>();
+    cr->setCmdOff(cmdOff);
   }
   return true;
 }

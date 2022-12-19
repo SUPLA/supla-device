@@ -222,6 +222,7 @@ if you need something more.
 
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
+* `CmdRelay` - related class `Supla::Control::CmdRelay`
 * `Fronius` - related class `Supla::PV::Fronius`
 * `Afore` - related class `Supla::PV::Afore`
 * `ThermometerParsed` - related class `Supla::Sensor::ThermometerParsed`
@@ -240,6 +241,12 @@ Example channels configuration (details are exaplained later):
       - type: VirtualRelay
         name: vr2
         initial_state: restore
+
+      - type: CmdRelay
+        name: command_relay_1
+        initial_state: restore
+        cmd_on: "echo 1 > command_relay_1.out"
+        cmd_off: "echo 0 > command_relay_1.out"
 
       - type: Fronius
         ip: 192.168.1.7
@@ -366,6 +373,17 @@ supla-device application is started. Following values are allowed:
 on, off, restore.
 "off" is default value.
 "restore" will use state storage file to keep and restore relay state.
+
+### CmdRelay
+
+CmdRelay is pretending to be a relay channel in Supla. It is very similar to
+VirtualRelay, however additionally it allows to configure Linux command to
+be executed on every turn on/off action.
+
+CmdRelay accepts the same parameters as VirtualRelay. Additionally it supports
+two extra configuration options:
+`cmd_on` - command to be exectued on turn on.
+`cmd_off` - command to be executed on turn off.
 
 ## Parsed channel `source` parameter
 

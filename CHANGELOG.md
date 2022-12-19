@@ -1,5 +1,29 @@
 # CHANGELOG.md
 
+## 22.12 (2022-12-19)
+
+  - Fix: Afore: fix crash on initialization
+  - Fix: allow 32 bytes of Wi-Fi SSID
+  - Fix: TrippleButtonRollerShutter add initialization of GPIO for STOP button
+  - Fix: fixed reset to factory defaults for LittleFsConfig for Arduino IDE
+  - Fix: Config mode: add escaping of HTML special characters when rendering user input values
+  - Change: add CRC calculation and verification for Storage classes
+  - Add: MQTT support for ElectricityMeter
+  - Add: Linux support for ThermHygroMeterParsed
+  - Add: getter for RollerShutter current direction
+  - Add: RGBW, Dimmer: add events on turn on/off for each sub-channel
+  - Add: Linux: add battery_level option
+  - Add: Html: add CustomTextParameter for user defined text input in config mode
+  - Add: Arduino: add example ConfigModeInputs
+  - Add: Linux: add JSON parsing by path (JSON pointer)
+  - Add: Linux: add example Airly integration
+  - Add: Linux: add Afore integration
+  - Add: Linux: add state storage file
+  - Add: Linux: VirtualRelay - add option to define initial relay state (on/off/restore)
+  - Add: Linux: add option to disable time expriation check for File source
+  - Add: Linux: add CmdRelay - allows to execute Linux command on relay state change
+
+
 ## 22.11.03 (2022-11-28)
 
   - Fix: THW-01: enabled more detailed logging of connection problem in "LAST STATE" field

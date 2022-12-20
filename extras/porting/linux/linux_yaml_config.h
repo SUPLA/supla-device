@@ -137,7 +137,8 @@ class LinuxYamlConfig : public Config {
   Supla::Source::Source* addSource(const YAML::Node& ch);
 
   bool addVirtualRelay(const YAML::Node& ch, int channelNumber);
-  bool addCmdRelay(const YAML::Node& ch, int channelNumber);
+  bool addCmdRelay(const YAML::Node& ch, int channelNumber,
+      Supla::Parser::Parser*);
   bool addFronius(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addThermometerParsed(const YAML::Node& ch,

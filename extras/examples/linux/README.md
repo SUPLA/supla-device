@@ -242,11 +242,25 @@ Example channels configuration (details are exaplained later):
         name: vr2
         initial_state: restore
 
+    # CmdRelay with state kept in memory and stored in storage
       - type: CmdRelay
         name: command_relay_1
         initial_state: restore
         cmd_on: "echo 1 > command_relay_1.out"
         cmd_off: "echo 0 > command_relay_1.out"
+
+    # CmdRelay with state read from data source
+      - type: CmdRelay
+        name: command_relay_2
+        cmd_on: "echo 1 > command_relay_1.out"
+        cmd_off: "echo 0 > command_relay_1.out"
+        source:
+          type: Cmd
+          command: "cat in_r2.txt"
+        parser:
+          type: Simple
+          refresh_time_ms: 1000
+        state: 0
 
       - type: Fronius
         ip: 192.168.1.7
@@ -384,6 +398,18 @@ CmdRelay accepts the same parameters as VirtualRelay. Additionally it supports
 two extra configuration options:
 `cmd_on` - command to be exectued on turn on.
 `cmd_off` - command to be executed on turn off.
+
+When CmdRelay is added without `state` parameter, then it will use internal
+memory to keep it's state, which will be always consistent with last executed
+action on relay channel. Such state can be saved to Storage.
+
+Another option for CmdRelay is to define `state` parameter. When `state`
+parameter is defined, it require to use Parser instance (and underlying Source)
+which is used to read state of this relay channel. It works exactly the same as
+for BinaryParsed channel. So you can define data source as file or command and
+use any available Parser to read your relay state. Please remember to keep
+state refresh rate at reasonable level (i.e. fetching data remotly every
+100 ms may not be the best idea :) ).
 
 ## Parsed channel `source` parameter
 

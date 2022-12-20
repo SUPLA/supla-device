@@ -388,7 +388,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     if (type == "VirtualRelay") {
       return addVirtualRelay(ch, channelNumber);
     } else if (type == "CmdRelay") {
-      return addCmdRelay(ch, channelNumber);
+      return addCmdRelay(ch, channelNumber, parser);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -491,9 +491,10 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
-                                         int channelNumber) {
+                                         int channelNumber,
+                                         Supla::Parser::Parser *parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CmdRelay", channelNumber);
-  auto cr = new Supla::Control::CmdRelay();
+  auto cr = new Supla::Control::CmdRelay(parser);
   if (ch["initial_state"]) {
     paramCount++;
     auto initialState = ch["initial_state"].as<std::string>();
@@ -515,6 +516,21 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
     auto cmdOff = ch["cmd_off"].as<std::string>();
     cr->setCmdOff(cmdOff);
   }
+  if (parser == nullptr && ch[Supla::Parser::State]) {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+    return false;
+  }
+  if (ch[Supla::Parser::State]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::State].as<int>();
+      cr->setMapping(Supla::Parser::State, index);
+    } else {
+      std::string key = ch[Supla::Parser::State].as<std::string>();
+      cr->setMapping(Supla::Parser::State, key);
+    }
+  }
+
   return true;
 }
 

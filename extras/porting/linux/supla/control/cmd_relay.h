@@ -20,18 +20,21 @@
 #define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_RELAY_H_
 
 #include <supla/control/virtual_relay.h>
+#include <supla/sensor/sensor_parsed.h>
 
 #include <string>
 
 namespace Supla {
 namespace Control {
-class CmdRelay : public VirtualRelay {
+class CmdRelay : public Sensor::SensorParsed<VirtualRelay> {
  public:
-  CmdRelay(_supla_int_t functions =
+  CmdRelay(Supla::Parser::Parser *parser, _supla_int_t functions =
                    (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
 
   void turnOn(_supla_int_t duration = 0) override;
   void turnOff(_supla_int_t duration = 0) override;
+  bool isOn() override;
+  void iterateAlways() override;
 
   void setCmdOn(const std::string &);
   void setCmdOff(const std::string &);
@@ -39,6 +42,7 @@ class CmdRelay : public VirtualRelay {
  protected:
   std::string cmdOn;
   std::string cmdOff;
+  uint64_t lastReadTime = 0;
 };
 
 };  // namespace Control

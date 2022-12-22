@@ -289,6 +289,15 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
+  int returnCode = esp_http_client_get_status_code(client);
+  SUPLA_LOG_INFO("HTTP return code %d", returnCode);
+  if (returnCode != 200) {
+    snprintf(buf, BUF_SIZE, "SW update: HTTP GET failed with status code %d",
+         returnCode);
+    fail(buf);
+    return;
+  }
+
   updatePartition = esp_ota_get_next_update_partition(NULL);
   if (updatePartition == NULL) {
     fail("SW update: failed to get next update partition");

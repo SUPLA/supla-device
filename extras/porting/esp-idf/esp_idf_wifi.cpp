@@ -155,12 +155,7 @@ void Supla::EspIdfWifi::setup() {
     memcpy(wifi_config.sta.ssid, ssid, MAX_SSID_SIZE);
     memcpy(wifi_config.sta.password, password, MAX_WIFI_PASSWORD_SIZE);
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
-    if (!initDone) {
-      wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
-    } else {
-      wifi_config.sta.scan_method = WIFI_FAST_SCAN;
-      wifi_config.sta.channel = lastChannel;
-    }
+    wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
 
     if (strlen(reinterpret_cast<char *>(wifi_config.sta.password))) {

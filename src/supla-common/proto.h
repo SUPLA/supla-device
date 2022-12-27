@@ -166,9 +166,9 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELGROUP_RELATION_PACK_MAXCOUNT 100  // ver. >= 9
 #endif /*SUPLA_CHANNELGROUP_RELATION_PACK_MAXCOUNT*/
 
-#define SUPLA_SCENE_CAPTION_MAXSIZE 401     // ver. >= 18
-#define SUPLA_SCENE_PACK_MAXCOUNT 20        // ver. >= 18
-#define SUPLA_SCENE_STATE_PACK_MAXCOUNT 20  // ver. >= 18
+#define SUPLA_SCENE_CAPTION_MAXSIZE SUPLA_CAPTION_MAXSIZE  // ver. >= 18
+#define SUPLA_SCENE_PACK_MAXCOUNT 20                       // ver. >= 18
+#define SUPLA_SCENE_STATE_PACK_MAXCOUNT 20                 // ver. >= 18
 
 #define SUPLA_DCS_CALL_GETVERSION 10
 #define SUPLA_SDC_CALL_GETVERSION_RESULT 20
@@ -262,9 +262,16 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_SC_CALL_SCENE_PACK_UPDATE 900                   // ver. >= 18
 #define SUPLA_SC_CALL_SCENE_STATE_PACK_UPDATE 910             // ver. >= 18
 #define SUPLA_CS_CALL_EXECUTE_ACTION 1000                     // ver. >= 19
-#define SUPLA_CS_CALL_AUTH_AND_EXECUTE_ACTION 1010            // ver. >= 19
+#define SUPLA_CS_CALL_EXECUTE_ACTION_WITH_AUTH 1010           // ver. >= 19
 #define SUPLA_SC_CALL_ACTION_EXECUTION_RESULT 1020            // ver. >= 19
+#define SUPLA_CS_CALL_GET_CHANNEL_VALUE_WITH_AUTH 1030        // ver. >= 19
+#define SUPLA_SC_CALL_GET_CHANNEL_VALUE_RESULT 1040           // ver. >= 19
+#define SUPLA_CS_CALL_SET_SCENE_CAPTION 1045                  // ver. >= 19
+#define SUPLA_SC_CALL_SET_SCENE_CAPTION_RESULT 1055           // ver. >= 19
 
+#define SUPLA_RESULT_RESPONSE_TIMEOUT -8
+#define SUPLA_RESULT_CANT_CONNECT_TO_HOST -7
+#define SUPLA_RESULT_HOST_NOT_FOUND -6
 #define SUPLA_RESULT_CALL_NOT_ALLOWED -5
 #define SUPLA_RESULT_DATA_TOO_LARGE -4
 #define SUPLA_RESULT_BUFFER_OVERFLOW -3
@@ -273,6 +280,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_RESULT_FALSE 0
 #define SUPLA_RESULT_TRUE 1
 
+// SUPLA_RESULTCODE_ are sent in TSuplaDataPacket.data (unsigned char)
 #define SUPLA_RESULTCODE_NONE 0
 #define SUPLA_RESULTCODE_UNSUPORTED 1
 #define SUPLA_RESULTCODE_FALSE 2
@@ -288,8 +296,6 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_RESULTCODE_CLIENT_LIMITEXCEEDED 12
 #define SUPLA_RESULTCODE_DEVICE_LIMITEXCEEDED 13
 #define SUPLA_RESULTCODE_GUID_ERROR 14
-#define SUPLA_RESULTCODE_HOSTNOTFOUND 15                           // ver. >= 5
-#define SUPLA_RESULTCODE_CANTCONNECTTOHOST 16                      // ver. >= 5
 #define SUPLA_RESULTCODE_REGISTRATION_DISABLED 17                  // ver. >= 7
 #define SUPLA_RESULTCODE_ACCESSID_NOT_ASSIGNED 18                  // ver. >= 7
 #define SUPLA_RESULTCODE_AUTHKEY_ERROR 19                          // ver. >= 7
@@ -312,6 +318,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_RESULTCODE_INCORRECT_PARAMETERS 35  // ver. >= 19
 #define SUPLA_RESULTCODE_CLIENT_NOT_EXISTS 36     // ver. >= 19
 #define SUPLA_RESULTCODE_COUNTRY_REJECTED 37
+#define SUPLA_RESULTCODE_CHANNEL_IS_OFFLINE 38  // ver. >= 19
 
 #define SUPLA_OAUTH_RESULTCODE_ERROR 0         // ver. >= 10
 #define SUPLA_OAUTH_RESULTCODE_SUCCESS 1       // ver. >= 10
@@ -717,7 +724,8 @@ typedef struct {
   char Name[SUPLA_DEVICE_NAME_MAXSIZE];  // UTF8
   char SoftVer[SUPLA_SOFTVER_MAXSIZE];
 
-  char ServerName[SUPLA_SERVER_NAME_MAXSIZE];
+  char ServerName[SUPLA_SERVER_NAME_MAXSIZE];  // ServerName is equal to Server
+                                               // host name/IP
 
   unsigned char channel_count;
   TDS_SuplaDeviceChannel_B
@@ -1152,15 +1160,17 @@ typedef struct {
 
 typedef struct {
   char Percentage;
-  char Reserved[15];
+  char Delta;  // If delta> 0 then the Percentage variable is seen as delta.
+  char Reserved[14];
 } TAction_RS_Parameters;  // ver. >= 19
 
 typedef struct {
-  char Brightness;
-  char ColorBrightness;
-  unsigned int Color;
+  char Brightness;       // -1 == Ignore
+  char ColorBrightness;  // -1 == Ignore
+  unsigned int Color;    // 0 == Ignore
   char ColorRandom;
-  char Reserverd[9];
+  char OnOff;
+  char Reserverd[8];
 } TAction_RGBW_Parameters;  // ver. >= 19
 
 typedef struct {
@@ -1186,11 +1196,26 @@ typedef struct {
 } TCS_ActionWithAuth;  // ver. >= 19
 
 typedef struct {
+  unsigned char ResultCode;
   _supla_int_t ActionId;
   _supla_int_t SubjectId;
   _supla_int_t SubjectType;
-  _supla_int_t ResultCode;
 } TSC_ActionExecutionResult;  // ver. >= 19
+
+typedef struct {
+  // server -> client
+  unsigned char ResultCode;
+  _supla_int_t ChannelId;  // Alias SubjectId
+  _supla_int_t Function;
+
+  TSuplaChannelValue_B Value;
+  TSuplaChannelExtendedValue ExtendedValue;  // Last variable in struct!
+} TSC_GetChannelValueResult;                 // ver. >= 19;
+
+typedef struct {
+  TCS_ClientAuthorizationDetails Auth;
+  _supla_int_t ChannelId;
+} TCS_GetChannelValueWithAuth;  // ver. >= 19
 
 typedef struct {
   // client -> server

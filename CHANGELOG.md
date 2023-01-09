@@ -1,5 +1,10 @@
 # CHANGELOG.md
 
+## 22.12.01 (2023-01-09)
+
+  - Fix: RGBW/Dimmer fix starting at lowest brighness when previously set brightness level was < 5%
+  - Add: RGBW/Dimmer add option to set delay between dim direction change during dimming by button (setMinMaxIterationDelay)
+  - Add: (ESP-IDF, ESP8266 RTOS) add HTTP status code to LAST STATE when it is different than 200
 ## 22.12 (2022-12-19)
 
   - Fix: Afore: fix crash on initialization
@@ -7,6 +12,7 @@
   - Fix: TrippleButtonRollerShutter add initialization of GPIO for STOP button
   - Fix: fixed reset to factory defaults for LittleFsConfig for Arduino IDE
   - Fix: Config mode: add escaping of HTML special characters when rendering user input values
+  - Fix: (ESP-IDF, ESP8266 RTOS) always run full Wi-Fi scan even if we are performing reconnection procedure. Sometimes device fails in finding best AP during scan and without full scan option it connects to the first one found. Then device remembers it as last AP and adjacent connections will be performed to not optimal AP. In multi-AP Wi-Fi network this old behaviour can lead to stucking with connecting to distant APs instead of the one with the best signal.
   - Change: add CRC calculation and verification for Storage classes
   - Add: MQTT support for ElectricityMeter
   - Add: Linux support for ThermHygroMeterParsed

@@ -145,6 +145,8 @@ TEST(DimmerTests, HandleActionTests) {
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(_, _, _, _, _)).Times(AtLeast(1));
 
   dimmer.setStep(10);
+  dimmer.setMinIterationBrightness(10);
+  dimmer.setMinMaxIterationDelay(400);
   dimmer.onInit();
   dimmer.onTimer();
   time.advance(400);
@@ -216,6 +218,8 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
 
   dimmer.setStep(5); // we'll call handleAction every 50 ms, so 5% step will
                      // drive 0 to 100% in 1 s
+  dimmer.setMinMaxIterationDelay(200);
+  dimmer.setMinIterationBrightness(5);
   dimmer.onInit();
   dimmer.iterateAlways();
   dimmer.onTimer();
@@ -258,8 +262,8 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
   }
 
   // pass another 1 s, this time with iterate dim w called every 50 ms with 5%
-  // step
-  for (int i = 0; i < 100; i++) {
+  // step. 200 ms is added for startup brightnening delay
+  for (int i = 0; i < 120; i++) {
     if (i % 5 == 0) {
       dimmer.handleAction(1, Supla::ITERATE_DIM_W);
       dimmer.onTimer();
@@ -270,7 +274,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
 
   // pass another 1 s, with iterate dim w called every 50 ms with 5%
   // step. It should dim down from 100% to 5%. Call sequence is not verified
-  // Additional 0.15 s is added for delay between direction switch
+  // Additional 0.20 s is added for delay between direction switch
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (5*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (10*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (15*1023/100))).Times(1);
@@ -290,7 +294,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (85*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (90*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (95*1023/100))).Times(1);
-  for (int i = 0; i < 115; i++) {
+  for (int i = 0; i < 120; i++) {
     if (i % 5 == 0) {
       dimmer.handleAction(1, Supla::ITERATE_DIM_W);
       dimmer.onTimer();
@@ -299,7 +303,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
     time.advance(10);
   }
 
-  // another 0.2 s should not change anything. Iterate dim w is being calles,
+  // another 0.2 s should not change anything. Iterate dim w is being called,
   // however there is a delay between direction changes
   for (int i = 0; i < 20; i++) {
     if (i % 5 == 0) {
@@ -310,7 +314,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
     time.advance(10);
   }
 
-  // another 0.95 s should dim from 5% to 100%. 5% is already on device, so
+  // another 1 s should dim from 5% to 100%. 5% is already on device, so
   // next call is 10%
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (10*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (15*1023/100))).Times(1);
@@ -331,7 +335,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (90*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (95*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (100*1023/100))).Times(1);
-  for (int i = 0; i < 95; i++) {
+  for (int i = 0; i < 100; i++) {
     if (i % 5 == 0) {
       dimmer.handleAction(1, Supla::ITERATE_DIM_W);
       dimmer.onTimer();
@@ -351,7 +355,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
     time.advance(10);
   }
 
-  // another 0.50 s should dim from 100% to 50%
+  // another 0.55 s should dim from 100% to 50%
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (50*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (55*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (60*1023/100))).Times(1);
@@ -362,7 +366,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (85*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (90*1023/100))).Times(1);
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (95*1023/100))).Times(1);
-  for (int i = 0; i < 50; i++) {
+  for (int i = 0; i < 55; i++) {
     if (i % 5 == 0) {
       dimmer.handleAction(1, Supla::ITERATE_DIM_W);
       dimmer.onTimer();

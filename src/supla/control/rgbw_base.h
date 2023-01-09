@@ -53,6 +53,7 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   void setDefaultDimmedBrightness(int dimmedBrightness);
   void setFadeEffectTime(int timeMs);
   void setMinIterationBrightness(uint8_t minBright);
+  void setMinMaxIterationDelay(uint16_t delayMs);
 
   void onInit();
   void iterateAlways();
@@ -86,7 +87,6 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   uint8_t lastBrightness;           // 0 - 100
   uint8_t defaultDimmedBrightness;  // 20
   bool dimIterationDirection;
-  int iterationDelayCounter;
   int fadeEffect;
   int hwRed;              // 0 - 255
   int hwGreen;            // 0 - 255
@@ -97,9 +97,11 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   int maxBrightness = 1023;
   int minColorBrightness = 0;
   int maxColorBrightness = 1023;
+  uint16_t minMaxIterationDelay = 750;
   uint64_t lastTick = 0;
   uint64_t lastMsgReceivedMs = 0;
   uint64_t lastIterateDimmerTimestamp = 0;
+  uint64_t iterationDelayTimestamp = 0;
   int8_t stateOnInit;
   uint8_t minIterationBrightness;
 };

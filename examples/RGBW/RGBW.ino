@@ -69,14 +69,19 @@ void setup() {
   auto button = new Supla::Control::Button(BUTTON_PIN, true, true);
   button->setMulticlickTime(200);
   button->setHoldTime(400);
-  button->repeatOnHoldEvery(200);
+  button->repeatOnHoldEvery(35);
+
+  rgbw->setStep(1);
+// rgbw->setMinMaxIterationDelay(750);  // delay between dimming direction
+                                        // change, 750 ms (default)
+//  rgbw->setMinIterationBrightness(1);  // 1 is default value
 
   button->addAction(Supla::ITERATE_DIM_ALL, rgbw, Supla::ON_HOLD);
   button->addAction(Supla::TOGGLE, rgbw, Supla::ON_CLICK_1);
 
   /*
    * SuplaDevice Initialization.
-   * Server address is available at https://cloud.supla.org 
+   * Server address is available at https://cloud.supla.org
    * If you do not have an account, you can create it at
    * https://cloud.supla.org/account/create SUPLA and SUPLA CLOUD are free of
    * charge

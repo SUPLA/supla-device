@@ -147,6 +147,8 @@ TEST(RgbTests, HandleActionTests) {
 
   time.advance(1000);
   rgb.setStep(10);
+  rgb.setMinIterationBrightness(10);
+  rgb.setMinMaxIterationDelay(400);
   rgb.onInit();
   time.advance(1000);
   rgb.iterateAlways();

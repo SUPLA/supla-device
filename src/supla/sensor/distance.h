@@ -30,11 +30,13 @@ class Distance : public ChannelElement {
   Distance();
 
   virtual double getValue();
+  virtual void setReadIntervalMs(uint32_t timeMs);
 
   void iterateAlways() override;
 
  protected:
   uint64_t lastReadTime = 0;
+  uint32_t readIntervalMs = 100;
 };
 
 };  // namespace Sensor

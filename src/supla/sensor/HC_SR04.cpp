@@ -49,7 +49,8 @@ void HC_SR04::onInit() {
 double HC_SR04::getValue() {
 //  noInterrupts();
   Supla::Io::digitalWrite(_trigPin, HIGH);
-  delayMicroseconds(10);
+  // increased delay from 10 to 30 to make it work also for JSN-SR20-Y1 sensor
+  delayMicroseconds(30);
   Supla::Io::digitalWrite(_trigPin, LOW);
   uint64_t duration = Supla::Io::pulseIn(_echoPin, HIGH, 60000);
 //  interrupts();

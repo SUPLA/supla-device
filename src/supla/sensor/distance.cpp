@@ -28,9 +28,15 @@ double Supla::Sensor::Distance::getValue() {
 }
 
 void Supla::Sensor::Distance::iterateAlways() {
-  if (lastReadTime + 100 < millis()) {
+  if (millis() - lastReadTime >= readIntervalMs) {
     lastReadTime = millis();
     channel.setNewValue(getValue());
   }
 }
 
+void Supla::Sensor::Distance::setReadIntervalMs(uint32_t timeMs) {
+  if (timeMs < 10) {
+    timeMs = 10;
+  }
+  readIntervalMs = timeMs;
+}

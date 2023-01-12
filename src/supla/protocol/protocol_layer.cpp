@@ -97,6 +97,21 @@ void ProtocolLayer::getChannelConfig(uint8_t channelNumber) {
   (void)(channelNumber);
 }
 
+void ProtocolLayer::setChannelConfig(uint8_t channelNumber,
+      _supla_int_t channelFunction, void *channelConfig, int size) {
+  (void)(channelNumber);
+  (void)(channelFunction);
+  (void)(channelConfig);
+  (void)(size);
+}
+
+void ProtocolLayer::getDeviceConfig() {
+}
+
+void ProtocolLayer::setDeviceConfig(TSD_DeviceConfig *deviceConfig) {
+  (void)(deviceConfig);
+}
+
 bool ProtocolLayer::isConfigEmpty() {
   return configEmpty;
 }

@@ -515,7 +515,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 
 // BIT map definition for TDS_SuplaRegisterDevice_*::Flags (32 bit)
 #define SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE 0x0010  // ver. >= 17
-#define SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED 0x0020     // ver. >= 18
+#define SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED    0x0020  // ver. >= 18
+#define SUPLA_DEVICE_FLAG_CALCFG_SET_TIME       0x0040  // ver. >= 20
 
 // BIT map definition for TDS_SuplaRegisterDevice_F::ConfigFields (64 bit)
 // type: TDeviceConfig_StatusLed
@@ -1686,6 +1687,7 @@ typedef struct {
 #define SUPLA_CALCFG_CMD_RESET_COUNTERS 7000              // v. >= 15
 #define SUPLA_CALCFG_CMD_RECALIBRATE 8000                 // v. >= 15
 #define SUPLA_CALCFG_CMD_ENTER_CFG_MODE 9000              // v. >= 17
+#define SUPLA_CALCFG_CMD_SET_TIME 9100                    // v. >= 20
 
 #define SUPLA_CALCFG_DATATYPE_RS_SETTINGS 1000
 #define SUPLA_CALCFG_DATATYPE_FB_SETTINGS 1100  // v. >= 17
@@ -2183,9 +2185,11 @@ typedef struct {
  * DEVICE CONFIG STRUCTURES
  ********************************************/
 
+#define SUPLA_DEVCFG_TYPE_DEFAULT 0
+
 // SUPLA_DS_CALL_GET_DEVICE_CONFIG
 typedef struct {
-  _supla_int16_t DeviceConfigType;  // DEFAULT == 0
+  _supla_int16_t DeviceConfigType;  // DEFAULT == 0, SUPLA_DEVCFG_TYPE_
 } TDS_GetDeviceConfigRequest;  // v. >= 20
 
 // SUPLA_DS_CALL_SET_DEVICE_CONFIG
@@ -2195,11 +2199,18 @@ typedef struct {
 // Fields parameter. Size of parameter depends on Field type.
 typedef struct {
   unsigned char EndOfDataFlag;  // 1 - last message; 0 - more messages will come
-  _supla_int16_t DeviceConfigType;  // DEFAULT == 0
+  _supla_int16_t DeviceConfigType;  // DEFAULT == 0, SUPLA_DEVCFG_TYPE_
   unsigned _supla_int64_t Fields;   // bit map of SUPLA_DEVICE_CONFIG_FIELD_
-  unsigned _supla_int16_t Size;
+  unsigned _supla_int16_t ConfigSize;
   char Config[SUPLA_DEVICE_CONFIG_MAXSIZE];  // Last variable in struct!
 } TSD_DeviceConfig;  // v. >= 20
+
+// SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT
+// SUPLA_DS_CALL_SET_DEVICE_CONFIG_RESULT
+typedef struct {
+  unsigned char Result;
+} TSD_SetDeviceConfigResult;
+
 
 #define SUPLA_DEVCFG_STATUS_LED_ON_WHEN_CONNECTED  0
 #define SUPLA_DEVCFG_STATUS_LED_OFF_WHEN_CONNECTED 1
@@ -2252,10 +2263,13 @@ typedef struct {
  * CHANNEL CONFIG STRUCTURES
  ********************************************/
 
+#define SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT         0
+#define SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE 1
+
 // SUPLA_DS_CALL_GET_CHANNEL_CONFIG
 typedef struct {
   unsigned char ChannelNumber;
-  unsigned char ConfigType;
+  unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
   unsigned _supla_int_t Flags;
 } TDS_GetChannelConfigRequest;  // v. >= 16
 
@@ -2265,12 +2279,19 @@ typedef struct {
 typedef struct {
   unsigned char ChannelNumber;
   _supla_int_t Func;
-  unsigned char ConfigType;
+  unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
   unsigned _supla_int16_t ConfigSize;
   char Config[SUPLA_CHANNEL_CONFIG_MAXSIZE];  // Last variable in struct!
                                               // v. >= 16
                                               // TSD_ChannelConfig_*
 } TSD_ChannelConfig;
+
+// SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT
+// SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT
+typedef struct {
+  unsigned char Result;
+  unsigned char ChannelNumber;
+} TSD_SetChannelConfigResult;
 
 typedef struct {
   _supla_int_t TimeMS;

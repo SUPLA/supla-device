@@ -90,7 +90,10 @@ class Element {
   virtual void handleGetChannelState(TDSC_ChannelState *channelState);
 
   virtual int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
-  virtual void handleChannelConfig(TSD_ChannelConfig *result);
+
+  // Returns SUPLA_RESULTCODE_
+  virtual uint8_t handleChannelConfig(TSD_ChannelConfig *result);
+  virtual void handleSetChannelConfigResult(TSD_SetChannelConfigResult *result);
 
   int getChannelNumber();
   virtual Channel *getChannel();

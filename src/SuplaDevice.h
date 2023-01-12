@@ -92,9 +92,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
              const char *Server,
              const char *email,
              const char authkey[SUPLA_AUTHKEY_SIZE],
-             unsigned char protoVersion = 16);
+             unsigned char protoVersion = 20);
 
-  bool begin(unsigned char protoVersion = 16);
+  bool begin(unsigned char protoVersion = 20);
 
   // Use ASCII only in name
   void setName(const char *Name);
@@ -123,6 +123,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setServerPort(int value);
 
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
+
+  // Returns SUPLA_RESULTCODE_
+  uint8_t handleDeviceConfig(TSD_DeviceConfig *request);
+  uint8_t handleSetDeviceConfigResult(TSD_SetDeviceConfigResult *result);
 
   void enterConfigMode();
   void enterNormalMode();

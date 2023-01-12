@@ -195,9 +195,9 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
   }
 }
 
-void Supla::Control::ActionTrigger::handleChannelConfig(
+uint8_t Supla::Control::ActionTrigger::handleChannelConfig(
     TSD_ChannelConfig *result) {
-  if (result->ConfigType == 0 &&
+  if (result->ConfigType == SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT &&
       result->ConfigSize == sizeof(TSD_ChannelConfig_ActionTrigger)) {
     TSD_ChannelConfig_ActionTrigger *config =
       reinterpret_cast<TSD_ChannelConfig_ActionTrigger *>(result->Config);
@@ -212,6 +212,7 @@ void Supla::Control::ActionTrigger::handleChannelConfig(
       Supla::Storage::ScheduleSave(2000);
     }
   }
+  return SUPLA_RESULTCODE_TRUE;
 }
 
 void Supla::Control::ActionTrigger::setRelatedChannel(Element *element) {

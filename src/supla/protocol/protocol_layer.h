@@ -60,7 +60,13 @@ class ProtocolLayer {
       unsigned char offline, uint32_t validityTimeSec) = 0;
   virtual void sendExtendedChannelValueChanged(uint8_t channelNumber,
     TSuplaChannelExtendedValue *value) = 0;
+
   virtual void getChannelConfig(uint8_t channelNumber);
+  virtual void setChannelConfig(uint8_t channelNumber,
+      _supla_int_t channelFunction, void *channelConfig, int size);
+
+  virtual void getDeviceConfig();
+  virtual void setDeviceConfig(TSD_DeviceConfig *deviceConfig);
 
  protected:
   static ProtocolLayer *firstPtr;

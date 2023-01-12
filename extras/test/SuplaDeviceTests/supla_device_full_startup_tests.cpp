@@ -91,7 +91,7 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
       EXPECT_CALL(timer, initTimers());
       EXPECT_CALL(srpc, srpc_params_init(_));
       EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-      EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 16));
+      EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 20));
 
       char GUID[SUPLA_GUID_SIZE] = {1};
       char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
@@ -198,7 +198,7 @@ TEST_F(SuplaDeviceTestsFullStartup, NoReplyForDeviceRegistrationShoudResetConnec
 
   EXPECT_CALL(*client, stop()).WillOnce(Assign(&isConnected, false));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(2);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(2);
 
   for (int i = 0; i < 11*10; i++) {
     sd.iterate();
@@ -229,7 +229,7 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   EXPECT_CALL(el1, onRegistered(_));
   EXPECT_CALL(el2, onRegistered(_));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
@@ -318,7 +318,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
     .WillRepeatedly(Return(true));
   // SSL disabled, port should be 2015
   EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -397,7 +397,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
     .WillRepeatedly(Return(true));
   // SSL disabled, port should be 2015
   EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -472,7 +472,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
     .WillRepeatedly(Return(true));
   // Port should be 2016
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -551,7 +551,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -630,7 +630,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -709,7 +709,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -788,7 +788,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -845,7 +845,7 @@ TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
   EXPECT_CALL(el1, onRegistered(_));
   EXPECT_CALL(el2, onRegistered(_));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 

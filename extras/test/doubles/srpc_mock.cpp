@@ -37,6 +37,37 @@ _supla_int_t srpc_ds_async_get_channel_config(
   return SrpcInterface::instance->getChannelConfig(request->ChannelNumber);
 }
 
+_supla_int_t srpc_ds_async_get_device_config(
+    void *_srpc, TDS_GetDeviceConfigRequest *request) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->getDeviceConfig(request);
+}
+
+_supla_int_t srpc_ds_async_set_device_config_result(
+    void *_srpc, TSD_SetDeviceConfigResult *result) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->setDeviceConfigResult(result);
+}
+
+_supla_int_t srpc_ds_async_set_device_config_request(
+    void *_srpc, TSD_DeviceConfig *request) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->setDeviceConfigRequest(request);
+}
+
+_supla_int_t srpc_ds_async_set_channel_config_result(
+    void *_srpc, TSD_SetChannelConfigResult *result) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->setChannelConfigResult(result);
+}
+
+_supla_int_t srpc_ds_async_set_channel_config_request(
+    void *_srpc, TSD_ChannelConfig *request) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->setChannelConfigRequest(request);
+}
+
+
 _supla_int_t srpc_ds_async_channel_value_changed_c(void *_srpc,
                                                    unsigned char channel_number,
                                                    char *value,
@@ -104,10 +135,10 @@ void srpc_set_proto_version(void *_srpc, unsigned char version) {
   SrpcInterface::instance->srpc_set_proto_version(_srpc, version);
 }
 
-_supla_int_t srpc_ds_async_registerdevice_e(
-    void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) {
+_supla_int_t srpc_ds_async_registerdevice_f(
+    void *_srpc, TDS_SuplaRegisterDevice_F *registerdevice) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_ds_async_registerdevice_e(
+  return SrpcInterface::instance->srpc_ds_async_registerdevice_f(
       _srpc, registerdevice);
 }
 

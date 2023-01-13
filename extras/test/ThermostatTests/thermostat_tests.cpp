@@ -33,4 +33,8 @@ TEST(ThermostatTests, BasicChannelSetup) {
 
   EXPECT_EQ(ch->getChannelNumber(), 0);
   EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_THERMOSTAT);
+  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_THERMOSTAT_HEAT);
+  EXPECT_TRUE(ch->isWeeklyScheduleAvailable());
+  EXPECT_NE(
+      ch->getFlags() & SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE, 0);
 }

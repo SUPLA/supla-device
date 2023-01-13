@@ -553,8 +553,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 // Free bits for future use:  0x0200, 0x0400, 0x0800
 #define SUPLA_CHANNEL_FLAG_RS_AUTO_CALIBRATION 0x1000    // ver. >= 15
 #define SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS 0x2000  // ver. >= 15
-// Free bits for future use: 0x8000
 #define SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE 0x4000               // ver. >= 15
+// Free bits for future use: 0x8000
 #define SUPLA_CHANNEL_FLAG_CHANNELSTATE 0x00010000                 // ver. >= 12
 #define SUPLA_CHANNEL_FLAG_PHASE1_UNSUPPORTED 0x00020000           // ver. >= 12
 #define SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED 0x00040000           // ver. >= 12
@@ -570,6 +570,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
   0x04000000  // ver. >= 12  DEPRECATED
 #define SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE \
   0x08000000  // ver. >= 20
+#define SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE \
+  0x10000000  // ver. >= 20
 
 #pragma pack(push, 1)
 
@@ -1939,7 +1941,9 @@ typedef struct {
 #define SUPLA_THERMOSTAT_CAP_FLAG_MODE_DRY      0x0020
 #define SUPLA_THERMOSTAT_CAP_FLAG_MODE_FAN      0x0040
 #define SUPLA_THERMOSTAT_CAP_FLAG_MODE_PURIFIER 0x0080
-#define SUPLA_THERMOSTAT_CAP_FLAG_SCHEDULE      0x0100
+// #define SUPLA_THERMOSTAT_CAP_FLAG_SCHEDULE      0x0100  // moved to channel
+                                                           // flags, instead of
+                                                           // thermostat cap
 
 // Heatpol: Thermostat value flags - ver. >= 11
 #define SUPLA_THERMOSTAT_VALUE_FLAG_ON 0x0001
@@ -2185,11 +2189,9 @@ typedef struct {
  * DEVICE CONFIG STRUCTURES
  ********************************************/
 
-#define SUPLA_DEVCFG_TYPE_DEFAULT 0
-
 // SUPLA_DS_CALL_GET_DEVICE_CONFIG
 typedef struct {
-  _supla_int16_t DeviceConfigType;  // DEFAULT == 0, SUPLA_DEVCFG_TYPE_
+  unsigned char zero[8];  // for future use
 } TDS_GetDeviceConfigRequest;  // v. >= 20
 
 // SUPLA_DS_CALL_SET_DEVICE_CONFIG
@@ -2199,7 +2201,7 @@ typedef struct {
 // Fields parameter. Size of parameter depends on Field type.
 typedef struct {
   unsigned char EndOfDataFlag;  // 1 - last message; 0 - more messages will come
-  _supla_int16_t DeviceConfigType;  // DEFAULT == 0, SUPLA_DEVCFG_TYPE_
+  unsigned char zero[8];  // for future use
   unsigned _supla_int64_t Fields;   // bit map of SUPLA_DEVICE_CONFIG_FIELD_
   unsigned _supla_int16_t ConfigSize;
   char Config[SUPLA_DEVICE_CONFIG_MAXSIZE];  // Last variable in struct!
@@ -2209,6 +2211,7 @@ typedef struct {
 // SUPLA_DS_CALL_SET_DEVICE_CONFIG_RESULT
 typedef struct {
   unsigned char Result;
+  unsigned char zero[8];  // for future use
 } TSD_SetDeviceConfigResult;
 
 
@@ -2290,6 +2293,7 @@ typedef struct {
 // SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT
 typedef struct {
   unsigned char Result;
+  unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
   unsigned char ChannelNumber;
 } TSD_SetChannelConfigResult;
 

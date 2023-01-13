@@ -62,6 +62,7 @@ class ProtocolLayer {
     TSuplaChannelExtendedValue *value) = 0;
 
   virtual void getChannelConfig(uint8_t channelNumber);
+  virtual void getChannelWeeklySchedule(uint8_t channelNumber);
   virtual void setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size);
 

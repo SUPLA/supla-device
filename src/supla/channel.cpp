@@ -316,6 +316,9 @@ void Channel::sendUpdate() {
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
         proto != nullptr; proto = proto->next()) {
       proto->getChannelConfig(channelNumber);
+      if (isWeeklyScheduleAvailable()) {
+        proto->getChannelWeeklySchedule(channelNumber);
+      }
     }
   }
 }
@@ -543,6 +546,10 @@ void Channel::setValidityTimeSec(unsigned _supla_int_t timeSec) {
 
 bool Channel::isSleepingEnabled() {
   return validityTimeSec > 0;
+}
+
+bool Channel::isWeeklyScheduleAvailable() {
+  return getFlags() & SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE;
 }
 
 void Channel::setCorrection(double correction, bool forSecondaryValue) {

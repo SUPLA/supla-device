@@ -52,6 +52,7 @@ class SuplaSrpc : public ProtocolLayer {
     TSuplaChannelExtendedValue *value) override;
 
   void getChannelConfig(uint8_t channelNumber) override;
+  void getChannelWeeklySchedule(uint8_t channelNumber) override;
   void setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size) override;
 

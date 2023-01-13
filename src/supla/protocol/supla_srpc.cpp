@@ -308,7 +308,17 @@ void Supla::messageReceived(void *srpc,
           auto element =
               Supla::Element::getElementByChannelNumber(result->ChannelNumber);
           if (element) {
-            element->handleChannelConfig(result);
+            switch (result->ConfigType) {
+              default:
+              case SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT: {
+                element->handleChannelConfig(result);
+                break;
+              }
+              case SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE: {
+                element->handleWeeklySchedule(result);
+                break;
+              }
+            }
           } else {
             SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
@@ -341,7 +351,17 @@ void Supla::messageReceived(void *srpc,
           auto element =
               Supla::Element::getElementByChannelNumber(request->ChannelNumber);
           if (element) {
-            result.Result = element->handleChannelConfig(request);
+            switch (request->ConfigType) {
+              default:
+              case SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT: {
+                result.Result = element->handleChannelConfig(request);
+                break;
+              }
+              case SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE: {
+                result.Result = element->handleWeeklySchedule(request);
+                break;
+              }
+            }
           } else {
             SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
@@ -839,6 +859,18 @@ void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber) {
   }
   TDS_GetChannelConfigRequest request = {};
   request.ChannelNumber = channelNumber;
+  request.ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT;
+  srpc_ds_async_get_channel_config(srpc, &request);
+}
+
+void Supla::Protocol::SuplaSrpc::getChannelWeeklySchedule(
+    uint8_t channelNumber) {
+  if (!isRegisteredAndReady()) {
+    return;
+  }
+  TDS_GetChannelConfigRequest request = {};
+  request.ChannelNumber = channelNumber;
+  request.ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE;
   srpc_ds_async_get_channel_config(srpc, &request);
 }
 
@@ -867,7 +899,6 @@ void Supla::Protocol::SuplaSrpc::getDeviceConfig() {
     return;
   }
   TDS_GetDeviceConfigRequest request = {};
-  request.DeviceConfigType = SUPLA_DEVCFG_TYPE_DEFAULT;
   srpc_ds_async_get_device_config(srpc, &request);
 }
 
@@ -881,7 +912,6 @@ void Supla::Protocol::SuplaSrpc::setDeviceConfig(
   }
 
   deviceConfig->EndOfDataFlag = 1;
-  deviceConfig->DeviceConfigType = SUPLA_DEVCFG_TYPE_DEFAULT;
   srpc_ds_async_set_device_config_request(srpc, deviceConfig);
 }
 

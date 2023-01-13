@@ -205,6 +205,13 @@ uint8_t Element::handleChannelConfig(TSD_ChannelConfig *result) {
   return SUPLA_RESULTCODE_UNSUPORTED;
 }
 
+uint8_t Element::handleWeeklySchedule(TSD_ChannelConfig *result) {
+  (void)(result);
+  SUPLA_LOG_ERROR(
+      "Element: received weekly schedly, but handling is missing");
+  return SUPLA_RESULTCODE_UNSUPORTED;
+}
+
 void Element::handleSetChannelConfigResult(TSD_SetChannelConfigResult *result) {
   (void)(result);
   SUPLA_LOG_ERROR(

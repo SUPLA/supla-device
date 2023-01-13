@@ -34,7 +34,8 @@ _supla_int_t srpc_ds_async_action_trigger(void *_srpc, TDS_ActionTrigger *at) {
 _supla_int_t srpc_ds_async_get_channel_config(
     void *_srpc, TDS_GetChannelConfigRequest *request) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->getChannelConfig(request->ChannelNumber);
+  return SrpcInterface::instance->getChannelConfig(request->ChannelNumber,
+      request->ConfigType);
 }
 
 _supla_int_t srpc_ds_async_get_device_config(

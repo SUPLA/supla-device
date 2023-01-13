@@ -54,6 +54,7 @@ file(GLOB TEST_SRC
   ToolsTests/*.cpp
   Mqtt/*.cpp
   Html/*.cpp
+  ThermostatTests/*.cpp
   )
 
 file(GLOB DOUBLE_SRC doubles/*.cpp)

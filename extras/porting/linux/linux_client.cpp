@@ -215,6 +215,20 @@ int Supla::LinuxClient::readImp(uint8_t *buf, size_t size) {
           stop();
           break;
         }
+        case SSL_ERROR_SYSCALL: {
+          SUPLA_LOG_WARNING(
+              "Client: SSL_ERROR_SYSCALL non-recoverable, fatal I/O error"
+              " occurred (errno: %d)", errno);
+          stop();
+          break;
+        }
+        case SSL_ERROR_SSL: {
+          SUPLA_LOG_WARNING(
+              "Client: SSL_ERROR_SSL non-recoverable, fatal error in the SSL "
+              "library occurred");
+          stop();
+          break;
+        }
         default: {
           printSslError(ssl, response);
         }

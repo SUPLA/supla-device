@@ -389,8 +389,9 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELTYPE_ELECTRICITY_METER 5000  // ver. >= 10
 #define SUPLA_CHANNELTYPE_IMPULSE_COUNTER 5010    // ver. >= 10
 
-#define SUPLA_CHANNELTYPE_THERMOSTAT 6000                   // ver. >= 20
+#define SUPLA_CHANNELTYPE_THERMOSTAT 6000                   // ver. >= 11
 #define SUPLA_CHANNELTYPE_THERMOSTAT_HEATPOL_HOMEPLUS 6010  // ver. >= 11
+#define SUPLA_CHANNELTYPE_HVAC 6100                         // ver. >= 20
 
 #define SUPLA_CHANNELTYPE_VALVE_OPENCLOSE 7000              // ver. >= 12
 #define SUPLA_CHANNELTYPE_VALVE_PERCENTAGE 7010             // ver. >= 12
@@ -444,10 +445,11 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELFNC_IC_HEAT_METER 340                // ver. >= 10
 // Thermostat 400 funciton is not used
 #define SUPLA_CHANNELFNC_THERMOSTAT 400                   // ver. >= 11
-#define SUPLA_CHANNELFNC_THERMOSTAT_HEAT 401              // ver. >= 20
-#define SUPLA_CHANNELFNC_THERMOSTAT_COOL 402              // ver. >= 20
-#define SUPLA_CHANNELFNC_THERMOSTAT_AUTO 403              // ver. >= 20
 #define SUPLA_CHANNELFNC_THERMOSTAT_HEATPOL_HOMEPLUS 410  // ver. >= 11
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT 420         // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL 421         // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO 422         // ver. >= 20
+// TODO(klew): add other HVAC variants
 #define SUPLA_CHANNELFNC_VALVE_OPENCLOSE 500              // ver. >= 12
 #define SUPLA_CHANNELFNC_VALVE_PERCENTAGE 510             // ver. >= 12
 #define SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT 520  // ver. >= 12
@@ -1891,28 +1893,65 @@ typedef struct {
   unsigned _supla_int16_t Temperature[10];
 } TThermostatTemperatureCfg;
 
-// Tempeature definitions for common Supla Thermostat
-// TThermostatTemperatureCfg_V2
-#define TEMPERATURE_T0               (1 << 0)
-#define TEMPERATURE_T1               (1 << 1)
-#define TEMPERATURE_T2               (1 << 2)
-#define TEMPERATURE_T3               (1 << 3)
-#define TEMPERATURE_HISTERESIS       (1 << 4)
-#define TEMPERATURE_COOL_HEAT_OFFSET (1 << 5)
-#define TEMPERATURE_BELOW_ALARM      (1 << 6)
-#define TEMPERATURE_ABOVE_ALARM      (1 << 7)
-#define TEMPERATURE_ROOM_MIN         (1 << 8)
-#define TEMPERATURE_ROOM_MAX         (1 << 9)
-#define TEMPERATURE_FLOOR_MIN        (1 << 10)
-#define TEMPERATURE_FLOOR_MAX        (1 << 11)
-// Four definitions left for future use
+// Tempeature definitions for HVAC
+// THVACTemperatureCfg
+// Below values are settable by user in UI
+// Temperature below which heating will be enabled as a freeze protection
+#define TEMPERATURE_FREEZE_PROTECTION          (1 << 0)
+// Economic temperaturey
+#define TEMPERATURE_ECO                        (1 << 1)
+// Comfort temperature
+#define TEMPERATURE_COMFORT                    (1 << 2)
+#define TEMPERATURE_BOOST                      (1 << 3)
+// Temperature above which cooling will be enabled as an overheating protection.
+#define TEMPERATURE_HEAT_PROTECTION            (1 << 4)
+// Histeresis value - i.e. heating will be enabled when current temperature
+// is histeresis/2 lower than current setpoint.
+#define TEMPERATURE_HISTERESIS                 (1 << 5)
+// Offset between heating and cooling temperature in auto mode.
+// I.e. if setpoint is 22 degrees, offset is 3 degrees, then heating will
+// be enabled when current temperture drops below (22 - offset/2 - histeresis/2)
+// Cooling will be enabled when termperture rise above (22 + offset/2 +
+// histeresis/2)
+#define TEMPERATURE_AUTO_OFFSET                (1 << 6)
+// Turns on "alarm" when temperature is below this value. Can be visual effect
+// or sound (if device is capable). It can also send AT to server (TBD)
+#define TEMPERATURE_BELOW_ALARM                (1 << 7)
+// As above, but for tempertatures above threshold
+#define TEMPERATURE_ABOVE_ALARM                (1 << 8)
+// Minimum temperature to be kept on heat/cold source (i.e. keeps floor always
+// at least 19 degrees)
+#define TEMPERATURE_HEATER_COOLER_MIN_SETPOINT (1 << 9)
+// Maximum temperature to be kept on heat/cold source (i.e. protect floor
+// from overheating and keep at most 28 degrees)
+#define TEMPERATURE_HEATER_COOLER_MAX_SETPOINT (1 << 10)
+
+// Below values are readonly for user
+// Minimum room (main thermometer) temperature to be set by user
+#define TEMPERATURE_ROOM_MIN                   (1 << 11)
+// Maximum room (main thermometer) temperature to be set by user
+#define TEMPERATURE_ROOM_MAX                   (1 << 12)
+// Minimum allowed temperature for heat/cold source (used with second
+// thermomter for floor/water/etc.)
+#define TEMPERATURE_HEATER_COOLER_MIN          (1 << 13)
+// Maximum allowed temperature for heat/cold source
+#define TEMPERATURE_HEATER_COOLER_MAX          (1 << 14)
+// Minimum histereis value
+#define TEMPERATURE_HISTERESIS_MIN             (1 << 15)
+// Maximum histereis value
+#define TEMPERATURE_HISTERESIS_MAX             (1 << 16)
+// Minimum temperature offset in AUTO mode
+#define TEMPERATURE_AUTO_OFFSET_MIN            (1 << 17)
+// Maximum temperature offset in AUTO mode
+#define TEMPERATURE_AUTO_OFFSET_MAX            (1 << 18)
+// 5 values left for future use
 
 // Used in Supla Thermostat
 typedef struct {
-  unsigned _supla_int16_t Index;  // BIT0 Temperature[0], BIT1 Temperature[1]
+  unsigned _supla_int_t Index;  // BIT0 Temperature[0], BIT1 Temperature[1]
                                   // etc...
-  unsigned _supla_int16_t Temperature[16];
-} TThermostatTemperatureCfg_V2;
+  unsigned _supla_int16_t Temperature[24];
+} THVACTemperatureCfg;
 
 // Thermostat configuration commands - ver. >= 11
 #define SUPLA_THERMOSTAT_CMD_TURNON 1
@@ -1929,19 +1968,19 @@ typedef struct {
 #define SUPLA_THERMOSTAT_CMD_SET_TIME 12
 #define SUPLA_THERMOSTAT_CMD_SET_TEMPERATURE 13
 
-// Thermostat capability flags - ver. >= 20
+// HVAC channel capability flags - ver. >= 20
 // Those flags are not yet used anywhere, so we change them
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_ONOFF 0x0001
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_AUTO  0x0002
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_COOL  0x0004
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_HEAT  0x0008
+#define SUPLA_HVAC_CAP_FLAG_MODE_ONOFF 0x0001
+#define SUPLA_HVAC_CAP_FLAG_MODE_AUTO  0x0002  // AUTO = HEAT + COOL
+#define SUPLA_HVAC_CAP_FLAG_MODE_COOL  0x0004
+#define SUPLA_HVAC_CAP_FLAG_MODE_HEAT  0x0008
 // ECO mode is just a setting with some specific temperature, so it dedicated
 // mode is not required
-// #define SUPLA_THERMOSTAT_CAP_FLAG_MODE_ECO 0x0010
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_DRY      0x0020
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_FAN      0x0040
-#define SUPLA_THERMOSTAT_CAP_FLAG_MODE_PURIFIER 0x0080
-// #define SUPLA_THERMOSTAT_CAP_FLAG_SCHEDULE      0x0100  // moved to channel
+// #define SUPLA_HVAC_CAP_FLAG_MODE_ECO 0x0010
+#define SUPLA_HVAC_CAP_FLAG_MODE_DRY      0x0020
+#define SUPLA_HVAC_CAP_FLAG_MODE_FAN      0x0040
+// #define SUPLA_HVAC_CAP_FLAG_MODE_PURIFIER 0x0080  // remove?
+// #define SUPLA_HVAC_CAP_FLAG_SCHEDULE      0x0100  // moved to channel
                                                            // flags, instead of
                                                            // thermostat cap
 
@@ -1981,6 +2020,78 @@ typedef struct {
   _supla_int16_t MeasuredTemperature;  // * 0.01
   _supla_int16_t PresetTemperature;    // * 0.01
 } TThermostat_Value;                   // v. >= 11
+
+
+// SUPLA_HVAC_SET_MODE_ value is used in THVACValue::Mode in (C)SD
+// communication. It is used to switch HVAC channel to particular mode.
+
+// SET_MODE_KEEP should be used when other parameters in THVACValue are send
+// to device and when device's mode should be preserved as it is.
+#define SUPLA_HVAC_SET_MODE_KEEP            0
+// SET_MODE_OFF disables all HVAC functions (however antifreeze function can be
+// still used)
+#define SUPLA_HVAC_SET_MODE_OFF             1
+// SET_MODE_ON enabled HVAC channel. Device restores modes which were used
+// before it was turned off. So actual state after SET_MODE_ON depends on
+// device's previous states.
+#define SUPLA_HVAC_SET_MODE_ON              2
+// SET_MODE_WEEKLY_SCHEDULE enabled weekly schedule mode for heat/cool function.
+#define SUPLA_HVAC_SET_MODE_WEEKLY_SCHEDULE 3
+// SET_MODE_MANUAL disables weekly schedule and enabled manaul mode
+#define SUPLA_HVAC_SET_MODE_MANUAL          4
+// SET_MODE_FAN_OFF disables fan functionality
+#define SUPLA_HVAC_SET_MODE_FAN_OFF         5
+// SET_MODE_FAN_AUTO enables fan functionality in automatic speed mode
+#define SUPLA_HVAC_SET_MODE_FAN_AUTO        6
+// SET_MODE_FAN_MANUAL enables fan functionality in automatic manual mode.
+// Fan speed is given in THVACValue::Value
+#define SUPLA_HVAC_SET_MODE_FAN_MANUAL      7
+// SET_MODE_FAN_ONLY disables other functions (heat/cool) and enables
+// fan. Fan works in previously set mode (auto or manual)
+#define SUPLA_HVAC_SET_MODE_FAN_ONLY        8
+// SET_MODE_DRY_OFF disables drying functionality
+#define SUPLA_HVAC_SET_MODE_DRY_OFF         9
+// SET_MODE_DRY_AUTO enables fan functionality in automatic speed mode
+#define SUPLA_HVAC_SET_MODE_DRY_AUTO        10
+// SET_MODE_DRY_MANUAL enables dry functionality in automatic manual mode.
+// Target humidity value is given in THVACValue::Value
+#define SUPLA_HVAC_SET_MODE_DRY_MANUAL      11
+
+// SUPLA_HVAC_MODE flags are returned in THVACValue::Mode in DS communication.
+// It is bit map of enabled functions.
+
+// ON flag tells if HVAC channel is enabled or disabled. It will be enabled if
+// at least one funciton is enabled (heat/cool, fan)
+#define SUPLA_HVAC_MODE_STATE_FLAG_ON (1 << 0)
+// HEAT_COOL_ON flag tells if heating/cooling function is enabled
+#define SUPLA_HVAC_MODE_STATE_FLAG_HEAT_COOL_ON (1 << 1)
+// HEAT_COOL_WEEKLY_SCHEDULE flag tells if weekly schedule is enabled for
+// heating/cooling functions. If it is not set, then manual mode is used.
+#define SUPLA_HVAC_MODE_STATE_FLAG_HEAT_COOL_WEEKLY_SCHEDULE (1 << 2)
+// FAN flag tells if fan function is enabled
+#define SUPLA_HVAC_MODE_STATE_FLAG_FAN (1 << 3)
+// DRY flag tells if drying function is enabled
+#define SUPLA_HVAC_MODE_STATE_FLAG_DRY (1 << 4)
+
+// Used for THVACValue::IsOn bitmap. Tells about current output state. I.e.
+// device may be in "heating" mode, but currently output is disabled, beacuse
+// desired temperature is reached, so IsOn will report 0
+#define SUPLA_HVAC_IS_ON_HEATING (1 << 0)
+#define SUPLA_HVAC_IS_ON_COOLING (1 << 1)
+
+typedef struct {
+  union {
+    unsigned char IsOn;  // DS: 0/1 (or 0..100 ?) bitmap SUPLA_HVAC_IS_ON_
+    unsigned char
+        Value;  // (C)SD: 0..100 humidity or fan setpoint (depending on
+                // SUPLA_HVAC_SET_MODE_ value).
+                // Value 255: "don't change"/ignore
+  };
+  unsigned char Mode;                     // SUPLA_HVAC_MODE_
+  _supla_int16_t SetpointTemperatureMin;  // * 0.01 - used for heating
+  _supla_int16_t SetpointTemperatureMax;  // * 0.01 - used for cooling
+  unsigned _supla_int16_t AlarmsAndFlags;  //  TBD
+} THVACValue;
 
 typedef struct {
   unsigned _supla_int16_t year;
@@ -2169,21 +2280,13 @@ typedef struct {
   _supla_int_t Param3;
 } TSD_ChannelIntParams;
 
-#define SUPLA_CHANNEL_CONFIG_MAXSIZE 256  // v. <= 19 - 128; v. >= 20 - 256
-#define SUPLA_DEVICE_CONFIG_MAXSIZE 256
+#define SUPLA_CHANNEL_CONFIG_MAXSIZE 512  // v. <= 19 - 128; v. >= 20 - 512
+#define SUPLA_DEVICE_CONFIG_MAXSIZE 512
+
 // Default type is used for standard channel config (user modifiable)
 #define SUPLA_CONFIG_TYPE_DEFAULT 0
-// Readonly properties type is used for sharing channels's properties which can't
-// be modified by user (i.e. range of allowed temperatures to be set)
-#define SUPLA_CONFIG_TYPE_READONLY_PROPERTIES 1
 // Weekly schedule
 #define SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE 2
-
-// Default type is used for standard device's config (user modifialbe)
-#define SUPLA_DEVICE_CONFIG_TYPE_DEFAULT 0
-// Readonly properties type is used for sharing device's properties which can't be
-// modified by user (i.e. TBD)
-#define SUPLA_DEVICE_CONFIG_TYPE_READONLY_PROPERTIES 1
 
 /********************************************
  * DEVICE CONFIG STRUCTURES
@@ -2317,37 +2420,86 @@ typedef struct {
   unsigned _supla_int_t ActiveActions;
 } TSD_ChannelConfig_ActionTrigger;  // v. >= 16
 
-// Supla thermostat
+// Weekly schedule definition for HVAC channel
+
+#define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_HEAT 0
+#define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_COOL 1
+#define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_AUTO 2
+// #define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_FAN_ONLY 3
+// #define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_DRY 4
+
 typedef struct {
-  TThermostatValueGroup WeeklySchedule[7];
+  unsigned char Mode;  // for HVAC: SUPLA_HVAC_WEEKLY_SCHEDULE_MODE_
+  union {
+    _supla_int16_t Temperature;
+    _supla_int16_t Value;
+  };
+} TWeeklyScheduleProgram;
+
+// Value use 4 bits, so numbers from 0 to 15 are allowed
+#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_OFF 0
+#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P1 1  // use Program[0]
+#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P2 2  // use Program[1]
+#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P3 3  // use Program[2]
+#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P4 4  // use Program[3]
+
+typedef struct {
+  TWeeklyScheduleProgram Program[4];  // 4*3 = 12 B
+  // Value contain Program setting for each 15 min. One 15 min program is set
+  // on 4 bits, so in one byte we have settings for two 2x 15 min.
+  unsigned char Value[7 * 24 * 2];    // 336 B
 } TSD_ChannelConfig_WeeklySchedule;  // v. >= 20
 
 // Config used for thermometers and thermometers with humidity channels.
 // When used for thermometers, humidity param is ignored.
 typedef struct {
-  _supla_int16_t TemperatureAdjustment;  // * 0.01
-  _supla_int16_t HumidityAdjustment;     // * 0.01
+  _supla_int16_t TemperatureAdjustment;     // * 0.01
+  _supla_int16_t HumidityAdjustment;        // * 0.01
   unsigned char AdjustmentAppliedByServer;  // 1/true - by server;
                                             // 0/false - by device
-} TSD_HumidityAndTempChannelCfg;  // v. >= 20
+} TSD_HumidityAndTempChannelCfg;            // v. >= 20
+
+// Not set is set when there is no thermometer for "HEATER_COOLER" available
+// at all.
+// Disabled is set when thermometer is available (i.e. we can read it and show
+// to user), but it is not used by thermostat for any other purpose
+// Other values are mainly for UI adjustement (i.e. show temperature as floor,
+// as water, generic heater or cooler device)
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET        0
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISALBED       1
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR          2
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER          3
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER 4
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER 5
+
+#define SUPLA_HVAC_ALGORITHM_ON_OFF 0
+
+// TODO(klew): should we have separate structures for configuration specific
+// to selected algorithm? I.e. histeresis should be applicable to on/off
+// algorithm, while i.e. PID requires different parameters to work (or can
+// those be adjusted automatically by software?)
 
 typedef struct {
-  int dummy;  // remove
-  /*
- DisableLocalConfig;  // do we want separate setting for local change of weekly schedule?
-                      // This field will block any action via local device buttons.
-                      // Thermostat will be in readonly mode and only informative data will
-                      // be displayed (i.e. time, current temperature)
-  UseMinHeaterCoolerTemp;
-  UseMaxHeaterCoolerTemp;
-  EnableAntiFreezeProtectcion;
-  HeatCoolMode;  // i.e. 0 - heat, 1 - cool, 2 - heat+cool (depends on device's capability)
-  MainThermometerChannelNo;  // channel number used by main (room) thermometer, i.e. 0, 1, etc.
-  HeaterCoolerThermometerChannelNo;  // channel number used for floor thermometer, i.e. 0, 1, etc. use -1/0xFF to disable
-  HeaterCoolerThermometerType;  // 0 - floor, 1 - water, 2 - heater, 3 - cooler
-  ThermostatAlgorithmOption;  // THERMOSTAT_ALGORITHM_OPTION_   0 - on/off based on histeresis
-  */
-} TSD_ChannelConfig_Thermostat;  // v. >= 20
+  // Channel numbers for thermometer config. Channels have to be local and
+  // numbering is the same as for registration message
+  unsigned char MainThermometerChannelNo;
+  unsigned char HeaterCoolerThermometerChannelNo;
+  // SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_
+  unsigned char HeaterCoolerThermometerType;
+  unsigned char EnableAntiFreezeAndOverheatProtection;
+  // bit map SUPLA_HVAC_ALGORITHM_ (readonly)
+  unsigned _supla_int16_t AlgorithmCaps;
+  // only one value of SUPLA_HVAC_ALGORITHM_
+  unsigned _supla_int16_t UsedAlgorithm;
+  // Below Min TimeMs parameters defines minimum time of relay/output to be
+  // be disabled or enabled. It is used to prevent to frequent relay state
+  // change
+  unsigned _supla_int16_t MinOnTimeMs;   // minimum allowed time for output to
+                                         // be enabled
+  unsigned _supla_int16_t MinOffTimeMs;  // minimum allowed time for output to
+                                         // be disabled
+  THVACTemperatureCfg Temperatures;
+} TSD_ChannelConfig_HVAC;  // v. >= 20
 
 typedef struct {
   _supla_int_t ChannelID;

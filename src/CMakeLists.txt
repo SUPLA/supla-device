@@ -40,7 +40,7 @@ set(SRCS
   supla/control/roller_shutter.cpp
   supla/control/bistable_roller_shutter.cpp
   supla/control/tripple_button_roller_shutter.cpp
-  supla/control/thermostat.cpp
+  supla/control/hvac_base.cpp
 
   supla/condition.cpp
   supla/condition_getter.cpp

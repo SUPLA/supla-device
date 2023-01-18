@@ -16,21 +16,46 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef SRC_SUPLA_CONTROL_THERMOSTAT_H_
-#define SRC_SUPLA_CONTROL_THERMOSTAT_H_
+#ifndef SRC_SUPLA_CONTROL_HVAC_BASE_H_
+#define SRC_SUPLA_CONTROL_HVAC_BASE_H_
 
 #include <supla/channel_element.h>
 
 namespace Supla {
 namespace Control {
 
-class Thermostat : public ChannelElement {
+class HvacBase : public ChannelElement {
  public:
-  Thermostat();
-  virtual ~Thermostat();
+  HvacBase();
+  virtual ~HvacBase();
+
+  void onLoadConfig() override;
+  void onLoadState() override;
+  void onInit() override;
+  void onSaveState() override;
+
+  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
+
+  void iterateAlways() override;
+
+  bool iterateConnected() override;
+
+  void setRequestTemperatureConfigFromServer() {
+    requestTemperatureConfigFromServer = true;
+  }
+
+  bool isOnOffSupported();
+  bool isHeatingSupported();
+  bool isCoolingSupported();
+  bool isAutoSupported();
+  bool isFanSupported();
+  bool isDrySupported();
+
+ private:
+  bool requestTemperatureConfigFromServer = false;
 };
 
 }  // namespace Control
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_CONTROL_THERMOSTAT_H_
+#endif  // SRC_SUPLA_CONTROL_HVAC_BASE_H_

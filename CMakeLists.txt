@@ -83,7 +83,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/control/sequence_button.cpp
   src/supla/control/simple_button.cpp
   src/supla/control/virtual_relay.cpp
-  src/supla/control/thermostat.cpp
+  src/supla/control/hvac_base.cpp
 
   # FreeRTOS target can't compile those files currently. So they are removed
   # here and added in linux porting cmake only;

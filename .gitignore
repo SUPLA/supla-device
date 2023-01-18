@@ -2,3 +2,4 @@ extras/examples/esp_idf/sdkconfig
 **/build/*
 sdkconfig.old
 **/.cache/*
+.clang_complete

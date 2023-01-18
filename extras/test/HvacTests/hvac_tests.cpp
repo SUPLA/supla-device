@@ -18,23 +18,30 @@
 
 #include <gtest/gtest.h>
 
-#include <supla/control/thermostat.h>
+#include <supla/control/hvac_base.h>
 
 // using ::testing::_;
 // using ::testing::ElementsAreArray;
 // using ::testing::Args;
 // using ::testing::ElementsAre;
 
-TEST(ThermostatTests, BasicChannelSetup) {
-  Supla::Control::Thermostat th;
+TEST(HvacTests, BasicChannelSetup) {
+  Supla::Control::HvacBase hvac;
 
-  auto ch = th.getChannel();
+  auto ch = hvac.getChannel();
   ASSERT_NE(ch, nullptr);
 
   EXPECT_EQ(ch->getChannelNumber(), 0);
-  EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_THERMOSTAT);
-  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_THERMOSTAT_HEAT);
+  EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
   EXPECT_TRUE(ch->isWeeklyScheduleAvailable());
   EXPECT_NE(
       ch->getFlags() & SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE, 0);
+
+  EXPECT_TRUE(hvac.isOnOffSupported());
+  EXPECT_TRUE(hvac.isHeatingSupported());
+  EXPECT_FALSE(hvac.isCoolingSupported());
+  EXPECT_FALSE(hvac.isAutoSupported());
+  EXPECT_FALSE(hvac.isFanSupported());
+  EXPECT_FALSE(hvac.isDrySupported());
 }

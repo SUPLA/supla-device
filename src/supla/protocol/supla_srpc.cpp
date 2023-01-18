@@ -853,13 +853,14 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
       value);
 }
 
-void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber) {
+void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
+    uint8_t configType) {
   if (!isRegisteredAndReady()) {
     return;
   }
   TDS_GetChannelConfigRequest request = {};
   request.ChannelNumber = channelNumber;
-  request.ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT;
+  request.ConfigType = configType;
   srpc_ds_async_get_channel_config(srpc, &request);
 }
 
@@ -875,7 +876,8 @@ void Supla::Protocol::SuplaSrpc::getChannelWeeklySchedule(
 }
 
 void Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
-    _supla_int_t channelFunction, void *channelConfig, int size) {
+    _supla_int_t channelFunction, void *channelConfig, int size,
+    uint8_t configType) {
   if (!isRegisteredAndReady()) {
     return;
   }
@@ -889,10 +891,9 @@ void Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
   TSD_ChannelConfig request = {};
   request.ChannelNumber = channelNumber;
   request.Func = channelFunction;
-  request.ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT;
+  request.ConfigType = configType;
   srpc_ds_async_set_channel_config_request(srpc, &request);
 }
-
 
 void Supla::Protocol::SuplaSrpc::getDeviceConfig() {
   if (!isRegisteredAndReady()) {

@@ -181,8 +181,7 @@ int main(int argc, char* argv[]) {
     SuplaDevice.begin();
 
     if (SuplaDevice.getCurrentStatus() != STATUS_INITIALIZED) {
-      SUPLA_LOG_INFO(
-                "Incomplete configuration. Please fix it and try again");
+      SUPLA_LOG_INFO("Incomplete configuration. Please fix it and try again");
       exit(1);
     }
 

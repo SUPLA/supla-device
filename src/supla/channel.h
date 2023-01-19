@@ -55,6 +55,26 @@ class Channel : public LocalAction {
   uint8_t getValueColorBrightness();
   uint8_t getValueBrightness();
 
+  void setHvacIsOn(uint8_t isOn);
+  void setHvacMode(uint8_t mode);
+  void setHvacSetpointTemperatureMin(int16_t setpointTemperatureMin);
+  void setHvacSetpointTemperatureMax(int16_t setpointTemperatureMax);
+  void clearHvacSetpointTemperatureMin();
+  void clearHvacSetpointTemperatureMax();
+  void setHvacFlags(uint16_t alarmsAndFlags);
+  void setHvacFlagSetpointTemperatureMinSet(bool value);
+  void setHvacFlagSetpointTemperatureMaxSet(bool value);
+
+  uint8_t getHvacIsOn();
+  uint8_t getHvacMode();
+  int16_t getHvacSetpointTemperatureMin();
+  int16_t getHvacSetpointTemperatureMax();
+  uint16_t getHvacFlags();
+  bool isHvacFlagSetpointTemperatureMinSet();
+  bool isHvacFlagSetpointTemperatureMaxSet();
+
+  THVACValue *getValueHvac();
+
   virtual bool isExtended();
   bool isUpdateReady();
   int getChannelNumber();

@@ -575,4 +575,171 @@ void Channel::setBatteryLevel(unsigned char level) {
   batteryLevel = level;
 }
 
+void Channel::setHvacIsOn(uint8_t isOn) {
+  auto value = getValueHvac();
+  if (value != nullptr && value->IsOn != isOn) {
+    setUpdateReady();
+    value->IsOn = isOn;
+  }
+}
+
+void Channel::setHvacMode(uint8_t mode) {
+  auto value = getValueHvac();
+  if (value != nullptr && value->Mode != mode) {
+    setUpdateReady();
+    value->Mode = mode;
+  }
+}
+
+// getValueHvac
+THVACValue *Channel::getValueHvac() {
+  if (channelNumber >= 0 && getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
+    return &reg_dev.channels[channelNumber].hvacValue;
+  }
+  return nullptr;
+}
+
+void Channel::setHvacSetpointTemperatureMax(int16_t temperature) {
+  auto value = getValueHvac();
+  if (value != nullptr && (value->SetpointTemperatureMax != temperature ||
+                           !isHvacFlagSetpointTemperatureMaxSet())) {
+    setUpdateReady();
+    value->SetpointTemperatureMax = temperature;
+    setHvacFlagSetpointTemperatureMaxSet(true);
+  }
+}
+
+void Channel::setHvacSetpointTemperatureMin(int16_t temperature) {
+  auto value = getValueHvac();
+  if (value != nullptr && (value->SetpointTemperatureMin != temperature ||
+                           !isHvacFlagSetpointTemperatureMinSet())) {
+    setUpdateReady();
+    value->SetpointTemperatureMin = temperature;
+    setHvacFlagSetpointTemperatureMinSet(true);
+  }
+}
+
+// clearHvacSetpointTemperatureMax
+void Channel::clearHvacSetpointTemperatureMax() {
+  auto value = getValueHvac();
+  if (value != nullptr && (value->SetpointTemperatureMax != 0 ||
+                           isHvacFlagSetpointTemperatureMaxSet())) {
+    setUpdateReady();
+    value->SetpointTemperatureMax = 0;
+    setHvacFlagSetpointTemperatureMaxSet(false);
+  }
+}
+
+// clearHvacSetpointTemperatureMin
+void Channel::clearHvacSetpointTemperatureMin() {
+  auto value = getValueHvac();
+  if (value != nullptr && (value->SetpointTemperatureMin != 0 ||
+                           isHvacFlagSetpointTemperatureMinSet())) {
+    setUpdateReady();
+    value->SetpointTemperatureMin = 0;
+    setHvacFlagSetpointTemperatureMinSet(false);
+  }
+}
+
+void Channel::setHvacFlags(uint16_t flags) {
+  auto value = getValueHvac();
+  if (value != nullptr && value->Flags != flags) {
+    setUpdateReady();
+    value->Flags = flags;
+  }
+}
+
+// setHvacFlagSetpointTemperatureMax
+void Channel::setHvacFlagSetpointTemperatureMaxSet(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureMaxSet()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+    }
+    setHvacFlags(flags);
+  }
+}
+
+// setHvacFlagSetpointTemperatureMin
+void Channel::setHvacFlagSetpointTemperatureMinSet(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureMinSet()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+    }
+    setHvacFlags(flags);
+  }
+}
+
+// isHvacFlagSetpointTemperatureMaxSet
+bool Channel::isHvacFlagSetpointTemperatureMaxSet() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+  }
+  return false;
+}
+
+// isHvacFlagSetpointTemperatureMinSet
+bool Channel::isHvacFlagSetpointTemperatureMinSet() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+  }
+  return false;
+}
+
+// impementation of getHvacIsOn
+uint8_t Channel::getHvacIsOn() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->IsOn;
+  }
+  return 0;
+}
+
+// impementation of getHvacMode
+uint8_t Channel::getHvacMode() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->Mode;
+  }
+  return 0;
+}
+
+// impementation of getHvacSetpointTemperatureMax
+int16_t Channel::getHvacSetpointTemperatureMax() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->SetpointTemperatureMax;
+  }
+  return 0;
+}
+
+// impementation of getHvacSetpointTemperatureMin
+int16_t Channel::getHvacSetpointTemperatureMin() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->SetpointTemperatureMin;
+  }
+  return 0;
+}
+
+// impementation of getHvacFlags
+uint16_t Channel::getHvacFlags() {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->Flags;
+  }
+  return 0;
+}
+
 };  // namespace Supla

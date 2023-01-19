@@ -446,10 +446,11 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 // Thermostat 400 funciton is not used
 #define SUPLA_CHANNELFNC_THERMOSTAT 400                   // ver. >= 11
 #define SUPLA_CHANNELFNC_THERMOSTAT_HEATPOL_HOMEPLUS 410  // ver. >= 11
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT 420         // ver. >= 20
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL 421         // ver. >= 20
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO 422         // ver. >= 20
-// TODO(klew): add other HVAC variants
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT        420  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL        421  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO        422  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_DRYER                  423  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_FAN                    424  // ver. >= 20
 #define SUPLA_CHANNELFNC_VALVE_OPENCLOSE 500              // ver. >= 12
 #define SUPLA_CHANNELFNC_VALVE_PERCENTAGE 510             // ver. >= 12
 #define SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT 520  // ver. >= 12
@@ -724,6 +725,25 @@ typedef struct {
   unsigned _supla_int_t disablesLocalOperation;
 } TActionTriggerProperties;
 
+#define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET (1 << 0)
+#define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET (1 << 1)
+
+// TODO(klew): how to handle fan within this structure?
+
+typedef struct {
+  union {
+    unsigned char IsOn;  // DS: 0/1 (or 0..100 ?) bitmap SUPLA_HVAC_IS_ON_
+    unsigned char
+        Value;  // (C)SD: 0..100 humidity or fan setpoint (depending on
+                // SUPLA_HVAC_SET_MODE_ value).
+                // Value 255: "don't change"/ignore
+  };
+  unsigned char Mode;                     // SUPLA_HVAC_MODE_
+  _supla_int16_t SetpointTemperatureMin;  // * 0.01 - used for heating
+  _supla_int16_t SetpointTemperatureMax;  // * 0.01 - used for cooling
+  unsigned _supla_int16_t Flags;  // SUPLA_HVAC_VALUE_FLAG_
+} THVACValue;
+
 typedef struct {
   // device -> server
 
@@ -741,6 +761,7 @@ typedef struct {
   union {
     char value[SUPLA_CHANNELVALUE_SIZE];
     TActionTriggerProperties actionTriggerProperties;  // ver. >= 16
+    THVACValue hvacValue;
   };
 } TDS_SuplaDeviceChannel_C;  // ver. >= 10
 
@@ -2078,20 +2099,6 @@ typedef struct {
 // desired temperature is reached, so IsOn will report 0
 #define SUPLA_HVAC_IS_ON_HEATING (1 << 0)
 #define SUPLA_HVAC_IS_ON_COOLING (1 << 1)
-
-typedef struct {
-  union {
-    unsigned char IsOn;  // DS: 0/1 (or 0..100 ?) bitmap SUPLA_HVAC_IS_ON_
-    unsigned char
-        Value;  // (C)SD: 0..100 humidity or fan setpoint (depending on
-                // SUPLA_HVAC_SET_MODE_ value).
-                // Value 255: "don't change"/ignore
-  };
-  unsigned char Mode;                     // SUPLA_HVAC_MODE_
-  _supla_int16_t SetpointTemperatureMin;  // * 0.01 - used for heating
-  _supla_int16_t SetpointTemperatureMax;  // * 0.01 - used for cooling
-  unsigned _supla_int16_t AlarmsAndFlags;  //  TBD
-} THVACValue;
 
 typedef struct {
   unsigned _supla_int16_t year;

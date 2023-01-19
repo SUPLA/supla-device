@@ -33,16 +33,16 @@ class HvacBase : public ChannelElement {
   void onLoadState() override;
   void onInit() override;
   void onSaveState() override;
-
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
-
   void iterateAlways() override;
-
   bool iterateConnected() override;
 
-  void setRequestTemperatureConfigFromServer() {
-    requestTemperatureConfigFromServer = true;
-  }
+  void setOnOffSupported(bool supported);
+  void setHeatingSupported(bool supported);
+  void setCoolingSupported(bool supported);
+  void setAutoSupported(bool supported);
+  void setFanSupported(bool supported);
+  void setDrySupported(bool supported);
 
   bool isOnOffSupported();
   bool isHeatingSupported();
@@ -51,8 +51,13 @@ class HvacBase : public ChannelElement {
   bool isFanSupported();
   bool isDrySupported();
 
+
  private:
   bool requestTemperatureConfigFromServer = false;
+
+  TSD_ChannelConfig_HVAC config = {};
+  TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
+  bool isWeeklyScheduleConfigured = false;
 };
 
 }  // namespace Control

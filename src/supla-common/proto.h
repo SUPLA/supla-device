@@ -2502,13 +2502,13 @@ typedef struct {
   unsigned _supla_int16_t AlgorithmCaps;
   // only one value of SUPLA_HVAC_ALGORITHM_
   unsigned _supla_int16_t UsedAlgorithm;
-  // Below Min TimeMs parameters defines minimum time of relay/output to be
-  // be disabled or enabled. It is used to prevent to frequent relay state
-  // change
-  unsigned _supla_int16_t MinOnTimeMs;   // minimum allowed time for output to
-                                         // be enabled
-  unsigned _supla_int16_t MinOffTimeMs;  // minimum allowed time for output to
-                                         // be disabled
+  // Below Min TimeS parameters defines minimum time of relay/output to be
+  // be disabled or enabled in seconds. It is used to prevent to frequent relay
+  // state change
+  unsigned _supla_int16_t MinOnTimeS;   // minimum allowed time for output to
+                                        // be enabled
+  unsigned _supla_int16_t MinOffTimeS;  // minimum allowed time for output to
+                                        // be disabled
   THVACTemperatureCfg Temperatures;
 } TSD_ChannelConfig_HVAC;  // v. >= 20
 

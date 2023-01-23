@@ -41,13 +41,6 @@ HvacBase::~HvacBase() {
 
 bool HvacBase::iterateConnected() {
   auto result = Element::iterateConnected();
-  if (result) {
-    if (requestTemperatureConfigFromServer) {
-      requestTemperatureConfigFromServer = false;
-      result = false;
-    }
-  }
-
   return result;
 }
 
@@ -57,18 +50,10 @@ void HvacBase::onLoadConfig() {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
 
     // Read last set channel function
-    Supla::Config::generateKey(key, getChannelNumber(), "hvac_fnc");
-    int32_t channelFunc = 0;
-    if (cfg->getInt32(key, &channelFunc)) {
-      SUPLA_LOG_INFO("HVAC channel function loaded successfully (%d)",
-                     channelFunc);
-      channel.setDefault(channelFunc);
-    } else {
-      SUPLA_LOG_INFO("HVAC channel function missing. Using SW defaults");
-    }
+    loadFunctionFromConfig();
 
     // Generic HVAC configuration
-    Supla::Config::generateKey(key, getChannelNumber(), "hvac_cfg");
+    generateKey(key, "hvac_cfg");
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&config),
                      sizeof(TSD_ChannelConfig_HVAC))) {
@@ -78,7 +63,7 @@ void HvacBase::onLoadConfig() {
     }
 
     // Weekly schedule configuration
-    Supla::Config::generateKey(key, getChannelNumber(), "hvac_weekly");
+    generateKey(key, "hvac_weekly");
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&weeklySchedule),
                      sizeof(TSD_ChannelConfig_WeeklySchedule))) {
@@ -130,11 +115,7 @@ void HvacBase::onInit() {
 
 
 void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  (void)(suplaSrpc);
-  // Request temperature configuration from server
-  // It will be received in onChannelConfigReceived
-  // and saved in config storage
-  requestTemperatureConfigFromServer = true;
+  Supla::Element::onRegistered(suplaSrpc);
 }
 
 void HvacBase::iterateAlways() {
@@ -213,5 +194,49 @@ bool HvacBase::isFanSupported() {
 
 bool HvacBase::isDrySupported() {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_DRY;
+}
+
+uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *config) {
+  if (config == nullptr) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+
+  if (config->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
+    return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+  }
+
+  auto channelFunction = config->Func;
+  if (!isFunctionSupported(channelFunction)) {
+    return SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED;
+  }
+
+  channel.setDefault(channelFunction);
+
+  return SUPLA_RESULTCODE_TRUE;
+}
+
+// handleWeeklySchedule
+uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *config) {
+  if (config == nullptr) {
+    return SUPLA_RESULTCODE_UNKNOWN_ERROR;
+  }
+
+  return SUPLA_RESULT_TRUE;
+}
+
+bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) {
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+      return isHeatingSupported();
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL:
+      return isCoolingSupported();
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
+      return isAutoSupported();
+    case SUPLA_CHANNELFNC_HVAC_FAN:
+      return isFanSupported();
+    case SUPLA_CHANNELFNC_HVAC_DRYER:
+      return isDrySupported();
+  }
+  return false;
 }
 

@@ -37,6 +37,9 @@ class HvacBase : public ChannelElement {
   void iterateAlways() override;
   bool iterateConnected() override;
 
+  uint8_t handleChannelConfig(TSD_ChannelConfig *config) override;
+  uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
+
   void setOnOffSupported(bool supported);
   void setHeatingSupported(bool supported);
   void setCoolingSupported(bool supported);
@@ -51,10 +54,9 @@ class HvacBase : public ChannelElement {
   bool isFanSupported();
   bool isDrySupported();
 
+  bool isFunctionSupported(_supla_int_t channelFunction);
 
  private:
-  bool requestTemperatureConfigFromServer = false;
-
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
   bool isWeeklyScheduleConfigured = false;

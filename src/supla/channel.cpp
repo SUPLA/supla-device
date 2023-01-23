@@ -316,9 +316,6 @@ void Channel::sendUpdate() {
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
         proto != nullptr; proto = proto->next()) {
       proto->getChannelConfig(channelNumber);
-      if (isWeeklyScheduleAvailable()) {
-        proto->getChannelWeeklySchedule(channelNumber);
-      }
     }
   }
 }

@@ -48,6 +48,8 @@ class ChannelElement : public Element, public LocalAction {
       Supla::Condition *condition,
       bool alwaysEnabled = false);
 
+  virtual bool loadFunctionFromConfig();
+
  protected:
   Channel channel;
 };

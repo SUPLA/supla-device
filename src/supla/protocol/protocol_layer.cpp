@@ -99,10 +99,6 @@ void ProtocolLayer::getChannelConfig(uint8_t channelNumber,
   (void)(configType);
 }
 
-void ProtocolLayer::getChannelWeeklySchedule(uint8_t channelNumber) {
-  (void)(channelNumber);
-}
-
 void ProtocolLayer::setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size,
       uint8_t configType) {
@@ -113,10 +109,7 @@ void ProtocolLayer::setChannelConfig(uint8_t channelNumber,
   (void)(configType);
 }
 
-void ProtocolLayer::getDeviceConfig() {
-}
-
-void ProtocolLayer::setDeviceConfig(TSD_DeviceConfig *deviceConfig) {
+void ProtocolLayer::setDeviceConfig(TSD_SetDeviceConfig *deviceConfig) {
   (void)(deviceConfig);
 }
 

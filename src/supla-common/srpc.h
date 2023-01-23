@@ -177,14 +177,12 @@ union TsrpcDataPacketData {
   TSC_ActionExecutionResult *sc_action_execution_result;
   TCS_GetChannelValueWithAuth *cs_get_value_with_auth;
   TSC_GetChannelValueResult *sc_get_value_result;
-  TSD_ChannelConfig *ds_set_channel_config_request;
-  TSD_ChannelConfig *sd_set_channel_config_request;
+  TSD_SetChannelConfig *ds_set_channel_config_request;
+  TSD_SetChannelConfig *sd_set_channel_config_request;
   TSD_SetChannelConfigResult *sd_set_channel_config_result;
   TSD_SetChannelConfigResult *ds_set_channel_config_result;
-  TDS_GetDeviceConfigRequest *ds_get_device_config_request;
-  TSD_DeviceConfig *sd_get_device_config_result;
-  TSD_DeviceConfig *ds_set_device_config_request;
-  TSD_DeviceConfig *sd_set_device_config_request;
+  TSD_SetDeviceConfig *ds_set_device_config_request;
+  TSD_SetDeviceConfig *sd_set_device_config_request;
   TSD_SetDeviceConfigResult *sd_set_device_config_result;
   TSD_SetDeviceConfigResult *ds_set_device_config_result;
 };
@@ -301,25 +299,21 @@ srpc_sd_async_get_channel_config_result(void *_srpc, TSD_ChannelConfig *config);
 _supla_int_t SRPC_ICACHE_FLASH
 srpc_ds_async_action_trigger(void *_srpc, TDS_ActionTrigger *action_trigger);
 _supla_int_t SRPC_ICACHE_FLASH srpc_sd_async_set_channel_config_request(
-    void *_srpc, TSD_ChannelConfig *config);
+    void *_srpc, TSD_SetChannelConfig *config);
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_set_channel_config_result(
     void *_srpc, TSD_SetChannelConfigResult *result);
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_set_channel_config_request(
-    void *_srpc, TSD_ChannelConfig *config);
+    void *_srpc, TSD_SetChannelConfig *config);
 _supla_int_t SRPC_ICACHE_FLASH srpc_sd_async_set_channel_config_result(
     void *_srpc, TSD_SetChannelConfigResult *result);
 _supla_int_t SRPC_ICACHE_FLASH srpc_sd_async_set_device_config_request(
-    void *_srpc, TSD_DeviceConfig *config);
+    void *_srpc, TSD_SetDeviceConfig *config);
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_set_device_config_result(
     void *_srpc, TSD_SetDeviceConfigResult *result);
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_set_device_config_request(
-    void *_srpc, TSD_DeviceConfig *config);
+    void *_srpc, TSD_SetDeviceConfig *config);
 _supla_int_t SRPC_ICACHE_FLASH srpc_sd_async_set_device_config_result(
     void *_srpc, TSD_SetDeviceConfigResult *result);
-_supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_get_device_config(
-    void *_srpc, TDS_GetDeviceConfigRequest *request);
-_supla_int_t SRPC_ICACHE_FLASH srpc_sd_async_get_device_config_result(
-    void *_srpc, TSD_DeviceConfig *config);
 #endif /*SRPC_EXCLUDE_DEVICE*/
 
 #ifndef SRPC_EXCLUDE_CLIENT

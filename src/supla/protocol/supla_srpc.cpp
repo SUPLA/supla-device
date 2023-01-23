@@ -348,17 +348,19 @@ void Supla::messageReceived(void *srpc,
           TSD_SetChannelConfigResult result = {};
           result.ChannelNumber = request->ChannelNumber;
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
-          auto element =
-              Supla::Element::getElementByChannelNumber(request->ChannelNumber);
+          auto element = Supla::Element::getElementByChannelNumber(
+              request->ChannelNumber);
           if (element) {
             switch (request->ConfigType) {
               default:
               case SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT: {
-                result.Result = element->handleChannelConfig(request);
+                result.Result =
+                    element->handleChannelConfig(request);
                 break;
               }
               case SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE: {
-                result.Result = element->handleWeeklySchedule(request);
+                result.Result =
+                    element->handleWeeklySchedule(request);
                 break;
               }
             }
@@ -368,13 +370,6 @@ void Supla::messageReceived(void *srpc,
                 request->ChannelNumber);
           }
           srpc_ds_async_set_channel_config_result(srpc, &result);
-        }
-        break;
-      }
-      case SUPLA_SD_CALL_GET_DEVICE_CONFIG_RESULT: {
-        TSD_DeviceConfig *result = rd.data.sd_get_device_config_result;
-        if (result) {
-          suplaSrpc->getSdc()->handleDeviceConfig(result);
         }
         break;
       }
@@ -864,47 +859,27 @@ void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
   srpc_ds_async_get_channel_config(srpc, &request);
 }
 
-void Supla::Protocol::SuplaSrpc::getChannelWeeklySchedule(
-    uint8_t channelNumber) {
-  if (!isRegisteredAndReady()) {
-    return;
-  }
-  TDS_GetChannelConfigRequest request = {};
-  request.ChannelNumber = channelNumber;
-  request.ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE;
-  srpc_ds_async_get_channel_config(srpc, &request);
-}
-
 void Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
     _supla_int_t channelFunction, void *channelConfig, int size,
     uint8_t configType) {
   if (!isRegisteredAndReady()) {
     return;
   }
-  if ((size != 0 && channelConfig == nullptr)
-    || (size == 0 && channelConfig != nullptr)
-    || (size < 0)
-    || (size > SUPLA_CHANNEL_CONFIG_MAXSIZE)) {
+  if ((size != 0 && channelConfig == nullptr) ||
+      (size == 0 && channelConfig != nullptr) || (size < 0) ||
+      (size > SUPLA_CHANNEL_CONFIG_MAXSIZE)) {
     return;
   }
 
-  TSD_ChannelConfig request = {};
+  TSD_SetChannelConfig request = {};
   request.ChannelNumber = channelNumber;
   request.Func = channelFunction;
   request.ConfigType = configType;
   srpc_ds_async_set_channel_config_request(srpc, &request);
 }
 
-void Supla::Protocol::SuplaSrpc::getDeviceConfig() {
-  if (!isRegisteredAndReady()) {
-    return;
-  }
-  TDS_GetDeviceConfigRequest request = {};
-  srpc_ds_async_get_device_config(srpc, &request);
-}
-
 void Supla::Protocol::SuplaSrpc::setDeviceConfig(
-    TSD_DeviceConfig *deviceConfig) {
+    TSD_SetDeviceConfig *deviceConfig) {
   if (!isRegisteredAndReady()) {
     return;
   }

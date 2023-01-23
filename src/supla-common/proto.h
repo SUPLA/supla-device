@@ -262,8 +262,6 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT 691           // ver. >= 20
 #define SUPLA_SD_CALL_SET_CHANNEL_CONFIG 682                  // ver. >= 20
 #define SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT 692           // ver. >= 20
-#define SUPLA_DS_CALL_GET_DEVICE_CONFIG 683                   // ver. >= 20
-#define SUPLA_SD_CALL_GET_DEVICE_CONFIG_RESULT 693            // ver. >= 20
 #define SUPLA_DS_CALL_SET_DEVICE_CONFIG 684                   // ver. >= 20
 #define SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT 694            // ver. >= 20
 #define SUPLA_SD_CALL_SET_DEVICE_CONFIG 685                   // ver. >= 20
@@ -2299,14 +2297,8 @@ typedef struct {
  * DEVICE CONFIG STRUCTURES
  ********************************************/
 
-// SUPLA_DS_CALL_GET_DEVICE_CONFIG
-typedef struct {
-  unsigned char zero[8];  // for future use
-} TDS_GetDeviceConfigRequest;  // v. >= 20
-
 // SUPLA_DS_CALL_SET_DEVICE_CONFIG
 // SUPLA_SD_CALL_SET_DEVICE_CONFIG
-// SUPLA_SD_CALL_GET_DEVICE_CONFIG_RESULT
 // Config field should contain fields stored in order as they appear in
 // Fields parameter. Size of parameter depends on Field type.
 typedef struct {
@@ -2315,12 +2307,13 @@ typedef struct {
   unsigned _supla_int64_t Fields;   // bit map of SUPLA_DEVICE_CONFIG_FIELD_
   unsigned _supla_int16_t ConfigSize;
   char Config[SUPLA_DEVICE_CONFIG_MAXSIZE];  // Last variable in struct!
-} TSD_DeviceConfig;  // v. >= 20
+} TSD_SetDeviceConfig;  // v. >= 20
 
 // SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT
 // SUPLA_DS_CALL_SET_DEVICE_CONFIG_RESULT
 typedef struct {
-  unsigned char Result;
+  unsigned char Result;  // SUPLA_CONFIG_RESULT_*
+  unsigned char ConfigType;  // SUPLA_DEVICE_CONFIG_TYPE_*
   unsigned char zero[8];  // for future use
 } TSD_SetDeviceConfigResult;
 
@@ -2379,6 +2372,13 @@ typedef struct {
 #define SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT         0
 #define SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE 1
 
+#define SUPLA_CONFIG_RESULT_FALSE 0
+#define SUPLA_CONFIG_RESULT_TRUE  1
+#define SUPLA_CONFIG_RESULT_DATA_ERROR 2
+#define SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED 3
+#define SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED 4
+
+
 // SUPLA_DS_CALL_GET_CHANNEL_CONFIG
 typedef struct {
   unsigned char ChannelNumber;
@@ -2386,7 +2386,7 @@ typedef struct {
   unsigned _supla_int_t Flags;
 } TDS_GetChannelConfigRequest;  // v. >= 16
 
-// SUPLA_SD_CALL_GET_CHANNEL_CONFIG_RESULT and
+// SUPLA_SD_CALL_GET_CHANNEL_CONFIG_RESULT
 // SUPLA_DS_CALL_SET_CHANNEL_CONFIG
 // SUPLA_SD_CALL_SET_CHANNEL_CONFIG
 typedef struct {
@@ -2399,10 +2399,14 @@ typedef struct {
                                               // TSD_ChannelConfig_*
 } TSD_ChannelConfig;
 
+// SUPLA_DS_CALL_SET_CHANNEL_CONFIG
+// SUPLA_SD_CALL_SET_CHANNEL_CONFIG
+typedef TSD_ChannelConfig TSD_SetChannelConfig;  // v. >= 20
+
 // SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT
 // SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT
 typedef struct {
-  unsigned char Result;
+  unsigned char Result;  // SUPLA_CONFIG_RESULT_*
   unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
   unsigned char ChannelNumber;
 } TSD_SetChannelConfigResult;

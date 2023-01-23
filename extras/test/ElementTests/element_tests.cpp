@@ -230,13 +230,13 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
     Times(2);
 
   EXPECT_CALL(time, millis)
-    .WillOnce(Return(0))   // #1
-    .WillOnce(Return(200)) // #2
-    .WillOnce(Return(250)) // #3
-    .WillOnce(Return(400)) // #4
-    .WillOnce(Return(600)) // #5
-    .WillOnce(Return(800)) // #6
-    ;
+      .WillOnce(Return(0))    // #1
+      .WillOnce(Return(200))  // #2
+      .WillOnce(Return(250))  // #3
+      .WillOnce(Return(400))  // #4
+      .WillOnce(Return(600))  // #5
+      .WillOnce(Return(800))  // #6
+      ;
 
   EXPECT_EQ(el1.iterateConnected(), true);  // #1
 
@@ -246,10 +246,6 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   EXPECT_EQ(el1.iterateConnected(), false);  // #2
   EXPECT_EQ(el1.iterateConnected(), true);  // #3
 
-  // add weekly schedule
-  EXPECT_CALL(srpc, getChannelConfig(
-        0, SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE)).Times(1);
-
   el1.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   EXPECT_EQ(el1.iterateConnected(), true);  // #4
 
@@ -258,7 +254,6 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #2
   EXPECT_EQ(el1.iterateConnected(), true);  // #3
-
 }
 
 

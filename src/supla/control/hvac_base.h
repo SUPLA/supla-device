@@ -40,12 +40,105 @@ class HvacBase : public ChannelElement {
   uint8_t handleChannelConfig(TSD_ChannelConfig *config) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
 
+  // Below functions are used to set device capabilities.
   void setOnOffSupported(bool supported);
   void setHeatingSupported(bool supported);
   void setCoolingSupported(bool supported);
   void setAutoSupported(bool supported);
   void setFanSupported(bool supported);
   void setDrySupported(bool supported);
+
+  void addAlgorithmCap(unsigned _supla_int16_t algorithm);
+  bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
+  unsigned _supla_int16_t getUsedAlgorithm() const;
+
+  bool setMainThermometerChannelNo(uint8_t channelNo);
+  uint8_t getMainThermometerChannelNo() const;
+
+  bool setHeaterCoolerThermometerChannelNo(uint8_t channelNo);
+  uint8_t getHeaterCoolerThermometerChannelNo() const;
+  void setHeaterCoolerThermometerType(uint8_t type);
+  uint8_t getHeaterCoolerThermometerType() const;
+
+  void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
+  bool isAntiFreezeAndHeatProtectionEnabled() const;
+
+  bool setMinOnTimeS(uint16_t seconds);
+  uint16_t getMinOnTimeS() const;
+  bool isMinOnOffTimeValid(uint16_t seconds) const;
+
+  bool setMinOffTimeS(uint16_t seconds);
+  uint16_t getMinOffTimeS() const;
+
+  // Below temperatures defines device capabilities.
+  // Configure those values before calling other setTemperature* functions.
+  void setTemperatureRoomMin(_supla_int16_t temperature);
+  void setTemperatureRoomMax(_supla_int16_t temperature);
+  void setTemperatureHeaterCoolerMin(_supla_int16_t temperature);
+  void setTemperatureHeaterCoolerMax(_supla_int16_t temperature);
+  void setTemperatureHisteresisMin(_supla_int16_t temperature);
+  void setTemperatureHisteresisMax(_supla_int16_t temperature);
+  void setTemperatureAutoOffsetMin(_supla_int16_t temperature);
+  void setTemperatureAutoOffsetMax(_supla_int16_t temperature);
+  _supla_int16_t getTemperatureRoomMin(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureRoomMax(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHeaterCoolerMin(
+      THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHeaterCoolerMax(
+      THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHisteresisMin(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHisteresisMax(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureAutoOffsetMin(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureAutoOffsetMax(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureRoomMin();
+  _supla_int16_t getTemperatureRoomMax();
+  _supla_int16_t getTemperatureHeaterCoolerMin();
+  _supla_int16_t getTemperatureHeaterCoolerMax();
+  _supla_int16_t getTemperatureHisteresisMin();
+  _supla_int16_t getTemperatureHisteresisMax();
+  _supla_int16_t getTemperatureAutoOffsetMin();
+  _supla_int16_t getTemperatureAutoOffsetMax();
+
+  // Below functions are used to set device configuration - those can
+  // be modified by user within limits defined by set* functions above.
+  // Set may fail if value is out of range defined by set* functions above.
+  bool setTemperatureFreezeProtection(_supla_int16_t temperature);
+  bool setTemperatureHeatProtection(_supla_int16_t temperature);
+  bool setTemperatureEco(_supla_int16_t temperature);
+  bool setTemperatureComfort(_supla_int16_t temperature);
+  bool setTemperatureBoost(_supla_int16_t temperature);
+  bool setTemperatureHisteresis(_supla_int16_t temperature);
+  bool setTemperatureAutoOffset(_supla_int16_t temperature);
+  bool setTemperatureBelowAlarm(_supla_int16_t temperature);
+  bool setTemperatureAboveAlarm(_supla_int16_t temperature);
+  bool setTemperatureHeaterCoolerMinSetpoint(_supla_int16_t temperature);
+  bool setTemperatureHeaterCoolerMaxSetpoint(_supla_int16_t temperature);
+  _supla_int16_t getTemperatureFreezeProtection(
+      THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHeatProtection(
+      THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureEco(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureComfort(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureBoost(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHisteresis(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureAutoOffset(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureBelowAlarm(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureAboveAlarm(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHeaterCoolerMinSetpoint(
+      THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint(
+      THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureFreezeProtection();
+  _supla_int16_t getTemperatureHeatProtection();
+  _supla_int16_t getTemperatureEco();
+  _supla_int16_t getTemperatureComfort();
+  _supla_int16_t getTemperatureBoost();
+  _supla_int16_t getTemperatureHisteresis();
+  _supla_int16_t getTemperatureAutoOffset();
+  _supla_int16_t getTemperatureBelowAlarm();
+  _supla_int16_t getTemperatureAboveAlarm();
+  _supla_int16_t getTemperatureHeaterCoolerMinSetpoint();
+  _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint();
 
   bool isOnOffSupported();
   bool isHeatingSupported();
@@ -55,6 +148,50 @@ class HvacBase : public ChannelElement {
   bool isDrySupported();
 
   bool isFunctionSupported(_supla_int_t channelFunction);
+  bool isConfigValid(TSD_ChannelConfig_HVAC *config);
+  bool isChannelThermometer(uint8_t channelNo);
+  bool isAlgorithmValid(unsigned _supla_int16_t algorithm);
+  bool areTemperaturesValid(THVACTemperatureCfg *temperatures);
+
+  static bool isTemperatureSetInStruct(THVACTemperatureCfg *temperatures,
+                                unsigned _supla_int_t index);
+  static _supla_int16_t getTemperatureFromStruct(
+      THVACTemperatureCfg *temperatures, unsigned _supla_int_t index);
+  static void setTemperatureInStruct(THVACTemperatureCfg *temperatures,
+                              unsigned _supla_int_t index,
+                              _supla_int16_t temperature);
+
+  bool isTemperatureInRoomConstrain(_supla_int16_t temperature);
+  bool isTemperatureInHeaterCoolerConstrain(_supla_int16_t temperature);
+  bool isTemperatureFreezeProtectionValid(_supla_int16_t temperature);
+  bool isTemperatureHeatProtectionValid(_supla_int16_t temperature);
+  bool isTemperatureEcoValid(_supla_int16_t temperature);
+  bool isTemperatureComfortValid(_supla_int16_t temperature);
+  bool isTemperatureBoostValid(_supla_int16_t temperature);
+  bool isTemperatureHisteresisValid(_supla_int16_t temperature);
+  bool isTemperatureAutoOffsetValid(_supla_int16_t temperature);
+  bool isTemperatureBelowAlarmValid(_supla_int16_t temperature);
+  bool isTemperatureAboveAlarmValid(_supla_int16_t temperature);
+  // validates temperature against current configuration
+  bool isTemperatureHeaterCoolerMinSetpointValid(_supla_int16_t temperature);
+  // validates temperature against current configuration
+  bool isTemperatureHeaterCoolerMaxSetpointValid(_supla_int16_t temperature);
+
+  bool isTemperatureFreezeProtectionValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureHeatProtectionValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureEcoValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureComfortValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureBoostValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureHisteresisValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureAutoOffsetValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureBelowAlarmValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureAboveAlarmValid(THVACTemperatureCfg *temperatures);
+  // validates temperature against configuration send in parameter
+  bool isTemperatureHeaterCoolerMinSetpointValid(
+      THVACTemperatureCfg *temperatures);
+  // validates temperature against configuration send in parameter
+  bool isTemperatureHeaterCoolerMaxSetpointValid(
+      THVACTemperatureCfg *temperatures);
 
  private:
   TSD_ChannelConfig_HVAC config = {};

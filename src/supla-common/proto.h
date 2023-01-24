@@ -1965,6 +1965,8 @@ typedef struct {
 #define TEMPERATURE_AUTO_OFFSET_MAX            (1 << 18)
 // 5 values left for future use
 
+#define SUPLA_TEMPERATURE_INVALID_INT16 -32768
+
 // Used in Supla Thermostat
 typedef struct {
   unsigned _supla_int_t Index;  // BIT0 Temperature[0], BIT1 Temperature[1]
@@ -2483,7 +2485,9 @@ typedef struct {
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER 4
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER 5
 
-#define SUPLA_HVAC_ALGORITHM_ON_OFF 0
+#define SUPLA_HVAC_ALGORITHM_NOT_SET 0
+#define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 1)
+
 
 // TODO(klew): should we have separate structures for configuration specific
 // to selected algorithm? I.e. histeresis should be applicable to on/off
@@ -2504,7 +2508,8 @@ typedef struct {
   unsigned _supla_int16_t UsedAlgorithm;
   // Below Min TimeS parameters defines minimum time of relay/output to be
   // be disabled or enabled in seconds. It is used to prevent to frequent relay
-  // state change
+  // state change.
+  // Allowed values are 0-600 (10 minutes) (TBD)
   unsigned _supla_int16_t MinOnTimeS;   // minimum allowed time for output to
                                         // be enabled
   unsigned _supla_int16_t MinOffTimeS;  // minimum allowed time for output to

@@ -18,6 +18,8 @@
 
 #include "hvac_base.h"
 
+#include <string.h>
+
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
@@ -100,15 +102,15 @@ void HvacBase::onInit() {
   if (getChannel()->getDefaultFunction() == 0) {
     // set default to auto when both heat and cool are supported
     if (isHeatingSupported() && isCoolingSupported() && isAutoSupported()) {
-      getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
     } else if (isHeatingSupported()) {
-      getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
+      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
     } else if (isCoolingSupported()) {
-      getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
+      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
     } else if (isDrySupported()) {
-      getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_DRYER);
+      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_DRYER);
     } else if (isFanSupported()) {
-      getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_FAN);
+      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_FAN);
     }
   }
 }
@@ -221,8 +223,11 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
+  TSD_ChannelConfig_HVAC configCopy;
+  memcpy(&configCopy, &config, sizeof(TSD_ChannelConfig_HVAC));
+
   // Received config looks ok, so we apply it to channel
-  channel.setDefault(channelFunction);
+  setAndSaveFunction(channelFunction);
 
   // We don't use setters here, because they run validation againsted current
   // configuration, which may fail. However new config was already validated
@@ -314,6 +319,10 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
     setTemperatureInStruct(&config.Temperatures,
                            TEMPERATURE_AUTO_OFFSET,
                            getTemperatureAutoOffset(&hvacConfig->Temperatures));
+  }
+
+  if (memcmp(&config, &configCopy, sizeof(TSD_ChannelConfig_HVAC)) != 0) {
+    saveConfig();
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;
@@ -740,6 +749,8 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *config) {
   if (config == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
+
+  saveWeeklySchedule();
 
   return SUPLA_RESULT_TRUE;
 }
@@ -1204,3 +1215,36 @@ uint16_t HvacBase::getMinOffTimeS() const {
   return config.MinOffTimeS;
 }
 
+void HvacBase::saveConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    // Generic HVAC configuration
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, "hvac_cfg");
+    if (cfg->setBlob(key,
+                     reinterpret_cast<char *>(&config),
+                     sizeof(TSD_ChannelConfig_HVAC))) {
+      SUPLA_LOG_INFO("HVAC config saved successfully");
+      cfg->saveWithDelay(1000);
+    } else {
+      SUPLA_LOG_INFO("HVAC failed to save config");
+    }
+  }
+}
+
+void HvacBase::saveWeeklySchedule() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    // Weekly schedule configuration
+    generateKey(key, "hvac_weekly");
+    if (cfg->setBlob(key,
+                     reinterpret_cast<char *>(&weeklySchedule),
+                     sizeof(TSD_ChannelConfig_WeeklySchedule))) {
+      SUPLA_LOG_INFO("HVAC weekly schedule saved successfully");
+      cfg->saveWithDelay(1000);
+    } else {
+      SUPLA_LOG_INFO("HVAC failed to save weekly schedule");
+    }
+  }
+}

@@ -76,3 +76,17 @@ bool Supla::ChannelElement::loadFunctionFromConfig() {
   }
   return false;
 }
+
+void Supla::ChannelElement::setAndSaveFunction(_supla_int_t channelFunction) {
+  if (channel.getDefaultFunction() != channelFunction) {
+    channel.setDefault(channelFunction);
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, "fnc");
+      cfg->setInt32(key, channelFunction);
+      cfg->saveWithDelay(5000);
+    }
+  }
+}
+

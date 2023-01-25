@@ -49,6 +49,7 @@ class ChannelElement : public Element, public LocalAction {
       bool alwaysEnabled = false);
 
   virtual bool loadFunctionFromConfig();
+  virtual void setAndSaveFunction(_supla_int_t channelFunction);
 
  protected:
   Channel channel;

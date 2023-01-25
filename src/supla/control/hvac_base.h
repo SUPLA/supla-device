@@ -40,6 +40,9 @@ class HvacBase : public ChannelElement {
   uint8_t handleChannelConfig(TSD_ChannelConfig *config) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
 
+  void saveConfig();
+  void saveWeeklySchedule();
+
   // Below functions are used to set device capabilities.
   void setOnOffSupported(bool supported);
   void setHeatingSupported(bool supported);

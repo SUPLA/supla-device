@@ -23,8 +23,11 @@
 #include <supla/control/hvac_base.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
+#include <config_mock.h>
 
-// using ::testing::_;
+using ::testing::_;
+using ::testing::AtLeast;
+using ::testing::StrEq;
 // using ::testing::ElementsAreArray;
 // using ::testing::Args;
 // using ::testing::ElementsAre;
@@ -546,6 +549,9 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
       hvac.getTemperatureHeaterCoolerMinSetpoint(),
       Supla::Control::HvacBase::getTemperatureFromStruct(
           &hvacConfig->Temperatures, TEMPERATURE_HEATER_COOLER_MIN_SETPOINT));
+
+  EXPECT_EQ(hvac.getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
 }
 
 TEST_F(HvacTestsF, temperatureSettersAndGetters) {
@@ -787,3 +793,139 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_EQ(hvac.getHeaterCoolerThermometerType(),
             SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET);
 }
+
+TEST_F(HvacTestsF, handleChannelConfigWithConfigStorage) {
+  ConfigMock cfg;
+  Supla::Control::HvacBase hvac;
+  Supla::Sensor::Thermometer t1;
+  Supla::Sensor::ThermHygroMeter t2;
+
+  ASSERT_EQ(hvac.getChannelNumber(), 0);
+  ASSERT_EQ(t1.getChannelNumber(), 1);
+  ASSERT_EQ(t2.getChannelNumber(), 2);
+
+  // init min max ranges for tempreatures setting and check again setters
+  // for temperatures
+  hvac.setTemperatureRoomMin(500);           // 5 degrees
+  hvac.setTemperatureRoomMax(5000);          // 50 degrees
+  hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
+  hvac.setTemperatureHisteresisMax(1000);    // 10 degree
+  hvac.setTemperatureAutoOffsetMin(200);     // 2 degrees
+  hvac.setTemperatureAutoOffsetMax(1000);    // 10 degrees
+  hvac.setTemperatureHeaterCoolerMin(500);   // 5 degrees
+  hvac.setTemperatureHeaterCoolerMax(7500);  // 75 degrees
+  hvac.addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
+  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
+  TSD_ChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TSD_ChannelConfig_HVAC *>(&configFromServer.Config);
+  hvacConfig->MainThermometerChannelNo = 1;
+  hvacConfig->HeaterCoolerThermometerType =
+      SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR;
+  hvacConfig->HeaterCoolerThermometerChannelNo = 2;
+  hvacConfig->EnableAntiFreezeAndOverheatProtection = 1;
+  hvacConfig->MinOnTimeS = 10;
+  hvacConfig->MinOffTimeS = 20;
+  hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_COMFORT, 2200);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2500);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HEATER_COOLER_MAX_SETPOINT, 3000);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HEATER_COOLER_MIN_SETPOINT, 2000);
+
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
+      .Times(1);
+
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+      .WillOnce([](const char *key, const char *buf, int size) {
+        TSD_ChannelConfig_HVAC expectedData = {
+            .MainThermometerChannelNo = 1,
+            .HeaterCoolerThermometerChannelNo = 2,
+            .HeaterCoolerThermometerType =
+                SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR,
+            .EnableAntiFreezeAndOverheatProtection = 1,
+            .AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF,
+            .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
+            .MinOnTimeS = 10,
+            .MinOffTimeS = 20,
+            .Temperatures = {}};
+
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_COMFORT, 2200);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_BOOST, 2500);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures,
+                TEMPERATURE_HEATER_COOLER_MAX_SETPOINT,
+                3000);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures,
+                TEMPERATURE_HEATER_COOLER_MIN_SETPOINT,
+                2000);
+
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures, TEMPERATURE_HEATER_COOLER_MIN, 500);
+            Supla::Control::HvacBase::setTemperatureInStruct(
+                &expectedData.Temperatures,
+                TEMPERATURE_HEATER_COOLER_MAX,
+                7500);
+
+            EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+            return 1;
+      });
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+      SUPLA_CONFIG_RESULT_TRUE);
+
+
+}
+

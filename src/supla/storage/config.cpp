@@ -29,6 +29,7 @@
 #include <supla/device/sw_update.h>
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
+#include <supla/element.h>
 
 #include "config.h"
 

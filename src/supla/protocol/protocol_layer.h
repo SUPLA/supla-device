@@ -63,11 +63,11 @@ class ProtocolLayer {
 
   virtual void getChannelConfig(uint8_t channelNumber,
       uint8_t configType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT);
-  virtual void setChannelConfig(uint8_t channelNumber,
+  virtual bool setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size,
       uint8_t configType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT);
 
-  virtual void setDeviceConfig(TSD_SetDeviceConfig *deviceConfig);
+  virtual bool setDeviceConfig(TSD_SetDeviceConfig *deviceConfig);
 
  protected:
   static ProtocolLayer *firstPtr;

@@ -99,7 +99,7 @@ void ProtocolLayer::getChannelConfig(uint8_t channelNumber,
   (void)(configType);
 }
 
-void ProtocolLayer::setChannelConfig(uint8_t channelNumber,
+bool ProtocolLayer::setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size,
       uint8_t configType) {
   (void)(channelNumber);
@@ -107,10 +107,12 @@ void ProtocolLayer::setChannelConfig(uint8_t channelNumber,
   (void)(channelConfig);
   (void)(size);
   (void)(configType);
+  return false;
 }
 
-void ProtocolLayer::setDeviceConfig(TSD_SetDeviceConfig *deviceConfig) {
+bool ProtocolLayer::setDeviceConfig(TSD_SetDeviceConfig *deviceConfig) {
   (void)(deviceConfig);
+  return false;
 }
 
 bool ProtocolLayer::isConfigEmpty() {

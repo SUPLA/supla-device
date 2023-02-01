@@ -859,16 +859,16 @@ void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
   srpc_ds_async_get_channel_config(srpc, &request);
 }
 
-void Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
+bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
     _supla_int_t channelFunction, void *channelConfig, int size,
     uint8_t configType) {
   if (!isRegisteredAndReady()) {
-    return;
+    return false;
   }
   if ((size != 0 && channelConfig == nullptr) ||
       (size == 0 && channelConfig != nullptr) || (size < 0) ||
       (size > SUPLA_CHANNEL_CONFIG_MAXSIZE)) {
-    return;
+    return false;
   }
 
   TSD_SetChannelConfig request = {};
@@ -876,18 +876,20 @@ void Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
   request.Func = channelFunction;
   request.ConfigType = configType;
   srpc_ds_async_set_channel_config_request(srpc, &request);
+  return true;
 }
 
-void Supla::Protocol::SuplaSrpc::setDeviceConfig(
+bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
     TSD_SetDeviceConfig *deviceConfig) {
   if (!isRegisteredAndReady()) {
-    return;
+    return false;
   }
   if (deviceConfig == nullptr) {
-    return;
+    return false;
   }
 
   deviceConfig->EndOfDataFlag = 1;
   srpc_ds_async_set_device_config_request(srpc, deviceConfig);
+  return true;
 }
 

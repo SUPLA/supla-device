@@ -39,7 +39,10 @@ class HvacBase : public ChannelElement {
 
   uint8_t handleChannelConfig(TSD_ChannelConfig *config) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
+  void handleSetChannelConfigResult(
+      TSD_SetChannelConfigResult *result) override;
 
+  void scheduleSaveConfig(uint32_t timeMs, bool localChange = false);
   void saveConfig();
   void saveWeeklySchedule();
 
@@ -52,24 +55,31 @@ class HvacBase : public ChannelElement {
   void setDrySupported(bool supported);
 
   void addAlgorithmCap(unsigned _supla_int16_t algorithm);
+  // use this function to set value based on local input change
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
   unsigned _supla_int16_t getUsedAlgorithm() const;
 
+  // use this function to set value based on local input change
   bool setMainThermometerChannelNo(uint8_t channelNo);
   uint8_t getMainThermometerChannelNo() const;
 
+  // use this function to set value based on local input change
   bool setHeaterCoolerThermometerChannelNo(uint8_t channelNo);
   uint8_t getHeaterCoolerThermometerChannelNo() const;
+  // use this function to set value based on local input change
   void setHeaterCoolerThermometerType(uint8_t type);
   uint8_t getHeaterCoolerThermometerType() const;
 
+  // use this function to set value based on local input change
   void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
   bool isAntiFreezeAndHeatProtectionEnabled() const;
 
+  // use this function to set value based on local input change
   bool setMinOnTimeS(uint16_t seconds);
   uint16_t getMinOnTimeS() const;
   bool isMinOnOffTimeValid(uint16_t seconds) const;
 
+  // use this function to set value based on local input change
   bool setMinOffTimeS(uint16_t seconds);
   uint16_t getMinOffTimeS() const;
 
@@ -105,6 +115,7 @@ class HvacBase : public ChannelElement {
   // Below functions are used to set device configuration - those can
   // be modified by user within limits defined by set* functions above.
   // Set may fail if value is out of range defined by set* functions above.
+  // use those set functions to set value based on local input change
   bool setTemperatureFreezeProtection(_supla_int16_t temperature);
   bool setTemperatureHeatProtection(_supla_int16_t temperature);
   bool setTemperatureEco(_supla_int16_t temperature);
@@ -196,10 +207,19 @@ class HvacBase : public ChannelElement {
   bool isTemperatureHeaterCoolerMaxSetpointValid(
       THVACTemperatureCfg *temperatures);
 
+  void clearChannelConfigChangedFlag();
+  void clearWeeklyScheduleChangedFlag();
+
  private:
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
   bool isWeeklyScheduleConfigured = false;
+  uint8_t channelConfigChangedOffline = 0;
+  uint8_t weeklyScheduleChangedOffline = 0;
+  bool waitForChannelConfigAndIgnoreIt = false;
+  bool waitForWeeklyScheduleAndIgnoreIt = false;
+  bool initDone = false;
+  uint64_t lastLocalConfigChangeTimestampMs = 0;
 };
 
 }  // namespace Control

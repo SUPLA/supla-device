@@ -82,12 +82,12 @@ class Channel : public LocalAction {
 
   void setType(_supla_int_t type);
   void setDefault(_supla_int_t value);
-  int32_t getDefaultFunction();
+  int32_t getDefaultFunction() const;
   void setFlag(_supla_int_t flag);
   void unsetFlag(_supla_int_t flag);
   _supla_int_t getFlags();
   void setFuncList(_supla_int_t functions);
-  _supla_int_t getFuncList();
+  _supla_int_t getFuncList() const;
   void setActionTriggerCaps(_supla_int_t caps);
   _supla_int_t getActionTriggerCaps();
 

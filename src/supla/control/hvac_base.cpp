@@ -236,27 +236,27 @@ void HvacBase::setOnOffSupported(bool supported) {
   }
 }
 
-bool HvacBase::isOnOffSupported() {
+bool HvacBase::isOnOffSupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
 }
 
-bool HvacBase::isHeatingSupported() {
+bool HvacBase::isHeatingSupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
 }
 
-bool HvacBase::isCoolingSupported() {
+bool HvacBase::isCoolingSupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_COOL;
 }
 
-bool HvacBase::isAutoSupported() {
+bool HvacBase::isAutoSupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
 }
 
-bool HvacBase::isFanSupported() {
+bool HvacBase::isFanSupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_FAN;
 }
 
-bool HvacBase::isDrySupported() {
+bool HvacBase::isDrySupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_DRY;
 }
 
@@ -396,7 +396,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
   return SUPLA_CONFIG_RESULT_TRUE;
 }
 
-bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) {
+bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) const {
   if (newConfig == nullptr) {
     return false;
   }
@@ -454,7 +454,8 @@ bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) {
   return true;
 }
 
-bool HvacBase::areTemperaturesValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::areTemperaturesValid(
+    const THVACTemperatureCfg *temperatures) const {
   if (temperatures == nullptr) {
     return false;
   }
@@ -541,7 +542,7 @@ bool HvacBase::areTemperaturesValid(THVACTemperatureCfg *temperatures) {
   return true;
 }
 
-bool HvacBase::isTemperatureSetInStruct(THVACTemperatureCfg *temperatures,
+bool HvacBase::isTemperatureSetInStruct(const THVACTemperatureCfg *temperatures,
                                         unsigned _supla_int_t index) {
   if (temperatures == nullptr) {
     return false;
@@ -555,7 +556,7 @@ bool HvacBase::isTemperatureSetInStruct(THVACTemperatureCfg *temperatures,
 }
 
 _supla_int16_t HvacBase::getTemperatureFromStruct(
-    THVACTemperatureCfg *temperatures, unsigned _supla_int_t index) {
+    const THVACTemperatureCfg *temperatures, unsigned _supla_int_t index) {
   if (!isTemperatureSetInStruct(temperatures, index)) {
     return SUPLA_TEMPERATURE_INVALID_INT16;
   }
@@ -571,7 +572,7 @@ _supla_int16_t HvacBase::getTemperatureFromStruct(
   return temperatures->Temperature[arrayIndex];
 }
 
-bool HvacBase::isTemperatureInRoomConstrain(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureInRoomConstrain(_supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -584,8 +585,15 @@ bool HvacBase::isTemperatureInRoomConstrain(_supla_int16_t temperature) {
   return temperature >= tMin && temperature <= tMax;
 }
 
+bool HvacBase::isTemperatureInAutoConstrain(_supla_int16_t tMin,
+                                            _supla_int16_t tMax) const {
+  auto offset = getTemperatureAutoOffset();
+  return (tMin + offset < tMax && isTemperatureInRoomConstrain(tMin) &&
+          isTemperatureInRoomConstrain(tMax));
+}
+
 bool HvacBase::isTemperatureInHeaterCoolerConstrain(
-    _supla_int16_t temperature) {
+    _supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -598,55 +606,60 @@ bool HvacBase::isTemperatureInHeaterCoolerConstrain(
   return temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureFreezeProtectionValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureFreezeProtectionValid(
+    _supla_int16_t temperature) const {
   return isTemperatureInRoomConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureFreezeProtectionValid(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   auto t =
       getTemperatureFromStruct(temperatures, TEMPERATURE_FREEZE_PROTECTION);
   return isTemperatureFreezeProtectionValid(t);
 }
 
-bool HvacBase::isTemperatureHeatProtectionValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureHeatProtectionValid(
+    _supla_int16_t temperature) const {
   return isTemperatureInRoomConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureHeatProtectionValid(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   auto  t = getTemperatureFromStruct(temperatures, TEMPERATURE_HEAT_PROTECTION);
   return isTemperatureInRoomConstrain(t);
 }
 
-bool HvacBase::isTemperatureEcoValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureEcoValid(_supla_int16_t temperature) const {
   return isTemperatureInRoomConstrain(temperature);
 }
 
-bool HvacBase::isTemperatureEcoValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureEcoValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_ECO);
   return isTemperatureInRoomConstrain(t);
 }
 
-bool HvacBase::isTemperatureComfortValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureComfortValid(_supla_int16_t temperature) const {
   return isTemperatureInRoomConstrain(temperature);
 }
 
-bool HvacBase::isTemperatureComfortValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureComfortValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_COMFORT);
   return isTemperatureInRoomConstrain(t);
 }
 
-bool HvacBase::isTemperatureBoostValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureBoostValid(_supla_int16_t temperature) const {
   return isTemperatureInRoomConstrain(temperature);
 }
 
-bool HvacBase::isTemperatureBoostValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureBoostValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_BOOST);
   return isTemperatureInRoomConstrain(t);
 }
 
-bool HvacBase::isTemperatureHisteresisValid(_supla_int16_t hist) {
+bool HvacBase::isTemperatureHisteresisValid(_supla_int16_t hist) const {
   if (hist == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -659,12 +672,13 @@ bool HvacBase::isTemperatureHisteresisValid(_supla_int16_t hist) {
   return hist >= histMin && hist <= histMax;
 }
 
-bool HvacBase::isTemperatureHisteresisValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureHisteresisValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto hist = getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
   return isTemperatureHisteresisValid(hist);
 }
 
-bool HvacBase::isTemperatureAutoOffsetValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureAutoOffsetValid(_supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -677,13 +691,14 @@ bool HvacBase::isTemperatureAutoOffsetValid(_supla_int16_t temperature) {
   return temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureAutoOffsetValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureAutoOffsetValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET);
   return isTemperatureAutoOffsetValid(t);
 }
 
 bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
-    _supla_int16_t temperature) {
+    _supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -699,7 +714,7 @@ bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
 }
 
 bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureHeaterCoolerMinSetpoint(temperatures);
   if (isTemperatureSetInStruct(temperatures,
                                TEMPERATURE_HEATER_COOLER_MAX_SETPOINT)) {
@@ -716,7 +731,7 @@ bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
 }
 
 bool HvacBase::isTemperatureHeaterCoolerMaxSetpointValid(
-    _supla_int16_t temperature) {
+    _supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -734,7 +749,7 @@ bool HvacBase::isTemperatureHeaterCoolerMaxSetpointValid(
 }
 
 bool HvacBase::isTemperatureHeaterCoolerMaxSetpointValid(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureHeaterCoolerMaxSetpoint(temperatures);
 
   // min setpoint is taken from configuration in temperatures struct
@@ -754,7 +769,7 @@ bool HvacBase::isTemperatureHeaterCoolerMaxSetpointValid(
   return t >= tMin && t <= tMax;
 }
 
-bool HvacBase::isTemperatureBelowAlarmValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureBelowAlarmValid(_supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -767,12 +782,13 @@ bool HvacBase::isTemperatureBelowAlarmValid(_supla_int16_t temperature) {
   return temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureBelowAlarmValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureBelowAlarmValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_BELOW_ALARM);
   return isTemperatureBelowAlarmValid(t);
 }
 
-bool HvacBase::isTemperatureAboveAlarmValid(_supla_int16_t temperature) {
+bool HvacBase::isTemperatureAboveAlarmValid(_supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
@@ -784,12 +800,13 @@ bool HvacBase::isTemperatureAboveAlarmValid(_supla_int16_t temperature) {
   return temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureAboveAlarmValid(THVACTemperatureCfg *temperatures) {
+bool HvacBase::isTemperatureAboveAlarmValid(
+    const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_ABOVE_ALARM);
   return isTemperatureAboveAlarmValid(t);
 }
 
-bool HvacBase::isChannelThermometer(uint8_t channelNo) {
+bool HvacBase::isChannelThermometer(uint8_t channelNo) const {
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
     SUPLA_LOG_WARNING("HVAC: thermometer not found for channel %d", channelNo);
@@ -808,12 +825,12 @@ bool HvacBase::isChannelThermometer(uint8_t channelNo) {
   return true;
 }
 
-bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) {
+bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
   return (config.AlgorithmCaps & algorithm) == algorithm;
 }
 
 // handleWeeklySchedule
-uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *config) {
+uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig) {
   if (waitForWeeklyScheduleAndIgnoreIt) {
     SUPLA_LOG_INFO("Ignoring weekly schedule for channel %d",
                    getChannelNumber());
@@ -821,16 +838,34 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *config) {
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
-  if (config == nullptr) {
+  if (newConfig == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  saveWeeklySchedule();
+  if (newConfig->ConfigSize < sizeof(TSD_ChannelConfig_WeeklySchedule)) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+
+  auto newSchedule =
+      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(newConfig->Config);
+
+  if (!isWeeklyScheduleValid(newSchedule)) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+
+  if (memcmp(&weeklySchedule,
+             newSchedule,
+             sizeof(TSD_ChannelConfig_WeeklySchedule)) != 0) {
+    memcpy(&weeklySchedule,
+           newSchedule,
+           sizeof(TSD_ChannelConfig_WeeklySchedule));
+    saveWeeklySchedule();
+  }
 
   return SUPLA_RESULT_TRUE;
 }
 
-bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) {
+bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
       return isHeatingSupported();
@@ -1084,170 +1119,171 @@ bool HvacBase::setTemperatureHeaterCoolerMaxSetpoint(
 }
 
 _supla_int16_t HvacBase::getTemperatureRoomMin(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_ROOM_MIN);
 }
 
 _supla_int16_t HvacBase::getTemperatureRoomMax(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_ROOM_MAX);
 }
 
 _supla_int16_t HvacBase::getTemperatureHeaterCoolerMin(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HEATER_COOLER_MIN);
 }
 
 _supla_int16_t HvacBase::getTemperatureHeaterCoolerMax(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HEATER_COOLER_MAX);
 }
 _supla_int16_t HvacBase::getTemperatureHisteresisMin(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS_MIN);
 }
 _supla_int16_t HvacBase::getTemperatureHisteresisMax(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS_MAX);
 }
 _supla_int16_t HvacBase::getTemperatureAutoOffsetMin(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET_MIN);
 }
 _supla_int16_t HvacBase::getTemperatureAutoOffsetMax(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET_MAX);
 }
 
-_supla_int16_t HvacBase::getTemperatureRoomMin() {
+_supla_int16_t HvacBase::getTemperatureRoomMin() const {
   return getTemperatureRoomMin(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureRoomMax() {
+_supla_int16_t HvacBase::getTemperatureRoomMax() const {
   return getTemperatureRoomMax(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMin() {
+_supla_int16_t HvacBase::getTemperatureHeaterCoolerMin() const {
   return getTemperatureHeaterCoolerMin(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMax() {
+_supla_int16_t HvacBase::getTemperatureHeaterCoolerMax() const {
   return getTemperatureHeaterCoolerMax(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHisteresisMin() {
+_supla_int16_t HvacBase::getTemperatureHisteresisMin() const {
   return getTemperatureHisteresisMin(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHisteresisMax() {
+_supla_int16_t HvacBase::getTemperatureHisteresisMax() const {
   return getTemperatureHisteresisMax(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureAutoOffsetMin() {
+_supla_int16_t HvacBase::getTemperatureAutoOffsetMin() const {
   return getTemperatureAutoOffsetMin(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureAutoOffsetMax() {
+_supla_int16_t HvacBase::getTemperatureAutoOffsetMax() const {
   return getTemperatureAutoOffsetMax(&config.Temperatures);
 }
 
 _supla_int16_t HvacBase::getTemperatureFreezeProtection(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_FREEZE_PROTECTION);
 }
 
 _supla_int16_t HvacBase::getTemperatureHeatProtection(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HEAT_PROTECTION);
 }
 
-_supla_int16_t HvacBase::getTemperatureEco(THVACTemperatureCfg *temperatures) {
+_supla_int16_t HvacBase::getTemperatureEco(
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_ECO);
 }
 
 _supla_int16_t HvacBase::getTemperatureComfort(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_COMFORT);
 }
 
 _supla_int16_t HvacBase::getTemperatureBoost(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_BOOST);
 }
 
 _supla_int16_t HvacBase::getTemperatureHisteresis(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
 }
 
 _supla_int16_t HvacBase::getTemperatureAutoOffset(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET);
 }
 
 _supla_int16_t HvacBase::getTemperatureBelowAlarm(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_BELOW_ALARM);
 }
 
 _supla_int16_t HvacBase::getTemperatureAboveAlarm(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_ABOVE_ALARM);
 }
 
 _supla_int16_t HvacBase::getTemperatureHeaterCoolerMinSetpoint(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures,
                                   TEMPERATURE_HEATER_COOLER_MIN_SETPOINT);
 }
 
 _supla_int16_t HvacBase::getTemperatureHeaterCoolerMaxSetpoint(
-    THVACTemperatureCfg *temperatures) {
+    const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures,
                                   TEMPERATURE_HEATER_COOLER_MAX_SETPOINT);
 }
 
-_supla_int16_t HvacBase::getTemperatureFreezeProtection() {
+_supla_int16_t HvacBase::getTemperatureFreezeProtection() const {
   return getTemperatureFreezeProtection(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeatProtection() {
+_supla_int16_t HvacBase::getTemperatureHeatProtection() const {
   return getTemperatureHeatProtection(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureEco() {
+_supla_int16_t HvacBase::getTemperatureEco() const {
   return getTemperatureEco(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureComfort() {
+_supla_int16_t HvacBase::getTemperatureComfort() const {
   return getTemperatureComfort(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureBoost() {
+_supla_int16_t HvacBase::getTemperatureBoost() const {
   return getTemperatureBoost(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHisteresis() {
+_supla_int16_t HvacBase::getTemperatureHisteresis() const {
   return getTemperatureHisteresis(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureAutoOffset() {
+_supla_int16_t HvacBase::getTemperatureAutoOffset() const {
   return getTemperatureAutoOffset(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureBelowAlarm() {
+_supla_int16_t HvacBase::getTemperatureBelowAlarm() const {
   return getTemperatureBelowAlarm(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureAboveAlarm() {
+_supla_int16_t HvacBase::getTemperatureAboveAlarm() const {
   return getTemperatureAboveAlarm(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMinSetpoint() {
+_supla_int16_t HvacBase::getTemperatureHeaterCoolerMinSetpoint() const {
   return getTemperatureHeaterCoolerMinSetpoint(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMaxSetpoint() {
+_supla_int16_t HvacBase::getTemperatureHeaterCoolerMaxSetpoint() const {
   return getTemperatureHeaterCoolerMaxSetpoint(&config.Temperatures);
 }
 
@@ -1442,6 +1478,7 @@ void HvacBase::saveWeeklySchedule() {
     }
     cfg->saveWithDelay(5000);
   }
+  isWeeklyScheduleConfigured = true;
 }
 
 void HvacBase::handleSetChannelConfigResult(
@@ -1496,4 +1533,225 @@ void HvacBase::clearWeeklyScheduleChangedFlag() {
       cfg->saveWithDelay(1000);
     }
   }
+}
+
+bool HvacBase::isWeeklyScheduleValid(
+    TSD_ChannelConfig_WeeklySchedule *newSchedule) const {
+  bool programIsUsed[SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE] = {};
+
+  // check if programs are valid
+  for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
+    if (!isProgramValid(newSchedule->Program[i])) {
+      return false;
+    }
+    if (newSchedule->Program[i].Mode != SUPLA_HVAC_MODE_NOT_USED) {
+      programIsUsed[i] = true;
+    }
+  }
+
+  // check if only used programs are configured in the schedule
+  for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
+    int programId = getWeeklyScheduleProgramId(newSchedule, i);
+    if (programId == 0 || !programIsUsed[programId - 1]) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+int HvacBase::getWeeklyScheduleProgramId(
+    const TSD_ChannelConfig_WeeklySchedule *schedule, int index) const {
+  if (schedule == nullptr) {
+    return -1;
+  }
+  if (index < 0 || index > SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
+    return -1;
+  }
+
+  return (schedule->Value[index / 2] >> (index % 2 * 4)) & 0xF;
+}
+
+int HvacBase::getWeeklyScheduleProgramId(int index) const {
+  if (!isWeeklyScheduleConfigured) {
+    return -1;
+  }
+  return getWeeklyScheduleProgramId(&weeklySchedule, index);
+}
+
+int HvacBase::getWeeklyScheduleProgramId(enum DayOfWeek dayOfWeek,
+                                         int hour,
+                                         int quarter) const {
+  return getWeeklyScheduleProgramId(calculateIndex(dayOfWeek, hour, quarter));
+}
+
+int HvacBase::calculateIndex(enum DayOfWeek dayOfWeek,
+                             int hour,
+                             int quarter) const {
+  if (dayOfWeek < DayOfWeek_Sunday || dayOfWeek > DayOfWeek_Saturday) {
+    return -1;
+  }
+  if (hour < 0 || hour > 23) {
+    return -1;
+  }
+  if (quarter < 0 || quarter > 3) {
+    return -1;
+  }
+
+  return (dayOfWeek * 24 + hour) * 4 + quarter;
+}
+
+bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program) const {
+  if (program.Mode == SUPLA_HVAC_MODE_NOT_USED) {
+    return true;
+  }
+
+  if (program.Mode != SUPLA_HVAC_MODE_COOL
+      && program.Mode != SUPLA_HVAC_MODE_HEAT
+      && program.Mode != SUPLA_HVAC_MODE_AUTO) {
+    return false;
+  }
+
+  if (!isModeSupported(program.Mode)) {
+    return false;
+  }
+
+  // check tempreatures
+  switch (program.Mode) {
+    case SUPLA_HVAC_MODE_HEAT: {
+      return isTemperatureInRoomConstrain(program.SetpointTemperatureMin);
+    }
+    case SUPLA_HVAC_MODE_COOL: {
+      return isTemperatureInRoomConstrain(program.SetpointTemperatureMax);
+    }
+    case SUPLA_HVAC_MODE_AUTO: {
+      return isTemperatureInAutoConstrain(program.SetpointTemperatureMin,
+                                          program.SetpointTemperatureMax);
+    }
+    default: {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+bool HvacBase::isModeSupported(int mode) const {
+  bool heatSupported = false;
+  bool coolSupported = false;
+  bool autoSupported = false;
+  bool drySupported = false;
+  bool fanSupported = isFanSupported();
+  bool onOffSupported = isOnOffSupported();
+
+  switch (channel.getDefaultFunction()) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+      heatSupported = true;
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
+      coolSupported = true;
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+      autoSupported = true;
+      heatSupported = true;
+      coolSupported = true;
+      drySupported = isDrySupported();
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_DRYER: {
+      drySupported = true;
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_FAN: {
+      fanSupported = true;
+      break;
+    }
+  }
+
+  switch (mode) {
+    case SUPLA_HVAC_MODE_HEAT: {
+      return heatSupported;
+    }
+    case SUPLA_HVAC_MODE_COOL: {
+      return coolSupported;
+    }
+    case SUPLA_HVAC_MODE_AUTO: {
+      return autoSupported;
+    }
+    case SUPLA_HVAC_MODE_MANUAL: {
+      return true;
+    }
+    case SUPLA_HVAC_MODE_FAN_ONLY: {
+      return fanSupported;
+    }
+    case SUPLA_HVAC_MODE_DRY: {
+      return drySupported;
+    }
+    case SUPLA_HVAC_MODE_TURN_ON:
+    case SUPLA_HVAC_MODE_OFF: {
+      return onOffSupported;
+    }
+  }
+
+  return false;
+}
+
+bool HvacBase::setWeeklySchedule(int index, int programId) {
+  if (index < 0 || index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
+    return false;
+  }
+  if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    return false;
+  }
+
+  if (programId > 0 &&
+      weeklySchedule.Program[programId - 1].Mode == SUPLA_HVAC_MODE_NOT_USED) {
+    return false;
+  }
+
+  if (index % 2) {
+    weeklySchedule.Value[index / 2] =
+        (weeklySchedule.Value[index / 2] & 0x0F) | (programId << 4);
+  } else {
+    weeklySchedule.Value[index / 2] =
+        (weeklySchedule.Value[index / 2] & 0xF0) | programId;
+  }
+
+  weeklyScheduleChangedOffline = 1;
+  isWeeklyScheduleConfigured = true;
+  return true;
+}
+
+bool HvacBase::setWeeklySchedule(enum DayOfWeek dayOfWeek,
+                                 int hour,
+                                 int quarter,
+                                 int programId) {
+  return setWeeklySchedule(calculateIndex(dayOfWeek, hour, quarter), programId);
+}
+
+TWeeklyScheduleProgram HvacBase::getProgram(int programId) const {
+  if (programId < 1 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    TWeeklyScheduleProgram program = {};
+    return program;
+  }
+
+  return weeklySchedule.Program[programId - 1];
+}
+
+bool HvacBase::setProgram(int programId,
+                          unsigned char mode,
+                          _supla_int16_t tMin,
+                          _supla_int16_t tMax) {
+  TWeeklyScheduleProgram program = {mode, {tMin}, {tMax}};
+
+  if (!isProgramValid(program)) {
+    return false;
+  }
+
+  weeklySchedule.Program[programId - 1].Mode = mode;
+  weeklySchedule.Program[programId - 1].SetpointTemperatureMin = tMin;
+  weeklySchedule.Program[programId - 1].SetpointTemperatureMax = tMax;
+  return true;
 }

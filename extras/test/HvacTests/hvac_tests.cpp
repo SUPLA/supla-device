@@ -970,7 +970,10 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_weekly"), _, 348))
+  EXPECT_CALL(
+      cfg,
+      getBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -1120,7 +1123,10 @@ TEST_F(HvacTestWithChannelSetupF,
   EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_weekly"), _, 348))
+  EXPECT_CALL(
+      cfg,
+      getBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -1346,4 +1352,121 @@ TEST_F(HvacTestWithChannelSetupF,
   // applied to the channel
   EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
       SUPLA_CONFIG_RESULT_TRUE);
+}
+
+TEST_F(HvacTestWithChannelSetupF, WeeklyScheduleBasicSetAndGet) {
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
+      .Times(1).WillOnce(Return(true));
+
+  hvac->onInit();
+
+  // weekly schedule is not configured, so all returns -1
+  for (enum Supla::DayOfWeek day : {Supla::DayOfWeek_Sunday,
+                                    Supla::DayOfWeek_Monday,
+                                    Supla::DayOfWeek_Tuesday,
+                                    Supla::DayOfWeek_Wednesday,
+                                    Supla::DayOfWeek_Thursday,
+                                    Supla::DayOfWeek_Friday,
+                                    Supla::DayOfWeek_Saturday}) {
+    for (int hour = 0; hour < 24; ++hour) {
+      for (int quarter = 0; quarter < 4; ++quarter) {
+        EXPECT_EQ(hvac->getWeeklyScheduleProgramId(day, hour, quarter), -1);
+      }
+    }
+  }
+
+  // check out of range values
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, -1, 0, 0));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 24, 0, 0));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, -1, 0));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 4, 0));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, -1));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 5));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(-1, 5));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(1000, 5));
+
+  // weekly schedule is still not configured, so it returns -1
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
+            -1);
+
+  // programs are not configured yet
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 1));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 2));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 3));
+  EXPECT_FALSE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 4));
+
+  // weekly schedule is still not configured, so it returns -1
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
+            -1);
+
+  EXPECT_TRUE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 0));
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0), 0);
+  // after setting at least one schedule value, whole weekly schedule becomes
+  // valid and by default it is set to 0
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Tuesday, 2, 3),
+            0);
+
+  TWeeklyScheduleProgram program = {};
+  auto result = hvac->getProgram(0);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
+  result = hvac->getProgram(1);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
+  result = hvac->getProgram(2);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
+  result = hvac->getProgram(3);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
+  result = hvac->getProgram(4);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
+
+  EXPECT_FALSE(
+      hvac->setProgram(-1, SUPLA_HVAC_MODE_COOL, 2000, 0));
+  EXPECT_FALSE(
+      hvac->setProgram(0, SUPLA_HVAC_MODE_COOL, 2000, 0));
+  EXPECT_FALSE(
+      hvac->setProgram(5, SUPLA_HVAC_MODE_COOL, 2000, 0));
+
+  EXPECT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2400, 0));
+  EXPECT_FALSE(hvac->setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2300));
+  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_AUTO, 1800, 2400));
+  EXPECT_TRUE(hvac->setProgram(4, SUPLA_HVAC_MODE_HEAT, 1900, 0));
+
+  TWeeklyScheduleProgram program1 = {SUPLA_HVAC_MODE_HEAT, {2400}, {0}};
+  TWeeklyScheduleProgram program4 = {SUPLA_HVAC_MODE_HEAT, {1900}, {0}};
+  result = hvac->getProgram(0);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
+  result = hvac->getProgram(1);
+  EXPECT_EQ(memcmp(&result, &program1, sizeof(result)), 0);
+  result = hvac->getProgram(2);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
+  result = hvac->getProgram(3);
+  EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
+  result = hvac->getProgram(4);
+  EXPECT_EQ(memcmp(&result, &program4, sizeof(result)), 0);
+
+  EXPECT_TRUE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 1));
+  EXPECT_TRUE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Monday, 0, 0, 4));
+  EXPECT_TRUE(
+      hvac->setWeeklySchedule(Supla::DayOfWeek_Tuesday, 0, 0, 1));
+
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0), 1);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Monday, 0, 0), 4);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Tuesday, 0, 0),
+            1);
 }

@@ -728,6 +728,22 @@ typedef struct {
 
 // TODO(klew): how to handle fan within this structure?
 
+// HVAC modes are used in in channel value (as a command from server or
+// as a status response from device to server) and in weekly schedules
+// programs. Programs may contain only following values: not used, heat, cool
+// and auto.
+#define SUPLA_HVAC_MODE_NOT_USED 0
+#define SUPLA_HVAC_MODE_HEAT     1
+#define SUPLA_HVAC_MODE_COOL     2
+#define SUPLA_HVAC_MODE_AUTO     3
+#define SUPLA_HVAC_MODE_MANUAL   4
+#define SUPLA_HVAC_MODE_FAN_ONLY 5
+#define SUPLA_HVAC_MODE_DRY      6
+// TURN ON mode is temperary. Device will use it to turn on and then it will
+// restore previous mode which was used before turn off.
+#define SUPLA_HVAC_MODE_TURN_ON  7
+#define SUPLA_HVAC_MODE_OFF      8
+
 typedef struct {
   union {
     unsigned char IsOn;  // DS: 0/1 (or 0..100 ?) bitmap SUPLA_HVAC_IS_ON_
@@ -2435,32 +2451,34 @@ typedef struct {
 
 // Weekly schedule definition for HVAC channel
 
-#define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_HEAT 0
-#define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_COOL 1
-#define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_AUTO 2
-// #define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_FAN_ONLY 3
-// #define SUPLA_HVAC_WEEKLY_SCHEDULE_PROGRAM_MODE_DRY 4
-
 typedef struct {
-  unsigned char Mode;  // for HVAC: SUPLA_HVAC_WEEKLY_SCHEDULE_MODE_
+  unsigned char Mode;  // for HVAC: SUPLA_HVAC_MODE_
+                       // Possible values: not used, heat, cool, auto.
   union {
-    _supla_int16_t Temperature;
-    _supla_int16_t Value;
+    _supla_int16_t SetpointTemperatureMin;  // * 0.01 - used for heating
+    _supla_int16_t Value1;
+  };
+  union {
+    _supla_int16_t SetpointTemperatureMax;  // * 0.01 - used for cooling
+    _supla_int16_t Value2;
   };
 } TWeeklyScheduleProgram;
 
-// Value use 4 bits, so numbers from 0 to 15 are allowed
-#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_OFF 0
-#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P1 1  // use Program[0]
-#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P2 2  // use Program[1]
-#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P3 3  // use Program[2]
-#define SUPLA_WEEKLY_SCHEDULE_HVAC_VALUE_P4 4  // use Program[3]
+#define SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE 4
+#define SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE (7 * 24 * 4)
+
 
 typedef struct {
-  TWeeklyScheduleProgram Program[4];  // 4*3 = 12 B
+  // 4*5 = 20 B
+  TWeeklyScheduleProgram Program[SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE];
   // Value contain Program setting for each 15 min. One 15 min program is set
   // on 4 bits, so in one byte we have settings for two 2x 15 min.
-  unsigned char Value[7 * 24 * 2];    // 336 B
+  // 0 - off
+  // 1 - program 1
+  // 2 - program 2
+  // 3 - program 3
+  // 4 - program 4
+  unsigned char Value[SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE / 2];  // 336 B
 } TSD_ChannelConfig_WeeklySchedule;  // v. >= 20
 
 // Config used for thermometers and thermometers with humidity channels.

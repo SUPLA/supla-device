@@ -22,6 +22,17 @@
 #include <supla/channel_element.h>
 
 namespace Supla {
+
+enum DayOfWeek {
+  DayOfWeek_Sunday = 0,
+  DayOfWeek_Monday = 1,
+  DayOfWeek_Tuesday = 2,
+  DayOfWeek_Wednesday = 3,
+  DayOfWeek_Thursday = 4,
+  DayOfWeek_Friday = 5,
+  DayOfWeek_Saturday = 6
+};
+
 namespace Control {
 
 class HvacBase : public ChannelElement {
@@ -42,7 +53,6 @@ class HvacBase : public ChannelElement {
   void handleSetChannelConfigResult(
       TSD_SetChannelConfigResult *result) override;
 
-  void scheduleSaveConfig(uint32_t timeMs, bool localChange = false);
   void saveConfig();
   void saveWeeklySchedule();
 
@@ -93,24 +103,30 @@ class HvacBase : public ChannelElement {
   void setTemperatureHisteresisMax(_supla_int16_t temperature);
   void setTemperatureAutoOffsetMin(_supla_int16_t temperature);
   void setTemperatureAutoOffsetMax(_supla_int16_t temperature);
-  _supla_int16_t getTemperatureRoomMin(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureRoomMax(THVACTemperatureCfg *temperatures);
+  _supla_int16_t getTemperatureRoomMin(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureRoomMax(
+      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHeaterCoolerMin(
-      THVACTemperatureCfg *temperatures);
+      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHeaterCoolerMax(
-      THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureHisteresisMin(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureHisteresisMax(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureAutoOffsetMin(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureAutoOffsetMax(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureRoomMin();
-  _supla_int16_t getTemperatureRoomMax();
-  _supla_int16_t getTemperatureHeaterCoolerMin();
-  _supla_int16_t getTemperatureHeaterCoolerMax();
-  _supla_int16_t getTemperatureHisteresisMin();
-  _supla_int16_t getTemperatureHisteresisMax();
-  _supla_int16_t getTemperatureAutoOffsetMin();
-  _supla_int16_t getTemperatureAutoOffsetMax();
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureHisteresisMin(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureHisteresisMax(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureAutoOffsetMin(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureAutoOffsetMax(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureRoomMin() const;
+  _supla_int16_t getTemperatureRoomMax() const;
+  _supla_int16_t getTemperatureHeaterCoolerMin() const;
+  _supla_int16_t getTemperatureHeaterCoolerMax() const;
+  _supla_int16_t getTemperatureHisteresisMin() const;
+  _supla_int16_t getTemperatureHisteresisMax() const;
+  _supla_int16_t getTemperatureAutoOffsetMin() const;
+  _supla_int16_t getTemperatureAutoOffsetMax() const;
 
   // Below functions are used to set device configuration - those can
   // be modified by user within limits defined by set* functions above.
@@ -128,87 +144,136 @@ class HvacBase : public ChannelElement {
   bool setTemperatureHeaterCoolerMinSetpoint(_supla_int16_t temperature);
   bool setTemperatureHeaterCoolerMaxSetpoint(_supla_int16_t temperature);
   _supla_int16_t getTemperatureFreezeProtection(
-      THVACTemperatureCfg *temperatures);
+      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHeatProtection(
-      THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureEco(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureComfort(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureBoost(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureHisteresis(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureAutoOffset(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureBelowAlarm(THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureAboveAlarm(THVACTemperatureCfg *temperatures);
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureEco(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureComfort(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureBoost(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureHisteresis(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureAutoOffset(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureBelowAlarm(
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureAboveAlarm(
+      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHeaterCoolerMinSetpoint(
-      THVACTemperatureCfg *temperatures);
+      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint(
-      THVACTemperatureCfg *temperatures);
-  _supla_int16_t getTemperatureFreezeProtection();
-  _supla_int16_t getTemperatureHeatProtection();
-  _supla_int16_t getTemperatureEco();
-  _supla_int16_t getTemperatureComfort();
-  _supla_int16_t getTemperatureBoost();
-  _supla_int16_t getTemperatureHisteresis();
-  _supla_int16_t getTemperatureAutoOffset();
-  _supla_int16_t getTemperatureBelowAlarm();
-  _supla_int16_t getTemperatureAboveAlarm();
-  _supla_int16_t getTemperatureHeaterCoolerMinSetpoint();
-  _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint();
+      const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureFreezeProtection() const;
+  _supla_int16_t getTemperatureHeatProtection() const;
+  _supla_int16_t getTemperatureEco() const;
+  _supla_int16_t getTemperatureComfort() const;
+  _supla_int16_t getTemperatureBoost() const;
+  _supla_int16_t getTemperatureHisteresis() const;
+  _supla_int16_t getTemperatureAutoOffset() const;
+  _supla_int16_t getTemperatureBelowAlarm() const;
+  _supla_int16_t getTemperatureAboveAlarm() const;
+  _supla_int16_t getTemperatureHeaterCoolerMinSetpoint() const;
+  _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint() const;
 
-  bool isOnOffSupported();
-  bool isHeatingSupported();
-  bool isCoolingSupported();
-  bool isAutoSupported();
-  bool isFanSupported();
-  bool isDrySupported();
+  // Below methods check if specific function is supported by thermostat.
+  // Even if function is supported, it doesn't mean that new mode setting will
+  // be valid, becuase this depends on configured Function.
+  bool isOnOffSupported() const;
+  bool isHeatingSupported() const;
+  bool isCoolingSupported() const;
+  bool isAutoSupported() const;
+  bool isFanSupported() const;
+  bool isDrySupported() const;
 
-  bool isFunctionSupported(_supla_int_t channelFunction);
-  bool isConfigValid(TSD_ChannelConfig_HVAC *config);
-  bool isChannelThermometer(uint8_t channelNo);
-  bool isAlgorithmValid(unsigned _supla_int16_t algorithm);
-  bool areTemperaturesValid(THVACTemperatureCfg *temperatures);
+  bool isFunctionSupported(_supla_int_t channelFunction) const;
+  bool isConfigValid(TSD_ChannelConfig_HVAC *config) const;
+  bool isWeeklyScheduleValid(
+      TSD_ChannelConfig_WeeklySchedule *newSchedule) const;
+  bool isChannelThermometer(uint8_t channelNo) const;
+  bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
+  bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
 
-  static bool isTemperatureSetInStruct(THVACTemperatureCfg *temperatures,
+  // Check if mode is supported by currently configured Function
+  bool isModeSupported(int mode) const;
+
+  static bool isTemperatureSetInStruct(const THVACTemperatureCfg *temperatures,
                                 unsigned _supla_int_t index);
   static _supla_int16_t getTemperatureFromStruct(
-      THVACTemperatureCfg *temperatures, unsigned _supla_int_t index);
+      const THVACTemperatureCfg *temperatures, unsigned _supla_int_t index);
   static void setTemperatureInStruct(THVACTemperatureCfg *temperatures,
                               unsigned _supla_int_t index,
                               _supla_int16_t temperature);
 
-  bool isTemperatureInRoomConstrain(_supla_int16_t temperature);
-  bool isTemperatureInHeaterCoolerConstrain(_supla_int16_t temperature);
-  bool isTemperatureFreezeProtectionValid(_supla_int16_t temperature);
-  bool isTemperatureHeatProtectionValid(_supla_int16_t temperature);
-  bool isTemperatureEcoValid(_supla_int16_t temperature);
-  bool isTemperatureComfortValid(_supla_int16_t temperature);
-  bool isTemperatureBoostValid(_supla_int16_t temperature);
-  bool isTemperatureHisteresisValid(_supla_int16_t temperature);
-  bool isTemperatureAutoOffsetValid(_supla_int16_t temperature);
-  bool isTemperatureBelowAlarmValid(_supla_int16_t temperature);
-  bool isTemperatureAboveAlarmValid(_supla_int16_t temperature);
+  bool isTemperatureInRoomConstrain(_supla_int16_t temperature) const;
+  bool isTemperatureInHeaterCoolerConstrain(_supla_int16_t temperature) const;
+  bool isTemperatureFreezeProtectionValid(_supla_int16_t temperature) const;
+  bool isTemperatureHeatProtectionValid(_supla_int16_t temperature) const;
+  bool isTemperatureEcoValid(_supla_int16_t temperature) const;
+  bool isTemperatureComfortValid(_supla_int16_t temperature) const;
+  bool isTemperatureBoostValid(_supla_int16_t temperature) const;
+  bool isTemperatureHisteresisValid(_supla_int16_t temperature) const;
+  bool isTemperatureAutoOffsetValid(_supla_int16_t temperature) const;
+  bool isTemperatureBelowAlarmValid(_supla_int16_t temperature) const;
+  bool isTemperatureAboveAlarmValid(_supla_int16_t temperature) const;
   // validates temperature against current configuration
-  bool isTemperatureHeaterCoolerMinSetpointValid(_supla_int16_t temperature);
+  bool isTemperatureHeaterCoolerMinSetpointValid(
+      _supla_int16_t temperature) const;
   // validates temperature against current configuration
-  bool isTemperatureHeaterCoolerMaxSetpointValid(_supla_int16_t temperature);
+  bool isTemperatureHeaterCoolerMaxSetpointValid(
+      _supla_int16_t temperature) const;
+  bool isTemperatureInAutoConstrain(_supla_int16_t tMin,
+                                    _supla_int16_t tMax) const;
 
-  bool isTemperatureFreezeProtectionValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureHeatProtectionValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureEcoValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureComfortValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureBoostValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureHisteresisValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureAutoOffsetValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureBelowAlarmValid(THVACTemperatureCfg *temperatures);
-  bool isTemperatureAboveAlarmValid(THVACTemperatureCfg *temperatures);
+  bool isTemperatureFreezeProtectionValid(
+      const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureHeatProtectionValid(
+      const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureEcoValid(const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureComfortValid(const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureBoostValid(const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureHisteresisValid(
+      const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureAutoOffsetValid(
+      const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureBelowAlarmValid(
+      const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureAboveAlarmValid(
+      const THVACTemperatureCfg *temperatures) const;
   // validates temperature against configuration send in parameter
   bool isTemperatureHeaterCoolerMinSetpointValid(
-      THVACTemperatureCfg *temperatures);
+      const THVACTemperatureCfg *temperatures) const;
   // validates temperature against configuration send in parameter
   bool isTemperatureHeaterCoolerMaxSetpointValid(
-      THVACTemperatureCfg *temperatures);
+      const THVACTemperatureCfg *temperatures) const;
 
   void clearChannelConfigChangedFlag();
   void clearWeeklyScheduleChangedFlag();
+
+  int getWeeklyScheduleProgramId(int index) const;
+  int getWeeklyScheduleProgramId(enum DayOfWeek dayOfWeek,
+                                  int hour,
+                                  int quarter) const;
+  int getWeeklyScheduleProgramId(
+      const TSD_ChannelConfig_WeeklySchedule *schedule, int index) const;
+  bool isProgramValid(const TWeeklyScheduleProgram &program) const;
+
+  bool setProgram(int programId,
+                  unsigned char mode,
+                  _supla_int16_t tMin,
+                  _supla_int16_t tMax);
+  // index is the number of quarter in week
+  bool setWeeklySchedule(int index, int programId);
+  // schedule internally works on 15 min intervals (quarters)
+  bool setWeeklySchedule(enum DayOfWeek dayOfWeek,
+                         int hour,
+                         int quarter,
+                         int programId);
+  int calculateIndex(enum DayOfWeek dayOfWeek,
+                     int hour,
+                     int quarter) const;
+  TWeeklyScheduleProgram getProgram(int programId) const;
 
  private:
   TSD_ChannelConfig_HVAC config = {};

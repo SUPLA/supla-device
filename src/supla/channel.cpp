@@ -232,7 +232,7 @@ void Channel::setDefault(_supla_int_t value) {
   }
 }
 
-int32_t Channel::getDefaultFunction() {
+int32_t Channel::getDefaultFunction() const {
   if (channelNumber >= 0) {
     return reg_dev.channels[channelNumber].Default;
   }
@@ -257,7 +257,7 @@ void Channel::setFuncList(_supla_int_t functions) {
   }
 }
 
-_supla_int_t Channel::getFuncList() {
+_supla_int_t Channel::getFuncList() const {
   if (channelNumber >= 0) {
     return reg_dev.channels[channelNumber].FuncList;
   }

@@ -382,13 +382,6 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
         getTemperatureHeaterCoolerMaxSetpoint(&hvacConfig->Temperatures));
   }
 
-  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_AUTO_OFFSET)) {
-    setTemperatureInStruct(&config.Temperatures,
-                           TEMPERATURE_AUTO_OFFSET,
-                           getTemperatureAutoOffset(&hvacConfig->Temperatures));
-  }
-
   if (memcmp(&config, &configCopy, sizeof(TSD_ChannelConfig_HVAC)) != 0) {
     saveConfig();
   }
@@ -502,13 +495,6 @@ bool HvacBase::areTemperaturesValid(
     }
   }
 
-  if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUTO_OFFSET)) {
-    if (!isTemperatureAutoOffsetValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC: invalid auto offset value");
-      return false;
-    }
-  }
-
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_BELOW_ALARM)) {
     if (!isTemperatureBelowAlarmValid(temperatures)) {
       SUPLA_LOG_WARNING("HVAC: invalid below alarm temperature");
@@ -587,9 +573,11 @@ bool HvacBase::isTemperatureInRoomConstrain(_supla_int16_t temperature) const {
 
 bool HvacBase::isTemperatureInAutoConstrain(_supla_int16_t tMin,
                                             _supla_int16_t tMax) const {
-  auto offset = getTemperatureAutoOffset();
-  return (tMin + offset < tMax && isTemperatureInRoomConstrain(tMin) &&
-          isTemperatureInRoomConstrain(tMax));
+  auto offsetMin = getTemperatureAutoOffsetMin();
+  auto offsetMax = getTemperatureAutoOffsetMax();
+  return (tMax - tMin >= offsetMin) && (tMax - tMin <= offsetMax) &&
+         isTemperatureInRoomConstrain(tMin) &&
+         isTemperatureInRoomConstrain(tMax);
 }
 
 bool HvacBase::isTemperatureInHeaterCoolerConstrain(
@@ -676,25 +664,6 @@ bool HvacBase::isTemperatureHisteresisValid(
     const THVACTemperatureCfg *temperatures) const {
   auto hist = getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
   return isTemperatureHisteresisValid(hist);
-}
-
-bool HvacBase::isTemperatureAutoOffsetValid(_supla_int16_t temperature) const {
-  if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
-    return false;
-  }
-
-  auto tMin = getTemperatureFromStruct(&config.Temperatures,
-                                       TEMPERATURE_AUTO_OFFSET_MIN);
-  auto tMax = getTemperatureFromStruct(&config.Temperatures,
-                                       TEMPERATURE_AUTO_OFFSET_MAX);
-
-  return temperature >= tMin && temperature <= tMax;
-}
-
-bool HvacBase::isTemperatureAutoOffsetValid(
-    const THVACTemperatureCfg *temperatures) const {
-  auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET);
-  return isTemperatureAutoOffsetValid(t);
 }
 
 bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
@@ -829,7 +798,6 @@ bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
   return (config.AlgorithmCaps & algorithm) == algorithm;
 }
 
-// handleWeeklySchedule
 uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig) {
   if (waitForWeeklyScheduleAndIgnoreIt) {
     SUPLA_LOG_INFO("Ignoring weekly schedule for channel %d",
@@ -853,7 +821,7 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  if (memcmp(&weeklySchedule,
+  if (!isWeeklyScheduleConfigured || memcmp(&weeklySchedule,
              newSchedule,
              sizeof(TSD_ChannelConfig_WeeklySchedule)) != 0) {
     memcpy(&weeklySchedule,
@@ -1039,21 +1007,6 @@ bool HvacBase::setTemperatureHisteresis(_supla_int16_t temperature) {
   return true;
 }
 
-bool HvacBase::setTemperatureAutoOffset(_supla_int16_t temperature) {
-  if (!isTemperatureAutoOffsetValid(temperature)) {
-    return false;
-  }
-  if (temperature != getTemperatureAutoOffset()) {
-    setTemperatureInStruct(
-        &config.Temperatures, TEMPERATURE_AUTO_OFFSET, temperature);
-    if (initDone) {
-      channelConfigChangedOffline = 1;
-      saveConfig();
-    }
-  }
-  return true;
-}
-
 bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
   if (!isTemperatureBelowAlarmValid(temperature)) {
     return false;
@@ -1216,11 +1169,6 @@ _supla_int16_t HvacBase::getTemperatureHisteresis(
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
 }
 
-_supla_int16_t HvacBase::getTemperatureAutoOffset(
-    const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET);
-}
-
 _supla_int16_t HvacBase::getTemperatureBelowAlarm(
     const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_BELOW_ALARM);
@@ -1265,10 +1213,6 @@ _supla_int16_t HvacBase::getTemperatureBoost() const {
 
 _supla_int16_t HvacBase::getTemperatureHisteresis() const {
   return getTemperatureHisteresis(&config.Temperatures);
-}
-
-_supla_int16_t HvacBase::getTemperatureAutoOffset() const {
-  return getTemperatureAutoOffset(&config.Temperatures);
 }
 
 _supla_int16_t HvacBase::getTemperatureBelowAlarm() const {
@@ -1552,7 +1496,7 @@ bool HvacBase::isWeeklyScheduleValid(
   // check if only used programs are configured in the schedule
   for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
     int programId = getWeeklyScheduleProgramId(newSchedule, i);
-    if (programId == 0 || !programIsUsed[programId - 1]) {
+    if (programId != 0 && !programIsUsed[programId - 1]) {
       return false;
     }
   }
@@ -1719,7 +1663,11 @@ bool HvacBase::setWeeklySchedule(int index, int programId) {
         (weeklySchedule.Value[index / 2] & 0xF0) | programId;
   }
 
-  weeklyScheduleChangedOffline = 1;
+  if (initDone) {
+    weeklyScheduleChangedOffline = 1;
+    saveWeeklySchedule();
+  }
+
   isWeeklyScheduleConfigured = true;
   return true;
 }
@@ -1753,5 +1701,10 @@ bool HvacBase::setProgram(int programId,
   weeklySchedule.Program[programId - 1].Mode = mode;
   weeklySchedule.Program[programId - 1].SetpointTemperatureMin = tMin;
   weeklySchedule.Program[programId - 1].SetpointTemperatureMax = tMax;
+
+  if (initDone) {
+    weeklyScheduleChangedOffline = 1;
+    saveWeeklySchedule();
+  }
   return true;
 }

@@ -62,10 +62,10 @@ class ProtocolLayer {
     TSuplaChannelExtendedValue *value) = 0;
 
   virtual void getChannelConfig(uint8_t channelNumber,
-      uint8_t configType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT);
+      uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT);
   virtual bool setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size,
-      uint8_t configType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT);
+      uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT);
 
   virtual bool setDeviceConfig(TSD_SetDeviceConfig *deviceConfig);
 

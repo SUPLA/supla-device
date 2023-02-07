@@ -18,7 +18,6 @@
 
 #include <gtest/gtest.h>
 
-
 #include <string.h>
 #include <supla/control/hvac_base.h>
 #include <supla/sensor/therm_hygro_meter.h>
@@ -325,7 +324,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   EXPECT_EQ(hvac.handleChannelConfig(nullptr), SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   TSD_ChannelConfig configFromServer = {};
-  configFromServer.ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
 
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
@@ -486,17 +485,6 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
-  // TEMPERATURE_AUTO_OFFSET
-  Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET, 0);
-  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-
-  Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
-  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_TRUE);
-
   // TEMPERATURE_BELOW_ALARM
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 0);
@@ -571,10 +559,6 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             Supla::Control::HvacBase::getTemperatureFromStruct(
                 &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS));
 
-  EXPECT_EQ(hvac.getTemperatureAutoOffset(),
-            Supla::Control::HvacBase::getTemperatureFromStruct(
-                &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET));
-
   EXPECT_EQ(hvac.getTemperatureBelowAlarm(),
             Supla::Control::HvacBase::getTemperatureFromStruct(
                 &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM));
@@ -638,10 +622,6 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_FALSE(hvac.setTemperatureHisteresis(100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(-100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(0));
-
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(100));
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(-100));
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(0));
 
   EXPECT_FALSE(hvac.setTemperatureHeaterCoolerMinSetpoint(100));
   EXPECT_FALSE(hvac.setTemperatureHeaterCoolerMinSetpoint(-100));
@@ -717,16 +697,6 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_TRUE(hvac.setTemperatureHisteresis(100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(10));
   EXPECT_EQ(hvac.getTemperatureHisteresis(), 100);
-
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(2000));
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(-1000));
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(0));
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(10));
-  EXPECT_TRUE(hvac.setTemperatureAutoOffset(200));
-  EXPECT_TRUE(hvac.setTemperatureAutoOffset(1000));
-  EXPECT_TRUE(hvac.setTemperatureAutoOffset(500));
-  EXPECT_FALSE(hvac.setTemperatureAutoOffset(10));
-  EXPECT_EQ(hvac.getTemperatureAutoOffset(), 500);
 
   EXPECT_TRUE(hvac.setTemperatureHeaterCoolerMinSetpoint(2000));
   EXPECT_FALSE(hvac.setTemperatureHeaterCoolerMinSetpoint(-1000));
@@ -865,8 +835,6 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
-  Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
@@ -911,8 +879,6 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
                 &expectedData.Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
-            Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1011,8 +977,6 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
-            Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
@@ -1086,8 +1050,6 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
       &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
-  Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
   Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1180,8 +1142,6 @@ TEST_F(HvacTestWithChannelSetupF,
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
-            Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
@@ -1258,8 +1218,6 @@ TEST_F(HvacTestWithChannelSetupF,
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_AUTO_OFFSET, 300);
-  Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
@@ -1296,7 +1254,7 @@ TEST_F(HvacTestWithChannelSetupF,
                      _supla_int_t channelFunction,
                      void *buf,
                      int size,
-                     uint8_t configType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT) {
+                     uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT) {
           TSD_ChannelConfig_HVAC expectedData = {
               .MainThermometerChannelNo = 0,
               .HeaterCoolerThermometerChannelNo = 0,
@@ -1342,7 +1300,7 @@ TEST_F(HvacTestWithChannelSetupF,
   // send reply from server
   TSD_SetChannelConfigResult result = {
       .Result = SUPLA_CONFIG_RESULT_FALSE,
-      .ConfigType = SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT,
+      .ConfigType = SUPLA_CONFIG_TYPE_DEFAULT,
       .ChannelNumber = 0
   };
 
@@ -1354,119 +1312,3 @@ TEST_F(HvacTestWithChannelSetupF,
       SUPLA_CONFIG_RESULT_TRUE);
 }
 
-TEST_F(HvacTestWithChannelSetupF, WeeklyScheduleBasicSetAndGet) {
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
-  EXPECT_CALL(cfg,
-              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
-      .Times(1).WillOnce(Return(true));
-
-  hvac->onInit();
-
-  // weekly schedule is not configured, so all returns -1
-  for (enum Supla::DayOfWeek day : {Supla::DayOfWeek_Sunday,
-                                    Supla::DayOfWeek_Monday,
-                                    Supla::DayOfWeek_Tuesday,
-                                    Supla::DayOfWeek_Wednesday,
-                                    Supla::DayOfWeek_Thursday,
-                                    Supla::DayOfWeek_Friday,
-                                    Supla::DayOfWeek_Saturday}) {
-    for (int hour = 0; hour < 24; ++hour) {
-      for (int quarter = 0; quarter < 4; ++quarter) {
-        EXPECT_EQ(hvac->getWeeklyScheduleProgramId(day, hour, quarter), -1);
-      }
-    }
-  }
-
-  // check out of range values
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, -1, 0, 0));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 24, 0, 0));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, -1, 0));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 4, 0));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, -1));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 5));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(-1, 5));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(1000, 5));
-
-  // weekly schedule is still not configured, so it returns -1
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
-            -1);
-
-  // programs are not configured yet
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 1));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 2));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 3));
-  EXPECT_FALSE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 4));
-
-  // weekly schedule is still not configured, so it returns -1
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
-            -1);
-
-  EXPECT_TRUE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 0));
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0), 0);
-  // after setting at least one schedule value, whole weekly schedule becomes
-  // valid and by default it is set to 0
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Tuesday, 2, 3),
-            0);
-
-  TWeeklyScheduleProgram program = {};
-  auto result = hvac->getProgram(0);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
-  result = hvac->getProgram(1);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
-  result = hvac->getProgram(2);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
-  result = hvac->getProgram(3);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
-  result = hvac->getProgram(4);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(program)), 0);
-
-  EXPECT_FALSE(
-      hvac->setProgram(-1, SUPLA_HVAC_MODE_COOL, 2000, 0));
-  EXPECT_FALSE(
-      hvac->setProgram(0, SUPLA_HVAC_MODE_COOL, 2000, 0));
-  EXPECT_FALSE(
-      hvac->setProgram(5, SUPLA_HVAC_MODE_COOL, 2000, 0));
-
-  EXPECT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2400, 0));
-  EXPECT_FALSE(hvac->setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2300));
-  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_AUTO, 1800, 2400));
-  EXPECT_TRUE(hvac->setProgram(4, SUPLA_HVAC_MODE_HEAT, 1900, 0));
-
-  TWeeklyScheduleProgram program1 = {SUPLA_HVAC_MODE_HEAT, {2400}, {0}};
-  TWeeklyScheduleProgram program4 = {SUPLA_HVAC_MODE_HEAT, {1900}, {0}};
-  result = hvac->getProgram(0);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
-  result = hvac->getProgram(1);
-  EXPECT_EQ(memcmp(&result, &program1, sizeof(result)), 0);
-  result = hvac->getProgram(2);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
-  result = hvac->getProgram(3);
-  EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
-  result = hvac->getProgram(4);
-  EXPECT_EQ(memcmp(&result, &program4, sizeof(result)), 0);
-
-  EXPECT_TRUE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 1));
-  EXPECT_TRUE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Monday, 0, 0, 4));
-  EXPECT_TRUE(
-      hvac->setWeeklySchedule(Supla::DayOfWeek_Tuesday, 0, 0, 1));
-
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0), 1);
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Monday, 0, 0), 4);
-  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Tuesday, 0, 0),
-            1);
-}

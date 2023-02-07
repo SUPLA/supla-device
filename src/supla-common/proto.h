@@ -1943,43 +1943,37 @@ typedef struct {
 // Histeresis value - i.e. heating will be enabled when current temperature
 // is histeresis/2 lower than current setpoint.
 #define TEMPERATURE_HISTERESIS                 (1 << 5)
-// Offset between heating and cooling temperature in auto mode.
-// I.e. if setpoint is 22 degrees, offset is 3 degrees, then heating will
-// be enabled when current temperture drops below (22 - offset/2 - histeresis/2)
-// Cooling will be enabled when termperture rise above (22 + offset/2 +
-// histeresis/2)
-#define TEMPERATURE_AUTO_OFFSET                (1 << 6)
 // Turns on "alarm" when temperature is below this value. Can be visual effect
 // or sound (if device is capable). It can also send AT to server (TBD)
-#define TEMPERATURE_BELOW_ALARM                (1 << 7)
+#define TEMPERATURE_BELOW_ALARM                (1 << 6)
 // As above, but for tempertatures above threshold
-#define TEMPERATURE_ABOVE_ALARM                (1 << 8)
+#define TEMPERATURE_ABOVE_ALARM                (1 << 7)
 // Minimum temperature to be kept on heat/cold source (i.e. keeps floor always
 // at least 19 degrees)
-#define TEMPERATURE_HEATER_COOLER_MIN_SETPOINT (1 << 9)
+#define TEMPERATURE_HEATER_COOLER_MIN_SETPOINT (1 << 8)
 // Maximum temperature to be kept on heat/cold source (i.e. protect floor
 // from overheating and keep at most 28 degrees)
-#define TEMPERATURE_HEATER_COOLER_MAX_SETPOINT (1 << 10)
+#define TEMPERATURE_HEATER_COOLER_MAX_SETPOINT (1 << 9)
 
 // Below values are readonly for user
 // Minimum room (main thermometer) temperature to be set by user
-#define TEMPERATURE_ROOM_MIN                   (1 << 11)
+#define TEMPERATURE_ROOM_MIN                   (1 << 10)
 // Maximum room (main thermometer) temperature to be set by user
-#define TEMPERATURE_ROOM_MAX                   (1 << 12)
+#define TEMPERATURE_ROOM_MAX                   (1 << 11)
 // Minimum allowed temperature for heat/cold source (used with second
 // thermomter for floor/water/etc.)
-#define TEMPERATURE_HEATER_COOLER_MIN          (1 << 13)
+#define TEMPERATURE_HEATER_COOLER_MIN          (1 << 12)
 // Maximum allowed temperature for heat/cold source
-#define TEMPERATURE_HEATER_COOLER_MAX          (1 << 14)
+#define TEMPERATURE_HEATER_COOLER_MAX          (1 << 13)
 // Minimum histereis value
-#define TEMPERATURE_HISTERESIS_MIN             (1 << 15)
+#define TEMPERATURE_HISTERESIS_MIN             (1 << 14)
 // Maximum histereis value
-#define TEMPERATURE_HISTERESIS_MAX             (1 << 16)
+#define TEMPERATURE_HISTERESIS_MAX             (1 << 15)
 // Minimum temperature offset in AUTO mode
-#define TEMPERATURE_AUTO_OFFSET_MIN            (1 << 17)
+#define TEMPERATURE_AUTO_OFFSET_MIN            (1 << 16)
 // Maximum temperature offset in AUTO mode
-#define TEMPERATURE_AUTO_OFFSET_MAX            (1 << 18)
-// 5 values left for future use
+#define TEMPERATURE_AUTO_OFFSET_MAX            (1 << 17)
+// 6 values left for future use
 
 #define SUPLA_TEMPERATURE_INVALID_INT16 -32768
 
@@ -2386,9 +2380,6 @@ typedef struct {
 /********************************************
  * CHANNEL CONFIG STRUCTURES
  ********************************************/
-
-#define SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT         0
-#define SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE 1
 
 #define SUPLA_CONFIG_RESULT_FALSE 0
 #define SUPLA_CONFIG_RESULT_TRUE  1

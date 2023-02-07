@@ -138,7 +138,6 @@ class HvacBase : public ChannelElement {
   bool setTemperatureComfort(_supla_int16_t temperature);
   bool setTemperatureBoost(_supla_int16_t temperature);
   bool setTemperatureHisteresis(_supla_int16_t temperature);
-  bool setTemperatureAutoOffset(_supla_int16_t temperature);
   bool setTemperatureBelowAlarm(_supla_int16_t temperature);
   bool setTemperatureAboveAlarm(_supla_int16_t temperature);
   bool setTemperatureHeaterCoolerMinSetpoint(_supla_int16_t temperature);
@@ -155,8 +154,6 @@ class HvacBase : public ChannelElement {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHisteresis(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureAutoOffset(
-      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureBelowAlarm(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureAboveAlarm(
@@ -171,7 +168,6 @@ class HvacBase : public ChannelElement {
   _supla_int16_t getTemperatureComfort() const;
   _supla_int16_t getTemperatureBoost() const;
   _supla_int16_t getTemperatureHisteresis() const;
-  _supla_int16_t getTemperatureAutoOffset() const;
   _supla_int16_t getTemperatureBelowAlarm() const;
   _supla_int16_t getTemperatureAboveAlarm() const;
   _supla_int16_t getTemperatureHeaterCoolerMinSetpoint() const;
@@ -214,7 +210,6 @@ class HvacBase : public ChannelElement {
   bool isTemperatureComfortValid(_supla_int16_t temperature) const;
   bool isTemperatureBoostValid(_supla_int16_t temperature) const;
   bool isTemperatureHisteresisValid(_supla_int16_t temperature) const;
-  bool isTemperatureAutoOffsetValid(_supla_int16_t temperature) const;
   bool isTemperatureBelowAlarmValid(_supla_int16_t temperature) const;
   bool isTemperatureAboveAlarmValid(_supla_int16_t temperature) const;
   // validates temperature against current configuration
@@ -234,8 +229,6 @@ class HvacBase : public ChannelElement {
   bool isTemperatureComfortValid(const THVACTemperatureCfg *temperatures) const;
   bool isTemperatureBoostValid(const THVACTemperatureCfg *temperatures) const;
   bool isTemperatureHisteresisValid(
-      const THVACTemperatureCfg *temperatures) const;
-  bool isTemperatureAutoOffsetValid(
       const THVACTemperatureCfg *temperatures) const;
   bool isTemperatureBelowAlarmValid(
       const THVACTemperatureCfg *temperatures) const;

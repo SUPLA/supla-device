@@ -310,11 +310,11 @@ void Supla::messageReceived(void *srpc,
           if (element) {
             switch (result->ConfigType) {
               default:
-              case SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT: {
+              case SUPLA_CONFIG_TYPE_DEFAULT: {
                 element->handleChannelConfig(result);
                 break;
               }
-              case SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE: {
+              case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
                 element->handleWeeklySchedule(result);
                 break;
               }
@@ -353,12 +353,12 @@ void Supla::messageReceived(void *srpc,
           if (element) {
             switch (request->ConfigType) {
               default:
-              case SUPLA_CHANNEL_CONFIG_TYPE_DEFAULT: {
+              case SUPLA_CONFIG_TYPE_DEFAULT: {
                 result.Result =
                     element->handleChannelConfig(request);
                 break;
               }
-              case SUPLA_CHANNEL_CONFIG_TYPE_WEEKLY_SCHEDULE: {
+              case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
                 result.Result =
                     element->handleWeeklySchedule(request);
                 break;

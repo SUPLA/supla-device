@@ -277,7 +277,6 @@ class HvacBase : public ChannelElement {
   bool waitForChannelConfigAndIgnoreIt = false;
   bool waitForWeeklyScheduleAndIgnoreIt = false;
   bool initDone = false;
-  uint64_t lastLocalConfigChangeTimestampMs = 0;
 };
 
 }  // namespace Control

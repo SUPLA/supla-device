@@ -41,6 +41,10 @@ namespace Supla {
 namespace Control {
 class Relay : public ChannelElement, public ActionHandler {
  public:
+  explicit Relay(Supla::Io *io, int pin,
+        bool highIsOn = true,
+        _supla_int_t functions = (0xFF ^
+                                  SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
   explicit Relay(int pin,
         bool highIsOn = true,
         _supla_int_t functions = (0xFF ^
@@ -83,6 +87,8 @@ class Relay : public ChannelElement, public ActionHandler {
   unsigned _supla_int_t storedTurnOnDurationMs;
   uint64_t durationTimestamp;
   bool keepTurnOnDurationMs;
+
+  Supla::Io *io = nullptr;
 };
 
 };  // namespace Control

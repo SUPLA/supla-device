@@ -506,6 +506,13 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
       cr->setDefaultStateRestore();
     }
   }
+
+  if (ch["offline_on_invalid_state"]) {
+    paramCount++;
+    auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
+    cr->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
+  }
+
   if (ch["cmd_on"]) {
     paramCount++;
     auto cmdOn = ch["cmd_on"].as<std::string>();

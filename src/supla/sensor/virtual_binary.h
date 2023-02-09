@@ -28,17 +28,18 @@ namespace Sensor {
 class VirtualBinary : public ChannelElement, public ActionHandler {
  public:
   VirtualBinary();
-  virtual bool getValue();
-  void iterateAlways();
-  void onInit();
-  void handleAction(int event, int action);
+  virtual bool getValue() const;
+  void iterateAlways() override;
+  void onInit() override;
+  void handleAction(int event, int action) override;
+
   void set();
   void clear();
   void toggle();
 
  protected:
-  bool state;
-  uint64_t lastReadTime;
+  bool state = false;
+  uint64_t lastReadTime = 0;
 };
 
 };  // namespace Sensor

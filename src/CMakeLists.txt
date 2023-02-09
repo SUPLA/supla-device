@@ -72,6 +72,8 @@ set(SRCS
   supla/sensor/therm_hygro_meter.cpp
   supla/sensor/thermometer.cpp
   supla/sensor/electricity_meter.cpp
+  supla/sensor/binary.cpp
+  supla/sensor/virtual_binary.cpp
 )
 
 add_library(supladevicelib SHARED ${SRCS})

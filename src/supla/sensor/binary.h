@@ -22,19 +22,27 @@
 #include "../channel_element.h"
 
 namespace Supla {
+
+class Io;
+
 namespace Sensor {
 class Binary : public ChannelElement {
  public:
+  explicit Binary(Supla::Io *io,
+                  int pin,
+                  bool pullUp = false,
+                  bool invertLogic = false);
   explicit Binary(int pin, bool pullUp = false, bool invertLogic = false);
-  bool getValue();
-  void iterateAlways();
-  void onInit();
+  bool getValue() const;
+  void iterateAlways() override;
+  void onInit() override;
 
  protected:
-  int pin;
-  bool pullUp;
-  bool invertLogic;
-  uint64_t lastReadTime;
+  int pin = -1;
+  bool pullUp = false;
+  bool invertLogic = false;
+  uint64_t lastReadTime = 0;
+  Supla::Io *io = nullptr;
 };
 
 };  // namespace Sensor

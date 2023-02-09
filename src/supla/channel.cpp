@@ -281,7 +281,7 @@ _supla_int_t Channel::getActionTriggerCaps() {
   return getFuncList();
 }
 
-int Channel::getChannelNumber() {
+int Channel::getChannelNumber() const {
   return channelNumber;
 }
 
@@ -333,11 +333,11 @@ void Channel::setUpdateReady() {
   valueChanged = true;
 }
 
-bool Channel::isUpdateReady() {
+bool Channel::isUpdateReady() const {
   return valueChanged || channelConfig;
 }
 
-bool Channel::isExtended() {
+bool Channel::isExtended() const {
   return false;
 }
 
@@ -468,7 +468,7 @@ void Channel::setNewValue(uint8_t red,
   }
 }
 
-_supla_int_t Channel::getChannelType() {
+_supla_int_t Channel::getChannelType() const {
   if (channelNumber >= 0) {
     return reg_dev.channels[channelNumber].Type;
   }

@@ -26,6 +26,20 @@ namespace Control {
 
 #define STATE_ON_INIT_KEEP 2
 
+BistableRelay::BistableRelay(Supla::Io *io,
+                             int pin,
+                             int statusPin,
+                             bool statusPullUp,
+                             bool statusHighIsOn,
+                             bool highIsOn,
+                             _supla_int_t functions)
+    : Relay(io, pin, highIsOn, functions),
+      statusPin(statusPin),
+      statusPullUp(statusPullUp),
+      statusHighIsOn(statusHighIsOn) {
+  stateOnInit = STATE_ON_INIT_KEEP;
+}
+
 BistableRelay::BistableRelay(int pin,
                              int statusPin,
                              bool statusPullUp,
@@ -35,10 +49,7 @@ BistableRelay::BistableRelay(int pin,
     : Relay(pin, highIsOn, functions),
       statusPin(statusPin),
       statusPullUp(statusPullUp),
-      statusHighIsOn(statusHighIsOn),
-      disarmTimeMs(0),
-      lastReadTime(0),
-      busy(false) {
+      statusHighIsOn(statusHighIsOn) {
   stateOnInit = STATE_ON_INIT_KEEP;
 }
 
@@ -46,13 +57,13 @@ void BistableRelay::onInit() {
   if (statusPin >= 0) {
     Supla::Io::pinMode(channel.getChannelNumber(),
                        statusPin,
-                       statusPullUp ? INPUT_PULLUP : INPUT);
+                       statusPullUp ? INPUT_PULLUP : INPUT, io);
     channel.setNewValue(isOn());
   } else {
     channel.setNewValue(false);
   }
 
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue());
+  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
 
   if (stateOnInit == STATE_ON_INIT_ON ||
       stateOnInit == STATE_ON_INIT_RESTORED_ON) {
@@ -62,7 +73,7 @@ void BistableRelay::onInit() {
     turnOff();
   }
 
-  Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT);
+  Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
 }
 
 void BistableRelay::iterateAlways() {
@@ -75,7 +86,7 @@ void BistableRelay::iterateAlways() {
 
   if (busy && millis() - disarmTimeMs > 200) {
     busy = false;
-    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue());
+    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
   }
 }
 
@@ -132,7 +143,7 @@ bool BistableRelay::isOn() {
   if (isStatusUnknown()) {
     return false;
   }
-  return Supla::Io::digitalRead(channel.getChannelNumber(), statusPin) ==
+  return Supla::Io::digitalRead(channel.getChannelNumber(), statusPin, io) ==
          (statusHighIsOn ? HIGH : LOW);
 }
 
@@ -144,7 +155,7 @@ void BistableRelay::internalToggle() {
   SUPLA_LOG_INFO("BistableRelay[%d] toggle relay", channel.getChannelNumber());
   busy = true;
   disarmTimeMs = millis();
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue());
+  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000);

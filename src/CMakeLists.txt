@@ -19,6 +19,7 @@ set(SRCS
 
   supla/device/last_state_logger.cpp
   supla/device/sw_update.cpp
+  supla/device/status_led.cpp
 
   supla/storage/storage.cpp
   supla/storage/config.cpp
@@ -75,6 +76,7 @@ set(SRCS
   supla/sensor/electricity_meter.cpp
   supla/sensor/binary.cpp
   supla/sensor/virtual_binary.cpp
+  supla/sensor/impulse_counter.cpp
 )
 
 add_library(supladevicelib SHARED ${SRCS})

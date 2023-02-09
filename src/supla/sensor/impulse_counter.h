@@ -24,19 +24,27 @@
 #include <supla/channel_element.h>
 
 namespace Supla {
+
+class Io;
+
 namespace Sensor {
 class ImpulseCounter : public ChannelElement, public ActionHandler {
  public:
+  ImpulseCounter(Supla::Io *io,
+                 int _impulsePin,
+                 bool _detectLowToHigh = false,
+                 bool inputPullup = true,
+                 unsigned int _debounceDelay = 10);
   ImpulseCounter(int _impulsePin,
                  bool _detectLowToHigh = false,
                  bool inputPullup = true,
                  unsigned int _debounceDelay = 10);
 
-  void onInit();
-  void onLoadState();
-  void onSaveState();
-  void onFastTimer();
-  void handleAction(int event, int action);
+  void onInit() override;
+  void onLoadState() override;
+  void onSaveState() override;
+  void onFastTimer() override;
+  void handleAction(int event, int action) override;
 
   // Returns value of a counter at given Supla channel
   unsigned _supla_int64_t getCounter();
@@ -48,21 +56,23 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
   void incCounter();
 
  protected:
-  int prevState;  // Store previous state of pin (LOW/HIGH). It is used to track
-                  // changes on pin state.
-  int impulsePin;  // Pin where impulses are counted
+  int prevState = 0;  // Store previous state of pin (LOW/HIGH). It is used to
+                      // track changes on pin state.
+  int impulsePin = -1;  // Pin where impulses are counted
 
-  uint64_t
-      lastImpulseMillis;  // Stores timestamp of last impulse (used to ignore
-                          // changes of state during 10 ms timeframe)
-  unsigned int debounceDelay;
-  bool detectLowToHigh;  // defines if we count raining (LOW to HIGH) or falling
-                         // (HIGH to LOW) edge
-  bool inputPullup;
+  uint64_t lastImpulseMillis =
+      0;  // Stores timestamp of last impulse (used to ignore
+          // changes of state during 10 ms timeframe)
+  unsigned int debounceDelay = 10;
+  bool detectLowToHigh = false;  // defines if we count raining (LOW to HIGH) or
+                                 // falling (HIGH to LOW) edge
+  bool inputPullup = true;
 
-  unsigned _supla_int64_t counter;  // Actual count of impulses
+  unsigned _supla_int64_t counter = 0;  // Actual count of impulses
+  Supla::Io *io = nullptr;
 };
-};  // namespace Sensor
-};  // namespace Supla
+
+}  // namespace Sensor
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_SENSOR_IMPULSE_COUNTER_H_

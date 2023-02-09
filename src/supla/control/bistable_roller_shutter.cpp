@@ -16,20 +16,26 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "bistable_roller_shutter.h"
+
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-
-#include "bistable_roller_shutter.h"
+#include <supla/io.h>
 
 namespace Supla {
 namespace Control {
 
+BistableRollerShutter::BistableRollerShutter(Supla::Io *io,
+                                             int pinUp,
+                                             int pinDown,
+                                             bool highIsOn)
+    : RollerShutter(io, pinUp, pinDown, highIsOn) {
+}
+
 BistableRollerShutter::BistableRollerShutter(int pinUp,
                                              int pinDown,
                                              bool highIsOn)
-    : RollerShutter(pinUp, pinDown, highIsOn),
-      activeBiRelay(false),
-      toggleTime(0) {
+    : RollerShutter(pinUp, pinDown, highIsOn) {
 }
 
 void BistableRollerShutter::stopMovement() {
@@ -48,26 +54,26 @@ void BistableRollerShutter::relayDownOn() {
   activeBiRelay = true;
   toggleTime = millis();
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? HIGH : LOW);
+      channel.getChannelNumber(), pinDown, highIsOn ? HIGH : LOW, io);
 }
 
 void BistableRollerShutter::relayUpOn() {
   activeBiRelay = true;
   toggleTime = millis();
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? HIGH : LOW);
+      channel.getChannelNumber(), pinUp, highIsOn ? HIGH : LOW, io);
 }
 
 void BistableRollerShutter::relayDownOff() {
   activeBiRelay = false;
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH);
+      channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH, io);
 }
 
 void BistableRollerShutter::relayUpOff() {
   activeBiRelay = false;
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH);
+      channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
 }
 
 void BistableRollerShutter::onTimer() {

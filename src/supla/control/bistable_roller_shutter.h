@@ -23,6 +23,10 @@ namespace Supla {
 namespace Control {
 class BistableRollerShutter : public RollerShutter {
  public:
+  BistableRollerShutter(Supla::Io *io,
+                        int pinUp,
+                        int pinDown,
+                        bool highIsOn = true);
   BistableRollerShutter(int pinUp, int pinDown, bool highIsOn = true);
 
   void onTimer() override;
@@ -34,13 +38,11 @@ class BistableRollerShutter : public RollerShutter {
   void relayUpOff() override;
   void relayDownOff() override;
 
-  bool activeBiRelay;
-  uint64_t toggleTime;
+  bool activeBiRelay = false;
+  uint64_t toggleTime = 0;
 };
 
-};  // namespace Control
-};  // namespace Supla
-
-
+}  // namespace Control
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_CONTROL_BISTABLE_ROLLER_SHUTTER_H_

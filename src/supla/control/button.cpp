@@ -28,15 +28,15 @@
 
 #define CFG_MODE_ON_HOLD_TIME 5000
 
-Supla::Control::Button::Button(int pin, bool pullUp, bool invertLogic)
-    : SimpleButton(pin, pullUp, invertLogic),
-      holdTimeMs(0),
-      repeatOnHoldMs(0),
-      multiclickTimeMs(0),
-      lastStateChangeMs(0),
-      clickCounter(0),
-      holdSend(0),
-      bistable(false) {
+Supla::Control::Button::Button(Supla::Io *io,
+                               int pin,
+                               bool pullUp,
+                               bool invertLogic)
+    : SimpleButton(io, pin, pullUp, invertLogic) {
+    }
+
+      Supla::Control::Button::Button(int pin, bool pullUp, bool invertLogic)
+    : SimpleButton(pin, pullUp, invertLogic) {
 }
 
 void Supla::Control::Button::onTimer() {

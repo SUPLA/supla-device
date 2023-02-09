@@ -27,6 +27,10 @@ namespace Control {
 
 class Button : public SimpleButton {
  public:
+  explicit Button(Supla::Io *io,
+                  int pin,
+                  bool pullUp = false,
+                  bool invertLogic = false);
   explicit Button(int pin, bool pullUp = false, bool invertLogic = false);
 
   void onTimer() override;
@@ -40,13 +44,13 @@ class Button : public SimpleButton {
   bool disableActionsInConfigMode() override;
 
  protected:
-  unsigned int holdTimeMs;
-  unsigned int repeatOnHoldMs;
-  unsigned int multiclickTimeMs;
-  uint64_t lastStateChangeMs;
-  uint8_t clickCounter;
-  unsigned int holdSend;
-  bool bistable;
+  unsigned int holdTimeMs = 0;
+  unsigned int repeatOnHoldMs = 0;
+  unsigned int multiclickTimeMs = 0;
+  uint64_t lastStateChangeMs = 0;
+  uint8_t clickCounter = 0;
+  unsigned int holdSend = 0;
+  bool bistable = false;
   bool configButton = false;
 };
 

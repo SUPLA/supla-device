@@ -33,7 +33,7 @@ Supla::Sensor::Binary::Binary(int pin, bool pullUp, bool invertLogic)
   channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
 }
 
-bool Supla::Sensor::Binary::getValue() const {
+bool Supla::Sensor::Binary::getValue() {
   auto value =
     Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) == LOW ? false
                                                                    : true;

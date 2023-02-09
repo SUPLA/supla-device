@@ -24,7 +24,7 @@ VirtualBinary::VirtualBinary() {
   channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
 }
 
-bool VirtualBinary::getValue() const {
+bool VirtualBinary::getValue() {
   return state;
 }
 

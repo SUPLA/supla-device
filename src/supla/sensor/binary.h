@@ -33,7 +33,7 @@ class Binary : public ChannelElement {
                   bool pullUp = false,
                   bool invertLogic = false);
   explicit Binary(int pin, bool pullUp = false, bool invertLogic = false);
-  bool getValue() const;
+  bool getValue();
   void iterateAlways() override;
   void onInit() override;
 

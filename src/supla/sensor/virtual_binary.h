@@ -28,7 +28,7 @@ namespace Sensor {
 class VirtualBinary : public ChannelElement, public ActionHandler {
  public:
   VirtualBinary();
-  virtual bool getValue() const;
+  virtual bool getValue();
   void iterateAlways() override;
   void onInit() override;
   void handleAction(int event, int action) override;

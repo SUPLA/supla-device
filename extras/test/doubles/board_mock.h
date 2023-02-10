@@ -24,7 +24,7 @@
 class BoardInterface {
  public:
   BoardInterface();
-  ~BoardInterface();
+  virtual ~BoardInterface();
 
   static BoardInterface *instance;
 

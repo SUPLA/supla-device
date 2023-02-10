@@ -32,3 +32,6 @@ void Supla::initTimers() {
   assert(timerInterfaceInstance);
   timerInterfaceInstance->initTimers();
 }
+
+TimerMock::TimerMock() {}
+TimerMock::~TimerMock() {}

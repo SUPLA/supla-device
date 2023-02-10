@@ -59,24 +59,18 @@ void Supla::Control::CmdRelay::setCmdOff(const std::string &newCmdOff) {
 }
 
 bool Supla::Control::CmdRelay::isOn() {
-  if (parser) {
-    bool value = false;
+  bool newState = false;
 
-    if (isParameterConfigured(Supla::Parser::State)) {
-      if (refreshParserSource()) {
-        double result = getParameterValue(Supla::Parser::State);
-        if (result - 0.1 <= 1 && 1 <= result + 0.1) {
-          value = true;
-        }
-        if (!parser->isValid()) {
-          value = false;
-        }
-      }
+  if (parser) {
+    int result = getStateValue();
+    if (result == 1) {
+      newState = true;
     }
-    return value;
   } else {
-    return Supla::Control::VirtualRelay::isOn();
+    newState = Supla::Control::VirtualRelay::isOn();
   }
+
+  return newState;
 }
 
 void Supla::Control::CmdRelay::iterateAlways() {
@@ -95,10 +89,8 @@ void Supla::Control::CmdRelay::iterateAlways() {
 
 bool Supla::Control::CmdRelay::isOffline() {
   if (useOfflineOnInvalidState && parser) {
-    if (refreshParserSource()) {
-      if (!parser->isValid()) {
-        return true;
-      }
+    if (getStateValue() == -1) {
+      return true;
     }
   }
   return false;

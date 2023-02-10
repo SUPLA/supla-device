@@ -24,6 +24,7 @@
 #include <supla-common/proto.h>
 #include <map>
 #include <string>
+#include <vector>
 
 namespace Supla {
 namespace Sensor {
@@ -31,10 +32,9 @@ namespace Sensor {
 const char BatteryLevel[] = "battery_level";
 const char MultiplierBatteryLevel[] = "multiplier_battery_level";
 
-
-template <typename T> class SensorParsed : public T {
+class SensorParsedBase {
  public:
-  explicit SensorParsed(Supla::Parser::Parser *);
+  explicit SensorParsedBase(Supla::Parser::Parser *);
 
   void setMapping(const std::string &parameter, const std::string &key);
 
@@ -46,7 +46,10 @@ template <typename T> class SensorParsed : public T {
 
   bool isParameterConfigured(const std::string &parameter);
 
-  void handleGetChannelState(TDSC_ChannelState *channelState) override;
+  // Returns -1 on invalid source/parser/value,
+  // Otherwise returns >= 0 read from parser.
+  int getStateValue();
+  void setOnValues(const std::vector<int> &onValues);
 
  protected:
   double getParameterValue(const std::string &parameter);
@@ -54,60 +57,20 @@ template <typename T> class SensorParsed : public T {
   Supla::Parser::Parser *parser = nullptr;
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
+  std::vector<int> stateOnValues;
   int id;
 };
+
+template <typename T> class SensorParsed : public T, public SensorParsedBase {
+ public:
+  explicit SensorParsed(Supla::Parser::Parser *);
+
+  void handleGetChannelState(TDSC_ChannelState *channelState) override;
+};
+
 template <typename T>
 SensorParsed<T>::SensorParsed(Supla::Parser::Parser *parser)
-    : parser(parser) {
-  static int instanceCounter = 0;
-  id = instanceCounter++;
-}
-
-template <typename T>
-void SensorParsed<T>::setMapping(const std::string &parameter,
-                                                const std::string &key) {
-  parameterToKey[parameter] = key;
-  parser->addKey(key, -1);  // ignore index
-}
-
-template <typename T>
-void SensorParsed<T>::setMapping(const std::string &parameter,
-                                                const int index) {
-  std::string key = parameter;
-  key += "_";
-  key += std::to_string(id);
-  parameterToKey[parameter] = key;
-  parser->addKey(key, index);
-}
-
-template <typename T>
-void SensorParsed<T>::setMultiplier(const std::string &parameter,
-                                                   double multiplier) {
-  parameterMultiplier[parameter] = multiplier;
-}
-
-template <typename T>
-double SensorParsed<T>::getParameterValue(
-    const std::string &parameter) {
-  double multiplier = 1;
-  if (parameterMultiplier.count(parameter)) {
-    multiplier = parameterMultiplier[parameter];
-  }
-  return parser->getValue(parameterToKey[parameter]) * multiplier;
-}
-
-template <typename T>
-bool SensorParsed<T>::refreshParserSource() {
-  if (parser && parser->refreshParserSource()) {
-    return true;
-  }
-  return false;
-}
-
-template <typename T>
-bool SensorParsed<T>::isParameterConfigured(
-    const std::string &parameter) {
-  return parameterToKey.count(parameter) > 0;
+    : SensorParsedBase(parser) {
 }
 
 template <typename T>

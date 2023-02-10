@@ -59,24 +59,18 @@ void Supla::Control::CmdRelay::setCmdOff(const std::string &newCmdOff) {
 }
 
 bool Supla::Control::CmdRelay::isOn() {
-  if (parser) {
-    bool value = false;
+  bool newState = false;
 
-    if (isParameterConfigured(Supla::Parser::State)) {
-      if (refreshParserSource()) {
-        double result = getParameterValue(Supla::Parser::State);
-        if (result - 0.1 <= 1 && 1 <= result + 0.1) {
-          value = true;
-        }
-        if (!parser->isValid()) {
-          value = false;
-        }
-      }
+  if (parser) {
+    int result = getStateValue();
+    if (result == 1) {
+      newState = true;
     }
-    return value;
   } else {
-    return Supla::Control::VirtualRelay::isOn();
+    newState = Supla::Control::VirtualRelay::isOn();
   }
+
+  return newState;
 }
 
 void Supla::Control::CmdRelay::iterateAlways() {
@@ -85,6 +79,27 @@ void Supla::Control::CmdRelay::iterateAlways() {
   if (parser && (millis() - lastReadTime > 100)) {
     lastReadTime = millis();
     channel.setNewValue(isOn());
+    if (isOffline()) {
+      channel.setOffline();
+    } else {
+      channel.setOnline();
+    }
   }
+}
+
+bool Supla::Control::CmdRelay::isOffline() {
+  if (useOfflineOnInvalidState && parser) {
+    if (getStateValue() == -1) {
+      return true;
+    }
+  }
+  return false;
+  //    return Supla::Control::VirtualRelay::isOffline();
+}
+
+void Supla::Control::CmdRelay::setUseOfflineOnInvalidState(
+    bool useOfflineOnInvalidState) {
+  this->useOfflineOnInvalidState = useOfflineOnInvalidState;
+  SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }
 

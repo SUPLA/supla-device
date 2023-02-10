@@ -21,24 +21,25 @@
 #include <supla/time.h>
 
 #include "sequence_button.h"
+#include "supla/control/simple_button.h"
+
+Supla::Control::SequenceButton::SequenceButton(Supla::Io *io,
+                                               int pin,
+                                               bool pullUp,
+                                               bool invertLogic)
+    : SimpleButton(io, pin, pullUp, invertLogic) {
+}
 
 Supla::Control::SequenceButton::SequenceButton(int pin,
                                                bool pullUp,
                                                bool invertLogic)
-    : SimpleButton(pin, pullUp, invertLogic),
-      lastStateChangeMs(0),
-      longestSequenceTimeDeltaWithMargin(800),
-      clickCounter(0),
-      sequenceDetectecion(true),
-      currentSequence(),
-      matchSequence(),
-      margin(0.3) {
+    : SimpleButton(pin, pullUp, invertLogic) {
 }
 
 void Supla::Control::SequenceButton::onTimer() {
   unsigned int timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
-  int stateResult = state.update();
+  enum Supla::Control::StateResults stateResult = state.update();
   if (stateResult == TO_PRESSED) {
     stateChanged = true;
     runAction(ON_PRESS);
@@ -140,6 +141,7 @@ void Supla::Control::SequenceButton::setSequence(uint16_t *sequence) {
 }
 
 void Supla::Control::SequenceButton::getLastRecordedSequence(
-    uint16_t *sequence) {
+    uint16_t *sequence) const {
   memcpy(sequence, currentSequence.data, sizeof(uint16_t[SEQUENCE_MAX_SIZE]));
 }
+

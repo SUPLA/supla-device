@@ -14,8 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef _arduino_mock_h
-#define _arduino_mock_h
+#ifndef EXTRAS_TEST_DOUBLES_ARDUINO_MOCK_H_
+#define EXTRAS_TEST_DOUBLES_ARDUINO_MOCK_H_
 
 #include "Arduino.h"
 #include <gmock/gmock.h>
@@ -41,14 +41,14 @@ class TimeInterface {
     static TimeInterface *instance;
 };
 
-
 class DigitalInterfaceMock : public DigitalInterface {
-  public:
+ public:
+  DigitalInterfaceMock();
+  virtual ~DigitalInterfaceMock();
   MOCK_METHOD(void, digitalWrite, (uint8_t, uint8_t), (override));
   MOCK_METHOD(void, analogWrite, (uint8_t, int), (override));
   MOCK_METHOD(int, digitalRead, (uint8_t), (override));
   MOCK_METHOD(void, pinMode, (uint8_t, uint8_t), (override));
-
 };
 
 class TimeInterfaceMock : public TimeInterface {
@@ -56,4 +56,4 @@ class TimeInterfaceMock : public TimeInterface {
     MOCK_METHOD(uint64_t, millis, (), (override));
 };
 
-#endif
+#endif  // EXTRAS_TEST_DOUBLES_ARDUINO_MOCK_H_

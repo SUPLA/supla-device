@@ -216,3 +216,5 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_evtool_v2_extended2emextended(
   return 1;
 }
 
+SrpcMock::SrpcMock() {}
+SrpcMock::~SrpcMock() {}

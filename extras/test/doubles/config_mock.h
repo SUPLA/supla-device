@@ -23,25 +23,48 @@
 #include <supla/storage/config.h>
 
 class ConfigMock : public Supla::Config {
-  public:
+ public:
+  ConfigMock();
+  virtual ~ConfigMock();
   MOCK_METHOD(bool, init, (), (override));
   MOCK_METHOD(void, removeAll, (), (override));
-//  MOCK_METHOD(bool, isMinimalConfigReady, (), (override));
+  //  MOCK_METHOD(bool, isMinimalConfigReady, (), (override));
   MOCK_METHOD(bool, isConfigModeSupported, (), (override));
-  MOCK_METHOD(bool, setString, (const char* key, const char* value), (override));
-  MOCK_METHOD(bool, getString, (const char* key, char* value, size_t maxSize), (override));
+  MOCK_METHOD(bool,
+              setString,
+              (const char* key, const char* value),
+              (override));
+  MOCK_METHOD(bool,
+              getString,
+              (const char* key, char* value, size_t maxSize),
+              (override));
   MOCK_METHOD(int, getStringSize, (const char* key), (override));
-  MOCK_METHOD(bool, setBlob, (const char* key, const char* value, size_t blobSize), (override));
-  MOCK_METHOD(bool, getBlob, (const char* key, char* value, size_t blobSize), (override));
+  MOCK_METHOD(bool,
+              setBlob,
+              (const char* key, const char* value, size_t blobSize),
+              (override));
+  MOCK_METHOD(bool,
+              getBlob,
+              (const char* key, char* value, size_t blobSize),
+              (override));
   MOCK_METHOD(int, getBlobSize, (const char* key), (override));
   MOCK_METHOD(bool, getInt8, (const char* key, int8_t* result), (override));
   MOCK_METHOD(bool, getUInt8, (const char* key, uint8_t* result), (override));
   MOCK_METHOD(bool, getInt32, (const char* key, int32_t* result), (override));
   MOCK_METHOD(bool, getUInt32, (const char* key, uint32_t* result), (override));
   MOCK_METHOD(bool, setInt8, (const char* key, const int8_t value), (override));
-  MOCK_METHOD(bool, setUInt8, (const char* key, const uint8_t value), (override));
-  MOCK_METHOD(bool, setInt32, (const char* key, const int32_t value), (override));
-  MOCK_METHOD(bool, setUInt32, (const char* key, const uint32_t value), (override));
+  MOCK_METHOD(bool,
+              setUInt8,
+              (const char* key, const uint8_t value),
+              (override));
+  MOCK_METHOD(bool,
+              setInt32,
+              (const char* key, const int32_t value),
+              (override));
+  MOCK_METHOD(bool,
+              setUInt32,
+              (const char* key, const uint32_t value),
+              (override));
   MOCK_METHOD(void, commit, (), (override));
   MOCK_METHOD(void, saveWithDelay, (uint32_t delayMs), (override));
   MOCK_METHOD(void, saveIfNeeded, (), (override));

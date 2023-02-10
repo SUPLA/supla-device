@@ -16,9 +16,10 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <gmock/gmock.h>
 #include "board_mock.h"
+
 #include <assert.h>
+#include <gmock/gmock.h>
 
 BoardInterface::BoardInterface() {
   instance = this;
@@ -42,3 +43,5 @@ bool isLastResetSoft() {
   return false;
 }
 
+BoardMock::BoardMock() {}
+BoardMock::~BoardMock() {}

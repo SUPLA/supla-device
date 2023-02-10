@@ -26,35 +26,44 @@
 #include "../local_action.h"
 
 namespace Supla {
+
+class Io;
+
 namespace Control {
 
 enum StateResults { PRESSED, RELEASED, TO_PRESSED, TO_RELEASED };
 
 class ButtonState {
  public:
+  ButtonState(Supla::Io *io, int pin, bool pullUp, bool invertLogic);
   ButtonState(int pin, bool pullUp, bool invertLogic);
-  int update();
+  enum StateResults update();
   void init();
 
   void setSwNoiseFilterDelay(unsigned int newDelayMs);
   void setDebounceDelay(unsigned int newDelayMs);
 
  protected:
-  int valueOnPress();
+  int valueOnPress() const;
 
-  uint64_t debounceTimeMs;
-  uint64_t filterTimeMs;
-  unsigned int debounceDelayMs;
-  unsigned int swNoiseFilterDelayMs;
-  int pin;
-  int8_t newStatusCandidate;
-  int8_t prevState;
-  bool pullUp;
-  bool invertLogic;
+  uint64_t debounceTimeMs = 0;
+  uint64_t filterTimeMs = 0;
+  unsigned int debounceDelayMs = 50;
+  unsigned int swNoiseFilterDelayMs = 20;
+  int pin = -1;
+  int8_t newStatusCandidate = 0;
+  int8_t prevState = 0;
+  bool pullUp = false;
+  bool invertLogic = false;
+  Supla::Io *io = nullptr;
 };
 
 class SimpleButton : public Element, public LocalAction {
  public:
+  explicit SimpleButton(Supla::Io *io,
+                        int pin,
+                        bool pullUp = false,
+                        bool invertLogic = false);
   explicit SimpleButton(int pin, bool pullUp = false, bool invertLogic = false);
 
   void onTimer() override;

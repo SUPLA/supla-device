@@ -16,22 +16,27 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
-#define EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
+#include "mqtt_mock.h"
 
-#include <gmock/gmock.h>
-#include <supla/network/network.h>
+MqttInterface::MqttInterface(SuplaDeviceClass *sdc)
+    : Supla::Protocol::Mqtt(sdc) {
+}
 
-class NetworkMockWithMac : public Supla::Network {
- public:
-  NetworkMockWithMac();
-  virtual ~NetworkMockWithMac();
-  MOCK_METHOD(void, setup, (), (override));
-  MOCK_METHOD(void, disable, (), (override));
+MqttInterface::~MqttInterface() {}
 
-  MOCK_METHOD(bool, isReady, (), (override));
-  MOCK_METHOD(bool, iterate, (), (override));
-  MOCK_METHOD(bool, getMacAddr, (uint8_t*), (override));
-};
+void MqttInterface::publishImp(const char *topic,
+                               const char *payload,
+                               int qos,
+                               bool retain) {
+  publishTest(std::string(topic), std::string(payload), qos, retain);
+}
 
-#endif  // EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
+MqttMock::MqttMock(SuplaDeviceClass *sdc) : MqttInterface(sdc) {
+}
+
+MqttMock::~MqttMock() {
+}
+
+void MqttMock::setRegisteredAndReady() {
+  connected = true;
+}

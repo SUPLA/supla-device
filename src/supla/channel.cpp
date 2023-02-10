@@ -281,7 +281,7 @@ _supla_int_t Channel::getActionTriggerCaps() {
   return getFuncList();
 }
 
-int Channel::getChannelNumber() {
+int Channel::getChannelNumber() const {
   return channelNumber;
 }
 
@@ -296,7 +296,7 @@ void Channel::sendUpdate() {
         proto != nullptr; proto = proto->next()) {
       proto->sendChannelValueChanged(channelNumber,
           reg_dev.channels[channelNumber].value,
-          0,
+          offline,
           validityTimeSec);
     }
 
@@ -333,11 +333,11 @@ void Channel::setUpdateReady() {
   valueChanged = true;
 }
 
-bool Channel::isUpdateReady() {
+bool Channel::isUpdateReady() const {
   return valueChanged || channelConfig;
 }
 
-bool Channel::isExtended() {
+bool Channel::isExtended() const {
   return false;
 }
 
@@ -468,7 +468,7 @@ void Channel::setNewValue(uint8_t red,
   }
 }
 
-_supla_int_t Channel::getChannelType() {
+_supla_int_t Channel::getChannelType() const {
   if (channelNumber >= 0) {
     return reg_dev.channels[channelNumber].Type;
   }
@@ -737,6 +737,20 @@ uint16_t Channel::getHvacFlags() {
     return value->Flags;
   }
   return 0;
+}
+
+void Channel::setOffline() {
+  if (offline == false) {
+    offline = true;
+    setUpdateReady();
+  }
+}
+
+void Channel::setOnline() {
+  if (offline == true) {
+    offline = false;
+    setUpdateReady();
+  }
 }
 
 };  // namespace Supla

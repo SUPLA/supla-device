@@ -66,10 +66,13 @@ unsigned long millis() {
   return TimeInterface::instance->millis();
 }
 
-void delay(uint64_t ms) {};
+void delay(uint64_t ms) {
+}
 
 long map(long input, long inMin, long inMax, long outMin, long outMax) {
   long result = (input - inMin) * (outMax - outMin) / (inMax - inMin);
   return result + outMin;
 }
 
+DigitalInterfaceMock::DigitalInterfaceMock() {}
+DigitalInterfaceMock::~DigitalInterfaceMock() {}

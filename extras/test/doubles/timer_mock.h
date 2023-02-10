@@ -14,19 +14,24 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef EXTRAS_TEST_DOUBLES_TIMER_MOCK_H_
+#define EXTRAS_TEST_DOUBLES_TIMER_MOCK_H_
+
 #include <supla/timer.h>
 #include <gmock/gmock.h>
 
 class TimerInterface {
-  public:
-    TimerInterface();
-    virtual ~TimerInterface();
-    virtual void initTimers() = 0;
+ public:
+  TimerInterface();
+  virtual ~TimerInterface();
+  virtual void initTimers() = 0;
 };
 
 class TimerMock : public TimerInterface {
-  public:
-    MOCK_METHOD((void), initTimers, (), (override));
+ public:
+  TimerMock();
+  virtual ~TimerMock();
+  MOCK_METHOD((void), initTimers, (), (override));
 };
 
-
+#endif  // EXTRAS_TEST_DOUBLES_TIMER_MOCK_H_

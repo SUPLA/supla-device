@@ -14,8 +14,19 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "../io.h"
 #include "pin_status_led.h"
+
+#include <supla/io.h>
+
+Supla::Control::PinStatusLed::PinStatusLed(Supla::Io *ioSrc,
+                                           Supla::Io *ioOut,
+                                           uint8_t srcPin,
+                                           uint8_t outPin,
+                                           bool invert)
+    : PinStatusLed(srcPin, outPin, invert) {
+  this->ioSrc = ioSrc;
+  this->ioOut = ioOut;
+}
 
 Supla::Control::PinStatusLed::PinStatusLed(uint8_t srcPin,
                                            uint8_t outPin,
@@ -25,7 +36,7 @@ Supla::Control::PinStatusLed::PinStatusLed(uint8_t srcPin,
 
 void Supla::Control::PinStatusLed::onInit() {
   updatePin();
-  Supla::Io::pinMode(outPin, OUTPUT);
+  Supla::Io::pinMode(outPin, OUTPUT, ioOut);
 }
 
 void Supla::Control::PinStatusLed::iterateAlways() {
@@ -38,9 +49,9 @@ void Supla::Control::PinStatusLed::setInvertedLogic(bool invertedLogic) {
 }
 
 void Supla::Control::PinStatusLed::updatePin() {
-  int value = Supla::Io::digitalRead(srcPin);
+  int value = Supla::Io::digitalRead(srcPin, ioSrc);
   value = invert ? !value : value;
-  if (value != Supla::Io::digitalRead(outPin)) {
-    Supla::Io::digitalWrite(outPin, value);
+  if (value != Supla::Io::digitalRead(outPin, ioOut)) {
+    Supla::Io::digitalWrite(outPin, value, ioOut);
   }
 }

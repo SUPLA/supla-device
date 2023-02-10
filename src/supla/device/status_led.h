@@ -48,9 +48,12 @@ enum LedSequence {
   CUSTOM_SEQUENCE /* values set manually, state changes ignored */
 };
 
+class Io;
+
 namespace Device {
 class StatusLed : public Element {
  public:
+  explicit StatusLed(Supla::Io *io, uint8_t outPin, bool invert = false);
   explicit StatusLed(uint8_t outPin, bool invert = false);
 
   void onLoadConfig() override;
@@ -80,17 +83,18 @@ class StatusLed : public Element {
   void turnOn();
   void turnOff();
 
-  uint8_t outPin;
-  bool invert;
+  uint8_t outPin = 0;
+  bool invert = false;
   unsigned int onDuration = 0;
   unsigned int offDuration = 1000;
   uint64_t lastUpdate = 0;
   LedState state = NOT_INITIALIZED;
   LedSequence currentSequence = NETWORK_CONNECTING;
   LedMode ledMode = LED_ON_WHEN_CONNECTED;
+  Supla::Io *io = nullptr;
 };
 
-};  // namespace Device
-};  // namespace Supla
+}  // namespace Device
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_DEVICE_STATUS_LED_H_

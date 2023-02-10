@@ -14,8 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef _srpc_mock_h
-#define _srpc_mock_h
+#ifndef EXTRAS_TEST_DOUBLES_SRPC_MOCK_H_
+#define EXTRAS_TEST_DOUBLES_SRPC_MOCK_H_
 
 #include <gmock/gmock.h>
 #include <supla-common/proto.h>
@@ -78,6 +78,8 @@ class SrpcInterface {
 
 class SrpcMock : public SrpcInterface {
  public:
+  SrpcMock();
+  virtual ~SrpcMock();
   MOCK_METHOD(_supla_int_t,
               valueChanged,
               (void *,
@@ -141,4 +143,4 @@ class SrpcMock : public SrpcInterface {
       (TSD_SetChannelConfig *request), (override));
 };
 
-#endif
+#endif  // EXTRAS_TEST_DOUBLES_SRPC_MOCK_H_

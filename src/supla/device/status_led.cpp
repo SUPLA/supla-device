@@ -16,13 +16,18 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "status_led.h"
+
 #include <SuplaDevice.h>
 #include <supla/io.h>
+#include <supla/protocol/protocol_layer.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-#include <supla/protocol/protocol_layer.h>
 
-#include "status_led.h"
+Supla::Device::StatusLed::StatusLed(Supla::Io *io, uint8_t outPin, bool invert)
+    : StatusLed(outPin, invert) {
+  this->io = io;
+}
 
 Supla::Device::StatusLed::StatusLed(uint8_t outPin, bool invert)
     : outPin(outPin), invert(invert) {
@@ -57,7 +62,7 @@ void Supla::Device::StatusLed::onInit() {
   if (state == NOT_INITIALIZED) {
     turnOn();
   }
-  Supla::Io::pinMode(outPin, OUTPUT);
+  Supla::Io::pinMode(outPin, OUTPUT, io);
 }
 
 void Supla::Device::StatusLed::iterateAlways() {
@@ -218,13 +223,13 @@ void Supla::Device::StatusLed::setInvertedLogic(bool invertedLogic) {
 void Supla::Device::StatusLed::turnOn() {
   lastUpdate = millis();
   state = ON;
-  Supla::Io::digitalWrite(outPin, invert ? 0 : 1);
+  Supla::Io::digitalWrite(outPin, invert ? 0 : 1, io);
 }
 
 void Supla::Device::StatusLed::turnOff() {
   lastUpdate = millis();
   state = OFF;
-  Supla::Io::digitalWrite(outPin, invert ? 1 : 0);
+  Supla::Io::digitalWrite(outPin, invert ? 1 : 0, io);
 }
 
 void Supla::Device::StatusLed::updatePin() {

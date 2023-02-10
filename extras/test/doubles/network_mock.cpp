@@ -16,22 +16,10 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
-#define EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
+#include "network_mock.h"
 
-#include <gmock/gmock.h>
-#include <supla/network/network.h>
+NetworkMock::NetworkMock() : Supla::Network(nullptr) {
+}
 
-class NetworkMockWithMac : public Supla::Network {
- public:
-  NetworkMockWithMac();
-  virtual ~NetworkMockWithMac();
-  MOCK_METHOD(void, setup, (), (override));
-  MOCK_METHOD(void, disable, (), (override));
-
-  MOCK_METHOD(bool, isReady, (), (override));
-  MOCK_METHOD(bool, iterate, (), (override));
-  MOCK_METHOD(bool, getMacAddr, (uint8_t*), (override));
-};
-
-#endif  // EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_
+NetworkMock::~NetworkMock() {
+}

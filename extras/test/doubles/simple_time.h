@@ -23,13 +23,11 @@
 #include "arduino_mock.h"
 
 class SimpleTime : public TimeInterface {
-  public:
-    uint64_t millis() override;
-    void advance(int advanceMs);
+ public:
+  uint64_t millis() override;
+  void advance(int advanceMs);
 
-    uint64_t value = 0;
+  uint64_t value = 0;
 };
-
-
 
 #endif  // EXTRAS_TEST_DOUBLES_SIMPLE_TIME_H_

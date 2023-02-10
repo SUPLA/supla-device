@@ -46,6 +46,7 @@
 #include <fstream>
 #include <random>
 #include <string>
+#include <vector>
 
 #include "linux_yaml_config.h"
 #include "supla/sensor/sensor_parsed.h"
@@ -506,6 +507,13 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
       cr->setDefaultStateRestore();
     }
   }
+
+  if (ch["offline_on_invalid_state"]) {
+    paramCount++;
+    auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
+    cr->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
+  }
+
   if (ch["cmd_on"]) {
     paramCount++;
     auto cmdOn = ch["cmd_on"].as<std::string>();
@@ -516,19 +524,9 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
     auto cmdOff = ch["cmd_off"].as<std::string>();
     cr->setCmdOff(cmdOff);
   }
-  if (parser == nullptr && ch[Supla::Parser::State]) {
-    SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+
+  if (!addStateParser(ch, cr, parser, false)) {
     return false;
-  }
-  if (ch[Supla::Parser::State]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Parser::State].as<int>();
-      cr->setMapping(Supla::Parser::State, index);
-    } else {
-      std::string key = ch[Supla::Parser::State].as<std::string>();
-      cr->setMapping(Supla::Parser::State, key);
-    }
   }
 
   return true;
@@ -801,20 +799,8 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
                                              Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding BinaryParsed", channelNumber);
   auto binary = new Supla::Sensor::BinaryParsed(parser);
-  if (ch[Supla::Parser::State]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Parser::State].as<int>();
-      binary->setMapping(Supla::Parser::State, index);
-    } else {
-      std::string key = ch[Supla::Parser::State].as<std::string>();
-      binary->setMapping(Supla::Parser::State, key);
-    }
-  } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::State);
+
+  if (!addStateParser(ch, binary, parser, true)) {
     return false;
   }
 
@@ -1280,3 +1266,36 @@ bool Supla::LinuxYamlConfig::addRainParsed(
   return true;
 }
 
+bool Supla::LinuxYamlConfig::addStateParser(
+    const YAML::Node& ch,
+    Supla::Sensor::SensorParsedBase* sensor,
+    Supla::Parser::Parser* parser,
+    bool mandatory) {
+  if (parser == nullptr && ch[Supla::Parser::State]) {
+    SUPLA_LOG_ERROR("Channel config: missing parser");
+    return false;
+  }
+
+  if (ch[Supla::Parser::State]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::State].as<int>();
+      sensor->setMapping(Supla::Parser::State, index);
+    } else {
+      std::string key = ch[Supla::Parser::State].as<std::string>();
+      sensor->setMapping(Supla::Parser::State, key);
+    }
+    if (ch[Supla::Parser::StateOnValues]) {
+      paramCount++;
+      sensor->setOnValues(
+          ch[Supla::Parser::StateOnValues].as<std::vector<int>>());
+    }
+  } else {
+    if (mandatory) {
+      SUPLA_LOG_ERROR("Channel config: missing \"%s\" parameter",
+                      Supla::Parser::State);
+      return false;
+    }
+  }
+  return true;
+}

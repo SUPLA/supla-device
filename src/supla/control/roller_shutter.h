@@ -22,7 +22,6 @@
 #include "../action_handler.h"
 #include "../actions.h"
 #include "../channel_element.h"
-#include "../io.h"
 
 #define UNKNOWN_POSITION   -1
 #define STOP_POSITION      -2
@@ -30,16 +29,20 @@
 #define MOVE_DOWN_POSITION -4
 
 namespace Supla {
+
+class Io;
+
 namespace Control {
 
 enum Directions { STOP_DIR = 0, DOWN_DIR = 1, UP_DIR = 2 };
 
 class RollerShutter : public ChannelElement, public ActionHandler {
  public:
+  RollerShutter(Supla::Io *io, int pinUp, int pinDown, bool highIsOn = true);
   RollerShutter(int pinUp, int pinDown, bool highIsOn = true);
 
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue);
-  void handleAction(int event, int action);
+  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
+  void handleAction(int event, int action) override;
 
   void close();         // Sets target position to 100%
   void open();          // Sets target position to 0%
@@ -49,18 +52,18 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   void moveDown();  // starts closing roller shutter regardless of its position
                     // (keep motor going down)
   void setTargetPosition(int newPosition);
-  int getCurrentPosition();
+  int getCurrentPosition() const;
   // Get current roller shutter movement direction. Returns int value of
   // enum Supla::Control::Directions
-  int getCurrentDirection();
+  int getCurrentDirection() const;
 
   void configComfortUpValue(uint8_t position);
   void configComfortDownValue(uint8_t position);
 
-  void onInit();
-  void onTimer();
-  void onLoadState();
-  void onSaveState();
+  void onInit() override;
+  void onTimer() override;
+  void onLoadState() override;
+  void onSaveState() override;
 
  protected:
   virtual void stopMovement();
@@ -73,39 +76,41 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   virtual void switchOffRelays();
   void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
 
-  bool lastDirectionWasOpen();
-  bool lastDirectionWasClose();
+  bool lastDirectionWasOpen() const;
+  bool lastDirectionWasClose() const;
   virtual bool inMove();
 
-  uint32_t closingTimeMs;
-  uint32_t openingTimeMs;
-  bool calibrate;  // set to true when new closing/opening time is given -
-                   // calibration is done to sync roller shutter position
+  uint32_t closingTimeMs = 0;
+  uint32_t openingTimeMs = 0;
+  bool calibrate =
+      true;  // set to true when new closing/opening time is given -
+             // calibration is done to sync roller shutter position
 
-  uint8_t comfortDownValue;
-  uint8_t comfortUpValue;
+  uint8_t comfortDownValue = 20;
+  uint8_t comfortUpValue = 80;
 
-  bool newTargetPositionAvailable;
+  bool newTargetPositionAvailable = false;
 
-  bool highIsOn;
+  bool highIsOn = true;
 
-  uint8_t currentDirection;  // stop, up, down
-  uint8_t lastDirection;
+  uint8_t currentDirection = STOP_DIR;  // stop, up, down
+  uint8_t lastDirection = STOP_DIR;
 
-  int8_t currentPosition;             // 0 - closed; 100 - opened
-  int8_t targetPosition;              // 0-100
-  int8_t lastPositionBeforeMovement;  // 0-100
+  int8_t currentPosition = UNKNOWN_POSITION;  // 0 - closed; 100 - opened
+  int8_t targetPosition = STOP_POSITION;      // 0-100
+  int8_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
 
-  int pinUp;
-  int pinDown;
+  int pinUp = -1;
+  int pinDown = -1;
 
-  uint64_t lastMovementStartTime;
-  uint64_t doNothingTime;
-  uint64_t calibrationTime;
-  uint64_t operationTimeout;
+  uint64_t lastMovementStartTime = 0;
+  uint64_t doNothingTime = 0;
+  uint64_t calibrationTime = 0;
+  uint64_t operationTimeout = 0;
+  Supla::Io *io = nullptr;
 };
 
-};  // namespace Control
-};  // namespace Supla
+}  // namespace Control
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_CONTROL_ROLLER_SHUTTER_H_

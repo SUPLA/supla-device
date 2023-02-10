@@ -26,26 +26,33 @@
 
 class MqttInterface : public Supla::Protocol::Mqtt {
  public:
-   MqttInterface(SuplaDeviceClass *sdc) : Supla::Protocol::Mqtt(sdc) {}
-   virtual void publishTest(std::string topic, std::string paload, int qos, bool retain) = 0;
-   void publishImp(const char *topic, const char *payload, int qos, bool retain) {
-     publishTest(std::string(topic), std::string(payload), qos, retain);
-   }
+  explicit MqttInterface(SuplaDeviceClass *sdc);
+  virtual ~MqttInterface();
+
+  virtual void publishTest(std::string topic,
+                           std::string paload,
+                           int qos,
+                           bool retain) = 0;
+  void publishImp(const char *topic,
+                  const char *payload,
+                  int qos,
+                  bool retain);
 };
 
 class MqttMock : public MqttInterface {
  public:
-   MqttMock(SuplaDeviceClass *sdc) : MqttInterface(sdc) {}
-   void setRegisteredAndReady() {
-     connected = true;
-   }
+  explicit MqttMock(SuplaDeviceClass *sdc);
+  virtual ~MqttMock();
 
-   MOCK_METHOD(void, publishTest,
-       (std::string topic, std::string payload, int qos, bool retain),
-       (override));
-   MOCK_METHOD(void, subscribeImp, (const char *topic, int qos), (override));
-   MOCK_METHOD(void, disconnect, (), (override));
-   MOCK_METHOD(bool, iterate, (uint64_t _millis), (override));
+  void setRegisteredAndReady();
+
+  MOCK_METHOD(void,
+              publishTest,
+              (std::string topic, std::string payload, int qos, bool retain),
+              (override));
+  MOCK_METHOD(void, subscribeImp, (const char *topic, int qos), (override));
+  MOCK_METHOD(void, disconnect, (), (override));
+  MOCK_METHOD(bool, iterate, (uint64_t _millis), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_MQTT_MOCK_H_

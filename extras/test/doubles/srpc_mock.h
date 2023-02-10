@@ -68,6 +68,8 @@ class SrpcInterface {
 
 class SrpcMock : public SrpcInterface {
  public:
+  SrpcMock();
+  virtual ~SrpcMock();
   MOCK_METHOD(_supla_int_t,
               valueChanged,
               (void *,

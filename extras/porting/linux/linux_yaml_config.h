@@ -62,6 +62,7 @@ channels:
 #include <supla/channel_element.h>
 #include <supla/parser/parser.h>
 #include <supla/sensor/electricity_meter_parsed.h>
+#include <supla/sensor/sensor_parsed.h>
 #include <supla/source/source.h>
 #include <supla/storage/config.h>
 #include <yaml-cpp/yaml.h>
@@ -170,6 +171,10 @@ class LinuxYamlConfig : public Config {
                             Supla::Parser::Parser* parser);
   void loadGuidAuthFromPath(const std::string& path);
   bool saveGuidAuth(const std::string& path);
+  bool addStateParser(const YAML::Node& ch,
+                      Supla::Sensor::SensorParsedBase* sensor,
+                      Supla::Parser::Parser* parser,
+                      bool mandatory);
 
   std::string file;
   YAML::Node config;

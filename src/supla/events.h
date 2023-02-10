@@ -84,6 +84,9 @@ enum Event {
   ON_BLUE_TURN_ON,    // when "blue" changes from 0 to non-0
   ON_BLUE_TURN_OFF,   // when "blue" changes from non-0 to 0
   ON_BLUE_CHANGE,     // on every change of "blue"
+
+  ON_CHANNEL_OFFLINE,
+  ON_CHANNEL_ONLINE,
 };
 
 };  // namespace Supla

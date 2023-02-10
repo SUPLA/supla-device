@@ -23,14 +23,15 @@
 #include <supla/network/network.h>
 
 class NetworkMock : public Supla::Network {
-  public:
-    NetworkMock() : Supla::Network(nullptr) {};
-    MOCK_METHOD(void, setup, (), (override));
-    MOCK_METHOD(void, disable, (), (override));
+ public:
+  NetworkMock();
+  virtual ~NetworkMock();
+  MOCK_METHOD(void, setup, (), (override));
+  MOCK_METHOD(void, disable, (), (override));
 
-    MOCK_METHOD(bool, isReady, (), (override));
-    MOCK_METHOD(bool, iterate, (), (override));
-    MOCK_METHOD(bool, isWifiConfigRequired, (), (override));
+  MOCK_METHOD(bool, isReady, (), (override));
+  MOCK_METHOD(bool, iterate, (), (override));
+  MOCK_METHOD(bool, isWifiConfigRequired, (), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_NETWORK_MOCK_H_

@@ -27,16 +27,10 @@ Supla::Sensor::BinaryParsed::BinaryParsed(Supla::Parser::Parser *parser)
 bool Supla::Sensor::BinaryParsed::getValue() {
   bool value = false;
 
-  if (isParameterConfigured(Supla::Parser::State)) {
-    if (refreshParserSource()) {
-      double result = getParameterValue(Supla::Parser::State);
-      if (result - 0.1 <= 1 && 1 <= result + 0.1) {
-        value = true;
-      }
-      if (!parser->isValid()) {
-        value = false;
-      }
-    }
+  int result = getStateValue();
+
+  if (result == 1) {
+    value = true;
   }
   return value;
 }

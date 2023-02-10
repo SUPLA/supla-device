@@ -43,6 +43,9 @@ class Channel : public LocalAction {
   void setNewValue(const TDSC_RollerShutterValue &value);
   bool setNewValue(char *newValue);
 
+  void setOffline();
+  void setOnline();
+
   double getValueDouble();
   double getValueDoubleFirst();
   double getValueDoubleSecond();
@@ -103,6 +106,7 @@ class Channel : public LocalAction {
   int channelNumber;
   unsigned _supla_int_t validityTimeSec;
   unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
+  bool offline = false;
 };
 
 };  // namespace Supla

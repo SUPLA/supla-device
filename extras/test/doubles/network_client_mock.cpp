@@ -35,3 +35,4 @@ NetworkClientMock::NetworkClientMock() {
 NetworkClientMock::~NetworkClientMock() {
   networkClientMockPtr = nullptr;
 }
+

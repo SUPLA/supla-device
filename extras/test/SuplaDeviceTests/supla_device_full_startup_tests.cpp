@@ -14,29 +14,28 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <SuplaDevice.h>
+#include <arduino_mock.h>
+#include <board_mock.h>
+#include <config_mock.h>
+#include <element_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
-#include <srpc_mock.h>
-#include <timer_mock.h>
-#include <SuplaDevice.h>
-#include <supla/clock/clock.h>
-#include <supla/storage/storage.h>
-#include <element_mock.h>
-#include <board_mock.h>
-#include "gmock/gmock.h"
-#include "supla/protocol/supla_srpc.h"
 #include <network_client_mock.h>
-#include <config_mock.h>
-#include <supla/sensor/therm_hygro_press_meter.h>
 #include <network_mock.h>
+#include <srpc_mock.h>
+#include <supla/clock/clock.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/sensor/therm_hygro_press_meter.h>
+#include <supla/storage/storage.h>
+#include <timer_mock.h>
+#include <simple_time.h>
 
-using ::testing::Return;
 using ::testing::_;
-using ::testing::DoAll;
 using ::testing::Assign;
+using ::testing::DoAll;
+using ::testing::Return;
 using ::testing::ReturnPointee;
-using ::testing::ElementsAreArray;
 
 class SuplaDeviceTests : public ::testing::Test {
   protected:
@@ -49,21 +48,6 @@ class SuplaDeviceTests : public ::testing::Test {
       memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
     }
 
-};
-
-class SimpleTime : public TimeInterface {
-  public:
-    SimpleTime() : value(0) {}
-
-    virtual uint64_t millis() override {
-      return value;
-    }
-
-    void advance(int advanceMs) {
-      value += advanceMs;
-    }
-
-    uint64_t value;
 };
 
 class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
@@ -104,9 +88,10 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
     }
 };
 
-class SuplaDeviceElementWithSecondaryChannel : public SuplaDeviceTestsFullStartup {
-  protected:
-    Supla::Sensor::ThermHygroPressMeter thpm;
+class SuplaDeviceElementWithSecondaryChannel
+    : public SuplaDeviceTestsFullStartup {
+ protected:
+  Supla::Sensor::ThermHygroPressMeter thpm;
 };
 
 class SuplaDeviceTestsFullStartupManual : public SuplaDeviceTests {

@@ -27,6 +27,7 @@
 namespace Supla {
 namespace Parser {
 const char State[] = "state";
+const char StateOnValues[] = "state_on_values";
 };
 
 namespace Sensor {

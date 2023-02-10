@@ -296,7 +296,7 @@ void Channel::sendUpdate() {
         proto != nullptr; proto = proto->next()) {
       proto->sendChannelValueChanged(channelNumber,
           reg_dev.channels[channelNumber].value,
-          0,
+          offline,
           validityTimeSec);
     }
 
@@ -566,6 +566,20 @@ unsigned char Channel::getBatteryLevel() {
 
 void Channel::setBatteryLevel(unsigned char level) {
   batteryLevel = level;
+}
+
+void Channel::setOffline() {
+  if (offline == false) {
+    offline = true;
+    setUpdateReady();
+  }
+}
+
+void Channel::setOnline() {
+  if (offline == true) {
+    offline = false;
+    setUpdateReady();
+  }
 }
 
 };  // namespace Supla

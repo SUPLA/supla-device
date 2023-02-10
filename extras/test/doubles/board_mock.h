@@ -16,21 +16,26 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef EXTRAS_TEST_DOUBLES_BOARD_MOCK_H_
+#define EXTRAS_TEST_DOUBLES_BOARD_MOCK_H_
+
 #include <gmock/gmock.h>
 
 class BoardInterface {
-  public:
-    BoardInterface();
-    ~BoardInterface();
+ public:
+  BoardInterface();
+  virtual ~BoardInterface();
 
-    static BoardInterface *instance;
+  static BoardInterface *instance;
 
-    virtual void deviceSoftwareReset() = 0;
+  virtual void deviceSoftwareReset() = 0;
 };
-
 
 class BoardMock : public BoardInterface {
-  public:
-    MOCK_METHOD(void, deviceSoftwareReset, (), (override));
+ public:
+  BoardMock();
+  virtual ~BoardMock();
+  MOCK_METHOD(void, deviceSoftwareReset, (), (override));
 };
 
+#endif  // EXTRAS_TEST_DOUBLES_BOARD_MOCK_H_

@@ -56,3 +56,8 @@ void Supla::Sensor::Thermometer::onLoadConfig() {
     }
   }
 }
+
+double Supla::Sensor::Thermometer::getLastTemperature() {
+  return getChannel()->getValueDouble();
+}
+

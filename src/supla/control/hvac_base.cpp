@@ -19,15 +19,20 @@
 #include "hvac_base.h"
 
 #include <string.h>
-
-#include <supla/storage/storage.h>
-#include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
+#include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/time.h>
+#include <limits>
+
+#include "output_interface.h"
+
+#define SUPLA_HVAC_DEFAULT_TEMP_MIN 1800  // 18.00 C
+#define SUPLA_HVAC_DEFAULT_TEMP_MAX 2400  // 24.00 C
 
 using Supla::Control::HvacBase;
 
-HvacBase::HvacBase() {
+HvacBase::HvacBase(Supla::Control::OutputInterface *output) : output(output) {
   channel.setType(SUPLA_CHANNELTYPE_HVAC);
   channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
@@ -51,7 +56,7 @@ bool HvacBase::iterateConnected() {
         for (auto proto = Supla::Protocol::ProtocolLayer::first();
             proto != nullptr; proto = proto->next()) {
           if (proto->setChannelConfig(getChannelNumber(),
-                                  getChannel()->getDefaultFunction(),
+                                  channel.getDefaultFunction(),
                                   reinterpret_cast<void *>(&config),
                                   sizeof(TSD_ChannelConfig_HVAC),
                                   SUPLA_CONFIG_TYPE_DEFAULT)) {
@@ -63,7 +68,7 @@ bool HvacBase::iterateConnected() {
         for (auto proto = Supla::Protocol::ProtocolLayer::first();
             proto != nullptr; proto = proto->next()) {
           if (proto->setChannelConfig(getChannelNumber(),
-                                  getChannel()->getDefaultFunction(),
+                                  channel.getDefaultFunction(),
                                   reinterpret_cast<void *>(&weeklySchedule),
                                   sizeof(weeklySchedule),
                                   SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
@@ -134,16 +139,16 @@ void HvacBase::onLoadConfig() {
 }
 
 void HvacBase::onLoadState() {
-  if (getChannel() && getChannelNumber() >= 0) {
-    auto hvacValue = getChannel()->getValueHvac();
+  if (getChannelNumber() >= 0) {
+    auto hvacValue = channel.getValueHvac();
     Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(hvacValue),
                             sizeof(THVACValue));
   }
 }
 
 void HvacBase::onSaveState() {
-  if (getChannel() && getChannelNumber() >= 0) {
-    auto hvacValue = getChannel()->getValueHvac();
+  if (getChannelNumber() >= 0) {
+    auto hvacValue = channel.getValueHvac();
     Supla::Storage::WriteState(
         reinterpret_cast<const unsigned char *>(hvacValue), sizeof(THVACValue));
   }
@@ -152,7 +157,7 @@ void HvacBase::onSaveState() {
 void HvacBase::onInit() {
   // init default channel function when it wasn't read from config or
   // set by user
-  if (getChannel()->getDefaultFunction() == 0) {
+  if (channel.getDefaultFunction() == 0) {
     // set default to auto when both heat and cool are supported
     if (isHeatingSupported() && isCoolingSupported() && isAutoSupported()) {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
@@ -167,6 +172,22 @@ void HvacBase::onInit() {
     }
   }
   initDone = true;
+
+  uint8_t mode = channel.getHvacMode();
+  if (mode == SUPLA_HVAC_MODE_NOT_USED) {
+    mode = SUPLA_HVAC_MODE_OFF;
+    channel.setHvacMode(mode);
+    if (isModeSupported(SUPLA_HVAC_MODE_HEAT) &&
+        !channel.isHvacFlagSetpointTemperatureMinSet()) {
+      channel.setHvacSetpointTemperatureMin(SUPLA_HVAC_DEFAULT_TEMP_MIN);
+    }
+    if (isModeSupported(SUPLA_HVAC_MODE_COOL) &&
+        !channel.isHvacFlagSetpointTemperatureMaxSet()) {
+      channel.setHvacSetpointTemperatureMax(SUPLA_HVAC_DEFAULT_TEMP_MAX);
+    }
+    setOutput(0);
+    channel.setHvacIsOn(0);
+  }
 }
 
 
@@ -183,6 +204,40 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 }
 
 void HvacBase::iterateAlways() {
+  switch (channel.getDefaultFunction()) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+      if (checkOverheatProtection()) {
+        break;
+      }
+      if (checkAntifreezeProtection()) {
+        break;
+      }
+
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+      if (checkAntifreezeProtection()) {
+        break;
+      }
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
+      if (checkOverheatProtection()) {
+        break;
+      }
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_DRYER: {
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_FAN: {
+      break;
+    }
+
+    default: {
+      break;
+    }
+  }
 }
 
 void HvacBase::setHeatingSupported(bool supported) {
@@ -1707,4 +1762,52 @@ bool HvacBase::setProgram(int programId,
     saveWeeklySchedule();
   }
   return true;
+}
+
+void HvacBase::setPrimaryThermometer(Supla::Sensor::Thermometer *t) {
+  primaryThermometer = t;
+}
+
+void HvacBase::setSecondaryThermometer(Supla::Sensor::Thermometer *t) {
+  secondaryThermometer = t;
+}
+
+_supla_int16_t HvacBase::getPrimaryTemp() {
+  return getTemperature(primaryThermometer);
+}
+
+_supla_int16_t HvacBase::getSecondaryTemp() {
+  return getTemperature(secondaryThermometer);
+}
+
+_supla_int16_t HvacBase::getTemperature(Supla::Sensor::Thermometer *t) {
+  if (t) {
+    double temp = t->getLastTemperature();
+    if (temp < TEMPERATURE_NOT_AVAILABLE) {
+      return 0;
+    }
+    temp *= 100;
+    if (temp > std::numeric_limits<_supla_int16_t>::max()) {
+      return std::numeric_limits<_supla_int16_t>::max();
+    }
+    if (temp < std::numeric_limits<_supla_int16_t>::min()) {
+      return std::numeric_limits<_supla_int16_t>::min();
+    }
+    return temp;
+  }
+  return 0;
+}
+
+void HvacBase::setOutput(int value) {
+  if (output) {
+    output->setOutputValue(value);
+  }
+}
+
+bool HvacBase::checkOverheatProtection() {
+  return false;
+}
+
+bool HvacBase::checkAntifreezeProtection() {
+  return false;
 }

@@ -33,6 +33,8 @@ class Thermometer : public ChannelElement {
   void onLoadConfig() override;
   void iterateAlways() override;
 
+  double getLastTemperature();
+
  protected:
   uint64_t lastReadTime;
 };

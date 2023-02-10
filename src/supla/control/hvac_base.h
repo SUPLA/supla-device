@@ -20,6 +20,7 @@
 #define SRC_SUPLA_CONTROL_HVAC_BASE_H_
 
 #include <supla/channel_element.h>
+#include "supla/sensor/thermometer.h"
 
 namespace Supla {
 
@@ -35,9 +36,11 @@ enum DayOfWeek {
 
 namespace Control {
 
+class OutputInterface;
+
 class HvacBase : public ChannelElement {
  public:
-  HvacBase();
+  explicit HvacBase(Supla::Control::OutputInterface *output = nullptr);
   virtual ~HvacBase();
 
   void onLoadConfig() override;
@@ -52,6 +55,13 @@ class HvacBase : public ChannelElement {
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
   void handleSetChannelConfigResult(
       TSD_SetChannelConfigResult *result) override;
+
+  void setPrimaryThermometer(Supla::Sensor::Thermometer *t);
+  void setSecondaryThermometer(Supla::Sensor::Thermometer *t);
+  _supla_int16_t getPrimaryTemp();
+  _supla_int16_t getSecondaryTemp();
+
+  void setOutput(int value);
 
   void saveConfig();
   void saveWeeklySchedule();
@@ -269,6 +279,10 @@ class HvacBase : public ChannelElement {
   TWeeklyScheduleProgram getProgram(int programId) const;
 
  private:
+  _supla_int16_t getTemperature(Supla::Sensor::Thermometer *t);
+  bool checkOverheatProtection();
+  bool checkAntifreezeProtection();
+
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
   bool isWeeklyScheduleConfigured = false;
@@ -277,6 +291,9 @@ class HvacBase : public ChannelElement {
   bool waitForChannelConfigAndIgnoreIt = false;
   bool waitForWeeklyScheduleAndIgnoreIt = false;
   bool initDone = false;
+  Supla::Control::OutputInterface *output = nullptr;
+  Supla::Sensor::Thermometer *primaryThermometer = nullptr;
+  Supla::Sensor::Thermometer *secondaryThermometer = nullptr;
 };
 
 }  // namespace Control

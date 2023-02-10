@@ -127,3 +127,20 @@ Supla::Control::InternalPinOutput::setDurationMs(_supla_int_t duration) {
   storedTurnOnDurationMs = duration;
   return *this;
 }
+
+int Supla::Control::InternalPinOutput::getOutputValue() {
+  return isOn() ? 1: 0;
+}
+
+void Supla::Control::InternalPinOutput::setOutputValue(int value) {
+  if (value) {
+    turnOn();
+  } else {
+    turnOff();
+  }
+}
+
+int Supla::Control::InternalPinOutput::getOutputMaxValue() const {
+  return 1;
+}
+

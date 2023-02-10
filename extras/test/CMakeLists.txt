@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_BUILD_TYPE Debug)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 
 include_directories(../../src)
 include_directories(doubles)

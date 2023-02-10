@@ -22,8 +22,8 @@
 namespace Supla {
 class ChannelExtended : public Channel {
  public:
-  bool isExtended();
-  TSuplaChannelExtendedValue *getExtValue();
+  bool isExtended() const override;
+  TSuplaChannelExtendedValue *getExtValue() override;
 
  protected:
   TSuplaChannelExtendedValue extValue = {};

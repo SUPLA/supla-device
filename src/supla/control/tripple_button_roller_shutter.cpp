@@ -16,13 +16,19 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "tripple_button_roller_shutter.h"
+
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-
-#include "tripple_button_roller_shutter.h"
+#include <supla/io.h>
 
 namespace Supla {
 namespace Control {
+
+TrippleButtonRollerShutter::TrippleButtonRollerShutter(
+    Supla::Io *io, int pinUp, int pinDown, int pinStop, bool highIsOn)
+    : BistableRollerShutter(io, pinUp, pinDown, highIsOn), pinStop(pinStop) {
+}
 
 TrippleButtonRollerShutter::TrippleButtonRollerShutter(int pinUp,
                                                        int pinDown,
@@ -36,8 +42,8 @@ TrippleButtonRollerShutter::~TrippleButtonRollerShutter() {
 
 void TrippleButtonRollerShutter::onInit() {
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH);
-  Supla::Io::pinMode(channel.getChannelNumber(), pinStop, OUTPUT);
+      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH, io);
+  Supla::Io::pinMode(channel.getChannelNumber(), pinStop, OUTPUT, io);
 
   BistableRollerShutter::onInit();
 }
@@ -54,13 +60,13 @@ void TrippleButtonRollerShutter::relayStopOn() {
   activeBiRelay = true;
   toggleTime = millis();
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinStop, highIsOn ? HIGH : LOW);
+      channel.getChannelNumber(), pinStop, highIsOn ? HIGH : LOW, io);
 }
 
 void TrippleButtonRollerShutter::relayStopOff() {
   activeBiRelay = false;
   Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH);
+      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH, io);
 }
 
 void TrippleButtonRollerShutter::switchOffRelays() {

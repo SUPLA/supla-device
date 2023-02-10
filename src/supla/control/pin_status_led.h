@@ -20,24 +20,35 @@
 #include "../element.h"
 
 namespace Supla {
+
+class Io;
+
 namespace Control {
 class PinStatusLed : public Element {
  public:
+  PinStatusLed(Supla::Io *ioSrc,
+               Supla::Io *ioOut,
+               uint8_t srcPin,
+               uint8_t outPin,
+               bool invert = false);
   PinStatusLed(uint8_t srcPin, uint8_t outPin, bool invert = false);
 
-  void onInit();
-  void iterateAlways();
+  void onInit() override;
+  void iterateAlways() override;
+
   void setInvertedLogic(bool invertedLogic);
 
  protected:
   void updatePin();
 
-  uint8_t srcPin;
-  uint8_t outPin;
-  bool invert;
+  uint8_t srcPin = 0;
+  uint8_t outPin = 0;
+  bool invert = false;
+  Supla::Io *ioSrc = nullptr;
+  Supla::Io *ioOut = nullptr;
 };
 
-};  // namespace Control
-};  // namespace Supla
+}  // namespace Control
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_CONTROL_PIN_STATUS_LED_H_

@@ -20,7 +20,7 @@
 namespace Supla {
 namespace Sensor {
 
-VirtualBinary::VirtualBinary() : state(false), lastReadTime(0) {
+VirtualBinary::VirtualBinary() {
   channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
 }
 

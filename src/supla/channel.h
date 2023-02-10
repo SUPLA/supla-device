@@ -58,10 +58,10 @@ class Channel : public LocalAction {
   uint8_t getValueColorBrightness();
   uint8_t getValueBrightness();
 
-  virtual bool isExtended();
-  bool isUpdateReady();
-  int getChannelNumber();
-  _supla_int_t getChannelType();
+  virtual bool isExtended() const;
+  bool isUpdateReady() const;
+  int getChannelNumber() const;
+  _supla_int_t getChannelType() const;
 
   void setType(_supla_int_t type);
   void setDefault(_supla_int_t value);

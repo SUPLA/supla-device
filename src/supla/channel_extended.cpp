@@ -17,7 +17,7 @@
 #include "supla/channel_extended.h"
 
 namespace Supla {
-bool ChannelExtended::isExtended() {
+bool ChannelExtended::isExtended() const {
   return true;
 }
 

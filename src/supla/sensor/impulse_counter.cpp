@@ -16,48 +16,55 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla/log_wrapper.h>
+#include "impulse_counter.h"
+
 #include <supla/actions.h>
 #include <supla/io.h>
+#include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 
-#include "impulse_counter.h"
-
 namespace Supla {
 namespace Sensor {
+
+ImpulseCounter::ImpulseCounter(Supla::Io *io,
+                               int _impulsePin,
+                               bool _detectLowToHigh,
+                               bool _inputPullup,
+                               unsigned int _debounceDelay)
+    : ImpulseCounter(
+          _impulsePin, _detectLowToHigh, _inputPullup, _debounceDelay) {
+  this->io = io;
+}
 
 ImpulseCounter::ImpulseCounter(int _impulsePin,
                                bool _detectLowToHigh,
                                bool _inputPullup,
                                unsigned int _debounceDelay)
     : impulsePin(_impulsePin),
-      lastImpulseMillis(0),
       debounceDelay(_debounceDelay),
       detectLowToHigh(_detectLowToHigh),
-      inputPullup(_inputPullup),
-      counter(0) {
+      inputPullup(_inputPullup) {
   channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
 
   prevState = (detectLowToHigh == true ? LOW : HIGH);
 
   SUPLA_LOG_DEBUG(
-            "Creating Impulse Counter: impulsePin(%d), "
-            "delay(%d ms)",
-            impulsePin,
-            debounceDelay);
+      "Creating Impulse Counter: impulsePin(%d), "
+      "delay(%d ms)",
+      impulsePin,
+      debounceDelay);
   if (impulsePin <= 0) {
-    SUPLA_LOG_DEBUG(
-              "SuplaImpulseCounter ERROR - incorrect impulse pin number");
-    return;
+    SUPLA_LOG_DEBUG("SuplaImpulseCounter ERROR - incorrect impulse pin number");
   }
 }
 
 void ImpulseCounter::onInit() {
   if (inputPullup) {
-    Supla::Io::pinMode(channel.getChannelNumber(), impulsePin, INPUT_PULLUP);
+    Supla::Io::pinMode(
+        channel.getChannelNumber(), impulsePin, INPUT_PULLUP, io);
   } else {
-    Supla::Io::pinMode(channel.getChannelNumber(), impulsePin, INPUT);
+    Supla::Io::pinMode(channel.getChannelNumber(), impulsePin, INPUT, io);
   }
 }
 
@@ -92,7 +99,7 @@ void ImpulseCounter::incCounter() {
 
 void ImpulseCounter::onFastTimer() {
   int currentState =
-      Supla::Io::digitalRead(channel.getChannelNumber(), impulsePin);
+      Supla::Io::digitalRead(channel.getChannelNumber(), impulsePin, io);
   if (prevState == (detectLowToHigh == true ? LOW : HIGH)) {
     if (millis() - lastImpulseMillis > debounceDelay) {
       if (currentState == (detectLowToHigh == true ? HIGH : LOW)) {

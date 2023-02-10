@@ -32,6 +32,10 @@ struct ClickSequence {
 
 class SequenceButton : public SimpleButton {
  public:
+  explicit SequenceButton(Supla::Io *io,
+                          int pin,
+                          bool pullUp = false,
+                          bool invertLogic = false);
   explicit SequenceButton(int pin,
                           bool pullUp = false,
                           bool invertLogic = false);
@@ -40,22 +44,22 @@ class SequenceButton : public SimpleButton {
 
   void setSequence(uint16_t *sequence);
   void setMargin(float);
-  void getLastRecordedSequence(uint16_t *sequence);
+  void getLastRecordedSequence(uint16_t *sequence) const;
 
  protected:
-  uint64_t lastStateChangeMs;
-  uint16_t longestSequenceTimeDeltaWithMargin;
-  uint8_t clickCounter;
-  bool sequenceDetectecion;
-
-  ClickSequence currentSequence;
-  ClickSequence matchSequence;
-
-  float margin;
   unsigned int calculateMargin(unsigned int);
+
+  uint64_t lastStateChangeMs = 0;
+  uint16_t longestSequenceTimeDeltaWithMargin = 800;
+  uint8_t clickCounter = 0;
+  bool sequenceDetectecion = true;
+  float margin = 0.3;
+
+  ClickSequence currentSequence = {};
+  ClickSequence matchSequence = {};
 };
 
-};  // namespace Control
-};  // namespace Supla
+}  // namespace Control
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_CONTROL_SEQUENCE_BUTTON_H_

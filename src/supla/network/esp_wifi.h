@@ -37,8 +37,6 @@
 #include "../supla_lib_config.h"
 #include "netif_wifi.h"
 
-// TODO(klew): change logs to supla_log
-
 namespace Supla {
 class ESPWifi : public Supla::Wifi {
  public:
@@ -54,18 +52,12 @@ class ESPWifi : public Supla::Wifi {
   }
 
   static void printConnectionDetails() {
-    Serial.print(F("Connected BSSID: "));
-    Serial.println(WiFi.BSSIDstr());
-    Serial.print(F("local IP: "));
-    Serial.println(WiFi.localIP());
-    Serial.print(F("subnetMask: "));
-    Serial.println(WiFi.subnetMask());
-    Serial.print(F("gatewayIP: "));
-    Serial.println(WiFi.gatewayIP());
+    SUPLA_LOG_INFO("Connected BSSID: ", WiFi.BSSIDstr());
+    SUPLA_LOG_INFO("local IP: ", WiFi.localIP());
+    SUPLA_LOG_INFO("subnetMask: ", WiFi.subnetMask());
+    SUPLA_LOG_INFO("gatewayIP: ", WiFi.gatewayIP());
     int rssi = WiFi.RSSI();
-    Serial.print(F("Signal strength (RSSI): "));
-    Serial.print(rssi);
-    Serial.println(F(" dBm"));
+    SUPLA_LOG_INFO("Signal strength (RSSI): ", rssi, " dBm");
   }
 
   // TODO(klew): add handling of custom local ip
@@ -83,7 +75,7 @@ class ESPWifi : public Supla::Wifi {
       disconnectedEventHandler = WiFi.onStationModeDisconnected(
           [](const WiFiEventStationModeDisconnected &event) {
           (void)(event);
-          Serial.println(F("WiFi station disconnected"));
+          SUPLA_LOG_INFO("WiFi station disconnected");
           });
 #else
       WiFiEventId_t event_gotIP = WiFi.onEvent(
@@ -96,7 +88,7 @@ class ESPWifi : public Supla::Wifi {
 
       WiFiEventId_t event_disconnected = WiFi.onEvent(
           [](WiFiEvent_t event, WiFiEventInfo_t info) {
-          Serial.println(F("WiFi Station disconnected"));
+          SUPLA_LOG_INFO("WiFi Station disconnected");
             // ESP32 doesn't reconnect automatically after lost connection
             WiFi.reconnect();
           },
@@ -110,7 +102,7 @@ class ESPWifi : public Supla::Wifi {
       } else {
         WiFi.mode(WIFI_MODE_STA);
       }
-      Serial.println(F("WiFi: resetting WiFi connection"));
+      SUPLA_LOG_INFO("WiFi: resetting WiFi connection");
       DisconnectProtocols();
       WiFi.disconnect();
     }

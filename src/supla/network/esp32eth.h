@@ -86,31 +86,28 @@ class ESPETH : public Supla::Network {
   void setup() override {
     WiFiEventId_t event_gotIP = WiFi.onEvent(
         [](WiFiEvent_t event, WiFiEventInfo_t info) {
-          Serial.print(F("local IP: "));
-          Serial.println(ETH.localIP());
-          Serial.print(F("subnetMask: "));
-          Serial.println(ETH.subnetMask());
-          Serial.print(F("gatewayIP: "));
-          Serial.println(ETH.gatewayIP());
-          Serial.print(F("ETH MAC: "));
-          Serial.println(ETH.macAddress());
+          SUPLA_LOG_INFO("local IP: ", ETH.localIP());
+          SUPLA_LOG_INFO("subnetMask: ", ETH.subnetMask());
+          SUPLA_LOG_INFO("gatewayIP: ", ETH.gatewayIP());
+          SUPLA_LOG_INFO("ETH MAC: ", ETH.macAddress());
           if (ETH.fullDuplex()) {
-            Serial.print(F("FULL_DUPLEX , "));
+            SUPLA_LOG_INFO("FULL_DUPLEX , ", ETH.linkSpeed(), "Mbps");
           }
-          Serial.print(ETH.linkSpeed());
-          Serial.println(F("Mbps"));
+          else {
+            SUPLA_LOG_INFO(ETH.linkSpeed(), "Mbps");
+          }
           eth_connected = true;
         },
         WiFiEvent_t::ARDUINO_EVENT_ETH_GOT_IP);  // ESP core 2.0.2
     (void)(event_gotIP);
     WiFiEventId_t event_disconnected = WiFi.onEvent(
         [](WiFiEvent_t event, WiFiEventInfo_t info) {
-          Serial.println(F("Station disconnected"));
+          SUPLA_LOG_INFO("Station disconnected");
           eth_connected = false;
         },
         WiFiEvent_t::ARDUINO_EVENT_ETH_DISCONNECTED);  // ESP core 2.0.2
     (void)(event_disconnected);
-    Serial.println(F("establishing Lan connection"));
+    SUPLA_LOG_INFO("establishing Lan connection");
     ETH.begin(ETH_ADDRESS,
               ETH_POWER_PIN,
               ETH_MDC_PIN,

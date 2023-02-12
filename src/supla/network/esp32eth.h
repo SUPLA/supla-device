@@ -92,7 +92,7 @@ class ESPETH : public Supla::Network {
           SUPLA_LOG_INFO("ETH MAC: ", ETH.macAddress());
           if (ETH.fullDuplex()) {
             SUPLA_LOG_INFO("FULL_DUPLEX , ", ETH.linkSpeed(), "Mbps");
-          }else{
+          } else {
             SUPLA_LOG_INFO(ETH.linkSpeed(), "Mbps");
           }
           eth_connected = true;

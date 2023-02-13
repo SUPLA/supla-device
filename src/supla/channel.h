@@ -76,6 +76,9 @@ class Channel : public LocalAction {
   bool isHvacFlagSetpointTemperatureMinSet();
   bool isHvacFlagSetpointTemperatureMaxSet();
 
+  static bool isHvacFlagSetpointTemperatureMinSet(THVACValue *hvacValue);
+  static bool isHvacFlagSetpointTemperatureMaxSet(THVACValue *hvacValue);
+
   THVACValue *getValueHvac();
 
   virtual bool isExtended() const;

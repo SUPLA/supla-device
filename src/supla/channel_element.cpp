@@ -77,7 +77,7 @@ bool Supla::ChannelElement::loadFunctionFromConfig() {
   return false;
 }
 
-void Supla::ChannelElement::setAndSaveFunction(_supla_int_t channelFunction) {
+bool Supla::ChannelElement::setAndSaveFunction(_supla_int_t channelFunction) {
   if (channel.getDefaultFunction() != channelFunction) {
     channel.setDefault(channelFunction);
     auto cfg = Supla::Storage::ConfigInstance();
@@ -87,6 +87,8 @@ void Supla::ChannelElement::setAndSaveFunction(_supla_int_t channelFunction) {
       cfg->setInt32(key, channelFunction);
       cfg->saveWithDelay(5000);
     }
+    return true;
   }
+  return false;
 }
 

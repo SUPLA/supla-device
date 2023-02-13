@@ -33,19 +33,7 @@ using ::testing::StrEq;
 using ::testing::Return;
 using ::testing::AnyNumber;
 
-class HvacTestsF : public ::testing::Test {
- protected:
-  void SetUp() override {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-  }
-  void TearDown() override {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-  }
-};
-
-class HvacTestWithChannelSetupF : public HvacTestsF {
+class HvacWeeklyScheduleTestsF : public ::testing::Test {
  protected:
   ConfigMock cfg;
   SimpleTime time;
@@ -54,7 +42,8 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
   Supla::Sensor::ThermHygroMeter *t2 = {};
 
   void SetUp() override {
-    HvacTestsF::SetUp();
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
 
     hvac = new Supla::Control::HvacBase();
     t1 = new Supla::Sensor::Thermometer();
@@ -78,14 +67,15 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
   }
 
   void TearDown() override {
-    HvacTestsF::TearDown();
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
     delete hvac;
     delete t1;
     delete t2;
   }
 };
 
-TEST_F(HvacTestWithChannelSetupF, WeeklyScheduleBasicSetAndGet) {
+TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AnyNumber());
   EXPECT_CALL(cfg, setInt32(_, _))
       .Times(AnyNumber())
@@ -222,7 +212,7 @@ TEST_F(HvacTestWithChannelSetupF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Monday, 0, 0), 3);
 }
 
-TEST_F(HvacTestWithChannelSetupF, handleWeeklyScehduleFromServer) {
+TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
@@ -307,7 +297,7 @@ TEST_F(HvacTestWithChannelSetupF, handleWeeklyScehduleFromServer) {
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 3), 0);
 }
 
-TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfigForWeekly) {
+TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
@@ -378,7 +368,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfigForWeekly) {
             0);
 }
 
-TEST_F(HvacTestWithChannelSetupF,
+TEST_F(HvacWeeklyScheduleTestsF,
        startupProcedureWithScheduleChangedBeforeConnection) {
   ProtocolLayerMock proto;
   ::testing::Sequence s1, s2;

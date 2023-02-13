@@ -575,6 +575,13 @@ void Channel::setBatteryLevel(unsigned char level) {
 void Channel::setHvacIsOn(uint8_t isOn) {
   auto value = getValueHvac();
   if (value != nullptr && value->IsOn != isOn) {
+    if (value->IsOn == 0 && isOn != 0) {
+      runAction(Supla::ON_TURN_ON);
+    } else if (value->IsOn != 0 && isOn == 0) {
+      runAction(Supla::ON_TURN_OFF);
+    }
+    runAction(Supla::ON_CHANGE);
+
     setUpdateReady();
     value->IsOn = isOn;
   }
@@ -588,7 +595,6 @@ void Channel::setHvacMode(uint8_t mode) {
   }
 }
 
-// getValueHvac
 THVACValue *Channel::getValueHvac() {
   if (channelNumber >= 0 && getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
     return &reg_dev.channels[channelNumber].hvacValue;
@@ -616,7 +622,6 @@ void Channel::setHvacSetpointTemperatureMin(int16_t temperature) {
   }
 }
 
-// clearHvacSetpointTemperatureMax
 void Channel::clearHvacSetpointTemperatureMax() {
   auto value = getValueHvac();
   if (value != nullptr && (value->SetpointTemperatureMax != 0 ||
@@ -627,7 +632,6 @@ void Channel::clearHvacSetpointTemperatureMax() {
   }
 }
 
-// clearHvacSetpointTemperatureMin
 void Channel::clearHvacSetpointTemperatureMin() {
   auto value = getValueHvac();
   if (value != nullptr && (value->SetpointTemperatureMin != 0 ||
@@ -646,7 +650,6 @@ void Channel::setHvacFlags(uint16_t flags) {
   }
 }
 
-// setHvacFlagSetpointTemperatureMax
 void Channel::setHvacFlagSetpointTemperatureMaxSet(bool value) {
   auto hvacValue = getValueHvac();
   if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureMaxSet()) {
@@ -676,20 +679,26 @@ void Channel::setHvacFlagSetpointTemperatureMinSet(bool value) {
   }
 }
 
-// isHvacFlagSetpointTemperatureMaxSet
 bool Channel::isHvacFlagSetpointTemperatureMaxSet() {
   auto value = getValueHvac();
+  return isHvacFlagSetpointTemperatureMaxSet(value);
+}
+
+bool Channel::isHvacFlagSetpointTemperatureMinSet() {
+  auto value = getValueHvac();
+  return isHvacFlagSetpointTemperatureMinSet(value);
+}
+
+bool Channel::isHvacFlagSetpointTemperatureMinSet(THVACValue *value) {
   if (value != nullptr) {
-    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
   }
   return false;
 }
 
-// isHvacFlagSetpointTemperatureMinSet
-bool Channel::isHvacFlagSetpointTemperatureMinSet() {
-  auto value = getValueHvac();
+bool Channel::isHvacFlagSetpointTemperatureMaxSet(THVACValue *value) {
   if (value != nullptr) {
-    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
   }
   return false;
 }

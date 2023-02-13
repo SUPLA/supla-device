@@ -51,6 +51,7 @@ class HvacBase : public ChannelElement {
   void iterateAlways() override;
   bool iterateConnected() override;
 
+  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
   void handleSetChannelConfigResult(
@@ -62,6 +63,11 @@ class HvacBase : public ChannelElement {
   _supla_int16_t getSecondaryTemp();
 
   void setOutput(int value);
+  void setTargetMode(int mode);
+  void setTemperatureSetpointMin(int tMin);
+  void setTemperatureSetpointMax(int tMax);
+  int getTemperatureSetpointMin();
+  int getTemperatureSetpointMax();
 
   void saveConfig();
   void saveWeeklySchedule();
@@ -296,6 +302,7 @@ class HvacBase : public ChannelElement {
   Supla::Control::OutputInterface *output = nullptr;
   Supla::Sensor::Thermometer *primaryThermometer = nullptr;
   Supla::Sensor::Thermometer *secondaryThermometer = nullptr;
+  uint64_t lastConfigChangeTimestampMs = 0;
 };
 
 }  // namespace Control

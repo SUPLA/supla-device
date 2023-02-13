@@ -180,8 +180,7 @@ void HvacBase::onInit() {
 
   uint8_t mode = channel.getHvacMode();
   if (mode == SUPLA_HVAC_MODE_NOT_USED) {
-    mode = SUPLA_HVAC_MODE_OFF;
-    channel.setHvacMode(mode);
+    setTargetMode(SUPLA_HVAC_MODE_OFF);
     if (isModeSupported(SUPLA_HVAC_MODE_HEAT) &&
         !channel.isHvacFlagSetpointTemperatureMinSet()) {
       channel.setHvacSetpointTemperatureMin(SUPLA_HVAC_DEFAULT_TEMP_MIN);
@@ -191,7 +190,6 @@ void HvacBase::onInit() {
       channel.setHvacSetpointTemperatureMax(SUPLA_HVAC_DEFAULT_TEMP_MAX);
     }
     setOutput(0);
-    channel.setHvacIsOn(0);
   }
 }
 
@@ -355,7 +353,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
   memcpy(&configCopy, &config, sizeof(TSD_ChannelConfig_HVAC));
 
   // Received config looks ok, so we apply it to channel
-  setAndSaveFunction(channelFunction);
+  if (setAndSaveFunction(channelFunction)) {
+    lastConfigChangeTimestampMs = millis();
+  }
 
   // We don't use setters here, because they run validation againsted current
   // configuration, which may fail. However new config was already validated
@@ -1354,9 +1354,15 @@ bool HvacBase::setHeaterCoolerThermometerChannelNo(uint8_t channelNo) {
   }
 
   if (getChannelNumber() == channelNo) {
-    config.HeaterCoolerThermometerChannelNo = channelNo;
-    setHeaterCoolerThermometerType(
-        SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET);
+    if (config.HeaterCoolerThermometerChannelNo != channelNo) {
+      config.HeaterCoolerThermometerChannelNo = channelNo;
+      setHeaterCoolerThermometerType(
+          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET);
+      if (initDone) {
+        channelConfigChangedOffline = 1;
+        saveConfig();
+      }
+    }
     return true;
   }
   return false;
@@ -1437,6 +1443,7 @@ uint16_t HvacBase::getMinOffTimeS() const {
 
 void HvacBase::saveConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
+  lastConfigChangeTimestampMs = millis();
   if (cfg) {
     // Generic HVAC configuration
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
@@ -1807,6 +1814,14 @@ void HvacBase::setOutput(int value) {
   if (output) {
     output->setOutputValue(value);
   }
+  channel.setHvacIsOn(value);
+}
+
+void HvacBase::setTargetMode(int mode) {
+  if (isModeSupported(mode)) {
+    channel.setHvacMode(mode);
+    lastConfigChangeTimestampMs = millis();
+  }
 }
 
 bool HvacBase::checkOverheatProtection() {
@@ -1831,3 +1846,76 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) {
   hvac->setTemperatureAutoOffsetMin(getTemperatureAutoOffsetMin());
   hvac->setTemperatureAutoOffsetMax(getTemperatureAutoOffsetMax());
 }
+
+int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+  auto hvacValue = reinterpret_cast<THVACValue *>(newValue);
+
+  if (!isModeSupported(hvacValue->Mode)) {
+    return 0;
+  }
+
+  bool tMaxSet = false;
+  bool tMinSet = false;
+  int tMin = hvacValue->SetpointTemperatureMin;
+  int tMax = hvacValue->SetpointTemperatureMax;
+
+  if (Supla::Channel::isHvacFlagSetpointTemperatureMaxSet(hvacValue)) {
+    if (!isTemperatureInRoomConstrain(tMaxSet)) {
+      return 0;
+    }
+    tMaxSet = true;
+  } else {
+    tMax = getTemperatureSetpointMax();
+  }
+
+  if (Supla::Channel::isHvacFlagSetpointTemperatureMinSet(hvacValue)) {
+    if (!isTemperatureInRoomConstrain(tMinSet)) {
+      return 0;
+    }
+    tMinSet = true;
+  } else {
+    tMin = getTemperatureSetpointMin();
+  }
+
+
+  // auto constrain is verified only when auto mode is requested
+  if (hvacValue->Mode == SUPLA_HVAC_MODE_AUTO) {
+    if (!isTemperatureInAutoConstrain(tMin, tMax)) {
+      return 0;
+    }
+  }
+
+  setTargetMode(hvacValue->Mode);
+
+  if (tMinSet) {
+    setTemperatureSetpointMin(tMin);
+  }
+  if (tMaxSet) {
+    setTemperatureSetpointMax(tMax);
+  }
+
+  // clear flag, so iterateAlawys method will apply new config instantly
+  // instead of waiting few seconds
+  lastConfigChangeTimestampMs = 0;
+
+  return 1;
+}
+
+void HvacBase::setTemperatureSetpointMin(int tMin) {
+  channel.setHvacSetpointTemperatureMin(tMin);
+  lastConfigChangeTimestampMs = millis();
+}
+
+void HvacBase::setTemperatureSetpointMax(int tMax) {
+  channel.setHvacSetpointTemperatureMax(tMax);
+  lastConfigChangeTimestampMs = millis();
+}
+
+int HvacBase::getTemperatureSetpointMin() {
+  return channel.getHvacSetpointTemperatureMin();
+}
+
+int HvacBase::getTemperatureSetpointMax() {
+  return channel.getHvacSetpointTemperatureMax();
+}
+

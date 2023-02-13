@@ -36,6 +36,7 @@ using ::testing::Return;
 
 class HvacTestsF : public ::testing::Test {
  protected:
+  SimpleTime time;
   void SetUp() override {
     Supla::Channel::lastCommunicationTimeMs = 0;
     memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
@@ -49,7 +50,6 @@ class HvacTestsF : public ::testing::Test {
 class HvacTestWithChannelSetupF : public HvacTestsF {
  protected:
   ConfigMock cfg;
-  SimpleTime time;
   Supla::Control::HvacBase *hvac = {};
   Supla::Sensor::Thermometer *t1 = {};
   Supla::Sensor::ThermHygroMeter *t2 = {};

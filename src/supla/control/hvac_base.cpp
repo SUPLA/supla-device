@@ -171,6 +171,11 @@ void HvacBase::onInit() {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_FAN);
     }
   }
+  if (getUsedAlgorithm() == 0 &&
+      isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF)) {
+    setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  }
+
   initDone = true;
 
   uint8_t mode = channel.getHvacMode();
@@ -1810,4 +1815,19 @@ bool HvacBase::checkOverheatProtection() {
 
 bool HvacBase::checkAntifreezeProtection() {
   return false;
+}
+
+void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) {
+  if (hvac == nullptr) {
+    return;
+  }
+  hvac->addAlgorithmCap(config.AlgorithmCaps);
+  hvac->setTemperatureRoomMin(getTemperatureRoomMin());
+  hvac->setTemperatureRoomMax(getTemperatureRoomMax());
+  hvac->setTemperatureHeaterCoolerMin(getTemperatureHeaterCoolerMin());
+  hvac->setTemperatureHeaterCoolerMax(getTemperatureHeaterCoolerMax());
+  hvac->setTemperatureHisteresisMin(getTemperatureHisteresisMin());
+  hvac->setTemperatureHisteresisMax(getTemperatureHisteresisMax());
+  hvac->setTemperatureAutoOffsetMin(getTemperatureAutoOffsetMin());
+  hvac->setTemperatureAutoOffsetMax(getTemperatureAutoOffsetMax());
 }

@@ -278,6 +278,8 @@ class HvacBase : public ChannelElement {
                      int quarter) const;
   TWeeklyScheduleProgram getProgram(int programId) const;
 
+  void copyFixedChannelConfigTo(HvacBase *hvac);
+
  private:
   _supla_int16_t getTemperature(Supla::Sensor::Thermometer *t);
   bool checkOverheatProtection();

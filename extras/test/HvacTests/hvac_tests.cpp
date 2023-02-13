@@ -1262,7 +1262,7 @@ TEST_F(HvacTestWithChannelSetupF,
                   SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET,
               .EnableAntiFreezeAndOverheatProtection = 0,
               .AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF,
-              .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_NOT_SET,
+              .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
               .MinOnTimeS = 0,
               .MinOffTimeS = 0,
               .Temperatures = {}};
@@ -1310,5 +1310,45 @@ TEST_F(HvacTestWithChannelSetupF,
   // applied to the channel
   EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
       SUPLA_CONFIG_RESULT_TRUE);
+}
+
+TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
+  Supla::Control::HvacBase hvac;
+  // init min max ranges for tempreatures setting and check again setters
+  // for temperatures
+  hvac.setTemperatureRoomMin(500);           // 5 degrees
+  hvac.setTemperatureRoomMax(5000);          // 50 degrees
+  hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
+  hvac.setTemperatureHisteresisMax(1000);    // 10 degree
+  hvac.setTemperatureAutoOffsetMin(200);     // 2 degrees
+  hvac.setTemperatureAutoOffsetMax(1000);    // 10 degrees
+  hvac.setTemperatureHeaterCoolerMin(500);   // 5 degrees
+  hvac.setTemperatureHeaterCoolerMax(7500);  // 75 degrees
+  hvac.addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  hvac.onInit();
+
+  EXPECT_EQ(hvac.getTemperatureRoomMin(), 500);
+  EXPECT_EQ(hvac.getTemperatureRoomMax(), 5000);
+  EXPECT_EQ(hvac.getTemperatureHisteresisMin(), 20);
+  EXPECT_EQ(hvac.getTemperatureHisteresisMax(), 1000);
+  EXPECT_EQ(hvac.getTemperatureAutoOffsetMin(), 200);
+  EXPECT_EQ(hvac.getTemperatureAutoOffsetMax(), 1000);
+  EXPECT_EQ(hvac.getTemperatureHeaterCoolerMin(), 500);
+  EXPECT_EQ(hvac.getTemperatureHeaterCoolerMax(), 7500);
+  EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_ON_OFF);
+
+  Supla::Control::HvacBase hvac2;
+  hvac.copyFixedChannelConfigTo(&hvac2);
+  hvac2.onInit();
+
+  EXPECT_EQ(hvac2.getTemperatureRoomMin(), 500);
+  EXPECT_EQ(hvac2.getTemperatureRoomMax(), 5000);
+  EXPECT_EQ(hvac2.getTemperatureHisteresisMin(), 20);
+  EXPECT_EQ(hvac2.getTemperatureHisteresisMax(), 1000);
+  EXPECT_EQ(hvac2.getTemperatureAutoOffsetMin(), 200);
+  EXPECT_EQ(hvac2.getTemperatureAutoOffsetMax(), 1000);
+  EXPECT_EQ(hvac2.getTemperatureHeaterCoolerMin(), 500);
+  EXPECT_EQ(hvac2.getTemperatureHeaterCoolerMax(), 7500);
+  EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_ON_OFF);
 }
 

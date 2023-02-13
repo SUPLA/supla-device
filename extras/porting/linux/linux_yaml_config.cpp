@@ -49,6 +49,7 @@
 #include <vector>
 
 #include "linux_yaml_config.h"
+#include "supla/control/action_trigger.h"
 #include "supla/sensor/sensor_parsed.h"
 #include "supla/sensor/therm_hygro_meter_parsed.h"
 
@@ -526,6 +527,10 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
   }
 
   if (!addStateParser(ch, cr, parser, false)) {
+    return false;
+  }
+
+  if (!addActionTrigger(ch, cr, false)) {
     return false;
   }
 
@@ -1295,6 +1300,26 @@ bool Supla::LinuxYamlConfig::addStateParser(
       SUPLA_LOG_ERROR("Channel config: missing \"%s\" parameter",
                       Supla::Parser::State);
       return false;
+    }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addActionTrigger(
+    const YAML::Node& ch,
+    Supla::ChannelElement* element,
+    bool mandatory) {
+  if (mandatory && !ch[Supla::Parser::ActionTrigger]) {
+    SUPLA_LOG_ERROR("Channel config: mandatory \"%s\" parameter missing",
+                    Supla::Parser::ActionTrigger);
+    return false;
+  }
+
+  if (ch[Supla::Parser::ActionTrigger]) {
+    paramCount++;
+    int type = ch[Supla::Parser::ActionTrigger].as<int>();
+    if (type == 1) {
+      auto at = new Supla::Control::ActionTrigger();
     }
   }
   return true;

@@ -175,6 +175,9 @@ class LinuxYamlConfig : public Config {
                       Supla::Sensor::SensorParsedBase* sensor,
                       Supla::Parser::Parser* parser,
                       bool mandatory);
+  bool addActionTrigger(const YAML::Node& ch,
+                      Supla::ChannelElement* sensor,
+                      bool mandatory);
 
   std::string file;
   YAML::Node config;

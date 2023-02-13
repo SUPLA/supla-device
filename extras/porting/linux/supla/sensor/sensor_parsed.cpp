@@ -83,7 +83,9 @@ int SensorParsedBase::getStateValue() {
             != stateOnValues.end()) {
           value = 1;
         } else {
-          value = 0;
+          if (value != -1) {
+            value = 0;
+          }
         }
       }
 

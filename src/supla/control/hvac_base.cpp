@@ -23,7 +23,7 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-#include <limits>
+#include <stdint.h>
 
 #include "output_interface.h"
 
@@ -1799,11 +1799,11 @@ _supla_int16_t HvacBase::getTemperature(Supla::Sensor::Thermometer *t) {
       return 0;
     }
     temp *= 100;
-    if (temp > std::numeric_limits<_supla_int16_t>::max()) {
-      return std::numeric_limits<_supla_int16_t>::max();
+    if (temp > INT16_MAX) {
+      return INT16_MAX;
     }
-    if (temp < std::numeric_limits<_supla_int16_t>::min()) {
-      return std::numeric_limits<_supla_int16_t>::min();
+    if (temp < INT16_MIN) {
+      return INT16_MIN;
     }
     return temp;
   }

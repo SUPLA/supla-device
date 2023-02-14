@@ -25,8 +25,15 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <utility>
+#include "supla/control/action_trigger.h"
 
 namespace Supla {
+
+namespace Control {
+class ActionTriggerParsed;
+}  // namespace Control
+
 namespace Sensor {
 
 const char BatteryLevel[] = "battery_level";
@@ -50,15 +57,41 @@ class SensorParsedBase {
   // Otherwise returns >= 0 read from parser.
   int getStateValue();
   void setOnValues(const std::vector<int> &onValues);
+  bool addAtOnState(const std::vector<int> &onState);
+  bool addAtOnValue(const std::vector<int> &onValue);
+  bool addAtOnStateChange(const std::vector<int> &onState);
+  bool addAtOnValueChange(const std::vector<int> &onValue);
+  void setLastState(int newState);
+  void setLastValue(int newValue);
+  void setAtName(std::string);
+  void registerActions();
+
+  static void registerAtName(std::string,
+                             Supla::Control::ActionTriggerParsed *);
 
  protected:
   double getParameterValue(const std::string &parameter);
 
+  // parser configuration
+  int id;
   Supla::Parser::Parser *parser = nullptr;
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
   std::vector<int> stateOnValues;
-  int id;
+
+  // action trigger configuration
+  std::string atName;
+  int lastState = -1;
+  int lastValue = -1;
+  std::map<int, int> atOnState;  // map<state, event>
+  std::map<int, int> atOnValue;
+  std::map<std::pair<int, int>, int>
+      atOnStateChangeFromTo;  // map<<from, to>, event>
+  std::map<std::pair<int, int>, int> atOnValueChangeFromTo;
+
+  static std::map<std::string, Supla::Control::ActionTriggerParsed *> atMap;
+
+  // TODO(klew): add local action
 };
 
 template <typename T> class SensorParsed : public T, public SensorParsedBase {

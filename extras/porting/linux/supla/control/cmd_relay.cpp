@@ -30,6 +30,12 @@ Supla::Control::CmdRelay::CmdRelay(Supla::Parser::Parser *parser,
   channel.setFuncList(functions);
 }
 
+
+void Supla::Control::CmdRelay::onInit() {
+  VirtualRelay::onInit();
+  registerActions();
+}
+
 void Supla::Control::CmdRelay::turnOn(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOn(duration);
   channel.setNewValue(isOn());
@@ -61,14 +67,19 @@ void Supla::Control::CmdRelay::setCmdOff(const std::string &newCmdOff) {
 bool Supla::Control::CmdRelay::isOn() {
   bool newState = false;
 
+  int result = 0;
   if (parser) {
-    int result = getStateValue();
+    result = getStateValue();
     if (result == 1) {
       newState = true;
+    } else if (result != -1) {
+     result = 0;
     }
   } else {
     newState = Supla::Control::VirtualRelay::isOn();
   }
+
+  setLastState(result);
 
   return newState;
 }

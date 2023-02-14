@@ -36,6 +36,8 @@ namespace Sensor {
 class BinaryParsed : public SensorParsed<VirtualBinary> {
  public:
   explicit BinaryParsed(Supla::Parser::Parser *);
+
+  void onInit() override;
   bool getValue() override;
 };
 };  // namespace Sensor

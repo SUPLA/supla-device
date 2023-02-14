@@ -24,6 +24,11 @@ Supla::Sensor::BinaryParsed::BinaryParsed(Supla::Parser::Parser *parser)
     : SensorParsed(parser) {
 }
 
+void Supla::Sensor::BinaryParsed::onInit() {
+  VirtualBinary::onInit();
+  registerActions();
+}
+
 bool Supla::Sensor::BinaryParsed::getValue() {
   bool value = false;
 
@@ -32,5 +37,9 @@ bool Supla::Sensor::BinaryParsed::getValue() {
   if (result == 1) {
     value = true;
   }
+
+//  setLastState(isOffline() ? -1 : (value ? 1 : 0));
+  setLastState(value ? 1 : 0);
+
   return value;
 }

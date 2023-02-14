@@ -31,7 +31,11 @@ was cloned.
     mkdir build
     cd build
     cmake ..
-    make -j10
+    make
+
+If you want to speed up compilation you can call `make -j5` instead of `make`.
+It will run 5 parallel compilation jobs. However it is not recommended to use
+on a PC with low RAM.
 
 It should produce `supla-device-linux` binary file. Check if it is working:
 
@@ -46,14 +50,14 @@ instructions.
 
 supla-device may work in 3 modes:
 1. "normal" - default mode, when you call `./supla-device-linux` from command
-line. In this mode logs are prited to console (standard output). Application
-working directory depends current working directory in console.
+line. In this mode logs are printed to console (standard output). Application
+working directory depends on current working directory in a console.
 2. "daemon" - can be started by calling `./supla-device-linux -d`. Application
 is forked and runs in background. Logs are routed to syslog
-(see /var/log/syslog). Current working directory is changed to "/". Currently
+(see /var/log/syslog). Current working directory is changed to `/`.
 supla-device doesn't create PID file.
 3. "service" - can be started by calling `./supla-device-linux -s`. Logs are
-routed to syslog and current working directory is changed to "/"
+routed to syslog and current working directory is changed to `/`
 (as in daemon mode). However separate process isn't forked and application
 runs in foreground.
 
@@ -68,8 +72,8 @@ found in syslog:
 This command will show last 100 entries in syslog and filter it for
 supla-device-linux string.
 
-You can change log level by adding -D (debug) or -V (verbose debug) to your
-command line, or in supla-device.yaml config file.
+You can change log level by adding `-D` (debug) or `-V` (verbose debug) to your
+command line, or in `supla-device.yaml` config file.
 
 If you need further help, please ask on
 [forum](https://en-forum.supla.org/viewforum.php?f=7) (or use any other
@@ -86,9 +90,9 @@ Feel free to contribute.
 ## Config file location
 
 supla-device use supla-device.yaml file for configuration. By default it checks
-"etc/supla-device.yaml" relative path. So it will look in current folder when
+`etc/supla-device.yaml` relative path. So it will look in current folder when
 run in "normal" mode, however in "daemon" or "service" mode, it will look
-for a config file in /etc/supla-device.yaml.
+for a config file in `/etc/supla-device.yaml`.
 
 You can specify your own config file:
 
@@ -97,17 +101,17 @@ You can specify your own config file:
 ## GUID, AUTHKEY, last_state.txt
 
 GUID and AUTHKEY is automatically generated (if missing) and stored in location:
-var/lib/supla-device/guid_auth.yaml. Directory may be modified, however file
+`var/lib/supla-device/guid_auth.yaml`. Directory may be modified, but file
 name can't.
 Please make sure that user, under which supla-device will be started, has write
-access to the var/lib/supla-device location. I.e. by calling:
+access to the `var/lib/supla-device` location. I.e. by calling:
 
     sudo mkdir -p /var/lib/supla-device
     sudo chown supla_user /var/lib/supla-device
 
 Adjust "supla_user" to your user name.
 
-last_state.txt file contain last runtime "last state" log (similar to
+`last_state.txt` file contain last runtime "last state" log (similar to
 "last state" log available on web interface for i.e. ESP8266 devices). It is
 rewritten on each startup.
 
@@ -121,13 +125,11 @@ Location for those files may be modified by providing providing
 Example config file is available in `extras/examples/linux/supla-device.yaml`.
 Please copy it and adjust to your needs.
 If you are not familiar with YAML format, please check some examples online
-before you start. Data is case sensisive and indentation is important.
+before you start. Data is case sensitive and indentation is important.
 
 ## Config file parameters
 
 ### Generic configuration
-
-Below parameters are without indentation in YAML file.
 
 #### Parameter `name`
 
@@ -140,9 +142,9 @@ Example:
 
 #### Parameter `log_level`
 
-Defines log level - it enables debug and verbose debug logs.
-Parameter is optional - default log level is "INFO".
-Allowed values: debug, verbose
+Use it to change log level to different value.
+Parameter is optional. Default log level is `info`.
+Allowed values: `debug`, `verbose`
 
 Example:
 
@@ -151,8 +153,8 @@ Example:
 #### Parameter `state_files_path`
 
 Defines location where supla-device will read/write GUID, AUTHKEY and
-last_state.txt.
-Parameter is optional - default value is: var/lib/supla-device (relative path).
+`last_state.txt`.
+Parameter is optional. Default value is: `var/lib/supla-device` (relative path).
 Allowed values: any valid relative or absolute path where supla-device will have
 proper rights to write and read files.
 Please put path in double quotes.
@@ -208,11 +210,11 @@ Channels are defined as YAML array under `channels` key. Each array element
 starts with `-` and should have proper indentation.
 
 Order of channels is important. First channel will get number 0, second 1, etc.
-and those will be registered in Supla server with those numbers. In Supla
+and will be registered in Supla server with those numbers. In Supla,
 device is not allowed to change order of channels, nor to change channel type,
 nor to remove channel. If you do so, device will not be able to register on
 Supla server and will have "Channel conflict" error (visible in logs and in
-last_state.txt file). In such case you will have to remove device from Supla
+`last_state.txt` file). In such case you will have to remove device from Supla
 Cloud with all measurement history and configuration, and register it again.
 
 It is ok to add channels later at the end of the list.
@@ -230,6 +232,7 @@ Supported channel types:
 * `ImpulseCounterParsed` - related class `Supla::Sensor::ImpulseCounterParsed`
 * `ElectricityMeterParsed` - related class `Supla::Sensor::ElectricityMeterParsed`
 * `BinaryParsed` - related class `Supla::Sensor::BinaryParsed`
+* `ActionTriggerParsed` - related class `Supla::Control::ActionTriggerParsed`
 
 Example channels configuration (details are exaplained later):
 
@@ -371,9 +374,11 @@ names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
 channel.
 
+More examples can be found in subfolders of `extras/examples/linux`.
+
 ### VirtualRelay
 
-VirtualRelay is pretending to be a relay channel in Supla. You can turn it on
+`VirtualRelay` is pretending to be a relay channel in Supla. You can turn it on
 and off from Supla App, etc.
 
 It is virtual, because it doesn't control anything - it just keeps state that
@@ -390,26 +395,47 @@ on, off, restore.
 
 ### CmdRelay
 
-CmdRelay is pretending to be a relay channel in Supla. It is very similar to
-VirtualRelay, however additionally it allows to configure Linux command to
+`CmdRelay` is pretending to be a relay channel in Supla. It is very similar to
+`VirtualRelay`, however additionally it allows to configure Linux command to
 be executed on every turn on/off action.
 
-CmdRelay accepts the same parameters as VirtualRelay. Additionally it supports
+`CmdRelay` accepts the same parameters as `VirtualRelay`. Additionally it supports
 two extra configuration options:
 `cmd_on` - command to be exectued on turn on.
 `cmd_off` - command to be executed on turn off.
 
-When CmdRelay is added without `state` parameter, then it will use internal
+When `CmdRelay` is added without `state` parameter, then it will use internal
 memory to keep it's state, which will be always consistent with last executed
 action on relay channel. Such state can be saved to Storage.
 
-Another option for CmdRelay is to define `state` parameter. When `state`
-parameter is defined, it require to use Parser instance (and underlying Source)
+Another option for `CmdRelay` is to define `state` parameter. When `state`
+parameter is defined, it require to use `Parser` instance (and underlying `Source`)
 which is used to read state of this relay channel. It works exactly the same as
-for BinaryParsed channel. So you can define data source as file or command and
-use any available Parser to read your relay state. Please remember to keep
+for `BinaryParsed` channel. So you can define data source as file or command and
+use any available `Parser` to read your relay state. Please remember to keep
 state refresh rate at reasonable level (i.e. fetching data remotly every
 100 ms may not be the best idea :) ).
+
+Parameter `offline_on_invalid_state` set to `true` will change channel to "offline"
+when it's state is invalid (i.e. source file wasn't modfified for a long time, or
+value was set to -1).
+
+Paramter `state_on_values` allows to define array of integers which are interpreted
+as state "on". I.e. `state_on_values = [3, 4, 5]` will set channel to "on"
+when state is 3, 4 or 5. Otherwise it will set channel to "off" with exepction to
+value -1 which is used as invalid state.
+
+Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send actions
+to Supla server depending on channel state (or value). Example:
+
+    action_trigger:
+      use: at1
+      on_state: [1, 0]
+      on_state: [2, 1]
+
+Exact values and configuration is exaplained in `ActionTriggerParsed` section.
+Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
+to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 
 ## Parsed channel `source` parameter
 
@@ -514,7 +540,7 @@ to be part of a proper channel definition.
 
 ## Parsed channel definition
 
-Each parser channel type defines its own parameter key for fetching data
+Each parsed channel type defines its own parameter key for fetching data
 from `parser`.
 
 Value of that parameter depends on used `parser` type. `Simple` parser use
@@ -637,6 +663,70 @@ AMIplus meter on standard single tariff:
           - voltage: voltage_at_phase_2_v
         phase_3:
           - voltage: voltage_at_phase_3_v
+
+### `ActionTriggerParsed`
+
+Creates instance of "action trigger" channel. There is only one mandatory
+parameter `name` which is used in other channels to reference this channel.
+
+Action trigger can be used only in `BinaryParsed` and `CmdRelay` channels.
+Here is example configuration of action trigger for `BinaryParsed` channel:
+
+    action_trigger:
+      - use: myAt2001
+      - on_state: [-1, 0]
+      - on_state_change: [0, 1, 1]
+      - on_value: [5, 2]
+      - on_value_change: [6, 7, 3]
+
+Above config will use `ActionTriggerParsed` channel with `name` "myAt2001".
+It will publish action "0" when channel enters state "-1" (offline).
+Action "1" will be published when channel state changes from "0" (off) to "1" (on).
+Action "2" will be published when value from `parser` is "5".
+Action "3" will be published when value from `parser` changes from "6" to "7".
+
+Both `BinaryParsed` and `CmdRelay` have state which can be equal to "0" (off) or
+"1" (on). Additionally `CmdRelay` can have state "-1" which is set when channel
+is offline.
+So `state` refers to channel state reported to Supla. On the other hand, `value` represents
+value which is read from `parser`. I.e. we can take input from file, which can have
+values from -1 to 10. Value "-1" for `CmdRelay` will be interpret as "offline" (when
+`offline_on_invalid_state` is set). Then by default value "1" is interpreted as
+"on" state and all other values are interpreted as "off" (this can be modified
+by setting `state_on_values` array).
+
+Action trigger can be configured when channel enters selected state or value, and
+for specific transition between states or values.
+
+Parameters `on_state` and `on_value` will configure action trigger run when channel
+enters selected state or value. First number in array defines state/value and second
+number defines action number to be send. So format is:
+
+    on_state: [STATE, ACTION]
+    on_value: [VALUE, ACTION]
+
+Similarly, parameters `on_state_change` and `on_value_change` will configure action
+trigger run when state or value changes between two selected values. Format is:
+
+    on_state_change: [FROM_STATE, TO_STATE, ACTION]
+    on_value_change: [FROM_VALUE, TO_VALUE, ACTION]
+
+It is allowed to configure multiple "on_" conditions to generate the same action.
+
+For action, please use only following numbers: 0, 1, 2, 3, 4, 5, 6, and
+10, 11, 12, 13, 14, 15.
+
+When aciton is used and device is registered in Cloud, there will be action
+trigger channel with actions corresponding to buttons, as defined in:
+[proto.h](https://github.com/SUPLA/supla-device/blob/660a79b66676c995730b5aa8452543440f519772/src/supla-common/proto.h#L2111)
+
+I.e. action 3 corresponds with:
+
+    #define SUPLA_ACTION_CAP_TOGGLE_x2 (1 << 3)
+
+(last number in bracket is action number, please check above link to `proto.h`
+ for more details). Currently in Supla only actions
+for buttons are defined, so we reuse them here.
 
 ## Battery level information for Parsed channels
 

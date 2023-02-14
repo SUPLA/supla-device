@@ -45,6 +45,20 @@ steps:
   - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py build"
   - /bin/bash -c "[ -f build/supla_esp32.bin ] && true || false"
 
+- name: esp_idf_stable_compilation_check
+  image: stable/esp-idf
+  pull: never
+  commands:
+  - pwd
+  - echo $SUPLA_DEVICE_PATH
+  - git submodule update --init --recursive
+  - ls -al
+  - export SUPLA_DEVICE_PATH=/drone/src
+  - cd extras/examples/esp_idf/
+  - rm -f build/supla_esp32.bin
+  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py build"
+  - /bin/bash -c "[ -f build/supla_esp32.bin ] && true || false"
+
 - name: freertos_linux_compilation_check
   image: devel/freertos
   pull: never

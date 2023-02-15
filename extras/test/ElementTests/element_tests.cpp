@@ -171,7 +171,7 @@ TEST_F(ElementTests, ChannelElementMethods) {
   el1.onFastTimer();
   el1.onRegistered();
 
-  TDSC_ChannelState channelState;
+  TDSC_ChannelState channelState = {};
   el1.handleGetChannelState(&channelState);
 
   EXPECT_EQ(el1.getChannelNumber(), 0);

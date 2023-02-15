@@ -117,7 +117,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
             auto cert = new char[len];
             memset(cert, 0, len);
             cfg->getCustomCA(cert, len);
-            client->setCACert(cert);
+            client->setCACert(cert, true);
           } else {
             SUPLA_LOG_ERROR(
                 "Custom CA is selected, but certificate is"

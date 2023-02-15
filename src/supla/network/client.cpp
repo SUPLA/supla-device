@@ -29,6 +29,11 @@ Supla::Client::Client() {
 }
 
 Supla::Client::~Client() {
+  if (destroyCertOnExit && rootCACert != nullptr) {
+    destroyCertOnExit = false;
+    delete[] rootCACert;
+    rootCACert = nullptr;
+  }
 }
 
 int Supla::Client::connect(IPAddress ip, uint16_t port) {
@@ -113,7 +118,13 @@ void Supla::Client::setSSLEnabled(bool enabled) {
   sslEnabled = enabled;
 }
 
-void Supla::Client::setCACert(const char *rootCA) {
+void Supla::Client::setCACert(const char *rootCA, bool destroyCertOnExit) {
+  if (rootCACert != nullptr && this->destroyCertOnExit) {
+    delete[] rootCACert;
+    rootCACert = nullptr;
+  }
+
+  this->destroyCertOnExit = destroyCertOnExit;
   rootCACert = rootCA;
 }
 

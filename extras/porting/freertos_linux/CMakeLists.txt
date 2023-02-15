@@ -10,7 +10,7 @@ set(FREERTOS_SRC
   $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/queue.c
   $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/tasks.c
   $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/timers.c
-  $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/croutine.c
+  #  $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/croutine.c
   $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/portable/ThirdParty/GCC/Posix/port.c
   $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/portable/ThirdParty/GCC/Posix/utils/wait_for_event.c
   $ENV{SUPLA_FREERTOS_PATH}/FreeRTOS/Source/portable/MemMang/heap_3.c

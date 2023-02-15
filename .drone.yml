@@ -4,6 +4,7 @@ name: default
 steps:
 - name: tests_compilation
   image: devel/freertos
+  pull: never
   commands:
   - mkdir extras/test/build
   - cd extras/test/build
@@ -12,6 +13,7 @@ steps:
 
 - name: tests
   image: devel/freertos
+  pull: never
   commands:
   - cd extras/test/build
   - ./supladevicetests --gtest_repeat=50 --gtest_shuffle

@@ -18,7 +18,6 @@ steps:
   depends_on:
   - tests_compilation
 
-steps:
 - name: tests_with_valgrind
   image: devel/supla-core
   pull: never

@@ -18,6 +18,16 @@ steps:
   depends_on:
   - tests_compilation
 
+steps:
+- name: tests_with_valgrind
+  image: devel/supla-core
+  pull: never
+  commands:
+  - cd extras/test/build
+  - valgrind --error-exitcode=1 --leak-check=full ./supladevicetests
+  depends_on:
+  - tests_compilation
+
 - name: esp8266_rtos_compilation_check
   image: devel/esp8266_rtos_sdk
   pull: never
@@ -246,6 +256,7 @@ steps:
                arduino_esp8266_compilation_check_part_3,
                arduino_mega_compilation_check,
                cpplint,
-               esp_idf_stable_compilation_check
+               esp_idf_stable_compilation_check,
+               tests_with_valgrind
               ]
 

@@ -31,7 +31,7 @@ steps:
   - /bin/bash -c "source /supla/esp/ESP8266_RTOS_SDK/export.sh && make -j32"
   - /bin/bash -c "[ -f build/supla-esp8266-mk.bin ] && true || false"
 
-- name: esp_idf_compilation_check
+- name: esp_idf_setup
   image: devel/esp-idf
   pull: never
   commands:
@@ -39,25 +39,30 @@ steps:
   - echo $SUPLA_DEVICE_PATH
   - git submodule update --init --recursive
   - ls -al
+
+- name: esp_idf_compilation_check
+  image: devel/esp-idf
+  pull: never
+  depends_on:
+    - esp_idf_setup
+  commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/
-  - rm -f build/supla_esp32.bin
-  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py build"
-  - /bin/bash -c "[ -f build/supla_esp32.bin ] && true || false"
+  - rm -fr build_devel
+  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py -B build_devel build"
+  - /bin/bash -c "[ -f build_devel/supla_esp32.bin ] && true || false"
 
 - name: esp_idf_stable_compilation_check
   image: stable/esp-idf
   pull: never
+  depends_on:
+    - esp_idf_setup
   commands:
-  - pwd
-  - echo $SUPLA_DEVICE_PATH
-  - git submodule update --init --recursive
-  - ls -al
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/
-  - rm -f build/supla_esp32.bin
-  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py build"
-  - /bin/bash -c "[ -f build/supla_esp32.bin ] && true || false"
+  - rm -fr build_stable
+  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py -B build_stable build"
+  - /bin/bash -c "[ -f build_stable/supla_esp32.bin ] && true || false"
 
 - name: freertos_linux_compilation_check
   image: devel/freertos
@@ -232,6 +237,7 @@ steps:
         - pull_request
   depends_on: [tests, esp8266_rtos_compilation_check, esp_idf_compilation_check,
                freertos_linux_compilation_check,
+               linux_compilation_check,
                arduino_esp32_compilation_check_part_1,
                arduino_esp32_compilation_check_part_2,
                arduino_esp32_compilation_check_part_3,
@@ -239,6 +245,7 @@ steps:
                arduino_esp8266_compilation_check_part_2,
                arduino_esp8266_compilation_check_part_3,
                arduino_mega_compilation_check,
-               cpplint
+               cpplint,
+               esp_idf_stable_compilation_check
               ]
 

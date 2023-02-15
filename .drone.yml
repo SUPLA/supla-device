@@ -3,7 +3,7 @@ name: default
 
 steps:
 - name: tests_compilation
-  image: rikorose/gcc-cmake
+  image: devel/freertos
   commands:
   - mkdir extras/test/build
   - cd extras/test/build
@@ -11,7 +11,7 @@ steps:
   - make -j32
 
 - name: tests
-  image: rikorose/gcc-cmake
+  image: devel/freertos
   commands:
   - cd extras/test/build
   - ./supladevicetests --gtest_repeat=50 --gtest_shuffle
@@ -19,7 +19,7 @@ steps:
   - tests_compilation
 
 - name: tests_with_valgrind
-  image: devel/supla-core
+  image: devel/freertos
   pull: never
   commands:
   - cd extras/test/build

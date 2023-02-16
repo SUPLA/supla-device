@@ -58,7 +58,7 @@ class InternalPinOutput : public Element,
 
   int getOutputValue() override;
   void setOutputValue(int value) override;
-  int getOutputMaxValue() const override;
+  bool isOnOffOnly() const override;
 
  protected:
   int pin = -1;

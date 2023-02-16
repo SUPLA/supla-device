@@ -27,8 +27,84 @@
 
 namespace Supla {
 
-Clock::Clock()
-    : localtime(0), lastServerUpdate(0), lastMillis(0), isClockReady(false) {
+static Clock *clockInstance = nullptr;
+
+bool Clock::IsReady() {
+  if (clockInstance && clockInstance->IsReady()) {
+    return true;
+  }
+  return false;
+}
+
+int Clock::GetYear() {
+  if (IsReady()) {
+    return clockInstance->getYear();
+  }
+  return 0;
+}
+
+int Clock::GetMonth() {
+  if (IsReady()) {
+    return clockInstance->getMonth();
+  }
+  return 0;
+}
+
+int Clock::GetDay() {
+  if (IsReady()) {
+    return clockInstance->getDay();
+  }
+  return 0;
+}
+
+int Clock::GetDayOfWeek() {
+  if (IsReady()) {
+    return clockInstance->getDayOfWeek();
+  }
+  return 0;
+}
+
+enum DayOfWeek Clock::GetHvacDayOfWeek() {
+  if (IsReady()) {
+    return clockInstance->getHvacDayOfWeek();
+  }
+  return DayOfWeek_Sunday;
+}
+
+int Clock::GetHour() {
+  if (IsReady()) {
+    return clockInstance->getHour();
+  }
+  return 0;
+}
+
+int Clock::GetQuarter() {
+  if (IsReady()) {
+    return clockInstance->getQuarter();
+  }
+  return 0;
+}
+
+int Clock::GetMin() {
+  if (IsReady()) {
+    return clockInstance->getMin();
+  }
+  return 0;
+}
+
+int Clock::GetSec() {
+  if (IsReady()) {
+    return clockInstance->getSec();
+  }
+  return 0;
+}
+
+Clock::Clock() {
+  clockInstance = this;
+}
+
+Clock::~Clock() {
+  clockInstance = nullptr;
 }
 
 bool Clock::isReady() {
@@ -66,12 +142,20 @@ int Clock::getDayOfWeek() {
   return timeinfo.tm_wday + 1;  // 1 - Sunday, 2 - Monday ...
 }
 
+enum DayOfWeek Clock::getHvacDayOfWeek() {
+  return static_cast<enum DayOfWeek>(getDayOfWeek() - 1);
+}
+
 int Clock::getHour() {
   struct tm timeinfo;
   // timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
   gmtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_hour;
+}
+
+int Clock::getQuarter() {
+  return getMin() / 15;
 }
 
 int Clock::getMin() {

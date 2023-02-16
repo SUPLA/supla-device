@@ -40,7 +40,8 @@ class OutputInterface;
 
 class HvacBase : public ChannelElement {
  public:
-  explicit HvacBase(Supla::Control::OutputInterface *output = nullptr);
+  explicit HvacBase(Supla::Control::OutputInterface *primaryOutput = nullptr,
+                    Supla::Control::OutputInterface *secondaryOutput = nullptr);
   virtual ~HvacBase();
 
   void onLoadConfig() override;
@@ -62,8 +63,11 @@ class HvacBase : public ChannelElement {
   _supla_int16_t getPrimaryTemp();
   _supla_int16_t getSecondaryTemp();
 
+  // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value);
   void setTargetMode(int mode);
+  void clearTemperatureSetpointMin();
+  void clearTemperatureSetpointMax();
   void setTemperatureSetpointMin(int tMin);
   void setTemperatureSetpointMax(int tMax);
   int getTemperatureSetpointMin();
@@ -285,11 +289,17 @@ class HvacBase : public ChannelElement {
   TWeeklyScheduleProgram getProgram(int programId) const;
 
   void copyFixedChannelConfigTo(HvacBase *hvac);
+  void turnOn();
+  bool turnOnWeeklySchedlue();
 
  private:
+  void addPrimaryOutput(Supla::Control::OutputInterface *output);
+  void addSecondaryOutput(Supla::Control::OutputInterface *output);
   _supla_int16_t getTemperature(Supla::Sensor::Thermometer *t);
   bool checkOverheatProtection();
   bool checkAntifreezeProtection();
+  bool processWeeklySchedule();
+  void setSetpointTemperaturesForCurrentMode(int tMin, int tMax);
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -299,10 +309,17 @@ class HvacBase : public ChannelElement {
   bool waitForChannelConfigAndIgnoreIt = false;
   bool waitForWeeklyScheduleAndIgnoreIt = false;
   bool initDone = false;
-  Supla::Control::OutputInterface *output = nullptr;
+  // primaryOutput can be used for heating or cooling (cooling is supported
+  // when secondaryOutput is not used, in such case "AUTO" mode is not
+  // available)
+  Supla::Control::OutputInterface *primaryOutput = nullptr;
+  // secondaryOutput can be used only for cooling
+  Supla::Control::OutputInterface *secondaryOutput = nullptr;
   Supla::Sensor::Thermometer *primaryThermometer = nullptr;
   Supla::Sensor::Thermometer *secondaryThermometer = nullptr;
+  uint8_t lastWorkingMode = SUPLA_HVAC_MODE_NOT_SET;
   uint64_t lastConfigChangeTimestampMs = 0;
+  uint64_t lastIterateTimestampMs = 0;
 };
 
 }  // namespace Control

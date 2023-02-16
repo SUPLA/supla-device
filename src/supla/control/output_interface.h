@@ -28,7 +28,7 @@ class OutputInterface {
   virtual ~OutputInterface() {}
   virtual int getOutputValue() = 0;
   virtual void setOutputValue(int value) = 0;
-  virtual int getOutputMaxValue() const = 0;
+  virtual bool isOnOffOnly() const = 0;
 };
 
 }  // namespace Control

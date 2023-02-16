@@ -140,7 +140,7 @@ void Supla::Control::InternalPinOutput::setOutputValue(int value) {
   }
 }
 
-int Supla::Control::InternalPinOutput::getOutputMaxValue() const {
-  return 1;
+bool Supla::Control::InternalPinOutput::isOnOffOnly() const {
+  return true;
 }
 

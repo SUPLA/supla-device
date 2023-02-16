@@ -26,6 +26,7 @@
 #include <simple_time.h>
 #include <protocol_layer_mock.h>
 #include "gmock/gmock.h"
+#include <output_mock.h>
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -36,6 +37,7 @@ using ::testing::AnyNumber;
 class HvacWeeklyScheduleTestsF : public ::testing::Test {
  protected:
   ConfigMock cfg;
+  OutputMock output;
   SimpleTime time;
   Supla::Control::HvacBase *hvac = {};
   Supla::Sensor::Thermometer *t1 = {};
@@ -45,7 +47,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
     Supla::Channel::lastCommunicationTimeMs = 0;
     memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
 
-    hvac = new Supla::Control::HvacBase();
+    hvac = new Supla::Control::HvacBase(&output);
     t1 = new Supla::Sensor::Thermometer();
     t2 = new Supla::Sensor::ThermHygroMeter();
 
@@ -76,6 +78,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
 };
 
 TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AnyNumber());
   EXPECT_CALL(cfg, setInt32(_, _))
       .Times(AnyNumber())
@@ -213,6 +216,7 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
@@ -301,6 +305,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -375,6 +380,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)

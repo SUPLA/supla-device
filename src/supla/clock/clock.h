@@ -20,18 +20,35 @@
 #include <supla-common/proto.h>
 #include <supla/element.h>
 #include <time.h>
+#include <supla/control/hvac_base.h>
 
 namespace Supla {
 
 class Clock : public Element {
  public:
+  static bool IsReady();
+  static int GetYear();
+  static int GetMonth();
+  static int GetDay();
+  static int GetDayOfWeek();  // 1 - Sunday, 2 - Monday
+  static enum DayOfWeek GetHvacDayOfWeek();  // 0 - Sunday, 1 - Monday as enum
+  static int GetHour();
+  static int GetQuarter();  // 0 - 0..14 min, 1 - 15..29 min, 2 - 30..44 min, 3
+                            // - 45..59 min
+  static int GetMin();
+  static int GetSec();
+
   Clock();
+  virtual ~Clock();
+
   virtual bool isReady();
   virtual int getYear();
   virtual int getMonth();
   virtual int getDay();
-  virtual int getDayOfWeek();  // 1 - Sunday, 2 - Monday
+  virtual int getDayOfWeek();
+  virtual enum DayOfWeek getHvacDayOfWeek();
   virtual int getHour();
+  virtual int getQuarter();
   virtual int getMin();
   virtual int getSec();
 
@@ -41,10 +58,10 @@ class Clock : public Element {
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 
  protected:
-  time_t localtime;
-  uint64_t lastServerUpdate;
-  uint64_t lastMillis;
-  bool isClockReady;
+  time_t localtime = {};
+  uint64_t lastServerUpdate = 0;
+  uint64_t lastMillis = 0;
+  bool isClockReady = false;
 };
 
 };  // namespace Supla

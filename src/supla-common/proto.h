@@ -725,28 +725,38 @@ typedef struct {
 
 #define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET (1 << 0)
 #define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET (1 << 1)
-
-// TODO(klew): how to handle fan within this structure?
+// Tells if output responsible for heating function is enabled
+#define SUPLA_HVAC_VALUE_FLAG_HEATING (1 << 2)
+// Tells if output responsible for cooling function is enabled
+#define SUPLA_HVAC_VALUE_FLAG_COOLING (1 << 3)
+// Tells if channel works in Weekly Schedule mode. If set to 0, then it works
+// in manual mode
+#define SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE (1 << 4)
+// FAN flag tells if fan function is enabled
+#define SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED (1 << 5)
 
 // HVAC modes are used in in channel value (as a command from server or
 // as a status response from device to server) and in weekly schedules
-// programs. Programs may contain only following values: not used, heat, cool
-// and auto.
-#define SUPLA_HVAC_MODE_NOT_USED 0
-#define SUPLA_HVAC_MODE_HEAT     1
-#define SUPLA_HVAC_MODE_COOL     2
-#define SUPLA_HVAC_MODE_AUTO     3
-#define SUPLA_HVAC_MODE_MANUAL   4
-#define SUPLA_HVAC_MODE_FAN_ONLY 5
-#define SUPLA_HVAC_MODE_DRY      6
-// TURN ON mode is temperary. Device will use it to turn on and then it will
+// programs. Programs can't use value TURN_ON and WEEKLY_SCHEDULE
+#define SUPLA_HVAC_MODE_NOT_SET         0
+#define SUPLA_HVAC_MODE_OFF             1
+#define SUPLA_HVAC_MODE_HEAT            2
+#define SUPLA_HVAC_MODE_COOL            3
+#define SUPLA_HVAC_MODE_AUTO            4
+#define SUPLA_HVAC_MODE_FAN_ONLY        6
+#define SUPLA_HVAC_MODE_DRY             7
+// TURN ON mode is a command. Device will use it to turn on and then it will
 // restore previous mode which was used before turn off.
-#define SUPLA_HVAC_MODE_TURN_ON  7
-#define SUPLA_HVAC_MODE_OFF      8
+#define SUPLA_HVAC_MODE_CMD_TURN_ON         8
+// Weekly schedule is a command. Device will use it to enable weekly schedule
+// mode and then it will set its mode according to schedule
+#define SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE 9
+
+// TODO(klew): how to handle fan within this structure?
 
 typedef struct {
   union {
-    unsigned char IsOn;  // DS: 0/1 (or 0..100 ?) bitmap SUPLA_HVAC_IS_ON_
+    unsigned char IsOn;  // DS: 0/1 (or 0..100 ?)
     unsigned char
         Value;  // (C)SD: 0..100 humidity or fan setpoint (depending on
                 // SUPLA_HVAC_SET_MODE_ value).
@@ -2053,63 +2063,6 @@ typedef struct {
 } TThermostat_Value;                   // v. >= 11
 
 
-// SUPLA_HVAC_SET_MODE_ value is used in THVACValue::Mode in (C)SD
-// communication. It is used to switch HVAC channel to particular mode.
-
-// SET_MODE_KEEP should be used when other parameters in THVACValue are send
-// to device and when device's mode should be preserved as it is.
-#define SUPLA_HVAC_SET_MODE_KEEP            0
-// SET_MODE_OFF disables all HVAC functions (however antifreeze function can be
-// still used)
-#define SUPLA_HVAC_SET_MODE_OFF             1
-// SET_MODE_ON enabled HVAC channel. Device restores modes which were used
-// before it was turned off. So actual state after SET_MODE_ON depends on
-// device's previous states.
-#define SUPLA_HVAC_SET_MODE_ON              2
-// SET_MODE_WEEKLY_SCHEDULE enabled weekly schedule mode for heat/cool function.
-#define SUPLA_HVAC_SET_MODE_WEEKLY_SCHEDULE 3
-// SET_MODE_MANUAL disables weekly schedule and enabled manaul mode
-#define SUPLA_HVAC_SET_MODE_MANUAL          4
-// SET_MODE_FAN_OFF disables fan functionality
-#define SUPLA_HVAC_SET_MODE_FAN_OFF         5
-// SET_MODE_FAN_AUTO enables fan functionality in automatic speed mode
-#define SUPLA_HVAC_SET_MODE_FAN_AUTO        6
-// SET_MODE_FAN_MANUAL enables fan functionality in automatic manual mode.
-// Fan speed is given in THVACValue::Value
-#define SUPLA_HVAC_SET_MODE_FAN_MANUAL      7
-// SET_MODE_FAN_ONLY disables other functions (heat/cool) and enables
-// fan. Fan works in previously set mode (auto or manual)
-#define SUPLA_HVAC_SET_MODE_FAN_ONLY        8
-// SET_MODE_DRY_OFF disables drying functionality
-#define SUPLA_HVAC_SET_MODE_DRY_OFF         9
-// SET_MODE_DRY_AUTO enables fan functionality in automatic speed mode
-#define SUPLA_HVAC_SET_MODE_DRY_AUTO        10
-// SET_MODE_DRY_MANUAL enables dry functionality in automatic manual mode.
-// Target humidity value is given in THVACValue::Value
-#define SUPLA_HVAC_SET_MODE_DRY_MANUAL      11
-
-// SUPLA_HVAC_MODE flags are returned in THVACValue::Mode in DS communication.
-// It is bit map of enabled functions.
-
-// ON flag tells if HVAC channel is enabled or disabled. It will be enabled if
-// at least one funciton is enabled (heat/cool, fan)
-#define SUPLA_HVAC_MODE_STATE_FLAG_ON (1 << 0)
-// HEAT_COOL_ON flag tells if heating/cooling function is enabled
-#define SUPLA_HVAC_MODE_STATE_FLAG_HEAT_COOL_ON (1 << 1)
-// HEAT_COOL_WEEKLY_SCHEDULE flag tells if weekly schedule is enabled for
-// heating/cooling functions. If it is not set, then manual mode is used.
-#define SUPLA_HVAC_MODE_STATE_FLAG_HEAT_COOL_WEEKLY_SCHEDULE (1 << 2)
-// FAN flag tells if fan function is enabled
-#define SUPLA_HVAC_MODE_STATE_FLAG_FAN (1 << 3)
-// DRY flag tells if drying function is enabled
-#define SUPLA_HVAC_MODE_STATE_FLAG_DRY (1 << 4)
-
-// Used for THVACValue::IsOn bitmap. Tells about current output state. I.e.
-// device may be in "heating" mode, but currently output is disabled, beacuse
-// desired temperature is reached, so IsOn will report 0
-#define SUPLA_HVAC_IS_ON_HEATING (1 << 0)
-#define SUPLA_HVAC_IS_ON_COOLING (1 << 1)
-
 typedef struct {
   unsigned _supla_int16_t year;
   unsigned char month;
@@ -2444,7 +2397,6 @@ typedef struct {
 
 typedef struct {
   unsigned char Mode;  // for HVAC: SUPLA_HVAC_MODE_
-                       // Possible values: not used, heat, cool, auto.
   union {
     _supla_int16_t SetpointTemperatureMin;  // * 0.01 - used for heating
     _supla_int16_t Value1;

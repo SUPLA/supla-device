@@ -67,6 +67,10 @@ class Channel : public LocalAction {
   void setHvacFlags(uint16_t alarmsAndFlags);
   void setHvacFlagSetpointTemperatureMinSet(bool value);
   void setHvacFlagSetpointTemperatureMaxSet(bool value);
+  void setHvacFlagHeating(bool value);
+  void setHvacFlagCooling(bool value);
+  void setHvacFlagWeeklySchedule(bool value);
+  void setHvacFlagFanEnabled(bool value);
 
   uint8_t getHvacIsOn();
   uint8_t getHvacMode();
@@ -75,9 +79,17 @@ class Channel : public LocalAction {
   uint16_t getHvacFlags();
   bool isHvacFlagSetpointTemperatureMinSet();
   bool isHvacFlagSetpointTemperatureMaxSet();
+  bool isHvacFlagHeating();
+  bool isHvacFlagCooling();
+  bool isHvacFlagWeeklySchedule();
+  bool isHvacFlagFanEnabled();
 
   static bool isHvacFlagSetpointTemperatureMinSet(THVACValue *hvacValue);
   static bool isHvacFlagSetpointTemperatureMaxSet(THVACValue *hvacValue);
+  static bool isHvacFlagHeating(THVACValue *hvacValue);
+  static bool isHvacFlagCooling(THVACValue *hvacValue);
+  static bool isHvacFlagWeeklySchedule(THVACValue *hvacValue);
+  static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
 
   THVACValue *getValueHvac();
 
@@ -94,6 +106,8 @@ class Channel : public LocalAction {
   _supla_int_t getFlags();
   void setFuncList(_supla_int_t functions);
   _supla_int_t getFuncList() const;
+  void addToFuncList(_supla_int_t function);
+  void removeFromFuncList(_supla_int_t function);
   void setActionTriggerCaps(_supla_int_t caps);
   _supla_int_t getActionTriggerCaps();
 

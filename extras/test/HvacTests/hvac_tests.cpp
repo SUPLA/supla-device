@@ -16,16 +16,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#include <config_mock.h>
+#include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
+#include <protocol_layer_mock.h>
+#include <simple_time.h>
 #include <string.h>
 #include <supla/control/hvac_base.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
-#include <config_mock.h>
-#include <simple_time.h>
-#include <protocol_layer_mock.h>
-#include "gmock/gmock.h"
+#include <output_mock.h>
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -50,6 +50,8 @@ class HvacTestsF : public ::testing::Test {
 class HvacTestWithChannelSetupF : public HvacTestsF {
  protected:
   ConfigMock cfg;
+  OutputMock output;
+
   Supla::Control::HvacBase *hvac = {};
   Supla::Sensor::Thermometer *t1 = {};
   Supla::Sensor::ThermHygroMeter *t2 = {};
@@ -57,7 +59,7 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
   void SetUp() override {
     HvacTestsF::SetUp();
 
-    hvac = new Supla::Control::HvacBase();
+    hvac = new Supla::Control::HvacBase(&output);
     t1 = new Supla::Sensor::Thermometer();
     t2 = new Supla::Sensor::ThermHygroMeter();
 
@@ -87,7 +89,8 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
 };
 
 TEST_F(HvacTestsF, BasicChannelSetup) {
-  Supla::Control::HvacBase hvac;
+  OutputMock output;
+  Supla::Control::HvacBase hvac(&output);
 
   auto ch = hvac.getChannel();
   ASSERT_NE(ch, nullptr);
@@ -103,13 +106,14 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
 
   EXPECT_TRUE(hvac.isOnOffSupported());
   EXPECT_TRUE(hvac.isHeatingSupported());
-  EXPECT_FALSE(hvac.isCoolingSupported());
+  EXPECT_TRUE(hvac.isCoolingSupported());
   EXPECT_FALSE(hvac.isAutoSupported());
   EXPECT_FALSE(hvac.isFanSupported());
   EXPECT_FALSE(hvac.isDrySupported());
 
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+  EXPECT_EQ(ch->getFuncList(),
+            SUPLA_HVAC_CAP_FLAG_MODE_HEAT | SUPLA_HVAC_CAP_FLAG_MODE_COOL |
+                SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
 
   // check setters for supported modes
   hvac.setCoolingSupported(true);
@@ -212,7 +216,11 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
 }
 
 TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
-  Supla::Control::HvacBase hvac;
+  OutputMock output;
+  Supla::Control::HvacBase hvac(&output);
+
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+
   auto *ch = hvac.getChannel();
   EXPECT_EQ(ch->getDefaultFunction(), 0);
 
@@ -302,7 +310,9 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
 }
 
 TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
-  Supla::Control::HvacBase hvac;
+  OutputMock output;
+  Supla::Control::HvacBase hvac(&output);
+
   Supla::Sensor::Thermometer t1;
   Supla::Sensor::ThermHygroMeter t2;
 
@@ -923,6 +933,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -1072,6 +1083,7 @@ TEST_F(HvacTestWithChannelSetupF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)

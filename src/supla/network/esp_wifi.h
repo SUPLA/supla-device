@@ -52,12 +52,12 @@ class ESPWifi : public Supla::Wifi {
   }
 
   static void printConnectionDetails() {
-    SUPLA_LOG_INFO("Connected BSSID: ", WiFi.BSSIDstr());
-    SUPLA_LOG_INFO("local IP: ", WiFi.localIP());
-    SUPLA_LOG_INFO("subnetMask: ", WiFi.subnetMask());
-    SUPLA_LOG_INFO("gatewayIP: ", WiFi.gatewayIP());
+    SUPLA_LOG_INFO("Connected BSSID: %s", WiFi.BSSIDstr().c_str());
+    SUPLA_LOG_INFO("local IP: %s", WiFi.localIP().toString().c_str());
+    SUPLA_LOG_INFO("subnetMask: %s", WiFi.subnetMask().toString().c_str());
+    SUPLA_LOG_INFO("gatewayIP: %s", WiFi.gatewayIP().toString().c_str());
     int rssi = WiFi.RSSI();
-    SUPLA_LOG_INFO("Signal strength (RSSI): ", rssi, " dBm");
+    SUPLA_LOG_INFO("Signal strength (RSSI): %d dBm", rssi);
   }
 
   // TODO(klew): add handling of custom local ip

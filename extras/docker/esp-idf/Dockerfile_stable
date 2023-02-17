@@ -13,10 +13,10 @@ RUN apt update && \
 RUN mkdir supla
 WORKDIR /supla
 
-# Download and install espressif toolset and ESP8266 RTOS SDK
+# Download and install espressif toolset and esp-idf
 RUN mkdir esp && \
     cd esp && \
-    git clone -b v5.0 --recursive https://github.com/espressif/esp-idf.git esp-idf && \
+    git clone -b v5.0.1 --recursive https://github.com/espressif/esp-idf.git esp-idf && \
     cd esp-idf && \
     ./install.sh all
 

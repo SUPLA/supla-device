@@ -29,6 +29,8 @@ namespace Supla {
 namespace Control {
 class TrippleButtonRollerShutter : public BistableRollerShutter {
  public:
+  TrippleButtonRollerShutter(
+      Supla::Io *io, int pinUp, int pinDown, int pinStop, bool highIsOn = true);
   TrippleButtonRollerShutter(int pinUp,
                              int pinDown,
                              int pinStop,

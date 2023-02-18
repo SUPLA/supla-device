@@ -19,6 +19,7 @@ set(SRCS
 
   supla/device/last_state_logger.cpp
   supla/device/sw_update.cpp
+  supla/device/status_led.cpp
 
   supla/storage/storage.cpp
   supla/storage/config.cpp
@@ -34,6 +35,7 @@ set(SRCS
   supla/control/dimmer_leds.cpp
   supla/control/simple_button.cpp
   supla/control/button.cpp
+  supla/control/sequence_button.cpp
   supla/control/action_trigger.cpp
   supla/control/relay.cpp
   supla/control/virtual_relay.cpp
@@ -72,6 +74,9 @@ set(SRCS
   supla/sensor/therm_hygro_meter.cpp
   supla/sensor/thermometer.cpp
   supla/sensor/electricity_meter.cpp
+  supla/sensor/binary.cpp
+  supla/sensor/virtual_binary.cpp
+  supla/sensor/impulse_counter.cpp
 )
 
 add_library(supladevicelib SHARED ${SRCS})

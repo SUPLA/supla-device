@@ -20,20 +20,22 @@
 #define SRC_SUPLA_CONTROL_INTERNAL_PIN_OUTPUT_H_
 
 #include "../action_handler.h"
-#include "../actions.h"
 #include "../element.h"
-#include "../io.h"
 #include "../local_action.h"
 
 #define STATE_ON_INIT_OFF 0
 #define STATE_ON_INIT_ON  1
 
 namespace Supla {
+
+class Io;
+
 namespace Control {
 class InternalPinOutput : public Element,
                           public ActionHandler,
                           public LocalAction {
  public:
+  explicit InternalPinOutput(Supla::Io *io, int pin, bool highIsOn = true);
   explicit InternalPinOutput(int pin, bool highIsOn = true);
 
   virtual InternalPinOutput &setDefaultStateOn();
@@ -47,20 +49,19 @@ class InternalPinOutput : public Element,
   virtual bool isOn();
   virtual void toggle(_supla_int_t duration = 0);
 
-  void handleAction(int event, int action);
+  void handleAction(int event, int action) override;
 
-  void onInit();
-  void iterateAlways();
+  void onInit() override;
+  void iterateAlways() override;
 
  protected:
-  int pin;
-  bool highIsOn;
-
-  int8_t stateOnInit;
-
-  unsigned _supla_int_t durationMs;
-  unsigned _supla_int_t storedTurnOnDurationMs;
-  uint64_t durationTimestamp;
+  int pin = -1;
+  bool highIsOn = true;
+  int8_t stateOnInit = STATE_ON_INIT_OFF;
+  unsigned _supla_int_t durationMs = 0;
+  unsigned _supla_int_t storedTurnOnDurationMs = 0;
+  uint64_t durationTimestamp = 0;
+  Supla::Io *io = nullptr;
 };
 
 };  // namespace Control

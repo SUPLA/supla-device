@@ -31,6 +31,14 @@
 namespace Supla {
 namespace Control {
 
+Relay::Relay(Supla::Io *io,
+             int pin,
+             bool highIsOn,
+             _supla_int_t functions)
+    : Relay(pin, highIsOn, functions) {
+  this->io = io;
+}
+
 Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
     : pin(pin),
       highIsOn(highIsOn),
@@ -67,7 +75,7 @@ void Relay::onInit() {
 
   // pin mode is set after setting pin value in order to
   // avoid problems with LOW trigger relays
-  Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT);
+  Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
 
   if (stateOn) {
     turnOn();
@@ -120,7 +128,7 @@ void Relay::turnOn(_supla_int_t duration) {
   if (keepTurnOnDurationMs) {
     durationMs = storedTurnOnDurationMs;
   }
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue());
+  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
 
   channel.setNewValue(true);
 
@@ -135,7 +143,7 @@ void Relay::turnOff(_supla_int_t duration) {
             duration);
   durationMs = duration;
   durationTimestamp = millis();
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue());
+  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
 
   channel.setNewValue(false);
 
@@ -144,7 +152,7 @@ void Relay::turnOff(_supla_int_t duration) {
 }
 
 bool Relay::isOn() {
-  return Supla::Io::digitalRead(channel.getChannelNumber(), pin) ==
+  return Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) ==
          pinOnValue();
 }
 

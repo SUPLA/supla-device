@@ -17,16 +17,20 @@
 #include "internal_pin_output.h"
 
 #include <supla/time.h>
-
+#include <supla/io.h>
+#include <supla/actions.h>
 #include "../events.h"
+
+Supla::Control::InternalPinOutput::InternalPinOutput(Supla::Io *io,
+                                                     int pin,
+                                                     bool highIsOn)
+    : InternalPinOutput(pin, highIsOn) {
+  this->io = io;
+}
 
 Supla::Control::InternalPinOutput::InternalPinOutput(int pin, bool highIsOn)
     : pin(pin),
-      highIsOn(highIsOn),
-      stateOnInit(STATE_ON_INIT_OFF),
-      durationMs(0),
-      storedTurnOnDurationMs(0),
-      durationTimestamp(0) {
+      highIsOn(highIsOn) {
 }
 
 Supla::Control::InternalPinOutput &
@@ -58,7 +62,7 @@ void Supla::Control::InternalPinOutput::turnOn(_supla_int_t duration) {
   runAction(Supla::ON_TURN_ON);
   runAction(Supla::ON_CHANGE);
 
-  Supla::Io::digitalWrite(pin, pinOnValue());
+  Supla::Io::digitalWrite(pin, pinOnValue(), io);
 }
 
 void Supla::Control::InternalPinOutput::turnOff(_supla_int_t duration) {
@@ -68,11 +72,11 @@ void Supla::Control::InternalPinOutput::turnOff(_supla_int_t duration) {
   runAction(Supla::ON_TURN_OFF);
   runAction(Supla::ON_CHANGE);
 
-  Supla::Io::digitalWrite(pin, pinOffValue());
+  Supla::Io::digitalWrite(pin, pinOffValue(), io);
 }
 
 bool Supla::Control::InternalPinOutput::isOn() {
-  return Supla::Io::digitalRead(pin) == pinOnValue();
+  return Supla::Io::digitalRead(pin, io) == pinOnValue();
 }
 
 void Supla::Control::InternalPinOutput::toggle(_supla_int_t duration) {
@@ -109,8 +113,8 @@ void Supla::Control::InternalPinOutput::onInit() {
   }
 
   Supla::Io::pinMode(
-      pin, OUTPUT);  // pin mode is set after setting pin value in order to
-                     // avoid problems with LOW trigger relays
+      pin, OUTPUT, io);  // pin mode is set after setting pin value in order to
+                         // avoid problems with LOW trigger relays
 }
 void Supla::Control::InternalPinOutput::iterateAlways() {
   if (durationMs && millis() - durationTimestamp > durationMs) {

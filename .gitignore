@@ -2,3 +2,5 @@ extras/examples/esp_idf/sdkconfig
 **/build/*
 sdkconfig.old
 **/.cache/*
+compile_commands.json
+.clang_complete

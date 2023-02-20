@@ -417,12 +417,12 @@ state refresh rate at reasonable level (i.e. fetching data remotly every
 100 ms may not be the best idea :) ).
 
 Parameter `offline_on_invalid_state` set to `true` will change channel to "offline"
-when it's state is invalid (i.e. source file wasn't modfified for a long time, or
+when its state is invalid (i.e. source file wasn't modfified for a long time, or
 value was set to -1).
 
 Paramter `state_on_values` allows to define array of integers which are interpreted
 as state "on". I.e. `state_on_values = [3, 4, 5]` will set channel to "on"
-when state is 3, 4 or 5. Otherwise it will set channel to "off" with exepction to
+when state is 3, 4 or 5. Otherwise it will set channel to "off" with exception to
 value -1 which is used as invalid state.
 
 Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send actions

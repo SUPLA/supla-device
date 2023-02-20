@@ -57,6 +57,7 @@ class Channel : public LocalAction {
   uint8_t getValueBlue();
   uint8_t getValueColorBrightness();
   uint8_t getValueBrightness();
+  double getLastTemperature();
 
   void setHvacIsOn(uint8_t isOn);
   void setHvacMode(uint8_t mode);
@@ -71,9 +72,11 @@ class Channel : public LocalAction {
   void setHvacFlagCooling(bool value);
   void setHvacFlagWeeklySchedule(bool value);
   void setHvacFlagFanEnabled(bool value);
+  void setHvacFlagError(bool value);
+  void setHvacFlagClockError(bool value);
 
   uint8_t getHvacIsOn();
-  uint8_t getHvacMode();
+  uint8_t getHvacMode() const;
   int16_t getHvacSetpointTemperatureMin();
   int16_t getHvacSetpointTemperatureMax();
   uint16_t getHvacFlags();
@@ -83,6 +86,8 @@ class Channel : public LocalAction {
   bool isHvacFlagCooling();
   bool isHvacFlagWeeklySchedule();
   bool isHvacFlagFanEnabled();
+  bool isHvacFlagError();
+  bool isHvacFlagClockError();
 
   static bool isHvacFlagSetpointTemperatureMinSet(THVACValue *hvacValue);
   static bool isHvacFlagSetpointTemperatureMaxSet(THVACValue *hvacValue);
@@ -90,8 +95,10 @@ class Channel : public LocalAction {
   static bool isHvacFlagCooling(THVACValue *hvacValue);
   static bool isHvacFlagWeeklySchedule(THVACValue *hvacValue);
   static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
+  static bool isHvacFlagError(THVACValue *hvacValue);
+  static bool isHvacFlagClockError(THVACValue *hvacValue);
 
-  THVACValue *getValueHvac();
+  THVACValue *getValueHvac() const;
 
   virtual bool isExtended() const;
   bool isUpdateReady() const;

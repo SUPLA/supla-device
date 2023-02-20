@@ -804,7 +804,7 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_TRUE(hvac.setHeaterCoolerThermometerChannelNo(2));
   EXPECT_EQ(hvac.getHeaterCoolerThermometerChannelNo(), 2);
   EXPECT_EQ(hvac.getHeaterCoolerThermometerType(),
-            SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISALBED);
+            SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED);
   hvac.setHeaterCoolerThermometerType(
       SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER);
   EXPECT_EQ(hvac.getHeaterCoolerThermometerType(),

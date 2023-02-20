@@ -58,11 +58,6 @@ class HvacBase : public ChannelElement {
   void handleSetChannelConfigResult(
       TSD_SetChannelConfigResult *result) override;
 
-  void setPrimaryThermometer(Supla::Sensor::Thermometer *t);
-  void setSecondaryThermometer(Supla::Sensor::Thermometer *t);
-  _supla_int16_t getPrimaryTemp();
-  _supla_int16_t getSecondaryTemp();
-
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value);
   void setTargetMode(int mode);
@@ -295,11 +290,16 @@ class HvacBase : public ChannelElement {
  private:
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
   void addSecondaryOutput(Supla::Control::OutputInterface *output);
-  _supla_int16_t getTemperature(Supla::Sensor::Thermometer *t);
+  _supla_int16_t getTemperature(int channelNo);
+  _supla_int16_t getPrimaryTemp();
+  _supla_int16_t getSecondaryTemp();
+  bool isSensorTempValid(_supla_int16_t temperature) const;
   bool checkOverheatProtection();
   bool checkAntifreezeProtection();
   bool processWeeklySchedule();
   void setSetpointTemperaturesForCurrentMode(int tMin, int tMax);
+  bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
+                                             _supla_int16_t t2) const;
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -315,8 +315,6 @@ class HvacBase : public ChannelElement {
   Supla::Control::OutputInterface *primaryOutput = nullptr;
   // secondaryOutput can be used only for cooling
   Supla::Control::OutputInterface *secondaryOutput = nullptr;
-  Supla::Sensor::Thermometer *primaryThermometer = nullptr;
-  Supla::Sensor::Thermometer *secondaryThermometer = nullptr;
   uint8_t lastWorkingMode = SUPLA_HVAC_MODE_NOT_SET;
   uint64_t lastConfigChangeTimestampMs = 0;
   uint64_t lastIterateTimestampMs = 0;

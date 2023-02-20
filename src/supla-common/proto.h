@@ -734,6 +734,8 @@ typedef struct {
 #define SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE (1 << 4)
 // FAN flag tells if fan function is enabled
 #define SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED (1 << 5)
+#define SUPLA_HVAC_VALUE_FLAG_ERROR       (1 << 6)
+#define SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR (1 << 7)
 
 // HVAC modes are used in in channel value (as a command from server or
 // as a status response from device to server) and in weekly schedules
@@ -2440,11 +2442,12 @@ typedef struct {
 // Other values are mainly for UI adjustement (i.e. show temperature as floor,
 // as water, generic heater or cooler device)
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET        0
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISALBED       1
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED       1
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR          2
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER          3
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER 4
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER 5
+#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL   6
 
 #define SUPLA_HVAC_ALGORITHM_NOT_SET 0
 #define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 1)

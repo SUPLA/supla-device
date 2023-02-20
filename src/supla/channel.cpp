@@ -549,6 +549,22 @@ uint8_t Channel::getValueBrightness() {
   return reg_dev.channels[channelNumber].value[0];
 }
 
+#define TEMPERATURE_NOT_AVAILABLE -275.0
+
+double Channel::getLastTemperature() {
+  switch (getChannelType()) {
+    case SUPLA_CHANNELTYPE_THERMOMETER: {
+      return getValueDouble();
+    }
+    case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR: {
+      return getValueDoubleFirst();
+    }
+    default: {
+      return TEMPERATURE_NOT_AVAILABLE;
+    }
+  }
+}
+
 void Channel::setValidityTimeSec(unsigned _supla_int_t timeSec) {
   validityTimeSec = timeSec;
 }
@@ -607,7 +623,7 @@ void Channel::setHvacMode(uint8_t mode) {
   }
 }
 
-THVACValue *Channel::getValueHvac() {
+THVACValue *Channel::getValueHvac() const {
   if (channelNumber >= 0 && getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
     return &reg_dev.channels[channelNumber].hvacValue;
   }
@@ -746,6 +762,34 @@ void Channel::setHvacFlagFanEnabled(bool value) {
   }
 }
 
+void Channel::setHvacFlagError(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagError()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_ERROR;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_ERROR;
+    }
+    setHvacFlags(flags);
+  }
+}
+
+void Channel::setHvacFlagClockError(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagClockError()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 bool Channel::isHvacFlagSetpointTemperatureMaxSet() {
   return isHvacFlagSetpointTemperatureMaxSet(getValueHvac());
 }
@@ -768,6 +812,14 @@ bool Channel::isHvacFlagWeeklySchedule() {
 
 bool Channel::isHvacFlagFanEnabled() {
   return isHvacFlagFanEnabled(getValueHvac());
+}
+
+bool Channel::isHvacFlagError() {
+  return isHvacFlagError(getValueHvac());
+}
+
+bool Channel::isHvacFlagClockError() {
+  return isHvacFlagClockError(getValueHvac());
 }
 
 bool Channel::isHvacFlagSetpointTemperatureMinSet(THVACValue *value) {
@@ -812,7 +864,20 @@ bool Channel::isHvacFlagFanEnabled(THVACValue *value) {
   return false;
 }
 
-// impementation of getHvacIsOn
+bool Channel::isHvacFlagError(THVACValue *value) {
+  if (value != nullptr) {
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_ERROR;
+  }
+  return false;
+}
+
+bool Channel::isHvacFlagClockError(THVACValue *value) {
+  if (value != nullptr) {
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR;
+  }
+  return false;
+}
+
 uint8_t Channel::getHvacIsOn() {
   auto value = getValueHvac();
   if (value != nullptr) {
@@ -821,8 +886,7 @@ uint8_t Channel::getHvacIsOn() {
   return 0;
 }
 
-// impementation of getHvacMode
-uint8_t Channel::getHvacMode() {
+uint8_t Channel::getHvacMode() const {
   auto value = getValueHvac();
   if (value != nullptr) {
     return value->Mode;
@@ -830,7 +894,6 @@ uint8_t Channel::getHvacMode() {
   return 0;
 }
 
-// impementation of getHvacSetpointTemperatureMax
 int16_t Channel::getHvacSetpointTemperatureMax() {
   auto value = getValueHvac();
   if (value != nullptr) {
@@ -839,7 +902,6 @@ int16_t Channel::getHvacSetpointTemperatureMax() {
   return 0;
 }
 
-// impementation of getHvacSetpointTemperatureMin
 int16_t Channel::getHvacSetpointTemperatureMin() {
   auto value = getValueHvac();
   if (value != nullptr) {
@@ -848,7 +910,6 @@ int16_t Channel::getHvacSetpointTemperatureMin() {
   return 0;
 }
 
-// impementation of getHvacFlags
 uint16_t Channel::getHvacFlags() {
   auto value = getValueHvac();
   if (value != nullptr) {

@@ -220,6 +220,31 @@ void HvacBase::iterateAlways() {
     return;
   }
 
+  if (lastConfigChangeTimestampMs &&
+      millis() - lastConfigChangeTimestampMs < 5000) {
+    return;
+  }
+  lastIterateTimestampMs = millis();
+  lastConfigChangeTimestampMs = 0;
+
+  auto t1 = getPrimaryTemp();
+  auto t2 = getSecondaryTemp();
+
+  if (!checkThermometersStatusForCurrentMode(t1, t2)) {
+    setTargetMode(SUPLA_HVAC_MODE_OFF);
+    setOutput(0);
+    channel.setHvacFlagError(true);
+    return;
+  }
+
+  if (config.HeaterCoolerThermometerType ==
+      SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL) {
+    t1 -= t2;
+    t2 = INT16_MIN;
+  }
+
+  channel.setHvacFlagError(false);
+
   switch (channel.getDefaultFunction()) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
       if (checkOverheatProtection()) {
@@ -487,7 +512,7 @@ bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) const {
 
   switch (newConfig->HeaterCoolerThermometerType) {
     case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET:
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISALBED:
+    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED:
     case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR:
     case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER:
     case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER:
@@ -1356,7 +1381,7 @@ bool HvacBase::setHeaterCoolerThermometerChannelNo(uint8_t channelNo) {
       if (getHeaterCoolerThermometerType() ==
           SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET) {
         setHeaterCoolerThermometerType(
-            SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISALBED);
+            SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED);
         if (initDone) {
           channelConfigChangedOffline = 1;
           saveConfig();
@@ -1790,38 +1815,43 @@ bool HvacBase::setProgram(int programId,
   return true;
 }
 
-void HvacBase::setPrimaryThermometer(Supla::Sensor::Thermometer *t) {
-  primaryThermometer = t;
-}
-
-void HvacBase::setSecondaryThermometer(Supla::Sensor::Thermometer *t) {
-  secondaryThermometer = t;
-}
-
 _supla_int16_t HvacBase::getPrimaryTemp() {
-  return getTemperature(primaryThermometer);
+  return getTemperature(config.MainThermometerChannelNo);
 }
 
 _supla_int16_t HvacBase::getSecondaryTemp() {
-  return getTemperature(secondaryThermometer);
-}
+  if (config.HeaterCoolerThermometerType !=
+          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
+      config.HeaterCoolerThermometerType !=
+          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
+    return getTemperature(config.HeaterCoolerThermometerChannelNo);
+  }
 
-_supla_int16_t HvacBase::getTemperature(Supla::Sensor::Thermometer *t) {
-  if (t) {
-    double temp = t->getLastTemperature();
-    if (temp < TEMPERATURE_NOT_AVAILABLE) {
-      return 0;
+  return INT16_MIN;
+  }
+
+_supla_int16_t HvacBase::getTemperature(int channelNo) {
+  if (channelNo >= 0 && channelNo != getChannelNumber()) {
+    auto el = Supla::Element::getElementByChannelNumber(channelNo);
+
+    if (!el) {
+      return INT16_MIN;
+    }
+
+    double temp = el->getChannel()->getLastTemperature();
+    if (temp <= TEMPERATURE_NOT_AVAILABLE) {
+      return INT16_MIN;
     }
     temp *= 100;
     if (temp > INT16_MAX) {
       return INT16_MAX;
     }
-    if (temp < INT16_MIN) {
-      return INT16_MIN;
+    if (temp <= INT16_MIN) {
+      return INT16_MIN + 1;
     }
     return temp;
   }
-  return 0;
+  return INT16_MIN;
 }
 
 void HvacBase::setOutput(int value) {
@@ -1936,10 +1966,16 @@ void HvacBase::setTargetMode(int mode) {
 }
 
 bool HvacBase::checkOverheatProtection() {
+  if (isAntiFreezeAndHeatProtectionEnabled()) {
+    // TODO(klew): implement
+  }
   return false;
 }
 
 bool HvacBase::checkAntifreezeProtection() {
+  if (isAntiFreezeAndHeatProtectionEnabled()) {
+    // TODO(klew): implement
+  }
   return false;
 }
 
@@ -2157,4 +2193,29 @@ void HvacBase::addSecondaryOutput(Supla::Control::OutputInterface *output) {
   }
 }
 
+bool HvacBase::isSensorTempValid(_supla_int16_t temperature) const {
+  return temperature > INT16_MIN;
+}
 
+bool HvacBase::checkThermometersStatusForCurrentMode(
+    _supla_int16_t t1, _supla_int16_t t2) const {
+  if (config.HeaterCoolerThermometerType !=
+          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
+      config.HeaterCoolerThermometerType !=
+          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
+    if (!isSensorTempValid(t1) || !isSensorTempValid(t2)) {
+      return false;
+    }
+  }
+
+  switch (channel.getHvacMode()) {
+    case SUPLA_HVAC_MODE_HEAT:
+    case SUPLA_HVAC_MODE_COOL:
+    case SUPLA_HVAC_MODE_AUTO: {
+      if (!isSensorTempValid(t1)) {
+        return false;
+      }
+    }
+  }
+  return true;
+}

@@ -38,6 +38,7 @@
 #include <supla/source/source.h>
 #include <supla/control/cmd_relay.h>
 #include <supla/tools.h>
+#include <supla/control/action_trigger_parsed.h>
 #include <yaml-cpp/exceptions.h>
 
 #include <chrono>  // NOLINT(build/c++11)
@@ -49,6 +50,7 @@
 #include <vector>
 
 #include "linux_yaml_config.h"
+#include "supla/control/action_trigger.h"
 #include "supla/sensor/sensor_parsed.h"
 #include "supla/sensor/therm_hygro_meter_parsed.h"
 
@@ -450,6 +452,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addThermHygroMeterParsed(ch, channelNumber, parser);
+    } else if (type == "ActionTriggerParsed") {
+      return addActionTriggerParsed(ch, channelNumber);
     } else {
       SUPLA_LOG_ERROR(
                 "Channel[%d] config: unknown type \"%s\"",
@@ -526,6 +530,10 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
   }
 
   if (!addStateParser(ch, cr, parser, false)) {
+    return false;
+  }
+
+  if (!addActionTriggerActions(ch, cr, false)) {
     return false;
   }
 
@@ -819,6 +827,10 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
     paramCount++;
     double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
     sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
+  }
+
+  if (!addActionTriggerActions(ch, sensor, false)) {
+    return false;
   }
 
   return true;
@@ -1299,3 +1311,68 @@ bool Supla::LinuxYamlConfig::addStateParser(
   }
   return true;
 }
+
+bool Supla::LinuxYamlConfig::addActionTriggerActions(
+    const YAML::Node& ch,
+    Supla::Sensor::SensorParsedBase *sensor,
+    bool mandatory) {
+  if (mandatory && !ch[Supla::Parser::ActionTrigger]) {
+    SUPLA_LOG_ERROR("Channel config: mandatory \"%s\" parameter missing",
+                    Supla::Parser::ActionTrigger);
+    return false;
+  }
+
+  if (ch[Supla::Parser::ActionTrigger]) {
+    paramCount++;
+    bool atNameFound = false;
+    for (const auto &el : ch[Supla::Parser::ActionTrigger]) {
+      if (el["on_state"]) {
+        if (!sensor->addAtOnState(el["on_state"].as<std::vector<int>>())) {
+          return false;
+        }
+      } else if (el["on_value"]) {
+        if (!sensor->addAtOnValue(el["on_value"].as<std::vector<int>>())) {
+          return false;
+        }
+      } else if (el["on_value_change"]) {
+        if (!sensor->addAtOnValueChange(
+            el["on_value_change"].as<std::vector<int>>())) {
+          return false;
+        }
+      } else if (el["on_state_change"]) {
+        if (!sensor->addAtOnStateChange(
+            el["on_state_change"].as<std::vector<int>>())) {
+          return false;
+        }
+      } else if (el["use"]) {
+        SUPLA_LOG_INFO("Channel config: using action trigger \"%s\"",
+                       el["use"].as<std::string>().c_str());
+        sensor->setAtName(el["use"].as<std::string>());
+        atNameFound = true;
+      }
+    }
+    if (!atNameFound) {
+      SUPLA_LOG_ERROR(
+          "Channel config: mandatory \"use\" parameter missing with "
+          "ActionTrigger name");
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addActionTriggerParsed(
+    const YAML::Node& ch, int channelNumber) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding ActionTriggerParsed",
+                 channelNumber);
+  if (ch["name"]) {
+    paramCount++;
+    new Supla::Control::ActionTriggerParsed(ch["name"].as<std::string>());
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: mandatory \"name\" parameter missing",
+                    channelNumber);
+    return false;
+  }
+  return true;
+}
+

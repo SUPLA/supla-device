@@ -41,6 +41,8 @@ class File : public Source {
   std::filesystem::path filePath;
   int fileExpirationSec = 10 * 60;
   bool fileIsTooOldLog = false;
+  std::string prevResult;
+  int readFailures = 0;
 };
 };  // namespace Source
 };  // namespace Supla

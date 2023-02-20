@@ -1,10 +1,20 @@
 # CHANGELOG.md
 
+## 23.02 (2023-02-20)
+
+  - Add: Linux: add support for ActionTrigger for CmdRelay and BinaryParsed
+  - Add: Distance sensor: add setReadIntervalMs method to set delay between sensor readouts (default 100 ms).
+  - Add: Improved handlign of custom GPIO interface (i.e. for port expanders) for Relay, Binary, all buttons, all RollerShutter classes, BistableRelay, InternalPinOutput, PinStatusLed, StatusLed
+  - Change: HC_SR04: changed delayMicroseconds 20 to 30 to make it work also wtih JSN-SR20-Y1 sensor
+  - Fix: Linux: terminate SSL connection on critical SSL error
+  - Fix: change logging from Serial to SUPLA_LOG_ macro for esp_wifi.h file (thanks @arturtadel)
+
 ## 22.12.01 (2023-01-09)
 
   - Fix: RGBW/Dimmer fix starting at lowest brighness when previously set brightness level was < 5%
   - Add: RGBW/Dimmer add option to set delay between dim direction change during dimming by button (setMinMaxIterationDelay)
   - Add: (ESP-IDF, ESP8266 RTOS) add HTTP status code to LAST STATE when it is different than 200
+
 ## 22.12 (2022-12-19)
 
   - Fix: Afore: fix crash on initialization

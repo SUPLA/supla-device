@@ -28,6 +28,7 @@ namespace Supla {
 namespace Parser {
 const char State[] = "state";
 const char StateOnValues[] = "state_on_values";
+const char ActionTrigger[] = "action_trigger";
 };
 
 namespace Sensor {
@@ -35,6 +36,8 @@ namespace Sensor {
 class BinaryParsed : public SensorParsed<VirtualBinary> {
  public:
   explicit BinaryParsed(Supla::Parser::Parser *);
+
+  void onInit() override;
   bool getValue() override;
 };
 };  // namespace Sensor

@@ -31,6 +31,7 @@ class CmdRelay : public Sensor::SensorParsed<VirtualRelay> {
   CmdRelay(Supla::Parser::Parser *parser, _supla_int_t functions =
                    (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
 
+  void onInit() override;
   void turnOn(_supla_int_t duration = 0) override;
   void turnOff(_supla_int_t duration = 0) override;
   bool isOn() override;

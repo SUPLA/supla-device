@@ -59,9 +59,20 @@ std::string Supla::Source::File::getContent() {
       }
     }
   } catch (std::filesystem::filesystem_error) {
+    SUPLA_LOG_ERROR("File: file \"%s\" reading error", filePath.c_str());
   }
 
   file.close();
+
+  if (result.length() < 1 && readFailures < 3) {
+    SUPLA_LOG_DEBUG("File: file \"%s\" reading error or empty",
+                    filePath.c_str());
+    readFailures++;
+    return prevResult;
+  }
+
+  readFailures = 0;
+  prevResult = result;
   return result;
 }
 

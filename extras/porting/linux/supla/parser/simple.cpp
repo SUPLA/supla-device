@@ -40,7 +40,7 @@ bool Supla::Parser::Simple::refreshSource() {
 
     if (sourceContent.length() == 0) {
       valid = false;
-      return false;
+      return valid;
     }
 
     std::stringstream ss(sourceContent);
@@ -53,10 +53,10 @@ bool Supla::Parser::Simple::refreshSource() {
     }
 
     valid = true;
-    return true;
+    return valid;
   }
   valid = false;
-  return false;
+  return valid;
 }
 
 bool Supla::Parser::Simple::isBasedOnIndex() {

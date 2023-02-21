@@ -1,0 +1,40 @@
+# Example supla-device config file for Linux device
+# https://github.com/SUPLA/supla-device
+
+name: Android TV integration
+log_level: debug
+state_files_path: "/home/my_user/atv"
+security_level: 2
+
+supla:
+  server: svrXX.supla.org
+  mail: your_email@mail.com
+
+channels:
+  - type: CmdRelay
+    offline_on_invalid_state: true
+    initial_state: restore
+# Full list of keycode: https://developer.android.com/reference/android/view/KeyEvent
+    cmd_on: "adb shell input keyevent 85"  # play/payse
+    cmd_off: "adb shell input keyevent 86" # stop
+    source:
+      type: File
+      file: "/home/my_user/atv/atv.state"
+      expiration_time_sec: 5
+    parser:
+      type: Simple
+      refresh_time_ms: 100
+    state: 0
+# For details about possible PlaybackState values please check:
+# https://developer.android.com/reference/android/media/session/PlaybackState
+    state_on_values: [6, 8, 4, 3, 5, 10, 9, 11]
+    action_trigger:
+      - use: at1
+# Send AT(1) when state is changed to 1 (from any state)
+      - on_state: [1, 1]
+# Send AT(2) when sate is changed from 1 (play) to offline or stop/pause
+      - on_state_change: [1, 0, 2]
+      - on_state_change: [1, -1, 2]
+
+  - type: ActionTriggerParsed
+    name: at1

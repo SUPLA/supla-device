@@ -2439,6 +2439,11 @@ typedef struct {
 // at all.
 // Disabled is set when thermometer is available (i.e. we can read it and show
 // to user), but it is not used by thermostat for any other purpose
+//
+// DIFFERENTIAL is used when thermostat should work in differential mode, which
+// means that it works based on difference between primary thermomter and
+// secondary thermometer.
+//
 // Other values are mainly for UI adjustement (i.e. show temperature as floor,
 // as water, generic heater or cooler device)
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET        0

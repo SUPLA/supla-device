@@ -59,7 +59,7 @@ class HvacBase : public ChannelElement {
       TSD_SetChannelConfigResult *result) override;
 
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
-  void setOutput(int value);
+  void setOutput(int value, bool force = false);
   void setTargetMode(int mode);
   void clearTemperatureSetpointMin();
   void clearTemperatureSetpointMax();
@@ -80,31 +80,31 @@ class HvacBase : public ChannelElement {
   void setDrySupported(bool supported);
 
   void addAlgorithmCap(unsigned _supla_int16_t algorithm);
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
   unsigned _supla_int16_t getUsedAlgorithm() const;
 
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   bool setMainThermometerChannelNo(uint8_t channelNo);
   uint8_t getMainThermometerChannelNo() const;
 
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   bool setHeaterCoolerThermometerChannelNo(uint8_t channelNo);
   uint8_t getHeaterCoolerThermometerChannelNo() const;
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   void setHeaterCoolerThermometerType(uint8_t type);
   uint8_t getHeaterCoolerThermometerType() const;
 
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
   bool isAntiFreezeAndHeatProtectionEnabled() const;
 
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   bool setMinOnTimeS(uint16_t seconds);
   uint16_t getMinOnTimeS() const;
   bool isMinOnOffTimeValid(uint16_t seconds) const;
 
-  // use this function to set value based on local input change
+  // use this function to set value based on local config change
   bool setMinOffTimeS(uint16_t seconds);
   uint16_t getMinOffTimeS() const;
 
@@ -294,12 +294,15 @@ class HvacBase : public ChannelElement {
   _supla_int16_t getPrimaryTemp();
   _supla_int16_t getSecondaryTemp();
   bool isSensorTempValid(_supla_int16_t temperature) const;
-  bool checkOverheatProtection();
-  bool checkAntifreezeProtection();
+  bool checkOverheatProtection(_supla_int16_t t);
+  bool checkAntifreezeProtection(_supla_int16_t t);
+  bool checkHeaterCoolerProtection(_supla_int16_t t);
   bool processWeeklySchedule();
   void setSetpointTemperaturesForCurrentMode(int tMin, int tMax);
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
                                              _supla_int16_t t2) const;
+  int evaluateOutputValue(_supla_int16_t tMeasured,
+                          _supla_int16_t tTarget) const;
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -318,6 +321,8 @@ class HvacBase : public ChannelElement {
   uint8_t lastWorkingMode = SUPLA_HVAC_MODE_NOT_SET;
   uint64_t lastConfigChangeTimestampMs = 0;
   uint64_t lastIterateTimestampMs = 0;
+  uint64_t lastOutputStateChangeTimestampMs = 0;
+  int lastValue = 0;
 };
 
 }  // namespace Control

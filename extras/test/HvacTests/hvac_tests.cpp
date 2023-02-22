@@ -784,6 +784,8 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_EQ(hvac.getMinOffTimeS(), 20);
 
   hvac.setAntiFreezeAndHeatProtectionEnabled(true);
+  EXPECT_FALSE(hvac.isAntiFreezeAndHeatProtectionEnabled());
+  hvac.getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
   EXPECT_TRUE(hvac.isAntiFreezeAndHeatProtectionEnabled());
   hvac.setAntiFreezeAndHeatProtectionEnabled(false);
   EXPECT_FALSE(hvac.isAntiFreezeAndHeatProtectionEnabled());

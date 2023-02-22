@@ -198,7 +198,7 @@ void HvacBase::onInit() {
         !channel.isHvacFlagSetpointTemperatureMaxSet()) {
       channel.setHvacSetpointTemperatureMax(SUPLA_HVAC_DEFAULT_TEMP_MAX);
     }
-    setOutput(0);
+    setOutput(0, true);
   }
 }
 
@@ -232,12 +232,12 @@ void HvacBase::iterateAlways() {
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
     setTargetMode(SUPLA_HVAC_MODE_OFF);
-    setOutput(0);
+    setOutput(0, true);
     channel.setHvacFlagError(true);
     return;
   }
 
-  if (config.HeaterCoolerThermometerType ==
+  if (getHeaterCoolerThermometerType() ==
       SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL) {
     t1 -= t2;
     t2 = INT16_MIN;
@@ -245,27 +245,26 @@ void HvacBase::iterateAlways() {
 
   channel.setHvacFlagError(false);
 
+  if (checkOverheatProtection(t1)) {
+    return;
+  }
+
+  if (checkAntifreezeProtection(t1)) {
+    return;
+  }
+
+  if (checkHeaterCoolerProtection(t2)) {
+    return;
+  }
+
   switch (channel.getDefaultFunction()) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
-      if (checkOverheatProtection()) {
-        break;
-      }
-      if (checkAntifreezeProtection()) {
-        break;
-      }
-
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
-      if (checkAntifreezeProtection()) {
-        break;
-      }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
-      if (checkOverheatProtection()) {
-        break;
-      }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_DRYER: {
@@ -1435,7 +1434,14 @@ void HvacBase::setAntiFreezeAndHeatProtectionEnabled(bool enabled) {
 }
 
 bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
-  return config.EnableAntiFreezeAndOverheatProtection;
+  auto func = channel.getDefaultFunction();
+  if (func == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO ||
+      func == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT ||
+      func == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL) {
+    return config.EnableAntiFreezeAndOverheatProtection;
+  }
+
+  return false;
 }
 
 bool HvacBase::isMinOnOffTimeValid(uint16_t seconds) const {
@@ -1820,11 +1826,10 @@ _supla_int16_t HvacBase::getPrimaryTemp() {
 }
 
 _supla_int16_t HvacBase::getSecondaryTemp() {
-  if (config.HeaterCoolerThermometerType !=
-          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
-      config.HeaterCoolerThermometerType !=
-          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
-    return getTemperature(config.HeaterCoolerThermometerChannelNo);
+  auto type = getHeaterCoolerThermometerType();
+  if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
+      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
+    return getTemperature(getHeaterCoolerThermometerChannelNo());
   }
 
   return INT16_MIN;
@@ -1854,10 +1859,41 @@ _supla_int16_t HvacBase::getTemperature(int channelNo) {
   return INT16_MIN;
 }
 
-void HvacBase::setOutput(int value) {
+void HvacBase::setOutput(int value, bool force) {
   if (primaryOutput == nullptr) {
     return;
   }
+
+  bool stateChanged = false;
+  // make sure that min on/off time configuration is respected
+  if (lastValue > 0 && value <= 0) {
+    if (!force && millis() - lastOutputStateChangeTimestampMs <
+        config.MinOnTimeS * 1000) {
+      return;
+    }
+    stateChanged = true;
+  }
+
+  if (lastValue == 0 && value != 0) {
+    if (!force && millis() - lastOutputStateChangeTimestampMs <
+        config.MinOffTimeS * 1000) {
+      return;
+    }
+    stateChanged = true;
+  }
+
+  if (lastValue < 0 && value >= 0) {
+    if (!force && millis() - lastOutputStateChangeTimestampMs <
+        config.MinOnTimeS * 1000) {
+      return;
+    }
+    stateChanged = true;
+  }
+
+  if (stateChanged) {
+    lastOutputStateChangeTimestampMs = millis();
+  }
+  lastValue = value;
 
   switch (channel.getDefaultFunction()) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
@@ -1943,10 +1979,6 @@ void HvacBase::setOutput(int value) {
       }
       break;
     }
-
-    default: {
-      return;
-    }
   }
 }
 
@@ -1965,16 +1997,61 @@ void HvacBase::setTargetMode(int mode) {
   }
 }
 
-bool HvacBase::checkOverheatProtection() {
+bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
   if (isAntiFreezeAndHeatProtectionEnabled()) {
-    // TODO(klew): implement
+    auto tFreeze = getTemperatureFreezeProtection();
+    if (!isSensorTempValid(tFreeze)) {
+      return false;
+    }
+
+    auto outputValue = evaluateOutputValue(t, tFreeze);
+    if (outputValue > 0) {
+      setOutput(outputValue, true);
+      return true;
+    }
   }
   return false;
 }
 
-bool HvacBase::checkAntifreezeProtection() {
+bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
   if (isAntiFreezeAndHeatProtectionEnabled()) {
-    // TODO(klew): implement
+    auto tOverheat = getTemperatureHeatProtection();
+    if (!isSensorTempValid(tOverheat)) {
+      return false;
+    }
+
+    auto outputValue = evaluateOutputValue(t, tOverheat);
+    if (outputValue < 0) {
+      setOutput(outputValue, true);
+      return true;
+    }
+  }
+  return false;
+}
+
+bool HvacBase::checkHeaterCoolerProtection(_supla_int16_t t) {
+  auto type = getHeaterCoolerThermometerType();
+
+  if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
+      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED &&
+      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL) {
+    auto tHeaterCoolerMin = getTemperatureHeaterCoolerMinSetpoint();
+    auto tHeaterCoolerMax = getTemperatureHeaterCoolerMaxSetpoint();
+    if (isSensorTempValid(tHeaterCoolerMin)) {
+      auto outputValue = evaluateOutputValue(t, tHeaterCoolerMin);
+      if (outputValue > 0) {
+        setOutput(outputValue, true);
+        return true;
+      }
+    }
+
+    if (isSensorTempValid(tHeaterCoolerMax)) {
+      auto outputValue = evaluateOutputValue(t, tHeaterCoolerMax);
+      if (outputValue < 0) {
+        setOutput(outputValue, true);
+        return true;
+      }
+    }
   }
   return false;
 }
@@ -2119,9 +2196,11 @@ bool HvacBase::processWeeklySchedule() {
 
   if (!Supla::Clock::IsReady()) {
     setTargetMode(SUPLA_HVAC_MODE_OFF);
+    channel.setHvacFlagClockError(true);
     return false;
   }
 
+  channel.setHvacFlagClockError(false);
   int programId = getWeeklyScheduleProgramId(Supla::Clock::GetHvacDayOfWeek(),
       Supla::Clock::GetHour(), Supla::Clock::GetQuarter());
 
@@ -2199,10 +2278,9 @@ bool HvacBase::isSensorTempValid(_supla_int16_t temperature) const {
 
 bool HvacBase::checkThermometersStatusForCurrentMode(
     _supla_int16_t t1, _supla_int16_t t2) const {
-  if (config.HeaterCoolerThermometerType !=
-          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
-      config.HeaterCoolerThermometerType !=
-          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
+  auto type = getHeaterCoolerThermometerType();
+  if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
+      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
     if (!isSensorTempValid(t1) || !isSensorTempValid(t2)) {
       return false;
     }
@@ -2219,3 +2297,12 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
   }
   return true;
 }
+
+int HvacBase::evaluateOutputValue(
+    _supla_int16_t tMeasured, _supla_int16_t tTarget) const {
+  (void)(tMeasured);
+  (void)(tTarget);
+  return 0;
+}
+
+

@@ -41,6 +41,9 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   RollerShutter(Supla::Io *io, int pinUp, int pinDown, bool highIsOn = true);
   RollerShutter(int pinUp, int pinDown, bool highIsOn = true);
 
+  RollerShutter(const RollerShutter &) = delete;
+  RollerShutter &operator=(const RollerShutter &) = delete;
+
   int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void handleAction(int event, int action) override;
 

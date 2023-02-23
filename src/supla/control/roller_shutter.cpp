@@ -46,6 +46,7 @@ RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setDefault(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
 }
 
 void RollerShutter::onInit() {
@@ -80,16 +81,57 @@ int RollerShutter::handleNewValueFromServer(
   char task = newValue->value[0];
   SUPLA_LOG_DEBUG("RollerShutter[%d] new value from server: %d",
       channel.getChannelNumber(), task);
-  if (task == 0) {
-    stop();
-  } else if (task == 1) {
-    moveDown();
-  } else if (task == 2) {
-    moveUp();
-  } else if (task >= 10 && task <= 110) {
-    setTargetPosition(task - 10);
-  }
+  switch (task) {
+    case 0: {
+      stop();
+      break;
+    }
+    case 1: {
+      moveDown();
+      break;
+    }
+    case 2: {
+      moveUp();
+      break;
+    }
+    case 3: {  // down or stop
+      if (inMove()) {
+        stop();
+      } else {
+        moveDown();
+      }
+      break;
+    }
+    case 4: {  // up or stop
+      if (inMove()) {
+        stop();
+      } else {
+        moveUp();
+      }
+      break;
+    }
+    case 5: {  // sbs
+      if (inMove()) {
+        stop();
+      } else if (lastDirectionWasOpen()) {
+        moveDown();
+      } else if (lastDirectionWasClose()) {
+        moveUp();
+      } else if (currentPosition < 50) {
+        moveDown();
+      } else {
+        moveUp();
+      }
+      break;
+    }
 
+    default: {
+      if (task >= 10 && task <= 110) {
+        setTargetPosition(task - 10);
+      }
+      break;
+    }
+  }
   return -1;
 }
 
@@ -165,13 +207,13 @@ void RollerShutter::handleAction(int event, int action) {
       if (inMove()) {
         stop();
       } else if (lastDirectionWasOpen()) {
-        close();
+        moveDown();
       } else if (lastDirectionWasClose()) {
-        open();
+        moveUp();
       } else if (currentPosition < 50) {
-        close();
+        moveDown();
       } else {
-        open();
+        moveUp();
       }
       break;
     }

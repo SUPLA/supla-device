@@ -59,6 +59,7 @@ file(GLOB TEST_SRC
   Mqtt/*.cpp
   Html/*.cpp
   HvacTests/*.cpp
+  RollerShutterTests/*.cpp
   )
 
 file(GLOB DOUBLE_SRC doubles/*.cpp)

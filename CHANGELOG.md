@@ -1,5 +1,10 @@
 # CHANGELOG.md
 
+## 23.02.01 (2023-02-22)
+
+  - Add: Roller shutter: add handling of server commands: up or stop, down or stop, step-by-step.
+  - Change: Roller shutter: change local handling of "step by step" (i.e. by button) to use moveUp/Down instead of open/close.
+
 ## 23.02 (2023-02-20)
 
   - Add: Linux: add support for ActionTrigger for CmdRelay and BinaryParsed

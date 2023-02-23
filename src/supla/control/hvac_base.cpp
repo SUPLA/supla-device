@@ -28,8 +28,9 @@
 
 #include "output_interface.h"
 
-#define SUPLA_HVAC_DEFAULT_TEMP_MIN 1800  // 18.00 C
-#define SUPLA_HVAC_DEFAULT_TEMP_MAX 2400  // 24.00 C
+#define SUPLA_HVAC_DEFAULT_TEMP_MIN          1800  // 18.00 C
+#define SUPLA_HVAC_DEFAULT_TEMP_MAX          2400  // 24.00 C
+#define SUPLA_HVAC_MAX_DIFFERENTIAL_SETPOINT 5000  // 50.00 C
 
 using Supla::Control::HvacBase;
 
@@ -237,8 +238,8 @@ void HvacBase::iterateAlways() {
     return;
   }
 
-  if (getHeaterCoolerThermometerType() ==
-      SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL) {
+  if (channel.getDefaultFunction() ==
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
     t1 -= t2;
     t2 = INT16_MIN;
   }
@@ -390,9 +391,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
   memcpy(&configCopy, &config, sizeof(TSD_ChannelConfig_HVAC));
 
   // Received config looks ok, so we apply it to channel
-  if (setAndSaveFunction(channelFunction)) {
-    lastConfigChangeTimestampMs = millis();
-  }
+  changeFunction(channelFunction);
 
   // We don't use setters here, because they run validation againsted current
   // configuration, which may fail. However new config was already validated
@@ -1435,13 +1434,17 @@ void HvacBase::setAntiFreezeAndHeatProtectionEnabled(bool enabled) {
 
 bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
   auto func = channel.getDefaultFunction();
-  if (func == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO ||
-      func == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT ||
-      func == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL) {
-    return config.EnableAntiFreezeAndOverheatProtection;
-  }
+  switch (func) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
+      return config.EnableAntiFreezeAndOverheatProtection;
+    }
 
-  return false;
+    default: {
+      return false;
+    }
+  }
 }
 
 bool HvacBase::isMinOnOffTimeValid(uint16_t seconds) const {
@@ -1674,7 +1677,7 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program) const {
   // check tempreatures
   switch (program.Mode) {
     case SUPLA_HVAC_MODE_HEAT: {
-      return isTemperatureInRoomConstrain(program.SetpointTemperatureMin);
+      return isSetpointMinTemperatureValid(program.SetpointTemperatureMin);
     }
     case SUPLA_HVAC_MODE_COOL: {
       return isTemperatureInRoomConstrain(program.SetpointTemperatureMax);
@@ -1722,6 +1725,9 @@ bool HvacBase::isModeSupported(int mode) const {
     case SUPLA_CHANNELFNC_HVAC_FAN: {
       fanSupported = true;
       break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
+      heatSupported = true;
     }
   }
 
@@ -2030,11 +2036,22 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
 }
 
 bool HvacBase::checkHeaterCoolerProtection(_supla_int16_t t) {
+  // heater/cooler protection is available in heat/cool/auto function
+  auto func = channel.getDefaultFunction();
+  switch (func) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
+      break;
+
+    default:
+      return false;
+  }
+
   auto type = getHeaterCoolerThermometerType();
 
   if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
-      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED &&
-      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL) {
+      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
     auto tHeaterCoolerMin = getTemperatureHeaterCoolerMinSetpoint();
     auto tHeaterCoolerMax = getTemperatureHeaterCoolerMaxSetpoint();
     if (isSensorTempValid(tHeaterCoolerMin)) {
@@ -2295,6 +2312,14 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
       }
     }
   }
+
+  if (channel.getDefaultFunction() ==
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    if (!isSensorTempValid(t1) || !isSensorTempValid(t2)) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -2305,4 +2330,36 @@ int HvacBase::evaluateOutputValue(
   return 0;
 }
 
+void HvacBase::changeFunction(int newFunction) {
+  auto currentFunction = channel.getDefaultFunction();
+  if (currentFunction == newFunction) {
+    return;
+  }
+
+  if (setAndSaveFunction(newFunction)) {
+    lastConfigChangeTimestampMs = millis();
+  }
+
+  // if function was changed to or from "differential" then we reset setpoint
+  // temperatures and mode to OFF. Also weekly schedule is cleared
+  if (newFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL ||
+      currentFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    channel.clearHvacSetpointTemperatureMax();
+    channel.clearHvacSetpointTemperatureMin();
+    channel.setHvacMode(SUPLA_HVAC_MODE_OFF);
+
+    isWeeklyScheduleConfigured = false;
+    memset(&weeklySchedule, 0, sizeof(weeklySchedule));
+    saveWeeklySchedule();
+  }
+}
+
+bool HvacBase::isSetpointMinTemperatureValid(_supla_int16_t tMin) const {
+  if (channel.getDefaultFunction() ==
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    return tMin >= 0 && tMin <= SUPLA_HVAC_MAX_DIFFERENTIAL_SETPOINT;
+  } else {
+    return isTemperatureInRoomConstrain(tMin);
+  }
+}
 

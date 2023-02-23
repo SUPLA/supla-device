@@ -442,21 +442,22 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELFNC_IC_WATER_METER 330               // ver. >= 10
 #define SUPLA_CHANNELFNC_IC_HEAT_METER 340                // ver. >= 10
 // Thermostat 400 funciton is not used
-#define SUPLA_CHANNELFNC_THERMOSTAT 400                   // ver. >= 11
-#define SUPLA_CHANNELFNC_THERMOSTAT_HEATPOL_HOMEPLUS 410  // ver. >= 11
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT        420  // ver. >= 20
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL        421  // ver. >= 20
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO        422  // ver. >= 20
-#define SUPLA_CHANNELFNC_HVAC_DRYER                  423  // ver. >= 20
-#define SUPLA_CHANNELFNC_HVAC_FAN                    424  // ver. >= 20
-#define SUPLA_CHANNELFNC_VALVE_OPENCLOSE 500              // ver. >= 12
-#define SUPLA_CHANNELFNC_VALVE_PERCENTAGE 510             // ver. >= 12
-#define SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT 520  // ver. >= 12
-#define SUPLA_CHANNELFNC_CONTROLLINGTHEENGINESPEED 600    // ver. >= 12
-#define SUPLA_CHANNELFNC_ACTIONTRIGGER 700                // ver. >= 16
-#define SUPLA_CHANNELFNC_DIGIGLASS_HORIZONTAL 800         // ver. >= 14
-#define SUPLA_CHANNELFNC_DIGIGLASS_VERTICAL 810           // ver. >= 14
-#define SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND 900    // ver. >= 17
+#define SUPLA_CHANNELFNC_THERMOSTAT                   400  // ver. >= 11
+#define SUPLA_CHANNELFNC_THERMOSTAT_HEATPOL_HOMEPLUS  410  // ver. >= 11
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT         420  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL         421  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO         422  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_DRYER                   423  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_FAN                     424  // ver. >= 20
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL 425  // ver. >= 20
+#define SUPLA_CHANNELFNC_VALVE_OPENCLOSE              500  // ver. >= 12
+#define SUPLA_CHANNELFNC_VALVE_PERCENTAGE             510  // ver. >= 12
+#define SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT  520  // ver. >= 12
+#define SUPLA_CHANNELFNC_CONTROLLINGTHEENGINESPEED    600  // ver. >= 12
+#define SUPLA_CHANNELFNC_ACTIONTRIGGER                700  // ver. >= 16
+#define SUPLA_CHANNELFNC_DIGIGLASS_HORIZONTAL         800  // ver. >= 14
+#define SUPLA_CHANNELFNC_DIGIGLASS_VERTICAL           810  // ver. >= 14
+#define SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND    900  // ver. >= 17
 
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEGATEWAYLOCK 0x00000001
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEGATE 0x00000002
@@ -2439,11 +2440,6 @@ typedef struct {
 // at all.
 // Disabled is set when thermometer is available (i.e. we can read it and show
 // to user), but it is not used by thermostat for any other purpose
-//
-// DIFFERENTIAL is used when thermostat should work in differential mode, which
-// means that it works based on difference between primary thermomter and
-// secondary thermometer.
-//
 // Other values are mainly for UI adjustement (i.e. show temperature as floor,
 // as water, generic heater or cooler device)
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET        0
@@ -2452,7 +2448,6 @@ typedef struct {
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER          3
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER 4
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER 5
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DIFFERENTIAL   6
 
 #define SUPLA_HVAC_ALGORITHM_NOT_SET 0
 #define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 1)

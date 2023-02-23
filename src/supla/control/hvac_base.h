@@ -286,6 +286,7 @@ class HvacBase : public ChannelElement {
   void copyFixedChannelConfigTo(HvacBase *hvac);
   void turnOn();
   bool turnOnWeeklySchedlue();
+  void changeFunction(int newFunction);
 
  private:
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
@@ -303,6 +304,7 @@ class HvacBase : public ChannelElement {
                                              _supla_int16_t t2) const;
   int evaluateOutputValue(_supla_int16_t tMeasured,
                           _supla_int16_t tTarget) const;
+  bool isSetpointMinTemperatureValid(_supla_int16_t tMax) const;
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};

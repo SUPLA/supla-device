@@ -258,23 +258,48 @@ void HvacBase::iterateAlways() {
     return;
   }
 
-  switch (channel.getDefaultFunction()) {
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_DRYER: {
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_FAN: {
-      break;
-    }
+  switch (channel.getHvacMode()) {
+    case SUPLA_HVAC_MODE_AUTO: {
+      int heatNewOutputValue =
+          evaluateOutputValue(t1, getTemperatureSetpointMin());
+      int coolNewOutputValue =
+          evaluateOutputValue(t1, getTemperatureSetpointMax());
+      if (heatNewOutputValue > 0) {
+        setOutput(heatNewOutputValue, false);
+      } else if (coolNewOutputValue < 0) {
+        setOutput(coolNewOutputValue, false);
+      } else {
+        setOutput(0, false);
+      }
 
+      break;
+    }
+    case SUPLA_HVAC_MODE_HEAT: {
+      int newOutputValue = evaluateOutputValue(t1, getTemperatureSetpointMin());
+      if (newOutputValue < 0) {
+        newOutputValue = 0;
+      }
+      setOutput(newOutputValue, false);
+      break;
+    }
+    case SUPLA_HVAC_MODE_COOL: {
+      int newOutputValue = evaluateOutputValue(t1, getTemperatureSetpointMax());
+      if (newOutputValue > 0) {
+        newOutputValue = 0;
+      }
+      setOutput(newOutputValue, false);
+      break;
+    }
+    /*
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_DRYER:
+    case SUPLA_CHANNELFNC_HVAC_FAN: {
+      // not implemented yet
+      break;
+    }
+     */
     default: {
       break;
     }
@@ -1870,6 +1895,14 @@ void HvacBase::setOutput(int value, bool force) {
     return;
   }
 
+  if (lastValue == value) {
+    return;
+  }
+
+  if (lastValue < -100) {
+    lastValue = 0;
+  }
+
   bool stateChanged = false;
   // make sure that min on/off time configuration is respected
   if (lastValue > 0 && value <= 0) {
@@ -1996,9 +2029,18 @@ void HvacBase::setTargetMode(int mode) {
   if (isModeSupported(mode)) {
     if (mode == SUPLA_HVAC_MODE_OFF) {
       lastWorkingMode = channel.getHvacMode();
+      channel.setHvacMode(mode);
+      setOutput(0, true);
+    } else if (mode == SUPLA_HVAC_MODE_CMD_TURN_ON) {
+      turnOn();
+    } else if (mode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
+      if (!turnOnWeeklySchedlue()) {
+        return;
+      }
+    } else {
+      channel.setHvacMode(mode);
     }
 
-    channel.setHvacMode(mode);
     lastConfigChangeTimestampMs = millis();
   }
 }
@@ -2123,7 +2165,13 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   }
 
   uint8_t mode = hvacValue->Mode;
-  if (mode == SUPLA_HVAC_MODE_CMD_TURN_ON) {
+  setTargetMode(mode);
+
+  if (mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
+    setSetpointTemperaturesForCurrentMode(tMin, tMax);
+  }
+
+  /*if (mode == SUPLA_HVAC_MODE_CMD_TURN_ON) {
     turnOn();
   } else if (mode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     if (!turnOnWeeklySchedlue()) {
@@ -2132,7 +2180,7 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   } else {
     setTargetMode(mode);
     setSetpointTemperaturesForCurrentMode(tMin, tMax);
-  }
+  }*/
 
   // clear flag, so iterateAlawys method will apply new config instantly
   // instead of waiting few seconds
@@ -2323,11 +2371,47 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
   return true;
 }
 
-int HvacBase::evaluateOutputValue(
-    _supla_int16_t tMeasured, _supla_int16_t tTarget) const {
-  (void)(tMeasured);
-  (void)(tTarget);
-  return 0;
+int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
+                                  _supla_int16_t tTarget) {
+  if (!isSensorTempValid(tMeasured)) {
+    channel.setHvacFlagError(true);
+    return 0;
+  }
+  if (!isSensorTempValid(tTarget)) {
+    channel.setHvacFlagError(true);
+    return 0;
+  }
+  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
+    channel.setHvacFlagError(true);
+    return 0;
+  }
+
+  int output = lastValue;
+
+  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF) {
+    auto histeresis = getTemperatureHisteresis();
+    if (!isSensorTempValid(histeresis)) {
+      channel.setHvacFlagError(true);
+      return 0;
+    }
+    histeresis >>= 1;
+
+    // check if we should turn on heating
+    if (lastValue <= 0) {
+      if (tMeasured < tTarget - histeresis) {
+        output = 100;
+      }
+    }
+
+    // check if we should turn on cooling
+    if (lastValue >= 0) {
+      if (tMeasured > tTarget + histeresis) {
+        output = -100;
+      }
+    }
+  }
+  channel.setHvacFlagError(false);
+  return output;
 }
 
 void HvacBase::changeFunction(int newFunction) {

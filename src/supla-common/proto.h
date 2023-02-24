@@ -2450,7 +2450,7 @@ typedef struct {
 #define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER 5
 
 #define SUPLA_HVAC_ALGORITHM_NOT_SET 0
-#define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 1)
+#define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 0)
 
 
 // TODO(klew): should we have separate structures for configuration specific

@@ -36,7 +36,7 @@ double Supla::Sensor::Thermometer::getValue() {
 }
 
 void Supla::Sensor::Thermometer::iterateAlways() {
-  if (millis() - lastReadTime > 10000) {
+  if (millis() - lastReadTime > refreshIntervalMs) {
     lastReadTime = millis();
     channel.setNewValue(getValue());
   }
@@ -59,5 +59,9 @@ void Supla::Sensor::Thermometer::onLoadConfig() {
 
 double Supla::Sensor::Thermometer::getLastTemperature() {
   return getChannel()->getValueDouble();
+}
+
+void Supla::Sensor::Thermometer::setRefreshIntervalMs(int intervalMs) {
+  refreshIntervalMs = intervalMs;
 }
 

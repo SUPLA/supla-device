@@ -34,9 +34,11 @@ class Thermometer : public ChannelElement {
   void iterateAlways() override;
 
   double getLastTemperature();
+  void setRefreshIntervalMs(int intervalMs);
 
  protected:
   uint64_t lastReadTime;
+  uint16_t refreshIntervalMs = 10000;
 };
 
 };  // namespace Sensor

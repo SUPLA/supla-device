@@ -303,7 +303,7 @@ class HvacBase : public ChannelElement {
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
                                              _supla_int16_t t2) const;
   int evaluateOutputValue(_supla_int16_t tMeasured,
-                          _supla_int16_t tTarget) const;
+                          _supla_int16_t tTarget);
   bool isSetpointMinTemperatureValid(_supla_int16_t tMax) const;
 
   TSD_ChannelConfig_HVAC config = {};
@@ -324,7 +324,7 @@ class HvacBase : public ChannelElement {
   uint64_t lastConfigChangeTimestampMs = 0;
   uint64_t lastIterateTimestampMs = 0;
   uint64_t lastOutputStateChangeTimestampMs = 0;
-  int lastValue = 0;
+  int lastValue = -1000;  // set out of output value range
 };
 
 }  // namespace Control

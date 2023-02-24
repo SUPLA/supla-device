@@ -167,7 +167,7 @@ void Network::printData(const char *prefix, const void *buf, const int count) {
         "%02X ",
         static_cast<unsigned int>(static_cast<const unsigned char *>(buf)[i]));
   }
-  SUPLA_LOG_DEBUG("%s: [%s]", prefix, tmp);
+  SUPLA_LOG_VERBOSE("%s: [%s]", prefix, tmp);
 }
 
 void Network::setSsid(const char *wifiSsid) {

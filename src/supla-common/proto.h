@@ -2023,6 +2023,7 @@ typedef struct {
 // #define SUPLA_HVAC_CAP_FLAG_MODE_ECO 0x0010
 #define SUPLA_HVAC_CAP_FLAG_MODE_DRY      0x0020
 #define SUPLA_HVAC_CAP_FLAG_MODE_FAN      0x0040
+#define SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL  0x0080
 // #define SUPLA_HVAC_CAP_FLAG_MODE_PURIFIER 0x0080  // remove?
 // #define SUPLA_HVAC_CAP_FLAG_SCHEDULE      0x0100  // moved to channel
                                                            // flags, instead of

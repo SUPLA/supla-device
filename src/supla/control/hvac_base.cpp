@@ -1910,6 +1910,9 @@ void HvacBase::setOutput(int value, bool force) {
         config.MinOnTimeS * 1000) {
       return;
     }
+    // when output should change from heating to cooling, we add off step
+    // between
+    value = 0;
     stateChanged = true;
   }
 
@@ -1926,6 +1929,9 @@ void HvacBase::setOutput(int value, bool force) {
         config.MinOnTimeS * 1000) {
       return;
     }
+    // when output should change from cooling to heating, we add off step
+    // between
+    value = 0;
     stateChanged = true;
   }
 
@@ -1935,7 +1941,8 @@ void HvacBase::setOutput(int value, bool force) {
   lastValue = value;
 
   switch (channel.getDefaultFunction()) {
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
       channel.setHvacFlagCooling(false);
       if (secondaryOutput) {
         secondaryOutput->setOutputValue(0);
@@ -2149,7 +2156,7 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   }
 
   if (Supla::Channel::isHvacFlagSetpointTemperatureMinSet(hvacValue)) {
-    if (!isTemperatureInRoomConstrain(tMin)) {
+    if (!isSetpointMinTemperatureValid(tMin)) {
       return 0;
     }
   } else {
@@ -2170,17 +2177,6 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   if (mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     setSetpointTemperaturesForCurrentMode(tMin, tMax);
   }
-
-  /*if (mode == SUPLA_HVAC_MODE_CMD_TURN_ON) {
-    turnOn();
-  } else if (mode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
-    if (!turnOnWeeklySchedlue()) {
-      return 0;
-    }
-  } else {
-    setTargetMode(mode);
-    setSetpointTemperaturesForCurrentMode(tMin, tMax);
-  }*/
 
   // clear flag, so iterateAlawys method will apply new config instantly
   // instead of waiting few seconds
@@ -2447,3 +2443,6 @@ bool HvacBase::isSetpointMinTemperatureValid(_supla_int16_t tMin) const {
   }
 }
 
+void HvacBase::enableDifferentialFunctionSupport() {
+  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
+}

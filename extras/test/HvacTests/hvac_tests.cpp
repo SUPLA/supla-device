@@ -213,6 +213,13 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
                                    SUPLA_HVAC_CAP_FLAG_MODE_COOL |
                                    SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
                                    SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+
+  hvac.enableDifferentialFunctionSupport();
+  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO |
+                                   SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
 }
 
 TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
@@ -307,6 +314,34 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   ch->setDefault(0);
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), 0);
+}
+
+TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInitWithTwoOutputs) {
+  OutputMock output1;
+  OutputMock output2;
+  Supla::Control::HvacBase hvac(&output1, &output2);
+
+  EXPECT_CALL(output1, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output2, setOutputValue(0)).Times(1);
+
+  auto *ch = hvac.getChannel();
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
+
+  hvac.onInit();
+  // check default function
+  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+
+  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+
+  hvac.enableDifferentialFunctionSupport();
+  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO |
+                                   SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
 }
 
 TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {

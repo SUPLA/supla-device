@@ -547,5 +547,13 @@ int RollerShutter::getCurrentDirection() const {
   return currentDirection;
 }
 
+uint32_t RollerShutter::getClosingTimeMs() const {
+  return closingTimeMs;
+}
+
+uint32_t RollerShutter::getOpeningTimeMs() const {
+  return openingTimeMs;
+}
+
 }  // namespace Control
 }  // namespace Supla

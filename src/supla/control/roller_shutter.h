@@ -68,6 +68,9 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   void onLoadState() override;
   void onSaveState() override;
 
+  uint32_t getClosingTimeMs() const;
+  uint32_t getOpeningTimeMs() const;
+
  protected:
   virtual void stopMovement();
   virtual void relayDownOn();

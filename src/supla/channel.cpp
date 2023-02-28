@@ -899,7 +899,7 @@ int16_t Channel::getHvacSetpointTemperatureMax() {
   if (value != nullptr) {
     return value->SetpointTemperatureMax;
   }
-  return 0;
+  return INT16_MIN;
 }
 
 int16_t Channel::getHvacSetpointTemperatureMin() {
@@ -907,7 +907,7 @@ int16_t Channel::getHvacSetpointTemperatureMin() {
   if (value != nullptr) {
     return value->SetpointTemperatureMin;
   }
-  return 0;
+  return INT16_MIN;
 }
 
 uint16_t Channel::getHvacFlags() {

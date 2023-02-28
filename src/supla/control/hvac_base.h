@@ -308,6 +308,7 @@ class HvacBase : public ChannelElement {
   int evaluateOutputValue(_supla_int16_t tMeasured,
                           _supla_int16_t tTarget);
   bool isSetpointMinTemperatureValid(_supla_int16_t tMin) const;
+  void fixTemperatureSetpoints();
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};

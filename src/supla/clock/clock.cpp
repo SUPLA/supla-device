@@ -30,7 +30,7 @@ namespace Supla {
 static Clock *clockInstance = nullptr;
 
 bool Clock::IsReady() {
-  if (clockInstance && clockInstance->IsReady()) {
+  if (clockInstance && clockInstance->isReady()) {
     return true;
   }
   return false;

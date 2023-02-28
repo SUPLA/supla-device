@@ -246,6 +246,10 @@ void HvacBase::iterateAlways() {
 
   channel.setHvacFlagError(false);
 
+  if (channel.isHvacFlagWeeklySchedule()) {
+    processWeeklySchedule();
+  }
+
   if (checkOverheatProtection(t1)) {
     return;
   }
@@ -2048,6 +2052,8 @@ void HvacBase::setTargetMode(int mode) {
       channel.setHvacMode(mode);
     }
 
+    fixTemperatureSetpoints();
+
     lastConfigChangeTimestampMs = millis();
   }
 }
@@ -2210,11 +2216,17 @@ void HvacBase::clearTemperatureSetpointMax() {
 }
 
 int HvacBase::getTemperatureSetpointMin() {
-  return channel.getHvacSetpointTemperatureMin();
+  if (channel.isHvacFlagSetpointTemperatureMinSet()) {
+    return channel.getHvacSetpointTemperatureMin();
+  }
+  return INT16_MIN;
 }
 
 int HvacBase::getTemperatureSetpointMax() {
-  return channel.getHvacSetpointTemperatureMax();
+  if (channel.isHvacFlagSetpointTemperatureMaxSet()) {
+    return channel.getHvacSetpointTemperatureMax();
+  }
+  return INT16_MIN;
 }
 
 void HvacBase::turnOn() {
@@ -2301,8 +2313,6 @@ void HvacBase::setSetpointTemperaturesForCurrentMode(int tMin, int tMax) {
     }
   }
 }
-  void addPrimaryOutput(Supla::Control::OutputInterface *output);
-  void addSecondaryOutput(Supla::Control::OutputInterface *output);
 
 void HvacBase::addPrimaryOutput(Supla::Control::OutputInterface *output) {
   primaryOutput = output;
@@ -2450,4 +2460,58 @@ bool HvacBase::isSetpointMinTemperatureValid(_supla_int16_t tMin) const {
 
 void HvacBase::enableDifferentialFunctionSupport() {
   channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
+}
+
+void HvacBase::fixTemperatureSetpoints() {
+  auto curTMin = getTemperatureSetpointMin();
+  auto curTMax = getTemperatureSetpointMax();
+
+  switch (channel.getHvacMode()) {
+    case SUPLA_HVAC_MODE_HEAT: {
+      if (!isSensorTempValid(curTMin)) {
+        setTemperatureSetpointMin(SUPLA_HVAC_DEFAULT_TEMP_MIN);
+      }
+      break;
+    }
+    case SUPLA_HVAC_MODE_COOL: {
+      if (!isSensorTempValid(curTMax)) {
+        setTemperatureSetpointMax(SUPLA_HVAC_DEFAULT_TEMP_MAX);
+      }
+      break;
+    }
+    case SUPLA_HVAC_MODE_AUTO: {
+      bool tMinValid = isSensorTempValid(curTMin);
+      bool tMaxValid = isSensorTempValid(curTMax);
+
+      if (tMinValid && tMaxValid) {
+        if (!isTemperatureInAutoConstrain(curTMin, curTMax)) {
+          auto offsetMin = getTemperatureAutoOffsetMin();
+          auto offsetMax = getTemperatureAutoOffsetMax();
+          if (curTMax - curTMin < offsetMin) {
+            if (isTemperatureInRoomConstrain(curTMin + offsetMin)) {
+              setTemperatureSetpointMax(curTMin + offsetMin);
+            } else {
+              setTemperatureSetpointMin(curTMax - offsetMin);
+            }
+          }
+          if (curTMax - curTMin > offsetMax) {
+            if (isTemperatureInRoomConstrain(curTMin + offsetMax)) {
+              setTemperatureSetpointMax(curTMin + offsetMax);
+            } else {
+              setTemperatureSetpointMin(curTMax - offsetMax);
+            }
+          }
+        } else if (tMinValid) {
+          channel.setHvacSetpointTemperatureMin(curTMin);
+        } else if (tMaxValid) {
+          channel.setHvacSetpointTemperatureMax(curTMax);
+        }
+      }
+      break;
+    }
+    default: {
+      // other modes doesn't require temperature setpoints fix
+      return;
+    }
+  }
 }

@@ -2186,13 +2186,17 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
 }
 
 void HvacBase::setTemperatureSetpointMin(int tMin) {
-  channel.setHvacSetpointTemperatureMin(tMin);
-  lastConfigChangeTimestampMs = millis();
+  if (isSetpointMinTemperatureValid(tMin)) {
+    channel.setHvacSetpointTemperatureMin(tMin);
+    lastConfigChangeTimestampMs = millis();
+  }
 }
 
 void HvacBase::setTemperatureSetpointMax(int tMax) {
-  channel.setHvacSetpointTemperatureMax(tMax);
-  lastConfigChangeTimestampMs = millis();
+  if (isTemperatureInRoomConstrain(tMax)) {
+    channel.setHvacSetpointTemperatureMax(tMax);
+    lastConfigChangeTimestampMs = millis();
+  }
 }
 
 void HvacBase::clearTemperatureSetpointMin() {
@@ -2437,7 +2441,8 @@ void HvacBase::changeFunction(int newFunction) {
 bool HvacBase::isSetpointMinTemperatureValid(_supla_int16_t tMin) const {
   if (channel.getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    return tMin >= 0 && tMin <= SUPLA_HVAC_MAX_DIFFERENTIAL_SETPOINT;
+    return tMin >= -SUPLA_HVAC_MAX_DIFFERENTIAL_SETPOINT &&
+           tMin <= SUPLA_HVAC_MAX_DIFFERENTIAL_SETPOINT;
   } else {
     return isTemperatureInRoomConstrain(tMin);
   }

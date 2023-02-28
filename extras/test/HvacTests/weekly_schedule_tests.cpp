@@ -514,3 +514,88 @@ TEST_F(HvacWeeklyScheduleTestsF,
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
       SUPLA_CONFIG_RESULT_TRUE);
 }
+
+TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), 0))
+      .Times(AtLeast(1)).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(
+      cfg,
+      setBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+      .WillOnce([](const char *key, const char *buf, int size) {
+        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+
+        EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+        return 1;
+      })
+      .WillOnce([](const char *key, const char *buf, int size) {
+        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+
+        expectedData.Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+        expectedData.Program[0].SetpointTemperatureMin = 2100;
+        expectedData.Program[1].Mode = SUPLA_HVAC_MODE_HEAT;
+        expectedData.Program[1].SetpointTemperatureMin = -2000;
+        expectedData.Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
+        expectedData.Program[2].SetpointTemperatureMin = 4000;
+        expectedData.Value[0] = (1 | (2 << 4));
+        expectedData.Value[1] = 3;
+
+        EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+        return 1;
+      });
+
+  hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+  hvac->onInit();
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL;
+  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
+  TSD_ChannelConfig_WeeklySchedule *weeklySchedule =
+      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(
+          &configFromServer.Config);
+
+  // empty weekly schedule is filled with "off", so it is fine
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+      SUPLA_CONFIG_RESULT_TRUE);
+
+  weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
+  weeklySchedule->Program[0].SetpointTemperatureMin = 2100;
+  weeklySchedule->Program[1].Mode = SUPLA_HVAC_MODE_HEAT;
+  weeklySchedule->Program[1].SetpointTemperatureMin = -2000;
+  // cool is not supported by current hvac
+  weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_COOL;
+  weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
+
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+      SUPLA_CONFIG_RESULT_DATA_ERROR);
+
+  weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
+  weeklySchedule->Program[2].SetpointTemperatureMin = 4000;
+
+  weeklySchedule->Value[0] = (1 | (2 << 4));
+  weeklySchedule->Value[1] = 3;
+
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TWeeklyScheduleProgram program1 = {SUPLA_HVAC_MODE_HEAT, {2100}, {0}};
+  TWeeklyScheduleProgram program2 = {SUPLA_HVAC_MODE_HEAT, {-2000}, {0}};
+  TWeeklyScheduleProgram program3 = {SUPLA_HVAC_MODE_HEAT, {4000}, {0}};
+  auto result = hvac->getProgram(1);
+  EXPECT_EQ(memcmp(&result, &program1, sizeof(result)), 0);
+  result = hvac->getProgram(2);
+  EXPECT_EQ(memcmp(&result, &program2, sizeof(result)), 0);
+  result = hvac->getProgram(3);
+  EXPECT_EQ(memcmp(&result, &program3, sizeof(result)), 0);
+
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0), 1);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 1), 2);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 2), 3);
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 3), 0);
+}
+

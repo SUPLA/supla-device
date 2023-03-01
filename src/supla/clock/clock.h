@@ -38,6 +38,8 @@ class Clock : public Element {
   static int GetMin();
   static int GetSec();
 
+  static Clock* GetInstance();
+
   Clock();
   virtual ~Clock();
 

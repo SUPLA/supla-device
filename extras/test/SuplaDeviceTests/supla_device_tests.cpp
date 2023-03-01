@@ -26,6 +26,7 @@
 #include <supla/protocol/supla_srpc.h>
 #include <network_client_mock.h>
 #include <network_with_mac_mock.h>
+#include <clock_mock.h>
 
 using ::testing::Return;
 using ::testing::_;
@@ -61,21 +62,15 @@ TEST_F(SuplaDeviceTests, DefaultValuesTest) {
   EXPECT_EQ(sd.getClock(), nullptr);
 }
 
-class ClockMock : public Supla::Clock {
-  public:
-    MOCK_METHOD(void,  parseLocaltimeFromServer, (TSDC_UserLocalTimeResult *result), (override));
-};
-
 TEST_F(SuplaDeviceTests, ClockMethods) {
   NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
-  ClockMock clock;
 
   ASSERT_EQ(sd.getClock(), nullptr);
   srpcLayer.onGetUserLocaltimeResult(nullptr);
 
-  sd.addClock(&clock);
+  ClockMock clock;
   ASSERT_EQ(sd.getClock(), &clock);
 
   EXPECT_CALL(clock, parseLocaltimeFromServer(nullptr)).Times(1);

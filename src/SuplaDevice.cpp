@@ -553,12 +553,12 @@ void SuplaDeviceClass::setServer(const char *server) {
 }
 
 void SuplaDeviceClass::addClock(Supla::Clock *_clock) {
-  SUPLA_LOG_DEBUG("Clock class added");
-  clock = _clock;
+  (void)(_clock);
+  SUPLA_LOG_DEBUG("addClock: DEPRECATED");
 }
 
 Supla::Clock *SuplaDeviceClass::getClock() {
-  return clock;
+  return Supla::Clock::GetInstance();
 }
 
 bool SuplaDeviceClass::loadDeviceConfig() {

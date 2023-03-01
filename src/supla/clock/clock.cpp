@@ -99,6 +99,10 @@ int Clock::GetSec() {
   return 0;
 }
 
+Clock* Clock::GetInstance() {
+  return clockInstance;
+}
+
 Clock::Clock() {
   clockInstance = this;
 }

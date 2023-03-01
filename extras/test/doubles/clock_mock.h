@@ -38,6 +38,11 @@ class ClockMock : public Supla::Clock {
   MOCK_METHOD(int, getQuarter, (), (override));
   MOCK_METHOD(int, getMin, (), (override));
   MOCK_METHOD(int, getSec, (), (override));
+
+  MOCK_METHOD(void,
+              parseLocaltimeFromServer,
+              (TSDC_UserLocalTimeResult * result),
+              (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_CLOCK_MOCK_H_

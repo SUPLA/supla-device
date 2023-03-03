@@ -60,7 +60,7 @@ class HvacBase : public ChannelElement {
 
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
-  void setTargetMode(int mode);
+  void setTargetMode(int mode, bool keepSchedule = false);
   void clearTemperatureSetpointMin();
   void clearTemperatureSetpointMax();
   void setTemperatureSetpointMin(int tMin);

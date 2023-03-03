@@ -190,7 +190,7 @@ void HvacBase::onInit() {
 
   uint8_t mode = channel.getHvacMode();
   if (mode == SUPLA_HVAC_MODE_NOT_SET) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF);
+    setTargetMode(SUPLA_HVAC_MODE_OFF, false);
     if (isModeSupported(SUPLA_HVAC_MODE_HEAT) &&
         !channel.isHvacFlagSetpointTemperatureMinSet()) {
       channel.setHvacSetpointTemperatureMin(SUPLA_HVAC_DEFAULT_TEMP_MIN);
@@ -232,7 +232,7 @@ void HvacBase::iterateAlways() {
   auto t2 = getSecondaryTemp();
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF);
+    setTargetMode(SUPLA_HVAC_MODE_OFF, true);
     setOutput(0, true);
     channel.setHvacFlagError(true);
     return;
@@ -2032,24 +2032,39 @@ void HvacBase::setOutput(int value, bool force) {
   }
 }
 
-void HvacBase::setTargetMode(int mode) {
+void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
   if (channel.getHvacMode() == mode) {
-    return;
+    if (!(mode == SUPLA_HVAC_MODE_OFF && !keepScheduleOn &&
+          channel.isHvacFlagWeeklySchedule())) {
+      return;
+    }
   }
 
   if (isModeSupported(mode)) {
     if (mode == SUPLA_HVAC_MODE_OFF) {
       lastWorkingMode = channel.getHvacMode();
+      if (!keepScheduleOn && channel.isHvacFlagWeeklySchedule()) {
+        channel.setHvacFlagWeeklySchedule(false);
+        lastWorkingMode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
+      }
       channel.setHvacMode(mode);
       setOutput(0, true);
     } else if (mode == SUPLA_HVAC_MODE_CMD_TURN_ON) {
-      turnOn();
+      if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF) {
+        turnOn();
+      }
+      keepScheduleOn = true;
     } else if (mode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
+      keepScheduleOn = true;
       if (!turnOnWeeklySchedlue()) {
         return;
       }
     } else {
       channel.setHvacMode(mode);
+    }
+
+    if (!keepScheduleOn) {
+      channel.setHvacFlagWeeklySchedule(false);
     }
 
     fixTemperatureSetpoints();
@@ -2178,7 +2193,7 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   }
 
   uint8_t mode = hvacValue->Mode;
-  setTargetMode(mode);
+  setTargetMode(mode, false);
 
   if (mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     setSetpointTemperaturesForCurrentMode(tMin, tMax);
@@ -2230,7 +2245,8 @@ int HvacBase::getTemperatureSetpointMax() {
 }
 
 void HvacBase::turnOn() {
-  if (channel.isHvacFlagWeeklySchedule()) {
+  if (channel.isHvacFlagWeeklySchedule() ||
+      lastWorkingMode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     turnOnWeeklySchedlue();
     return;
   }
@@ -2254,7 +2270,7 @@ void HvacBase::turnOn() {
       }
     }
   }
-  setTargetMode(mode);
+  setTargetMode(mode, false);
 }
 
 bool HvacBase::turnOnWeeklySchedlue() {
@@ -2272,7 +2288,7 @@ bool HvacBase::processWeeklySchedule() {
   }
 
   if (!Supla::Clock::IsReady()) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF);
+    setTargetMode(SUPLA_HVAC_MODE_OFF, true);
     channel.setHvacFlagClockError(true);
     return false;
   }
@@ -2282,19 +2298,22 @@ bool HvacBase::processWeeklySchedule() {
       Supla::Clock::GetHour(), Supla::Clock::GetQuarter());
 
   if (programId == 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF);
+    setTargetMode(SUPLA_HVAC_MODE_OFF, true);
     return true;
   }
 
   TWeeklyScheduleProgram program = getProgram(programId);
 
-  setTargetMode(program.Mode);
+  setTargetMode(program.Mode, true);
   setSetpointTemperaturesForCurrentMode(program.SetpointTemperatureMin,
       program.SetpointTemperatureMax);
   return true;
 }
 
 void HvacBase::setSetpointTemperaturesForCurrentMode(int tMin, int tMax) {
+      setTemperatureSetpointMin(tMin);
+      setTemperatureSetpointMax(tMax);
+      /*
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT: {
       setTemperatureSetpointMin(tMin);
@@ -2312,6 +2331,7 @@ void HvacBase::setSetpointTemperaturesForCurrentMode(int tMin, int tMax) {
       break;
     }
   }
+  */
 }
 
 void HvacBase::addPrimaryOutput(Supla::Control::OutputInterface *output) {

@@ -25,6 +25,7 @@
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 #include <supla/clock/clock.h>
+#include <supla/actions.h>
 
 #include "output_interface.h"
 
@@ -50,8 +51,39 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
 HvacBase::~HvacBase() {
 }
 
+// void handleAction(int event, int action) override;
+void HvacBase::handleAction(int event, int action) {
+  (void)(event);
+  switch (action) {
+    case Supla::TURN_ON: {
+      setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
+      break;
+    }
+    case Supla::TURN_OFF: {
+      setTargetMode(SUPLA_HVAC_MODE_OFF, false);
+      break;
+    }
+    case Supla::TOGGLE: {
+      if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF) {
+        setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
+      } else {
+        setTargetMode(SUPLA_HVAC_MODE_OFF, false);
+      }
+    }
+  }
+}
+
 bool HvacBase::iterateConnected() {
   auto result = Element::iterateConnected();
+
+  if (!result) {
+    SUPLA_LOG_DEBUG("HVAC send: IsOn %d, Mode %d, tMin %d, tMax %d, flags 0x%x",
+                    channel.getHvacIsOn(),
+                    channel.getHvacMode(),
+                    channel.getHvacSetpointTemperatureMin(),
+                    channel.getHvacSetpointTemperatureMax(),
+                    channel.getHvacFlags());
+  }
 
   if (result && !waitForChannelConfigAndIgnoreIt &&
       !waitForWeeklyScheduleAndIgnoreIt) {
@@ -205,6 +237,13 @@ void HvacBase::onInit() {
 
 
 void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  SUPLA_LOG_DEBUG("HVAC onRegistered");
+    SUPLA_LOG_DEBUG("HVAC send: IsOn %d, Mode %d, tMin %d, tMax %d, flags 0x%x",
+                    channel.getHvacIsOn(),
+                    channel.getHvacMode(),
+                    channel.getHvacSetpointTemperatureMin(),
+                    channel.getHvacSetpointTemperatureMax(),
+                    channel.getHvacFlags());
   Supla::Element::onRegistered(suplaSrpc);
   if (channelConfigChangedOffline) {
     channelConfigChangedOffline = 1;
@@ -220,20 +259,24 @@ void HvacBase::iterateAlways() {
   if (millis() - lastIterateTimestampMs < 1000) {
     return;
   }
+  lastIterateTimestampMs = millis();
 
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
     return;
   }
-  lastIterateTimestampMs = millis();
   lastConfigChangeTimestampMs = 0;
+
+  if (!isModeSupported(channel.getHvacMode())) {
+    setTargetMode(SUPLA_HVAC_MODE_OFF);
+  }
 
   auto t1 = getPrimaryTemp();
   auto t2 = getSecondaryTemp();
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF, true);
     setOutput(0, true);
+    SUPLA_LOG_DEBUG("HVAC: check thermometers not valid");
     channel.setHvacFlagError(true);
     return;
   }
@@ -244,21 +287,26 @@ void HvacBase::iterateAlways() {
     t2 = INT16_MIN;
   }
 
-  channel.setHvacFlagError(false);
-
   if (channel.isHvacFlagWeeklySchedule()) {
+    SUPLA_LOG_DEBUG("HVAC: check weekly schedule exit");
     processWeeklySchedule();
   }
 
   if (checkOverheatProtection(t1)) {
+    SUPLA_LOG_DEBUG("HVAC: check overheat protection exit");
+    channel.setHvacFlagError(false);
     return;
   }
 
   if (checkAntifreezeProtection(t1)) {
+    SUPLA_LOG_DEBUG("HVAC: check antifreeze protection exit");
+    channel.setHvacFlagError(false);
     return;
   }
 
   if (checkHeaterCoolerProtection(t2)) {
+    SUPLA_LOG_DEBUG("HVAC: check heater/cooler protection exit");
+    channel.setHvacFlagError(false);
     return;
   }
 
@@ -420,7 +468,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
   memcpy(&configCopy, &config, sizeof(TSD_ChannelConfig_HVAC));
 
   // Received config looks ok, so we apply it to channel
-  changeFunction(channelFunction);
+  changeFunction(channelFunction, false);
 
   // We don't use setters here, because they run validation againsted current
   // configuration, which may fail. However new config was already validated
@@ -2033,6 +2081,7 @@ void HvacBase::setOutput(int value, bool force) {
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
+  SUPLA_LOG_DEBUG("HVAC: set target mode %d requested", mode);
   if (channel.getHvacMode() == mode) {
     if (!(mode == SUPLA_HVAC_MODE_OFF && !keepScheduleOn &&
           channel.isHvacFlagWeeklySchedule())) {
@@ -2071,6 +2120,7 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
 
     lastConfigChangeTimestampMs = millis();
   }
+  SUPLA_LOG_DEBUG("HVAC: mode %d", channel.getHvacMode());
 }
 
 bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
@@ -2252,6 +2302,10 @@ void HvacBase::turnOn() {
   }
 
   uint8_t mode = SUPLA_HVAC_MODE_OFF;
+  if (!isModeSupported(lastWorkingMode)) {
+    lastWorkingMode = SUPLA_HVAC_MODE_NOT_SET;
+  }
+
   if (lastWorkingMode != SUPLA_HVAC_MODE_NOT_SET) {
     mode = lastWorkingMode;
   } else {
@@ -2404,14 +2458,17 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
 int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
                                   _supla_int16_t tTarget) {
   if (!isSensorTempValid(tMeasured)) {
+    SUPLA_LOG_DEBUG("HVAC: tMeasured not valid");
     channel.setHvacFlagError(true);
     return 0;
   }
   if (!isSensorTempValid(tTarget)) {
+    SUPLA_LOG_DEBUG("HVAC: tTarget not valid");
     channel.setHvacFlagError(true);
     return 0;
   }
   if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
+    SUPLA_LOG_DEBUG("HVAC: algorithm not valid");
     channel.setHvacFlagError(true);
     return 0;
   }
@@ -2421,6 +2478,7 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
   if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF) {
     auto histeresis = getTemperatureHisteresis();
     if (!isSensorTempValid(histeresis)) {
+      SUPLA_LOG_DEBUG("HVAC: histeresis not valid");
       channel.setHvacFlagError(true);
       return 0;
     }
@@ -2444,7 +2502,7 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
   return output;
 }
 
-void HvacBase::changeFunction(int newFunction) {
+void HvacBase::changeFunction(int newFunction, bool changedLocally) {
   auto currentFunction = channel.getDefaultFunction();
   if (currentFunction == newFunction) {
     return;
@@ -2466,6 +2524,13 @@ void HvacBase::changeFunction(int newFunction) {
     memset(&weeklySchedule, 0, sizeof(weeklySchedule));
     saveWeeklySchedule();
   }
+
+  if (changedLocally) {
+    channelConfigChangedOffline = 1;
+    saveConfig();
+  }
+
+  clearLastOutputValue();
 }
 
 bool HvacBase::isSetpointMinTemperatureValid(_supla_int16_t tMin) const {
@@ -2535,3 +2600,10 @@ void HvacBase::fixTemperatureSetpoints() {
     }
   }
 }
+
+void HvacBase::clearLastOutputValue() {
+  lastValue = -1000;
+  lastOutputStateChangeTimestampMs = 0;
+}
+
+

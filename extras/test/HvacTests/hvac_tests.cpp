@@ -393,6 +393,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->HeaterCoolerThermometerType =
       SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET;
+
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 

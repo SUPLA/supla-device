@@ -1199,5 +1199,4 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
     t1->iterateConnected();
     time.advance(100);
   }
-
 }

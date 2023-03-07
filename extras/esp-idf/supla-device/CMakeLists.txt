@@ -53,6 +53,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/button_action_trigger_config.cpp
   ../../../src/supla/network/html/text_cmd_input_parameter.cpp
   ../../../src/supla/network/html/select_cmd_input_parameter.cpp
+  ../../../src/supla/network/html/hvac_parameters.cpp
   ../../../src/supla/network/client.cpp
   ../../../src/supla/network/ip_address.cpp
 
@@ -81,6 +82,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/control/sequence_button.cpp
   ../../../src/supla/control/simple_button.cpp
   ../../../src/supla/control/virtual_relay.cpp
+  ../../../src/supla/control/hvac_base.cpp
 
   ../../../src/supla/condition.cpp
   ../../../src/supla/condition_getter.cpp

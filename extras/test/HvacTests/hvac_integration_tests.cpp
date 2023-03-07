@@ -2511,3 +2511,365 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAutoSetpointTempCheck) {
     time.advance(100);
   }
 }
+
+TEST_F(HvacIntegrationF, runtimeFunctionChange) {
+  hvac->addSecondaryOutput(&secondaryOutput);
+
+  EXPECT_EQ(hvac->getChannelNumber(), 0);
+  EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
+  EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
+
+  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
+  EXPECT_CALL(secondaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, 64))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+      .WillRepeatedly(Return(false));
+
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), _))
+      .WillRepeatedly(Return(true));
+
+  EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
+      .WillOnce([](unsigned char *data, int size) {
+        THVACValue hvacValue = {};
+        memcpy(data, &hvacValue, sizeof(THVACValue));
+        return sizeof(THVACValue);
+      });
+
+  EXPECT_CALL(storage, readState(_, 1))
+      .WillOnce([](unsigned char *data, int size) {
+        uint8_t lastWorkingMode = 0;
+        memcpy(data, &lastWorkingMode, 1);
+        return 1;
+      });
+
+  // ignore channel value changed from thermometer
+  EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
+
+  t1->setValue(23.5);
+  t1->setRefreshIntervalMs(100);
+
+  hvac->setMainThermometerChannelNo(1);
+  hvac->setTemperatureHisteresis(40);  // 0.4 C
+
+  hvac->onLoadConfig();
+  hvac->onLoadState();
+
+  ::testing::Sequence seqPrimary;
+  ::testing::Sequence seqSecondary;
+  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+      .Times(1)
+      .InSequence(seqSecondary);
+
+  hvac->onInit();
+  t1->onInit();
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    time.advance(100);
+  }
+
+  hvac->onRegistered(nullptr);
+
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  t1->setValue(30);
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+      .Times(1)
+      .InSequence(seqSecondary);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_HEATING);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+
+
+  hvac->setTargetMode(SUPLA_HVAC_MODE_HEAT);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  t1->setValue(15);
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+      .Times(1)
+      .InSequence(seqSecondary);
+
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
+                               _,
+                               sizeof(TSD_ChannelConfig_HVAC),
+                               SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(1)
+      .WillRepeatedly(Return(true));
+
+  hvac->changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT, true);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+      .Times(1)
+      .InSequence(seqSecondary);
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL,
+                               _,
+                               sizeof(TSD_ChannelConfig_HVAC),
+                               SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(1)
+      .WillRepeatedly(Return(true));
+
+  hvac->changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL, true);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+  hvac->setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(1))
+      .Times(1)
+      .InSequence(seqSecondary);
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                      SUPLA_HVAC_VALUE_FLAG_COOLING);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+  t1->setValue(45);
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+      .Times(1)
+      .InSequence(seqSecondary);
+
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
+                               _,
+                               sizeof(TSD_ChannelConfig_HVAC),
+                               SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(1)
+      .WillRepeatedly(Return(true));
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+
+  t1->setValue(15);
+  hvac->changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT, true);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+      .Times(1)
+      .InSequence(seqSecondary);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary, seqSecondary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                      SUPLA_HVAC_VALUE_FLAG_HEATING);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+    });
+  hvac->setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
+
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(100);
+  }
+}
+

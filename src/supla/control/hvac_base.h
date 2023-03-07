@@ -20,6 +20,7 @@
 #define SRC_SUPLA_CONTROL_HVAC_BASE_H_
 
 #include <supla/channel_element.h>
+#include <supla/action_handler.h>
 #include "supla/sensor/thermometer.h"
 
 namespace Supla {
@@ -38,7 +39,7 @@ namespace Control {
 
 class OutputInterface;
 
-class HvacBase : public ChannelElement {
+class HvacBase : public ChannelElement, public ActionHandler {
  public:
   explicit HvacBase(Supla::Control::OutputInterface *primaryOutput = nullptr,
                     Supla::Control::OutputInterface *secondaryOutput = nullptr);
@@ -57,6 +58,7 @@ class HvacBase : public ChannelElement {
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
   void handleSetChannelConfigResult(
       TSD_SetChannelConfigResult *result) override;
+  void handleAction(int event, int action) override;
 
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
@@ -286,7 +288,7 @@ class HvacBase : public ChannelElement {
   void copyFixedChannelConfigTo(HvacBase *hvac);
   void turnOn();
   bool turnOnWeeklySchedlue();
-  void changeFunction(int newFunction);
+  void changeFunction(int newFunction, bool changedLocally);
 
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
   void addSecondaryOutput(Supla::Control::OutputInterface *output);
@@ -309,6 +311,7 @@ class HvacBase : public ChannelElement {
                           _supla_int16_t tTarget);
   bool isSetpointMinTemperatureValid(_supla_int16_t tMin) const;
   void fixTemperatureSetpoints();
+  void clearLastOutputValue();
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};

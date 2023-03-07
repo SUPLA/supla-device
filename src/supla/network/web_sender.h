@@ -32,6 +32,7 @@ class WebSender {
   virtual void send(int number, int precision);
   virtual void sendNameAndId(const char *id);
   virtual void sendLabelFor(const char *id, const char *label);
+  virtual void sendSelectItem(int value, const char *label, bool selected);
 };
 };  // namespace Supla
 

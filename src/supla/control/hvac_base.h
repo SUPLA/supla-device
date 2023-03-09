@@ -91,11 +91,11 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t getMainThermometerChannelNo() const;
 
   // use this function to set value based on local config change
-  bool setHeaterCoolerThermometerChannelNo(uint8_t channelNo);
-  uint8_t getHeaterCoolerThermometerChannelNo() const;
+  bool setAuxThermometerChannelNo(uint8_t channelNo);
+  uint8_t getAuxThermometerChannelNo() const;
   // use this function to set value based on local config change
-  void setHeaterCoolerThermometerType(uint8_t type);
-  uint8_t getHeaterCoolerThermometerType() const;
+  void setAuxThermometerType(uint8_t type);
+  uint8_t getAuxThermometerType() const;
 
   // use this function to set value based on local config change
   void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
@@ -114,8 +114,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // Configure those values before calling other setTemperature* functions.
   void setTemperatureRoomMin(_supla_int16_t temperature);
   void setTemperatureRoomMax(_supla_int16_t temperature);
-  void setTemperatureHeaterCoolerMin(_supla_int16_t temperature);
-  void setTemperatureHeaterCoolerMax(_supla_int16_t temperature);
+  void setTemperatureAuxMin(_supla_int16_t temperature);
+  void setTemperatureAuxMax(_supla_int16_t temperature);
   void setTemperatureHisteresisMin(_supla_int16_t temperature);
   void setTemperatureHisteresisMax(_supla_int16_t temperature);
   void setTemperatureAutoOffsetMin(_supla_int16_t temperature);
@@ -124,9 +124,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureRoomMax(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureHeaterCoolerMin(
+  _supla_int16_t getTemperatureAuxMin(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureHeaterCoolerMax(
+  _supla_int16_t getTemperatureAuxMax(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHisteresisMin(
       const THVACTemperatureCfg *temperatures) const;
@@ -138,8 +138,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureRoomMin() const;
   _supla_int16_t getTemperatureRoomMax() const;
-  _supla_int16_t getTemperatureHeaterCoolerMin() const;
-  _supla_int16_t getTemperatureHeaterCoolerMax() const;
+  _supla_int16_t getTemperatureAuxMin() const;
+  _supla_int16_t getTemperatureAuxMax() const;
   _supla_int16_t getTemperatureHisteresisMin() const;
   _supla_int16_t getTemperatureHisteresisMax() const;
   _supla_int16_t getTemperatureAutoOffsetMin() const;
@@ -157,8 +157,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool setTemperatureHisteresis(_supla_int16_t temperature);
   bool setTemperatureBelowAlarm(_supla_int16_t temperature);
   bool setTemperatureAboveAlarm(_supla_int16_t temperature);
-  bool setTemperatureHeaterCoolerMinSetpoint(_supla_int16_t temperature);
-  bool setTemperatureHeaterCoolerMaxSetpoint(_supla_int16_t temperature);
+  bool setTemperatureAuxMinSetpoint(_supla_int16_t temperature);
+  bool setTemperatureAuxMaxSetpoint(_supla_int16_t temperature);
   _supla_int16_t getTemperatureFreezeProtection(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHeatProtection(
@@ -175,9 +175,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureAboveAlarm(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureHeaterCoolerMinSetpoint(
+  _supla_int16_t getTemperatureAuxMinSetpoint(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint(
+  _supla_int16_t getTemperatureAuxMaxSetpoint(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureFreezeProtection() const;
   _supla_int16_t getTemperatureHeatProtection() const;
@@ -187,8 +187,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   _supla_int16_t getTemperatureHisteresis() const;
   _supla_int16_t getTemperatureBelowAlarm() const;
   _supla_int16_t getTemperatureAboveAlarm() const;
-  _supla_int16_t getTemperatureHeaterCoolerMinSetpoint() const;
-  _supla_int16_t getTemperatureHeaterCoolerMaxSetpoint() const;
+  _supla_int16_t getTemperatureAuxMinSetpoint() const;
+  _supla_int16_t getTemperatureAuxMaxSetpoint() const;
 
   // Below methods check if specific function is supported by thermostat.
   // Even if function is supported, it doesn't mean that new mode setting will
@@ -220,7 +220,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
                               _supla_int16_t temperature);
 
   bool isTemperatureInRoomConstrain(_supla_int16_t temperature) const;
-  bool isTemperatureInHeaterCoolerConstrain(_supla_int16_t temperature) const;
+  bool isTemperatureInAuxConstrain(_supla_int16_t temperature) const;
   bool isTemperatureFreezeProtectionValid(_supla_int16_t temperature) const;
   bool isTemperatureHeatProtectionValid(_supla_int16_t temperature) const;
   bool isTemperatureEcoValid(_supla_int16_t temperature) const;
@@ -230,10 +230,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isTemperatureBelowAlarmValid(_supla_int16_t temperature) const;
   bool isTemperatureAboveAlarmValid(_supla_int16_t temperature) const;
   // validates temperature against current configuration
-  bool isTemperatureHeaterCoolerMinSetpointValid(
+  bool isTemperatureAuxMinSetpointValid(
       _supla_int16_t temperature) const;
   // validates temperature against current configuration
-  bool isTemperatureHeaterCoolerMaxSetpointValid(
+  bool isTemperatureAuxMaxSetpointValid(
       _supla_int16_t temperature) const;
   bool isTemperatureInAutoConstrain(_supla_int16_t tMin,
                                     _supla_int16_t tMax) const;
@@ -252,10 +252,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isTemperatureAboveAlarmValid(
       const THVACTemperatureCfg *temperatures) const;
   // validates temperature against configuration send in parameter
-  bool isTemperatureHeaterCoolerMinSetpointValid(
+  bool isTemperatureAuxMinSetpointValid(
       const THVACTemperatureCfg *temperatures) const;
   // validates temperature against configuration send in parameter
-  bool isTemperatureHeaterCoolerMaxSetpointValid(
+  bool isTemperatureAuxMaxSetpointValid(
       const THVACTemperatureCfg *temperatures) const;
 
   void clearChannelConfigChangedFlag();
@@ -294,6 +294,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void addSecondaryOutput(Supla::Control::OutputInterface *output);
 
   void enableDifferentialFunctionSupport();
+  bool isDifferentialFunctionSupported() const;
 
  private:
   _supla_int16_t getTemperature(int channelNo);
@@ -302,7 +303,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isSensorTempValid(_supla_int16_t temperature) const;
   bool checkOverheatProtection(_supla_int16_t t);
   bool checkAntifreezeProtection(_supla_int16_t t);
-  bool checkHeaterCoolerProtection(_supla_int16_t t);
+  bool checkAuxProtection(_supla_int16_t t);
   bool processWeeklySchedule();
   void setSetpointTemperaturesForCurrentMode(int tMin, int tMax);
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,

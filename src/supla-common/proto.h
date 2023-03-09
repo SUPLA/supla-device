@@ -1963,10 +1963,10 @@ typedef struct {
 #define TEMPERATURE_ABOVE_ALARM                (1 << 7)
 // Minimum temperature to be kept on heat/cold source (i.e. keeps floor always
 // at least 19 degrees)
-#define TEMPERATURE_HEATER_COOLER_MIN_SETPOINT (1 << 8)
+#define TEMPERATURE_AUX_MIN_SETPOINT (1 << 8)
 // Maximum temperature to be kept on heat/cold source (i.e. protect floor
 // from overheating and keep at most 28 degrees)
-#define TEMPERATURE_HEATER_COOLER_MAX_SETPOINT (1 << 9)
+#define TEMPERATURE_AUX_MAX_SETPOINT (1 << 9)
 
 // Below values are readonly for user
 // Minimum room (main thermometer) temperature to be set by user
@@ -1975,9 +1975,9 @@ typedef struct {
 #define TEMPERATURE_ROOM_MAX                   (1 << 11)
 // Minimum allowed temperature for heat/cold source (used with second
 // thermomter for floor/water/etc.)
-#define TEMPERATURE_HEATER_COOLER_MIN          (1 << 12)
+#define TEMPERATURE_AUX_MIN          (1 << 12)
 // Maximum allowed temperature for heat/cold source
-#define TEMPERATURE_HEATER_COOLER_MAX          (1 << 13)
+#define TEMPERATURE_AUX_MAX          (1 << 13)
 // Minimum histereis value
 #define TEMPERATURE_HISTERESIS_MIN             (1 << 14)
 // Maximum histereis value
@@ -2348,7 +2348,7 @@ typedef struct {
 // SUPLA_DS_CALL_GET_CHANNEL_CONFIG
 typedef struct {
   unsigned char ChannelNumber;
-  unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
+  unsigned char ConfigType;  // SUPLA_CONFIG_TYPE_
   unsigned _supla_int_t Flags;
 } TDS_GetChannelConfigRequest;  // v. >= 16
 
@@ -2358,7 +2358,7 @@ typedef struct {
 typedef struct {
   unsigned char ChannelNumber;
   _supla_int_t Func;
-  unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
+  unsigned char ConfigType;  // SUPLA_CONFIG_TYPE_
   unsigned _supla_int16_t ConfigSize;
   char Config[SUPLA_CHANNEL_CONFIG_MAXSIZE];  // Last variable in struct!
                                               // v. >= 16
@@ -2373,7 +2373,7 @@ typedef TSD_ChannelConfig TSD_SetChannelConfig;  // v. >= 20
 // SUPLA_DS_CALL_SET_CHANNEL_CONFIG_RESULT
 typedef struct {
   unsigned char Result;  // SUPLA_CONFIG_RESULT_*
-  unsigned char ConfigType;  // SUPLA_CHANNEL_CONFIG_TYPE_
+  unsigned char ConfigType;  // SUPLA_CONFIG_TYPE_
   unsigned char ChannelNumber;
 } TSD_SetChannelConfigResult;
 
@@ -2437,18 +2437,18 @@ typedef struct {
                                             // 0/false - by device
 } TSD_HumidityAndTempChannelCfg;            // v. >= 20
 
-// Not set is set when there is no thermometer for "HEATER_COOLER" available
+// Not set is set when there is no thermometer for "AUX" available
 // at all.
 // Disabled is set when thermometer is available (i.e. we can read it and show
 // to user), but it is not used by thermostat for any other purpose
 // Other values are mainly for UI adjustement (i.e. show temperature as floor,
 // as water, generic heater or cooler device)
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET        0
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED       1
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR          2
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER          3
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER 4
-#define SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER 5
+#define SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET        0
+#define SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED       1
+#define SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR          2
+#define SUPLA_HVAC_AUX_THERMOMETER_TYPE_WATER          3
+#define SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_HEATER 4
+#define SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_COOLER 5
 
 #define SUPLA_HVAC_ALGORITHM_NOT_SET 0
 #define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 0)
@@ -2463,9 +2463,9 @@ typedef struct {
   // Channel numbers for thermometer config. Channels have to be local and
   // numbering is the same as for registration message
   unsigned char MainThermometerChannelNo;
-  unsigned char HeaterCoolerThermometerChannelNo;
-  // SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_
-  unsigned char HeaterCoolerThermometerType;
+  unsigned char AuxThermometerChannelNo;
+  // SUPLA_HVAC_AUX_THERMOMETER_TYPE_
+  unsigned char AuxThermometerType;
   unsigned char EnableAntiFreezeAndOverheatProtection;
   // bit map SUPLA_HVAC_ALGORITHM_ (readonly)
   unsigned _supla_int16_t AlgorithmCaps;

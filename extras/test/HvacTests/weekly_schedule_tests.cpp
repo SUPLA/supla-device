@@ -63,8 +63,8 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
     hvac->setTemperatureHisteresisMax(1000);    // 10 degree
     hvac->setTemperatureAutoOffsetMin(200);     // 2 degrees
     hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
-    hvac->setTemperatureHeaterCoolerMin(500);   // 5 degrees
-    hvac->setTemperatureHeaterCoolerMax(7500);  // 75 degrees
+    hvac->setTemperatureAuxMin(500);   // 5 degrees
+    hvac->setTemperatureAuxMax(7500);  // 75 degrees
     hvac->addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
   }
 

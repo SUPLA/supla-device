@@ -304,7 +304,7 @@ void HvacBase::iterateAlways() {
     return;
   }
 
-  if (checkHeaterCoolerProtection(t2)) {
+  if (checkAuxProtection(t2)) {
     SUPLA_LOG_DEBUG("HVAC: check heater/cooler protection exit");
     channel.setHvacFlagError(false);
     return;
@@ -474,9 +474,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
   // configuration, which may fail. However new config was already validated
   // so we assign them directly.
   config.MainThermometerChannelNo = hvacConfig->MainThermometerChannelNo;
-  config.HeaterCoolerThermometerChannelNo =
-      hvacConfig->HeaterCoolerThermometerChannelNo;
-  config.HeaterCoolerThermometerType = hvacConfig->HeaterCoolerThermometerType;
+  config.AuxThermometerChannelNo =
+      hvacConfig->AuxThermometerChannelNo;
+  config.AuxThermometerType = hvacConfig->AuxThermometerType;
   config.EnableAntiFreezeAndOverheatProtection =
       hvacConfig->EnableAntiFreezeAndOverheatProtection;
   config.UsedAlgorithm = hvacConfig->UsedAlgorithm;
@@ -540,19 +540,19 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig) {
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_HEATER_COOLER_MIN_SETPOINT)) {
+                               TEMPERATURE_AUX_MIN_SETPOINT)) {
     setTemperatureInStruct(
         &config.Temperatures,
-        TEMPERATURE_HEATER_COOLER_MIN_SETPOINT,
-        getTemperatureHeaterCoolerMinSetpoint(&hvacConfig->Temperatures));
+        TEMPERATURE_AUX_MIN_SETPOINT,
+        getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_HEATER_COOLER_MAX_SETPOINT)) {
+                               TEMPERATURE_AUX_MAX_SETPOINT)) {
     setTemperatureInStruct(
         &config.Temperatures,
-        TEMPERATURE_HEATER_COOLER_MAX_SETPOINT,
-        getTemperatureHeaterCoolerMaxSetpoint(&hvacConfig->Temperatures));
+        TEMPERATURE_AUX_MAX_SETPOINT,
+        getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
   }
 
   if (memcmp(&config, &configCopy, sizeof(TSD_ChannelConfig_HVAC)) != 0) {
@@ -574,24 +574,24 @@ bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) const {
 
   // heater cooler thermometer is optional, but if set, it has to be set to a
   // local thermometer
-  if (newConfig->HeaterCoolerThermometerType !=
-      SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET) {
-    if (!isChannelThermometer(newConfig->HeaterCoolerThermometerChannelNo)) {
+  if (newConfig->AuxThermometerType !=
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
+    if (!isChannelThermometer(newConfig->AuxThermometerChannelNo)) {
       return false;
     }
-    if (newConfig->HeaterCoolerThermometerChannelNo ==
+    if (newConfig->AuxThermometerChannelNo ==
         newConfig->MainThermometerChannelNo) {
       return false;
     }
   }
 
-  switch (newConfig->HeaterCoolerThermometerType) {
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET:
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED:
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_FLOOR:
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_WATER:
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_COOLER:
-    case SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER:
+  switch (newConfig->AuxThermometerType) {
+    case SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET:
+    case SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED:
+    case SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR:
+    case SUPLA_HVAC_AUX_THERMOMETER_TYPE_WATER:
+    case SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_COOLER:
+    case SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_HEATER:
       break;
     default:
       return false;
@@ -683,16 +683,16 @@ bool HvacBase::areTemperaturesValid(
   }
 
   if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_HEATER_COOLER_MIN_SETPOINT)) {
-    if (!isTemperatureHeaterCoolerMinSetpointValid(temperatures)) {
+                               TEMPERATURE_AUX_MIN_SETPOINT)) {
+    if (!isTemperatureAuxMinSetpointValid(temperatures)) {
       SUPLA_LOG_WARNING("HVAC: invalid heater cooler min setpoint");
       return false;
     }
   }
 
   if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_HEATER_COOLER_MAX_SETPOINT)) {
-    if (!isTemperatureHeaterCoolerMaxSetpointValid(temperatures)) {
+                               TEMPERATURE_AUX_MAX_SETPOINT)) {
+    if (!isTemperatureAuxMaxSetpointValid(temperatures)) {
       SUPLA_LOG_WARNING("HVAC: invalid heater cooler max setpoint");
       return false;
     }
@@ -753,16 +753,16 @@ bool HvacBase::isTemperatureInAutoConstrain(_supla_int16_t tMin,
          isTemperatureInRoomConstrain(tMax);
 }
 
-bool HvacBase::isTemperatureInHeaterCoolerConstrain(
+bool HvacBase::isTemperatureInAuxConstrain(
     _supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
 
   auto tMin = getTemperatureFromStruct(&config.Temperatures,
-                                       TEMPERATURE_HEATER_COOLER_MIN);
+                                       TEMPERATURE_AUX_MIN);
   auto tMax = getTemperatureFromStruct(&config.Temperatures,
-                                       TEMPERATURE_HEATER_COOLER_MAX);
+                                       TEMPERATURE_AUX_MAX);
 
   return temperature >= tMin && temperature <= tMax;
 }
@@ -839,74 +839,74 @@ bool HvacBase::isTemperatureHisteresisValid(
   return isTemperatureHisteresisValid(hist);
 }
 
-bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
+bool HvacBase::isTemperatureAuxMinSetpointValid(
     _supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
 
-  auto tMin = getTemperatureHeaterCoolerMin();
-  auto tMax = getTemperatureHeaterCoolerMax();
+  auto tMin = getTemperatureAuxMin();
+  auto tMax = getTemperatureAuxMax();
 
-  auto tMaxSetpoint = getTemperatureHeaterCoolerMaxSetpoint();
+  auto tMaxSetpoint = getTemperatureAuxMaxSetpoint();
 
   return (temperature < tMaxSetpoint ||
           tMaxSetpoint == SUPLA_TEMPERATURE_INVALID_INT16) &&
          temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureHeaterCoolerMinSetpointValid(
+bool HvacBase::isTemperatureAuxMinSetpointValid(
     const THVACTemperatureCfg *temperatures) const {
-  auto t = getTemperatureHeaterCoolerMinSetpoint(temperatures);
+  auto t = getTemperatureAuxMinSetpoint(temperatures);
   if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_HEATER_COOLER_MAX_SETPOINT)) {
-    auto tMaxSetpoint = getTemperatureHeaterCoolerMaxSetpoint(temperatures);
+                               TEMPERATURE_AUX_MAX_SETPOINT)) {
+    auto tMaxSetpoint = getTemperatureAuxMaxSetpoint(temperatures);
     if (t >= tMaxSetpoint) {
       return false;
     }
   }
 
-  auto tMin = getTemperatureHeaterCoolerMin();
-  auto tMax = getTemperatureHeaterCoolerMax();
+  auto tMin = getTemperatureAuxMin();
+  auto tMax = getTemperatureAuxMax();
 
   return t >= tMin && t <= tMax;
 }
 
-bool HvacBase::isTemperatureHeaterCoolerMaxSetpointValid(
+bool HvacBase::isTemperatureAuxMaxSetpointValid(
     _supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
 
   // min and max values are taken from device config
-  auto tMin = getTemperatureHeaterCoolerMin();
-  auto tMax = getTemperatureHeaterCoolerMax();
+  auto tMin = getTemperatureAuxMin();
+  auto tMax = getTemperatureAuxMax();
 
   // current min setpoint is taken from current device config
-  auto tMinSetpoint = getTemperatureHeaterCoolerMinSetpoint();
+  auto tMinSetpoint = getTemperatureAuxMinSetpoint();
 
   return (temperature > tMinSetpoint ||
           tMinSetpoint == SUPLA_TEMPERATURE_INVALID_INT16) &&
          temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureHeaterCoolerMaxSetpointValid(
+bool HvacBase::isTemperatureAuxMaxSetpointValid(
     const THVACTemperatureCfg *temperatures) const {
-  auto t = getTemperatureHeaterCoolerMaxSetpoint(temperatures);
+  auto t = getTemperatureAuxMaxSetpoint(temperatures);
 
   // min setpoint is taken from configuration in temperatures struct
   // i.e. new values send from server
   if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_HEATER_COOLER_MIN_SETPOINT)) {
-    auto tMinSetpoint = getTemperatureHeaterCoolerMinSetpoint(temperatures);
+                               TEMPERATURE_AUX_MIN_SETPOINT)) {
+    auto tMinSetpoint = getTemperatureAuxMinSetpoint(temperatures);
     if (t <= tMinSetpoint) {
       return false;
     }
   }
 
   // min and max range is validated against device config (readonly values)
-  auto tMin = getTemperatureHeaterCoolerMin();
-  auto tMax = getTemperatureHeaterCoolerMax();
+  auto tMin = getTemperatureAuxMin();
+  auto tMax = getTemperatureAuxMax();
 
   return t >= tMin && t <= tMax;
 }
@@ -1018,6 +1018,8 @@ bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
       return isFanSupported();
     case SUPLA_CHANNELFNC_HVAC_DRYER:
       return isDrySupported();
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
+      return isDifferentialFunctionSupported();
   }
   return false;
 }
@@ -1059,14 +1061,14 @@ void HvacBase::setTemperatureRoomMax(_supla_int16_t temperature) {
       &config.Temperatures, TEMPERATURE_ROOM_MAX, temperature);
 }
 
-void HvacBase::setTemperatureHeaterCoolerMin(_supla_int16_t temperature) {
+void HvacBase::setTemperatureAuxMin(_supla_int16_t temperature) {
   setTemperatureInStruct(
-      &config.Temperatures, TEMPERATURE_HEATER_COOLER_MIN, temperature);
+      &config.Temperatures, TEMPERATURE_AUX_MIN, temperature);
 }
 
-void HvacBase::setTemperatureHeaterCoolerMax(_supla_int16_t temperature) {
+void HvacBase::setTemperatureAuxMax(_supla_int16_t temperature) {
   setTemperatureInStruct(
-      &config.Temperatures, TEMPERATURE_HEATER_COOLER_MAX, temperature);
+      &config.Temperatures, TEMPERATURE_AUX_MAX, temperature);
 }
 
 void HvacBase::setTemperatureHisteresisMin(_supla_int16_t temperature) {
@@ -1210,14 +1212,14 @@ bool HvacBase::setTemperatureAboveAlarm(_supla_int16_t temperature) {
   return true;
 }
 
-bool HvacBase::setTemperatureHeaterCoolerMinSetpoint(
+bool HvacBase::setTemperatureAuxMinSetpoint(
     _supla_int16_t temperature) {
-  if (!isTemperatureHeaterCoolerMinSetpointValid(temperature)) {
+  if (!isTemperatureAuxMinSetpointValid(temperature)) {
     return false;
   }
-  if (temperature != getTemperatureHeaterCoolerMinSetpoint()) {
+  if (temperature != getTemperatureAuxMinSetpoint()) {
     setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_HEATER_COOLER_MIN_SETPOINT,
+        TEMPERATURE_AUX_MIN_SETPOINT,
         temperature);
     if (initDone) {
       channelConfigChangedOffline = 1;
@@ -1227,14 +1229,14 @@ bool HvacBase::setTemperatureHeaterCoolerMinSetpoint(
   return true;
 }
 
-bool HvacBase::setTemperatureHeaterCoolerMaxSetpoint(
+bool HvacBase::setTemperatureAuxMaxSetpoint(
     _supla_int16_t temperature) {
-  if (!isTemperatureHeaterCoolerMaxSetpointValid(temperature)) {
+  if (!isTemperatureAuxMaxSetpointValid(temperature)) {
     return false;
   }
-  if (temperature != getTemperatureHeaterCoolerMaxSetpoint()) {
+  if (temperature != getTemperatureAuxMaxSetpoint()) {
     setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_HEATER_COOLER_MAX_SETPOINT,
+        TEMPERATURE_AUX_MAX_SETPOINT,
         temperature);
     if (initDone) {
       channelConfigChangedOffline = 1;
@@ -1254,14 +1256,14 @@ _supla_int16_t HvacBase::getTemperatureRoomMax(
   return getTemperatureFromStruct(temperatures, TEMPERATURE_ROOM_MAX);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMin(
+_supla_int16_t HvacBase::getTemperatureAuxMin(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures, TEMPERATURE_HEATER_COOLER_MIN);
+  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_MIN);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMax(
+_supla_int16_t HvacBase::getTemperatureAuxMax(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures, TEMPERATURE_HEATER_COOLER_MAX);
+  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_MAX);
 }
 _supla_int16_t HvacBase::getTemperatureHisteresisMin(
     const THVACTemperatureCfg *temperatures) const {
@@ -1288,12 +1290,12 @@ _supla_int16_t HvacBase::getTemperatureRoomMax() const {
   return getTemperatureRoomMax(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMin() const {
-  return getTemperatureHeaterCoolerMin(&config.Temperatures);
+_supla_int16_t HvacBase::getTemperatureAuxMin() const {
+  return getTemperatureAuxMin(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMax() const {
-  return getTemperatureHeaterCoolerMax(&config.Temperatures);
+_supla_int16_t HvacBase::getTemperatureAuxMax() const {
+  return getTemperatureAuxMax(&config.Temperatures);
 }
 
 _supla_int16_t HvacBase::getTemperatureHisteresisMin() const {
@@ -1352,16 +1354,16 @@ _supla_int16_t HvacBase::getTemperatureAboveAlarm(
   return getTemperatureFromStruct(temperatures, TEMPERATURE_ABOVE_ALARM);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMinSetpoint(
+_supla_int16_t HvacBase::getTemperatureAuxMinSetpoint(
     const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures,
-                                  TEMPERATURE_HEATER_COOLER_MIN_SETPOINT);
+                                  TEMPERATURE_AUX_MIN_SETPOINT);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMaxSetpoint(
+_supla_int16_t HvacBase::getTemperatureAuxMaxSetpoint(
     const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures,
-                                  TEMPERATURE_HEATER_COOLER_MAX_SETPOINT);
+                                  TEMPERATURE_AUX_MAX_SETPOINT);
 }
 
 _supla_int16_t HvacBase::getTemperatureFreezeProtection() const {
@@ -1396,12 +1398,12 @@ _supla_int16_t HvacBase::getTemperatureAboveAlarm() const {
   return getTemperatureAboveAlarm(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMinSetpoint() const {
-  return getTemperatureHeaterCoolerMinSetpoint(&config.Temperatures);
+_supla_int16_t HvacBase::getTemperatureAuxMinSetpoint() const {
+  return getTemperatureAuxMinSetpoint(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureHeaterCoolerMaxSetpoint() const {
-  return getTemperatureHeaterCoolerMaxSetpoint(&config.Temperatures);
+_supla_int16_t HvacBase::getTemperatureAuxMaxSetpoint() const {
+  return getTemperatureAuxMaxSetpoint(&config.Temperatures);
 }
 
 bool HvacBase::setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm) {
@@ -1424,9 +1426,9 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
 
 bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
   if (isChannelThermometer(channelNo)) {
-    if (getHeaterCoolerThermometerType() !=
-        SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET) {
-      if (channelNo == getHeaterCoolerThermometerChannelNo()) {
+    if (getAuxThermometerType() !=
+        SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
+      if (channelNo == getAuxThermometerChannelNo()) {
         return false;
       }
     }
@@ -1446,17 +1448,17 @@ uint8_t HvacBase::getMainThermometerChannelNo() const {
   return config.MainThermometerChannelNo;
 }
 
-bool HvacBase::setHeaterCoolerThermometerChannelNo(uint8_t channelNo) {
+bool HvacBase::setAuxThermometerChannelNo(uint8_t channelNo) {
   if (isChannelThermometer(channelNo)) {
     if (getMainThermometerChannelNo() == channelNo) {
       return false;
     }
-    if (config.HeaterCoolerThermometerChannelNo != channelNo) {
-      config.HeaterCoolerThermometerChannelNo = channelNo;
-      if (getHeaterCoolerThermometerType() ==
-          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET) {
-        setHeaterCoolerThermometerType(
-            SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED);
+    if (config.AuxThermometerChannelNo != channelNo) {
+      config.AuxThermometerChannelNo = channelNo;
+      if (getAuxThermometerType() ==
+          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
+        setAuxThermometerType(
+            SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
         if (initDone) {
           channelConfigChangedOffline = 1;
           saveConfig();
@@ -1467,10 +1469,10 @@ bool HvacBase::setHeaterCoolerThermometerChannelNo(uint8_t channelNo) {
   }
 
   if (getChannelNumber() == channelNo) {
-    if (config.HeaterCoolerThermometerChannelNo != channelNo) {
-      config.HeaterCoolerThermometerChannelNo = channelNo;
-      setHeaterCoolerThermometerType(
-          SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET);
+    if (config.AuxThermometerChannelNo != channelNo) {
+      config.AuxThermometerChannelNo = channelNo;
+      setAuxThermometerType(
+          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
       if (initDone) {
         channelConfigChangedOffline = 1;
         saveConfig();
@@ -1481,13 +1483,13 @@ bool HvacBase::setHeaterCoolerThermometerChannelNo(uint8_t channelNo) {
   return false;
 }
 
-uint8_t HvacBase::getHeaterCoolerThermometerChannelNo() const {
-  return config.HeaterCoolerThermometerChannelNo;
+uint8_t HvacBase::getAuxThermometerChannelNo() const {
+  return config.AuxThermometerChannelNo;
 }
 
-void HvacBase::setHeaterCoolerThermometerType(uint8_t type) {
-  if (config.HeaterCoolerThermometerType != type) {
-    config.HeaterCoolerThermometerType = type;
+void HvacBase::setAuxThermometerType(uint8_t type) {
+  if (config.AuxThermometerType != type) {
+    config.AuxThermometerType = type;
     if (initDone) {
       channelConfigChangedOffline = 1;
       saveConfig();
@@ -1495,8 +1497,8 @@ void HvacBase::setHeaterCoolerThermometerType(uint8_t type) {
   }
 }
 
-uint8_t HvacBase::getHeaterCoolerThermometerType() const {
-  return config.HeaterCoolerThermometerType;
+uint8_t HvacBase::getAuxThermometerType() const {
+  return config.AuxThermometerType;
 }
 
 void HvacBase::setAntiFreezeAndHeatProtectionEnabled(bool enabled) {
@@ -1909,10 +1911,10 @@ _supla_int16_t HvacBase::getPrimaryTemp() {
 }
 
 _supla_int16_t HvacBase::getSecondaryTemp() {
-  auto type = getHeaterCoolerThermometerType();
-  if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
-      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
-    return getTemperature(getHeaterCoolerThermometerChannelNo());
+  auto type = getAuxThermometerType();
+  if (type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET &&
+      type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED) {
+    return getTemperature(getAuxThermometerChannelNo());
   }
 
   return INT16_MIN;
@@ -2099,7 +2101,8 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
       channel.setHvacMode(mode);
       setOutput(0, true);
     } else if (mode == SUPLA_HVAC_MODE_CMD_TURN_ON) {
-      if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF) {
+      if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF ||
+          !isModeSupported(channel.getHvacMode())) {
         turnOn();
       }
       keepScheduleOn = true;
@@ -2155,7 +2158,7 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
   return false;
 }
 
-bool HvacBase::checkHeaterCoolerProtection(_supla_int16_t t) {
+bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   // heater/cooler protection is available in heat/cool/auto function
   auto func = channel.getDefaultFunction();
   switch (func) {
@@ -2168,22 +2171,22 @@ bool HvacBase::checkHeaterCoolerProtection(_supla_int16_t t) {
       return false;
   }
 
-  auto type = getHeaterCoolerThermometerType();
+  auto type = getAuxThermometerType();
 
-  if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
-      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
-    auto tHeaterCoolerMin = getTemperatureHeaterCoolerMinSetpoint();
-    auto tHeaterCoolerMax = getTemperatureHeaterCoolerMaxSetpoint();
-    if (isSensorTempValid(tHeaterCoolerMin)) {
-      auto outputValue = evaluateOutputValue(t, tHeaterCoolerMin);
+  if (type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET &&
+      type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED) {
+    auto tAuxMin = getTemperatureAuxMinSetpoint();
+    auto tAuxMax = getTemperatureAuxMaxSetpoint();
+    if (isSensorTempValid(tAuxMin)) {
+      auto outputValue = evaluateOutputValue(t, tAuxMin);
       if (outputValue > 0) {
         setOutput(outputValue, true);
         return true;
       }
     }
 
-    if (isSensorTempValid(tHeaterCoolerMax)) {
-      auto outputValue = evaluateOutputValue(t, tHeaterCoolerMax);
+    if (isSensorTempValid(tAuxMax)) {
+      auto outputValue = evaluateOutputValue(t, tAuxMax);
       if (outputValue < 0) {
         setOutput(outputValue, true);
         return true;
@@ -2200,8 +2203,8 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) {
   hvac->addAlgorithmCap(config.AlgorithmCaps);
   hvac->setTemperatureRoomMin(getTemperatureRoomMin());
   hvac->setTemperatureRoomMax(getTemperatureRoomMax());
-  hvac->setTemperatureHeaterCoolerMin(getTemperatureHeaterCoolerMin());
-  hvac->setTemperatureHeaterCoolerMax(getTemperatureHeaterCoolerMax());
+  hvac->setTemperatureAuxMin(getTemperatureAuxMin());
+  hvac->setTemperatureAuxMax(getTemperatureAuxMax());
   hvac->setTemperatureHisteresisMin(getTemperatureHisteresisMin());
   hvac->setTemperatureHisteresisMax(getTemperatureHisteresisMax());
   hvac->setTemperatureAutoOffsetMin(getTemperatureAutoOffsetMin());
@@ -2427,9 +2430,9 @@ bool HvacBase::isSensorTempValid(_supla_int16_t temperature) const {
 
 bool HvacBase::checkThermometersStatusForCurrentMode(
     _supla_int16_t t1, _supla_int16_t t2) const {
-  auto type = getHeaterCoolerThermometerType();
-  if (type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_NOT_SET &&
-      type != SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_DISABLED) {
+  auto type = getAuxThermometerType();
+  if (type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET &&
+      type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED) {
     if (!isSensorTempValid(t1) || !isSensorTempValid(t2)) {
       return false;
     }
@@ -2545,6 +2548,10 @@ bool HvacBase::isSetpointMinTemperatureValid(_supla_int16_t tMin) const {
 
 void HvacBase::enableDifferentialFunctionSupport() {
   channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
+}
+
+bool HvacBase::isDifferentialFunctionSupported() const {
+  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL;
 }
 
 void HvacBase::fixTemperatureSetpoints() {

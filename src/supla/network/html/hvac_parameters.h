@@ -33,11 +33,15 @@ class HvacParameters : public HtmlElement {
 
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
+  void onProcessingEnd() override;
 
   void setHvacPtr(Supla::Control::HvacBase *hvac);
 
  protected:
   Supla::Control::HvacBase *hvac = nullptr;
+  THVACValue *hvacValue = nullptr;
+  TSD_ChannelConfig *config = nullptr;
+  TSD_ChannelConfig_HVAC *hvacConfig = nullptr;
 };
 
 };  // namespace Html

@@ -670,6 +670,26 @@ void Channel::clearHvacSetpointTemperatureMin() {
   }
 }
 
+void Channel::setHvacSetpointTemperatureMin(THVACValue *hvacValue,
+                                             int16_t setpointTemperatureMin) {
+  if (hvacValue != nullptr &&
+      (hvacValue->SetpointTemperatureMin != setpointTemperatureMin ||
+       !isHvacFlagSetpointTemperatureMinSet(hvacValue))) {
+    hvacValue->SetpointTemperatureMin = setpointTemperatureMin;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+  }
+}
+
+void Channel::setHvacSetpointTemperatureMax(THVACValue *hvacValue,
+                                             int16_t setpointTemperatureMax) {
+  if (hvacValue != nullptr &&
+      (hvacValue->SetpointTemperatureMax != setpointTemperatureMax ||
+       !isHvacFlagSetpointTemperatureMaxSet(hvacValue))) {
+    hvacValue->SetpointTemperatureMax = setpointTemperatureMax;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+  }
+}
+
 void Channel::setHvacFlags(uint16_t flags) {
   auto value = getValueHvac();
   if (value != nullptr && value->Flags != flags) {

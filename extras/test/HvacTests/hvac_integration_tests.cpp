@@ -67,8 +67,8 @@ class HvacIntegrationF : public ::testing::Test {
     hvac->setTemperatureHisteresisMax(1000);    // 10 degree
     hvac->setTemperatureAutoOffsetMin(200);     // 2 degrees
     hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
-    hvac->setTemperatureHeaterCoolerMin(500);   // 5 degrees
-    hvac->setTemperatureHeaterCoolerMax(7500);  // 75 degrees
+    hvac->setTemperatureAuxMin(500);   // 5 degrees
+    hvac->setTemperatureAuxMax(7500);  // 75 degrees
     hvac->addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
   }
 
@@ -1865,9 +1865,9 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   t2->setRefreshIntervalMs(100);
 
   hvac->setMainThermometerChannelNo(1);
-  hvac->setHeaterCoolerThermometerChannelNo(2);
-  hvac->setHeaterCoolerThermometerType(
-      SUPLA_HVAC_HEATER_COOLER_THERMOMETER_TYPE_GENERIC_HEATER);
+  hvac->setAuxThermometerChannelNo(2);
+  hvac->setAuxThermometerType(
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_HEATER);
   hvac->setTemperatureHisteresis(400);  // 4.00 C
 
   hvac->onLoadConfig();

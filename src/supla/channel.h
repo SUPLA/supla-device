@@ -97,6 +97,10 @@ class Channel : public LocalAction {
   static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
   static bool isHvacFlagError(THVACValue *hvacValue);
   static bool isHvacFlagClockError(THVACValue *hvacValue);
+  static void setHvacSetpointTemperatureMin(THVACValue *hvacValue,
+                                            int16_t setpointTemperatureMin);
+  static void setHvacSetpointTemperatureMax(THVACValue *hvacValue,
+                                            int16_t setpointTemperatureMax);
 
   THVACValue *getValueHvac() const;
 

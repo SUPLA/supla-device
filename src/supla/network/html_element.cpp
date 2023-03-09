@@ -74,4 +74,7 @@ bool HtmlElement::handleResponse(const char *key, const char *value) {
   return false;
 }
 
+void HtmlElement::onProcessingEnd() {
+}
+
 };  // namespace Supla

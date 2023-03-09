@@ -133,6 +133,11 @@ bool Supla::EspWebServer::handlePost() {
     delay(1);
   }
 
+  for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
+      htmlElement = htmlElement->next()) {
+    htmlElement->onProcessingEnd();
+  }
+
   if (Supla::Storage::ConfigInstance()) {
     Supla::Storage::ConfigInstance()->commit();
     sdc->disableLocalActionsIfNeeded();

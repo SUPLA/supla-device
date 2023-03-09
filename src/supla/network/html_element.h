@@ -45,6 +45,7 @@ class HtmlElement {
   virtual ~HtmlElement();
   virtual void send(Supla::WebSender *sender) = 0;
   virtual bool handleResponse(const char *key, const char *value);
+  virtual void onProcessingEnd();
   HtmlSection section;
 
  protected:

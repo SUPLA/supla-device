@@ -2196,7 +2196,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   return false;
 }
 
-void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) {
+void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) const {
   if (hvac == nullptr) {
     return;
   }
@@ -2209,6 +2209,14 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) {
   hvac->setTemperatureHisteresisMax(getTemperatureHisteresisMax());
   hvac->setTemperatureAutoOffsetMin(getTemperatureAutoOffsetMin());
   hvac->setTemperatureAutoOffsetMax(getTemperatureAutoOffsetMax());
+}
+
+void HvacBase::copyFullChannelConfigTo(TSD_ChannelConfig_HVAC *hvac) const {
+  if (hvac == nullptr) {
+    return;
+  }
+
+  memcpy(hvac, &config, sizeof(TSD_ChannelConfig_HVAC));
 }
 
 int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {

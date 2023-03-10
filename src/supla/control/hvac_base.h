@@ -285,7 +285,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
                      int quarter) const;
   TWeeklyScheduleProgram getProgram(int programId) const;
 
-  void copyFixedChannelConfigTo(HvacBase *hvac);
+  void copyFixedChannelConfigTo(HvacBase *hvac) const;
+  void copyFullChannelConfigTo(TSD_ChannelConfig_HVAC *hvac) const;
   void turnOn();
   bool turnOnWeeklySchedlue();
   void changeFunction(int newFunction, bool changedLocally);

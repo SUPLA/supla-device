@@ -25,6 +25,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include "supla/control/hvac_base.h"
 
 using Supla::Html::HvacParameters;
 
@@ -150,7 +151,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_min");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Setpoint min. temperature");
+  sender->sendLabelFor(key, "Min. temperature [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -169,7 +170,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_max");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Setpoint max. temperature");
+  sender->sendLabelFor(key, "Max. temperature [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -185,10 +186,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   // form-field END
 
+  sender->send("<h2>Thermometers configuration</h2>");
   // form-field BEGIN
   hvac->generateKey(key, "t_main");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Main thermomemter");
+  sender->sendLabelFor(key, "Main thermometer channel");
   sender->send("<div>");
   sender->send("<select ");
   sender->sendNameAndId(key);
@@ -212,9 +214,9 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field END
 
   // form-field BEGIN
-  hvac->generateKey(key, "t_sec");
+  hvac->generateKey(key, "t_aux");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Secondary thermomemter");
+  sender->sendLabelFor(key, "Aux thermometer channel");
   sender->send("<div>");
   sender->send("<select ");
   sender->sendNameAndId(key);
@@ -238,9 +240,9 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field END
 
   // form-field BEGIN
-  hvac->generateKey(key, "t_sec_type");
+  hvac->generateKey(key, "t_aux_type");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Secondary thermomemter type");
+  sender->sendLabelFor(key, "Aux thermometer type");
   sender->send("<div>");
   sender->send("<select ");
   sender->sendNameAndId(key);
@@ -274,6 +276,287 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   sender->send("</div>");
   // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_aux_min");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Aux min. temperature [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tAuxMinSetpoint = hvac->getTemperatureAuxMinSetpoint();
+  if (tAuxMinSetpoint != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf,
+             sizeof(buf),
+             "%d.%1d",
+             tAuxMinSetpoint / 100,
+             (tAuxMinSetpoint / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+// TEMPERATURE_AUX_MAX_SETPOINT
+  // form-field BEGIN
+  hvac->generateKey(key, "t_aux_max");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Aux max temperature [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tAuxMaxSetpoint = hvac->getTemperatureAuxMaxSetpoint();
+  if (tAuxMaxSetpoint != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf,
+             sizeof(buf),
+             "%d.%1d",
+             tAuxMaxSetpoint / 100,
+             (tAuxMaxSetpoint / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  sender->send("<h2>Anti freeze and overheat protection</h2>");
+  // form-field BEGIN
+  hvac->generateKey(key, "anti_freeze");
+  sender->send("<div class=\"form-field right-checkbox\">");
+  sender->sendLabelFor(key, "Enable anti-freeze and overheat protection");
+  sender->send("<label>");
+  sender->send("<div class=\"switch\">");
+  sender->send("<input type=\"checkbox\" value=\"on\" ");
+  sender->send(checked(hvac->isAntiFreezeAndHeatProtectionEnabled()));
+  sender->sendNameAndId(key);
+  sender->send(">");
+  sender->send("<span class=\"slider\"></span>");
+  sender->send("</div>");
+  sender->send("</label>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_freeze");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Freeze protection [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tFreeze = hvac->getTemperatureFreezeProtection();
+  if (tFreeze != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf, sizeof(buf), "%d.%1d", tFreeze / 100, (tFreeze / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_heat");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Heat protection [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tHeatProtection = hvac->getTemperatureHeatProtection();
+  if (tHeatProtection != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf,
+             sizeof(buf),
+             "%d.%1d",
+             tHeatProtection / 100,
+             (tHeatProtection / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+
+  sender->send("<h2>Output behavior settings</h2>");
+  /*
+  // Currently on/off is the only supported algorithm, so there is nothing
+  // to change. Uncomment when more algorithms are supported.
+  // form-field BEGIN
+  hvac->generateKey(key, "algorithm");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Algorithm");
+  sender->send("<div>");
+  sender->send("<select ");
+  sender->sendNameAndId(key);
+  sender->send(">");
+  if (hvac->isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF)) {
+    sender->sendSelectItem(
+        SUPLA_HVAC_ALGORITHM_ON_OFF,
+        "On Off",
+        hvac->getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF);
+  }
+  sender->send("</select>");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+  */
+
+  // form-field BEGIN
+  hvac->generateKey(key, "min_on_s");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Min. ON time [s]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto minOnTimeS = hvac->getMinOnTimeS();
+  char buf[100] = {};
+  snprintf(buf, sizeof(buf), "%d", minOnTimeS);
+  sender->send(buf);
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "min_off_s");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Min. OFF time [s]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto minOffTimeS = hvac->getMinOffTimeS();
+  snprintf(buf, sizeof(buf), "%d", minOffTimeS);
+  sender->send(buf);
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  sender->send("<h2>Temperatures configuration</h2>");
+  // form-field BEGIN
+  hvac->generateKey(key, "t_eco");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Eco [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tEco = hvac->getTemperatureEco();
+  if (tEco != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf, sizeof(buf), "%d.%1d", tEco / 100, (tEco / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_comfort");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Comfort [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tComfort = hvac->getTemperatureComfort();
+  if (tComfort != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf, sizeof(buf), "%d.%1d", tComfort / 100, (tComfort / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_boost");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Boost [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tBoost = hvac->getTemperatureBoost();
+  if (tBoost != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf, sizeof(buf), "%d.%1d", tBoost / 100, (tBoost / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_hister");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Histeresis [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tHister = hvac->getTemperatureHisteresis();
+  if (tHister != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(buf, sizeof(buf), "%d.%1d", tHister / 100, (tHister / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_below");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Below alarm [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tBelowAlarm = hvac->getTemperatureBelowAlarm();
+  if (tBelowAlarm != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(
+        buf, sizeof(buf), "%d.%1d", tBelowAlarm / 100, (tBelowAlarm / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
+  // form-field BEGIN
+  hvac->generateKey(key, "t_above");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Above alarm [°C]");
+  sender->send("<div>");
+  sender->send("<input type=\"number\" step=\"0.1\" ");
+  sender->sendNameAndId(key);
+  sender->send(" value=\"");
+  auto tAboveAlarm = hvac->getTemperatureAboveAlarm();
+  if (tAboveAlarm != INT16_MIN) {
+    char buf[100] = {};
+    snprintf(
+        buf, sizeof(buf), "%d.%1d", tAboveAlarm / 100, (tAboveAlarm / 10) % 10);
+    sender->send(buf);
+  }
+  sender->send("\">");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
 }
 
 bool HvacParameters::handleResponse(const char* key, const char* value) {
@@ -298,6 +581,10 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     config->ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
     config->ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
     hvacConfig = reinterpret_cast<TSD_ChannelConfig_HVAC*>(&(config->Config));
+    hvac->copyFullChannelConfigTo(hvacConfig);
+    // anti free will be enabled when checkbox is checked, otherwise
+    // form field won't be send, so we disable it here
+    hvacConfig->EnableAntiFreezeAndOverheatProtection = false;
   }
 
   if (config == nullptr || hvacValue == nullptr) {
@@ -310,31 +597,22 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
 
   // channel function
   if (strcmp(key, keyMatch) == 0) {
-    SUPLA_LOG_DEBUG("Processing fnc");
     int32_t channelFunc = stringToUInt(value);
     config->Func = channelFunc;
-//    if (hvac->isFunctionSupported(channelFunc)) {
-//      hvac->changeFunction(channelFunc, true);
-//    }
     return true;
   }
 
   hvac->generateKey(keyMatch, "hvac_mode");
   // channel mode
   if (strcmp(key, keyMatch) == 0) {
-    SUPLA_LOG_DEBUG("Processing hvac_mode");
     int32_t mode = stringToUInt(value);
     hvacValue->Mode = mode;
-//    if (hvac->isModeSupported(mode)) {
-//      hvac->setTargetMode(mode, false);
-//    }
     return true;
   }
 
   hvac->generateKey(keyMatch, "t_min");
   // setpoint min temperature
   if (strcmp(key, keyMatch) == 0) {
-    SUPLA_LOG_DEBUG("Processing t_min");
     if (strnlen(value, 10) > 0) {
       int16_t tMin = floatStringToInt(value, 1);
       tMin *= 10;
@@ -346,10 +624,8 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   hvac->generateKey(keyMatch, "t_max");
   // setpoint max temperature
   if (strcmp(key, keyMatch) == 0) {
-    SUPLA_LOG_DEBUG("Processing t_max");
     if (strnlen(value, 10) > 0) {
       int16_t tMax = floatStringToInt(value, 1);
-      SUPLA_LOG_DEBUG("tMax: %d", tMax);
       tMax *= 10;
       Supla::Channel::setHvacSetpointTemperatureMax(hvacValue, tMax);
     }
@@ -359,19 +635,216 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   hvac->generateKey(keyMatch, "t_main");
   // main thermometer
   if (strcmp(key, keyMatch) == 0) {
-    SUPLA_LOG_DEBUG("Processing t_main");
     int32_t tMain = stringToUInt(value);
     hvacConfig->MainThermometerChannelNo = tMain;
     return true;
   }
+
+  hvac->generateKey(keyMatch, "t_aux");
+  // aux thermometer
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t tAux = stringToUInt(value);
+    hvacConfig->AuxThermometerChannelNo = tAux;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_aux_type");
+  // aux thermometer type
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t tSecType = stringToUInt(value);
+    hvacConfig->AuxThermometerType = tSecType;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "anti_freeze");
+  // anti freeze temperature
+  if (strcmp(key, keyMatch) == 0) {
+    bool antiFreeze = (strcmp(value, "on") == 0);
+    hvacConfig->EnableAntiFreezeAndOverheatProtection = antiFreeze;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "algorithm");
+  // algorithm
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t algorithm = stringToUInt(value);
+    hvacConfig->UsedAlgorithm = algorithm;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "min_on_s");
+  // min on time
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t minOnTimeS = stringToInt(value);
+    hvacConfig->MinOnTimeS = minOnTimeS;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "min_off_s");
+  // min off time
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t minOffTimeS = stringToInt(value);
+    hvacConfig->MinOffTimeS = minOffTimeS;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_freeze");
+  // temperature freeze
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_FREEZE_PROTECTION,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_eco");
+  // temperature eco
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_ECO,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_comfort");
+  // temperature comfort
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_COMFORT,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_boost");
+  // temperature boost
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_BOOST,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_heat");
+  // temperature heat
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_HEAT_PROTECTION,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_hister");
+  // temperature hister
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_HISTERESIS,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_below");
+  // temperature below alarm
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_BELOW_ALARM,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_above");
+  // temperature above alarm
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_ABOVE_ALARM,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_aux_min");
+  // temperature aux min setpoint
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_AUX_MIN_SETPOINT,
+          temperature);
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_aux_max");
+  // temperature aux max setpoint
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      int16_t temperature = floatStringToInt(value, 1);
+      temperature *= 10;
+      Supla::Control::HvacBase::setTemperatureInStruct(
+          &hvacConfig->Temperatures,
+          TEMPERATURE_AUX_MAX_SETPOINT,
+          temperature);
+    }
+    return true;
+  }
+
   return false;
 }
 
 void HvacParameters::onProcessingEnd() {
-  // TODO(klew): implement
-  hvacConfig = nullptr;
-  delete config;
-  config = nullptr;
-  delete hvacValue;
-  hvacValue = nullptr;
+  if (config != nullptr) {
+    hvac->handleChannelConfig(config);
+
+    hvacConfig = nullptr;
+    delete config;
+    config = nullptr;
+  }
+
+  if (hvacValue != nullptr) {
+    hvac->handleNewValueFromServer(
+        reinterpret_cast<TSD_SuplaChannelNewValue*>(hvacValue));
+
+    delete hvacValue;
+    hvacValue = nullptr;
+  }
 }

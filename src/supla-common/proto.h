@@ -724,20 +724,20 @@ typedef struct {
   unsigned _supla_int_t disablesLocalOperation;
 } TActionTriggerProperties;
 
-#define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET (1 << 0)
-#define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET (1 << 1)
+#define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET (1ULL << 0)
+#define SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET (1ULL  << 1)
 // Tells if output responsible for heating function is enabled
-#define SUPLA_HVAC_VALUE_FLAG_HEATING (1 << 2)
+#define SUPLA_HVAC_VALUE_FLAG_HEATING (1ULL << 2)
 // Tells if output responsible for cooling function is enabled
-#define SUPLA_HVAC_VALUE_FLAG_COOLING (1 << 3)
+#define SUPLA_HVAC_VALUE_FLAG_COOLING (1ULL << 3)
 // Tells if channel works in Weekly Schedule mode. If set to 0, then it works
 // in manual mode
-#define SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE (1 << 4)
-#define SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER (1 << 5)
+#define SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE (1ULL << 4)
+#define SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER (1ULL << 5)
 // FAN flag tells if fan function is enabled
-#define SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED (1 << 6)
-#define SUPLA_HVAC_VALUE_FLAG_ERROR       (1 << 7)
-#define SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR (1 << 8)
+#define SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED (1ULL << 6)
+#define SUPLA_HVAC_VALUE_FLAG_ERROR       (1ULL << 7)
+#define SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR (1ULL << 8)
 
 // HVAC modes are used in in channel value (as a command from server or
 // as a status response from device to server) and in weekly schedules
@@ -1949,47 +1949,47 @@ typedef struct {
 // THVACTemperatureCfg
 // Below values are settable by user in UI
 // Temperature below which heating will be enabled as a freeze protection
-#define TEMPERATURE_FREEZE_PROTECTION          (1 << 0)
+#define TEMPERATURE_FREEZE_PROTECTION          (1ULL << 0)
 // Economic temperaturey
-#define TEMPERATURE_ECO                        (1 << 1)
+#define TEMPERATURE_ECO                        (1ULL << 1)
 // Comfort temperature
-#define TEMPERATURE_COMFORT                    (1 << 2)
-#define TEMPERATURE_BOOST                      (1 << 3)
+#define TEMPERATURE_COMFORT                    (1ULL << 2)
+#define TEMPERATURE_BOOST                      (1ULL << 3)
 // Temperature above which cooling will be enabled as an overheating protection.
-#define TEMPERATURE_HEAT_PROTECTION            (1 << 4)
+#define TEMPERATURE_HEAT_PROTECTION            (1ULL << 4)
 // Histeresis value - i.e. heating will be enabled when current temperature
 // is histeresis/2 lower than current setpoint.
-#define TEMPERATURE_HISTERESIS                 (1 << 5)
+#define TEMPERATURE_HISTERESIS                 (1ULL << 5)
 // Turns on "alarm" when temperature is below this value. Can be visual effect
 // or sound (if device is capable). It can also send AT to server (TBD)
-#define TEMPERATURE_BELOW_ALARM                (1 << 6)
+#define TEMPERATURE_BELOW_ALARM                (1ULL << 6)
 // As above, but for tempertatures above threshold
-#define TEMPERATURE_ABOVE_ALARM                (1 << 7)
+#define TEMPERATURE_ABOVE_ALARM                (1ULL << 7)
 // Minimum temperature to be kept on heat/cold source (i.e. keeps floor always
 // at least 19 degrees)
-#define TEMPERATURE_AUX_MIN_SETPOINT (1 << 8)
+#define TEMPERATURE_AUX_MIN_SETPOINT (1ULL << 8)
 // Maximum temperature to be kept on heat/cold source (i.e. protect floor
 // from overheating and keep at most 28 degrees)
-#define TEMPERATURE_AUX_MAX_SETPOINT (1 << 9)
+#define TEMPERATURE_AUX_MAX_SETPOINT (1ULL << 9)
 
 // Below values are readonly for user
 // Minimum room (main thermometer) temperature to be set by user
-#define TEMPERATURE_ROOM_MIN                   (1 << 10)
+#define TEMPERATURE_ROOM_MIN                   (1ULL << 10)
 // Maximum room (main thermometer) temperature to be set by user
-#define TEMPERATURE_ROOM_MAX                   (1 << 11)
+#define TEMPERATURE_ROOM_MAX                   (1ULL << 11)
 // Minimum allowed temperature for heat/cold source (used with second
 // thermomter for floor/water/etc.)
-#define TEMPERATURE_AUX_MIN          (1 << 12)
+#define TEMPERATURE_AUX_MIN          (1ULL << 12)
 // Maximum allowed temperature for heat/cold source
-#define TEMPERATURE_AUX_MAX          (1 << 13)
+#define TEMPERATURE_AUX_MAX          (1ULL << 13)
 // Minimum histereis value
-#define TEMPERATURE_HISTERESIS_MIN             (1 << 14)
+#define TEMPERATURE_HISTERESIS_MIN             (1ULL << 14)
 // Maximum histereis value
-#define TEMPERATURE_HISTERESIS_MAX             (1 << 15)
+#define TEMPERATURE_HISTERESIS_MAX             (1ULL << 15)
 // Minimum temperature offset in AUTO mode
-#define TEMPERATURE_AUTO_OFFSET_MIN            (1 << 16)
+#define TEMPERATURE_AUTO_OFFSET_MIN            (1ULL << 16)
 // Maximum temperature offset in AUTO mode
-#define TEMPERATURE_AUTO_OFFSET_MAX            (1 << 17)
+#define TEMPERATURE_AUTO_OFFSET_MAX            (1ULL << 17)
 // 6 values left for future use
 
 #define SUPLA_TEMPERATURE_INVALID_INT16 -32768
@@ -2455,7 +2455,7 @@ typedef struct {
 #define SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_COOLER 5
 
 #define SUPLA_HVAC_ALGORITHM_NOT_SET 0
-#define SUPLA_HVAC_ALGORITHM_ON_OFF (1 << 0)
+#define SUPLA_HVAC_ALGORITHM_ON_OFF (1ULL << 0)
 
 
 // TODO(klew): should we have separate structures for configuration specific

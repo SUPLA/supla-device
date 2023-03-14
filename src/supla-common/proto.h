@@ -733,10 +733,11 @@ typedef struct {
 // Tells if channel works in Weekly Schedule mode. If set to 0, then it works
 // in manual mode
 #define SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE (1 << 4)
+#define SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER (1 << 5)
 // FAN flag tells if fan function is enabled
-#define SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED (1 << 5)
-#define SUPLA_HVAC_VALUE_FLAG_ERROR       (1 << 6)
-#define SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR (1 << 7)
+#define SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED (1 << 6)
+#define SUPLA_HVAC_VALUE_FLAG_ERROR       (1 << 7)
+#define SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR (1 << 8)
 
 // HVAC modes are used in in channel value (as a command from server or
 // as a status response from device to server) and in weekly schedules
@@ -935,7 +936,10 @@ typedef struct {
   // server -> device
   _supla_int_t SenderID;
   unsigned char ChannelNumber;
-  unsigned _supla_int_t DurationMS;
+  union {
+    unsigned _supla_int_t DurationMS;
+    unsigned _supla_int_t DurationSec;
+  };
 
   char value[SUPLA_CHANNELVALUE_SIZE];
 } TSD_SuplaChannelNewValue;

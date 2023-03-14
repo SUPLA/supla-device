@@ -99,6 +99,13 @@ int Clock::GetSec() {
   return 0;
 }
 
+time_t Clock::GetTimeStamp() {
+  if (IsReady()) {
+    return clockInstance->getTimeStamp();
+  }
+  return 0;
+}
+
 Clock* Clock::GetInstance() {
   return clockInstance;
 }
@@ -175,6 +182,11 @@ int Clock::getSec() {
   time_t currentTime = time(0);
   gmtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_sec;
+}
+
+time_t Clock::getTimeStamp() {
+  time_t currentTime = time(0);
+  return currentTime;
 }
 
 void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {

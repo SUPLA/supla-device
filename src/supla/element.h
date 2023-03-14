@@ -92,8 +92,10 @@ class Element {
   virtual int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
 
   // Returns SUPLA_RESULTCODE_
-  virtual uint8_t handleChannelConfig(TSD_ChannelConfig *result);
-  virtual uint8_t handleWeeklySchedule(TSD_ChannelConfig *result);
+  virtual uint8_t handleChannelConfig(TSD_ChannelConfig *result,
+                                      bool local = false);
+  virtual uint8_t handleWeeklySchedule(TSD_ChannelConfig *result,
+                                       bool local = false);
   // handleSetChannelConfigResult should handle both standard channel config
   // and weekly schedule config
   virtual void handleSetChannelConfigResult(TSD_SetChannelConfigResult *result);

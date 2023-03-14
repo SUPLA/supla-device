@@ -54,8 +54,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool iterateConnected() override;
 
   int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
-  uint8_t handleChannelConfig(TSD_ChannelConfig *config) override;
-  uint8_t handleWeeklySchedule(TSD_ChannelConfig *result) override;
+  uint8_t handleChannelConfig(TSD_ChannelConfig *config,
+                              bool local = false) override;
+  uint8_t handleWeeklySchedule(TSD_ChannelConfig *result,
+                               bool local = false) override;
   void handleSetChannelConfigResult(
       TSD_SetChannelConfigResult *result) override;
   void handleAction(int event, int action) override;
@@ -297,6 +299,11 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void enableDifferentialFunctionSupport();
   bool isDifferentialFunctionSupported() const;
 
+  bool applyNewRuntimeSettings(int mode,
+                               int16_t tMin,
+                               int16_t tMax,
+                               int32_t durationSec = 0);
+
  private:
   _supla_int16_t getTemperature(int channelNo);
   _supla_int16_t getPrimaryTemp();
@@ -314,6 +321,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isSetpointMinTemperatureValid(_supla_int16_t tMin) const;
   void fixTemperatureSetpoints();
   void clearLastOutputValue();
+  void storeLastWorkingMode();
 
   TSD_ChannelConfig_HVAC config = {};
   TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -329,7 +337,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   Supla::Control::OutputInterface *primaryOutput = nullptr;
   // secondaryOutput can be used only for cooling
   Supla::Control::OutputInterface *secondaryOutput = nullptr;
-  uint8_t lastWorkingMode = SUPLA_HVAC_MODE_NOT_SET;
+  THVACValue lastWorkingMode = {};
+  time_t countdownTimerEnds = 0;
   uint64_t lastConfigChangeTimestampMs = 0;
   uint64_t lastIterateTimestampMs = 0;
   uint64_t lastOutputStateChangeTimestampMs = 0;

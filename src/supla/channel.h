@@ -74,6 +74,7 @@ class Channel : public LocalAction {
   void setHvacFlagFanEnabled(bool value);
   void setHvacFlagError(bool value);
   void setHvacFlagClockError(bool value);
+  void setHvacFlagCountdownTimer(bool value);
 
   uint8_t getHvacIsOn();
   uint8_t getHvacMode() const;
@@ -88,6 +89,7 @@ class Channel : public LocalAction {
   bool isHvacFlagFanEnabled();
   bool isHvacFlagError();
   bool isHvacFlagClockError();
+  bool isHvacFlagCountdownTimer();
 
   static bool isHvacFlagSetpointTemperatureMinSet(THVACValue *hvacValue);
   static bool isHvacFlagSetpointTemperatureMaxSet(THVACValue *hvacValue);
@@ -97,6 +99,7 @@ class Channel : public LocalAction {
   static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
   static bool isHvacFlagError(THVACValue *hvacValue);
   static bool isHvacFlagClockError(THVACValue *hvacValue);
+  static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
   static void setHvacSetpointTemperatureMin(THVACValue *hvacValue,
                                             int16_t setpointTemperatureMin);
   static void setHvacSetpointTemperatureMax(THVACValue *hvacValue,

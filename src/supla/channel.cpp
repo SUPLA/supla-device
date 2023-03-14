@@ -810,6 +810,20 @@ void Channel::setHvacFlagClockError(bool value) {
   }
 }
 
+void Channel::setHvacFlagCountdownTimer(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagCountdownTimer()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 bool Channel::isHvacFlagSetpointTemperatureMaxSet() {
   return isHvacFlagSetpointTemperatureMaxSet(getValueHvac());
 }
@@ -840,6 +854,10 @@ bool Channel::isHvacFlagError() {
 
 bool Channel::isHvacFlagClockError() {
   return isHvacFlagClockError(getValueHvac());
+}
+
+bool Channel::isHvacFlagCountdownTimer() {
+  return isHvacFlagCountdownTimer(getValueHvac());
 }
 
 bool Channel::isHvacFlagSetpointTemperatureMinSet(THVACValue *value) {
@@ -894,6 +912,13 @@ bool Channel::isHvacFlagError(THVACValue *value) {
 bool Channel::isHvacFlagClockError(THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR;
+  }
+  return false;
+}
+
+bool Channel::isHvacFlagCountdownTimer(THVACValue *value) {
+  if (value != nullptr) {
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER;
   }
   return false;
 }

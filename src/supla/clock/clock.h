@@ -37,6 +37,7 @@ class Clock : public Element {
                             // - 45..59 min
   static int GetMin();
   static int GetSec();
+  static time_t GetTimeStamp();
 
   static Clock* GetInstance();
 
@@ -53,6 +54,7 @@ class Clock : public Element {
   virtual int getQuarter();
   virtual int getMin();
   virtual int getSec();
+  virtual time_t getTimeStamp();
 
   void onTimer();
   bool iterateConnected();

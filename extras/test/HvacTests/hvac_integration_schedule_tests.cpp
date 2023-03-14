@@ -26,7 +26,7 @@
 #include <supla/sensor/virtual_thermometer.h>
 #include <output_mock.h>
 #include <storage_mock.h>
-#include <clock_mock.h>
+#include <clock_stub.h>
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -125,17 +125,10 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
       .WillOnce(Return(true));
 
   EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
-      .WillOnce([](unsigned char *data, int size) {
+      .WillRepeatedly([](unsigned char *data, int size) {
         THVACValue hvacValue = {};
         memcpy(data, &hvacValue, sizeof(THVACValue));
         return sizeof(THVACValue);
-      });
-
-  EXPECT_CALL(storage, readState(_, 1))
-      .WillOnce([](unsigned char *data, int size) {
-        uint8_t lastWorkingMode = 0;
-        memcpy(data, &lastWorkingMode, 1);
-        return 1;
       });
 
   // ignore channel value changed from thermometer
@@ -198,7 +191,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   }
 
   TSD_SuplaChannelNewValue newValue = {};
-  THVACValue *hvacValue = reinterpret_cast<THVACValue *>(&newValue);
+  THVACValue *hvacValue = reinterpret_cast<THVACValue *>(newValue.value);
   hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
     SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
   hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
@@ -316,26 +309,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(100);
   }
 
-  ClockMock clock;
-
-  EXPECT_CALL(clock, isReady())
-    .WillRepeatedly(Return(true));
-  EXPECT_CALL(clock, getYear())
-    .WillRepeatedly(Return(2023));
-  EXPECT_CALL(clock, getMonth())
-    .WillRepeatedly(Return(1));
-  EXPECT_CALL(clock, getDay())
-    .WillRepeatedly(Return(1));
-  EXPECT_CALL(clock, getQuarter())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getHour())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getMin())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getSec())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getHvacDayOfWeek())
-    .WillRepeatedly(Return(Supla::DayOfWeek::DayOfWeek_Sunday));
+  ClockStub clock;
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -361,8 +335,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(100);
   }
 
-  EXPECT_CALL(clock, getQuarter())
-    .WillRepeatedly(Return(1));
+  for (int i = 0; i < 15; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(60*1000);  // +1 minute
+  }
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -388,8 +367,14 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(100);
   }
 
-  EXPECT_CALL(clock, getQuarter())
-    .WillRepeatedly(Return(2));
+
+  for (int i = 0; i < 15; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(60*1000);  // +1 minute
+  }
 
   EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -417,8 +402,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(100);
   }
 
-  EXPECT_CALL(clock, getQuarter())
-    .WillRepeatedly(Return(3));
+  for (int i = 0; i < 15; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(60*1000);  // +1 minute
+  }
 
   EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -443,6 +433,65 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     hvac->iterateConnected();
     t1->iterateConnected();
     time.advance(100);
+  }
+
+  hvacValue->Mode = SUPLA_HVAC_MODE_HEAT;
+  hvacValue->SetpointTemperatureMin = 2350;
+  hvacValue->SetpointTemperatureMax = 2700;
+  newValue.DurationSec = 20;
+  EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
+
+  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_HEATING |
+                  SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2350);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+    });
+
+  // +20s
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(1000);
+  }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2350);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+    });
+
+  // +20s
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(1000);
   }
 }
 
@@ -491,17 +540,10 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
-      .WillOnce([](unsigned char *data, int size) {
+      .WillRepeatedly([](unsigned char *data, int size) {
         THVACValue hvacValue = {};
         memcpy(data, &hvacValue, sizeof(THVACValue));
         return sizeof(THVACValue);
-      });
-
-  EXPECT_CALL(storage, readState(_, 1))
-      .WillOnce([](unsigned char *data, int size) {
-        uint8_t lastWorkingMode = 0;
-        memcpy(data, &lastWorkingMode, 1);
-        return 1;
       });
 
   // ignore channel value changed from thermometer
@@ -568,7 +610,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   }
 
   TSD_SuplaChannelNewValue newValue = {};
-  THVACValue *hvacValue = reinterpret_cast<THVACValue *>(&newValue);
+  THVACValue *hvacValue = reinterpret_cast<THVACValue *>(newValue.value);
   hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
     SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
   hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
@@ -772,26 +814,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
     time.advance(100);
   }
 
-  ClockMock clock;
-
-  EXPECT_CALL(clock, isReady())
-    .WillRepeatedly(Return(true));
-  EXPECT_CALL(clock, getYear())
-    .WillRepeatedly(Return(2023));
-  EXPECT_CALL(clock, getMonth())
-    .WillRepeatedly(Return(1));
-  EXPECT_CALL(clock, getDay())
-    .WillRepeatedly(Return(1));
-  EXPECT_CALL(clock, getQuarter())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getHour())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getMin())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getSec())
-    .WillRepeatedly(Return(0));
-  EXPECT_CALL(clock, getHvacDayOfWeek())
-    .WillRepeatedly(Return(Supla::DayOfWeek::DayOfWeek_Sunday));
+  ClockStub clock;
 
   hvacValue->Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
@@ -1102,7 +1125,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
     });
 
-  for (int i = 0; i < 60; ++i) {
+  for (int i = 0; i < 70; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
     hvac->iterateConnected();
@@ -1110,8 +1133,41 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
     time.advance(100);
   }
 
-  EXPECT_CALL(clock, getHour())
-    .WillRepeatedly(Return(1));
+  auto quarter = Supla::Clock::GetQuarter();
+  (void)(quarter);
+  t1->setValue(24.5);
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                      SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1900);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+    });
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                      SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+    });
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -1125,16 +1181,16 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
     });
 
-  for (int i = 0; i < 60; ++i) {
+  for (int i = 0; i < 70; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
     hvac->iterateConnected();
     t1->iterateConnected();
-    time.advance(100);
+    time.advance(60 * 1000);  // +1 minute
   }
 
   hvac->setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
@@ -1162,7 +1218,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
                       SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
     });
 
@@ -1188,7 +1244,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
     });
 

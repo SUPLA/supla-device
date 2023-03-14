@@ -196,7 +196,8 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
 }
 
 uint8_t Supla::Control::ActionTrigger::handleChannelConfig(
-    TSD_ChannelConfig *result) {
+    TSD_ChannelConfig *result, bool local) {
+  (void)(local);
   if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT &&
       result->ConfigSize == sizeof(TSD_ChannelConfig_ActionTrigger)) {
     TSD_ChannelConfig_ActionTrigger *config =

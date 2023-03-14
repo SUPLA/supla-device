@@ -179,7 +179,9 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   TWeeklyScheduleProgram program4 = {SUPLA_HVAC_MODE_HEAT, {1900}, {0}};
   result = hvac->getProgram(0);
   EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
-  result = hvac->getProgram(1); EXPECT_EQ(memcmp(&result, &program1, sizeof(result)), 0); result = hvac->getProgram(2);
+  result = hvac->getProgram(1);
+  EXPECT_EQ(memcmp(&result, &program1, sizeof(result)), 0);
+  result = hvac->getProgram(2);
   EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
   result = hvac->getProgram(3);
   EXPECT_EQ(memcmp(&result, &program, sizeof(result)), 0);
@@ -316,7 +318,8 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -391,7 +394,8 @@ TEST_F(HvacWeeklyScheduleTestsF,
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(

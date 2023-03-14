@@ -101,7 +101,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -296,7 +297,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE |
                   SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
-        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
     });
@@ -516,7 +517,8 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(

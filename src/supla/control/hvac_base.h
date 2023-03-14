@@ -113,6 +113,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool setMinOffTimeS(uint16_t seconds);
   uint16_t getMinOffTimeS() const;
 
+  // use this function to set value based on local config change
+  bool setOutputValueOnError(signed char value);
+  signed char getOutputValueOnError() const;
+
   // Below temperatures defines device capabilities.
   // Configure those values before calling other setTemperature* functions.
   void setTemperatureRoomMin(_supla_int16_t temperature);

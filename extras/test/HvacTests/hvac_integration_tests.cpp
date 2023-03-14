@@ -101,7 +101,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -536,7 +537,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -966,7 +967,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAuto) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -1788,7 +1789,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -2236,6 +2238,79 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     t2->iterateConnected();
     time.advance(100);
   }
+
+  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                  SUPLA_HVAC_VALUE_FLAG_ERROR);
+
+        EXPECT_EQ(hvacValue->IsOn, 0);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, -100);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 0);
+    });
+  t1->setValue(-275);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    t2->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    t2->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL,
+                               _,
+                               sizeof(TSD_ChannelConfig_HVAC),
+                               SUPLA_CONFIG_TYPE_DEFAULT))
+      .Times(1)
+      .WillRepeatedly(Return(true));
+
+
+  hvac->setOutputValueOnError(100);
+  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                  SUPLA_HVAC_VALUE_FLAG_HEATING |
+                  SUPLA_HVAC_VALUE_FLAG_ERROR);
+
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, -100);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 0);
+    });
+  t1->setValue(-275);
+  for (int i = 0; i < 60; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    t2->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    t2->iterateConnected();
+    time.advance(100);
+  }
+
 }
 
 TEST_F(HvacIntegrationF, startupWithEmptyConfigAutoSetpointTempCheck) {
@@ -2260,7 +2335,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAutoSetpointTempCheck) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -2498,9 +2574,11 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,
@@ -2849,9 +2927,11 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,

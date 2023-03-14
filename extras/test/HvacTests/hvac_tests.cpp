@@ -853,6 +853,21 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_TRUE(hvac.setAuxThermometerChannelNo(0));
   EXPECT_EQ(hvac.getAuxThermometerType(),
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
+
+  EXPECT_TRUE(hvac.setOutputValueOnError(0));
+  EXPECT_EQ(hvac.getOutputValueOnError(), 0);
+  EXPECT_TRUE(hvac.setOutputValueOnError(1));
+  EXPECT_EQ(hvac.getOutputValueOnError(), 1);
+  EXPECT_TRUE(hvac.setOutputValueOnError(100));
+  EXPECT_EQ(hvac.getOutputValueOnError(), 100);
+  EXPECT_TRUE(hvac.setOutputValueOnError(101));
+  EXPECT_EQ(hvac.getOutputValueOnError(), 100);
+  EXPECT_TRUE(hvac.setOutputValueOnError(-1));
+  EXPECT_EQ(hvac.getOutputValueOnError(), -1);
+  EXPECT_TRUE(hvac.setOutputValueOnError(-100));
+  EXPECT_EQ(hvac.getOutputValueOnError(), -100);
+  EXPECT_TRUE(hvac.setOutputValueOnError(-101));
+  EXPECT_EQ(hvac.getOutputValueOnError(), -100);
 }
 
 TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
@@ -869,6 +884,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   hvacConfig->EnableAntiFreezeAndOverheatProtection = 1;
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
+  hvacConfig->OutputValueOnError = 100;
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);
@@ -913,6 +929,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
             .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
             .MinOnTimeS = 10,
             .MinOffTimeS = 20,
+            .OutputValueOnError = 100,
             .Temperatures = {}};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -982,7 +999,8 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
@@ -1132,7 +1150,8 @@ TEST_F(HvacTestWithChannelSetupF,
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, 64))
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(

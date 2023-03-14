@@ -2483,6 +2483,7 @@ typedef struct {
                                         // be enabled
   unsigned _supla_int16_t MinOffTimeS;  // minimum allowed time for output to
                                         // be disabled
+  signed char OutputValueOnError;      // -100 cool, 0 off (default), 100 heat
   THVACTemperatureCfg Temperatures;
 } TSD_ChannelConfig_HVAC;  // v. >= 20
 

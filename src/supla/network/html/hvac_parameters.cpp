@@ -441,6 +441,22 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   // form-field END
 
+  // form-field BEGIN
+  hvac->generateKey(key, "error_val");
+  sender->send("<div class=\"form-field\">");
+  sender->sendLabelFor(key, "Output state in case of error");
+  sender->send("<div>");
+  sender->send("<select ");
+  sender->sendNameAndId(key);
+  sender->send(">");
+  sender->sendSelectItem(0, "Off", hvac->getOutputValueOnError() == 0);
+  sender->sendSelectItem(100, "Heat", hvac->getOutputValueOnError() == 100);
+  sender->sendSelectItem(-100, "Cool", hvac->getOutputValueOnError() == -100);
+  sender->send("</select>");
+  sender->send("</div>");
+  sender->send("</div>");
+  // form-field END
+
   sender->send("<h2>Temperatures configuration</h2>");
   // form-field BEGIN
   hvac->generateKey(key, "t_eco");
@@ -824,6 +840,17 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
           &hvacConfig->Temperatures,
           TEMPERATURE_AUX_MAX_SETPOINT,
           temperature);
+    }
+    return true;
+  }
+
+
+  hvac->generateKey(keyMatch, "error_val");
+  // output on error value
+  if (strcmp(key, keyMatch) == 0) {
+    if (strnlen(value, 10) > 0) {
+      signed char errorValue = stringToInt(value);
+      hvacConfig->OutputValueOnError = errorValue;
     }
     return true;
   }

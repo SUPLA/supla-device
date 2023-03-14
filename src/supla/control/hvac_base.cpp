@@ -288,7 +288,7 @@ void HvacBase::iterateAlways() {
   auto t2 = getSecondaryTemp();
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
-    setOutput(0, true);
+    setOutput(getOutputValueOnError(), true);
     SUPLA_LOG_DEBUG("HVAC: check thermometers not valid");
     channel.setHvacFlagError(true);
     return;
@@ -496,6 +496,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   config.UsedAlgorithm = hvacConfig->UsedAlgorithm;
   config.MinOnTimeS = hvacConfig->MinOnTimeS;
   config.MinOffTimeS = hvacConfig->MinOffTimeS;
+  config.OutputValueOnError = hvacConfig->OutputValueOnError;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -626,6 +627,13 @@ bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) const {
 
   if (!isMinOnOffTimeValid(newConfig->MinOffTimeS)) {
     SUPLA_LOG_WARNING("HVAC: invalid min off time %d", newConfig->MinOffTimeS);
+    return false;
+  }
+
+  if (newConfig->OutputValueOnError > 100 ||
+      newConfig->OutputValueOnError < -100) {
+    SUPLA_LOG_WARNING("HVAC: invalid output value on error %d",
+                      newConfig->OutputValueOnError);
     return false;
   }
 
@@ -1586,6 +1594,28 @@ uint16_t HvacBase::getMinOffTimeS() const {
   return config.MinOffTimeS;
 }
 
+bool HvacBase::setOutputValueOnError(signed char value) {
+  if (value > 100) {
+    value = 100;
+  }
+  if (value < -100) {
+    value = -100;
+  }
+
+  if (config.OutputValueOnError != value) {
+    config.OutputValueOnError = value;
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+  return true;
+}
+
+signed char HvacBase::getOutputValueOnError() const {
+  return config.OutputValueOnError;
+}
+
 void HvacBase::saveConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   lastConfigChangeTimestampMs = millis();
@@ -2415,7 +2445,7 @@ bool HvacBase::processWeeklySchedule() {
   }
 
   if (!Supla::Clock::IsReady()) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF, true);
+    setOutput(getOutputValueOnError(), true);
     channel.setHvacFlagClockError(true);
     return false;
   }
@@ -2438,27 +2468,8 @@ bool HvacBase::processWeeklySchedule() {
 }
 
 void HvacBase::setSetpointTemperaturesForCurrentMode(int tMin, int tMax) {
-      setTemperatureSetpointMin(tMin);
-      setTemperatureSetpointMax(tMax);
-      /*
-  switch (channel.getHvacMode()) {
-    case SUPLA_HVAC_MODE_HEAT: {
-      setTemperatureSetpointMin(tMin);
-      clearTemperatureSetpointMax();
-      break;
-    }
-    case SUPLA_HVAC_MODE_COOL: {
-      setTemperatureSetpointMax(tMax);
-      clearTemperatureSetpointMin();
-      break;
-    }
-    case SUPLA_HVAC_MODE_AUTO: {
-      setTemperatureSetpointMin(tMin);
-      setTemperatureSetpointMax(tMax);
-      break;
-    }
-  }
-  */
+  setTemperatureSetpointMin(tMin);
+  setTemperatureSetpointMax(tMax);
 }
 
 void HvacBase::addPrimaryOutput(Supla::Control::OutputInterface *output) {
@@ -2533,17 +2544,17 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC: tMeasured not valid");
     channel.setHvacFlagError(true);
-    return 0;
+    return getOutputValueOnError();
   }
   if (!isSensorTempValid(tTarget)) {
     SUPLA_LOG_DEBUG("HVAC: tTarget not valid");
     channel.setHvacFlagError(true);
-    return 0;
+    return getOutputValueOnError();
   }
   if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
     SUPLA_LOG_DEBUG("HVAC: algorithm not valid");
     channel.setHvacFlagError(true);
-    return 0;
+    return getOutputValueOnError();
   }
 
   int output = lastValue;
@@ -2553,7 +2564,7 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
     if (!isSensorTempValid(histeresis)) {
       SUPLA_LOG_DEBUG("HVAC: histeresis not valid");
       channel.setHvacFlagError(true);
-      return 0;
+      return getOutputValueOnError();
     }
     histeresis >>= 1;
 

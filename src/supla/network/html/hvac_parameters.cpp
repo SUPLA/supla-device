@@ -581,8 +581,10 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     return false;
   }
 
-  if (hvacValue == nullptr) {
-    hvacValue = new THVACValue;
+  if (newValue == nullptr) {
+    newValue = new TSD_SuplaChannelNewValue;
+    memset(newValue, 0, sizeof(TSD_SuplaChannelNewValue));
+    hvacValue = reinterpret_cast<THVACValue*>(newValue->value);
     memcpy(
         hvacValue,
         &Supla::Channel::reg_dev.channels[hvac->getChannelNumber()].hvacValue,
@@ -603,7 +605,7 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     hvacConfig->EnableAntiFreezeAndOverheatProtection = false;
   }
 
-  if (config == nullptr || hvacValue == nullptr) {
+  if (config == nullptr || newValue == nullptr) {
     SUPLA_LOG_ERROR("Memory allocation failed");
     return false;
   }
@@ -867,11 +869,11 @@ void HvacParameters::onProcessingEnd() {
     config = nullptr;
   }
 
-  if (hvacValue != nullptr) {
-    hvac->handleNewValueFromServer(
-        reinterpret_cast<TSD_SuplaChannelNewValue*>(hvacValue));
+  if (newValue != nullptr) {
+    hvac->handleNewValueFromServer(newValue);
 
-    delete hvacValue;
+    delete newValue;
     hvacValue = nullptr;
+    newValue = nullptr;
   }
 }

@@ -475,6 +475,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       reinterpret_cast<TSD_ChannelConfig_HVAC *>(newConfig->Config);
 
   if (!isConfigValid(hvacConfig)) {
+    SUPLA_LOG_DEBUG("HVAC: invalid config");
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 

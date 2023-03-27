@@ -16,6 +16,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "rgbw_leds.h"
 #include <supla/io.h>
+#include <supla/log_wrapper.h>
 
 #ifdef ARDUINO_ARCH_ESP32
 extern int esp32PwmChannelCouner;
@@ -63,29 +64,27 @@ void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
 
 void Supla::Control::RGBWLeds::onInit() {
 #ifdef ARDUINO_ARCH_ESP32
-  Serial.print(F("RGBW: attaching pin "));
-  Serial.print(redPin);
-  Serial.print(F(" to PWM channel: "));
-  Serial.println(esp32PwmChannelCouner);
+  SUPLA_LOG_DEBUG("RGBW: attaching pin %d to PWM channel %d",
+                  redPin, esp32PwmChannelCouner);
 
-  ledcSetup(esp32PwmChannelCouner, 12000, 10);
+  ledcSetup(esp32PwmChannelCouner, 1000, 10);
   ledcAttachPin(redPin, esp32PwmChannelCouner);
   // on ESP32 we write to PWM channels instead of pins, so we copy channel
   // number as pin in order to reuse variable
   redPin = esp32PwmChannelCouner;
   esp32PwmChannelCouner++;
 
-  ledcSetup(esp32PwmChannelCouner, 12000, 10);
+  ledcSetup(esp32PwmChannelCouner, 1000, 10);
   ledcAttachPin(greenPin, esp32PwmChannelCouner);
   greenPin = esp32PwmChannelCouner;
   esp32PwmChannelCouner++;
 
-  ledcSetup(esp32PwmChannelCouner, 12000, 10);
+  ledcSetup(esp32PwmChannelCouner, 1000, 10);
   ledcAttachPin(bluePin, esp32PwmChannelCouner);
   bluePin = esp32PwmChannelCouner;
   esp32PwmChannelCouner++;
 
-  ledcSetup(esp32PwmChannelCouner, 12000, 10);
+  ledcSetup(esp32PwmChannelCouner, 1000, 10);
   ledcAttachPin(brightnessPin, esp32PwmChannelCouner);
   brightnessPin = esp32PwmChannelCouner;
   esp32PwmChannelCouner++;

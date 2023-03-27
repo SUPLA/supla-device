@@ -233,6 +233,10 @@ Supported channel types:
 * `ElectricityMeterParsed` - related class `Supla::Sensor::ElectricityMeterParsed`
 * `BinaryParsed` - related class `Supla::Sensor::BinaryParsed`
 * `ActionTriggerParsed` - related class `Supla::Control::ActionTriggerParsed`
+* `HumidityParsed` - related class `Supla::Sensor::HumidityParsed
+* `PressureParsed` - related class `Supla::Sensor::PressureParsed`
+* `WindParsed` - related class `Supla::Sensor::WindParsed`
+* `RainParsed` - related class `Supla::Sensor::RainParsed`
 
 Example channels configuration (details are exaplained later):
 
@@ -727,6 +731,39 @@ I.e. action 3 corresponds with:
 (last number in bracket is action number, please check above link to `proto.h`
  for more details). Currently in Supla only actions
 for buttons are defined, so we reuse them here.
+
+### `HumidityParsed`
+Add channel with "humidity" type.
+
+Mandatory parameter: `humidity` - defines key/index by which data is fetched
+from `parser`.
+Optional parameter: `multiplier` - defines multiplier for fetched value
+(you can put any floating point number).
+
+### `PressureParsed`
+Add channel with "pressure" type.
+
+Mandatory parameter: `pressure` - defines key/index by which data is fetched
+from `parser`.
+Optional parameter: `multiplier` - defines multiplier for fetched value
+(you can put any floating point number).
+
+### `WindParsed`
+Add channel with "wind" type.
+
+Mandatory parameter: `wind` - defines key/index by which data is fetched
+from `parser`.
+Optional parameter: `multiplier` - defines multiplier for fetched value
+(you can put any floating point number).
+
+### `RainParsed`
+Add channel with "rain" type.
+
+Mandatory parameter: `rain` - defines key/index by which data is fetched
+from `parser`.
+Optional parameter: `multiplier` - defines multiplier for fetched value
+(you can put any floating point number).
+
 
 ## Battery level information for Parsed channels
 

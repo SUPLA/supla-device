@@ -105,7 +105,10 @@ enum Action {
   ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
 
   // Weight sensor
-  TARE_SCALES
+  TARE_SCALES,
+
+  VOLUME_UP,
+  VOLUME_DOWN
 };
 };  // namespace Supla
 

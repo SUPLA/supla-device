@@ -262,11 +262,31 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 }
 
 void HvacBase::iterateAlways() {
-  if (millis() - lastIterateTimestampMs < 1000) {
+  if (lastIterateTimestampMs && millis() - lastIterateTimestampMs < 1000) {
     return;
   }
   lastIterateTimestampMs = millis();
 
+  // update tempreatures information
+  auto t1 = getPrimaryTemp();
+  auto t2 = getSecondaryTemp();
+
+  if (!checkThermometersStatusForCurrentMode(t1, t2)) {
+    setOutput(getOutputValueOnError(), true);
+    lastTemperature = INT16_MIN;
+    SUPLA_LOG_DEBUG("HVAC: check thermometers not valid");
+    channel.setHvacFlagError(true);
+    return;
+  }
+
+  if (channel.getDefaultFunction() ==
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    t1 -= t2;
+    t2 = INT16_MIN;
+  }
+  lastTemperature = t1;
+
+  // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
     return;
@@ -282,22 +302,6 @@ void HvacBase::iterateAlways() {
 
   if (!isModeSupported(channel.getHvacMode())) {
     setTargetMode(SUPLA_HVAC_MODE_OFF);
-  }
-
-  auto t1 = getPrimaryTemp();
-  auto t2 = getSecondaryTemp();
-
-  if (!checkThermometersStatusForCurrentMode(t1, t2)) {
-    setOutput(getOutputValueOnError(), true);
-    SUPLA_LOG_DEBUG("HVAC: check thermometers not valid");
-    channel.setHvacFlagError(true);
-    return;
-  }
-
-  if (channel.getDefaultFunction() ==
-      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    t1 -= t2;
-    t2 = INT16_MIN;
   }
 
   if (channel.isHvacFlagWeeklySchedule()) {
@@ -2701,3 +2705,8 @@ void HvacBase::storeLastWorkingMode() {
     lastWorkingMode.Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
   }
 }
+
+_supla_int16_t HvacBase::getLastTemperature() {
+  return lastTemperature;
+}
+

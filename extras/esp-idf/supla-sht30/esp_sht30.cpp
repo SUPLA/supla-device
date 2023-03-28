@@ -41,6 +41,8 @@ void Supla::Sensor::SHT30::onInit() {
   if (err != ESP_OK) {
     SUPLA_LOG_WARNING("Failed to init i2c (%d)", err);
   }
+
+  channel.setNewValue(getTemp(), getHumi());
 }
 
 void Supla::Sensor::SHT30::readSensor() {

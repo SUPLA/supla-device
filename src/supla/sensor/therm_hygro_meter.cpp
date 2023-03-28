@@ -40,6 +40,24 @@ double Supla::Sensor::ThermHygroMeter::getHumi() {
   return HUMIDITY_NOT_AVAILABLE;
 }
 
+int16_t Supla::Sensor::ThermHygroMeter::getHumiInt16() {
+  if (getChannelNumber() >= 0) {
+    double humi = getChannel()->getValueDoubleSecond();
+    if (humi <= HUMIDITY_NOT_AVAILABLE) {
+      return INT16_MIN;
+    }
+    humi *= 100;
+    if (humi > INT16_MAX) {
+      return INT16_MAX;
+    }
+    if (humi <= INT16_MIN) {
+      return INT16_MIN + 1;
+    }
+    return humi;
+  }
+  return INT16_MIN;
+}
+
 void Supla::Sensor::ThermHygroMeter::iterateAlways() {
   if (millis() - lastReadTime > 10000) {
     lastReadTime = millis();

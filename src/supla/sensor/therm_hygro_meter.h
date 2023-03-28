@@ -34,6 +34,8 @@ class ThermHygroMeter : public Thermometer {
 
   virtual double getTemp();
   virtual double getHumi();
+
+  int16_t getHumiInt16();
 };
 
 };  // namespace Sensor

@@ -309,6 +309,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
                                int16_t tMax,
                                int32_t durationSec = 0);
 
+  _supla_int16_t getLastTemperature();
+
  private:
   _supla_int16_t getTemperature(int channelNo);
   _supla_int16_t getPrimaryTemp();
@@ -348,6 +350,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint64_t lastIterateTimestampMs = 0;
   uint64_t lastOutputStateChangeTimestampMs = 0;
   int lastValue = -1000;  // set out of output value range
+  _supla_int16_t lastTemperature = 0;
 };
 
 }  // namespace Control

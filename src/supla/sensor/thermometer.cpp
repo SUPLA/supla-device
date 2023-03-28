@@ -35,6 +35,24 @@ double Supla::Sensor::Thermometer::getValue() {
   return TEMPERATURE_NOT_AVAILABLE;
 }
 
+int16_t Supla::Sensor::Thermometer::getTempInt16() {
+  if (getChannelNumber() >= 0) {
+    double temp = getChannel()->getLastTemperature();
+    if (temp <= TEMPERATURE_NOT_AVAILABLE) {
+      return INT16_MIN;
+    }
+    temp *= 100;
+    if (temp > INT16_MAX) {
+      return INT16_MAX;
+    }
+    if (temp <= INT16_MIN) {
+      return INT16_MIN + 1;
+    }
+    return temp;
+  }
+  return INT16_MIN;
+}
+
 void Supla::Sensor::Thermometer::iterateAlways() {
   if (millis() - lastReadTime > refreshIntervalMs) {
     lastReadTime = millis();

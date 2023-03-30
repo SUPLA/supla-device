@@ -297,6 +297,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void turnOn();
   bool turnOnWeeklySchedlue();
   void changeFunction(int newFunction, bool changedLocally);
+  _supla_int_t getChannelFunction();
 
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
   void addSecondaryOutput(Supla::Control::OutputInterface *output);

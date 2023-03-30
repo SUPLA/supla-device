@@ -2710,3 +2710,7 @@ _supla_int16_t HvacBase::getLastTemperature() {
   return lastTemperature;
 }
 
+_supla_int_t HvacBase::getChannelFunction() {
+  return channel.getDefaultFunction();
+}
+

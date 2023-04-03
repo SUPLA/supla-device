@@ -28,6 +28,7 @@
 #include <supla/actions.h>
 
 #include "output_interface.h"
+#include "supla/events.h"
 
 #define SUPLA_HVAC_DEFAULT_TEMP_MIN          1800  // 18.00 C
 #define SUPLA_HVAC_DEFAULT_TEMP_MAX          2400  // 24.00 C
@@ -2060,6 +2061,7 @@ void HvacBase::setOutput(int value, bool force) {
         channel.setHvacFlagHeating(false);
         channel.setHvacIsOn(0);
         primaryOutput->setOutputValue(0);
+        runAction(Supla::ON_HVAC_STANDBY);
       } else {
         channel.setHvacFlagHeating(true);
         if (primaryOutput->isOnOffOnly()) {
@@ -2067,6 +2069,7 @@ void HvacBase::setOutput(int value, bool force) {
         }
         channel.setHvacIsOn(value);
         primaryOutput->setOutputValue(value);
+        runAction(Supla::ON_HVAC_HEATING);
       }
       break;
     }
@@ -2083,6 +2086,7 @@ void HvacBase::setOutput(int value, bool force) {
         channel.setHvacFlagCooling(false);
         channel.setHvacIsOn(0);
         output->setOutputValue(0);
+        runAction(Supla::ON_HVAC_STANDBY);
       } else {
         channel.setHvacFlagCooling(true);
         if (primaryOutput->isOnOffOnly()) {
@@ -2092,6 +2096,7 @@ void HvacBase::setOutput(int value, bool force) {
         }
         channel.setHvacIsOn(value);
         output->setOutputValue(value);
+        runAction(Supla::ON_HVAC_COOLING);
       }
       break;
     }
@@ -2107,6 +2112,7 @@ void HvacBase::setOutput(int value, bool force) {
         channel.setHvacIsOn(0);
         primaryOutput->setOutputValue(0);
         secondaryOutput->setOutputValue(0);
+        runAction(Supla::ON_HVAC_STANDBY);
       } else if (value >= 1) {
         channel.setHvacFlagCooling(false);
         channel.setHvacFlagHeating(true);
@@ -2117,6 +2123,7 @@ void HvacBase::setOutput(int value, bool force) {
         }
         channel.setHvacIsOn(value);
         primaryOutput->setOutputValue(value);
+        runAction(Supla::ON_HVAC_HEATING);
       } else if (value <= -1) {
         channel.setHvacFlagCooling(true);
         channel.setHvacFlagHeating(false);
@@ -2130,6 +2137,7 @@ void HvacBase::setOutput(int value, bool force) {
 
         channel.setHvacIsOn(value);
         secondaryOutput->setOutputValue(value);
+        runAction(Supla::ON_HVAC_COOLING);
       }
       break;
     }

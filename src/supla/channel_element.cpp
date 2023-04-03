@@ -39,6 +39,10 @@ void Supla::ChannelElement::addAction(int action,
   addAction(action, *client, event, alwaysEnabled);
 }
 
+void Supla::ChannelElement::runAction(int event) {
+  channel.runAction(event);
+}
+
 bool Supla::ChannelElement::isEventAlreadyUsed(int event) {
   return channel.isEventAlreadyUsed(event);
 }

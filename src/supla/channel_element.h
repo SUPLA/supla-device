@@ -40,6 +40,8 @@ class ChannelElement : public Element, public LocalAction {
       bool alwaysEnabled = false) override;
   bool isEventAlreadyUsed(int event) override;
 
+  void runAction(int event) override;
+
   virtual void addAction(int action,
       ActionHandler &client,  // NOLINT(runtime/references)
       Supla::Condition *condition,

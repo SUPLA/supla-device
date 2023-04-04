@@ -2722,3 +2722,15 @@ _supla_int_t HvacBase::getChannelFunction() {
   return channel.getDefaultFunction();
 }
 
+int HvacBase::getMode() {
+  return channel.getHvacMode();
+}
+
+bool HvacBase::isWeeklyScheduleEnabled() {
+  return channel.isHvacFlagWeeklySchedule();
+}
+
+bool HvacBase::isCountdownEnabled() {
+  return channel.isHvacFlagCountdownTimer();
+}
+

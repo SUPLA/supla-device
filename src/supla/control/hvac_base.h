@@ -72,6 +72,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setTemperatureSetpointMax(int tMax);
   int getTemperatureSetpointMin();
   int getTemperatureSetpointMax();
+  int getMode();
+  bool isWeeklyScheduleEnabled();
+  bool isCountdownEnabled();
 
   void saveConfig();
   void saveWeeklySchedule();

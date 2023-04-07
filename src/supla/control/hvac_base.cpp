@@ -297,7 +297,7 @@ void HvacBase::iterateAlways() {
   if (getChannel()->isHvacFlagCountdownTimer()) {
     if (countdownTimerEnds <= Supla::Clock::GetTimeStamp()) {
       getChannel()->setHvacFlagCountdownTimer(false);
-      turnOn();
+      turnOn();  // turnOn restores last stored runtime mode
     }
   }
 
@@ -2145,7 +2145,8 @@ void HvacBase::setOutput(int value, bool force) {
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
-  SUPLA_LOG_DEBUG("HVAC: set target mode %d requested", mode);
+  SUPLA_LOG_INFO("HVAC: set target mode %s requested",
+                 channel.getHvacModeCstr(mode));
   channel.setHvacFlagCountdownTimer(false);
   if (channel.getHvacMode() == mode) {
     if (!(mode == SUPLA_HVAC_MODE_OFF && !keepScheduleOn &&
@@ -2186,7 +2187,7 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
 
     lastConfigChangeTimestampMs = millis();
   }
-  SUPLA_LOG_DEBUG("HVAC: mode %d", channel.getHvacMode());
+  SUPLA_LOG_INFO("HVAC: current mode %s", channel.getHvacModeCstr());
 }
 
 bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
@@ -2282,25 +2283,49 @@ void HvacBase::copyFullChannelConfigTo(TSD_ChannelConfig_HVAC *hvac) const {
   memcpy(hvac, &config, sizeof(TSD_ChannelConfig_HVAC));
 }
 
+bool HvacBase::applyNewRuntimeSettings(int mode, int32_t durationSec) {
+  return applyNewRuntimeSettings(mode,
+                                 getTemperatureSetpointMin(),
+                                 getTemperatureSetpointMax(),
+                                 durationSec);
+}
+
 bool HvacBase::applyNewRuntimeSettings(int mode,
                                        int16_t tMin,
                                        int16_t tMax,
                                        int32_t durationSec) {
+  SUPLA_LOG_DEBUG(
+      "HVAC: applyNewRuntimeSettings mode=%s tMin=%d tMax=%d, durationSec=%d",
+      channel.getHvacModeCstr(mode),
+      tMin,
+      tMax,
+      durationSec);
+
   if (!isModeSupported(mode)) {
+    SUPLA_LOG_WARNING("HVAC: applyNewRuntimeSettings mode=%s not supported",
+                      channel.getHvacModeCstr(mode));
     return false;
   }
 
   if (tMax != INT16_MIN && !isTemperatureInRoomConstrain(tMax)) {
+    SUPLA_LOG_WARNING(
+        "HVAC: applyNewRuntimeSettings tMax=%d not supported", tMax);
     return false;
   }
 
   if (tMin != INT16_MAX && !isTemperatureInRoomConstrain(tMin)) {
+    SUPLA_LOG_WARNING(
+        "HVAC: applyNewRuntimeSettings tMin=%d not supported", tMin);
     return false;
   }
 
   // auto constrain is verified only when auto mode is requested
   if (mode == SUPLA_HVAC_MODE_AUTO) {
     if (!isTemperatureInAutoConstrain(tMin, tMax)) {
+      SUPLA_LOG_WARNING(
+          "HVAC: applyNewRuntimeSettings tMin=%d tMax=%d not supported",
+          tMin,
+          tMax);
       return false;
     }
   }
@@ -2309,11 +2334,16 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
     if (Supla::Clock::IsReady()) {
       time_t now = Supla::Clock::GetTimeStamp();
       countdownTimerEnds = now + durationSec;
+      channel.setHvacFlagClockError(false);
       if (countdownTimerEnds <= now) {
+        SUPLA_LOG_WARNING(
+            "HVAC: applyNewRuntimeSettings countdown timer ends in the past");
         return false;
       }
       storeLastWorkingMode();
     } else {
+      SUPLA_LOG_WARNING("HVAC: applyNewRuntimeSettings clock is not ready!");
+      channel.setHvacFlagClockError(true);
       return false;
     }
   } else {
@@ -2404,6 +2434,21 @@ int HvacBase::getTemperatureSetpointMax() {
   return INT16_MIN;
 }
 
+int HvacBase::getDefaultManualMode() {
+    switch (channel.getDefaultFunction()) {
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+        return SUPLA_HVAC_MODE_HEAT;
+      }
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
+       return SUPLA_HVAC_MODE_COOL;
+      }
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+        return SUPLA_HVAC_MODE_AUTO;
+      }
+    }
+  return SUPLA_HVAC_MODE_OFF;
+}
+
 void HvacBase::turnOn() {
   if (channel.isHvacFlagWeeklySchedule() ||
       lastWorkingMode.Mode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
@@ -2419,20 +2464,7 @@ void HvacBase::turnOn() {
   if (lastWorkingMode.Mode != SUPLA_HVAC_MODE_NOT_SET) {
     mode = lastWorkingMode.Mode;
   } else {
-    switch (channel.getDefaultFunction()) {
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
-        mode = SUPLA_HVAC_MODE_HEAT;
-        break;
-      }
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
-        mode = SUPLA_HVAC_MODE_COOL;
-        break;
-      }
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
-        mode = SUPLA_HVAC_MODE_AUTO;
-        break;
-      }
-    }
+    mode = getDefaultManualMode();
   }
   if (Supla::Channel::isHvacFlagSetpointTemperatureMinSet(&lastWorkingMode)) {
     setTemperatureSetpointMin(lastWorkingMode.SetpointTemperatureMin);

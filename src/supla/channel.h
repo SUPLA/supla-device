@@ -78,6 +78,9 @@ class Channel : public LocalAction {
 
   uint8_t getHvacIsOn();
   uint8_t getHvacMode() const;
+  // returns mode as a string. If mode parameters is -1 then it returns current
+  // channel mode, otherwise mode parameter is used.
+  const char *getHvacModeCstr(int mode = -1) const;
   int16_t getHvacSetpointTemperatureMin();
   int16_t getHvacSetpointTemperatureMax();
   uint16_t getHvacFlags();

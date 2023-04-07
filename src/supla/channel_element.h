@@ -38,10 +38,6 @@ class ChannelElement : public Element, public LocalAction {
       bool alwaysEnabled = false) override;
   void addAction(int action, ActionHandler *client, int event,
       bool alwaysEnabled = false) override;
-  bool isEventAlreadyUsed(int event) override;
-
-  void runAction(int event) override;
-
   virtual void addAction(int action,
       ActionHandler &client,  // NOLINT(runtime/references)
       Supla::Condition *condition,
@@ -49,6 +45,10 @@ class ChannelElement : public Element, public LocalAction {
   virtual void addAction(int action, ActionHandler *client,
       Supla::Condition *condition,
       bool alwaysEnabled = false);
+
+  bool isEventAlreadyUsed(int event) override;
+
+  void runAction(int event) override;
 
   virtual bool loadFunctionFromConfig();
   // returns true if function was changed (previous one was different)

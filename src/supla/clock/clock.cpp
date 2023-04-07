@@ -18,7 +18,8 @@
 
 #include <supla/log_wrapper.h>
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32) || \
+    defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
 #include <sys/time.h>
 #endif
 
@@ -212,7 +213,8 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
 
   localtime = mktime(&timeinfo);
 
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32) || \
+    defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
   timeval tv = {localtime, 0};
   settimeofday(&tv, nullptr);
 #elif defined(ARDUINO_ARCH_AVR)

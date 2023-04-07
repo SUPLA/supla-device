@@ -73,6 +73,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int getTemperatureSetpointMin();
   int getTemperatureSetpointMax();
   int getMode();
+  int getDefaultManualMode();
   bool isWeeklyScheduleEnabled();
   bool isCountdownEnabled();
 
@@ -311,6 +312,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool applyNewRuntimeSettings(int mode,
                                int16_t tMin,
                                int16_t tMax,
+                               int32_t durationSec = 0);
+
+  // keeps the temperature setpoints
+  bool applyNewRuntimeSettings(int mode,
                                int32_t durationSec = 0);
 
   _supla_int16_t getLastTemperature();

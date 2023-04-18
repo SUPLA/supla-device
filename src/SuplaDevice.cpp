@@ -441,12 +441,12 @@ void SuplaDeviceClass::iterate(void) {
       }
 
       if (deviceMode == Supla::DEVICE_MODE_TEST) {
-        // Test mode
+      // Test mode
       }
       break;
     }
 
-// Config mode
+    // Config mode
     case Supla::DEVICE_MODE_CONFIG: {
       break;
     }
@@ -466,7 +466,7 @@ void SuplaDeviceClass::iterate(void) {
         } else {
           swUpdate = Supla::Device::SwUpdate::Create(this, url);
         }
-        if (cfg->isSwUpdateBeta()) {
+        if (cfg && cfg->isSwUpdateBeta()) {
           swUpdate->useBeta();
         }
       }

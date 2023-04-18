@@ -70,12 +70,12 @@ void RGBWBase::setRGBW(int red,
   }
 
   // Store last non 0 brightness for turn on/toggle operations
-  if (toggle && colorBrightness == 100 && curColorBrightness == 0) {
+  if (toggle && colorBrightness == 100) {
     colorBrightness = lastColorBrightness;
   } else if (colorBrightness > 0) {
     lastColorBrightness = colorBrightness;
   }
-  if (toggle && brightness == 100 && curBrightness == 0) {
+  if (toggle && brightness == 100) {
     brightness = lastBrightness;
   } else if (brightness > 0) {
     lastBrightness = brightness;
@@ -119,7 +119,7 @@ int RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   uint8_t colorBrightness = static_cast<uint8_t>(newValue->value[1]);
   uint8_t brightness = static_cast<uint8_t>(newValue->value[0]);
 
-  setRGBW(red, green, blue, colorBrightness, brightness, toggle == 1);
+  setRGBW(red, green, blue, colorBrightness, brightness, toggle > 0);
 
   return -1;
 }

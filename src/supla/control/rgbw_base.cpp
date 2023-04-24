@@ -27,10 +27,6 @@
 #define RGBW_STATE_ON_INIT_OFF     0
 #define RGBW_STATE_ON_INIT_ON      1
 
-#ifdef ARDUINO_ARCH_ESP32
-int esp32PwmChannelCouner = 0;
-#endif
-
 namespace Supla {
 namespace Control {
 

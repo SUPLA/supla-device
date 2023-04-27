@@ -396,7 +396,7 @@ TEST(RgbwDimmerTests, HandleActionTests) {
 
   time.advance(1000);
   rgb.iterateAlways();
-  //  rgb.onTimer();
+  //  rgb.onFastTimer();
 
   // a little bit later, values are set to channel
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -1006,22 +1006,24 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithoutFading) {
   rgb.setFadeEffectTime(0);
   rgb.onInit();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
+  time.advance(1000);
+  rgb.onFastTimer();
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.toggle();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.handleAction(1, Supla::TURN_ON_W_DIMMED);
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.turnOff();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
 
   // channel value should be still empty, since no time elapsed (no calls to
   // iterateAlways)
@@ -1063,10 +1065,10 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
   // fade effect 10000 ms, time step 1000 ms
   EXPECT_CALL(
       rgb,
-      setRGBWValueOnDevice(102, 920, 0, (100 * 1023 / 100), (20 * 1023 / 100)));
+      setRGBWValueOnDevice(102, 921, 0, (100 * 1023 / 100), (20 * 1023 / 100)));
   EXPECT_CALL(
       rgb,
-      setRGBWValueOnDevice(204, 817, 0, (100 * 1023 / 100), (20 * 1023 / 100)));
+      setRGBWValueOnDevice(204, 819, 0, (100 * 1023 / 100), (20 * 1023 / 100)));
   EXPECT_CALL(
       rgb,
       setRGBWValueOnDevice(306, 802, 0, (100 * 1023 / 100), (20 * 1023 / 100)));
@@ -1081,73 +1083,75 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
   // so it should set value on device as it is
   rgb.onInit();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
+  time.advance(1000);
+  rgb.onFastTimer();
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.toggle();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.handleAction(1, Supla::TURN_ON_W_DIMMED);
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.turnOff();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   rgb.turnOff();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
 
   // change fade effect to 10000 ms, so we'll get 1/10 steps
   rgb.setFadeEffectTime(10000);
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
 
   rgb.setRGBW(100, 200, 0, -1, -1, false);
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
   time.advance(1000);
-  rgb.onTimer();
+  rgb.onFastTimer();
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);
@@ -1161,8 +1165,8 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   ::testing::InSequence seq;
 
   RgbwBaseForTest rgb;
-  rgb.setBrightnessLimits(100, 500)
-    .setColorBrightnessLimits(600, 700);
+  rgb.setBrightnessLimits(100, 500);
+  rgb.setColorBrightnessLimits(600, 700);
 
   // fade effect 1000 ms, time step 1000 ms
   // Limits: brightness (100, 500), colorBrightness (600, 700)
@@ -1181,25 +1185,27 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   time.advance(1000);
   rgb.onInit();
   time.advance(1000);
-  rgb.onTimer();  // off
+  rgb.onFastTimer();
+  time.advance(1000);
+  rgb.onFastTimer();  // off
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();  // on
+  rgb.onFastTimer();  // on
   rgb.toggle();
   time.advance(1000);
-  rgb.onTimer();  // toggle -> off
+  rgb.onFastTimer();  // toggle -> off
   rgb.handleAction(1, Supla::TURN_ON_W_DIMMED);
   time.advance(1000);
-  rgb.onTimer();  // white ON
+  rgb.onFastTimer();  // white ON
   rgb.turnOff();
   time.advance(1000);
-  rgb.onTimer();  // off
+  rgb.onFastTimer();  // off
   rgb.turnOn();
   time.advance(1000);
-  rgb.onTimer();  // ON
+  rgb.onFastTimer();  // ON
   rgb.turnOff();
   time.advance(1000);
-  rgb.onTimer();  // OFF
+  rgb.onFastTimer();  // OFF
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);

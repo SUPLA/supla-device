@@ -16,12 +16,16 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "rgbw_base.h"
+
+#include <math.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <supla/log_wrapper.h>
 
 #include "../storage/storage.h"
 #include "../time.h"
 #include "../tools.h"
-#include "rgbw_base.h"
 
 #define RGBW_STATE_ON_INIT_RESTORE -1
 #define RGBW_STATE_ON_INIT_OFF     0
@@ -29,6 +33,17 @@
 
 namespace Supla {
 namespace Control {
+
+int GeometricBrightnessAdjuster::adjustBrightness(int input) {
+  auto result = pow(input, 1.505);
+  if (result > 1023) {
+    result = 1023;
+  }
+  if (result < 0) {
+    result = 0;
+  }
+  return result;
+}
 
 RGBWBase::RGBWBase()
     : buttonStep(5),
@@ -42,7 +57,7 @@ RGBWBase::RGBWBase()
       defaultDimmedBrightness(20),
       dimIterationDirection(false),
       fadeEffect(500),
-      hwRed(-1),
+      hwRed(0),
       hwGreen(0),
       hwBlue(0),
       hwColorBrightness(0),
@@ -51,6 +66,13 @@ RGBWBase::RGBWBase()
       minIterationBrightness(1) {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING);
+}
+
+void RGBWBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
+  if (brightnessAdjuster) {
+    delete brightnessAdjuster;
+  }
+  brightnessAdjuster = adjuster;
 }
 
 void RGBWBase::setRGBW(int red,
@@ -93,6 +115,8 @@ void RGBWBase::setRGBW(int red,
   if (brightness >= 0) {
     curBrightness = brightness;
   }
+
+  resetDisance = true;
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000);
@@ -388,9 +412,45 @@ void RGBWBase::setFadeEffectTime(int timeMs) {
   fadeEffect = timeMs;
 }
 
-void RGBWBase::onTimer() {
+int RGBWBase::adjustBrightness(int value) {
+  if (brightnessAdjuster) {
+    return brightnessAdjuster->adjustBrightness(value);
+  }
+  return adjustRange(value, 0, 100, 0, 1023);
+}
+
+double RGBWBase::getStep(int step, int target, double current, int distance) {
+  if (step) {
+    double result = step;
+    if (target > current) {
+      if (fadeEffect > 0 && distance < 100) {
+        result = step / 3.0;
+      }
+      if (current + result > target) {
+        result = target - current;
+      }
+      return result;
+    } else if (target < current) {
+      result = -step;
+      if (fadeEffect > 0 && distance < 100) {
+        result = result / 3.0;
+      }
+      if (current + result < target) {
+        result = target - current;
+      }
+      return result;
+    }
+  }
+  return 0;
+}
+
+void RGBWBase::onFastTimer() {
+  if (lastTick == 0) {
+    lastTick = millis();
+    return;
+  }
   uint64_t timeDiff = millis() - lastTick;
-  lastTick = millis();
+
 
   if (timeDiff > 0) {
     double divider = 1.0 * fadeEffect / timeDiff;
@@ -398,87 +458,62 @@ void RGBWBase::onTimer() {
       divider = 1;
     }
 
-    double step = 1023 / divider;
-    bool valueChanged = false;
+    int step = 1023 / divider;
     if (step < 1) {
-      step = 1;
+      return;
     }
 
-    int curRedAdj = adjustRange(curRed, 0, 255, 0, 1023);
-    int curGreenAdj = adjustRange(curGreen, 0, 255, 0, 1023);
-    int curBlueAdj = adjustRange(curBlue, 0, 255, 0, 1023);
-    int curColorBrightnessAdj =
-        adjustRange(curColorBrightness, 0, 100, 0, 1023);
-    int curBrightnessAdj = adjustRange(curBrightness, 0, 100, 0, 1023);
+    lastTick = millis();
 
-    if (curRedAdj > hwRed) {
-      valueChanged = true;
-      hwRed += step;
-      if (hwRed > curRedAdj) {
-        hwRed = curRedAdj;
-      }
-    } else if (curRedAdj < hwRed) {
-      valueChanged = true;
-      hwRed -= step;
-      if (hwRed < curRedAdj) {
-        hwRed = curRedAdj;
-      }
+    // target values are in 0..1023 range
+    int targetRed = adjustRange(curRed, 0, 255, 0, 1023);
+    int targetGreen = adjustRange(curGreen, 0, 255, 0, 1023);
+    int targetBlue = adjustRange(curBlue, 0, 255, 0, 1023);
+    int targetColorBrightness = adjustBrightness(curColorBrightness);
+    int targetBrightness = adjustBrightness(curBrightness);
+
+    if (resetDisance) {
+      resetDisance = false;
+
+      redDistance = abs(targetRed - hwRed);
+      greenDistance = abs(targetGreen - hwGreen);
+      blueDistance = abs(targetBlue - hwBlue);
+      colorBrightnessDistance = abs(targetColorBrightness - hwColorBrightness);
+      brightnessDistance = abs(targetBrightness - hwBrightness);
     }
 
-    if (curGreenAdj > hwGreen) {
+    auto redStep = getStep(step, targetRed, hwRed, redDistance);
+    if (redStep != 0) {
       valueChanged = true;
-      hwGreen += step;
-      if (hwGreen > curGreenAdj) {
-        hwGreen = curGreenAdj;
-      }
-    } else if (curGreenAdj < hwGreen) {
-      valueChanged = true;
-      hwGreen -= step;
-      if (hwGreen < curGreenAdj) {
-        hwGreen = curGreenAdj;
-      }
+      hwRed += redStep;
     }
 
-    if (curBlueAdj > hwBlue) {
+    auto greenStep = getStep(step, targetGreen, hwGreen, greenDistance);
+    if (greenStep != 0) {
       valueChanged = true;
-      hwBlue += step;
-      if (hwBlue > curBlueAdj) {
-        hwBlue = curBlueAdj;
-      }
-    } else if (curBlueAdj < hwBlue) {
-      valueChanged = true;
-      hwBlue -= step;
-      if (hwBlue < curBlueAdj) {
-        hwBlue = curBlueAdj;
-      }
+      hwGreen += greenStep;
     }
 
-    if (curColorBrightnessAdj > hwColorBrightness) {
+    auto blueStep = getStep(step, targetBlue, hwBlue, blueDistance);
+    if (blueStep != 0) {
       valueChanged = true;
-      hwColorBrightness += step;
-      if (hwColorBrightness > curColorBrightnessAdj) {
-        hwColorBrightness = curColorBrightnessAdj;
-      }
-    } else if (curColorBrightnessAdj < hwColorBrightness) {
-      valueChanged = true;
-      hwColorBrightness -= step;
-      if (hwColorBrightness < curColorBrightnessAdj) {
-        hwColorBrightness = curColorBrightnessAdj;
-      }
+      hwBlue += blueStep;
     }
 
-    if (curBrightnessAdj > hwBrightness) {
+    auto colorBrightnessStep = getStep(step,
+                                       targetColorBrightness,
+                                       hwColorBrightness,
+                                       colorBrightnessDistance);
+    if (colorBrightnessStep != 0) {
       valueChanged = true;
-      hwBrightness += step;
-      if (hwBrightness > curBrightnessAdj) {
-        hwBrightness = curBrightnessAdj;
-      }
-    } else if (curBrightnessAdj < hwBrightness) {
+      hwColorBrightness += colorBrightnessStep;
+    }
+
+    auto brightnessStep =
+        getStep(step, targetBrightness, hwBrightness, brightnessDistance);
+    if (brightnessStep != 0) {
       valueChanged = true;
-      hwBrightness -= step;
-      if (hwBrightness < curBrightnessAdj) {
-        hwBrightness = curBrightnessAdj;
-      }
+      hwBrightness += brightnessStep;
     }
 
     if (valueChanged) {
@@ -488,6 +523,7 @@ void RGBWBase::onTimer() {
           adjustRange(hwBrightness, 0, 1023, minBrightness, maxBrightness);
       setRGBWValueOnDevice(
           hwRed, hwGreen, hwBlue, adjColorBrightness, adjBrightness);
+      valueChanged = false;
     }
   }
 }

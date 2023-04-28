@@ -38,54 +38,53 @@ using ::testing::Return;
 using ::testing::ReturnPointee;
 
 class SuplaDeviceTests : public ::testing::Test {
-  protected:
-    virtual void SetUp() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-    }
-    virtual void TearDown() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-    }
-
+ protected:
+  virtual void SetUp() {
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  }
+  virtual void TearDown() {
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  }
 };
 
 class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
-  protected:
-    SrpcMock srpc;
-    NetworkMock net;
-    TimerMock timer;
-    SimpleTime time;
-    SuplaDeviceClass sd;
-    ElementMock el1;
-    ElementMock el2;
-    BoardMock board;
-    NetworkClientMock *client = nullptr;
+ protected:
+  SrpcMock srpc;
+  NetworkMock net;
+  TimerMock timer;
+  SimpleTime time;
+  SuplaDeviceClass sd;
+  ElementMock el1;
+  ElementMock el2;
+  BoardMock board;
+  NetworkClientMock *client = nullptr;
 
-    virtual void SetUp() {
-      client = new NetworkClientMock;  // it will be destroyed in
-                                       // Supla::Protocol::SuplaSrpc
-      SuplaDeviceTests::SetUp();
+  virtual void SetUp() {
+    client = new NetworkClientMock;  // it will be destroyed in
+                                     // Supla::Protocol::SuplaSrpc
+    SuplaDeviceTests::SetUp();
 
-      int dummy;
+    int dummy;
 
-      EXPECT_CALL(el1, onInit());
-      EXPECT_CALL(el2, onInit());
+    EXPECT_CALL(el1, onInit());
+    EXPECT_CALL(el2, onInit());
 
-      EXPECT_CALL(timer, initTimers());
-      EXPECT_CALL(srpc, srpc_params_init(_));
-      EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-      EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 16));
+    EXPECT_CALL(timer, initTimers());
+    EXPECT_CALL(srpc, srpc_params_init(_));
+    EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+    EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 16));
 
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
-      EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
-    }
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
+    EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  }
 
-    virtual void TearDown() {
-      SuplaDeviceTests::TearDown();
-    }
+  virtual void TearDown() {
+    SuplaDeviceTests::TearDown();
+  }
 };
 
 class SuplaDeviceElementWithSecondaryChannel
@@ -815,6 +814,61 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 }
 
 TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
+  bool isConnected = false;
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));
+  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
+
+  EXPECT_CALL(net, setup()).Times(1);
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+
+  EXPECT_CALL(el1, iterateAlways()).Times(35);
+  EXPECT_CALL(el2, iterateAlways()).Times(35);
+
+  EXPECT_CALL(el1, onRegistered(_));
+  EXPECT_CALL(el2, onRegistered(_));
+
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
+
+//  EXPECT_CALL(net, ping(_)).WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected()).Times(30).WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected()).Times(30).WillRepeatedly(Return(true));
+
+  // ThermHygroPress meter has two channels and it will send valueChanged
+  EXPECT_CALL(srpc, valueChanged(_, 0, _, 0, 0));
+  EXPECT_CALL(srpc, valueChanged(_, 1, _, 0, 0));
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(1000);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 16;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 30; i++) {
+    sd.iterate();
+    time.advance(1000);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+}
+
+TEST_F(SuplaDeviceElementWithSecondaryChannel, SleepingChannel) {
   bool isConnected = false;
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));

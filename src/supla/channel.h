@@ -75,6 +75,7 @@ class Channel : public LocalAction {
   _supla_int_t getActionTriggerCaps();
 
   void setValidityTimeSec(unsigned _supla_int_t);
+  void setUpdateReady();
   void clearUpdateReady();
   virtual void sendUpdate();
   virtual TSuplaChannelExtendedValue *getExtValue();
@@ -99,8 +100,6 @@ class Channel : public LocalAction {
   static TDS_SuplaRegisterDevice_E reg_dev;
 
  protected:
-  void setUpdateReady();
-
   bool valueChanged;
   bool channelConfig;
   int channelNumber;

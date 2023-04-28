@@ -27,6 +27,10 @@
 #include "../time.h"
 #include "../tools.h"
 
+#ifdef ARDUINO_ARCH_ESP32
+int esp32PwmChannelCounter = 0;
+#endif
+
 #define RGBW_STATE_ON_INIT_RESTORE -1
 #define RGBW_STATE_ON_INIT_OFF     0
 #define RGBW_STATE_ON_INIT_ON      1

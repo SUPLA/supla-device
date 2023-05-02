@@ -38,16 +38,27 @@ int esp32PwmChannelCounter = 0;
 namespace Supla {
 namespace Control {
 
+GeometricBrightnessAdjuster::GeometricBrightnessAdjuster(double power,
+                                                         int offset)
+    : power(power), offset(offset) {
+}
+
 int GeometricBrightnessAdjuster::adjustBrightness(int input) {
-  auto result = pow(input, 1.505);
+  if (input == 0) {
+    return 0;
+  }
+  double result = (input + offset) / (100.0 + offset);
+  result = pow(result, power);
+  result = result * 1023.0;
   if (result > 1023) {
     result = 1023;
   }
   if (result < 0) {
     result = 0;
   }
-  return result;
+  return round(result);
 }
+
 
 RGBWBase::RGBWBase()
     : buttonStep(5),
@@ -521,10 +532,20 @@ void RGBWBase::onFastTimer() {
     }
 
     if (valueChanged) {
-      uint32_t adjColorBrightness = adjustRange(
-          hwColorBrightness, 0, 1023, minColorBrightness, maxColorBrightness);
-      uint32_t adjBrightness =
-          adjustRange(hwBrightness, 0, 1023, minBrightness, maxBrightness);
+      uint32_t adjColorBrightness = hwColorBrightness;
+      if (curColorBrightness > 0) {
+        adjColorBrightness = adjustRange(adjColorBrightness,
+                                         1,
+                                         1023,
+                                         minColorBrightness,
+                                         maxColorBrightness);
+      }
+      uint32_t adjBrightness = hwBrightness;
+      if (curBrightness > 0) {
+        adjBrightness =
+            adjustRange(adjBrightness, 1, 1023, minBrightness, maxBrightness);
+      }
+
       setRGBWValueOnDevice(
           hwRed, hwGreen, hwBlue, adjColorBrightness, adjBrightness);
       valueChanged = false;

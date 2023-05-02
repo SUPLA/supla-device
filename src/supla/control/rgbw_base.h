@@ -36,8 +36,14 @@ class BrightnessAdjuster {
 
 class GeometricBrightnessAdjuster : public BrightnessAdjuster {
  public:
+  explicit GeometricBrightnessAdjuster(double power = 1.505, int offset = 0);
   int adjustBrightness(int input) override;
+
+ private:
+  double power = 1.505;
+  int offset = 0;
 };
+
 
 class RGBWBase : public ChannelElement, public ActionHandler {
  public:
@@ -114,9 +120,9 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   double hwBlue = 0;             // 0 - 1023
   double hwColorBrightness = 0;  // 0 - 1023
   double hwBrightness = 0;       // 0 - 1023
-  int minBrightness = 0;
+  int minBrightness = 1;
   int maxBrightness = 1023;
-  int minColorBrightness = 0;
+  int minColorBrightness = 1;
   int maxColorBrightness = 1023;
   int redDistance = 0;
   int greenDistance = 0;

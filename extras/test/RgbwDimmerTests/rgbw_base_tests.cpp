@@ -1170,13 +1170,13 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
 
   // fade effect 1000 ms, time step 1000 ms
   // Limits: brightness (100, 500), colorBrightness (600, 700)
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 600, 100));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 700, 500));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 600, 100));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 600, (20*4 + 100 - 1)));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 600, 100));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, (20*4 + 100 - 1)));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 700, (20*4 + 100 - 1)));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 600, 100));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
 
   auto ch = rgb.getChannel();
 

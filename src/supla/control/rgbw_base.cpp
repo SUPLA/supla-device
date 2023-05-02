@@ -167,11 +167,11 @@ void RGBWBase::turnOff() {
 }
 
 void RGBWBase::toggle() {
-  setRGBW(-1,
-          -1,
-          -1,
-          curColorBrightness > 0 ? 0 : lastColorBrightness,
-          curBrightness > 0 ? 0 : lastBrightness);
+  if (curBrightness > 0 || curColorBrightness > 0) {
+    turnOff();
+  } else {
+    turnOn();
+  }
 }
 
 uint8_t RGBWBase::addWithLimit(int value, int addition, int limit) {

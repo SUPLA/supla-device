@@ -886,6 +886,69 @@ TEST(RgbwDimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBlue(), 10);
   EXPECT_EQ(ch->getValueColorBrightness(), 30);
   EXPECT_EQ(ch->getValueBrightness(), 30);
+
+  rgb.handleAction(1, Supla::TURN_OFF_W);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 30);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  rgb.handleAction(1, Supla::TOGGLE);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  rgb.handleAction(1, Supla::TOGGLE);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 30);
+  EXPECT_EQ(ch->getValueBrightness(), 30);
+rgb.handleAction(1, Supla::TURN_OFF_RGB);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 30);
+
+  rgb.handleAction(1, Supla::TOGGLE);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+
+  rgb.handleAction(1, Supla::TURN_ON_RGB);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 30);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  rgb.handleAction(1, Supla::TOGGLE);
+  time.advance(400);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 245);
+  EXPECT_EQ(ch->getValueBlue(), 10);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
 }
 
 

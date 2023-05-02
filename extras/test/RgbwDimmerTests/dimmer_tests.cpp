@@ -212,6 +212,30 @@ TEST(DimmerTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueBlue(), 0);
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 40);
+
+  dimmer.handleAction(1, Supla::TOGGLE);
+  for (int i = 0; i < 45; i++) {
+    time.advance(10);
+    dimmer.iterateAlways();
+    dimmer.onFastTimer();
+  }
+  EXPECT_EQ(ch->getValueRed(), 0);
+  EXPECT_EQ(ch->getValueGreen(), 0);
+  EXPECT_EQ(ch->getValueBlue(), 0);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  dimmer.handleAction(1, Supla::TOGGLE);
+  for (int i = 0; i < 45; i++) {
+    time.advance(10);
+    dimmer.iterateAlways();
+    dimmer.onFastTimer();
+  }
+  EXPECT_EQ(ch->getValueRed(), 0);
+  EXPECT_EQ(ch->getValueGreen(), 0);
+  EXPECT_EQ(ch->getValueBlue(), 0);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 40);
 }
 
 TEST(DimmerTests, IterateDimmerChangeDirection) {

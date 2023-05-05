@@ -57,6 +57,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/custom_sw_update.cpp
   src/supla/network/html/text_cmd_input_parameter.cpp
   src/supla/network/html/select_cmd_input_parameter.cpp
+  src/supla/network/html/select_input_parameter.cpp
   src/supla/network/client.cpp
   src/supla/network/ip_address.cpp
 

@@ -26,6 +26,12 @@ namespace Supla {
 namespace Control {
 
 class Button : public SimpleButton {
+  enum class ButtonType {
+    MONOSTABLE,
+    BISTABLE,
+    MOTION_SENSOR
+  };
+
  public:
   explicit Button(Supla::Io *io,
                   int pin,
@@ -35,10 +41,23 @@ class Button : public SimpleButton {
 
   void onTimer() override;
   void onLoadConfig() override;
+  void onInit() override;
+  void addAction(int action, ActionHandler &client, int event,
+      bool alwaysEnabled = false) override;
+  void addAction(int action, ActionHandler *client, int event,
+      bool alwaysEnabled = false) override;
+
   void setHoldTime(unsigned int timeMs);
   void repeatOnHoldEvery(unsigned int timeMs);
+
+  // setting of bistableButton is for backward compatiblity.
+  // Use setButtonType instaed.
   void setMulticlickTime(unsigned int timeMs, bool bistableButton = false);
+
+  void setButtonType(const ButtonType type);
   bool isBistable() const;
+  bool isMonostable() const;
+  bool isMotionSensor() const;
 
   virtual void configureAsConfigButton(SuplaDeviceClass *sdc);
   bool disableActionsInConfigMode() override;
@@ -49,8 +68,9 @@ class Button : public SimpleButton {
   unsigned int multiclickTimeMs = 0;
   uint64_t lastStateChangeMs = 0;
   uint8_t clickCounter = 0;
+  uint8_t maxMulticlickValueConfigured = 0;
   unsigned int holdSend = 0;
-  bool bistable = false;
+  ButtonType buttonType = ButtonType::MONOSTABLE;
   bool configButton = false;
 };
 

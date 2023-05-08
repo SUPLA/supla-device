@@ -281,7 +281,7 @@ void Supla::Sensor::ElectricityMeter::addAction(int action,
 void Supla::Sensor::ElectricityMeter::addAction(int action,
                                                 ActionHandler *client,
                                                 Supla::Condition *condition) {
-  addAction(action, *client, condition);
+  ElectricityMeter::addAction(action, *client, condition);
 }
 
 // energy 1 == 0.00001 kWh

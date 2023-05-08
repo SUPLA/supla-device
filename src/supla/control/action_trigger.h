@@ -21,14 +21,16 @@
 
 #include <stdint.h>
 
-#include "../action_handler.h"
-#include "../actions.h"
-#include "../at_channel.h"
-#include "../element.h"
-#include "button.h"
-#include "supla/protocol/supla_srpc.h"
+#include <supla/action_handler.h>
+#include <supla/actions.h>
+#include <supla/at_channel.h>
+#include <supla/element.h>
 
 namespace Supla {
+
+namespace Protocol {
+class SuplaSrpc;
+}
 
 enum ActionHandlingType {
   ActionHandlingType_RelayOnSuplaServer = 0,
@@ -37,6 +39,8 @@ enum ActionHandlingType {
 };
 
 namespace Control {
+
+class Button;
 
 class ActionTrigger : public Element, public ActionHandler {
  public:
@@ -81,8 +85,7 @@ class ActionTrigger : public Element, public ActionHandler {
   uint32_t disablesLocalOperation = 0;
   uint32_t disabledCapabilities = 0;
   bool storageEnabled = false;
-  ActionHandlingType actionHandlingType =
-    ActionHandlingType_RelayOnSuplaServer;
+  ActionHandlingType actionHandlingType = ActionHandlingType_RelayOnSuplaServer;
 
   Supla::ActionHandlerClient *localHandlerForEnabledAt = nullptr;
   Supla::ActionHandlerClient *localHandlerForDisabledAt = nullptr;

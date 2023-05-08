@@ -32,7 +32,7 @@ void Supla::ChannelElement::addAction(int action,
     ActionHandler *client,
     int event,
     bool alwaysEnabled) {
-  addAction(action, *client, event, alwaysEnabled);
+  ChannelElement::addAction(action, *client, event, alwaysEnabled);
 }
 
 bool Supla::ChannelElement::isEventAlreadyUsed(int event) {
@@ -52,6 +52,6 @@ void Supla::ChannelElement::addAction(int action,
     ActionHandler *client,
     Supla::Condition *condition,
     bool alwaysEnabled) {
-  addAction(action, *client, condition, alwaysEnabled);
+  ChannelElement::addAction(action, *client, condition, alwaysEnabled);
 }
 

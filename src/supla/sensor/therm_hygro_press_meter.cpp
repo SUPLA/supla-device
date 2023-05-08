@@ -80,5 +80,5 @@ void Supla::Sensor::ThermHygroPressMeter::addAction(int action,
                                             ActionHandler *client,
                                             int event,
                                             bool alwaysEnabled) {
-  addAction(action, *client, event, alwaysEnabled);
+  ThermHygroPressMeter::addAction(action, *client, event, alwaysEnabled);
 }

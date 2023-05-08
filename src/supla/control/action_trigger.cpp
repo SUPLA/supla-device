@@ -16,13 +16,15 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "action_trigger.h"
+
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/control/button.h>
 #include <stdio.h>
-
-#include "action_trigger.h"
-
+#include <supla/events.h>
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
@@ -238,20 +240,44 @@ void Supla::Control::ActionTrigger::onInit() {
   // handle automatic switch from on_press, on_release, on_change
   // events to on_click_1 for local actions on relays, roller shutters, etc.
   if (attachedButton) {
-    if (attachedButton->isBistable() &&
-        attachedButton->isEventAlreadyUsed(Supla::ON_CHANGE)) {
-      // for bistable button use on_change <-> on_click_1
-      localHandlerForDisabledAt =
-          attachedButton->getHandlerForFirstClient(Supla::ON_CHANGE);
-    }
-    if (!attachedButton->isBistable()) {
-      // for monostable button use on_press/on_release <-> on_click_1
-      bool onPress = attachedButton->isEventAlreadyUsed(Supla::ON_PRESS);
-      bool onRelease = attachedButton->isEventAlreadyUsed(Supla::ON_RELEASE);
+    if (attachedButton->isBistable()) {
+      bool isOnChangeUsed = attachedButton->isEventAlreadyUsed(
+          Supla::ON_CHANGE);
+      bool isConditionlOnChangeUsed =
+          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_CHANGE);
 
-      if (onPress != onRelease) {
+      if (isOnChangeUsed != isConditionlOnChangeUsed) {
+        // for bistable button use on_change <-> on_click_1
         localHandlerForDisabledAt = attachedButton->getHandlerForFirstClient(
-            onPress ? Supla::ON_PRESS : Supla::ON_RELEASE);
+            isOnChangeUsed ? Supla::ON_CHANGE : Supla::CONDITIONAL_ON_CHANGE);
+      }
+    } else if (attachedButton->isMonostable()) {
+      // for monostable button use on_press/on_release <-> on_click_1
+      bool isOnPressUsed = attachedButton->isEventAlreadyUsed(Supla::ON_PRESS);
+      bool isOnReleaseUsed =
+          attachedButton->isEventAlreadyUsed(Supla::ON_RELEASE);
+
+      bool isConditionalOnPressUsed =
+          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_PRESS);
+      bool isConditionalOnReleaseUsed = attachedButton->isEventAlreadyUsed(
+          Supla::CONDITIONAL_ON_RELEASE);
+      // check if only one of those bool values are set to true:
+      if (isOnPressUsed && !isOnReleaseUsed && !isConditionalOnPressUsed &&
+          !isConditionalOnReleaseUsed) {
+        localHandlerForDisabledAt =
+          attachedButton->getHandlerForFirstClient(Supla::ON_PRESS);
+      } else if (isOnReleaseUsed && !isOnPressUsed &&
+          !isConditionalOnPressUsed && !isConditionalOnReleaseUsed) {
+        localHandlerForDisabledAt =
+          attachedButton->getHandlerForFirstClient(Supla::ON_RELEASE);
+      } else if (isConditionalOnPressUsed && !isOnPressUsed &&
+          !isOnReleaseUsed && !isConditionalOnReleaseUsed) {
+        localHandlerForDisabledAt = attachedButton->getHandlerForFirstClient(
+            Supla::CONDITIONAL_ON_PRESS);
+      } else if (isConditionalOnReleaseUsed && !isOnPressUsed &&
+          !isOnReleaseUsed && !isConditionalOnPressUsed) {
+        localHandlerForDisabledAt = attachedButton->getHandlerForFirstClient(
+            Supla::CONDITIONAL_ON_RELEASE);
       }
     }
 
@@ -320,7 +346,7 @@ void Supla::Control::ActionTrigger::onInit() {
   }
 
   // Configure default actions for monostable button
-  if (attachedButton && !attachedButton->isBistable()) {
+  if (attachedButton && attachedButton->isMonostable()) {
     if (attachedButton->isEventAlreadyUsed(Supla::ON_HOLD)) {
       disablesLocalOperation |= SUPLA_ACTION_CAP_HOLD;
     }

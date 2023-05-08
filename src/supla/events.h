@@ -20,7 +20,7 @@
 namespace Supla {
 
 enum Event {
-// Supla::Control::Button events
+  // Supla::Control::Button events
   ON_PRESS,    // Triggered on transition to valueOnPress()
   ON_RELEASE,  // Triggered on transition from valueOnPress()
   ON_CHANGE,   // Triggered on all transitions
@@ -35,8 +35,8 @@ enum Event {
   ON_CLICK_8,
   ON_CLICK_9,
   ON_CLICK_10,
-  ON_CRAZY_CLICKER,  // triggered on >= 10 clicks
-  ON_SEQUENCE_MATCH,        // triggered by SequenceButton
+  ON_CRAZY_CLICKER,          // triggered on >= 10 clicks
+  ON_SEQUENCE_MATCH,         // triggered by SequenceButton
   ON_SEQUENCE_DOESNT_MATCH,  // triggered by SequenceButton
   ON_TURN_ON,
   ON_TURN_OFF,
@@ -52,6 +52,12 @@ enum Event {
   ON_LONG_CLICK_8,
   ON_LONG_CLICK_9,
   ON_LONG_CLICK_10,
+  // Conditional events are triggered only when no on_hold was send
+  // and we are not in the middle of muliclick detection.
+  // Otherwise they work as standard events
+  CONDITIONAL_ON_PRESS,
+  CONDITIONAL_ON_RELEASE,
+  CONDITIONAL_ON_CHANGE,
 
   // SuplaDeviceClass events
   ON_DEVICE_STATUS_CHANGE,
@@ -69,21 +75,21 @@ enum Event {
   ON_EVENT_10,
 
   // RGBW/DIMMER events
-  ON_DIMMER_TURN_ON,    // when "brightness" changes from 0 to non-0
-  ON_DIMMER_TURN_OFF,   // when "brightness" changes from non-0 to 0
-  ON_DIMMER_BRIGHTNESS_CHANGE,     // on every change of "brightness"
-  ON_COLOR_TURN_ON,    // when "color brightness" changes from 0 to non-0
-  ON_COLOR_TURN_OFF,   // when "color brightness" changes from non-0 to 0
-  ON_COLOR_BRIGHTNESS_CHANGE,     // on every change of "color brightness"
-  ON_RED_TURN_ON,    // when "red" changes from 0 to non-0
-  ON_RED_TURN_OFF,   // when "red" changes from non-0 to 0
-  ON_RED_CHANGE,     // on every change of "red"
-  ON_GREEN_TURN_ON,    // when "green" changes from 0 to non-0
-  ON_GREEN_TURN_OFF,   // when "green" changes from non-0 to 0
-  ON_GREEN_CHANGE,     // on every change of "green"
-  ON_BLUE_TURN_ON,    // when "blue" changes from 0 to non-0
-  ON_BLUE_TURN_OFF,   // when "blue" changes from non-0 to 0
-  ON_BLUE_CHANGE,     // on every change of "blue"
+  ON_DIMMER_TURN_ON,            // when "brightness" changes from 0 to non-0
+  ON_DIMMER_TURN_OFF,           // when "brightness" changes from non-0 to 0
+  ON_DIMMER_BRIGHTNESS_CHANGE,  // on every change of "brightness"
+  ON_COLOR_TURN_ON,   // when "color brightness" changes from 0 to non-0
+  ON_COLOR_TURN_OFF,  // when "color brightness" changes from non-0 to 0
+  ON_COLOR_BRIGHTNESS_CHANGE,  // on every change of "color brightness"
+  ON_RED_TURN_ON,              // when "red" changes from 0 to non-0
+  ON_RED_TURN_OFF,             // when "red" changes from non-0 to 0
+  ON_RED_CHANGE,               // on every change of "red"
+  ON_GREEN_TURN_ON,            // when "green" changes from 0 to non-0
+  ON_GREEN_TURN_OFF,           // when "green" changes from non-0 to 0
+  ON_GREEN_CHANGE,             // on every change of "green"
+  ON_BLUE_TURN_ON,             // when "blue" changes from 0 to non-0
+  ON_BLUE_TURN_OFF,            // when "blue" changes from non-0 to 0
+  ON_BLUE_CHANGE,              // on every change of "blue"
 
   ON_CHANNEL_OFFLINE,
   ON_CHANNEL_ONLINE,

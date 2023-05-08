@@ -100,7 +100,7 @@ void LocalAction::addAction(int action, ActionHandler &client, int event,
 
 void LocalAction::addAction(int action, ActionHandler *client, int event,
     bool alwaysEnabled) {
-  addAction(action, *client, event, alwaysEnabled);
+  LocalAction::addAction(action, *client, event, alwaysEnabled);
 }
 
 void LocalAction::runAction(int event) {

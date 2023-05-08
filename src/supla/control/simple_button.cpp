@@ -18,10 +18,8 @@
 
 #include "supla/control/simple_button.h"
 
-#include "../io.h"
-#include "../time.h"
-#include "button.h"
-#include "supla/storage/config.h"
+#include <supla/io.h>
+#include <supla/time.h>
 
 Supla::Control::ButtonState::ButtonState(Supla::Io *io,
                                          int pin,

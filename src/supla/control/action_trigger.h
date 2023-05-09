@@ -75,9 +75,11 @@ class ActionTrigger : public Element, public ActionHandler {
   void enableStateStorage();
 
   static int actionTriggerCapToButtonEvent(uint32_t actionCap);
+  static int actionTriggerCapToActionId(uint32_t actionCap);
   static int getActionTriggerCap(int action);
 
  protected:
+  void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();
   Supla::AtChannel channel;
   Supla::Control::Button *attachedButton = nullptr;

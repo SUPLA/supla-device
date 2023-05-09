@@ -174,66 +174,86 @@ void Button::onTimer() {
 
 void Button::addAction(int action, ActionHandler *client, int event,
       bool alwaysEnabled) {
-  uint8_t clickCounterValueForEvent = 0;
-  switch (event) {
-    case ON_LONG_CLICK_1:
-    case ON_CLICK_1: {
-      clickCounterValueForEvent = 1;
-      break;
-    }
-    case ON_LONG_CLICK_2:
-    case ON_CLICK_2: {
-      clickCounterValueForEvent = 2;
-      break;
-    }
-    case ON_LONG_CLICK_3:
-    case ON_CLICK_3: {
-      clickCounterValueForEvent = 3;
-      break;
-    }
-    case ON_LONG_CLICK_4:
-    case ON_CLICK_4: {
-      clickCounterValueForEvent = 4;
-      break;
-    }
-    case ON_LONG_CLICK_5:
-    case ON_CLICK_5: {
-      clickCounterValueForEvent = 5;
-      break;
-    }
-    case ON_LONG_CLICK_6:
-    case ON_CLICK_6: {
-      clickCounterValueForEvent = 6;
-      break;
-    }
-    case ON_LONG_CLICK_7:
-    case ON_CLICK_7: {
-      clickCounterValueForEvent = 7;
-      break;
-    }
-    case ON_LONG_CLICK_8:
-    case ON_CLICK_8: {
-      clickCounterValueForEvent = 8;
-      break;
-    }
-    case ON_LONG_CLICK_9:
-    case ON_CLICK_9: {
-      clickCounterValueForEvent = 9;
-      break;
-    }
-    case ON_CRAZY_CLICKER:
-    case ON_LONG_CLICK_10:
-    case ON_CLICK_10: {
-      clickCounterValueForEvent = 10;
-      break;
-    }
-  }
-
-  if (clickCounterValueForEvent > maxMulticlickValueConfigured) {
-    maxMulticlickValueConfigured = clickCounterValueForEvent;
-  }
-
   SimpleButton::addAction(action, client, event, alwaysEnabled);
+  evaluateMaxMulticlickValue();
+}
+
+void Button::disableAction(int action, ActionHandler *client, int event) {
+  SimpleButton::disableAction(action, client, event);
+  evaluateMaxMulticlickValue();
+}
+
+void Button::enableAction(int action, ActionHandler *client, int event) {
+  SimpleButton::enableAction(action, client, event);
+  evaluateMaxMulticlickValue();
+}
+
+void Button::evaluateMaxMulticlickValue() {
+  auto ptr = ActionHandlerClient::begin;
+  uint8_t clickCounterValueForEvent = 0;
+  maxMulticlickValueConfigured = 0;
+  while (ptr) {
+    if (ptr->trigger == this && ptr->isEnabled()) {
+      switch (ptr->onEvent) {
+        case ON_LONG_CLICK_1:
+        case ON_CLICK_1: {
+          clickCounterValueForEvent = 1;
+          break;
+        }
+        case ON_LONG_CLICK_2:
+        case ON_CLICK_2: {
+          clickCounterValueForEvent = 2;
+          break;
+        }
+        case ON_LONG_CLICK_3:
+        case ON_CLICK_3: {
+          clickCounterValueForEvent = 3;
+          break;
+        }
+        case ON_LONG_CLICK_4:
+        case ON_CLICK_4: {
+          clickCounterValueForEvent = 4;
+          break;
+        }
+        case ON_LONG_CLICK_5:
+        case ON_CLICK_5: {
+          clickCounterValueForEvent = 5;
+          break;
+        }
+        case ON_LONG_CLICK_6:
+        case ON_CLICK_6: {
+          clickCounterValueForEvent = 6;
+          break;
+        }
+        case ON_LONG_CLICK_7:
+        case ON_CLICK_7: {
+          clickCounterValueForEvent = 7;
+          break;
+        }
+        case ON_LONG_CLICK_8:
+        case ON_CLICK_8: {
+          clickCounterValueForEvent = 8;
+          break;
+        }
+        case ON_LONG_CLICK_9:
+        case ON_CLICK_9: {
+          clickCounterValueForEvent = 9;
+          break;
+        }
+        case ON_CRAZY_CLICKER:
+        case ON_LONG_CLICK_10:
+        case ON_CLICK_10: {
+          clickCounterValueForEvent = 10;
+          break;
+        }
+      }
+    }
+    ptr = ptr->next;
+
+    if (clickCounterValueForEvent > maxMulticlickValueConfigured) {
+      maxMulticlickValueConfigured = clickCounterValueForEvent;
+    }
+  }
 }
 
 void Button::addAction(int action, ActionHandler &client, int event,
@@ -304,5 +324,9 @@ bool Button::disableActionsInConfigMode() {
 
 void Button::setButtonType(const ButtonType type) {
   buttonType = type;
+}
+
+uint8_t Button::getMaxMulticlickValue() {
+  return maxMulticlickValueConfigured;
 }
 

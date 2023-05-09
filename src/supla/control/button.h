@@ -46,6 +46,8 @@ class Button : public SimpleButton {
       bool alwaysEnabled = false) override;
   void addAction(int action, ActionHandler *client, int event,
       bool alwaysEnabled = false) override;
+  void disableAction(int action, ActionHandler *client, int event) override;
+  void enableAction(int action, ActionHandler *client, int event) override;
 
   void setHoldTime(unsigned int timeMs);
   void repeatOnHoldEvery(unsigned int timeMs);
@@ -62,7 +64,10 @@ class Button : public SimpleButton {
   virtual void configureAsConfigButton(SuplaDeviceClass *sdc);
   bool disableActionsInConfigMode() override;
 
+  uint8_t getMaxMulticlickValue();
+
  protected:
+  void evaluateMaxMulticlickValue();
   unsigned int holdTimeMs = 0;
   unsigned int repeatOnHoldMs = 0;
   unsigned int multiclickTimeMs = 0;

@@ -26,13 +26,13 @@ namespace Supla {
 namespace Control {
 
 class Button : public SimpleButton {
+ public:
   enum class ButtonType {
     MONOSTABLE,
     BISTABLE,
     MOTION_SENSOR
   };
 
- public:
   explicit Button(Supla::Io *io,
                   int pin,
                   bool pullUp = false,

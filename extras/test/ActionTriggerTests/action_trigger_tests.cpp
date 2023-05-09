@@ -253,6 +253,86 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
   EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1);
 }
 
+TEST_F(ActionTriggerTests, AttachToMotionSensorButton) {
+  SrpcMock srpc;
+  TimeInterfaceStub time;
+  Supla::Control::Button b1(10);
+  // enabling motion sensor button
+  b1.setButtonType(Supla::Control::Button::ButtonType::MOTION_SENSOR);
+  b1.setMulticlickTime(500);
+  Supla::Control::ActionTrigger at;
+  Supla::Channel ch1;
+  Supla::Control::VirtualRelay relay1(1);
+
+  at.attach(b1);
+  at.iterateConnected();
+  at.setRelatedChannel(ch1);
+
+  EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
+
+  b1.addAction(Supla::TURN_ON, relay1, Supla::ON_PRESS);
+  b1.addAction(Supla::TURN_OFF, relay1, Supla::ON_RELEASE);
+
+  EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
+
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TURN_ON));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TURN_OFF));
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TOGGLE_x1)).Times(0);
+  EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TOGGLE_x5)).Times(0);
+
+  EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
+
+  EXPECT_TRUE(b1.isMotionSensor());
+  b1.runAction(Supla::ON_PRESS);
+  b1.runAction(Supla::ON_RELEASE);
+  b1.runAction(Supla::ON_CLICK_1);
+  b1.runAction(Supla::ON_HOLD);
+  b1.runAction(Supla::ON_CLICK_6);
+  b1.runAction(Supla::ON_CLICK_5);
+
+  for (int i = 0; i < 10; i++) {
+    at.iterateConnected();
+  }
+
+  at.onInit();
+
+  TSD_ChannelConfig result = {};
+  result.ConfigType = 0;
+  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
+  TSD_ChannelConfig_ActionTrigger config = {};
+  config.ActiveActions =
+      SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF |
+      SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x2 |
+      SUPLA_ACTION_CAP_TOGGLE_x3 | SUPLA_ACTION_CAP_TOGGLE_x4 |
+      SUPLA_ACTION_CAP_TOGGLE_x5;
+
+  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+
+  EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
+  at.handleChannelConfig(&result);
+  // actions toggle x1, x2, x3, x4, x5 are not supported for Motion sensor
+  // button type, so they won't be enabled even if such data was send by server
+  EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
+  b1.runAction(Supla::ON_PRESS);
+  b1.runAction(Supla::ON_RELEASE);
+  b1.runAction(Supla::ON_CLICK_1);
+  b1.runAction(Supla::ON_HOLD);
+  b1.runAction(Supla::ON_CLICK_6);
+  b1.runAction(Supla::ON_CLICK_5);
+
+  for (int i = 0; i < 10; i++) {
+    at.iterateConnected();
+  }
+
+  TActionTriggerProperties *propInRegister =
+      reinterpret_cast<TActionTriggerProperties *>(
+          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+
+  EXPECT_EQ(propInRegister->relatedChannelNumber, 2);
+  EXPECT_EQ(propInRegister->disablesLocalOperation,
+            SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF);
+}
+
 TEST_F(ActionTriggerTests, SendActionOnce) {
   SrpcMock srpc;
   TimeInterfaceStub time;

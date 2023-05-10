@@ -31,6 +31,7 @@
 #include <supla/control/virtual_relay.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/storage.h>
+#include "supla/actions.h"
 #include "supla/events.h"
 
 using testing::_;
@@ -1069,7 +1070,7 @@ TEST_F(ActionTriggerTests,
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
-  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
+  EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
 
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_RELEASE);
@@ -1151,11 +1152,12 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 
   // initial configuration
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_CHANGE);
+  b1.addAction(Supla::TURN_ON, ah, Supla::CONDITIONAL_ON_PRESS);
   at.attach(b1);
 
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1));
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CHANGE));
-  EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_PRESS));
+  EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::CONDITIONAL_ON_PRESS));
 
   // on init call is executed in SuplaDevice.setup()
   at.onInit();
@@ -1216,7 +1218,8 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
           Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
-  EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1);
+  EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1 |
+                                                    SUPLA_ACTION_CAP_TURN_ON);
 
   // another config from server which disables some actions
   config.ActiveActions =

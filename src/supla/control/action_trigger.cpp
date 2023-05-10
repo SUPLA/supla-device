@@ -206,6 +206,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
     activeActionsFromServer & disablesLocalOperation;
   if (attachedButton) {
     bool makeSureThatOnClick1IsDisabled = false;
+    bool makeSureThatOnChangePressReleaseIsDisabled = false;
 
     if (activeActionsFromServer ||
         actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
@@ -214,6 +215,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
       if (localHandlerForDisabledAt && localHandlerForEnabledAt) {
         localHandlerForDisabledAt->disable();
         localHandlerForEnabledAt->enable();
+        makeSureThatOnChangePressReleaseIsDisabled = true;
       }
     } else {
       // enable on_press, on_release, on_change local actions and
@@ -242,11 +244,40 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
       // enable/disable other actions when AT from server is disabled/enabled
       if (actionsToDisable & actionCap) {
         attachedButton->disableOtherClients(this, eventId);
+        if (eventId == Supla::ON_PRESS) {
+          attachedButton->disableOtherClients(this,
+                                              Supla::CONDITIONAL_ON_PRESS);
+        } else if (eventId == Supla::ON_RELEASE) {
+          attachedButton->disableOtherClients(this,
+                                              Supla::CONDITIONAL_ON_RELEASE);
+        } else if (eventId == Supla::ON_CLICK_1) {
+          attachedButton->disableOtherClients(this,
+                                              Supla::ON_CHANGE);
+          attachedButton->disableOtherClients(this,
+                                              Supla::CONDITIONAL_ON_CHANGE);
+        }
       } else if (disablesLocalOperation & actionCap) {
         attachedButton->enableOtherClients(this, eventId);
+        if (eventId == Supla::ON_PRESS) {
+          attachedButton->enableOtherClients(this,
+                                             Supla::CONDITIONAL_ON_PRESS);
+        } else if (eventId == Supla::ON_RELEASE) {
+          attachedButton->enableOtherClients(this,
+                                             Supla::CONDITIONAL_ON_RELEASE);
+        } else if (eventId == Supla::ON_CLICK_1) {
+          attachedButton->enableOtherClients(this,
+                                             Supla::ON_CHANGE);
+          attachedButton->enableOtherClients(this,
+                                             Supla::CONDITIONAL_ON_CHANGE);
+        }
         if (makeSureThatOnClick1IsDisabled && eventId == Supla::ON_CLICK_1) {
           makeSureThatOnClick1IsDisabled = false;
           localHandlerForEnabledAt->disable();
+        }
+        if (makeSureThatOnChangePressReleaseIsDisabled &&
+            eventId == Supla::ON_CLICK_1) {
+          makeSureThatOnChangePressReleaseIsDisabled = false;
+          localHandlerForDisabledAt->disable();
         }
       }
     }
@@ -354,13 +385,17 @@ void Supla::Control::ActionTrigger::onInit() {
   if (attachedButton) {
     // Configure default actions for bistable button
     if (attachedButton->isBistable()) {
-      if (attachedButton->isEventAlreadyUsed(Supla::ON_PRESS)) {
+      if (attachedButton->isEventAlreadyUsed(Supla::ON_PRESS) ||
+          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_PRESS)) {
         disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_ON;
       }
-      if (attachedButton->isEventAlreadyUsed(Supla::ON_RELEASE)) {
+      if (attachedButton->isEventAlreadyUsed(Supla::ON_RELEASE) ||
+          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_RELEASE)) {
         disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_OFF;
       }
-      if (attachedButton->isEventAlreadyUsed(Supla::ON_CLICK_1)) {
+      if (attachedButton->isEventAlreadyUsed(Supla::ON_CLICK_1) ||
+          attachedButton->isEventAlreadyUsed(Supla::ON_CHANGE) ||
+          attachedButton->isEventAlreadyUsed(Supla::CONDITIONAL_ON_CHANGE)) {
         disablesLocalOperation |= SUPLA_ACTION_CAP_TOGGLE_x1;
       }
       if (attachedButton->isEventAlreadyUsed(Supla::ON_CLICK_2)) {

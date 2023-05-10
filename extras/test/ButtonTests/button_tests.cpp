@@ -236,10 +236,11 @@ TEST(ButtonTests, Multiclick) {
   EXPECT_CALL(mock1, handleAction(Supla::ON_HOLD, 4)).Times(0);
 
   // Conditional on_press and on_change are send only on first button press.
-  // Conditional on_release is not send, because there was multiclick detected.
-  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_CHANGE, 10)).Times(1);
+  // Conditional on_release is send, because there was multiclick detected.
+  // Conditional on_change is send twice (on_press + on_release)
+  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_CHANGE, 10)).Times(2);
   EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_PRESS, 9)).Times(1);
-  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_RELEASE, 11)).Times(0);
+  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_RELEASE, 11)).Times(1);
 
   Supla::Control::Button button(5, false, false);
   button.setHoldTime(700);
@@ -476,9 +477,9 @@ TEST(ButtonTests, MulticlickShouldSendEventAsap) {
   EXPECT_CALL(ioMock, digitalRead(5))
       .WillOnce(Return(0))  // #1 onInit
       .WillOnce(Return(1))  // #2 time 0 - first read
-      .WillOnce(Return(1))  // #3 click 1 (ignored)
+      .WillOnce(Return(1))  // #3 click 1 (ignored), conditional_on_press send
       .WillOnce(Return(0))  // #4
-      .WillOnce(Return(0))  // #5 release
+      .WillOnce(Return(0))  // #5 release, contional_on_release send
       .WillOnce(Return(1))  // #6
       .WillOnce(Return(1))  // #7 click 2 (send)
       .WillOnce(Return(0))  // #8
@@ -488,7 +489,7 @@ TEST(ButtonTests, MulticlickShouldSendEventAsap) {
       .WillOnce(Return(0))  // #12
       .WillOnce(Return(0))  // #13 release
       .WillOnce(Return(1))  // #14
-      .WillOnce(Return(1))  // #15 click 2
+      .WillOnce(Return(1))  // #15
       .WillOnce(Return(0))  // #16
       .WillOnce(Return(0))  // #17 release
       .WillOnce(Return(0));  // #18 some time -> ON_CLICK_2
@@ -497,10 +498,11 @@ TEST(ButtonTests, MulticlickShouldSendEventAsap) {
   EXPECT_CALL(mock1, handleAction(Supla::ON_HOLD, 4)).Times(0);
 
   // Conditional on_press and on_change are send only on first button press.
-  // Conditional on_release is not send, because there was multiclick detected.
-  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_CHANGE, 10)).Times(1);
+  // Conditional on_release is send, because there was multiclick detected.
+  // Conditional on_change is send twice (on_press + on_release)
+  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_CHANGE, 10)).Times(2);
   EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_PRESS, 9)).Times(1);
-  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_RELEASE, 11)).Times(0);
+  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_RELEASE, 11)).Times(1);
 
   Supla::Control::Button button(5, false, false);
   button.setHoldTime(700);
@@ -547,4 +549,76 @@ TEST(ButtonTests, MulticlickShouldSendEventAsap) {
   button.onTimer();  // #17
   time.advance(100);
   button.onTimer();  // #18
+}
+
+TEST(ButtonTests, MotionSensorClicks) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock mock1;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillOnce(Return(0))  // #1 onInit
+      .WillOnce(Return(1))  // #2 time 0 - first read
+      .WillOnce(Return(1))  // #3 on press
+      .WillOnce(Return(0))  // #4
+      .WillOnce(Return(0))  // #5 release
+      .WillOnce(Return(0))  // #6
+      .WillOnce(Return(0))  // #7
+      .WillOnce(Return(1))  // #8
+      .WillOnce(Return(1))  // #9 on press
+      .WillOnce(Return(0))  // #10
+      .WillOnce(Return(0))  // #11 release
+      .WillOnce(Return(1))  // #12
+      .WillOnce(Return(1))  // #13 on press
+      .WillOnce(Return(0))  // #14
+      .WillOnce(Return(0))  // #15 release
+      .WillOnce(Return(0));  // #16 some time -> ON_CLICK_4 - motion sensor
+                             // counts in the same way as bistable input
+
+  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_PRESS, 1)).Times(2);
+  EXPECT_CALL(mock1, handleAction(Supla::CONDITIONAL_ON_RELEASE, 1)).Times(2);
+  EXPECT_CALL(mock1, handleAction(Supla::ON_CLICK_4, 1)).Times(1);
+
+  Supla::Control::Button button(5, false, false);
+  button.setButtonType(Supla::Control::Button::ButtonType::MOTION_SENSOR);
+  button.setHoldTime(700);  // should be ignored
+  button.setMulticlickTime(300);
+
+  button.onInit();
+  button.addAction(1, mock1, Supla::CONDITIONAL_ON_PRESS);
+  button.addAction(1, mock1, Supla::CONDITIONAL_ON_RELEASE);
+  button.addAction(1, mock1, Supla::ON_CLICK_4);
+
+  time.advance(1000);
+  button.onTimer();  // #2
+  time.advance(30);  // filtering
+  button.onTimer();  // #3 on press
+  time.advance(60);  // debounce
+  button.onTimer();  // #4
+  time.advance(30);  // filtering
+  button.onTimer();  // #5 on release
+  time.advance(60);  // debounce
+  button.onTimer();  // #6
+
+  time.advance(1000);
+  button.onTimer();  // #7
+  time.advance(30);  //
+  button.onTimer();  // #8
+  time.advance(60);  // filtering
+  button.onTimer();  // #9 on press
+  time.advance(60);  // debounce
+  button.onTimer();  // #10 release
+  time.advance(60);  //
+  button.onTimer();  // #11
+  time.advance(60);  // filtering
+  button.onTimer();  // #12   !!!!
+  time.advance(60);  // debounce
+  button.onTimer();  // #13   !!!!
+  time.advance(60);  //
+  button.onTimer();  // #14
+  time.advance(60);  // filtering
+  button.onTimer();  // #15
+  time.advance(500);  // debounce
+  button.onTimer();  // #16 on click 4
 }

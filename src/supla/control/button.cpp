@@ -58,7 +58,7 @@ void Button::onTimer() {
     stateChanged = true;
     runAction(ON_RELEASE);
     runAction(ON_CHANGE);
-    if (clickCounter == 0 && holdSend == 0) {
+    if (clickCounter <= 1 && holdSend == 0) {
       runAction(CONDITIONAL_ON_RELEASE);
       runAction(CONDITIONAL_ON_CHANGE);
     }
@@ -66,7 +66,8 @@ void Button::onTimer() {
 
   if (stateChanged) {
     lastStateChangeMs = millis();
-    if (multiclickTimeMs > 0 && (stateResult == TO_PRESSED || isBistable())) {
+    if (multiclickTimeMs > 0 && (stateResult == TO_PRESSED || isBistable() ||
+        isMotionSensor())) {
       if (clickCounter <= maxMulticlickValueConfigured) {
         // don't increase counter if already at max value
         clickCounter++;
@@ -82,7 +83,7 @@ void Button::onTimer() {
         runAction(ON_HOLD);
         ++holdSend;
       }
-    } else if (stateResult == RELEASED || isBistable()) {
+    } else if (stateResult == RELEASED || isBistable() || isMotionSensor()) {
       // for all button types (monostable, bistable, and motion sensor)
       if (multiclickTimeMs == 0) {
         holdSend = 0;
@@ -263,7 +264,7 @@ void Button::addAction(int action, ActionHandler &client, int event,
 
 void Button::setHoldTime(unsigned int timeMs) {
   holdTimeMs = timeMs;
-  if (isBistable()) {
+  if (isBistable() || isMotionSensor()) {
     holdTimeMs = 0;
   }
 }
@@ -274,7 +275,7 @@ void Button::setMulticlickTime(unsigned int timeMs,
   if (bistableButton) {
     buttonType = ButtonType::BISTABLE;
   }
-  if (isBistable()) {
+  if (isBistable() || isMotionSensor()) {
     holdTimeMs = 0;
   }
 }

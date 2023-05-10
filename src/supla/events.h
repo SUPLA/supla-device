@@ -54,7 +54,10 @@ enum Event {
   ON_LONG_CLICK_10,
   // Conditional events are triggered only when no on_hold was send
   // and we are not in the middle of muliclick detection.
-  // Otherwise they work as standard events
+  // Otherwise they work as standard events.
+  // Conditional on_press is send on first press in multiclick detection
+  // and on_release is send only after first button release in multiclick
+  // detection (when no on_hold was send)
   CONDITIONAL_ON_PRESS,
   CONDITIONAL_ON_RELEASE,
   CONDITIONAL_ON_CHANGE,

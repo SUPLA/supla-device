@@ -65,6 +65,8 @@ class Button : public SimpleButton {
   bool disableActionsInConfigMode() override;
 
   uint8_t getMaxMulticlickValue();
+  int8_t getButtonNumber() const override;
+  void setButtonNumber(int8_t number);
 
  protected:
   void evaluateMaxMulticlickValue();
@@ -77,6 +79,10 @@ class Button : public SimpleButton {
   unsigned int holdSend = 0;
   ButtonType buttonType = ButtonType::MONOSTABLE;
   bool configButton = false;
+  bool useOnLoadConfig = true;
+  int8_t buttonNumber = -1;
+
+  static int buttonCounter;
 };
 
 };  // namespace Control

@@ -38,10 +38,12 @@ class ButtonState {
   ButtonState(Supla::Io *io, int pin, bool pullUp, bool invertLogic);
   ButtonState(int pin, bool pullUp, bool invertLogic);
   enum StateResults update();
+  enum StateResults getLastState() const;
   void init();
 
   void setSwNoiseFilterDelay(unsigned int newDelayMs);
   void setDebounceDelay(unsigned int newDelayMs);
+  int getGpio() const;
 
  protected:
   int valueOnPress() const;
@@ -71,7 +73,12 @@ class SimpleButton : public Element, public LocalAction {
   void setSwNoiseFilterDelay(unsigned int newDelayMs);
   void setDebounceDelay(unsigned int newDelayMs);
 
+  enum StateResults getLastState() const;
+
  protected:
+  // Returns unique button number (current implementation returns configured
+  // GPIO)
+  virtual int8_t getButtonNumber() const;
   ButtonState state;
 };
 

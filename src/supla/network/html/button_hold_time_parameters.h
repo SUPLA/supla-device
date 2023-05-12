@@ -16,43 +16,25 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_NETWORK_HTML_SELECT_INPUT_PARAMETER_H_
-#define SRC_SUPLA_NETWORK_HTML_SELECT_INPUT_PARAMETER_H_
+#ifndef SRC_SUPLA_NETWORK_HTML_BUTTON_HOLD_TIME_PARAMETERS_H_
+#define SRC_SUPLA_NETWORK_HTML_BUTTON_HOLD_TIME_PARAMETERS_H_
 
 #include <supla/network/html_element.h>
-#include <supla/local_action.h>
-#include <stdint.h>
 
 namespace Supla {
 
 namespace Html {
 
-struct SelectValueMapElement {
-  char *name = nullptr;
-  int value = 0;
-  SelectValueMapElement *next = nullptr;
+const char BtnHoldTag[] = "btn_hold";
 
-  ~SelectValueMapElement();
-};
-
-class SelectInputParameter : public HtmlElement, public LocalAction {
+class ButtonHoldTimeParameters : public HtmlElement {
  public:
-  SelectInputParameter();
-  SelectInputParameter(const char *paramTag, const char *paramLabel);
-  virtual ~SelectInputParameter();
+  ButtonHoldTimeParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
-  void registerValue(const char *name, int value);
-  void setTag(const char *tagValue);
-  void setLabel(const char *labelValue);
-
- protected:
-  char *tag = nullptr;
-  char *label = nullptr;
-  SelectValueMapElement *firstValue = nullptr;
 };
 
 };  // namespace Html
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_NETWORK_HTML_SELECT_INPUT_PARAMETER_H_
+#endif  // SRC_SUPLA_NETWORK_HTML_BUTTON_HOLD_TIME_PARAMETERS_H_

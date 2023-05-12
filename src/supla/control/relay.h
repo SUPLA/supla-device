@@ -39,6 +39,8 @@
 
 namespace Supla {
 namespace Control {
+class Button;
+
 class Relay : public ChannelElement, public ActionHandler {
  public:
   explicit Relay(Supla::Io *io, int pin,
@@ -61,6 +63,8 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual void turnOff(_supla_int_t duration = 0);
   virtual bool isOn();
   virtual void toggle(_supla_int_t duration = 0);
+
+  void attach(Supla::Control::Button *);
 
   void handleAction(int event, int action) override;
 
@@ -89,6 +93,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool keepTurnOnDurationMs;
 
   Supla::Io *io = nullptr;
+  Supla::Control::Button *attachedButton = nullptr;
 };
 
 };  // namespace Control

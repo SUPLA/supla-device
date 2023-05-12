@@ -22,6 +22,9 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <supla/log_wrapper.h>
+#include <supla/control/button.h>
+#include <supla/storage/config.h>
+#include <supla/network/html/rgbw_button_parameters.h>
 
 #include "../storage/storage.h"
 #include "../time.h"
@@ -554,10 +557,123 @@ void RGBWBase::onFastTimer() {
 }
 
 void RGBWBase::onInit() {
+  if (attachedButton) {
+    SUPLA_LOG_DEBUG("RGBWBase[%d] configuring attachedButton, control type %d",
+                    getChannel()->getChannelNumber(), buttonControlType);
+    if (attachedButton->isMonostable()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring monostable button",
+                      getChannel()->getChannelNumber());
+      switch (buttonControlType) {
+        case BUTTON_FOR_RGBW: {
+          attachedButton->addAction(
+              Supla::ITERATE_DIM_ALL, this, Supla::ON_HOLD);
+          attachedButton->addAction(Supla::TOGGLE, this, Supla::ON_CLICK_1);
+          break;
+        }
+        case BUTTON_FOR_RGB: {
+          attachedButton->addAction(
+              Supla::ITERATE_DIM_RGB, this, Supla::ON_HOLD);
+          attachedButton->addAction(Supla::TOGGLE_RGB, this, Supla::ON_CLICK_1);
+          break;
+        }
+        case BUTTON_FOR_W: {
+          attachedButton->addAction(Supla::ITERATE_DIM_W, this, Supla::ON_HOLD);
+          attachedButton->addAction(Supla::TOGGLE_W, this, Supla::ON_CLICK_1);
+          break;
+        }
+      }
+    } else if (attachedButton->isBistable()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring bistable button",
+                      getChannel()->getChannelNumber());
+      switch (buttonControlType) {
+        case BUTTON_FOR_RGBW: {
+          attachedButton->addAction(
+              Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+        case BUTTON_FOR_RGB: {
+          attachedButton->addAction(
+              Supla::TOGGLE_RGB, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+        case BUTTON_FOR_W: {
+          attachedButton->addAction(
+              Supla::TOGGLE_W, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+      }
+    } else if (attachedButton->isMotionSensor()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring motion sensor button",
+                      getChannel()->getChannelNumber());
+      switch (buttonControlType) {
+        case BUTTON_FOR_RGBW: {
+          attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
+          attachedButton->addAction(Supla::TURN_OFF, this, Supla::ON_RELEASE);
+          break;
+        }
+        case BUTTON_FOR_RGB: {
+          attachedButton->addAction(Supla::TURN_ON_RGB, this, Supla::ON_PRESS);
+          attachedButton->addAction(
+              Supla::TURN_OFF_RGB, this, Supla::ON_RELEASE);
+          break;
+        }
+        case BUTTON_FOR_W: {
+          attachedButton->addAction(Supla::TURN_ON_W, this, Supla::ON_PRESS);
+          attachedButton->addAction(Supla::TURN_OFF_W, this, Supla::ON_RELEASE);
+          break;
+        }
+      }
+      if (attachedButton->getLastState() == Supla::Control::PRESSED) {
+        SUPLA_LOG_DEBUG("RGBWBase[%d] button pressed",
+                        getChannel()->getChannelNumber());
+        switch (buttonControlType) {
+          case BUTTON_FOR_RGBW: {
+            curColorBrightness = lastColorBrightness;
+            curBrightness = lastBrightness;
+            break;
+          }
+          case BUTTON_FOR_RGB: {
+            curColorBrightness = lastColorBrightness;
+            break;
+          }
+          case BUTTON_FOR_W: {
+            curBrightness = lastBrightness;
+            break;
+          }
+        }
+      } else {
+        SUPLA_LOG_DEBUG("RGBWBase[%d] button not pressed",
+                        getChannel()->getChannelNumber());
+        switch (buttonControlType) {
+          case BUTTON_FOR_RGBW: {
+            curColorBrightness = 0;
+            curBrightness = 0;
+            break;
+          }
+          case BUTTON_FOR_RGB: {
+            curColorBrightness = 0;
+            break;
+          }
+          case BUTTON_FOR_W: {
+            curBrightness = 0;
+            break;
+          }
+        }
+      }
+    } else {
+      SUPLA_LOG_WARNING("RGBWBase[%d] unknown button type",
+                        getChannel()->getChannelNumber());
+    }
+  }
+
   if (stateOnInit == RGBW_STATE_ON_INIT_ON) {
+    SUPLA_LOG_DEBUG("RGBWBase[%d] TURN on onInit",
+                    getChannel()->getChannelNumber());
     curColorBrightness = 100;
     curBrightness = 100;
   } else if (stateOnInit == RGBW_STATE_ON_INIT_OFF) {
+    SUPLA_LOG_DEBUG("RGBWBase[%d] TURN off onInit",
+                    getChannel()->getChannelNumber());
     curColorBrightness = 0;
     curBrightness = 0;
   }
@@ -600,6 +716,11 @@ void RGBWBase::onLoadState() {
                             sizeof(lastColorBrightness));
   Supla::Storage::ReadState((unsigned char *)&lastBrightness,
                             sizeof(lastBrightness));
+  SUPLA_LOG_DEBUG(
+      "RGBWBase[%d] loaded state: red=%d, green=%d, blue=%d, "
+      "colorBrightness=%d, brightness=%d",
+      getChannel()->getChannelNumber(), curRed, curGreen, curBlue,
+      curColorBrightness, curBrightness);
 }
 
 RGBWBase &RGBWBase::setDefaultStateOn() {
@@ -653,6 +774,31 @@ RGBWBase &RGBWBase::setColorBrightnessLimits(int min, int max) {
   minColorBrightness = min;
   maxColorBrightness = max;
   return *this;
+}
+
+void RGBWBase::attach(Supla::Control::Button *button) {
+  attachedButton = button;
+}
+
+void RGBWBase::onLoadConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(
+        key, getChannel()->getChannelNumber(), Supla::Html::RgbwButtonTag);
+    int32_t rgbwButtonControlType = 0;
+    // try to read RGBW button control type from channel specific parameter
+    // and if it is missgin, read gloal value setting
+    if (!cfg->getInt32(key, &rgbwButtonControlType)) {
+      cfg->getInt32(Supla::Html::RgbwButtonTag, &rgbwButtonControlType);
+    }
+    if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 3) {
+      buttonControlType = static_cast<ButtonControlType>(rgbwButtonControlType);
+    }
+  }
+  SUPLA_LOG_DEBUG("RGBWBase[%d] button control type: %d",
+                  getChannel()->getChannelNumber(),
+                  buttonControlType);
 }
 
 };  // namespace Control

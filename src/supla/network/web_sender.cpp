@@ -37,12 +37,16 @@ void WebSender::send(int number, int precision) {
   }
   char buf[100];
   int divider = 1;
+  int printPrecission = precision;
   for (int i = 0; i < precision; i++) {
     divider *= 10;
+    if (number % divider == 0) {
+      printPrecission--;
+    }
   }
 
   snprintf(buf, sizeof(buf),
-      "%.*f", precision, static_cast<float>(number) / divider);
+      "%.*f", printPrecission, static_cast<float>(number) / divider);
   send(buf);
 }
 

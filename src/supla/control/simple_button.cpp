@@ -20,8 +20,12 @@
 
 #include <supla/io.h>
 #include <supla/time.h>
+#include <supla/log_wrapper.h>
 
-Supla::Control::ButtonState::ButtonState(Supla::Io *io,
+using Supla::Control::SimpleButton;
+using Supla::Control::ButtonState;
+
+ButtonState::ButtonState(Supla::Io *io,
                                          int pin,
                                          bool pullUp,
                                          bool invertLogic)
@@ -29,11 +33,11 @@ Supla::Control::ButtonState::ButtonState(Supla::Io *io,
   this->io = io;
 }
 
-Supla::Control::ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
+ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
     : pin(pin), pullUp(pullUp), invertLogic(invertLogic) {
 }
 
-enum Supla::Control::StateResults Supla::Control::ButtonState::update() {
+enum Supla::Control::StateResults ButtonState::update() {
   uint64_t curMillis = millis();
   if (debounceDelayMs == 0 || curMillis - debounceTimeMs > debounceDelayMs) {
     int currentState = Supla::Io::digitalRead(pin, io);
@@ -67,20 +71,29 @@ enum Supla::Control::StateResults Supla::Control::ButtonState::update() {
   }
 }
 
-Supla::Control::SimpleButton::SimpleButton(Supla::Io *io,
+enum Supla::Control::StateResults ButtonState::getLastState()
+    const {
+  if (prevState == valueOnPress()) {
+    return PRESSED;
+  } else {
+    return RELEASED;
+  }
+}
+
+SimpleButton::SimpleButton(Supla::Io *io,
                                            int pin,
                                            bool pullUp,
                                            bool invertLogic)
     : state(io, pin, pullUp, invertLogic) {
 }
 
-Supla::Control::SimpleButton::SimpleButton(int pin,
+SimpleButton::SimpleButton(int pin,
                                            bool pullUp,
                                            bool invertLogic)
     : state(pin, pullUp, invertLogic) {
 }
 
-void Supla::Control::SimpleButton::onTimer() {
+void SimpleButton::onTimer() {
   enum Supla::Control::StateResults stateResult = state.update();
   if (stateResult == TO_PRESSED) {
     runAction(ON_PRESS);
@@ -91,33 +104,48 @@ void Supla::Control::SimpleButton::onTimer() {
   }
 }
 
-void Supla::Control::SimpleButton::onInit() {
+void SimpleButton::onInit() {
   state.init();
 }
 
-void Supla::Control::ButtonState::init() {
+void ButtonState::init() {
   Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
   prevState = Supla::Io::digitalRead(pin, io);
   newStatusCandidate = prevState;
+  SUPLA_LOG_DEBUG("Pin %d, pullUp %d, invertLogic %d, state %d", pin, pullUp,
+                  invertLogic, prevState);
 }
 
-int Supla::Control::ButtonState::valueOnPress() const {
+int ButtonState::valueOnPress() const {
   return invertLogic ? LOW : HIGH;
 }
 
-void Supla::Control::SimpleButton::setSwNoiseFilterDelay(
+void SimpleButton::setSwNoiseFilterDelay(
     unsigned int newDelayMs) {
   state.setSwNoiseFilterDelay(newDelayMs);
 }
-void Supla::Control::ButtonState::setSwNoiseFilterDelay(
+void ButtonState::setSwNoiseFilterDelay(
     unsigned int newDelayMs) {
   swNoiseFilterDelayMs = newDelayMs;
 }
 
-void Supla::Control::SimpleButton::setDebounceDelay(unsigned int newDelayMs) {
+void SimpleButton::setDebounceDelay(unsigned int newDelayMs) {
   state.setDebounceDelay(newDelayMs);
 }
 
-void Supla::Control::ButtonState::setDebounceDelay(unsigned int newDelayMs) {
+void ButtonState::setDebounceDelay(unsigned int newDelayMs) {
   debounceDelayMs = newDelayMs;
 }
+
+int8_t SimpleButton::getButtonNumber() const {
+  return state.getGpio();
+}
+
+int ButtonState::getGpio() const {
+  return pin;
+}
+
+enum Supla::Control::StateResults SimpleButton::getLastState() const {
+  return state.getLastState();
+}
+

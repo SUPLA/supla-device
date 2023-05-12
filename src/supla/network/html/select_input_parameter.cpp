@@ -39,22 +39,51 @@ SelectValueMapElement::~SelectValueMapElement() {
   name = nullptr;
 }
 
-SelectInputParameter::SelectInputParameter(const char *paramTag,
-                                             const char *paramLabel)
+SelectInputParameter::SelectInputParameter() : HtmlElement(HTML_SECTION_FORM) {
+}
+
+SelectInputParameter::SelectInputParameter(const char* paramTag,
+                                           const char* paramLabel)
     : HtmlElement(HTML_SECTION_FORM) {
-  int size = strlen(paramTag);
+  setTag(paramTag);
+  setLabel(paramLabel);
+}
+
+void SelectInputParameter::setTag(const char* tagValue) {
+  auto size = strlen(tagValue);
   if (size >= SUPLA_CONFIG_MAX_KEY_SIZE) {
     size = SUPLA_CONFIG_MAX_KEY_SIZE - 1;
-    SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", paramTag);
+    SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", tagValue);
+  }
+
+  if (tag != nullptr) {
+    delete []tag;
+    tag = nullptr;
+  }
+
+  if (tagValue == nullptr || size == 0) {
+    return;
   }
 
   tag = new char[size + 1];
-  strncpy(tag, paramTag, size + 1);
+  strncpy(tag, tagValue, size + 1);
+}
 
-  size = strlen(paramLabel);
+void SelectInputParameter::setLabel(const char *labelValue) {
+  auto size = strlen(labelValue);
+
+  if (label != nullptr) {
+    delete []label;
+    label = nullptr;
+  }
+
+  if (labelValue == nullptr || size == 0) {
+    return;
+  }
+
   if (size < 500) {
     label = new char[size + 1];
-    strncpy(label, paramLabel, size + 1);
+    strncpy(label, labelValue, size + 1);
   }
 }
 
@@ -76,6 +105,10 @@ SelectInputParameter::~SelectInputParameter() {
 }
 
 void SelectInputParameter::send(Supla::WebSender* sender) {
+  if (tag == nullptr || label == nullptr) {
+    return;
+  }
+
   auto cfg = Supla::Storage::ConfigInstance();
   int32_t value = 0;
   if (cfg) {

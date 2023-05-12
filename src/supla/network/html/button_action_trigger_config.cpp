@@ -50,7 +50,7 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
     cfg->getInt32(key, &value);
 
     char label[100] = {};
-    snprintf(label, sizeof(label), "Button #%d MQTT action trigger type",
+    snprintf(label, sizeof(label), "IN%d MQTT action trigger type",
         buttonNumber);
 
     // form-field BEGIN

@@ -20,9 +20,12 @@
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
 #include <supla/network/html/button_multiclick_parameters.h>
+#include <supla/network/html/button_hold_time_parameters.h>
+#include <supla/network/html/button_type_parameters.h>
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <SuplaDevice.h>
+#include <supla/log_wrapper.h>
 
 #include "button.h"
 
@@ -30,12 +33,18 @@
 
 using Supla::Control::Button;
 
+int Button::buttonCounter = 0;
+
 Button::Button(Supla::Io *io, int pin, bool pullUp, bool invertLogic)
     : SimpleButton(io, pin, pullUp, invertLogic) {
+  buttonNumber = buttonCounter;
+  buttonCounter++;
 }
 
 Button::Button(int pin, bool pullUp, bool invertLogic)
     : SimpleButton(pin, pullUp, invertLogic) {
+  buttonNumber = buttonCounter;
+  buttonCounter++;
 }
 
 void Button::onInit() {
@@ -267,6 +276,7 @@ void Button::setHoldTime(unsigned int timeMs) {
   if (isBistable() || isMotionSensor()) {
     holdTimeMs = 0;
   }
+  SUPLA_LOG_DEBUG("Button[%d]::setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
 
 void Button::setMulticlickTime(unsigned int timeMs,
@@ -278,6 +288,8 @@ void Button::setMulticlickTime(unsigned int timeMs,
   if (isBistable() || isMotionSensor()) {
     holdTimeMs = 0;
   }
+  SUPLA_LOG_DEBUG(
+      "Button[%d]::setMulticlickTime: %u", getButtonNumber(), timeMs);
 }
 
 void Button::repeatOnHoldEvery(unsigned int timeMs) {
@@ -296,19 +308,74 @@ bool Button::isMotionSensor() const {
 }
 
 void Button::onLoadConfig() {
+  if (!useOnLoadConfig) {
+    SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: not used", getButtonNumber());
+    return;
+  }
+
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    uint32_t value = 300;
-    if (cfg->getUInt32(Supla::Html::BtnMulticlickTag, &value)) {
-      if (value >= 300 && value <= 10000) {
-        setMulticlickTime(value, isBistable());
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(key, getButtonNumber(), Supla::Html::BtnTypeTag);
+    int32_t btnTypeValue = 0;
+    if (cfg->getInt32(key, &btnTypeValue)) {
+      SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: btnType: %d",
+                      getButtonNumber(),
+                      btnTypeValue);
+      switch (btnTypeValue) {
+        default:
+        case 0:
+          setButtonType(ButtonType::MONOSTABLE);
+          break;
+        case 1:
+          setButtonType(ButtonType::BISTABLE);
+          break;
+        case 2:
+          setButtonType(ButtonType::MOTION_SENSOR);
+          break;
       }
+    }
+
+    bool saveConfig = false;
+
+    uint32_t multiclickTimeMsValue = 0;
+    if (cfg->getUInt32(Supla::Html::BtnMulticlickTag, &multiclickTimeMsValue)) {
+      if (multiclickTimeMsValue < 300) {
+        multiclickTimeMsValue = 300;
+      }
+      if (multiclickTimeMsValue > 10000) {
+        multiclickTimeMsValue = 10000;
+      }
+      setMulticlickTime(multiclickTimeMsValue, isBistable());
+    } else {
+      cfg->setUInt32(Supla::Html::BtnMulticlickTag, multiclickTimeMs);
+      saveConfig = true;
+    }
+
+    uint32_t holdTimeMsValue = CFG_MODE_ON_HOLD_TIME;
+    if (cfg->getUInt32(Supla::Html::BtnHoldTag, &holdTimeMsValue)) {
+      if (holdTimeMsValue < 300) {
+        holdTimeMsValue = 300;
+      }
+      if (holdTimeMsValue > 10000) {
+        holdTimeMsValue = 10000;
+      }
+      setHoldTime(holdTimeMsValue);
+    } else {
+      cfg->setUInt32(Supla::Html::BtnHoldTag, holdTimeMs);
+      saveConfig = true;
+    }
+
+    if (saveConfig) {
+      cfg->commit();
     }
   }
 }
 
 void Button::configureAsConfigButton(SuplaDeviceClass *sdc) {
+  SUPLA_LOG_DEBUG("Button[%d]::configureAsConfigButton", getButtonNumber());
   configButton = true;
+  useOnLoadConfig = false;
   setHoldTime(CFG_MODE_ON_HOLD_TIME);
   setMulticlickTime(300, isBistable());
   addAction(Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
@@ -324,10 +391,19 @@ bool Button::disableActionsInConfigMode() {
 }
 
 void Button::setButtonType(const ButtonType type) {
+  SUPLA_LOG_DEBUG("Button[%d]::setButtonType: %d", getButtonNumber(), type);
   buttonType = type;
 }
 
 uint8_t Button::getMaxMulticlickValue() {
   return maxMulticlickValueConfigured;
+}
+
+int8_t Button::getButtonNumber() const {
+  return buttonNumber;
+}
+
+void Button::setButtonNumber(int8_t btnNumber) {
+  buttonNumber = btnNumber;
 }
 

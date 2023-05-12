@@ -44,8 +44,15 @@ class GeometricBrightnessAdjuster : public BrightnessAdjuster {
   int offset = 0;
 };
 
+class Button;
 
 class RGBWBase : public ChannelElement, public ActionHandler {
+  enum ButtonControlType {
+    BUTTON_FOR_RGBW,
+    BUTTON_FOR_RGB,
+    BUTTON_FOR_W
+  };
+
  public:
   RGBWBase();
 
@@ -78,6 +85,9 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   void onFastTimer() override;
   void onLoadState() override;
   void onSaveState() override;
+  void onLoadConfig() override;
+
+  void attach(Supla::Control::Button *);
 
   virtual RGBWBase &setDefaultStateOn();
   virtual RGBWBase &setDefaultStateOff();
@@ -139,6 +149,8 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   uint8_t minIterationBrightness = 1;
   BrightnessAdjuster *brightnessAdjuster = nullptr;
   bool valueChanged = true;
+  Supla::Control::Button *attachedButton = nullptr;
+  enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
 };
 
 };  // namespace Control

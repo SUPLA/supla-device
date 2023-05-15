@@ -1737,7 +1737,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   ActionHandlerMock ah;
 
   EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
-    if (strcmp(key, "mqtt_at_0") == 0) {
+    if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 2;
       return true;
     }
@@ -1856,7 +1856,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   ActionHandlerMock ah;
 
   EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
-    if (strcmp(key, "mqtt_at_0") == 0) {
+    if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 1;
       return true;
     }
@@ -2004,7 +2004,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   ActionHandlerMock ah;
 
   EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
-    if (strcmp(key, "mqtt_at_0") == 0) {
+    if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 0;
       return true;
     }

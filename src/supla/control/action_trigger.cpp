@@ -25,6 +25,7 @@
 #include <supla/control/button.h>
 #include <stdio.h>
 #include <supla/events.h>
+#include <supla/network/html/button_action_trigger_config.h>
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
@@ -525,8 +526,10 @@ void Supla::Control::ActionTrigger::onLoadConfig() {
   }
 
   int32_t value = 0;  // default value
-  char key[16] = {};
-  snprintf(key, sizeof(key), "mqtt_at_%d", getChannelNumber());
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(key,
+                             getChannel()->getChannelNumber(),
+                             Supla::Html::BtnActionTriggerCfgTagPrefix);
   cfg->getInt32(key, &value);
 
   switch (value) {

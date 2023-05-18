@@ -22,6 +22,7 @@
 #include <supla/network/html/button_multiclick_parameters.h>
 #include <supla/network/html/button_hold_time_parameters.h>
 #include <supla/network/html/button_type_parameters.h>
+#include <supla/network/html/button_config_parameters.h>
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <SuplaDevice.h>
@@ -101,11 +102,12 @@ void Button::onTimer() {
       if (multiclickTimeMs > 0 &&
           (timeDelta > multiclickTimeMs ||
            maxMulticlickValueConfigured == clickCounter)) {
-        if (holdSend == 0) {
+        if (holdSend == 0 && clickCounter != 255) {
           switch (clickCounter) {
-            case 1:
+            case 1: {
               runAction(ON_CLICK_1);
               break;
+            }
             case 2:
               runAction(ON_CLICK_2);
               break;
@@ -173,6 +175,7 @@ void Button::onTimer() {
               break;
           }
         }
+        clickCounter = 255;
         if (timeDelta > multiclickTimeMs) {
           holdSend = 0;
           clickCounter = 0;
@@ -307,9 +310,9 @@ bool Button::isMotionSensor() const {
   return buttonType == ButtonType::MOTION_SENSOR;
 }
 
-void Button::onLoadConfig() {
+void Button::onLoadConfig(SuplaDeviceClass *sdc) {
   if (!useOnLoadConfig) {
-    SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: not used", getButtonNumber());
+    SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: skip", getButtonNumber());
     return;
   }
 
@@ -364,6 +367,26 @@ void Button::onLoadConfig() {
     } else {
       cfg->setUInt32(Supla::Html::BtnHoldTag, holdTimeMs);
       saveConfig = true;
+    }
+
+    int32_t useInputAsConfigButtonValue = 0;
+    Supla::Config::generateKey(
+        key, getButtonNumber(), Supla::Html::BtnConfigTag);
+    if (!cfg->getInt32(key, &useInputAsConfigButtonValue)) {
+      cfg->getInt32(Supla::Html::BtnConfigTag, &useInputAsConfigButtonValue);
+    }
+
+    if (useInputAsConfigButtonValue == 0) {
+      // ON is "0", which is default value
+      SUPLA_LOG_DEBUG("Button[%d] enabling IN as config button",
+                      getButtonNumber());
+      configButton = true;
+      addAction(Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY,
+                sdc,
+                Supla::ON_CLICK_10,
+                true);
+      addAction(
+          Supla::LEAVE_CONFIG_MODE_AND_RESET, sdc, Supla::ON_CLICK_1, true);
     }
 
     if (saveConfig) {

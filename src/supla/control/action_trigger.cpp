@@ -518,7 +518,8 @@ void Supla::Control::ActionTrigger::onSaveState() {
                              sizeof(activeActionsFromServer));
   }
 }
-void Supla::Control::ActionTrigger::onLoadConfig() {
+void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
 
   if (cfg == nullptr) {

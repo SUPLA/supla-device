@@ -174,7 +174,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
          element = element->next()) {
-      element->onLoadConfig();
+      element->onLoadConfig(this);
       delay(0);
     }
   }

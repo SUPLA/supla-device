@@ -29,7 +29,7 @@ class ThermHygroMeter : public Thermometer {
  public:
   ThermHygroMeter();
   void onInit() override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void iterateAlways() override;
 
   virtual double getTemp();

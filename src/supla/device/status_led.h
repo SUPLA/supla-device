@@ -56,7 +56,7 @@ class StatusLed : public Element {
   explicit StatusLed(Supla::Io *io, uint8_t outPin, bool invert = false);
   explicit StatusLed(uint8_t outPin, bool invert = false);
 
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void onInit() override;
   void iterateAlways() override;
   void onTimer() override;

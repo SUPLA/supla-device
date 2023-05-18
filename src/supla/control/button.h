@@ -40,7 +40,7 @@ class Button : public SimpleButton {
   explicit Button(int pin, bool pullUp = false, bool invertLogic = false);
 
   void onTimer() override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void onInit() override;
   void addAction(int action, ActionHandler &client, int event,
       bool alwaysEnabled = false) override;

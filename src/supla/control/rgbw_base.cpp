@@ -136,6 +136,9 @@ void RGBWBase::setRGBW(int red,
 
   resetDisance = true;
 
+  SUPLA_LOG_DEBUG("RGBW: %d,%d,%d,%d,%d", curRed, curGreen, curBlue,
+                  curColorBrightness, curBrightness);
+
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000);
 }
@@ -780,7 +783,8 @@ void RGBWBase::attach(Supla::Control::Button *button) {
   attachedButton = button;
 }
 
-void RGBWBase::onLoadConfig() {
+void RGBWBase::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};

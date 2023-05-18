@@ -159,8 +159,8 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -282,8 +282,8 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -406,8 +406,8 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -530,8 +530,8 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -662,8 +662,8 @@ TEST_F(FullStartupWithConfig,
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -788,8 +788,8 @@ TEST_F(FullStartupWithConfig,
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -913,8 +913,8 @@ TEST_F(FullStartupWithConfig,
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -1019,8 +1019,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1098,8 +1098,8 @@ TEST_F(FullStartupWithConfig, OfflineModeProtoDisabled) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(false));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1181,8 +1181,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOff) {
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1263,8 +1263,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOff) {
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1357,8 +1357,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
 
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1442,8 +1442,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1531,8 +1531,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1623,8 +1623,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1716,8 +1716,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1807,8 +1807,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -1903,8 +1903,8 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(1);
@@ -2031,8 +2031,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
   EXPECT_CALL(cfg, getMqttQos()).WillRepeatedly(Return(0));
   EXPECT_CALL(cfg, isMqttAuthEnabled()).WillRepeatedly(Return(false));
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -2135,8 +2135,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnEmailSet) {
 
   EXPECT_CALL(mqtt, disconnect()).Times(1);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -2239,8 +2239,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOffMqttServerSet) {
 
   EXPECT_CALL(mqtt, disconnect()).Times(0);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);
@@ -2357,8 +2357,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
 
   EXPECT_CALL(mqtt, disconnect()).Times(0);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(1);
-  EXPECT_CALL(el2, onLoadConfig()).Times(1);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_)).Times(0);

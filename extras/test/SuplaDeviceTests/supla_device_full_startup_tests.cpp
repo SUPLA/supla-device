@@ -275,8 +275,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   int dummy = 0;
   sd.setActivityTimeout(45);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -354,8 +354,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   sd.setSuplaCACert(myCA1);
   sd.setSupla3rdPartyCACert(myCA2);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -429,8 +429,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   int dummy = 0;
   sd.setActivityTimeout(45);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -509,8 +509,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   int dummy = 0;
   sd.setActivityTimeout(45);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -588,8 +588,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   int dummy = 0;
   sd.setActivityTimeout(45);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -667,8 +667,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   int dummy = 0;
   sd.setActivityTimeout(45);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));
@@ -746,8 +746,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   int dummy = 0;
   sd.setActivityTimeout(45);
 
-  EXPECT_CALL(el1, onLoadConfig()).Times(0);
-  EXPECT_CALL(el2, onLoadConfig()).Times(0);
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el1, onInit()).Times(1);
   EXPECT_CALL(el2, onInit()).Times(1);
   EXPECT_CALL(el1, onRegistered(_));

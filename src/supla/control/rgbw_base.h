@@ -85,7 +85,7 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   void onFastTimer() override;
   void onLoadState() override;
   void onSaveState() override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
 
   void attach(Supla::Control::Button *);
 

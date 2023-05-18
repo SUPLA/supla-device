@@ -1517,7 +1517,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   EXPECT_CALL(storage, writeState(Pointee(storedActionsFromServer), 4));
 
   // on init call is executed in SuplaDevice.setup()
-  at.onLoadConfig();
+  at.onLoadConfig(nullptr);
   at.onLoadState();
   at.onInit();
   at.onSaveState();
@@ -1770,7 +1770,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   EXPECT_CALL(storage, writeState(Pointee(actionsFromServerToBeSaved), 4));
 
   // on init call is executed in SuplaDevice.setup()
-  at.onLoadConfig();
+  at.onLoadConfig(nullptr);
   at.onLoadState();
   at.onInit();
   at.onSaveState();
@@ -1887,7 +1887,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   EXPECT_CALL(storage, writeState(Pointee(storedActionsFromServer), 4));
 
   // on init call is executed in SuplaDevice.setup()
-  at.onLoadConfig();
+  at.onLoadConfig(nullptr);
   at.onLoadState();
   at.onInit();
   at.onSaveState();
@@ -2032,7 +2032,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   EXPECT_CALL(storage, writeState(Pointee(storedActionsFromServer), 4));
 
   // on init call is executed in SuplaDevice.setup()
-  at.onLoadConfig();
+  at.onLoadConfig(nullptr);
   at.onLoadState();
   at.onInit();
   at.onSaveState();

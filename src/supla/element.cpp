@@ -85,7 +85,7 @@ Element *Element::next() {
 
 void Element::onInit() {}
 
-void Element::onLoadConfig() {}
+void Element::onLoadConfig(SuplaDeviceClass *) {}
 
 void Element::onLoadState() {}
 

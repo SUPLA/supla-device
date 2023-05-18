@@ -42,7 +42,8 @@ void Supla::Sensor::Thermometer::iterateAlways() {
   }
 }
 
-void Supla::Sensor::Thermometer::onLoadConfig() {
+void Supla::Sensor::Thermometer::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = 0;

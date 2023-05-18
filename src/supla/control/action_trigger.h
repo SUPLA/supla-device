@@ -67,7 +67,7 @@ class ActionTrigger : public Element, public ActionHandler {
   void onInit() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
   void handleChannelConfig(TSD_ChannelConfig *result) override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;
 

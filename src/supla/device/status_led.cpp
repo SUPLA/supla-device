@@ -33,7 +33,8 @@ Supla::Device::StatusLed::StatusLed(uint8_t outPin, bool invert)
     : outPin(outPin), invert(invert) {
 }
 
-void Supla::Device::StatusLed::onLoadConfig() {
+void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = 0;

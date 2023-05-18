@@ -21,6 +21,8 @@
 
 #include "channel.h"
 
+class SuplaDeviceClass;
+
 namespace Supla {
 
 class Element {
@@ -36,7 +38,7 @@ class Element {
   // First method called on element in SuplaDevice.begin()
   // Called only if Config Storage class is configured
   // Element should read its configration in this method
-  virtual void onLoadConfig();
+  virtual void onLoadConfig(SuplaDeviceClass *sdc);
 
   // Second method called on element in SuplaDevice.begin()
   // method called during Config initialization (i.e. read from EEPROM, FRAM).

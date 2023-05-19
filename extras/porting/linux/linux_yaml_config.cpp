@@ -39,7 +39,6 @@
 #include <supla/control/cmd_relay.h>
 #include <supla/tools.h>
 #include <supla/control/action_trigger_parsed.h>
-#include <yaml-cpp/exceptions.h>
 
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>

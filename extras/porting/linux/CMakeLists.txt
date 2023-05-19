@@ -81,5 +81,5 @@ target_link_libraries (supladevice PUBLIC
   nlohmann_json::nlohmann_json
   cxxopts::cxxopts
   OpenSSL::SSL
-  ${YAML_CPP_LIBRARIES}
+  yaml-cpp
   )

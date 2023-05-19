@@ -141,7 +141,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
   ::testing::Sequence seq1;
@@ -557,7 +557,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
   ::testing::Sequence seq1;

@@ -1080,7 +1080,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
       });
 
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
   hvac->onRegistered(nullptr);
@@ -1246,7 +1246,7 @@ TEST_F(HvacTestWithChannelSetupF,
             return 1;
           });
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
 

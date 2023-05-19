@@ -884,7 +884,7 @@ TEST_F(SuplaDeviceElementWithSecondaryChannel, SleepingChannel) {
   EXPECT_CALL(el1, onRegistered(_));
   EXPECT_CALL(el2, onRegistered(_));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 

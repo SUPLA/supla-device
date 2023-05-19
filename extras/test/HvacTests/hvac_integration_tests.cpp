@@ -314,7 +314,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
   t1->onInit();
@@ -750,7 +750,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
   t1->onInit();
@@ -997,7 +997,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAuto) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;
@@ -1845,7 +1845,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_HEATER);
   hvac->setTemperatureHisteresis(400);  // 4.00 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->setTemperatureSetpointMin(-500);  // -5
   hvac->onInit();
@@ -2366,7 +2366,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAutoSetpointTempCheck) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;
@@ -2608,7 +2608,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;
@@ -2963,7 +2963,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   ClockStub clock;
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;

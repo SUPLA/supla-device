@@ -46,7 +46,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
                     Supla::Control::OutputInterface *secondaryOutput = nullptr);
   virtual ~HvacBase();
 
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onInit() override;
   void onSaveState() override;

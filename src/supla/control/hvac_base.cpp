@@ -119,7 +119,8 @@ bool HvacBase::iterateConnected() {
   return result;
 }
 
-void HvacBase::onLoadConfig() {
+void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};

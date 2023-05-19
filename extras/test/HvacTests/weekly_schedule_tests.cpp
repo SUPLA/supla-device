@@ -347,7 +347,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
             return 1;
           });
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
   hvac->onRegistered(nullptr);
@@ -440,7 +440,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
             return 1;
           });
 
-  hvac->onLoadConfig();
+  hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
 

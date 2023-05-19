@@ -18,6 +18,7 @@
 #include <gtest/gtest.h>
 #include <arduino_mock.h>
 #include <supla/control/rgb_leds.h>
+#include <simple_time.h>
 
 using ::testing::Return;
 
@@ -31,7 +32,7 @@ class TimeInterfaceStub : public TimeInterface {
 };
 
 TEST(RgbLedsTests, SettingNewRGBValue) {
-  TimeInterfaceStub time;
+  SimpleTime time;
   DigitalInterfaceMock ioMock;
 
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
@@ -57,8 +58,12 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
+  time.advance(1000);
   rgb.onInit();
-  rgb.onTimer();
+  time.advance(1);
+  rgb.onFastTimer();
+  time.advance(1);
+  rgb.onFastTimer();
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);
@@ -66,6 +71,7 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
+  time.advance(1000);
   rgb.iterateAlways();
 
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -76,15 +82,16 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
 
   rgb.setRGBW(1, 2, 3, 100, 5);
 
+  time.advance(1000);
   rgb.iterateAlways();
-  rgb.onTimer();
+  time.advance(1000);
+  rgb.onFastTimer();
 
   EXPECT_EQ(ch->getValueRed(), 1);
   EXPECT_EQ(ch->getValueGreen(), 2);
   EXPECT_EQ(ch->getValueBlue(), 3);
   EXPECT_EQ(ch->getValueColorBrightness(), 100);
   EXPECT_EQ(ch->getValueBrightness(), 0);
-
 }
 
 

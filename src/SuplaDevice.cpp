@@ -174,7 +174,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
          element = element->next()) {
-      element->onLoadConfig();
+      element->onLoadConfig(this);
       delay(0);
     }
   }
@@ -446,12 +446,12 @@ void SuplaDeviceClass::iterate(void) {
       }
 
       if (deviceMode == Supla::DEVICE_MODE_TEST) {
-        // Test mode
+      // Test mode
       }
       break;
     }
 
-      // Config mode
+    // Config mode
     case Supla::DEVICE_MODE_CONFIG: {
       break;
     }

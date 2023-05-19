@@ -100,7 +100,7 @@ void LocalAction::addAction(int action, ActionHandler &client, int event,
 
 void LocalAction::addAction(int action, ActionHandler *client, int event,
     bool alwaysEnabled) {
-  addAction(action, *client, event, alwaysEnabled);
+  LocalAction::addAction(action, *client, event, alwaysEnabled);
 }
 
 void LocalAction::runAction(int event) {
@@ -184,6 +184,28 @@ ActionHandlerClient *LocalAction::getHandlerForClient(ActionHandler *client,
 
 bool LocalAction::disableActionsInConfigMode() {
   return false;
+}
+
+void LocalAction::disableAction(int action, ActionHandler *client, int event) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    if (ptr->trigger == this && (ptr->onEvent == event || event == -1) &&
+        ptr->client == client && (ptr->action == action || action == -1)) {
+      ptr->disable();
+    }
+    ptr = ptr->next;
+  }
+}
+
+void LocalAction::enableAction(int action, ActionHandler *client, int event) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    if (ptr->trigger == this && (ptr->onEvent == event || event == -1) &&
+        ptr->client == client && (ptr->action == action || action == -1)) {
+      ptr->enable();
+    }
+    ptr = ptr->next;
+  }
 }
 
 };  // namespace Supla

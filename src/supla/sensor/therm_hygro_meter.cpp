@@ -65,9 +65,9 @@ void Supla::Sensor::ThermHygroMeter::iterateAlways() {
   }
 }
 
-void Supla::Sensor::ThermHygroMeter::onLoadConfig() {
+void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
   // set temperature correction
-  Supla::Sensor::Thermometer::onLoadConfig();
+  Supla::Sensor::Thermometer::onLoadConfig(sdc);
 
   // set humidity correction:
   auto cfg = Supla::Storage::ConfigInstance();

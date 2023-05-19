@@ -16,23 +16,52 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "rgbw_base.h"
+
+#include <math.h>
 #include <stdint.h>
+#include <stdlib.h>
+#include <supla/log_wrapper.h>
+#include <supla/control/button.h>
+#include <supla/storage/config.h>
+#include <supla/network/html/rgbw_button_parameters.h>
 
 #include "../storage/storage.h"
 #include "../time.h"
 #include "../tools.h"
-#include "rgbw_base.h"
+
+#ifdef ARDUINO_ARCH_ESP32
+int esp32PwmChannelCounter = 0;
+#endif
 
 #define RGBW_STATE_ON_INIT_RESTORE -1
 #define RGBW_STATE_ON_INIT_OFF     0
 #define RGBW_STATE_ON_INIT_ON      1
 
-#ifdef ARDUINO_ARCH_ESP32
-int esp32PwmChannelCouner = 0;
-#endif
-
 namespace Supla {
 namespace Control {
+
+GeometricBrightnessAdjuster::GeometricBrightnessAdjuster(double power,
+                                                         int offset)
+    : power(power), offset(offset) {
+}
+
+int GeometricBrightnessAdjuster::adjustBrightness(int input) {
+  if (input == 0) {
+    return 0;
+  }
+  double result = (input + offset) / (100.0 + offset);
+  result = pow(result, power);
+  result = result * 1023.0;
+  if (result > 1023) {
+    result = 1023;
+  }
+  if (result < 0) {
+    result = 0;
+  }
+  return round(result);
+}
+
 
 RGBWBase::RGBWBase()
     : buttonStep(5),
@@ -46,7 +75,7 @@ RGBWBase::RGBWBase()
       defaultDimmedBrightness(20),
       dimIterationDirection(false),
       fadeEffect(500),
-      hwRed(-1),
+      hwRed(0),
       hwGreen(0),
       hwBlue(0),
       hwColorBrightness(0),
@@ -55,6 +84,13 @@ RGBWBase::RGBWBase()
       minIterationBrightness(1) {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING);
+}
+
+void RGBWBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
+  if (brightnessAdjuster) {
+    delete brightnessAdjuster;
+  }
+  brightnessAdjuster = adjuster;
 }
 
 void RGBWBase::setRGBW(int red,
@@ -70,12 +106,12 @@ void RGBWBase::setRGBW(int red,
   }
 
   // Store last non 0 brightness for turn on/toggle operations
-  if (toggle && colorBrightness == 100 && curColorBrightness == 0) {
+  if (toggle && colorBrightness == 100) {
     colorBrightness = lastColorBrightness;
   } else if (colorBrightness > 0) {
     lastColorBrightness = colorBrightness;
   }
-  if (toggle && brightness == 100 && curBrightness == 0) {
+  if (toggle && brightness == 100) {
     brightness = lastBrightness;
   } else if (brightness > 0) {
     lastBrightness = brightness;
@@ -98,6 +134,11 @@ void RGBWBase::setRGBW(int red,
     curBrightness = brightness;
   }
 
+  resetDisance = true;
+
+  SUPLA_LOG_DEBUG("RGBW: %d,%d,%d,%d,%d", curRed, curGreen, curBlue,
+                  curColorBrightness, curBrightness);
+
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000);
 }
@@ -119,7 +160,7 @@ int RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   uint8_t colorBrightness = static_cast<uint8_t>(newValue->value[1]);
   uint8_t brightness = static_cast<uint8_t>(newValue->value[0]);
 
-  setRGBW(red, green, blue, colorBrightness, brightness, toggle == 1);
+  setRGBW(red, green, blue, colorBrightness, brightness, toggle > 0);
 
   return -1;
 }
@@ -132,11 +173,11 @@ void RGBWBase::turnOff() {
 }
 
 void RGBWBase::toggle() {
-  setRGBW(-1,
-          -1,
-          -1,
-          curColorBrightness > 0 ? 0 : lastColorBrightness,
-          curBrightness > 0 ? 0 : lastBrightness);
+  if (curBrightness > 0 || curColorBrightness > 0) {
+    turnOff();
+  } else {
+    turnOn();
+  }
 }
 
 uint8_t RGBWBase::addWithLimit(int value, int addition, int limit) {
@@ -392,9 +433,45 @@ void RGBWBase::setFadeEffectTime(int timeMs) {
   fadeEffect = timeMs;
 }
 
-void RGBWBase::onTimer() {
+int RGBWBase::adjustBrightness(int value) {
+  if (brightnessAdjuster) {
+    return brightnessAdjuster->adjustBrightness(value);
+  }
+  return adjustRange(value, 0, 100, 0, 1023);
+}
+
+double RGBWBase::getStep(int step, int target, double current, int distance) {
+  if (step) {
+    double result = step;
+    if (target > current) {
+      if (fadeEffect > 0 && distance < 100) {
+        result = step / 3.0;
+      }
+      if (current + result > target) {
+        result = target - current;
+      }
+      return result;
+    } else if (target < current) {
+      result = -step;
+      if (fadeEffect > 0 && distance < 100) {
+        result = result / 3.0;
+      }
+      if (current + result < target) {
+        result = target - current;
+      }
+      return result;
+    }
+  }
+  return 0;
+}
+
+void RGBWBase::onFastTimer() {
+  if (lastTick == 0) {
+    lastTick = millis();
+    return;
+  }
   uint64_t timeDiff = millis() - lastTick;
-  lastTick = millis();
+
 
   if (timeDiff > 0) {
     double divider = 1.0 * fadeEffect / timeDiff;
@@ -402,105 +479,204 @@ void RGBWBase::onTimer() {
       divider = 1;
     }
 
-    double step = 1023 / divider;
-    bool valueChanged = false;
+    int step = 1023 / divider;
     if (step < 1) {
-      step = 1;
+      return;
     }
 
-    int curRedAdj = adjustRange(curRed, 0, 255, 0, 1023);
-    int curGreenAdj = adjustRange(curGreen, 0, 255, 0, 1023);
-    int curBlueAdj = adjustRange(curBlue, 0, 255, 0, 1023);
-    int curColorBrightnessAdj =
-        adjustRange(curColorBrightness, 0, 100, 0, 1023);
-    int curBrightnessAdj = adjustRange(curBrightness, 0, 100, 0, 1023);
+    lastTick = millis();
 
-    if (curRedAdj > hwRed) {
-      valueChanged = true;
-      hwRed += step;
-      if (hwRed > curRedAdj) {
-        hwRed = curRedAdj;
-      }
-    } else if (curRedAdj < hwRed) {
-      valueChanged = true;
-      hwRed -= step;
-      if (hwRed < curRedAdj) {
-        hwRed = curRedAdj;
-      }
+    // target values are in 0..1023 range
+    int targetRed = adjustRange(curRed, 0, 255, 0, 1023);
+    int targetGreen = adjustRange(curGreen, 0, 255, 0, 1023);
+    int targetBlue = adjustRange(curBlue, 0, 255, 0, 1023);
+    int targetColorBrightness = adjustBrightness(curColorBrightness);
+    int targetBrightness = adjustBrightness(curBrightness);
+
+    if (resetDisance) {
+      resetDisance = false;
+
+      redDistance = abs(targetRed - hwRed);
+      greenDistance = abs(targetGreen - hwGreen);
+      blueDistance = abs(targetBlue - hwBlue);
+      colorBrightnessDistance = abs(targetColorBrightness - hwColorBrightness);
+      brightnessDistance = abs(targetBrightness - hwBrightness);
     }
 
-    if (curGreenAdj > hwGreen) {
+    auto redStep = getStep(step, targetRed, hwRed, redDistance);
+    if (redStep != 0) {
       valueChanged = true;
-      hwGreen += step;
-      if (hwGreen > curGreenAdj) {
-        hwGreen = curGreenAdj;
-      }
-    } else if (curGreenAdj < hwGreen) {
-      valueChanged = true;
-      hwGreen -= step;
-      if (hwGreen < curGreenAdj) {
-        hwGreen = curGreenAdj;
-      }
+      hwRed += redStep;
     }
 
-    if (curBlueAdj > hwBlue) {
+    auto greenStep = getStep(step, targetGreen, hwGreen, greenDistance);
+    if (greenStep != 0) {
       valueChanged = true;
-      hwBlue += step;
-      if (hwBlue > curBlueAdj) {
-        hwBlue = curBlueAdj;
-      }
-    } else if (curBlueAdj < hwBlue) {
-      valueChanged = true;
-      hwBlue -= step;
-      if (hwBlue < curBlueAdj) {
-        hwBlue = curBlueAdj;
-      }
+      hwGreen += greenStep;
     }
 
-    if (curColorBrightnessAdj > hwColorBrightness) {
+    auto blueStep = getStep(step, targetBlue, hwBlue, blueDistance);
+    if (blueStep != 0) {
       valueChanged = true;
-      hwColorBrightness += step;
-      if (hwColorBrightness > curColorBrightnessAdj) {
-        hwColorBrightness = curColorBrightnessAdj;
-      }
-    } else if (curColorBrightnessAdj < hwColorBrightness) {
-      valueChanged = true;
-      hwColorBrightness -= step;
-      if (hwColorBrightness < curColorBrightnessAdj) {
-        hwColorBrightness = curColorBrightnessAdj;
-      }
+      hwBlue += blueStep;
     }
 
-    if (curBrightnessAdj > hwBrightness) {
+    auto colorBrightnessStep = getStep(step,
+                                       targetColorBrightness,
+                                       hwColorBrightness,
+                                       colorBrightnessDistance);
+    if (colorBrightnessStep != 0) {
       valueChanged = true;
-      hwBrightness += step;
-      if (hwBrightness > curBrightnessAdj) {
-        hwBrightness = curBrightnessAdj;
-      }
-    } else if (curBrightnessAdj < hwBrightness) {
+      hwColorBrightness += colorBrightnessStep;
+    }
+
+    auto brightnessStep =
+        getStep(step, targetBrightness, hwBrightness, brightnessDistance);
+    if (brightnessStep != 0) {
       valueChanged = true;
-      hwBrightness -= step;
-      if (hwBrightness < curBrightnessAdj) {
-        hwBrightness = curBrightnessAdj;
-      }
+      hwBrightness += brightnessStep;
     }
 
     if (valueChanged) {
-      uint32_t adjColorBrightness = adjustRange(
-          hwColorBrightness, 0, 1023, minColorBrightness, maxColorBrightness);
-      uint32_t adjBrightness =
-          adjustRange(hwBrightness, 0, 1023, minBrightness, maxBrightness);
+      uint32_t adjColorBrightness = hwColorBrightness;
+      if (curColorBrightness > 0) {
+        adjColorBrightness = adjustRange(adjColorBrightness,
+                                         1,
+                                         1023,
+                                         minColorBrightness,
+                                         maxColorBrightness);
+      }
+      uint32_t adjBrightness = hwBrightness;
+      if (curBrightness > 0) {
+        adjBrightness =
+            adjustRange(adjBrightness, 1, 1023, minBrightness, maxBrightness);
+      }
+
       setRGBWValueOnDevice(
           hwRed, hwGreen, hwBlue, adjColorBrightness, adjBrightness);
+      valueChanged = false;
     }
   }
 }
 
 void RGBWBase::onInit() {
+  if (attachedButton) {
+    SUPLA_LOG_DEBUG("RGBWBase[%d] configuring attachedButton, control type %d",
+                    getChannel()->getChannelNumber(), buttonControlType);
+    if (attachedButton->isMonostable()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring monostable button",
+                      getChannel()->getChannelNumber());
+      switch (buttonControlType) {
+        case BUTTON_FOR_RGBW: {
+          attachedButton->addAction(
+              Supla::ITERATE_DIM_ALL, this, Supla::ON_HOLD);
+          attachedButton->addAction(Supla::TOGGLE, this, Supla::ON_CLICK_1);
+          break;
+        }
+        case BUTTON_FOR_RGB: {
+          attachedButton->addAction(
+              Supla::ITERATE_DIM_RGB, this, Supla::ON_HOLD);
+          attachedButton->addAction(Supla::TOGGLE_RGB, this, Supla::ON_CLICK_1);
+          break;
+        }
+        case BUTTON_FOR_W: {
+          attachedButton->addAction(Supla::ITERATE_DIM_W, this, Supla::ON_HOLD);
+          attachedButton->addAction(Supla::TOGGLE_W, this, Supla::ON_CLICK_1);
+          break;
+        }
+      }
+    } else if (attachedButton->isBistable()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring bistable button",
+                      getChannel()->getChannelNumber());
+      switch (buttonControlType) {
+        case BUTTON_FOR_RGBW: {
+          attachedButton->addAction(
+              Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+        case BUTTON_FOR_RGB: {
+          attachedButton->addAction(
+              Supla::TOGGLE_RGB, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+        case BUTTON_FOR_W: {
+          attachedButton->addAction(
+              Supla::TOGGLE_W, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+      }
+    } else if (attachedButton->isMotionSensor()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring motion sensor button",
+                      getChannel()->getChannelNumber());
+      switch (buttonControlType) {
+        case BUTTON_FOR_RGBW: {
+          attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
+          attachedButton->addAction(Supla::TURN_OFF, this, Supla::ON_RELEASE);
+          break;
+        }
+        case BUTTON_FOR_RGB: {
+          attachedButton->addAction(Supla::TURN_ON_RGB, this, Supla::ON_PRESS);
+          attachedButton->addAction(
+              Supla::TURN_OFF_RGB, this, Supla::ON_RELEASE);
+          break;
+        }
+        case BUTTON_FOR_W: {
+          attachedButton->addAction(Supla::TURN_ON_W, this, Supla::ON_PRESS);
+          attachedButton->addAction(Supla::TURN_OFF_W, this, Supla::ON_RELEASE);
+          break;
+        }
+      }
+      if (attachedButton->getLastState() == Supla::Control::PRESSED) {
+        SUPLA_LOG_DEBUG("RGBWBase[%d] button pressed",
+                        getChannel()->getChannelNumber());
+        switch (buttonControlType) {
+          case BUTTON_FOR_RGBW: {
+            curColorBrightness = lastColorBrightness;
+            curBrightness = lastBrightness;
+            break;
+          }
+          case BUTTON_FOR_RGB: {
+            curColorBrightness = lastColorBrightness;
+            break;
+          }
+          case BUTTON_FOR_W: {
+            curBrightness = lastBrightness;
+            break;
+          }
+        }
+      } else {
+        SUPLA_LOG_DEBUG("RGBWBase[%d] button not pressed",
+                        getChannel()->getChannelNumber());
+        switch (buttonControlType) {
+          case BUTTON_FOR_RGBW: {
+            curColorBrightness = 0;
+            curBrightness = 0;
+            break;
+          }
+          case BUTTON_FOR_RGB: {
+            curColorBrightness = 0;
+            break;
+          }
+          case BUTTON_FOR_W: {
+            curBrightness = 0;
+            break;
+          }
+        }
+      }
+    } else {
+      SUPLA_LOG_WARNING("RGBWBase[%d] unknown button type",
+                        getChannel()->getChannelNumber());
+    }
+  }
+
   if (stateOnInit == RGBW_STATE_ON_INIT_ON) {
+    SUPLA_LOG_DEBUG("RGBWBase[%d] TURN on onInit",
+                    getChannel()->getChannelNumber());
     curColorBrightness = 100;
     curBrightness = 100;
   } else if (stateOnInit == RGBW_STATE_ON_INIT_OFF) {
+    SUPLA_LOG_DEBUG("RGBWBase[%d] TURN off onInit",
+                    getChannel()->getChannelNumber());
     curColorBrightness = 0;
     curBrightness = 0;
   }
@@ -543,6 +719,11 @@ void RGBWBase::onLoadState() {
                             sizeof(lastColorBrightness));
   Supla::Storage::ReadState((unsigned char *)&lastBrightness,
                             sizeof(lastBrightness));
+  SUPLA_LOG_DEBUG(
+      "RGBWBase[%d] loaded state: red=%d, green=%d, blue=%d, "
+      "colorBrightness=%d, brightness=%d",
+      getChannel()->getChannelNumber(), curRed, curGreen, curBlue,
+      curColorBrightness, curBrightness);
 }
 
 RGBWBase &RGBWBase::setDefaultStateOn() {
@@ -596,6 +777,32 @@ RGBWBase &RGBWBase::setColorBrightnessLimits(int min, int max) {
   minColorBrightness = min;
   maxColorBrightness = max;
   return *this;
+}
+
+void RGBWBase::attach(Supla::Control::Button *button) {
+  attachedButton = button;
+}
+
+void RGBWBase::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(
+        key, getChannel()->getChannelNumber(), Supla::Html::RgbwButtonTag);
+    int32_t rgbwButtonControlType = 0;
+    // try to read RGBW button control type from channel specific parameter
+    // and if it is missgin, read gloal value setting
+    if (!cfg->getInt32(key, &rgbwButtonControlType)) {
+      cfg->getInt32(Supla::Html::RgbwButtonTag, &rgbwButtonControlType);
+    }
+    if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 3) {
+      buttonControlType = static_cast<ButtonControlType>(rgbwButtonControlType);
+    }
+  }
+  SUPLA_LOG_DEBUG("RGBWBase[%d] button control type: %d",
+                  getChannel()->getChannelNumber(),
+                  buttonControlType);
 }
 
 };  // namespace Control

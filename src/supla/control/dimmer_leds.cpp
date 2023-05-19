@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <supla/log_wrapper.h>
 
 #ifdef ARDUINO_ARCH_ESP32
-extern int esp32PwmChannelCouner;
+extern int esp32PwmChannelCounter;
 #endif
 
 Supla::Control::DimmerLeds::DimmerLeds(int brightnessPin)
@@ -52,14 +52,14 @@ void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
 void Supla::Control::DimmerLeds::onInit() {
 #ifdef ARDUINO_ARCH_ESP32
   SUPLA_LOG_DEBUG("Dimmer: attaching pin %d to PWM channel %d",
-                  brightnessPin, esp32PwmChannelCouner);
+                  brightnessPin, esp32PwmChannelCounter);
 
-  ledcSetup(esp32PwmChannelCouner, 1000, 10);
-  ledcAttachPin(brightnessPin, esp32PwmChannelCouner);
+  ledcSetup(esp32PwmChannelCounter, 1000, 10);
+  ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
   // on ESP32 we write to PWM channels instead of pins, so we copy channel
   // number as pin in order to reuse variable
-  brightnessPin = esp32PwmChannelCouner;
-  esp32PwmChannelCouner++;
+  brightnessPin = esp32PwmChannelCounter;
+  esp32PwmChannelCounter++;
 #else
   Supla::Io::pinMode(brightnessPin, OUTPUT);
 

@@ -49,7 +49,7 @@ After step 5 you should see Supla example applications in Arduino IDE examples. 
 ### Network interfaces
 Supported network interfaces for Arduino Mega:
 * Ethernet Shield - with W5100 chipset. Include `<supla/network/ethernet_shield.h>` and add `Supla::EthernetShield ethernet;` as a global variable.
-* ENC28J60 - it requires additional UIPEthenet library (https://github.com/ntruchsess/arduino_uip). Include `<supla/network/ENC28J60.h>` and 
+* ENC28J60 - it requires additional EthernetENC library. Include `<supla/network/ENC28J60.h>` and 
 add `Supla::ENC28J60 ethernet;` as a global variable. Warning: network initialization on this library is blocking. In case of missing ENC28J60 board
 or some other problem with network, program will stuck on initialization and will not work until connection is properly esablished.
 Second warning: UIPEthernet library is consuming few hundred of bytes of RAM memory more, compared to standard Ethernet library. 
@@ -86,6 +86,7 @@ Each example can run on Arduino Mega, ESP8266, or ESP32 board - unless mentioned
 * `supla/conditions` - classes that are used to check runtime dependencies between channels (i.e. turn on relay when humidity is below 40%)
 * `supla/device` - device maintanance functions (like status LED which informs about connection status)
 * `supla/pv` - supported integrations with inverters used with photovoltaic
+* `supla/protocol` - protocol layers implementation for Supla and MQTT
 * `supla` - all common classes are defined in main `supla` folder. You can find there classes that create framework on which all other components work. 
 
 Some functions from above folders have dependencies to external libraries. Please check documentation included in header files.
@@ -103,13 +104,15 @@ All elements have to be constructed before `SuplaDevice.begin()` method is calle
 Supla channel number is assigned to each elemement with channel in an order of creation of objects. First channel will get number 0, second 1, etc. Supla server will not accept registration of device when order of channels is changed, or some channel is removed. In such case, you should remove device from Supla Cloud and register it again from scratch.
 
 `Element` class defines follwoing virtual methods that are called by SuplaDevice:
-1. `onLoadState` - called first within `SuplaDevice.begin()` method. It reads configuration data from persistent memory storage.
-2. `onInit` - called second within `SuplaDevice.begin()` method. It should initialize your element - all GPIO settings should be done there and proper state of channel should be set. 
-3. `onSaveState` - called in `SuplaDevice.iterate()` - it saves state data to persistant storage. It is not called on each iteration. `Storage` class makes sure that storing to memory does not happen too often and time delay between saves depends on implementation. 
-3. `iterateAlways` - called on each iteration of `SuplaDevice.iterate()` method, regardless of network/connection status. Be careful - some other methods called in `SuplaDevice.iterate()` method may block program execution for some time (even few seconds) - i.e. trying to establish connection with Supla server is blocking - in case server is not accessible, it will iterfere with `iterateAlways` method. So time critical functions should not be put here.
-4. `iterateConnected` - called on each iterateion of `SuplaDevice.iterate()` method when device is connected and properly registered in Supla server. This method usually checks if there is some new data to be send to server (i.e. new temperature reading) and sends it. 
-5. `onTimer` - called every 10 ms after enabling in `SuplaDevice.begin()`
-6. `onFastTimer` - called every 1 ms (0.5 ms in case of Arudino Mega) after enabling in `SuplaDevice.begin()`
+1. `onLoadConfig` - called first within `SuplaDevice.begin()` method. It reads element configuration from Supla::Config instance.
+2. `onLoadState` - called second within `SuplaDevice.begin()` method. It reads element state data from persistent memory storage.
+3. `onInit` - called third within `SuplaDevice.begin()` method. It should initialize your element - all GPIO settings should be done there and proper state of channel should be set. 
+4. `onSaveState` - called in `SuplaDevice.iterate()` - it saves state data to persistant storage. It is not called on each iteration. `Storage` class makes sure that storing to memory does not happen too often and time delay between saves depends on implementation.
+5. `onRegistered` - called in `SuplaDevice.iterate()` - it is called after SuplaDevice is registered to Supla server.
+6. `iterateAlways` - called on each iteration of `SuplaDevice.iterate()` method, regardless of network/connection status. Be careful - some other methods called in `SuplaDevice.iterate()` method may block program execution for some time (even few seconds) - i.e. trying to establish connection with Supla server is blocking - in case server is not accessible, it will iterfere with `iterateAlways` method. So time critical functions should not be put here.
+7. `iterateConnected` - called on each iterateion of `SuplaDevice.iterate()` method when device is connected and properly registered in Supla server. This method usually checks if there is some new data to be send to server (i.e. new temperature reading) and sends it. 
+8. `onTimer` - called every 10 ms after enabling in `SuplaDevice.begin()`
+9. `onFastTimer` - called every 1 ms (0.5 ms in case of Arudino Mega) after enabling in `SuplaDevice.begin()`
 
 ## How to migrate programs written in SuplaDevice libraray versions 1.6 and older
 
@@ -209,33 +212,43 @@ Sensor category is for all elements/channels that reads something and provides d
 
 * `Binary` - two state sensor: on/off, enabled/disabled, open/closesd, etc. It reads GPIO state: LOW/HIGH
 * `VirtualBinary` - similar to `Binary` but it use settable variable in memory to show state
+* `VirtualThermometer` - thermometer channel with settable variable in memory
+* `VirtualHygrometer` - humidity channel with settable variable in memory
+* `VirtualThermHygroPressMeter` - thermometer, humidity, and pressure channel with settable variable in memory
 * `Thermometer` - base class for thermometer sensors
 * `DS18B20` - DS18B20 thermometer
 * `Si7021` - S17021 thermometer
 * `Si7021Sonoff` - Si7021 thermometer for Sonoff
 * `MAX6675_K` - MAX6675_K thermometer
+* `MAXThermocouple` - MAX6675 and MAX31855 thremocouples (thermometers)
+* `NTC10k` - NTC10k thermometer
 * `ThermHygroMeter` - base class for sensors capable of measuring temperature and humidity
 * `DHT` - DHT11 and DHT22 support
 * `SHT3x` - SHT3x support
+* `AHT` - AHT temperature and humidity
 * `ThermHygroPressMeter` - base class for sensors capable of measuring temperature, humidity, and pressure
 * `BME280` - BME280 support
 * `Distance` - base class for distance sensors
-* `HC_SR04` - HC_SR04 distance meter
+* `HC_SR04` - HC_SR04, JSN-SR20-Y1 distance meters
 * `Pressure` - base class for presure meters
 * `Wind` - base class for wind meters (speed)
 * `Rain` - base class for rain meters
 * `Weight` - base class for weight meters
 * `ImpulseCounter` - calculates impulses on a given GPIO
 * `ElectricityMeter` - base class for electricity meters
+* `OnePhaseElectricityMeter` - base class for single phase electricity meters
 * `PZEMv2` - PZEMv2 one phase electricity meter
 * `PZEMv3` - PZEMv3 one phase electricity meter
 * `ThreePhasePZEMv3` - 3x PZEMv3 for measuring three phases
 * `EspFreeHeap` - provides free heap memory on ESP8266 as a Channel
+* `HX711` - HX711 support (weight sensor)
+* `HygroMeter` - base class for sensors capable of measuring humidity
 
 ### Control 
 Control category is for all elements/channels that are used to control something, i.e. relays, buttons, RGBW.
 Classes in this category are in namespace `Supla::Control`:
 
+* `ActionTrigger` - allows to send Action Triggers to server based on events in application, can be attached to Button
 * `BistableRelay` - SuplaDevice sends short impulses on GPIO to trigger change of bistable relay. It requires additional GPIO input to read status of relay
 * `BistableRollerShutter` - Roller shutter implementation to control external roller shutter controllers that work in a similar way to bistable relays
 * `Button` - allows to use button connected to GPIO to control other elements in device. Supports multiclicks, long click, etc
@@ -248,9 +261,11 @@ Classes in this category are in namespace `Supla::Control`:
 * `RGBBase` - base class for RGB control
 * `RGBLeds` - PWM based implementation for RGB lights
 * `RGBWBase` - base class for RGBW control
+* `RGBWLeds` - PWM based implementation for RGBW lights
 * `RollerShutter` - controller for roller shutters
 * `SequenceButton` - extension of button which allows to trigger actions based on specific sequence/rythm
 * `SimpleButton` - button that allows only press and release detection with lower memory footprint
+* `TrippleButtonRollerShutter` - roller shutter implementation to control external roller shutter controllers with 3 buttons: up, down, stop
 * `VirtualRelay` - relay which keeps its state in memory and doesn't affect any GPIO
 
 ### Photovoltaic inverter

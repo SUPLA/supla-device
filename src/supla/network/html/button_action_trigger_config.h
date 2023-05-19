@@ -24,7 +24,7 @@
 namespace Supla {
 namespace Html {
 
-const char BtnActionTriggerCfgTagPrefix[] = "mqtt_at_";
+const char BtnActionTriggerCfgTagPrefix[] = "mqtt_at";
 
 class ButtonActionTriggerConfig : public HtmlElement {
  public:

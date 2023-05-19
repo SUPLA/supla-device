@@ -31,7 +31,7 @@ class Thermometer : public ChannelElement {
   virtual double getValue();
   int16_t getTempInt16();
   void onInit() override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void iterateAlways() override;
 
   double getLastTemperature();

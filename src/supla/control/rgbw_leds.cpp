@@ -19,7 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <supla/log_wrapper.h>
 
 #ifdef ARDUINO_ARCH_ESP32
-extern int esp32PwmChannelCouner;
+extern int esp32PwmChannelCounter;
 #endif
 
 Supla::Control::RGBWLeds::RGBWLeds(int redPin,
@@ -65,29 +65,29 @@ void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
 void Supla::Control::RGBWLeds::onInit() {
 #ifdef ARDUINO_ARCH_ESP32
   SUPLA_LOG_DEBUG("RGBW: attaching pin %d to PWM channel %d",
-                  redPin, esp32PwmChannelCouner);
+                  redPin, esp32PwmChannelCounter);
 
-  ledcSetup(esp32PwmChannelCouner, 1000, 10);
-  ledcAttachPin(redPin, esp32PwmChannelCouner);
+  ledcSetup(esp32PwmChannelCounter, 1000, 10);
+  ledcAttachPin(redPin, esp32PwmChannelCounter);
   // on ESP32 we write to PWM channels instead of pins, so we copy channel
   // number as pin in order to reuse variable
-  redPin = esp32PwmChannelCouner;
-  esp32PwmChannelCouner++;
+  redPin = esp32PwmChannelCounter;
+  esp32PwmChannelCounter++;
 
-  ledcSetup(esp32PwmChannelCouner, 1000, 10);
-  ledcAttachPin(greenPin, esp32PwmChannelCouner);
-  greenPin = esp32PwmChannelCouner;
-  esp32PwmChannelCouner++;
+  ledcSetup(esp32PwmChannelCounter, 1000, 10);
+  ledcAttachPin(greenPin, esp32PwmChannelCounter);
+  greenPin = esp32PwmChannelCounter;
+  esp32PwmChannelCounter++;
 
-  ledcSetup(esp32PwmChannelCouner, 1000, 10);
-  ledcAttachPin(bluePin, esp32PwmChannelCouner);
-  bluePin = esp32PwmChannelCouner;
-  esp32PwmChannelCouner++;
+  ledcSetup(esp32PwmChannelCounter, 1000, 10);
+  ledcAttachPin(bluePin, esp32PwmChannelCounter);
+  bluePin = esp32PwmChannelCounter;
+  esp32PwmChannelCounter++;
 
-  ledcSetup(esp32PwmChannelCouner, 1000, 10);
-  ledcAttachPin(brightnessPin, esp32PwmChannelCouner);
-  brightnessPin = esp32PwmChannelCouner;
-  esp32PwmChannelCouner++;
+  ledcSetup(esp32PwmChannelCounter, 1000, 10);
+  ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
+  brightnessPin = esp32PwmChannelCounter;
+  esp32PwmChannelCounter++;
 
 #else
   Supla::Io::pinMode(redPin, OUTPUT);

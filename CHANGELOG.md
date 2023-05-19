@@ -1,5 +1,15 @@
 # CHANGELOG.md
 
+## 23.04 (2023-04-19)
+
+  - Change: (Arduino ESP32) Dimmer, RGB, RGBW: ESP32 LEDC channel frequency changed from 12 kHz to 1 kHz.
+  - Change: ESP-IDF example: change partition scheme (factory removed, ota_0 and ota_1 size change to 1.5 M)
+  - Change: change Supla communication send/recv log level to verbose.
+  - Fix: RGBW: handling of command TurnOnOff value (server or app may send value 1, 2, 3 depending on source/channel type, which should be handled in the same way by device).
+  - Fix: Arduino Mega ENC28J60: fix compilation error. Changed library for ENC28J60 to EthernetENC.
+  - Add: sd4linux: add documentation for Humidity, Pressure, Rain, Wind parsed sensors.
+  - Add: RollerShutter: add getters for closing/opening time
+
 ## 23.02.01 (2023-02-22)
 
   - Add: Roller shutter: add handling of server commands: up or stop, down or stop, step-by-step.

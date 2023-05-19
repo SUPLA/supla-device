@@ -22,6 +22,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+#include <supla/control/button.h>
 
 #include "../actions.h"
 #include "../io.h"
@@ -65,6 +66,27 @@ void Relay::onInit() {
       stateOnInit == STATE_ON_INIT_RESTORED_ON) {
     stateOn = true;
   }
+
+  if (attachedButton) {
+    if (attachedButton->isMonostable()) {
+      attachedButton->addAction(
+          Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
+    } else if (attachedButton->isBistable()) {
+      attachedButton->addAction(
+          Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
+    } else if (attachedButton->isMotionSensor()) {
+      attachedButton->addAction(
+          Supla::TURN_ON, this, Supla::ON_PRESS);
+      attachedButton->addAction(
+          Supla::TURN_OFF, this, Supla::ON_RELEASE);
+      if (attachedButton->getLastState() == Supla::Control::PRESSED) {
+        stateOn = true;
+      } else {
+        stateOn = false;
+      }
+    }
+  }
+
   if (!isLastResetSoft()) {
     if (stateOn) {
       turnOn();
@@ -245,6 +267,10 @@ Relay &Relay::keepTurnOnDuration(bool keep) {
 
 unsigned _supla_int_t Relay::getStoredTurnOnDurationMs() {
   return storedTurnOnDurationMs;
+}
+
+void Relay::attach(Supla::Control::Button *button) {
+  attachedButton = button;
 }
 
 }  // namespace Control

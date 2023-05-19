@@ -27,6 +27,12 @@ namespace Control {
 
 class Button : public SimpleButton {
  public:
+  enum class ButtonType {
+    MONOSTABLE,
+    BISTABLE,
+    MOTION_SENSOR
+  };
+
   explicit Button(Supla::Io *io,
                   int pin,
                   bool pullUp = false,
@@ -34,24 +40,49 @@ class Button : public SimpleButton {
   explicit Button(int pin, bool pullUp = false, bool invertLogic = false);
 
   void onTimer() override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
+  void onInit() override;
+  void addAction(int action, ActionHandler &client, int event,
+      bool alwaysEnabled = false) override;
+  void addAction(int action, ActionHandler *client, int event,
+      bool alwaysEnabled = false) override;
+  void disableAction(int action, ActionHandler *client, int event) override;
+  void enableAction(int action, ActionHandler *client, int event) override;
+
   void setHoldTime(unsigned int timeMs);
   void repeatOnHoldEvery(unsigned int timeMs);
+
+  // setting of bistableButton is for backward compatiblity.
+  // Use setButtonType instaed.
   void setMulticlickTime(unsigned int timeMs, bool bistableButton = false);
+
+  void setButtonType(const ButtonType type);
   bool isBistable() const;
+  bool isMonostable() const;
+  bool isMotionSensor() const;
 
   virtual void configureAsConfigButton(SuplaDeviceClass *sdc);
   bool disableActionsInConfigMode() override;
 
+  uint8_t getMaxMulticlickValue();
+  int8_t getButtonNumber() const override;
+  void setButtonNumber(int8_t number);
+
  protected:
+  void evaluateMaxMulticlickValue();
   unsigned int holdTimeMs = 0;
   unsigned int repeatOnHoldMs = 0;
   unsigned int multiclickTimeMs = 0;
   uint64_t lastStateChangeMs = 0;
   uint8_t clickCounter = 0;
+  uint8_t maxMulticlickValueConfigured = 0;
   unsigned int holdSend = 0;
-  bool bistable = false;
+  ButtonType buttonType = ButtonType::MONOSTABLE;
   bool configButton = false;
+  bool useOnLoadConfig = true;
+  int8_t buttonNumber = -1;
+
+  static int buttonCounter;
 };
 
 };  // namespace Control

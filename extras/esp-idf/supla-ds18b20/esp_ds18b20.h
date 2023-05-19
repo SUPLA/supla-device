@@ -74,7 +74,7 @@ class DS18B20 : public Thermometer {
 
   explicit DS18B20(uint8_t gpio, uint8_t *deviceAddress = nullptr);
   void iterateAlways() override;
-  void onLoadConfig() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
   void onInit() override;
   double getValue() override;
   void assignAddressIfNeeded();

@@ -36,7 +36,7 @@ void Supla::ChannelElement::addAction(int action,
     ActionHandler *client,
     int event,
     bool alwaysEnabled) {
-  addAction(action, *client, event, alwaysEnabled);
+  ChannelElement::addAction(action, *client, event, alwaysEnabled);
 }
 
 void Supla::ChannelElement::runAction(int event) {
@@ -60,7 +60,7 @@ void Supla::ChannelElement::addAction(int action,
     ActionHandler *client,
     Supla::Condition *condition,
     bool alwaysEnabled) {
-  addAction(action, *client, condition, alwaysEnabled);
+  ChannelElement::addAction(action, *client, condition, alwaysEnabled);
 }
 
 bool Supla::ChannelElement::loadFunctionFromConfig() {

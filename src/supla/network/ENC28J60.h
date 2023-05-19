@@ -20,7 +20,7 @@
 #define SRC_SUPLA_NETWORK_ENC28J60_H_
 
 #include <Arduino.h>
-#include <UIPEthernet.h>
+#include <EthernetENC.h>
 
 #include <supla/log_wrapper.h>
 
@@ -32,7 +32,7 @@
 namespace Supla {
 class ENC28J60 : public Supla::Network {
  public:
-  explicit ENC28J60(uint8_t mac[6], IPAddress *ip = NULL) : Network(ip) {
+  explicit ENC28J60(uint8_t mac[6], unsigned char *ip = NULL) : Network(ip) {
     memcpy(this->mac, mac, 6);
     sslEnabled = false;
   }

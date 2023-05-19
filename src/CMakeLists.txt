@@ -63,6 +63,11 @@ set(SRCS
   supla/network/client.cpp
   supla/network/ip_address.cpp
   supla/network/html/text_cmd_input_parameter.cpp
+  supla/network/html/select_input_parameter.cpp
+  supla/network/html/rgbw_button_parameters.cpp
+  supla/network/html/button_type_parameters.cpp
+  supla/network/html/button_config_parameters.cpp
+  supla/network/html/button_hold_time_parameters.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

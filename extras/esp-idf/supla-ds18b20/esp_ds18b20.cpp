@@ -26,8 +26,8 @@
 #include "supla/sensor/one_phase_electricity_meter.h"
 #include "supla/sensor/thermometer.h"
 
-void Supla::Sensor::DS18B20::onLoadConfig() {
-  Supla::Sensor::Thermometer::onLoadConfig();
+void Supla::Sensor::DS18B20::onLoadConfig(SuplaDeviceClass *sdc) {
+  Supla::Sensor::Thermometer::onLoadConfig(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};

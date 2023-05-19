@@ -27,7 +27,32 @@
 
 namespace Supla {
 namespace Control {
+
+class BrightnessAdjuster {
+ public:
+  virtual ~BrightnessAdjuster() = default;
+  virtual int adjustBrightness(int input) = 0;
+};
+
+class GeometricBrightnessAdjuster : public BrightnessAdjuster {
+ public:
+  explicit GeometricBrightnessAdjuster(double power = 1.505, int offset = 0);
+  int adjustBrightness(int input) override;
+
+ private:
+  double power = 1.505;
+  int offset = 0;
+};
+
+class Button;
+
 class RGBWBase : public ChannelElement, public ActionHandler {
+  enum ButtonControlType {
+    BUTTON_FOR_RGBW,
+    BUTTON_FOR_RGB,
+    BUTTON_FOR_W
+  };
+
  public:
   RGBWBase();
 
@@ -44,22 +69,25 @@ class RGBWBase : public ChannelElement, public ActionHandler {
                        int brightness,
                        bool toggle = false);
 
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue);
+  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   virtual void turnOn();
   virtual void turnOff();
   virtual void toggle();
-  void handleAction(int event, int action);
+  void handleAction(int event, int action) override;
   void setStep(int step);
   void setDefaultDimmedBrightness(int dimmedBrightness);
   void setFadeEffectTime(int timeMs);
   void setMinIterationBrightness(uint8_t minBright);
   void setMinMaxIterationDelay(uint16_t delayMs);
 
-  void onInit();
-  void iterateAlways();
-  void onTimer();
-  void onLoadState();
-  void onSaveState();
+  void onInit() override;
+  void iterateAlways() override;
+  void onFastTimer() override;
+  void onLoadState() override;
+  void onSaveState() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
+
+  void attach(Supla::Control::Button *);
 
   virtual RGBWBase &setDefaultStateOn();
   virtual RGBWBase &setDefaultStateOff();
@@ -73,37 +101,56 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   // set on device. Values should be between 0 and 1023 (min, max).
   virtual RGBWBase &setColorBrightnessLimits(int min, int max);
 
+  void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
+
  protected:
   uint8_t addWithLimit(int value, int addition, int limit = 255);
   virtual void iterateDimmerRGBW(int rgbStep, int wStep);
+  // Set mapping between interface setting of brightness and actual value
+  // set on device.
+  // Input value is in range 0-100.
+  // Returns value in range 0-1023 adjusted by selected function.
+  int adjustBrightness(int value);
 
-  uint8_t buttonStep;               // 10
-  uint8_t curRed;                   // 0 - 255
-  uint8_t curGreen;                 // 0 - 255
-  uint8_t curBlue;                  // 0 - 255
-  uint8_t curColorBrightness;       // 0 - 100
-  uint8_t curBrightness;            // 0 - 100
-  uint8_t lastColorBrightness;      // 0 - 100
-  uint8_t lastBrightness;           // 0 - 100
-  uint8_t defaultDimmedBrightness;  // 20
-  bool dimIterationDirection;
-  int fadeEffect;
-  int hwRed;              // 0 - 255
-  int hwGreen;            // 0 - 255
-  int hwBlue;             // 0 - 255
-  int hwColorBrightness;  // 0 - 100
-  int hwBrightness;       // 0 - 100
-  int minBrightness = 0;
+  double getStep(int step, int target, double current, int distance);
+
+  uint8_t buttonStep = 10;               // 10
+  uint8_t curRed = 0;                   // 0 - 255
+  uint8_t curGreen = 0;                 // 0 - 255
+  uint8_t curBlue = 0;                  // 0 - 255
+  uint8_t curColorBrightness = 0;       // 0 - 100
+  uint8_t curBrightness = 0;            // 0 - 100
+  uint8_t lastColorBrightness = 100;      // 0 - 100
+  uint8_t lastBrightness = 100;           // 0 - 100
+  uint8_t defaultDimmedBrightness = 20;  // 20
+  bool dimIterationDirection = false;
+  int fadeEffect = 500;
+  double hwRed = 0;              // 0 - 1023
+  double hwGreen = 0;            // 0 - 1023
+  double hwBlue = 0;             // 0 - 1023
+  double hwColorBrightness = 0;  // 0 - 1023
+  double hwBrightness = 0;       // 0 - 1023
+  int minBrightness = 1;
   int maxBrightness = 1023;
-  int minColorBrightness = 0;
+  int minColorBrightness = 1;
   int maxColorBrightness = 1023;
+  int redDistance = 0;
+  int greenDistance = 0;
+  int blueDistance = 0;
+  int colorBrightnessDistance = 0;
+  int brightnessDistance = 0;
+  bool resetDisance = false;
   uint16_t minMaxIterationDelay = 750;
   uint64_t lastTick = 0;
   uint64_t lastMsgReceivedMs = 0;
   uint64_t lastIterateDimmerTimestamp = 0;
   uint64_t iterationDelayTimestamp = 0;
-  int8_t stateOnInit;
-  uint8_t minIterationBrightness;
+  int8_t stateOnInit = -1;
+  uint8_t minIterationBrightness = 1;
+  BrightnessAdjuster *brightnessAdjuster = nullptr;
+  bool valueChanged = true;
+  Supla::Control::Button *attachedButton = nullptr;
+  enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
 };
 
 };  // namespace Control

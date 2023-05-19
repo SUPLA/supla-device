@@ -63,6 +63,7 @@ class Button : public SimpleButton {
 
   virtual void configureAsConfigButton(SuplaDeviceClass *sdc);
   bool disableActionsInConfigMode() override;
+  void dontUseOnLoadConfig();
 
   uint8_t getMaxMulticlickValue();
   int8_t getButtonNumber() const override;

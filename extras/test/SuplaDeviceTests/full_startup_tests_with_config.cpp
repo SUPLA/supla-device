@@ -183,7 +183,7 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -306,7 +306,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -430,7 +430,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -554,7 +554,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -686,7 +686,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -812,7 +812,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -937,7 +937,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1042,7 +1042,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1121,7 +1121,7 @@ TEST_F(FullStartupWithConfig, OfflineModeProtoDisabled) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1204,7 +1204,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOff) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1286,7 +1286,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOff) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1380,7 +1380,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1462,7 +1462,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1551,7 +1551,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1643,7 +1643,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1736,7 +1736,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1827,7 +1827,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -1924,7 +1924,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   EXPECT_CALL(*client, connected()).WillOnce(Return(false))
     .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillOnce(Return(1));
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -2051,7 +2051,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -2155,7 +2155,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnEmailSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -2259,7 +2259,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOffMqttServerSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
@@ -2377,7 +2377,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
 
   EXPECT_CALL(*client, connected()).Times(0);
   EXPECT_CALL(*client, connectImp(_, 2016)).Times(0);
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_f(_, _)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(0);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));

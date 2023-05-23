@@ -152,7 +152,7 @@ class Channel : public LocalAction {
   void requestChannelConfig();
 
   static uint64_t lastCommunicationTimeMs;
-  static TDS_SuplaRegisterDevice_F reg_dev;
+  static TDS_SuplaRegisterDevice_E reg_dev;
 
  protected:
   bool valueChanged;

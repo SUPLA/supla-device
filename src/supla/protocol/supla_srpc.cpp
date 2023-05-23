@@ -632,7 +632,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, "Register in progress");
-    if (!srpc_ds_async_registerdevice_f(srpc, &Supla::Channel::reg_dev)) {
+    if (!srpc_ds_async_registerdevice_e(srpc, &Supla::Channel::reg_dev)) {
       SUPLA_LOG_WARNING("Fatal SRPC failure!");
     }
     return false;

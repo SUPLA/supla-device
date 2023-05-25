@@ -1,5 +1,24 @@
 # CHANGELOG.md
 
+## 23.05 (2023-05-25)
+
+  - Change: ESP-IDF version update to 5.0.2
+  - Change: Config: rename of MQTT AT config parameter tag
+  - Fix: Sleeping channel: channel value change should be always send after successful registration to Supla server (for sleeping channels) - fix for invalid binary sensor value for sleeping device.
+  - Fix: RGBW, Dimmer: fix min range setting on "turn off". Min range should be adjusted only if bightness is > 0%, otherwise set 0 to HW.
+  - Fix: RGBW: fix button toggle action - toggle with both RGB and W subchannels should turn off or turn on both subchannels, instead of toggleing both brightness and color brightness individually
+  - Fix: Linux: fix CMake config for yaml-cpp lib, so it will work on MacOs also
+  - Add: HTML: add SelectInputParameter for generic dropdown HTML select field with configurable tag, label and values
+  - Add: RGBW, Dimmer: add option to specify brightness scaling function. Add smoother brighness change.
+  - Add: Button: add detection of max configured multiclick value - button will send proper multiclick event without waiting for release or next press, when max configured click amount was reached (alignement with older framework behavior)
+  - Add: Button: add events CONDITIONAL_ON_PRESS, CONDITIONAL_ON_RELEASE, CONDITIONAL_ON_CHANGE - those events are generated only on first press or release in sequence (i.e. only during first click, and ignored for other muliclicks. on release is also ignored after on hold).
+  - Add: Button: add explicit setButtonType method for: monostable, bistable, motion sensor type setting.
+  - Add: Button: add "motion sensor" button type
+  - Add: HTML: add new HTML elements for button configuration (button type, hold time detection) and for RGBW setting (selection of which subchannel should be controlled by button).
+  - Add: Relay, RGBWBase: add option to attach(button), which will be configured with default actions during onInit.
+  - Add: HTML: add "use button as IN Config" HTML element
+  - Add: Button: add option to automatically configure input as config based on Config Storage
+
 ## 23.04 (2023-04-19)
 
   - Change: (Arduino ESP32) Dimmer, RGB, RGBW: ESP32 LEDC channel frequency changed from 12 kHz to 1 kHz.

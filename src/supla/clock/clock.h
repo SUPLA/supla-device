@@ -56,8 +56,8 @@ class Clock : public Element {
   virtual int getSec();
   virtual time_t getTimeStamp();
 
-  void onTimer();
-  bool iterateConnected();
+  void onTimer() override;
+  bool iterateConnected() override;
 
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 

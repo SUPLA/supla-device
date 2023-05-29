@@ -19,15 +19,15 @@
 #ifndef SRC_SUPLA_SENSOR_THERMOMETER_H_
 #define SRC_SUPLA_SENSOR_THERMOMETER_H_
 
-#include "supla/channel_element.h"
-
-#define TEMPERATURE_NOT_AVAILABLE -275.0
+#include <supla/channel_element.h>
+#include <supla/sensor/thermometer_driver.h>
 
 namespace Supla {
 namespace Sensor {
 class Thermometer : public ChannelElement {
  public:
   Thermometer();
+  explicit Thermometer(ThermometerDriver *driver);
   virtual double getValue();
   int16_t getTempInt16();
   void onInit() override;
@@ -40,6 +40,7 @@ class Thermometer : public ChannelElement {
  protected:
   uint64_t lastReadTime;
   uint16_t refreshIntervalMs = 10000;
+  ThermometerDriver *driver = nullptr;
 };
 
 };  // namespace Sensor

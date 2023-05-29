@@ -22,16 +22,27 @@
 
 #include <stdio.h>
 
+using Supla::Sensor::Thermometer;
+
 Supla::Sensor::Thermometer::Thermometer() : lastReadTime(0) {
   channel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
   channel.setDefault(SUPLA_CHANNELFNC_THERMOMETER);
 }
 
+Thermometer::Thermometer(ThermometerDriver *driver) : driver(driver) {
+}
+
 void Supla::Sensor::Thermometer::onInit() {
+  if (driver) {
+    driver->initialize();
+  }
   channel.setNewValue(getValue());
 }
 
 double Supla::Sensor::Thermometer::getValue() {
+  if (driver) {
+    return driver->getValue();
+  }
   return TEMPERATURE_NOT_AVAILABLE;
 }
 

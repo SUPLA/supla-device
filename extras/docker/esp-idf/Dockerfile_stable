@@ -20,6 +20,9 @@ RUN mkdir esp && \
     cd esp-idf && \
     ./install.sh all
 
+# Workaround for LEDC in IRAM
+echo "    ledc (noflash)" >> components/driver/linker.lf
+
 # Download supla-device
 RUN git clone --recursive https://github.com/SUPLA/supla-device.git && \
       mkdir projects

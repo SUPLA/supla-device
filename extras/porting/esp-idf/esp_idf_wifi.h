@@ -32,6 +32,8 @@
 
 namespace Supla {
 
+#define SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX 2
+
 class EspIdfWifi : public Supla::Wifi {
  public:
   explicit EspIdfWifi(const char *wifiSsid = nullptr,
@@ -61,7 +63,7 @@ class EspIdfWifi : public Supla::Wifi {
   EventGroupHandle_t wifiEventGroup;
   unsigned _supla_int_t ipv4 = 0;
   uint8_t lastChannel = 0;
-  int lastReasons[2] = {};
+  int lastReasons[SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX] = {};
   int lastReasonIdx = 0;
 #ifdef SUPLA_DEVICE_ESP32
   esp_netif_t *staNetIf = nullptr;

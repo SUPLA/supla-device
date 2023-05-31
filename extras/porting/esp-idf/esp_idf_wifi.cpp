@@ -266,14 +266,14 @@ bool Supla::EspIdfWifi::getMacAddr(uint8_t *out) {
 
 void Supla::EspIdfWifi::logWifiReason(int reason) {
   bool reasonAlreadyReported = false;
-  for (int i = 0; i < sizeof(lastReasons); i++) {
+  for (int i = 0; i < SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX; i++) {
     if (lastReasons[i] == reason) {
       reasonAlreadyReported = true;
       break;
     }
   }
 
-  if (lastReasonIdx >= sizeof(lastReasons)) {
+  if (lastReasonIdx >= SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX) {
     lastReasonIdx = 0;
   }
   lastReasons[lastReasonIdx++] = reason;

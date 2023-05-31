@@ -305,6 +305,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   if (strnlen(Supla::Channel::reg_dev.SoftVer, SUPLA_SOFTVER_MAXSIZE) == 0) {
     setSwVersion(suplaDeviceVersion);
   }
+  SUPLA_LOG_INFO("Device name: %s", Supla::Channel::reg_dev.Name);
+  SUPLA_LOG_INFO("Device software version: %s",
+                 Supla::Channel::reg_dev.SoftVer);
 
   SUPLA_LOG_DEBUG("Initializing network layer");
   char hostname[32] = {};

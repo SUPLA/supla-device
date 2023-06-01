@@ -100,6 +100,8 @@ enum Event {
   ON_HVAC_HEATING,
   ON_HVAC_COOLING,
   ON_HVAC_STANDBY,
+
+  ON_ERROR,
 };
 
 };  // namespace Supla

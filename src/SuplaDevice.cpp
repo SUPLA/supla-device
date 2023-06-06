@@ -735,6 +735,12 @@ void SuplaDeviceClass::softRestart() {
 
   // TODO(klew): stop supla timers
 
+  for (auto element = Supla::Element::begin(); element != nullptr;
+       element = element->next()) {
+    element->onSoftReset();
+    delay(0);
+  }
+
   if (Supla::WebServer::Instance()) {
     Supla::WebServer::Instance()->stop();
   }

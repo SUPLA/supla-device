@@ -79,6 +79,9 @@ class Element {
   // other SuplaDevice activities
   virtual void onFastTimer();
 
+  // method called when soft restart is triggered
+  virtual void onSoftReset();
+
   // return value:
   //  -1 - don't send reply to server
   //  0 - success==false

@@ -2767,3 +2767,11 @@ bool HvacBase::isCountdownEnabled() {
   return channel.isHvacFlagCountdownTimer();
 }
 
+bool HvacBase::isThermostatDisabled() {
+  return getMode() == SUPLA_HVAC_MODE_OFF;
+}
+
+bool HvacBase::isManualModeEnabled() {
+  return !isThermostatDisabled() && !isWeeklyScheduleEnabled() &&
+         !isCountdownEnabled();
+}

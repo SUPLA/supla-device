@@ -76,6 +76,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int getDefaultManualMode();
   bool isWeeklyScheduleEnabled();
   bool isCountdownEnabled();
+  bool isThermostatDisabled();
+  bool isManualModeEnabled();
 
   void saveConfig();
   void saveWeeklySchedule();

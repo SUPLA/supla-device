@@ -226,4 +226,7 @@ void Element::generateKey(char *output, const char *key) {
   Supla::Config::generateKey(output, getChannelNumber(), key);
 }
 
+void Element::onSoftReset() {
+}
+
 };  // namespace Supla

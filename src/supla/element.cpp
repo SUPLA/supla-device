@@ -216,7 +216,8 @@ uint8_t Element::handleWeeklySchedule(TSD_ChannelConfig *result, bool local) {
   return SUPLA_RESULTCODE_UNSUPORTED;
 }
 
-void Element::handleSetChannelConfigResult(TSD_SetChannelConfigResult *result) {
+void Element::handleSetChannelConfigResult(
+    TSDS_SetChannelConfigResult *result) {
   (void)(result);
   SUPLA_LOG_ERROR(
       "Element: received set channel config reply, but handling is missing");

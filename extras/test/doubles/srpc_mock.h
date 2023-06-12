@@ -65,13 +65,13 @@ class SrpcInterface {
       unsigned char configType) = 0;
 
   virtual _supla_int_t setDeviceConfigResult(
-      TSD_SetDeviceConfigResult *result) = 0;
+      TSDS_SetDeviceConfigResult *result) = 0;
   virtual _supla_int_t setDeviceConfigRequest(
-      TSD_SetDeviceConfig *request) = 0;
+      TSDS_SetDeviceConfig *request) = 0;
   virtual _supla_int_t setChannelConfigResult(
-      TSD_SetChannelConfigResult *result) = 0;
+      TSDS_SetChannelConfigResult *result) = 0;
   virtual _supla_int_t setChannelConfigRequest(
-      TSD_SetChannelConfig *request) = 0;
+      TSDS_SetChannelConfig *request) = 0;
 
   static SrpcInterface *instance;
 };
@@ -134,13 +134,13 @@ class SrpcMock : public SrpcInterface {
               (unsigned char channelNumber, unsigned char configType),
               (override));
   MOCK_METHOD(_supla_int_t, setDeviceConfigResult,
-      (TSD_SetDeviceConfigResult *result), (override));
+      (TSDS_SetDeviceConfigResult *result), (override));
   MOCK_METHOD(_supla_int_t, setDeviceConfigRequest,
-      (TSD_SetDeviceConfig *request), (override));
+      (TSDS_SetDeviceConfig *request), (override));
   MOCK_METHOD(_supla_int_t, setChannelConfigResult,
-      (TSD_SetChannelConfigResult *result), (override));
+      (TSDS_SetChannelConfigResult *result), (override));
   MOCK_METHOD(_supla_int_t, setChannelConfigRequest,
-      (TSD_SetChannelConfig *request), (override));
+      (TSDS_SetChannelConfig *request), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_SRPC_MOCK_H_

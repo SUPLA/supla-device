@@ -602,7 +602,7 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     hvac->copyFullChannelConfigTo(hvacConfig);
     // anti free will be enabled when checkbox is checked, otherwise
     // form field won't be send, so we disable it here
-    hvacConfig->EnableAntiFreezeAndOverheatProtection = false;
+    hvacConfig->AntiFreezeAndOverheatProtectionEnabled = false;
   }
 
   if (config == nullptr || newValue == nullptr) {
@@ -678,7 +678,7 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   // anti freeze temperature
   if (strcmp(key, keyMatch) == 0) {
     bool antiFreeze = (strcmp(value, "on") == 0);
-    hvacConfig->EnableAntiFreezeAndOverheatProtection = antiFreeze;
+    hvacConfig->AntiFreezeAndOverheatProtectionEnabled = antiFreeze;
     return true;
   }
 

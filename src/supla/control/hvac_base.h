@@ -60,7 +60,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *result,
                                bool local = false) override;
   void handleSetChannelConfigResult(
-      TSD_SetChannelConfigResult *result) override;
+      TSDS_SetChannelConfigResult *result) override;
   void handleAction(int event, int action) override;
 
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
@@ -90,7 +90,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setFanSupported(bool supported);
   void setDrySupported(bool supported);
 
-  void addAlgorithmCap(unsigned _supla_int16_t algorithm);
+  void addAvailableAlgorithm(unsigned _supla_int16_t algorithm);
   // use this function to set value based on local config change
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
   unsigned _supla_int16_t getUsedAlgorithm() const;

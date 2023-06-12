@@ -69,7 +69,7 @@ class ProtocolLayerMock : public Supla::Protocol::ProtocolLayer {
               (override));
   MOCK_METHOD(bool,
               setDeviceConfig,
-              (TSD_SetDeviceConfig * deviceConfig),
+              (TSDS_SetDeviceConfig * deviceConfig),
               (override));
 };
 

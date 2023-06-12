@@ -328,7 +328,7 @@ void Supla::messageReceived(void *srpc,
         break;
       }
       case SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT: {
-        auto *result = rd.data.sd_set_channel_config_result;
+        auto *result = rd.data.sds_set_channel_config_result;
         if (result) {
           auto element =
               Supla::Element::getElementByChannelNumber(result->ChannelNumber);
@@ -343,9 +343,9 @@ void Supla::messageReceived(void *srpc,
         break;
       }
       case SUPLA_SD_CALL_SET_CHANNEL_CONFIG: {
-        auto *request = rd.data.sd_set_channel_config_request;
+        auto *request = rd.data.sds_set_channel_config_request;
         if (request) {
-          TSD_SetChannelConfigResult result = {};
+          TSDS_SetChannelConfigResult result = {};
           result.ChannelNumber = request->ChannelNumber;
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
           auto element = Supla::Element::getElementByChannelNumber(
@@ -374,16 +374,16 @@ void Supla::messageReceived(void *srpc,
         break;
       }
       case SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT: {
-        auto *result = rd.data.sd_set_device_config_result;
+        auto *result = rd.data.sds_set_device_config_result;
         if (result) {
           suplaSrpc->getSdc()->handleSetDeviceConfigResult(result);
         }
         break;
       }
       case SUPLA_SD_CALL_SET_DEVICE_CONFIG: {
-        auto *request = rd.data.sd_set_device_config_request;
+        auto *request = rd.data.sds_set_device_config_request;
         if (request) {
-          TSD_SetDeviceConfigResult result = {};
+          TSDS_SetDeviceConfigResult result = {};
           // TODO(klew): check if we need to know if below method was called
           // from SET_DEVICE_CONFIG or rom GET_DEVICE_CONFIG_RESULT
           result.Result = suplaSrpc->getSdc()->handleDeviceConfig(request);
@@ -871,7 +871,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
     return false;
   }
 
-  TSD_SetChannelConfig request = {};
+  TSDS_SetChannelConfig request = {};
   request.ChannelNumber = channelNumber;
   request.Func = channelFunction;
   request.ConfigType = configType;
@@ -880,7 +880,7 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
 }
 
 bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
-    TSD_SetDeviceConfig *deviceConfig) {
+    TSDS_SetDeviceConfig *deviceConfig) {
   if (!isRegisteredAndReady()) {
     return false;
   }

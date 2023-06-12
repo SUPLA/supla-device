@@ -498,8 +498,8 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   config.AuxThermometerChannelNo =
       hvacConfig->AuxThermometerChannelNo;
   config.AuxThermometerType = hvacConfig->AuxThermometerType;
-  config.EnableAntiFreezeAndOverheatProtection =
-      hvacConfig->EnableAntiFreezeAndOverheatProtection;
+  config.AntiFreezeAndOverheatProtectionEnabled =
+      hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
   config.UsedAlgorithm = hvacConfig->UsedAlgorithm;
   config.MinOnTimeS = hvacConfig->MinOnTimeS;
   config.MinOffTimeS = hvacConfig->MinOffTimeS;
@@ -1000,7 +1000,7 @@ bool HvacBase::isChannelThermometer(uint8_t channelNo) const {
 }
 
 bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
-  return (config.AlgorithmCaps & algorithm) == algorithm;
+  return (config.AvailableAlgorithms & algorithm) == algorithm;
 }
 
 uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
@@ -1058,8 +1058,8 @@ bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
   return false;
 }
 
-void HvacBase::addAlgorithmCap(unsigned _supla_int16_t algorithm) {
-  config.AlgorithmCaps |= algorithm;
+void HvacBase::addAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
+  config.AvailableAlgorithms |= algorithm;
 }
 
 void HvacBase::setTemperatureInStruct(THVACTemperatureCfg *temperatures,
@@ -1536,8 +1536,8 @@ uint8_t HvacBase::getAuxThermometerType() const {
 }
 
 void HvacBase::setAntiFreezeAndHeatProtectionEnabled(bool enabled) {
-  if (config.EnableAntiFreezeAndOverheatProtection != enabled) {
-    config.EnableAntiFreezeAndOverheatProtection = enabled;
+  if (config.AntiFreezeAndOverheatProtectionEnabled != enabled) {
+    config.AntiFreezeAndOverheatProtectionEnabled = enabled;
     if (initDone) {
       channelConfigChangedOffline = 1;
       saveConfig();
@@ -1551,7 +1551,7 @@ bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
-      return config.EnableAntiFreezeAndOverheatProtection;
+      return config.AntiFreezeAndOverheatProtectionEnabled;
     }
 
     default: {
@@ -1675,7 +1675,7 @@ void HvacBase::saveWeeklySchedule() {
 }
 
 void HvacBase::handleSetChannelConfigResult(
-    TSD_SetChannelConfigResult *result) {
+    TSDS_SetChannelConfigResult *result) {
   if (result == nullptr) {
     return;
   }
@@ -2265,7 +2265,7 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) const {
   if (hvac == nullptr) {
     return;
   }
-  hvac->addAlgorithmCap(config.AlgorithmCaps);
+  hvac->addAvailableAlgorithm(config.AvailableAlgorithms);
   hvac->setTemperatureRoomMin(getTemperatureRoomMin());
   hvac->setTemperatureRoomMax(getTemperatureRoomMax());
   hvac->setTemperatureAuxMin(getTemperatureAuxMin());

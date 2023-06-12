@@ -1155,14 +1155,14 @@ void SuplaDeviceClass::allowWorkInOfflineMode() {
   allowOfflineMode = true;
 }
 
-uint8_t SuplaDeviceClass::handleDeviceConfig(TSD_SetDeviceConfig *request) {
+uint8_t SuplaDeviceClass::handleDeviceConfig(TSDS_SetDeviceConfig *request) {
   (void)(request);
   // TODO(klew): implement
   return SUPLA_RESULTCODE_UNSUPORTED;
 }
 
 uint8_t SuplaDeviceClass::handleSetDeviceConfigResult(
-    TSD_SetDeviceConfigResult *result) {
+    TSDS_SetDeviceConfigResult *result) {
   (void)(result);
   // TODO(klew): implement
   return SUPLA_RESULTCODE_UNSUPORTED;

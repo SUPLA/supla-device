@@ -67,7 +67,7 @@ class ProtocolLayer {
       _supla_int_t channelFunction, void *channelConfig, int size,
       uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT);
 
-  virtual bool setDeviceConfig(TSD_SetDeviceConfig *deviceConfig);
+  virtual bool setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
 
  protected:
   static ProtocolLayer *firstPtr;

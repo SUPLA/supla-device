@@ -39,25 +39,25 @@ _supla_int_t srpc_ds_async_get_channel_config(
 }
 
 _supla_int_t srpc_ds_async_set_device_config_result(
-    void *_srpc, TSD_SetDeviceConfigResult *result) {
+    void *_srpc, TSDS_SetDeviceConfigResult *result) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setDeviceConfigResult(result);
 }
 
 _supla_int_t srpc_ds_async_set_device_config_request(
-    void *_srpc, TSD_SetDeviceConfig *request) {
+    void *_srpc, TSDS_SetDeviceConfig *request) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setDeviceConfigRequest(request);
 }
 
 _supla_int_t srpc_ds_async_set_channel_config_result(
-    void *_srpc, TSD_SetChannelConfigResult *result) {
+    void *_srpc, TSDS_SetChannelConfigResult *result) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setChannelConfigResult(result);
 }
 
 _supla_int_t srpc_ds_async_set_channel_config_request(
-    void *_srpc, TSD_SetChannelConfig *request) {
+    void *_srpc, TSDS_SetChannelConfig *request) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setChannelConfigRequest(request);
 }

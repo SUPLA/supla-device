@@ -125,8 +125,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
 
   // Returns SUPLA_RESULTCODE_
-  uint8_t handleDeviceConfig(TSD_SetDeviceConfig *request);
-  uint8_t handleSetDeviceConfigResult(TSD_SetDeviceConfigResult *result);
+  uint8_t handleDeviceConfig(TSDS_SetDeviceConfig *request);
+  uint8_t handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult *result);
 
   void enterConfigMode();
   void enterNormalMode();

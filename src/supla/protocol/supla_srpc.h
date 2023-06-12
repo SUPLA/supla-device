@@ -56,7 +56,7 @@ class SuplaSrpc : public ProtocolLayer {
       _supla_int_t channelFunction, void *channelConfig, int size,
       uint8_t configType) override;
 
-  bool setDeviceConfig(TSD_SetDeviceConfig *deviceConfig) override;
+  bool setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig) override;
 
   void *getSrpcPtr();
 

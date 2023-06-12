@@ -77,7 +77,7 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
     hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
     hvac->setTemperatureAuxMin(500);   // 5 degrees
     hvac->setTemperatureAuxMax(7500);  // 75 degrees
-    hvac->addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+    hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   }
 
   void TearDown() override {
@@ -450,11 +450,11 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   // algorithm caps in value received from server is not used
   // It is readonly value stored on device
-  hvacConfig->AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF;
+  hvacConfig->AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
-  hvac.addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -803,7 +803,7 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
 
   EXPECT_FALSE(hvac.setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF));
   EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_NOT_SET);
-  hvac.addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   EXPECT_TRUE(hvac.setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF));
   EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_ON_OFF);
   EXPECT_FALSE(hvac.setUsedAlgorithm(999));
@@ -881,7 +881,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
   hvacConfig->AuxThermometerChannelNo = 2;
-  hvacConfig->EnableAntiFreezeAndOverheatProtection = 1;
+  hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
   hvacConfig->OutputValueOnError = 100;
@@ -924,8 +924,8 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
             .AuxThermometerChannelNo = 2,
             .AuxThermometerType =
                 SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-            .EnableAntiFreezeAndOverheatProtection = 1,
-            .AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF,
+            .AntiFreezeAndOverheatProtectionEnabled = 1,
+            .AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF,
             .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
             .MinOnTimeS = 10,
             .MinOffTimeS = 20,
@@ -1024,8 +1024,8 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
             .AuxThermometerChannelNo = 2,
             .AuxThermometerType =
                 SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-            .EnableAntiFreezeAndOverheatProtection = 1,
-            .AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF,
+            .AntiFreezeAndOverheatProtectionEnabled = 1,
+            .AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF,
             .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
             .MinOnTimeS = 10,
             .MinOffTimeS = 20,
@@ -1101,7 +1101,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
   hvacConfig->AuxThermometerChannelNo = 2;
-  hvacConfig->EnableAntiFreezeAndOverheatProtection = 1;
+  hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
@@ -1191,8 +1191,8 @@ TEST_F(HvacTestWithChannelSetupF,
                 .AuxThermometerChannelNo = 2,
                 .AuxThermometerType =
                     SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-                .EnableAntiFreezeAndOverheatProtection = 1,
-                .AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF,
+                .AntiFreezeAndOverheatProtectionEnabled = 1,
+                .AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF,
                 .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
                 .MinOnTimeS = 10,
                 .MinOffTimeS = 20,
@@ -1270,7 +1270,7 @@ TEST_F(HvacTestWithChannelSetupF,
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
   hvacConfig->AuxThermometerChannelNo = 2;
-  hvacConfig->EnableAntiFreezeAndOverheatProtection = 1;
+  hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
@@ -1329,8 +1329,8 @@ TEST_F(HvacTestWithChannelSetupF,
               .AuxThermometerChannelNo = 0,
               .AuxThermometerType =
                   SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET,
-              .EnableAntiFreezeAndOverheatProtection = 0,
-              .AlgorithmCaps = SUPLA_HVAC_ALGORITHM_ON_OFF,
+              .AntiFreezeAndOverheatProtectionEnabled = 0,
+              .AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF,
               .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
               .MinOnTimeS = 0,
               .MinOffTimeS = 0,
@@ -1367,7 +1367,7 @@ TEST_F(HvacTestWithChannelSetupF,
   }
 
   // send reply from server
-  TSD_SetChannelConfigResult result = {
+  TSDS_SetChannelConfigResult result = {
       .Result = SUPLA_CONFIG_RESULT_FALSE,
       .ConfigType = SUPLA_CONFIG_TYPE_DEFAULT,
       .ChannelNumber = 0
@@ -1393,7 +1393,7 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
   hvac.setTemperatureAutoOffsetMax(1000);    // 10 degrees
   hvac.setTemperatureAuxMin(500);   // 5 degrees
   hvac.setTemperatureAuxMax(7500);  // 75 degrees
-  hvac.addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   hvac.onInit();
 
   EXPECT_EQ(hvac.getTemperatureRoomMin(), 500);

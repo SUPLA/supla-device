@@ -65,7 +65,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
     hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
     hvac->setTemperatureAuxMin(500);   // 5 degrees
     hvac->setTemperatureAuxMax(7500);  // 75 degrees
-    hvac->addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+    hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   }
 
   void TearDown() override {
@@ -505,7 +505,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   }
 
   // send reply from server
-  TSD_SetChannelConfigResult result = {
+  TSDS_SetChannelConfigResult result = {
       .Result = SUPLA_CONFIG_RESULT_FALSE,
       .ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE,
       .ChannelNumber = 0

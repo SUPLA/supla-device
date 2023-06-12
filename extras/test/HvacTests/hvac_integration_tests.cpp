@@ -70,7 +70,7 @@ class HvacIntegrationF : public ::testing::Test {
     hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
     hvac->setTemperatureAuxMin(500);   // 5 degrees
     hvac->setTemperatureAuxMax(7500);  // 75 degrees
-    hvac->addAlgorithmCap(SUPLA_HVAC_ALGORITHM_ON_OFF);
+    hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   }
 
   void TearDown() override {

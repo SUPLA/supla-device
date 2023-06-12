@@ -110,7 +110,7 @@ bool ProtocolLayer::setChannelConfig(uint8_t channelNumber,
   return false;
 }
 
-bool ProtocolLayer::setDeviceConfig(TSD_SetDeviceConfig *deviceConfig) {
+bool ProtocolLayer::setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig) {
   (void)(deviceConfig);
   return false;
 }

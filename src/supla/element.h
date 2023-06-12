@@ -103,7 +103,8 @@ class Element {
                                        bool local = false);
   // handleSetChannelConfigResult should handle both standard channel config
   // and weekly schedule config
-  virtual void handleSetChannelConfigResult(TSD_SetChannelConfigResult *result);
+  virtual void handleSetChannelConfigResult(
+      TSDS_SetChannelConfigResult *result);
 
   int getChannelNumber();
   virtual Channel *getChannel();

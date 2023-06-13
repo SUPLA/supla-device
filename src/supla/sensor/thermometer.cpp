@@ -29,7 +29,8 @@ Supla::Sensor::Thermometer::Thermometer() : lastReadTime(0) {
   channel.setDefault(SUPLA_CHANNELFNC_THERMOMETER);
 }
 
-Thermometer::Thermometer(ThermometerDriver *driver) : driver(driver) {
+Thermometer::Thermometer(ThermometerDriver *driver) : Thermometer() {
+  this->driver = driver;
 }
 
 void Supla::Sensor::Thermometer::onInit() {

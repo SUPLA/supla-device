@@ -632,6 +632,29 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, "Register in progress");
+    static bool firstRegistration = true;
+    if (firstRegistration) {
+      firstRegistration = false;
+      for (int i = 0; i < Supla::Channel::reg_dev.channel_count; i++) {
+        SUPLA_LOG_DEBUG(
+            "CH #%i, type: %d, FuncList: 0x%X, default: %d, flags: 0x%X, "
+            "value: "
+            "[%02x %02x %02x %02x %02x %02x %02x %02x]",
+            Supla::Channel::reg_dev.channels[i].Number,
+            Supla::Channel::reg_dev.channels[i].Type,
+            Supla::Channel::reg_dev.channels[i].FuncList,
+            Supla::Channel::reg_dev.channels[i].Default,
+            Supla::Channel::reg_dev.channels[i].Flags,
+            Supla::Channel::reg_dev.channels[i].value[0],
+            Supla::Channel::reg_dev.channels[i].value[1],
+            Supla::Channel::reg_dev.channels[i].value[2],
+            Supla::Channel::reg_dev.channels[i].value[3],
+            Supla::Channel::reg_dev.channels[i].value[4],
+            Supla::Channel::reg_dev.channels[i].value[5],
+            Supla::Channel::reg_dev.channels[i].value[6],
+            Supla::Channel::reg_dev.channels[i].value[7]);
+      }
+    }
     if (!srpc_ds_async_registerdevice_e(srpc, &Supla::Channel::reg_dev)) {
       SUPLA_LOG_WARNING("Fatal SRPC failure!");
     }

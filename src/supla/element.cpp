@@ -230,4 +230,8 @@ void Element::generateKey(char *output, const char *key) {
 void Element::onSoftReset() {
 }
 
+void Element::onDeviceConfigChange(uint64_t fieldBit) {
+  (void)(fieldBit);
+}
+
 };  // namespace Supla

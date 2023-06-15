@@ -82,6 +82,8 @@ class Element {
   // method called when soft restart is triggered
   virtual void onSoftReset();
 
+  virtual void onDeviceConfigChange(uint64_t fieldBit);
+
   // return value:
   //  -1 - don't send reply to server
   //  0 - success==false

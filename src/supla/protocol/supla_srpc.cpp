@@ -23,6 +23,7 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/network/client.h>
+#include <supla/device/remote_device_config.h>
 
 #include <string.h>
 
@@ -376,18 +377,14 @@ void Supla::messageReceived(void *srpc,
       case SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT: {
         auto *result = rd.data.sds_set_device_config_result;
         if (result) {
-          suplaSrpc->getSdc()->handleSetDeviceConfigResult(result);
+          suplaSrpc->handleSetDeviceConfigResult(result);
         }
         break;
       }
       case SUPLA_SD_CALL_SET_DEVICE_CONFIG: {
         auto *request = rd.data.sds_set_device_config_request;
         if (request) {
-          TSDS_SetDeviceConfigResult result = {};
-          // TODO(klew): check if we need to know if below method was called
-          // from SET_DEVICE_CONFIG or rom GET_DEVICE_CONFIG_RESULT
-          result.Result = suplaSrpc->getSdc()->handleDeviceConfig(request);
-          srpc_ds_async_set_device_config_result(srpc, &result);
+          suplaSrpc->handleDeviceConfig(request);
         }
         break;
       }
@@ -442,6 +439,13 @@ void Supla::Protocol::SuplaSrpc::onVersionError(
 void Supla::Protocol::SuplaSrpc::onRegisterResult(
     TSD_SuplaRegisterDeviceResult *registerDeviceResult) {
   uint32_t serverActivityTimeout = 0;
+  setDeviceConfigReceivedAfterRegistration = false;
+
+  if (remoteDeviceConfig != nullptr) {
+    SUPLA_LOG_DEBUG("Cleanup remote device config instance");
+    delete remoteDeviceConfig;
+    remoteDeviceConfig = nullptr;
+  }
 
   switch (registerDeviceResult->result_code) {
     // OK scenario
@@ -673,6 +677,21 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
     return false;
   } else if (registered == 1) {
     // Device is registered and everything is correct
+    auto cfg = Supla::Storage::ConfigInstance();
+
+    if (setDeviceConfigReceivedAfterRegistration && cfg &&
+        cfg->isDeviceConfigChangeReadyToSend() &&
+        remoteDeviceConfig == nullptr) {
+      SUPLA_LOG_INFO("Sending new device config to server");
+      remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig();
+      TSDS_SetDeviceConfig deviceConfig = {};
+      if (remoteDeviceConfig->fillFullSetDeviceConfig(&deviceConfig)) {
+        srpc_ds_async_set_device_config_request(srpc, &deviceConfig);
+      } else {
+        cfg->clearDeviceConfigChangeFlag();
+        cfg->saveWithDelay(1000);
+      }
+    }
 
     if (ping() == false) {
       sdc->uptime.setConnectionLostCause(
@@ -916,3 +935,56 @@ bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
   return true;
 }
 
+void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
+    TSDS_SetDeviceConfig *request) {
+  SUPLA_LOG_INFO("Received new device config");
+  if (remoteDeviceConfig == nullptr) {
+    remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig();
+  }
+
+  remoteDeviceConfig->processConfig(request);
+
+  if (remoteDeviceConfig->isEndFlagReceived()) {
+    {
+      TSDS_SetDeviceConfigResult result = {};
+      result.Result = remoteDeviceConfig->getResultCode();
+      SUPLA_LOG_INFO("Sending device config result %d", result.Result);
+      srpc_ds_async_set_device_config_result(srpc, &result);
+    }
+
+    if (remoteDeviceConfig->isSetDeviceConfigRequired()) {
+      TSDS_SetDeviceConfig deviceConfig = {};
+      if (remoteDeviceConfig->fillFullSetDeviceConfig(&deviceConfig)) {
+        srpc_ds_async_set_device_config_request(srpc, &deviceConfig);
+      } else {
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (cfg) {
+          cfg->clearDeviceConfigChangeFlag();
+          cfg->saveWithDelay(1000);
+        }
+      }
+    } else {
+      // procedure ends here, so delete the handler
+      setDeviceConfigReceivedAfterRegistration = true;
+      delete remoteDeviceConfig;
+      remoteDeviceConfig = nullptr;
+    }
+  }
+}
+
+void Supla::Protocol::SuplaSrpc::handleSetDeviceConfigResult(
+    TSDS_SetDeviceConfigResult *result) {
+  if (result == nullptr) {
+    return;
+  }
+
+  if (remoteDeviceConfig == nullptr) {
+    SUPLA_LOG_WARNING("Unexpected set device config result - missing handler");
+    return;
+  }
+
+  remoteDeviceConfig->handleSetDeviceConfigResult(result);
+  setDeviceConfigReceivedAfterRegistration = true;
+  delete remoteDeviceConfig;
+  remoteDeviceConfig = nullptr;
+}

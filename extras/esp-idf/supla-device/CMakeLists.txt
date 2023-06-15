@@ -105,6 +105,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/device/last_state_logger.cpp
   ../../../src/supla/device/sw_update.cpp
   ../../../src/supla/device/factory_test.cpp
+  ../../../src/supla/device/remote_device_config.cpp
 # not all files from sensor folder are compiled here. Some still require
 # porting from ARDUINO
   ../../../src/supla/sensor/binary.cpp

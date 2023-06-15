@@ -124,10 +124,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
 
-  // Returns SUPLA_RESULTCODE_
-  uint8_t handleDeviceConfig(TSDS_SetDeviceConfig *request);
-  uint8_t handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult *result);
-
   void enterConfigMode();
   void enterNormalMode();
   // Schedules timeout to restart device. When provided timeout is 0

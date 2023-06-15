@@ -27,6 +27,10 @@ namespace Supla {
 
 class Client;
 
+namespace Device {
+class RemoteDeviceConfig;
+}  // namespace Device
+
 namespace Protocol {
 
 class SuplaSrpc : public ProtocolLayer {
@@ -79,6 +83,8 @@ class SuplaSrpc : public ProtocolLayer {
   const char* getSupla3rdPartyCACert();
   bool isUpdatePending() override;
   bool isSuplaPublicServerConfigured();
+  void handleDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
+  void handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult *result);
 
   Supla::Client *client = nullptr;
 
@@ -98,11 +104,15 @@ class SuplaSrpc : public ProtocolLayer {
   uint64_t lastSentMs = 0;
   uint16_t connectionFailCounter = 0;
   bool enabled = true;
+  bool setDeviceConfigReceivedAfterRegistration = false;
 
   int port = -1;
 
   const char *suplaCACert = nullptr;
   const char *supla3rdPartyCACert = nullptr;
+
+ private:
+  Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
 };
 }  // namespace Protocol
 

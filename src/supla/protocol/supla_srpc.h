@@ -113,6 +113,7 @@ class SuplaSrpc : public ProtocolLayer {
 
  private:
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
+  const char *configResultToCStr(int result) const;
 };
 }  // namespace Protocol
 

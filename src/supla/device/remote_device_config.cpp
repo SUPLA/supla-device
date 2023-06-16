@@ -24,12 +24,14 @@
 #include <supla/device/status_led.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html/screen_brightness_parameters.h>
+#include <supla/clock/clock.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
 uint64_t RemoteDeviceConfig::fieldBitsUsedByDevice = 0;
 
-RemoteDeviceConfig::RemoteDeviceConfig() {
+RemoteDeviceConfig::RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration)
+    : firstDeviceConfigAfterRegistration(firstDeviceConfigAfterRegistration) {
 }
 
 RemoteDeviceConfig::~RemoteDeviceConfig() {
@@ -60,7 +62,12 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
   if (isEndFlagReceived()) {
     resultCode = SUPLA_CONFIG_RESULT_TRUE;
 
-    if (fieldBitsFromServer != fieldBitsUsedByDevice) {
+    // just after device registration on server, we should get full
+    // set device config request with all fields. If list of fields is
+    // not the same as on device, then we need to send full device config
+    // to server with all fields to inform it about supported fields
+    if (firstDeviceConfigAfterRegistration &&
+        fieldBitsFromServer != fieldBitsUsedByDevice) {
       requireSetDeviceConfig = true;
       SUPLA_LOG_INFO(
           "RemoteDeviceConfig: Config fields mismatch (0x%08llx != 0x%08llx) - "
@@ -242,7 +249,7 @@ void RemoteDeviceConfig::processStatusLedConfig(
       cfg->setInt8(Supla::Device::StatusLedCfgTag, config->StatusLedType);
       cfg->saveWithDelay(1000);
 
-      notifyElementsAboutConfigChange(fieldBit);
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
     }
   }
 }
@@ -270,33 +277,67 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
       cfg->setInt32(Supla::Html::ScreenBrightnessCfgTag, newValue);
       cfg->saveWithDelay(1000);
 
-      notifyElementsAboutConfigChange(fieldBit);
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
     }
   }
 }
 
 void RemoteDeviceConfig::processTimezoneOffsetConfig(uint64_t fieldBit,
     TDeviceConfig_TimezoneOffset *config) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t offset = 0;
+    cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &offset);
+    if (offset < -1560) {
+      offset = -1560;
+    }
+    if (offset > 1560) {
+      offset = 1560;
+    }
+    int32_t newValue = config->TimezoneOffsetMinutes;
+    if (newValue < -1560) {
+      newValue = -1560;
+    }
+    if (newValue > 1560) {
+      newValue = 1560;
+    }
+    if (newValue != offset) {
+      SUPLA_LOG_INFO("Setting TimezoneOffset to %d", newValue);
+      cfg->setInt32(Supla::TimezoneOffsetMinCfgTag, newValue);
+      cfg->saveWithDelay(1000);
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+  }
 }
 
 void RemoteDeviceConfig::processButtonVolumeConfig(uint64_t fieldBit,
     TDeviceConfig_ButtonVolume *config) {
+  (void)(fieldBit);
+  (void)(config);
 }
 
 void RemoteDeviceConfig::processScreensaverModeConfig(uint64_t fieldBit,
     TDeviceConfig_ScreensaverMode *config) {
+  (void)(fieldBit);
+  (void)(config);
 }
 
 void RemoteDeviceConfig::processScreensaverDelayConfig(uint64_t fieldBit,
     TDeviceConfig_ScreensaverDelay *config) {
+  (void)(fieldBit);
+  (void)(config);
 }
 
 void RemoteDeviceConfig::processAutomaticTimeSyncConfig(uint64_t fieldBit,
     TDeviceConfig_AutomaticTimeSync *config) {
+  (void)(fieldBit);
+  (void)(config);
 }
 
 void RemoteDeviceConfig::processDisableLocalConfigConfig(uint64_t fieldBit,
     TDeviceConfig_DisableLocalConfig *config) {
+  (void)(fieldBit);
+  (void)(config);
 }
 
 
@@ -336,26 +377,46 @@ void RemoteDeviceConfig::fillScreenBrightnessConfig(
 
 void RemoteDeviceConfig::fillTimezoneOffsetConfig(
     TDeviceConfig_TimezoneOffset *config) const {
+  if (config == nullptr) {
+    return;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t value = 0;
+    cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &value);
+    if (value < -1560) {
+      value = -1560;
+    }
+    if (value > 1560) {
+      value = 1560;
+    }
+    config->TimezoneOffsetMinutes = value;
+  }
 }
 
 void RemoteDeviceConfig::fillButtonVolumeConfig(
     TDeviceConfig_ButtonVolume *config) const {
+  (void)(config);
 }
 
 void RemoteDeviceConfig::fillScreensaverModeConfig(
     TDeviceConfig_ScreensaverMode *config) const {
+  (void)(config);
 }
 
 void RemoteDeviceConfig::fillScreensaverDelayConfig(
     TDeviceConfig_ScreensaverDelay *config) const {
+  (void)(config);
 }
 
 void RemoteDeviceConfig::fillAutomaticTimeSyncConfig(
     TDeviceConfig_AutomaticTimeSync *config) const {
+  (void)(config);
 }
 
 void RemoteDeviceConfig::fillDisableLocalConfigConfig(
     TDeviceConfig_DisableLocalConfig *config) const {
+  (void)(config);
 }
 
 bool RemoteDeviceConfig::isSetDeviceConfigRequired() const {
@@ -500,11 +561,7 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
 
 void RemoteDeviceConfig::handleSetDeviceConfigResult(
     TSDS_SetDeviceConfigResult *result) {
-  if (result != nullptr) {
-    SUPLA_LOG_INFO("RemoteDeviceConfig: received set device config result %d",
-                   result->Result);
-  }
-
+  (void)(result);
   // received set device config result means that we updated all local
   // config changes to the server. We can clear localConfigChange flag
   auto cfg = Supla::Storage::ConfigInstance();
@@ -521,11 +578,3 @@ void RemoteDeviceConfig::handleSetDeviceConfigResult(
   }
 }
 
-void RemoteDeviceConfig::notifyElementsAboutConfigChange(
-    uint64_t fieldBit) const {
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    element->onDeviceConfigChange(fieldBit);
-    delay(0);
-  }
-}

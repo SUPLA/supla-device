@@ -24,6 +24,8 @@
 
 namespace Supla {
 
+const char TimezoneOffsetMinCfgTag[] = "timeoffset_min";
+
 class Clock : public Element {
  public:
   static bool IsReady();
@@ -58,10 +60,15 @@ class Clock : public Element {
 
   void onTimer() override;
   bool iterateConnected() override;
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
+  void onDeviceConfigChange(uint64_t fieldBit) override;
 
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 
  protected:
+  void applyNewTimezoneOffset(int newOffset);
+  void setSystemTime(time_t newTime, int timezoneOffsetMin);
+  int lastTimezoneOffsetMin = 0;
   time_t localtime = {};
   uint64_t lastServerUpdate = 0;
   uint64_t lastMillis = 0;

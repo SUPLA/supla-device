@@ -31,7 +31,7 @@ class RemoteDeviceConfig {
  public:
   static void RegisterConfigField(uint64_t fieldBit);
 
-  RemoteDeviceConfig();
+  explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
 
   void processConfig(TSDS_SetDeviceConfig *config);
@@ -72,14 +72,12 @@ class RemoteDeviceConfig {
   void fillDisableLocalConfigConfig(
       TDeviceConfig_DisableLocalConfig *config) const;
 
-  void notifyElementsAboutConfigChange(uint64_t fieldBit) const;
-
   bool endFlagReceived = false;
   uint8_t resultCode = 255;
   uint64_t fieldBitsFromServer = 0;
   int messageCounter = 0;
   bool requireSetDeviceConfig = false;
-  int localConfigChangeFlag = -1;
+  bool firstDeviceConfigAfterRegistration = false;
 
   static uint64_t fieldBitsUsedByDevice;
 };

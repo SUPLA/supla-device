@@ -939,7 +939,8 @@ void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
     TSDS_SetDeviceConfig *request) {
   SUPLA_LOG_INFO("Received new device config");
   if (remoteDeviceConfig == nullptr) {
-    remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig();
+    remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig(
+        !setDeviceConfigReceivedAfterRegistration);
   }
 
   remoteDeviceConfig->processConfig(request);
@@ -948,7 +949,8 @@ void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
     {
       TSDS_SetDeviceConfigResult result = {};
       result.Result = remoteDeviceConfig->getResultCode();
-      SUPLA_LOG_INFO("Sending device config result %d", result.Result);
+      SUPLA_LOG_INFO("Sending device config result %s (%d)",
+                     configResultToCStr(result.Result), result.Result);
       srpc_ds_async_set_device_config_result(srpc, &result);
     }
 
@@ -978,6 +980,10 @@ void Supla::Protocol::SuplaSrpc::handleSetDeviceConfigResult(
     return;
   }
 
+  SUPLA_LOG_INFO("Received set device config result %s (%d)",
+                 configResultToCStr(result->Result),
+                 result->Result);
+
   if (remoteDeviceConfig == nullptr) {
     SUPLA_LOG_WARNING("Unexpected set device config result - missing handler");
     return;
@@ -987,4 +993,23 @@ void Supla::Protocol::SuplaSrpc::handleSetDeviceConfigResult(
   setDeviceConfigReceivedAfterRegistration = true;
   delete remoteDeviceConfig;
   remoteDeviceConfig = nullptr;
+}
+
+const char *Supla::Protocol::SuplaSrpc::configResultToCStr(int result) const {
+  switch (result) {
+    case SUPLA_CONFIG_RESULT_TRUE:
+      return "OK";
+    case SUPLA_CONFIG_RESULT_FALSE:
+      return "FALSE (NOK)";
+    case SUPLA_CONFIG_RESULT_DATA_ERROR:
+      return "DATA_ERROR";
+    case SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED:
+      return "TYPE_NOT_SUPPORTED";
+    case SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED:
+      return "FUNCTION_NOT_SUPPORTED";
+    case SUPLA_CONFIG_RESULT_LOCAL_CONFIG_DISABLED:
+      return "LOCAL_CONFIG_DISABLED";
+    default:
+      return "UNKNOWN";
+  }
 }

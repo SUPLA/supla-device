@@ -17,6 +17,8 @@
 */
 
 #include <supla/log_wrapper.h>
+#include <supla/storage/config.h>
+#include <supla/device/remote_device_config.h>
 
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32) || \
     defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
@@ -211,23 +213,17 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
   timeinfo.tm_min = result->min;
   timeinfo.tm_sec = result->sec;
 
-  localtime = mktime(&timeinfo);
+  time_t newTime = mktime(&timeinfo);
 
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32) || \
-    defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
-  timeval tv = {localtime, 0};
-  settimeofday(&tv, nullptr);
-#elif defined(ARDUINO_ARCH_AVR)
-  set_system_time(mktime(&timeinfo));
-#endif
-  SUPLA_LOG_DEBUG(
-            "Received local time from server: %d-%d-%d %d:%d:%d",
-            getYear(),
-            getMonth(),
-            getDay(),
-            getHour(),
-            getMin(),
-            getSec());
+  // add timezone offset min to local time
+  int32_t timezoneOffsetMinutes = 0;
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg &&
+      cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &timezoneOffsetMinutes)) {
+    SUPLA_LOG_DEBUG("Using timezone offset: %d min", timezoneOffsetMinutes);
+  }
+
+  setSystemTime(newTime, timezoneOffsetMinutes);
 }
 
 void Clock::onTimer() {
@@ -257,6 +253,59 @@ bool Clock::iterateConnected() {
     return false;
   }
   return true;
+}
+
+void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    // register DeviceConfig field bit:
+    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+        SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET);
+  }
+}
+
+void Clock::onDeviceConfigChange(uint64_t fieldBit) {
+  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET) {
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      int32_t newTimezoneOffsetMin = 0;
+      cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &newTimezoneOffsetMin);
+
+      if (newTimezoneOffsetMin != lastTimezoneOffsetMin) {
+        time_t currentTime = getTimeStamp();
+        int oldTimeOffsetSec = lastTimezoneOffsetMin * 60;
+        currentTime -= oldTimeOffsetSec;
+        setSystemTime(currentTime, newTimezoneOffsetMin);
+      }
+    }
+  }
+}
+
+void Clock::setSystemTime(time_t newTime, int timezoneOffsetMin) {
+  int offsetSeconds = timezoneOffsetMin * 60;
+  newTime += offsetSeconds;
+
+  lastTimezoneOffsetMin = timezoneOffsetMin;
+  localtime = newTime;
+
+#if defined(ARDUINO_ARCH_AVR)
+  set_system_time(localtime);
+#elif defined(SUPLA_LINUX)
+  SUPLA_LOG_DEBUG("Ignore setting time");
+#else
+  timeval tv = {localtime, 0};
+  settimeofday(&tv, nullptr);
+#endif
+
+  SUPLA_LOG_DEBUG(
+            "Set new local time: %d-%d-%d %d:%d:%d",
+            getYear(),
+            getMonth(),
+            getDay(),
+            getHour(),
+            getMin(),
+            getSec());
 }
 
 };  // namespace Supla

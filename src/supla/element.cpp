@@ -234,4 +234,13 @@ void Element::onDeviceConfigChange(uint64_t fieldBit) {
   (void)(fieldBit);
 }
 
+void Element::NotifyElementsAboutConfigChange(
+    uint64_t fieldBit) {
+  for (auto element = Supla::Element::begin(); element != nullptr;
+       element = element->next()) {
+    element->onDeviceConfigChange(fieldBit);
+    delay(0);
+  }
+}
+
 };  // namespace Supla

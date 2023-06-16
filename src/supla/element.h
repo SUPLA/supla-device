@@ -33,6 +33,8 @@ class Element {
   static Element *last();
   static Element *getElementByChannelNumber(int channelNumber);
   static bool IsAnyUpdatePending();
+  static void NotifyElementsAboutConfigChange(uint64_t fieldBit);
+
   Element *next();
 
   // First method called on element in SuplaDevice.begin()

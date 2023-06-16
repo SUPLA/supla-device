@@ -60,6 +60,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/button_type_parameters.cpp
   ../../../src/supla/network/html/button_config_parameters.cpp
   ../../../src/supla/network/html/rgbw_button_parameters.cpp
+  ../../../src/supla/network/html/timezone_offset_parameters.cpp
   ../../../src/supla/network/client.cpp
   ../../../src/supla/network/ip_address.cpp
 

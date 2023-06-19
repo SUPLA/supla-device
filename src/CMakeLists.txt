@@ -70,6 +70,7 @@ set(SRCS
   supla/network/html/button_config_parameters.cpp
   supla/network/html/button_hold_time_parameters.cpp
   supla/network/html/timezone_offset_parameters.cpp
+  supla/network/html/volume_parameters.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

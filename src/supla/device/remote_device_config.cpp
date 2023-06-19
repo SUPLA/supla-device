@@ -25,6 +25,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/network/html/screen_brightness_parameters.h>
 #include <supla/clock/clock.h>
+#include <supla/network/html/volume_parameters.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -57,22 +58,15 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
     return;
   }
 
-  fieldBitsFromServer |= config->Fields;
-
   if (isEndFlagReceived()) {
     resultCode = SUPLA_CONFIG_RESULT_TRUE;
-
-    // just after device registration on server, we should get full
-    // set device config request with all fields. If list of fields is
-    // not the same as on device, then we need to send full device config
-    // to server with all fields to inform it about supported fields
     if (firstDeviceConfigAfterRegistration &&
-        fieldBitsFromServer != fieldBitsUsedByDevice) {
+        config->AvailableFields != fieldBitsUsedByDevice) {
       requireSetDeviceConfig = true;
       SUPLA_LOG_INFO(
           "RemoteDeviceConfig: Config fields mismatch (0x%08llx != 0x%08llx) - "
           "sending full device config",
-          fieldBitsFromServer,
+          config->AvailableFields,
           fieldBitsUsedByDevice);
     }
   }
@@ -312,8 +306,25 @@ void RemoteDeviceConfig::processTimezoneOffsetConfig(uint64_t fieldBit,
 
 void RemoteDeviceConfig::processButtonVolumeConfig(uint64_t fieldBit,
     TDeviceConfig_ButtonVolume *config) {
-  (void)(fieldBit);
-  (void)(config);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint8_t value = 100;
+    cfg->getUInt8(Supla::Html::VolumeCfgTag, &value);
+    if (value > 100) {
+      value = 100;
+    }
+
+    uint8_t newValue = config->Volume;
+    if (newValue > 100) {
+      newValue = 100;
+    }
+    if (newValue != value) {
+      SUPLA_LOG_INFO("Setting Volume to %d", newValue);
+      cfg->setUInt8(Supla::Html::VolumeCfgTag, newValue);
+      cfg->saveWithDelay(1000);
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+  }
 }
 
 void RemoteDeviceConfig::processScreensaverModeConfig(uint64_t fieldBit,
@@ -354,6 +365,7 @@ void RemoteDeviceConfig::fillStatusLedConfig(
     if (value < 0 || value > 2) {
       value = 0;
     }
+    SUPLA_LOG_DEBUG("Setting StatusLedType to %d (0x%X)", value, value);
     config->StatusLedType = value;
   }
 }
@@ -368,8 +380,11 @@ void RemoteDeviceConfig::fillScreenBrightnessConfig(
     int32_t value = -1;
     cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &value);
     if (value == -1 || value < -1 || value > 100) {
+      SUPLA_LOG_DEBUG("Setting ScreenBrightness automatic to 1 (0x01)");
       config->Automatic = 1;
     } else {
+      SUPLA_LOG_DEBUG(
+          "Setting ScreenBrightness to %d (0x%X)", value, value);
       config->ScreenBrightness = value;
     }
   }
@@ -390,13 +405,26 @@ void RemoteDeviceConfig::fillTimezoneOffsetConfig(
     if (value > 1560) {
       value = 1560;
     }
+    SUPLA_LOG_DEBUG("Setting TimezoneOffset to %d (0x%04X)", value, value);
     config->TimezoneOffsetMinutes = value;
   }
 }
 
 void RemoteDeviceConfig::fillButtonVolumeConfig(
     TDeviceConfig_ButtonVolume *config) const {
-  (void)(config);
+  if (config == nullptr) {
+    return;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint8_t value = 0;
+    cfg->getUInt8(Supla::Html::VolumeCfgTag, &value);
+    if (value > 100) {
+      value = 100;
+    }
+    SUPLA_LOG_DEBUG("Setting Volume to %d (0x%02X)", value, value);
+    config->Volume = value;
+  }
 }
 
 void RemoteDeviceConfig::fillScreensaverModeConfig(
@@ -555,6 +583,7 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
     }
     fieldBit <<= 1;
   }
+  config->AvailableFields = fieldBitsUsedByDevice;
   config->ConfigSize = dataIndex;
   return true;
 }

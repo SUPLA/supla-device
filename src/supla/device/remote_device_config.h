@@ -74,7 +74,6 @@ class RemoteDeviceConfig {
 
   bool endFlagReceived = false;
   uint8_t resultCode = 255;
-  uint64_t fieldBitsFromServer = 0;
   int messageCounter = 0;
   bool requireSetDeviceConfig = false;
   bool firstDeviceConfigAfterRegistration = false;

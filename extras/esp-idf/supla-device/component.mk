@@ -53,6 +53,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/button_action_trigger_config.o \
   ../../../src/supla/network/html/text_cmd_input_parameter.o \
   ../../../src/supla/network/html/select_cmd_input_parameter.o \
+  ../../../src/supla/network/html/volume_parameters.o \
   ../../../src/supla/network/client.o \
   ../../../src/supla/network/ip_address.o \
   \
@@ -97,6 +98,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/device/last_state_logger.o \
   ../../../src/supla/device/sw_update.o \
   ../../../src/supla/device/factory_test.o \
+  ../../../src/supla/device/remote_device_config.o \
 	\
   ../../../src/supla/sensor/binary.o \
   ../../../src/supla/sensor/electricity_meter.o \

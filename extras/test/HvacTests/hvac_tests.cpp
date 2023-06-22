@@ -381,6 +381,11 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  // invalid config size
+  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC) - 1;
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC);

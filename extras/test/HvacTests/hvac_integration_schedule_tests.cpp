@@ -121,6 +121,10 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
       .Times(1)
       .WillOnce(Return(true));
   EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), _))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(true));
@@ -534,6 +538,10 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
+      .Times(2)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), _))
       .Times(2)
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,

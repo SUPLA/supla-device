@@ -944,6 +944,8 @@ const char *Channel::getHvacModeCstr(int mode) const {
     mode = getHvacMode();
   }
   switch (mode) {
+    case SUPLA_HVAC_MODE_NOT_SET:
+      return "NOT SET";
     case SUPLA_HVAC_MODE_OFF:
       return "OFF";
     case SUPLA_HVAC_MODE_HEAT:

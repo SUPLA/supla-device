@@ -144,7 +144,16 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
                      reinterpret_cast<char *>(&weeklySchedule),
                      sizeof(TSD_ChannelConfig_WeeklySchedule))) {
       SUPLA_LOG_INFO("HVAC weekly schedule loaded successfully");
-      isWeeklyScheduleConfigured = true;
+
+      generateKey(key, "weekly_ignr");
+      uint8_t weeklyScheduleIgnore = 0;
+      cfg->getUInt8(key, &weeklyScheduleIgnore);
+      if (weeklyScheduleIgnore) {
+        isWeeklyScheduleConfigured = false;
+        SUPLA_LOG_INFO("HVAC ignoring weekly schedule");
+      } else {
+        isWeeklyScheduleConfigured = true;
+      }
     } else {
       SUPLA_LOG_INFO("HVAC weekly schedule missing. Using SW defaults");
       isWeeklyScheduleConfigured = false;
@@ -1019,6 +1028,15 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
+  if (newConfig->ConfigSize == 0) {
+    // Empty config for weekly schedule means that no weekly schedule is
+    // configured
+    isWeeklyScheduleConfigured = false;
+    memset(&weeklySchedule, 0, sizeof(weeklySchedule));
+    saveWeeklySchedule();
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+
   if (newConfig->ConfigSize < sizeof(TSD_ChannelConfig_WeeklySchedule)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
@@ -1036,6 +1054,7 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
     memcpy(&weeklySchedule,
            newSchedule,
            sizeof(TSD_ChannelConfig_WeeklySchedule));
+    isWeeklyScheduleConfigured = true;
     saveWeeklySchedule();
   }
 
@@ -1665,6 +1684,13 @@ void HvacBase::saveWeeklySchedule() {
       SUPLA_LOG_INFO("HVAC failed to save weekly schedule");
     }
 
+    generateKey(key, "weekly_ignr");
+    if (cfg->setUInt8(key, isWeeklyScheduleConfigured ? 0 : 1)) {
+      SUPLA_LOG_INFO("HVAC weekly schedule ignore set successfully");
+    } else {
+      SUPLA_LOG_INFO("HVAC failed to set ignore weekly schedule");
+    }
+
     generateKey(key, "weekly_chng");
     if (weeklyScheduleChangedOffline) {
       cfg->setUInt8(key, 1);
@@ -1673,7 +1699,6 @@ void HvacBase::saveWeeklySchedule() {
     }
     cfg->saveWithDelay(5000);
   }
-  isWeeklyScheduleConfigured = true;
 }
 
 void HvacBase::handleSetChannelConfigResult(
@@ -1758,10 +1783,10 @@ bool HvacBase::isWeeklyScheduleValid(
 int HvacBase::getWeeklyScheduleProgramId(
     const TSD_ChannelConfig_WeeklySchedule *schedule, int index) const {
   if (schedule == nullptr) {
-    return -1;
+    return 0;
   }
   if (index < 0 || index > SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
-    return -1;
+    return 0;
   }
 
   return (schedule->Value[index / 2] >> (index % 2 * 4)) & 0xF;
@@ -1920,6 +1945,7 @@ bool HvacBase::setWeeklySchedule(int index, int programId) {
 
   if (initDone) {
     weeklyScheduleChangedOffline = 1;
+    isWeeklyScheduleConfigured = true;
     saveWeeklySchedule();
   }
 
@@ -1959,6 +1985,7 @@ bool HvacBase::setProgram(int programId,
 
   if (initDone) {
     weeklyScheduleChangedOffline = 1;
+    isWeeklyScheduleConfigured = true;
     saveWeeklySchedule();
   }
   return true;
@@ -2156,8 +2183,8 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
     }
   }
 
-  SUPLA_LOG_INFO("HVAC: set target mode %s requested",
-                 channel.getHvacModeCstr(mode));
+  SUPLA_LOG_INFO("HVAC: set target mode %s requested (%d)",
+                 channel.getHvacModeCstr(mode), mode);
 
   if (isModeSupported(mode)) {
     if (mode == SUPLA_HVAC_MODE_OFF) {
@@ -2508,11 +2535,21 @@ bool HvacBase::processWeeklySchedule() {
     return true;
   }
 
-  TWeeklyScheduleProgram program = getProgram(programId);
+  if (programId == -1) {
+    setTargetMode(SUPLA_HVAC_MODE_OFF, false);
+    return false;
+  }
 
-  setTargetMode(program.Mode, true);
-  setSetpointTemperaturesForCurrentMode(program.SetpointTemperatureMin,
-      program.SetpointTemperatureMax);
+  TWeeklyScheduleProgram program = getProgram(programId);
+  if (program.Mode == SUPLA_HVAC_MODE_NOT_SET) {
+    SUPLA_LOG_INFO("WeeklySchedule: Invalid program mode. Disabling schedule.");
+    setTargetMode(SUPLA_HVAC_MODE_OFF, false);
+    return false;
+  } else {
+    setTargetMode(program.Mode, true);
+    setSetpointTemperaturesForCurrentMode(program.SetpointTemperatureMin,
+        program.SetpointTemperatureMax);
+  }
   return true;
 }
 

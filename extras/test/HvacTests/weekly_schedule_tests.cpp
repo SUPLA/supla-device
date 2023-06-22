@@ -218,20 +218,23 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
+  ::testing::Sequence s1;
   EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
       .Times(1).WillOnce(Return(true));
 
-  EXPECT_CALL(cfg,
-              setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(AtLeast(1)).WillRepeatedly(Return(true));
-
   EXPECT_CALL(
       cfg,
       setBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+      .WillOnce([](const char *key, const char *buf, int size) {
+        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+
+        EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+        return 1;
+      })
       .WillOnce([](const char *key, const char *buf, int size) {
         TSD_ChannelConfig_WeeklySchedule expectedData = {};
 
@@ -253,6 +256,31 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
       });
+
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), 0))
+      .Times(1).InSequence(s1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), 0))
+      .Times(1).InSequence(s1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), 1))
+      .Times(1).InSequence(s1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), 0))
+      .Times(1).InSequence(s1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), 0))
+      .Times(1).InSequence(s1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), 0))
+      .Times(1).InSequence(s1)
+      .WillOnce(Return(true));
 
   hvac->onInit();
   TSD_ChannelConfig configFromServer = {};
@@ -278,12 +306,18 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
       SUPLA_CONFIG_RESULT_DATA_ERROR);
 
+  // Config size == 0 should clear the weekly schedule on device
+  configFromServer.ConfigSize = 0;
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+      SUPLA_CONFIG_RESULT_TRUE);
+
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
 
   weeklySchedule->Value[0] = (1 | (2 << 4));
   weeklySchedule->Value[1] = 3;
 
+  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -330,6 +364,9 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_ignr"), 0))
       .Times(1)
       .WillOnce(Return(true));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
@@ -417,13 +454,28 @@ TEST_F(HvacWeeklyScheduleTestsF,
       .InSequence(s1)
       .WillOnce(Return(true));
 
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_ignr"), 0))
+      .Times(1)
+      .InSequence(s2)
+      .WillOnce(Return(true));
+
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 1))
       .Times(1)
       .InSequence(s2)
       .WillOnce(Return(true));
 
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(2)
+      .Times(1)
+      .InSequence(s2)
+      .WillRepeatedly(Return(true));
+
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_ignr"), 0))
+      .Times(1)
+      .InSequence(s2)
+      .WillOnce(Return(true));
+
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
+      .Times(1)
       .InSequence(s2)
       .WillRepeatedly(Return(true));
 
@@ -522,6 +574,10 @@ TEST_F(HvacWeeklyScheduleTestsF,
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   EXPECT_CALL(output, setOutputValue(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), 0))
+      .Times(AtLeast(1)).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_chng"), 0))

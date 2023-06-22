@@ -26,6 +26,7 @@
 #include <supla/network/html/screen_brightness_parameters.h>
 #include <supla/clock/clock.h>
 #include <supla/network/html/volume_parameters.h>
+#include <supla/network/html/screen_delay_parameters.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -335,8 +336,24 @@ void RemoteDeviceConfig::processScreensaverModeConfig(uint64_t fieldBit,
 
 void RemoteDeviceConfig::processScreensaverDelayConfig(uint64_t fieldBit,
     TDeviceConfig_ScreensaverDelay *config) {
-  (void)(fieldBit);
-  (void)(config);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t value = 0;
+    cfg->getInt32(Supla::Html::ScreenDelayCfgTag, &value);
+    if (value < 0) {
+      value = 0;
+    }
+    if (value > 65535) {
+      value = 65535;
+    }
+
+    if (value != config->ScreensaverDelayMs) {
+      SUPLA_LOG_INFO("Setting ScreensaverDelay to %d", value);
+      cfg->setInt32(Supla::Html::ScreenDelayCfgTag, value);
+      cfg->saveWithDelay(1000);
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+  }
 }
 
 void RemoteDeviceConfig::processAutomaticTimeSyncConfig(uint64_t fieldBit,
@@ -430,11 +447,29 @@ void RemoteDeviceConfig::fillButtonVolumeConfig(
 void RemoteDeviceConfig::fillScreensaverModeConfig(
     TDeviceConfig_ScreensaverMode *config) const {
   (void)(config);
+  // TODO(klew): ...
 }
 
 void RemoteDeviceConfig::fillScreensaverDelayConfig(
     TDeviceConfig_ScreensaverDelay *config) const {
-  (void)(config);
+  if (config == nullptr) {
+    return;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t value = 0;
+    cfg->getInt32(Supla::Html::ScreenDelayCfgTag, &value);
+    if (value < 0) {
+      value = 0;
+    }
+    if (value > 65535) {
+      value = 65535;
+    }
+    uint16_t delayMs = value;
+    SUPLA_LOG_DEBUG(
+        "Setting ScreensaverDelay to %d (0x%02X)", delayMs, delayMs);
+    config->ScreensaverDelayMs = delayMs;
+  }
 }
 
 void RemoteDeviceConfig::fillAutomaticTimeSyncConfig(

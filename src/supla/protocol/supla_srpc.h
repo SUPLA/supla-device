@@ -88,6 +88,8 @@ class SuplaSrpc : public ProtocolLayer {
 
   Supla::Client *client = nullptr;
 
+  static const char *configResultToCStr(int result);
+
  protected:
   bool ping();
 
@@ -113,7 +115,6 @@ class SuplaSrpc : public ProtocolLayer {
 
  private:
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;
-  const char *configResultToCStr(int result) const;
 };
 }  // namespace Protocol
 

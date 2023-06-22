@@ -351,6 +351,10 @@ void Supla::messageReceived(void *srpc,
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
           auto element = Supla::Element::getElementByChannelNumber(
               request->ChannelNumber);
+          SUPLA_LOG_INFO("Received SetChannelConfig for channel %d, function %d"
+              ", config type %d, config size %d", request->ChannelNumber,
+              request->Func, request->ConfigType, request->ConfigSize);
+
           if (element) {
             switch (request->ConfigType) {
               default:
@@ -370,6 +374,9 @@ void Supla::messageReceived(void *srpc,
                 "Error: couldn't find element for a requested channel [%d]",
                 request->ChannelNumber);
           }
+          SUPLA_LOG_INFO("Sending channel config result %s (%d)",
+              Supla::Protocol::SuplaSrpc::configResultToCStr(result.Result),
+              result.Result);
           srpc_ds_async_set_channel_config_result(srpc, &result);
         }
         break;
@@ -995,7 +1002,7 @@ void Supla::Protocol::SuplaSrpc::handleSetDeviceConfigResult(
   remoteDeviceConfig = nullptr;
 }
 
-const char *Supla::Protocol::SuplaSrpc::configResultToCStr(int result) const {
+const char *Supla::Protocol::SuplaSrpc::configResultToCStr(int result) {
   switch (result) {
     case SUPLA_CONFIG_RESULT_TRUE:
       return "OK";

@@ -307,7 +307,6 @@ void HvacBase::iterateAlways() {
   }
 
   if (channel.isHvacFlagWeeklySchedule()) {
-    SUPLA_LOG_DEBUG("HVAC: check weekly schedule exit");
     processWeeklySchedule();
   }
 
@@ -454,6 +453,7 @@ bool HvacBase::isDrySupported() const {
 
 uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                                       bool local) {
+  SUPLA_LOG_DEBUG("HVAC: processing channel config");
   if (waitForChannelConfigAndIgnoreIt && !local) {
     SUPLA_LOG_INFO("Ignoring config for channel %d", getChannelNumber());
     waitForChannelConfigAndIgnoreIt = false;
@@ -1006,6 +1006,8 @@ bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
 uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
                                        bool local) {
   (void)(local);
+  SUPLA_LOG_DEBUG("Handling weekly schedule for channel %d",
+      getChannelNumber());
   if (waitForWeeklyScheduleAndIgnoreIt) {
     SUPLA_LOG_INFO("Ignoring weekly schedule for channel %d",
                    getChannelNumber());
@@ -2146,8 +2148,6 @@ void HvacBase::setOutput(int value, bool force) {
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
-  SUPLA_LOG_INFO("HVAC: set target mode %s requested",
-                 channel.getHvacModeCstr(mode));
   channel.setHvacFlagCountdownTimer(false);
   if (channel.getHvacMode() == mode) {
     if (!(mode == SUPLA_HVAC_MODE_OFF && !keepScheduleOn &&
@@ -2155,6 +2155,9 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
       return;
     }
   }
+
+  SUPLA_LOG_INFO("HVAC: set target mode %s requested",
+                 channel.getHvacModeCstr(mode));
 
   if (isModeSupported(mode)) {
     if (mode == SUPLA_HVAC_MODE_OFF) {

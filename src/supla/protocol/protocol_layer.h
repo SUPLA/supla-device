@@ -61,6 +61,12 @@ class ProtocolLayer {
   virtual void sendExtendedChannelValueChanged(uint8_t channelNumber,
     TSuplaChannelExtendedValue *value) = 0;
   virtual void getChannelConfig(uint8_t channelNumber);
+  virtual void sendRegisterNotification(
+      TDS_RegisterPushNotification *notification);
+  virtual bool sendNotification(int context,
+                              const char *title,
+                              const char *message,
+                              int soundId);
 
  protected:
   static ProtocolLayer *firstPtr;

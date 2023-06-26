@@ -62,6 +62,8 @@ class Notification : public Element {
                    const char *message = nullptr,
                    int soundId = 0);
 
+  static bool SendF(int context, const char* title,  const char *fmt, ...);
+
   static bool IsNotificationUsed();
 
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;

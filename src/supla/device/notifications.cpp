@@ -19,6 +19,8 @@
 #include "notifications.h"
 
 #include <supla/log_wrapper.h>
+#include <stdio.h>
+#include <stdarg.h>
 
 using Supla::Notification;
 
@@ -65,6 +67,23 @@ bool Notification::Send(int context,
     return false;
   }
   return GetInstance()->send(context, title, message, soundId);
+}
+
+bool Notification::SendF(int context,
+                        const char *title,
+                        const char *format,
+                        ...) {
+  if (format == nullptr) {
+    return false;
+  }
+  char message[SUPLA_PN_BODY_MAXSIZE] = {};
+
+  va_list args;
+  va_start(args, format);
+  vsnprintf(message, SUPLA_PN_BODY_MAXSIZE, format, args);
+  auto result = Send(context, title, message, -1);
+  va_end(args);
+  return result;
 }
 
 bool Notification::registerNotification(int context,

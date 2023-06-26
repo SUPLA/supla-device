@@ -97,6 +97,7 @@ bool HvacBase::iterateConnected() {
                                     reinterpret_cast<void *>(&config),
                                     sizeof(TSD_ChannelConfig_HVAC),
                                     SUPLA_CONFIG_TYPE_DEFAULT)) {
+          SUPLA_LOG_INFO("Sending channel config for %d", getChannelNumber());
           channelConfigChangedOffline = 2;
         }
       }
@@ -110,6 +111,8 @@ bool HvacBase::iterateConnected() {
                                     reinterpret_cast<void *>(&weeklySchedule),
                                     sizeof(weeklySchedule),
                                     SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
+          SUPLA_LOG_INFO("Sending weekly schedule config for %d",
+                         getChannelNumber());
           weeklyScheduleChangedOffline = 2;
         }
       }
@@ -483,6 +486,10 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   bool applyServerConfig = (newConfig->ConfigSize > 0);
+  if (!applyServerConfig) {
+    // server doesn't have channel configuration, so we'll send it
+    channelConfigChangedOffline = 1;
+  }
 
   if (applyServerConfig &&
       newConfig->ConfigSize < sizeof(TSD_ChannelConfig_HVAC)) {

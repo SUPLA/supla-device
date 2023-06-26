@@ -924,6 +924,8 @@ bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
   request.ChannelNumber = channelNumber;
   request.Func = channelFunction;
   request.ConfigType = configType;
+  request.ConfigSize = size;
+  memcpy(request.Config, channelConfig, size);
   srpc_ds_async_set_channel_config_request(srpc, &request);
   return true;
 }

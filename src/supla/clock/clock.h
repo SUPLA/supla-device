@@ -67,7 +67,8 @@ class Clock : public Element {
 
  protected:
   void applyNewTimezoneOffset(int newOffset);
-  void setSystemTime(time_t newTime, int timezoneOffsetMin);
+  void setSystemTimeWithTimezone(time_t newTime, int timezoneOffsetMin);
+  void setSystemTime(time_t newTime);
   int lastTimezoneOffsetMin = 0;
   time_t localtime = {};
   uint64_t lastServerUpdate = 0;

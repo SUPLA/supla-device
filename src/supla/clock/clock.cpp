@@ -223,7 +223,7 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
     SUPLA_LOG_DEBUG("Using timezone offset: %d min", timezoneOffsetMinutes);
   }
 
-  setSystemTime(newTime, timezoneOffsetMinutes);
+  setSystemTimeWithTimezone(newTime, timezoneOffsetMinutes);
 }
 
 void Clock::onTimer() {
@@ -276,36 +276,49 @@ void Clock::onDeviceConfigChange(uint64_t fieldBit) {
         time_t currentTime = getTimeStamp();
         int oldTimeOffsetSec = lastTimezoneOffsetMin * 60;
         currentTime -= oldTimeOffsetSec;
-        setSystemTime(currentTime, newTimezoneOffsetMin);
+        setSystemTimeWithTimezone(currentTime, newTimezoneOffsetMin);
       }
     }
   }
 }
 
-void Clock::setSystemTime(time_t newTime, int timezoneOffsetMin) {
+void Clock::setSystemTimeWithTimezone(time_t newTime, int timezoneOffsetMin) {
   int offsetSeconds = timezoneOffsetMin * 60;
   newTime += offsetSeconds;
 
   lastTimezoneOffsetMin = timezoneOffsetMin;
+
+  setSystemTime(newTime);
+}
+
+void Clock::setSystemTime(time_t newTime) {
+  if (newTime == -1) {
+    SUPLA_LOG_WARNING("Clock: failed to set new time");
+    return;
+  }
   localtime = newTime;
-
+  time_t currentTime = getTimeStamp();
+  if (currentTime != localtime) {
 #if defined(ARDUINO_ARCH_AVR)
-  set_system_time(localtime);
+    set_system_time(localtime);
 #elif defined(SUPLA_LINUX)
-  SUPLA_LOG_DEBUG("Ignore setting time");
+    SUPLA_LOG_DEBUG("Ignore setting time");
 #else
-  timeval tv = {localtime, 0};
-  settimeofday(&tv, nullptr);
+    timeval tv = {localtime, 0};
+    settimeofday(&tv, nullptr);
 #endif
+    SUPLA_LOG_DEBUG("Clock: time diff (system-new): %d s",
+                    currentTime - newTime);
 
-  SUPLA_LOG_DEBUG(
-            "Set new local time: %d-%d-%d %d:%d:%d",
-            getYear(),
-            getMonth(),
-            getDay(),
-            getHour(),
-            getMin(),
-            getSec());
+    SUPLA_LOG_DEBUG(
+        "Clock: new local time: %d-%d-%d %d:%d:%d",
+        getYear(),
+        getMonth(),
+        getDay(),
+        getHour(),
+        getMin(),
+        getSec());
+  }
 }
 
 };  // namespace Supla

@@ -46,6 +46,7 @@ ImpulseCounter::ImpulseCounter(int _impulsePin,
       detectLowToHigh(_detectLowToHigh),
       inputPullup(_inputPullup) {
   channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 
   prevState = (detectLowToHigh == true ? LOW : HIGH);
 
@@ -119,6 +120,19 @@ void ImpulseCounter::handleAction(int event, int action) {
       break;
     }
   }
+}
+
+int ImpulseCounter::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
+  if (request) {
+    if (request->Command == SUPLA_CALCFG_CMD_RESET_COUNTERS) {
+      if (!request->SuperUserAuthorized) {
+        return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+      }
+      setCounter(0);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+  }
+  return SUPLA_CALCFG_RESULT_FALSE;
 }
 
 }  // namespace Sensor

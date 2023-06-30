@@ -45,6 +45,7 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
   void onSaveState() override;
   void onFastTimer() override;
   void handleAction(int event, int action) override;
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
 
   // Returns value of a counter at given Supla channel
   unsigned _supla_int64_t getCounter();

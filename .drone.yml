@@ -159,10 +159,10 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./Afore/
 # OneWire library has some compilation warnings treated as errors, so this example is compiled without "warnings all"
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries ./DallasTemperature/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries ./DSwithNotification/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./DHT/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./Fronius/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./HX711_Weight_sensor/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./DSwithNotification/
 
 - name: arduino_esp32_compilation_check_part_2
   image: devel/arduino-cli

@@ -434,9 +434,20 @@ void SuplaDeviceClass::iterate(void) {
       }
       if (iterateConnected) {
         // Iterate all elements
-        for (auto element = Supla::Element::begin(); element != nullptr;
-            element = element->next()) {
-          if (!element->iterateConnected()) {
+        // Iterate connected exits loop when method returns false, which means
+        // that element send message to server. In next iteration we'll start
+        // with next element instead of first one on the list.
+        if (Supla::Element::IsInvalidPtrSet()) {
+          iterateConnectedPtr = nullptr;
+          Supla::Element::ClearInvalidPtr();
+        }
+        if (iterateConnectedPtr == nullptr) {
+          iterateConnectedPtr = Supla::Element::begin();
+        }
+        for (; iterateConnectedPtr != nullptr;
+             iterateConnectedPtr = iterateConnectedPtr->next()) {
+          if (!iterateConnectedPtr->iterateConnected()) {
+            iterateConnectedPtr = iterateConnectedPtr->next();
             break;
           }
           delay(0);

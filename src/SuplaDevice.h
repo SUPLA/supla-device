@@ -202,6 +202,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;
+  Supla::Element *iterateConnectedPtr = nullptr;
 
   _impl_arduino_status impl_arduino_status = nullptr;
 

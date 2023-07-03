@@ -19,6 +19,12 @@
  * by setting LOW or HIGH output on selected GPIO.
  */
 
+
+/*
+ * TODO(klew):
+ *  - add sending timer value to server
+ */
+
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/tools.h>
@@ -29,8 +35,7 @@
 #include "../storage/storage.h"
 #include "relay.h"
 
-namespace Supla {
-namespace Control {
+using Supla::Control::Relay;
 
 Relay::Relay(Supla::Io *io,
              int pin,
@@ -42,14 +47,56 @@ Relay::Relay(Supla::Io *io,
 
 Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
     : pin(pin),
-      highIsOn(highIsOn),
-      stateOnInit(STATE_ON_INIT_OFF),
-      durationMs(0),
-      storedTurnOnDurationMs(0),
-      durationTimestamp(0),
-      keepTurnOnDurationMs(false) {
+      highIsOn(highIsOn) {
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   channel.setFuncList(functions);
+}
+
+void Relay::onRegistered(
+    Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  SUPLA_LOG_DEBUG("RELAY: onRegistered");
+  Supla::Element::onRegistered(suplaSrpc);
+  channel.requestChannelConfig();
+}
+
+void Relay::handleChannelConfig(
+    TSD_ChannelConfig *result) {
+  SUPLA_LOG_DEBUG(
+      "Relay::handleChannelConfig, func %d, configtype %d, configsize %d",
+      result->Func,
+      result->ConfigType,
+      result->ConfigSize);
+  setChannelFunction(result->Func);
+  switch (result->Func) {
+    default:
+    case SUPLA_CHANNELFNC_LIGHTSWITCH:
+    case SUPLA_CHANNELFNC_POWERSWITCH: {
+      break;
+    }
+
+    case SUPLA_CHANNELFNC_STAIRCASETIMER: {
+      if (result->ConfigType == 0 &&
+          result->ConfigSize == sizeof(TSD_ChannelConfig_StaircaseTimer)) {
+        uint32_t newDurationMs =
+            reinterpret_cast<TSD_ChannelConfig_StaircaseTimer *>(result->Config)
+                ->TimeMS;
+        if (newDurationMs != storedTurnOnDurationMs) {
+          storedTurnOnDurationMs = newDurationMs;
+          Supla::Storage::ScheduleSave(2000);
+        }
+      }
+      break;
+    }
+
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
+      // add here reading of duration from config when it will be added
+      break;
+    }
+  }
 }
 
 uint8_t Relay::pinOnValue() {
@@ -87,11 +134,12 @@ void Relay::onInit() {
     }
   }
 
+  uint32_t duration = durationMs;
   if (!isLastResetSoft()) {
     if (stateOn) {
-      turnOn();
+      turnOn(duration);
     } else {
-      turnOff();
+      turnOff(duration);
     }
   }
 
@@ -100,9 +148,9 @@ void Relay::onInit() {
   Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
 
   if (stateOn) {
-    turnOn();
+    turnOn(duration);
   } else {
-    turnOff();
+    turnOff(duration);
   }
 }
 
@@ -115,15 +163,28 @@ void Relay::iterateAlways() {
 int Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   int result = -1;
   if (newValue->value[0] == 1) {
-    if (keepTurnOnDurationMs) {
+    if (isImpulseFunction()) {
       storedTurnOnDurationMs = newValue->DurationMS;
     }
+
+    uint32_t copyDurationMs = storedTurnOnDurationMs;
+    if (isStaircaseFunction() && newValue->DurationMS == 0) {
+      // in case of staircase timer we allow duration == 0 from server, which
+      // means that this time we should turn on without automatic turn off.
+      storedTurnOnDurationMs = 0;
+    }
+
     turnOn(newValue->DurationMS);
+    storedTurnOnDurationMs = copyDurationMs;
     result = 1;
   } else if (newValue->value[0] == 0) {
+    if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
     turnOff(0);  // newValue->DurationMS may contain "turn on duration" which
                  // result in unexpected "turn on after duration ms received in
                  // turnOff message"
+    } else {
+      turnOff(newValue->DurationMS);
+    }
     result = 1;
   }
 
@@ -135,7 +196,7 @@ void Relay::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
     return;
   }
 
-  if (keepTurnOnDurationMs) {
+  if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
     value->DurationMS = storedTurnOnDurationMs;
   }
 }
@@ -147,7 +208,7 @@ void Relay::turnOn(_supla_int_t duration) {
             duration);
   durationMs = duration;
   durationTimestamp = millis();
-  if (keepTurnOnDurationMs) {
+  if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
     durationMs = storedTurnOnDurationMs;
   }
   Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
@@ -193,6 +254,13 @@ void Relay::toggle(_supla_int_t duration) {
 void Relay::handleAction(int event, int action) {
   (void)(event);
   switch (action) {
+    case TURN_ON_WITHOUT_TIMER: {
+      uint32_t copyDurationMs = storedTurnOnDurationMs;
+      storedTurnOnDurationMs = 0;
+      turnOn();
+      storedTurnOnDurationMs = copyDurationMs;
+      break;
+    }
     case TURN_ON: {
       turnOn();
       break;
@@ -209,39 +277,81 @@ void Relay::handleAction(int event, int action) {
 }
 
 void Relay::onSaveState() {
-  Supla::Storage::WriteState((unsigned char *)&storedTurnOnDurationMs,
-                             sizeof(storedTurnOnDurationMs));
-  bool enabled = false;
-  if (stateOnInit < 0) {
-    enabled = isOn();
+  uint32_t durationForState = storedTurnOnDurationMs;
+  uint8_t relayFlags = 0;
+  if (isStaircaseFunction()) {
+    relayFlags |= RELAY_FLAGS_STAIRCASE;
+  } else if (isImpulseFunction()) {
+    relayFlags |= RELAY_FLAGS_IMPULSE_FUNCTION;
+  } else {
+    // for other functions we store remaining countdown timer value
+    durationForState = 0;
+    if (durationMs) {
+      uint64_t remainingTimeMs = millis() - durationTimestamp;
+      if (remainingTimeMs < durationMs) {
+        // remaining time should always be lower than durationMs in other cases
+        // it means that timer already expired and it will be toggled on next
+        // iterateAlways()
+        durationForState = remainingTimeMs;
+      }
+    }
   }
-  Supla::Storage::WriteState((unsigned char *)&enabled, sizeof(enabled));
+
+  Supla::Storage::WriteState(
+      reinterpret_cast<unsigned char *>(&durationForState),
+      sizeof(durationForState));
+  if (stateOnInit < 0) {
+    relayFlags |= (isOn() ? RELAY_FLAGS_ON : 0);
+  }
+
+  Supla::Storage::WriteState(reinterpret_cast<unsigned char *>(&relayFlags),
+                             sizeof(relayFlags));
 }
 
 void Relay::onLoadState() {
-  Supla::Storage::ReadState((unsigned char *)&storedTurnOnDurationMs,
-                            sizeof(storedTurnOnDurationMs));
-  if (keepTurnOnDurationMs) {
+  Supla::Storage::ReadState(
+      reinterpret_cast<unsigned char *>(&storedTurnOnDurationMs),
+      sizeof(storedTurnOnDurationMs));
+  uint8_t relayFlags = 0;
+  Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(&relayFlags),
+                            sizeof(relayFlags));
+  if (stateOnInit < 0) {
+    SUPLA_LOG_INFO(
+              "Relay[%d]: restored relay state: %s",
+              channel.getChannelNumber(),
+              (relayFlags & RELAY_FLAGS_ON) ? "ON" : "OFF");
+    if (relayFlags & RELAY_FLAGS_ON) {
+      stateOnInit = STATE_ON_INIT_RESTORED_ON;
+    } else {
+      stateOnInit = STATE_ON_INIT_RESTORED_OFF;
+    }
+  }
+  if (relayFlags & RELAY_FLAGS_STAIRCASE) {
+    SUPLA_LOG_INFO(
+              "Relay[%d]: restored staircase function",
+              channel.getChannelNumber());
+    setChannelFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  } else if (relayFlags & RELAY_FLAGS_IMPULSE_FUNCTION) {
+    SUPLA_LOG_INFO(
+              "Relay[%d]: restored impulse function",
+              channel.getChannelNumber());
+    // actual funciton may be different, but we only have 8 bit bitfiled to
+    // keep the state and currently it doesn't matter which "impulse function"
+    // is actually used, so we set it to "controlling the gate"
+    setChannelFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
+  }
+  if (isStaircaseFunction() || isImpulseFunction()) {
     SUPLA_LOG_INFO(
               "Relay[%d]: restored durationMs: %d",
               channel.getChannelNumber(),
               storedTurnOnDurationMs);
   } else {
-    storedTurnOnDurationMs = 0;
-  }
-
-  bool enabled = false;
-  Supla::Storage::ReadState((unsigned char *)&enabled, sizeof(enabled));
-  if (stateOnInit < 0) {
-    SUPLA_LOG_INFO(
-              "Relay[%d]: restored relay state: %s",
-              channel.getChannelNumber(),
-              enabled ? "ON" : "OFF");
-    if (enabled) {
-      stateOnInit = STATE_ON_INIT_RESTORED_ON;
-    } else {
-      stateOnInit = STATE_ON_INIT_RESTORED_OFF;
+    // restore remaining countdown timer value
+    // relay will be on/off in onInit() with configured durationMs
+    if (stateOnInit < 0) {
+      durationMs = storedTurnOnDurationMs;
     }
+    storedTurnOnDurationMs = 0;
   }
 }
 
@@ -261,7 +371,9 @@ Relay &Relay::setDefaultStateRestore() {
 }
 
 Relay &Relay::keepTurnOnDuration(bool keep) {
-  keepTurnOnDurationMs = keep;
+  (void)(keep);
+  // empty method left for compatibility
+  // DEPREACATED
   return *this;
 }
 
@@ -273,5 +385,33 @@ void Relay::attach(Supla::Control::Button *button) {
   attachedButton = button;
 }
 
-}  // namespace Control
-}  // namespace Supla
+
+bool Relay::isStaircaseFunction() const {
+  return channelFunction == SUPLA_CHANNELFNC_STAIRCASETIMER;
+}
+
+bool Relay::isImpulseFunction() const {
+  return (channelFunction == SUPLA_CHANNELFNC_CONTROLLINGTHEGATE ||
+          channelFunction == SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK ||
+          channelFunction == SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK ||
+          channelFunction == SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR);
+}
+
+void Relay::setChannelFunction(_supla_int_t newFunction) {
+  bool wasImpulseFunction = isImpulseFunction();
+  bool wasStaircaseFunction = isStaircaseFunction();
+  channelFunction = newFunction;
+  if (wasImpulseFunction != isImpulseFunction()) {
+    Supla::Storage::ScheduleSave(2000);
+  }
+  if (wasStaircaseFunction != isStaircaseFunction()) {
+    Supla::Storage::ScheduleSave(2000);
+  }
+
+  if (isStaircaseFunction() || isImpulseFunction()) {
+    keepTurnOnDurationMs = true;
+  } else {
+    keepTurnOnDurationMs = false;
+    storedTurnOnDurationMs = 0;
+  }
+}

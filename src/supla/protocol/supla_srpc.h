@@ -51,6 +51,10 @@ class SuplaSrpc : public ProtocolLayer {
   void sendExtendedChannelValueChanged(uint8_t channelNumber,
     TSuplaChannelExtendedValue *value) override;
   void getChannelConfig(uint8_t channelNumber) override;
+  void sendRemainingTimeValue(uint8_t channelNumber,
+                              uint32_t timeMs,
+                              uint8_t state,
+                              int32_t senderId) override;
 
   void *getSrpcPtr();
 

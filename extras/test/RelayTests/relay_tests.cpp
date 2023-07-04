@@ -163,55 +163,71 @@ TEST_F(RelayFixture, stateOnInitTests) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpio1Value = 0;
+  int gpio2Value = 0;
+  int gpio3Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalRead(gpio2))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio2Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio2Value));
+  EXPECT_CALL(ioMock, digitalRead(gpio3))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio3Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio3Value));
+
   // virtual Relay &keepTurnOnDuration(bool keep = true);
   ::testing::InSequence seq;
 
   // R1
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
 
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
   r1.onRegistered(nullptr);
+  EXPECT_EQ(gpio1Value, 1);
 
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpio1Value, 1);
 
   // R2
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0));
   EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0));
 
   r2.onLoadConfig(nullptr);
   r2.onLoadState();
   r2.onInit();
   r2.onRegistered(nullptr);
+  EXPECT_EQ(gpio2Value, 0);
 
   for (int i = 0; i < 10; i++) {
     r2.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpio2Value, 0);
 
   // R3
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio3, 1));
   EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio3, 1));
 
   r3.onLoadConfig(nullptr);
   r3.onLoadState();
   r3.onInit();
+  EXPECT_EQ(gpio3Value, 1);
 
   for (int i = 0; i < 10; i++) {
     r3.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpio3Value, 1);
 }
 
 TEST_F(RelayFixture, startupTestsForLight) {
@@ -229,129 +245,20 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
-  ::testing::InSequence seq;
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // TURN_OFF
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // turnOff
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  // turnOn
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // toggle
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  // toggle
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // isOn 2x
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-
-  // countdown timer checks
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // Scenario1, from server:
-  // turn on, turn off, turn off, turn on, turn on
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // off without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // on without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // off with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // on with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // first one on is started with 2s timer, but in the meantime we get
-  // off without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // on is started with 2s timer, but in the meantime we get
-  // on without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // on is started with 2s timer, but in the meantime we get
-  // off with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // on is started with 2s timer, but in the meantime we get
-  // on with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // on is started with 2s timer, but in the meantime we get
-  // off by button
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // on is started with 2s timer, but in the meantime we get
-  // on by button
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // on is started with 2s timer, but in the meantime we get
-  // toggle by button
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(gpioValue, 0);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
@@ -359,6 +266,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   char value[SUPLA_CHANNELVALUE_SIZE] = {};
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -370,6 +278,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   value[0] = 1;
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -381,6 +290,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   value[0] = 0;
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -392,6 +302,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   value[0] = 1;
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -399,11 +310,14 @@ TEST_F(RelayFixture, startupTestsForLight) {
                           SUPLA_CHANNELVALUE_SIZE));
 
   r1.turnOff();
+  EXPECT_EQ(gpioValue, 0);
   r1.turnOn();
+  EXPECT_EQ(gpioValue, 1);
   r1.toggle();
+  EXPECT_EQ(gpioValue, 0);
   r1.toggle();
+  EXPECT_EQ(gpioValue, 1);
 
-  EXPECT_EQ(0, r1.isOn());
   EXPECT_EQ(1, r1.isOn());
 
   // countdown timer checks
@@ -415,56 +329,76 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   // Check: CountdownTimerTurnOnFor2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
-  for (int i = 0; i < 12; i++) {
+  for (int i = 0; i < 2; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
+  for (int i = 0; i < 10; i++) {
+    r1.iterateAlways();
+    time.advance(100);
+  }
+  EXPECT_EQ(gpioValue, 0);
 
   // check if duration wasn't stored
   r1.turnOn();
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
   r1.turnOff();
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   // Scenario1, from server:
   // turn on, turn off, turn off, turn on, turn on
   newValueFromServer.DurationMS = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
@@ -472,10 +406,12 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   // Check: CountdownTimerTurnOnAfter2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
@@ -483,10 +419,12 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   // Check: CountdownTimerTurnedOnTurnOffandTurnOnAfter2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
@@ -494,10 +432,12 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   // Check: CountdownTimerTurnedOnTurnOnFor2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   // tests that check handling of new value from server which is without
   // timer, but currently device is running some timer
@@ -509,16 +449,19 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 0;  // turn off
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
 
   // turnOff(2s) and then in the middle, turnOn(0)
   newValueFromServer.DurationMS = 2000;
@@ -529,23 +472,28 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // turnOff(2s) and then in the middle, turnOff(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -556,23 +504,28 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
-  newValueFromServer.value[0] = 0;  // turn on
+  newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // turnOff(2s) and then in the middle, turnOn(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -583,23 +536,28 @@ TEST_F(RelayFixture, startupTestsForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   // tests that check handling of new value from server which is without
   // timer, but currently device is running some timer
@@ -611,21 +569,25 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   //
   newValueFromServer.DurationMS = 2000;
@@ -633,21 +595,25 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // turnOn(2s) and then in the middle, turnOff(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -655,21 +621,25 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // turnOn(2s) and then in the middle, turnOn(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -677,21 +647,25 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   // turnOn(2s) and then in the middle, turnOn(0) by button
   newValueFromServer.DurationMS = 2000;
@@ -699,17 +673,21 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   r1.turnOff();
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
   /////////////////////////////////////////////////////////
   // turnOn(2s) and then in the middle, turnOff(0) by button
   newValueFromServer.DurationMS = 2000;
@@ -717,17 +695,21 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   r1.turnOn();
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
   /////////////////////////////////////////////////////////
   // turnOn(2s) and then in the middle, toggle(0) by button
   newValueFromServer.DurationMS = 2000;
@@ -735,17 +717,21 @@ TEST_F(RelayFixture, startupTestsForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   r1.toggle();
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
@@ -770,142 +756,85 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // R1
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_ON 1000 ms
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // TURN_OFF
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_ON 1000 ms
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_OFF
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_ON 1000 ms
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_ON 2000 ms
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_OFF
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_OFF
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-  // TURN_OFF 1000 ms
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_ON
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // handle new value from server
-  // TURN_OFF
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_ON with duration 1s
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_OFF
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_OFF
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_ON with duration 1s
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_ON with duration 1s
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // TURN_ON with duration 1s
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
 
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(gpioValue, 1);
   r1.onRegistered(nullptr);
 
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
 
   r1.turnOn(1000);  // turn on for 1000 ms
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 15; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   r1.turnOn(200);  // turn on for 200 ms
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 5; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   r1.turnOn(1000);  // turn on for 1000 ms
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // additional turn on 2000 ms, when first is turn on is not completed yet
   // it should restart timer and turn off after 2 s
   r1.turnOn(2000);  // turn on for 2000 ms
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   r1.turnOff();
+  EXPECT_EQ(gpioValue, 0);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   r1.turnOff(1000);
+  EXPECT_EQ(gpioValue, 0);
 
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   ////////////////////////////////////////////////
   // Check handling of "new value from server"
@@ -918,49 +847,61 @@ TEST_F(RelayFixture, durationMsTests) {
   newValueFromServer.value[0] = 0;  // turn off
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.value[0] = 2;  // invalid value
   EXPECT_EQ(-1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   newValueFromServer.DurationMS = 1000;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   newValueFromServer.DurationMS = 1000;
   newValueFromServer.value[0] = 0;  // turn off with duration 1s - which is
                                     // currently ignored by s-d
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // there is no "keepTurnOnDuration" enabled
   r1.turnOn();
+  EXPECT_EQ(gpioValue, 1);
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
 
   // when countdown timer was introducetd, keepTurnOnDuration() method was
   // deprecated and it doesn't have any effect, so instead of it, we
@@ -978,24 +919,30 @@ TEST_F(RelayFixture, durationMsTests) {
   newValueFromServer.DurationMS = 1000;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   // "keepTurnOnDuration" is enabled, so it should use 1000 ms as duration
   r1.turnOn();
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   // "keepTurnOnDuration" is enabled, so it should use 1000 ms as duration
   r1.turnOn(2000);
+  EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 }
 
 TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
@@ -1015,66 +962,65 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // R1
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_OFF after 2.5 s
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // Turn on
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_OFF after 2.5 s
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // explicit turn off (1000 ms)
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // it will automatically turn off after 2.5s
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // explicit turn off
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
 
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(gpioValue, 1);
   r1.onRegistered(nullptr);
 
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
   r1.turnOn(5000);
+  EXPECT_EQ(gpioValue, 1);
 
   // turn off will happen after 2.5s because of stored turn on duration
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 
+  // turn off will last 1s, then it will turn on and off after timeout
   r1.turnOff(1000);
-  for (int i = 0; i < 50; i++) {
+  EXPECT_EQ(gpioValue, 0);
+  for (int i = 0; i < 15; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 1);
+  for (int i = 0; i < 17; i++) {
+    r1.iterateAlways();
+    time.advance(100);
+  }
+  EXPECT_EQ(gpioValue, 1);
+  for (int i = 0; i < 30; i++) {
+    r1.iterateAlways();
+    time.advance(100);
+  }
+  EXPECT_EQ(gpioValue, 0);
   r1.turnOff();
+  EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(gpioValue, 0);
 }
 
 TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
@@ -1094,59 +1040,55 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // R1
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // Turn on (5000 ms)
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-
-  // TURN_OFF after 2.5 s
-  // there is toggle when durationMs ends, so it reads gpio state
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-
-  // explicit turn off
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
-  // TURN_ON after 1 s
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1));
-  // explicit turn off
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0));
 
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
 
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   r1.turnOn(5000);
+  EXPECT_EQ(1, gpioValue);
 
   // turn off will happen after 2.5s because of stored turn on duration
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   r1.turnOff(1000);
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   r1.turnOff();
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 }
 
 TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
@@ -1165,23 +1107,22 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(1, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
@@ -1189,13 +1130,16 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   // make sure that duration wasn't remebered
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 }
 
 TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
@@ -1214,23 +1158,22 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
@@ -1238,13 +1181,16 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // make sure that duration wasn't remebered
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 }
 
 TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
@@ -1263,17 +1209,22 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(1, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
@@ -1281,6 +1232,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 }
 
 TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
@@ -1300,24 +1252,31 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 }
 
 TEST_F(RelayFixture, checkTimerStateStorageForLight) {
@@ -1337,28 +1296,26 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
-  // handle new value from server
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   // save
   uint8_t relayFlags = 1;
   EXPECT_CALL(storage, writeState(_, 4))
       .WillOnce([](const unsigned char *value, int32_t buf) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 1100);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 900);
         return true;
       });
-  // save state checks relay isOn:
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   // save
   relayFlags = 0;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1366,7 +1323,6 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 0);
         return true;
       });
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
@@ -1374,6 +1330,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
@@ -1389,10 +1346,12 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // ~1s elapsed, then save state to storage
   r1.onSaveState();
@@ -1401,8 +1360,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   // duration should be 0
   r1.onSaveState();
+  EXPECT_EQ(0, gpioValue);
 }
 
 TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
@@ -1421,17 +1382,22 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_LIGHTSWITCH, 0);
 
@@ -1439,6 +1405,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 }
 
 TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
@@ -1458,28 +1425,26 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
-  // handle new value from server
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   // save
   uint8_t relayFlags = 1;
   EXPECT_CALL(storage, writeState(_, 4))
       .WillOnce([](const unsigned char *value, int32_t buf) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 1100);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 900);
         return true;
       });
-  // save state checks relay isOn:
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   // save
   relayFlags = 0;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1487,7 +1452,6 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 0);
         return true;
       });
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
@@ -1495,6 +1459,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_POWERSWITCH, 0);
 
@@ -1502,6 +1467,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   TSD_SuplaChannelNewValue newValueFromServer = {};
 
@@ -1510,10 +1476,12 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // ~1s elapsed, then save state to storage
   r1.onSaveState();
@@ -1522,8 +1490,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   // duration should be 0
   r1.onSaveState();
+  EXPECT_EQ(0, gpioValue);
 }
 
 TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
@@ -1543,15 +1513,17 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
-  // handle new value from server
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   // save
   uint8_t relayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1559,12 +1531,8 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 4000);
         return true;
       });
-  // save state checks relay isOn:
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   // save
   relayFlags = RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1572,7 +1540,6 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 4000);
         return true;
       });
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
@@ -1580,6 +1547,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_STAIRCASETIMER, 4000);
 
@@ -1587,6 +1555,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   TSD_SuplaChannelNewValue newValueFromServer = {};
 
@@ -1595,10 +1564,12 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // ~1s elapsed, then save state to storage
   r1.onSaveState();
@@ -1607,6 +1578,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   // duration should be 0
   r1.onSaveState();
 }
@@ -1628,15 +1600,17 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
-  // handle new value from server
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   // save
   uint8_t relayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1644,12 +1618,8 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return true;
       });
-  // save state checks relay isOn:
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   // save
   relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1657,7 +1627,6 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return true;
       });
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
@@ -1665,6 +1634,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   // currently impulse functions doesn't have channel config Config field
   // so it still relies on durationMs send in new value
@@ -1674,6 +1644,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   TSD_SuplaChannelNewValue newValueFromServer = {};
 
@@ -1682,10 +1653,12 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // ~0.3s elapsed, then save state to storage
   r1.onSaveState();
@@ -1694,6 +1667,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   r1.onSaveState();
 }
 
@@ -1714,16 +1688,16 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
   uint8_t relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1731,13 +1705,9 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 600);
         return true;
       });
-  // save state checks relay isOn:
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
-  // handle new value from server
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   // save
   relayFlags |= RELAY_FLAGS_ON;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1745,12 +1715,8 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return true;
       });
-  // save state checks relay isOn:
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   // save
   relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1758,7 +1724,6 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return true;
       });
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
@@ -1766,6 +1731,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   // currently impulse functions doesn't have channel config Config field
   // so it still relies on durationMs send in new value
@@ -1775,12 +1741,15 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   r1.onSaveState();
 
   TSD_SuplaChannelNewValue newValueFromServer = {};
@@ -1790,10 +1759,12 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // ~0.3s elapsed, then save state to storage
   r1.onSaveState();
@@ -1802,6 +1773,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   r1.onSaveState();
 }
 
@@ -1821,16 +1793,16 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
   uint8_t relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1841,20 +1813,14 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
 
-  // handle new value from server
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
   // save
- // relayFlags |= RELAY_FLAGS_ON;
   EXPECT_CALL(storage, writeState(_, 4))
       .WillOnce([](const unsigned char *value, int32_t buf) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return true;
       });
-  // save state checks relay isOn:
   EXPECT_CALL(storage, writeState(Pointee(relayFlags), 1))
       .WillOnce(Return(true));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   // save
   relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeState(_, 4))
@@ -1869,6 +1835,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   // currently impulse functions doesn't have channel config Config field
   // so it still relies on durationMs send in new value
@@ -1878,12 +1845,15 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   r1.onSaveState();
 
   TSD_SuplaChannelNewValue newValueFromServer = {};
@@ -1893,10 +1863,12 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // ~0.3s elapsed, then save state to storage
   r1.onSaveState();
@@ -1905,6 +1877,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   r1.onSaveState();
 }
 
@@ -1924,129 +1897,22 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_CALL(storage, readState(_, 1))
       .WillRepeatedly(DoAll(SetArgPointee<0>(storedRelayFlags), Return(true)));
 
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+
   ::testing::InSequence seq;
 
   // init
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // TURN_OFF
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  // TURN_ON
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // turnOff
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  // turnOn
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // toggle
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  // toggle
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  // isOn 2x
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-
-  // countdown timer checks
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // Scenario1, from server:
-  // turn on, turn off, turn off, turn on, turn on
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // off without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // on without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // off with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // first one off is started with 2s timer, but in the meantime we get
-  // on with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // first one on is started with 2s timer, but in the meantime we get
-  // off without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // on is started with 2s timer, but in the meantime we get
-  // on without timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // on is started with 2s timer, but in the meantime we get
-  // off with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // on is started with 2s timer, but in the meantime we get
-  // on with another 2s timer
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // on is started with 2s timer, but in the meantime we get
-  // off by button
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
-
-  // on is started with 2s timer, but in the meantime we get
-  // on by button
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-
-  // on is started with 2s timer, but in the meantime we get
-  // toggle by button
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 1));
-  EXPECT_CALL(ioMock, digitalRead(gpio)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio, 0));
 
   // test begins
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
+  EXPECT_EQ(0, gpioValue);
   r1.onRegistered(nullptr);
   sendConfig(&r1, SUPLA_CHANNELFNC_POWERSWITCH, 0);
 
@@ -2054,6 +1920,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   char value[SUPLA_CHANNELVALUE_SIZE] = {};
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -2061,10 +1928,12 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
                           SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_ON);
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   value[0] = 1;
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -2072,10 +1941,12 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
                           SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_OFF);
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   value[0] = 0;
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -2083,10 +1954,12 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
                           SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_ON);
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   value[0] = 1;
   EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
@@ -2094,11 +1967,15 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
                           SUPLA_CHANNELVALUE_SIZE));
 
   r1.turnOff();
+  EXPECT_EQ(0, gpioValue);
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   r1.toggle();
-  r1.toggle();
-
+  EXPECT_EQ(0, gpioValue);
   EXPECT_EQ(0, r1.isOn());
+  r1.toggle();
+  EXPECT_EQ(1, gpioValue);
+
   EXPECT_EQ(1, r1.isOn());
 
   // countdown timer checks
@@ -2110,56 +1987,72 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   // Check: CountdownTimerTurnOnFor2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   // check if duration wasn't stored
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
   r1.turnOff();
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   // Scenario1, from server:
   // turn on, turn off, turn off, turn on, turn on
   newValueFromServer.DurationMS = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
@@ -2167,10 +2060,12 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   // Check: CountdownTimerTurnOnAfter2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
@@ -2178,10 +2073,12 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   // Check: CountdownTimerTurnedOnTurnOffandTurnOnAfter2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
@@ -2189,10 +2086,12 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   // Check: CountdownTimerTurnedOnTurnOnFor2s
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   // tests that check handling of new value from server which is without
   // timer, but currently device is running some timer
@@ -2204,16 +2103,19 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 0;  // turn off
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
 
   // turnOff(2s) and then in the middle, turnOn(0)
   newValueFromServer.DurationMS = 2000;
@@ -2224,23 +2126,28 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // turnOff(2s) and then in the middle, turnOff(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -2251,23 +2158,28 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
-  newValueFromServer.value[0] = 0;  // turn on
+  newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // turnOff(2s) and then in the middle, turnOn(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -2278,23 +2190,28 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   // tests that check handling of new value from server which is without
   // timer, but currently device is running some timer
@@ -2306,21 +2223,25 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   //
   newValueFromServer.DurationMS = 2000;
@@ -2328,21 +2249,25 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 0;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // turnOn(2s) and then in the middle, turnOff(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -2350,21 +2275,25 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(0, gpioValue);
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   // turnOn(2s) and then in the middle, turnOn(2s), which should restart timer
   newValueFromServer.DurationMS = 2000;
@@ -2372,21 +2301,25 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   newValueFromServer.DurationMS = 2000;
   newValueFromServer.ChannelNumber = 0;
   newValueFromServer.value[0] = 1;  // turn on
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
 
   // turnOn(2s) and then in the middle, turnOn(0) by button
   newValueFromServer.DurationMS = 2000;
@@ -2394,17 +2327,21 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   r1.turnOff();
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   /////////////////////////////////////////////////////////
   // turnOn(2s) and then in the middle, turnOff(0) by button
   newValueFromServer.DurationMS = 2000;
@@ -2412,17 +2349,21 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   r1.turnOn();
+  EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
   /////////////////////////////////////////////////////////
   // turnOn(2s) and then in the middle, toggle(0) by button
   newValueFromServer.DurationMS = 2000;
@@ -2430,17 +2371,21 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   newValueFromServer.value[0] = 1;  // turn on
 
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
+  EXPECT_EQ(1, gpioValue);
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(1, gpioValue);
 
   r1.toggle();
+  EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
     time.advance(100);
   }
+  EXPECT_EQ(0, gpioValue);
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////
   /////////////////////////////////////////////////////////

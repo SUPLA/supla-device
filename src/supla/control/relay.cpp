@@ -19,7 +19,6 @@
  * by setting LOW or HIGH output on selected GPIO.
  */
 
-
 /*
  * TODO(klew):
  *  - add sending timer value to server
@@ -29,6 +28,7 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/control/button.h>
+#include <supla/protocol/protocol_layer.h>
 
 #include "../actions.h"
 #include "../io.h"
@@ -55,9 +55,12 @@ Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
 
 void Relay::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  SUPLA_LOG_DEBUG("RELAY: onRegistered");
   Supla::Element::onRegistered(suplaSrpc);
   channel.requestChannelConfig();
+
+  if (durationMs) {
+    updateTimerValue();
+  }
 }
 
 void Relay::handleChannelConfig(
@@ -158,6 +161,10 @@ void Relay::iterateAlways() {
   if (durationMs && millis() - durationTimestamp > durationMs) {
     toggle();
   }
+  if (timerUpdateTimestamp != durationTimestamp) {
+    timerUpdateTimestamp = durationTimestamp;
+    updateTimerValue();
+  }
 }
 
 int Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
@@ -207,10 +214,15 @@ void Relay::turnOn(_supla_int_t duration) {
             channel.getChannelNumber(),
             duration);
   durationMs = duration;
-  durationTimestamp = millis();
   if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
     durationMs = storedTurnOnDurationMs;
   }
+  if (durationMs != 0) {
+    durationTimestamp = millis();
+  } else {
+    durationTimestamp = 0;
+  }
+
   Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
 
   channel.setNewValue(true);
@@ -225,7 +237,11 @@ void Relay::turnOff(_supla_int_t duration) {
             channel.getChannelNumber(),
             duration);
   durationMs = duration;
-  durationTimestamp = millis();
+  if (durationMs != 0) {
+    durationTimestamp = millis();
+  } else {
+    durationTimestamp = 0;
+  }
   Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
 
   channel.setNewValue(false);
@@ -287,12 +303,12 @@ void Relay::onSaveState() {
     // for other functions we store remaining countdown timer value
     durationForState = 0;
     if (durationMs) {
-      uint64_t remainingTimeMs = millis() - durationTimestamp;
-      if (remainingTimeMs < durationMs) {
+      uint64_t elapsedTimeMs = millis() - durationTimestamp;
+      if (elapsedTimeMs < durationMs) {
         // remaining time should always be lower than durationMs in other cases
         // it means that timer already expired and it will be toggled on next
         // iterateAlways()
-        durationForState = remainingTimeMs;
+        durationForState = durationMs - elapsedTimeMs;
       }
     }
   }
@@ -413,5 +429,30 @@ void Relay::setChannelFunction(_supla_int_t newFunction) {
   } else {
     keepTurnOnDurationMs = false;
     storedTurnOnDurationMs = 0;
+  }
+}
+
+void Relay::updateTimerValue() {
+  uint32_t remainingTime = 0;
+  uint8_t state = 0;
+  int32_t senderId = 0;
+
+  if (durationMs != 0) {
+    uint64_t elapsedTimeMs = millis() - durationTimestamp;
+    if (elapsedTimeMs <= durationMs) {
+      remainingTime = durationMs - elapsedTimeMs;
+      state = (isOn() ? 0 : 1);
+    }
+  }
+
+  SUPLA_LOG_DEBUG("Relay[%d]: updating timer value: remainingTime=%d state=%d",
+                  channel.getChannelNumber(),
+                  remainingTime,
+                  state);
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first();
+      proto != nullptr; proto = proto->next()) {
+    proto->sendRemainingTimeValue(
+        getChannelNumber(), remainingTime, state, senderId);
   }
 }

@@ -55,6 +55,10 @@ class ProtocolLayer {
   virtual bool isUpdatePending();
   virtual bool isRegisteredAndReady() = 0;
   virtual void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) = 0;
+  virtual void sendRemainingTimeValue(uint8_t channelNumber,
+                                      uint32_t timeMs,
+                                      uint8_t state,
+                                      int32_t senderId);
   virtual void getUserLocaltime();
   virtual void sendChannelValueChanged(uint8_t channelNumber, char *value,
       unsigned char offline, uint32_t validityTimeSec) = 0;

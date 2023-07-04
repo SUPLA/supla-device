@@ -93,6 +93,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
  protected:
   void setChannelFunction(_supla_int_t newFunction);
+  void updateTimerValue();
   int pin = -1;
   bool highIsOn = true;
   int channelFunction = 0;
@@ -103,6 +104,10 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint64_t durationTimestamp = 0;
+
+  uint32_t lastDurationMsOnTimerUpdate = 0;
+  uint64_t timerUpdateTimestamp = 0;
+  bool lastStateOnTimerUpdate = false;
 
   Supla::Io *io = nullptr;
   Supla::Control::Button *attachedButton = nullptr;

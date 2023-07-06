@@ -130,7 +130,7 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
 
 void Clock::onTimer() {
   if (isClockReady) {
-    uint64_t curMillis = millis();
+    uint32_t curMillis = millis();
     int seconds = (curMillis - lastMillis) / 1000;
     if (seconds > 0) {
       lastMillis = curMillis - ((curMillis - lastMillis) % 1000);

@@ -39,7 +39,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool verifyConfig() override;
   bool isEnabled() override;
   void disconnect() override;
-  bool iterate(uint64_t _millis) override;
+  bool iterate(uint32_t _millis) override;
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
   bool isRegisteredAndReady() override;
@@ -90,10 +90,10 @@ class SuplaSrpc : public ProtocolLayer {
   bool requestNetworkRestart = false;
   uint32_t activityTimeoutS = 30;
   _supla_int64_t lastPingTimeMs = 0;
-  uint64_t waitForIterate = 0;
-  uint64_t lastIterateTime = 0;
-  uint64_t lastResponseMs = 0;
-  uint64_t lastSentMs = 0;
+  uint32_t waitForIterate = 0;
+  uint32_t lastIterateTime = 0;
+  uint32_t lastResponseMs = 0;
+  uint32_t lastSentMs = 0;
   uint16_t connectionFailCounter = 0;
   bool enabled = true;
 

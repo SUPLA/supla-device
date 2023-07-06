@@ -47,7 +47,7 @@ class ProtocolLayer {
   // Return value indicates if specific protocol is ready to handle data
   // from other elements and if call to Element::iterateConnected should be
   // done.
-  virtual bool iterate(uint64_t _millis) = 0;
+  virtual bool iterate(uint32_t _millis) = 0;
   virtual bool isNetworkRestartRequested() = 0;
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();

@@ -49,7 +49,7 @@ class SequenceButton : public SimpleButton {
  protected:
   unsigned int calculateMargin(unsigned int);
 
-  uint64_t lastStateChangeMs = 0;
+  uint32_t lastStateChangeMs = 0;
   uint16_t longestSequenceTimeDeltaWithMargin = 800;
   uint8_t clickCounter = 0;
   bool sequenceDetectecion = true;

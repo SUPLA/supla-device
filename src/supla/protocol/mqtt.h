@@ -70,7 +70,7 @@ class Mqtt : public ProtocolLayer {
   bool verifyConfig() override;
   bool isEnabled() override;
 //  void disconnect() override;
-//  void iterate(uint64_t _millis) override;
+//  void iterate(uint32_t _millis) override;
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
   bool isConnectionError() override;

@@ -87,7 +87,7 @@ class StatusLed : public Element {
   bool invert = false;
   unsigned int onDuration = 0;
   unsigned int offDuration = 1000;
-  uint64_t lastUpdate = 0;
+  uint32_t lastUpdate = 0;
   LedState state = NOT_INITIALIZED;
   LedSequence currentSequence = NETWORK_CONNECTING;
   LedMode ledMode = LED_ON_WHEN_CONNECTED;

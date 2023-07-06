@@ -36,7 +36,7 @@ class TimeInterface {
   public:
     TimeInterface();
     virtual ~TimeInterface();
-    virtual uint64_t millis() = 0;
+    virtual uint32_t millis() = 0;
 
     static TimeInterface *instance;
 };
@@ -53,7 +53,7 @@ class DigitalInterfaceMock : public DigitalInterface {
 
 class TimeInterfaceMock : public TimeInterface {
   public:
-    MOCK_METHOD(uint64_t, millis, (), (override));
+    MOCK_METHOD(uint32_t, millis, (), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_ARDUINO_MOCK_H_

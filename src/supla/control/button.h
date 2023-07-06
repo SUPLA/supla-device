@@ -73,7 +73,7 @@ class Button : public SimpleButton {
   unsigned int holdTimeMs = 0;
   unsigned int repeatOnHoldMs = 0;
   unsigned int multiclickTimeMs = 0;
-  uint64_t lastStateChangeMs = 0;
+  uint32_t lastStateChangeMs = 0;
   uint8_t clickCounter = 0;
   uint8_t maxMulticlickValueConfigured = 0;
   unsigned int holdSend = 0;

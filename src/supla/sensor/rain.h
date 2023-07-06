@@ -46,7 +46,7 @@ class Rain : public ChannelElement {
   }
 
  protected:
-  uint64_t lastReadTime;
+  uint32_t lastReadTime;
 };
 
 };  // namespace Sensor

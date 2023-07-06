@@ -32,7 +32,7 @@ class MqttUT : public Supla::Protocol::Mqtt {
   public:
     explicit MqttUT(SuplaDeviceClass *sdc) : Supla::Protocol::Mqtt(sdc) {}
     void disconnect() override {}
-    bool iterate(uint64_t millis) override {
+    bool iterate(uint32_t millis) override {
       return false;
     }
     void publishImp(const char *topic,

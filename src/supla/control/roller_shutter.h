@@ -109,10 +109,10 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   int pinUp = -1;
   int pinDown = -1;
 
-  uint64_t lastMovementStartTime = 0;
-  uint64_t doNothingTime = 0;
-  uint64_t calibrationTime = 0;
-  uint64_t operationTimeout = 0;
+  uint32_t lastMovementStartTime = 0;
+  uint32_t doNothingTime = 0;
+  uint32_t calibrationTime = 0;
+  uint32_t operationTimeout = 0;
   Supla::Io *io = nullptr;
 };
 

@@ -61,7 +61,7 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
                       // track changes on pin state.
   int impulsePin = -1;  // Pin where impulses are counted
 
-  uint64_t lastImpulseMillis =
+  uint32_t lastImpulseMillis =
       0;  // Stores timestamp of last impulse (used to ignore
           // changes of state during 10 ms timeframe)
   unsigned int debounceDelay = 10;

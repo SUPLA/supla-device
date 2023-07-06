@@ -103,10 +103,10 @@ class Relay : public ChannelElement, public ActionHandler {
 
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
-  uint64_t durationTimestamp = 0;
+  uint32_t durationTimestamp = 0;
 
   uint32_t lastDurationMsOnTimerUpdate = 0;
-  uint64_t timerUpdateTimestamp = 0;
+  uint32_t timerUpdateTimestamp = 0;
   bool lastStateOnTimerUpdate = false;
 
   Supla::Io *io = nullptr;

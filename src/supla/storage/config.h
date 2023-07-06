@@ -139,7 +139,7 @@ class Config {
   virtual bool getAltWiFiPassword(char* result);
 
  protected:
-  uint64_t saveDelayTimestamp = 0;
+  uint32_t saveDelayTimestamp = 0;
   uint32_t saveDelayMs = 0;
 };
 };  // namespace Supla

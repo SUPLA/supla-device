@@ -24,7 +24,7 @@
 
 class StorageMock: public Supla::Storage {
  public:
-  MOCK_METHOD(void, scheduleSave, (uint64_t), (override));
+  MOCK_METHOD(void, scheduleSave, (uint32_t), (override));
   MOCK_METHOD(void, commit, (), (override));
   MOCK_METHOD(int,
               readStorage,

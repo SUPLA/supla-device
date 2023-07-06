@@ -22,7 +22,7 @@
 #else
 #include <stdint.h>
 
-uint64_t millis(void);
+uint32_t millis(void);
 void delay(uint64_t);
 void delayMicroseconds(uint64_t);
 

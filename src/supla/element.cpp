@@ -119,7 +119,7 @@ bool Element::iterateConnected(void *ptr) {
 
 bool Element::iterateConnected() {
   bool response = true;
-  uint64_t timestamp = millis();
+  uint32_t timestamp = millis();
   Channel *secondaryChannel = getSecondaryChannel();
   if (secondaryChannel && secondaryChannel->isUpdateReady() &&
       timestamp - secondaryChannel->lastCommunicationTimeMs > 50) {

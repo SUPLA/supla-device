@@ -61,7 +61,7 @@ class Weight : public ChannelElement, public ActionHandler {
   }
 
  protected:
-  uint64_t lastReadTime = 0;
+  uint32_t lastReadTime = 0;
 };
 
 };  // namespace Sensor

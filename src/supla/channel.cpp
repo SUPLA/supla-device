@@ -27,7 +27,7 @@
 
 namespace Supla {
 
-uint64_t Channel::lastCommunicationTimeMs = 0;
+uint32_t Channel::lastCommunicationTimeMs = 0;
 TDS_SuplaRegisterDevice_E Channel::reg_dev;
 
 Channel::Channel() : valueChanged(false), channelConfig(false),

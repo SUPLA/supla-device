@@ -38,7 +38,7 @@ ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
 }
 
 enum Supla::Control::StateResults ButtonState::update() {
-  uint64_t curMillis = millis();
+  uint32_t curMillis = millis();
   if (debounceDelayMs == 0 || curMillis - debounceTimeMs > debounceDelayMs) {
     int currentState = Supla::Io::digitalRead(pin, io);
     if (currentState != prevState) {

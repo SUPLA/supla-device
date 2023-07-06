@@ -23,7 +23,7 @@
 #include <FreeRTOS.h>
 #include <task.h>
 
-uint64_t millis(void) {
+uint32_t millis(void) {
   if (portTICK_PERIOD_MS != 1) {
     // TODO(klew): implement
     // error
@@ -46,7 +46,7 @@ void delayMicroseconds(uint64_t delayMicro) {
 #include <unistd.h>
 #include <esp_timer.h>
 
-uint64_t millis(void) {
+uint32_t millis(void) {
   return esp_timer_get_time() / 1000;
 }
 
@@ -64,7 +64,7 @@ void delayMicroseconds(uint64_t delayMicro) {
 
 std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
 
-uint64_t millis() {
+uint32_t millis() {
   std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
   return std::chrono::duration_cast<std::chrono::milliseconds>(end - begin)
     .count();

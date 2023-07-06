@@ -260,7 +260,7 @@ class ElectricityMeter :
   unsigned _supla_int_t rawCurrent[MAX_PHASES];
   bool valueChanged;
   bool currentMeasurementAvailable;
-  uint64_t lastReadTime;
+  uint32_t lastReadTime;
   unsigned int refreshRateSec;
 };
 

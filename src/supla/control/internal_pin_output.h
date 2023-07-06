@@ -60,7 +60,7 @@ class InternalPinOutput : public Element,
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   unsigned _supla_int_t durationMs = 0;
   unsigned _supla_int_t storedTurnOnDurationMs = 0;
-  uint64_t durationTimestamp = 0;
+  uint32_t durationTimestamp = 0;
   Supla::Io *io = nullptr;
 };
 

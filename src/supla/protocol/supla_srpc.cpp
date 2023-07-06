@@ -493,7 +493,7 @@ bool Supla::Protocol::SuplaSrpc::ping() {
   return true;
 }
 
-bool Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
+bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!isEnabled()) {
     return false;
   }

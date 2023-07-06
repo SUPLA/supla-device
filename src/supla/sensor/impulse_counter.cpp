@@ -86,7 +86,6 @@ void ImpulseCounter::onLoadState() {
 
 void ImpulseCounter::setCounter(unsigned _supla_int64_t value) {
   counter = value;
-  channel.setNewValue(value);
   SUPLA_LOG_DEBUG(
             "ImpulseCounter[%d] - set counter to %d",
             channel.getChannelNumber(),
@@ -95,7 +94,6 @@ void ImpulseCounter::setCounter(unsigned _supla_int64_t value) {
 
 void ImpulseCounter::incCounter() {
   counter++;
-  channel.setNewValue(getCounter());
 }
 
 void ImpulseCounter::onFastTimer() {
@@ -133,6 +131,13 @@ int ImpulseCounter::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
     }
   }
   return SUPLA_CALCFG_RESULT_FALSE;
+}
+
+void ImpulseCounter::iterateAlways() {
+  if (millis() - lastReadTime > 1000) {
+    lastReadTime = millis();
+    channel.setNewValue(counter);
+  }
 }
 
 }  // namespace Sensor

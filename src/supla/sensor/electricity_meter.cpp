@@ -46,30 +46,31 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   valueChanged = false;
 
   emValue.m_count = 1;
-
-  // Update current messurement precision based on last updates
-  if (currentMeasurementAvailable) {
-    bool over65A = false;
-    for (int i = 0; i < MAX_PHASES; i++) {
-      if (rawCurrent[i] > 65000) {
-        over65A = true;
+  if ((emValue.measured_values & (~EM_VAR_ALL_ENERGY_REGISTERS)) != 0) {
+    // Update current messurement precision based on last updates
+    if (currentMeasurementAvailable) {
+      bool over65A = false;
+      for (int i = 0; i < MAX_PHASES; i++) {
+        if (rawCurrent[i] > 65000) {
+          over65A = true;
+        }
       }
-    }
 
-    for (int i = 0; i < MAX_PHASES; i++) {
+      for (int i = 0; i < MAX_PHASES; i++) {
+        if (over65A) {
+          emValue.m[0].current[i] = rawCurrent[i] / 10;
+        } else {
+          emValue.m[0].current[i] = rawCurrent[i];
+        }
+      }
+
       if (over65A) {
-        emValue.m[0].current[i] = rawCurrent[i] / 10;
+        emValue.measured_values &= (~EM_VAR_CURRENT);
+        emValue.measured_values |= EM_VAR_CURRENT_OVER_65A;
       } else {
-        emValue.m[0].current[i] = rawCurrent[i];
+        emValue.measured_values &= (~EM_VAR_CURRENT_OVER_65A);
+        emValue.measured_values |= EM_VAR_CURRENT;
       }
-    }
-
-    if (over65A) {
-      emValue.measured_values &= (~EM_VAR_CURRENT);
-      emValue.measured_values |= EM_VAR_CURRENT_OVER_65A;
-    } else {
-      emValue.measured_values &= (~EM_VAR_CURRENT_OVER_65A);
-      emValue.measured_values |= EM_VAR_CURRENT;
     }
   }
 
@@ -162,7 +163,7 @@ void Supla::Sensor::ElectricityMeter::setFreq(unsigned _supla_int16_t freq) {
 
 // power in 0.00001 W
 void Supla::Sensor::ElectricityMeter::setPowerActive(int phase,
-                                                     _supla_int_t power) {
+    _supla_int_t power) {
   if (phase >= 0 && phase < MAX_PHASES) {
     if (emValue.m[0].power_active[phase] != power) {
       valueChanged = true;
@@ -222,8 +223,13 @@ void Supla::Sensor::ElectricityMeter::setPhaseAngle(int phase,
 
 void Supla::Sensor::ElectricityMeter::resetReadParameters() {
   if (emValue.measured_values != 0) {
-    emValue.measured_values = 0;
+    // we keep only energy counting registers/flags
+    emValue.measured_values &= EM_VAR_ALL_ENERGY_REGISTERS;
+
     memset(&emValue.m[0], 0, sizeof(TElectricityMeter_Measurement));
+    memset(&rawCurrent, 0, sizeof(rawCurrent));
+    currentMeasurementAvailable = false;
+
     valueChanged = true;
   }
 }

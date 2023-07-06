@@ -40,6 +40,12 @@ struct EnergyMeasurmentsStorage {
 };
 #pragma pack(pop)
 
+#define EM_VAR_ALL_ENERGY_REGISTERS                                  \
+  (EM_VAR_FORWARD_ACTIVE_ENERGY | EM_VAR_REVERSE_ACTIVE_ENERGY |     \
+  EM_VAR_FORWARD_REACTIVE_ENERGY | EM_VAR_REVERSE_REACTIVE_ENERGY |  \
+  EM_VAR_FORWARD_ACTIVE_ENERGY_BALANCED |                            \
+  EM_VAR_REVERSE_ACTIVE_ENERGY_BALANCED)
+
 class ElectricityMeter :
   public Element, public LocalAction, public ActionHandler {
  public:

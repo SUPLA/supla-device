@@ -273,6 +273,8 @@ void Relay::handleAction(int event, int action) {
     case TURN_ON_WITHOUT_TIMER: {
       uint32_t copyDurationMs = storedTurnOnDurationMs;
       storedTurnOnDurationMs = 0;
+      SUPLA_LOG_DEBUG("Relay[%d]: override stored durationMs",
+                      channel.getChannelNumber());
       turnOn();
       storedTurnOnDurationMs = copyDurationMs;
       break;

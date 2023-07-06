@@ -46,31 +46,29 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   valueChanged = false;
 
   emValue.m_count = 1;
-  if ((emValue.measured_values & (~EM_VAR_ALL_ENERGY_REGISTERS)) != 0) {
-    // Update current messurement precision based on last updates
-    if (currentMeasurementAvailable) {
-      bool over65A = false;
-      for (int i = 0; i < MAX_PHASES; i++) {
-        if (rawCurrent[i] > 65000) {
-          over65A = true;
-        }
+  // Update current messurement precision based on last updates
+  if (currentMeasurementAvailable) {
+    bool over65A = false;
+    for (int i = 0; i < MAX_PHASES; i++) {
+      if (rawCurrent[i] > 65000) {
+        over65A = true;
       }
+    }
 
-      for (int i = 0; i < MAX_PHASES; i++) {
-        if (over65A) {
-          emValue.m[0].current[i] = rawCurrent[i] / 10;
-        } else {
-          emValue.m[0].current[i] = rawCurrent[i];
-        }
-      }
-
+    for (int i = 0; i < MAX_PHASES; i++) {
       if (over65A) {
-        emValue.measured_values &= (~EM_VAR_CURRENT);
-        emValue.measured_values |= EM_VAR_CURRENT_OVER_65A;
+        emValue.m[0].current[i] = rawCurrent[i] / 10;
       } else {
-        emValue.measured_values &= (~EM_VAR_CURRENT_OVER_65A);
-        emValue.measured_values |= EM_VAR_CURRENT;
+        emValue.m[0].current[i] = rawCurrent[i];
       }
+    }
+
+    if (over65A) {
+      emValue.measured_values &= (~EM_VAR_CURRENT);
+      emValue.measured_values |= EM_VAR_CURRENT_OVER_65A;
+    } else {
+      emValue.measured_values &= (~EM_VAR_CURRENT_OVER_65A);
+      emValue.measured_values |= EM_VAR_CURRENT;
     }
   }
 

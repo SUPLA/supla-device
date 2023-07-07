@@ -301,7 +301,7 @@ void Relay::onSaveState() {
     relayFlags |= RELAY_FLAGS_STAIRCASE;
   } else if (isImpulseFunction()) {
     relayFlags |= RELAY_FLAGS_IMPULSE_FUNCTION;
-  } else if (isCountdownTimerFunctionEnabled()) {
+  } else if (isCountdownTimerFunctionEnabled() && stateOnInit < 0) {
     // for other functions we store remaining countdown timer value
     durationForState = 0;
     if (durationMs) {

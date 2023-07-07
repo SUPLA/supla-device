@@ -470,7 +470,7 @@ void RGBWBase::onFastTimer() {
     lastTick = millis();
     return;
   }
-  uint64_t timeDiff = millis() - lastTick;
+  uint32_t timeDiff = millis() - lastTick;
 
 
   if (timeDiff > 0) {

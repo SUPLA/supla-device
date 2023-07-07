@@ -49,7 +49,7 @@ void LastStateLogger::log(const char *state) {
   }
 
   Supla::AutoLock autoLock(mutex);
-  char copy[LAST_STATE_LOGGER_BUFFER_SIZE];
+  char *copy = new char[LAST_STATE_LOGGER_BUFFER_SIZE];
   memcpy(copy, buffer, LAST_STATE_LOGGER_BUFFER_SIZE);
   memcpy(buffer, state, newStateSize);
   buffer[newStateSize] = '\0';
@@ -62,6 +62,7 @@ void LastStateLogger::log(const char *state) {
   buffer[LAST_STATE_LOGGER_BUFFER_SIZE - 1] = '\0';
 
   SUPLA_LOG_INFO("LAST STATE ADDED: %s", buffer);
+  delete [] copy;
 }
 
 char *LastStateLogger::getLog() {

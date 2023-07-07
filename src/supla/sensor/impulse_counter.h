@@ -45,6 +45,8 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
   void onSaveState() override;
   void onFastTimer() override;
   void handleAction(int event, int action) override;
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
+  void iterateAlways() override;
 
   // Returns value of a counter at given Supla channel
   unsigned _supla_int64_t getCounter();
@@ -60,7 +62,7 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
                       // track changes on pin state.
   int impulsePin = -1;  // Pin where impulses are counted
 
-  uint64_t lastImpulseMillis =
+  uint32_t lastImpulseMillis =
       0;  // Stores timestamp of last impulse (used to ignore
           // changes of state during 10 ms timeframe)
   unsigned int debounceDelay = 10;
@@ -69,6 +71,7 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
   bool inputPullup = true;
 
   unsigned _supla_int64_t counter = 0;  // Actual count of impulses
+  uint32_t lastReadTime = 0;
   Supla::Io *io = nullptr;
 };
 

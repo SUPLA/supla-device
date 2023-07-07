@@ -35,7 +35,7 @@ class Distance : public ChannelElement {
   void iterateAlways() override;
 
  protected:
-  uint64_t lastReadTime = 0;
+  uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 100;
 };
 

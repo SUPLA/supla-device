@@ -42,7 +42,7 @@ class ImpulseCounterParsed : public SensorParsed<ChannelElement> {
   void iterateAlways() override;
 
  protected:
-  uint64_t lastReadTime = 0;
+  uint32_t lastReadTime = 0;
   bool isDataErrorLogged = false;
 };
 };  // namespace Sensor

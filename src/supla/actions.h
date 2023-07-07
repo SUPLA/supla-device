@@ -25,6 +25,8 @@ namespace Supla {
 enum Action {
   // Relays
   TURN_ON,
+  TURN_ON_WITHOUT_TIMER,  // used with staircase timer function, when
+                          // timer should not be used this time
   TURN_OFF,
   TOGGLE,
 

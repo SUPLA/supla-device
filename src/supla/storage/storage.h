@@ -39,8 +39,8 @@ class Storage {
   static bool WriteState(const unsigned char *, int);
   static bool PrepareState(bool dryRun = false);
   static bool FinalizeSaveState();
-  static bool SaveStateAllowed(uint64_t);
-  static void ScheduleSave(uint64_t delayMs);
+  static bool SaveStateAllowed(uint32_t);
+  static void ScheduleSave(uint32_t delayMs);
   static void SetConfigInstance(Config *instance);
   static bool IsConfigStorageAvailable();
 
@@ -66,7 +66,7 @@ class Storage {
   virtual ~Storage();
 
   // Changes default state save period time
-  virtual void setStateSavePeriod(uint64_t periodMs);
+  virtual void setStateSavePeriod(uint32_t periodMs);
 
   virtual bool init();
   virtual bool readState(unsigned char *, int);
@@ -74,8 +74,8 @@ class Storage {
 
   virtual bool prepareState(bool performDryRun);
   virtual bool finalizeSaveState();
-  virtual bool saveStateAllowed(uint64_t);
-  virtual void scheduleSave(uint64_t delayMs);
+  virtual bool saveStateAllowed(uint32_t);
+  virtual void scheduleSave(uint32_t delayMs);
 
   virtual void commit() = 0;
 
@@ -105,8 +105,8 @@ class Storage {
   int sectionsCount = 0;
   bool dryRun = false;
 
-  uint64_t saveStatePeriod = 1000;
-  uint64_t lastWriteTimestamp = 0;
+  uint32_t saveStatePeriod = 1000;
+  uint32_t lastWriteTimestamp = 0;
   uint16_t crc = 0;
 
   SpecialSectionInfo *firstSectionInfo = nullptr;

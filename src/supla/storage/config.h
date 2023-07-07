@@ -144,8 +144,8 @@ class Config {
   virtual bool clearDeviceConfigChangeFlag();
 
  protected:
-  uint64_t saveDelayTimestamp = 0;
-  uint64_t deviceConfigUpdateDelayTimestamp = 0;
+  uint32_t saveDelayTimestamp = 0;
+  uint32_t deviceConfigUpdateDelayTimestamp = 0;
   uint32_t saveDelayMs = 0;
   int8_t deviceConfigChangeFlag = -1;
 };

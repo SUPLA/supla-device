@@ -38,7 +38,7 @@ class Thermometer : public ChannelElement {
   void setRefreshIntervalMs(int intervalMs);
 
  protected:
-  uint64_t lastReadTime;
+  uint32_t lastReadTime = 0;
   uint16_t refreshIntervalMs = 10000;
   ThermometerDriver *driver = nullptr;
 };

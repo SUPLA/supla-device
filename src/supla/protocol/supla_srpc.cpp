@@ -578,7 +578,7 @@ bool Supla::Protocol::SuplaSrpc::ping() {
   return true;
 }
 
-bool Supla::Protocol::SuplaSrpc::iterate(uint64_t _millis) {
+bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   if (!isEnabled()) {
     return false;
   }
@@ -1021,4 +1021,30 @@ const char *Supla::Protocol::SuplaSrpc::configResultToCStr(int result) {
     default:
       return "UNKNOWN";
   }
+}
+
+void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
+                                           uint32_t timeMs,
+                                           uint8_t state,
+                                           int32_t senderId) {
+  if (!isRegisteredAndReady()) {
+    SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not registered");
+    return;
+  }
+  auto *value = new TSuplaChannelExtendedValue;
+  memset(value, 0, sizeof(TSuplaChannelExtendedValue));
+  value->type = EV_TYPE_TIMER_STATE_V1;
+  value->size = sizeof(TTimerState_ExtendedValue);
+
+  TTimerState_ExtendedValue *timerState =
+      reinterpret_cast<TTimerState_ExtendedValue *>(&value->value);
+
+  timerState->SenderID = senderId;
+  timerState->TargetValue[0] = state;
+  timerState->RemainingTimeMs = timeMs;
+
+  SUPLA_LOG_DEBUG("SRPC sedning: remaining time %d, channel %d, state %d",
+                  timeMs, channelNumber, state);
+  srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
+  delete value;
 }

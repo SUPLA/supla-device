@@ -312,3 +312,112 @@ TEST(ElectricityMeterTests, SettersAndGetters) {
   */
 }
 
+TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
+  Supla::Sensor::ElectricityMeter em;
+
+  int number = em.getChannel()->getChannelNumber();
+  EXPECT_EQ(number, 0);
+
+  // phase 0
+  EXPECT_EQ(em.getFwdActEnergy(0), 0);
+  EXPECT_EQ(em.getRvrActEnergy(0), 0);
+  EXPECT_EQ(em.getFwdReactEnergy(0), 0);
+  EXPECT_EQ(em.getRvrReactEnergy(0), 0);
+  EXPECT_EQ(em.getVoltage(0), 0);
+  EXPECT_EQ(em.getCurrent(0), 0);
+  EXPECT_EQ(em.getFreq(), 0);
+  EXPECT_EQ(em.getPowerActive(0), 0);
+  EXPECT_EQ(em.getPowerReactive(0), 0);
+  EXPECT_EQ(em.getPowerApparent(0), 0);
+  EXPECT_EQ(em.getPowerFactor(0), 0);
+  EXPECT_EQ(em.getPhaseAngle(0), 0);
+
+  em.setFwdActEnergy(0, 2000);
+  em.setRvrActEnergy(0, 2);
+  em.setFwdReactEnergy(0, 3);
+  em.setRvrReactEnergy(0, 4);
+  em.setVoltage(0, 5);
+  em.setCurrent(0, 6);
+  em.setFreq(7);
+  em.setPowerActive(0, 8);
+  em.setPowerReactive(0, 9);
+  em.setPowerApparent(0, 10);
+  em.setPowerFactor(0, 11);
+  em.setPhaseAngle(0, 12);
+
+  EXPECT_EQ(em.getFwdActEnergy(0), 2000);
+  EXPECT_EQ(em.getRvrActEnergy(0), 2);
+  EXPECT_EQ(em.getFwdReactEnergy(0), 3);
+  EXPECT_EQ(em.getRvrReactEnergy(0), 4);
+  EXPECT_EQ(em.getVoltage(0), 5);
+  EXPECT_EQ(em.getCurrent(0), 6);
+  EXPECT_EQ(em.getFreq(), 7);
+  EXPECT_EQ(em.getPowerActive(0), 8);
+  EXPECT_EQ(em.getPowerReactive(0), 9);
+  EXPECT_EQ(em.getPowerApparent(0), 10);
+  EXPECT_EQ(em.getPowerFactor(0), 11);
+  EXPECT_EQ(em.getPhaseAngle(0), 12);
+
+  char emptyArray[SUPLA_CHANNELVALUE_SIZE] = {};
+  auto channel = em.getChannel();
+
+  EXPECT_EQ(0,
+            memcmp(Supla::Channel::reg_dev.channels[number].value,
+                   emptyArray,
+                   SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_FALSE(channel->isUpdateReady());
+
+  em.updateChannelValues();
+
+  TElectricityMeter_Value *emValue =
+      reinterpret_cast<TElectricityMeter_Value *>(
+          Supla::Channel::reg_dev.channels[number].value);
+
+  EXPECT_EQ(emValue->total_forward_active_energy, 2);
+  EXPECT_EQ(emValue->flags, EM_VALUE_FLAG_PHASE1_ON);
+  EXPECT_TRUE(channel->isUpdateReady());
+
+  auto extValue = em.getChannel()->getExtValue();
+  EXPECT_EQ(extValue->type,
+            EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2);
+  // data structre under extValue->value is actually smaller than
+  // TElectricityMeter_ExtendedValue_V2, however we'll only read in a limit
+  // of valid bytes
+  TElectricityMeter_ExtendedValue_V2 *emExtValue =
+      reinterpret_cast<TElectricityMeter_ExtendedValue_V2 *>(extValue->value);
+  EXPECT_EQ(emExtValue->measured_values,
+            EM_VAR_FREQ | EM_VAR_VOLTAGE | EM_VAR_CURRENT |
+                EM_VAR_POWER_ACTIVE | EM_VAR_POWER_REACTIVE |
+                EM_VAR_POWER_APPARENT | EM_VAR_POWER_FACTOR |
+                EM_VAR_PHASE_ANGLE | EM_VAR_FORWARD_ACTIVE_ENERGY |
+                EM_VAR_REVERSE_ACTIVE_ENERGY | EM_VAR_FORWARD_REACTIVE_ENERGY |
+                EM_VAR_REVERSE_REACTIVE_ENERGY);
+  EXPECT_EQ(emExtValue->m_count, 1);
+
+  em.resetReadParameters();
+
+  EXPECT_EQ(em.getFwdActEnergy(0), 2000);
+  EXPECT_EQ(em.getRvrActEnergy(0), 2);
+  EXPECT_EQ(em.getFwdReactEnergy(0), 3);
+  EXPECT_EQ(em.getRvrReactEnergy(0), 4);
+  EXPECT_EQ(em.getVoltage(0), 0);
+  EXPECT_EQ(em.getCurrent(0), 0);
+  EXPECT_EQ(em.getFreq(), 0);
+  EXPECT_EQ(em.getPowerActive(0), 0);
+  EXPECT_EQ(em.getPowerReactive(0), 0);
+  EXPECT_EQ(em.getPowerApparent(0), 0);
+  EXPECT_EQ(em.getPowerFactor(0), 0);
+  EXPECT_EQ(em.getPhaseAngle(0), 0);
+
+  em.updateChannelValues();
+
+  EXPECT_EQ(extValue->type,
+            EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2);
+
+  // only energy registers are kept
+  EXPECT_EQ(emExtValue->measured_values,
+                EM_VAR_FORWARD_ACTIVE_ENERGY |
+                EM_VAR_REVERSE_ACTIVE_ENERGY | EM_VAR_FORWARD_REACTIVE_ENERGY |
+                EM_VAR_REVERSE_REACTIVE_ENERGY);
+  EXPECT_EQ(emExtValue->m_count, 1);
+}

@@ -71,8 +71,8 @@ class Clock : public Element {
   void setSystemTime(time_t newTime);
   int lastTimezoneOffsetMin = 0;
   time_t localtime = {};
-  uint64_t lastServerUpdate = 0;
-  uint64_t lastMillis = 0;
+  uint32_t lastServerUpdate = 0;
+  uint32_t lastMillis = 0;
   bool isClockReady = false;
 };
 

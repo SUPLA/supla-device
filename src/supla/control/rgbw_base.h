@@ -141,10 +141,10 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   int brightnessDistance = 0;
   bool resetDisance = false;
   uint16_t minMaxIterationDelay = 750;
-  uint64_t lastTick = 0;
-  uint64_t lastMsgReceivedMs = 0;
-  uint64_t lastIterateDimmerTimestamp = 0;
-  uint64_t iterationDelayTimestamp = 0;
+  uint32_t lastTick = 0;
+  uint32_t lastMsgReceivedMs = 0;
+  uint32_t lastIterateDimmerTimestamp = 0;
+  uint32_t iterationDelayTimestamp = 0;
   int8_t stateOnInit = -1;
   uint8_t minIterationBrightness = 1;
   BrightnessAdjuster *brightnessAdjuster = nullptr;

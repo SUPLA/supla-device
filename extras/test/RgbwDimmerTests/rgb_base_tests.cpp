@@ -32,8 +32,8 @@ class RgbBaseForTest : public Supla::Control::RGBBase {
 
 class TimeInterfaceStub : public TimeInterface {
   public:
-    virtual uint64_t millis() override {
-      static uint64_t value = 0;
+    virtual uint32_t millis() override {
+      static uint32_t value = 0;
       value += 1000;
       return value;
     }
@@ -43,7 +43,7 @@ class SimpleTime : public TimeInterface {
   public:
     SimpleTime() : value(0) {}
 
-    virtual uint64_t millis() override {
+    virtual uint32_t millis() override {
       return value;
     }
 
@@ -51,7 +51,7 @@ class SimpleTime : public TimeInterface {
       value += advanceMs;
     }
 
-    uint64_t value;
+    uint32_t value;
 };
 
 

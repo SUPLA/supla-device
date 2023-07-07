@@ -48,8 +48,8 @@ class ButtonState {
  protected:
   int valueOnPress() const;
 
-  uint64_t debounceTimeMs = 0;
-  uint64_t filterTimeMs = 0;
+  uint32_t debounceTimeMs = 0;
+  uint32_t filterTimeMs = 0;
   unsigned int debounceDelayMs = 50;
   unsigned int swNoiseFilterDelayMs = 20;
   int pin = -1;

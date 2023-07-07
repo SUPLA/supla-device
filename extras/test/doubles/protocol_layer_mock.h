@@ -31,7 +31,7 @@ class ProtocolLayerMock : public Supla::Protocol::ProtocolLayer {
   MOCK_METHOD(bool, isEnabled, (), (override));
   MOCK_METHOD(void, disconnect, (), (override));
   MOCK_METHOD(bool, isConfigEmpty, (), (override));
-  MOCK_METHOD(bool, iterate, (uint64_t _millis), (override));
+  MOCK_METHOD(bool, iterate, (uint32_t _millis), (override));
   MOCK_METHOD(bool, isNetworkRestartRequested, (), (override));
   MOCK_METHOD(uint32_t, getConnectionFailTime, (), (override));
   MOCK_METHOD(bool, isConnectionError, (), (override));
@@ -71,6 +71,11 @@ class ProtocolLayerMock : public Supla::Protocol::ProtocolLayer {
               setDeviceConfig,
               (TSDS_SetDeviceConfig * deviceConfig),
               (override));
+  MOCK_METHOD(
+      void,
+      sendRemainingTimeValue,
+      (uint8_t channelNumber, uint32_t timeMs, uint8_t state, int32_t senderId),
+      (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_PROTOCOL_LAYER_MOCK_H_

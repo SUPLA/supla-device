@@ -120,7 +120,7 @@ class Channel : public LocalAction {
   int32_t getDefaultFunction() const;
   void setFlag(_supla_int_t flag);
   void unsetFlag(_supla_int_t flag);
-  _supla_int_t getFlags();
+  _supla_int_t getFlags() const;
   void setFuncList(_supla_int_t functions);
   _supla_int_t getFuncList() const;
   void addToFuncList(_supla_int_t function);
@@ -151,7 +151,7 @@ class Channel : public LocalAction {
 
   void requestChannelConfig();
 
-  static uint64_t lastCommunicationTimeMs;
+  static uint32_t lastCommunicationTimeMs;
   static TDS_SuplaRegisterDevice_E reg_dev;
 
  protected:

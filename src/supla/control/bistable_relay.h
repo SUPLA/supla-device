@@ -64,8 +64,8 @@ class BistableRelay : public Relay {
   int statusPin = -1;
   bool statusPullUp = true;
   bool statusHighIsOn = true;
-  uint64_t disarmTimeMs = 0;
-  uint64_t lastReadTime = 0;
+  uint32_t disarmTimeMs = 0;
+  uint32_t lastReadTime = 0;
   bool busy = false;
 };
 

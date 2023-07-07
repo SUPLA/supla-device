@@ -42,7 +42,7 @@ using ::testing::SetArgPointee;
 
 class StorageMock : public Supla::Storage {
  public:
-  MOCK_METHOD(void, scheduleSave, (uint64_t), (override));
+  MOCK_METHOD(void, scheduleSave, (uint32_t), (override));
   MOCK_METHOD(void, commit, (), (override));
   MOCK_METHOD(int,
               readStorage,
@@ -94,8 +94,8 @@ class ActionHandlerMock : public Supla::ActionHandler {
 
 class TimeInterfaceStub : public TimeInterface {
  public:
-  uint64_t millis() override {
-    static uint64_t value = 0;
+  uint32_t millis() override {
+    static uint32_t value = 0;
     value += 1000;
     return value;
   }

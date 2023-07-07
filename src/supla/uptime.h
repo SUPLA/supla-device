@@ -26,20 +26,21 @@ class Uptime {
  public:
   Uptime();
 
-  void iterate(uint64_t millis);
+  void iterate(uint32_t millis);
   void resetConnectionUptime();
   void setConnectionLostCause(unsigned char cause);
 
-  unsigned _supla_int_t getUptime();
-  unsigned _supla_int_t getConnectionUptime();
-  unsigned char getLastResetCause();
+  unsigned _supla_int_t getUptime() const;
+  unsigned _supla_int_t getConnectionUptime() const;
+  unsigned char getLastResetCause() const;
 
  protected:
-  uint64_t lastMillis;
-  unsigned _supla_int_t deviceUptime;
-  unsigned _supla_int_t connectionUptime;
-  unsigned char lastConnectionResetCause;
-  bool acceptConnectionLostCause;
+  uint32_t lastMillis = 0;;
+  unsigned _supla_int_t deviceUptime = 0;
+  unsigned _supla_int_t connectionUptime = 0;
+  unsigned char lastConnectionResetCause =
+      SUPLA_LASTCONNECTIONRESETCAUSE_UNKNOWN;
+  bool acceptConnectionLostCause = false;
 };
 
 };  // namespace Supla

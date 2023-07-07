@@ -56,8 +56,8 @@ class OneWireBus {
 
   uint8_t gpio = 0;
   OneWireBus *nextBus = nullptr;
-  uint64_t lastReadTime = 0;
-  uint64_t lastMeasurementRequestTimeMs = 0;
+  uint32_t lastReadTime = 0;
+  uint32_t lastMeasurementRequestTimeMs = 0;
   uint32_t conversionTimeMs = 750;
 
  protected:

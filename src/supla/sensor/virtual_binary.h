@@ -39,7 +39,7 @@ class VirtualBinary : public ChannelElement, public ActionHandler {
 
  protected:
   bool state = false;
-  uint64_t lastReadTime = 0;
+  uint32_t lastReadTime = 0;
 };
 
 };  // namespace Sensor

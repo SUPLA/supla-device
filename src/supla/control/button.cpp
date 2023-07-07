@@ -53,7 +53,7 @@ void Button::onInit() {
 }
 
 void Button::onTimer() {
-  uint64_t timeDelta = millis() - lastStateChangeMs;
+  uint32_t timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
   int stateResult = state.update();
   if (stateResult == TO_PRESSED) {

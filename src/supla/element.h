@@ -35,6 +35,8 @@ class Element {
   static bool IsAnyUpdatePending();
   static void NotifyElementsAboutConfigChange(uint64_t fieldBit);
 
+  static bool IsInvalidPtrSet();
+  static void ClearInvalidPtr();
   Element *next();
 
   // First method called on element in SuplaDevice.begin()
@@ -120,6 +122,7 @@ class Element {
 
  protected:
   static Element *firstPtr;
+  static bool invalidatePtr;
   Element *nextPtr;
 };
 

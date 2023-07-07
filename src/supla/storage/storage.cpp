@@ -101,14 +101,14 @@ bool Storage::FinalizeSaveState() {
   return false;
 }
 
-bool Storage::SaveStateAllowed(uint64_t ms) {
+bool Storage::SaveStateAllowed(uint32_t ms) {
   if (Instance()) {
     return Instance()->saveStateAllowed(ms);
   }
   return false;
 }
 
-void Storage::ScheduleSave(uint64_t delayMs) {
+void Storage::ScheduleSave(uint32_t delayMs) {
   if (Instance()) {
     Instance()->scheduleSave(delayMs);
   }
@@ -398,7 +398,7 @@ int Storage::updateStorage(unsigned int offset,
   return size;
 }
 
-void Storage::setStateSavePeriod(uint64_t periodMs) {
+void Storage::setStateSavePeriod(uint32_t periodMs) {
   if (periodMs < 1000) {
     saveStatePeriod = 1000;
   } else {
@@ -406,7 +406,7 @@ void Storage::setStateSavePeriod(uint64_t periodMs) {
   }
 }
 
-bool Storage::saveStateAllowed(uint64_t ms) {
+bool Storage::saveStateAllowed(uint32_t ms) {
   if (ms - lastWriteTimestamp > saveStatePeriod) {
     lastWriteTimestamp = ms;
     return true;
@@ -414,9 +414,9 @@ bool Storage::saveStateAllowed(uint64_t ms) {
   return false;
 }
 
-void Storage::scheduleSave(uint64_t delayMs) {
-  uint64_t currentMs = millis();
-  uint64_t newTimestamp = currentMs - saveStatePeriod - 1 + delayMs;
+void Storage::scheduleSave(uint32_t delayMs) {
+  uint32_t currentMs = millis();
+  uint32_t newTimestamp = currentMs - saveStatePeriod - 1 + delayMs;
   if (currentMs - lastWriteTimestamp < currentMs - newTimestamp) {
     lastWriteTimestamp = newTimestamp;
   }

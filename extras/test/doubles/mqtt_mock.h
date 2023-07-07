@@ -52,7 +52,7 @@ class MqttMock : public MqttInterface {
               (override));
   MOCK_METHOD(void, subscribeImp, (const char *topic, int qos), (override));
   MOCK_METHOD(void, disconnect, (), (override));
-  MOCK_METHOD(bool, iterate, (uint64_t _millis), (override));
+  MOCK_METHOD(bool, iterate, (uint32_t _millis), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_MQTT_MOCK_H_

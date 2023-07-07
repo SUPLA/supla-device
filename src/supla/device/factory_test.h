@@ -62,7 +62,7 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   bool testingMachineEnabled = true;
   SuplaDeviceClass *sdc = nullptr;
   uint32_t timeoutS = 30;
-  uint64_t initTimestamp = 0;
+  uint32_t initTimestamp = 0;
   Supla::TestStage testStage = Supla::TestStage_None;
   int testStep = 0;
 };

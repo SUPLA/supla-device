@@ -24,10 +24,10 @@
 
 class SimpleTime : public TimeInterface {
  public:
-  uint64_t millis() override;
+  uint32_t millis() override;
   void advance(int advanceMs);
 
-  uint64_t value = 0;
+  uint32_t value = 0;
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_SIMPLE_TIME_H_

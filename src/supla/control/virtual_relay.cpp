@@ -25,11 +25,12 @@ Supla::Control::VirtualRelay::VirtualRelay(_supla_int_t functions)
 }
 
 void Supla::Control::VirtualRelay::onInit() {
+  uint32_t duration = durationMs;
   if (stateOnInit == STATE_ON_INIT_ON ||
       stateOnInit == STATE_ON_INIT_RESTORED_ON) {
-    turnOn();
+    turnOn(duration);
   } else {
-    turnOff();
+    turnOff(duration);
   }
 }
 
@@ -39,10 +40,15 @@ void Supla::Control::VirtualRelay::turnOn(_supla_int_t duration) {
       channel.getChannelNumber(),
       duration);
   durationMs = duration;
-  durationTimestamp = millis();
   if (keepTurnOnDurationMs) {
     durationMs = storedTurnOnDurationMs;
   }
+  if (durationMs != 0) {
+    durationTimestamp = millis();
+  } else {
+    durationTimestamp = 0;
+  }
+
   state = true;
 
   channel.setNewValue(state);
@@ -56,7 +62,11 @@ void Supla::Control::VirtualRelay::turnOff(_supla_int_t duration) {
       channel.getChannelNumber(),
       duration);
   durationMs = duration;
-  durationTimestamp = millis();
+  if (durationMs != 0) {
+    durationTimestamp = millis();
+  } else {
+    durationTimestamp = 0;
+  }
   state = false;
 
   channel.setNewValue(state);

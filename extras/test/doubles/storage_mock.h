@@ -24,16 +24,21 @@
 
 class StorageMock: public Supla::Storage {
  public:
-  MOCK_METHOD(void, scheduleSave, (uint64_t), (override));
+  MOCK_METHOD(void, scheduleSave, (uint32_t), (override));
   MOCK_METHOD(void, commit, (), (override));
-  MOCK_METHOD(int, readStorage, (unsigned int, unsigned char *, int, bool), (override));
-  MOCK_METHOD(int, writeStorage, (unsigned int, const unsigned char *, int), (override));
+  MOCK_METHOD(int,
+              readStorage,
+              (unsigned int, unsigned char *, int, bool),
+              (override));
+  MOCK_METHOD(int,
+              writeStorage,
+              (unsigned int, const unsigned char *, int),
+              (override));
   MOCK_METHOD(bool, readState, (unsigned char *, int), (override));
   MOCK_METHOD(bool, writeState, (const unsigned char *, int), (override));
   MOCK_METHOD(bool, prepareState, (bool), (override));
   MOCK_METHOD(bool, finalizeSaveState, (), (override));
   MOCK_METHOD(bool, init, (), (override));
-
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_STORAGE_MOCK_H_

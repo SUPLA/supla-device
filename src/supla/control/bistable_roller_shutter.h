@@ -39,7 +39,7 @@ class BistableRollerShutter : public RollerShutter {
   void relayDownOff() override;
 
   bool activeBiRelay = false;
-  uint64_t toggleTime = 0;
+  uint32_t toggleTime = 0;
 };
 
 }  // namespace Control

@@ -38,7 +38,7 @@ TEST(UptimeTests, LastResetCauseSetAndGet) {
 
 TEST(UptimeTests, IterateShouldIncreaseUptimeCounters) {
   Supla::Uptime uptime;
-  unsigned long millis = 0;
+  uint32_t millis = 0;
 
   EXPECT_EQ(uptime.getUptime(), 0);
   EXPECT_EQ(uptime.getConnectionUptime(), 0);
@@ -72,5 +72,26 @@ TEST(UptimeTests, IterateShouldIncreaseUptimeCounters) {
   EXPECT_EQ(uptime.getUptime(), 24);
   EXPECT_EQ(uptime.getConnectionUptime(), 2);
   EXPECT_EQ(uptime.getLastResetCause(), SUPLA_LASTCONNECTIONRESETCAUSE_UNKNOWN);
+}
+
+TEST(UptimeTests, OverflowTest) {
+  Supla::Uptime uptime;
+  uint32_t millis = 0;
+
+  EXPECT_EQ(uptime.getUptime(), 0);
+
+  bool wasOverflow = false;
+  uint32_t previousMillis = 0;
+  for (int i = 0; i < 10000000; i++) {
+    millis += 1000;
+    uptime.iterate(millis);
+    ASSERT_EQ(uptime.getUptime(), i + 1);
+
+    if (previousMillis > millis) {
+      wasOverflow = true;
+    }
+    previousMillis = millis;
+  }
+  EXPECT_EQ(wasOverflow, true);
 }
 

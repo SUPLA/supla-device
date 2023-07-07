@@ -46,7 +46,6 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   valueChanged = false;
 
   emValue.m_count = 1;
-
   // Update current messurement precision based on last updates
   if (currentMeasurementAvailable) {
     bool over65A = false;
@@ -162,7 +161,7 @@ void Supla::Sensor::ElectricityMeter::setFreq(unsigned _supla_int16_t freq) {
 
 // power in 0.00001 W
 void Supla::Sensor::ElectricityMeter::setPowerActive(int phase,
-                                                     _supla_int_t power) {
+    _supla_int_t power) {
   if (phase >= 0 && phase < MAX_PHASES) {
     if (emValue.m[0].power_active[phase] != power) {
       valueChanged = true;
@@ -222,8 +221,13 @@ void Supla::Sensor::ElectricityMeter::setPhaseAngle(int phase,
 
 void Supla::Sensor::ElectricityMeter::resetReadParameters() {
   if (emValue.measured_values != 0) {
-    emValue.measured_values = 0;
+    // we keep only energy counting registers/flags
+    emValue.measured_values &= EM_VAR_ALL_ENERGY_REGISTERS;
+
     memset(&emValue.m[0], 0, sizeof(TElectricityMeter_Measurement));
+    memset(&rawCurrent, 0, sizeof(rawCurrent));
+    currentMeasurementAvailable = false;
+
     valueChanged = true;
   }
 }

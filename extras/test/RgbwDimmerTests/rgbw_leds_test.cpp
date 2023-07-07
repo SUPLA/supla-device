@@ -24,8 +24,8 @@ using ::testing::Return;
 
 class TimeInterfaceStub : public TimeInterface {
   public:
-    virtual uint64_t millis() override {
-      static uint64_t value = 0;
+    virtual uint32_t millis() override {
+      static uint32_t value = 0;
       value += 1000;
       return value;
     }

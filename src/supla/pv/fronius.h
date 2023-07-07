@@ -50,7 +50,7 @@ class Fronius : public Supla::Sensor::OnePhaseElectricityMeter {
   bool startCharFound;
   bool dataIsReady;
   bool dataFetchInProgress;
-  uint64_t connectionTimeoutMs;
+  uint32_t connectionTimeoutMs;
 };
 };  // namespace PV
 };  // namespace Supla

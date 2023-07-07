@@ -104,7 +104,7 @@ void LightRelay::turnOn(_supla_int_t duration) {
 
 void LightRelay::iterateAlways() {
   if (isOn()) {
-    uint64_t currentMillis = millis();
+    uint32_t currentMillis = millis();
     int seconds = (currentMillis - turnOnTimestamp) / 1000;
     if (seconds > 0) {
       turnOnTimestamp =

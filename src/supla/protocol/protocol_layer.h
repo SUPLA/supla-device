@@ -47,7 +47,7 @@ class ProtocolLayer {
   // Return value indicates if specific protocol is ready to handle data
   // from other elements and if call to Element::iterateConnected should be
   // done.
-  virtual bool iterate(uint64_t _millis) = 0;
+  virtual bool iterate(uint32_t _millis) = 0;
   virtual bool isNetworkRestartRequested() = 0;
   virtual uint32_t getConnectionFailTime() = 0;
   virtual bool isConnectionError();
@@ -55,6 +55,10 @@ class ProtocolLayer {
   virtual bool isUpdatePending();
   virtual bool isRegisteredAndReady() = 0;
   virtual void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) = 0;
+  virtual void sendRemainingTimeValue(uint8_t channelNumber,
+                                      uint32_t timeMs,
+                                      uint8_t state,
+                                      int32_t senderId);
   virtual void getUserLocaltime();
   virtual void sendChannelValueChanged(uint8_t channelNumber, char *value,
       unsigned char offline, uint32_t validityTimeSec) = 0;

@@ -117,5 +117,15 @@ bool ProtocolLayer::sendNotification(int context,
   return false;
 }
 
+void ProtocolLayer::sendRemainingTimeValue(uint8_t channelNumber,
+                                           uint32_t timeMs,
+                                           uint8_t state,
+                                           int32_t senderId) {
+  (void)(channelNumber);
+  (void)(timeMs);
+  (void)(state);
+  (void)(senderId);
+}
+
 }  // namespace Protocol
 }  // namespace Supla

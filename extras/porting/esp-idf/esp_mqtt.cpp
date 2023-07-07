@@ -253,7 +253,7 @@ void Supla::Protocol::EspMqtt::disconnect() {
   enterRegisteredAndReady = false;
 }
 
-bool Supla::Protocol::EspMqtt::iterate(uint64_t _millis) {
+bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
   (void)(_millis);
   if (!isEnabled()) {
     return false;

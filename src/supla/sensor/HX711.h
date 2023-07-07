@@ -71,7 +71,7 @@ class HX711 : public Weight {
       hx711Sensor.setCalFactor(calFactor);
       SUPLA_LOG_DEBUG("HX711 startup is complete");
     }
-    uint64_t wait = millis();
+    uint32_t wait = millis();
     while (!hx711Sensor.update() && millis() - wait <= 100) {}
     SUPLA_LOG_INFO("HX711 calibration value: %.2f", hx711Sensor.getCalFactor());
     SUPLA_LOG_INFO(

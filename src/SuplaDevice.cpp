@@ -385,7 +385,7 @@ void SuplaDeviceClass::iterate(void) {
     cfg->saveIfNeeded();
   }
 
-  uint64_t _millis = millis();
+  uint32_t _millis = millis();
   checkIfRestartIsNeeded(_millis);
   handleLocalActionTriggers();
   iterateAlwaysElements(_millis);
@@ -434,9 +434,20 @@ void SuplaDeviceClass::iterate(void) {
       }
       if (iterateConnected) {
         // Iterate all elements
-        for (auto element = Supla::Element::begin(); element != nullptr;
-            element = element->next()) {
-          if (!element->iterateConnected()) {
+        // Iterate connected exits loop when method returns false, which means
+        // that element send message to server. In next iteration we'll start
+        // with next element instead of first one on the list.
+        if (Supla::Element::IsInvalidPtrSet()) {
+          iterateConnectedPtr = nullptr;
+          Supla::Element::ClearInvalidPtr();
+        }
+        if (iterateConnectedPtr == nullptr) {
+          iterateConnectedPtr = Supla::Element::begin();
+        }
+        for (; iterateConnectedPtr != nullptr;
+             iterateConnectedPtr = iterateConnectedPtr->next()) {
+          if (!iterateConnectedPtr->iterateConnected()) {
+            iterateConnectedPtr = iterateConnectedPtr->next();
             break;
           }
           delay(0);
@@ -629,7 +640,7 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   return configComplete;
 }
 
-void SuplaDeviceClass::iterateAlwaysElements(uint64_t _millis) {
+void SuplaDeviceClass::iterateAlwaysElements(uint32_t _millis) {
   uptime.iterate(_millis);
 
   // Iterate all elements
@@ -1004,7 +1015,7 @@ void SuplaDeviceClass::handleLocalActionTriggers() {
   }
 }
 
-void SuplaDeviceClass::checkIfRestartIsNeeded(uint64_t _millis) {
+void SuplaDeviceClass::checkIfRestartIsNeeded(uint32_t _millis) {
   if (deviceRestartTimeoutTimestamp != 0 &&
       _millis - deviceRestartTimeoutTimestamp > 5ul * 60 * 1000) {
     SUPLA_LOG_INFO("Config mode 5 min timeout. Reset device");

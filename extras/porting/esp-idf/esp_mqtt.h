@@ -36,7 +36,7 @@ class EspMqtt : public Mqtt {
   void onInit() override;
   //  bool onLoadConfig() override;
   void disconnect() override;
-  bool iterate(uint64_t _millis) override;
+  bool iterate(uint32_t _millis) override;
   // bool isNetworkRestartRequested() override;
   // uint32_t getConnectionFailTime() override;
 

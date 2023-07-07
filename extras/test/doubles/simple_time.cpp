@@ -18,7 +18,7 @@
 
 #include "simple_time.h"
 
-uint64_t SimpleTime::millis() {
+uint32_t SimpleTime::millis() {
   return value;
 }
 

@@ -179,10 +179,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
  protected:
   int networkIsNotReadyCounter = 0;
 
-  uint64_t deviceRestartTimeoutTimestamp = 0;
-  uint64_t waitForIterate = 0;
-  uint64_t lastIterateTime = 0;
-  uint64_t enterConfigModeTimestamp = 0;
+  uint32_t deviceRestartTimeoutTimestamp = 0;
+  uint32_t waitForIterate = 0;
+  uint32_t lastIterateTime = 0;
+  uint32_t enterConfigModeTimestamp = 0;
   unsigned int forceRestartTimeMs = 0;
   unsigned int resetOnConnectionFailTimeoutSec = 0;
 
@@ -202,6 +202,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
   const uint8_t *rsaPublicKey = nullptr;
+  Supla::Element *iterateConnectedPtr = nullptr;
 
   _impl_arduino_status impl_arduino_status = nullptr;
 
@@ -216,11 +217,11 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setString(char *dst, const char *src, int max_size);
 
-  void iterateAlwaysElements(uint64_t _millis);
+  void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();
-  bool iterateSuplaProtocol(uint64_t _millis);
+  bool iterateSuplaProtocol(uint32_t _millis);
   void handleLocalActionTriggers();
-  void checkIfRestartIsNeeded(uint64_t _millis);
+  void checkIfRestartIsNeeded(uint32_t _millis);
   void createSrpcLayerIfNeeded();
 };
 

@@ -264,7 +264,7 @@ _supla_int_t Channel::getFuncList() {
   return 0;
 }
 
-_supla_int_t Channel::getFlags() {
+_supla_int_t Channel::getFlags() const {
   if (channelNumber >= 0) {
     return reg_dev.channels[channelNumber].Flags;
   }

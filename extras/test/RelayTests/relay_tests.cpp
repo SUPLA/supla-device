@@ -139,6 +139,16 @@ TEST_F(RelayFixture, basicTests) {
   EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
 
   r3.onInit();
+
+  r1.disableCountdownTimerFunction();
+  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Flags,
+            SUPLA_CHANNEL_FLAG_CHANNELSTATE);
+  EXPECT_FALSE(r1.isCountdownTimerFunctionEnabled());
+  r1.enableCountdownTimerFunction();
+  EXPECT_TRUE(r1.isCountdownTimerFunctionEnabled());
+  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Flags,
+            SUPLA_CHANNEL_FLAG_CHANNELSTATE |
+            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
 }
 
 TEST_F(RelayFixture, stateOnInitTests) {

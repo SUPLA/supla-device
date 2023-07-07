@@ -90,6 +90,9 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool isStaircaseFunction() const;
   bool isImpulseFunction() const;
+  void disableCountdownTimerFunction();
+  void enableCountdownTimerFunction();
+  bool isCountdownTimerFunctionEnabled() const;
 
  protected:
   void setChannelFunction(_supla_int_t newFunction);

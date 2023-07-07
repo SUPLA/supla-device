@@ -301,7 +301,7 @@ void Relay::onSaveState() {
     relayFlags |= RELAY_FLAGS_STAIRCASE;
   } else if (isImpulseFunction()) {
     relayFlags |= RELAY_FLAGS_IMPULSE_FUNCTION;
-  } else {
+  } else if (isCountdownTimerFunctionEnabled()) {
     // for other functions we store remaining countdown timer value
     durationForState = 0;
     if (durationMs) {
@@ -457,4 +457,16 @@ void Relay::updateTimerValue() {
     proto->sendRemainingTimeValue(
         getChannelNumber(), remainingTime, state, senderId);
   }
+}
+
+void Relay::disableCountdownTimerFunction() {
+  channel.unsetFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
+}
+
+void Relay::enableCountdownTimerFunction() {
+  channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
+}
+
+bool Relay::isCountdownTimerFunctionEnabled() const {
+  return channel.getFlags() & SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED;
 }

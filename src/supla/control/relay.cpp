@@ -161,10 +161,15 @@ void Relay::iterateAlways() {
   if (durationMs && millis() - durationTimestamp > durationMs) {
     toggle();
   }
+}
+
+bool Relay::iterateConnected() {
   if (timerUpdateTimestamp != durationTimestamp) {
     timerUpdateTimestamp = durationTimestamp;
     updateTimerValue();
   }
+
+  return ChannelElement::iterateConnected();
 }
 
 int Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {

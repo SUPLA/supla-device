@@ -24,18 +24,22 @@
 #include <supla/actions.h>
 #include <supla/channel.h>
 #include <supla/control/relay.h>
+#include <protocol_layer_mock.h>
+#include "gmock/gmock.h"
 
 using ::testing::_;
 using ::testing::Return;
 using ::testing::SetArgPointee;
 using ::testing::DoAll;
 using ::testing::Pointee;
+using ::testing::AtLeast;
 
 class RelayFixture : public testing::Test {
  public:
   DigitalInterfaceMock ioMock;
   StorageMock storage;
   SimpleTime time;
+  ProtocolLayerMock protoMock;
 
   RelayFixture() {
   }
@@ -188,6 +192,10 @@ TEST_F(RelayFixture, stateOnInitTests) {
       .WillRepeatedly(::testing::ReturnPointee(&gpio3Value));
   EXPECT_CALL(ioMock, digitalWrite(gpio3, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpio3Value));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(1)).Times(1);
 
   // virtual Relay &keepTurnOnDuration(bool keep = true);
   ::testing::InSequence seq;
@@ -204,6 +212,7 @@ TEST_F(RelayFixture, stateOnInitTests) {
 
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpio1Value, 1);
@@ -220,6 +229,7 @@ TEST_F(RelayFixture, stateOnInitTests) {
 
   for (int i = 0; i < 10; i++) {
     r2.iterateAlways();
+    r2.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpio2Value, 0);
@@ -235,6 +245,7 @@ TEST_F(RelayFixture, stateOnInitTests) {
 
   for (int i = 0; i < 10; i++) {
     r3.iterateAlways();
+    r3.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpio3Value, 1);
@@ -260,9 +271,48 @@ TEST_F(RelayFixture, startupTestsForLight) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+
+  ::testing::InSequence seq;
 
   // init
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 1000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));  //
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
 
   // test begins
   r1.onLoadConfig(nullptr);
@@ -274,6 +324,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -286,6 +337,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   r1.handleAction(0, Supla::TURN_ON);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -298,6 +350,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   r1.handleAction(0, Supla::TURN_OFF);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -310,6 +363,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   r1.handleAction(0, Supla::TURN_ON);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -341,11 +395,13 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(1, r1.handleNewValueFromServer(&newValueFromServer));
   for (int i = 0; i < 2; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -355,6 +411,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -362,6 +419,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -374,6 +432,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -382,6 +441,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -390,6 +450,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -398,6 +459,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -406,6 +468,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -419,6 +482,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -432,6 +496,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -445,6 +510,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -463,6 +529,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -480,6 +547,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -489,6 +557,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -501,6 +570,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -512,6 +582,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -521,6 +592,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -533,6 +605,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -544,6 +617,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -553,6 +627,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -565,6 +640,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -583,6 +659,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -595,6 +672,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -609,6 +687,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -621,6 +700,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -635,6 +715,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -647,6 +728,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -661,6 +743,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -673,6 +756,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -687,6 +771,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -695,6 +780,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -709,6 +795,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -717,6 +804,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -731,6 +819,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -739,6 +828,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -772,6 +862,11 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
 
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
+
   ::testing::InSequence seq;
 
   // R1
@@ -786,6 +881,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -796,6 +892,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 15; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -805,6 +902,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 5; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -813,6 +911,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -824,6 +923,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -833,6 +933,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -842,6 +943,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -860,6 +962,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -869,6 +972,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -878,6 +982,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -888,6 +993,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -899,6 +1005,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -909,6 +1016,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
@@ -932,6 +1040,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -941,6 +1050,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -950,6 +1060,7 @@ TEST_F(RelayFixture, durationMsTests) {
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -977,6 +1088,10 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -992,6 +1107,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
 
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -1002,6 +1118,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
   // turn off will happen after 2.5s because of stored turn on duration
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -1011,16 +1128,19 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 15; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 17; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -1028,6 +1148,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
   EXPECT_EQ(gpioValue, 0);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
@@ -1055,6 +1176,10 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1070,6 +1195,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
 
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1080,6 +1206,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
   // turn off will happen after 2.5s because of stored turn on duration
   for (int i = 0; i < 30; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1088,6 +1215,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1096,6 +1224,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1122,6 +1251,10 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1138,6 +1271,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1147,6 +1281,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1173,6 +1308,10 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1189,6 +1328,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1198,6 +1338,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1224,6 +1365,9 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -1240,6 +1384,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1267,6 +1412,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -1284,6 +1430,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1311,6 +1458,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1346,6 +1497,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
 
@@ -1359,6 +1511,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1368,6 +1521,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
 
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1397,6 +1551,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -1413,6 +1568,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1440,6 +1596,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1475,6 +1635,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1489,6 +1650,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1498,6 +1660,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
 
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1528,6 +1691,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1563,6 +1730,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1577,6 +1745,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 11; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1586,6 +1755,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
 
   for (int i = 0; i < 42; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1615,6 +1785,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1652,6 +1826,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1666,6 +1841,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1675,6 +1851,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
 
   for (int i = 0; i < 42; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1703,6 +1880,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1749,6 +1930,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1757,6 +1939,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1772,6 +1955,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1781,6 +1965,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
 
   for (int i = 0; i < 42; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1808,6 +1993,10 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1853,6 +2042,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1861,6 +2051,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1876,6 +2067,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 3; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1885,6 +2077,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
 
   for (int i = 0; i < 42; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1912,6 +2105,10 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  // send channel value is not verified in detail
+  EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
 
@@ -1928,6 +2125,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1941,6 +2139,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -1954,6 +2153,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -1967,6 +2167,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2000,6 +2201,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 12; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2009,6 +2211,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2016,6 +2219,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2028,6 +2232,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2036,6 +2241,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2044,6 +2250,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2052,6 +2259,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2060,6 +2268,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2073,6 +2282,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2086,6 +2296,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2099,6 +2310,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2117,6 +2329,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2134,6 +2347,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2143,6 +2357,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2155,6 +2370,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2166,6 +2382,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2175,6 +2392,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2187,6 +2405,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2198,6 +2417,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2207,6 +2427,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2219,6 +2440,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2237,6 +2459,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2249,6 +2472,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2263,6 +2487,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2275,6 +2500,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 40; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2289,6 +2515,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2301,6 +2528,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2315,6 +2543,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2327,6 +2556,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
 
   for (int i = 0; i < 50; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2341,6 +2571,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2349,6 +2580,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
@@ -2363,6 +2595,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2371,6 +2604,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2385,6 +2619,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // time advance 1 s - which is in the middle of scheduled timer
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(1, gpioValue);
@@ -2393,6 +2628,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
   for (int i = 0; i < 22; i++) {
     r1.iterateAlways();
+    r1.iterateConnected();
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);

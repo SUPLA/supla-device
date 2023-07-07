@@ -31,7 +31,7 @@ class SuplaSrpcLayerMock : public Supla::Protocol::SuplaSrpc {
   MOCK_METHOD(bool, isEnabled, (), (override));
   MOCK_METHOD(void, disconnect, (), (override));
   MOCK_METHOD(bool, isConfigEmpty, (), (override));
-  MOCK_METHOD(bool, iterate, (uint64_t _millis), (override));
+  MOCK_METHOD(bool, iterate, (uint32_t _millis), (override));
   MOCK_METHOD(bool, isNetworkRestartRequested, (), (override));
   MOCK_METHOD(uint32_t, getConnectionFailTime, (), (override));
   MOCK_METHOD(bool, isConnectionError, (), (override));

@@ -1021,7 +1021,7 @@ TEST_F(RelayFixture, durationMsTests) {
   }
   EXPECT_EQ(gpioValue, 1);
 
-  // when countdown timer was introducetd, keepTurnOnDuration() method was
+  // when countdown timer was introduced, keepTurnOnDuration() method was
   // deprecated and it doesn't have any effect, so instead of it, we
   // send configuration vie channel config message
   r1.keepTurnOnDuration(true);

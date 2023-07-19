@@ -277,8 +277,6 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
       if (cfg->getAuthKey(buf)) {
         setAuthKey(buf);
       }
-      generateHexString(Supla::Channel::reg_dev.GUID, buf, SUPLA_GUID_SIZE);
-      SUPLA_LOG_INFO("New GUID: %s", buf);
       generateHexString(
           Supla::Channel::reg_dev.AuthKey, buf, SUPLA_AUTHKEY_SIZE);
       SUPLA_LOG_DEBUG("New AuthKey: %s", buf);
@@ -289,6 +287,10 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
       return false;
     }
   }
+
+  char buf[SUPLA_GUID_SIZE * 2 + 1] = {};
+  generateHexString(Supla::Channel::reg_dev.GUID, buf, SUPLA_GUID_SIZE);
+  SUPLA_LOG_INFO("GUID: %s", buf);
 
   if (strnlen(Supla::Channel::reg_dev.Name, SUPLA_DEVICE_NAME_MAXSIZE) == 0) {
 #if defined(ARDUINO_ARCH_ESP8266)
@@ -307,7 +309,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
   SUPLA_LOG_INFO("Device name: %s", Supla::Channel::reg_dev.Name);
   SUPLA_LOG_INFO("Device software version: %s",
-                 Supla::Channel::reg_dev.SoftVer);
+      Supla::Channel::reg_dev.SoftVer);
 
   SUPLA_LOG_DEBUG("Initializing network layer");
   char hostname[32] = {};

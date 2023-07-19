@@ -62,6 +62,10 @@ class ESPWifi : public Supla::Wifi {
 
   // TODO(klew): add handling of custom local ip
   void setup() override {
+    // ESP8266: for some reason when hostname is longer than 30 bytes, Wi-Fi
+    // connection can't be esablished. So as a workaround, we truncate hostname
+    // to 30 bytes
+    hostname[30] = '\0';
     if (!wifiConfigured) {
       // ESP32 requires setHostname to be called before begin...
       WiFi.setHostname(hostname);

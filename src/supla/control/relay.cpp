@@ -58,9 +58,7 @@ void Relay::onRegistered(
   Supla::Element::onRegistered(suplaSrpc);
   channel.requestChannelConfig();
 
-  if (durationMs) {
-    updateTimerValue();
-  }
+  timerUpdateTimestamp = 0;
 }
 
 void Relay::handleChannelConfig(

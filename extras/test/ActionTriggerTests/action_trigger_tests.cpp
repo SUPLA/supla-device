@@ -141,14 +141,14 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x2 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x4 | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at.handleChannelConfig(&result);
   b1.runAction(Supla::ON_PRESS);
@@ -175,7 +175,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   // it should be executed on ah mock
@@ -223,15 +223,15 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF |
       SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x2 |
       SUPLA_ACTION_CAP_TOGGLE_x3 | SUPLA_ACTION_CAP_TOGGLE_x4 |
       SUPLA_ACTION_CAP_TOGGLE_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   EXPECT_EQ(b1.getMaxMulticlickValue(), 1);
   at.handleChannelConfig(&result);
@@ -299,15 +299,15 @@ TEST_F(ActionTriggerTests, AttachToMotionSensorButton) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_TURN_ON | SUPLA_ACTION_CAP_TURN_OFF |
       SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x2 |
       SUPLA_ACTION_CAP_TOGGLE_x3 | SUPLA_ACTION_CAP_TOGGLE_x4 |
       SUPLA_ACTION_CAP_TOGGLE_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
   at.handleChannelConfig(&result);
@@ -342,15 +342,15 @@ TEST_F(ActionTriggerTests, SendActionOnce) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions = SUPLA_ACTION_CAP_TURN_ON;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at.handleChannelConfig(&result);
 
   config.ActiveActions = SUPLA_ACTION_CAP_SHORT_PRESS_x1;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at2.handleChannelConfig(&result);
 
@@ -379,10 +379,10 @@ TEST_F(ActionTriggerTests, SendFewActions) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions = SUPLA_ACTION_CAP_TURN_ON;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at.iterateConnected();
   at.handleChannelConfig(&result);
@@ -505,14 +505,14 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -544,7 +544,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -560,7 +560,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -575,7 +575,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -642,14 +642,14 @@ TEST_F(ActionTriggerTests,
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -682,7 +682,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(
@@ -699,7 +699,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(
@@ -715,7 +715,7 @@ TEST_F(ActionTriggerTests,
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(
@@ -779,14 +779,14 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -817,7 +817,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
@@ -833,7 +833,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
@@ -848,7 +848,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
@@ -915,14 +915,14 @@ TEST_F(ActionTriggerTests,
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -955,7 +955,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(
@@ -972,7 +972,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(
@@ -989,7 +989,7 @@ TEST_F(ActionTriggerTests,
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(
@@ -1058,14 +1058,14 @@ TEST_F(ActionTriggerTests,
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at.handleChannelConfig(&result);
 
@@ -1094,7 +1094,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
@@ -1111,7 +1111,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
@@ -1127,7 +1127,7 @@ TEST_F(ActionTriggerTests,
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
@@ -1189,13 +1189,13 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_TOGGLE_x2 | SUPLA_ACTION_CAP_TOGGLE_x3 |
       SUPLA_ACTION_CAP_TOGGLE_x4 | SUPLA_ACTION_CAP_TOGGLE_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1224,7 +1224,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
@@ -1239,7 +1239,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 
   // another config from server which disables some actions
   config.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
@@ -1254,7 +1254,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
@@ -1317,13 +1317,13 @@ TEST_F(ActionTriggerTests,
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_TOGGLE_x2 | SUPLA_ACTION_CAP_TOGGLE_x3 |
       SUPLA_ACTION_CAP_TOGGLE_x4 | SUPLA_ACTION_CAP_TOGGLE_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1353,7 +1353,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(
@@ -1370,7 +1370,7 @@ TEST_F(ActionTriggerTests,
 
   // another config from server which disables some actions
   config.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(
@@ -1386,7 +1386,7 @@ TEST_F(ActionTriggerTests,
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(
@@ -1449,14 +1449,14 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1550,14 +1550,14 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1644,14 +1644,14 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1682,7 +1682,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
@@ -1698,7 +1698,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   // another config from server which disables some actions
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
@@ -1713,7 +1713,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
 
   // another config from server which disables all actions
   config.ActiveActions = 0;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   EXPECT_TRUE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
@@ -1805,14 +1805,14 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1924,14 +1924,14 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x3 | SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -1955,13 +1955,13 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
 
   memset(&result, 0, sizeof(result));
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
   memset(&config, 0, sizeof(config));
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x2 | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with SHORT_PRESS_x1 used, so
   // ON_CLICK_1 is disabled locally and published to servers
@@ -2068,13 +2068,13 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x4 | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
@@ -2097,13 +2097,13 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
 
   memset(&result, 0, sizeof(result));
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
   memset(&config, 0, sizeof(config));
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x2 | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   // we received channel config with SHORT_PRESS_x1 used, so
   // ON_CLICK_1 is disabled locally and published to servers
@@ -2183,14 +2183,14 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
 
   TSD_ChannelConfig result = {};
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_ActionTrigger);
-  TSD_ChannelConfig_ActionTrigger config = {};
+  result.ConfigSize = sizeof(TChannelConfig_ActionTrigger);
+  TChannelConfig_ActionTrigger config = {};
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x2 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
       SUPLA_ACTION_CAP_SHORT_PRESS_x4 | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
 
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at.handleChannelConfig(&result);
   b1.runAction(Supla::ON_PRESS);
@@ -2217,7 +2217,7 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
   config.ActiveActions = SUPLA_ACTION_CAP_HOLD |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
-  memcpy(result.Config, &config, sizeof(TSD_ChannelConfig_ActionTrigger));
+  memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
   at.handleChannelConfig(&result);
 
   // it should be executed on ah mock

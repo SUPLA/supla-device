@@ -288,9 +288,9 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
 void Supla::Control::ActionTrigger::handleChannelConfig(
     TSD_ChannelConfig *result) {
   if (result->ConfigType == 0 &&
-      result->ConfigSize == sizeof(TSD_ChannelConfig_ActionTrigger)) {
-    TSD_ChannelConfig_ActionTrigger *config =
-      reinterpret_cast<TSD_ChannelConfig_ActionTrigger *>(result->Config);
+      result->ConfigSize == sizeof(TChannelConfig_ActionTrigger)) {
+    TChannelConfig_ActionTrigger *config =
+      reinterpret_cast<TChannelConfig_ActionTrigger *>(result->Config);
     activeActionsFromServer = config->ActiveActions;
     SUPLA_LOG_DEBUG(
         "AT[%d] received config with active actions: 0x%X",

@@ -63,9 +63,9 @@ class RelayFixture : public testing::Test {
     result.Func = func;
     result.ConfigType = 0;
     if (func == SUPLA_CHANNELFNC_STAIRCASETIMER) {
-      result.ConfigSize = sizeof(TSD_ChannelConfig_StaircaseTimer);
-      TSD_ChannelConfig_StaircaseTimer *config =
-        reinterpret_cast<TSD_ChannelConfig_StaircaseTimer *>(&result.Config);
+      result.ConfigSize = sizeof(TChannelConfig_StaircaseTimer);
+      TChannelConfig_StaircaseTimer *config =
+        reinterpret_cast<TChannelConfig_StaircaseTimer *>(&result.Config);
       config->TimeMS = timeMs;
     }
     r->handleChannelConfig(&result);
@@ -1028,9 +1028,9 @@ TEST_F(RelayFixture, durationMsTests) {
   TSD_ChannelConfig result = {};
   result.Func = SUPLA_CHANNELFNC_STAIRCASETIMER;
   result.ConfigType = 0;
-  result.ConfigSize = sizeof(TSD_ChannelConfig_StaircaseTimer);
-  TSD_ChannelConfig_StaircaseTimer *config =
-      reinterpret_cast<TSD_ChannelConfig_StaircaseTimer *>(&result.Config);
+  result.ConfigSize = sizeof(TChannelConfig_StaircaseTimer);
+  TChannelConfig_StaircaseTimer *config =
+      reinterpret_cast<TChannelConfig_StaircaseTimer *>(&result.Config);
   config->TimeMS = 1000;
   r1.handleChannelConfig(&result);
 
@@ -1262,6 +1262,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
 
   // test begins
+  time.advance(100);
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();
@@ -1319,6 +1320,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
 
   // test begins
+  time.advance(100);
   r1.onLoadConfig(nullptr);
   r1.onLoadState();
   r1.onInit();

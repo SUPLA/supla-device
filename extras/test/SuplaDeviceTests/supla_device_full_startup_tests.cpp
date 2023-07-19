@@ -74,7 +74,7 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
     EXPECT_CALL(timer, initTimers());
     EXPECT_CALL(srpc, srpc_params_init(_));
     EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-    EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 16));
+    EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 20));
 
     char GUID[SUPLA_GUID_SIZE] = {1};
     char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
@@ -231,7 +231,7 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
   register_device_result.activity_timeout = 45;
-  register_device_result.version = 16;
+  register_device_result.version = 20;
   register_device_result.version_min = 1;
 
   auto srpcLayer = sd.getSrpcLayer();
@@ -851,7 +851,7 @@ TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
   register_device_result.activity_timeout = 45;
-  register_device_result.version = 16;
+  register_device_result.version = 20;
   register_device_result.version_min = 1;
 
   auto srpcLayer = sd.getSrpcLayer();
@@ -906,7 +906,7 @@ TEST_F(SuplaDeviceElementWithSecondaryChannel, SleepingChannel) {
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
   register_device_result.activity_timeout = 45;
-  register_device_result.version = 16;
+  register_device_result.version = 20;
   register_device_result.version_min = 1;
 
   auto srpcLayer = sd.getSrpcLayer();

@@ -384,16 +384,16 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             SUPLA_CONFIG_RESULT_TRUE);
 
   // invalid config size
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC) - 1;
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC) - 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
-  TSD_ChannelConfig_HVAC *hvacConfig =
-      reinterpret_cast<TSD_ChannelConfig_HVAC *>(&configFromServer.Config);
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
 
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->AuxThermometerType =
@@ -879,9 +879,9 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
-  TSD_ChannelConfig_HVAC *hvacConfig =
-      reinterpret_cast<TSD_ChannelConfig_HVAC *>(&configFromServer.Config);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
@@ -922,9 +922,9 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
       .Times(1).WillOnce(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_HVAC expectedData = {
+        TChannelConfig_HVAC expectedData = {
             .MainThermometerChannelNo = 1,
             .AuxThermometerChannelNo = 2,
             .AuxThermometerType =
@@ -1005,13 +1005,13 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -1022,9 +1022,9 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
       .Times(1)
       .WillOnce(Return(true));
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_HVAC expectedData = {
+        TChannelConfig_HVAC expectedData = {
             .MainThermometerChannelNo = 1,
             .AuxThermometerChannelNo = 2,
             .AuxThermometerType =
@@ -1099,9 +1099,9 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
-  TSD_ChannelConfig_HVAC *hvacConfig =
-      reinterpret_cast<TSD_ChannelConfig_HVAC *>(&configFromServer.Config);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
@@ -1156,13 +1156,13 @@ TEST_F(HvacTestWithChannelSetupF,
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -1171,7 +1171,7 @@ TEST_F(HvacTestWithChannelSetupF,
       .WillOnce(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .InSequence(s1)
       .WillOnce(Return(true));
@@ -1187,11 +1187,11 @@ TEST_F(HvacTestWithChannelSetupF,
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .InSequence(s1)
       .WillOnce(
           [](const char *key, const char *buf, int size) {
-            TSD_ChannelConfig_HVAC expectedData = {
+            TChannelConfig_HVAC expectedData = {
                 .MainThermometerChannelNo = 1,
                 .AuxThermometerChannelNo = 2,
                 .AuxThermometerType =
@@ -1268,9 +1268,9 @@ TEST_F(HvacTestWithChannelSetupF,
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
-  TSD_ChannelConfig_HVAC *hvacConfig =
-      reinterpret_cast<TSD_ChannelConfig_HVAC *>(&configFromServer.Config);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
@@ -1313,7 +1313,7 @@ TEST_F(HvacTestWithChannelSetupF,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
                                  _,
-                                 sizeof(TSD_ChannelConfig_HVAC),
+                                 sizeof(TChannelConfig_HVAC),
                                  SUPLA_CONFIG_TYPE_DEFAULT))
         .Times(3)
         .WillRepeatedly(Return(false));
@@ -1322,14 +1322,14 @@ TEST_F(HvacTestWithChannelSetupF,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
                                  _,
-                                 sizeof(TSD_ChannelConfig_HVAC),
+                                 sizeof(TChannelConfig_HVAC),
                                  SUPLA_CONFIG_TYPE_DEFAULT))
         .WillOnce([](uint8_t channelNumber,
                      _supla_int_t channelFunction,
                      void *buf,
                      int size,
                      uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT) {
-          TSD_ChannelConfig_HVAC expectedData = {
+          TChannelConfig_HVAC expectedData = {
               .MainThermometerChannelNo = 0,
               .AuxThermometerChannelNo = 0,
               .AuxThermometerType =

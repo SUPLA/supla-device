@@ -102,13 +102,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -258,9 +258,9 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
-  TSD_ChannelConfig_WeeklySchedule *weeklySchedule =
-      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  TChannelConfig_WeeklySchedule *weeklySchedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(
           &configFromServer.Config);
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -270,8 +270,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
 
-  weeklySchedule->Value[0] = (1 | (2 << 4));
-  weeklySchedule->Value[1] = 3;
+  weeklySchedule->Quarters[0] = (1 | (2 << 4));
+  weeklySchedule->Quarters[1] = 3;
 
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
@@ -522,13 +522,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -656,9 +656,9 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
-  TSD_ChannelConfig_WeeklySchedule *weeklySchedule =
-      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  TChannelConfig_WeeklySchedule *weeklySchedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(
           &configFromServer.Config);
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -668,8 +668,8 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
 
-  weeklySchedule->Value[0] = (1 | (2 << 4));
-  weeklySchedule->Value[1] = 3;
+  weeklySchedule->Quarters[0] = (1 | (2 << 4));
+  weeklySchedule->Quarters[1] = 3;
 
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
@@ -861,8 +861,8 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
 
-  weeklySchedule->Value[0] = (1 | (2 << 4));
-  weeklySchedule->Value[1] = 3;
+  weeklySchedule->Quarters[0] = (1 | (2 << 4));
+  weeklySchedule->Quarters[1] = 3;
 
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);

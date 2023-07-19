@@ -596,9 +596,9 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     memset(config, 0, sizeof(TSD_ChannelConfig));
     config->ChannelNumber = hvac->getChannelNumber();
     config->Func = hvac->getChannel()->getDefaultFunction();
-    config->ConfigSize = sizeof(TSD_ChannelConfig_HVAC);
+    config->ConfigSize = sizeof(TChannelConfig_HVAC);
     config->ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
-    hvacConfig = reinterpret_cast<TSD_ChannelConfig_HVAC*>(&(config->Config));
+    hvacConfig = reinterpret_cast<TChannelConfig_HVAC*>(&(config->Config));
     hvac->copyFullChannelConfigTo(hvacConfig);
     // anti free will be enabled when checkbox is checked, otherwise
     // form field won't be send, so we disable it here

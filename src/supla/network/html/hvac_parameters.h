@@ -42,7 +42,7 @@ class HvacParameters : public HtmlElement {
   TSD_SuplaChannelNewValue *newValue = nullptr;
   THVACValue *hvacValue = nullptr;
   TSD_ChannelConfig *config = nullptr;
-  TSD_ChannelConfig_HVAC *hvacConfig = nullptr;
+  TChannelConfig_HVAC *hvacConfig = nullptr;
 };
 
 };  // namespace Html

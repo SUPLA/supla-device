@@ -228,21 +228,21 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   EXPECT_CALL(
       cfg,
       setBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+        TChannelConfig_WeeklySchedule expectedData = {};
 
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
       })
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+        TChannelConfig_WeeklySchedule expectedData = {};
 
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
       })
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+        TChannelConfig_WeeklySchedule expectedData = {};
 
         expectedData.Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
         expectedData.Program[0].SetpointTemperatureMin = 2100;
@@ -250,8 +250,8 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
         expectedData.Program[1].SetpointTemperatureMin = 1800;
         expectedData.Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
         expectedData.Program[2].SetpointTemperatureMin = 2300;
-        expectedData.Value[0] = (1 | (2 << 4));
-        expectedData.Value[1] = 3;
+        expectedData.Quarters[0] = (1 | (2 << 4));
+        expectedData.Quarters[1] = 3;
 
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
@@ -286,9 +286,9 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
-  TSD_ChannelConfig_WeeklySchedule *weeklySchedule =
-      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  TChannelConfig_WeeklySchedule *weeklySchedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(
           &configFromServer.Config);
 
   // empty weekly schedule is filled with "off", so it is fine
@@ -314,10 +314,10 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
 
-  weeklySchedule->Value[0] = (1 | (2 << 4));
-  weeklySchedule->Value[1] = 3;
+  weeklySchedule->Quarters[0] = (1 | (2 << 4));
+  weeklySchedule->Quarters[1] = 3;
 
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -353,13 +353,13 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -375,10 +375,10 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   EXPECT_CALL(
       cfg,
       setBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillOnce(
           [](const char *key, const char *buf, int size) {
-            TSD_ChannelConfig_WeeklySchedule expectedData = {};
+            TChannelConfig_WeeklySchedule expectedData = {};
 
             EXPECT_EQ(0, memcmp(buf, &expectedData, size));
             return 1;
@@ -402,7 +402,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
 
   // empty weekly schedule is filled with "off", so it is fine
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
@@ -432,13 +432,13 @@ TEST_F(HvacWeeklyScheduleTestsF,
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -449,7 +449,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   EXPECT_CALL(
       cfg,
       setBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .InSequence(s1)
       .WillOnce(Return(true));
@@ -482,11 +482,11 @@ TEST_F(HvacWeeklyScheduleTestsF,
   EXPECT_CALL(
       cfg,
       setBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .InSequence(s1)
       .WillOnce(
           [](const char *key, const char *buf, int size) {
-            TSD_ChannelConfig_WeeklySchedule expectedData = {};
+            TChannelConfig_WeeklySchedule expectedData = {};
 
             EXPECT_EQ(0, memcmp(buf, &expectedData, size));
             return 1;
@@ -509,7 +509,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
 
   // empty weekly schedule is filled with "off", so it is fine
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
@@ -527,7 +527,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
                                  _,
-                                 sizeof(TSD_ChannelConfig_WeeklySchedule),
+                                 sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
         .Times(3)
         .WillRepeatedly(Return(false));
@@ -536,14 +536,14 @@ TEST_F(HvacWeeklyScheduleTestsF,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
                                  _,
-                                 sizeof(TSD_ChannelConfig_WeeklySchedule),
+                                 sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
         .WillOnce([](uint8_t channelNumber,
                      _supla_int_t channelFunction,
                      void *buf,
                      int size,
                      uint8_t configType) {
-          TSD_ChannelConfig_WeeklySchedule expectedData = {};
+          TChannelConfig_WeeklySchedule expectedData = {};
           expectedData.Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
           expectedData.Program[0].SetpointTemperatureMin = 1800;
           EXPECT_EQ(0, memcmp(buf, &expectedData, size));
@@ -586,15 +586,15 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   EXPECT_CALL(
       cfg,
       setBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+        TChannelConfig_WeeklySchedule expectedData = {};
 
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
       })
       .WillOnce([](const char *key, const char *buf, int size) {
-        TSD_ChannelConfig_WeeklySchedule expectedData = {};
+        TChannelConfig_WeeklySchedule expectedData = {};
 
         expectedData.Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
         expectedData.Program[0].SetpointTemperatureMin = 2100;
@@ -602,8 +602,8 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
         expectedData.Program[1].SetpointTemperatureMin = -2000;
         expectedData.Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
         expectedData.Program[2].SetpointTemperatureMin = 4000;
-        expectedData.Value[0] = (1 | (2 << 4));
-        expectedData.Value[1] = 3;
+        expectedData.Quarters[0] = (1 | (2 << 4));
+        expectedData.Quarters[1] = 3;
 
         EXPECT_EQ(0, memcmp(buf, &expectedData, size));
         return 1;
@@ -614,9 +614,9 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL;
-  configFromServer.ConfigSize = sizeof(TSD_ChannelConfig_WeeklySchedule);
-  TSD_ChannelConfig_WeeklySchedule *weeklySchedule =
-      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(
+  configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
+  TChannelConfig_WeeklySchedule *weeklySchedule =
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(
           &configFromServer.Config);
 
   // empty weekly schedule is filled with "off", so it is fine
@@ -637,8 +637,8 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
   weeklySchedule->Program[2].SetpointTemperatureMin = 4000;
 
-  weeklySchedule->Value[0] = (1 | (2 << 4));
-  weeklySchedule->Value[1] = 3;
+  weeklySchedule->Quarters[0] = (1 | (2 << 4));
+  weeklySchedule->Quarters[1] = 3;
 
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);

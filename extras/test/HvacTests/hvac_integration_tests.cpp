@@ -102,13 +102,13 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -537,13 +537,13 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
 //  EXPECT_CALL(cfg,
@@ -967,13 +967,13 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAuto) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -1790,13 +1790,13 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
 //  EXPECT_CALL(cfg,
@@ -2267,7 +2267,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   }
 
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
@@ -2276,7 +2276,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
               setChannelConfig(0,
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL,
                                _,
-                               sizeof(TSD_ChannelConfig_HVAC),
+                               sizeof(TChannelConfig_HVAC),
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
       .WillRepeatedly(Return(true));
@@ -2336,13 +2336,13 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAutoSetpointTempCheck) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
@@ -2575,15 +2575,15 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillRepeatedly(Return(false));
 
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
@@ -2724,7 +2724,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
               setChannelConfig(0,
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
                                _,
-                               sizeof(TSD_ChannelConfig_HVAC),
+                               sizeof(TChannelConfig_HVAC),
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
       .WillRepeatedly(Return(true));
@@ -2761,7 +2761,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
               setChannelConfig(0,
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL,
                                _,
-                               sizeof(TSD_ChannelConfig_HVAC),
+                               sizeof(TChannelConfig_HVAC),
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
       .WillRepeatedly(Return(true));
@@ -2836,7 +2836,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
               setChannelConfig(0,
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
                                _,
-                               sizeof(TSD_ChannelConfig_HVAC),
+                               sizeof(TChannelConfig_HVAC),
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
       .WillRepeatedly(Return(true));
@@ -2928,15 +2928,15 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TSD_ChannelConfig_HVAC)))
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(
       cfg,
       getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TSD_ChannelConfig_WeeklySchedule)))
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .WillRepeatedly(Return(false));
 
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))

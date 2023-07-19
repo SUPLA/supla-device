@@ -214,9 +214,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isDrySupported() const;
 
   bool isFunctionSupported(_supla_int_t channelFunction) const;
-  bool isConfigValid(TSD_ChannelConfig_HVAC *config) const;
+  bool isConfigValid(TChannelConfig_HVAC *config) const;
   bool isWeeklyScheduleValid(
-      TSD_ChannelConfig_WeeklySchedule *newSchedule) const;
+      TChannelConfig_WeeklySchedule *newSchedule) const;
   bool isChannelThermometer(uint8_t channelNo) const;
   bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
   bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
@@ -279,7 +279,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
                                   int hour,
                                   int quarter) const;
   int getWeeklyScheduleProgramId(
-      const TSD_ChannelConfig_WeeklySchedule *schedule, int index) const;
+      const TChannelConfig_WeeklySchedule *schedule, int index) const;
   bool isProgramValid(const TWeeklyScheduleProgram &program) const;
 
   bool setProgram(int programId,
@@ -299,7 +299,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   TWeeklyScheduleProgram getProgram(int programId) const;
 
   void copyFixedChannelConfigTo(HvacBase *hvac) const;
-  void copyFullChannelConfigTo(TSD_ChannelConfig_HVAC *hvac) const;
+  void copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const;
   void turnOn();
   bool turnOnWeeklySchedlue();
   void changeFunction(int newFunction, bool changedLocally);
@@ -341,8 +341,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void clearLastOutputValue();
   void storeLastWorkingMode();
 
-  TSD_ChannelConfig_HVAC config = {};
-  TSD_ChannelConfig_WeeklySchedule weeklySchedule = {};
+  TChannelConfig_HVAC config = {};
+  TChannelConfig_WeeklySchedule weeklySchedule = {};
   bool isWeeklyScheduleConfigured = false;
   uint8_t channelConfigChangedOffline = 0;
   uint8_t weeklyScheduleChangedOffline = 0;

@@ -95,7 +95,7 @@ bool HvacBase::iterateConnected() {
         if (proto->setChannelConfig(getChannelNumber(),
                                     channel.getDefaultFunction(),
                                     reinterpret_cast<void *>(&config),
-                                    sizeof(TSD_ChannelConfig_HVAC),
+                                    sizeof(TChannelConfig_HVAC),
                                     SUPLA_CONFIG_TYPE_DEFAULT)) {
           SUPLA_LOG_INFO("Sending channel config for %d", getChannelNumber());
           channelConfigChangedOffline = 2;
@@ -135,7 +135,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     generateKey(key, "hvac_cfg");
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&config),
-                     sizeof(TSD_ChannelConfig_HVAC))) {
+                     sizeof(TChannelConfig_HVAC))) {
       SUPLA_LOG_INFO("HVAC config loaded successfully");
     } else {
       SUPLA_LOG_INFO("HVAC config missing. Using SW defaults");
@@ -145,7 +145,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     generateKey(key, "hvac_weekly");
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&weeklySchedule),
-                     sizeof(TSD_ChannelConfig_WeeklySchedule))) {
+                     sizeof(TChannelConfig_WeeklySchedule))) {
       SUPLA_LOG_INFO("HVAC weekly schedule loaded successfully");
 
       generateKey(key, "weekly_ignr");
@@ -492,20 +492,20 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   if (applyServerConfig &&
-      newConfig->ConfigSize < sizeof(TSD_ChannelConfig_HVAC)) {
+      newConfig->ConfigSize < sizeof(TChannelConfig_HVAC)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
   auto hvacConfig =
-      reinterpret_cast<TSD_ChannelConfig_HVAC *>(newConfig->Config);
+      reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
 
   if (applyServerConfig && !isConfigValid(hvacConfig)) {
     SUPLA_LOG_DEBUG("HVAC: invalid config");
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  TSD_ChannelConfig_HVAC configCopy;
-  memcpy(&configCopy, &config, sizeof(TSD_ChannelConfig_HVAC));
+  TChannelConfig_HVAC configCopy;
+  memcpy(&configCopy, &config, sizeof(TChannelConfig_HVAC));
 
   // Received config looks ok, so we apply it to channel
   changeFunction(channelFunction, false);
@@ -601,7 +601,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     }
   }
 
-  if (memcmp(&config, &configCopy, sizeof(TSD_ChannelConfig_HVAC)) != 0) {
+  if (memcmp(&config, &configCopy, sizeof(TChannelConfig_HVAC)) != 0) {
     if (local && initDone) {
       channelConfigChangedOffline = 1;
     }
@@ -611,7 +611,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   return SUPLA_CONFIG_RESULT_TRUE;
 }
 
-bool HvacBase::isConfigValid(TSD_ChannelConfig_HVAC *newConfig) const {
+bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
   if (newConfig == nullptr) {
     return false;
   }
@@ -1052,12 +1052,12 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
-  if (newConfig->ConfigSize < sizeof(TSD_ChannelConfig_WeeklySchedule)) {
+  if (newConfig->ConfigSize < sizeof(TChannelConfig_WeeklySchedule)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
   auto newSchedule =
-      reinterpret_cast<TSD_ChannelConfig_WeeklySchedule *>(newConfig->Config);
+      reinterpret_cast<TChannelConfig_WeeklySchedule *>(newConfig->Config);
 
   if (!isWeeklyScheduleValid(newSchedule)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
@@ -1065,10 +1065,10 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
 
   if (!isWeeklyScheduleConfigured || memcmp(&weeklySchedule,
              newSchedule,
-             sizeof(TSD_ChannelConfig_WeeklySchedule)) != 0) {
+             sizeof(TChannelConfig_WeeklySchedule)) != 0) {
     memcpy(&weeklySchedule,
            newSchedule,
-           sizeof(TSD_ChannelConfig_WeeklySchedule));
+           sizeof(TChannelConfig_WeeklySchedule));
     isWeeklyScheduleConfigured = true;
     saveWeeklySchedule();
   }
@@ -1668,7 +1668,7 @@ void HvacBase::saveConfig() {
     generateKey(key, "hvac_cfg");
     if (cfg->setBlob(key,
                      reinterpret_cast<char *>(&config),
-                     sizeof(TSD_ChannelConfig_HVAC))) {
+                     sizeof(TChannelConfig_HVAC))) {
       SUPLA_LOG_INFO("HVAC config saved successfully");
     } else {
       SUPLA_LOG_INFO("HVAC failed to save config");
@@ -1693,7 +1693,7 @@ void HvacBase::saveWeeklySchedule() {
     generateKey(key, "hvac_weekly");
     if (cfg->setBlob(key,
                      reinterpret_cast<char *>(&weeklySchedule),
-                     sizeof(TSD_ChannelConfig_WeeklySchedule))) {
+                     sizeof(TChannelConfig_WeeklySchedule))) {
       SUPLA_LOG_INFO("HVAC weekly schedule saved successfully");
     } else {
       SUPLA_LOG_INFO("HVAC failed to save weekly schedule");
@@ -1771,7 +1771,7 @@ void HvacBase::clearWeeklyScheduleChangedFlag() {
 }
 
 bool HvacBase::isWeeklyScheduleValid(
-    TSD_ChannelConfig_WeeklySchedule *newSchedule) const {
+    TChannelConfig_WeeklySchedule *newSchedule) const {
   bool programIsUsed[SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE] = {};
 
   // check if programs are valid
@@ -1796,7 +1796,7 @@ bool HvacBase::isWeeklyScheduleValid(
 }
 
 int HvacBase::getWeeklyScheduleProgramId(
-    const TSD_ChannelConfig_WeeklySchedule *schedule, int index) const {
+    const TChannelConfig_WeeklySchedule *schedule, int index) const {
   if (schedule == nullptr) {
     return 0;
   }
@@ -1804,7 +1804,7 @@ int HvacBase::getWeeklyScheduleProgramId(
     return 0;
   }
 
-  return (schedule->Value[index / 2] >> (index % 2 * 4)) & 0xF;
+  return (schedule->Quarters[index / 2] >> (index % 2 * 4)) & 0xF;
 }
 
 int HvacBase::getWeeklyScheduleProgramId(int index) const {
@@ -1951,11 +1951,11 @@ bool HvacBase::setWeeklySchedule(int index, int programId) {
   }
 
   if (index % 2) {
-    weeklySchedule.Value[index / 2] =
-        (weeklySchedule.Value[index / 2] & 0x0F) | (programId << 4);
+    weeklySchedule.Quarters[index / 2] =
+        (weeklySchedule.Quarters[index / 2] & 0x0F) | (programId << 4);
   } else {
-    weeklySchedule.Value[index / 2] =
-        (weeklySchedule.Value[index / 2] & 0xF0) | programId;
+    weeklySchedule.Quarters[index / 2] =
+        (weeklySchedule.Quarters[index / 2] & 0xF0) | programId;
   }
 
   if (initDone) {
@@ -2321,12 +2321,12 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) const {
   hvac->setTemperatureAutoOffsetMax(getTemperatureAutoOffsetMax());
 }
 
-void HvacBase::copyFullChannelConfigTo(TSD_ChannelConfig_HVAC *hvac) const {
+void HvacBase::copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const {
   if (hvac == nullptr) {
     return;
   }
 
-  memcpy(hvac, &config, sizeof(TSD_ChannelConfig_HVAC));
+  memcpy(hvac, &config, sizeof(TChannelConfig_HVAC));
 }
 
 bool HvacBase::applyNewRuntimeSettings(int mode, int32_t durationSec) {

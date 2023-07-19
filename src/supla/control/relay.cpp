@@ -58,9 +58,7 @@ void Relay::onRegistered(
   Supla::Element::onRegistered(suplaSrpc);
   channel.requestChannelConfig();
 
-  if (durationMs) {
-    updateTimerValue();
-  }
+  timerUpdateTimestamp = 0;
 }
 
 uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
@@ -81,9 +79,9 @@ uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
 
     case SUPLA_CHANNELFNC_STAIRCASETIMER: {
       if (result->ConfigType == 0 &&
-          result->ConfigSize == sizeof(TSD_ChannelConfig_StaircaseTimer)) {
+          result->ConfigSize == sizeof(TChannelConfig_StaircaseTimer)) {
         uint32_t newDurationMs =
-            reinterpret_cast<TSD_ChannelConfig_StaircaseTimer *>(result->Config)
+            reinterpret_cast<TChannelConfig_StaircaseTimer *>(result->Config)
                 ->TimeMS;
         if (newDurationMs != storedTurnOnDurationMs) {
           storedTurnOnDurationMs = newDurationMs;

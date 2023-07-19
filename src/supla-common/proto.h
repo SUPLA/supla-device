@@ -218,9 +218,11 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE_B 360                // ver. >= 8
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE_C 361                // ver. >= 10
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE_D 362                // ver. >= 15
+#define SUPLA_SC_CALL_CHANNELPACK_UPDATE_E 363                // ver. >= 21
 #define SUPLA_SC_CALL_CHANNEL_UPDATE_B 370                    // ver. >= 8
 #define SUPLA_SC_CALL_CHANNEL_UPDATE_C 371                    // ver. >= 10
 #define SUPLA_SC_CALL_CHANNEL_UPDATE_D 372                    // ver. >= 15
+#define SUPLA_SC_CALL_CHANNEL_UPDATE_E 373                    // ver. >= 21
 #define SUPLA_SC_CALL_CHANNELGROUP_PACK_UPDATE 380            // ver. >= 9
 #define SUPLA_SC_CALL_CHANNELGROUP_PACK_UPDATE_B 381          // ver. >= 10
 #define SUPLA_SC_CALL_CHANNELGROUP_RELATION_PACK_UPDATE 390   // ver. >= 9
@@ -282,6 +284,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_DS_CALL_REGISTER_PUSH_NOTIFICATION 1100         // ver. >= 20
 #define SUPLA_DS_CALL_SEND_PUSH_NOTIFICATION 1110             // ver. >= 20
 #define SUPLA_CS_CALL_REGISTER_PN_CLIENT_TOKEN 1120           // ver. >= 20
+#define SUPLA_SC_CALL_REGISTER_PN_CLIENT_TOKEN_RESULT 1121    // ver. >= 20
 
 #define SUPLA_RESULT_RESPONSE_TIMEOUT -8
 #define SUPLA_RESULT_CANT_CONNECT_TO_HOST -7
@@ -1107,6 +1110,33 @@ typedef struct {
 
 typedef struct {
   // server -> client
+  char EOL;  // End Of List
+
+  _supla_int_t Id;
+  _supla_int_t ParentChannelId[2];
+  _supla_int16_t ParentChannelRelationType[2];
+  _supla_int_t DeviceID;
+  _supla_int_t LocationID;
+  _supla_int_t Type;
+  _supla_int_t Func;
+  _supla_int_t AltIcon;
+  _supla_int_t UserIcon;
+  _supla_int16_t ManufacturerID;
+  _supla_int16_t ProductID;
+
+  unsigned _supla_int_t Flags;
+  unsigned char ProtocolVersion;
+  char online;
+
+  TSuplaChannelValue_B value;
+
+  unsigned _supla_int_t
+      CaptionSize;  // including the terminating null byte ('\0')
+  char Caption[SUPLA_CHANNEL_CAPTION_MAXSIZE];  // Last variable in struct!
+} TSC_SuplaChannel_E;                           // ver. >= 21
+
+typedef struct {
+  // server -> client
 
   _supla_int_t count;
   _supla_int_t total_left;
@@ -1122,6 +1152,15 @@ typedef struct {
   TSC_SuplaChannel_D
       items[SUPLA_CHANNELPACK_MAXCOUNT];  // Last variable in struct!
 } TSC_SuplaChannelPack_D;                 // ver. >= 15
+
+typedef struct {
+  // server -> client
+
+  _supla_int_t count;
+  _supla_int_t total_left;
+  TSC_SuplaChannel_E
+      items[SUPLA_CHANNELPACK_MAXCOUNT];  // Last variable in struct!
+} TSC_SuplaChannelPack_E;                 // ver. >= 21
 
 typedef struct {
   // server -> client
@@ -2346,7 +2385,7 @@ typedef struct {
   unsigned _supla_int16_t ConfigSize;
   char Config[SUPLA_CHANNEL_CONFIG_MAXSIZE];  // Last variable in struct!
                                               // v. >= 16
-                                              // TSD_ChannelConfig_*
+                                              // TChannelConfig_*
 } TSD_ChannelConfig;
 
 // SUPLA_DS_CALL_SET_CHANNEL_CONFIG
@@ -2363,23 +2402,23 @@ typedef struct {
 
 typedef struct {
   _supla_int_t TimeMS;
-} TSD_ChannelConfig_StaircaseTimer;  // v. >= 16
+} TChannelConfig_StaircaseTimer;  // v. >= 16
 
 typedef struct {
   _supla_int_t ClosingTimeMS;
   _supla_int_t OpeningTimeMS;
-} TSD_ChannelConfig_Rollershutter;  // v. >= 16
+} TChannelConfig_Rollershutter;  // v. >= 16
 
 typedef struct {
   _supla_int_t ClosingTimeMS;
   _supla_int_t OpeningTimeMS;
   _supla_int_t TiltingTimeMS;
   unsigned char FacadeBlindType;  // SUPLA_FACADEBLIND_TYPE_
-} TSD_ChannelConfig_FacadeBlind;  // v. >= 21
+} TChannelConfig_FacadeBlind;     // v. >= 21
 
 typedef struct {
   unsigned _supla_int_t ActiveActions;
-} TSD_ChannelConfig_ActionTrigger;  // v. >= 16
+} TChannelConfig_ActionTrigger;  // v. >= 16
 
 // Weekly schedule definition for HVAC channel
 
@@ -2401,15 +2440,14 @@ typedef struct {
 typedef struct {
   // 4*5 = 20 B
   TWeeklyScheduleProgram Program[SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE];
-  // Value contain Program setting for each 15 min. One 15 min program is set
-  // on 4 bits, so in one byte we have settings for two 2x 15 min.
-  // 0 - off
+  // "Quarters" contain Program setting for each 15 min. One 15 min program is
+  // set on 4 bits, so in one byte we have settings for two 2x 15 min. 0 - off
   // 1 - program 1
   // 2 - program 2
   // 3 - program 3
   // 4 - program 4
-  unsigned char Value[SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE / 2];  // 336 B
-} TSD_ChannelConfig_WeeklySchedule;                            // v. >= 21
+  unsigned char Quarters[SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE / 2];  // 336 B
+} TChannelConfig_WeeklySchedule;                                  // v. >= 21
 
 // Config used for thermometers and thermometers with humidity channels.
 // When used for thermometers, humidity param is ignored.
@@ -2517,10 +2555,18 @@ typedef struct {
 // TEMPERATURE_AUTO_OFFSET_MIN < TEMPERATURE_AUTO_OFFSET_MAX
 
 typedef struct {
-  // Channel numbers for thermometer config. Channels have to be local and
-  // numbering is the same as for registration message
-  unsigned char MainThermometerChannelNo;
-  unsigned char AuxThermometerChannelNo;
+  union {
+    _supla_int_t MainThermometerChannelId;
+    // Channel numbers for thermometer config. Channels have to be local and
+    // numbering is the same as for registration message
+    unsigned char MainThermometerChannelNo;
+  };
+
+  union {
+    _supla_int_t AuxThermometerChannelId;
+    unsigned char AuxThermometerChannelNo;
+  };
+
   // SUPLA_HVAC_AUX_THERMOMETER_TYPE_
   unsigned char AuxThermometerType;
   unsigned char AntiFreezeAndOverheatProtectionEnabled;
@@ -2538,7 +2584,7 @@ typedef struct {
                                         // be disabled
   signed char OutputValueOnError;       // -100 cool, 0 off (default), 100 heat
   THVACTemperatureCfg Temperatures;
-} TSD_ChannelConfig_HVAC;  // v. >= 21
+} TChannelConfig_HVAC;  // v. >= 21
 
 typedef struct {
   _supla_int_t ChannelID;
@@ -2580,8 +2626,10 @@ typedef struct {
   _supla_int_t ActionTrigger;
   unsigned char zero[10];  // Place for future variables
 } TDS_ActionTrigger;
+
 #define SUPLA_PN_TITLE_MAXSIZE 101
 #define SUPLA_PN_BODY_MAXSIZE 256
+#define SUPLA_PN_PROFILE_NAME_MAXSIZE 51
 
 #define PN_SERVER_MANAGED_TITLE (1 << 0)
 #define PN_SERVER_MANAGED_BODY (1 << 1)
@@ -2595,6 +2643,7 @@ typedef struct {
                             // applies to all subsequent notifications.
 
   _supla_int16_t Context;  // >= 0 Channel, -1 Device
+  signed char Reserved[8];
 } TDS_RegisterPushNotification;
 
 typedef struct {
@@ -2618,6 +2667,9 @@ typedef struct {
   unsigned char DevelopmentEnv;
   _supla_int_t Platform;
   _supla_int_t AppId;
+  signed char
+      ProfileName[SUPLA_PN_PROFILE_NAME_MAXSIZE];  // Including the terminating
+                                                   // null byte ('\0').
   unsigned _supla_int16_t
       RealTokenSize;  // It allows you to determine if the maximum size of the
                       // Token variable is sufficient.
@@ -2625,7 +2677,16 @@ typedef struct {
       TokenSize;  // Including the terminating null byte ('\0'). Size
                   // <= 1 removes the token
   signed char Token[SUPLA_PN_CLIENT_TOKEN_MAXSIZE];  // Last variable in struct!
+} TCS_PnClientToken;
+
+typedef struct {
+  TCS_ClientAuthorizationDetails Auth;
+  TCS_PnClientToken Token;  // Last variable in struct!
 } TCS_RegisterPnClientToken;
+
+typedef struct {
+  _supla_int_t ResultCode;
+} TSC_RegisterPnClientTokenResult;
 
 #pragma pack(pop)
 

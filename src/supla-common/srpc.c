@@ -25,7 +25,12 @@
 #include "log.h"
 #include "proto.h"
 
+// ESP8266 and ESP32
 #if defined(ESP8266) || defined(ESP32)
+#define __EH_DISABLED
+#define SRPC_BUFFER_SIZE 256
+#define SRPC_QUEUE_SIZE 2
+#define SRPC_QUEUE_MIN_ALLOC_COUNT 2
 
 #if !defined(ESP32)
 #include <mem.h>
@@ -34,46 +39,32 @@
 
 #if defined(ARDUINO_ARCH_ESP8266)
 #include <ets_sys.h>
-#define __EH_DISABLED
 #elif defined(ARDUINO_ARCH_ESP32)
-#define __EH_DISABLED
 #else
+// ESP8266 nonos SDK target
 #include <user_interface.h>
-
 #include "espmissingincludes.h"
 #endif
 
-#ifndef SRPC_BUFFER_SIZE
-#define SRPC_BUFFER_SIZE 1024
-#endif /*SRPC_BUFFER_SIZE*/
-
-#ifndef SRPC_QUEUE_SIZE
-#define SRPC_QUEUE_SIZE 2
-#endif /*SRPC_QUEUE_SIZE*/
-
-#ifndef SRPC_QUEUE_MIN_ALLOC_COUNT
-#define SRPC_QUEUE_MIN_ALLOC_COUNT 2
-#endif /* SRPC_QUEUE_MIN_ALLOC_COUNT */
-
+// ARDUINO MEGA
 #elif defined(__AVR__)
-
 #define SRPC_BUFFER_SIZE 32
 #define SRPC_QUEUE_SIZE 1
 #define SRPC_QUEUE_MIN_ALLOC_COUNT 1
 #define __EH_DISABLED
 
+// OTHER SUPLA_DEVICE
+// Linux target, other?
 #elif defined(SUPLA_DEVICE)
-
-#ifndef SRPC_BUFFER_SIZE
 #define SRPC_BUFFER_SIZE 1024
-#endif /*SRPC_BUFFER_SIZE*/
-
 #define __EH_DISABLED
 
+// other not releated to supla-device
 #else
 #include <assert.h>
 #endif
 
+// ALL targets
 #ifndef SRPC_BUFFER_SIZE
 #define SRPC_BUFFER_SIZE 32768
 #endif /*SRPC_BUFFER_SIZE*/
@@ -617,6 +608,39 @@ void SRPC_ICACHE_FLASH srpc_getchannelpack_d(Tsrpc *srpc,
       &srpc_channelpack_get_pack_count_d, &srpc_channelpack_set_pack_count_d,
       &srpc_channelpack_get_item_ptr_d,
       &srpc_channelpack_get_item_caption_size_d);
+}
+
+void *SRPC_ICACHE_FLASH srpc_channelpack_get_item_ptr_e(void *pack,
+                                                        _supla_int_t idx) {
+  return &((TSC_SuplaChannelPack_E *)pack)->items[idx];  // NOLINT
+}
+
+_supla_int_t SRPC_ICACHE_FLASH srpc_channelpack_get_pack_count_e(void *pack) {
+  return ((TSC_SuplaChannelPack_E *)pack)->count;
+}
+
+void SRPC_ICACHE_FLASH srpc_channelpack_set_pack_count_e(
+    void *pack, _supla_int_t count, unsigned char increment) {
+  if (increment == 0) {
+    ((TSC_SuplaChannelPack_E *)pack)->count = count;
+  } else {
+    ((TSC_SuplaChannelPack_E *)pack)->count += count;
+  }
+}
+
+unsigned _supla_int_t SRPC_ICACHE_FLASH
+srpc_channelpack_get_item_caption_size_e(void *item) {
+  return ((TSC_SuplaChannel_E *)item)->CaptionSize;
+}
+
+void SRPC_ICACHE_FLASH srpc_getchannelpack_e(Tsrpc *srpc,
+                                             TsrpcReceivedData *rd) {
+  srpc_getpack(
+      srpc, rd, sizeof(TSC_SuplaChannelPack_E), sizeof(TSC_SuplaChannel_E),
+      SUPLA_CHANNELPACK_MAXCOUNT, SUPLA_CHANNEL_CAPTION_MAXSIZE,
+      &srpc_channelpack_get_pack_count_e, &srpc_channelpack_set_pack_count_e,
+      &srpc_channelpack_get_item_ptr_e,
+      &srpc_channelpack_get_item_caption_size_e);
 }
 
 void *SRPC_ICACHE_FLASH srpc_channelgroup_pack_get_item_ptr(void *pack,
@@ -1227,6 +1251,17 @@ char SRPC_ICACHE_FLASH srpc_getdata(void *_srpc, TsrpcReceivedData *rd,
 
         break;
 
+      case SUPLA_SC_CALL_CHANNEL_UPDATE_E:
+
+        if (srpc->sdp.data_size >=
+                (sizeof(TSC_SuplaChannel_E) - SUPLA_CHANNEL_CAPTION_MAXSIZE) &&
+            srpc->sdp.data_size <= sizeof(TSC_SuplaChannel_E)) {
+          rd->data.sc_channel_e =
+              (TSC_SuplaChannel_E *)calloc(1, sizeof(TSC_SuplaChannel_E));
+        }
+
+        break;
+
       case SUPLA_SC_CALL_CHANNELPACK_UPDATE:
         srpc_getchannelpack(srpc, rd);
         break;
@@ -1241,6 +1276,10 @@ char SRPC_ICACHE_FLASH srpc_getdata(void *_srpc, TsrpcReceivedData *rd,
 
       case SUPLA_SC_CALL_CHANNELPACK_UPDATE_D:
         srpc_getchannelpack_d(srpc, rd);
+        break;
+
+      case SUPLA_SC_CALL_CHANNELPACK_UPDATE_E:
+        srpc_getchannelpack_e(srpc, rd);
         break;
 
       case SUPLA_SC_CALL_CHANNEL_VALUE_UPDATE:
@@ -1551,6 +1590,13 @@ char SRPC_ICACHE_FLASH srpc_getdata(void *_srpc, TsrpcReceivedData *rd,
                   1, sizeof(TCS_RegisterPnClientToken));
         }
         break;
+      case SUPLA_SC_CALL_REGISTER_PN_CLIENT_TOKEN_RESULT:
+        if (srpc->sdp.data_size == sizeof(TSC_RegisterPnClientTokenResult)) {
+          rd->data.sc_register_pn_client_token_result =
+              (TSC_RegisterPnClientTokenResult *)calloc(
+                  1, sizeof(TSC_RegisterPnClientTokenResult));
+        }
+        break;
 #endif /*#ifndef SRPC_EXCLUDE_CLIENT*/
     }
 
@@ -1713,6 +1759,7 @@ srpc_call_min_version_required(void *_srpc, unsigned _supla_int_t call_id) {
     case SUPLA_DS_CALL_REGISTER_PUSH_NOTIFICATION:
     case SUPLA_DS_CALL_SEND_PUSH_NOTIFICATION:
     case SUPLA_CS_CALL_REGISTER_PN_CLIENT_TOKEN:
+    case SUPLA_SC_CALL_REGISTER_PN_CLIENT_TOKEN_RESULT:
     case SUPLA_CS_CALL_SET_CHANNEL_GROUP_CAPTION:
     case SUPLA_SC_CALL_SET_CHANNEL_GROUP_CAPTION_RESULT:
       return 20;
@@ -1724,6 +1771,8 @@ srpc_call_min_version_required(void *_srpc, unsigned _supla_int_t call_id) {
     case SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT:
     case SUPLA_SD_CALL_SET_DEVICE_CONFIG:
     case SUPLA_DS_CALL_SET_DEVICE_CONFIG_RESULT:
+    case SUPLA_SC_CALL_CHANNEL_UPDATE_E:
+    case SUPLA_SC_CALL_CHANNELPACK_UPDATE_E:
       return 21;
   }
 
@@ -2467,6 +2516,17 @@ srpc_sc_async_channel_update_d(void *_srpc, TSC_SuplaChannel_D *channel_d) {
                          (char *)channel_d, size);
 }
 
+_supla_int_t SRPC_ICACHE_FLASH
+srpc_sc_async_channel_update_e(void *_srpc, TSC_SuplaChannel_E *channel_e) {
+  _supla_int_t size = sizeof(TSC_SuplaChannel_E) -
+                      SUPLA_CHANNEL_CAPTION_MAXSIZE + channel_e->CaptionSize;
+
+  if (size > sizeof(TSC_SuplaChannel_E)) return 0;
+
+  return srpc_async_call(_srpc, SUPLA_SC_CALL_CHANNEL_UPDATE_E,
+                         (char *)channel_e, size);
+}
+
 unsigned _supla_int_t srpc_channelpack_get_caption_size(void *pack,
                                                         _supla_int_t idx) {
   return ((TSC_SuplaChannelPack *)pack)->items[idx].CaptionSize;
@@ -2525,6 +2585,21 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_sc_async_channelpack_update_d(
       &srpc_channelpack_set_pack_count_d, sizeof(TSC_SuplaChannelPack_D),
       SUPLA_CHANNELPACK_MAXCOUNT, SUPLA_CHANNEL_CAPTION_MAXSIZE,
       sizeof(TSC_SuplaChannel_D), SUPLA_SC_CALL_CHANNELPACK_UPDATE_D);
+}
+
+unsigned _supla_int_t srpc_channelpack_get_caption_size_e(void *pack,
+                                                          _supla_int_t idx) {
+  return ((TSC_SuplaChannelPack_E *)pack)->items[idx].CaptionSize;
+}
+
+_supla_int_t SRPC_ICACHE_FLASH srpc_sc_async_channelpack_update_e(
+    void *_srpc, TSC_SuplaChannelPack_E *channel_pack) {
+  return srpc_set_pack(
+      _srpc, channel_pack, channel_pack->count,
+      &srpc_channelpack_get_caption_size_e, &srpc_channelpack_get_item_ptr_e,
+      &srpc_channelpack_set_pack_count_e, sizeof(TSC_SuplaChannelPack_E),
+      SUPLA_CHANNELPACK_MAXCOUNT, SUPLA_CHANNEL_CAPTION_MAXSIZE,
+      sizeof(TSC_SuplaChannel_E), SUPLA_SC_CALL_CHANNELPACK_UPDATE_E);
 }
 
 _supla_int_t SRPC_ICACHE_FLASH srpc_sc_async_channel_value_update(
@@ -3052,14 +3127,25 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_cs_async_register_pn_client_token(
     return 0;
   }
 
-  if (reg->TokenSize > SUPLA_PN_CLIENT_TOKEN_MAXSIZE) {
+  if (reg->Token.TokenSize > SUPLA_PN_CLIENT_TOKEN_MAXSIZE) {
     return 0;
   }
 
-  return srpc_async_call(_srpc, SUPLA_CS_CALL_REGISTER_PN_CLIENT_TOKEN,
-                         (char *)reg,
-                         sizeof(TCS_RegisterPnClientToken) -
-                             SUPLA_PN_CLIENT_TOKEN_MAXSIZE + reg->TokenSize);
+  return srpc_async_call(
+      _srpc, SUPLA_CS_CALL_REGISTER_PN_CLIENT_TOKEN, (char *)reg,
+      sizeof(TCS_RegisterPnClientToken) - SUPLA_PN_CLIENT_TOKEN_MAXSIZE +
+          reg->Token.TokenSize);
+}
+
+_supla_int_t SRPC_ICACHE_FLASH srpc_sc_async_register_pn_client_token_result(
+    void *_srpc, TSC_RegisterPnClientTokenResult *result) {
+  if (!result) {
+    return 0;
+  }
+
+  return srpc_async_call(_srpc, SUPLA_SC_CALL_REGISTER_PN_CLIENT_TOKEN_RESULT,
+                         (char *)result,
+                         sizeof(TSC_RegisterPnClientTokenResult));
 }
 
 #endif /*SRPC_EXCLUDE_CLIENT*/

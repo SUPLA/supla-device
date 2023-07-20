@@ -45,6 +45,12 @@ class SuplaSrpc : public ProtocolLayer {
   bool isRegisteredAndReady() override;
 
   void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
+  void sendRegisterNotification(
+      TDS_RegisterPushNotification *notification) override;
+  bool sendNotification(int context,
+                      const char *title,
+                      const char *message,
+                      int soundId) override;
   void getUserLocaltime() override;
   void sendChannelValueChanged(uint8_t channelNumber, char *value,
       unsigned char offline, uint32_t validityTimeSec) override;

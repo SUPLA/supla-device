@@ -62,6 +62,13 @@ class SrpcInterface {
       void *_srpc, TDSC_ChannelState *state) = 0;
   virtual _supla_int_t srpc_dcs_async_get_user_localtime(void *_srpc) = 0;
   virtual _supla_int_t getChannelConfig(unsigned char channelNumber) = 0;
+  virtual _supla_int_t registerPushNotification(
+      int context, unsigned char ServerManagedFields) = 0;
+  virtual _supla_int_t sendPushNotification(
+      int context,
+      unsigned char TitleSize,
+      unsigned char BodySize,
+      const signed char *TitleAndBody) = 0;
 
   static SrpcInterface *instance;
 };
@@ -122,6 +129,17 @@ class SrpcMock : public SrpcInterface {
   MOCK_METHOD(_supla_int_t,
               getChannelConfig,
               (unsigned char channelNumber),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              registerPushNotification,
+              (int context, unsigned char ServerManagedFields),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              sendPushNotification,
+              (int context,
+               unsigned char TitleSize,
+               unsigned char BodySize,
+               const signed char *TitleAndBody),
               (override));
 };
 

@@ -60,6 +60,7 @@ file(GLOB TEST_SRC
   Html/*.cpp
   HvacTests/*.cpp
   RollerShutterTests/*.cpp
+  NotifTests/*.cpp
   RelayTests/*.cpp
   )
 

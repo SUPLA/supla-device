@@ -119,6 +119,22 @@ bool ProtocolLayer::isConfigEmpty() {
   return configEmpty;
 }
 
+void ProtocolLayer::sendRegisterNotification(
+      TDS_RegisterPushNotification *notification) {
+  (void)(notification);
+}
+
+bool ProtocolLayer::sendNotification(int context,
+                              const char *title,
+                              const char *message,
+                              int soundId) {
+  (void)(context);
+  (void)(title);
+  (void)(message);
+  (void)(soundId);
+  return false;
+}
+
 void ProtocolLayer::sendRemainingTimeValue(uint8_t channelNumber,
                                            uint32_t timeMs,
                                            uint8_t state,

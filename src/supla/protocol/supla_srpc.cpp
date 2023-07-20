@@ -867,6 +867,45 @@ void Supla::Protocol::SuplaSrpc::sendActionTrigger(
   srpc_ds_async_action_trigger(srpc, &at);
 }
 
+bool Supla::Protocol::SuplaSrpc::sendNotification(int context,
+                                                const char *title,
+                                                const char *message,
+                                                int soundId) {
+  if (!isRegisteredAndReady()) {
+    return false;
+  }
+
+  TDS_PushNotification notif = {};
+  notif.Context = context;
+  if (soundId >= 0) {
+    notif.SoundId = soundId;
+  }
+  int titleLen = (title == nullptr ? 0 : strlen(title));
+  int messageLen = (message == nullptr ? 0 : strlen(message));
+
+  notif.TitleSize = (titleLen == 0 ? 0 : titleLen + 1);
+  notif.BodySize = (messageLen == 0 ? 0 : messageLen + 1);
+
+  if (titleLen >= SUPLA_PN_TITLE_MAXSIZE) {
+    titleLen = SUPLA_PN_TITLE_MAXSIZE - 1;
+  }
+  if (titleLen > 0) {
+    memcpy(notif.TitleAndBody, title, titleLen);
+    notif.TitleAndBody[titleLen] = '\0';
+  }
+  if (messageLen >= SUPLA_PN_BODY_MAXSIZE) {
+    messageLen = SUPLA_PN_BODY_MAXSIZE - 1;
+  }
+  int titleOffset = (titleLen == 0 ? 0 : titleLen + 1);
+  if (messageLen > 0) {
+    memcpy(notif.TitleAndBody + titleOffset, message, messageLen + 1);
+    notif.TitleAndBody[titleOffset + messageLen] = '\0';
+  }
+
+  srpc_ds_async_send_push_notification(srpc, &notif);
+  return true;
+}
+
 void Supla::Protocol::SuplaSrpc::getUserLocaltime() {
   if (!isRegisteredAndReady()) {
     return;
@@ -1020,6 +1059,17 @@ const char *Supla::Protocol::SuplaSrpc::configResultToCStr(int result) {
       return "LOCAL_CONFIG_DISABLED";
     default:
       return "UNKNOWN";
+  }
+}
+
+void Supla::Protocol::SuplaSrpc::sendRegisterNotification(
+    TDS_RegisterPushNotification *notification) {
+  if (!isRegisteredAndReady() || notification == nullptr) {
+    return;
+  }
+  int result = srpc_ds_async_register_push_notification(srpc, notification);
+  if (result == 0) {
+    SUPLA_LOG_WARNING("Sending register notification failed");
   }
 }
 

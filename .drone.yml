@@ -131,6 +131,7 @@ steps:
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./ImpulseCounter/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./Pzem_V_2/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./Pzem_V_3/
+  - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./DSwithNotification/
 
 - name: arduino_esp8266_compilation_check_part_3
   image: devel/arduino-cli
@@ -158,6 +159,7 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./Afore/
 # OneWire library has some compilation warnings treated as errors, so this example is compiled without "warnings all"
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries ./DallasTemperature/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries ./DSwithNotification/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./DHT/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./Fronius/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./HX711_Weight_sensor/
@@ -217,6 +219,7 @@ steps:
   - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./SequenceButton/
   - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./AHT/
   - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./HX711_Weight_sensor/
+  - arduino-cli compile --fqbn arduino:avr:mega --optimize-for-debug --export-binaries --warnings all ./DSwithNotification/
 
 - name: cpplint
   image: devel/supla-core

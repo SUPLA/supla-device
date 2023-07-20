@@ -21,6 +21,7 @@ set(SRCS
   supla/device/sw_update.cpp
   supla/device/status_led.cpp
   supla/device/remote_device_config.cpp
+  supla/device/notifications.cpp
 
   supla/storage/storage.cpp
   supla/storage/config.cpp

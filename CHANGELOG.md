@@ -1,5 +1,15 @@
 # CHANGELOG.md
 
+## 23.07.01 (2023-07-20)
+
+  - Change: default proto version for SuplaDevice changed from 16 to 20 (if you want to use other proto version, please specify it in SuplaDevice.begin(proto_version) call)
+  - Change: supla-common update
+  - Fix: Relay: fix for stackoverflow issue with ESP8266 and restoring countdown timer. Timer update message will be send on iterateConnected, instead of onRegistered callback.
+  - Fix: Arduino IDE (ESP8266): for some reason when hostname is longer than 30 bytes, Wi-Fi connection can't be esablished. So as a workaround, we truncate hostname to 30 bytes
+  - Add: abbility to send Push notifications directly from device
+  - Add: Arduino IDE: add example with basic notifications usage (DSwithNotification)
+  - Add: SuplaDevice: always print device's GUID in debug logs
+
 ## 23.07 (2023-07-07)
 
   - Change: Relay with Staircase function: duration of staircase timer is now fetched from server after registration. It is no longer required to turn on timer from Supla app in order to store a new timer value on device.

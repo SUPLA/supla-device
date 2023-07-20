@@ -73,6 +73,13 @@ class ProtocolLayer {
 
   virtual bool setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
 
+  virtual void sendRegisterNotification(
+      TDS_RegisterPushNotification *notification);
+  virtual bool sendNotification(int context,
+                              const char *title,
+                              const char *message,
+                              int soundId);
+
  protected:
   static ProtocolLayer *firstPtr;
   ProtocolLayer *nextPtr = nullptr;

@@ -273,6 +273,7 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
     weeklyScheduleChangedOffline = 1;
     waitForWeeklyScheduleAndIgnoreIt = true;
   }
+  firstChannelConfigAfterRegister = true;
 }
 
 void HvacBase::iterateAlways() {
@@ -467,7 +468,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                                       bool local) {
   SUPLA_LOG_DEBUG("HVAC: processing channel config");
   if (waitForChannelConfigAndIgnoreIt && !local) {
-    SUPLA_LOG_INFO("Ignoring config for channel %d", getChannelNumber());
+    SUPLA_LOG_INFO(
+        "Ignoring config for channel %d (local config changed offline)",
+        getChannelNumber());
     waitForChannelConfigAndIgnoreIt = false;
     return SUPLA_CONFIG_RESULT_TRUE;
   }
@@ -499,8 +502,24 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   auto hvacConfig =
       reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
 
+  if (applyServerConfig) {
+    SUPLA_LOG_DEBUG("Current config:");
+    debugPrintConfigStruct(&config);
+    SUPLA_LOG_DEBUG("New config:");
+    debugPrintConfigStruct(hvacConfig);
+  }
+
   if (applyServerConfig && !isConfigValid(hvacConfig)) {
     SUPLA_LOG_DEBUG("HVAC: invalid config");
+    // server have invalid channel config
+    if (firstChannelConfigAfterRegister) {
+      // if first config after register is invalid, we try to send out config
+      // to server in order to fix it. If next channel configs will be also
+      // invalid, we reject them without sending out config to server to avoid
+      // message infinite loop
+      channelConfigChangedOffline = 1;
+      firstChannelConfigAfterRegister = false;
+    }
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
@@ -2829,4 +2848,24 @@ bool HvacBase::isThermostatDisabled() {
 bool HvacBase::isManualModeEnabled() {
   return !isThermostatDisabled() && !isWeeklyScheduleEnabled() &&
          !isCountdownEnabled();
+}
+
+void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config) {
+  SUPLA_LOG_DEBUG("HVAC: ");
+  SUPLA_LOG_DEBUG("  Main: %d", config->MainThermometerChannelNo);
+  SUPLA_LOG_DEBUG("  Aux: %d", config->AuxThermometerChannelNo);
+  SUPLA_LOG_DEBUG("  Aux type: %d", config->AuxThermometerType);
+  SUPLA_LOG_DEBUG("  AntiFreezeAndOverheatProtectionEnabled: %d",
+                  config->AntiFreezeAndOverheatProtectionEnabled);
+  SUPLA_LOG_DEBUG("  Algorithms: %d", config->AvailableAlgorithms);
+  SUPLA_LOG_DEBUG("  UsedAlgorithm: %d", config->UsedAlgorithm);
+  SUPLA_LOG_DEBUG("  MinOnTimeS: %d", config->MinOnTimeS);
+  SUPLA_LOG_DEBUG("  MinOffTimeS: %d", config->MinOffTimeS);
+  SUPLA_LOG_DEBUG("  OutputValueOnError: %d", config->OutputValueOnError);
+  SUPLA_LOG_DEBUG("  Temperatures:");
+  for (int i = 0; i < 24; i++) {
+    if ((1 << i) & config->Temperatures.Index) {
+      SUPLA_LOG_DEBUG("    %d: %d", i, config->Temperatures.Temperature[i]);
+    }
+  }
 }

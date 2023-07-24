@@ -1426,3 +1426,175 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
   EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_ON_OFF);
 }
 
+TEST_F(HvacTestWithChannelSetupF,
+       startupProcedureWithInvalidConfigFromServerAfterRegister) {
+  ProtocolLayerMock proto;
+  ::testing::Sequence s1, s2;
+  // Config storage doesn't contain any data about HVAC channel, so it returns
+  // false on each getxxx call. Then function is initialized and saved to
+  // storage.
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
+      .Times(1)
+      .WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
+      .Times(1)
+      .WillOnce(Return(true));
+
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .Times(1)
+      .InSequence(s1)
+      .WillOnce(Return(true));
+
+  hvac->onLoadConfig(nullptr);
+  hvac->onLoadState();
+  hvac->onInit();
+
+  hvac->onRegistered(nullptr);
+
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    hvac->iterateConnected();
+  }
+
+  // send config from server
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
+  hvacConfig->MainThermometerChannelNo = 1;
+  hvacConfig->AuxThermometerType =
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
+  hvacConfig->AuxThermometerChannelNo =
+      1;  // error, aux has to be different from main
+  hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
+  hvacConfig->MinOnTimeS = 10;
+  hvacConfig->MinOffTimeS = 20;
+  hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_COMFORT, 2200);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2500);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUX_MAX_SETPOINT, 3000);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 2000);
+
+  EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
+      SUPLA_CONFIG_RESULT_DATA_ERROR);
+
+  // above set config from server should be ignored beacuse of error in config
+  EXPECT_EQ(hvac->getMainThermometerChannelNo(), 0);
+
+  {
+    ::testing::InSequence seq;
+
+    EXPECT_CALL(proto,
+                setChannelConfig(0,
+                                 SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
+                                 _,
+                                 sizeof(TChannelConfig_HVAC),
+                                 SUPLA_CONFIG_TYPE_DEFAULT))
+        .Times(3)
+        .WillRepeatedly(Return(false));
+
+    EXPECT_CALL(proto,
+                setChannelConfig(0,
+                                 SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
+                                 _,
+                                 sizeof(TChannelConfig_HVAC),
+                                 SUPLA_CONFIG_TYPE_DEFAULT))
+        .WillOnce([](uint8_t channelNumber,
+                     _supla_int_t channelFunction,
+                     void *buf,
+                     int size,
+                     uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT) {
+          TChannelConfig_HVAC expectedData = {
+              .MainThermometerChannelNo = 0,
+              .AuxThermometerChannelNo = 0,
+              .AuxThermometerType =
+                  SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET,
+              .AntiFreezeAndOverheatProtectionEnabled = 0,
+              .AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF,
+              .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF,
+              .MinOnTimeS = 0,
+              .MinOffTimeS = 0,
+              .Temperatures = {}};
+
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_AUX_MIN, 500);
+          Supla::Control::HvacBase::setTemperatureInStruct(
+              &expectedData.Temperatures, TEMPERATURE_AUX_MAX, 7500);
+
+          EXPECT_EQ(0, memcmp(buf, &expectedData, size));
+          return true;
+        });
+    EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 0))
+      .Times(2).WillRepeatedly(Return(true));
+  }
+
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    hvac->iterateConnected();
+  }
+
+  // send reply from server
+  TSDS_SetChannelConfigResult result = {
+    .Result = SUPLA_CONFIG_RESULT_FALSE,
+    .ConfigType = SUPLA_CONFIG_TYPE_DEFAULT,
+    .ChannelNumber = 0
+  };
+
+  hvac->handleSetChannelConfigResult(&result);
+
+  // send anothoer set channel config from server - this time it should be
+  // applied to the channel
+  hvacConfig->AuxThermometerChannelNo = 2;
+  EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
+      SUPLA_CONFIG_RESULT_TRUE);
+}

@@ -862,7 +862,7 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
 
 void HvacParameters::onProcessingEnd() {
   if (config != nullptr) {
-    hvac->handleChannelConfig(config);
+    hvac->handleChannelConfig(config, true);
 
     hvacConfig = nullptr;
     delete config;

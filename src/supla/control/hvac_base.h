@@ -322,6 +322,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   _supla_int16_t getLastTemperature();
 
+  static void debugPrintConfigStruct(const TChannelConfig_HVAC *config);
+
  private:
   _supla_int16_t getTemperature(int channelNo);
   _supla_int16_t getPrimaryTemp();
@@ -346,6 +348,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isWeeklyScheduleConfigured = false;
   uint8_t channelConfigChangedOffline = 0;
   uint8_t weeklyScheduleChangedOffline = 0;
+  bool firstChannelConfigAfterRegister = false;
   bool waitForChannelConfigAndIgnoreIt = false;
   bool waitForWeeklyScheduleAndIgnoreIt = false;
   bool initDone = false;

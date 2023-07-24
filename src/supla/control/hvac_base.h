@@ -324,10 +324,11 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   static void debugPrintConfigStruct(const TChannelConfig_HVAC *config);
 
- private:
-  _supla_int16_t getTemperature(int channelNo);
   _supla_int16_t getPrimaryTemp();
   _supla_int16_t getSecondaryTemp();
+
+ private:
+  _supla_int16_t getTemperature(int channelNo);
   bool isSensorTempValid(_supla_int16_t temperature) const;
   bool checkOverheatProtection(_supla_int16_t t);
   bool checkAntifreezeProtection(_supla_int16_t t);

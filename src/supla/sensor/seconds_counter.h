@@ -34,8 +34,8 @@ class SecondsCounter : public VirtualImpulseCounter {
   void disable();
 
  private:
-  uint64_t lastMillis = {};
-  uint64_t remainingMillis = {};
+  uint32_t lastMillis = {};
+  uint32_t remainingMillis = {};
   bool isEnabled = false;
 };
 

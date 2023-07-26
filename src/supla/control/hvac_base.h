@@ -361,9 +361,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   Supla::Control::OutputInterface *secondaryOutput = nullptr;
   THVACValue lastWorkingMode = {};
   time_t countdownTimerEnds = 0;
-  uint64_t lastConfigChangeTimestampMs = 0;
-  uint64_t lastIterateTimestampMs = 0;
-  uint64_t lastOutputStateChangeTimestampMs = 0;
+  uint32_t lastConfigChangeTimestampMs = 0;
+  uint32_t lastIterateTimestampMs = 0;
+  uint32_t lastOutputStateChangeTimestampMs = 0;
   int lastValue = -1000;  // set out of output value range
   _supla_int16_t lastTemperature = 0;
 };

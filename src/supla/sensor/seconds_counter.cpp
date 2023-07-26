@@ -42,7 +42,7 @@ void SecondsCounter::handleAction(int event, int action) {
 
 void SecondsCounter::iterateAlways() {
   if (isEnabled) {
-    uint64_t now = millis();
+    uint32_t now = millis();
     if (now - lastMillis + remainingMillis > 1000) {
       int seconds = (now - lastMillis + remainingMillis) / 1000;
       remainingMillis = (now - lastMillis + remainingMillis) % 1000;

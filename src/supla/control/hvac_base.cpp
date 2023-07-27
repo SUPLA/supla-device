@@ -26,6 +26,7 @@
 #include <supla/time.h>
 #include <supla/clock/clock.h>
 #include <supla/actions.h>
+#include <supla/sensor/thermometer.h>
 
 #include "output_interface.h"
 #include "supla/events.h"
@@ -133,10 +134,16 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
 
     // Generic HVAC configuration
     generateKey(key, "hvac_cfg");
+    TChannelConfig_HVAC storedConfig = {};
     if (cfg->getBlob(key,
-                     reinterpret_cast<char *>(&config),
+                     reinterpret_cast<char *>(&storedConfig),
                      sizeof(TChannelConfig_HVAC))) {
-      SUPLA_LOG_INFO("HVAC config loaded successfully");
+      if (isConfigValid(&storedConfig)) {
+        applyConfigWithoutValidation(&storedConfig);
+        SUPLA_LOG_INFO("HVAC config loaded successfully");
+      } else {
+        SUPLA_LOG_WARNING("HVAC config invalid in storage. Using SW defaults");
+      }
     } else {
       SUPLA_LOG_INFO("HVAC config missing. Using SW defaults");
     }
@@ -530,94 +537,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   changeFunction(channelFunction, false);
 
   if (applyServerConfig) {
-    // We don't use setters here, because they run validation againsted current
-    // configuration, which may fail. However new config was already validated
-    // so we assign them directly.
-    config.MainThermometerChannelNo = hvacConfig->MainThermometerChannelNo;
-    config.AuxThermometerChannelNo = hvacConfig->AuxThermometerChannelNo;
-    config.AuxThermometerType = hvacConfig->AuxThermometerType;
-    config.AntiFreezeAndOverheatProtectionEnabled =
-        hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
-    config.UsedAlgorithm = hvacConfig->UsedAlgorithm;
-    config.MinOnTimeS = hvacConfig->MinOnTimeS;
-    config.MinOffTimeS = hvacConfig->MinOffTimeS;
-    config.OutputValueOnError = hvacConfig->OutputValueOnError;
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
-      setTemperatureInStruct(&config.Temperatures,
-                             TEMPERATURE_ECO,
-                             getTemperatureEco(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_COMFORT)) {
-      setTemperatureInStruct(&config.Temperatures,
-                             TEMPERATURE_COMFORT,
-                             getTemperatureComfort(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_BOOST)) {
-      setTemperatureInStruct(&config.Temperatures,
-                             TEMPERATURE_BOOST,
-                             getTemperatureBoost(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_FREEZE_PROTECTION)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_FREEZE_PROTECTION,
-          getTemperatureFreezeProtection(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_HEAT_PROTECTION)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_HEAT_PROTECTION,
-          getTemperatureHeatProtection(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_HISTERESIS)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_HISTERESIS,
-          getTemperatureHisteresis(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_BELOW_ALARM)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_BELOW_ALARM,
-          getTemperatureBelowAlarm(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_ABOVE_ALARM)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_ABOVE_ALARM,
-          getTemperatureAboveAlarm(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_AUX_MIN_SETPOINT)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_AUX_MIN_SETPOINT,
-          getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
-    }
-
-    if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-                                 TEMPERATURE_AUX_MAX_SETPOINT)) {
-      setTemperatureInStruct(
-          &config.Temperatures,
-          TEMPERATURE_AUX_MAX_SETPOINT,
-          getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
-    }
+    applyConfigWithoutValidation(hvacConfig);
   }
 
   if (memcmp(&config, &configCopy, sizeof(TChannelConfig_HVAC)) != 0) {
@@ -628,6 +548,100 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;
+}
+
+void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
+  if (hvacConfig == nullptr) {
+    return;
+  }
+  // We don't use setters here, because they run validation against current
+  // configuration, which may fail. However new config was already validated
+  // so we assign them directly.
+  config.MainThermometerChannelNo = hvacConfig->MainThermometerChannelNo;
+  config.AuxThermometerChannelNo = hvacConfig->AuxThermometerChannelNo;
+  config.AuxThermometerType = hvacConfig->AuxThermometerType;
+  config.AntiFreezeAndOverheatProtectionEnabled =
+    hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
+  config.UsedAlgorithm = hvacConfig->UsedAlgorithm;
+  config.MinOnTimeS = hvacConfig->MinOnTimeS;
+  config.MinOffTimeS = hvacConfig->MinOffTimeS;
+  config.OutputValueOnError = hvacConfig->OutputValueOnError;
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
+    setTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_ECO,
+        getTemperatureEco(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_COMFORT)) {
+    setTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_COMFORT,
+        getTemperatureComfort(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_BOOST)) {
+    setTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_BOOST,
+        getTemperatureBoost(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_FREEZE_PROTECTION)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_FREEZE_PROTECTION,
+        getTemperatureFreezeProtection(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_HEAT_PROTECTION)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_HEAT_PROTECTION,
+        getTemperatureHeatProtection(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_HISTERESIS)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_HISTERESIS,
+        getTemperatureHisteresis(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_BELOW_ALARM)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_BELOW_ALARM,
+        getTemperatureBelowAlarm(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_ABOVE_ALARM)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_ABOVE_ALARM,
+        getTemperatureAboveAlarm(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_AUX_MIN_SETPOINT)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_AUX_MIN_SETPOINT,
+        getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_AUX_MAX_SETPOINT)) {
+    setTemperatureInStruct(
+        &config.Temperatures,
+        TEMPERATURE_AUX_MAX_SETPOINT,
+        getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
+  }
 }
 
 bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {

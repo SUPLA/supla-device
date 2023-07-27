@@ -22,7 +22,6 @@
 #include <supla/channel_element.h>
 #include <supla/action_handler.h>
 #include <time.h>
-#include <supla/sensor/thermometer.h>
 
 namespace Supla {
 
@@ -343,6 +342,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void fixTemperatureSetpoints();
   void clearLastOutputValue();
   void storeLastWorkingMode();
+  void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_WeeklySchedule weeklySchedule = {};

@@ -41,9 +41,11 @@ TEST(InternalPinOutputTests, BasicMethodsTests) {
 
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
   EXPECT_CALL(ioMock, digitalWrite(pin2, HIGH)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin2, OUTPUT)).Times(1);
+  EXPECT_CALL(ioMock, digitalWrite(pin2, HIGH)).Times(1);
 
   EXPECT_CALL(ioMock, digitalRead(pin)).WillOnce(Return(LOW));
   EXPECT_CALL(ioMock, digitalRead(pin2)).WillOnce(Return(HIGH));
@@ -93,9 +95,11 @@ TEST(InternalPinOutputTests, DefaultInitialState) {
 
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
 
   EXPECT_CALL(ioMock, digitalWrite(pin2, HIGH)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin2, OUTPUT)).Times(1);
+  EXPECT_CALL(ioMock, digitalWrite(pin2, HIGH)).Times(1);
 
   Supla::Control::InternalPinOutput ipo(pin);
   Supla::Control::InternalPinOutput ipo2(pin2, false);
@@ -119,6 +123,8 @@ TEST(InternalPinOutputTests, TurnOnWithIterations) {
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
@@ -147,6 +153,8 @@ TEST(InternalPinOutputTests, TurnOnWithDuration) {
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
@@ -190,6 +198,8 @@ TEST(InternalPinOutputTests, TurnOffWithDuration) {
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
@@ -233,6 +243,8 @@ TEST(InternalPinOutputTests, TurnOnWithStoredDuration) {
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
@@ -290,6 +302,7 @@ TEST(InternalPinOutputTests, HandleActionTests) {
 
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1); // onInit
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1); // onInit
 
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1); // Turn on
 
@@ -329,6 +342,10 @@ TEST(InternalPinOutputTests, TurnOnWithAction) {
   EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, 33));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
+  EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_TURN_OFF, Supla::TURN_OFF));
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, 33));
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ahMock, handleAction(Supla::ON_TURN_ON, Supla::TURN_ON));

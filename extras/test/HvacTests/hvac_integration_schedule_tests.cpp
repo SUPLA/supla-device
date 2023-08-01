@@ -118,16 +118,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
-      .Times(1)
-      .WillOnce(Return(true));
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_ignr"), _))
-      .Times(1)
-      .WillOnce(Return(true));
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_chng"), _))
-      .Times(1)
-      .WillOnce(Return(true));
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
       .WillRepeatedly([](unsigned char *data, int size) {
@@ -172,20 +169,10 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
-        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2100);
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 0);
     });
-
-  for (int i = 0; i < 50; ++i) {
-    hvac->iterateAlways();
-    t1->iterateAlways();
-    hvac->iterateConnected();
-    t1->iterateConnected();
-    time.advance(100);
-  }
-
-  hvac->setTargetMode(SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE);
 
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();
@@ -538,15 +525,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
-      .Times(2)
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_ignr"), _))
-      .Times(2)
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_chng"), _))
-      .Times(2)
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
@@ -595,21 +579,11 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
-        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1800);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2400);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_AUTO);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2100);
+        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2500);
     });
 
-
-  for (int i = 0; i < 50; ++i) {
-    hvac->iterateAlways();
-    t1->iterateAlways();
-    hvac->iterateConnected();
-    t1->iterateConnected();
-    time.advance(100);
-  }
-
-  hvac->setTargetMode(SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE);
 
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();

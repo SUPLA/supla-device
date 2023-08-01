@@ -122,6 +122,16 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool setOutputValueOnError(signed char value);
   signed char getOutputValueOnError() const;
 
+  void setDefaultTemperatureRoomMin(int channelFunction,
+                                    _supla_int16_t temperature);
+  void setDefaultTemperatureRoomMax(int channelFunction,
+                                    _supla_int16_t temperature);
+  _supla_int16_t getDefaultTemperatureRoomMin() const;
+  _supla_int16_t getDefaultTemperatureRoomMax() const;
+
+  void initDefaultConfig();
+  void initDefaultWeeklySchedule();
+
   // Below temperatures defines device capabilities.
   // Configure those values before calling other setTemperature* functions.
   void setTemperatureRoomMin(_supla_int16_t temperature);
@@ -230,6 +240,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   static void setTemperatureInStruct(THVACTemperatureCfg *temperatures,
                               unsigned _supla_int_t index,
                               _supla_int16_t temperature);
+  static void clearTemperatureInStruct(THVACTemperatureCfg *temperatures,
+                              unsigned _supla_int_t index);
+
+  static int getArrayIndex(int bitIndex);
 
   bool isTemperatureInRoomConstrain(_supla_int16_t temperature) const;
   bool isTemperatureInAuxConstrain(_supla_int16_t temperature) const;
@@ -338,11 +352,11 @@ class HvacBase : public ChannelElement, public ActionHandler {
                                              _supla_int16_t t2) const;
   int evaluateOutputValue(_supla_int16_t tMeasured,
                           _supla_int16_t tTarget);
-  bool isSetpointMinTemperatureValid(_supla_int16_t tMin) const;
   void fixTemperatureSetpoints();
   void clearLastOutputValue();
   void storeLastWorkingMode();
   void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
+  int channelFunctionToIndex(int channelFunction) const;
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -366,6 +380,25 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint32_t lastOutputStateChangeTimestampMs = 0;
   int lastValue = -1000;  // set out of output value range
   _supla_int16_t lastTemperature = 0;
+
+  _supla_int16_t defaultTemperatureRoomMin[6] = {
+      1000,  // default min temperature for all other functions or when value is
+             // set to INT16_MIN
+      1000,  // HEAT
+      1000,  // COOL
+      1000,  // AUTO
+      -5000,  // DIFFERENTIAL
+      1000,   // DOMESTIC_HOT_WATER
+  };
+  _supla_int16_t defaultTemperatureRoomMax[6] = {
+      4000,  // default min temperature for all other functions or when value is
+             // set to INT16_MIN
+      4000,  // HEAT
+      4000,  // COOL
+      4000,  // AUTO
+      5000,  // DIFFERENTIAL
+      9000,   // DOMESTIC_HOT_WATER
+  };
 };
 
 }  // namespace Control

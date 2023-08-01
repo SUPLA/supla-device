@@ -350,6 +350,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   Supla::Sensor::Thermometer t1;
   Supla::Sensor::ThermHygroMeter t2;
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
 
   ASSERT_EQ(hvac.getChannelNumber(), 0);
   ASSERT_EQ(t1.getChannelNumber(), 1);
@@ -499,7 +500,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_BOOST, 5000);
+      &hvacConfig->Temperatures, TEMPERATURE_BOOST, 4000);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -510,7 +511,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -543,7 +544,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
@@ -898,13 +899,13 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2500);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
   Supla::Control::HvacBase::setTemperatureInStruct(
@@ -912,6 +913,26 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 2000);
 
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
@@ -944,13 +965,13 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_BOOST, 2500);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -963,9 +984,9 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
                 2000);
 
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -984,7 +1005,25 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
             EXPECT_EQ(0, memcmp(buf, &expectedData, size));
             return 1;
       });
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), _))
+      .WillRepeatedly(Return(true));
 
+  hvac->onLoadConfig(nullptr);
+  hvac->onLoadState();
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    hvac->iterateConnected();
+  }
   EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
       SUPLA_CONFIG_RESULT_TRUE);
 }
@@ -994,7 +1033,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
   EXPECT_CALL(output, setOutputValue(0)).Times(1);
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(Return(false));
@@ -1021,6 +1060,17 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 0))
       .Times(1)
       .WillOnce(Return(true));
+
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), _))
+      .WillRepeatedly(Return(true));
+
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillOnce([](const char *key, const char *buf, int size) {
@@ -1043,13 +1093,13 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_BOOST, 2500);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1062,9 +1112,9 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
                 2000);
 
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1117,13 +1167,13 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2500);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
   Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1187,6 +1237,16 @@ TEST_F(HvacTestWithChannelSetupF,
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), _))
+      .WillRepeatedly(Return(true));
+
+  EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .InSequence(s1)
       .WillOnce(
@@ -1210,13 +1270,13 @@ TEST_F(HvacTestWithChannelSetupF,
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_BOOST, 2500);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+                &expectedData.Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS, 100);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+                &expectedData.Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1229,9 +1289,9 @@ TEST_F(HvacTestWithChannelSetupF,
                 2000);
 
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1286,13 +1346,13 @@ TEST_F(HvacTestWithChannelSetupF,
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2500);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
   Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1345,9 +1405,9 @@ TEST_F(HvacTestWithChannelSetupF,
               &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
 
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
           Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1390,8 +1450,10 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
   Supla::Control::HvacBase hvac;
   // init min max ranges for tempreatures setting and check again setters
   // for temperatures
-  hvac.setTemperatureRoomMin(500);           // 5 degrees
-  hvac.setTemperatureRoomMax(5000);          // 50 degrees
+  hvac.setDefaultTemperatureRoomMin(0,
+                                    500);  // 5 degrees
+  hvac.setDefaultTemperatureRoomMax(0,
+                                    5000);   // 50 degrees
   hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
   hvac.setTemperatureHisteresisMax(1000);    // 10 degree
   hvac.setTemperatureAutoOffsetMin(200);     // 2 degrees
@@ -1413,6 +1475,10 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
 
   Supla::Control::HvacBase hvac2;
   hvac.copyFixedChannelConfigTo(&hvac2);
+  hvac2.setDefaultTemperatureRoomMin(0,
+                                    500);  // 5 degrees
+  hvac2.setDefaultTemperatureRoomMax(0,
+                                    5000);   // 50 degrees
   hvac2.onInit();
 
   EXPECT_EQ(hvac2.getTemperatureRoomMin(), 500);
@@ -1465,6 +1531,16 @@ TEST_F(HvacTestWithChannelSetupF,
       .InSequence(s1)
       .WillOnce(Return(true));
 
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_weekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_ignr"), _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setUInt8(StrEq("0_weekly_chng"), _))
+      .WillRepeatedly(Return(true));
+
   hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
   hvac->onInit();
@@ -1499,13 +1575,13 @@ TEST_F(HvacTestWithChannelSetupF,
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2500);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 500);
+      &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 1000);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 3400);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
   Supla::Control::HvacBase::setTemperatureInStruct(
-      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 800);
+      &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 1800);
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 3500);
   Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1555,9 +1631,9 @@ TEST_F(HvacTestWithChannelSetupF,
               .Temperatures = {}};
 
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 5000);
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MIN, 20);
           Supla::Control::HvacBase::setTemperatureInStruct(

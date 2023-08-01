@@ -92,7 +92,7 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 
   hvac->onInit();
 
-  // weekly schedule is not configured, so all returns -1
+  // weekly schedule is configured to default off
   for (enum Supla::DayOfWeek day : {Supla::DayOfWeek_Sunday,
                                     Supla::DayOfWeek_Monday,
                                     Supla::DayOfWeek_Tuesday,
@@ -102,7 +102,7 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
                                     Supla::DayOfWeek_Saturday}) {
     for (int hour = 0; hour < 24; ++hour) {
       for (int quarter = 0; quarter < 4; ++quarter) {
-        EXPECT_EQ(hvac->getWeeklyScheduleProgramId(day, hour, quarter), -1);
+        EXPECT_EQ(hvac->getWeeklyScheduleProgramId(day, hour, quarter), 0);
       }
     }
   }
@@ -125,9 +125,9 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_FALSE(
       hvac->setWeeklySchedule(1000, 5));
 
-  // weekly schedule is still not configured, so it returns -1
+  // weekly schedule is still configured to default
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
-            -1);
+            0);
 
   // programs are not configured yet
   EXPECT_FALSE(
@@ -139,9 +139,9 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
   EXPECT_FALSE(
       hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 4));
 
-  // weekly schedule is still not configured, so it returns -1
+  // weekly schedule is still configured to default
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
-            -1);
+            0);
 
   EXPECT_TRUE(
       hvac->setWeeklySchedule(Supla::DayOfWeek_Sunday, 0, 0, 0));
@@ -394,9 +394,9 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
     hvac->iterateConnected();
   }
 
-  // no schedule is configure yet
+  // default schedule off
   EXPECT_EQ(hvac->getWeeklyScheduleProgramId(Supla::DayOfWeek_Sunday, 0, 0),
-            -1);
+            0);
 
   // send config from server
   TSD_ChannelConfig configFromServer = {};
@@ -450,10 +450,19 @@ TEST_F(HvacWeeklyScheduleTestsF,
       cfg,
       setBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
+      .Times(2)
       .InSequence(s1)
+      .WillRepeatedly(Return(true));
+
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_ignr"), 0))
+      .Times(1)
+      .InSequence(s2)
       .WillOnce(Return(true));
 
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), 0))
+      .Times(1)
+      .InSequence(s2)
+      .WillOnce(Return(true));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_ignr"), 0))
       .Times(1)
       .InSequence(s2)

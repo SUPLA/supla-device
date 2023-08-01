@@ -2425,29 +2425,6 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
     return false;
   }
 
-  if (tMax != INT16_MIN && !isTemperatureInRoomConstrain(tMax)) {
-    SUPLA_LOG_WARNING(
-        "HVAC: applyNewRuntimeSettings tMax=%d not supported", tMax);
-    return false;
-  }
-
-  if (tMin != INT16_MAX && !isTemperatureInRoomConstrain(tMin)) {
-    SUPLA_LOG_WARNING(
-        "HVAC: applyNewRuntimeSettings tMin=%d not supported", tMin);
-    return false;
-  }
-
-  // auto constrain is verified only when auto mode is requested
-  if (mode == SUPLA_HVAC_MODE_AUTO) {
-    if (!isTemperatureInAutoConstrain(tMin, tMax)) {
-      SUPLA_LOG_WARNING(
-          "HVAC: applyNewRuntimeSettings tMin=%d tMax=%d not supported",
-          tMin,
-          tMax);
-      return false;
-    }
-  }
-
   if (durationSec > 0) {
     if (Supla::Clock::IsReady()) {
       time_t now = Supla::Clock::GetTimeStamp();

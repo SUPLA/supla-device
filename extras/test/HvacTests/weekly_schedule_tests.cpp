@@ -266,7 +266,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
       .Times(1).InSequence(s1)
       .WillOnce(Return(true));
   EXPECT_CALL(cfg,
-              setUInt8(StrEq("0_weekly_ignr"), 1))
+              setUInt8(StrEq("0_weekly_ignr"), 0))
       .Times(1).InSequence(s1)
       .WillOnce(Return(true));
   EXPECT_CALL(cfg,

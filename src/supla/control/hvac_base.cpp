@@ -1099,11 +1099,11 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
   if (newConfig->ConfigSize == 0) {
     // Empty config for weekly schedule means that no weekly schedule is
     // configured
-    SUPLA_LOG_DEBUG("HVAC: No weekly schedule configured for channel %d",
-                    getChannelNumber());
-    isWeeklyScheduleConfigured = false;
-    memset(&weeklySchedule, 0, sizeof(weeklySchedule));
-    saveWeeklySchedule();
+    SUPLA_LOG_DEBUG(
+        "HVAC: No weekly schedule configured for channel %d. Using SW "
+        "defaults.",
+        getChannelNumber());
+    initDefaultWeeklySchedule();
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 

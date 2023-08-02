@@ -944,7 +944,7 @@ void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
   TDS_GetChannelConfigRequest request = {};
   request.ChannelNumber = channelNumber;
   request.ConfigType = configType;
-  srpc_ds_async_get_channel_config(srpc, &request);
+  srpc_ds_async_get_channel_config_request(srpc, &request);
 }
 
 bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,

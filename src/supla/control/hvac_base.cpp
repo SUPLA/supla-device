@@ -45,6 +45,14 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   addPrimaryOutput(primaryOutput);
   addSecondaryOutput(secondaryOutput);
 
+  setTemperatureHisteresisMin(20);  // 0.2 degree
+  setTemperatureHisteresisMax(1000);  // 10 degree
+  setTemperatureAutoOffsetMin(200);   // 2 degrees
+  setTemperatureAutoOffsetMax(1000);  // 10 degrees
+  setTemperatureAuxMin(500);  // 5 degrees
+  setTemperatureAuxMax(7500);  // 75 degrees
+  addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
+
   // default function is set in onInit based on supported modes or loaded from
   // config
 }
@@ -241,10 +249,7 @@ void HvacBase::onInit() {
     }
   }
   initDefaultConfig();
-  if (getUsedAlgorithm() == 0 &&
-      isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF)) {
-    setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
-  }
+  initDefaultAlgorithm();
 
   if (!isWeeklyScheduleConfigured) {
     initDefaultWeeklySchedule();
@@ -302,7 +307,7 @@ void HvacBase::iterateAlways() {
     setOutput(getOutputValueOnError(), true);
     lastTemperature = INT16_MIN;
     SUPLA_LOG_DEBUG("HVAC: check thermometers not valid");
-    channel.setHvacFlagError(true);
+    channel.setHvacFlagThermometerError(true);
     return;
   }
 
@@ -337,19 +342,19 @@ void HvacBase::iterateAlways() {
 
   if (checkOverheatProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC: check overheat protection exit");
-    channel.setHvacFlagError(false);
+    channel.setHvacFlagThermometerError(false);
     return;
   }
 
   if (checkAntifreezeProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC: check antifreeze protection exit");
-    channel.setHvacFlagError(false);
+    channel.setHvacFlagThermometerError(false);
     return;
   }
 
   if (checkAuxProtection(t2)) {
     SUPLA_LOG_DEBUG("HVAC: check heater/cooler protection exit");
-    channel.setHvacFlagError(false);
+    channel.setHvacFlagThermometerError(false);
     return;
   }
 
@@ -1477,7 +1482,13 @@ _supla_int16_t HvacBase::getTemperatureBoost(
 
 _supla_int16_t HvacBase::getTemperatureHisteresis(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
+  auto histeresis =
+      getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
+  if (histeresis == INT16_MIN) {
+    histeresis =
+        getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS_MIN);
+  }
+  return histeresis;
 }
 
 _supla_int16_t HvacBase::getTemperatureBelowAlarm(
@@ -2693,17 +2704,17 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
                                   _supla_int16_t tTarget) {
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC: tMeasured not valid");
-    channel.setHvacFlagError(true);
+    channel.setHvacFlagThermometerError(true);
     return getOutputValueOnError();
   }
   if (!isSensorTempValid(tTarget)) {
     SUPLA_LOG_DEBUG("HVAC: tTarget not valid");
-    channel.setHvacFlagError(true);
     return getOutputValueOnError();
   }
+
+  initDefaultAlgorithm();
   if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
     SUPLA_LOG_DEBUG("HVAC: algorithm not valid");
-    channel.setHvacFlagError(true);
     return getOutputValueOnError();
   }
 
@@ -2713,7 +2724,6 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
     auto histeresis = getTemperatureHisteresis();
     if (!isSensorTempValid(histeresis)) {
       SUPLA_LOG_DEBUG("HVAC: histeresis not valid");
-      channel.setHvacFlagError(true);
       return getOutputValueOnError();
     }
     histeresis >>= 1;
@@ -2732,7 +2742,7 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
       }
     }
   }
-  channel.setHvacFlagError(false);
+  channel.setHvacFlagThermometerError(false);
   return output;
 }
 
@@ -2756,7 +2766,7 @@ void HvacBase::changeFunction(int newFunction, bool changedLocally) {
   channel.setHvacFlagHeating(false);
   channel.setHvacFlagCooling(false);
   channel.setHvacFlagFanEnabled(false);
-  channel.setHvacFlagError(false);
+  channel.setHvacFlagThermometerError(false);
   channel.setHvacFlagClockError(false);
   channel.setHvacFlagCountdownTimer(false);
 
@@ -3004,4 +3014,10 @@ void HvacBase::initDefaultWeeklySchedule() {
   // TODO(klew): add default schedules
 
   saveWeeklySchedule();
+}
+
+void HvacBase::initDefaultAlgorithm() {
+  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
+    setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  }
 }

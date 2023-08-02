@@ -2317,7 +2317,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_ERROR);
+                  SUPLA_HVAC_VALUE_FLAG_THERMOMETER_ERROR);
 
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
@@ -2362,7 +2362,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
                   SUPLA_HVAC_VALUE_FLAG_HEATING |
-                  SUPLA_HVAC_VALUE_FLAG_ERROR);
+                  SUPLA_HVAC_VALUE_FLAG_THERMOMETER_ERROR);
 
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);

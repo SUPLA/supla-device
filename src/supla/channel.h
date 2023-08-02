@@ -72,7 +72,7 @@ class Channel : public LocalAction {
   void setHvacFlagCooling(bool value);
   void setHvacFlagWeeklySchedule(bool value);
   void setHvacFlagFanEnabled(bool value);
-  void setHvacFlagError(bool value);
+  void setHvacFlagThermometerError(bool value);
   void setHvacFlagClockError(bool value);
   void setHvacFlagCountdownTimer(bool value);
 
@@ -90,7 +90,7 @@ class Channel : public LocalAction {
   bool isHvacFlagCooling();
   bool isHvacFlagWeeklySchedule();
   bool isHvacFlagFanEnabled();
-  bool isHvacFlagError();
+  bool isHvacFlagThermometerError();
   bool isHvacFlagClockError();
   bool isHvacFlagCountdownTimer();
 
@@ -100,7 +100,7 @@ class Channel : public LocalAction {
   static bool isHvacFlagCooling(THVACValue *hvacValue);
   static bool isHvacFlagWeeklySchedule(THVACValue *hvacValue);
   static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
-  static bool isHvacFlagError(THVACValue *hvacValue);
+  static bool isHvacFlagThermometerError(THVACValue *hvacValue);
   static bool isHvacFlagClockError(THVACValue *hvacValue);
   static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
   static void setHvacSetpointTemperatureMin(THVACValue *hvacValue,

@@ -452,16 +452,6 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-
-  // algorithm caps in value received from server is not used
-  // It is readonly value stored on device
-  hvacConfig->AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF;
-  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
-
-  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
-  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
   hvacConfig->UsedAlgorithm = 15;
@@ -671,7 +661,8 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_FALSE(hvac.setTemperatureBoost(-100));
   EXPECT_FALSE(hvac.setTemperatureBoost(0));
 
-  EXPECT_FALSE(hvac.setTemperatureHisteresis(100));
+  // there is default histeresis min/max configured
+  EXPECT_TRUE(hvac.setTemperatureHisteresis(100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(-100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(0));
 
@@ -807,9 +798,6 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_EQ(hvac.getMinOnTimeS(), 0);
   EXPECT_EQ(hvac.getMinOffTimeS(), 0);
 
-  EXPECT_FALSE(hvac.setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF));
-  EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_NOT_SET);
-  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
   EXPECT_TRUE(hvac.setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF));
   EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_ON_OFF);
   EXPECT_FALSE(hvac.setUsedAlgorithm(999));

@@ -782,15 +782,15 @@ void Channel::setHvacFlagFanEnabled(bool value) {
   }
 }
 
-void Channel::setHvacFlagError(bool value) {
+void Channel::setHvacFlagThermometerError(bool value) {
   auto hvacValue = getValueHvac();
-  if (hvacValue != nullptr && value != isHvacFlagError()) {
+  if (hvacValue != nullptr && value != isHvacFlagThermometerError()) {
     setUpdateReady();
     uint16_t flags = hvacValue->Flags;
     if (value) {
-      flags |= SUPLA_HVAC_VALUE_FLAG_ERROR;
+      flags |= SUPLA_HVAC_VALUE_FLAG_THERMOMETER_ERROR;
     } else {
-      flags &= ~SUPLA_HVAC_VALUE_FLAG_ERROR;
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_THERMOMETER_ERROR;
     }
     setHvacFlags(flags);
   }
@@ -848,8 +848,8 @@ bool Channel::isHvacFlagFanEnabled() {
   return isHvacFlagFanEnabled(getValueHvac());
 }
 
-bool Channel::isHvacFlagError() {
-  return isHvacFlagError(getValueHvac());
+bool Channel::isHvacFlagThermometerError() {
+  return isHvacFlagThermometerError(getValueHvac());
 }
 
 bool Channel::isHvacFlagClockError() {
@@ -902,9 +902,9 @@ bool Channel::isHvacFlagFanEnabled(THVACValue *value) {
   return false;
 }
 
-bool Channel::isHvacFlagError(THVACValue *value) {
+bool Channel::isHvacFlagThermometerError(THVACValue *value) {
   if (value != nullptr) {
-    return value->Flags & SUPLA_HVAC_VALUE_FLAG_ERROR;
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_THERMOMETER_ERROR;
   }
   return false;
 }

@@ -238,12 +238,6 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
       .WillOnce([](const char *key, const char *buf, int size) {
         TChannelConfig_WeeklySchedule expectedData = {};
 
-        EXPECT_EQ(0, memcmp(buf, &expectedData, size));
-        return 1;
-      })
-      .WillOnce([](const char *key, const char *buf, int size) {
-        TChannelConfig_WeeklySchedule expectedData = {};
-
         expectedData.Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
         expectedData.Program[0].SetpointTemperatureMin = 2100;
         expectedData.Program[1].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -257,14 +251,6 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
         return 1;
       });
 
-  EXPECT_CALL(cfg,
-              setUInt8(StrEq("0_weekly_ignr"), 0))
-      .Times(1).InSequence(s1)
-      .WillOnce(Return(true));
-  EXPECT_CALL(cfg,
-              setUInt8(StrEq("0_weekly_chng"), 0))
-      .Times(1).InSequence(s1)
-      .WillOnce(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_ignr"), 0))
       .Times(1).InSequence(s1)
@@ -306,7 +292,9 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
       SUPLA_CONFIG_RESULT_DATA_ERROR);
 
-  // Config size == 0 should clear the weekly schedule on device
+  // Config size == 0 means that server doesn't have weekly schedule, so
+  // device should send it's locally configured schedule. It it is missing,
+  // device will initialize it with default values
   configFromServer.ConfigSize = 0;
   EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
       SUPLA_CONFIG_RESULT_TRUE);

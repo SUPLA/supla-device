@@ -2817,14 +2817,21 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .WillOnce(Return(true));
 
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
+                               _,
+                               sizeof(TChannelConfig_WeeklySchedule),
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .WillOnce(Return(true));
+
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
-        EXPECT_EQ(hvacValue->Flags, 0
-                  );
+        EXPECT_EQ(hvacValue->Flags, 0);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureMin, 0);
@@ -2852,6 +2859,13 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
       .WillRepeatedly(Return(true));
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL,
+                               _,
+                               sizeof(TChannelConfig_WeeklySchedule),
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
+      .WillOnce(Return(true));
 
   hvac->changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL, true);
   for (int i = 0; i < 60; ++i) {
@@ -2925,6 +2939,13 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                                sizeof(TChannelConfig_HVAC),
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(proto,
+              setChannelConfig(0,
+                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
+                               _,
+                               sizeof(TChannelConfig_WeeklySchedule),
+                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))

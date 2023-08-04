@@ -1087,7 +1087,6 @@ bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
 
 uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
                                        bool local) {
-  (void)(local);
   SUPLA_LOG_DEBUG("Handling weekly schedule for channel %d",
       getChannelNumber());
   if (waitForWeeklyScheduleAndIgnoreIt) {
@@ -1105,10 +1104,16 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
     // Empty config for weekly schedule means that no weekly schedule is
     // configured
     SUPLA_LOG_DEBUG(
-        "HVAC: No weekly schedule configured for channel %d. Using SW "
-        "defaults.",
+        "HVAC[%d]: Missing weekly schedule on server. Sending local schedule",
         getChannelNumber());
-    initDefaultWeeklySchedule();
+    if (!isWeeklyScheduleConfigured) {
+      SUPLA_LOG_DEBUG(
+          "HVAC: No weekly schedule configured for channel %d. Using SW "
+          "defaults.",
+          getChannelNumber());
+      initDefaultWeeklySchedule();
+    }
+    weeklyScheduleChangedOffline = 1;
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
@@ -1132,6 +1137,9 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newConfig,
            newSchedule,
            sizeof(TChannelConfig_WeeklySchedule));
     isWeeklyScheduleConfigured = true;
+    if (!local) {
+      weeklyScheduleChangedOffline = 0;
+    }
     saveWeeklySchedule();
   }
 
@@ -2471,6 +2479,12 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
 
 int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   auto hvacValue = reinterpret_cast<THVACValue *>(newValue->value);
+  SUPLA_LOG_DEBUG(
+      "HVAC: new value from server: mode=%s tMin=%d tMax=%d, durationSec=%d",
+      channel.getHvacModeCstr(hvacValue->Mode),
+      hvacValue->SetpointTemperatureMin,
+      hvacValue->SetpointTemperatureMax,
+      newValue->DurationSec);
 
   int tMin = hvacValue->SetpointTemperatureMin;
   int tMax = hvacValue->SetpointTemperatureMax;
@@ -3010,6 +3024,9 @@ void HvacBase::initDefaultWeeklySchedule() {
   // time.
   // We define default values for HEAT, COOL, AUTO, DOMESTIC_HOT_WATER later
   memset(&weeklySchedule, 0, sizeof(weeklySchedule));
+  if (initDone) {
+    weeklyScheduleChangedOffline = 1;
+  }
 
   // TODO(klew): add default schedules
 

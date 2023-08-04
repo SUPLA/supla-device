@@ -579,6 +579,25 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_chng"), 0))
       .Times(AtLeast(1)).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg,
+              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(
+          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
 
   EXPECT_CALL(
       cfg,
@@ -607,6 +626,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
       });
 
   hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+  hvac->onLoadConfig(nullptr);
   hvac->onInit();
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;

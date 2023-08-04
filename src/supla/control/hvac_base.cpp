@@ -247,8 +247,9 @@ void HvacBase::onInit() {
     } else if (isFanSupported()) {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_FAN);
     }
+    initDefaultConfig();
   }
-  initDefaultConfig();
+
   initDefaultAlgorithm();
 
   if (!isWeeklyScheduleConfigured) {
@@ -270,6 +271,7 @@ void HvacBase::onInit() {
     }
     setOutput(0, true);
   }
+  debugPrintConfigStruct(&config);
 }
 
 

@@ -2283,10 +2283,11 @@ void HvacBase::setOutput(int value, bool force) {
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
+  SUPLA_LOG_DEBUG(
+      "HVAC: set target mode %d, keepScheduleOn %d", mode, keepScheduleOn);
   channel.setHvacFlagCountdownTimer(false);
   if (channel.getHvacMode() == mode) {
-    if (!(mode == SUPLA_HVAC_MODE_OFF && !keepScheduleOn &&
-          channel.isHvacFlagWeeklySchedule())) {
+    if (!(!keepScheduleOn && channel.isHvacFlagWeeklySchedule())) {
       return;
     }
   }
@@ -3030,7 +3031,117 @@ void HvacBase::initDefaultWeeklySchedule() {
     weeklyScheduleChangedOffline = 1;
   }
 
-  // TODO(klew): add default schedules
+  // first we init Program in schedule
+  switch (getChannel()->getDefaultFunction()) {
+    default: {
+      SUPLA_LOG_WARNING(
+          "HVAC: no default weekly schedule defined for function %d",
+          getChannel()->getDefaultFunction());
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+      setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0);
+      setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0);
+      setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
+      setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0);
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
+      setProgram(1, SUPLA_HVAC_MODE_COOL, 2400, 0);
+      setProgram(2, SUPLA_HVAC_MODE_COOL, 2100, 0);
+      setProgram(3, SUPLA_HVAC_MODE_COOL, 1800, 0);
+      setProgram(4, SUPLA_HVAC_MODE_COOL, 2800, 0);
+      break;
+    }
+
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+      setProgram(1, SUPLA_HVAC_MODE_AUTO, 1800, 2500);
+      setProgram(2, SUPLA_HVAC_MODE_AUTO, 2100, 2400);
+      setProgram(3, SUPLA_HVAC_MODE_HEAT, 2300, 0);
+      setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2400);
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
+      setProgram(1, SUPLA_HVAC_MODE_HEAT, -500, 0);
+      setProgram(2, SUPLA_HVAC_MODE_HEAT, -200, 0);
+      setProgram(3, SUPLA_HVAC_MODE_HEAT, -1000, 0);
+      setProgram(4, SUPLA_HVAC_MODE_HEAT, -1500, 0);
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      setProgram(1, SUPLA_HVAC_MODE_HEAT, 4000, 0);
+      setProgram(2, SUPLA_HVAC_MODE_HEAT, 5000, 0);
+      setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
+      setProgram(4, SUPLA_HVAC_MODE_HEAT, 7500, 0);
+      break;
+    }
+  }
+
+  // then we init Quarters in schedule
+  switch (getChannel()->getDefaultFunction()) {
+    default: {
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
+        int program = 1;
+        for (int hour = 0; hour < 24; hour++) {
+          if (hour >= 6 && hour < 21) {
+            program = 2;
+          } else {
+            program = 1;
+          }
+          for (int quarter = 0; quarter < 4; quarter++) {
+            setWeeklySchedule(static_cast<enum DayOfWeek>(dayOfAWeek),
+                              hour,
+                              quarter,
+                              program);
+          }
+        }
+      }
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
+      for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
+        int program = 0;  // off
+        for (int hour = 0; hour < 24; hour++) {
+          if (hour >= 6 && hour < 21) {
+            program = 1;  // cool to 24.0
+          } else {
+            program = 0;
+          }
+          for (int quarter = 0; quarter < 4; quarter++) {
+            setWeeklySchedule(static_cast<enum DayOfWeek>(dayOfAWeek),
+                              hour,
+                              quarter,
+                              program);
+          }
+        }
+      }
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+      for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
+        int program = 1;
+        for (int hour = 0; hour < 24; hour++) {
+          if (hour >= 6 && hour < 21) {
+            program = 2;
+          } else {
+            program = 1;
+          }
+          for (int quarter = 0; quarter < 4; quarter++) {
+            setWeeklySchedule(static_cast<enum DayOfWeek>(dayOfAWeek),
+                              hour,
+                              quarter,
+                              program);
+          }
+        }
+      }
+      break;
+    }
+  }
 
   saveWeeklySchedule();
 }

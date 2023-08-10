@@ -243,6 +243,10 @@ void Clock::onTimer() {
 }
 
 bool Clock::iterateConnected() {
+  if (!automaticTimeSync) {
+    return true;
+  }
+
   if (lastServerUpdate == 0 ||
       millis() - lastServerUpdate > 5 * 60000) {  // update every 5 min
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
@@ -262,6 +266,14 @@ void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
     // register DeviceConfig field bit:
     Supla::Device::RemoteDeviceConfig::RegisterConfigField(
         SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET);
+    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+        SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
+
+    // load automaticTimeSync from storage
+    uint8_t value = 1;
+    cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+    automaticTimeSync = (value == 1);
+    SUPLA_LOG_DEBUG("Clock: automaticTimeSync: %d", automaticTimeSync);
   }
 }
 
@@ -278,6 +290,14 @@ void Clock::onDeviceConfigChange(uint64_t fieldBit) {
         currentTime -= oldTimeOffsetSec;
         setSystemTimeWithTimezone(currentTime, newTimezoneOffsetMin);
       }
+    }
+  }
+  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC) {
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      uint8_t value = 1;
+      cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+      automaticTimeSync = (value == 1);
     }
   }
 }

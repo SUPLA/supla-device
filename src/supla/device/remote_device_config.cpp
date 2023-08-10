@@ -358,12 +358,24 @@ void RemoteDeviceConfig::processScreensaverDelayConfig(uint64_t fieldBit,
 
 void RemoteDeviceConfig::processAutomaticTimeSyncConfig(uint64_t fieldBit,
     TDeviceConfig_AutomaticTimeSync *config) {
-  (void)(fieldBit);
-  (void)(config);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint8_t value = 1;
+    cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+    if (value != config->AutomaticTimeSync && config->AutomaticTimeSync <= 1) {
+      SUPLA_LOG_INFO("Setting AutomaticTimeSync to %d",
+                     config->AutomaticTimeSync);
+      cfg->setUInt8(Supla::AutomaticTimeSyncCfgTag, config->AutomaticTimeSync);
+      cfg->saveWithDelay(1000);
+
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+  }
 }
 
 void RemoteDeviceConfig::processDisableLocalConfigConfig(uint64_t fieldBit,
     TDeviceConfig_DisableLocalConfig *config) {
+  // TODO(klew): ...
   (void)(fieldBit);
   (void)(config);
 }
@@ -474,12 +486,25 @@ void RemoteDeviceConfig::fillScreensaverDelayConfig(
 
 void RemoteDeviceConfig::fillAutomaticTimeSyncConfig(
     TDeviceConfig_AutomaticTimeSync *config) const {
-  (void)(config);
+  if (config == nullptr) {
+    return;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint8_t value = 1;  // by default it is enabled
+    cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+    if (value > 1) {
+      value = 1;
+    }
+    SUPLA_LOG_DEBUG("Setting AutomaticTimeSync to %d", value);
+    config->AutomaticTimeSync = value;
+  }
 }
 
 void RemoteDeviceConfig::fillDisableLocalConfigConfig(
     TDeviceConfig_DisableLocalConfig *config) const {
   (void)(config);
+  // TODO(klew): ...
 }
 
 bool RemoteDeviceConfig::isSetDeviceConfigRequired() const {

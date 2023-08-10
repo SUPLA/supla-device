@@ -25,6 +25,7 @@
 namespace Supla {
 
 const char TimezoneOffsetMinCfgTag[] = "timeoffset_min";
+const char AutomaticTimeSyncCfgTag[] = "timesync_auto";
 
 class Clock : public Element {
  public:
@@ -74,6 +75,7 @@ class Clock : public Element {
   uint32_t lastServerUpdate = 0;
   uint32_t lastMillis = 0;
   bool isClockReady = false;
+  bool automaticTimeSync = true;
 };
 
 };  // namespace Supla

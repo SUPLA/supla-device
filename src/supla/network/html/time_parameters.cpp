@@ -18,6 +18,9 @@
 
 #include "time_parameters.h"
 
+// Exclude Arduino AVR
+#ifndef ARDUINO_ARCH_AVR
+
 #include <SuplaDevice.h>
 #include <string.h>
 #include <supla/network/web_sender.h>
@@ -197,3 +200,5 @@ void TimeParameters::onProcessingEnd() {
   }
   checkboxFound = false;
 }
+
+#endif

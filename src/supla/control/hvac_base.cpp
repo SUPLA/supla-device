@@ -308,7 +308,9 @@ void HvacBase::iterateAlways() {
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
     setOutput(getOutputValueOnError(), true);
     lastTemperature = INT16_MIN;
-    SUPLA_LOG_DEBUG("HVAC: check thermometers not valid");
+    SUPLA_LOG_DEBUG(
+        "HVAC: invalid temperature readout - check if your thermometer is "
+        "correctly connected and configured");
     channel.setHvacFlagThermometerError(true);
     return;
   }

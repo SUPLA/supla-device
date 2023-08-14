@@ -102,4 +102,11 @@ void WebSender::sendSafe(const char *buf, int size) {
   }
 }
 
+void WebSender::sendSelectItem(int value, const char *label, bool selected) {
+  char buf[100];
+  snprintf(buf, sizeof(buf), "<option value=\"%d\" %s>%s</option>", value,
+      selected ? "selected" : "", label);
+  send(buf);
+}
+
 };  // namespace Supla

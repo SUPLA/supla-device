@@ -21,6 +21,8 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
+#include <supla/device/remote_device_config.h>
+#include <supla/device/status_led.h>
 
 #include "status_led_parameters.h"
 
@@ -71,20 +73,25 @@ bool StatusLedParameters::handleResponse(const char* key, const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (strcmp(key, "led") == 0) {
     int led = stringToUInt(value);
-    switch (led) {
-      default:
-      case 0: {
-        cfg->setInt8("statusled", 0);
-        break;
+    int8_t valueInCfg = -1;
+    cfg->getInt8(Supla::Device::StatusLedCfgTag, &valueInCfg);
+    if (valueInCfg != led) {
+      switch (led) {
+        default:
+        case 0: {
+          cfg->setInt8(Supla::Device::StatusLedCfgTag, 0);
+          break;
+        }
+        case 1: {
+          cfg->setInt8(Supla::Device::StatusLedCfgTag, led);
+          break;
+        }
+        case 2: {
+          cfg->setInt8(Supla::Device::StatusLedCfgTag, led);
+          break;
+        }
       }
-      case 1: {
-        cfg->setInt8("statusled", led);
-        break;
-      }
-      case 2: {
-        cfg->setInt8("statusled", led);
-        break;
-      }
+      cfg->setDeviceConfigChangeFlag();
     }
     return true;
   }

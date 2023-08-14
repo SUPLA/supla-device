@@ -227,6 +227,11 @@ void Supla::WebServer::parsePost(const char *postContent,
   }
 
   if (lastChunk) {
+    for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
+        htmlElement = htmlElement->next()) {
+      htmlElement->onProcessingEnd();
+    }
+
     if (Supla::Storage::ConfigInstance()) {
       Supla::Storage::ConfigInstance()->commit();
       sdc->disableLocalActionsIfNeeded();

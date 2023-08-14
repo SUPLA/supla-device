@@ -29,6 +29,8 @@
 #include <supla/device/sw_update.h>
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
+#include <supla/element.h>
+#include <supla/device/remote_device_config.h>
 
 #include "config.h"
 
@@ -392,6 +394,14 @@ void Config::saveIfNeeded() {
       saveDelayTimestamp = 0;
     }
   }
+  if (deviceConfigUpdateDelayTimestamp) {
+    if (millis() - deviceConfigUpdateDelayTimestamp > 1000) {
+      if (deviceConfigChangeFlag == 1) {
+        deviceConfigChangeFlag = 2;
+      }
+      deviceConfigUpdateDelayTimestamp = 0;
+    }
+  }
 }
 
 void Config::generateKey(char *output, int number, const char *key) {
@@ -455,6 +465,40 @@ bool Config::isMinimalConfigReady() {
 }
 
 bool Config::isConfigModeSupported() {
+  return true;
+}
+
+bool Config::isDeviceConfigChangeFlagSet() {
+  if (deviceConfigChangeFlag == -1) {
+    uint8_t result = 0;
+    getUInt8(Supla::Device::DeviceConfigChangeCfgTag, &result);
+    deviceConfigChangeFlag = result;
+    if (deviceConfigChangeFlag == 1) {
+      // value 2 means that device config change is ready to be send.
+      // This part of code will be called only during startup initialization,
+      // so here we don't wait for commit()
+      deviceConfigChangeFlag = 2;
+    }
+  }
+  return deviceConfigChangeFlag != 0;
+}
+
+bool Config::isDeviceConfigChangeReadyToSend() {
+  return (isDeviceConfigChangeFlagSet() && deviceConfigChangeFlag == 2);
+}
+
+bool Config::setDeviceConfigChangeFlag() {
+  deviceConfigUpdateDelayTimestamp = millis();
+  deviceConfigChangeFlag = 1;
+  return setUInt8(Supla::Device::DeviceConfigChangeCfgTag, 1);
+}
+
+bool Config::clearDeviceConfigChangeFlag() {
+  if (deviceConfigChangeFlag == 2) {
+    deviceConfigUpdateDelayTimestamp = 0;
+    deviceConfigChangeFlag = 0;
+    return setUInt8(Supla::Device::DeviceConfigChangeCfgTag, 0);
+  }
   return true;
 }
 

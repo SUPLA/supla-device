@@ -61,8 +61,9 @@ void Relay::onRegistered(
   timerUpdateTimestamp = 0;
 }
 
-void Relay::handleChannelConfig(
-    TSD_ChannelConfig *result) {
+uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
+                                   bool local) {
+  (void)(local);
   SUPLA_LOG_DEBUG(
       "Relay::handleChannelConfig, func %d, configtype %d, configsize %d",
       result->Func,
@@ -98,6 +99,7 @@ void Relay::handleChannelConfig(
       break;
     }
   }
+  return SUPLA_CONFIG_RESULT_TRUE;
 }
 
 uint8_t Relay::pinOnValue() {

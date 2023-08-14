@@ -33,6 +33,8 @@ class Element {
   static Element *last();
   static Element *getElementByChannelNumber(int channelNumber);
   static bool IsAnyUpdatePending();
+  static void NotifyElementsAboutConfigChange(uint64_t fieldBit);
+
   static bool IsInvalidPtrSet();
   static void ClearInvalidPtr();
   Element *next();
@@ -84,6 +86,8 @@ class Element {
   // method called when soft restart is triggered
   virtual void onSoftReset();
 
+  virtual void onDeviceConfigChange(uint64_t fieldBit);
+
   // return value:
   //  -1 - don't send reply to server
   //  0 - success==false
@@ -97,7 +101,16 @@ class Element {
   virtual void handleGetChannelState(TDSC_ChannelState *channelState);
 
   virtual int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
-  virtual void handleChannelConfig(TSD_ChannelConfig *result);
+
+  // Returns SUPLA_RESULTCODE_
+  virtual uint8_t handleChannelConfig(TSD_ChannelConfig *result,
+                                      bool local = false);
+  virtual uint8_t handleWeeklySchedule(TSD_ChannelConfig *result,
+                                       bool local = false);
+  // handleSetChannelConfigResult should handle both standard channel config
+  // and weekly schedule config
+  virtual void handleSetChannelConfigResult(
+      TSDS_SetChannelConfigResult *result);
 
   int getChannelNumber();
   virtual Channel *getChannel();

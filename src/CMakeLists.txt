@@ -20,6 +20,7 @@ set(SRCS
   supla/device/last_state_logger.cpp
   supla/device/sw_update.cpp
   supla/device/status_led.cpp
+  supla/device/remote_device_config.cpp
   supla/device/notifications.cpp
 
   supla/storage/storage.cpp
@@ -43,6 +44,7 @@ set(SRCS
   supla/control/roller_shutter.cpp
   supla/control/bistable_roller_shutter.cpp
   supla/control/tripple_button_roller_shutter.cpp
+  supla/control/hvac_base.cpp
 
   supla/condition.cpp
   supla/condition_getter.cpp
@@ -68,6 +70,9 @@ set(SRCS
   supla/network/html/button_type_parameters.cpp
   supla/network/html/button_config_parameters.cpp
   supla/network/html/button_hold_time_parameters.cpp
+  supla/network/html/time_parameters.cpp
+  supla/network/html/volume_parameters.cpp
+  supla/network/html/disable_user_interface_parameter.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 
@@ -79,10 +84,12 @@ set(SRCS
   supla/sensor/therm_hygro_press_meter.cpp
   supla/sensor/therm_hygro_meter.cpp
   supla/sensor/thermometer.cpp
+  supla/sensor/thermometer_driver.cpp
   supla/sensor/electricity_meter.cpp
   supla/sensor/binary.cpp
   supla/sensor/virtual_binary.cpp
   supla/sensor/impulse_counter.cpp
+  supla/sensor/virtual_impulse_counter.cpp
 )
 
 add_library(supladevicelib SHARED ${SRCS})

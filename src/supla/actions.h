@@ -76,6 +76,9 @@ enum Action {
 
   // Impulse counter
   RESET,
+  INCREMENT,
+  ENABLE,
+  DISABLE,
 
   // Action trigger
   SEND_AT_TURN_ON,

@@ -18,32 +18,29 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <driver/i2c.h>
 
 #include "esp_sht30.h"
 
-Supla::Sensor::SHT30::SHT30(int sda, int scl, uint8_t addr)
-    : sda(sda), scl(scl), addr(addr) {
+Supla::Sensor::SHT30::SHT30(Supla::I2CDriver *driver, uint8_t addr)
+    : addr(addr), driver(driver) {
 }
+
 void Supla::Sensor::SHT30::onInit() {
-  i2c_config_t conf = {};
-
-  conf.mode = I2C_MODE_MASTER;
-  conf.sda_io_num = sda;
-  conf.scl_io_num = scl;
-  conf.sda_pullup_en = false;
-  conf.scl_pullup_en = false;
-  conf.master.clk_speed = 40000;
-
-  i2c_param_config(I2C_NUM_0, &conf);
-
-  esp_err_t err = (i2c_driver_install(I2C_NUM_0, conf.mode, 0, 0, 0));
-
-  if (err != ESP_OK) {
-    SUPLA_LOG_WARNING("Failed to init i2c (%d)", err);
+  if (driver != nullptr) {
+    driver->initialize();
   }
+
+  channel.setNewValue(getTemp(), getHumi());
 }
 
 void Supla::Sensor::SHT30::readSensor() {
+  if (driver == nullptr || !driver->isInitialized()) {
+    return;
+  }
+
+  i2c_port_t port = driver->getI2CNumber();
+
   // TODO(klew): add CRC verification
   uint8_t registerToReadByte1 = 0x2C;
   uint8_t registerToReadByte2 = 0x06;
@@ -56,7 +53,7 @@ void Supla::Sensor::SHT30::readSensor() {
   i2c_master_write_byte(cmd, registerToReadByte2, 1);
   i2c_master_stop(cmd);
   esp_err_t ret =
-      i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
+      i2c_master_cmd_begin(port, cmd, 1000 / portTICK_PERIOD_MS);
   i2c_cmd_link_delete(cmd);
   if (ret != ESP_OK) {
     SUPLA_LOG_DEBUG("SHT30: failed to send read request %d", ret);
@@ -73,7 +70,7 @@ void Supla::Sensor::SHT30::readSensor() {
   i2c_master_read_byte(cmd, &buff[4], I2C_MASTER_ACK);
   i2c_master_read_byte(cmd, &buff[5], I2C_MASTER_NACK);
   i2c_master_stop(cmd);
-  ret = i2c_master_cmd_begin(I2C_NUM_0, cmd, 1000 / portTICK_PERIOD_MS);
+  ret = i2c_master_cmd_begin(port, cmd, 1000 / portTICK_PERIOD_MS);
   i2c_cmd_link_delete(cmd);
   if (ret != ESP_OK) {
     SUPLA_LOG_DEBUG("SHT30: failed to read measurement");
@@ -105,7 +102,7 @@ double Supla::Sensor::SHT30::getHumi() {
 }
 
 void Supla::Sensor::SHT30::iterateAlways() {
-  if (millis() - lastReadTime > 2000) {
+  if (millis() - lastReadTime > 5000) {
     lastReadTime = millis();
     channel.setNewValue(getTemp(), getHumi());
   }

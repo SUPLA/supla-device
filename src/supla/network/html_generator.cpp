@@ -59,7 +59,7 @@ const char styles[] =
     "10px;display:none}.form-field{display:flex;align-items:center;padding:8px "
     "10px;border-top:1px solid #00d150;margin:0 "
     "-10px}.box>.form-field:first-of-type{border-top:0}.form-field "
-    "label{width:120px;margin-right:5px;color:#00d150}a.wide-link,button{"
+    "label{width:250px;margin-right:5px;color:#00d150}a.wide-link,button{"
     "display:block;color:#fff;font-size:1.3em;text-align:center}@media screen "
     "and (max-width:530px){.form-field{flex-direction:column}.form-field "
     "label{width:100%;margin:3px 0}}.form-field>div{width:100%}.form-field "

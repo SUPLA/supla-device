@@ -115,6 +115,11 @@ void Supla::Control::InternalPinOutput::onInit() {
   Supla::Io::pinMode(
       pin, OUTPUT, io);  // pin mode is set after setting pin value in order to
                          // avoid problems with LOW trigger relays
+  if (stateOnInit == STATE_ON_INIT_ON) {
+    turnOn();
+  } else {
+    turnOff();
+  }
 }
 void Supla::Control::InternalPinOutput::iterateAlways() {
   if (durationMs && millis() - durationTimestamp > durationMs) {
@@ -127,3 +132,20 @@ Supla::Control::InternalPinOutput::setDurationMs(_supla_int_t duration) {
   storedTurnOnDurationMs = duration;
   return *this;
 }
+
+int Supla::Control::InternalPinOutput::getOutputValue() {
+  return isOn() ? 1: 0;
+}
+
+void Supla::Control::InternalPinOutput::setOutputValue(int value) {
+  if (value) {
+    turnOn();
+  } else {
+    turnOff();
+  }
+}
+
+bool Supla::Control::InternalPinOutput::isOnOffOnly() const {
+  return true;
+}
+

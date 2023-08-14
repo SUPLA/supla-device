@@ -430,3 +430,6 @@ void Button::setButtonNumber(int8_t btnNumber) {
   buttonNumber = btnNumber;
 }
 
+void Button::dontUseOnLoadConfig() {
+  useOnLoadConfig = false;
+}

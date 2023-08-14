@@ -61,7 +61,18 @@ class SrpcInterface {
   virtual _supla_int_t srpc_csd_async_channel_state_result(
       void *_srpc, TDSC_ChannelState *state) = 0;
   virtual _supla_int_t srpc_dcs_async_get_user_localtime(void *_srpc) = 0;
-  virtual _supla_int_t getChannelConfig(unsigned char channelNumber) = 0;
+  virtual _supla_int_t getChannelConfig(unsigned char channelNumber,
+      unsigned char configType) = 0;
+
+  virtual _supla_int_t setDeviceConfigResult(
+      TSDS_SetDeviceConfigResult *result) = 0;
+  virtual _supla_int_t setDeviceConfigRequest(
+      TSDS_SetDeviceConfig *request) = 0;
+  virtual _supla_int_t setChannelConfigResult(
+      TSDS_SetChannelConfigResult *result) = 0;
+  virtual _supla_int_t setChannelConfigRequest(
+      TSDS_SetChannelConfig *request) = 0;
+
   virtual _supla_int_t registerPushNotification(
       int context, unsigned char ServerManagedFields) = 0;
   virtual _supla_int_t sendPushNotification(
@@ -128,8 +139,16 @@ class SrpcMock : public SrpcInterface {
               (override));
   MOCK_METHOD(_supla_int_t,
               getChannelConfig,
-              (unsigned char channelNumber),
+              (unsigned char channelNumber, unsigned char configType),
               (override));
+  MOCK_METHOD(_supla_int_t, setDeviceConfigResult,
+      (TSDS_SetDeviceConfigResult *result), (override));
+  MOCK_METHOD(_supla_int_t, setDeviceConfigRequest,
+      (TSDS_SetDeviceConfig *request), (override));
+  MOCK_METHOD(_supla_int_t, setChannelConfigResult,
+      (TSDS_SetChannelConfigResult *result), (override));
+  MOCK_METHOD(_supla_int_t, setChannelConfigRequest,
+      (TSDS_SetChannelConfig *request), (override));
   MOCK_METHOD(_supla_int_t,
               registerPushNotification,
               (int context, unsigned char ServerManagedFields),

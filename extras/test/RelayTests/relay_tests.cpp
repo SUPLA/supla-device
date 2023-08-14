@@ -194,8 +194,8 @@ TEST_F(RelayFixture, stateOnInitTests) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpio3Value));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
-  EXPECT_CALL(protoMock, getChannelConfig(1)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(1, 0)).Times(1);
 
   // virtual Relay &keepTurnOnDuration(bool keep = true);
   ::testing::InSequence seq;
@@ -273,7 +273,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -864,7 +864,7 @@ TEST_F(RelayFixture, durationMsTests) {
 
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1090,7 +1090,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1178,7 +1178,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1253,7 +1253,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1311,7 +1311,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1369,7 +1369,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -1414,7 +1414,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -1462,7 +1462,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1553,7 +1553,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
       .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
 
   ::testing::InSequence seq;
 
@@ -1600,7 +1600,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1695,7 +1695,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1789,7 +1789,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1884,7 +1884,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -1997,7 +1997,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;
@@ -2109,7 +2109,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
-  EXPECT_CALL(protoMock, getChannelConfig(0)).Times(1);
+  EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, _, _, 0)).Times(AtLeast(1));
 
   ::testing::InSequence seq;

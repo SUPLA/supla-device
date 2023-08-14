@@ -203,7 +203,7 @@ TEST_F(ElementTests, ChannelElementMethods) {
   array1[0] = 1;
   EXPECT_CALL(srpc, valueChanged(nullptr, 0, ElementsAreArray(array1), 0, 0)); // value at #2
   EXPECT_CALL(srpc, valueChanged(nullptr, 0, ElementsAreArray(array0), 0, 0)); // value at #5
-  EXPECT_CALL(srpc, getChannelConfig(0));
+  EXPECT_CALL(srpc, getChannelConfig(0, SUPLA_CONFIG_TYPE_DEFAULT));
 
 
   EXPECT_EQ(el1.iterateConnected(), true);  // #1
@@ -219,8 +219,43 @@ TEST_F(ElementTests, ChannelElementMethods) {
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #6
   EXPECT_EQ(el1.iterateConnected(), true);  // #7
-
 }
+
+TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
+  ElementWithChannel el1;
+  TimeInterfaceMock time;
+  SrpcMock srpc;
+
+  EXPECT_CALL(srpc, getChannelConfig(0, SUPLA_CONFIG_TYPE_DEFAULT)).
+    Times(2);
+
+  EXPECT_CALL(time, millis)
+      .WillOnce(Return(0))    // #1
+      .WillOnce(Return(200))  // #2
+      .WillOnce(Return(250))  // #3
+      .WillOnce(Return(400))  // #4
+      .WillOnce(Return(600))  // #5
+      .WillOnce(Return(800))  // #6
+      ;
+
+  EXPECT_EQ(el1.iterateConnected(), true);  // #1
+
+  EXPECT_FALSE(el1.channel.isUpdateReady());
+  el1.channel.requestChannelConfig();
+  EXPECT_TRUE(el1.channel.isUpdateReady());
+  EXPECT_EQ(el1.iterateConnected(), false);  // #2
+  EXPECT_EQ(el1.iterateConnected(), true);  // #3
+
+  el1.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+  EXPECT_EQ(el1.iterateConnected(), true);  // #4
+
+  EXPECT_FALSE(el1.channel.isUpdateReady());
+  el1.channel.requestChannelConfig();
+  EXPECT_TRUE(el1.channel.isUpdateReady());
+  EXPECT_EQ(el1.iterateConnected(), false);  // #2
+  EXPECT_EQ(el1.iterateConnected(), true);  // #3
+}
+
 
 
 

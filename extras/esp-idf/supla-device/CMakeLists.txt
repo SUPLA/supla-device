@@ -53,12 +53,17 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/button_action_trigger_config.cpp
   ../../../src/supla/network/html/text_cmd_input_parameter.cpp
   ../../../src/supla/network/html/select_cmd_input_parameter.cpp
+  ../../../src/supla/network/html/hvac_parameters.cpp
   ../../../src/supla/network/html/select_input_parameter.cpp
   ../../../src/supla/network/html/button_multiclick_parameters.cpp
   ../../../src/supla/network/html/button_hold_time_parameters.cpp
   ../../../src/supla/network/html/button_type_parameters.cpp
   ../../../src/supla/network/html/button_config_parameters.cpp
   ../../../src/supla/network/html/rgbw_button_parameters.cpp
+  ../../../src/supla/network/html/time_parameters.cpp
+  ../../../src/supla/network/html/volume_parameters.cpp
+  ../../../src/supla/network/html/screen_delay_parameters.cpp
+  ../../../src/supla/network/html/disable_user_interface_parameter.cpp
   ../../../src/supla/network/client.cpp
   ../../../src/supla/network/ip_address.cpp
 
@@ -87,6 +92,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/control/sequence_button.cpp
   ../../../src/supla/control/simple_button.cpp
   ../../../src/supla/control/virtual_relay.cpp
+  ../../../src/supla/control/hvac_base.cpp
 
   ../../../src/supla/condition.cpp
   ../../../src/supla/condition_getter.cpp
@@ -103,6 +109,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/device/last_state_logger.cpp
   ../../../src/supla/device/sw_update.cpp
   ../../../src/supla/device/factory_test.cpp
+  ../../../src/supla/device/remote_device_config.cpp
 # not all files from sensor folder are compiled here. Some still require
 # porting from ARDUINO
   ../../../src/supla/sensor/binary.cpp
@@ -112,6 +119,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/sensor/therm_hygro_meter.cpp
   ../../../src/supla/sensor/therm_hygro_press_meter.cpp
   ../../../src/supla/sensor/thermometer.cpp
+  ../../../src/supla/sensor/thermometer_driver.cpp
   ../../../src/supla/sensor/virtual_binary.cpp
   ../../../src/supla/sensor/distance.cpp
   ../../../src/supla/sensor/HC_SR04.cpp

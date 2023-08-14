@@ -138,9 +138,16 @@ class Config {
   virtual bool getAltWiFiSSID(char* result);
   virtual bool getAltWiFiPassword(char* result);
 
+  virtual bool isDeviceConfigChangeFlagSet();
+  virtual bool isDeviceConfigChangeReadyToSend();
+  virtual bool setDeviceConfigChangeFlag();
+  virtual bool clearDeviceConfigChangeFlag();
+
  protected:
   uint32_t saveDelayTimestamp = 0;
+  uint32_t deviceConfigUpdateDelayTimestamp = 0;
   uint32_t saveDelayMs = 0;
+  int8_t deviceConfigChangeFlag = -1;
 };
 };  // namespace Supla
 

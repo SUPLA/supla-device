@@ -85,7 +85,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   ~SuplaDeviceClass();
 
   void fillStateData(TDSC_ChannelState *channelState);
-  void addClock(Supla::Clock *clock);
+  void addClock(Supla::Clock *clock);  // DEPRECATED
   Supla::Clock *getClock();
 
   bool begin(const char GUID[SUPLA_GUID_SIZE],
@@ -206,7 +206,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   _impl_arduino_status impl_arduino_status = nullptr;
 
-  Supla::Clock *clock = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
 
   char *customHostnamePrefix = nullptr;

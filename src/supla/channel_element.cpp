@@ -15,6 +15,10 @@
 */
 
 #include "channel_element.h"
+
+#include <supla/storage/config.h>
+#include <supla/log_wrapper.h>
+
 #include "events.h"
 
 Supla::Channel *Supla::ChannelElement::getChannel() {
@@ -35,6 +39,10 @@ void Supla::ChannelElement::addAction(int action,
   ChannelElement::addAction(action, *client, event, alwaysEnabled);
 }
 
+void Supla::ChannelElement::runAction(int event) {
+  channel.runAction(event);
+}
+
 bool Supla::ChannelElement::isEventAlreadyUsed(int event) {
   return channel.isEventAlreadyUsed(event);
 }
@@ -53,5 +61,38 @@ void Supla::ChannelElement::addAction(int action,
     Supla::Condition *condition,
     bool alwaysEnabled) {
   ChannelElement::addAction(action, *client, condition, alwaysEnabled);
+}
+
+bool Supla::ChannelElement::loadFunctionFromConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, "fnc");
+    int32_t channelFunc = 0;
+    if (cfg->getInt32(key, &channelFunc)) {
+      SUPLA_LOG_INFO("Channel function loaded successfully (%d)",
+                     channelFunc);
+      channel.setDefault(channelFunc);
+      return true;
+    } else {
+      SUPLA_LOG_INFO("Channel function missing. Using SW defaults");
+    }
+  }
+  return false;
+}
+
+bool Supla::ChannelElement::setAndSaveFunction(_supla_int_t channelFunction) {
+  if (channel.getDefaultFunction() != channelFunction) {
+    channel.setDefault(channelFunction);
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, "fnc");
+      cfg->setInt32(key, channelFunction);
+      cfg->saveWithDelay(5000);
+    }
+    return true;
+  }
+  return false;
 }
 

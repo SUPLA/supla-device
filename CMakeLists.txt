@@ -37,6 +37,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/device/last_state_logger.cpp
   src/supla/device/status_led.cpp
   src/supla/device/sw_update.cpp
+  src/supla/device/remote_device_config.cpp
   src/supla/device/notifications.cpp
 
   src/supla/storage/storage.cpp
@@ -65,6 +66,10 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/button_config_parameters.cpp
   src/supla/network/html/button_action_trigger_config.cpp
   src/supla/network/html/rgbw_button_parameters.cpp
+  src/supla/network/html/time_parameters.cpp
+  src/supla/network/html/volume_parameters.cpp
+  src/supla/network/html/screen_delay_parameters.cpp
+  src/supla/network/html/disable_user_interface_parameter.cpp
 
   src/supla/network/client.cpp
   src/supla/network/ip_address.cpp
@@ -92,6 +97,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/control/sequence_button.cpp
   src/supla/control/simple_button.cpp
   src/supla/control/virtual_relay.cpp
+  src/supla/control/hvac_base.cpp
 
   # FreeRTOS target can't compile those files currently. So they are removed
   # here and added in linux porting cmake only;
@@ -105,9 +111,11 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/electricity_meter.cpp
   src/supla/sensor/hygro_meter.cpp
   src/supla/sensor/impulse_counter.cpp
+  src/supla/sensor/virtual_impulse_counter.cpp
   src/supla/sensor/therm_hygro_meter.cpp
   src/supla/sensor/therm_hygro_press_meter.cpp
   src/supla/sensor/thermometer.cpp
+  src/supla/sensor/thermometer_driver.cpp
   src/supla/sensor/virtual_binary.cpp
   src/supla/sensor/ntc10k.cpp
 )

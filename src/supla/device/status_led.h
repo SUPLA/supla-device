@@ -51,6 +51,9 @@ enum LedSequence {
 class Io;
 
 namespace Device {
+
+const char StatusLedCfgTag[] = "statusled";
+
 class StatusLed : public Element {
  public:
   explicit StatusLed(Supla::Io *io, uint8_t outPin, bool invert = false);
@@ -60,6 +63,7 @@ class StatusLed : public Element {
   void onInit() override;
   void iterateAlways() override;
   void onTimer() override;
+  void onDeviceConfigChange(uint64_t fieldBit) override;
 
   // Use inverted logic for GPIO output, when:
   // false -> HIGH=ON,  LOW=OFF

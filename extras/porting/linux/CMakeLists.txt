@@ -3,8 +3,19 @@ include(FetchContent)
 find_package(yaml-cpp REQUIRED)
 find_package(OpenSSL REQUIRED)
 
-FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz)
-FetchContent_Declare(cxxopts URL https://github.com/jarro2783/cxxopts/archive/refs/tags/v3.0.0.tar.gz)
+if(${CMAKE_VERSION} VERSION_LESS "3.24.0") 
+  FetchContent_Declare(json URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz)
+  FetchContent_Declare(cxxopts URL https://github.com/jarro2783/cxxopts/archive/refs/tags/v3.0.0.tar.gz)
+else()
+  FetchContent_Declare(json
+    URL https://github.com/nlohmann/json/releases/download/v3.10.5/json.tar.xz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+  FetchContent_Declare(cxxopts
+    URL https://github.com/jarro2783/cxxopts/archive/refs/tags/v3.0.0.tar.gz
+    DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+endif()
 #FetchContent_MakeAvailable(json cxxopts)
 
 # NOTE: Where possible, prefer to use FetchContent_MakeAvailable()

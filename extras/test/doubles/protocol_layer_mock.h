@@ -56,7 +56,20 @@ class ProtocolLayerMock : public Supla::Protocol::ProtocolLayer {
               (override));
   MOCK_METHOD(void,
               getChannelConfig,
-              (uint8_t channelNumber),
+              (uint8_t channelNumber,
+               uint8_t configType),
+              (override));
+  MOCK_METHOD(bool,
+              setChannelConfig,
+              (uint8_t channelNumber,
+               _supla_int_t channelFunction,
+               void *channelConfig,
+               int size,
+               uint8_t configType),
+              (override));
+  MOCK_METHOD(bool,
+              setDeviceConfig,
+              (TSDS_SetDeviceConfig * deviceConfig),
               (override));
   MOCK_METHOD(
       void,

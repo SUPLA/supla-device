@@ -80,7 +80,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool iterateConnected() override;
   int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
-  void handleChannelConfig(TSD_ChannelConfig *result) override;
+  uint8_t handleChannelConfig(TSD_ChannelConfig *result,
+                              bool local = false) override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
   // value for specific channel type (i.e. to prefill durationMS field when

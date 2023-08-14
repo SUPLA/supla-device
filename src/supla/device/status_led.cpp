@@ -23,6 +23,9 @@
 #include <supla/protocol/protocol_layer.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
+#include <supla/log_wrapper.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/device/remote_device_config.h>
 
 Supla::Device::StatusLed::StatusLed(Supla::Io *io, uint8_t outPin, bool invert)
     : StatusLed(outPin, invert) {
@@ -38,7 +41,7 @@ void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = 0;
-    if (cfg->getInt8("statusled", &value)) {
+    if (cfg->getInt8(StatusLedCfgTag, &value)) {
       switch (value) {
         default:
         case 0: {
@@ -55,6 +58,10 @@ void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
         }
       }
     }
+
+    // register DeviceConfig field bit:
+    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+        SUPLA_DEVICE_CONFIG_FIELD_STATUS_LED);
   }
 }
 
@@ -266,4 +273,12 @@ void Supla::Device::StatusLed::setAutoSequence() {
 
 void Supla::Device::StatusLed::setMode(LedMode newMode) {
   ledMode = newMode;
+}
+
+void Supla::Device::StatusLed::onDeviceConfigChange(uint64_t fieldBit) {
+  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_STATUS_LED) {
+    // reload config
+    SUPLA_LOG_DEBUG("StatusLed: reload config");
+    onLoadConfig(nullptr);
+  }
 }

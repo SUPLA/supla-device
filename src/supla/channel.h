@@ -57,6 +57,58 @@ class Channel : public LocalAction {
   uint8_t getValueBlue();
   uint8_t getValueColorBrightness();
   uint8_t getValueBrightness();
+  double getLastTemperature();
+
+  void setHvacIsOn(uint8_t isOn);
+  void setHvacMode(uint8_t mode);
+  void setHvacSetpointTemperatureMin(int16_t setpointTemperatureMin);
+  void setHvacSetpointTemperatureMax(int16_t setpointTemperatureMax);
+  void clearHvacSetpointTemperatureMin();
+  void clearHvacSetpointTemperatureMax();
+  void setHvacFlags(uint16_t alarmsAndFlags);
+  void setHvacFlagSetpointTemperatureMinSet(bool value);
+  void setHvacFlagSetpointTemperatureMaxSet(bool value);
+  void setHvacFlagHeating(bool value);
+  void setHvacFlagCooling(bool value);
+  void setHvacFlagWeeklySchedule(bool value);
+  void setHvacFlagFanEnabled(bool value);
+  void setHvacFlagThermometerError(bool value);
+  void setHvacFlagClockError(bool value);
+  void setHvacFlagCountdownTimer(bool value);
+
+  uint8_t getHvacIsOn();
+  uint8_t getHvacMode() const;
+  // returns mode as a string. If mode parameters is -1 then it returns current
+  // channel mode, otherwise mode parameter is used.
+  const char *getHvacModeCstr(int mode = -1) const;
+  int16_t getHvacSetpointTemperatureMin();
+  int16_t getHvacSetpointTemperatureMax();
+  uint16_t getHvacFlags();
+  bool isHvacFlagSetpointTemperatureMinSet();
+  bool isHvacFlagSetpointTemperatureMaxSet();
+  bool isHvacFlagHeating();
+  bool isHvacFlagCooling();
+  bool isHvacFlagWeeklySchedule();
+  bool isHvacFlagFanEnabled();
+  bool isHvacFlagThermometerError();
+  bool isHvacFlagClockError();
+  bool isHvacFlagCountdownTimer();
+
+  static bool isHvacFlagSetpointTemperatureMinSet(THVACValue *hvacValue);
+  static bool isHvacFlagSetpointTemperatureMaxSet(THVACValue *hvacValue);
+  static bool isHvacFlagHeating(THVACValue *hvacValue);
+  static bool isHvacFlagCooling(THVACValue *hvacValue);
+  static bool isHvacFlagWeeklySchedule(THVACValue *hvacValue);
+  static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
+  static bool isHvacFlagThermometerError(THVACValue *hvacValue);
+  static bool isHvacFlagClockError(THVACValue *hvacValue);
+  static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
+  static void setHvacSetpointTemperatureMin(THVACValue *hvacValue,
+                                            int16_t setpointTemperatureMin);
+  static void setHvacSetpointTemperatureMax(THVACValue *hvacValue,
+                                            int16_t setpointTemperatureMax);
+
+  THVACValue *getValueHvac() const;
 
   virtual bool isExtended() const;
   bool isUpdateReady() const;
@@ -65,12 +117,14 @@ class Channel : public LocalAction {
 
   void setType(_supla_int_t type);
   void setDefault(_supla_int_t value);
-  int32_t getDefaultFunction();
+  int32_t getDefaultFunction() const;
   void setFlag(_supla_int_t flag);
   void unsetFlag(_supla_int_t flag);
   _supla_int_t getFlags() const;
   void setFuncList(_supla_int_t functions);
-  _supla_int_t getFuncList();
+  _supla_int_t getFuncList() const;
+  void addToFuncList(_supla_int_t function);
+  void removeFromFuncList(_supla_int_t function);
   void setActionTriggerCaps(_supla_int_t caps);
   _supla_int_t getActionTriggerCaps();
 
@@ -85,6 +139,7 @@ class Channel : public LocalAction {
       TElectricityMeter_ExtendedValue_V2 *out);
   void setCorrection(double correction, bool forSecondaryValue = false);
   bool isSleepingEnabled();
+  bool isWeeklyScheduleAvailable();
 
   // Returns true if channel is battery powered (for channel state info)
   bool isBatteryPowered();

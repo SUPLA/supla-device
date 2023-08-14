@@ -22,21 +22,51 @@
 
 #include <stdio.h>
 
+using Supla::Sensor::Thermometer;
+
 Supla::Sensor::Thermometer::Thermometer() : lastReadTime(0) {
   channel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
   channel.setDefault(SUPLA_CHANNELFNC_THERMOMETER);
 }
 
+Thermometer::Thermometer(ThermometerDriver *driver) : Thermometer() {
+  this->driver = driver;
+}
+
 void Supla::Sensor::Thermometer::onInit() {
+  if (driver) {
+    driver->initialize();
+  }
   channel.setNewValue(getValue());
 }
 
 double Supla::Sensor::Thermometer::getValue() {
+  if (driver) {
+    return driver->getValue();
+  }
   return TEMPERATURE_NOT_AVAILABLE;
 }
 
+int16_t Supla::Sensor::Thermometer::getTempInt16() {
+  if (getChannelNumber() >= 0) {
+    double temp = getChannel()->getLastTemperature();
+    if (temp <= TEMPERATURE_NOT_AVAILABLE) {
+      return INT16_MIN;
+    }
+    temp *= 100;
+    if (temp > INT16_MAX) {
+      return INT16_MAX;
+    }
+    if (temp <= INT16_MIN) {
+      return INT16_MIN + 1;
+    }
+    return temp;
+  }
+  return INT16_MIN;
+}
+
 void Supla::Sensor::Thermometer::iterateAlways() {
-  if (millis() - lastReadTime > 10000) {
+  if (millis() - lastReadTime > refreshIntervalMs) {
     lastReadTime = millis();
     channel.setNewValue(getValue());
   }
@@ -57,3 +87,12 @@ void Supla::Sensor::Thermometer::onLoadConfig(SuplaDeviceClass *sdc) {
     }
   }
 }
+
+double Supla::Sensor::Thermometer::getLastTemperature() {
+  return getChannel()->getValueDouble();
+}
+
+void Supla::Sensor::Thermometer::setRefreshIntervalMs(int intervalMs) {
+  refreshIntervalMs = intervalMs;
+}
+

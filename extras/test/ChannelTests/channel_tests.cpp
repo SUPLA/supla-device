@@ -27,16 +27,16 @@
 #include <network_client_mock.h>
 
 class ChannelTestsFixture : public ::testing::Test {
-  protected:
-    virtual void SetUp() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-    }
-    virtual void TearDown() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-    }
+ protected:
+  virtual void SetUp() {
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  }
 
+  virtual void TearDown() {
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  }
 };
 
 class ActionHandlerMock : public Supla::ActionHandler {
@@ -44,11 +44,7 @@ class ActionHandlerMock : public Supla::ActionHandler {
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
 
-
-using ::testing::_;
 using ::testing::ElementsAreArray;
-using ::testing::Args;
-using ::testing::ElementsAre;
 
 TEST(ChannelTests, ChannelMethods) {
   Supla::Channel first;
@@ -68,8 +64,11 @@ TEST(ChannelTests, ChannelMethods) {
   EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Type, 0);
   EXPECT_EQ(Supla::Channel::reg_dev.channels[number].FuncList, 0);
   EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Default, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags, SUPLA_CHANNEL_FLAG_CHANNELSTATE);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, emptyArray, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+            SUPLA_CHANNEL_FLAG_CHANNELSTATE);
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          emptyArray,
+                          SUPLA_CHANNELVALUE_SIZE));
 
   first.setType(10);
   EXPECT_EQ(first.getChannelType(), 10);
@@ -79,20 +78,22 @@ TEST(ChannelTests, ChannelMethods) {
   EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Default, 14);
 
   first.setFlag(2);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags, SUPLA_CHANNEL_FLAG_CHANNELSTATE | 2);
+  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+            SUPLA_CHANNEL_FLAG_CHANNELSTATE | 2);
 
   first.setFlag(4);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags, SUPLA_CHANNEL_FLAG_CHANNELSTATE | 2 | 4);
+  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+            SUPLA_CHANNEL_FLAG_CHANNELSTATE | 2 | 4);
 
   first.unsetFlag(2);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags, SUPLA_CHANNEL_FLAG_CHANNELSTATE | 4);
+  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+            SUPLA_CHANNEL_FLAG_CHANNELSTATE | 4);
 
   first.unsetFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
   EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags, 4);
 
   first.setFuncList(11);
   EXPECT_EQ(Supla::Channel::reg_dev.channels[number].FuncList, 11);
-
 }
 
 TEST(ChannelTests, SetNewValue) {
@@ -100,60 +101,80 @@ TEST(ChannelTests, SetNewValue) {
   int number = channel.getChannelNumber();
   char emptyArray[SUPLA_CHANNELVALUE_SIZE] = {};
 
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, emptyArray, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::Channel::reg_dev.channels[number].value,
+                   emptyArray,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_FALSE(channel.isUpdateReady());
 
   char array[SUPLA_CHANNELVALUE_SIZE] = {0, 1, 2, 3, 4, 5, 6, 7};
   channel.setNewValue(array);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, array, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::Channel::reg_dev.channels[number].value,
+                   array,
+                   SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
 
   channel.clearUpdateReady();
   EXPECT_FALSE(channel.isUpdateReady());
 
   channel.setNewValue(array);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, array, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          array,
+                          SUPLA_CHANNELVALUE_SIZE));
   EXPECT_FALSE(channel.isUpdateReady());
 
   array[4] = 15;
   channel.setNewValue(array);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, array, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          array,
+                          SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
 
   ASSERT_EQ(sizeof(double), 8);
   double temp = 3.1415;
   channel.setNewValue(temp);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &temp, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &temp,
+                          SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
   char arrayBool[SUPLA_CHANNELVALUE_SIZE] = {};
   arrayBool[0] = true;
   channel.setNewValue(true);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, arrayBool, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          arrayBool,
+                          SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
   channel.setNewValue(false);
   arrayBool[0] = false;
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, arrayBool, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          arrayBool,
+                          SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
   int value = 1234;
   ASSERT_EQ(sizeof(int), 4);
   channel.setNewValue(value);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &value, sizeof(int)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &value,
+                          sizeof(int)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
-  
+
   unsigned _supla_int64_t value64 = 124346;
   ASSERT_EQ(sizeof(value64), 8);
   channel.setNewValue(value64);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &value64, sizeof(value64)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &value64,
+                          sizeof(value64)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
-  
+
   double humi = 95.2234123;
   temp = 23.443322;
 
@@ -161,15 +182,21 @@ TEST(ChannelTests, SetNewValue) {
   int expectedHumi = humi * 1000;
 
   channel.setNewValue(temp, humi);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedTemp, sizeof(expectedTemp)));
-  EXPECT_TRUE(0 == memcmp(&(Supla::Channel::reg_dev.channels[number].value[4]), &expectedHumi, sizeof(expectedHumi)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedTemp,
+                          sizeof(expectedTemp)));
+  EXPECT_EQ(0, memcmp(&(Supla::Channel::reg_dev.channels[number].value[4]),
+                          &expectedHumi,
+                          sizeof(expectedHumi)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
   // RGBW channel setting
   channel.setNewValue(1, 2, 3, 4, 5);
   char rgbwArray[SUPLA_CHANNELVALUE_SIZE] = {5, 4, 3, 2, 1, 0, 0, 0};
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, rgbwArray, SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          rgbwArray,
+                          SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
@@ -185,70 +212,81 @@ TEST(ChannelTests, SetNewValue) {
   expectedValue.total_forward_active_energy = (1000 + 2000 + 4000) / 1000;
 
   channel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
   emVal.measured_values |= EM_VAR_VOLTAGE;
-  emVal.m[0].voltage[0] = 10; 
-  emVal.m[0].voltage[1] = 0; 
-  emVal.m[0].voltage[2] = 0; 
+  emVal.m[0].voltage[0] = 10;
+  emVal.m[0].voltage[1] = 0;
+  emVal.m[0].voltage[2] = 0;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
-  emVal.m[0].voltage[0] = 0; 
-  emVal.m[0].voltage[1] = 20; 
-  emVal.m[0].voltage[2] = 0; 
+  emVal.m[0].voltage[0] = 0;
+  emVal.m[0].voltage[1] = 20;
+  emVal.m[0].voltage[2] = 0;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE2_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
-
-  emVal.m[0].voltage[0] = 0; 
-  emVal.m[0].voltage[1] = 0; 
-  emVal.m[0].voltage[2] = 300; 
+  emVal.m[0].voltage[0] = 0;
+  emVal.m[0].voltage[1] = 0;
+  emVal.m[0].voltage[2] = 300;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE3_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
-
-  emVal.m[0].voltage[0] = 10; 
-  emVal.m[0].voltage[1] = 0; 
-  emVal.m[0].voltage[2] = 540; 
+  emVal.m[0].voltage[0] = 10;
+  emVal.m[0].voltage[1] = 0;
+  emVal.m[0].voltage[2] = 540;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
-  emVal.m[0].voltage[0] = 10; 
-  emVal.m[0].voltage[1] = 230; 
-  emVal.m[0].voltage[2] = 540; 
+  emVal.m[0].voltage[0] = 10;
+  emVal.m[0].voltage[1] = 230;
+  emVal.m[0].voltage[2] = 540;
 
   expectedValue.flags = 0;
-  expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON | EM_VALUE_FLAG_PHASE2_ON;
+  expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON |
+                         EM_VALUE_FLAG_PHASE2_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 }
@@ -344,20 +382,18 @@ TEST(ChannelTests, BoolChannelWithLocalActions) {
   EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action3));
   EXPECT_CALL(mock2, handleAction).Times(0);
 
-
   ch1.addAction(action1, mock1, Supla::ON_TURN_ON);
   ch1.addAction(action2, mock1, Supla::ON_TURN_OFF);
 
   ch1.setNewValue(true);
   ch1.setNewValue(false);
-  ch1.setNewValue(false); // nothing should be called on mocks
-  ch1.setNewValue(false); // nothing should be called on mocks
+  ch1.setNewValue(false);  // nothing should be called on mocks
+  ch1.setNewValue(false);  // nothing should be called on mocks
 
   ch1.addAction(action3, mock1, Supla::ON_CHANGE);
   ch1.setNewValue(true);
-  ch1.setNewValue(true); // nothing should be called on mocks
-  ch1.setNewValue(true); // nothing should be called on mocks
-
+  ch1.setNewValue(true);  // nothing should be called on mocks
+  ch1.setNewValue(true);  // nothing should be called on mocks
 }
 
 TEST(ChannelTests, Int32ChannelWithLocalActions) {
@@ -496,44 +532,45 @@ TEST(ChannelTests, RgbwChannelWithLocalActions) {
   ActionHandlerMock mock2;
   SrpcMock srpc;
 
+  EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, Supla::ON_CHANGE)).Times(6);
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_CHANGE, Supla::ON_CHANGE)).Times(6);
+              handleAction(Supla::ON_DIMMER_BRIGHTNESS_CHANGE,
+                           Supla::ON_DIMMER_BRIGHTNESS_CHANGE))
+      .Times(3);
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_DIMMER_BRIGHTNESS_CHANGE,
-        Supla::ON_DIMMER_BRIGHTNESS_CHANGE)).Times(3);
+              handleAction(Supla::ON_COLOR_BRIGHTNESS_CHANGE,
+                           Supla::ON_COLOR_BRIGHTNESS_CHANGE))
+      .Times(2);
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_COLOR_BRIGHTNESS_CHANGE,
-        Supla::ON_COLOR_BRIGHTNESS_CHANGE)).Times(2);
+              handleAction(Supla::ON_DIMMER_TURN_ON, Supla::ON_DIMMER_TURN_ON));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_DIMMER_TURN_ON, Supla::ON_DIMMER_TURN_ON));
+              handleAction(Supla::ON_COLOR_TURN_ON, Supla::ON_COLOR_TURN_ON));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_COLOR_TURN_ON, Supla::ON_COLOR_TURN_ON));
+              handleAction(Supla::ON_RED_TURN_ON, Supla::ON_RED_TURN_ON));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_RED_TURN_ON, Supla::ON_RED_TURN_ON));
+              handleAction(Supla::ON_GREEN_TURN_ON, Supla::ON_GREEN_TURN_ON));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_GREEN_TURN_ON, Supla::ON_GREEN_TURN_ON));
+              handleAction(Supla::ON_GREEN_TURN_OFF, Supla::ON_GREEN_TURN_OFF));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_GREEN_TURN_OFF, Supla::ON_GREEN_TURN_OFF));
+              handleAction(Supla::ON_BLUE_TURN_ON, Supla::ON_BLUE_TURN_ON));
+  EXPECT_CALL(mock1, handleAction(Supla::ON_RED_CHANGE, Supla::ON_RED_CHANGE));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_BLUE_TURN_ON, Supla::ON_BLUE_TURN_ON));
+              handleAction(Supla::ON_RED_TURN_OFF, Supla::ON_RED_TURN_OFF));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_RED_CHANGE, Supla::ON_RED_CHANGE));
+              handleAction(Supla::ON_GREEN_CHANGE, Supla::ON_GREEN_CHANGE))
+      .Times(3);
+  EXPECT_CALL(mock1, handleAction(Supla::ON_BLUE_CHANGE, Supla::ON_BLUE_CHANGE))
+      .Times(2);
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_RED_TURN_OFF, Supla::ON_RED_TURN_OFF));
-  EXPECT_CALL(mock1,
-      handleAction(Supla::ON_GREEN_CHANGE, Supla::ON_GREEN_CHANGE)).Times(3);
-  EXPECT_CALL(mock1,
-      handleAction(Supla::ON_BLUE_CHANGE, Supla::ON_BLUE_CHANGE)).Times(2);
-  EXPECT_CALL(mock1,
-      handleAction(Supla::ON_BLUE_TURN_OFF, Supla::ON_BLUE_TURN_OFF));
-  EXPECT_CALL(mock1,
-      handleAction(Supla::ON_TURN_ON, Supla::ON_TURN_ON));
-  EXPECT_CALL(mock1,
-      handleAction(Supla::ON_TURN_OFF, Supla::ON_TURN_OFF)).Times(2);
-  EXPECT_CALL(mock1,
+              handleAction(Supla::ON_BLUE_TURN_OFF, Supla::ON_BLUE_TURN_OFF));
+  EXPECT_CALL(mock1, handleAction(Supla::ON_TURN_ON, Supla::ON_TURN_ON));
+  EXPECT_CALL(mock1, handleAction(Supla::ON_TURN_OFF, Supla::ON_TURN_OFF))
+      .Times(2);
+  EXPECT_CALL(
+      mock1,
       handleAction(Supla::ON_DIMMER_TURN_OFF, Supla::ON_DIMMER_TURN_OFF));
   EXPECT_CALL(mock1,
-      handleAction(Supla::ON_COLOR_TURN_OFF, Supla::ON_COLOR_TURN_OFF));
+              handleAction(Supla::ON_COLOR_TURN_OFF, Supla::ON_COLOR_TURN_OFF));
 
   EXPECT_CALL(mock2, handleAction).Times(0);
 
@@ -543,12 +580,14 @@ TEST(ChannelTests, RgbwChannelWithLocalActions) {
   ch1.addAction(Supla::ON_CHANGE, mock1, Supla::ON_CHANGE);
   ch1.addAction(Supla::ON_DIMMER_TURN_ON, mock1, Supla::ON_DIMMER_TURN_ON);
   ch1.addAction(Supla::ON_DIMMER_TURN_OFF, mock1, Supla::ON_DIMMER_TURN_OFF);
-  ch1.addAction(Supla::ON_DIMMER_BRIGHTNESS_CHANGE, mock1,
-      Supla::ON_DIMMER_BRIGHTNESS_CHANGE);
+  ch1.addAction(Supla::ON_DIMMER_BRIGHTNESS_CHANGE,
+                mock1,
+                Supla::ON_DIMMER_BRIGHTNESS_CHANGE);
   ch1.addAction(Supla::ON_COLOR_TURN_ON, mock1, Supla::ON_COLOR_TURN_ON);
   ch1.addAction(Supla::ON_COLOR_TURN_OFF, mock1, Supla::ON_COLOR_TURN_OFF);
-  ch1.addAction(Supla::ON_COLOR_BRIGHTNESS_CHANGE, mock1,
-      Supla::ON_COLOR_BRIGHTNESS_CHANGE);
+  ch1.addAction(Supla::ON_COLOR_BRIGHTNESS_CHANGE,
+                mock1,
+                Supla::ON_COLOR_BRIGHTNESS_CHANGE);
   ch1.addAction(Supla::ON_RED_TURN_ON, mock1, Supla::ON_RED_TURN_ON);
   ch1.addAction(Supla::ON_RED_TURN_OFF, mock1, Supla::ON_RED_TURN_OFF);
   ch1.addAction(Supla::ON_RED_CHANGE, mock1, Supla::ON_RED_CHANGE);
@@ -592,16 +631,16 @@ TEST(ChannelTests, SetNewValueWithCorrection) {
   channel1.setNewValue(pi);
   EXPECT_DOUBLE_EQ(channel1.getValueDouble(), pi + 3);
 
-
   double e = 2.71828;
 
   channel2.setCorrection(2, true);
 
   channel2.setNewValue(pi, e);
   EXPECT_NEAR(channel2.getValueDoubleFirst(), pi, 0.001);
-  EXPECT_NEAR(channel2.getValueDoubleSecond(), e + 2, 0.001); // value with correction
+  EXPECT_NEAR(
+      channel2.getValueDoubleSecond(), e + 2, 0.001);  // value with correction
 
-  Supla::Correction::clear(); // cleanup
+  Supla::Correction::clear();  // cleanup
 }
 
 TEST_F(ChannelTestsFixture, SetNewTemperatureHumidityWithCorrection) {
@@ -641,18 +680,16 @@ TEST_F(ChannelTestsFixture, SetNewTemperatureHumidityWithCorrection) {
   channel2.setNewValue(25.0, 80.0);
   EXPECT_NEAR(channel2.getValueDoubleFirst(), 35, 0.001);
   EXPECT_NEAR(
-      channel2.getValueDoubleSecond(), 100, 0.001); // value with correction
-                                                    // limitted to 100 %
+      channel2.getValueDoubleSecond(), 100, 0.001);  // value with correction
+                                                     // limitted to 100 %
 
   channel2.setNewValue(-50.0, -1.0);
   EXPECT_NEAR(channel2.getValueDoubleFirst(), -40, 0.001);
-  EXPECT_NEAR(
-      channel2.getValueDoubleSecond(), -1, 0.001); // no correctio
+  EXPECT_NEAR(channel2.getValueDoubleSecond(), -1, 0.001);  // no correctio
 
   channel2.setNewValue(-275.0, -1.0);
   EXPECT_NEAR(channel2.getValueDoubleFirst(), -275, 0.001);
-  EXPECT_NEAR(
-      channel2.getValueDoubleSecond(), -1, 0.001); // no correctio
+  EXPECT_NEAR(channel2.getValueDoubleSecond(), -1, 0.001);  // no correctio
 
   // channel 3 - humidity
   channel3.setCorrection(-40, true);
@@ -665,13 +702,124 @@ TEST_F(ChannelTestsFixture, SetNewTemperatureHumidityWithCorrection) {
   channel3.setNewValue(-275.0, 30.0);
   EXPECT_NEAR(channel3.getValueDoubleFirst(), -275, 0.001);
   EXPECT_NEAR(
-      channel3.getValueDoubleSecond(), 0, 0.001); // value with correction
-                                                    // limitted to 100 %
+      channel3.getValueDoubleSecond(), 0, 0.001);  // value with correction
+                                                   // limitted to 100 %
   channel3.setNewValue(-275.0, 230.0);
   EXPECT_NEAR(channel3.getValueDoubleFirst(), -275, 0.001);
   EXPECT_NEAR(
-      channel3.getValueDoubleSecond(), 100, 0.001); // value with correction
-                                                    // limitted to 100 %
+      channel3.getValueDoubleSecond(), 100, 0.001);  // value with correction
+                                                     // limitted to 100 %
 
-  Supla::Correction::clear(); // cleanup
+  Supla::Correction::clear();  // cleanup
+}
+
+
+TEST_F(ChannelTestsFixture, HvacMethodsTest) {
+  Supla::Channel ch;
+
+  // when channel type is not set to HVAC, valueHvac should be nullptr
+  EXPECT_EQ(ch.getValueHvac(), nullptr);
+
+  EXPECT_FALSE(ch.isUpdateReady());
+
+  ch.setType(SUPLA_CHANNELTYPE_HVAC);
+
+  // when channel type is set to HVAC, valueHvac should be not nullptr
+  EXPECT_NE(ch.getValueHvac(), nullptr);
+  EXPECT_EQ(ch.getHvacIsOn(), 0);
+  EXPECT_EQ(ch.getHvacMode(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_EQ(ch.getHvacFlags(), 0);
+
+  EXPECT_FALSE(ch.isUpdateReady());
+
+  // check all hvac setters
+  ch.setHvacIsOn(1);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOn(), 1);
+  ch.setHvacMode(2);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacMode(), 2);
+  ch.setHvacSetpointTemperatureMin(1);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 1);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+
+  ch.setHvacSetpointTemperatureMax(2);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 1);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 2);
+
+  ch.setHvacSetpointTemperatureMin(10);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 10);
+  ch.setHvacSetpointTemperatureMax(20);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 20);
+
+  ch.setHvacFlags(0x0F);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacFlags(), 0x0F);
+
+  ch.setHvacFlags(0);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacFlags(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMaxSet());
+
+  ch.setHvacSetpointTemperatureMin(5);
+  ch.setHvacSetpointTemperatureMax(10);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 5);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 10);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+
+  ch.setHvacSetpointTemperatureMin(0);
+  ch.setHvacSetpointTemperatureMax(0);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+
+  ch.clearHvacSetpointTemperatureMin();
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+
+  ch.clearHvacSetpointTemperatureMax();
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMaxSet());
+
+  ch.setHvacSetpointTemperatureMin(0);
+  ch.setHvacSetpointTemperatureMax(0);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
 }

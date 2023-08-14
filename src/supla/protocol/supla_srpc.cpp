@@ -23,6 +23,7 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/network/client.h>
+#include <supla/device/remote_device_config.h>
 
 #include <string.h>
 
@@ -242,7 +243,7 @@ void Supla::messageReceived(void *srpc,
                 actionResult);
           }
         } else {
-          SUPLA_LOG_DEBUG(
+          SUPLA_LOG_WARNING(
               "Error: couldn't find element for a requested channel [%d]",
               rd.data.sd_channel_new_value->ChannelNumber);
         }
@@ -294,7 +295,7 @@ void Supla::messageReceived(void *srpc,
             result.Result = element->handleCalcfgFromServer(
                 rd.data.sd_device_calcfg_request);
           } else {
-            SUPLA_LOG_ERROR(
+            SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
                 rd.data.sd_channel_new_value->ChannelNumber);
           }
@@ -308,12 +309,89 @@ void Supla::messageReceived(void *srpc,
           auto element =
               Supla::Element::getElementByChannelNumber(result->ChannelNumber);
           if (element) {
-            element->handleChannelConfig(result);
+            switch (result->ConfigType) {
+              default:
+              case SUPLA_CONFIG_TYPE_DEFAULT: {
+                element->handleChannelConfig(result);
+                break;
+              }
+              case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
+                element->handleWeeklySchedule(result);
+                break;
+              }
+            }
           } else {
-            SUPLA_LOG_DEBUG(
+            SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
                 result->ChannelNumber);
           }
+        }
+        break;
+      }
+      case SUPLA_SD_CALL_SET_CHANNEL_CONFIG_RESULT: {
+        auto *result = rd.data.sds_set_channel_config_result;
+        if (result) {
+          auto element =
+              Supla::Element::getElementByChannelNumber(result->ChannelNumber);
+          if (element) {
+            element->handleSetChannelConfigResult(result);
+          } else {
+            SUPLA_LOG_WARNING(
+                "Error: couldn't find element for a requested channel [%d]",
+                result->ChannelNumber);
+          }
+        }
+        break;
+      }
+      case SUPLA_SD_CALL_SET_CHANNEL_CONFIG: {
+        auto *request = rd.data.sds_set_channel_config_request;
+        if (request) {
+          TSDS_SetChannelConfigResult result = {};
+          result.ChannelNumber = request->ChannelNumber;
+          result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
+          auto element = Supla::Element::getElementByChannelNumber(
+              request->ChannelNumber);
+          SUPLA_LOG_INFO("Received SetChannelConfig for channel %d, function %d"
+              ", config type %d, config size %d", request->ChannelNumber,
+              request->Func, request->ConfigType, request->ConfigSize);
+
+          if (element) {
+            switch (request->ConfigType) {
+              default:
+              case SUPLA_CONFIG_TYPE_DEFAULT: {
+                result.Result =
+                    element->handleChannelConfig(request);
+                break;
+              }
+              case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
+                result.Result =
+                    element->handleWeeklySchedule(request);
+                break;
+              }
+            }
+          } else {
+            SUPLA_LOG_WARNING(
+                "Error: couldn't find element for a requested channel [%d]",
+                request->ChannelNumber);
+          }
+          SUPLA_LOG_INFO("Sending channel config result %s (%d)",
+              Supla::Protocol::SuplaSrpc::configResultToCStr(result.Result),
+              result.Result);
+          srpc_ds_async_set_channel_config_result(srpc, &result);
+        }
+        break;
+      }
+      case SUPLA_SD_CALL_SET_DEVICE_CONFIG_RESULT: {
+        auto *result = rd.data.sds_set_device_config_result;
+        if (result) {
+          suplaSrpc->handleSetDeviceConfigResult(result);
+        }
+        break;
+      }
+      case SUPLA_SD_CALL_SET_DEVICE_CONFIG: {
+        auto *request = rd.data.sds_set_device_config_request;
+        if (request) {
+          suplaSrpc->handleDeviceConfig(request);
         }
         break;
       }
@@ -332,7 +410,7 @@ void Supla::messageReceived(void *srpc,
                 newValue.value, groupNewValue->value, SUPLA_CHANNELVALUE_SIZE);
             element->handleNewValueFromServer(&newValue);
           } else {
-            SUPLA_LOG_DEBUG(
+            SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
                 rd.data.sd_channel_new_value->ChannelNumber);
           }
@@ -368,6 +446,13 @@ void Supla::Protocol::SuplaSrpc::onVersionError(
 void Supla::Protocol::SuplaSrpc::onRegisterResult(
     TSD_SuplaRegisterDeviceResult *registerDeviceResult) {
   uint32_t serverActivityTimeout = 0;
+  setDeviceConfigReceivedAfterRegistration = false;
+
+  if (remoteDeviceConfig != nullptr) {
+    SUPLA_LOG_DEBUG("Cleanup remote device config instance");
+    delete remoteDeviceConfig;
+    remoteDeviceConfig = nullptr;
+  }
 
   switch (registerDeviceResult->result_code) {
     // OK scenario
@@ -558,6 +643,29 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, "Register in progress");
+    static bool firstRegistration = true;
+    if (firstRegistration) {
+      firstRegistration = false;
+      for (int i = 0; i < Supla::Channel::reg_dev.channel_count; i++) {
+        SUPLA_LOG_DEBUG(
+            "CH #%i, type: %d, FuncList: 0x%X, default: %d, flags: 0x%X, "
+            "value: "
+            "[%02x %02x %02x %02x %02x %02x %02x %02x]",
+            Supla::Channel::reg_dev.channels[i].Number,
+            Supla::Channel::reg_dev.channels[i].Type,
+            Supla::Channel::reg_dev.channels[i].FuncList,
+            Supla::Channel::reg_dev.channels[i].Default,
+            Supla::Channel::reg_dev.channels[i].Flags,
+            Supla::Channel::reg_dev.channels[i].value[0],
+            Supla::Channel::reg_dev.channels[i].value[1],
+            Supla::Channel::reg_dev.channels[i].value[2],
+            Supla::Channel::reg_dev.channels[i].value[3],
+            Supla::Channel::reg_dev.channels[i].value[4],
+            Supla::Channel::reg_dev.channels[i].value[5],
+            Supla::Channel::reg_dev.channels[i].value[6],
+            Supla::Channel::reg_dev.channels[i].value[7]);
+      }
+    }
     if (!srpc_ds_async_registerdevice_e(srpc, &Supla::Channel::reg_dev)) {
       SUPLA_LOG_WARNING("Fatal SRPC failure!");
     }
@@ -576,6 +684,21 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     return false;
   } else if (registered == 1) {
     // Device is registered and everything is correct
+    auto cfg = Supla::Storage::ConfigInstance();
+
+    if (setDeviceConfigReceivedAfterRegistration && cfg &&
+        cfg->isDeviceConfigChangeReadyToSend() &&
+        remoteDeviceConfig == nullptr) {
+      SUPLA_LOG_INFO("Sending new device config to server");
+      remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig();
+      TSDS_SetDeviceConfig deviceConfig = {};
+      if (remoteDeviceConfig->fillFullSetDeviceConfig(&deviceConfig)) {
+        srpc_ds_async_set_device_config_request(srpc, &deviceConfig);
+      } else {
+        cfg->clearDeviceConfigChangeFlag();
+        cfg->saveWithDelay(1000);
+      }
+    }
 
     if (ping() == false) {
       sdc->uptime.setConnectionLostCause(
@@ -813,13 +936,130 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
       value);
 }
 
-void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber) {
+void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
+    uint8_t configType) {
   if (!isRegisteredAndReady()) {
     return;
   }
   TDS_GetChannelConfigRequest request = {};
   request.ChannelNumber = channelNumber;
-  srpc_ds_async_get_channel_config(srpc, &request);
+  request.ConfigType = configType;
+  srpc_ds_async_get_channel_config_request(srpc, &request);
+}
+
+bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
+    _supla_int_t channelFunction, void *channelConfig, int size,
+    uint8_t configType) {
+  if (!isRegisteredAndReady()) {
+    return false;
+  }
+  if ((size != 0 && channelConfig == nullptr) ||
+      (size == 0 && channelConfig != nullptr) || (size < 0) ||
+      (size > SUPLA_CHANNEL_CONFIG_MAXSIZE)) {
+    return false;
+  }
+
+  TSDS_SetChannelConfig request = {};
+  request.ChannelNumber = channelNumber;
+  request.Func = channelFunction;
+  request.ConfigType = configType;
+  request.ConfigSize = size;
+  memcpy(request.Config, channelConfig, size);
+  srpc_ds_async_set_channel_config_request(srpc, &request);
+  return true;
+}
+
+bool Supla::Protocol::SuplaSrpc::setDeviceConfig(
+    TSDS_SetDeviceConfig *deviceConfig) {
+  if (!isRegisteredAndReady()) {
+    return false;
+  }
+  if (deviceConfig == nullptr) {
+    return false;
+  }
+
+  deviceConfig->EndOfDataFlag = 1;
+  srpc_ds_async_set_device_config_request(srpc, deviceConfig);
+  return true;
+}
+
+void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
+    TSDS_SetDeviceConfig *request) {
+  SUPLA_LOG_INFO("Received new device config");
+  if (remoteDeviceConfig == nullptr) {
+    remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig(
+        !setDeviceConfigReceivedAfterRegistration);
+  }
+
+  remoteDeviceConfig->processConfig(request);
+
+  if (remoteDeviceConfig->isEndFlagReceived()) {
+    {
+      TSDS_SetDeviceConfigResult result = {};
+      result.Result = remoteDeviceConfig->getResultCode();
+      SUPLA_LOG_INFO("Sending device config result %s (%d)",
+                     configResultToCStr(result.Result), result.Result);
+      srpc_ds_async_set_device_config_result(srpc, &result);
+    }
+
+    if (remoteDeviceConfig->isSetDeviceConfigRequired()) {
+      TSDS_SetDeviceConfig deviceConfig = {};
+      if (remoteDeviceConfig->fillFullSetDeviceConfig(&deviceConfig)) {
+        srpc_ds_async_set_device_config_request(srpc, &deviceConfig);
+      } else {
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (cfg) {
+          cfg->clearDeviceConfigChangeFlag();
+          cfg->saveWithDelay(1000);
+        }
+      }
+    } else {
+      // procedure ends here, so delete the handler
+      setDeviceConfigReceivedAfterRegistration = true;
+      delete remoteDeviceConfig;
+      remoteDeviceConfig = nullptr;
+    }
+  }
+}
+
+void Supla::Protocol::SuplaSrpc::handleSetDeviceConfigResult(
+    TSDS_SetDeviceConfigResult *result) {
+  if (result == nullptr) {
+    return;
+  }
+
+  SUPLA_LOG_INFO("Received set device config result %s (%d)",
+                 configResultToCStr(result->Result),
+                 result->Result);
+
+  if (remoteDeviceConfig == nullptr) {
+    SUPLA_LOG_WARNING("Unexpected set device config result - missing handler");
+    return;
+  }
+
+  remoteDeviceConfig->handleSetDeviceConfigResult(result);
+  setDeviceConfigReceivedAfterRegistration = true;
+  delete remoteDeviceConfig;
+  remoteDeviceConfig = nullptr;
+}
+
+const char *Supla::Protocol::SuplaSrpc::configResultToCStr(int result) {
+  switch (result) {
+    case SUPLA_CONFIG_RESULT_TRUE:
+      return "OK";
+    case SUPLA_CONFIG_RESULT_FALSE:
+      return "FALSE (NOK)";
+    case SUPLA_CONFIG_RESULT_DATA_ERROR:
+      return "DATA_ERROR";
+    case SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED:
+      return "TYPE_NOT_SUPPORTED";
+    case SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED:
+      return "FUNCTION_NOT_SUPPORTED";
+    case SUPLA_CONFIG_RESULT_LOCAL_CONFIG_DISABLED:
+      return "LOCAL_CONFIG_DISABLED";
+    default:
+      return "UNKNOWN";
+  }
 }
 
 void Supla::Protocol::SuplaSrpc::sendRegisterNotification(

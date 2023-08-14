@@ -17,8 +17,11 @@
 */
 
 #include <supla/log_wrapper.h>
+#include <supla/storage/config.h>
+#include <supla/device/remote_device_config.h>
 
-#ifdef ARDUINO_ARCH_ESP8266
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32) || \
+    defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
 #include <sys/time.h>
 #endif
 
@@ -27,8 +30,95 @@
 
 namespace Supla {
 
-Clock::Clock()
-    : localtime(0), lastServerUpdate(0), lastMillis(0), isClockReady(false) {
+static Clock *clockInstance = nullptr;
+
+bool Clock::IsReady() {
+  if (clockInstance && clockInstance->isReady()) {
+    return true;
+  }
+  return false;
+}
+
+int Clock::GetYear() {
+  if (IsReady()) {
+    return clockInstance->getYear();
+  }
+  return 0;
+}
+
+int Clock::GetMonth() {
+  if (IsReady()) {
+    return clockInstance->getMonth();
+  }
+  return 0;
+}
+
+int Clock::GetDay() {
+  if (IsReady()) {
+    return clockInstance->getDay();
+  }
+  return 0;
+}
+
+int Clock::GetDayOfWeek() {
+  if (IsReady()) {
+    return clockInstance->getDayOfWeek();
+  }
+  return 0;
+}
+
+enum DayOfWeek Clock::GetHvacDayOfWeek() {
+  if (IsReady()) {
+    return clockInstance->getHvacDayOfWeek();
+  }
+  return DayOfWeek_Sunday;
+}
+
+int Clock::GetHour() {
+  if (IsReady()) {
+    return clockInstance->getHour();
+  }
+  return 0;
+}
+
+int Clock::GetQuarter() {
+  if (IsReady()) {
+    return clockInstance->getQuarter();
+  }
+  return 0;
+}
+
+int Clock::GetMin() {
+  if (IsReady()) {
+    return clockInstance->getMin();
+  }
+  return 0;
+}
+
+int Clock::GetSec() {
+  if (IsReady()) {
+    return clockInstance->getSec();
+  }
+  return 0;
+}
+
+time_t Clock::GetTimeStamp() {
+  if (IsReady()) {
+    return clockInstance->getTimeStamp();
+  }
+  return 0;
+}
+
+Clock* Clock::GetInstance() {
+  return clockInstance;
+}
+
+Clock::Clock() {
+  clockInstance = this;
+}
+
+Clock::~Clock() {
+  clockInstance = nullptr;
 }
 
 bool Clock::isReady() {
@@ -66,12 +156,20 @@ int Clock::getDayOfWeek() {
   return timeinfo.tm_wday + 1;  // 1 - Sunday, 2 - Monday ...
 }
 
+enum DayOfWeek Clock::getHvacDayOfWeek() {
+  return static_cast<enum DayOfWeek>(getDayOfWeek() - 1);
+}
+
 int Clock::getHour() {
   struct tm timeinfo;
   // timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
   gmtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_hour;
+}
+
+int Clock::getQuarter() {
+  return getMin() / 15;
 }
 
 int Clock::getMin() {
@@ -87,6 +185,11 @@ int Clock::getSec() {
   time_t currentTime = time(0);
   gmtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_sec;
+}
+
+time_t Clock::getTimeStamp() {
+  time_t currentTime = time(0);
+  return currentTime;
 }
 
 void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
@@ -110,22 +213,9 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
   timeinfo.tm_min = result->min;
   timeinfo.tm_sec = result->sec;
 
-  localtime = mktime(&timeinfo);
+  time_t newTime = mktime(&timeinfo);
 
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
-  timeval tv = {localtime, 0};
-  settimeofday(&tv, nullptr);
-#elif defined(ARDUINO_ARCH_AVR)
-  set_system_time(mktime(&timeinfo));
-#endif
-  SUPLA_LOG_DEBUG(
-            "Received local time from server: %d-%d-%d %d:%d:%d",
-            getYear(),
-            getMonth(),
-            getDay(),
-            getHour(),
-            getMin(),
-            getSec());
+  setSystemTime(newTime);
 }
 
 void Clock::onTimer() {
@@ -145,6 +235,10 @@ void Clock::onTimer() {
 }
 
 bool Clock::iterateConnected() {
+  if (!automaticTimeSync) {
+    return true;
+  }
+
   if (lastServerUpdate == 0 ||
       millis() - lastServerUpdate > 5 * 60000) {  // update every 5 min
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
@@ -155,6 +249,63 @@ bool Clock::iterateConnected() {
     return false;
   }
   return true;
+}
+
+void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    // register DeviceConfig field bit:
+    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+        SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
+
+    // load automaticTimeSync from storage
+    uint8_t value = 1;
+    cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+    automaticTimeSync = (value == 1);
+    SUPLA_LOG_DEBUG("Clock: automaticTimeSync: %d", automaticTimeSync);
+  }
+}
+
+void Clock::onDeviceConfigChange(uint64_t fieldBit) {
+  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC) {
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      uint8_t value = 1;
+      cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+      automaticTimeSync = (value == 1);
+    }
+  }
+}
+
+void Clock::setSystemTime(time_t newTime) {
+  if (newTime == -1) {
+    SUPLA_LOG_WARNING("Clock: failed to set new time");
+    return;
+  }
+  localtime = newTime;
+  time_t currentTime = getTimeStamp();
+  if (currentTime != localtime) {
+#if defined(ARDUINO_ARCH_AVR)
+    set_system_time(localtime);
+#elif defined(SUPLA_LINUX)
+    SUPLA_LOG_DEBUG("Ignore setting time");
+#else
+    timeval tv = {localtime, 0};
+    settimeofday(&tv, nullptr);
+#endif
+    SUPLA_LOG_DEBUG("Clock: time diff (system-new): %d s",
+                    currentTime - newTime);
+
+    SUPLA_LOG_DEBUG(
+        "Clock: new local time: %d-%d-%d %d:%d:%d",
+        getYear(),
+        getMonth(),
+        getDay(),
+        getHour(),
+        getMin(),
+        getSec());
+  }
 }
 
 };  // namespace Supla

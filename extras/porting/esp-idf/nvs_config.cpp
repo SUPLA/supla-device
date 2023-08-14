@@ -145,6 +145,7 @@ bool NvsConfig::setUInt32(const char* key, const uint32_t value) {
 }
 
 void NvsConfig::commit() {
+  SUPLA_LOG_DEBUG("NvsConfig: commit");
   nvs_commit(nvsHandle);
 }
 

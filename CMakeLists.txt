@@ -69,6 +69,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/time_parameters.cpp
   src/supla/network/html/volume_parameters.cpp
   src/supla/network/html/screen_delay_parameters.cpp
+  src/supla/network/html/disable_user_interface_parameter.cpp
 
   src/supla/network/client.cpp
   src/supla/network/ip_address.cpp

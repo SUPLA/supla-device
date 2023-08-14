@@ -28,6 +28,7 @@
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/html/screen_delay_parameters.h>
 #include <supla/network/html/screen_saver_type.h>
+#include <supla/network/html/disable_user_interface_parameter.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -409,9 +410,21 @@ void RemoteDeviceConfig::processAutomaticTimeSyncConfig(uint64_t fieldBit,
 
 void RemoteDeviceConfig::processDisableUserInterfaceConfig(uint64_t fieldBit,
     TDeviceConfig_DisableUserInterface *config) {
-  // TODO(klew): ...
-  (void)(fieldBit);
-  (void)(config);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint8_t value = 0;
+    cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
+    if (value != config->DisableUserInterface &&
+        config->DisableUserInterface <= 1) {
+      SUPLA_LOG_INFO("Setting DisableUserInterface to %d",
+                     config->DisableUserInterface);
+      cfg->setUInt8(Supla::Html::DisableUserInterfaceCfgTag,
+                    config->DisableUserInterface);
+      cfg->saveWithDelay(1000);
+
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+  }
 }
 
 
@@ -525,8 +538,17 @@ void RemoteDeviceConfig::fillAutomaticTimeSyncConfig(
 
 void RemoteDeviceConfig::fillDisableUserInterfaceConfig(
     TDeviceConfig_DisableUserInterface *config) const {
-  (void)(config);
-  // TODO(klew): ...
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (config == nullptr || cfg == nullptr) {
+    return;
+  }
+  uint8_t value = 0;
+  cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
+  if (value > 1) {
+    value = 1;
+  }
+  SUPLA_LOG_DEBUG("Setting DisableUserInterface to %d", value);
+  config->DisableUserInterface = value;
 }
 
 bool RemoteDeviceConfig::isSetDeviceConfigRequired() const {

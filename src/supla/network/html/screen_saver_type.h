@@ -16,24 +16,11 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_NETWORK_HTML_TIMEZONE_OFFSET_PARAMETERS_H_
-#define SRC_SUPLA_NETWORK_HTML_TIMEZONE_OFFSET_PARAMETERS_H_
-
-#include <supla/network/html_element.h>
+#ifndef SRC_SUPLA_NETWORK_HTML_SCREEN_SAVER_TYPE_H_
+#define SRC_SUPLA_NETWORK_HTML_SCREEN_SAVER_TYPE_H_
 
 namespace Supla {
+  const char ScreenSaverTypeTag[] = "screen_saver";
+}  // namespace Supla
 
-namespace Html {
-
-class TimezoneOffsetParameters : public HtmlElement {
- public:
-  TimezoneOffsetParameters();
-  virtual ~TimezoneOffsetParameters();
-  void send(Supla::WebSender* sender) override;
-  bool handleResponse(const char* key, const char* value) override;
-};
-
-};  // namespace Html
-};  // namespace Supla
-
-#endif  // SRC_SUPLA_NETWORK_HTML_TIMEZONE_OFFSET_PARAMETERS_H_
+#endif  // SRC_SUPLA_NETWORK_HTML_SCREEN_SAVER_TYPE_H_

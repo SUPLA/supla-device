@@ -215,15 +215,7 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
 
   time_t newTime = mktime(&timeinfo);
 
-  // add timezone offset min to local time
-  int32_t timezoneOffsetMinutes = 0;
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg &&
-      cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &timezoneOffsetMinutes)) {
-    SUPLA_LOG_DEBUG("Using timezone offset: %d min", timezoneOffsetMinutes);
-  }
-
-  setSystemTimeWithTimezone(newTime, timezoneOffsetMinutes);
+  setSystemTime(newTime);
 }
 
 void Clock::onTimer() {
@@ -265,8 +257,6 @@ void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
   if (cfg) {
     // register DeviceConfig field bit:
     Supla::Device::RemoteDeviceConfig::RegisterConfigField(
-        SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET);
-    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
         SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
 
     // load automaticTimeSync from storage
@@ -278,20 +268,6 @@ void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void Clock::onDeviceConfigChange(uint64_t fieldBit) {
-  if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET) {
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (cfg) {
-      int32_t newTimezoneOffsetMin = 0;
-      cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &newTimezoneOffsetMin);
-
-      if (newTimezoneOffsetMin != lastTimezoneOffsetMin) {
-        time_t currentTime = getTimeStamp();
-        int oldTimeOffsetSec = lastTimezoneOffsetMin * 60;
-        currentTime -= oldTimeOffsetSec;
-        setSystemTimeWithTimezone(currentTime, newTimezoneOffsetMin);
-      }
-    }
-  }
   if (fieldBit == SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC) {
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
@@ -300,15 +276,6 @@ void Clock::onDeviceConfigChange(uint64_t fieldBit) {
       automaticTimeSync = (value == 1);
     }
   }
-}
-
-void Clock::setSystemTimeWithTimezone(time_t newTime, int timezoneOffsetMin) {
-  int offsetSeconds = timezoneOffsetMin * 60;
-  newTime += offsetSeconds;
-
-  lastTimezoneOffsetMin = timezoneOffsetMin;
-
-  setSystemTime(newTime);
 }
 
 void Clock::setSystemTime(time_t newTime) {

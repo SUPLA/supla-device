@@ -23,13 +23,32 @@
 #include <supla/protocol/supla_srpc.h>
 
 namespace Supla {
+
+enum class ScreenSaverType {
+  SCREEN_SAVER_OFF,
+  SCREEN_SAVER_TEMPERATURE,
+  SCREEN_SAVER_TEMPERATURE_HUMIDITY,
+  SCREEN_SAVER_TIME,
+  SCREEN_SAVER_TIME_DATE,
+  SCREEN_SAVER_TEMPERATURE_TIME,
+  SCREEN_SAVER_MAIN_AND_AUX_TEMPERATURE,
+};
+
 namespace Device {
 
 const char DeviceConfigChangeCfgTag[] = "devcfg_chng";
 
 class RemoteDeviceConfig {
  public:
+  // Registers config field. Register each field separately (only single bit
+  // value are accepted)
   static void RegisterConfigField(uint64_t fieldBit);
+  // Configures screen saver available modes. Set all available modes
+  // in single call (this method overwrites previous values)
+  static void SetScreenSaverModesAvailable(uint64_t allValues);
+  static enum ScreenSaverType ScreenSaverModeBitToEnum(uint64_t fieldBit);
+  static uint64_t ScreenSaverEnumToBit(enum ScreenSaverType type);
+  static uint64_t ScreenSaverIntToBit(int mode);
 
   explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
@@ -48,8 +67,6 @@ class RemoteDeviceConfig {
                               TDeviceConfig_StatusLed *config);
   void processScreenBrightnessConfig(uint64_t fieldBit,
                                     TDeviceConfig_ScreenBrightness *config);
-  void processTimezoneOffsetConfig(uint64_t fieldBit,
-                                  TDeviceConfig_TimezoneOffset *config);
   void processButtonVolumeConfig(uint64_t fieldBit,
                                 TDeviceConfig_ButtonVolume *config);
   void processScreensaverModeConfig(uint64_t fieldBit,
@@ -58,19 +75,18 @@ class RemoteDeviceConfig {
                                     TDeviceConfig_ScreensaverDelay *config);
   void processAutomaticTimeSyncConfig(uint64_t fieldBit,
                                      TDeviceConfig_AutomaticTimeSync *config);
-  void processDisableLocalConfigConfig(uint64_t fieldBit,
-                                      TDeviceConfig_DisableLocalConfig *config);
+  void processDisableUserInterfaceConfig(
+      uint64_t fieldBit, TDeviceConfig_DisableUserInterface *config);
 
   void fillStatusLedConfig(TDeviceConfig_StatusLed *config) const;
   void fillScreenBrightnessConfig(TDeviceConfig_ScreenBrightness *config) const;
-  void fillTimezoneOffsetConfig(TDeviceConfig_TimezoneOffset *config) const;
   void fillButtonVolumeConfig(TDeviceConfig_ButtonVolume *config) const;
   void fillScreensaverModeConfig(TDeviceConfig_ScreensaverMode *config) const;
   void fillScreensaverDelayConfig(TDeviceConfig_ScreensaverDelay *config) const;
   void fillAutomaticTimeSyncConfig(
       TDeviceConfig_AutomaticTimeSync *config) const;
-  void fillDisableLocalConfigConfig(
-      TDeviceConfig_DisableLocalConfig *config) const;
+  void fillDisableUserInterfaceConfig(
+      TDeviceConfig_DisableUserInterface *config) const;
 
   bool endFlagReceived = false;
   uint8_t resultCode = 255;
@@ -79,6 +95,7 @@ class RemoteDeviceConfig {
   bool firstDeviceConfigAfterRegistration = false;
 
   static uint64_t fieldBitsUsedByDevice;
+  static uint64_t screenSaverModesAvailable;
 };
 
 }  // namespace Device

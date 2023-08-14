@@ -27,10 +27,12 @@
 #include <supla/clock/clock.h>
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/html/screen_delay_parameters.h>
+#include <supla/network/html/screen_saver_type.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
 uint64_t RemoteDeviceConfig::fieldBitsUsedByDevice = 0;
+uint64_t RemoteDeviceConfig::screenSaverModesAvailable = 0;
 
 RemoteDeviceConfig::RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration)
     : firstDeviceConfigAfterRegistration(firstDeviceConfigAfterRegistration) {
@@ -50,6 +52,58 @@ void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
     SUPLA_LOG_INFO("RemoteDeviceConfig: Registering field 0x%08llx", fieldBit);
   }
   fieldBitsUsedByDevice |= fieldBit;
+}
+
+void RemoteDeviceConfig::SetScreenSaverModesAvailable(uint64_t allValues) {
+  screenSaverModesAvailable = allValues;
+}
+
+enum Supla::ScreenSaverType RemoteDeviceConfig::ScreenSaverModeBitToEnum(
+    uint64_t fieldBit) {
+  if (fieldBit == 0 || (fieldBit & (fieldBit - 1)) != 0) {
+    // (fieldBit & (fieldBit) - 1) will evaluate to 0 only when fieldBit had
+    // only one bit set to 1 (that number was power of 2)
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid field 0x%08llx", fieldBit);
+    return Supla::ScreenSaverType::SCREEN_SAVER_OFF;
+  }
+
+  switch (fieldBit) {
+    default:
+    case (1 << 0): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_OFF;
+    }
+    case (1 << 1): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_TEMPERATURE;
+    }
+    case (1 << 2): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_TEMPERATURE_HUMIDITY;
+    }
+    case (1 << 3): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_TIME;
+    }
+    case (1 << 4): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_TIME_DATE;
+    }
+    case (1 << 5): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_TEMPERATURE_TIME;
+    }
+    case (1 << 6): {
+      return Supla::ScreenSaverType::SCREEN_SAVER_MAIN_AND_AUX_TEMPERATURE;
+    }
+  }
+}
+
+uint64_t RemoteDeviceConfig::ScreenSaverEnumToBit(enum ScreenSaverType type) {
+  int number = static_cast<int>(type);
+  return ScreenSaverIntToBit(number);
+}
+
+uint64_t RemoteDeviceConfig::ScreenSaverIntToBit(int mode) {
+  if (mode < 0 || mode > 63) {
+    mode = 0;
+  }
+
+  return (1ULL << mode);
 }
 
 void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
@@ -132,34 +186,19 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_ButtonVolume);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_DISABLE_LOCAL_CONFIG: {
-          SUPLA_LOG_DEBUG("Processing DisableLocalConfig config");
-          if (dataIndex + sizeof(TDeviceConfig_DisableLocalConfig) >
+        case SUPLA_DEVICE_CONFIG_FIELD_DISABLE_USER_INTERFACE: {
+          SUPLA_LOG_DEBUG("Processing DisableUserInterface config");
+          if (dataIndex + sizeof(TDeviceConfig_DisableUserInterface) >
               config->ConfigSize) {
             SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
             resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
             return;
           }
-          processDisableLocalConfigConfig(
+          processDisableUserInterfaceConfig(
               fieldBit,
-              reinterpret_cast<TDeviceConfig_DisableLocalConfig *>(
+              reinterpret_cast<TDeviceConfig_DisableUserInterface *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_DisableLocalConfig);
-          break;
-        }
-        case SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET: {
-          SUPLA_LOG_DEBUG("Processing TimezoneOffset config");
-          if (dataIndex + sizeof(TDeviceConfig_TimezoneOffset) >
-              config->ConfigSize) {
-            SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
-            resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
-            return;
-          }
-          processTimezoneOffsetConfig(
-              fieldBit,
-              reinterpret_cast<TDeviceConfig_TimezoneOffset *>(config->Config +
-                                                               dataIndex));
-          dataIndex += sizeof(TDeviceConfig_TimezoneOffset);
+          dataIndex += sizeof(TDeviceConfig_DisableUserInterface);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC: {
@@ -277,82 +316,77 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
   }
 }
 
-void RemoteDeviceConfig::processTimezoneOffsetConfig(uint64_t fieldBit,
-    TDeviceConfig_TimezoneOffset *config) {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    int32_t offset = 0;
-    cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &offset);
-    if (offset < -1560) {
-      offset = -1560;
-    }
-    if (offset > 1560) {
-      offset = 1560;
-    }
-    int32_t newValue = config->TimezoneOffsetMinutes;
-    if (newValue < -1560) {
-      newValue = -1560;
-    }
-    if (newValue > 1560) {
-      newValue = 1560;
-    }
-    if (newValue != offset) {
-      SUPLA_LOG_INFO("Setting TimezoneOffset to %d", newValue);
-      cfg->setInt32(Supla::TimezoneOffsetMinCfgTag, newValue);
-      cfg->saveWithDelay(1000);
-      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
-    }
-  }
-}
-
 void RemoteDeviceConfig::processButtonVolumeConfig(uint64_t fieldBit,
     TDeviceConfig_ButtonVolume *config) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    uint8_t value = 100;
-    cfg->getUInt8(Supla::Html::VolumeCfgTag, &value);
-    if (value > 100) {
-      value = 100;
-    }
+  if (config == nullptr || cfg == nullptr) {
+    return;
+  }
+  uint8_t value = 100;
+  cfg->getUInt8(Supla::Html::VolumeCfgTag, &value);
+  if (value > 100) {
+    value = 100;
+  }
 
-    uint8_t newValue = config->Volume;
-    if (newValue > 100) {
-      newValue = 100;
-    }
-    if (newValue != value) {
-      SUPLA_LOG_INFO("Setting Volume to %d", newValue);
-      cfg->setUInt8(Supla::Html::VolumeCfgTag, newValue);
-      cfg->saveWithDelay(1000);
-      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
-    }
+  uint8_t newValue = config->Volume;
+  if (newValue > 100) {
+    newValue = 100;
+  }
+  if (newValue != value) {
+    SUPLA_LOG_INFO("Setting Volume to %d", newValue);
+    cfg->setUInt8(Supla::Html::VolumeCfgTag, newValue);
+    cfg->saveWithDelay(1000);
+    Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }
 }
 
 void RemoteDeviceConfig::processScreensaverModeConfig(uint64_t fieldBit,
     TDeviceConfig_ScreensaverMode *config) {
-  (void)(fieldBit);
-  (void)(config);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (config == nullptr || cfg == nullptr) {
+    return;
+  }
+  if ((config->ScreensaverMode & screenSaverModesAvailable) == 0) {
+    SUPLA_LOG_WARNING(
+        "Selected ScreensaverMode %d is not supported by this device",
+        config->ScreensaverMode);
+    return;
+  }
+  int8_t currentValue = 0;
+  cfg->getInt8(Supla::ScreenSaverTypeTag, &currentValue);
+  if (currentValue < 0 || currentValue > 63) {
+    currentValue = 0;
+  }
+  auto newValue =
+      static_cast<int>(ScreenSaverModeBitToEnum(config->ScreensaverMode));
+  if (newValue != currentValue) {
+    SUPLA_LOG_INFO("Setting ScreensaverMode to %d", newValue);
+    cfg->setInt8(Supla::ScreenSaverTypeTag, newValue);
+    cfg->saveWithDelay(1000);
+    Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+  }
 }
 
 void RemoteDeviceConfig::processScreensaverDelayConfig(uint64_t fieldBit,
     TDeviceConfig_ScreensaverDelay *config) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    int32_t value = 0;
-    cfg->getInt32(Supla::Html::ScreenDelayCfgTag, &value);
-    if (value < 0) {
-      value = 0;
-    }
-    if (value > 65535) {
-      value = 65535;
-    }
+  if (config == nullptr || cfg == nullptr) {
+    return;
+  }
+  int32_t value = 0;
+  cfg->getInt32(Supla::Html::ScreenDelayCfgTag, &value);
+  if (value < 0) {
+    value = 0;
+  }
+  if (value > 65535) {
+    value = 65535;
+  }
 
-    if (value != config->ScreensaverDelayMs) {
-      SUPLA_LOG_INFO("Setting ScreensaverDelay to %d", value);
-      cfg->setInt32(Supla::Html::ScreenDelayCfgTag, value);
-      cfg->saveWithDelay(1000);
-      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
-    }
+  if (value != config->ScreensaverDelayMs) {
+    SUPLA_LOG_INFO("Setting ScreensaverDelay to %d", value);
+    cfg->setInt32(Supla::Html::ScreenDelayCfgTag, value);
+    cfg->saveWithDelay(1000);
+    Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }
 }
 
@@ -373,8 +407,8 @@ void RemoteDeviceConfig::processAutomaticTimeSyncConfig(uint64_t fieldBit,
   }
 }
 
-void RemoteDeviceConfig::processDisableLocalConfigConfig(uint64_t fieldBit,
-    TDeviceConfig_DisableLocalConfig *config) {
+void RemoteDeviceConfig::processDisableUserInterfaceConfig(uint64_t fieldBit,
+    TDeviceConfig_DisableUserInterface *config) {
   // TODO(klew): ...
   (void)(fieldBit);
   (void)(config);
@@ -419,26 +453,6 @@ void RemoteDeviceConfig::fillScreenBrightnessConfig(
   }
 }
 
-void RemoteDeviceConfig::fillTimezoneOffsetConfig(
-    TDeviceConfig_TimezoneOffset *config) const {
-  if (config == nullptr) {
-    return;
-  }
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    int32_t value = 0;
-    cfg->getInt32(Supla::TimezoneOffsetMinCfgTag, &value);
-    if (value < -1560) {
-      value = -1560;
-    }
-    if (value > 1560) {
-      value = 1560;
-    }
-    SUPLA_LOG_DEBUG("Setting TimezoneOffset to %d (0x%04X)", value, value);
-    config->TimezoneOffsetMinutes = value;
-  }
-}
-
 void RemoteDeviceConfig::fillButtonVolumeConfig(
     TDeviceConfig_ButtonVolume *config) const {
   if (config == nullptr) {
@@ -458,8 +472,16 @@ void RemoteDeviceConfig::fillButtonVolumeConfig(
 
 void RemoteDeviceConfig::fillScreensaverModeConfig(
     TDeviceConfig_ScreensaverMode *config) const {
-  (void)(config);
-  // TODO(klew): ...
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (config == nullptr || cfg == nullptr) {
+    return;
+  }
+  int8_t value = 0;
+  cfg->getInt8(Supla::ScreenSaverTypeTag, &value);
+  SUPLA_LOG_DEBUG("Setting ScreensaverMode to %d (0x%02X)", value, value);
+  config->ScreensaverMode = ScreenSaverIntToBit(value);
+  SUPLA_LOG_DEBUG("Setting ModesAvailabe to 0x%04X", screenSaverModesAvailable);
+  config->ModesAvailable = screenSaverModesAvailable;
 }
 
 void RemoteDeviceConfig::fillScreensaverDelayConfig(
@@ -501,8 +523,8 @@ void RemoteDeviceConfig::fillAutomaticTimeSyncConfig(
   }
 }
 
-void RemoteDeviceConfig::fillDisableLocalConfigConfig(
-    TDeviceConfig_DisableLocalConfig *config) const {
+void RemoteDeviceConfig::fillDisableUserInterfaceConfig(
+    TDeviceConfig_DisableUserInterface *config) const {
   (void)(config);
   // TODO(klew): ...
 }
@@ -569,30 +591,17 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_ButtonVolume);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_DISABLE_LOCAL_CONFIG: {
-          SUPLA_LOG_DEBUG("Adding DisableLocalConfig config field");
-          if (dataIndex + sizeof(TDeviceConfig_DisableLocalConfig) >
+        case SUPLA_DEVICE_CONFIG_FIELD_DISABLE_USER_INTERFACE: {
+          SUPLA_LOG_DEBUG("Adding DisableUserInterface config field");
+          if (dataIndex + sizeof(TDeviceConfig_DisableUserInterface) >
               SUPLA_DEVICE_CONFIG_MAXSIZE) {
             SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
             return false;
           }
-          fillDisableLocalConfigConfig(
-              reinterpret_cast<TDeviceConfig_DisableLocalConfig *>(
+          fillDisableUserInterfaceConfig(
+              reinterpret_cast<TDeviceConfig_DisableUserInterface *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_DisableLocalConfig);
-          break;
-        }
-        case SUPLA_DEVICE_CONFIG_FIELD_TIMEZONE_OFFSET: {
-          SUPLA_LOG_DEBUG("Adding TimezoneOffset config field");
-          if (dataIndex + sizeof(TDeviceConfig_TimezoneOffset) >
-              SUPLA_DEVICE_CONFIG_MAXSIZE) {
-            SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
-            return false;
-          }
-          fillTimezoneOffsetConfig(
-              reinterpret_cast<TDeviceConfig_TimezoneOffset *>(
-                  config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_TimezoneOffset);
+          dataIndex += sizeof(TDeviceConfig_DisableUserInterface);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC: {

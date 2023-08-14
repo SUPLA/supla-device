@@ -24,7 +24,6 @@
 
 namespace Supla {
 
-const char TimezoneOffsetMinCfgTag[] = "timeoffset_min";
 const char AutomaticTimeSyncCfgTag[] = "timesync_auto";
 
 class Clock : public Element {
@@ -67,10 +66,7 @@ class Clock : public Element {
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 
  protected:
-  void applyNewTimezoneOffset(int newOffset);
-  void setSystemTimeWithTimezone(time_t newTime, int timezoneOffsetMin);
   void setSystemTime(time_t newTime);
-  int lastTimezoneOffsetMin = 0;
   time_t localtime = {};
   uint32_t lastServerUpdate = 0;
   uint32_t lastMillis = 0;

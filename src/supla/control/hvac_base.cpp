@@ -305,23 +305,6 @@ void HvacBase::iterateAlways() {
   auto t1 = getPrimaryTemp();
   auto t2 = getSecondaryTemp();
 
-  if (!checkThermometersStatusForCurrentMode(t1, t2)) {
-    setOutput(getOutputValueOnError(), true);
-    lastTemperature = INT16_MIN;
-    SUPLA_LOG_DEBUG(
-        "HVAC: invalid temperature readout - check if your thermometer is "
-        "correctly connected and configured");
-    channel.setHvacFlagThermometerError(true);
-    return;
-  }
-
-  if (channel.getDefaultFunction() ==
-      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    t1 -= t2;
-    t2 = INT16_MIN;
-  }
-  lastTemperature = t1;
-
   // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
@@ -343,6 +326,23 @@ void HvacBase::iterateAlways() {
   if (channel.isHvacFlagWeeklySchedule()) {
     processWeeklySchedule();
   }
+
+  if (!checkThermometersStatusForCurrentMode(t1, t2)) {
+    setOutput(getOutputValueOnError(), true);
+    lastTemperature = INT16_MIN;
+    SUPLA_LOG_DEBUG(
+        "HVAC: invalid temperature readout - check if your thermometer is "
+        "correctly connected and configured");
+    channel.setHvacFlagThermometerError(true);
+    return;
+  }
+
+  if (channel.getDefaultFunction() ==
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    t1 -= t2;
+    t2 = INT16_MIN;
+  }
+  lastTemperature = t1;
 
   if (checkOverheatProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC: check overheat protection exit");

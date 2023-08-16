@@ -2033,15 +2033,20 @@ bool HvacBase::isModeSupported(int mode) const {
 
 bool HvacBase::setWeeklySchedule(int index, int programId) {
   if (index < 0 || index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
+    SUPLA_LOG_DEBUG("HVAC: invalid index %d", index);
     return false;
   }
   if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
+    SUPLA_LOG_DEBUG("HVAC: invalid programId %d", programId);
     return false;
   }
 
   if (programId > 0 &&
       (weeklySchedule.Program[programId - 1].Mode == SUPLA_HVAC_MODE_NOT_SET ||
       weeklySchedule.Program[programId - 1].Mode > SUPLA_HVAC_MODE_DRY)) {
+    SUPLA_LOG_DEBUG("HVAC: invalid mode %d for programId %d",
+                    weeklySchedule.Program[programId - 1].Mode,
+                    programId);
     return false;
   }
 
@@ -3049,10 +3054,10 @@ void HvacBase::initDefaultWeeklySchedule() {
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
-      setProgram(1, SUPLA_HVAC_MODE_COOL, 2400, 0);
-      setProgram(2, SUPLA_HVAC_MODE_COOL, 2100, 0);
-      setProgram(3, SUPLA_HVAC_MODE_COOL, 1800, 0);
-      setProgram(4, SUPLA_HVAC_MODE_COOL, 2800, 0);
+      setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400);
+      setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100);
+      setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800);
+      setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800);
       break;
     }
 

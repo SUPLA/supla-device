@@ -1,5 +1,29 @@
 # CHANGELOG.md
 
+## 23.08.01 (2023-08-17)
+
+  - Change: ESP-IDF example: change partition scheme (factory removed, ota_0 and ota_1 size change to 1.5 M)
+  - Change: Supla common update to proto v21
+  - ESP-IDF SHT30: changed measurement period from 2s to 5s
+  - Fix: ChannelElement: fix runAction (addAction is delegated to Channel, so runAction also should)
+  - Fix: Clock: fix setting system time for esp32 targets
+  - Fix: InternalPinOutput: add additional turnOn/Off during onInit after setting pinMode (in case of ESP32, GPIO state should be set after pinMode).
+  - Fix: Arduino ESP8266: removed timezone setting from NTP request before creating ssl connection
+  - Add HvacBase class for thermostats
+  - Add VirtualImpulseCounter (to count from arbitary source). Add SecondsCounter (counts time of being enabled).
+  - Add handling of "set device/channel config" for device and channel configuration sharign with server
+  - Arduino IDE: add ThermostatBasic example
+  - Linux cmake: add DOWNLOAD_EXTRACT_TIMESTAMP option
+  - Proto, srpc: add methods for get/set device/channel config. Add weekly schedule get/set methods.
+  - Linux compilation: add ccache
+  - FreeRTOS: removed croutine.c from compilation (it was removed from FreeRTOS kernel)
+  - Clock: add static getters for time
+  - ESP-IDF SHT30: add initialization of values during onInit.
+  - ESP-IDF: extracted i2c driver from sht30 (to share it with other devices on the same bus)
+  - Button: add option to disable onLoadConfig
+  - Add ThermometerDriver interface class for reading thermometer value from HW.
+  - ESP-IDF: add ADC driver interface
+
 ## 23.07.01 (2023-07-20)
 
   - Change: default proto version for SuplaDevice changed from 16 to 20 (if you want to use other proto version, please specify it in SuplaDevice.begin(proto_version) call)

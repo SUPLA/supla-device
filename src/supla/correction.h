@@ -27,6 +27,8 @@ class Correction {
        double correction,
        bool forSecondaryValue = false);
   static double get(uint8_t channelNumber, bool forSecondaryValue = false);
+  static Correction *getInstance(uint8_t channelNumber,
+                                 bool forSecondaryValue = false);
   static void clear();
 
  protected:

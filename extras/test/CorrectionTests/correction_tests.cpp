@@ -54,3 +54,19 @@ TEST(CorrectionTests, CorrectionGetCheckForSecondary) {
   EXPECT_EQ(Correction::get(5), 0);
 }
 
+TEST(CorrectionTests, CorrectionChangeTest) {
+  Correction::add(5, 2.5);
+
+  EXPECT_EQ(Correction::get(5), 2.5);
+  EXPECT_EQ(Correction::get(5, true), 0);
+  EXPECT_EQ(Correction::get(1), 0);
+
+  Correction::add(5, 3.14);
+  EXPECT_EQ(Correction::get(1), 0);
+  EXPECT_EQ(Correction::get(5), 3.14);
+
+  Correction::clear();
+
+  EXPECT_EQ(Correction::get(1), 0);
+  EXPECT_EQ(Correction::get(5), 0);
+}

@@ -16,6 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef SUPLA_EXCLUDE_LITTLEFS_CONFIG
+
 #if !defined(ARDUINO_ARCH_AVR)
 // don't compile it on Arduino Mega
 
@@ -217,4 +219,6 @@ void Supla::LittleFsConfig::removeAll() {
 
   Supla::KeyValue::removeAll();
 }
+
 #endif
+#endif  // SUPLA_EXCLUDE_LITTLEFS_CONFIG

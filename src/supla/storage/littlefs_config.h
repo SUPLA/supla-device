@@ -19,6 +19,8 @@
 #ifndef SRC_SUPLA_STORAGE_LITTLEFS_CONFIG_H_
 #define SRC_SUPLA_STORAGE_LITTLEFS_CONFIG_H_
 
+#ifndef SUPLA_EXCLUDE_LITTLEFS_CONFIG
+
 #include "key_value.h"
 
 namespace Supla {
@@ -40,4 +42,5 @@ class LittleFsConfig : public KeyValue {
 };
 };  // namespace Supla
 
+#endif  // SUPLA_EXCLUDE_LITTLEFS_CONFIG
 #endif  // SRC_SUPLA_STORAGE_LITTLEFS_CONFIG_H_

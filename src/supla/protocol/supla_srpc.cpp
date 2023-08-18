@@ -656,14 +656,14 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
             Supla::Channel::reg_dev.channels[i].FuncList,
             Supla::Channel::reg_dev.channels[i].Default,
             Supla::Channel::reg_dev.channels[i].Flags,
-            Supla::Channel::reg_dev.channels[i].value[0],
-            Supla::Channel::reg_dev.channels[i].value[1],
-            Supla::Channel::reg_dev.channels[i].value[2],
-            Supla::Channel::reg_dev.channels[i].value[3],
-            Supla::Channel::reg_dev.channels[i].value[4],
-            Supla::Channel::reg_dev.channels[i].value[5],
-            Supla::Channel::reg_dev.channels[i].value[6],
-            Supla::Channel::reg_dev.channels[i].value[7]);
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[0]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[1]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[2]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[3]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[4]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[5]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[6]),
+            static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[7]));
       }
     }
     if (!srpc_ds_async_registerdevice_e(srpc, &Supla::Channel::reg_dev)) {

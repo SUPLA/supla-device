@@ -128,7 +128,7 @@ bool Clock::isReady() {
 int Clock::getYear() {
   struct tm timeinfo;
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_year + 1900;
 }
 
@@ -136,7 +136,7 @@ int Clock::getMonth() {
   struct tm timeinfo;
   //  timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_mon + 1;
 }
 
@@ -144,7 +144,7 @@ int Clock::getDay() {
   struct tm timeinfo;
   //  timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_mday;
 }
 
@@ -152,7 +152,7 @@ int Clock::getDayOfWeek() {
   struct tm timeinfo;
   //  timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_wday + 1;  // 1 - Sunday, 2 - Monday ...
 }
 
@@ -164,7 +164,7 @@ int Clock::getHour() {
   struct tm timeinfo;
   // timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_hour;
 }
 
@@ -176,14 +176,14 @@ int Clock::getMin() {
   struct tm timeinfo;
   // timeinfo = gmtime(time(0));
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_min;
 }
 
 int Clock::getSec() {
   struct tm timeinfo;
   time_t currentTime = time(0);
-  gmtime_r(&currentTime, &timeinfo);
+  localtime_r(&currentTime, &timeinfo);
   return timeinfo.tm_sec;
 }
 

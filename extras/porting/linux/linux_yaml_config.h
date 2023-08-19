@@ -115,6 +115,8 @@ class LinuxYamlConfig : public KeyValue {
   int32_t getSuplaServerPort() override;
   bool getEmail(char* result) override;
 
+  int getProtoVersion();
+
   std::string getStateFilesPath();
 
  protected:

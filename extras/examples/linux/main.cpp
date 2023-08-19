@@ -181,7 +181,7 @@ int main(int argc, char* argv[]) {
     auto clock = std::make_unique<Supla::LinuxClock>();
     (void)(clock);
 
-    SuplaDevice.begin(21);
+    SuplaDevice.begin(config->getProtoVersion());
 
     if (SuplaDevice.getCurrentStatus() != STATUS_INITIALIZED) {
       SUPLA_LOG_INFO("Incomplete configuration. Please fix it and try again");

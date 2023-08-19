@@ -307,6 +307,18 @@ bool Supla::LinuxYamlConfig::getEmail(char* result) {
   return false;
 }
 
+int Supla::LinuxYamlConfig::getProtoVersion() {
+  try {
+    if (config["supla"] && config["supla"]["proto"]) {
+      auto version = config["supla"]["proto"].as<int>();
+      return version;
+    }
+  } catch (const YAML::Exception& ex) {
+    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+  }
+  return 20;
+}
+
 bool Supla::LinuxYamlConfig::setGUID(const char* guidRaw) {
   char guidHex[SUPLA_GUID_HEXSIZE] = {};
   generateHexString(guidRaw, guidHex, SUPLA_GUID_SIZE);

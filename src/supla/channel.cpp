@@ -232,6 +232,10 @@ void Channel::setDefault(_supla_int_t value) {
   }
 }
 
+void Channel::setDefaultFunction(_supla_int_t function) {
+  setDefault(function);
+}
+
 int32_t Channel::getDefaultFunction() const {
   if (channelNumber >= 0) {
     return reg_dev.channels[channelNumber].Default;

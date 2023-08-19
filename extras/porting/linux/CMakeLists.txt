@@ -42,6 +42,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   linux_file_storage.cpp
 
   linux_timers.cpp
+  linux_clock.cpp
 
   supla/source/cmd.cpp
   supla/source/file.cpp
@@ -63,6 +64,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   supla/control/cmd_relay.cpp
   supla/control/action_trigger_parsed.cpp
+  supla/control/hvac_parsed.cpp
 
   ../../../src/supla/pv/fronius.cpp
   ../../../src/supla/pv/afore.cpp

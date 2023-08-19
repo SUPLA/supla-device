@@ -116,7 +116,10 @@ class Channel : public LocalAction {
   _supla_int_t getChannelType() const;
 
   void setType(_supla_int_t type);
+  // setDefault and setDefaultFunction are the same methods.
+  // Second was added for better readability
   void setDefault(_supla_int_t value);
+  void setDefaultFunction(_supla_int_t function);
   int32_t getDefaultFunction() const;
   void setFlag(_supla_int_t flag);
   void unsetFlag(_supla_int_t flag);

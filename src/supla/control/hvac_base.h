@@ -324,6 +324,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   void enableDifferentialFunctionSupport();
   bool isDifferentialFunctionSupported() const;
+  void enableDomesticHotWaterFunctionSupport();
+  bool isDomesticHotWaterFunctionSupported() const;
 
   bool applyNewRuntimeSettings(int mode,
                                int16_t tMin,

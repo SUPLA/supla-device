@@ -324,7 +324,9 @@ void HvacBase::iterateAlways() {
   }
 
   if (channel.isHvacFlagWeeklySchedule()) {
-    processWeeklySchedule();
+    if (!processWeeklySchedule()) {
+      return;
+    }
   }
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
@@ -2616,10 +2618,14 @@ bool HvacBase::turnOnWeeklySchedlue() {
 
 bool HvacBase::processWeeklySchedule() {
   if (!channel.isHvacFlagWeeklySchedule()) {
+    SUPLA_LOG_DEBUG(
+        "Hvac: processs weekly schedule failed - it is not enabled");
     return false;
   }
 
   if (!Supla::Clock::IsReady()) {
+    SUPLA_LOG_DEBUG(
+        "Hvac: processs weekly schedule failed - clock is not ready");
     setOutput(getOutputValueOnError(), true);
     channel.setHvacFlagClockError(true);
     return false;
@@ -2636,6 +2642,8 @@ bool HvacBase::processWeeklySchedule() {
 
   if (programId == -1) {
     setTargetMode(SUPLA_HVAC_MODE_OFF, false);
+    SUPLA_LOG_DEBUG(
+        "Hvac: processs weekly schedule failed - invalid program id");
     return false;
   }
 
@@ -2811,6 +2819,14 @@ void HvacBase::enableDifferentialFunctionSupport() {
 
 bool HvacBase::isDifferentialFunctionSupported() const {
   return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL;
+}
+
+void HvacBase::enableDomesticHotWaterFunctionSupport() {
+  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_DOMESTIC_HOT_WATER);
+}
+
+bool HvacBase::isDomesticHotWaterFunctionSupported() const {
+  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_DOMESTIC_HOT_WATER;
 }
 
 void HvacBase::fixTemperatureSetpoints() {

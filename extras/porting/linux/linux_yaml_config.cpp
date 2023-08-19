@@ -16,29 +16,31 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <supla/network/ip_address.h>
-#include <supla/log_wrapper.h>
+#include "linux_yaml_config.h"
+
 #include <supla-common/proto.h>
+#include <supla/control/action_trigger_parsed.h>
+#include <supla/control/cmd_relay.h>
 #include <supla/control/virtual_relay.h>
+#include <supla/log_wrapper.h>
+#include <supla/network/ip_address.h>
 #include <supla/parser/json.h>
 #include <supla/parser/parser.h>
 #include <supla/parser/simple.h>
-#include <supla/pv/fronius.h>
 #include <supla/pv/afore.h>
+#include <supla/pv/fronius.h>
 #include <supla/sensor/binary_parsed.h>
 #include <supla/sensor/electricity_meter_parsed.h>
-#include <supla/sensor/impulse_counter_parsed.h>
-#include <supla/sensor/thermometer_parsed.h>
 #include <supla/sensor/humidity_parsed.h>
+#include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/pressure_parsed.h>
-#include <supla/sensor/wind_parsed.h>
 #include <supla/sensor/rain_parsed.h>
+#include <supla/sensor/thermometer_parsed.h>
+#include <supla/sensor/wind_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
 #include <supla/source/source.h>
-#include <supla/control/cmd_relay.h>
 #include <supla/tools.h>
-#include <supla/control/action_trigger_parsed.h>
 
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
@@ -48,10 +50,11 @@
 #include <string>
 #include <vector>
 
-#include "linux_yaml_config.h"
 #include "supla/control/action_trigger.h"
+#include "supla/control/hvac_parsed.h"
 #include "supla/sensor/sensor_parsed.h"
 #include "supla/sensor/therm_hygro_meter_parsed.h"
+#include "supla/storage/key_value.h"
 
 namespace Supla {
 const char Multiplier[] = "multiplier";
@@ -59,9 +62,12 @@ const char MultiplierTemp[] = "multiplier_temp";
 const char MultiplierHumi[] = "multiplier_humi";
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
+const char ReadWriteConfigStorage[] = "/config_storage.bin";
 const char GuidKey[] = "guid";
 const char AuthKeyKey[] = "authkey";
 };  // namespace Supla
+
+#define SUPLA_LINUX_CONFIG_BUF_SIZE (1024 * 1024)
 
 Supla::LinuxYamlConfig::LinuxYamlConfig(const std::string& file) : file(file) {
 }
@@ -70,6 +76,11 @@ Supla::LinuxYamlConfig::~LinuxYamlConfig() {
 }
 
 bool Supla::LinuxYamlConfig::init() {
+  if (initDone) {
+    return true;
+  }
+
+  initDone = true;
   if (config.size() == 0) {
     try {
       config = YAML::LoadFile(file);
@@ -79,6 +90,47 @@ bool Supla::LinuxYamlConfig::init() {
       return false;
     }
   }
+  // check if KeyValue was initialized earlier
+  if (first) {
+    SUPLA_LOG_WARNING("init called on non empty database. Aborting");
+    // init can be done only on empty storage
+    return false;
+  }
+
+  std::string readWriteConfigFilePath =
+      getStateFilesPath() + Supla::ReadWriteConfigStorage;
+
+  uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
+  if (std::filesystem::exists(readWriteConfigFilePath)) {
+    SUPLA_LOG_INFO("Read write config storage file: %s",
+                   readWriteConfigFilePath.c_str());
+
+    std::ifstream rwConfigFile(readWriteConfigFilePath,
+                            std::ifstream::in | std::ios::binary);
+
+    unsigned char c = rwConfigFile.get();
+
+    int bytesRead = 0;
+    for (; rwConfigFile.good() && bytesRead < SUPLA_LINUX_CONFIG_BUF_SIZE;
+         bytesRead++) {
+      buf[bytesRead] = c;
+      c = rwConfigFile.get();
+    }
+
+    rwConfigFile.close();
+
+    if (bytesRead >= SUPLA_LINUX_CONFIG_BUF_SIZE) {
+      SUPLA_LOG_ERROR("Read write config: buffer overflow - file is too big");
+      return false;
+    }
+
+    SUPLA_LOG_INFO("Read write config: initializing storage from file...");
+    return initFromMemory(buf, bytesRead);
+  } else {
+    SUPLA_LOG_INFO(
+        "Read write config: config file missing, starting with empty database");
+  }
+
   return true;
 }
 
@@ -108,9 +160,6 @@ bool Supla::LinuxYamlConfig::isVerbose() {
     SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
-}
-
-void Supla::LinuxYamlConfig::removeAll() {
 }
 
 bool Supla::LinuxYamlConfig::generateGuidAndAuthkey() {
@@ -146,76 +195,38 @@ bool Supla::LinuxYamlConfig::generateGuidAndAuthkey() {
   return saveGuidAuth(getStateFilesPath());
 }
 
-// Generic getters and setters
-bool Supla::LinuxYamlConfig::setString(const char* key, const char* value) {
-  SUPLA_LOG_WARNING("Config setters are not supported (setString)");
-  return false;
-}
-bool Supla::LinuxYamlConfig::getString(const char* key,
-                                       char* value,
-                                       size_t maxSize) {
-  return false;
-}
-int Supla::LinuxYamlConfig::getStringSize(const char* key) {
-  return false;
-}
-
-bool Supla::LinuxYamlConfig::setBlob(const char* key,
-                                     const char* value,
-                                     size_t blobSize) {
-  SUPLA_LOG_WARNING("Config setters are not supported (setBlob)");
-  return false;
-}
-
-bool Supla::LinuxYamlConfig::getBlob(const char* key,
-                                     char* value,
-                                     size_t blobSize) {
-  return false;
-}
-
-int Supla::LinuxYamlConfig::getBlobSize(const char* key) {
-  return 0;
-}
-
-bool Supla::LinuxYamlConfig::getInt8(const char* key, int8_t* result) {
-  return false;
-}
+// Currently "security_level" is read from yaml config and for all other
+// parameters we fallback to KeyValue getUInt8.
+// This method will first look for param in yaml, and if it is missing, it
+// will look for it in KeyValue storage
 bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
   try {
     if (config[key]) {
       *result = static_cast<uint8_t>(config[key].as<unsigned int>());
       return true;
+    } else {
+      return Supla::KeyValue::getUInt8(key, result);
     }
   } catch (const YAML::Exception& ex) {
     SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
   return false;
 }
-bool Supla::LinuxYamlConfig::getInt32(const char* key, int32_t* result) {
-  return false;
-}
-bool Supla::LinuxYamlConfig::getUInt32(const char* key, uint32_t* result) {
-  return false;
-}
-
-bool Supla::LinuxYamlConfig::setInt8(const char* key, const int8_t value) {
-  SUPLA_LOG_WARNING("Config setters are not supported (setInt8)");
-  return false;
-}
-bool Supla::LinuxYamlConfig::setUInt8(const char* key, const uint8_t value) {
-  SUPLA_LOG_WARNING("Config setters are not supported (setUInt8)");
-  return false;
-}
-bool Supla::LinuxYamlConfig::setInt32(const char* key, const int32_t value) {
-  SUPLA_LOG_WARNING("Config setters are not supported (setInt32)");
-  return false;
-}
-bool Supla::LinuxYamlConfig::setUInt32(const char* key, const uint32_t value) {
-  SUPLA_LOG_WARNING("Config setters are not supported (setUInt32)");
-  return false;
-}
 
 void Supla::LinuxYamlConfig::commit() {
+  uint8_t buf[SUPLA_LINUX_CONFIG_BUF_SIZE] = {};
+
+  size_t dataSize = serializeToMemory(buf, SUPLA_LINUX_CONFIG_BUF_SIZE);
+
+  std::ofstream rwConfigFile(
+      getStateFilesPath() + Supla::ReadWriteConfigStorage,
+      std::ofstream::out | std::ios::binary);
+
+  for (int i = 0; i < dataSize; i++) {
+    rwConfigFile << buf[i];
+  }
+
+  rwConfigFile.close();
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {
@@ -225,7 +236,7 @@ bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {
 
 bool Supla::LinuxYamlConfig::setSuplaCommProtocolEnabled(bool enabled) {
   SUPLA_LOG_WARNING(
-            "setSuplaCommProtocolEnabled is not supported on this platform");
+      "setSuplaCommProtocolEnabled is not supported on this platform");
   return false;
 }
 bool Supla::LinuxYamlConfig::setSuplaServer(const char* server) {
@@ -233,8 +244,7 @@ bool Supla::LinuxYamlConfig::setSuplaServer(const char* server) {
   return false;
 }
 bool Supla::LinuxYamlConfig::setSuplaServerPort(int32_t port) {
-  SUPLA_LOG_WARNING(
-            "setSuplaServerPort is not supported on this platform");
+  SUPLA_LOG_WARNING("setSuplaServerPort is not supported on this platform");
   return false;
 }
 bool Supla::LinuxYamlConfig::setEmail(const char* email) {
@@ -395,6 +405,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
       return addAfore(ch, channelNumber);
+    } else if (type == "Hvac") {
+      return addHvac(ch, channelNumber);
     } else if (type == "ThermometerParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -454,24 +466,21 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "ActionTriggerParsed") {
       return addActionTriggerParsed(ch, channelNumber);
     } else {
-      SUPLA_LOG_ERROR(
-                "Channel[%d] config: unknown type \"%s\"",
-                channelNumber,
-                type.c_str());
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown type \"%s\"",
+                      channelNumber,
+                      type.c_str());
       return false;
     }
 
     if (ch.size() > paramCount) {
-      SUPLA_LOG_WARNING(
-                "Channel[%d] config: too many parameters",
-                channelNumber);
+      SUPLA_LOG_WARNING("Channel[%d] config: too many parameters",
+                        channelNumber);
     }
     return true;
 
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing mandatory \"type\" parameter",
-              channelNumber);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"type\" parameter",
+                    channelNumber);
   }
   return false;
 }
@@ -496,7 +505,7 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
                                          int channelNumber,
-                                         Supla::Parser::Parser *parser) {
+                                         Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CmdRelay", channelNumber);
   auto cr = new Supla::Control::CmdRelay(parser);
   if (ch["initial_state"]) {
@@ -565,17 +574,15 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
     IPAddress ipAddr(ip);
     new Supla::PV::Fronius(ipAddr, port, deviceId);
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing mandatory \"ip\" parameter",
-              channelNumber);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
+                    channelNumber);
     return false;
   }
 
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch,
-                                        int channelNumber) {
+bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch, int channelNumber) {
   int port = 80;
   if (ch["port"]) {
     paramCount++;
@@ -589,9 +596,9 @@ bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch,
     loginAndPassword = ch["login_and_password"].as<std::string>();
   } else {
     SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing mandatory"
-              " \"login_and_password\" parameter",
-              channelNumber);
+        "Channel[%d] config: missing mandatory"
+        " \"login_and_password\" parameter",
+        channelNumber);
     return false;
   }
 
@@ -609,12 +616,111 @@ bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch,
     IPAddress ipAddr(ip);
     new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing mandatory \"ip\" parameter",
-              channelNumber);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
+                    channelNumber);
     return false;
   }
 
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding Hvac", channelNumber);
+  int mainThermometerChannelNo = -1;
+  int auxThermometerChannelNo = -1;
+  std::string cmdOn;
+  std::string cmdOff;
+  std::string cmdOnSecondary;
+  std::string cmdOffSecondary;
+  if (ch["cmd_on"]) {
+    paramCount++;
+    cmdOn = ch["cmd_on"].as<std::string>();
+  } else {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: missing mandatory \"cmd_on\" parameter",
+        channelNumber);
+    return false;
+  }
+  if (ch["cmd_off"]) {
+    paramCount++;
+    cmdOff = ch["cmd_off"].as<std::string>();
+  } else {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: missing mandatory \"cmd_off\" parameter",
+        channelNumber);
+    return false;
+  }
+  if (ch["cmd_on_secondary"]) {
+    paramCount++;
+    cmdOnSecondary = ch["cmd_on_secondary"].as<std::string>();
+  }
+  if (ch["cmd_off_secondary"]) {
+    paramCount++;
+    cmdOffSecondary = ch["cmd_off_secondary"].as<std::string>();
+  }
+  if (ch["main_thermometer_channel_no"]) {
+    paramCount++;
+    mainThermometerChannelNo = ch["main_thermometer_channel_no"].as<int>();
+  } else {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: missing mandatory \"main_thermometer_channel_no\" "
+        "parameter",
+        channelNumber);
+    return false;
+  }
+  if (ch["aux_thermometer_channel_no"]) {
+    paramCount++;
+    auxThermometerChannelNo = ch["aux_thermometer_channel_no"].as<int>();
+  } else {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: missing mandatory \"aux_thermometer_channel_no\" "
+        "parameter",
+        channelNumber);
+    return false;
+  }
+
+  auto hvac = new Supla::Control::HvacParsed(
+      cmdOn, cmdOff, cmdOnSecondary, cmdOffSecondary);
+  hvac->setMainThermometerChannelNo(mainThermometerChannelNo);
+  hvac->setAuxThermometerChannelNo(auxThermometerChannelNo);
+  hvac->setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR);
+  hvac->setTemperatureHisteresisMin(20);  // 0.2 degree
+  hvac->setTemperatureHisteresisMax(1000);  // 10 degree
+  hvac->setTemperatureAutoOffsetMin(200);   // 2 degrees
+  hvac->setTemperatureAutoOffsetMax(1000);  // 10 degrees
+  hvac->setTemperatureAuxMin(500);  // 5 degrees
+  hvac->setTemperatureAuxMax(7500);  // 75 degrees
+  hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
+
+  hvac->setTemperatureHisteresis(40);
+
+  if (ch["default_function"]) {
+    paramCount++;
+    std::string function = ch["default_function"].as<std::string>();
+    if (function == "heat") {
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
+    } else if (function == "cool") {
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
+    } else if (function == "auto") {
+      if (cmdOnSecondary.empty() || cmdOffSecondary.empty()) {
+        SUPLA_LOG_ERROR(
+            "Channel[%d] config: missing mandatory \"cmd_on_secondary\" or "
+            "\"cmd_off_secondary\" parameter when setting \"auto\" function",
+            channelNumber);
+        return false;
+      }
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+    } else if (function == "dhw") {
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
+    } else if (function == "diff") {
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+    }
+  }
   return true;
 }
 
@@ -632,10 +738,9 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
       therm->setMapping(Supla::Parser::Temperature, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Temperature);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Temperature);
     return false;
   }
   if (ch[Supla::Multiplier]) {
@@ -670,9 +775,8 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
 
 bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
-  SUPLA_LOG_INFO(
-            "Channel[%d] config: adding ImpulseCounterParsed",
-            channelNumber);
+  SUPLA_LOG_INFO("Channel[%d] config: adding ImpulseCounterParsed",
+                 channelNumber);
   auto ic = new Supla::Sensor::ImpulseCounterParsed(parser);
   if (ch[Supla::Parser::Counter]) {
     paramCount++;
@@ -684,10 +788,9 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
       ic->setMapping(Supla::Parser::Counter, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Counter);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Counter);
     return false;
   }
   if (ch[Supla::Multiplier]) {
@@ -718,9 +821,8 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
 
 bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
-  SUPLA_LOG_INFO(
-            "Channel[%d] config: adding ElectricityMeterParsed",
-            channelNumber);
+  SUPLA_LOG_INFO("Channel[%d] config: adding ElectricityMeterParsed",
+                 channelNumber);
   auto em = new Supla::Sensor::ElectricityMeterParsed(parser);
 
   // set not phase releated parameters (currently only frequency)
@@ -844,14 +946,13 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
       prs = parsers[parserNames[use]];
     }
     if (!prs) {
-      SUPLA_LOG_ERROR(
-                "Config: can't find parser with \"name\"=\"%s\"",
-                use.c_str());
+      SUPLA_LOG_ERROR("Config: can't find parser with \"name\"=\"%s\"",
+                      use.c_str());
       return nullptr;
     }
     if (parser["name"]) {
       SUPLA_LOG_ERROR(
-                "Config: can't use \"name\" for parser with \"use\" parameter");
+          "Config: can't use \"name\" for parser with \"use\" parameter");
       return nullptr;
     }
     return prs;
@@ -900,14 +1001,13 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       src = sources[sourceNames[use]];
     }
     if (!src) {
-      SUPLA_LOG_ERROR(
-                "Config: can't find source with \"name\"=\"%s\"",
-                use.c_str());
+      SUPLA_LOG_ERROR("Config: can't find source with \"name\"=\"%s\"",
+                      use.c_str());
       return nullptr;
     }
     if (source["name"]) {
       SUPLA_LOG_ERROR(
-                "Config: can't use \"name\" for source with \"use\" parameter");
+          "Config: can't use \"name\" for source with \"use\" parameter");
       return nullptr;
     }
     return src;
@@ -1021,11 +1121,10 @@ bool Supla::LinuxYamlConfig::isConfigModeSupported() {
   return false;
 }
 
-bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser) {
+bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ThermHygroMeterParsed",
-      channelNumber);
+                 channelNumber);
   auto thermHumi = new Supla::Sensor::ThermHygroMeterParsed(parser);
   if (ch[Supla::Parser::Humidity]) {
     paramCount++;
@@ -1037,10 +1136,9 @@ bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(const YAML::Node& ch,
       thermHumi->setMapping(Supla::Parser::Humidity, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Humidity);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Humidity);
     return false;
   }
 
@@ -1060,10 +1158,9 @@ bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(const YAML::Node& ch,
       thermHumi->setMapping(Supla::Parser::Temperature, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Temperature);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Temperature);
     return false;
   }
 
@@ -1093,8 +1190,9 @@ bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(const YAML::Node& ch,
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addHumidityParsed(
-    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+bool Supla::LinuxYamlConfig::addHumidityParsed(const YAML::Node& ch,
+                                               int channelNumber,
+                                               Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding HumidityParsed", channelNumber);
   auto humi = new Supla::Sensor::HumidityParsed(parser);
   if (ch[Supla::Parser::Humidity]) {
@@ -1107,10 +1205,9 @@ bool Supla::LinuxYamlConfig::addHumidityParsed(
       humi->setMapping(Supla::Parser::Humidity, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Humidity);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Humidity);
     return false;
   }
   if (ch[Supla::Multiplier]) {
@@ -1139,8 +1236,9 @@ bool Supla::LinuxYamlConfig::addHumidityParsed(
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addPressureParsed(
-    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+bool Supla::LinuxYamlConfig::addPressureParsed(const YAML::Node& ch,
+                                               int channelNumber,
+                                               Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding PressureParsed", channelNumber);
   auto pressure = new Supla::Sensor::PressureParsed(parser);
   if (ch[Supla::Parser::Pressure]) {
@@ -1153,10 +1251,9 @@ bool Supla::LinuxYamlConfig::addPressureParsed(
       pressure->setMapping(Supla::Parser::Pressure, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Pressure);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Pressure);
     return false;
   }
   if (ch[Supla::Multiplier]) {
@@ -1185,8 +1282,9 @@ bool Supla::LinuxYamlConfig::addPressureParsed(
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addWindParsed(
-    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+bool Supla::LinuxYamlConfig::addWindParsed(const YAML::Node& ch,
+                                           int channelNumber,
+                                           Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding WindParsed", channelNumber);
   auto wind = new Supla::Sensor::WindParsed(parser);
   if (ch[Supla::Parser::Wind]) {
@@ -1199,10 +1297,9 @@ bool Supla::LinuxYamlConfig::addWindParsed(
       wind->setMapping(Supla::Parser::Wind, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Wind);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Wind);
     return false;
   }
   if (ch[Supla::Multiplier]) {
@@ -1231,8 +1328,9 @@ bool Supla::LinuxYamlConfig::addWindParsed(
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addRainParsed(
-    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+bool Supla::LinuxYamlConfig::addRainParsed(const YAML::Node& ch,
+                                           int channelNumber,
+                                           Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding RainParsed", channelNumber);
   auto rain = new Supla::Sensor::RainParsed(parser);
   if (ch[Supla::Parser::Rain]) {
@@ -1245,10 +1343,9 @@ bool Supla::LinuxYamlConfig::addRainParsed(
       rain->setMapping(Supla::Parser::Rain, key);
     }
   } else {
-    SUPLA_LOG_ERROR(
-              "Channel[%d] config: missing \"%s\" parameter",
-              channelNumber,
-              Supla::Parser::Rain);
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Rain);
     return false;
   }
   if (ch[Supla::Multiplier]) {
@@ -1313,7 +1410,7 @@ bool Supla::LinuxYamlConfig::addStateParser(
 
 bool Supla::LinuxYamlConfig::addActionTriggerActions(
     const YAML::Node& ch,
-    Supla::Sensor::SensorParsedBase *sensor,
+    Supla::Sensor::SensorParsedBase* sensor,
     bool mandatory) {
   if (mandatory && !ch[Supla::Parser::ActionTrigger]) {
     SUPLA_LOG_ERROR("Channel config: mandatory \"%s\" parameter missing",
@@ -1324,7 +1421,7 @@ bool Supla::LinuxYamlConfig::addActionTriggerActions(
   if (ch[Supla::Parser::ActionTrigger]) {
     paramCount++;
     bool atNameFound = false;
-    for (const auto &el : ch[Supla::Parser::ActionTrigger]) {
+    for (const auto& el : ch[Supla::Parser::ActionTrigger]) {
       if (el["on_state"]) {
         if (!sensor->addAtOnState(el["on_state"].as<std::vector<int>>())) {
           return false;
@@ -1335,12 +1432,12 @@ bool Supla::LinuxYamlConfig::addActionTriggerActions(
         }
       } else if (el["on_value_change"]) {
         if (!sensor->addAtOnValueChange(
-            el["on_value_change"].as<std::vector<int>>())) {
+                el["on_value_change"].as<std::vector<int>>())) {
           return false;
         }
       } else if (el["on_state_change"]) {
         if (!sensor->addAtOnStateChange(
-            el["on_state_change"].as<std::vector<int>>())) {
+                el["on_state_change"].as<std::vector<int>>())) {
           return false;
         }
       } else if (el["use"]) {
@@ -1360,8 +1457,8 @@ bool Supla::LinuxYamlConfig::addActionTriggerActions(
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addActionTriggerParsed(
-    const YAML::Node& ch, int channelNumber) {
+bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
+                                                    int channelNumber) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ActionTriggerParsed",
                  channelNumber);
   if (ch["name"]) {
@@ -1374,4 +1471,3 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(
   }
   return true;
 }
-

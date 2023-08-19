@@ -83,6 +83,7 @@ set(SRCS
 
   supla/sensor/therm_hygro_press_meter.cpp
   supla/sensor/therm_hygro_meter.cpp
+  supla/sensor/hygro_meter.cpp
   supla/sensor/thermometer.cpp
   supla/sensor/thermometer_driver.cpp
   supla/sensor/electricity_meter.cpp

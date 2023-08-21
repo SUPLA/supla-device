@@ -19,27 +19,22 @@
 #ifndef SRC_SUPLA_SENSOR_THERMOMETER_H_
 #define SRC_SUPLA_SENSOR_THERMOMETER_H_
 
-#include <supla/channel_element.h>
 #include <supla/sensor/thermometer_driver.h>
+
+#include "therm_hygro_meter.h"
 
 namespace Supla {
 namespace Sensor {
-class Thermometer : public ChannelElement {
+class Thermometer : public ThermHygroMeter {
  public:
   Thermometer();
   explicit Thermometer(ThermometerDriver *driver);
   virtual double getValue();
-  int16_t getTempInt16();
   void onInit() override;
-  void onLoadConfig(SuplaDeviceClass *) override;
   void iterateAlways() override;
 
-  double getLastTemperature();
-  void setRefreshIntervalMs(int intervalMs);
-
  protected:
-  uint32_t lastReadTime = 0;
-  uint16_t refreshIntervalMs = 10000;
+  void setHumidityCorrection(int32_t correction) override;
   ThermometerDriver *driver = nullptr;
 };
 

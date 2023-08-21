@@ -19,17 +19,16 @@
 #ifndef SRC_SUPLA_SENSOR_HYGRO_METER_H_
 #define SRC_SUPLA_SENSOR_HYGRO_METER_H_
 
-#include "thermometer.h"
+#include "therm_hygro_meter.h"
 
-#define HUMIDITY_NOT_AVAILABLE -1
 
 namespace Supla {
 namespace Sensor {
-class HygroMeter : public Thermometer {
+class HygroMeter : public ThermHygroMeter {
  public:
   HygroMeter();
-  virtual double getHumi();
-  void iterateAlways();
+ protected:
+  void setTemperatureCorrection(int32_t correction) override;
 };
 
 };  // namespace Sensor

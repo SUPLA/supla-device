@@ -24,7 +24,7 @@
 
 using Supla::Sensor::Thermometer;
 
-Supla::Sensor::Thermometer::Thermometer() : lastReadTime(0) {
+Supla::Sensor::Thermometer::Thermometer() {
   channel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
   channel.setDefault(SUPLA_CHANNELFNC_THERMOMETER);
 }
@@ -47,23 +47,6 @@ double Supla::Sensor::Thermometer::getValue() {
   return TEMPERATURE_NOT_AVAILABLE;
 }
 
-int16_t Supla::Sensor::Thermometer::getTempInt16() {
-  if (getChannelNumber() >= 0) {
-    double temp = getChannel()->getLastTemperature();
-    if (temp <= TEMPERATURE_NOT_AVAILABLE) {
-      return INT16_MIN;
-    }
-    temp *= 100;
-    if (temp > INT16_MAX) {
-      return INT16_MAX;
-    }
-    if (temp <= INT16_MIN) {
-      return INT16_MIN + 1;
-    }
-    return temp;
-  }
-  return INT16_MIN;
-}
 
 void Supla::Sensor::Thermometer::iterateAlways() {
   if (millis() - lastReadTime > refreshIntervalMs) {
@@ -72,27 +55,6 @@ void Supla::Sensor::Thermometer::iterateAlways() {
   }
 }
 
-void Supla::Sensor::Thermometer::onLoadConfig(SuplaDeviceClass *sdc) {
-  (void)(sdc);
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    int32_t value = 0;
-    char key[16] = {};
-    snprintf(key, sizeof(key), "corr_%d_0", getChannelNumber());
-    if (cfg->getInt32(key, &value)) {
-      double correction = 1.0 * value / 10.0;
-      getChannel()->setCorrection(correction);
-      SUPLA_LOG_DEBUG("Channel[%d] temperature correction %f",
-          getChannelNumber(), correction);
-    }
-  }
+void Supla::Sensor::Thermometer::setHumidityCorrection(int32_t correction) {
+  (void)(correction);
 }
-
-double Supla::Sensor::Thermometer::getLastTemperature() {
-  return getChannel()->getValueDouble();
-}
-
-void Supla::Sensor::Thermometer::setRefreshIntervalMs(int intervalMs) {
-  refreshIntervalMs = intervalMs;
-}
-

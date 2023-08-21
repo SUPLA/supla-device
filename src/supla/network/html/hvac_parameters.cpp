@@ -396,11 +396,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("<select ");
   sender->sendNameAndId(key);
   sender->send(">");
-  if (hvac->isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF)) {
+  if (hvac->isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE)) {
     sender->sendSelectItem(
-        SUPLA_HVAC_ALGORITHM_ON_OFF,
+        SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
         "On Off",
-        hvac->getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF);
+        hvac->getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   }
   sender->send("</select>");
   sender->send("</div>");

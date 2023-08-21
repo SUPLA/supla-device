@@ -353,7 +353,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setSetpointTemperaturesForCurrentMode(int tMin, int tMax);
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
                                              _supla_int16_t t2) const;
-  int evaluateOutputValue(_supla_int16_t tMeasured,
+  int evaluateHeatOutputValue(_supla_int16_t tMeasured,
+                          _supla_int16_t tTarget);
+  int evaluateCoolOutputValue(_supla_int16_t tMeasured,
                           _supla_int16_t tTarget);
   void fixTemperatureSetpoints();
   void clearLastOutputValue();

@@ -51,7 +51,8 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   setTemperatureAutoOffsetMax(1000);  // 10 degrees
   setTemperatureAuxMin(500);  // 5 degrees
   setTemperatureAuxMax(7500);  // 75 degrees
-  addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
+  addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+  addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
 
   // default function is set in onInit based on supported modes or loaded from
   // config
@@ -367,9 +368,9 @@ void HvacBase::iterateAlways() {
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_AUTO: {
       int heatNewOutputValue =
-          evaluateOutputValue(t1, getTemperatureSetpointMin());
+          evaluateHeatOutputValue(t1, getTemperatureSetpointMin());
       int coolNewOutputValue =
-          evaluateOutputValue(t1, getTemperatureSetpointMax());
+          evaluateCoolOutputValue(t1, getTemperatureSetpointMax());
       if (heatNewOutputValue > 0) {
         setOutput(heatNewOutputValue, false);
       } else if (coolNewOutputValue < 0) {
@@ -381,7 +382,8 @@ void HvacBase::iterateAlways() {
       break;
     }
     case SUPLA_HVAC_MODE_HEAT: {
-      int newOutputValue = evaluateOutputValue(t1, getTemperatureSetpointMin());
+      int newOutputValue =
+          evaluateHeatOutputValue(t1, getTemperatureSetpointMin());
       if (newOutputValue < 0) {
         newOutputValue = 0;
       }
@@ -389,7 +391,8 @@ void HvacBase::iterateAlways() {
       break;
     }
     case SUPLA_HVAC_MODE_COOL: {
-      int newOutputValue = evaluateOutputValue(t1, getTemperatureSetpointMax());
+      int newOutputValue =
+          evaluateCoolOutputValue(t1, getTemperatureSetpointMax());
       if (newOutputValue > 0) {
         newOutputValue = 0;
       }
@@ -2346,7 +2349,7 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
       return false;
     }
 
-    auto outputValue = evaluateOutputValue(t, tFreeze);
+    auto outputValue = evaluateHeatOutputValue(t, tFreeze);
     if (outputValue > 0) {
       setOutput(outputValue, true);
       return true;
@@ -2362,7 +2365,7 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
       return false;
     }
 
-    auto outputValue = evaluateOutputValue(t, tOverheat);
+    auto outputValue = evaluateCoolOutputValue(t, tOverheat);
     if (outputValue < 0) {
       setOutput(outputValue, true);
       return true;
@@ -2391,7 +2394,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
     auto tAuxMin = getTemperatureAuxMinSetpoint();
     auto tAuxMax = getTemperatureAuxMaxSetpoint();
     if (isSensorTempValid(tAuxMin)) {
-      auto outputValue = evaluateOutputValue(t, tAuxMin);
+      auto outputValue = evaluateHeatOutputValue(t, tAuxMin);
       if (outputValue > 0) {
         setOutput(outputValue, true);
         return true;
@@ -2399,7 +2402,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
     }
 
     if (isSensorTempValid(tAuxMax)) {
-      auto outputValue = evaluateOutputValue(t, tAuxMax);
+      auto outputValue = evaluateCoolOutputValue(t, tAuxMax);
       if (outputValue < 0) {
         setOutput(outputValue, true);
         return true;
@@ -2732,7 +2735,7 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
   return true;
 }
 
-int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
+int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
                                   _supla_int16_t tTarget) {
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC: tMeasured not valid");
@@ -2752,32 +2755,103 @@ int HvacBase::evaluateOutputValue(_supla_int16_t tMeasured,
 
   int output = lastValue;
 
-  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF) {
-    auto histeresis = getTemperatureHisteresis();
-    if (!isSensorTempValid(histeresis)) {
-      SUPLA_LOG_DEBUG("HVAC: histeresis not valid");
-      return getOutputValueOnError();
-    }
-    histeresis >>= 1;
+  auto histeresis = getTemperatureHisteresis();
+  if (!isSensorTempValid(histeresis)) {
+    SUPLA_LOG_DEBUG("HVAC: histeresis not valid");
+    return getOutputValueOnError();
+  }
 
-    // check if we should turn on heating
-    if (lastValue <= 0) {
-      if (tMeasured < tTarget - histeresis) {
-        output = 100;
-      }
-    }
+  auto histeresisHeat = histeresis;
+  auto histeresisOff = histeresis;
 
-    // check if we should turn on cooling
-    if (lastValue >= 0) {
-      if (tMeasured > tTarget + histeresis) {
-        output = -100;
-      }
+  switch (getUsedAlgorithm()) {
+    case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE: {
+      histeresis >>= 1;
+      histeresisHeat = histeresis;
+      histeresisOff = histeresis;
+      break;
+    }
+    case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST: {
+      histeresisOff = 0;
+      break;
     }
   }
+  // check if we should turn on heating
+  if (lastValue <= 0) {
+    if (tMeasured < tTarget - histeresisHeat) {
+      output = 100;
+    }
+  }
+
+  // check if we should turn off heating
+  if (lastValue > 0) {
+    if (tMeasured > tTarget + histeresisOff) {
+      output = 0;
+    }
+  }
+
   channel.setHvacFlagThermometerError(false);
   return output;
 }
 
+int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
+                                  _supla_int16_t tTarget) {
+  if (!isSensorTempValid(tMeasured)) {
+    SUPLA_LOG_DEBUG("HVAC: tMeasured not valid");
+    channel.setHvacFlagThermometerError(true);
+    return getOutputValueOnError();
+  }
+  if (!isSensorTempValid(tTarget)) {
+    SUPLA_LOG_DEBUG("HVAC: tTarget not valid");
+    return getOutputValueOnError();
+  }
+
+  initDefaultAlgorithm();
+  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
+    SUPLA_LOG_DEBUG("HVAC: algorithm not valid");
+    return getOutputValueOnError();
+  }
+
+  int output = lastValue;
+
+  auto histeresis = getTemperatureHisteresis();
+  if (!isSensorTempValid(histeresis)) {
+    SUPLA_LOG_DEBUG("HVAC: histeresis not valid");
+    return getOutputValueOnError();
+  }
+
+  auto histeresisCool = histeresis;
+  auto histeresisOff = histeresis;
+
+  switch (getUsedAlgorithm()) {
+    case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE: {
+      histeresis >>= 1;
+      histeresisCool = histeresis;
+      histeresisOff = histeresis;
+      break;
+    }
+    case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST: {
+      histeresisOff = 0;
+      break;
+    }
+  }
+  // check if we should turn on cooling
+  if (lastValue >= 0) {
+    if (tMeasured > tTarget + histeresisCool) {
+      output = -100;
+    }
+  }
+
+  // check if we should turn off cooling
+  if (lastValue < 0) {
+    if (tMeasured < tTarget - histeresisOff) {
+      output = 0;
+    }
+  }
+
+  channel.setHvacFlagThermometerError(false);
+  return output;
+}
 void HvacBase::changeFunction(int newFunction, bool changedLocally) {
   auto currentFunction = channel.getDefaultFunction();
   if (currentFunction == newFunction) {
@@ -3015,8 +3089,27 @@ void HvacBase::initDefaultConfig() {
   memcpy(&newConfig, &config, sizeof(newConfig));
 
   newConfig.AntiFreezeAndOverheatProtectionEnabled = 0;
-  if (isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF)) {
-    newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF;
+
+  switch (channel.getDefaultFunction()) {
+    default: {
+      if (isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE)) {
+        newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+      } else if (isAlgorithmValid(
+                     SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST)) {
+        newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+      }
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      // For DHW default algorithm is ON_OFF_SETPOINT_AT_MOST
+      if (isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST)) {
+        newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+      } else if (isAlgorithmValid(
+                     SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE)) {
+        newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+      }
+      break;
+    }
   }
 
   newConfig.MinOffTimeS = 0;
@@ -3171,6 +3264,6 @@ void HvacBase::initDefaultWeeklySchedule() {
 
 void HvacBase::initDefaultAlgorithm() {
   if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
-    setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
+    setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   }
 }

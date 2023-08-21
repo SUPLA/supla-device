@@ -726,6 +726,7 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
       hvac->getChannel()->setDefaultFunction(
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
     } else if (function == "dhw") {
+      hvac->enableDomesticHotWaterFunctionSupport();
       hvac->getChannel()->setDefaultFunction(
           SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
     } else if (function == "diff") {

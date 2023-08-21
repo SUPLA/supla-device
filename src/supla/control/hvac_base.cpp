@@ -162,15 +162,12 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&weeklySchedule),
                      sizeof(TChannelConfig_WeeklySchedule))) {
-      SUPLA_LOG_INFO("HVAC weekly schedule loaded successfully");
-
-      generateKey(key, "weekly_ignr");
-      uint8_t weeklyScheduleIgnore = 0;
-      cfg->getUInt8(key, &weeklyScheduleIgnore);
-      if (weeklyScheduleIgnore) {
+      if (!isWeeklyScheduleValid(&weeklySchedule)) {
+        SUPLA_LOG_WARNING("HVAC weekly schedule invalid in storage. Using SW "
+                          "defaults");
         isWeeklyScheduleConfigured = false;
-        SUPLA_LOG_INFO("HVAC ignoring weekly schedule");
       } else {
+        SUPLA_LOG_INFO("HVAC weekly schedule loaded successfully");
         isWeeklyScheduleConfigured = true;
       }
     } else {
@@ -1169,6 +1166,9 @@ bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
       return isDrySupported();
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
       return isDifferentialFunctionSupported();
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      return isDomesticHotWaterFunctionSupported() && isHeatingSupported();
+    }
   }
   return false;
 }
@@ -1680,6 +1680,7 @@ bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
   switch (func) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {
       return config.AntiFreezeAndOverheatProtectionEnabled;
     }
@@ -1791,13 +1792,6 @@ void HvacBase::saveWeeklySchedule() {
       SUPLA_LOG_INFO("HVAC weekly schedule saved successfully");
     } else {
       SUPLA_LOG_INFO("HVAC failed to save weekly schedule");
-    }
-
-    generateKey(key, "weekly_ignr");
-    if (cfg->setUInt8(key, isWeeklyScheduleConfigured ? 0 : 1)) {
-      SUPLA_LOG_INFO("HVAC weekly schedule ignore set successfully");
-    } else {
-      SUPLA_LOG_INFO("HVAC failed to set ignore weekly schedule");
     }
 
     generateKey(key, "weekly_chng");
@@ -1980,7 +1974,8 @@ bool HvacBase::isModeSupported(int mode) const {
   bool onOffSupported = isOnOffSupported();
 
   switch (channel.getDefaultFunction()) {
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
       heatSupported = true;
       break;
     }
@@ -2201,6 +2196,7 @@ void HvacBase::setOutput(int value, bool force) {
 
   switch (channel.getDefaultFunction()) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
       channel.setHvacFlagCooling(false);
       if (secondaryOutput) {
@@ -2379,6 +2375,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   auto func = channel.getDefaultFunction();
   switch (func) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL:
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
       break;
@@ -2571,7 +2568,8 @@ int HvacBase::getTemperatureSetpointMax() {
 
 int HvacBase::getDefaultManualMode() {
     switch (channel.getDefaultFunction()) {
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT: {
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT:
+      case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
         return SUPLA_HVAC_MODE_HEAT;
       }
       case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL: {

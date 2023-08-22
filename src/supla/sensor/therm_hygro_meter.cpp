@@ -176,6 +176,7 @@ void Supla::Sensor::ThermHygroMeter::setRefreshIntervalMs(int intervalMs) {
 
 void Supla::Sensor::ThermHygroMeter::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  setChannelResult = 0;
   Supla::Element::onRegistered(suplaSrpc);
   if (Supla::Storage::ConfigInstance()) {
     if (setChannelStateFlag) {
@@ -206,12 +207,15 @@ uint8_t Supla::Sensor::ThermHygroMeter::handleChannelConfig(
     return SUPLA_CONFIG_RESULT_TRUE;
   }
   if (result->ConfigType != 0) {
-    SUPLA_LOG_DEBUG("handleChannelConfig, invalid configtype");
+    SUPLA_LOG_DEBUG("Channel[%d] invalid configtype", getChannelNumber());
     return SUPLA_CONFIG_RESULT_FALSE;
   }
   if (result->ConfigSize == 0) {
     // server doesn't have channel configuration, so we'll send it
-    setChannelStateFlag = 1;
+    // But don't send it if it failed in previous attempt
+    if (setChannelResult == 0) {
+      setChannelStateFlag = 1;
+    }
     return SUPLA_CONFIG_RESULT_TRUE;
   }
   if (result->Func == SUPLA_CHANNELFNC_THERMOMETER ||
@@ -276,7 +280,7 @@ void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt(
 bool Supla::Sensor::ThermHygroMeter::iterateConnected() {
   auto result = Element::iterateConnected();
 
-  if (result) {
+  if (!result) {
     return result;
   }
 
@@ -315,6 +319,7 @@ void Supla::Sensor::ThermHygroMeter::handleSetChannelConfigResult(
   }
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
+  setChannelResult = result->Result;
 
   switch (result->ConfigType) {
     case SUPLA_CONFIG_TYPE_DEFAULT: {

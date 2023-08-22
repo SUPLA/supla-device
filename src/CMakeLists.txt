@@ -73,6 +73,7 @@ set(SRCS
   supla/network/html/time_parameters.cpp
   supla/network/html/volume_parameters.cpp
   supla/network/html/disable_user_interface_parameter.cpp
+  supla/network/html/h2_tag.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

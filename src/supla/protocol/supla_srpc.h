@@ -38,6 +38,8 @@ class SuplaSrpc : public ProtocolLayer {
   explicit SuplaSrpc(SuplaDeviceClass *sdc, int version = 16);
   ~SuplaSrpc();
 
+  static bool isSuplaPublicServerConfigured();
+
   void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;
@@ -92,7 +94,6 @@ class SuplaSrpc : public ProtocolLayer {
   const char* getSuplaCACert();
   const char* getSupla3rdPartyCACert();
   bool isUpdatePending() override;
-  bool isSuplaPublicServerConfigured();
   void handleDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
   void handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult *result);
 

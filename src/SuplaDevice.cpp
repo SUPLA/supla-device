@@ -21,22 +21,21 @@
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla/protocol/supla_srpc.h>
-
-#include "supla/actions.h"
-#include "supla/channel.h"
-#include "supla/device/last_state_logger.h"
-#include "supla/device/sw_update.h"
-#include "supla/element.h"
-#include "supla/events.h"
-#include "supla/io.h"
-#include "supla/network/network.h"
-#include "supla/network/web_server.h"
-#include "supla/storage/config.h"
-#include "supla/storage/storage.h"
-#include "supla/time.h"
-#include "supla/timer.h"
-#include "supla/tools.h"
-#include "supla/version.h"
+#include <supla/actions.h>
+#include <supla/channel.h>
+#include <supla/device/last_state_logger.h>
+#include <supla/device/sw_update.h>
+#include <supla/element.h>
+#include <supla/events.h>
+#include <supla/io.h>
+#include <supla/network/network.h>
+#include <supla/network/web_server.h>
+#include <supla/storage/config.h>
+#include <supla/storage/storage.h>
+#include <supla/time.h>
+#include <supla/timer.h>
+#include <supla/tools.h>
+#include <supla/version.h>
 
 void SuplaDeviceClass::status(int newStatus, const char *msg, bool alwaysLog) {
   bool showLog = false;
@@ -565,6 +564,16 @@ void SuplaDeviceClass::setEmail(const char *email) {
 void SuplaDeviceClass::setServer(const char *server) {
   setString(
       Supla::Channel::reg_dev.ServerName, server, SUPLA_SERVER_NAME_MAXSIZE);
+
+  // for Supla public servers we check if address is misspelled (srv instead
+  // of svr) and replace it
+  if (Supla::Protocol::SuplaSrpc::isSuplaPublicServerConfigured()) {
+    if (strncmpInsensitive(server, "srv", 3) == 0 && server[3] >= '0' &&
+        server[3] <= '9') {
+      Supla::Channel::reg_dev.ServerName[1] = 'v';
+      Supla::Channel::reg_dev.ServerName[2] = 'r';
+    }
+  }
 }
 
 void SuplaDeviceClass::addClock(Supla::Clock *_clock) {

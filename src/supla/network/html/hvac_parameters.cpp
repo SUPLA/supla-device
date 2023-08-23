@@ -151,7 +151,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_min");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Min. temperature [°C]");
+  sender->sendLabelFor(key, "Heating temperature [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -170,7 +170,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_max");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Max. temperature [°C]");
+  sender->sendLabelFor(key, "Cooling temperature [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);

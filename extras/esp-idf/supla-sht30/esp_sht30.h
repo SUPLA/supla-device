@@ -29,7 +29,6 @@ class SHT30 : public ThermHygroMeter {
   SHT30(Supla::I2CDriver *driver, uint8_t addr);
 
   void onInit() override;
-  void iterateAlways() override;
 
   double getTemp() override;
   double getHumi() override;

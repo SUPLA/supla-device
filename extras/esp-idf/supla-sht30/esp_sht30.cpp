@@ -101,9 +101,3 @@ double Supla::Sensor::SHT30::getHumi() {
   return lastValidHumi;
 }
 
-void Supla::Sensor::SHT30::iterateAlways() {
-  if (millis() - lastReadTime > 5000) {
-    lastReadTime = millis();
-    channel.setNewValue(getTemp(), getHumi());
-  }
-}

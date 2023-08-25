@@ -128,7 +128,6 @@ void setup() {
   hvac->setTemperatureAutoOffsetMax(1000);  // 10 degrees
   hvac->setTemperatureAuxMin(500);  // 5 degrees
   hvac->setTemperatureAuxMax(7500);  // 75 degrees
-  hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF);
 
   hvac->setTemperatureHisteresis(40);
 

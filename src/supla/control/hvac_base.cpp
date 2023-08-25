@@ -256,6 +256,18 @@ void HvacBase::onInit() {
 
   initDone = true;
 
+  // validate thermometers channel numbers
+  if (!setMainThermometerChannelNo(getMainThermometerChannelNo())) {
+    SUPLA_LOG_WARNING("HVAC channel number %d is invalid. Clearing.",
+                      getMainThermometerChannelNo());
+    setMainThermometerChannelNo(getChannelNumber());
+  }
+  if (!setAuxThermometerChannelNo(getAuxThermometerChannelNo())) {
+    SUPLA_LOG_WARNING("HVAC channel number %d is invalid. Clearing.",
+                      getAuxThermometerChannelNo());
+    setAuxThermometerChannelNo(getChannelNumber());
+  }
+
   uint8_t mode = channel.getHvacMode();
   if (mode == SUPLA_HVAC_MODE_NOT_SET) {
     turnOn();
@@ -275,12 +287,12 @@ void HvacBase::onInit() {
 
 void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   SUPLA_LOG_DEBUG("HVAC onRegistered");
-    SUPLA_LOG_DEBUG("HVAC send: IsOn %d, Mode %d, tMin %d, tMax %d, flags 0x%x",
-                    channel.getHvacIsOn(),
-                    channel.getHvacMode(),
-                    channel.getHvacSetpointTemperatureMin(),
-                    channel.getHvacSetpointTemperatureMax(),
-                    channel.getHvacFlags());
+  SUPLA_LOG_DEBUG("HVAC send: IsOn %d, Mode %d, tMin %d, tMax %d, flags 0x%x",
+                  channel.getHvacIsOn(),
+                  channel.getHvacMode(),
+                  channel.getHvacSetpointTemperatureMin(),
+                  channel.getHvacSetpointTemperatureMax(),
+                  channel.getHvacFlags());
   Supla::Element::onRegistered(suplaSrpc);
   if (channelConfigChangedOffline) {
     channelConfigChangedOffline = 1;
@@ -1589,6 +1601,10 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
 }
 
 bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
+  if (!initDone) {
+    config.MainThermometerChannelNo = channelNo;
+    return true;
+  }
   if (isChannelThermometer(channelNo)) {
     if (getAuxThermometerType() !=
         SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
@@ -1613,6 +1629,10 @@ uint8_t HvacBase::getMainThermometerChannelNo() const {
 }
 
 bool HvacBase::setAuxThermometerChannelNo(uint8_t channelNo) {
+  if (!initDone) {
+    config.AuxThermometerChannelNo = channelNo;
+    return true;
+  }
   if (isChannelThermometer(channelNo)) {
     if (getMainThermometerChannelNo() == channelNo) {
       return false;

@@ -785,13 +785,18 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   Supla::Sensor::Thermometer t1;
   Supla::Sensor::ThermHygroMeter t2;
 
+  EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_NOT_SET);
+
+  hvac.onInit();
+
   EXPECT_EQ(hvac.getMinOnTimeS(), 0);
   EXPECT_EQ(hvac.getMinOffTimeS(), 0);
-  EXPECT_EQ(hvac.getUsedAlgorithm(), SUPLA_HVAC_ALGORITHM_NOT_SET);
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), 0);
   EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
   EXPECT_EQ(hvac.getAuxThermometerType(),
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   EXPECT_FALSE(hvac.isAntiFreezeAndHeatProtectionEnabled());
 

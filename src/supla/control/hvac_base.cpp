@@ -1831,6 +1831,7 @@ void HvacBase::handleSetChannelConfigResult(
   }
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
+  (void)(success);
 
   switch (result->ConfigType) {
     case SUPLA_CONFIG_TYPE_DEFAULT: {

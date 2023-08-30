@@ -319,6 +319,7 @@ void Supla::Sensor::ThermHygroMeter::handleSetChannelConfigResult(
   }
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
+  (void)(success);
   setChannelResult = result->Result;
 
   switch (result->ConfigType) {

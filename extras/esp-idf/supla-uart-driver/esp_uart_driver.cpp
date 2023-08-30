@@ -25,7 +25,9 @@
 using Supla::UartDriver;
 
 UartDriver::UartDriver(int txGpio, int rxGpio, int uartNum)
-    : txGpio(txGpio), rxGpio(rxGpio), uartNum(uartNum) {
+    : txGpio(txGpio),
+      rxGpio(rxGpio),
+      uartNum(static_cast<uart_port_t>(uartNum)) {
 }
 
 UartDriver::~UartDriver() {

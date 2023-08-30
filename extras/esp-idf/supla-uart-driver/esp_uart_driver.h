@@ -38,7 +38,7 @@ class UartDriver {
   bool initialized = false;
   int txGpio = 0;
   int rxGpio = 0;
-  int uartNum = 1;
+  uart_port_t uartNum = static_cast<uart_port_t>(1);
 };
 
 }  // namespace Supla

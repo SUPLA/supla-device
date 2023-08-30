@@ -167,7 +167,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                  SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2100);
@@ -201,7 +202,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
@@ -224,7 +226,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
@@ -289,7 +292,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
                   SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
+        // in case of clock error, we work with program[0]
+        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
         EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
     });
 
@@ -489,6 +493,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
 TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   hvac->addSecondaryOutput(&secondaryOutput);
+  ClockStub clock;
 
   EXPECT_EQ(hvac->getChannelNumber(), 0);
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
@@ -797,8 +802,6 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
     t1->iterateConnected();
     time.advance(100);
   }
-
-  ClockStub clock;
 
   hvacValue->Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);

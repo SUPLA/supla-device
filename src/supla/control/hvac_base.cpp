@@ -311,6 +311,12 @@ void HvacBase::iterateAlways() {
   }
   lastIterateTimestampMs = millis();
 
+  if (Supla::Clock::IsReady()) {
+    channel.setHvacFlagClockError(false);
+  } else {
+    channel.setHvacFlagClockError(true);
+  }
+
   // update tempreatures information
   auto t1 = getPrimaryTemp();
   auto t2 = getSecondaryTemp();
@@ -2540,7 +2546,7 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
 
   if (applyNewRuntimeSettings(
       hvacValue->Mode, tMin, tMax, newValue->DurationSec)) {
-    // clear flag, so iterateAlawys method will apply new config instantly
+    // clear flag, so iterateAlways method will apply new config instantly
     // instead of waiting few seconds
     lastConfigChangeTimestampMs = 0;
     return 1;
@@ -2645,17 +2651,17 @@ bool HvacBase::processWeeklySchedule() {
     return false;
   }
 
+  int programId = 1;
+
   if (!Supla::Clock::IsReady()) {
     SUPLA_LOG_DEBUG(
         "Hvac: processs weekly schedule failed - clock is not ready");
-    setOutput(getOutputValueOnError(), true);
     channel.setHvacFlagClockError(true);
-    return false;
+  } else {
+    channel.setHvacFlagClockError(false);
+    programId = getWeeklyScheduleProgramId(Supla::Clock::GetHvacDayOfWeek(),
+        Supla::Clock::GetHour(), Supla::Clock::GetQuarter());
   }
-
-  channel.setHvacFlagClockError(false);
-  int programId = getWeeklyScheduleProgramId(Supla::Clock::GetHvacDayOfWeek(),
-      Supla::Clock::GetHour(), Supla::Clock::GetQuarter());
 
   if (programId == 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
     setTargetMode(SUPLA_HVAC_MODE_OFF, true);

@@ -46,6 +46,7 @@ class HvacIntegrationF : public ::testing::Test {
   OutputMock secondaryOutput;
   SimpleTime time;
   ProtocolLayerMock proto;
+  ClockStub clock;
 
   Supla::Control::HvacBase *hvac = {};
   Supla::Sensor::VirtualThermometer *t1 = {};
@@ -3074,8 +3075,6 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
 
-  ClockStub clock;
-
   hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
 
@@ -3996,8 +3995,6 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
 
   hvac->setMainThermometerChannelNo(1);
   hvac->setTemperatureHisteresis(40);  // 0.4 C
-
-  ClockStub clock;
 
   hvac->onLoadConfig(nullptr);
   hvac->onLoadState();

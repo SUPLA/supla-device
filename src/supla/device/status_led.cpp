@@ -65,6 +65,35 @@ void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
+void Supla::Device::StatusLed::storeModeToConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int8_t currentCfgValue = 0;
+    cfg->getInt8(StatusLedCfgTag, &currentCfgValue);
+    if (currentCfgValue != ledMode) {
+      switch (ledMode) {
+        default:
+        case 0: {
+          cfg->setInt8(Supla::Device::StatusLedCfgTag, 0);
+          break;
+        }
+        case 1: {
+          cfg->setInt8(Supla::Device::StatusLedCfgTag,
+                       static_cast<int8_t>(ledMode));
+          break;
+        }
+        case 2: {
+          cfg->setInt8(Supla::Device::StatusLedCfgTag,
+                       static_cast<int8_t>(ledMode));
+          break;
+        }
+      }
+      cfg->setDeviceConfigChangeFlag();
+      cfg->saveWithDelay(2000);
+    }
+  }
+}
+
 void Supla::Device::StatusLed::onInit() {
   updatePin();
   if (state == NOT_INITIALIZED) {
@@ -273,6 +302,10 @@ void Supla::Device::StatusLed::setAutoSequence() {
 
 void Supla::Device::StatusLed::setMode(LedMode newMode) {
   ledMode = newMode;
+}
+
+Supla::LedMode Supla::Device::StatusLed::getMode() const {
+  return ledMode;
 }
 
 void Supla::Device::StatusLed::onDeviceConfigChange(uint64_t fieldBit) {

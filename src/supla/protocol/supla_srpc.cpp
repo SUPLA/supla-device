@@ -29,6 +29,16 @@
 
 #include "supla_srpc.h"
 
+namespace Supla::Protocol {
+struct CalCfgResultPendingItem {
+  uint8_t channelNo = 0;
+  int32_t receiverId = 0;
+  int32_t command = 0;
+
+  CalCfgResultPendingItem *next = nullptr;
+};
+}  // namespace Supla::Protocol
+
 
 Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
     : Supla::Protocol::ProtocolLayer(sdc), version(version) {
@@ -267,7 +277,7 @@ void Supla::messageReceived(void *srpc,
         break;
       }
       case SUPLA_SD_CALL_DEVICE_CALCFG_REQUEST: {
-        TDS_DeviceCalCfgResult result;
+        TDS_DeviceCalCfgResult result = {};
         result.ReceiverID = rd.data.sd_device_calcfg_request->SenderID;
         result.ChannelNumber = rd.data.sd_device_calcfg_request->ChannelNumber;
         result.Command = rd.data.sd_device_calcfg_request->Command;
@@ -294,13 +304,19 @@ void Supla::messageReceived(void *srpc,
           if (element) {
             result.Result = element->handleCalcfgFromServer(
                 rd.data.sd_device_calcfg_request);
+            if (result.Result == SUPLA_SRPC_CALCFG_RESULT_PENDING) {
+              suplaSrpc->calCfgResultPending.set(
+                  result.ChannelNumber, result.ReceiverID, result.Command);
+            }
           } else {
             SUPLA_LOG_WARNING(
                 "Error: couldn't find element for a requested channel [%d]",
                 rd.data.sd_channel_new_value->ChannelNumber);
           }
         }
-        srpc_ds_async_device_calcfg_result(srpc, &result);
+        if (result.Result >= 0) {
+          srpc_ds_async_device_calcfg_result(srpc, &result);
+        }
         break;
       }
       case SUPLA_SD_CALL_GET_CHANNEL_CONFIG_RESULT: {
@@ -1098,3 +1114,101 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
   srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
   delete value;
 }
+
+void Supla::Protocol::CalCfgResultPending::set(uint8_t channelNo,
+                                               int32_t receiverId,
+                                               int32_t command) {
+  auto ptr = first;
+  CalCfgResultPendingItem *prev = nullptr;
+  while (ptr) {
+    if (ptr->channelNo == channelNo) {
+      ptr->receiverId = receiverId;
+      ptr->command = command;
+      return;
+    }
+    prev = ptr;
+    ptr = ptr->next;
+  }
+  auto item = new CalCfgResultPendingItem;
+  item->channelNo = channelNo;
+  item->receiverId = receiverId;
+  item->command = command;
+  item->next = nullptr;
+
+  if (first == nullptr) {
+    first = item;
+  } else if (prev) {
+    prev->next = item;
+  }
+}
+
+void Supla::Protocol::CalCfgResultPending::clear(uint8_t channelNo) {
+  auto ptr = first;
+  CalCfgResultPendingItem *prev = nullptr;
+  while (ptr) {
+    if (ptr->channelNo == channelNo) {
+      if (prev) {
+        prev->next = ptr->next;
+      } else {
+        first = ptr->next;
+      }
+      delete ptr;
+      return;
+    }
+    prev = ptr;
+    ptr = ptr->next;
+  }
+}
+
+Supla::Protocol::CalCfgResultPending::CalCfgResultPending() {
+}
+
+Supla::Protocol::CalCfgResultPending::~CalCfgResultPending() {
+  while (first) {
+    auto copy = first;
+    first = first->next;
+    delete copy;
+  }
+}
+
+Supla::Protocol::CalCfgResultPendingItem *
+Supla::Protocol::CalCfgResultPending::get(uint8_t channelNo) {
+  auto ptr = first;
+  while (ptr) {
+    if (ptr->channelNo == channelNo) {
+      return ptr;
+    }
+    ptr = ptr->next;
+  }
+  return nullptr;
+}
+
+void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(uint8_t channelNo,
+                                                         int32_t resultId,
+                                                         int32_t command,
+                                                         int dataSize,
+                                                         void *data) {
+  auto pendingResponse = calCfgResultPending.get(channelNo);
+  if (pendingResponse == nullptr) {
+    SUPLA_LOG_WARNING("No pending response for channel %d", channelNo);
+    return;
+  }
+
+  TDS_DeviceCalCfgResult result = {};
+  result.ReceiverID = pendingResponse->receiverId;
+  result.ChannelNumber = channelNo;
+  result.Command = pendingResponse->command;
+  if (command >= 0) {
+    result.Command = command;
+  }
+
+  result.Result = resultId;
+  result.DataSize = dataSize;
+  if (dataSize > SUPLA_CALCFG_DATA_MAXSIZE) {
+    SUPLA_LOG_WARNING("Data size %d is too big", dataSize);
+    dataSize = SUPLA_CALCFG_DATA_MAXSIZE;
+  }
+  memcpy(result.Data, data, dataSize);
+  srpc_ds_async_device_calcfg_result(srpc, &result);
+}
+

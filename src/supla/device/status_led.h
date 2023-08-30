@@ -81,6 +81,8 @@ class StatusLed : public Element {
 
   // Sets status LED mode
   void setMode(LedMode newMode);
+  LedMode getMode() const;
+  void storeModeToConfig();
 
  protected:
   void updatePin();

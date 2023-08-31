@@ -2732,14 +2732,6 @@ bool HvacBase::isSensorTempValid(_supla_int16_t temperature) const {
 
 bool HvacBase::checkThermometersStatusForCurrentMode(
     _supla_int16_t t1, _supla_int16_t t2) const {
-  auto type = getAuxThermometerType();
-  if (type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET &&
-      type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED) {
-    if (!isSensorTempValid(t1) || !isSensorTempValid(t2)) {
-      return false;
-    }
-  }
-
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT:
     case SUPLA_HVAC_MODE_COOL:

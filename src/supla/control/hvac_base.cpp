@@ -3281,6 +3281,11 @@ void HvacBase::initDefaultWeeklySchedule() {
 
 void HvacBase::initDefaultAlgorithm() {
   if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
-    setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+    if (channel.getDefaultFunction() ==
+        SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER) {
+      setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
+    } else {
+      setUsedAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+    }
   }
 }

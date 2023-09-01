@@ -234,18 +234,24 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   hvac.onInit();
   // check default function
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check auto
   hvac.setAutoSupported(true);
   // init doesn't change default function when it was previously set
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
 
   // clear default function and check auto again
   ch->setDefault(0);
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check cool only
   hvac.setCoolingSupported(true);
@@ -254,6 +260,8 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   ch->setDefault(0);
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check heat only
   hvac.setCoolingSupported(false);
@@ -262,6 +270,8 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   ch->setDefault(0);
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check dry
   hvac.setCoolingSupported(false);
@@ -292,6 +302,8 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   ch->setDefault(0);
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check will all options disabled
   hvac.setOnOffSupported(false);
@@ -1675,4 +1687,22 @@ TEST_F(HvacTestWithChannelSetupF,
   hvacConfig->AuxThermometerChannelNo = 2;
   EXPECT_EQ(hvac->handleChannelConfig(&configFromServer),
       SUPLA_CONFIG_RESULT_TRUE);
+}
+
+TEST_F(HvacTestsF, checkInitizationForDHW) {
+  OutputMock output;
+  Supla::Control::HvacBase hvac(&output);
+
+  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+
+  auto *ch = hvac.getChannel();
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
+  hvac.getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
+
+  hvac.onInit();
+  // check default function
+  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
+
+  EXPECT_EQ(hvac.getUsedAlgorithm(),
+            SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
 }

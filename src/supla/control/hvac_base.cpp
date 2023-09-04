@@ -212,6 +212,12 @@ void HvacBase::onLoadState() {
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&countdownTimerEnds),
         sizeof(countdownTimerEnds));
+    Supla::Storage::ReadState(
+        reinterpret_cast<unsigned char *>(&lastManualSetpointMin),
+        sizeof(lastManualSetpointMin));
+    Supla::Storage::ReadState(
+        reinterpret_cast<unsigned char *>(&lastManualSetpointMax),
+        sizeof(lastManualSetpointMax));
   }
 }
 
@@ -226,6 +232,12 @@ void HvacBase::onSaveState() {
     Supla::Storage::WriteState(
         reinterpret_cast<const unsigned char *>(&countdownTimerEnds),
         sizeof(countdownTimerEnds));
+    Supla::Storage::WriteState(
+        reinterpret_cast<const unsigned char *>(&lastManualSetpointMin),
+        sizeof(lastManualSetpointMin));
+    Supla::Storage::WriteState(
+        reinterpret_cast<const unsigned char *>(&lastManualSetpointMax),
+        sizeof(lastManualSetpointMax));
   }
 }
 
@@ -2513,6 +2525,17 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
   if (durationSec > 0) {
     channel.setHvacFlagCountdownTimer(true);
   }
+
+  if (!channel.isHvacFlagWeeklySchedule() && mode != SUPLA_HVAC_MODE_OFF) {
+    // in manual mode we store last manual temperatures
+    if (tMin > INT16_MIN) {
+      lastManualSetpointMin = tMin;
+    }
+    if (tMax > INT16_MIN) {
+      lastManualSetpointMax = tMax;
+    }
+  }
+
   return true;
 }
 
@@ -2525,23 +2548,27 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       hvacValue->SetpointTemperatureMax,
       newValue->DurationSec);
 
-  int tMin = hvacValue->SetpointTemperatureMin;
-  int tMax = hvacValue->SetpointTemperatureMax;
+  int tMin = INT16_MIN;  // hvacValue->SetpointTemperatureMin;
+  int tMax = INT16_MIN;  // hvacValue->SetpointTemperatureMax;
 
   if (Supla::Channel::isHvacFlagSetpointTemperatureMaxSet(hvacValue)) {
-    if (!isTemperatureInRoomConstrain(tMax)) {
-      return 0;
+    if (isTemperatureInRoomConstrain(hvacValue->SetpointTemperatureMax)) {
+      tMax = hvacValue->SetpointTemperatureMax;
+    } else {
+      tMax = lastManualSetpointMax;
     }
   } else {
-    tMax = getTemperatureSetpointMax();
+    tMax = lastManualSetpointMax;  // getTemperatureSetpointMax();
   }
 
   if (Supla::Channel::isHvacFlagSetpointTemperatureMinSet(hvacValue)) {
-    if (!isTemperatureInRoomConstrain(tMin)) {
-      return 0;
+    if (isTemperatureInRoomConstrain(hvacValue->SetpointTemperatureMin)) {
+      tMin = hvacValue->SetpointTemperatureMin;
+    } else {
+      tMin = lastManualSetpointMin;
     }
   } else {
-    tMin = getTemperatureSetpointMin();
+    tMin = lastManualSetpointMin;  // getTemperatureSetpointMin();
   }
 
   if (applyNewRuntimeSettings(
@@ -2689,6 +2716,15 @@ bool HvacBase::processWeeklySchedule() {
 }
 
 void HvacBase::setSetpointTemperaturesForCurrentMode(int tMin, int tMax) {
+  if (!channel.isHvacFlagWeeklySchedule()) {
+    if (tMin == INT16_MIN) {
+      tMin = lastManualSetpointMin;
+    }
+    if (tMax == INT16_MIN) {
+      tMax = lastManualSetpointMax;
+    }
+  }
+
   setTemperatureSetpointMin(tMin);
   setTemperatureSetpointMax(tMax);
 }

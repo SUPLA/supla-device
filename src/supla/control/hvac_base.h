@@ -379,6 +379,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // secondaryOutput can be used only for cooling
   Supla::Control::OutputInterface *secondaryOutput = nullptr;
   THVACValue lastWorkingMode = {};
+  int16_t lastManualSetpointMin = INT16_MIN;
+  int16_t lastManualSetpointMax = INT16_MIN;
+
   time_t countdownTimerEnds = 0;
   uint32_t lastConfigChangeTimestampMs = 0;
   uint32_t lastIterateTimestampMs = 0;

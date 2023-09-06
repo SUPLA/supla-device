@@ -54,6 +54,8 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
     sender->send("<span class=\"slider\"></span>");
     sender->send("</div>");
     sender->send("</label>");
+    sender->send("<p>Warning: you can enter config mode only from Cloud, "
+        "local user interface, and by power cycling the device 3 times.</p>");
     sender->send("</div>");
     // form-field BEGIN
   }

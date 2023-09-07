@@ -30,7 +30,7 @@ const char PowerCycleKey[] = "power_cycle";
 }  // namespace Supla::Device
 
 EnterCfgModeAfterPowerCycle::EnterCfgModeAfterPowerCycle(uint32_t timeoutMs,
-                                                         int powerCycles)
+                                                         uint32_t powerCycles)
     : timeoutMs(timeoutMs), maxPowerCycles(powerCycles) {
 }
 

@@ -27,7 +27,7 @@ namespace Supla::Device {
 class EnterCfgModeAfterPowerCycle : public Supla::Element {
  public:
   explicit EnterCfgModeAfterPowerCycle(uint32_t timeoutMs = 5000,
-                                       int powerCycles = 3);
+                                      uint32_t powerCycles = 3);
 
   void onLoadConfig(SuplaDeviceClass *sdc) override;
   void iterateAlways() override;
@@ -36,7 +36,7 @@ class EnterCfgModeAfterPowerCycle : public Supla::Element {
   SuplaDeviceClass *sdc = nullptr;
   uint32_t timestampMs = 0;
   uint32_t timeoutMs = 5000;
-  int maxPowerCycles = 3;
+  uint32_t maxPowerCycles = 3;
   uint32_t currentPowerCycle = 0;
   bool incremented = false;
   bool enabled = false;

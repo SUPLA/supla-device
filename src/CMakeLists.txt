@@ -22,6 +22,7 @@ set(SRCS
   supla/device/status_led.cpp
   supla/device/remote_device_config.cpp
   supla/device/notifications.cpp
+  supla/device/enter_cfg_mode_after_power_cycle.cpp
 
   supla/storage/storage.cpp
   supla/storage/config.cpp

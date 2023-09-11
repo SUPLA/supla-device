@@ -11,7 +11,9 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/action_handler.cpp
   ../../../src/supla/at_channel.cpp
   ../../../src/supla/channels/channel.cpp
+  ../../../src/supla/channels/binary_sensor_channel.cpp
   ../../../src/supla/channel_element.cpp
+  ../../../src/supla/element_with_channel_actions.cpp
   ../../../src/supla/channels/channel_extended.cpp
   ../../../src/supla/correction.cpp
   ../../../src/supla/element.cpp

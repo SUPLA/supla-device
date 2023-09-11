@@ -21,9 +21,9 @@
 
 #include <supla-common/srpc.h>
 #include <supla/action_handler.h>
+#include <supla/element_with_channel_actions.h>
 
 #include "../channel_extended.h"
-#include "../element.h"
 #include "../local_action.h"
 
 #define MAX_PHASES 3
@@ -46,8 +46,8 @@ struct EnergyMeasurmentsStorage {
   EM_VAR_FORWARD_ACTIVE_ENERGY_BALANCED |                            \
   EM_VAR_REVERSE_ACTIVE_ENERGY_BALANCED)
 
-class ElectricityMeter :
-  public Element, public LocalAction, public ActionHandler {
+class ElectricityMeter : public ElementWithChannelActions,
+                         public ActionHandler {
  public:
   ElectricityMeter();
 
@@ -252,13 +252,6 @@ class ElectricityMeter :
   void setRefreshRate(unsigned int sec);
 
   Channel *getChannel() override;
-
-  virtual void addAction(int action,
-                         ActionHandler &client,  // NOLINT(runtime/references)
-                         Supla::Condition *condition);
-  virtual void addAction(int action,
-                         ActionHandler *client,
-                         Supla::Condition *condition);
 
  protected:
   TElectricityMeter_ExtendedValue_V2 emValue;

@@ -53,3 +53,12 @@ void Supla::Sensor::Binary::onInit() {
       channel.getChannelNumber(), pin, pullUp ? INPUT_PULLUP : INPUT, io);
   channel.setNewValue(getValue());
 }
+
+Supla::Channel *Supla::Sensor::Binary::getChannel() {
+  return &channel;
+}
+
+void Supla::Sensor::Binary::setServerInvertLogic(bool invertLogic) {
+  channel.setServerInvertLogic(invertLogic);
+}
+

@@ -19,14 +19,15 @@
 #ifndef SRC_SUPLA_SENSOR_BINARY_H_
 #define SRC_SUPLA_SENSOR_BINARY_H_
 
-#include "../channel_element.h"
+#include <supla/channels/binary_sensor_channel.h>
+#include <supla/element_with_channel_actions.h>
 
 namespace Supla {
 
 class Io;
 
 namespace Sensor {
-class Binary : public ChannelElement {
+class Binary : public ElementWithChannelActions {
  public:
   explicit Binary(Supla::Io *io,
                   int pin,
@@ -36,6 +37,9 @@ class Binary : public ChannelElement {
   bool getValue();
   void iterateAlways() override;
   void onInit() override;
+  Channel *getChannel() override;
+
+  void setServerInvertLogic(bool invertLogic);
 
  protected:
   int pin = -1;
@@ -43,6 +47,7 @@ class Binary : public ChannelElement {
   bool invertLogic = false;
   uint32_t lastReadTime = 0;
   Supla::Io *io = nullptr;
+  BinarySensorChannel channel;
 };
 
 };  // namespace Sensor

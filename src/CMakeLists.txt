@@ -4,12 +4,14 @@
 set(SRCS
   supla/uptime.cpp
   supla/channels/channel.cpp
+  supla/channels/binary_sensor_channel.cpp
   supla/channels/channel_extended.cpp
   supla/io.cpp
   supla/tools.cpp
   supla/element.cpp
   supla/local_action.cpp
   supla/channel_element.cpp
+  supla/element_with_channel_actions.cpp
   supla/correction.cpp
   supla/at_channel.cpp
   supla/action_handler.cpp

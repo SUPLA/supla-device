@@ -10,8 +10,10 @@ COMPONENT_OBJS := \
   ../../../src/SuplaDevice.o \
   ../../../src/supla/action_handler.o \
   ../../../src/supla/at_channel.o \
-  ../../../src/supla/channel.o \
+  ../../../src/supla/channels/channel.o \
+	../../../src/supla/channels/binary_sensor_channel.o \
   ../../../src/supla/channel_element.o \
+  ../../../src/supla/element_with_channel_actions.o \
   ../../../src/supla/channel_extended.o \
   ../../../src/supla/correction.o \
   ../../../src/supla/element.o \

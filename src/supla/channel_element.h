@@ -22,37 +22,15 @@
 #include "local_action.h"
 #include "action_handler.h"
 #include "condition.h"
+#include "element_with_channel_actions.h"
 
 namespace Supla {
 
 class Condition;
 
-class ChannelElement : public Element, public LocalAction {
+class ChannelElement : public ElementWithChannelActions {
  public:
   Channel *getChannel() override;
-
-  // Override local action methods in order to delegate execution to Channel
-  void addAction(int action,
-      ActionHandler &client,  // NOLINT(runtime/references)
-      int event,
-      bool alwaysEnabled = false) override;
-  void addAction(int action, ActionHandler *client, int event,
-      bool alwaysEnabled = false) override;
-  virtual void addAction(int action,
-      ActionHandler &client,  // NOLINT(runtime/references)
-      Supla::Condition *condition,
-      bool alwaysEnabled = false);
-  virtual void addAction(int action, ActionHandler *client,
-      Supla::Condition *condition,
-      bool alwaysEnabled = false);
-
-  bool isEventAlreadyUsed(int event) override;
-
-  void runAction(int event) override;
-
-  virtual bool loadFunctionFromConfig();
-  // returns true if function was changed (previous one was different)
-  virtual bool setAndSaveFunction(_supla_int_t channelFunction);
 
  protected:
   Channel channel;

@@ -272,22 +272,6 @@ void Supla::Sensor::ElectricityMeter::setRefreshRate(unsigned int sec) {
   }
 }
 
-// TODO(klew): move those addAction methods to separate parent
-// class i.e. ExtChannelElement - similar to ChannelElement
-void Supla::Sensor::ElectricityMeter::addAction(int action,
-                                                ActionHandler &client,
-                                                Supla::Condition *condition) {
-  condition->setClient(client);
-  condition->setSource(this);
-  LocalAction::addAction(action, condition, Supla::ON_CHANGE);
-}
-
-void Supla::Sensor::ElectricityMeter::addAction(int action,
-                                                ActionHandler *client,
-                                                Supla::Condition *condition) {
-  ElectricityMeter::addAction(action, *client, condition);
-}
-
 // energy 1 == 0.00001 kWh
 unsigned _supla_int64_t
 Supla::Sensor::ElectricityMeter::getFwdActEnergy(int phase) {

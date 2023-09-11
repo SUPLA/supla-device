@@ -51,7 +51,7 @@ class Channel : public LocalAction {
   double getValueDoubleSecond();
   _supla_int_t getValueInt32();
   unsigned _supla_int64_t getValueInt64();
-  bool getValueBool();
+  virtual bool getValueBool();
   uint8_t getValueRed();
   uint8_t getValueGreen();
   uint8_t getValueBlue();

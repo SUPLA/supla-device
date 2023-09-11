@@ -2,8 +2,8 @@ set(SUPLA_DEVICE_SRCS
   src/SuplaDevice.cpp
 
   src/supla/uptime.cpp
-  src/supla/channel.cpp
-  src/supla/channel_extended.cpp
+  src/supla/channels/channel.cpp
+  src/supla/channels/channel_extended.cpp
   src/supla/io.cpp
   src/supla/tools.cpp
   src/supla/element.cpp

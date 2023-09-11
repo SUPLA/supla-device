@@ -10,9 +10,9 @@ set(SUPLA_DEVICE_SRCS
 
   ../../../src/supla/action_handler.cpp
   ../../../src/supla/at_channel.cpp
-  ../../../src/supla/channel.cpp
+  ../../../src/supla/channels/channel.cpp
   ../../../src/supla/channel_element.cpp
-  ../../../src/supla/channel_extended.cpp
+  ../../../src/supla/channels/channel_extended.cpp
   ../../../src/supla/correction.cpp
   ../../../src/supla/element.cpp
   ../../../src/supla/io.cpp

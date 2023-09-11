@@ -18,12 +18,12 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
+#include <supla-common/srpc.h>
+#include <supla/tools.h>
+#include <supla/events.h>
+#include <supla/correction.h>
 
 #include "channel.h"
-#include "supla-common/srpc.h"
-#include "tools.h"
-#include "events.h"
-#include "correction.h"
 
 namespace Supla {
 

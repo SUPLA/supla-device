@@ -3114,7 +3114,7 @@ _supla_int16_t HvacBase::getDefaultTemperatureRoomMin() const {
     defaultTemperature = defaultTemperatureRoomMin[channelFunctionToIndex(0)];
   }
   if (defaultTemperature == INT16_MIN) {
-    defaultTemperature = 1000;  // return 10 degree if nothing else is set
+    defaultTemperature = 500;  // return 5 degree if nothing else is set
   }
   return defaultTemperature;
 }
@@ -3241,7 +3241,7 @@ void HvacBase::initDefaultWeeklySchedule() {
       setProgram(1, SUPLA_HVAC_MODE_HEAT, 4000, 0);
       setProgram(2, SUPLA_HVAC_MODE_HEAT, 5000, 0);
       setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
-      setProgram(4, SUPLA_HVAC_MODE_HEAT, 7500, 0);
+      setProgram(4, SUPLA_HVAC_MODE_HEAT, 6000, 0);
       break;
     }
   }

@@ -390,22 +390,22 @@ class HvacBase : public ChannelElement, public ActionHandler {
   _supla_int16_t lastTemperature = 0;
 
   _supla_int16_t defaultTemperatureRoomMin[6] = {
-      1000,  // default min temperature for all other functions or when value is
+      500,  // default min temperature for all other functions or when value is
              // set to INT16_MIN
-      1000,  // HEAT
-      1000,  // COOL
-      1000,  // AUTO
+      500,  // HEAT
+      500,  // COOL
+      500,  // AUTO
       -5000,  // DIFFERENTIAL
       1000,   // DOMESTIC_HOT_WATER
   };
   _supla_int16_t defaultTemperatureRoomMax[6] = {
-      4000,  // default min temperature for all other functions or when value is
+      4000,  // default max temperature for all other functions or when value is
              // set to INT16_MIN
       4000,  // HEAT
       4000,  // COOL
       4000,  // AUTO
       5000,  // DIFFERENTIAL
-      9000,   // DOMESTIC_HOT_WATER
+      7500,   // DOMESTIC_HOT_WATER
   };
 };
 

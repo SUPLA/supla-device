@@ -992,7 +992,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
                 2000);
 
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1121,7 +1121,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
                 2000);
 
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1298,7 +1298,7 @@ TEST_F(HvacTestWithChannelSetupF,
                 2000);
 
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
+                &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1415,7 +1415,7 @@ TEST_F(HvacTestWithChannelSetupF,
               &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
 
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
           Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1645,7 +1645,7 @@ TEST_F(HvacTestWithChannelSetupF,
               .Temperatures = {}};
 
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 1000);
+              &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_ROOM_MAX, 4000);
           Supla::Control::HvacBase::setTemperatureInStruct(

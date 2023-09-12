@@ -1010,4 +1010,4 @@ void Channel::setOnline() {
   }
 }
 
-};  // namespace Supla
+}  // namespace Supla

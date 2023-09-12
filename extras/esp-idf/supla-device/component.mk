@@ -12,9 +12,9 @@ COMPONENT_OBJS := \
   ../../../src/supla/at_channel.o \
   ../../../src/supla/channels/channel.o \
 	../../../src/supla/channels/binary_sensor_channel.o \
-  ../../../src/supla/channels/channel_element.o \
+  ../../../src/supla/channel_element.o \
   ../../../src/supla/element_with_channel_actions.o \
-  ../../../src/supla/channel_extended.o \
+  ../../../src/supla/channels/channel_extended.o \
   ../../../src/supla/correction.o \
   ../../../src/supla/element.o \
   ../../../src/supla/io.o \
@@ -140,6 +140,7 @@ COMPONENT_OBJS := \
 COMPONENT_SRCDIRS := ../../../src/supla-common \
 										 ../../../src/supla \
 										 ../../../src/supla/conditions \
+										 ../../../src/supla/channels \
 										 ../../../src/supla/clock \
 										 ../../../src/supla/control \
 										 ../../../src/supla/device \

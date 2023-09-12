@@ -2535,6 +2535,15 @@ typedef struct {
   unsigned char AdjustmentAppliedByDevice;  // 1/true - by device
                                             // 0/false - by server
 } TChannelConfig_TemperatureAndHumidity;    // v. >= 21
+                                            //
+// ChannelConfig for all binary sensors (all functions valid for
+// SUPLA_CHANNELTYPE_BINARYSENSOR)
+// Device doesn't apply this inverted logic on communication towards server.
+// It is used only for interanal purposes and for other external interfaces
+// like MQTT
+typedef struct {
+  unsigned char InvertedLogic;  // 0 - not inverted, 1 - inverted
+} TChannelConfig_BinarySensor;  // v. >= 21
 
 // Not set is set when there is no thermometer for "AUX" available
 // at all.

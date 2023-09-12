@@ -22,6 +22,8 @@
 #include <supla/channels/binary_sensor_channel.h>
 #include <supla/element_with_channel_actions.h>
 
+class SuplaDeviceClass;
+
 namespace Supla {
 
 class Io;
@@ -34,6 +36,9 @@ class BinaryBase : public ElementWithChannelActions {
   virtual bool getValue() = 0;
   void iterateAlways() override;
   Channel *getChannel() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
+  uint8_t handleChannelConfig(TSD_ChannelConfig *config,
+                              bool local = false) override;
 
   void setServerInvertLogic(bool invertLogic);
   void setReadIntervalMs(uint32_t intervalMs);

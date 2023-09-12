@@ -30,7 +30,6 @@ Supla::Sensor::Binary::Binary(Supla::Io *io,
 
 Supla::Sensor::Binary::Binary(int pin, bool pullUp, bool invertLogic)
     : pin(pin), pullUp(pullUp), invertLogic(invertLogic) {
-  channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
 }
 
 bool Supla::Sensor::Binary::getValue() {

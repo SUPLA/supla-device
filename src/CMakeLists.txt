@@ -92,6 +92,7 @@ set(SRCS
   supla/sensor/thermometer_driver.cpp
   supla/sensor/electricity_meter.cpp
   supla/sensor/binary.cpp
+  supla/sensor/binary_base.cpp
   supla/sensor/virtual_binary.cpp
   supla/sensor/impulse_counter.cpp
   supla/sensor/virtual_impulse_counter.cpp

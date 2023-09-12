@@ -104,6 +104,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/device/remote_device_config.o \
 	\
   ../../../src/supla/sensor/binary.o \
+	../../../src/supla/sensor/binary_base.o \.
   ../../../src/supla/sensor/electricity_meter.o \
   ../../../src/supla/sensor/hygro_meter.o \
   ../../../src/supla/sensor/impulse_counter.o \

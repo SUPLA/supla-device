@@ -117,6 +117,7 @@ set(SUPLA_DEVICE_SRCS
 # not all files from sensor folder are compiled here. Some still require
 # porting from ARDUINO
   ../../../src/supla/sensor/binary.cpp
+  ../../../src/supla/sensor/binary_base.cpp
   ../../../src/supla/sensor/electricity_meter.cpp
   ../../../src/supla/sensor/hygro_meter.cpp
   ../../../src/supla/sensor/impulse_counter.cpp

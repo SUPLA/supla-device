@@ -134,7 +134,7 @@ class SuplaSrpc : public ProtocolLayer {
   uint8_t securityLevel = 0;
   bool requestNetworkRestart = false;
   uint32_t activityTimeoutS = 30;
-  _supla_int64_t lastPingTimeMs = 0;
+  uint32_t lastPingTimeMs = 0;
   uint32_t waitForIterate = 0;
   uint32_t lastIterateTime = 0;
   uint32_t lastResponseMs = 0;

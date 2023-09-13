@@ -335,6 +335,10 @@ void Supla::messageReceived(void *srpc,
                 element->handleWeeklySchedule(result);
                 break;
               }
+              case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE: {
+                element->handleWeeklySchedule(result, true);
+                break;
+              }
             }
           } else {
             SUPLA_LOG_WARNING(
@@ -382,6 +386,11 @@ void Supla::messageReceived(void *srpc,
               case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
                 result.Result =
                     element->handleWeeklySchedule(request);
+                break;
+              }
+              case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE: {
+                result.Result =
+                    element->handleWeeklySchedule(request, true);
                 break;
               }
             }
@@ -580,7 +589,7 @@ void Supla::Protocol::SuplaSrpc::setActivityTimeout(
 }
 
 bool Supla::Protocol::SuplaSrpc::ping() {
-  _supla_int64_t _millis = millis();
+  uint32_t _millis = millis();
   // If time from last response is longer than "server_activity_timeout + 10 s",
   // then inform about failure in communication
   if ((_millis - lastResponseMs) / 1000 >= (activityTimeoutS + 10)) {

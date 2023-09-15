@@ -406,7 +406,47 @@ void HvacParameters::send(Supla::WebSender* sender) {
 
 
   sender->send("<h2>Output behavior settings</h2>");
-  /*
+
+  // form-field BEGIN
+  int countSensors = 0;
+  int sensorId = 0;
+  for (int i = 0; i < Supla::Channel::reg_dev.channel_count; i++) {
+    if (Supla::Channel::reg_dev.channels[i].Type ==
+        SUPLA_CHANNELTYPE_BINARYSENSOR) {
+      countSensors++;
+      sensorId = i;
+    }
+  }
+  if (countSensors > 0) {
+    hvac->generateKey(key, "sensor");
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Turn off based on sensor state");
+    sender->send("<div>");
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->send(">");
+    sender->sendSelectItem(
+        hvac->getChannelNumber(),
+        "Disabled",
+        hvac->getBinarySensorChannelNo() == hvac->getChannelNumber());
+    if (countSensors == 1) {
+      sender->sendSelectItem(
+          sensorId,
+          "Enabled",
+          hvac->getBinarySensorChannelNo() == sensorId);
+    } else {
+      for (int i = 0; i < Supla::Channel::reg_dev.channel_count; i++) {
+        char buf[100] = {};
+        snprintf(buf, sizeof(buf), "Use sensor #%d", i);
+        sender->sendSelectItem(i, buf, hvac->getBinarySensorChannelNo() == i);
+      }
+    }
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");
+  }
+  // form-field END
+
   // Currently on/off is the only supported algorithm, so there is nothing
   // to change. Uncomment when more algorithms are supported.
   // form-field BEGIN
@@ -418,16 +458,21 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->sendNameAndId(key);
   sender->send(">");
   if (hvac->isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE)) {
-    sender->sendSelectItem(
-        SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-        "On Off",
-        hvac->getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+    sender->sendSelectItem(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
+                           "On/Off middle",
+                           hvac->getUsedAlgorithm() ==
+                               SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+  }
+  if (hvac->isAlgorithmValid(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST)) {
+    sender->sendSelectItem(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
+                           "On/Off at most",
+                           hvac->getUsedAlgorithm() ==
+                               SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
   }
   sender->send("</select>");
   sender->send("</div>");
   sender->send("</div>");
   // form-field END
-  */
 
   // form-field BEGIN
   hvac->generateKey(key, "min_on_s");
@@ -594,7 +639,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   sender->send("</div>");
   // form-field END
-}
+}  // NOLINT(readability/fn_size)
 
 bool HvacParameters::handleResponse(const char* key, const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
@@ -712,6 +757,14 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   if (strcmp(key, keyMatch) == 0) {
     bool antiFreeze = (strcmp(value, "on") == 0);
     hvacConfig->AntiFreezeAndOverheatProtectionEnabled = antiFreeze;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "sensor");
+  // sensor
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t sensor = stringToUInt(value);
+    hvacConfig->BinarySensorChannelNo = sensor;
     return true;
   }
 

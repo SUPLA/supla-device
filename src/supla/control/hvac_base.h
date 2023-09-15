@@ -240,6 +240,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
       TChannelConfig_WeeklySchedule *newSchedule,
       bool isAltWeeklySchedule = false) const;
   bool isChannelThermometer(uint8_t channelNo) const;
+  bool isChannelBinarySensor(uint8_t channelNo) const;
   bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
   bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
 
@@ -354,6 +355,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   _supla_int16_t getLastTemperature();
 
+  int getBinarySensorChannelNo() const;
+
   static void debugPrintConfigStruct(const TChannelConfig_HVAC *config, int id);
 
   _supla_int16_t getPrimaryTemp();
@@ -361,6 +364,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
  private:
   _supla_int16_t getTemperature(int channelNo);
+  // returns true if forced off should be set
+  bool getForcedOffSensorState();
   bool isSensorTempValid(_supla_int16_t temperature) const;
   bool checkOverheatProtection(_supla_int16_t t);
   bool checkAntifreezeProtection(_supla_int16_t t);

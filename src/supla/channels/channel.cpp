@@ -828,6 +828,20 @@ void Channel::setHvacFlagCountdownTimer(bool value) {
   }
 }
 
+void Channel::setHvacFlagForcedOffBySensor(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagForcedOffBySensor()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_FORCED_OFF_BY_SENSOR;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_FORCED_OFF_BY_SENSOR;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 void Channel::setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag) {
   auto hvacValue = getValueHvac();
   if (hvacValue != nullptr && flag != getHvacFlagHeatOrCool()) {
@@ -878,6 +892,10 @@ bool Channel::isHvacFlagClockError() {
 
 bool Channel::isHvacFlagCountdownTimer() {
   return isHvacFlagCountdownTimer(getValueHvac());
+}
+
+bool Channel::isHvacFlagForcedOffBySensor() {
+  return isHvacFlagForcedOffBySensor(getValueHvac());
 }
 
 enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool() {
@@ -943,6 +961,13 @@ bool Channel::isHvacFlagClockError(THVACValue *value) {
 bool Channel::isHvacFlagCountdownTimer(THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER;
+  }
+  return false;
+}
+
+bool Channel::isHvacFlagForcedOffBySensor(THVACValue *value) {
+  if (value != nullptr) {
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_FORCED_OFF_BY_SENSOR;
   }
   return false;
 }

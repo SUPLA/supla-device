@@ -442,19 +442,28 @@ void HvacBase::iterateAlways() {
   lastTemperature = t1;
 
   if (checkOverheatProtection(t1)) {
-    SUPLA_LOG_DEBUG("HVAC: check overheat protection exit");
+    SUPLA_LOG_DEBUG("HVAC: overheat protection exit");
     channel.setHvacFlagThermometerError(false);
     return;
   }
 
   if (checkAntifreezeProtection(t1)) {
-    SUPLA_LOG_DEBUG("HVAC: check antifreeze protection exit");
+    SUPLA_LOG_DEBUG("HVAC: antifreeze protection exit");
     channel.setHvacFlagThermometerError(false);
     return;
   }
 
+  if (getForcedOffSensorState()) {
+    SUPLA_LOG_DEBUG("HVAC: forced off by sensor exit");
+    channel.setHvacFlagForcedOffBySensor(true);
+    setOutput(0, false);
+    return;
+  } else {
+    channel.setHvacFlagForcedOffBySensor(false);
+  }
+
   if (checkAuxProtection(t2)) {
-    SUPLA_LOG_DEBUG("HVAC: check heater/cooler protection exit");
+    SUPLA_LOG_DEBUG("HVAC: heater/cooler protection exit");
     channel.setHvacFlagThermometerError(false);
     return;
   }
@@ -687,6 +696,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   config.MinOffTimeS = hvacConfig->MinOffTimeS;
   config.OutputValueOnError = hvacConfig->OutputValueOnError;
   config.Subfunction = hvacConfig->Subfunction;
+  config.BinarySensorChannelNo = hvacConfig->BinarySensorChannelNo;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -799,6 +809,13 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     default:
       return false;
   }
+
+  if (newConfig->BinarySensorChannelNo != channel.getChannelNumber()) {
+    if (!isChannelBinarySensor(newConfig->BinarySensorChannelNo)) {
+      return false;
+    }
+  }
+
 
   if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     switch (newConfig->Subfunction) {
@@ -1203,6 +1220,20 @@ bool HvacBase::isChannelThermometer(uint8_t channelNo) const {
       return false;
   }
   return true;
+}
+
+bool HvacBase::isChannelBinarySensor(uint8_t channelNo) const {
+  auto element = Supla::Element::getElementByChannelNumber(channelNo);
+  if (element == nullptr) {
+    SUPLA_LOG_WARNING("HVAC: binary sensor not found for channel %d",
+                      channelNo);
+    return false;
+  }
+  if (element->getChannel()->getChannelType() ==
+      SUPLA_CHANNELTYPE_BINARYSENSOR) {
+    return true;
+  }
+  return false;
 }
 
 bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
@@ -3234,6 +3265,7 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
   SUPLA_LOG_DEBUG("  Aux type: %d", config->AuxThermometerType);
   SUPLA_LOG_DEBUG("  AntiFreezeAndOverheatProtectionEnabled: %d",
                   config->AntiFreezeAndOverheatProtectionEnabled);
+  SUPLA_LOG_DEBUG("  Sensor: %d", config->BinarySensorChannelNo);
   SUPLA_LOG_DEBUG("  Algorithms: %d", config->AvailableAlgorithms);
   SUPLA_LOG_DEBUG("  UsedAlgorithm: %d", config->UsedAlgorithm);
   SUPLA_LOG_DEBUG("  MinOnTimeS: %d", config->MinOnTimeS);
@@ -3521,4 +3553,28 @@ void HvacBase::setDefaultSubfunction(uint8_t subfunction) {
   if (subfunction <= SUPLA_HVAC_SUBFUNCTION_COOL) {
     defaultSubfunction = subfunction;
   }
+}
+
+bool HvacBase::getForcedOffSensorState() {
+  if (config.BinarySensorChannelNo != getChannelNumber()) {
+    auto element =
+        Supla::Element::getElementByChannelNumber(config.BinarySensorChannelNo);
+    if (element == nullptr) {
+      SUPLA_LOG_WARNING("HVAC: sensor not found for channel %d",
+                        config.BinarySensorChannelNo);
+      return false;
+    }
+    auto elementType = element->getChannel()->getChannelType();
+    if (elementType == SUPLA_CHANNELTYPE_BINARYSENSOR) {
+      // open window == false
+      // missing hotel card == false
+      // etc
+      return element->getChannel()->getValueBool() == false;
+    }
+  }
+  return false;
+}
+
+int HvacBase::getBinarySensorChannelNo() const {
+  return config.BinarySensorChannelNo;
 }

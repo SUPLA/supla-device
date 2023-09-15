@@ -80,6 +80,7 @@ class Channel : public LocalAction {
   void setHvacFlagThermometerError(bool value);
   void setHvacFlagClockError(bool value);
   void setHvacFlagCountdownTimer(bool value);
+  void setHvacFlagForcedOffBySensor(bool value);
   void setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag);
 
   uint8_t getHvacIsOn();
@@ -99,6 +100,7 @@ class Channel : public LocalAction {
   bool isHvacFlagThermometerError();
   bool isHvacFlagClockError();
   bool isHvacFlagCountdownTimer();
+  bool isHvacFlagForcedOffBySensor();
   enum HvacHeatOrCoolFlag getHvacFlagHeatOrCool();
 
   static bool isHvacFlagSetpointTemperatureHeatSet(THVACValue *hvacValue);
@@ -110,6 +112,7 @@ class Channel : public LocalAction {
   static bool isHvacFlagThermometerError(THVACValue *hvacValue);
   static bool isHvacFlagClockError(THVACValue *hvacValue);
   static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
+  static bool isHvacFlagForcedOffBySensor(THVACValue *hvacValue);
   static enum HvacHeatOrCoolFlag getHvacFlagHeatOrCool(THVACValue *hvacValue);
   static void setHvacSetpointTemperatureHeat(THVACValue *hvacValue,
                                              int16_t setpointTemperatureHeat);

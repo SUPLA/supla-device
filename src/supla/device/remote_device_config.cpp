@@ -56,7 +56,11 @@ void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
 }
 
 void RemoteDeviceConfig::SetScreenSaverModesAvailable(uint64_t allValues) {
+  SUPLA_LOG_INFO("RemoteDeviceConfig: SetScreenSaverModesAvailable 0x%08llx",
+                 allValues);
   screenSaverModesAvailable = allValues;
+  SUPLA_LOG_INFO("RemoteDeviceConfig: SetScreenSaverModesAvailable 0x%08llx",
+                 screenSaverModesAvailable);
 }
 
 enum Supla::ScreenSaverType RemoteDeviceConfig::ScreenSaverModeBitToEnum(
@@ -347,6 +351,10 @@ void RemoteDeviceConfig::processScreensaverModeConfig(uint64_t fieldBit,
   if (config == nullptr || cfg == nullptr) {
     return;
   }
+  SUPLA_LOG_DEBUG(
+      "config->ScreensaverMode %04x, screenSaverModesAvailable %08llx",
+      config->ScreensaverMode,
+      screenSaverModesAvailable);
   if ((config->ScreensaverMode & screenSaverModesAvailable) == 0) {
     SUPLA_LOG_WARNING(
         "Selected ScreensaverMode %d is not supported by this device",

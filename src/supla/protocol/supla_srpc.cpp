@@ -442,6 +442,24 @@ void Supla::messageReceived(void *srpc,
         }
         break;
       }
+      case SUPLA_SD_CALL_CHANNEL_CONFIG_FINISHED: {
+        auto *request = rd.data.sd_channel_config_finished;
+        if (request) {
+          auto element = Supla::Element::getElementByChannelNumber(
+              request->ChannelNumber);
+          SUPLA_LOG_INFO("Received ChannelConfigFinished for channel %d",
+              request->ChannelNumber);
+
+          if (element) {
+            element->handleChannelConfigFinished();
+          } else {
+            SUPLA_LOG_WARNING(
+                "Error: couldn't find element for a requested channel [%d]",
+                request->ChannelNumber);
+          }
+        }
+        break;
+      }
       default:
         SUPLA_LOG_WARNING("Received unknown message from server!");
         break;

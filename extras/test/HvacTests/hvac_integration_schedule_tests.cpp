@@ -112,12 +112,15 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(cfg,
-              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT))
+              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
       .WillOnce(Return(true));
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_ignr"), _))
@@ -173,12 +176,12 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
                   SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2100);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 0);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
 
   for (int i = 0; i < 50; ++i) {
@@ -191,11 +194,11 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
   TSD_SuplaChannelNewValue newValue = {};
   THVACValue *hvacValue = reinterpret_cast<THVACValue *>(newValue.value);
-  hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-    SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+  hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+    SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
   hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
-  hvacValue->SetpointTemperatureMin = 2050;
-  hvacValue->SetpointTemperatureMax = 2700;
+  hvacValue->SetpointTemperatureHeat = 2050;
+  hvacValue->SetpointTemperatureCool = 2700;
 
 
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
@@ -207,13 +210,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -231,13 +234,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
   hvacValue->Mode = SUPLA_HVAC_MODE_HEAT;
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
@@ -253,18 +256,18 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
-  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
   configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
   TChannelConfig_WeeklySchedule *weeklySchedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(
           &configFromServer.Config);
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[0].SetpointTemperatureMin = 1500;
+  weeklySchedule->Program[0].SetpointTemperatureHeat = 1500;
   weeklySchedule->Program[1].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[1].SetpointTemperatureMin = 1900;
+  weeklySchedule->Program[1].SetpointTemperatureHeat = 1900;
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
+  weeklySchedule->Program[2].SetpointTemperatureHeat = 2300;
 
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
@@ -281,8 +284,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   }
 
   hvacValue->Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
-  hvacValue->SetpointTemperatureMin = 2350;
-  hvacValue->SetpointTemperatureMax = 2700;
+  hvacValue->SetpointTemperatureHeat = 2350;
+  hvacValue->SetpointTemperatureCool = 2700;
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -292,15 +295,15 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE |
                   SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         // in case of clock error, we work with program[0]
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -320,13 +323,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -352,13 +355,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1900);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1900);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -386,14 +389,14 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE |
                   SUPLA_HVAC_VALUE_FLAG_HEATING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -420,13 +423,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -438,8 +441,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   }
 
   hvacValue->Mode = SUPLA_HVAC_MODE_HEAT;
-  hvacValue->SetpointTemperatureMin = 2350;
-  hvacValue->SetpointTemperatureMax = 2700;
+  hvacValue->SetpointTemperatureHeat = 2350;
+  hvacValue->SetpointTemperatureCool = 2700;
   newValue.DurationSec = 20;
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
 
@@ -451,14 +454,14 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_HEATING |
                   SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2350);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2350);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   // +20s
@@ -478,13 +481,13 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                   SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2350);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2350);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   // +20s
@@ -536,6 +539,9 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg,
+              setBlob(StrEq("0_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg,
               setUInt8(StrEq("0_weekly_ignr"), _))
@@ -593,12 +599,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_AUTO);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2100);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
 
@@ -612,11 +618,11 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   TSD_SuplaChannelNewValue newValue = {};
   THVACValue *hvacValue = reinterpret_cast<THVACValue *>(newValue.value);
-  hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-    SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+  hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+    SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
   hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
-  hvacValue->SetpointTemperatureMin = 2050;
-  hvacValue->SetpointTemperatureMax = 2700;
+  hvacValue->SetpointTemperatureHeat = 2050;
+  hvacValue->SetpointTemperatureCool = 2700;
 
 
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
@@ -628,12 +634,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -646,18 +652,18 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
-  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
   configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
   TChannelConfig_WeeklySchedule *weeklySchedule =
       reinterpret_cast<TChannelConfig_WeeklySchedule *>(
           &configFromServer.Config);
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[0].SetpointTemperatureMin = 1500;
+  weeklySchedule->Program[0].SetpointTemperatureHeat = 1500;
   weeklySchedule->Program[1].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[1].SetpointTemperatureMin = 1900;
+  weeklySchedule->Program[1].SetpointTemperatureHeat = 1900;
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
+  weeklySchedule->Program[2].SetpointTemperatureHeat = 2300;
 
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
@@ -673,11 +679,11 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
     time.advance(100);
   }
 
-  hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-    SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+  hvacValue->Flags = SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+    SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
   hvacValue->Mode = SUPLA_HVAC_MODE_CMD_TURN_ON;
-  hvacValue->SetpointTemperatureMin = 2050;
-  hvacValue->SetpointTemperatureMax = 2700;
+  hvacValue->SetpointTemperatureHeat = 2050;
+  hvacValue->SetpointTemperatureCool = 2700;
 
 
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
@@ -689,12 +695,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_AUTO);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
 
@@ -718,12 +724,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
 
@@ -745,12 +751,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
 
@@ -772,12 +778,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
 
@@ -799,12 +805,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
 
@@ -826,13 +832,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
 
@@ -845,11 +851,11 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   }
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_COOL;
-  weeklySchedule->Program[0].SetpointTemperatureMax = 2600;
+  weeklySchedule->Program[0].SetpointTemperatureCool = 2600;
   weeklySchedule->Program[1].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[1].SetpointTemperatureMin = 1900;
+  weeklySchedule->Program[1].SetpointTemperatureHeat = 1900;
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
-  weeklySchedule->Program[2].SetpointTemperatureMin = 2300;
+  weeklySchedule->Program[2].SetpointTemperatureHeat = 2300;
 
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
@@ -864,13 +870,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -890,12 +896,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -915,13 +921,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -941,12 +947,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -978,12 +984,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1003,12 +1009,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1028,12 +1034,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1053,13 +1059,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1091,12 +1097,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1116,13 +1122,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1500);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1500);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 70; ++i) {
@@ -1144,13 +1150,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 1900);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1900);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1160,13 +1166,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1176,13 +1182,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 70; ++i) {
@@ -1214,12 +1220,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1239,13 +1245,13 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
                       SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2300);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2600);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2600);
     });
 
   for (int i = 0; i < 60; ++i) {
@@ -1258,8 +1264,8 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   hvacValue->Flags = 0;
   hvacValue->Mode = SUPLA_HVAC_MODE_HEAT;
-  hvacValue->SetpointTemperatureMin = INT16_MIN;
-  hvacValue->SetpointTemperatureMax = INT16_MIN;
+  hvacValue->SetpointTemperatureHeat = INT16_MIN;
+  hvacValue->SetpointTemperatureCool = INT16_MIN;
 
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
 
@@ -1270,12 +1276,12 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
-                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET |
-                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET);
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                      SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMin, 2050);
-        EXPECT_EQ(hvacValue->SetpointTemperatureMax, 2700);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });
 
   for (int i = 0; i < 60; ++i) {

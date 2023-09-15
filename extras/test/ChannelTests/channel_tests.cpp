@@ -728,10 +728,10 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   EXPECT_NE(ch.getValueHvac(), nullptr);
   EXPECT_EQ(ch.getHvacIsOn(), 0);
   EXPECT_EQ(ch.getHvacMode(), 0);
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMaxSet());
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureCoolSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
   EXPECT_EQ(ch.getHvacFlags(), 0);
 
   EXPECT_FALSE(ch.isUpdateReady());
@@ -745,28 +745,28 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
   EXPECT_EQ(ch.getHvacMode(), 2);
-  ch.setHvacSetpointTemperatureMin(1);
+  ch.setHvacSetpointTemperatureHeat(1);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 1);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 1);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
 
-  ch.setHvacSetpointTemperatureMax(2);
+  ch.setHvacSetpointTemperatureCool(2);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 1);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 2);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureCoolSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 1);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 2);
 
-  ch.setHvacSetpointTemperatureMin(10);
+  ch.setHvacSetpointTemperatureHeat(10);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 10);
-  ch.setHvacSetpointTemperatureMax(20);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 10);
+  ch.setHvacSetpointTemperatureCool(20);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 20);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 20);
 
   ch.setHvacFlags(0x0F);
   EXPECT_TRUE(ch.isUpdateReady());
@@ -777,49 +777,49 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
   EXPECT_EQ(ch.getHvacFlags(), 0);
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureCoolSet());
 
-  ch.setHvacSetpointTemperatureMin(5);
-  ch.setHvacSetpointTemperatureMax(10);
+  ch.setHvacSetpointTemperatureHeat(5);
+  ch.setHvacSetpointTemperatureCool(10);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 5);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 10);
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 5);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 10);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureCoolSet());
 
-  ch.setHvacSetpointTemperatureMin(0);
-  ch.setHvacSetpointTemperatureMax(0);
+  ch.setHvacSetpointTemperatureHeat(0);
+  ch.setHvacSetpointTemperatureCool(0);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureCoolSet());
 
-  ch.clearHvacSetpointTemperatureMin();
+  ch.clearHvacSetpointTemperatureHeat();
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureCoolSet());
 
-  ch.clearHvacSetpointTemperatureMax();
+  ch.clearHvacSetpointTemperatureCool();
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureCoolSet());
 
-  ch.setHvacSetpointTemperatureMin(0);
-  ch.setHvacSetpointTemperatureMax(0);
+  ch.setHvacSetpointTemperatureHeat(0);
+  ch.setHvacSetpointTemperatureCool(0);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMin(), 0);
-  EXPECT_EQ(ch.getHvacSetpointTemperatureMax(), 0);
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMinSet());
-  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureMaxSet());
+  EXPECT_EQ(ch.getHvacSetpointTemperatureHeat(), 0);
+  EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureHeatSet());
+  EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureCoolSet());
 }

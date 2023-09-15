@@ -24,6 +24,11 @@
 
 namespace Supla {
 
+enum class HvacHeatOrCoolFlag {
+  HeatSubfunctionOrNotUsed,
+  CoolSubfunction,
+};
+
 class Channel : public LocalAction {
  public:
   Channel();
@@ -61,13 +66,13 @@ class Channel : public LocalAction {
 
   void setHvacIsOn(uint8_t isOn);
   void setHvacMode(uint8_t mode);
-  void setHvacSetpointTemperatureMin(int16_t setpointTemperatureMin);
-  void setHvacSetpointTemperatureMax(int16_t setpointTemperatureMax);
-  void clearHvacSetpointTemperatureMin();
-  void clearHvacSetpointTemperatureMax();
+  void setHvacSetpointTemperatureHeat(int16_t setpointTemperatureHeat);
+  void setHvacSetpointTemperatureCool(int16_t setpointTemperatureCool);
+  void clearHvacSetpointTemperatureHeat();
+  void clearHvacSetpointTemperatureCool();
   void setHvacFlags(uint16_t alarmsAndFlags);
-  void setHvacFlagSetpointTemperatureMinSet(bool value);
-  void setHvacFlagSetpointTemperatureMaxSet(bool value);
+  void setHvacFlagSetpointTemperatureHeatSet(bool value);
+  void setHvacFlagSetpointTemperatureCoolSet(bool value);
   void setHvacFlagHeating(bool value);
   void setHvacFlagCooling(bool value);
   void setHvacFlagWeeklySchedule(bool value);
@@ -75,17 +80,18 @@ class Channel : public LocalAction {
   void setHvacFlagThermometerError(bool value);
   void setHvacFlagClockError(bool value);
   void setHvacFlagCountdownTimer(bool value);
+  void setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag);
 
   uint8_t getHvacIsOn();
   uint8_t getHvacMode() const;
   // returns mode as a string. If mode parameters is -1 then it returns current
   // channel mode, otherwise mode parameter is used.
   const char *getHvacModeCstr(int mode = -1) const;
-  int16_t getHvacSetpointTemperatureMin();
-  int16_t getHvacSetpointTemperatureMax();
+  int16_t getHvacSetpointTemperatureHeat();
+  int16_t getHvacSetpointTemperatureCool();
   uint16_t getHvacFlags();
-  bool isHvacFlagSetpointTemperatureMinSet();
-  bool isHvacFlagSetpointTemperatureMaxSet();
+  bool isHvacFlagSetpointTemperatureHeatSet();
+  bool isHvacFlagSetpointTemperatureCoolSet();
   bool isHvacFlagHeating();
   bool isHvacFlagCooling();
   bool isHvacFlagWeeklySchedule();
@@ -93,9 +99,10 @@ class Channel : public LocalAction {
   bool isHvacFlagThermometerError();
   bool isHvacFlagClockError();
   bool isHvacFlagCountdownTimer();
+  enum HvacHeatOrCoolFlag getHvacFlagHeatOrCool();
 
-  static bool isHvacFlagSetpointTemperatureMinSet(THVACValue *hvacValue);
-  static bool isHvacFlagSetpointTemperatureMaxSet(THVACValue *hvacValue);
+  static bool isHvacFlagSetpointTemperatureHeatSet(THVACValue *hvacValue);
+  static bool isHvacFlagSetpointTemperatureCoolSet(THVACValue *hvacValue);
   static bool isHvacFlagHeating(THVACValue *hvacValue);
   static bool isHvacFlagCooling(THVACValue *hvacValue);
   static bool isHvacFlagWeeklySchedule(THVACValue *hvacValue);
@@ -103,10 +110,11 @@ class Channel : public LocalAction {
   static bool isHvacFlagThermometerError(THVACValue *hvacValue);
   static bool isHvacFlagClockError(THVACValue *hvacValue);
   static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
-  static void setHvacSetpointTemperatureMin(THVACValue *hvacValue,
-                                            int16_t setpointTemperatureMin);
-  static void setHvacSetpointTemperatureMax(THVACValue *hvacValue,
-                                            int16_t setpointTemperatureMax);
+  static enum HvacHeatOrCoolFlag getHvacFlagHeatOrCool(THVACValue *hvacValue);
+  static void setHvacSetpointTemperatureHeat(THVACValue *hvacValue,
+                                             int16_t setpointTemperatureHeat);
+  static void setHvacSetpointTemperatureCool(THVACValue *hvacValue,
+                                            int16_t setpointTemperatureCool);
 
   THVACValue *getValueHvac() const;
 

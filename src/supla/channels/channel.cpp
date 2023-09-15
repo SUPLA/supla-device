@@ -634,63 +634,63 @@ THVACValue *Channel::getValueHvac() const {
   return nullptr;
 }
 
-void Channel::setHvacSetpointTemperatureMax(int16_t temperature) {
+void Channel::setHvacSetpointTemperatureCool(int16_t temperature) {
   auto value = getValueHvac();
-  if (value != nullptr && (value->SetpointTemperatureMax != temperature ||
-                           !isHvacFlagSetpointTemperatureMaxSet())) {
+  if (value != nullptr && (value->SetpointTemperatureCool != temperature ||
+                           !isHvacFlagSetpointTemperatureCoolSet())) {
     setUpdateReady();
-    value->SetpointTemperatureMax = temperature;
-    setHvacFlagSetpointTemperatureMaxSet(true);
+    value->SetpointTemperatureCool = temperature;
+    setHvacFlagSetpointTemperatureCoolSet(true);
   }
 }
 
-void Channel::setHvacSetpointTemperatureMin(int16_t temperature) {
+void Channel::setHvacSetpointTemperatureHeat(int16_t temperature) {
   auto value = getValueHvac();
-  if (value != nullptr && (value->SetpointTemperatureMin != temperature ||
-                           !isHvacFlagSetpointTemperatureMinSet())) {
+  if (value != nullptr && (value->SetpointTemperatureHeat != temperature ||
+                           !isHvacFlagSetpointTemperatureHeatSet())) {
     setUpdateReady();
-    value->SetpointTemperatureMin = temperature;
-    setHvacFlagSetpointTemperatureMinSet(true);
+    value->SetpointTemperatureHeat = temperature;
+    setHvacFlagSetpointTemperatureHeatSet(true);
   }
 }
 
-void Channel::clearHvacSetpointTemperatureMax() {
+void Channel::clearHvacSetpointTemperatureCool() {
   auto value = getValueHvac();
-  if (value != nullptr && (value->SetpointTemperatureMax != 0 ||
-                           isHvacFlagSetpointTemperatureMaxSet())) {
+  if (value != nullptr && (value->SetpointTemperatureCool != 0 ||
+                           isHvacFlagSetpointTemperatureCoolSet())) {
     setUpdateReady();
-    value->SetpointTemperatureMax = 0;
-    setHvacFlagSetpointTemperatureMaxSet(false);
+    value->SetpointTemperatureCool = 0;
+    setHvacFlagSetpointTemperatureCoolSet(false);
   }
 }
 
-void Channel::clearHvacSetpointTemperatureMin() {
+void Channel::clearHvacSetpointTemperatureHeat() {
   auto value = getValueHvac();
-  if (value != nullptr && (value->SetpointTemperatureMin != 0 ||
-                           isHvacFlagSetpointTemperatureMinSet())) {
+  if (value != nullptr && (value->SetpointTemperatureHeat != 0 ||
+                           isHvacFlagSetpointTemperatureHeatSet())) {
     setUpdateReady();
-    value->SetpointTemperatureMin = 0;
-    setHvacFlagSetpointTemperatureMinSet(false);
+    value->SetpointTemperatureHeat = 0;
+    setHvacFlagSetpointTemperatureHeatSet(false);
   }
 }
 
-void Channel::setHvacSetpointTemperatureMin(THVACValue *hvacValue,
-                                             int16_t setpointTemperatureMin) {
+void Channel::setHvacSetpointTemperatureHeat(THVACValue *hvacValue,
+                                             int16_t setpointTemperatureHeat) {
   if (hvacValue != nullptr &&
-      (hvacValue->SetpointTemperatureMin != setpointTemperatureMin ||
-       !isHvacFlagSetpointTemperatureMinSet(hvacValue))) {
-    hvacValue->SetpointTemperatureMin = setpointTemperatureMin;
-    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+      (hvacValue->SetpointTemperatureHeat != setpointTemperatureHeat ||
+       !isHvacFlagSetpointTemperatureHeatSet(hvacValue))) {
+    hvacValue->SetpointTemperatureHeat = setpointTemperatureHeat;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
   }
 }
 
-void Channel::setHvacSetpointTemperatureMax(THVACValue *hvacValue,
-                                             int16_t setpointTemperatureMax) {
+void Channel::setHvacSetpointTemperatureCool(THVACValue *hvacValue,
+                                             int16_t setpointTemperatureCool) {
   if (hvacValue != nullptr &&
-      (hvacValue->SetpointTemperatureMax != setpointTemperatureMax ||
-       !isHvacFlagSetpointTemperatureMaxSet(hvacValue))) {
-    hvacValue->SetpointTemperatureMax = setpointTemperatureMax;
-    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+      (hvacValue->SetpointTemperatureCool != setpointTemperatureCool ||
+       !isHvacFlagSetpointTemperatureCoolSet(hvacValue))) {
+    hvacValue->SetpointTemperatureCool = setpointTemperatureCool;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
   }
 }
 
@@ -702,29 +702,29 @@ void Channel::setHvacFlags(uint16_t flags) {
   }
 }
 
-void Channel::setHvacFlagSetpointTemperatureMaxSet(bool value) {
+void Channel::setHvacFlagSetpointTemperatureCoolSet(bool value) {
   auto hvacValue = getValueHvac();
-  if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureMaxSet()) {
+  if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureCoolSet()) {
     setUpdateReady();
     uint16_t flags = hvacValue->Flags;
     if (value) {
-      flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+      flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
     } else {
-      flags &= ~SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
     }
     setHvacFlags(flags);
   }
 }
 
-void Channel::setHvacFlagSetpointTemperatureMinSet(bool value) {
+void Channel::setHvacFlagSetpointTemperatureHeatSet(bool value) {
   auto hvacValue = getValueHvac();
-  if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureMinSet()) {
+  if (hvacValue != nullptr && value != isHvacFlagSetpointTemperatureHeatSet()) {
     setUpdateReady();
     uint16_t flags = hvacValue->Flags;
     if (value) {
-      flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+      flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
     } else {
-      flags &= ~SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
     }
     setHvacFlags(flags);
   }
@@ -828,12 +828,28 @@ void Channel::setHvacFlagCountdownTimer(bool value) {
   }
 }
 
-bool Channel::isHvacFlagSetpointTemperatureMaxSet() {
-  return isHvacFlagSetpointTemperatureMaxSet(getValueHvac());
+void Channel::setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && flag != getHvacFlagHeatOrCool()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (flag == HvacHeatOrCoolFlag::CoolSubfunction) {
+      // cool subfunction is stored as 1
+      flags |= SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL;
+    } else {
+      // heat subfunction and "not used" is stored as 0
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL;
+    }
+    setHvacFlags(flags);
+  }
 }
 
-bool Channel::isHvacFlagSetpointTemperatureMinSet() {
-  return isHvacFlagSetpointTemperatureMinSet(getValueHvac());
+bool Channel::isHvacFlagSetpointTemperatureCoolSet() {
+  return isHvacFlagSetpointTemperatureCoolSet(getValueHvac());
+}
+
+bool Channel::isHvacFlagSetpointTemperatureHeatSet() {
+  return isHvacFlagSetpointTemperatureHeatSet(getValueHvac());
 }
 
 bool Channel::isHvacFlagHeating() {
@@ -864,16 +880,20 @@ bool Channel::isHvacFlagCountdownTimer() {
   return isHvacFlagCountdownTimer(getValueHvac());
 }
 
-bool Channel::isHvacFlagSetpointTemperatureMinSet(THVACValue *value) {
+enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool() {
+  return getHvacFlagHeatOrCool(getValueHvac());
+}
+
+bool Channel::isHvacFlagSetpointTemperatureHeatSet(THVACValue *value) {
   if (value != nullptr) {
-    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MIN_SET;
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
   }
   return false;
 }
 
-bool Channel::isHvacFlagSetpointTemperatureMaxSet(THVACValue *value) {
+bool Channel::isHvacFlagSetpointTemperatureCoolSet(THVACValue *value) {
   if (value != nullptr) {
-    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_MAX_SET;
+    return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
   }
   return false;
 }
@@ -927,6 +947,15 @@ bool Channel::isHvacFlagCountdownTimer(THVACValue *value) {
   return false;
 }
 
+enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool(THVACValue *hvacValue) {
+  if (hvacValue != nullptr) {
+    return (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL
+                ? HvacHeatOrCoolFlag::CoolSubfunction
+                : HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed);
+  }
+  return HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed;
+}
+
 uint8_t Channel::getHvacIsOn() {
   auto value = getValueHvac();
   if (value != nullptr) {
@@ -972,18 +1001,18 @@ const char *Channel::getHvacModeCstr(int mode) const {
   }
 }
 
-int16_t Channel::getHvacSetpointTemperatureMax() {
+int16_t Channel::getHvacSetpointTemperatureCool() {
   auto value = getValueHvac();
   if (value != nullptr) {
-    return value->SetpointTemperatureMax;
+    return value->SetpointTemperatureCool;
   }
   return INT16_MIN;
 }
 
-int16_t Channel::getHvacSetpointTemperatureMin() {
+int16_t Channel::getHvacSetpointTemperatureHeat() {
   auto value = getValueHvac();
   if (value != nullptr) {
-    return value->SetpointTemperatureMin;
+    return value->SetpointTemperatureHeat;
   }
   return INT16_MIN;
 }

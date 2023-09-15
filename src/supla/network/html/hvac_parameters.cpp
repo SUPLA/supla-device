@@ -64,17 +64,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("<select ");
   sender->sendNameAndId(key);
   sender->send(">");
-  if (hvac->isFunctionSupported(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT)) {
+  if (hvac->isFunctionSupported(SUPLA_CHANNELFNC_HVAC_THERMOSTAT)) {
     sender->sendSelectItem(
-        SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT,
-        "Heat",
-        channelFunc == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
-  }
-  if (hvac->isFunctionSupported(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL,
-        "Cool",
-        channelFunc == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
+        SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
+        "Room thermostat",
+        channelFunc == SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
   }
   if (hvac->isFunctionSupported(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO)) {
     sender->sendSelectItem(
@@ -93,6 +87,31 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   sender->send("</div>");
   // form-field END
+
+  // form-field BEGIN
+  if (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+      hvac->isCoolingSupported() && hvac->isHeatingSupported()) {
+    hvac->generateKey(key, "subfnc");
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Room thermostat function");
+    sender->send("<div>");
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->send(">");
+    sender->sendSelectItem(
+        SUPLA_HVAC_SUBFUNCTION_HEAT,
+        "Heat",
+        hvac->isHeatingSubfunction());
+    sender->sendSelectItem(
+        SUPLA_HVAC_SUBFUNCTION_COOL,
+        "Cool",
+        hvac->isCoolingSubfunction());
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");
+  }
+  // form-field END
+
 
   // form-field BEGIN
   auto hvacMode = hvac->getChannel()->getHvacMode();
@@ -156,10 +175,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
   sender->send(" value=\"");
-  auto tMin = hvac->getTemperatureSetpointMin();
-  if (tMin != INT16_MIN) {
+  auto tHeat = hvac->getTemperatureSetpointHeat();
+  if (tHeat != INT16_MIN) {
     char buf[100] = {};
-    snprintf(buf, sizeof(buf), "%d.%1d", tMin / 100, (tMin / 10) % 10);
+    // TODO(klew): add handling negative numbers
+    snprintf(buf, sizeof(buf), "%d.%1d", tHeat / 100, (tHeat / 10) % 10);
     sender->send(buf);
   }
   sender->send("\">");
@@ -175,10 +195,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
   sender->send(" value=\"");
-  auto tMax = hvac->getTemperatureSetpointMax();
-  if (tMax != INT16_MIN) {
+  auto tCool = hvac->getTemperatureSetpointCool();
+  if (tCool != INT16_MIN) {
     char buf[100] = {};
-    snprintf(buf, sizeof(buf), "%d.%1d", tMax / 100, (tMax / 10) % 10);
+    // TODO(klew): add handling negative numbers
+    snprintf(buf, sizeof(buf), "%d.%1d", tCool / 100, (tCool / 10) % 10);
     sender->send(buf);
   }
   sender->send("\">");
@@ -620,6 +641,18 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
+  hvac->generateKey(keyMatch, "subfnc");
+
+  // channel subfunction
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t subfunction = stringToUInt(value);
+    if (subfunction >= 0 && subfunction <= 2) {
+      hvacConfig->Subfunction = subfunction;
+    }
+    return true;
+  }
+
+
   hvac->generateKey(keyMatch, "hvac_mode");
   // channel mode
   if (strcmp(key, keyMatch) == 0) {
@@ -632,9 +665,9 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   // setpoint min temperature
   if (strcmp(key, keyMatch) == 0) {
     if (strnlen(value, 10) > 0) {
-      int16_t tMin = floatStringToInt(value, 1);
-      tMin *= 10;
-      Supla::Channel::setHvacSetpointTemperatureMin(hvacValue, tMin);
+      int16_t tHeat = floatStringToInt(value, 1);
+      tHeat *= 10;
+      Supla::Channel::setHvacSetpointTemperatureHeat(hvacValue, tHeat);
     }
     return true;
   }
@@ -643,9 +676,9 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   // setpoint max temperature
   if (strcmp(key, keyMatch) == 0) {
     if (strnlen(value, 10) > 0) {
-      int16_t tMax = floatStringToInt(value, 1);
-      tMax *= 10;
-      Supla::Channel::setHvacSetpointTemperatureMax(hvacValue, tMax);
+      int16_t tCool = floatStringToInt(value, 1);
+      tCool *= 10;
+      Supla::Channel::setHvacSetpointTemperatureCool(hvacValue, tCool);
     }
     return true;
   }

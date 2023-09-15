@@ -3340,10 +3340,14 @@ void HvacBase::initDefaultConfig() {
   }
 
   if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-    if (isHeatingSupported()) {
-      newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
-    } else if (isCoolingSupported()) {
-      newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_COOL;
+    if (defaultSubfunction != SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
+      newConfig.Subfunction = defaultSubfunction;
+    } else {
+      if (isHeatingSupported()) {
+        newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+      } else if (isCoolingSupported()) {
+        newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_COOL;
+      }
     }
   }
 
@@ -3511,4 +3515,10 @@ bool HvacBase::isHeatingSubfunction() const {
 bool HvacBase::isCoolingSubfunction() const {
   return channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
          config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL;
+}
+
+void HvacBase::setDefaultSubfunction(uint8_t subfunction) {
+  if (subfunction <= SUPLA_HVAC_SUBFUNCTION_COOL) {
+    defaultSubfunction = subfunction;
+  }
 }

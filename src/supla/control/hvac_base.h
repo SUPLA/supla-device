@@ -100,6 +100,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // Subfunction can be set only for HVAC_THERMOSTAT channel function
   // SUPLA_HVAC_SUBFUNCTION_*
   void setSubfunction(uint8_t subfunction);
+  void setDefaultSubfunction(uint8_t subfunction);
 
   // use this function to set value based on local config change
   bool setMainThermometerChannelNo(uint8_t channelNo);
@@ -399,6 +400,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int16_t lastManualSetpointHeat = INT16_MIN;
   int16_t lastManualSetpointCool = INT16_MIN;
   uint8_t previousSubfunction = 0;
+  uint8_t defaultSubfunction = 0;
 
   time_t countdownTimerEnds = 0;
   uint32_t lastConfigChangeTimestampMs = 0;

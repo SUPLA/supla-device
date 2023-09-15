@@ -710,11 +710,11 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
     paramCount++;
     std::string function = ch["default_function"].as<std::string>();
     if (function == "heat") {
-      hvac->getChannel()->setDefaultFunction(
-          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT);
+      hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+      hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
     } else if (function == "cool") {
-      hvac->getChannel()->setDefaultFunction(
-          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
+      hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+      hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
     } else if (function == "auto") {
       if (cmdOnSecondary.empty() || cmdOffSecondary.empty()) {
         SUPLA_LOG_ERROR(

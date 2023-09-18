@@ -355,7 +355,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   _supla_int16_t getLastTemperature();
 
-  int getBinarySensorChannelNo() const;
+  bool setBinarySensorChannelNo(uint8_t channelNo);
+  uint8_t getBinarySensorChannelNo() const;
 
   static void debugPrintConfigStruct(const TChannelConfig_HVAC *config, int id);
 
@@ -406,6 +407,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int16_t lastManualSetpointCool = INT16_MIN;
   uint8_t previousSubfunction = 0;
   uint8_t defaultSubfunction = 0;
+
+  uint8_t defaultMainThermometer = 0;
+  uint8_t defaultAuxThermometer = 0;
+  uint8_t defaultBinarySensor = 0;
 
   time_t countdownTimerEnds = 0;
   uint32_t lastConfigChangeTimestampMs = 0;

@@ -58,6 +58,11 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
 
+  // by default binary sensor and aux thermometers are off (set to HVAC
+  // channel number)
+  defaultBinarySensor = getChannelNumber();
+  defaultAuxThermometer = getChannelNumber();
+
   // default function is set in onInit based on supported modes or loaded from
   // config
 }
@@ -311,6 +316,11 @@ void HvacBase::onInit() {
     SUPLA_LOG_WARNING("HVAC channel number %d is invalid. Clearing.",
                       getAuxThermometerChannelNo());
     setAuxThermometerChannelNo(getChannelNumber());
+  }
+  if (!setBinarySensorChannelNo(getBinarySensorChannelNo())) {
+    SUPLA_LOG_WARNING("HVAC channel number %d is invalid. Clearing.",
+                      getBinarySensorChannelNo());
+    setBinarySensorChannelNo(getChannelNumber());
   }
 
   uint8_t mode = channel.getHvacMode();
@@ -688,6 +698,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   // so we assign them directly.
   config.MainThermometerChannelNo = hvacConfig->MainThermometerChannelNo;
   config.AuxThermometerChannelNo = hvacConfig->AuxThermometerChannelNo;
+  config.BinarySensorChannelNo = hvacConfig->BinarySensorChannelNo;
   config.AuxThermometerType = hvacConfig->AuxThermometerType;
   config.AntiFreezeAndOverheatProtectionEnabled =
     hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
@@ -696,7 +707,8 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   config.MinOffTimeS = hvacConfig->MinOffTimeS;
   config.OutputValueOnError = hvacConfig->OutputValueOnError;
   config.Subfunction = hvacConfig->Subfunction;
-  config.BinarySensorChannelNo = hvacConfig->BinarySensorChannelNo;
+  config.SetpointChangeKeepsWeeklyScheduleMode =
+      hvacConfig->SetpointChangeKeepsWeeklyScheduleMode;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -1756,6 +1768,7 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
 bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
   if (!initDone) {
     config.MainThermometerChannelNo = channelNo;
+    defaultMainThermometer = channelNo;
     return true;
   }
   if (isChannelThermometer(channelNo)) {
@@ -1784,6 +1797,7 @@ uint8_t HvacBase::getMainThermometerChannelNo() const {
 bool HvacBase::setAuxThermometerChannelNo(uint8_t channelNo) {
   if (!initDone) {
     config.AuxThermometerChannelNo = channelNo;
+    defaultAuxThermometer = channelNo;
     return true;
   }
   if (isChannelThermometer(channelNo)) {
@@ -3405,6 +3419,18 @@ void HvacBase::initDefaultConfig() {
   setTemperatureInStruct(&newConfig.Temperatures, TEMPERATURE_ROOM_MAX,
       getDefaultTemperatureRoomMax());
 
+  if (!isChannelThermometer(newConfig.MainThermometerChannelNo)) {
+    newConfig.MainThermometerChannelNo = defaultMainThermometer;
+  }
+  if (!isChannelThermometer(newConfig.AuxThermometerChannelNo) &&
+      newConfig.AuxThermometerChannelNo != getChannelNumber()) {
+    newConfig.AuxThermometerChannelNo = defaultAuxThermometer;
+  }
+  if (!isChannelBinarySensor(newConfig.BinarySensorChannelNo) &&
+      newConfig.BinarySensorChannelNo != getChannelNumber()) {
+    newConfig.BinarySensorChannelNo = defaultBinarySensor;
+  }
+
   memcpy(&config, &newConfig, sizeof(config));
 }
 
@@ -3575,6 +3601,25 @@ bool HvacBase::getForcedOffSensorState() {
   return false;
 }
 
-int HvacBase::getBinarySensorChannelNo() const {
+bool HvacBase::setBinarySensorChannelNo(uint8_t channelNo) {
+  if (!initDone) {
+    config.BinarySensorChannelNo = channelNo;
+    defaultBinarySensor = channelNo;
+    return true;
+  }
+  if (isChannelBinarySensor(channelNo)) {
+    if (config.BinarySensorChannelNo != channelNo) {
+      config.BinarySensorChannelNo = channelNo;
+      if (initDone) {
+        channelConfigChangedOffline = 1;
+        saveConfig();
+      }
+    }
+    return true;
+  }
+  return false;
+}
+
+uint8_t HvacBase::getBinarySensorChannelNo() const {
   return config.BinarySensorChannelNo;
 }

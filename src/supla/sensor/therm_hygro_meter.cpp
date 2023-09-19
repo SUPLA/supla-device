@@ -177,6 +177,8 @@ void Supla::Sensor::ThermHygroMeter::setRefreshIntervalMs(int intervalMs) {
 void Supla::Sensor::ThermHygroMeter::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
   setChannelResult = 0;
+  configFinishedReceived = false;
+  defaultConfigReceived = false;
   Supla::Element::onRegistered(suplaSrpc);
   if (Supla::Storage::ConfigInstance()) {
     if (setChannelStateFlag) {
@@ -210,6 +212,8 @@ uint8_t Supla::Sensor::ThermHygroMeter::handleChannelConfig(
     SUPLA_LOG_DEBUG("Channel[%d] invalid configtype", getChannelNumber());
     return SUPLA_CONFIG_RESULT_FALSE;
   }
+  defaultConfigReceived = true;
+
   if (result->ConfigSize == 0) {
     // server doesn't have channel configuration, so we'll send it
     // But don't send it if it failed in previous attempt
@@ -284,7 +288,7 @@ bool Supla::Sensor::ThermHygroMeter::iterateConnected() {
     return result;
   }
 
-  if (!waitForChannelConfigAndIgnoreIt) {
+  if (configFinishedReceived) {
     if (setChannelStateFlag == 1) {
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
@@ -347,3 +351,12 @@ void Supla::Sensor::ThermHygroMeter::clearChannelConfigChangedFlag() {
     }
   }
 }
+
+void Supla::Sensor::ThermHygroMeter::handleChannelConfigFinished() {
+  configFinishedReceived = true;
+  if (!defaultConfigReceived) {
+    // trigger sending channel config to server
+    setChannelStateFlag = 1;
+  }
+}
+

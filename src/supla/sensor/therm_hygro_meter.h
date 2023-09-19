@@ -49,6 +49,7 @@ class ThermHygroMeter : public ChannelElement {
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void clearChannelConfigChangedFlag();
+  void handleChannelConfigFinished() override;
 
  protected:
   int16_t getConfiguredTemperatureCorrection();
@@ -64,6 +65,8 @@ class ThermHygroMeter : public ChannelElement {
   uint32_t lastReadTime = 0;
   uint16_t refreshIntervalMs = 10000;
   bool waitForChannelConfigAndIgnoreIt = false;
+  bool configFinishedReceived = false;
+  bool defaultConfigReceived = false;
   int8_t setChannelStateFlag = 0;
   uint8_t setChannelResult = 0;
 };

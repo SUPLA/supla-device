@@ -117,6 +117,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
   bool isAntiFreezeAndHeatProtectionEnabled() const;
 
+  void setTemperatureSetpointChangeSwitchesToManualMode(bool enabled);
+  bool isTemperatureSetpointChangeSwitchesToManualMode() const;
+
   // use this function to set value based on local config change
   bool setMinOnTimeS(uint16_t seconds);
   uint16_t getMinOnTimeS() const;
@@ -324,7 +327,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int calculateIndex(enum DayOfWeek dayOfWeek,
                      int hour,
                      int quarter) const;
+  int getCurrentQuarter() const;
   TWeeklyScheduleProgram getCurrentProgram() const;
+  int getCurrentProgramId() const;
   TWeeklyScheduleProgram getProgramAt(int quarterIndex) const;
   TWeeklyScheduleProgram getProgramById(int programId,
                                         bool isAltWeeklySchedule = false) const;
@@ -362,6 +367,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   _supla_int16_t getPrimaryTemp();
   _supla_int16_t getSecondaryTemp();
+
+  bool isWeelkySchedulManualOverrideMode() const;
 
  private:
   _supla_int16_t getTemperature(int channelNo);
@@ -418,6 +425,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint32_t lastOutputStateChangeTimestampMs = 0;
   int lastValue = -1000;  // set out of output value range
   _supla_int16_t lastTemperature = 0;
+  int lastProgramManualOverride = -1;
 
   _supla_int16_t defaultTemperatureRoomMin[6] = {
       500,  // default min temperature for all other functions or when value is

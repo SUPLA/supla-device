@@ -858,6 +858,21 @@ void Channel::setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag) {
   }
 }
 
+void Channel::setHvacFlagWeeklyScheduleTemporalOverride(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr &&
+      value != isHvacFlagWeeklyScheduleTemporalOverride()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE_TEMPORAL_OVERRIDE;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE_TEMPORAL_OVERRIDE;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 bool Channel::isHvacFlagSetpointTemperatureCoolSet() {
   return isHvacFlagSetpointTemperatureCoolSet(getValueHvac());
 }
@@ -900,6 +915,10 @@ bool Channel::isHvacFlagForcedOffBySensor() {
 
 enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool() {
   return getHvacFlagHeatOrCool(getValueHvac());
+}
+
+bool Channel::isHvacFlagWeeklyScheduleTemporalOverride() {
+  return isHvacFlagWeeklyScheduleTemporalOverride(getValueHvac());
 }
 
 bool Channel::isHvacFlagSetpointTemperatureHeatSet(THVACValue *value) {
@@ -979,6 +998,14 @@ enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool(THVACValue *hvacValue) {
                 : HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed);
   }
   return HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed;
+}
+
+bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *value) {
+  if (value != nullptr) {
+    return value->Flags &
+           SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE_TEMPORAL_OVERRIDE;
+  }
+  return false;
 }
 
 uint8_t Channel::getHvacIsOn() {

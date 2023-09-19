@@ -1473,6 +1473,7 @@ TEST_F(HvacTestWithChannelSetupF,
               .MinOnTimeS = 0,
               .MinOffTimeS = 0,
               .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
+              .TemperatureSetpointChangeSwitchesToManualMode = 1,
               .Temperatures = {}};
 
           Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1731,6 +1732,7 @@ TEST_F(HvacTestWithChannelSetupF,
               .MinOnTimeS = 0,
               .MinOffTimeS = 0,
               .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
+              .TemperatureSetpointChangeSwitchesToManualMode = 1,
               .Temperatures = {}};
 
           Supla::Control::HvacBase::setTemperatureInStruct(

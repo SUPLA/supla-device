@@ -707,8 +707,8 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   config.MinOffTimeS = hvacConfig->MinOffTimeS;
   config.OutputValueOnError = hvacConfig->OutputValueOnError;
   config.Subfunction = hvacConfig->Subfunction;
-  config.SetpointChangeKeepsWeeklyScheduleMode =
-      hvacConfig->SetpointChangeKeepsWeeklyScheduleMode;
+  config.TemperatureSetpointChangeSwitchesToManualMode =
+      hvacConfig->TemperatureSetpointChangeSwitchesToManualMode;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -1877,6 +1877,20 @@ bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
   }
 }
 
+void HvacBase::setTemperatureSetpointChangeSwitchesToManualMode(bool enabled) {
+  if (config.TemperatureSetpointChangeSwitchesToManualMode != enabled) {
+    config.TemperatureSetpointChangeSwitchesToManualMode = enabled;
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+}
+
+bool HvacBase::isTemperatureSetpointChangeSwitchesToManualMode() const {
+  return config.TemperatureSetpointChangeSwitchesToManualMode;
+}
+
 bool HvacBase::isMinOnOffTimeValid(uint16_t seconds) const {
   return seconds <= 600;  // TODO(klew): is this range ok? from 1 s to 10 min
                           // 0 - disabled
@@ -2324,15 +2338,37 @@ TWeeklyScheduleProgram HvacBase::getProgramAt(int quarterIndex) const {
   return weeklySchedulePtr->Program[programId - 1];
 }
 
-TWeeklyScheduleProgram HvacBase::getCurrentProgram() const {
+int HvacBase::getCurrentQuarter() const {
   int quarterIndex = -1;
 
   if (Supla::Clock::IsReady()) {
     quarterIndex = calculateIndex(Supla::Clock::GetHvacDayOfWeek(),
         Supla::Clock::GetHour(), Supla::Clock::GetQuarter());
   }
+  return quarterIndex;
+}
 
-  return getProgramAt(quarterIndex);
+TWeeklyScheduleProgram HvacBase::getCurrentProgram() const {
+  return getProgramAt(getCurrentQuarter());
+}
+
+int HvacBase::getCurrentProgramId() const {
+  int quarterIndex = getCurrentQuarter();
+
+  int programId = 1;
+
+  auto weeklySchedulePtr = &weeklySchedule;
+  if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+    if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL) {
+      weeklySchedulePtr = &altWeeklySchedule;
+    }
+  }
+
+  if (quarterIndex >= 0) {
+    programId = getWeeklyScheduleProgramId(weeklySchedulePtr, quarterIndex);
+  }
+
+  return programId;
 }
 
 bool HvacBase::setProgram(int programId,
@@ -2561,6 +2597,10 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
     }
   }
 
+  if (!keepScheduleOn && mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
+    lastProgramManualOverride = -1;
+  }
+
   SUPLA_LOG_INFO("HVAC: set target mode %s requested (%d)",
                  channel.getHvacModeCstr(mode), mode);
 
@@ -2709,6 +2749,26 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
       tHeat,
       tCool,
       durationSec);
+  if (mode == SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
+    lastProgramManualOverride = -1;
+  }
+
+  if (mode == SUPLA_HVAC_MODE_NOT_SET) {
+    if (isWeeklyScheduleEnabled() &&
+        !isTemperatureSetpointChangeSwitchesToManualMode()) {
+      lastProgramManualOverride = getCurrentProgramId();
+      mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
+    } else {
+      mode = getDefaultManualMode();
+      if (mode == SUPLA_HVAC_MODE_AUTO) {
+        if (tHeat == INT16_MIN && tCool > INT16_MIN) {
+          mode = SUPLA_HVAC_MODE_COOL;
+        } else if (tHeat > INT16_MIN && tCool == INT16_MIN) {
+          mode = SUPLA_HVAC_MODE_HEAT;
+        }
+      }
+    }
+  }
 
   if (!isModeSupported(mode)) {
     SUPLA_LOG_WARNING("HVAC: applyNewRuntimeSettings mode=%s not supported",
@@ -2726,7 +2786,9 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
             "HVAC: applyNewRuntimeSettings countdown timer ends in the past");
         return false;
       }
-      storeLastWorkingMode();
+      if (!isCountdownEnabled()) {
+        storeLastWorkingMode();
+      }
     } else {
       SUPLA_LOG_WARNING("HVAC: applyNewRuntimeSettings clock is not ready!");
       channel.setHvacFlagClockError(true);
@@ -2739,7 +2801,8 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
 
   setTargetMode(mode, false);
 
-  if (mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
+  if (mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE ||
+      isWeelkySchedulManualOverrideMode()) {
     setSetpointTemperaturesForCurrentMode(tHeat, tCool);
   }
 
@@ -2917,6 +2980,18 @@ bool HvacBase::processWeeklySchedule() {
     setTargetMode(SUPLA_HVAC_MODE_OFF, false);
     return false;
   } else {
+    if (isWeelkySchedulManualOverrideMode()) {
+      int currentProgramId = getCurrentProgramId();
+      if (currentProgramId != lastProgramManualOverride) {
+        SUPLA_LOG_DEBUG("WeeklySchedule: leaving manual override mode");
+        lastProgramManualOverride = -1;
+      } else {
+        channel.setHvacFlagWeeklyScheduleTemporalOverride(true);
+        SUPLA_LOG_DEBUG("WeeklySchedule: Manual override mode");
+        return true;
+      }
+    }
+    channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
     setTargetMode(program.Mode, true);
     setSetpointTemperaturesForCurrentMode(program.SetpointTemperatureHeat,
         program.SetpointTemperatureCool);
@@ -3286,8 +3361,13 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
   SUPLA_LOG_DEBUG("  MinOffTimeS: %d", config->MinOffTimeS);
   SUPLA_LOG_DEBUG("  OutputValueOnError: %d", config->OutputValueOnError);
   SUPLA_LOG_DEBUG("  Subfunction: %s (%d)",
-                  (config->Subfunction == 1) ? "HEAT" : "COOL",
+                  (config->Subfunction == 1) ? "HEAT" :
+                  (config->Subfunction == 2) ? "COOL" : "N/A",
                   config->Subfunction);
+  SUPLA_LOG_DEBUG("  Setpoint change in weekly schedule: %s",
+                  (config->TemperatureSetpointChangeSwitchesToManualMode == 1)
+                      ? "ON"
+                      : "OFF");
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
     if ((1 << i) & config->Temperatures.Index) {
@@ -3399,6 +3479,7 @@ void HvacBase::initDefaultConfig() {
 
   newConfig.MinOffTimeS = 0;
   newConfig.MinOnTimeS = 0;
+  newConfig.TemperatureSetpointChangeSwitchesToManualMode = 1;
 
   // some temperature config is cleared
   clearTemperatureInStruct(&newConfig.Temperatures,
@@ -3623,3 +3704,8 @@ bool HvacBase::setBinarySensorChannelNo(uint8_t channelNo) {
 uint8_t HvacBase::getBinarySensorChannelNo() const {
   return config.BinarySensorChannelNo;
 }
+
+bool HvacBase::isWeelkySchedulManualOverrideMode() const {
+  return lastProgramManualOverride != -1;
+}
+

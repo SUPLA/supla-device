@@ -52,9 +52,9 @@ void HvacParameters::send(Supla::WebSender* sender) {
   char tmp[100] = {};
   snprintf(tmp, sizeof(tmp), "Thermostat #%d", hvac->getChannelNumber());
 
-  sender->send("<h3>");
+  sender->send("<h2>");
   sender->send(tmp);
-  sender->send("</h3>");
+  sender->send("</h2>");
 
   // form-field BEGIN
   hvac->generateKey(key, "fnc");
@@ -170,7 +170,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_min");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Heating temperature [°C]");
+  sender->sendLabelFor(key, "Heating temperature setpoint [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -190,7 +190,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_max");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Cooling temperature [°C]");
+  sender->sendLabelFor(key, "Cooling temperature setpoint [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -207,11 +207,30 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   // form-field END
 
+// "Temperature setpoint change switches to manual mode"
+  // form-field BEGIN
+  hvac->generateKey(key, "t_chng_keeps");
+  sender->send("<div class=\"form-field right-checkbox\">");
+  sender->sendLabelFor(key,
+                       "Temperature setpoint change switches to manual mode");
+  sender->send("<label>");
+  sender->send("<div class=\"switch\">");
+  sender->send("<input type=\"checkbox\" value=\"on\" ");
+  sender->send(
+      checked(hvac->isTemperatureSetpointChangeSwitchesToManualMode()));
+  sender->sendNameAndId(key);
+  sender->send(">");
+  sender->send("<span class=\"slider\"></span>");
+  sender->send("</div>");
+  sender->send("</label>");
+  sender->send("</div>");
+  // form-field END
+
   sender->send("<h2>Thermometers configuration</h2>");
   // form-field BEGIN
   hvac->generateKey(key, "t_main");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Main thermometer channel");
+  sender->sendLabelFor(key, "Main thermometer channel number");
   sender->send("<div>");
   sender->send("<select ");
   sender->sendNameAndId(key);
@@ -237,11 +256,13 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_aux");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Aux thermometer channel");
+  sender->sendLabelFor(key, "Aux thermometer channel number");
   sender->send("<div>");
   sender->send("<select ");
   sender->sendNameAndId(key);
   sender->send(">");
+  sender->sendSelectItem(hvac->getChannelNumber(), "Not set",
+      hvac->getAuxThermometerChannelNo() == hvac->getChannelNumber());
   for (int i = 0; i < Supla::Channel::reg_dev.channel_count; i++) {
     if (Supla::Channel::reg_dev.channels[i].Type ==
             SUPLA_CHANNELTYPE_THERMOMETER ||
@@ -301,7 +322,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_aux_min");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Aux min. temperature [°C]");
+  sender->sendLabelFor(key, "Aux min. temperature setpoint [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -309,6 +330,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   auto tAuxMinSetpoint = hvac->getTemperatureAuxMinSetpoint();
   if (tAuxMinSetpoint != INT16_MIN) {
     char buf[100] = {};
+    // TODO(klew): fix negative numbers
     snprintf(buf,
              sizeof(buf),
              "%d.%1d",
@@ -325,7 +347,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_aux_max");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Aux max temperature [°C]");
+  sender->sendLabelFor(key, "Aux max temperature setpoint [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -333,6 +355,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   auto tAuxMaxSetpoint = hvac->getTemperatureAuxMaxSetpoint();
   if (tAuxMaxSetpoint != INT16_MIN) {
     char buf[100] = {};
+    // TODO(klew): fix negative numbers
     snprintf(buf,
              sizeof(buf),
              "%d.%1d",
@@ -384,7 +407,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field BEGIN
   hvac->generateKey(key, "t_heat");
   sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Heat protection [°C]");
+  sender->sendLabelFor(key, "Overheat protection [°C]");
   sender->send("<div>");
   sender->send("<input type=\"number\" step=\"0.1\" ");
   sender->sendNameAndId(key);
@@ -669,6 +692,8 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     // anti free will be enabled when checkbox is checked, otherwise
     // form field won't be send, so we disable it here
     hvacConfig->AntiFreezeAndOverheatProtectionEnabled = false;
+    // as above
+    hvacConfig->TemperatureSetpointChangeSwitchesToManualMode = false;
   }
 
   if (config == nullptr || newValue == nullptr) {
@@ -757,6 +782,14 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   if (strcmp(key, keyMatch) == 0) {
     bool antiFreeze = (strcmp(value, "on") == 0);
     hvacConfig->AntiFreezeAndOverheatProtectionEnabled = antiFreeze;
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "t_chng_keeps");
+  // temperature setpoint change switch to manual mode
+  if (strcmp(key, keyMatch) == 0) {
+    bool tChangeSwitch = (strcmp(value, "on") == 0);
+    hvacConfig->TemperatureSetpointChangeSwitchesToManualMode = tChangeSwitch;
     return true;
   }
 

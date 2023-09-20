@@ -1047,6 +1047,8 @@ const char *Channel::getHvacModeCstr(int mode) const {
       return "CMD TURN ON";
     case SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE:
       return "CMD WEEKLY SCHEDULE";
+    case SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL:
+      return "CMD SWITCH TO MANUAL";
 
     default:
       return "UNKNOWN";

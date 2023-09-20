@@ -52,6 +52,12 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
+void BinaryBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  configFinishedReceived = false;
+  defaultConfigReceived = false;
+  Supla::Element::onRegistered(suplaSrpc);
+}
+
 uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                                       bool local) {
   (void)(local);
@@ -68,6 +74,8 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   if (newConfig->ConfigSize != sizeof(TChannelConfig_BinarySensor)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
+
+  defaultConfigReceived = true;
 
   TChannelConfig_BinarySensor *config =
       reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig);
@@ -108,3 +116,8 @@ void BinaryBase::setReadIntervalMs(uint32_t intervalMs) {
   }
   readIntervalMs = intervalMs;
 }
+
+void BinaryBase::handleChannelConfigFinished() {
+  configFinishedReceived = true;
+}
+

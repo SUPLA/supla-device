@@ -364,6 +364,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t getBinarySensorChannelNo() const;
 
   static void debugPrintConfigStruct(const TChannelConfig_HVAC *config, int id);
+  static void debugPrintProgram(const TWeeklyScheduleProgram *program, int id);
 
   _supla_int16_t getPrimaryTemp();
   _supla_int16_t getSecondaryTemp();
@@ -412,6 +413,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   THVACValue lastWorkingMode = {};
   int16_t lastManualSetpointHeat = INT16_MIN;
   int16_t lastManualSetpointCool = INT16_MIN;
+  uint8_t lastManualMode = 0;
   uint8_t previousSubfunction = 0;
   uint8_t defaultSubfunction = 0;
 

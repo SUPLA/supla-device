@@ -146,6 +146,11 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -619,6 +624,11 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -1077,6 +1087,11 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAuto) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer
@@ -1917,6 +1932,11 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -2496,6 +2516,11 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigAutoSetpointTempCheck) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -2756,6 +2781,11 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer
@@ -3113,6 +3143,11 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer
@@ -3708,6 +3743,11 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -3885,6 +3925,11 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer
@@ -4069,6 +4114,11 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer
@@ -4267,6 +4317,11 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -4433,6 +4488,11 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer
@@ -4602,6 +4662,11 @@ TEST_F(HvacIntegrationF, histeresisAutoCheck) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer

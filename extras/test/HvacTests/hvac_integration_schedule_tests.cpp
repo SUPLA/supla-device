@@ -141,6 +141,11 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
       });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -561,6 +566,11 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
         int16_t value = INT16_MIN;
         memcpy(data, &value, sizeof(int16_t));
         return sizeof(int16_t);
+      });
+  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
+      .WillRepeatedly([](unsigned char *data, int size) {
+        *data = 0;
+        return sizeof(uint8_t);
       });
 
   // ignore channel value changed from thermometer

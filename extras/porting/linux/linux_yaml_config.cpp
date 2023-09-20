@@ -640,6 +640,7 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
   SUPLA_LOG_INFO("Channel[%d] config: adding Hvac", channelNumber);
   int mainThermometerChannelNo = -1;
   int auxThermometerChannelNo = -1;
+  int binarySensorChannelNo = -1;
   std::string cmdOn;
   std::string cmdOff;
   std::string cmdOnSecondary;
@@ -691,10 +692,18 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
     return false;
   }
 
+  if (ch["binary_sensor_channel_no"]) {
+    paramCount++;
+    binarySensorChannelNo = ch["binary_sensor_channel_no"].as<int>();
+  }
+
   auto hvac = new Supla::Control::HvacParsed(
       cmdOn, cmdOff, cmdOnSecondary, cmdOffSecondary);
   hvac->setMainThermometerChannelNo(mainThermometerChannelNo);
   hvac->setAuxThermometerChannelNo(auxThermometerChannelNo);
+  if (binarySensorChannelNo >= 0) {
+    hvac->setBinarySensorChannelNo(binarySensorChannelNo);
+  }
   hvac->setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR);
   hvac->setTemperatureHisteresisMin(20);  // 0.2 degree
   hvac->setTemperatureHisteresisMax(1000);  // 10 degree

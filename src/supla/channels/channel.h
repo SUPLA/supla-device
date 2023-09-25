@@ -24,7 +24,7 @@
 
 namespace Supla {
 
-enum class HvacHeatOrCoolFlag {
+enum class HvacCoolSubfunctionFlag {
   HeatSubfunctionOrNotUsed,
   CoolSubfunction,
 };
@@ -81,7 +81,7 @@ class Channel : public LocalAction {
   void setHvacFlagClockError(bool value);
   void setHvacFlagCountdownTimer(bool value);
   void setHvacFlagForcedOffBySensor(bool value);
-  void setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag);
+  void setHvacFlagCoolSubfunction(enum HvacCoolSubfunctionFlag flag);
   void setHvacFlagWeeklyScheduleTemporalOverride(bool value);
 
   uint8_t getHvacIsOn();
@@ -102,7 +102,7 @@ class Channel : public LocalAction {
   bool isHvacFlagClockError();
   bool isHvacFlagCountdownTimer();
   bool isHvacFlagForcedOffBySensor();
-  enum HvacHeatOrCoolFlag getHvacFlagHeatOrCool();
+  enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction();
   bool isHvacFlagWeeklyScheduleTemporalOverride();
 
   static bool isHvacFlagSetpointTemperatureHeatSet(THVACValue *hvacValue);
@@ -115,7 +115,8 @@ class Channel : public LocalAction {
   static bool isHvacFlagClockError(THVACValue *hvacValue);
   static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
   static bool isHvacFlagForcedOffBySensor(THVACValue *hvacValue);
-  static enum HvacHeatOrCoolFlag getHvacFlagHeatOrCool(THVACValue *hvacValue);
+  static enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction(
+      THVACValue *hvacValue);
   static bool isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *hvacValue);
 
   static void setHvacSetpointTemperatureHeat(THVACValue *hvacValue,

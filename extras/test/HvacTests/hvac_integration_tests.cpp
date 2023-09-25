@@ -644,7 +644,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -659,7 +659,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -675,7 +675,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL|
+                  SUPLA_HVAC_VALUE_FLAG_COOL|
                   SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -692,7 +692,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -708,7 +708,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL|
+                  SUPLA_HVAC_VALUE_FLAG_COOL|
                   SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -725,7 +725,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -740,7 +740,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -756,7 +756,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL|
+                  SUPLA_HVAC_VALUE_FLAG_COOL|
                   SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -772,7 +772,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL|
+                  SUPLA_HVAC_VALUE_FLAG_COOL|
                   SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -787,7 +787,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
-        EXPECT_EQ(hvacValue->Flags, SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+        EXPECT_EQ(hvacValue->Flags, SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -802,7 +802,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -817,7 +817,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL|
+                  SUPLA_HVAC_VALUE_FLAG_COOL|
                   SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -2922,7 +2922,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
-        EXPECT_EQ(hvacValue->Flags, SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+        EXPECT_EQ(hvacValue->Flags, SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -2973,7 +2973,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -2996,7 +2996,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
 
         EXPECT_EQ(hvacValue->Flags,
                       SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                      SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL |
+                      SUPLA_HVAC_VALUE_FLAG_COOL |
                       SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -3889,6 +3889,7 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
          config.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
          Supla::Control::HvacBase::setTemperatureInStruct(
              &config.Temperatures, TEMPERATURE_HISTERESIS, 30);
+         config.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
          memcpy(value, &config, blobSize);
          return true;
       });
@@ -4509,7 +4510,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
@@ -4525,7 +4526,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL|
+                  SUPLA_HVAC_VALUE_FLAG_COOL|
                   SUPLA_HVAC_VALUE_FLAG_COOLING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
@@ -4542,7 +4543,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL);
+                  SUPLA_HVAC_VALUE_FLAG_COOL);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);

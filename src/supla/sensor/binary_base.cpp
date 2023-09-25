@@ -71,7 +71,7 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
   }
 
-  if (newConfig->ConfigSize != sizeof(TChannelConfig_BinarySensor)) {
+  if (newConfig->ConfigSize < sizeof(TChannelConfig_BinarySensor)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 

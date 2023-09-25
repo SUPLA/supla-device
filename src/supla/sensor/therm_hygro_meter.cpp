@@ -225,6 +225,9 @@ uint8_t Supla::Sensor::ThermHygroMeter::handleChannelConfig(
   if (result->Func == SUPLA_CHANNELFNC_THERMOMETER ||
       result->Func == SUPLA_CHANNELFNC_HUMIDITYANDTEMPERATURE ||
       result->Func == SUPLA_CHANNELFNC_HUMIDITY) {
+    if (result->ConfigSize < sizeof(TChannelConfig_TemperatureAndHumidity)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
     auto configFromServer =
         reinterpret_cast<TChannelConfig_TemperatureAndHumidity *>(
             result->Config);

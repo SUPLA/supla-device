@@ -907,6 +907,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
   hvacConfig->OutputValueOnError = 100;
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);
@@ -1183,6 +1184,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);
@@ -1365,6 +1367,7 @@ TEST_F(HvacTestWithChannelSetupF,
   hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
   hvacConfig->MinOnTimeS = 10;
   hvacConfig->MinOffTimeS = 20;
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
   hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);

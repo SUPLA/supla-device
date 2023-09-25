@@ -386,6 +386,16 @@ void HvacBase::handleChannelConfigFinished() {
 }
 
 void HvacBase::iterateAlways() {
+  if (getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+    if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
+      if (isHeatingSupported()) {
+        setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
+      } else if (isCoolingSupported()) {
+        setSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
+      }
+    }
+  }
+
   if (previousSubfunction != config.Subfunction) {
     previousSubfunction = config.Subfunction;
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
@@ -417,9 +427,11 @@ void HvacBase::iterateAlways() {
   }
 
   if (isCoolingSubfunction()) {
-    channel.setHvacFlagHeatOrCool(HvacHeatOrCoolFlag::CoolSubfunction);
+    channel.setHvacFlagCoolSubfunction(
+        HvacCoolSubfunctionFlag::CoolSubfunction);
   } else {
-    channel.setHvacFlagHeatOrCool(HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed);
+    channel.setHvacFlagCoolSubfunction(
+        HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed);
   }
 
   // update tempreatures information
@@ -848,14 +860,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
 
   if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     switch (newConfig->Subfunction) {
-      case SUPLA_HVAC_SUBFUNCTION_NOT_SET: {
-        if (isHeatingSupported()) {
-          newConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
-        } else if (isCoolingSupported()) {
-          newConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_COOL;
-        }
-        break;
-      }
+      case SUPLA_HVAC_SUBFUNCTION_NOT_SET:
       case SUPLA_HVAC_SUBFUNCTION_COOL:
       case SUPLA_HVAC_SUBFUNCTION_HEAT:
         break;
@@ -2189,17 +2194,21 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
       if (isAltWeeklySchedule) {
         return false;
       }
-      return isHeatingSupported();
-    }
-    if (program.Mode == SUPLA_HVAC_MODE_COOL) {
+      if (!isHeatingSupported()) {
+        return false;
+      }
+    } else if (program.Mode == SUPLA_HVAC_MODE_COOL) {
       if (!isAltWeeklySchedule) {
         return false;
       }
-      return isCoolingSupported();
+      if (!isCoolingSupported()) {
+        return false;
+      }
+    } else if (program.Mode != SUPLA_HVAC_MODE_NOT_SET &&
+               program.Mode != SUPLA_HVAC_MODE_OFF) {
+      return false;
     }
-  }
-
-  if (!isModeSupported(program.Mode)) {
+  } else if (!isModeSupported(program.Mode)) {
     return false;
   }
 

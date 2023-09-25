@@ -17,6 +17,7 @@
    */
 
 #include "binary_sensor_channel.h"
+#include <supla/log_wrapper.h>
 
 using Supla::BinarySensorChannel;
 
@@ -25,6 +26,8 @@ bool BinarySensorChannel::getValueBool() {
 }
 
 void BinarySensorChannel::setServerInvertLogic(bool invert) {
+  SUPLA_LOG_DEBUG(
+      "Binary[%d] setServerInvertLogic %d", getChannelNumber(), invert);
   serverInvertLogic = invert;
 }
 

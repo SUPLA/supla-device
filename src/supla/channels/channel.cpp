@@ -842,17 +842,17 @@ void Channel::setHvacFlagForcedOffBySensor(bool value) {
   }
 }
 
-void Channel::setHvacFlagHeatOrCool(enum HvacHeatOrCoolFlag flag) {
+void Channel::setHvacFlagCoolSubfunction(enum HvacCoolSubfunctionFlag flag) {
   auto hvacValue = getValueHvac();
-  if (hvacValue != nullptr && flag != getHvacFlagHeatOrCool()) {
+  if (hvacValue != nullptr && flag != getHvacFlagCoolSubfunction()) {
     setUpdateReady();
     uint16_t flags = hvacValue->Flags;
-    if (flag == HvacHeatOrCoolFlag::CoolSubfunction) {
+    if (flag == HvacCoolSubfunctionFlag::CoolSubfunction) {
       // cool subfunction is stored as 1
-      flags |= SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL;
+      flags |= SUPLA_HVAC_VALUE_FLAG_COOL;
     } else {
       // heat subfunction and "not used" is stored as 0
-      flags &= ~SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL;
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_COOL;
     }
     setHvacFlags(flags);
   }
@@ -913,8 +913,8 @@ bool Channel::isHvacFlagForcedOffBySensor() {
   return isHvacFlagForcedOffBySensor(getValueHvac());
 }
 
-enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool() {
-  return getHvacFlagHeatOrCool(getValueHvac());
+enum HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction() {
+  return getHvacFlagCoolSubfunction(getValueHvac());
 }
 
 bool Channel::isHvacFlagWeeklyScheduleTemporalOverride() {
@@ -991,13 +991,14 @@ bool Channel::isHvacFlagForcedOffBySensor(THVACValue *value) {
   return false;
 }
 
-enum HvacHeatOrCoolFlag Channel::getHvacFlagHeatOrCool(THVACValue *hvacValue) {
+enum HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction(
+    THVACValue *hvacValue) {
   if (hvacValue != nullptr) {
-    return (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_HEAT_OR_COOL
-                ? HvacHeatOrCoolFlag::CoolSubfunction
-                : HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed);
+    return (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_COOL
+                ? HvacCoolSubfunctionFlag::CoolSubfunction
+                : HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed);
   }
-  return HvacHeatOrCoolFlag::HeatSubfunctionOrNotUsed;
+  return HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed;
 }
 
 bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *value) {

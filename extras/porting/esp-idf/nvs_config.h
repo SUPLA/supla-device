@@ -40,7 +40,6 @@ class NvsConfig : public Config {
 
   bool setBlob(const char* key, const char* value, size_t blobSize) override;
   bool getBlob(const char* key, char* value, size_t blobSize) override;
-  int getBlobSize(const char* key) override;
 
   bool getInt8(const char* key, int8_t* result) override;
   bool getUInt8(const char* key, uint8_t* result) override;
@@ -55,6 +54,7 @@ class NvsConfig : public Config {
   void commit() override;
 
  protected:
+  int getBlobSize(const char* key) override;
   nvs_handle_t nvsHandle = 0;
 };
 };  // namespace Supla

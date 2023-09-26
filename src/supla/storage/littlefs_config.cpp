@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "supla/storage/key_value.h"
 #ifndef SUPLA_EXCLUDE_LITTLEFS_CONFIG
 
 #if !defined(ARDUINO_ARCH_AVR)
@@ -31,6 +32,8 @@ namespace Supla {
 };
 
 #define SUPLA_LITTLEFS_CONFIG_BUF_SIZE 1024
+
+#define BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE 32
 
 Supla::LittleFsConfig::LittleFsConfig() {}
 
@@ -58,6 +61,7 @@ bool Supla::LittleFsConfig::init() {
 
     int fileSize = cfg.size();
 
+    SUPLA_LOG_DEBUG("LittleFsConfig: config file size %d", fileSize);
     if (fileSize > SUPLA_LITTLEFS_CONFIG_BUF_SIZE) {
       SUPLA_LOG_ERROR("LittleFsConfig: config file is too big");
       cfg.close();
@@ -79,7 +83,9 @@ bool Supla::LittleFsConfig::init() {
     }
 
     SUPLA_LOG_DEBUG("LittleFsConfig: initializing storage from file...");
-    return initFromMemory(buf, fileSize);
+    auto result =  initFromMemory(buf, fileSize);
+    SUPLA_LOG_DEBUG("LittleFsConfig: init result %d", result);
+    return result;
   } else {
     SUPLA_LOG_DEBUG("LittleFsConfig:: config file missing");
   }
@@ -215,10 +221,117 @@ void Supla::LittleFsConfig::removeAll() {
     return;
   }
   LittleFS.remove(CustomCAFileName);
+
+  File suplaDir = LittleFS.open("/supla");
+  if (suplaDir && suplaDir.isDirectory()) {
+    File file = suplaDir.openNextFile();
+    while (file) {
+      if (!file.isDirectory()) {
+        SUPLA_LOG_DEBUG("LittleFsConfig: removing file %s", file.path());
+        char path[200] = {};
+        snprintf(path, sizeof(path), "%s", file.path());
+        file.close();
+        if (!LittleFS.remove(path)) {
+          SUPLA_LOG_ERROR("LittleFsConfig: failed to remove file");
+        }
+      }
+      file = suplaDir.openNextFile();
+    }
+  } else {
+    SUPLA_LOG_DEBUG("LittleFsConfig: failed to open supla directory");
+  }
+
   LittleFS.end();
 
   Supla::KeyValue::removeAll();
 }
+
+bool Supla::LittleFsConfig::setBlob(const char* key,
+                                    const char* value,
+                                    size_t blobSize) {
+  if (blobSize < BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE) {
+    return Supla::KeyValue::setBlob(key, value, blobSize);
+  }
+
+  SUPLA_LOG_DEBUG("LittleFS: writing file %s", key);
+  if (!initLittleFs()) {
+    return false;
+  }
+
+  LittleFS.mkdir("/supla");
+
+  char filename[50] = {};
+  snprintf(filename, sizeof(filename), "/supla/%s", key);
+  File file = LittleFS.open(filename, "w");
+  if (!file) {
+    SUPLA_LOG_ERROR(
+        "LittleFsConfig: failed to open blob file \"%s\" for write", key);
+    LittleFS.end();
+    return false;
+  }
+
+  file.write(reinterpret_cast<const uint8_t*>(value), blobSize);
+  file.close();
+  LittleFS.end();
+  return true;
+}
+
+bool Supla::LittleFsConfig::getBlob(const char* key,
+                                    char* value,
+                                    size_t blobSize) {
+  if (blobSize < BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE) {
+    return Supla::KeyValue::getBlob(key, value, blobSize);
+  }
+
+  if (!initLittleFs()) {
+    return false;
+  }
+
+  char filename[50] = {};
+  snprintf(filename, sizeof(filename), "/supla/%s", key);
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    SUPLA_LOG_ERROR(
+        "LittleFsConfig: failed to open blob file \"%s\" for read", key);
+    LittleFS.end();
+    return false;
+  }
+  int fileSize = file.size();
+  if (fileSize > blobSize) {
+    SUPLA_LOG_ERROR("LittleFsConfig: blob file is too big");
+    file.close();
+    LittleFS.end();
+    return false;
+  }
+
+  int bytesRead = file.read(reinterpret_cast<uint8_t*>(value), fileSize);
+
+  file.close();
+  LittleFS.end();
+  return bytesRead == fileSize;
+}
+
+int Supla::LittleFsConfig::getBlobSize(const char* key) {
+  if (!initLittleFs()) {
+    return false;
+  }
+
+  char filename[50] = {};
+  snprintf(filename, sizeof(filename), "/supla/%s", key);
+  File file = LittleFS.open(filename, "r");
+  if (!file) {
+    SUPLA_LOG_ERROR(
+        "LittleFsConfig: failed to open blob file \"%s\"", key);
+    LittleFS.end();
+    return false;
+  }
+  int fileSize = file.size();
+
+  file.close();
+  LittleFS.end();
+  return fileSize;
+}
+
 
 #endif
 #endif  // SUPLA_EXCLUDE_LITTLEFS_CONFIG

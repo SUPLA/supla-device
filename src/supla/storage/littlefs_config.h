@@ -37,7 +37,12 @@ class LittleFsConfig : public KeyValue {
   int getCustomCASize() override;
   bool setCustomCA(const char* customCA) override;
 
+  // override blob storage to use separate file for each value
+  bool setBlob(const char* key, const char* value, size_t blobSize) override;
+  bool getBlob(const char* key, char* value, size_t blobSize) override;
+
  protected:
+  int getBlobSize(const char* key) override;
   bool initLittleFs();
 };
 };  // namespace Supla

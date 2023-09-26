@@ -46,7 +46,6 @@ class KeyValue : public Config {
 
   bool setBlob(const char* key, const char* value, size_t blobSize) override;
   bool getBlob(const char* key, char* value, size_t blobSize) override;
-  int getBlobSize(const char* key) override;
 
   bool getInt8(const char* key, int8_t* result) override;
   bool getUInt8(const char* key, uint8_t* result) override;
@@ -59,6 +58,7 @@ class KeyValue : public Config {
   bool setUInt32(const char* key, const uint32_t value) override;
 
  protected:
+  int getBlobSize(const char* key) override;
   KeyValueElement* find(const char* key);
   KeyValueElement* findOrCreate(const char* key);
   KeyValueElement* first = nullptr;

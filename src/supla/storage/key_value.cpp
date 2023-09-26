@@ -16,16 +16,17 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "key_value.h"
+
 #include <string.h>
 #include <supla-common/proto.h>
+#include <supla/log_wrapper.h>
 
 #if defined(ESP8266)
 #include <Esp.h>
 #elif defined(ESP32)
 #include <esp_random.h>
 #endif
-
-#include "key_value.h"
 
 namespace Supla {
 KeyValue::~KeyValue() {
@@ -533,6 +534,7 @@ size_t KeyValueElement::serialize(uint8_t* destination, size_t maxSize) {
   }
 
   if (blockSize > maxSize) {
+    SUPLA_LOG_ERROR("Key value too big");
     return 0;
   }
 

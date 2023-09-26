@@ -296,7 +296,7 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
     LittleFS.end();
     return false;
   }
-  int fileSize = file.size();
+  size_t fileSize = file.size();
   if (fileSize > blobSize) {
     SUPLA_LOG_ERROR("LittleFsConfig: blob file is too big");
     file.close();

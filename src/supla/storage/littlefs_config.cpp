@@ -222,14 +222,14 @@ void Supla::LittleFsConfig::removeAll() {
   }
   LittleFS.remove(CustomCAFileName);
 
-  File suplaDir = LittleFS.open("/supla");
+  File suplaDir = LittleFS.open("/supla", "r");
   if (suplaDir && suplaDir.isDirectory()) {
     File file = suplaDir.openNextFile();
     while (file) {
       if (!file.isDirectory()) {
-        SUPLA_LOG_DEBUG("LittleFsConfig: removing file %s", file.path());
+        SUPLA_LOG_DEBUG("LittleFsConfig: removing file /supla/%s", file.name());
         char path[200] = {};
-        snprintf(path, sizeof(path), "%s", file.path());
+        snprintf(path, sizeof(path), "/supla/%s", file.name());
         file.close();
         if (!LittleFS.remove(path)) {
           SUPLA_LOG_ERROR("LittleFsConfig: failed to remove file");

@@ -111,75 +111,56 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
   EXPECT_FALSE(hvac.isFanSupported());
   EXPECT_FALSE(hvac.isDrySupported());
 
-  EXPECT_EQ(ch->getFuncList(),
-            SUPLA_HVAC_CAP_FLAG_MODE_HEAT | SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 
   // check setters for supported modes
   hvac.setCoolingSupported(true);
   EXPECT_TRUE(hvac.isCoolingSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
   // check fan
   hvac.setFanSupported(true);
-  EXPECT_TRUE(hvac.isFanSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_FAN);
+  EXPECT_FALSE(hvac.isFanSupported());  // fan is not implemented
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+
   // check dry
   hvac.setDrySupported(true);
-  EXPECT_TRUE(hvac.isDrySupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_FAN |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_DRY);
+  EXPECT_FALSE(hvac.isDrySupported());  // dry is not implemented
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+
   // check auto
   hvac.setAutoSupported(true);
   EXPECT_TRUE(hvac.isAutoSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_FAN |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_DRY |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(
+      ch->getFuncList(),
+      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
 
   // check onoff
   hvac.setOnOffSupported(false);
   EXPECT_FALSE(hvac.isOnOffSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_FAN |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_DRY |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(
+      ch->getFuncList(),
+      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
 
   // check heating
+  // auto is also removed, because it requires both heat and cool support
   hvac.setHeatingSupported(false);
   EXPECT_FALSE(hvac.isHeatingSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_FAN |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_DRY |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 
   // check cooling
   hvac.setCoolingSupported(false);
   EXPECT_FALSE(hvac.isCoolingSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_FAN |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_DRY |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(ch->getFuncList(), 0);
 
   // check fan
   hvac.setFanSupported(false);
   EXPECT_FALSE(hvac.isFanSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_DRY |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(ch->getFuncList(), 0);
 
   // check dry
   hvac.setDrySupported(false);
   EXPECT_FALSE(hvac.isDrySupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(ch->getFuncList(), 0);
 
   // check auto
   hvac.setAutoSupported(false);
@@ -189,14 +170,12 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
   // check onoff
   hvac.setOnOffSupported(true);
   EXPECT_TRUE(hvac.isOnOffSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+  EXPECT_EQ(ch->getFuncList(), 0);
 
   // check heating
   hvac.setHeatingSupported(true);
   EXPECT_TRUE(hvac.isHeatingSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
-
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 
   // check if set auto will also set cool and heat
   hvac.setCoolingSupported(false);
@@ -209,17 +188,15 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
   EXPECT_TRUE(hvac.isAutoSupported());
   EXPECT_TRUE(hvac.isCoolingSupported());
   EXPECT_TRUE(hvac.isHeatingSupported());
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(
+      ch->getFuncList(),
+      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
 
   hvac.enableDifferentialFunctionSupport();
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO |
-                                   SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
+  EXPECT_EQ(ch->getFuncList(),
+            SUPLA_BIT_FUNC_HVAC_THERMOSTAT |
+                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO |
+                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL);
 }
 
 TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
@@ -281,16 +258,16 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   EXPECT_EQ(hvac.getUsedAlgorithm(),
             SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
-  // check dry
+  // check dry - not implemented yet
   hvac.setCoolingSupported(false);
   hvac.setHeatingSupported(false);
   hvac.setAutoSupported(false);
   hvac.setDrySupported(true);
   ch->setDefault(0);
   hvac.onInit();
-  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_DRYER);
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
 
-  // check fan
+  // check fan - not implemented yet
   hvac.setCoolingSupported(false);
   hvac.setHeatingSupported(false);
   hvac.setAutoSupported(false);
@@ -298,7 +275,7 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   hvac.setFanSupported(true);
   ch->setDefault(0);
   hvac.onInit();
-  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_FAN);
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
 
   // check with all options enabled
   hvac.setOnOffSupported(true);
@@ -351,17 +328,14 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInitWithTwoOutputs) {
   // check default function
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
 
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+  EXPECT_EQ(
+      ch->getFuncList(),
+      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
 
   hvac.enableDifferentialFunctionSupport();
-  EXPECT_EQ(ch->getFuncList(), SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_COOL |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
-                                   SUPLA_HVAC_CAP_FLAG_MODE_AUTO |
-                                   SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO |
+                            SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL |
+                            SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 }
 
 TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
@@ -975,6 +949,9 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
                 .MinOffTimeS = 20,
                 .OutputValueOnError = 100,
                 .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
+                .ModeCapabilities = SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                    SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                    SUPLA_HVAC_CAP_FLAG_MODE_COOL,
                 .Temperatures = {}};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1092,22 +1069,25 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
               setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
-      .WillOnce([](const char *key, const char *buf, int size) {
-        TChannelConfig_HVAC expectedData = {
-            .MainThermometerChannelNo = 1,
-            .AuxThermometerChannelNo = 2,
-            .AuxThermometerType =
-                SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-            .AntiFreezeAndOverheatProtectionEnabled = 1,
-            .AvailableAlgorithms = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
-                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
-            .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-            .MinOnTimeS = 10,
-            .MinOffTimeS = 20,
-            .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
-            .Temperatures = {}};
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .WillOnce(
+          [](const char *key, const char *buf, int size) {
+            TChannelConfig_HVAC expectedData = {
+                .MainThermometerChannelNo = 1,
+                .AuxThermometerChannelNo = 2,
+                .AuxThermometerType = SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
+                .AntiFreezeAndOverheatProtectionEnabled = 1,
+                .AvailableAlgorithms =
+                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
+                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
+                .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
+                .MinOnTimeS = 10,
+                .MinOffTimeS = 20,
+                .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
+                .ModeCapabilities = SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                    SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                    SUPLA_HVAC_CAP_FLAG_MODE_COOL,
+                .Temperatures = {}};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
@@ -1157,8 +1137,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
 
             EXPECT_EQ(0, memcmp(buf, &expectedData, size));
             return 1;
-      });
-
+          });
 
   hvac->onLoadConfig(nullptr);
   hvac->onLoadState();
@@ -1288,6 +1267,9 @@ TEST_F(HvacTestWithChannelSetupF,
                 .MinOnTimeS = 10,
                 .MinOffTimeS = 20,
                 .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
+                .ModeCapabilities = SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                    SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                    SUPLA_HVAC_CAP_FLAG_MODE_COOL,
                 .Temperatures = {}};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1452,7 +1434,6 @@ TEST_F(HvacTestWithChannelSetupF,
         .Times(1)
         .WillRepeatedly(Return(false));
 
-
     EXPECT_CALL(proto,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
@@ -1477,6 +1458,9 @@ TEST_F(HvacTestWithChannelSetupF,
               .MinOffTimeS = 0,
               .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
               .TemperatureSetpointChangeSwitchesToManualMode = 1,
+              .ModeCapabilities = SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                  SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                  SUPLA_HVAC_CAP_FLAG_MODE_COOL,
               .Temperatures = {}};
 
           Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1736,6 +1720,9 @@ TEST_F(HvacTestWithChannelSetupF,
               .MinOffTimeS = 0,
               .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
               .TemperatureSetpointChangeSwitchesToManualMode = 1,
+              .ModeCapabilities = SUPLA_HVAC_CAP_FLAG_MODE_ONOFF |
+                                  SUPLA_HVAC_CAP_FLAG_MODE_HEAT |
+                                  SUPLA_HVAC_CAP_FLAG_MODE_COOL,
               .Temperatures = {}};
 
           Supla::Control::HvacBase::setTemperatureInStruct(

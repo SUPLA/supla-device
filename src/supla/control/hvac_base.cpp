@@ -558,77 +558,83 @@ void HvacBase::iterateAlways() {
 
 void HvacBase::setHeatingSupported(bool supported) {
   if (supported) {
-    channel.setFuncList(channel.getFuncList() | SUPLA_HVAC_CAP_FLAG_MODE_HEAT);
+    channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
   } else {
-    channel.setFuncList(channel.getFuncList() & ~SUPLA_HVAC_CAP_FLAG_MODE_HEAT);
+    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
+    if (!isCoolingSupported()) {
+      channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+    }
+    setAutoSupported(false);
   }
 }
 
 void HvacBase::setCoolingSupported(bool supported) {
   if (supported) {
-    channel.setFuncList(channel.getFuncList() | SUPLA_HVAC_CAP_FLAG_MODE_COOL);
+    channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_COOL;
   } else {
-    channel.setFuncList(channel.getFuncList() & ~SUPLA_HVAC_CAP_FLAG_MODE_COOL);
+    channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_COOL;
+    if (!isHeatingSupported()) {
+      channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+    }
+    setAutoSupported(false);
   }
 }
 
 void HvacBase::setAutoSupported(bool supported) {
   if (supported) {
-    channel.setFuncList(channel.getFuncList() | SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+    channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
     setHeatingSupported(true);
     setCoolingSupported(true);
   } else {
-    channel.setFuncList(channel.getFuncList() & ~SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+    channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
   }
 }
 
 void HvacBase::setFanSupported(bool supported) {
-  if (supported) {
-    channel.setFuncList(channel.getFuncList() | SUPLA_HVAC_CAP_FLAG_MODE_FAN);
-  } else {
-    channel.setFuncList(channel.getFuncList() & ~SUPLA_HVAC_CAP_FLAG_MODE_FAN);
-  }
+  (void)(supported);
+  // not implemented yet
 }
 
 void HvacBase::setDrySupported(bool supported) {
-  if (supported) {
-    channel.setFuncList(channel.getFuncList() | SUPLA_HVAC_CAP_FLAG_MODE_DRY);
-  } else {
-    channel.setFuncList(channel.getFuncList() & ~SUPLA_HVAC_CAP_FLAG_MODE_DRY);
-  }
+  (void)(supported);
+  // not implemented yet
 }
 
 void HvacBase::setOnOffSupported(bool supported) {
   if (supported) {
-    channel.setFuncList(channel.getFuncList() | SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
   } else {
-    channel.setFuncList(channel.getFuncList() &
-                        ~SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
   }
 }
 
 bool HvacBase::isOnOffSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
+  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
 }
 
 bool HvacBase::isHeatingSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
+  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
 }
 
 bool HvacBase::isCoolingSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_COOL;
+  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_COOL;
 }
 
 bool HvacBase::isAutoSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
+  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
 }
 
 bool HvacBase::isFanSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_FAN;
+  return false;
 }
 
 bool HvacBase::isDrySupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_MODE_DRY;
+  return false;
 }
 
 uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
@@ -713,6 +719,16 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       channelConfigChangedOffline = 1;
     }
     saveConfig();
+  }
+
+  // check if readonly fields have correct values on server
+  // if not, then send update to server
+  // Check is done only on first config after registration
+  if (!configFinishedReceived) {
+    if (hvacConfig->ModeCapabilities != config.ModeCapabilities ||
+        hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
+      channelConfigChangedOffline = 1;
+    }
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;
@@ -3041,6 +3057,14 @@ bool HvacBase::processWeeklySchedule() {
         SUPLA_LOG_DEBUG("WeeklySchedule: leaving manual override mode");
         lastProgramManualOverride = -1;
       } else {
+        if (getMode() == SUPLA_HVAC_MODE_OFF) {
+          int mode = lastManualMode;
+          if (mode == 0) {
+            mode = getDefaultManualMode();
+          }
+          SUPLA_LOG_DEBUG("WeeklySchedule: Manual override mode %d", mode);
+          setTargetMode(mode, true);
+        }
         channel.setHvacFlagWeeklyScheduleTemporalOverride(true);
         SUPLA_LOG_DEBUG("WeeklySchedule: Manual override mode");
         return true;
@@ -3072,19 +3096,16 @@ void HvacBase::addPrimaryOutput(Supla::Control::OutputInterface *output) {
   primaryOutput = output;
 
   if (primaryOutput == nullptr) {
-    channel.removeFromFuncList(SUPLA_HVAC_CAP_FLAG_MODE_HEAT);
-    channel.removeFromFuncList(SUPLA_HVAC_CAP_FLAG_MODE_COOL);
-    channel.removeFromFuncList(SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
-    channel.removeFromFuncList(SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+    channel.setFuncList(0);
     return;
   }
 
-  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_MODE_HEAT);
-  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_MODE_COOL);
-  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_MODE_ONOFF);
+  setHeatingSupported(true);
+  setCoolingSupported(true);
+  setOnOffSupported(true);
 
   if (secondaryOutput != nullptr) {
-    channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+    setAutoSupported(true);
   }
 }
 
@@ -3092,12 +3113,12 @@ void HvacBase::addSecondaryOutput(Supla::Control::OutputInterface *output) {
   secondaryOutput = output;
 
   if (secondaryOutput == nullptr) {
-    channel.removeFromFuncList(SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+    setAutoSupported(false);
     return;
   }
 
   if (primaryOutput != nullptr) {
-    channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_MODE_AUTO);
+    setAutoSupported(true);
   }
 }
 
@@ -3285,19 +3306,19 @@ void HvacBase::changeFunction(int newFunction, bool changedLocally) {
 }
 
 void HvacBase::enableDifferentialFunctionSupport() {
-  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL);
+  channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL);
 }
 
 bool HvacBase::isDifferentialFunctionSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_DIFFERENTIAL;
+  return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL;
 }
 
 void HvacBase::enableDomesticHotWaterFunctionSupport() {
-  channel.addToFuncList(SUPLA_HVAC_CAP_FLAG_DOMESTIC_HOT_WATER);
+  channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_DOMESTIC_HOT_WATER);
 }
 
 bool HvacBase::isDomesticHotWaterFunctionSupported() const {
-  return channel.getFuncList() & SUPLA_HVAC_CAP_FLAG_DOMESTIC_HOT_WATER;
+  return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_DOMESTIC_HOT_WATER;
 }
 
 void HvacBase::fixTemperatureSetpoints() {
@@ -3424,8 +3445,8 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   config->Subfunction);
   SUPLA_LOG_DEBUG("  Setpoint change in weekly schedule: %s",
                   (config->TemperatureSetpointChangeSwitchesToManualMode == 1)
-                      ? "ON"
-                      : "OFF");
+                      ? "switches to manual"
+                      : "keeps weekly");
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
     if ((1 << i) & config->Temperatures.Index) {

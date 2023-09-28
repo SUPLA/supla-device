@@ -466,11 +466,12 @@ void HvacBase::iterateAlways() {
     setOutput(getOutputValueOnError(), true);
     lastTemperature = INT16_MIN;
     SUPLA_LOG_DEBUG(
-        "HVAC: invalid temperature readout - check if your thermometer is "
-        "correctly connected and configured");
+        "HVAC[%d]: invalid temperature readout - check if your thermometer is "
+        "correctly connected and configured", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
     return;
   }
+  channel.setHvacFlagThermometerError(false);
 
   if (channel.getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
@@ -480,19 +481,17 @@ void HvacBase::iterateAlways() {
   lastTemperature = t1;
 
   if (checkOverheatProtection(t1)) {
-    SUPLA_LOG_DEBUG("HVAC: overheat protection exit");
-    channel.setHvacFlagThermometerError(false);
+    SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
     return;
   }
 
   if (checkAntifreezeProtection(t1)) {
-    SUPLA_LOG_DEBUG("HVAC: antifreeze protection exit");
-    channel.setHvacFlagThermometerError(false);
+    SUPLA_LOG_DEBUG("HVAC[%d]: antifreeze protection exit", getChannelNumber());
     return;
   }
 
   if (getForcedOffSensorState()) {
-    SUPLA_LOG_DEBUG("HVAC: forced off by sensor exit");
+    SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit", getChannelNumber());
     channel.setHvacFlagForcedOffBySensor(true);
     setOutput(0, false);
     return;
@@ -501,8 +500,8 @@ void HvacBase::iterateAlways() {
   }
 
   if (checkAuxProtection(t2)) {
-    SUPLA_LOG_DEBUG("HVAC: heater/cooler protection exit");
-    channel.setHvacFlagThermometerError(false);
+    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
+                    getChannelNumber());
     return;
   }
 
@@ -2866,7 +2865,8 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
 
   setTargetMode(mode, false);
 
-  if (mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE ||
+  if ((mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE &&
+        !isWeeklyScheduleEnabled()) ||
       isWeelkySchedulManualOverrideMode()) {
     setSetpointTemperaturesForCurrentMode(tHeat, tCool);
   }

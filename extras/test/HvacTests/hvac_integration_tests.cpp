@@ -827,7 +827,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
   // it was cool
   hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
-  hvac->setHeatingSupported(false);
+  hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
 
   t1->setValue(23.5);
   t1->setRefreshIntervalMs(100);

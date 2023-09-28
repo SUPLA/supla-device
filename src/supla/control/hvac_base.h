@@ -85,9 +85,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void saveWeeklySchedule();
 
   // Below functions are used to set device capabilities.
-  void setOnOffSupported(bool supported);
-  void setHeatingSupported(bool supported);
-  void setCoolingSupported(bool supported);
+  void setHeatingAndCoolingSupported(bool supported);
   void setAutoSupported(bool supported);
   void setFanSupported(bool supported);
   void setDrySupported(bool supported);
@@ -227,9 +225,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // Below methods check if specific function is supported by thermostat.
   // Even if function is supported, it doesn't mean that new mode setting will
   // be valid, becuase this depends on configured Function.
-  bool isOnOffSupported() const;
-  bool isHeatingSupported() const;
-  bool isCoolingSupported() const;
+  bool isHeatingAndCoolingSupported() const;
   bool isAutoSupported() const;
   bool isFanSupported() const;
   bool isDrySupported() const;

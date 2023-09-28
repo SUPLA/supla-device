@@ -293,9 +293,9 @@ void HvacBase::onInit() {
   // set by user
   if (channel.getDefaultFunction() == 0) {
     // set default to auto when both heat and cool are supported
-    if (isHeatingSupported() && isCoolingSupported() && isAutoSupported()) {
+    if (isAutoSupported()) {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
-    } else if (isHeatingSupported() || isCoolingSupported()) {
+    } else if (isHeatingAndCoolingSupported()) {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
     } else if (isDrySupported()) {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_DRYER);
@@ -388,11 +388,7 @@ void HvacBase::handleChannelConfigFinished() {
 void HvacBase::iterateAlways() {
   if (getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
-      if (isHeatingSupported()) {
-        setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
-      } else if (isCoolingSupported()) {
-        setSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
-      }
+      setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
     }
   }
 
@@ -555,29 +551,11 @@ void HvacBase::iterateAlways() {
   }
 }
 
-void HvacBase::setHeatingSupported(bool supported) {
+void HvacBase::setHeatingAndCoolingSupported(bool supported) {
   if (supported) {
     channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
-    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
-  } else {
-    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
-    if (!isCoolingSupported()) {
-      channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
-    }
-    setAutoSupported(false);
-  }
-}
-
-void HvacBase::setCoolingSupported(bool supported) {
-  if (supported) {
-    channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
-    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_COOL;
   } else {
     channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
-    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_COOL;
-    if (!isHeatingSupported()) {
-      channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
-    }
     setAutoSupported(false);
   }
 }
@@ -585,12 +563,9 @@ void HvacBase::setCoolingSupported(bool supported) {
 void HvacBase::setAutoSupported(bool supported) {
   if (supported) {
     channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
-    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
-    setHeatingSupported(true);
-    setCoolingSupported(true);
+    setHeatingAndCoolingSupported(true);
   } else {
     channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
-    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
   }
 }
 
@@ -604,28 +579,12 @@ void HvacBase::setDrySupported(bool supported) {
   // not implemented yet
 }
 
-void HvacBase::setOnOffSupported(bool supported) {
-  if (supported) {
-    config.ModeCapabilities |= SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
-  } else {
-    config.ModeCapabilities &= ~SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
-  }
-}
-
-bool HvacBase::isOnOffSupported() const {
-  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_ONOFF;
-}
-
-bool HvacBase::isHeatingSupported() const {
-  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_HEAT;
-}
-
-bool HvacBase::isCoolingSupported() const {
-  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_COOL;
+bool HvacBase::isHeatingAndCoolingSupported() const {
+  return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_THERMOSTAT;
 }
 
 bool HvacBase::isAutoSupported() const {
-  return config.ModeCapabilities & SUPLA_HVAC_CAP_FLAG_MODE_AUTO;
+  return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO;
 }
 
 bool HvacBase::isFanSupported() const {
@@ -724,8 +683,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   // if not, then send update to server
   // Check is done only on first config after registration
   if (!configFinishedReceived) {
-    if (hvacConfig->ModeCapabilities != config.ModeCapabilities ||
-        hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
+    if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
       channelConfigChangedOffline = 1;
     }
   }
@@ -1367,7 +1325,7 @@ uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
 bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
-      return isHeatingSupported() || isCoolingSupported();
+      return isHeatingAndCoolingSupported();
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
       return isAutoSupported();
     case SUPLA_CHANNELFNC_HVAC_FAN:
@@ -1377,7 +1335,7 @@ bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
       return isDifferentialFunctionSupported();
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
-      return isDomesticHotWaterFunctionSupported() && isHeatingSupported();
+      return isDomesticHotWaterFunctionSupported();
     }
   }
   return false;
@@ -2209,14 +2167,14 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
       if (isAltWeeklySchedule) {
         return false;
       }
-      if (!isHeatingSupported()) {
+      if (!isHeatingAndCoolingSupported()) {
         return false;
       }
     } else if (program.Mode == SUPLA_HVAC_MODE_COOL) {
       if (!isAltWeeklySchedule) {
         return false;
       }
-      if (!isCoolingSupported()) {
+      if (!isHeatingAndCoolingSupported()) {
         return false;
       }
     } else if (program.Mode != SUPLA_HVAC_MODE_NOT_SET &&
@@ -2253,7 +2211,7 @@ bool HvacBase::isModeSupported(int mode) const {
   bool autoSupported = false;
   bool drySupported = false;
   bool fanSupported = isFanSupported();
-  bool onOffSupported = isOnOffSupported();
+  bool onOffSupported = true;
 
   switch (channel.getDefaultFunction()) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
@@ -3100,9 +3058,7 @@ void HvacBase::addPrimaryOutput(Supla::Control::OutputInterface *output) {
     return;
   }
 
-  setHeatingSupported(true);
-  setCoolingSupported(true);
-  setOnOffSupported(true);
+  setHeatingAndCoolingSupported(true);
 
   if (secondaryOutput != nullptr) {
     setAutoSupported(true);
@@ -3548,11 +3504,7 @@ void HvacBase::initDefaultConfig() {
     if (defaultSubfunction != SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
       newConfig.Subfunction = defaultSubfunction;
     } else {
-      if (isHeatingSupported()) {
-        newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
-      } else if (isCoolingSupported()) {
-        newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_COOL;
-      }
+      newConfig.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
     }
   }
 
@@ -3614,18 +3566,15 @@ void HvacBase::initDefaultWeeklySchedule() {
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
-      if (isHeatingSupported()) {
-        setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0, USE_MAIN_WEEKLYSCHEDULE);
-        setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0, USE_MAIN_WEEKLYSCHEDULE);
-        setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0, USE_MAIN_WEEKLYSCHEDULE);
-        setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0, USE_MAIN_WEEKLYSCHEDULE);
-      }
-      if (isCoolingSupported()) {
-        setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400, USE_ALT_WEEKLYSCHEDULE);
-        setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100, USE_ALT_WEEKLYSCHEDULE);
-        setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800, USE_ALT_WEEKLYSCHEDULE);
-        setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800, USE_ALT_WEEKLYSCHEDULE);
-      }
+      setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0, USE_MAIN_WEEKLYSCHEDULE);
+      setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0, USE_MAIN_WEEKLYSCHEDULE);
+      setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0, USE_MAIN_WEEKLYSCHEDULE);
+      setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0, USE_MAIN_WEEKLYSCHEDULE);
+
+      setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400, USE_ALT_WEEKLYSCHEDULE);
+      setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100, USE_ALT_WEEKLYSCHEDULE);
+      setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800, USE_ALT_WEEKLYSCHEDULE);
+      setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800, USE_ALT_WEEKLYSCHEDULE);
       break;
     }
 
@@ -3655,8 +3604,7 @@ void HvacBase::initDefaultWeeklySchedule() {
   // then we init Quarters in schedule
   auto channelFunction = channel.getDefaultFunction();
     // default schedule for heating mode
-  if ((channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-       isHeatingSupported()) ||
+  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT ||
       channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
       channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
     for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
@@ -3675,8 +3623,7 @@ void HvacBase::initDefaultWeeklySchedule() {
       }
     }
   }
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-      isCoolingSupported()) {
+  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
       int program = 0;  // off
       for (int hour = 0; hour < 24; hour++) {

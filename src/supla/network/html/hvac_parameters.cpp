@@ -89,8 +89,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   // form-field END
 
   // form-field BEGIN
-  if (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-      hvac->isCoolingSupported() && hvac->isHeatingSupported()) {
+  if (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     hvac->generateKey(key, "subfnc");
     sender->send("<div class=\"form-field\">");
     sender->sendLabelFor(key, "Room thermostat function");

@@ -70,7 +70,6 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
 HvacBase::~HvacBase() {
 }
 
-// void handleAction(int event, int action) override;
 void HvacBase::handleAction(int event, int action) {
   (void)(event);
   switch (action) {
@@ -88,6 +87,53 @@ void HvacBase::handleAction(int event, int action) {
       } else {
         setTargetMode(SUPLA_HVAC_MODE_OFF, false);
       }
+      break;
+    }
+    case Supla::INCREASE_TEMPERATURE: {
+      changeTemperatureSetpointsBy(buttonTemperatureStep,
+                                   buttonTemperatureStep);
+      break;
+    }
+    case Supla::DECREASE_TEMPERATURE: {
+      changeTemperatureSetpointsBy(-buttonTemperatureStep,
+                                   -buttonTemperatureStep);
+      break;
+    }
+    case Supla::INCREASE_HEATING_TEMPERATURE: {
+      changeTemperatureSetpointsBy(buttonTemperatureStep, 0);
+      break;
+    }
+    case Supla::DECREASE_HEATING_TEMPERATURE: {
+      changeTemperatureSetpointsBy(-buttonTemperatureStep, 0);
+      break;
+    }
+    case Supla::INCREASE_COOLING_TEMPERATURE: {
+      changeTemperatureSetpointsBy(0, buttonTemperatureStep);
+      break;
+    }
+    case Supla::DECREASE_COOLING_TEMPERATURE: {
+      changeTemperatureSetpointsBy(0, -buttonTemperatureStep);
+      break;
+    }
+    case Supla::SWITCH_TO_MANUAL_MODE: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL, 0);
+      break;
+    }
+    case Supla::SWITCH_TO_WEEKLY_SCHEDULE_MODE: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE, 0);
+      break;
+    }
+    case Supla::SWITCH_TO_MANUAL_MODE_HEAT: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_HEAT, 0);
+      break;
+    }
+    case Supla::SWITCH_TO_MANUAL_MODE_COOL: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_COOL, 0);
+      break;
+    }
+    case Supla::SWITCH_TO_MANUAL_MODE_AUTO: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_AUTO, 0);
+      break;
     }
   }
 }
@@ -2896,17 +2942,43 @@ int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
 }
 
 void HvacBase::setTemperatureSetpointHeat(int tHeat) {
-  if (isTemperatureInRoomConstrain(tHeat)) {
-    channel.setHvacSetpointTemperatureHeat(tHeat);
-    lastConfigChangeTimestampMs = millis();
+  if (tHeat == INT16_MIN) {
+    return;
   }
+  auto tMin =
+      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
+  auto tMax =
+      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
+
+  if (tHeat < tMin) {
+    tHeat = tMin;
+  }
+  if (tHeat > tMax) {
+    tHeat = tMax;
+  }
+
+  channel.setHvacSetpointTemperatureHeat(tHeat);
+  lastConfigChangeTimestampMs = millis();
 }
 
 void HvacBase::setTemperatureSetpointCool(int tCool) {
-  if (isTemperatureInRoomConstrain(tCool)) {
-    channel.setHvacSetpointTemperatureCool(tCool);
-    lastConfigChangeTimestampMs = millis();
+  if (tCool == INT16_MIN) {
+    return;
   }
+  auto tMin =
+      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
+  auto tMax =
+      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
+
+  if (tCool < tMin) {
+    tCool = tMin;
+  }
+  if (tCool > tMax) {
+    tCool = tMax;
+  }
+
+  channel.setHvacSetpointTemperatureCool(tCool);
+  lastConfigChangeTimestampMs = millis();
 }
 
 void HvacBase::clearTemperatureSetpointHeat() {
@@ -3030,8 +3102,15 @@ bool HvacBase::processWeeklySchedule() {
     }
     channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
     setTargetMode(program.Mode, true);
-    setSetpointTemperaturesForCurrentMode(program.SetpointTemperatureHeat,
-        program.SetpointTemperatureCool);
+    int16_t tHeat = program.SetpointTemperatureHeat;
+    int16_t tCool = program.SetpointTemperatureCool;
+    if (program.Mode == SUPLA_HVAC_MODE_HEAT) {
+      tCool = INT16_MIN;
+    }
+    if (program.Mode == SUPLA_HVAC_MODE_COOL) {
+      tHeat = INT16_MIN;
+    }
+    setSetpointTemperaturesForCurrentMode(tHeat, tCool);
   }
   return true;
 }
@@ -3735,3 +3814,39 @@ bool HvacBase::isWeelkySchedulManualOverrideMode() const {
   return lastProgramManualOverride != -1;
 }
 
+void HvacBase::setButtonTemperatureStep(int16_t step) {
+  buttonTemperatureStep = step;
+}
+
+void HvacBase::changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool) {
+  auto function = getChannelFunction();
+
+  switch (function) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
+      if (isHeatingSubfunction()) {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
+                                getTemperatureSetpointHeat() + tHeat,
+                                INT16_MIN);
+      }
+      if (isCoolingSubfunction()) {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
+                                INT16_MIN,
+                                getTemperatureSetpointCool() + tCool);
+      }
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
+                              getTemperatureSetpointHeat() + tHeat,
+                              INT16_MIN);
+      break;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
+                              getTemperatureSetpointHeat() + tHeat,
+                              getTemperatureSetpointCool() + tCool);
+      break;
+    }
+  }
+}

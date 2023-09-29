@@ -94,6 +94,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // use this function to set value based on local config change
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
   unsigned _supla_int16_t getUsedAlgorithm() const;
+  void setButtonTemperatureStep(int16_t step);
 
   // Subfunction can be set only for HVAC_THERMOSTAT channel function
   // SUPLA_HVAC_SUBFUNCTION_*
@@ -388,6 +389,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void storeLastWorkingMode();
   void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
   int channelFunctionToIndex(int channelFunction) const;
+  void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -424,6 +426,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int lastValue = -1000;  // set out of output value range
   _supla_int16_t lastTemperature = 0;
   int lastProgramManualOverride = -1;
+  int16_t buttonTemperatureStep = 50;  // 0.5 degrees
 
   _supla_int16_t defaultTemperatureRoomMin[6] = {
       500,  // default min temperature for all other functions or when value is

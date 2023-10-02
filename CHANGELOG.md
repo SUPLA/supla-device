@@ -1,5 +1,30 @@
 # CHANGELOG.md
 
+## 23.10 (2023-10-02)
+
+  - Change: Correction: method "add" on temperature/humidity correction will modify existing correction if it was added earlier
+  - Change: Arduino Config: moved blob structures to be stored in separate files in "/supla" directory
+  - Change: HVAC: change how FuncList field is used (it stores only bits corresponding with supported functions instead of supported modes).
+  - Change: ESP-IDF: bump esp-idf to 5.1.1
+  - Change: HVAC: manually set temperature should be remembered and restored when manual mode is requested by user
+  - Change: HVAC: change default temperature ranges per function
+  - Fix: add fix for misspelled Supla server domain name svr->srv
+  - Fix: SuplaSrpc: fix server ping problem when uptime is > 50 days
+  - Fix: HVAC: multiple smaller bugfixes
+  - Add: compilation flag SUPLA_EXCLUDE_LITTLEFS_CONFIG to exclude Supla LittleFs config implementation from compliation
+  - Add: Linux: add HVAC channel integration
+  - Add: Linux: add ability to specify proto version in yaml config file
+  - Add: HVAC: add new algorithm "on/off at most" which enables heating when tempeature is below (setpoint - histeresis) and stops heating when setpoint is reached. This is default algorithm for DHW function. Other functions uses "on/off middle" algorithm
+  - Add: Thermometer, ThermHygroMeter, HygroMeter: add ability to share correction configuration with server
+  - Add: HVAC: add support for Domestic Hot Water function
+  - Add: EnterCfgModeAfterPowerCycle: add class to trigger cfg mode after few quick power cycles
+  - Add: BinarySensor: add handling of channel config
+  - Add: HVAC: add handling of forced turn off of thremostat when i.e. window sensor detects open window
+  - Add: HVAC: add "temperature setpoint change switch to manual mode" option for weekly schedule. Add weekly schedule manual override flag
+  - Add: HVAC: add handling of CMD_SWITCH_TO_MANUAL_MODE
+  - Add: BinaryBase: add handling of channel config finished
+  - Add: HVAC: add option to control HVAC via addAction button integration
+
 ## 23.08.01 (2023-08-17)
 
   - Change: ESP-IDF example: change partition scheme (factory removed, ota_0 and ota_1 size change to 1.5 M)

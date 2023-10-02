@@ -323,8 +323,10 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   status(STATUS_INITIALIZED, "SuplaDevice initialized");
 
-  if (allowOfflineMode && deviceMode == Supla::DEVICE_MODE_CONFIG &&
-      configEmpty) {
+  if ((allowOfflineMode == 1 && deviceMode == Supla::DEVICE_MODE_CONFIG &&
+       configEmpty) ||
+      (allowOfflineMode == 2 && deviceMode == Supla::DEVICE_MODE_CONFIG &&
+       !atLeastOneProtoIsEnabled)) {
     deviceMode = Supla::DEVICE_MODE_NORMAL;
     SUPLA_LOG_INFO("Disabling network setup, device work in offline mode");
     skipNetwork = true;
@@ -1172,8 +1174,8 @@ bool SuplaDeviceClass::isSleepingAllowed() {
          forceRestartTimeMs == 0;
 }
 
-void SuplaDeviceClass::allowWorkInOfflineMode() {
-  allowOfflineMode = true;
+void SuplaDeviceClass::allowWorkInOfflineMode(int mode) {
+  allowOfflineMode = mode;
 }
 
 SuplaDeviceClass SuplaDevice;

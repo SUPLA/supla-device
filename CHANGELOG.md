@@ -24,6 +24,8 @@
   - Add: HVAC: add handling of CMD_SWITCH_TO_MANUAL_MODE
   - Add: BinaryBase: add handling of channel config finished
   - Add: HVAC: add option to control HVAC via addAction button integration
+  - Add: SuplaDevice: add allowWorkInOfflineMode variant which requires all communication protocols to be disalbed in order to enable offline mode
+
 
 ## 23.08.01 (2023-08-17)
 

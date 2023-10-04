@@ -294,7 +294,6 @@ TEST(ToolsTests, floatStringToIntTests) {
   EXPECT_EQ(floatStringToInt("0", 0), 0);
   EXPECT_EQ(floatStringToInt("0", 3), 0);
   EXPECT_EQ(floatStringToInt("1", 3), 1000);
-
 }
 
 TEST(ToolsTests, stringToIntTests) {
@@ -310,5 +309,57 @@ TEST(ToolsTests, stringToIntTests) {
   EXPECT_EQ(stringToInt("-1234"), -1234);
   EXPECT_EQ(stringToInt("1234"), 1234);
   EXPECT_EQ(stringToInt("-1-"), 0);
+}
 
+TEST(ToolsTest, stringToColorTests) {
+  uint8_t red = 0;
+  uint8_t green = 0;
+  uint8_t blue = 0;
+
+  EXPECT_FALSE(stringToColor("this is not valid", &red, &green, &blue));
+  EXPECT_EQ(red, 0);
+  EXPECT_EQ(green, 0);
+  EXPECT_EQ(blue, 0);
+  EXPECT_FALSE(stringToColor("200", &red, &green, &blue));
+  EXPECT_EQ(red, 0);
+  EXPECT_EQ(green, 0);
+  EXPECT_EQ(blue, 0);
+  EXPECT_FALSE(stringToColor("10,20", &red, &green, &blue));
+  EXPECT_EQ(red, 0);
+  EXPECT_EQ(green, 0);
+  EXPECT_EQ(blue, 0);
+  EXPECT_FALSE(stringToColor("10,20 30", &red, &green, &blue));
+  EXPECT_EQ(red, 0);
+  EXPECT_EQ(green, 0);
+  EXPECT_EQ(blue, 0);
+
+  EXPECT_TRUE(stringToColor("10,20,30", &red, &green, &blue));
+  EXPECT_EQ(red, 10);
+  EXPECT_EQ(green, 20);
+  EXPECT_EQ(blue, 30);
+
+  EXPECT_FALSE(stringToColor("10,20,-30", &red, &green, &blue));
+  EXPECT_EQ(red, 10);
+  EXPECT_EQ(green, 20);
+  EXPECT_EQ(blue, 30);
+
+  EXPECT_FALSE(stringToColor("10,20,300", &red, &green, &blue));
+  EXPECT_EQ(red, 10);
+  EXPECT_EQ(green, 20);
+  EXPECT_EQ(blue, 30);
+
+  EXPECT_FALSE(stringToColor("1000,20,30", &red, &green, &blue));
+  EXPECT_EQ(red, 10);
+  EXPECT_EQ(green, 20);
+  EXPECT_EQ(blue, 30);
+
+  EXPECT_TRUE(stringToColor("0,0,0", &red, &green, &blue));
+  EXPECT_EQ(red, 0);
+  EXPECT_EQ(green, 0);
+  EXPECT_EQ(blue, 0);
+
+  EXPECT_TRUE(stringToColor("255,255,255", &red, &green, &blue));
+  EXPECT_EQ(red, 255);
+  EXPECT_EQ(green, 255);
+  EXPECT_EQ(blue, 255);
 }

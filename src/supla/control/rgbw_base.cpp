@@ -805,5 +805,19 @@ void RGBWBase::onLoadConfig(SuplaDeviceClass *sdc) {
                   buttonControlType);
 }
 
+void RGBWBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
+  if (value == nullptr) {
+    return;
+  }
+
+  value->value[0] = curBrightness;
+  value->value[1] = curColorBrightness;
+  value->value[2] = curBlue;
+  value->value[3] = curGreen;
+  value->value[4] = curRed;
+  SUPLA_LOG_DEBUG("RGBW fill: %d,%d,%d,%d,%d", curRed, curGreen, curBlue,
+                  curColorBrightness, curBrightness);
+}
+
 };  // namespace Control
 };  // namespace Supla

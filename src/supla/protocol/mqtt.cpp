@@ -31,7 +31,9 @@
 #include <supla/tools.h>
 #include <supla/element.h>
 #include <supla/protocol/mqtt_topic.h>
-#include "supla/sensor/electricity_meter.h"
+#include <supla/sensor/electricity_meter.h>
+
+using Supla::Protocol::Mqtt;
 
 Supla::Protocol::Mqtt::Mqtt(SuplaDeviceClass *sdc) :
   Supla::Protocol::ProtocolLayer(sdc) {
@@ -303,6 +305,18 @@ void Supla::Protocol::Mqtt::publishDouble(const char *topic,
   publish(topic, buf, qos, retain);
 }
 
+void Mqtt::publishColor(const char *topic,
+                        uint8_t red,
+                        uint8_t green,
+                        uint8_t blue,
+                        int qos,
+                        int retain) {
+  char buf[12] = {};
+  snprintf(buf, sizeof(buf), "%d,%d,%d", red, green, blue);
+  publish(topic, buf, qos, retain);
+}
+
+
 void Supla::Protocol::Mqtt::subscribe(const char *topic, int qos) {
   if (prefix == nullptr) {
     SUPLA_LOG_ERROR("Mqtt: publish error, prefix not initialized");
@@ -371,6 +385,60 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
       // Data for EM is published by publishExtendedChannelState method
       break;
     }
+    case SUPLA_CHANNELTYPE_DIMMER: {
+      // publish dimmer state
+      publishInt(
+          (topic / "brightness").c_str(), ch->getValueBrightness(), -1, 1);
+      publishBool((topic / "on").c_str(),
+                  ch->getValueBrightness() > 0,
+                  -1,
+                  1);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
+      // publish RGB LED state
+      publishInt((topic / "color_brightness").c_str(),
+                 ch->getValueColorBrightness(),
+                 -1,
+                 1);
+      publishBool((topic / "on").c_str(),
+                  ch->getValueColorBrightness() > 0,
+                  -1,
+                  1);
+      publishColor((topic / "color").c_str(),
+                   ch->getValueRed(),
+                   ch->getValueGreen(),
+                   ch->getValueBlue(),
+                   -1,
+                   1);
+      break;
+    }
+
+    case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
+      // publish dimmer and RGB LED state
+      publishInt(
+          (topic / "brightness").c_str(), ch->getValueBrightness(), -1, 1);
+      publishInt((topic / "color_brightness").c_str(),
+                 ch->getValueColorBrightness(),
+                 -1,
+                 1);
+      publishBool((topic / "rgb" / "on").c_str(),
+                  ch->getValueColorBrightness() > 0,
+                  -1,
+                  1);
+      publishBool((topic / "dimmer" / "on").c_str(),
+                  ch->getValueBrightness() > 0,
+                  -1,
+                  1);
+      publishColor((topic / "color").c_str(),
+                   ch->getValueRed(),
+                   ch->getValueGreen(),
+                   ch->getValueBlue(),
+                   -1,
+                   1);
+      break;
+    }
+
     default:
       SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
           ch->getChannelType());
@@ -534,6 +602,26 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
       subscribe((topic / "execute_action").c_str());
       break;
     }
+    case SUPLA_CHANNELTYPE_DIMMER: {
+      subscribe((topic / "execute_action").c_str());
+      subscribe((topic / "set" / "brightness").c_str());
+      break;
+    }
+    case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
+      subscribe((topic / "execute_action").c_str());
+      subscribe((topic / "set" / "color_brightness").c_str());
+      subscribe((topic / "set" / "color").c_str());
+      break;
+    }
+    case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
+      subscribe((topic / "execute_action" / "rgb").c_str());
+      subscribe((topic / "execute_action" / "dimmer").c_str());
+      subscribe((topic / "set" / "brightness").c_str());
+      subscribe((topic / "set" / "color_brightness").c_str());
+      subscribe((topic / "set" / "color").c_str());
+      break;
+    }
+
     default:
       SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
           ch->getChannelType());
@@ -628,6 +716,119 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
       }
       break;
     }
+
+    case SUPLA_CHANNELTYPE_DIMMER: {
+      if (strcmp(part, "set/brightness") == 0) {
+        int brightness = stringToInt(payload);
+        if (brightness >= 0 && brightness <= 100) {
+          newValue.value[0] = brightness;
+          element->handleNewValueFromServer(&newValue);
+        }
+      } else if (strcmp(part, "execute_action") == 0) {
+        newValue.value[5] = 1;
+        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+          newValue.value[0] = 100;
+          element->handleNewValueFromServer(&newValue);
+        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+          newValue.value[0] = 0;
+          element->handleNewValueFromServer(&newValue);
+        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+          newValue.value[0] = ch->getValueBrightness() > 0 ? 0 : 100;
+        } else {
+          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+          break;
+        }
+        element->handleNewValueFromServer(&newValue);
+      }
+      break;
+    }
+    case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
+      if (strcmp(part, "set/color_brightness") == 0) {
+        int brightness = stringToInt(payload);
+        if (brightness >= 0 && brightness <= 100) {
+          newValue.value[1] = brightness;
+          element->handleNewValueFromServer(&newValue);
+        }
+      } else if (strcmp(part, "execute_action") == 0) {
+          newValue.value[5] = 1;
+        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+          newValue.value[1] = 100;
+        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+          newValue.value[1] = 0;
+        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+          newValue.value[1] = ch->getValueBrightness() > 0 ? 0 : 100;
+        } else {
+          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+          break;
+        }
+        element->handleNewValueFromServer(&newValue);
+      } else if (strcmp(part, "set/color") == 0) {
+        SUPLA_LOG_DEBUG("PAYLOAD %s", payload);
+        uint8_t red = 0;
+        uint8_t green = 0;
+        uint8_t blue = 0;
+        if (stringToColor(payload, &red, &green, &blue)) {
+          newValue.value[2] = blue;
+          newValue.value[3] = green;
+          newValue.value[4] = red;
+          element->handleNewValueFromServer(&newValue);
+        }
+      }
+      break;
+    }
+    case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
+      if (strcmp(part, "set/color_brightness") == 0) {
+        int brightness = stringToInt(payload);
+        if (brightness >= 0 && brightness <= 100) {
+          newValue.value[1] = brightness;
+          element->handleNewValueFromServer(&newValue);
+        }
+      } else if (strcmp(part, "set/brightness") == 0) {
+        int brightness = stringToInt(payload);
+        if (brightness >= 0 && brightness <= 100) {
+          newValue.value[0] = brightness;
+          element->handleNewValueFromServer(&newValue);
+        }
+      } else if (strcmp(part, "execute_action/rgb") == 0) {
+        newValue.value[5] = 1;
+        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+          newValue.value[1] = 100;
+        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+          newValue.value[1] = 0;
+        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+          newValue.value[1] = ch->getValueColorBrightness() > 0 ? 0 : 100;
+        } else {
+          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+          break;
+        }
+        element->handleNewValueFromServer(&newValue);
+      } else if (strcmp(part, "execute_action/dimmer") == 0) {
+        newValue.value[5] = 1;
+        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+          newValue.value[0] = 100;
+        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+          newValue.value[0] = 0;
+        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+          newValue.value[0] = ch->getValueBrightness() > 0 ? 0 : 100;
+        } else {
+          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+          break;
+        }
+        element->handleNewValueFromServer(&newValue);
+      } else if (strcmp(part, "set/color") == 0) {
+        SUPLA_LOG_DEBUG("PAYLOAD %s", payload);
+        uint8_t red = 0;
+        uint8_t green = 0;
+        uint8_t blue = 0;
+        if (stringToColor(payload, &red, &green, &blue)) {
+          newValue.value[2] = blue;
+          newValue.value[3] = green;
+          newValue.value[4] = red;
+          element->handleNewValueFromServer(&newValue);
+        }
+      }
+      break;
+    }
     // TODO(klew): add here more channel types
 
     // Not supported
@@ -699,6 +900,19 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
     }
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
       publishHADiscoveryEM(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_DIMMER: {
+      publishHADiscoveryDimmer(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
+      publishHADiscoveryRGB(element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
+      publishHADiscoveryDimmer(element);
+      publishHADiscoveryRGB(element);
       break;
     }
     default:
@@ -1472,3 +1686,165 @@ const char *Supla::Protocol::Mqtt::getDeviceClassStr(
   }
 }
 
+void Mqtt::publishHADiscoveryRGB(Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  char objectId[30] = {};
+  int subId = ch->getChannelType() == SUPLA_CHANNELTYPE_DIMMERANDRGBLED ?
+    1 : 0;
+  generateObjectId(objectId, element->getChannelNumber(), subId);
+
+  auto topic = getHADiscoveryTopic("light", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"RGB Lighting\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"stat_t\":\"~/state%s/on\","
+      "\"cmd_t\":\"~/execute_action%s\","
+      "\"pl_on\":\"TURN_ON\","
+      "\"pl_off\":\"TURN_OFF\","
+      "\"stat_val_tpl\":\"{%% if value == \\\"true\\\" %%}TURN_ON{%% else "
+        "%%}TURN_OFF{%% endif %%}\","
+      "\"on_cmd_type\":\"last\","
+      "\"bri_cmd_t\":\"~/set/color_brightness\","
+      "\"bri_scl\":100,"
+      "\"bri_stat_t\":\"~/state/color_brightness\","
+      "\"rgb_stat_t\":\"~/state/color\","
+      "\"rgb_cmd_t\":\"~/set/color\""
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            objectId,
+            subId == 1 ? "/rgb" : "",
+            subId == 1 ? "/rgb" : ""
+            )
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
+void Mqtt::publishHADiscoveryDimmer(Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  bool subchannels = ch->getChannelType() == SUPLA_CHANNELTYPE_DIMMERANDRGBLED;
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), 0);
+
+  auto topic = getHADiscoveryTopic("light", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"Dimmer\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"stat_t\":\"~/state%s/on\","
+      "\"cmd_t\":\"~/execute_action%s\","
+      "\"pl_on\":\"TURN_ON\","
+      "\"pl_off\":\"TURN_OFF\","
+      "\"stat_val_tpl\":\"{%% if value == \\\"true\\\" %%}TURN_ON{%% else "
+        "%%}TURN_OFF{%% endif %%}\","
+      "\"on_cmd_type\":\"last\","
+      "\"bri_cmd_t\":\"~/set/brightness\","
+      "\"bri_scl\":100,"
+      "\"bri_stat_t\":\"~/state/brightness\""
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            objectId,
+            subchannels ? "/dimmer" : "",
+            subchannels ? "/dimmer" : ""
+            )
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}

@@ -60,6 +60,12 @@ int32_t stringToInt(const char *str, int len = -1);
 // Convers float value from string to integer with given precision
 int32_t floatStringToInt(const char *str, int precision);
 
+// Converts "230,12,43" string to RGB values. Returns false on error
+bool stringToColor(const char *payload,
+                   uint8_t *red,
+                   uint8_t *green,
+                   uint8_t *blue);
+
 // Decode url string from buffer into buffer (inplace)
 // Replace '+' with ' '.
 // Replace %xy with proper byte.
@@ -83,5 +89,6 @@ const char *getManufacturer(int16_t id);
 namespace Supla {
 int getPlatformId();
 }  // namespace Supla
+
 
 #endif  // SRC_SUPLA_TOOLS_H_

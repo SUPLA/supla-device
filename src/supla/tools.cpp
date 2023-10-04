@@ -19,6 +19,7 @@
 #include "tools.h"
 #include <string.h>
 #include <supla-common/proto.h>
+#include <stdlib.h>
 
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder) {
   (void)(byteOrder);
@@ -366,4 +367,42 @@ const char *getManufacturer(int16_t id) {
   }
 
   return "Unknown";
+}
+
+bool stringToColor(const char *payload,
+                   uint8_t *red,
+                   uint8_t *green,
+                   uint8_t *blue) {
+  char *endPtr = nullptr;
+  int32_t redL = 0;
+  int32_t greenL = 0;
+  int32_t blueL = 0;
+
+  redL = std::strtol(payload, &endPtr, 10);
+  if (*endPtr != ',') {
+    return false;
+  }
+
+  ++endPtr;
+  greenL = std::strtol(endPtr, &endPtr, 10);
+  if (*endPtr != ',') {
+    return false;
+  }
+
+  ++endPtr;
+  blueL = std::strtol(endPtr, &endPtr, 10);
+  if (*endPtr != '\0') {
+    return false;
+  }
+
+  if (redL < 0 || redL > 255 || greenL < 0 || greenL > 255 || blueL < 0 ||
+      blueL > 255) {
+    return false;
+  }
+
+  *red = static_cast<uint8_t>(redL);
+  *green = static_cast<uint8_t>(greenL);
+  *blue = static_cast<uint8_t>(blueL);
+
+  return true;
 }

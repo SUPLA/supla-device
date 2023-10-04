@@ -93,6 +93,12 @@ class Mqtt : public ProtocolLayer {
                int qos = -1,
                int retain = -1,
                int precision = 2);
+  void publishColor(const char *topic,
+      uint8_t red,
+      uint8_t green,
+      uint8_t blue,
+      int qos = -1,
+      int retain = -1);
   void publishChannelState(int channel);
   void publishExtendedChannelState(int channel);
   void subscribeChannel(int channel);
@@ -119,6 +125,8 @@ class Mqtt : public ProtocolLayer {
   void publishHADiscoveryHumidity(Supla::Element *);
   void publishHADiscoveryActionTrigger(Supla::Element *);
   void publishHADiscoveryEM(Supla::Element *);
+  void publishHADiscoveryRGB(Supla::Element *);
+  void publishHADiscoveryDimmer(Supla::Element *);
 
   // parameterName has to be ASCII string with small caps and underscores
   // between words i.e. "total_forward_active_energy".

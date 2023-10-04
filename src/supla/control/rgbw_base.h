@@ -89,6 +89,11 @@ class RGBWBase : public ChannelElement, public ActionHandler {
 
   void attach(Supla::Control::Button *);
 
+  // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
+  // value for specific channel type (i.e. to prefill durationMS field when
+  // required)
+  void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
+
   virtual RGBWBase &setDefaultStateOn();
   virtual RGBWBase &setDefaultStateOff();
   virtual RGBWBase &setDefaultStateRestore();

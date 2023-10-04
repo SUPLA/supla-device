@@ -135,6 +135,30 @@ void HvacBase::handleAction(int event, int action) {
       applyNewRuntimeSettings(SUPLA_HVAC_MODE_AUTO, 0);
       break;
     }
+    case Supla::TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES: {
+      auto mode = getMode();
+      bool isWeeklyScheduleMode = isWeeklyScheduleEnabled();
+      if (isWeeklyScheduleMode) {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL, 0);
+      } else if (mode == SUPLA_HVAC_MODE_OFF) {
+        turnOn();
+      } else {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE, 0);
+      }
+      break;
+    }
+    case Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES: {
+      auto mode = getMode();
+      bool isWeeklyScheduleMode = isWeeklyScheduleEnabled();
+      if (isWeeklyScheduleMode) {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_OFF, 0);
+      } else if (mode == SUPLA_HVAC_MODE_OFF) {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL, 0);
+      } else {
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE, 0);
+      }
+      break;
+    }
   }
 }
 

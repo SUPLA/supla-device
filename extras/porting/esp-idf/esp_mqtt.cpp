@@ -26,6 +26,7 @@
 #include "esp_mqtt.h"
 
 Supla::Mutex *Supla::Protocol::EspMqtt::mutex = nullptr;
+Supla::Mutex *Supla::Protocol::EspMqtt::mutexEventHandler = nullptr;
 static Supla::Protocol::EspMqtt *espMqtt = nullptr;
 
 namespace Supla {
@@ -71,6 +72,8 @@ static void mqttEventHandler(void *handler_args,
                                int32_t eventId,
                                void *eventData) {
   SUPLA_LOG_DEBUG(" *** MQTT event handler enter");
+  Supla::AutoLock eventHandlerLock(Supla::Protocol::EspMqtt::mutexEventHandler);
+  SUPLA_LOG_DEBUG(" *** MQTT event handler waiting");
   Supla::AutoLock autoLock(Supla::Protocol::EspMqtt::mutex);
   SUPLA_LOG_DEBUG(
       " *** MQTT Event dispatched from event loop base=%s, eventId=%d",
@@ -175,6 +178,8 @@ static void mqttEventHandler(void *handler_args,
 Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
   : Supla::Protocol::Mqtt(sdc) {
     mutex = Supla::Mutex::Create();
+    mutexEventHandler = Supla::Mutex::Create();
+    mutexEventHandler->unlock();
     espMqtt = this;
   }
 
@@ -264,8 +269,9 @@ bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
   if (started) {
     // this is used to synchronize event loop handling with SuplaDevice.iterate
     mutex->unlock();
-    delay(0);
+    mutexEventHandler->lock();
     mutex->lock();
+    mutexEventHandler->unlock();
 
     // below code is executed after mqtt event loop from ...
     if (!connected) {

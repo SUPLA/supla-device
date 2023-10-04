@@ -41,6 +41,7 @@ class EspMqtt : public Mqtt {
   // uint32_t getConnectionFailTime() override;
 
   static Supla::Mutex *mutex;
+  static Supla::Mutex *mutexEventHandler;
   void setConnecting();
   void setConnectionError();
   void setRegisteredAndReady();

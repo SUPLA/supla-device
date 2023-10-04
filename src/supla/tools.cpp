@@ -373,6 +373,7 @@ bool stringToColor(const char *payload,
                    uint8_t *red,
                    uint8_t *green,
                    uint8_t *blue) {
+#ifndef ARDUINO_ARCH_AVR
   char *endPtr = nullptr;
   int32_t redL = 0;
   int32_t greenL = 0;
@@ -405,4 +406,7 @@ bool stringToColor(const char *payload,
   *blue = static_cast<uint8_t>(blueL);
 
   return true;
+#else
+  return false;
+#endif
 }

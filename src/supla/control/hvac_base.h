@@ -115,6 +115,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // use this function to set value based on local config change
   void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
   bool isAntiFreezeAndHeatProtectionEnabled() const;
+  void setAuxMinMaxSetpointEnabled(bool enabled);
+  bool isAuxMinMaxSetpointEnabled() const;
 
   void setTemperatureSetpointChangeSwitchesToManualMode(bool enabled);
   bool isTemperatureSetpointChangeSwitchesToManualMode() const;

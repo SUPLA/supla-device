@@ -785,6 +785,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   config.Subfunction = hvacConfig->Subfunction;
   config.TemperatureSetpointChangeSwitchesToManualMode =
       hvacConfig->TemperatureSetpointChangeSwitchesToManualMode;
+  config.AuxMinMaxSetpointEnabled = hvacConfig->AuxMinMaxSetpointEnabled;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -1952,6 +1953,31 @@ bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
   }
 }
 
+void HvacBase::setAuxMinMaxSetpointEnabled(bool enabled) {
+  if (config.AuxMinMaxSetpointEnabled != enabled) {
+    config.AuxMinMaxSetpointEnabled = enabled;
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+}
+
+bool HvacBase::isAuxMinMaxSetpointEnabled() const {
+  auto func = channel.getDefaultFunction();
+  switch (func) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      return config.AuxMinMaxSetpointEnabled;
+    }
+
+    default: {
+      return false;
+    }
+  }
+}
+
 void HvacBase::setTemperatureSetpointChangeSwitchesToManualMode(bool enabled) {
   if (config.TemperatureSetpointChangeSwitchesToManualMode != enabled) {
     config.TemperatureSetpointChangeSwitchesToManualMode = enabled;
@@ -2761,16 +2787,8 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
 }
 
 bool HvacBase::checkAuxProtection(_supla_int16_t t) {
-  // heater/cooler protection is available in heat/cool/auto function
-  auto func = channel.getDefaultFunction();
-  switch (func) {
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
-    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
-      break;
-
-    default:
-      return false;
+  if (!isAuxMinMaxSetpointEnabled()) {
+    return false;
   }
 
   auto type = getAuxThermometerType();
@@ -3510,6 +3528,8 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   (config->TemperatureSetpointChangeSwitchesToManualMode == 1)
                       ? "switches to manual"
                       : "keeps weekly");
+  SUPLA_LOG_DEBUG("  AuxMinMaxSetpointEnabled: %d",
+                  config->AuxMinMaxSetpointEnabled);
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
     if ((1 << i) & config->Temperatures.Index) {
@@ -3584,6 +3604,7 @@ void HvacBase::initDefaultConfig() {
   memcpy(&newConfig, &config, sizeof(newConfig));
 
   newConfig.AntiFreezeAndOverheatProtectionEnabled = 0;
+  newConfig.AuxMinMaxSetpointEnabled = 0;
 
   switch (channel.getDefaultFunction()) {
     default: {

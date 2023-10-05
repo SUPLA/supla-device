@@ -605,6 +605,10 @@ void HvacBase::iterateAlways() {
       setOutput(newOutputValue, false);
       break;
     }
+    case SUPLA_HVAC_MODE_OFF: {
+      setOutput(0, false);
+      break;
+    }
     /*
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
       break;

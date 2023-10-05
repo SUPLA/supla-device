@@ -24,14 +24,14 @@
 
 namespace Supla {
 
-enum class ScreenSaverType {
-  SCREEN_SAVER_OFF,
-  SCREEN_SAVER_TEMPERATURE,
-  SCREEN_SAVER_TEMPERATURE_HUMIDITY,
-  SCREEN_SAVER_TIME,
-  SCREEN_SAVER_TIME_DATE,
-  SCREEN_SAVER_TEMPERATURE_TIME,
-  SCREEN_SAVER_MAIN_AND_AUX_TEMPERATURE,
+enum class HomeScreenContent {
+  HOME_SCREEN_OFF,
+  HOME_SCREEN_TEMPERATURE,
+  HOME_SCREEN_TEMPERATURE_HUMIDITY,
+  HOME_SCREEN_TIME,
+  HOME_SCREEN_TIME_DATE,
+  HOME_SCREEN_TEMPERATURE_TIME,
+  HOME_SCREEN_MAIN_AND_AUX_TEMPERATURE,
 };
 
 namespace Device {
@@ -45,10 +45,10 @@ class RemoteDeviceConfig {
   static void RegisterConfigField(uint64_t fieldBit);
   // Configures screen saver available modes. Set all available modes
   // in single call (this method overwrites previous values)
-  static void SetScreenSaverModesAvailable(uint64_t allValues);
-  static enum ScreenSaverType ScreenSaverModeBitToEnum(uint64_t fieldBit);
-  static uint64_t ScreenSaverEnumToBit(enum ScreenSaverType type);
-  static uint64_t ScreenSaverIntToBit(int mode);
+  static void SetHomeScreenContentAvailable(uint64_t allValues);
+  static enum HomeScreenContent HomeScreenContentBitToEnum(uint64_t fieldBit);
+  static uint64_t HomeScreenEnumToBit(enum HomeScreenContent type);
+  static uint64_t HomeScreenIntToBit(int mode);
 
   explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
@@ -69,10 +69,10 @@ class RemoteDeviceConfig {
                                     TDeviceConfig_ScreenBrightness *config);
   void processButtonVolumeConfig(uint64_t fieldBit,
                                 TDeviceConfig_ButtonVolume *config);
-  void processScreensaverModeConfig(uint64_t fieldBit,
-                                   TDeviceConfig_ScreensaverMode *config);
-  void processScreensaverDelayConfig(uint64_t fieldBit,
-                                    TDeviceConfig_ScreensaverDelay *config);
+  void processHomeScreenContentConfig(uint64_t fieldBit,
+                                   TDeviceConfig_HomeScreenContent *config);
+  void processHomeScreenDelayConfig(uint64_t fieldBit,
+                                    TDeviceConfig_HomeScreenDelay *config);
   void processAutomaticTimeSyncConfig(uint64_t fieldBit,
                                      TDeviceConfig_AutomaticTimeSync *config);
   void processDisableUserInterfaceConfig(
@@ -81,8 +81,9 @@ class RemoteDeviceConfig {
   void fillStatusLedConfig(TDeviceConfig_StatusLed *config) const;
   void fillScreenBrightnessConfig(TDeviceConfig_ScreenBrightness *config) const;
   void fillButtonVolumeConfig(TDeviceConfig_ButtonVolume *config) const;
-  void fillScreensaverModeConfig(TDeviceConfig_ScreensaverMode *config) const;
-  void fillScreensaverDelayConfig(TDeviceConfig_ScreensaverDelay *config) const;
+  void fillHomeScreenContentConfig(
+      TDeviceConfig_HomeScreenContent *config) const;
+  void fillHomeScreenDelayConfig(TDeviceConfig_HomeScreenDelay *config) const;
   void fillAutomaticTimeSyncConfig(
       TDeviceConfig_AutomaticTimeSync *config) const;
   void fillDisableUserInterfaceConfig(
@@ -95,7 +96,7 @@ class RemoteDeviceConfig {
   bool firstDeviceConfigAfterRegistration = false;
 
   static uint64_t fieldBitsUsedByDevice;
-  static uint64_t screenSaverModesAvailable;
+  static uint64_t homeScreenContentAvailable;
 };
 
 }  // namespace Device

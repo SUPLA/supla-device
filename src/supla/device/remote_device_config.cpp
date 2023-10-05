@@ -27,13 +27,13 @@
 #include <supla/clock/clock.h>
 #include <supla/network/html/volume_parameters.h>
 #include <supla/network/html/screen_delay_parameters.h>
-#include <supla/network/html/screen_saver_type.h>
+#include <supla/network/html/home_screen_content.h>
 #include <supla/network/html/disable_user_interface_parameter.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
 uint64_t RemoteDeviceConfig::fieldBitsUsedByDevice = 0;
-uint64_t RemoteDeviceConfig::screenSaverModesAvailable = 0;
+uint64_t RemoteDeviceConfig::homeScreenContentAvailable = 0;
 
 RemoteDeviceConfig::RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration)
     : firstDeviceConfigAfterRegistration(firstDeviceConfigAfterRegistration) {
@@ -55,55 +55,55 @@ void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
   fieldBitsUsedByDevice |= fieldBit;
 }
 
-void RemoteDeviceConfig::SetScreenSaverModesAvailable(uint64_t allValues) {
-  SUPLA_LOG_INFO("RemoteDeviceConfig: SetScreenSaverModesAvailable 0x%08llx",
+void RemoteDeviceConfig::SetHomeScreenContentAvailable(uint64_t allValues) {
+  SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%08llx",
                  allValues);
-  screenSaverModesAvailable = allValues;
-  SUPLA_LOG_INFO("RemoteDeviceConfig: SetScreenSaverModesAvailable 0x%08llx",
-                 screenSaverModesAvailable);
+  homeScreenContentAvailable = allValues;
+  SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%08llx",
+                 homeScreenContentAvailable);
 }
 
-enum Supla::ScreenSaverType RemoteDeviceConfig::ScreenSaverModeBitToEnum(
+enum Supla::HomeScreenContent RemoteDeviceConfig::HomeScreenContentBitToEnum(
     uint64_t fieldBit) {
   if (fieldBit == 0 || (fieldBit & (fieldBit - 1)) != 0) {
     // (fieldBit & (fieldBit) - 1) will evaluate to 0 only when fieldBit had
     // only one bit set to 1 (that number was power of 2)
     SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid field 0x%08llx", fieldBit);
-    return Supla::ScreenSaverType::SCREEN_SAVER_OFF;
+    return Supla::HomeScreenContent::HOME_SCREEN_OFF;
   }
 
   switch (fieldBit) {
     default:
     case (1 << 0): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_OFF;
+      return Supla::HomeScreenContent::HOME_SCREEN_OFF;
     }
     case (1 << 1): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_TEMPERATURE;
+      return Supla::HomeScreenContent::HOME_SCREEN_TEMPERATURE;
     }
     case (1 << 2): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_TEMPERATURE_HUMIDITY;
+      return Supla::HomeScreenContent::HOME_SCREEN_TEMPERATURE_HUMIDITY;
     }
     case (1 << 3): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_TIME;
+      return Supla::HomeScreenContent::HOME_SCREEN_TIME;
     }
     case (1 << 4): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_TIME_DATE;
+      return Supla::HomeScreenContent::HOME_SCREEN_TIME_DATE;
     }
     case (1 << 5): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_TEMPERATURE_TIME;
+      return Supla::HomeScreenContent::HOME_SCREEN_TEMPERATURE_TIME;
     }
     case (1 << 6): {
-      return Supla::ScreenSaverType::SCREEN_SAVER_MAIN_AND_AUX_TEMPERATURE;
+      return Supla::HomeScreenContent::HOME_SCREEN_MAIN_AND_AUX_TEMPERATURE;
     }
   }
 }
 
-uint64_t RemoteDeviceConfig::ScreenSaverEnumToBit(enum ScreenSaverType type) {
+uint64_t RemoteDeviceConfig::HomeScreenEnumToBit(enum HomeScreenContent type) {
   int number = static_cast<int>(type);
-  return ScreenSaverIntToBit(number);
+  return HomeScreenIntToBit(number);
 }
 
-uint64_t RemoteDeviceConfig::ScreenSaverIntToBit(int mode) {
+uint64_t RemoteDeviceConfig::HomeScreenIntToBit(int mode) {
   if (mode < 0 || mode > 63) {
     mode = 0;
   }
@@ -221,34 +221,34 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_AutomaticTimeSync);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_SCREENSAVER_DELAY: {
-          SUPLA_LOG_DEBUG("Processing ScreensaverDelay config");
-          if (dataIndex + sizeof(TDeviceConfig_ScreensaverDelay) >
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_DELAY: {
+          SUPLA_LOG_DEBUG("Processing HomeScreenDelay config");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenDelay) >
               config->ConfigSize) {
             SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
             resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
             return;
           }
-          processScreensaverDelayConfig(
+          processHomeScreenDelayConfig(
               fieldBit,
-              reinterpret_cast<TDeviceConfig_ScreensaverDelay *>(
+              reinterpret_cast<TDeviceConfig_HomeScreenDelay *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_ScreensaverDelay);
+          dataIndex += sizeof(TDeviceConfig_HomeScreenDelay);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_SCREENSAVER_MODE: {
-          SUPLA_LOG_DEBUG("Processing ScreensaverMode config");
-          if (dataIndex + sizeof(TDeviceConfig_ScreensaverMode) >
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_CONTENT: {
+          SUPLA_LOG_DEBUG("Processing HomeScreenContent config");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenContent) >
               config->ConfigSize) {
             SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
             resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
             return;
           }
-          processScreensaverModeConfig(
+          processHomeScreenContentConfig(
               fieldBit,
-              reinterpret_cast<TDeviceConfig_ScreensaverMode *>(config->Config +
-                                                                dataIndex));
-          dataIndex += sizeof(TDeviceConfig_ScreensaverMode);
+              reinterpret_cast<TDeviceConfig_HomeScreenContent *>(
+                  config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_HomeScreenContent);
           break;
         }
         default: {
@@ -345,39 +345,39 @@ void RemoteDeviceConfig::processButtonVolumeConfig(uint64_t fieldBit,
   }
 }
 
-void RemoteDeviceConfig::processScreensaverModeConfig(uint64_t fieldBit,
-    TDeviceConfig_ScreensaverMode *config) {
+void RemoteDeviceConfig::processHomeScreenContentConfig(uint64_t fieldBit,
+    TDeviceConfig_HomeScreenContent *config) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (config == nullptr || cfg == nullptr) {
     return;
   }
   SUPLA_LOG_DEBUG(
-      "config->ScreensaverMode %04x, screenSaverModesAvailable %08llx",
-      config->ScreensaverMode,
-      screenSaverModesAvailable);
-  if ((config->ScreensaverMode & screenSaverModesAvailable) == 0) {
+      "config->HomeScreenContent %04x, homeScreenContentAvailable %08llx",
+      config->HomeScreenContent,
+      homeScreenContentAvailable);
+  if ((config->HomeScreenContent & homeScreenContentAvailable) == 0) {
     SUPLA_LOG_WARNING(
-        "Selected ScreensaverMode %d is not supported by this device",
-        config->ScreensaverMode);
+        "Selected HomeScreenContent %d is not supported by this device",
+        config->HomeScreenContent);
     return;
   }
   int8_t currentValue = 0;
-  cfg->getInt8(Supla::ScreenSaverTypeTag, &currentValue);
+  cfg->getInt8(Supla::HomeScreenContentTag, &currentValue);
   if (currentValue < 0 || currentValue > 63) {
     currentValue = 0;
   }
   auto newValue =
-      static_cast<int>(ScreenSaverModeBitToEnum(config->ScreensaverMode));
+      static_cast<int>(HomeScreenContentBitToEnum(config->HomeScreenContent));
   if (newValue != currentValue) {
-    SUPLA_LOG_INFO("Setting ScreensaverMode to %d", newValue);
-    cfg->setInt8(Supla::ScreenSaverTypeTag, newValue);
+    SUPLA_LOG_INFO("Setting HomeScreenContent to %d", newValue);
+    cfg->setInt8(Supla::HomeScreenContentTag, newValue);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }
 }
 
-void RemoteDeviceConfig::processScreensaverDelayConfig(uint64_t fieldBit,
-    TDeviceConfig_ScreensaverDelay *config) {
+void RemoteDeviceConfig::processHomeScreenDelayConfig(uint64_t fieldBit,
+    TDeviceConfig_HomeScreenDelay *config) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (config == nullptr || cfg == nullptr) {
     return;
@@ -391,8 +391,8 @@ void RemoteDeviceConfig::processScreensaverDelayConfig(uint64_t fieldBit,
     value = 65535;
   }
 
-  if (value != config->ScreensaverDelayMs) {
-    SUPLA_LOG_INFO("Setting ScreensaverDelay to %d", value);
+  if (value != config->HomeScreenDelayS) {
+    SUPLA_LOG_INFO("Setting HomeScreenDelay to %d", value);
     cfg->setInt32(Supla::Html::ScreenDelayCfgTag, value);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
@@ -491,22 +491,23 @@ void RemoteDeviceConfig::fillButtonVolumeConfig(
   }
 }
 
-void RemoteDeviceConfig::fillScreensaverModeConfig(
-    TDeviceConfig_ScreensaverMode *config) const {
+void RemoteDeviceConfig::fillHomeScreenContentConfig(
+    TDeviceConfig_HomeScreenContent *config) const {
   auto cfg = Supla::Storage::ConfigInstance();
   if (config == nullptr || cfg == nullptr) {
     return;
   }
   int8_t value = 0;
-  cfg->getInt8(Supla::ScreenSaverTypeTag, &value);
-  SUPLA_LOG_DEBUG("Setting ScreensaverMode to %d (0x%02X)", value, value);
-  config->ScreensaverMode = ScreenSaverIntToBit(value);
-  SUPLA_LOG_DEBUG("Setting ModesAvailabe to 0x%04X", screenSaverModesAvailable);
-  config->ModesAvailable = screenSaverModesAvailable;
+  cfg->getInt8(Supla::HomeScreenContentTag, &value);
+  SUPLA_LOG_DEBUG("Setting HomeScreenContent to %d (0x%02X)", value, value);
+  config->HomeScreenContent = HomeScreenIntToBit(value);
+  SUPLA_LOG_DEBUG("Setting ModesAvailabe to 0x%04X",
+                  homeScreenContentAvailable);
+  config->ContentAvailable = homeScreenContentAvailable;
 }
 
-void RemoteDeviceConfig::fillScreensaverDelayConfig(
-    TDeviceConfig_ScreensaverDelay *config) const {
+void RemoteDeviceConfig::fillHomeScreenDelayConfig(
+    TDeviceConfig_HomeScreenDelay *config) const {
   if (config == nullptr) {
     return;
   }
@@ -520,10 +521,10 @@ void RemoteDeviceConfig::fillScreensaverDelayConfig(
     if (value > 65535) {
       value = 65535;
     }
-    uint16_t delayMs = value;
+    uint16_t delayS = value;
     SUPLA_LOG_DEBUG(
-        "Setting ScreensaverDelay to %d (0x%02X)", delayMs, delayMs);
-    config->ScreensaverDelayMs = delayMs;
+        "Setting HomeScreenDelay to %d (0x%02X)", delayS, delayS);
+    config->HomeScreenDelayS = delayS;
   }
 }
 
@@ -647,30 +648,30 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_AutomaticTimeSync);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_SCREENSAVER_DELAY: {
-          SUPLA_LOG_DEBUG("Adding ScreensaverDelay config field");
-          if (dataIndex + sizeof(TDeviceConfig_ScreensaverDelay) >
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_DELAY: {
+          SUPLA_LOG_DEBUG("Adding HomeScreenDelay config field");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenDelay) >
               SUPLA_DEVICE_CONFIG_MAXSIZE) {
             SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
             return false;
           }
-          fillScreensaverDelayConfig(
-              reinterpret_cast<TDeviceConfig_ScreensaverDelay *>(
+          fillHomeScreenDelayConfig(
+              reinterpret_cast<TDeviceConfig_HomeScreenDelay *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_ScreensaverDelay);
+          dataIndex += sizeof(TDeviceConfig_HomeScreenDelay);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_SCREENSAVER_MODE: {
-          SUPLA_LOG_DEBUG("Adding ScreensaverMode config field");
-          if (dataIndex + sizeof(TDeviceConfig_ScreensaverMode) >
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_CONTENT: {
+          SUPLA_LOG_DEBUG("Adding HomeScreenContent config field");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenContent) >
               SUPLA_DEVICE_CONFIG_MAXSIZE) {
             SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
             return false;
           }
-          fillScreensaverModeConfig(
-              reinterpret_cast<TDeviceConfig_ScreensaverMode *>(
+          fillHomeScreenContentConfig(
+              reinterpret_cast<TDeviceConfig_HomeScreenContent *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_ScreensaverMode);
+          dataIndex += sizeof(TDeviceConfig_HomeScreenContent);
           break;
         }
         default: {

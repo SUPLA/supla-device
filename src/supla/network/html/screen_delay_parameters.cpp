@@ -87,7 +87,7 @@ bool ScreenDelayParameters::handleResponse(const char* key,
       cfg->setInt32(ScreenDelayCfgTag, param);
       cfg->setDeviceConfigChangeFlag();
       Supla::Element::NotifyElementsAboutConfigChange(
-          SUPLA_DEVICE_CONFIG_FIELD_SCREENSAVER_DELAY);
+          SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_DELAY);
     }
     return true;
   }

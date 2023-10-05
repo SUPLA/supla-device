@@ -16,11 +16,11 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_NETWORK_HTML_SCREEN_SAVER_TYPE_H_
-#define SRC_SUPLA_NETWORK_HTML_SCREEN_SAVER_TYPE_H_
+#ifndef SRC_SUPLA_NETWORK_HTML_HOME_SCREEN_CONTENT_H_
+#define SRC_SUPLA_NETWORK_HTML_HOME_SCREEN_CONTENT_H_
 
 namespace Supla {
-  const char ScreenSaverTypeTag[] = "screen_saver";
+  const char HomeScreenContentTag[] = "home_screen";
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_NETWORK_HTML_SCREEN_SAVER_TYPE_H_
+#endif  // SRC_SUPLA_NETWORK_HTML_HOME_SCREEN_CONTENT_H_

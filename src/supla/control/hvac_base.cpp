@@ -791,6 +791,8 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
     setTemperatureInStruct(&config.Temperatures,
         TEMPERATURE_ECO,
         getTemperatureEco(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_ECO);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -798,6 +800,8 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
     setTemperatureInStruct(&config.Temperatures,
         TEMPERATURE_COMFORT,
         getTemperatureComfort(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_COMFORT);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -805,6 +809,8 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
     setTemperatureInStruct(&config.Temperatures,
         TEMPERATURE_BOOST,
         getTemperatureBoost(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_BOOST);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -813,6 +819,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
         &config.Temperatures,
         TEMPERATURE_FREEZE_PROTECTION,
         getTemperatureFreezeProtection(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_FREEZE_PROTECTION);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -821,6 +830,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
         &config.Temperatures,
         TEMPERATURE_HEAT_PROTECTION,
         getTemperatureHeatProtection(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_HEAT_PROTECTION);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -837,6 +849,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
         &config.Temperatures,
         TEMPERATURE_BELOW_ALARM,
         getTemperatureBelowAlarm(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_BELOW_ALARM);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -845,6 +860,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
         &config.Temperatures,
         TEMPERATURE_ABOVE_ALARM,
         getTemperatureAboveAlarm(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_ABOVE_ALARM);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -853,6 +871,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
         &config.Temperatures,
         TEMPERATURE_AUX_MIN_SETPOINT,
         getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_AUX_MIN_SETPOINT);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -861,6 +882,9 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
         &config.Temperatures,
         TEMPERATURE_AUX_MAX_SETPOINT,
         getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
+  } else {
+    clearTemperatureInStruct(&config.Temperatures,
+        TEMPERATURE_AUX_MAX_SETPOINT);
   }
 }
 

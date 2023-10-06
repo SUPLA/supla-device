@@ -2779,7 +2779,10 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
 }
 
 bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
-  if (isAntiFreezeAndHeatProtectionEnabled()) {
+  // antifreeze can be used when it is enabled, and when current function and
+  // subfunction allows heating
+  if (isAntiFreezeAndHeatProtectionEnabled() &&
+      isModeSupported(SUPLA_HVAC_MODE_HEAT)) {
     auto tFreeze = getTemperatureFreezeProtection();
     if (!isSensorTempValid(tFreeze)) {
       return false;
@@ -2795,7 +2798,10 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
 }
 
 bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
-  if (isAntiFreezeAndHeatProtectionEnabled()) {
+  // overheat can be used when it is enabled, and when current function and
+  // subfunction allows cooling
+  if (isAntiFreezeAndHeatProtectionEnabled() &&
+      isModeSupported(SUPLA_HVAC_MODE_COOL)) {
     auto tOverheat = getTemperatureHeatProtection();
     if (!isSensorTempValid(tOverheat)) {
       return false;

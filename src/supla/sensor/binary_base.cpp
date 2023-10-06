@@ -60,8 +60,8 @@ void BinaryBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 
 uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
                                       bool local) {
-  (void)(local);
-  SUPLA_LOG_DEBUG("Binary[%d]: processing channel config", getChannelNumber());
+  SUPLA_LOG_DEBUG("Binary[%d]: processing%s channel config", getChannelNumber(),
+                   local ? " local" : "");
 
   if (newConfig == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
@@ -78,7 +78,7 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   defaultConfigReceived = true;
 
   TChannelConfig_BinarySensor *config =
-      reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig);
+      reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig->Config);
 
   setServerInvertLogic(config->InvertedLogic > 0);
 
@@ -119,5 +119,13 @@ void BinaryBase::setReadIntervalMs(uint32_t intervalMs) {
 
 void BinaryBase::handleChannelConfigFinished() {
   configFinishedReceived = true;
+  if (!defaultConfigReceived) {
+    // set default config on device
+    SUPLA_LOG_DEBUG("Binary[%d]: setting default channel config",
+                    getChannelNumber());
+    TSD_ChannelConfig defaultConfig = {};
+    defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
+    handleChannelConfig(&defaultConfig, true);
+  }
 }
 

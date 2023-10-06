@@ -505,10 +505,12 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
+  // aux min setpoint can be lower than aux max in message from server,
+  // it will be corrected by device afterwards
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 2000);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 1000);
@@ -699,8 +701,8 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
 
   // change min setpoint
   EXPECT_TRUE(hvac.setTemperatureAuxMinSetpoint(500));
-  // ang check max setpoint
-  EXPECT_TRUE(hvac.setTemperatureAuxMaxSetpoint(501));
+  // ang check max setpoint (min setpoint offset is not kept)
+  EXPECT_FALSE(hvac.setTemperatureAuxMaxSetpoint(501));
   EXPECT_TRUE(hvac.setTemperatureAuxMaxSetpoint(1000));
   EXPECT_FALSE(hvac.setTemperatureAuxMaxSetpoint(10));
   EXPECT_EQ(hvac.getTemperatureAuxMaxSetpoint(), 1000);

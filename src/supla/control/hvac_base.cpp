@@ -242,6 +242,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
                      sizeof(TChannelConfig_HVAC))) {
       if (isConfigValid(&storedConfig)) {
         applyConfigWithoutValidation(&storedConfig);
+        fixTemperatureSetpoints();
         SUPLA_LOG_INFO("HVAC config loaded successfully");
       } else {
         SUPLA_LOG_WARNING("HVAC config invalid in storage. Using SW defaults");
@@ -743,6 +744,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   // Received config looks ok, so we apply it to channel
   if (applyServerConfig) {
     applyConfigWithoutValidation(hvacConfig);
+    fixTempearturesConfig();
   }
 
   defaultConfigReceived = true;
@@ -1208,10 +1210,11 @@ bool HvacBase::isTemperatureAuxMinSetpointValid(
 
   auto tMin = getTemperatureAuxMin();
   auto tMax = getTemperatureAuxMax();
+  auto tOffsetMin = getTemperatureAutoOffsetMin();
 
   auto tMaxSetpoint = getTemperatureAuxMaxSetpoint();
 
-  return (temperature < tMaxSetpoint ||
+  return (temperature <= (tMaxSetpoint - tOffsetMin) ||
           tMaxSetpoint == SUPLA_TEMPERATURE_INVALID_INT16) &&
          temperature >= tMin && temperature <= tMax;
 }
@@ -1219,13 +1222,6 @@ bool HvacBase::isTemperatureAuxMinSetpointValid(
 bool HvacBase::isTemperatureAuxMinSetpointValid(
     const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureAuxMinSetpoint(temperatures);
-  if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_AUX_MAX_SETPOINT)) {
-    auto tMaxSetpoint = getTemperatureAuxMaxSetpoint(temperatures);
-    if (t >= tMaxSetpoint) {
-      return false;
-    }
-  }
 
   auto tMin = getTemperatureAuxMin();
   auto tMax = getTemperatureAuxMax();
@@ -1242,11 +1238,12 @@ bool HvacBase::isTemperatureAuxMaxSetpointValid(
   // min and max values are taken from device config
   auto tMin = getTemperatureAuxMin();
   auto tMax = getTemperatureAuxMax();
+  auto tOffsetMin = getTemperatureAutoOffsetMin();
 
   // current min setpoint is taken from current device config
   auto tMinSetpoint = getTemperatureAuxMinSetpoint();
 
-  return (temperature > tMinSetpoint ||
+  return (temperature >= (tMinSetpoint + tOffsetMin) ||
           tMinSetpoint == SUPLA_TEMPERATURE_INVALID_INT16) &&
          temperature >= tMin && temperature <= tMax;
 }
@@ -1254,16 +1251,6 @@ bool HvacBase::isTemperatureAuxMaxSetpointValid(
 bool HvacBase::isTemperatureAuxMaxSetpointValid(
     const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureAuxMaxSetpoint(temperatures);
-
-  // min setpoint is taken from configuration in temperatures struct
-  // i.e. new values send from server
-  if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_AUX_MIN_SETPOINT)) {
-    auto tMinSetpoint = getTemperatureAuxMinSetpoint(temperatures);
-    if (t <= tMinSetpoint) {
-      return false;
-    }
-  }
 
   // min and max range is validated against device config (readonly values)
   auto tMin = getTemperatureAuxMin();
@@ -3926,6 +3913,60 @@ void HvacBase::changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool) {
                               getTemperatureSetpointHeat() + tHeat,
                               getTemperatureSetpointCool() + tCool);
       break;
+    }
+  }
+}
+
+void HvacBase::fixTempearturesConfig() {
+  auto function = getChannelFunction();
+
+  // Aux Setpoint min and max corrections
+  switch (function) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+      auto tAuxSetpointMin = getTemperatureAuxMinSetpoint();
+      auto tAuxSetpointMax = getTemperatureAuxMaxSetpoint();
+      if (tAuxSetpointMin != INT16_MIN && tAuxSetpointMax != INT16_MIN) {
+        auto tOffsetMin = getTemperatureAutoOffsetMin();
+        if (tOffsetMin == INT16_MIN) {
+          tOffsetMin = 200;
+        }
+        if (tAuxSetpointMin > tAuxSetpointMax - tOffsetMin) {
+          if (!setTemperatureAuxMinSetpoint(tAuxSetpointMax - tOffsetMin) &&
+              !setTemperatureAuxMaxSetpoint(tAuxSetpointMin + tOffsetMin)) {
+            clearTemperatureInStruct(&config.Temperatures,
+                TEMPERATURE_AUX_MIN_SETPOINT);
+            clearTemperatureInStruct(&config.Temperatures,
+                TEMPERATURE_AUX_MAX_SETPOINT);
+            setTemperatureAuxMinSetpoint(getTemperatureAuxMin());
+            setTemperatureAuxMaxSetpoint(getTemperatureAuxMax());
+          }
+        }
+      }
+    }
+  }
+
+  // Anti-freeze and overheat corrections
+  if (function == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
+    auto tAntiFreeze = getTemperatureFreezeProtection();
+    auto tOverheat = getTemperatureHeatProtection();
+    if (tAntiFreeze != INT16_MIN && tOverheat != INT16_MIN) {
+      auto tOffsetMin = getTemperatureAutoOffsetMin();
+      if (tOffsetMin == INT16_MIN) {
+        tOffsetMin = 200;
+      }
+      if (tAntiFreeze > tOverheat - tOffsetMin) {
+        if (!setTemperatureFreezeProtection(tOverheat - tOffsetMin) &&
+            !setTemperatureHeatProtection(tAntiFreeze + tOffsetMin)) {
+          clearTemperatureInStruct(&config.Temperatures,
+              TEMPERATURE_FREEZE_PROTECTION);
+          clearTemperatureInStruct(&config.Temperatures,
+              TEMPERATURE_HEAT_PROTECTION);
+          setTemperatureFreezeProtection(getTemperatureRoomMin());
+          setTemperatureHeatProtection(getTemperatureRoomMax());
+        }
+      }
     }
   }
 }

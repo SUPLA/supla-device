@@ -479,6 +479,7 @@ void HvacBase::iterateAlways() {
     channel.setHvacFlagCountdownTimer(false);
     clearLastOutputValue();
     setOutput(0, true);
+    fixTemperatureSetpoints();
     lastIterateTimestampMs = 0;
   }
 
@@ -745,6 +746,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   if (applyServerConfig) {
     applyConfigWithoutValidation(hvacConfig);
     fixTempearturesConfig();
+    fixTemperatureSetpoints();
   }
 
   defaultConfigReceived = true;

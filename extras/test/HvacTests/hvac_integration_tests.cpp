@@ -2922,11 +2922,12 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
-        EXPECT_EQ(hvacValue->Flags, SUPLA_HVAC_VALUE_FLAG_COOL);
+        EXPECT_EQ(hvacValue->Flags, SUPLA_HVAC_VALUE_FLAG_COOL |
+            SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
-        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
   EXPECT_CALL(proto,
@@ -3034,10 +3035,11 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
-        EXPECT_EQ(hvacValue->Flags, 0);
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
-        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
 

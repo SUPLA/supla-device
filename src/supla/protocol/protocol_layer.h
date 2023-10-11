@@ -59,6 +59,11 @@ class ProtocolLayer {
                                       uint32_t timeMs,
                                       uint8_t state,
                                       int32_t senderId);
+  virtual void sendRemainingTimeValue(uint8_t channelNumber,
+                                      uint32_t remainingTime,
+                                      uint8_t* state,
+                                      int32_t senderId,
+                                      bool useSecondsInsteadOfMs);
   virtual void getUserLocaltime();
   virtual void sendChannelValueChanged(uint8_t channelNumber, char *value,
       unsigned char offline, uint32_t validityTimeSec) = 0;

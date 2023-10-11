@@ -393,6 +393,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
   int channelFunctionToIndex(int channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
+  void updateTimerValue();
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_WeeklySchedule weeklySchedule = {};
@@ -447,6 +448,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
       5000,  // DIFFERENTIAL
       7500,   // DOMESTIC_HOT_WATER
   };
+
+  uint32_t timerUpdateTimestamp = 0;
 };
 
 }  // namespace Control

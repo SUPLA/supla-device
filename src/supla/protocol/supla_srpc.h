@@ -91,6 +91,11 @@ class SuplaSrpc : public ProtocolLayer {
                               uint32_t timeMs,
                               uint8_t state,
                               int32_t senderId) override;
+  void sendRemainingTimeValue(uint8_t channelNumber,
+                              uint32_t remainingTime,
+                              unsigned char state[SUPLA_CHANNELVALUE_SIZE],
+                              int32_t senderId,
+                              bool useSecondsInsteadOfMs) override;
 
   void *getSrpcPtr();
 

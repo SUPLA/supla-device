@@ -163,6 +163,10 @@ void HvacBase::handleAction(int event, int action) {
 }
 
 bool HvacBase::iterateConnected() {
+  if (timerUpdateTimestamp != countdownTimerEnds && Supla::Clock::IsReady()) {
+    timerUpdateTimestamp = countdownTimerEnds;
+    updateTimerValue();
+  }
   auto result = Element::iterateConnected();
 
   if (!result) {
@@ -437,6 +441,7 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   defaultConfigReceived = false;
   weeklyScheduleReceived = false;
   altWeeklyScheduleReceived = false;
+  timerUpdateTimestamp = 0;
 }
 
 void HvacBase::handleChannelConfigFinished() {
@@ -517,6 +522,7 @@ void HvacBase::iterateAlways() {
     if (countdownTimerEnds <= Supla::Clock::GetTimeStamp()) {
       getChannel()->setHvacFlagCountdownTimer(false);
       turnOn();  // turnOn restores last stored runtime mode
+      countdownTimerEnds = 1;
     }
   }
 
@@ -2929,7 +2935,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
     }
   } else {
     channel.setHvacFlagCountdownTimer(false);
-    countdownTimerEnds = 0;
+    countdownTimerEnds = 1;
   }
 
   setTargetMode(mode, false);
@@ -3970,5 +3976,29 @@ void HvacBase::fixTempearturesConfig() {
         }
       }
     }
+  }
+}
+
+void HvacBase::updateTimerValue() {
+  int32_t senderId = 0;
+  time_t now = Supla::Clock::GetTimeStamp();
+  uint32_t remainingTimeS = 0;
+
+  if (countdownTimerEnds > now) {
+    remainingTimeS = countdownTimerEnds - now;
+  }
+
+  SUPLA_LOG_DEBUG("HVAC[%d]: updating timer value: remainingTime=%d s",
+      channel.getChannelNumber(),
+      remainingTimeS);
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first();
+      proto != nullptr; proto = proto->next()) {
+    proto->sendRemainingTimeValue(
+        getChannelNumber(),
+        remainingTimeS,
+        reinterpret_cast<unsigned char*>(&lastWorkingMode),
+        senderId,
+        true);
   }
 }

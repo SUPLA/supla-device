@@ -1142,6 +1142,44 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
   delete value;
 }
 
+void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
+    uint8_t channelNumber,
+    uint32_t remainingTime,
+    unsigned char state[SUPLA_CHANNELVALUE_SIZE],
+    int32_t senderId,
+    bool useSecondsInsteadOfMs) {
+  if (!isRegisteredAndReady()) {
+    SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not send - not registered");
+    return;
+  }
+  auto *value = new TSuplaChannelExtendedValue;
+  memset(value, 0, sizeof(TSuplaChannelExtendedValue));
+  if (useSecondsInsteadOfMs) {
+    value->type = EV_TYPE_TIMER_STATE_V1_SEC;
+  } else {
+    value->type = EV_TYPE_TIMER_STATE_V1;
+  }
+  value->size = sizeof(TTimerState_ExtendedValue);
+
+  TTimerState_ExtendedValue *timerState =
+      reinterpret_cast<TTimerState_ExtendedValue *>(&value->value);
+
+  timerState->SenderID = senderId;
+  memcpy(timerState->TargetValue, state, sizeof(timerState->TargetValue));
+  if (useSecondsInsteadOfMs) {
+    timerState->RemainingTimeMs = remainingTime;
+  } else {
+    timerState->RemainingTimeS = remainingTime;
+  }
+
+  SUPLA_LOG_DEBUG("SRPC sedning: remaining time %d %s, channel %d",
+                  remainingTime,
+                  useSecondsInsteadOfMs ? "s" : "ms",
+                  channelNumber);
+  srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
+  delete value;
+}
+
 void Supla::Protocol::CalCfgResultPending::set(uint8_t channelNo,
                                                int32_t receiverId,
                                                int32_t command) {

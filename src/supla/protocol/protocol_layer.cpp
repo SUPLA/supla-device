@@ -145,5 +145,17 @@ void ProtocolLayer::sendRemainingTimeValue(uint8_t channelNumber,
   (void)(senderId);
 }
 
+void ProtocolLayer::sendRemainingTimeValue(uint8_t channelNumber,
+                                           uint32_t remainingTime,
+                                           uint8_t *state,
+                                           int32_t senderId,
+                                           bool useSecondsInsteadOfMs) {
+  (void)(channelNumber);
+  (void)(remainingTime);
+  (void)(state);
+  (void)(senderId);
+  (void)(useSecondsInsteadOfMs);
+}
+
 }  // namespace Protocol
 }  // namespace Supla

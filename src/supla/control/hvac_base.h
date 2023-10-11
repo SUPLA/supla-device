@@ -423,7 +423,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t defaultAuxThermometer = 0;
   uint8_t defaultBinarySensor = 0;
 
-  time_t countdownTimerEnds = 0;
+  time_t countdownTimerEnds = 1;
   uint32_t lastConfigChangeTimestampMs = 0;
   uint32_t lastIterateTimestampMs = 0;
   uint32_t lastOutputStateChangeTimestampMs = 0;

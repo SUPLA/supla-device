@@ -328,6 +328,9 @@ void HvacBase::onLoadState() {
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&countdownTimerEnds),
         sizeof(countdownTimerEnds));
+    if (countdownTimerEnds == 0) {
+      countdownTimerEnds = 1;
+    }
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastManualSetpointHeat),
         sizeof(lastManualSetpointHeat));

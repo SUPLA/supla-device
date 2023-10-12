@@ -84,6 +84,7 @@ RGBWBase::RGBWBase()
       minIterationBrightness(1) {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
 }
 
 void RGBWBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
@@ -153,15 +154,83 @@ void RGBWBase::iterateAlways() {
 }
 
 int RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
-  uint8_t toggle = static_cast<uint8_t>(newValue->value[5]);
+  uint8_t command = static_cast<uint8_t>(newValue->value[6]);
+  uint8_t toggleOnOff = static_cast<uint8_t>(newValue->value[5]);
   uint8_t red = static_cast<uint8_t>(newValue->value[4]);
   uint8_t green = static_cast<uint8_t>(newValue->value[3]);
   uint8_t blue = static_cast<uint8_t>(newValue->value[2]);
   uint8_t colorBrightness = static_cast<uint8_t>(newValue->value[1]);
   uint8_t brightness = static_cast<uint8_t>(newValue->value[0]);
 
-  setRGBW(red, green, blue, colorBrightness, brightness, toggle > 0);
+  if (brightness > 100) {
+    brightness = 100;
+  }
+  if (colorBrightness > 100) {
+    colorBrightness = 100;
+  }
 
+  switch (command) {
+    case RGBW_COMMAND_NOT_SET: {
+      setRGBW(red, green, blue, colorBrightness, brightness, toggleOnOff > 0);
+      break;
+    }
+    case RGBW_COMMAND_TURN_ON_DIMMER: {
+      setRGBW(-1, -1, -1, -1, lastBrightness);
+      break;
+    }
+    case RGBW_COMMAND_TURN_OFF_DIMMER: {
+      setRGBW(-1, -1, -1, -1, 0);
+      break;
+    }
+    case RGBW_COMMAND_TOGGLE_DIMMER: {
+      setRGBW(-1, -1, -1, -1, curBrightness > 0 ? 0 : lastBrightness);
+      break;
+    }
+    case RGBW_COMMAND_TURN_ON_RGB: {
+      setRGBW(-1, -1, -1, lastColorBrightness, -1);
+      break;
+    }
+    case RGBW_COMMAND_TURN_OFF_RGB: {
+      setRGBW(-1, -1, -1, 0, -1);
+      break;
+    }
+    case RGBW_COMMAND_TOGGLE_RGB: {
+      setRGBW(-1, -1, -1, curColorBrightness > 0 ? 0 : lastColorBrightness, -1);
+      break;
+    }
+    case RGBW_COMMAND_TURN_ON_ALL: {
+      turnOn();
+      break;
+    }
+    case RGBW_COMMAND_TURN_OFF_ALL: {
+      turnOff();
+      break;
+    }
+    case RGBW_COMMAND_TOGGLE_ALL: {
+      toggle();
+      break;
+    }
+    case RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON: {
+      if (curBrightness > 0) {
+        setRGBW(-1, -1, -1, -1, brightness);
+      } else {
+        lastBrightness = brightness;
+      }
+      break;
+    }
+    case RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON: {
+      if (curColorBrightness > 0) {
+        setRGBW(-1, -1, -1, colorBrightness, -1);
+      } else {
+        lastColorBrightness = colorBrightness;
+      }
+      break;
+    }
+    case RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON: {
+      setRGBW(red, green, blue, -1, -1);
+      break;
+    }
+  }
   return -1;
 }
 

@@ -33,6 +33,23 @@ class RgbwBaseForTest : public Supla::Control::RGBWBase {
               (override));
 };
 
+void setValues(TRGBW_Value *value,
+               int red,
+               int green,
+               int blue,
+               int colorBrightness,
+               int brightness,
+               int onOff,
+               int command) {
+  value->onOff = onOff;
+  value->command = command;
+  value->R = red;
+  value->G = green;
+  value->B = blue;
+  value->colorBrightness = colorBrightness;
+  value->brightness = brightness;
+}
+
 TEST(RgbwDimmerTests, InitializationWithDefaultValues) {
   SimpleTime time;
 
@@ -41,8 +58,11 @@ TEST(RgbwDimmerTests, InitializationWithDefaultValues) {
   ASSERT_NE(rgb.getChannel(), nullptr);
 
   auto ch = rgb.getChannel();
-
   EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
+  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING);
+  EXPECT_EQ(ch->getFlags(), SUPLA_CHANNEL_FLAG_CHANNELSTATE |
+      SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
+
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);
   EXPECT_EQ(ch->getValueBlue(), 0);
@@ -1531,4 +1551,247 @@ TEST(RgbwDimmerTests, SetValueFromServerTurnOnOff) {
   EXPECT_EQ(ch->getValueBlue(), 3);
   EXPECT_EQ(ch->getValueColorBrightness(), 4);
   EXPECT_EQ(ch->getValueBrightness(), 5);
+}
+
+// RGBW commands
+TEST(RgbwDimmerTests, RgbwCommandsTest) {
+  SimpleTime time;
+
+  RgbwBaseForTest rgb;
+
+  auto ch = rgb.getChannel();
+
+  time.advance(100);
+  rgb.onInit();
+  time.advance(1000);
+  rgb.iterateAlways();
+
+  EXPECT_EQ(ch->getValueRed(), 0);
+  EXPECT_EQ(ch->getValueGreen(), 255);
+  EXPECT_EQ(ch->getValueBlue(), 0);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  TSD_SuplaChannelNewValue msg = {};
+  TRGBW_Value *rgbwValue = reinterpret_cast<TRGBW_Value *>(msg.value);
+  setValues(
+      rgbwValue, 1, 2, 3, 5, 5, 0, RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_TURN_ON_DIMMER);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 100);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_TURN_ON_RGB);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 100);
+  EXPECT_EQ(ch->getValueBrightness(), 100);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_TURN_OFF_DIMMER);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 100);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_TOGGLE_ALL);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_TOGGLE_ALL);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 100);
+  EXPECT_EQ(ch->getValueBrightness(), 100);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_TOGGLE_ALL);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+    rgbwValue, 0, 0, 0, 50, 50, 0, RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+    rgbwValue, 1, 1, 1, 1, 1, 0, RGBW_COMMAND_TURN_ON_ALL);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 100);
+  EXPECT_EQ(ch->getValueBrightness(), 50);
+
+  setValues(
+    rgbwValue, 0, 0, 0, 50, 60, 0, RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 100);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
+
+  setValues(rgbwValue,
+            0,
+            0,
+            0,
+            15,
+            0,
+            0,
+            RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 15);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
+
+  setValues(
+      rgbwValue, 0, 0, 0, 0, 0, 0, RGBW_COMMAND_TOGGLE_ALL);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(rgbwValue,
+            0,
+            0,
+            0,
+            95,
+            0,
+            0,
+            RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+    rgbwValue, 1, 1, 1, 1, 1, 0, RGBW_COMMAND_TURN_ON_ALL);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 1);
+  EXPECT_EQ(ch->getValueGreen(), 2);
+  EXPECT_EQ(ch->getValueBlue(), 3);
+  EXPECT_EQ(ch->getValueColorBrightness(), 95);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
+
+  setValues(
+    rgbwValue, 10, 20, 30, 1, 1, 0, RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 20);
+  EXPECT_EQ(ch->getValueBlue(), 30);
+  EXPECT_EQ(ch->getValueColorBrightness(), 95);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
+
+  setValues(
+    rgbwValue, 10, 20, 30, 1, 1, 0, RGBW_COMMAND_TOGGLE_DIMMER);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 20);
+  EXPECT_EQ(ch->getValueBlue(), 30);
+  EXPECT_EQ(ch->getValueColorBrightness(), 95);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+
+  setValues(
+    rgbwValue, 10, 20, 30, 1, 1, 0, RGBW_COMMAND_TOGGLE_DIMMER);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 20);
+  EXPECT_EQ(ch->getValueBlue(), 30);
+  EXPECT_EQ(ch->getValueColorBrightness(), 95);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
+
+  setValues(
+    rgbwValue, 10, 20, 30, 1, 1, 0, RGBW_COMMAND_TOGGLE_RGB);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 20);
+  EXPECT_EQ(ch->getValueBlue(), 30);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
+
+  setValues(
+    rgbwValue, 10, 20, 30, 1, 1, 0, RGBW_COMMAND_TOGGLE_RGB);
+  rgb.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  rgb.iterateAlways();
+  EXPECT_EQ(ch->getValueRed(), 10);
+  EXPECT_EQ(ch->getValueGreen(), 20);
+  EXPECT_EQ(ch->getValueBlue(), 30);
+  EXPECT_EQ(ch->getValueColorBrightness(), 95);
+  EXPECT_EQ(ch->getValueBrightness(), 60);
 }

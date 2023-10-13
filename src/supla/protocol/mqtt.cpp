@@ -722,18 +722,18 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
         int brightness = stringToInt(payload);
         if (brightness >= 0 && brightness <= 100) {
           newValue.value[0] = brightness;
+          newValue.value[6] = RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON;
           element->handleNewValueFromServer(&newValue);
         }
       } else if (strcmp(part, "execute_action") == 0) {
-        newValue.value[5] = 1;
         if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[0] = 100;
+          newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
           element->handleNewValueFromServer(&newValue);
         } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[0] = 0;
+          newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
           element->handleNewValueFromServer(&newValue);
         } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[0] = ch->getValueBrightness() > 0 ? 0 : 100;
+          newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
         } else {
           SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
           break;
@@ -747,16 +747,16 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
         int brightness = stringToInt(payload);
         if (brightness >= 0 && brightness <= 100) {
           newValue.value[1] = brightness;
+          newValue.value[6] = RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON;
           element->handleNewValueFromServer(&newValue);
         }
       } else if (strcmp(part, "execute_action") == 0) {
-          newValue.value[5] = 1;
         if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[1] = 100;
+          newValue.value[6] = RGBW_COMMAND_TURN_ON_RGB;
         } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[1] = 0;
+          newValue.value[6] = RGBW_COMMAND_TURN_OFF_RGB;
         } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[1] = ch->getValueBrightness() > 0 ? 0 : 100;
+          newValue.value[6] = RGBW_COMMAND_TOGGLE_RGB;
         } else {
           SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
           break;
@@ -771,6 +771,7 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
           newValue.value[2] = blue;
           newValue.value[3] = green;
           newValue.value[4] = red;
+          newValue.value[6] = RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON;
           element->handleNewValueFromServer(&newValue);
         }
       }
@@ -781,35 +782,35 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
         int brightness = stringToInt(payload);
         if (brightness >= 0 && brightness <= 100) {
           newValue.value[1] = brightness;
+          newValue.value[6] = RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON;
           element->handleNewValueFromServer(&newValue);
         }
       } else if (strcmp(part, "set/brightness") == 0) {
         int brightness = stringToInt(payload);
         if (brightness >= 0 && brightness <= 100) {
           newValue.value[0] = brightness;
+          newValue.value[6] = RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON;
           element->handleNewValueFromServer(&newValue);
         }
       } else if (strcmp(part, "execute_action/rgb") == 0) {
-        newValue.value[5] = 1;
         if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[1] = 100;
+          newValue.value[6] = RGBW_COMMAND_TURN_ON_RGB;
         } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[1] = 0;
+          newValue.value[6] = RGBW_COMMAND_TURN_OFF_RGB;
         } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[1] = ch->getValueColorBrightness() > 0 ? 0 : 100;
+          newValue.value[6] = RGBW_COMMAND_TOGGLE_RGB;
         } else {
           SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
           break;
         }
         element->handleNewValueFromServer(&newValue);
       } else if (strcmp(part, "execute_action/dimmer") == 0) {
-        newValue.value[5] = 1;
         if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[0] = 100;
+          newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
         } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[0] = 0;
+          newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
         } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[0] = ch->getValueBrightness() > 0 ? 0 : 100;
+          newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
         } else {
           SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
           break;
@@ -824,6 +825,7 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
           newValue.value[2] = blue;
           newValue.value[3] = green;
           newValue.value[4] = red;
+          newValue.value[6] = RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON;
           element->handleNewValueFromServer(&newValue);
         }
       }

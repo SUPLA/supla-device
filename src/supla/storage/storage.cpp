@@ -305,6 +305,10 @@ bool Storage::init() {
         storageStartingOffset, (unsigned char *)&preamble, sizeof(preamble));
     commit();
 
+    elementStateSize = 0;
+    elementStateOffset = 0;
+    elementStateCrcCValid = false;
+
   } else if (preamble.version != SUPLA_STORAGE_VERSION) {
     SUPLA_LOG_DEBUG(
               "Storage: storage version [%d] is not supported. Storage not "
@@ -378,6 +382,9 @@ void Storage::deleteAll() {
   writeStorage(
       storageStartingOffset, (unsigned char *)&emptyTag, sizeof(emptyTag));
   commit();
+  elementStateSize = 0;
+  elementStateOffset = 0;
+  elementStateCrcCValid = false;
 }
 
 int Storage::updateStorage(unsigned int offset,

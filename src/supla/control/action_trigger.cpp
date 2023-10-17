@@ -228,6 +228,12 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
       }
     }
 
+    if (activeActionsFromServer & SUPLA_ACTION_CAP_HOLD) {
+      attachedButton->disableRepeatOnHold();
+    } else {
+      attachedButton->enableRepeatOnHold();
+    }
+
     for (int i = 0; i < 32; i++) {
       uint32_t actionCap = (1ULL << i);
       int eventId = actionTriggerCapToButtonEvent(actionCap);
@@ -444,6 +450,13 @@ void Supla::Control::ActionTrigger::onInit() {
 
     } else if (attachedButton->isMonostable()) {
       // Configure default actions for monostable button
+      if (!(disabledCapabilities & SUPLA_ACTION_CAP_TURN_ON)) {
+        addActionToButtonAndDisableIt(Supla::SEND_AT_TURN_ON, Supla::ON_PRESS);
+      }
+      if (!(disabledCapabilities & SUPLA_ACTION_CAP_TURN_OFF)) {
+        addActionToButtonAndDisableIt(Supla::SEND_AT_TURN_OFF,
+                                      Supla::ON_RELEASE);
+      }
       if (attachedButton->isEventAlreadyUsed(Supla::ON_HOLD)) {
         disablesLocalOperation |= SUPLA_ACTION_CAP_HOLD;
       }

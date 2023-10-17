@@ -96,6 +96,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/control/simple_button.cpp
   ../../../src/supla/control/virtual_relay.cpp
   ../../../src/supla/control/hvac_base.cpp
+  ../../../src/supla/control/group_button_control_rgbw.cpp
 
   ../../../src/supla/condition.cpp
   ../../../src/supla/condition_getter.cpp

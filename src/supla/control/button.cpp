@@ -89,7 +89,7 @@ void Button::onTimer() {
     if (isMonostable() && stateResult == PRESSED) {
       if (clickCounter <= 1 && holdTimeMs > 0 &&
           timeDelta > (holdTimeMs + holdSend * repeatOnHoldMs) &&
-          (repeatOnHoldMs == 0 ? !holdSend : true)) {
+          (!repeatOnHoldEnabled ? !holdSend : true)) {
         runAction(ON_HOLD);
         ++holdSend;
       }
@@ -297,6 +297,7 @@ void Button::setMulticlickTime(unsigned int timeMs,
 
 void Button::repeatOnHoldEvery(unsigned int timeMs) {
   repeatOnHoldMs = timeMs;
+  repeatOnHoldEnabled = true;
 }
 
 bool Button::isBistable() const {
@@ -432,4 +433,12 @@ void Button::setButtonNumber(int8_t btnNumber) {
 
 void Button::dontUseOnLoadConfig() {
   useOnLoadConfig = false;
+}
+
+void Button::disableRepeatOnHold() {
+  repeatOnHoldEnabled = false;
+}
+
+void Button::enableRepeatOnHold() {
+  repeatOnHoldEnabled = true;
 }

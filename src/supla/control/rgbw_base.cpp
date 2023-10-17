@@ -29,6 +29,7 @@
 #include "../storage/storage.h"
 #include "../time.h"
 #include "../tools.h"
+#include "supla/actions.h"
 
 #ifdef ARDUINO_ARCH_ESP32
 int esp32PwmChannelCounter = 0;
@@ -230,6 +231,49 @@ int RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       setRGBW(red, green, blue, -1, -1);
       break;
     }
+    case RGBW_COMMAND_START_ITERATE_DIMMER: {
+      lastAutoIterateStartTimestamp = millis();
+      if (autoIterateMode == AutoIterateMode::OFF) {
+        autoIterateMode = AutoIterateMode::DIMMER;
+      } else {
+        autoIterateMode = AutoIterateMode::ALL;
+      }
+      break;
+    }
+    case RGBW_COMMAND_START_ITERATE_RGB: {
+      lastAutoIterateStartTimestamp = millis();
+      if (autoIterateMode == AutoIterateMode::OFF) {
+        autoIterateMode = AutoIterateMode::RGB;
+      } else {
+        autoIterateMode = AutoIterateMode::ALL;
+      }
+      break;
+    }
+    case RGBW_COMMAND_START_ITERATE_ALL: {
+      autoIterateMode = AutoIterateMode::ALL;
+      lastAutoIterateStartTimestamp = millis();
+      break;
+    }
+    case RGBW_COMMAND_STOP_ITERATE_DIMMER: {
+      if (autoIterateMode == AutoIterateMode::DIMMER) {
+        autoIterateMode = AutoIterateMode::OFF;
+      } else if (autoIterateMode == AutoIterateMode::ALL) {
+        autoIterateMode = AutoIterateMode::RGB;
+      }
+      break;
+    }
+    case RGBW_COMMAND_STOP_ITERATE_RGB: {
+      if (autoIterateMode == AutoIterateMode::RGB) {
+        autoIterateMode = AutoIterateMode::OFF;
+      } else if (autoIterateMode == AutoIterateMode::ALL) {
+        autoIterateMode = AutoIterateMode::DIMMER;
+      }
+      break;
+    }
+    case RGBW_COMMAND_STOP_ITERATE_ALL: {
+      autoIterateMode = AutoIterateMode::OFF;
+      break;
+    }
   }
   return -1;
 }
@@ -242,11 +286,23 @@ void RGBWBase::turnOff() {
 }
 
 void RGBWBase::toggle() {
-  if (curBrightness > 0 || curColorBrightness > 0) {
+  if (isOn()) {
     turnOff();
   } else {
     turnOn();
   }
+}
+
+bool RGBWBase::isOn() {
+  return isOnRGB() || isOnW();
+}
+
+bool RGBWBase::isOnW() {
+  return curBrightness > 0;
+}
+
+bool RGBWBase::isOnRGB() {
+  return curColorBrightness > 0;
 }
 
 uint8_t RGBWBase::addWithLimit(int value, int addition, int limit) {
@@ -541,6 +597,31 @@ void RGBWBase::onFastTimer() {
   }
   uint32_t timeDiff = millis() - lastTick;
 
+  if (autoIterateMode != AutoIterateMode::OFF &&
+      millis() - lastAutoIterateStartTimestamp < 10000) {
+    if (millis() - lastIterateDimmerTimestamp >= 35) {
+      // lastIterateDimmerTimestamp is updated in handleAction calls below
+      switch (autoIterateMode) {
+        case AutoIterateMode::DIMMER: {
+          handleAction(0, Supla::ITERATE_DIM_W);
+          break;
+        }
+        case AutoIterateMode::RGB: {
+          handleAction(0, Supla::ITERATE_DIM_RGB);
+          break;
+        }
+        case AutoIterateMode::ALL: {
+          handleAction(0, Supla::ITERATE_DIM_ALL);
+          break;
+        }
+        default:
+          break;
+      }
+    }
+  } else {
+    // disable auto iterate after 10 s timeout
+    autoIterateMode = AutoIterateMode::OFF;
+  }
 
   if (timeDiff > 0) {
     double divider = 1.0 * fadeEffect / timeDiff;
@@ -653,6 +734,9 @@ void RGBWBase::onInit() {
           attachedButton->addAction(Supla::TOGGLE_W, this, Supla::ON_CLICK_1);
           break;
         }
+        case BUTTON_NOT_USED: {
+          break;
+        }
       }
     } else if (attachedButton->isBistable()) {
       SUPLA_LOG_DEBUG("RGBWBase[%d] configuring bistable button",
@@ -671,6 +755,9 @@ void RGBWBase::onInit() {
         case BUTTON_FOR_W: {
           attachedButton->addAction(
               Supla::TOGGLE_W, this, Supla::CONDITIONAL_ON_CHANGE);
+          break;
+        }
+        case BUTTON_NOT_USED: {
           break;
         }
       }
@@ -694,6 +781,9 @@ void RGBWBase::onInit() {
           attachedButton->addAction(Supla::TURN_OFF_W, this, Supla::ON_RELEASE);
           break;
         }
+        case BUTTON_NOT_USED: {
+          break;
+        }
       }
       if (attachedButton->getLastState() == Supla::Control::PRESSED) {
         SUPLA_LOG_DEBUG("RGBWBase[%d] button pressed",
@@ -710,6 +800,9 @@ void RGBWBase::onInit() {
           }
           case BUTTON_FOR_W: {
             curBrightness = lastBrightness;
+            break;
+          }
+          case BUTTON_NOT_USED: {
             break;
           }
         }
@@ -730,6 +823,9 @@ void RGBWBase::onInit() {
             curBrightness = 0;
             break;
           }
+          case BUTTON_NOT_USED: {
+            break;
+          }
         }
       }
     } else {
@@ -738,11 +834,13 @@ void RGBWBase::onInit() {
     }
   }
 
+  bool toggle = false;
   if (stateOnInit == RGBW_STATE_ON_INIT_ON) {
     SUPLA_LOG_DEBUG("RGBWBase[%d] TURN on onInit",
                     getChannel()->getChannelNumber());
     curColorBrightness = 100;
     curBrightness = 100;
+    toggle = true;
   } else if (stateOnInit == RGBW_STATE_ON_INIT_OFF) {
     SUPLA_LOG_DEBUG("RGBWBase[%d] TURN off onInit",
                     getChannel()->getChannelNumber());
@@ -750,7 +848,7 @@ void RGBWBase::onInit() {
     curBrightness = 0;
   }
 
-  setRGBW(curRed, curGreen, curBlue, curColorBrightness, curBrightness);
+  setRGBW(curRed, curGreen, curBlue, curColorBrightness, curBrightness, toggle);
 }
 
 void RGBWBase::onSaveState() {
@@ -865,7 +963,7 @@ void RGBWBase::onLoadConfig(SuplaDeviceClass *sdc) {
     if (!cfg->getInt32(key, &rgbwButtonControlType)) {
       cfg->getInt32(Supla::Html::RgbwButtonTag, &rgbwButtonControlType);
     }
-    if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 3) {
+    if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {
       buttonControlType = static_cast<ButtonControlType>(rgbwButtonControlType);
     }
   }
@@ -886,6 +984,14 @@ void RGBWBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
   value->value[4] = curRed;
   SUPLA_LOG_DEBUG("RGBW fill: %d,%d,%d,%d,%d", curRed, curGreen, curBlue,
                   curColorBrightness, curBrightness);
+}
+
+int RGBWBase::getCurrentDimmerBrightness() const {
+  return curBrightness;
+}
+
+int RGBWBase::getCurrentRGBBrightness() const {
+  return curColorBrightness;
 }
 
 };  // namespace Control

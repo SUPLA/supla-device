@@ -48,6 +48,7 @@ set(SRCS
   supla/control/bistable_roller_shutter.cpp
   supla/control/tripple_button_roller_shutter.cpp
   supla/control/hvac_base.cpp
+  supla/control/group_button_control_rgbw.cpp
 
   supla/condition.cpp
   supla/condition_getter.cpp

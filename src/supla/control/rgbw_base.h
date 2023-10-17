@@ -47,13 +47,21 @@ class GeometricBrightnessAdjuster : public BrightnessAdjuster {
 class Button;
 
 class RGBWBase : public ChannelElement, public ActionHandler {
+ public:
   enum ButtonControlType {
     BUTTON_FOR_RGBW,
     BUTTON_FOR_RGB,
-    BUTTON_FOR_W
+    BUTTON_FOR_W,
+    BUTTON_NOT_USED
   };
 
- public:
+  enum class AutoIterateMode {
+    OFF,
+    DIMMER,
+    RGB,
+    ALL
+  };
+
   RGBWBase();
 
   virtual void setRGBWValueOnDevice(uint32_t red,
@@ -73,6 +81,9 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   virtual void turnOn();
   virtual void turnOff();
   virtual void toggle();
+  bool isOn();
+  bool isOnW();
+  bool isOnRGB();
   void handleAction(int event, int action) override;
   void setStep(int step);
   void setDefaultDimmedBrightness(int dimmedBrightness);
@@ -107,6 +118,8 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   virtual RGBWBase &setColorBrightnessLimits(int min, int max);
 
   void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
+  int getCurrentDimmerBrightness() const;
+  int getCurrentRGBBrightness() const;
 
  protected:
   uint8_t addWithLimit(int value, int addition, int limit = 255);
@@ -156,6 +169,9 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   bool valueChanged = true;
   Supla::Control::Button *attachedButton = nullptr;
   enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
+
+  enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;
+  uint32_t lastAutoIterateStartTimestamp = 0;
 };
 
 };  // namespace Control

@@ -1498,6 +1498,8 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   b1.addAction(Supla::TURN_OFF, ah, Supla::ON_HOLD, true);  // always enabled
   at.attach(b1);
   at.enableStateStorage();
+  at.disableATCapability(SUPLA_ACTION_CAP_TURN_ON);
+  at.disableATCapability(SUPLA_ACTION_CAP_TURN_OFF);
   at.disableATCapability(SUPLA_ACTION_CAP_HOLD);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x2);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x4);
@@ -1750,6 +1752,8 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   b1.addAction(Supla::TURN_OFF, ah, Supla::ON_HOLD, true);  // always enabled
   at.attach(b1);
   at.enableStateStorage();
+  at.disableATCapability(SUPLA_ACTION_CAP_TURN_ON);
+  at.disableATCapability(SUPLA_ACTION_CAP_TURN_OFF);
   at.disableATCapability(SUPLA_ACTION_CAP_HOLD);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x2);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x4);
@@ -1869,6 +1873,8 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   b1.addAction(Supla::TURN_OFF, ah, Supla::ON_HOLD, true);  // always enabled
   at.attach(b1);
   at.enableStateStorage();
+  at.disableATCapability(SUPLA_ACTION_CAP_TURN_ON);
+  at.disableATCapability(SUPLA_ACTION_CAP_TURN_OFF);
   at.disableATCapability(SUPLA_ACTION_CAP_HOLD);
   at.disableATCapability(SUPLA_ACTION_CAP_SHORT_PRESS_x2);
 

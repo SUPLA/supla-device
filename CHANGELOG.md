@@ -1,5 +1,24 @@
 # CHANGELOG.md
 
+## 23.10.01 (2023-10-17)
+
+  - Change: HVAC: rename "screensaver" -> "home screen"
+  - Fix: ESP-IDF MQTT: replace delay(0) with dedicated mutex in order to make sure that MQTT task will get CPU time ASAP
+  - Fix: HVAC: fix for disabling anti-freeze mode when thermostat is off
+  - Fix: BinaryBase: fix for handling channel config. Add handling of default invert state when config on server is missing
+  - Fix: HVAC: add clearing of temperature in struct when value is missing from server
+  - Fix: HVAC: anti-freeze function can be used only when heating mode is allowed. Overheat protection can be used only when cooling mode is allowed.
+  - Fix: HVAC: add aux setpoint min/aux and antifreeze/overheat validation and runtime fix of invalid values
+  - Fix: HVAC: init default temperature setpoint value after subfucntion change
+  - Fix: Storage: invalidate storage when deleteAll was called
+  - Add: HVAC: HVAC: add sending "timer state" extended channel value for timer function
+  - Add: HVAC: add handling of AuxSetpointMinMaxEnabled
+  - Add: HVAC: add button actions: TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES, TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES
+  - Add: MQTT: add support for Dimmer, RGB, and RGBW channel with Home Assistant MQTT Autodiscovery
+  - Add: RGBW, Dimmer, RGB: add support for commands (i.e. set only color, set brightness without turn on, etc.)
+  - Add: RGBW, RGB, Dimmer: add actions for starting and stopping brightness iteration (by server). Add option to disable button local action from local config.
+  - Add: GroupButtonControlRGBW: add class to handle group of RGBWs, RGBs, Dimmers by a single button
+
 ## 23.10 (2023-10-02)
 
   - Change: Correction: method "add" on temperature/humidity correction will modify existing correction if it was added earlier

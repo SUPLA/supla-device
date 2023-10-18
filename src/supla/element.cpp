@@ -61,6 +61,10 @@ Element *Element::last() {
 }
 
 Element *Element::getElementByChannelNumber(int channelNumber) {
+  if (channelNumber < 0) {
+    return nullptr;
+  }
+
   Element *element = begin();
   while (element != nullptr && element->getChannelNumber() != channelNumber) {
     element = element->next();

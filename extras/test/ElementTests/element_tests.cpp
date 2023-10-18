@@ -82,17 +82,15 @@ TEST_F(ElementTests, ElementListAdding) {
   EXPECT_EQ(Supla::Element::last(), el1);
 
   EXPECT_EQ(Supla::Element::getElementByChannelNumber(0), nullptr);
-  // Element without channel number acts as channel with -1 number
-  EXPECT_EQ(Supla::Element::getElementByChannelNumber(-1), el1);
+  EXPECT_EQ(Supla::Element::getElementByChannelNumber(-1), nullptr);
   EXPECT_EQ(Supla::Element::getElementByChannelNumber(10), nullptr);
-  
+
   auto el2 = new Supla::Element;
   EXPECT_EQ(Supla::Element::begin(), el1);
   EXPECT_EQ(Supla::Element::last(), el2);
 
   EXPECT_EQ(Supla::Element::getElementByChannelNumber(0), nullptr);
-  // Element without channel number acts as channel with -1 number
-  EXPECT_EQ(Supla::Element::getElementByChannelNumber(-1), el1);
+  EXPECT_EQ(Supla::Element::getElementByChannelNumber(-1), nullptr);
   EXPECT_EQ(Supla::Element::getElementByChannelNumber(10), nullptr);
 
   auto el3 = new Supla::Element;

@@ -72,7 +72,7 @@ class RemoteDeviceConfig {
   void processHomeScreenContentConfig(uint64_t fieldBit,
                                    TDeviceConfig_HomeScreenContent *config);
   void processHomeScreenDelayConfig(uint64_t fieldBit,
-                                    TDeviceConfig_HomeScreenDelay *config);
+                                    TDeviceConfig_HomeScreenOffDelay *config);
   void processAutomaticTimeSyncConfig(uint64_t fieldBit,
                                      TDeviceConfig_AutomaticTimeSync *config);
   void processDisableUserInterfaceConfig(
@@ -83,7 +83,8 @@ class RemoteDeviceConfig {
   void fillButtonVolumeConfig(TDeviceConfig_ButtonVolume *config) const;
   void fillHomeScreenContentConfig(
       TDeviceConfig_HomeScreenContent *config) const;
-  void fillHomeScreenDelayConfig(TDeviceConfig_HomeScreenDelay *config) const;
+  void fillHomeScreenDelayConfig(
+      TDeviceConfig_HomeScreenOffDelay *config) const;
   void fillAutomaticTimeSyncConfig(
       TDeviceConfig_AutomaticTimeSync *config) const;
   void fillDisableUserInterfaceConfig(

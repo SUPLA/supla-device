@@ -2094,7 +2094,7 @@ void HvacBase::saveConfig() {
 
     generateKey(key, "cfg_chng");
     if (channelConfigChangedOffline) {
-     cfg->setUInt8(key, 1);
+      cfg->setUInt8(key, 1);
     } else {
       cfg->setUInt8(key, 0);
     }

@@ -221,9 +221,9 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_AutomaticTimeSync);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_DELAY: {
-          SUPLA_LOG_DEBUG("Processing HomeScreenDelay config");
-          if (dataIndex + sizeof(TDeviceConfig_HomeScreenDelay) >
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY: {
+          SUPLA_LOG_DEBUG("Processing HomeScreenOffDelay config");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenOffDelay) >
               config->ConfigSize) {
             SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
             resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
@@ -231,9 +231,9 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           }
           processHomeScreenDelayConfig(
               fieldBit,
-              reinterpret_cast<TDeviceConfig_HomeScreenDelay *>(
+              reinterpret_cast<TDeviceConfig_HomeScreenOffDelay *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_HomeScreenDelay);
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelay);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_CONTENT: {
@@ -377,7 +377,7 @@ void RemoteDeviceConfig::processHomeScreenContentConfig(uint64_t fieldBit,
 }
 
 void RemoteDeviceConfig::processHomeScreenDelayConfig(uint64_t fieldBit,
-    TDeviceConfig_HomeScreenDelay *config) {
+    TDeviceConfig_HomeScreenOffDelay *config) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (config == nullptr || cfg == nullptr) {
     return;
@@ -391,8 +391,8 @@ void RemoteDeviceConfig::processHomeScreenDelayConfig(uint64_t fieldBit,
     value = 65535;
   }
 
-  if (value != config->HomeScreenDelayS) {
-    SUPLA_LOG_INFO("Setting HomeScreenDelay to %d", value);
+  if (value != config->HomeScreenOffDelayS) {
+    SUPLA_LOG_INFO("Setting HomeScreenOffDelay to %d", value);
     cfg->setInt32(Supla::Html::ScreenDelayCfgTag, value);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
@@ -507,7 +507,7 @@ void RemoteDeviceConfig::fillHomeScreenContentConfig(
 }
 
 void RemoteDeviceConfig::fillHomeScreenDelayConfig(
-    TDeviceConfig_HomeScreenDelay *config) const {
+    TDeviceConfig_HomeScreenOffDelay *config) const {
   if (config == nullptr) {
     return;
   }
@@ -523,8 +523,8 @@ void RemoteDeviceConfig::fillHomeScreenDelayConfig(
     }
     uint16_t delayS = value;
     SUPLA_LOG_DEBUG(
-        "Setting HomeScreenDelay to %d (0x%02X)", delayS, delayS);
-    config->HomeScreenDelayS = delayS;
+        "Setting HomeScreenOffDelay to %d (0x%02X)", delayS, delayS);
+    config->HomeScreenOffDelayS = delayS;
   }
 }
 
@@ -648,17 +648,17 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_AutomaticTimeSync);
           break;
         }
-        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_DELAY: {
-          SUPLA_LOG_DEBUG("Adding HomeScreenDelay config field");
-          if (dataIndex + sizeof(TDeviceConfig_HomeScreenDelay) >
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY: {
+          SUPLA_LOG_DEBUG("Adding HomeScreenOffDelay config field");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenOffDelay) >
               SUPLA_DEVICE_CONFIG_MAXSIZE) {
             SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
             return false;
           }
           fillHomeScreenDelayConfig(
-              reinterpret_cast<TDeviceConfig_HomeScreenDelay *>(
+              reinterpret_cast<TDeviceConfig_HomeScreenOffDelay *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_HomeScreenDelay);
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelay);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_CONTENT: {

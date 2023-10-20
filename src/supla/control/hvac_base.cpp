@@ -2819,6 +2819,11 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
     return false;
   }
 
+  if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF ||
+      channel.getHvacMode() == SUPLA_HVAC_MODE_NOT_SET) {
+    return false;
+  }
+
   auto type = getAuxThermometerType();
 
   if (type != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET &&

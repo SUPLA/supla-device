@@ -32,6 +32,7 @@
 #include <supla/element.h>
 #include <supla/protocol/mqtt_topic.h>
 #include <supla/sensor/electricity_meter.h>
+#include <supla/control/hvac_base.h>
 
 using Supla::Protocol::Mqtt;
 
@@ -316,7 +317,6 @@ void Mqtt::publishColor(const char *topic,
   publish(topic, buf, qos, retain);
 }
 
-
 void Supla::Protocol::Mqtt::subscribe(const char *topic, int qos) {
   if (prefix == nullptr) {
     SUPLA_LOG_ERROR("Mqtt: publish error, prefix not initialized");
@@ -436,6 +436,59 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
                    ch->getValueBlue(),
                    -1,
                    1);
+      break;
+    }
+
+    case SUPLA_CHANNELTYPE_HVAC: {
+      if (ch->isHvacFlagHeating()) {
+        publish((topic / "action").c_str(), "heating", -1, 1);
+      } else if (ch->isHvacFlagCooling()) {
+        publish((topic / "action").c_str(), "cooling", -1, 1);
+      } else if (ch->getHvacMode() == SUPLA_HVAC_MODE_OFF ||
+          ch->getHvacMode() == SUPLA_HVAC_MODE_NOT_SET) {
+        publish((topic / "action").c_str(), "off", -1, 1);
+      } else {
+        publish((topic / "action").c_str(), "idle", -1, 1);
+      }
+      if (ch->isHvacFlagWeeklySchedule()) {
+        publish((topic / "mode").c_str(), "auto", -1, 1);
+      } else {
+        switch (ch->getHvacMode()) {
+          case SUPLA_HVAC_MODE_HEAT: {
+            publish((topic / "mode").c_str(), "heat", -1, 1);
+            break;
+          }
+          case SUPLA_HVAC_MODE_COOL: {
+            publish((topic / "mode").c_str(), "cool", -1, 1);
+            break;
+          }
+          case SUPLA_HVAC_MODE_AUTO: {
+            publish((topic / "mode").c_str(), "heat_cool", -1, 1);
+            break;
+          }
+          case SUPLA_HVAC_MODE_OFF:
+          case SUPLA_HVAC_MODE_NOT_SET:
+          default: {
+            publish((topic / "mode").c_str(), "off", -1, 1);
+            break;
+          }
+        }
+      }
+      if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
+      // publish heat and cool temp
+      } else {
+        int16_t tempreatureSetpoint = ch->getHvacSetpointTemperatureHeat();
+        if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+            ch->getHvacFlagCoolSubfunction() ==
+                HvacCoolSubfunctionFlag::CoolSubfunction) {
+          tempreatureSetpoint = ch->getHvacSetpointTemperatureCool();
+        }
+        publishDouble((topic / "temperature_setpoint").c_str(),
+                      static_cast<double>(tempreatureSetpoint) / 100.0,
+                      -1,
+                      1,
+                      2);
+      }
       break;
     }
 
@@ -621,6 +674,13 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
       subscribe((topic / "set" / "color").c_str());
       break;
     }
+    case SUPLA_CHANNELTYPE_HVAC: {
+      subscribe((topic / "execute_action").c_str());
+      subscribe((topic / "set" / "temperature_setpoint").c_str());
+      subscribe((topic / "set" / "temperature_setpoint_heat").c_str());
+      subscribe((topic / "set" / "temperature_setpoint_cool").c_str());
+      break;
+    }
 
     default:
       SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
@@ -684,151 +744,26 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
     SUPLA_LOG_DEBUG("Mqtt: failed to load channel object");
     return false;
   }
-
-  TSD_SuplaChannelNewValue newValue = {};
-  element->fillSuplaChannelNewValue(&newValue);
-
   switch (ch->getChannelType()) {
     // Relay
     case SUPLA_CHANNELTYPE_RELAY: {
-      if (strcmp(part, "set/on") == 0) {
-        if (isPayloadOn(payload)) {
-          newValue.value[0] = 1;
-        } else {
-          newValue.value[0] = 0;
-        }
-        element->handleNewValueFromServer(&newValue);
-      } else if (strcmp(part, "execute_action") == 0) {
-        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[0] = 1;
-          element->handleNewValueFromServer(&newValue);
-        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[0] = 0;
-          element->handleNewValueFromServer(&newValue);
-        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[0] = ch->getValueBool() ? 0 : 1;
-          element->handleNewValueFromServer(&newValue);
-        } else {
-          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
-        }
-      } else {
-        SUPLA_LOG_DEBUG("Mqtt: received unsupported topic %s", part);
-      }
+      processRelayRequest(part, payload, element);
       break;
     }
-
     case SUPLA_CHANNELTYPE_DIMMER: {
-      if (strcmp(part, "set/brightness") == 0) {
-        int brightness = stringToInt(payload);
-        if (brightness >= 0 && brightness <= 100) {
-          newValue.value[0] = brightness;
-          newValue.value[6] = RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON;
-          element->handleNewValueFromServer(&newValue);
-        }
-      } else if (strcmp(part, "execute_action") == 0) {
-        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
-          element->handleNewValueFromServer(&newValue);
-        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
-          element->handleNewValueFromServer(&newValue);
-        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
-        } else {
-          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
-          break;
-        }
-        element->handleNewValueFromServer(&newValue);
-      }
+      processDimmerRequest(part, payload, element);
       break;
     }
     case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
-      if (strcmp(part, "set/color_brightness") == 0) {
-        int brightness = stringToInt(payload);
-        if (brightness >= 0 && brightness <= 100) {
-          newValue.value[1] = brightness;
-          newValue.value[6] = RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON;
-          element->handleNewValueFromServer(&newValue);
-        }
-      } else if (strcmp(part, "execute_action") == 0) {
-        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_ON_RGB;
-        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_OFF_RGB;
-        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TOGGLE_RGB;
-        } else {
-          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
-          break;
-        }
-        element->handleNewValueFromServer(&newValue);
-      } else if (strcmp(part, "set/color") == 0) {
-        SUPLA_LOG_DEBUG("PAYLOAD %s", payload);
-        uint8_t red = 0;
-        uint8_t green = 0;
-        uint8_t blue = 0;
-        if (stringToColor(payload, &red, &green, &blue)) {
-          newValue.value[2] = blue;
-          newValue.value[3] = green;
-          newValue.value[4] = red;
-          newValue.value[6] = RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON;
-          element->handleNewValueFromServer(&newValue);
-        }
-      }
+      processRGBWRequest(part, payload, element);
       break;
     }
     case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
-      if (strcmp(part, "set/color_brightness") == 0) {
-        int brightness = stringToInt(payload);
-        if (brightness >= 0 && brightness <= 100) {
-          newValue.value[1] = brightness;
-          newValue.value[6] = RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON;
-          element->handleNewValueFromServer(&newValue);
-        }
-      } else if (strcmp(part, "set/brightness") == 0) {
-        int brightness = stringToInt(payload);
-        if (brightness >= 0 && brightness <= 100) {
-          newValue.value[0] = brightness;
-          newValue.value[6] = RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON;
-          element->handleNewValueFromServer(&newValue);
-        }
-      } else if (strcmp(part, "execute_action/rgb") == 0) {
-        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_ON_RGB;
-        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_OFF_RGB;
-        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TOGGLE_RGB;
-        } else {
-          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
-          break;
-        }
-        element->handleNewValueFromServer(&newValue);
-      } else if (strcmp(part, "execute_action/dimmer") == 0) {
-        if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
-        } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
-        } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
-          newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
-        } else {
-          SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
-          break;
-        }
-        element->handleNewValueFromServer(&newValue);
-      } else if (strcmp(part, "set/color") == 0) {
-        SUPLA_LOG_DEBUG("PAYLOAD %s", payload);
-        uint8_t red = 0;
-        uint8_t green = 0;
-        uint8_t blue = 0;
-        if (stringToColor(payload, &red, &green, &blue)) {
-          newValue.value[2] = blue;
-          newValue.value[3] = green;
-          newValue.value[4] = red;
-          newValue.value[6] = RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON;
-          element->handleNewValueFromServer(&newValue);
-        }
-      }
+      processRGBWRequest(part, payload, element);
+      break;
+    }
+    case SUPLA_CHANNELTYPE_HVAC: {
+      processHVACRequest(part, payload, element);
       break;
     }
     // TODO(klew): add here more channel types
@@ -917,6 +852,11 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
       publishHADiscoveryRGB(element);
       break;
     }
+    case SUPLA_CHANNELTYPE_HVAC: {
+      publishHADiscoveryHVAC(element);
+      break;
+    }
+    // TODO(klew): add more channels here
     default:
       SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
           ch->getChannelType());
@@ -1849,4 +1789,382 @@ void Mqtt::publishHADiscoveryDimmer(Supla::Element *element) {
   publish(topic.c_str(), payload, -1, 1, true);
 
   delete[] payload;
+}
+
+void Mqtt::processRelayRequest(const char *part,
+                               const char *payload,
+                               Supla::Element *element) {
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+
+  if (strcmp(part, "set/on") == 0) {
+    if (isPayloadOn(payload)) {
+      newValue.value[0] = 1;
+    } else {
+      newValue.value[0] = 0;
+    }
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(part, "execute_action") == 0) {
+    if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+      newValue.value[0] = 1;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+      newValue.value[0] = 0;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+      newValue.value[0] = element->getChannel()->getValueBool() ? 0 : 1;
+      element->handleNewValueFromServer(&newValue);
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+    }
+  } else {
+    SUPLA_LOG_DEBUG("Mqtt: received unsupported topic %s", part);
+  }
+}
+
+void Mqtt::processRGBWRequest(const char *part,
+                              const char *payload,
+                              Supla::Element *element) {
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+
+  if (strcmp(part, "set/color_brightness") == 0) {
+    int brightness = stringToInt(payload);
+    if (brightness >= 0 && brightness <= 100) {
+      newValue.value[1] = brightness;
+      newValue.value[6] = RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    }
+  } else if (strcmp(part, "set/brightness") == 0) {
+    int brightness = stringToInt(payload);
+    if (brightness >= 0 && brightness <= 100) {
+      newValue.value[0] = brightness;
+      newValue.value[6] = RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    }
+  } else if (strcmp(part, "execute_action/rgb") == 0) {
+    if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_ON_RGB;
+    } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_OFF_RGB;
+    } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TOGGLE_RGB;
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+      return;
+    }
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(part, "execute_action/dimmer") == 0) {
+    if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
+    } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
+    } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+      return;
+    }
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(part, "set/color") == 0) {
+    SUPLA_LOG_DEBUG("PAYLOAD %s", payload);
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+    if (stringToColor(payload, &red, &green, &blue)) {
+      newValue.value[2] = blue;
+      newValue.value[3] = green;
+      newValue.value[4] = red;
+      newValue.value[6] = RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    }
+  }
+}
+
+void Mqtt::processRGBRequest(const char *part,
+                             const char *payload,
+                             Supla::Element *element) {
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+
+  if (strcmp(part, "set/color_brightness") == 0) {
+    int brightness = stringToInt(payload);
+    if (brightness >= 0 && brightness <= 100) {
+      newValue.value[1] = brightness;
+      newValue.value[6] = RGBW_COMMAND_SET_COLOR_BRIGHTNESS_WITHOUT_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    }
+  } else if (strcmp(part, "execute_action") == 0) {
+    if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_ON_RGB;
+    } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_OFF_RGB;
+    } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TOGGLE_RGB;
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+      return;
+    }
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(part, "set/color") == 0) {
+    SUPLA_LOG_DEBUG("PAYLOAD %s", payload);
+    uint8_t red = 0;
+    uint8_t green = 0;
+    uint8_t blue = 0;
+    if (stringToColor(payload, &red, &green, &blue)) {
+      newValue.value[2] = blue;
+      newValue.value[3] = green;
+      newValue.value[4] = red;
+      newValue.value[6] = RGBW_COMMAND_SET_RGB_WITHOUT_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    }
+  }
+}
+
+void Mqtt::processDimmerRequest(const char *part,
+                                const char *payload,
+                                Supla::Element *element) {
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+
+  if (strcmp(part, "set/brightness") == 0) {
+    int brightness = stringToInt(payload);
+    if (brightness >= 0 && brightness <= 100) {
+      newValue.value[0] = brightness;
+      newValue.value[6] = RGBW_COMMAND_SET_BRIGHTNESS_WITHOUT_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    }
+  } else if (strcmp(part, "execute_action") == 0) {
+    if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_ON_DIMMER;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "turn_off", 9) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TURN_OFF_DIMMER;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+      newValue.value[6] = RGBW_COMMAND_TOGGLE_DIMMER;
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+      return;
+    }
+    element->handleNewValueFromServer(&newValue);
+  }
+}
+
+void Mqtt::publishHADiscoveryHVAC(Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto hvac = reinterpret_cast<Supla::Control::HvacBase *>(element);
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), 0);
+
+  // generate topics for related thermometer and hygrometer channels
+  char temperatureTopic[100] = "None";
+  char humidityTopic[100] = "None";
+  auto tempChannelNo = hvac->getMainThermometerChannelNo();
+  if (tempChannelNo != element->getChannelNumber()) {
+    snprintf(temperatureTopic,
+             sizeof(temperatureTopic),
+             "%s/channels/%i/state/temperature",
+             prefix, tempChannelNo);
+
+    auto thermometerEl =
+        Supla::Element::getElementByChannelNumber(tempChannelNo);
+    if (thermometerEl != nullptr &&
+        thermometerEl->getChannel()->getChannelType() ==
+            SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR) {
+      snprintf(humidityTopic,
+          sizeof(humidityTopic),
+          "%s/channels/%i/state/humidity",
+          prefix, tempChannelNo);
+    }
+  }
+
+  auto topic = getHADiscoveryTopic("climate", objectId);
+  int16_t tempMin = hvac->getTemperatureRoomMin();
+  int16_t tempMax = hvac->getTemperatureRoomMax();
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i Thermostat\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"action_topic\":\"~/state/action\","   // off, heating, cooling, drying,
+                                               // idle, fan.
+      "\"current_temperature_topic\":\"%s\","  // link to temperature sensor
+      "\"current_humidity_topic\":\"%s\","  // link to humidity sensor
+      "\"max_temp\":\"%.2f\","
+      "\"min_temp\":\"%.2f\","
+      "\"modes\":["
+        "\"off\","
+        "\"auto\","  // auto == weekly schedule
+        "%s"  // remaining supported modes (depends on function)
+        "],"
+      "\"mode_stat_t\":\"~/state/mode\","
+      "\"mode_command_topic\":\"~/execute_action\","
+      "\"power_command_topic\":\"~/execute_action\","
+      "\"payload_off\":\"turn_off\","
+      "\"payload_on\":\"turn_on\","
+      "\"temperature_unit\":\"C\","
+      "\"temp_step\":\"0.1\","
+      "%s"  // tempearture setpoints
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(
+            i ? payload : &c,
+            i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            element->getChannelNumber(),
+            objectId,
+            temperatureTopic,
+            humidityTopic,
+            static_cast<double>(tempMax) / 100.0,
+            static_cast<double>(tempMin) / 100.0,
+            (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO
+                 ? "\"heat\",\"cool\",\"heat_cool\""
+                 :
+                 (hvac->isCoolingSubfunction()
+                  ? "\"cool\"" : "\"heat\"")),
+            (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO
+                 ? "\"temperature_high_command_topic\":\""
+                   "~/set/temperature_setpoint_cool/\","
+                   "\"temperature_high_state_topic\":\""
+                   "~/state/temperature_setpoint_cool/\","
+                   "\"temperature_low_command_topic\":\""
+                   "~/set/temperature_setpoint_heat/\","
+                   "\"temperature_low_state_topic\":\""
+                   "~/state/temperature_setpoint_heat/\""
+                 : "\"temperature_command_topic\":\""
+                   "~/set/temperature_setpoint\","
+                   "\"temperature_state_topic\":\""
+                   "~/state/temperature_setpoint\"")) +
+        1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
+void Mqtt::processHVACRequest(const char *topic,
+                              const char *payload,
+                              Supla::Element *element) {
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+  THVACValue *hvacValue = reinterpret_cast<THVACValue *>(newValue.value);
+
+  if (strcmp(topic, "set/temperature_setpoint_heat") == 0) {
+    int32_t value = floatStringToInt(payload, 2);
+    if (value < INT16_MIN || value > INT16_MAX) {
+      return;
+    }
+    hvacValue->SetpointTemperatureHeat = value;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(topic, "set/temperature_setpoint_cool") == 0) {
+    int32_t value = floatStringToInt(payload, 2);
+    if (value < INT16_MIN || value > INT16_MAX) {
+      return;
+    }
+    hvacValue->SetpointTemperatureCool = value;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(topic, "set/temperature_setpoint") == 0) {
+    int32_t value = floatStringToInt(payload, 2);
+    if (value < INT16_MIN || value > INT16_MAX) {
+      return;
+    }
+    if (element && element->getChannel() &&
+        element->getChannel()->getHvacFlagCoolSubfunction() ==
+            HvacCoolSubfunctionFlag::CoolSubfunction) {
+      hvacValue->SetpointTemperatureCool = value;
+      hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
+      element->handleNewValueFromServer(&newValue);
+      return;
+    }
+    hvacValue->SetpointTemperatureHeat = value;
+    hvacValue->Flags |= SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(topic, "execute_action") == 0) {
+    if (strncmpInsensitive(payload, "turn_on", 8) == 0) {
+      hvacValue->Mode = SUPLA_HVAC_MODE_CMD_TURN_ON;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "turn_off", 9) == 0 ||
+        strncmpInsensitive(payload, "off", 4) == 0) {
+      hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
+      if (element && element->getChannel() &&
+          element->getChannel()->getHvacIsOn() != 0) {
+        hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
+      } else {
+        hvacValue->Mode = SUPLA_HVAC_MODE_CMD_TURN_ON;
+      }
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "auto", 5) == 0) {
+      hvacValue->Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "heat", 5) == 0) {
+      hvacValue->Mode = SUPLA_HVAC_MODE_HEAT;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "cool", 5) == 0) {
+      hvacValue->Mode = SUPLA_HVAC_MODE_COOL;
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "heat_cool", 10) == 0) {
+      hvacValue->Mode = SUPLA_HVAC_MODE_AUTO;
+      element->handleNewValueFromServer(&newValue);
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+    }
+  } else {
+    SUPLA_LOG_DEBUG("Mqtt: received unsupported topic %s", topic);
+  }
+}
+
+void Mqtt::notifyConfigChange(int channelNumber) {
+  if (channelNumber >= 0 && channelNumber < 255) {
+    // set bit on configChangedBit[8]:
+    configChangedBit[channelNumber / 8] |= (1 << (channelNumber % 8));
+  }
 }

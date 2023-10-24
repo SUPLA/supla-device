@@ -258,6 +258,16 @@ void Supla::Protocol::EspMqtt::disconnect() {
   enterRegisteredAndReady = false;
 }
 
+void Supla::Protocol::EspMqtt::publishChannelSetup(int channelNumber) {
+  if (channelNumber < 0 || channelNumber >= channelsCount) {
+    return;
+  }
+  publishHADiscovery(channelNumber);
+  subscribeChannel(channelNumber);
+  publishChannelState(channelNumber);
+  configChangedBit[channelNumber / 8] &= ~(1 << (channelNumber % 8));
+}
+
 bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
   (void)(_millis);
   if (!isEnabled()) {
@@ -285,9 +295,24 @@ bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
       lastStatusUpdateSec = uptime.getConnectionUptime();
 
       for (int i = 0; i < channelsCount; i++) {
-        publishHADiscovery(i);
-        subscribeChannel(i);
-        publishChannelState(i);
+        publishChannelSetup(i);
+      }
+    }
+
+    // check if any configChangedBit is set
+    bool anyConfigChanged = false;
+    for (int i = 0; i < sizeof(configChangedBit) / sizeof(configChangedBit[0]);
+         i++) {
+      if (configChangedBit[i] != 0) {
+        anyConfigChanged = true;
+        break;
+      }
+    }
+    if (anyConfigChanged) {
+      for (int i = 0; i < channelsCount; i++) {
+        if (configChangedBit[i / 8] & (1 << (i % 8))) {
+          publishChannelSetup(i);
+        }
       }
     }
 
@@ -326,6 +351,7 @@ void Supla::Protocol::EspMqtt::setRegisteredAndReady() {
   enterRegisteredAndReady = true;
   uptime.resetConnectionUptime();
   lastStatusUpdateSec = 0;
+  memset(configChangedBit, 0, sizeof(configChangedBit));
 }
 
 void Supla::Protocol::EspMqtt::publishImp(const char *topic,

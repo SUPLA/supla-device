@@ -75,6 +75,7 @@ class ProtocolLayer {
   virtual bool setChannelConfig(uint8_t channelNumber,
       _supla_int_t channelFunction, void *channelConfig, int size,
       uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT);
+  virtual void notifyConfigChange(int channelNumber);
 
   virtual bool setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
 

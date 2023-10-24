@@ -2101,6 +2101,10 @@ void HvacBase::saveConfig() {
 
     cfg->saveWithDelay(5000);
   }
+  for (auto proto = Supla::Protocol::ProtocolLayer::first();
+      proto != nullptr; proto = proto->next()) {
+    proto->notifyConfigChange(getChannelNumber());
+  }
 }
 
 void HvacBase::saveWeeklySchedule() {

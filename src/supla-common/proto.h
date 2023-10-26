@@ -1971,7 +1971,7 @@ typedef struct {
   char R;
   char onOff;
   char command;  // RGBW_COMMAND_, requires
-                 // SUPLA_CHANNEL_FLAG_RGBW_SET_LEVEL_WITHOUT_SWITCHING_ON
+                 // SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED v. >= 21
 } TRGBW_Value;  // v. >= 10
 
 #define SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF 0x1
@@ -2438,6 +2438,10 @@ typedef struct {
 typedef struct {
   unsigned char DisableUserInterface;  // 0 - false (local UI enabled)
                                        // 1 - true (local UI disabled)
+                                       // 2 - partial
+  // min/max allowed parameters are mandatory for "partial" variant
+  unsigned _supla_int16_t minAllowedTemperatureSetpointFromLocalUI;
+  unsigned _supla_int16_t maxAllowedTemperatureSetpointFromLocalUI;
 } TDeviceConfig_DisableUserInterface;  // v. >= 21
 
 typedef struct {

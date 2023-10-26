@@ -142,8 +142,60 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
     return;
   }
 
+  // check size first
   int dataIndex = 0;
   uint64_t fieldBit = 1;
+  while (dataIndex < config->ConfigSize && fieldBit) {
+    if (fieldBit & config->Fields) {
+      switch (fieldBit) {
+        case SUPLA_DEVICE_CONFIG_FIELD_STATUS_LED: {
+          dataIndex += sizeof(TDeviceConfig_StatusLed);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS: {
+          dataIndex += sizeof(TDeviceConfig_ScreenBrightness);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_BUTTON_VOLUME: {
+          dataIndex += sizeof(TDeviceConfig_ButtonVolume);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_DISABLE_USER_INTERFACE: {
+          dataIndex += sizeof(TDeviceConfig_DisableUserInterface);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC: {
+          dataIndex += sizeof(TDeviceConfig_AutomaticTimeSync);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY: {
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelay);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_CONTENT: {
+          dataIndex += sizeof(TDeviceConfig_HomeScreenContent);
+          break;
+        }
+        default: {
+          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
+                            fieldBit);
+          resultCode = SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+          return;
+        }
+      }
+    }
+    fieldBit <<= 1;
+  }
+  if (dataIndex != config->ConfigSize) {
+    SUPLA_LOG_WARNING(
+        "RemoteDeviceConfig: precheck failed - invalid ConfigSize");
+    resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
+    return;
+  }
+
+  // actual parsing of DeviceConfig
+  dataIndex = 0;
+  fieldBit = 1;
   while (dataIndex < config->ConfigSize) {
     if (fieldBit & config->Fields) {
       switch (fieldBit) {
@@ -420,16 +472,38 @@ void RemoteDeviceConfig::processDisableUserInterfaceConfig(uint64_t fieldBit,
     TDeviceConfig_DisableUserInterface *config) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
+    bool change = false;
     uint8_t value = 0;
+    int32_t minTempUI = 0;
+    int32_t maxTempUI = 0;
     cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
+    cfg->getInt32(Supla::Html::MinTempUICfgTag, &minTempUI);
+    cfg->getInt32(Supla::Html::MaxTempUICfgTag, &maxTempUI);
     if (value != config->DisableUserInterface &&
-        config->DisableUserInterface <= 1) {
+        config->DisableUserInterface <= 2) {
       SUPLA_LOG_INFO("Setting DisableUserInterface to %d",
                      config->DisableUserInterface);
       cfg->setUInt8(Supla::Html::DisableUserInterfaceCfgTag,
                     config->DisableUserInterface);
-      cfg->saveWithDelay(1000);
+      change = true;
+    }
+    if (minTempUI != config->minAllowedTemperatureSetpointFromLocalUI) {
+      SUPLA_LOG_INFO("Setting minAllowedTemperatureSetpointFromLocalUI to %d",
+                     config->minAllowedTemperatureSetpointFromLocalUI);
+      cfg->setInt32(Supla::Html::MinTempUICfgTag,
+                    config->minAllowedTemperatureSetpointFromLocalUI);
+      change = true;
+    }
+    if (maxTempUI != config->maxAllowedTemperatureSetpointFromLocalUI) {
+      SUPLA_LOG_INFO("Setting maxAllowedTemperatureSetpointFromLocalUI to %d",
+                     config->maxAllowedTemperatureSetpointFromLocalUI);
+      cfg->setInt32(Supla::Html::MaxTempUICfgTag,
+                    config->maxAllowedTemperatureSetpointFromLocalUI);
+      change = true;
+    }
 
+    if (change) {
+      cfg->saveWithDelay(1000);
       Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
     }
   }
@@ -552,10 +626,32 @@ void RemoteDeviceConfig::fillDisableUserInterfaceConfig(
     return;
   }
   uint8_t value = 0;
+  int32_t minTempUI = 0;
+  int32_t maxTempUI = 0;
   cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
-  if (value > 1) {
-    value = 1;
+  cfg->getInt32(Supla::Html::MinTempUICfgTag, &minTempUI);
+  cfg->getInt32(Supla::Html::MaxTempUICfgTag, &maxTempUI);
+  if (value > 2) {
+    value = 2;
   }
+  if (minTempUI < INT16_MIN) {
+    minTempUI = INT16_MIN;
+  }
+  if (minTempUI > INT16_MAX) {
+    minTempUI = INT16_MAX;
+  }
+  if (maxTempUI < INT16_MIN) {
+    maxTempUI = INT16_MIN;
+  }
+  if (maxTempUI > INT16_MAX) {
+    maxTempUI = INT16_MAX;
+  }
+  SUPLA_LOG_DEBUG("Setting minAllowedTemperatureSetpointFromLocalUI to %d",
+                  minTempUI);
+  config->minAllowedTemperatureSetpointFromLocalUI = minTempUI;
+  SUPLA_LOG_DEBUG("Setting maxAllowedTemperatureSetpointFromLocalUI to %d",
+                  maxTempUI);
+  config->maxAllowedTemperatureSetpointFromLocalUI = maxTempUI;
   SUPLA_LOG_DEBUG("Setting DisableUserInterface to %d", value);
   config->DisableUserInterface = value;
 }

@@ -25,6 +25,7 @@
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
+#include <stdio.h>
 
 using Supla::Html::DisableUserInterfaceParameter;
 
@@ -42,52 +43,159 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
     cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
 
     // form-field BEGIN
-    sender->send("<div class=\"form-field right-checkbox\">");
+    sender->send("<div class=\"form-field\">");
     sender->sendLabelFor(Supla::Html::DisableUserInterfaceCfgTag,
-                         "Disable local user interface");
-    sender->send("<label>");
-    sender->send("<div class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(checked(value == 1));
+                         "Local interface restriction");
+    sender->send("<select ");
     sender->sendNameAndId(Supla::Html::DisableUserInterfaceCfgTag);
-    sender->send(">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</div>");
-    sender->send("</label>");
+    sender->send(" onchange=\"disableUserInterfaceChange();\">");
+    sender->send("<option value=\"0\"");
+    if (value == 0) {
+      sender->send(" selected");
+    }
+    sender->send(">NONE</option>");
+    sender->send("<option value=\"1\"");
+    if (value == 1) {
+      sender->send(" selected");
+    }
+    sender->send(">FULL</option>");
+    sender->send("<option value=\"2\"");
+    if (value == 2) {
+      sender->send(" selected");
+    }
+    sender->send(">Allow temperature change</option>");
+    sender->send("</select>");
     sender->send("<p>Warning: you can enter config mode only from Cloud, "
         "local user interface, and by power cycling the device 3 times.</p>");
     sender->send("</div>");
+    // form-field END
+
+    sender->send(
+        "<script>"
+        "function disableUserInterfaceChange(){"
+        "var e=document.getElementById(\"disable_ui\"),"
+        "c=document.getElementById(\"min_max_temp_ui\"),"
+        "l=\"2\"==e.value?\"block\":\"none\";"
+        "c.style.display=l;}"
+        "</script>");
+
     // form-field BEGIN
+    sender->send("<div id=\"min_max_temp_ui\" ");
+    if (value == 2) {
+      sender->send("style=\"display:block;\">");
+    } else {
+      sender->send("style=\"display:none;\">");
+    }
+    int32_t minTempUI = 0;
+    cfg->getInt32(Supla::Html::MinTempUICfgTag, &minTempUI);
+    if (minTempUI < INT16_MIN) {
+      minTempUI = INT16_MIN;
+    }
+    if (minTempUI > INT16_MAX) {
+      minTempUI = INT16_MAX;
+    }
+
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(Supla::Html::MinTempUICfgTag,
+                         "Interface minimum temperature");
+    sender->send("<div>");
+    sender->send("<input type=\"number\" step=\"0.1\" ");
+    sender->sendNameAndId(Supla::Html::MinTempUICfgTag);
+    sender->send(" value=\"");
+    char buf[100] = {};
+    snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(minTempUI) / 100.0);
+    sender->send(buf);
+    sender->send("\">");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
+
+    // form-field BEGIN
+    int32_t maxTempUI = 0;
+    cfg->getInt32(Supla::Html::MaxTempUICfgTag, &maxTempUI);
+    if (maxTempUI < INT16_MIN) {
+      maxTempUI = INT16_MIN;
+    }
+    if (maxTempUI > INT16_MAX) {
+      maxTempUI = INT16_MAX;
+    }
+
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(Supla::Html::MaxTempUICfgTag,
+                         "Interface maximum temperature");
+    sender->send("<div>");
+    sender->send("<input type=\"number\" step=\"0.1\" ");
+    sender->sendNameAndId(Supla::Html::MaxTempUICfgTag);
+    sender->send(" value=\"");
+    snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(maxTempUI) / 100.0);
+    sender->send(buf);
+    sender->send("\"></div></div></div>");
+    // form-field END
   }
 }
 
 bool DisableUserInterfaceParameter::handleResponse(const char* key,
-                                                   const char* value) {
+    const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg && strcmp(key, Supla::Html::DisableUserInterfaceCfgTag) == 0) {
-    checkboxFound = true;
+  if (!cfg) {
+    return false;
+  }
+  if (strcmp(key, Supla::Html::DisableUserInterfaceCfgTag) == 0) {
     uint8_t currentValue = 0;  // default value
     cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &currentValue);
+    uint8_t newValue = stringToUInt(value);
+    if (newValue > 2) {
+      newValue = 2;
+    }
 
-    uint8_t disableUI = (strcmp(value, "on") == 0 ? 1 : 0);
-
-    if (disableUI != currentValue) {
-      cfg->setUInt8(Supla::Html::DisableUserInterfaceCfgTag, disableUI);
-      cfg->setDeviceConfigChangeFlag();
-      Supla::Element::NotifyElementsAboutConfigChange(
-          SUPLA_DEVICE_CONFIG_FIELD_DISABLE_USER_INTERFACE);
+    if (newValue != currentValue) {
+      cfg->setUInt8(Supla::Html::DisableUserInterfaceCfgTag, newValue);
+      change = true;
     }
     return true;
+  }
+  if (strcmp(key, Supla::Html::MinTempUICfgTag) == 0) {
+    int32_t currentValue = 0;
+    cfg->getInt32(Supla::Html::MinTempUICfgTag, &currentValue);
+    int32_t minTempUI = floatStringToInt(value, 2);
+    if (minTempUI < INT16_MIN) {
+      minTempUI = INT16_MIN;
+    }
+    if (minTempUI > INT16_MAX) {
+      minTempUI = INT16_MAX;
+    }
+    if (minTempUI != currentValue) {
+      cfg->setInt32(Supla::Html::MinTempUICfgTag, minTempUI);
+      change = true;
+    }
+    return true;
+  }
+  if (strcmp(key, Supla::Html::MaxTempUICfgTag) == 0) {
+    int32_t currentValue = 0;
+    cfg->getInt32(Supla::Html::MaxTempUICfgTag, &currentValue);
+    int32_t maxTempUI = floatStringToInt(value, 2);
+
+    if (maxTempUI < INT16_MIN) {
+      maxTempUI = INT16_MIN;
+    }
+    if (maxTempUI > INT16_MAX) {
+      maxTempUI = INT16_MAX;
+    }
+    if (maxTempUI != currentValue) {
+      cfg->setInt32(Supla::Html::MaxTempUICfgTag, maxTempUI);
+      change = true;
+    }
   }
   return false;
 }
 
 void DisableUserInterfaceParameter::onProcessingEnd() {
-  if (!checkboxFound) {
-    // checkbox doesn't send value when it is not checked, so on processing end
-    // we check if it was found earlier, and if not, then we process it as "off"
-    handleResponse(Supla::Html::DisableUserInterfaceCfgTag, "off");
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (change && cfg) {
+    cfg->setDeviceConfigChangeFlag();
+    Supla::Element::NotifyElementsAboutConfigChange(
+        SUPLA_DEVICE_CONFIG_FIELD_DISABLE_USER_INTERFACE);
   }
-  checkboxFound = false;
+  change = false;
 }
 

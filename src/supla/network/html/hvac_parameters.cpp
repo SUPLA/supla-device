@@ -177,8 +177,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   auto tHeat = hvac->getTemperatureSetpointHeat();
   if (tHeat != INT16_MIN) {
     char buf[100] = {};
-    // TODO(klew): add handling negative numbers
-    snprintf(buf, sizeof(buf), "%d.%1d", tHeat / 100, (tHeat / 10) % 10);
+    snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(tHeat) / 100.0);
     sender->send(buf);
   }
   sender->send("\">");
@@ -197,8 +196,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   auto tCool = hvac->getTemperatureSetpointCool();
   if (tCool != INT16_MIN) {
     char buf[100] = {};
-    // TODO(klew): add handling negative numbers
-    snprintf(buf, sizeof(buf), "%d.%1d", tCool / 100, (tCool / 10) % 10);
+    snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(tCool) / 100.0);
     sender->send(buf);
   }
   sender->send("\">");
@@ -329,12 +327,8 @@ void HvacParameters::send(Supla::WebSender* sender) {
   auto tAuxMinSetpoint = hvac->getTemperatureAuxMinSetpoint();
   if (tAuxMinSetpoint != INT16_MIN) {
     char buf[100] = {};
-    // TODO(klew): fix negative numbers
-    snprintf(buf,
-             sizeof(buf),
-             "%d.%1d",
-             tAuxMinSetpoint / 100,
-             (tAuxMinSetpoint / 10) % 10);
+    snprintf(buf, sizeof(buf), "%.1f",
+             static_cast<double>(tAuxMinSetpoint) / 100.0);
     sender->send(buf);
   }
   sender->send("\">");
@@ -354,12 +348,8 @@ void HvacParameters::send(Supla::WebSender* sender) {
   auto tAuxMaxSetpoint = hvac->getTemperatureAuxMaxSetpoint();
   if (tAuxMaxSetpoint != INT16_MIN) {
     char buf[100] = {};
-    // TODO(klew): fix negative numbers
-    snprintf(buf,
-             sizeof(buf),
-             "%d.%1d",
-             tAuxMaxSetpoint / 100,
-             (tAuxMaxSetpoint / 10) % 10);
+    snprintf(buf, sizeof(buf), "%.1f",
+             static_cast<double>(tAuxMaxSetpoint) / 100.0);
     sender->send(buf);
   }
   sender->send("\">");

@@ -537,6 +537,8 @@ void HvacBase::iterateAlways() {
     if (!processWeeklySchedule()) {
       return;
     }
+  } else {
+    channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
   }
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
@@ -546,6 +548,7 @@ void HvacBase::iterateAlways() {
         "HVAC[%d]: invalid temperature readout - check if your thermometer is "
         "correctly connected and configured", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
+    channel.setHvacFlagForcedOffBySensor(false);
     return;
   }
   channel.setHvacFlagThermometerError(false);

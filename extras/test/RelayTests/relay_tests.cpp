@@ -196,6 +196,8 @@ TEST_F(RelayFixture, stateOnInitTests) {
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
   EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
   EXPECT_CALL(protoMock, getChannelConfig(1, 0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(1, 0, 0, 0));
 
   // virtual Relay &keepTurnOnDuration(bool keep = true);
   ::testing::InSequence seq;
@@ -279,6 +281,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
 
   // init
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 1000, 0, 0));
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 1, 0));
@@ -1370,6 +1373,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
   EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
 
   ::testing::InSequence seq;
 
@@ -1415,6 +1419,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
 
   ::testing::InSequence seq;
 
@@ -1554,6 +1559,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
   EXPECT_CALL(ioMock, digitalWrite(gpio, _))
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   EXPECT_CALL(protoMock, getChannelConfig(0, 0)).Times(1);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
 
   ::testing::InSequence seq;
 

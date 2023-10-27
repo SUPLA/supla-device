@@ -33,6 +33,10 @@ class ScreenBrightnessParameters : public HtmlElement {
   virtual ~ScreenBrightnessParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
+  void onProcessingEnd() override;
+
+ private:
+  bool checkboxFound = false;
 };
 
 };  // namespace Html

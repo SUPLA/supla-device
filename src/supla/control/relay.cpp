@@ -58,7 +58,7 @@ void Relay::onRegistered(
   Supla::Element::onRegistered(suplaSrpc);
   channel.requestChannelConfig();
 
-  timerUpdateTimestamp = 0;
+  timerUpdateTimestamp = 1;
 }
 
 uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,

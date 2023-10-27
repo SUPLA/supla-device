@@ -57,6 +57,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/select_cmd_input_parameter.o \
   ../../../src/supla/network/html/volume_parameters.o \
   ../../../src/supla/network/html/screen_delay_parameters.o \
+  ../../../src/supla/network/html/screen_brightness_parameters.o \
   ../../../src/supla/network/client.o \
   ../../../src/supla/network/ip_address.o \
   \

@@ -78,6 +78,8 @@ set(SRCS
   supla/network/html/volume_parameters.cpp
   supla/network/html/disable_user_interface_parameter.cpp
   supla/network/html/h2_tag.cpp
+  supla/network/html/screen_brightness_parameters.cpp
+  supla/network/html/screen_delay_parameters.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

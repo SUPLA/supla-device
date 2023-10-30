@@ -1306,7 +1306,9 @@ typedef struct {
 #define ACTION_REVEAL_PARTIALLY 50
 #define ACTION_SHUT_PARTIALLY 51
 #define ACTION_TURN_ON 60
+#define ACTION_TURN_ON_WITH_DURATION 61
 #define ACTION_TURN_OFF 70
+#define ACTION_TURN_OFF_WITH_DURATION 71
 #define ACTION_SET_RGBW_PARAMETERS 80
 #define ACTION_OPEN_CLOSE 90
 #define ACTION_STOP 100
@@ -1321,8 +1323,7 @@ typedef struct {
 #define ACTION_HVAC_SWITCH_TO_PROGRAM_MODE 231
 #define ACTION_HVAC_SWITCH_TO_MANUAL_MODE 232
 #define ACTION_HVAC_SET_TEMPERATURES 233
-#define ACTION_TURN_ON_WITH_DURATION 234
-#define ACTION_TURN_OFF_WITH_DURATION 235
+#define ACTION_HVAC_SET_TEMPERATURE 234
 #define ACTION_READ 1000
 #define ACTION_SET 2000
 #define ACTION_EXECUTE 3000
@@ -2769,7 +2770,12 @@ typedef struct {
   unsigned char TemperatureSetpointChangeSwitchesToManualMode;  // 0 - off,
                                                                 // 1 - on (def)
   unsigned char AuxMinMaxSetpointEnabled;  // 0 - off (default), 1 - on
-  unsigned char Reserved[49];
+  // For AUTO thermostats we have two outpus. They can either use
+  // shared output for heating/cooling action and second output for heat vs
+  // cool mode selection, or they can use separate outputs - one for heating
+  // and one for cooling
+  unsigned char AutoUseSeparateHeatCoolOutputs;  // 0 - off (default), 1 - on
+  unsigned char Reserved[48];
   THVACTemperatureCfg Temperatures;
 } TChannelConfig_HVAC;  // v. >= 21
 

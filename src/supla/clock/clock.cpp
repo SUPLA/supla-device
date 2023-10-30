@@ -19,6 +19,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/device/remote_device_config.h>
+#include <SuplaDevice.h>
 
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32) || \
     defined(ESP8266) || defined(ESP32) || defined(ESP_PLATFORM)
@@ -252,12 +253,14 @@ bool Clock::iterateConnected() {
 }
 
 void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
-  (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     // register DeviceConfig field bit:
     Supla::Device::RemoteDeviceConfig::RegisterConfigField(
         SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
+    if (sdc) {
+      sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_TIME);
+    }
 
     // load automaticTimeSync from storage
     uint8_t value = 1;

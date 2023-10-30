@@ -51,7 +51,7 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   void iterateAlways() override;
   void handleAction(int event, int action) override;
 
-  virtual int16_t getManufacurerId();
+  virtual int16_t getManufacturerId();
   virtual void waitForConfigButtonPress();
   virtual bool checkTestStep();
 

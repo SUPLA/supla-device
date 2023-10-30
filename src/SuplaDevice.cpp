@@ -784,7 +784,7 @@ void SuplaDeviceClass::enterNormalMode() {
   Supla::Network::SetNormalMode();
 }
 
-void SuplaDeviceClass::setManufacurerId(_supla_int16_t id) {
+void SuplaDeviceClass::setManufacturerId(_supla_int16_t id) {
   Supla::Channel::reg_dev.ManufacturerID = id;
 }
 

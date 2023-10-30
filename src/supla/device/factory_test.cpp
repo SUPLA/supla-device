@@ -34,7 +34,7 @@ FactoryTest::FactoryTest(SuplaDeviceClass *sdc, uint32_t timeoutS)
 FactoryTest::~FactoryTest() {
 }
 
-int16_t FactoryTest::getManufacurerId() {
+int16_t FactoryTest::getManufacturerId() {
   return -1;
 }
 
@@ -50,7 +50,7 @@ void FactoryTest::onInit() {
 
   testStage = Supla::TestStage_Init;
 
-  if (Supla::Channel::reg_dev.ManufacturerID != getManufacurerId()) {
+  if (Supla::Channel::reg_dev.ManufacturerID != getManufacturerId()) {
     SUPLA_LOG_ERROR("TEST failed: invalid ManufacturerID");
     testFailed = true;
     return;

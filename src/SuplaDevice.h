@@ -104,7 +104,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setEmail(const char *email);
   void setServer(const char *server);
   void setSwVersion(const char *);
-  void setManufacurerId(_supla_int16_t);
+  void setManufacturerId(_supla_int16_t);
   void setProductId(_supla_int16_t);
   void addFlags(_supla_int_t);
   void removeFlags(_supla_int_t);

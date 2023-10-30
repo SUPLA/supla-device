@@ -444,8 +444,9 @@ void RemoteDeviceConfig::processHomeScreenDelayConfig(uint64_t fieldBit,
   }
 
   if (value != config->HomeScreenOffDelayS) {
-    SUPLA_LOG_INFO("Setting HomeScreenOffDelay to %d", value);
-    cfg->setInt32(Supla::Html::ScreenDelayCfgTag, value);
+    SUPLA_LOG_INFO("Setting HomeScreenOffDelay to %d",
+                   config->HomeScreenOffDelayS);
+    cfg->setInt32(Supla::Html::ScreenDelayCfgTag, config->HomeScreenOffDelayS);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }

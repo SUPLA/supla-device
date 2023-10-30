@@ -109,11 +109,13 @@ void SimpleButton::onInit() {
 }
 
 void ButtonState::init() {
-  Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
-  prevState = Supla::Io::digitalRead(pin, io);
-  newStatusCandidate = prevState;
-  SUPLA_LOG_DEBUG("Pin %d, pullUp %d, invertLogic %d, state %d", pin, pullUp,
-                  invertLogic, prevState);
+  if (prevState == -1) {
+    Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
+    prevState = Supla::Io::digitalRead(pin, io);
+    newStatusCandidate = prevState;
+    SUPLA_LOG_DEBUG("Pin %d, pullUp %d, invertLogic %d, state %d", pin, pullUp,
+        invertLogic, prevState);
+  }
 }
 
 int ButtonState::valueOnPress() const {

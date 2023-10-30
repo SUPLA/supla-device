@@ -54,7 +54,7 @@ class ButtonState {
   unsigned int swNoiseFilterDelayMs = 20;
   int pin = -1;
   int8_t newStatusCandidate = 0;
-  int8_t prevState = 0;
+  int8_t prevState = -1;
   bool pullUp = false;
   bool invertLogic = false;
   Supla::Io *io = nullptr;

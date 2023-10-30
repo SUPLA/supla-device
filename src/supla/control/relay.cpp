@@ -118,6 +118,7 @@ void Relay::onInit() {
   }
 
   if (attachedButton) {
+    attachedButton->onInit();  // make sure button was initialized
     if (attachedButton->isMonostable()) {
       attachedButton->addAction(
           Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);

@@ -2229,3 +2229,4 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
   // it should be executed on ah mock
   b1.runAction(Supla::ON_CLICK_1);
 }
+

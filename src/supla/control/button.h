@@ -18,6 +18,7 @@
 #define SRC_SUPLA_CONTROL_BUTTON_H_
 
 #include <stdint.h>
+#include "action_trigger.h"
 #include "simple_button.h"
 
 class SuplaDeviceClass;
@@ -27,6 +28,7 @@ namespace Control {
 
 class Button : public SimpleButton {
  public:
+  friend class ActionTrigger;
   enum class ButtonType {
     MONOSTABLE,
     BISTABLE,
@@ -51,8 +53,6 @@ class Button : public SimpleButton {
 
   void setHoldTime(unsigned int timeMs);
   void repeatOnHoldEvery(unsigned int timeMs);
-  void disableRepeatOnHold();
-  void enableRepeatOnHold();
 
   // setting of bistableButton is for backward compatiblity.
   // Use setButtonType instaed.
@@ -73,6 +73,8 @@ class Button : public SimpleButton {
 
  protected:
   void evaluateMaxMulticlickValue();
+  void disableRepeatOnHold();
+  void enableRepeatOnHold();
   unsigned int holdTimeMs = 0;
   unsigned int repeatOnHoldMs = 0;
   bool repeatOnHoldEnabled = false;

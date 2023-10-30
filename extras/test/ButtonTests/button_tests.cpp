@@ -214,6 +214,61 @@ TEST(ButtonTests, OnHoldRepeated) {
   button.onTimer();  // #10 ON_RELEASE
 }
 
+TEST(ButtonTests, OnHoldNotRepeated) {
+  SimpleTime time;
+  DigitalInterfaceMock ioMock;
+  ActionHandlerMock mock1;
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT));
+  EXPECT_CALL(ioMock, digitalRead(5))
+      .WillOnce(Return(0))  // #1 onInit
+      .WillOnce(Return(1))  // #2 time 0 - first read
+      .WillOnce(Return(1))  // #3
+      .WillOnce(Return(1))  // #4
+      .WillOnce(Return(1))  // #5
+      .WillOnce(Return(1))  // #6
+      .WillOnce(Return(1))  // #7
+      .WillOnce(Return(1))  // #8
+      .WillOnce(Return(0))  // #9
+      .WillOnce(Return(0));  // #10
+
+  EXPECT_CALL(mock1, handleAction(Supla::ON_PRESS, 1)).Times(1);
+  EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, 2)).Times(2);
+  EXPECT_CALL(mock1, handleAction(Supla::ON_RELEASE, 3)).Times(1);
+  EXPECT_CALL(mock1, handleAction(Supla::ON_HOLD, 4)).Times(1);
+  EXPECT_CALL(mock1, handleAction(Supla::ON_LONG_CLICK_0, 5)).Times(0);
+
+  Supla::Control::Button button(5, false, false);
+
+  button.setHoldTime(500);
+//  button.repeatOnHoldEvery(100);
+  button.onInit();
+  button.addAction(1, mock1, Supla::ON_PRESS);
+  button.addAction(2, mock1, Supla::ON_CHANGE);
+  button.addAction(3, mock1, Supla::ON_RELEASE);
+  button.addAction(4, mock1, Supla::ON_HOLD);
+  button.addAction(5, mock1, Supla::ON_LONG_CLICK_0);
+
+  time.advance(1000);
+  button.onTimer();  // #2
+  time.advance(30);
+  button.onTimer();  // #3 ON_PRESS
+  time.advance(60);
+  button.onTimer();  // #4
+  time.advance(450);
+  button.onTimer();  // #5 ON_HOLD
+  time.advance(110);
+  button.onTimer();  // #6 ON_HOLD
+  time.advance(10);
+  button.onTimer();  // #7
+  time.advance(100);
+  button.onTimer();  // #8 ON_HOLD
+  time.advance(10);
+  button.onTimer();  // #9 new state candidate
+  time.advance(30);
+  button.onTimer();  // #10 ON_RELEASE
+}
+
 TEST(ButtonTests, Multiclick) {
   SimpleTime time;
   DigitalInterfaceMock ioMock;

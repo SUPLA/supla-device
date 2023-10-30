@@ -686,10 +686,9 @@ void RGBWBase::onFastTimer() {
       valueChanged = true;
       hwBrightness += brightnessStep;
     }
-
     if (valueChanged) {
       uint32_t adjColorBrightness = hwColorBrightness;
-      if (curColorBrightness > 0) {
+      if (hwColorBrightness > 0) {
         adjColorBrightness = adjustRange(adjColorBrightness,
                                          1,
                                          1023,
@@ -697,7 +696,7 @@ void RGBWBase::onFastTimer() {
                                          maxColorBrightness);
       }
       uint32_t adjBrightness = hwBrightness;
-      if (curBrightness > 0) {
+      if (hwBrightness > 0) {
         adjBrightness =
             adjustRange(adjBrightness, 1, 1023, minBrightness, maxBrightness);
       }

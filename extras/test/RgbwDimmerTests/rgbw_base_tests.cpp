@@ -24,6 +24,7 @@
 
 using ::testing::Return;
 using ::testing::_;
+using ::testing::Le;
 
 class RgbwBaseForTest : public Supla::Control::RGBWBase {
  public:
@@ -1259,6 +1260,9 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, (20*4 + 100 - 1)));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 700, (20*4 + 100 - 1)));
+  EXPECT_CALL(
+      rgb,
+      setRGBWValueOnDevice(0, 1023, 0, Le(700), Le((20 * 4 + 100 - 1))));
   EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
 
   auto ch = rgb.getChannel();
@@ -1287,8 +1291,10 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   time.advance(1000);
   rgb.onFastTimer();  // ON
   rgb.turnOff();
+  time.advance(1);
+  rgb.onFastTimer();  // turning OFF...
   time.advance(1000);
-  rgb.onFastTimer();  // OFF
+  rgb.onFastTimer();  // OFF (full)
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);

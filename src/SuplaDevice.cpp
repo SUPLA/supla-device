@@ -753,10 +753,14 @@ void SuplaDeviceClass::enterConfigMode() {
 
 void SuplaDeviceClass::softRestart() {
   status(STATUS_SOFTWARE_RESET, "Software reset");
-  saveStateToStorage();
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    cfg->commit();
+
+  if (!triggerResetToFacotrySettings) {
+    // skip writing to storage if reset is because of factory reset
+    saveStateToStorage();
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      cfg->commit();
+    }
   }
   deviceMode = Supla::DEVICE_MODE_NORMAL;
 
@@ -973,8 +977,7 @@ void SuplaDeviceClass::handleAction(int event, int action) {
       if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
         requestCfgMode(Supla::Device::WithoutTimeout);
       } else if (millis() - enterConfigModeTimestamp > 2000) {
-        resetToFactorySettings();
-        scheduleSoftRestart(0);
+        triggerResetToFacotrySettings = true;
       }
       break;
     }

@@ -1027,9 +1027,9 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+//  EXPECT_CALL(srpc, srpc_params_init(_));
+//  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+//  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
@@ -1189,9 +1189,6 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOff) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
@@ -1450,9 +1447,6 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(1);
@@ -1539,9 +1533,6 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(1);
@@ -1631,9 +1622,6 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(0);
@@ -1724,9 +1712,6 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(1);
@@ -1815,9 +1800,6 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_));
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(1);
@@ -2143,9 +2125,6 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnEmailSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_)).Times(1);
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(1);
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(1);
@@ -2247,9 +2226,6 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOffMqttServerSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_)).Times(1);
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(1);
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(0);
@@ -2365,9 +2341,6 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
   EXPECT_CALL(el2, onRegistered(_)).Times(0);
 
   EXPECT_CALL(timer, initTimers());
-  EXPECT_CALL(srpc, srpc_params_init(_)).Times(1);
-  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(1);
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(0);

@@ -49,6 +49,7 @@ class SrpcInterface {
   virtual _supla_int_t srpc_ds_async_device_calcfg_result(
       void *_srpc, TDS_DeviceCalCfgResult *result) = 0;
   virtual void *srpc_init(TsrpcParams *params) = 0;
+  virtual void srpc_free(void *srpc) = 0;
   virtual void srpc_rd_free(TsrpcReceivedData *rd) = 0;
   virtual char srpc_getdata(void *_srpc,
                             TsrpcReceivedData *rd,
@@ -110,6 +111,7 @@ class SrpcMock : public SrpcInterface {
               (void *, TDS_DeviceCalCfgResult *),
               (override));
   MOCK_METHOD((void *), srpc_init, (TsrpcParams *), (override));
+  MOCK_METHOD((void), srpc_free, (void *), (override));
   MOCK_METHOD(void, srpc_rd_free, (TsrpcReceivedData *), (override));
   MOCK_METHOD(char,
               srpc_getdata,

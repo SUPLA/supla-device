@@ -97,8 +97,6 @@ class SuplaSrpc : public ProtocolLayer {
                               int32_t senderId,
                               bool useSecondsInsteadOfMs) override;
 
-  void *getSrpcPtr();
-
   void onVersionError(TSDC_SuplaVersionError *versionError);
   void onRegisterResult(TSD_SuplaRegisterDeviceResult *register_device_result);
   void onSetActivityTimeoutResult(
@@ -132,6 +130,8 @@ class SuplaSrpc : public ProtocolLayer {
 
  protected:
   bool ping();
+  void initializeSrpc();
+  void deinitializeSrpc();
 
   void *srpc = nullptr;
   int version = 0;

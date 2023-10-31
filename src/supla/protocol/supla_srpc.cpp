@@ -181,23 +181,7 @@ void Supla::Protocol::SuplaSrpc::onInit() {
     }
   }
 
-  TsrpcParams srpcParams;
-  srpc_params_init(&srpcParams);
-  srpcParams.data_read = &Supla::dataRead;
-  srpcParams.data_write = &Supla::dataWrite;
-  srpcParams.on_remote_call_received = &Supla::messageReceived;
-  srpcParams.user_params = this;
-
-  srpc = srpc_init(&srpcParams);
-
-  // Set Supla protocol interface version
-  srpc_set_proto_version(srpc, version);
-
   SUPLA_LOG_INFO("Using Supla protocol version %d", version);
-}
-
-void *Supla::Protocol::SuplaSrpc::getSrpcPtr() {
-  return srpc;
 }
 
 _supla_int_t Supla::dataRead(void *buf, _supla_int_t count, void *userParams) {
@@ -216,10 +200,10 @@ _supla_int_t Supla::dataWrite(void *buf, _supla_int_t count, void *userParams) {
 }
 
 void Supla::messageReceived(void *srpc,
-    unsigned _supla_int_t rrId,
-    unsigned _supla_int_t callType,
-    void *userParam,
-    unsigned char protoVersion) {
+                            unsigned _supla_int_t rrId,
+                            unsigned _supla_int_t callType,
+                            void *userParam,
+                            unsigned char protoVersion) {
   (void)(rrId);
   (void)(callType);
   (void)(protoVersion);
@@ -657,7 +641,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       connectionFailCounter = 0;
       //      lastConnectionResetCounter = 0;
       SUPLA_LOG_INFO("Connected to Supla Server");
-
+      initializeSrpc();
     } else {
       sdc->status(STATUS_SERVER_DISCONNECTED, "Not connected to Supla server");
       SUPLA_LOG_DEBUG("Connection fail (%d). Server: %s",
@@ -768,6 +752,7 @@ void Supla::Protocol::SuplaSrpc::disconnect() {
 
   registered = 0;
   client->stop();
+  deinitializeSrpc();
 }
 
 void Supla::Protocol::SuplaSrpc::updateLastResponseTime() {
@@ -1277,3 +1262,29 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(uint8_t channelNo,
   srpc_ds_async_device_calcfg_result(srpc, &result);
 }
 
+void Supla::Protocol::SuplaSrpc::initializeSrpc() {
+  if (srpc) {
+    deinitializeSrpc();
+  }
+
+  SUPLA_LOG_INFO("Initializing SRPC");
+  TsrpcParams srpcParams;
+  srpc_params_init(&srpcParams);
+  srpcParams.data_read = &Supla::dataRead;
+  srpcParams.data_write = &Supla::dataWrite;
+  srpcParams.on_remote_call_received = &Supla::messageReceived;
+  srpcParams.user_params = this;
+
+  srpc = srpc_init(&srpcParams);
+
+  // Set Supla protocol interface version
+  srpc_set_proto_version(srpc, version);
+}
+
+void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
+  SUPLA_LOG_INFO("Deinitializing SRPC");
+  if (srpc) {
+    srpc_free(srpc);
+    srpc = nullptr;
+  }
+}

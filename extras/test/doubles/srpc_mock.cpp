@@ -108,6 +108,11 @@ void *srpc_init(TsrpcParams *params) {
   return SrpcInterface::instance->srpc_init(params);
 }
 
+void srpc_free(void *srpc) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->srpc_free(srpc);
+}
+
 void srpc_rd_free(TsrpcReceivedData *rd) {
   assert(SrpcInterface::instance);
   SrpcInterface::instance->srpc_rd_free(rd);

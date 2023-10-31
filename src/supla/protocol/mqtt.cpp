@@ -475,7 +475,27 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
         }
       }
       if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
-      // publish heat and cool temp
+        publish((topic / "temperature_setpoint").c_str(), "", -1, 1);
+        int16_t setpointHeat = ch->getHvacSetpointTemperatureHeat();
+        if (setpointHeat > INT16_MIN) {
+          publishDouble((topic / "temperature_setpoint_heat").c_str(),
+                        static_cast<double>(setpointHeat) / 100.0,
+                        -1,
+                        1,
+                        2);
+        } else {
+          publish((topic / "temperature_setpoint_heat").c_str(), "", -1, 1);
+        }
+        int16_t setpointCool = ch->getHvacSetpointTemperatureCool();
+        if (setpointCool > INT16_MIN) {
+          publishDouble((topic / "temperature_setpoint_cool").c_str(),
+                        static_cast<double>(setpointCool) / 100.0,
+                        -1,
+                        1,
+                        2);
+        } else {
+          publish((topic / "temperature_setpoint_cool").c_str(), "", -1, 1);
+        }
       } else {
         int16_t tempreatureSetpoint = ch->getHvacSetpointTemperatureHeat();
         if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
@@ -483,6 +503,8 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
                 HvacCoolSubfunctionFlag::CoolSubfunction) {
           tempreatureSetpoint = ch->getHvacSetpointTemperatureCool();
         }
+        publish((topic / "temperature_setpoint_heat").c_str(), "", -1, 1);
+        publish((topic / "temperature_setpoint_cool").c_str(), "", -1, 1);
         publishDouble((topic / "temperature_setpoint").c_str(),
                       static_cast<double>(tempreatureSetpoint) / 100.0,
                       -1,

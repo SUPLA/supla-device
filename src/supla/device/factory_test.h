@@ -65,6 +65,9 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   uint32_t initTimestamp = 0;
   Supla::TestStage testStage = Supla::TestStage_None;
   int testStep = 0;
+  // fill fail reason for devices that can show it during the test
+  // Use values >= 100 for device specific failures
+  int failReason = 0;
 };
 
 }  // namespace Device

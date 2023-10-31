@@ -53,18 +53,21 @@ void FactoryTest::onInit() {
   if (Supla::Channel::reg_dev.ManufacturerID != getManufacturerId()) {
     SUPLA_LOG_ERROR("TEST failed: invalid ManufacturerID");
     testFailed = true;
+    failReason = 1;
     return;
   }
 
   if (Supla::Channel::reg_dev.ProductID == 0) {
     SUPLA_LOG_ERROR("TEST failed: ProductID is empty");
     testFailed = true;
+    failReason = 2;
     return;
   }
 
   if (strnlen(Supla::Channel::reg_dev.Name, SUPLA_DEVICE_NAME_MAXSIZE) == 0) {
     SUPLA_LOG_ERROR("TEST failed: device name is empty");
     testFailed = true;
+    failReason = 3;
     return;
   }
 
@@ -72,18 +75,21 @@ void FactoryTest::onInit() {
   if (cfg == nullptr) {
     SUPLA_LOG_ERROR("TEST failed: missing Config instance");
     testFailed = true;
+    failReason = 4;
     return;
   }
 
   if (!sdc->getStorageInitResult()) {
     SUPLA_LOG_ERROR("TEST failed: storage init result is false");
     testFailed = true;
+    failReason = 5;
     return;
   }
 
   if (sdc->getRsaPublicKey() == nullptr) {
     SUPLA_LOG_ERROR("TEST failed: missing public RSA key");
     testFailed = true;
+    failReason = 6;
     return;
   } else {
     bool emptyRsa = true;
@@ -96,6 +102,7 @@ void FactoryTest::onInit() {
     if (emptyRsa) {
       SUPLA_LOG_ERROR("TEST failed: public RSA set, but it is empty");
       testFailed = true;
+      failReason = 7;
       return;
     }
   }
@@ -104,24 +111,29 @@ void FactoryTest::onInit() {
   if (srpc == nullptr) {
     SUPLA_LOG_ERROR("TEST failed: missing srpc layer");
     testFailed = true;
+    failReason = 8;
     return;
   }
   if (srpc->getSuplaCACert() == nullptr) {
     SUPLA_LOG_ERROR("TEST failed: missing Supla CA cert");
     testFailed = true;
+    failReason = 9;
     return;
   } else if (strlen(srpc->getSuplaCACert()) <= 0) {
     SUPLA_LOG_ERROR("TEST failed: Supla CA cert is empty");
     testFailed = true;
+    failReason = 10;
     return;
   }
   if (srpc->getSupla3rdPartyCACert() == nullptr) {
     SUPLA_LOG_ERROR("TEST failed: missing Supla 3rd party CA cert");
     testFailed = true;
+    failReason = 11;
     return;
   } else if (strlen(srpc->getSupla3rdPartyCACert()) <= 0) {
     SUPLA_LOG_ERROR("TEST failed: Supla 3rd party CA cert is empty");
     testFailed = true;
+    failReason = 12;
     return;
   }
 }
@@ -135,6 +147,11 @@ void FactoryTest::iterateAlways() {
     SUPLA_LOG_ERROR("TEST[%d,%d]: check test step failed",
         testStage, testStep);
     testFailed = true;
+    // failReason should be set in checkTestStep
+    // if it wasn't, fill it with default value
+    if (failReason == 0) {
+      failReason = 13;
+    }
   }
 
   if (!testFinished) {
@@ -145,6 +162,7 @@ void FactoryTest::iterateAlways() {
                       testStep,
                       timeoutS);
       testFailed = true;
+      failReason = 14;
     }
     //
     if (testFailed) {

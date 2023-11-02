@@ -21,6 +21,7 @@
 #include <supla/time.h>
 #include <stdio.h>
 #include <string.h>
+#include <supla/actions.h>
 
 #include "factory_test.h"
 
@@ -170,11 +171,13 @@ void FactoryTest::iterateAlways() {
           "TEST[%d,%d]: failed, schedule reset", testStage, testStep);
       sdc->scheduleSoftRestart(2000);
       testFinished = true;
+      testingMachineEnabled = false;
     }
   } else if (!testFailed) {
     // test finished successfully
     SUPLA_LOG_INFO(
         "TEST[%d,%d]: testing done - SUCCESS!!!", testStage, testStep);
+    sdc->handleAction(0, Supla::RESET_TO_FACTORY_SETTINGS);
     sdc->resetToFactorySettings();
     sdc->scheduleSoftRestart(1000);
     testingMachineEnabled = false;

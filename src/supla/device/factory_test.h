@@ -36,8 +36,8 @@ enum TestStage {
 };
 
 enum TestActionType {
-  TestAction_CfgButtonOnPress = 0,
-  TestAction_DeviceStatusChange = 1
+  TestAction_CfgButtonOnPress = 11000,
+  TestAction_DeviceStatusChange = 11101
 };
 
 namespace Device {

@@ -34,8 +34,8 @@ class ActionHandlerClient {
   LocalAction *trigger = nullptr;
   ActionHandler *client = nullptr;
   ActionHandlerClient *next = nullptr;
-  uint8_t onEvent = 0;
-  uint8_t action = 0;
+  uint16_t onEvent = 0;
+  uint16_t action = 0;
   static ActionHandlerClient *begin;
 
   bool isEnabled();

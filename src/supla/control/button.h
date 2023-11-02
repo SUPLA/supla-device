@@ -73,7 +73,9 @@ class Button : public SimpleButton {
 
  protected:
   void evaluateMaxMulticlickValue();
-  void disableRepeatOnHold();
+  // disbles repeating "on hold" if repeat time is lower than threshold
+  // threshold 0 disables always
+  void disableRepeatOnHold(uint32_t threshold = 0);
   void enableRepeatOnHold();
   unsigned int holdTimeMs = 0;
   unsigned int repeatOnHoldMs = 0;

@@ -435,8 +435,10 @@ void Button::dontUseOnLoadConfig() {
   useOnLoadConfig = false;
 }
 
-void Button::disableRepeatOnHold() {
-  repeatOnHoldEnabled = false;
+void Button::disableRepeatOnHold(uint32_t threshold) {
+  if (threshold == 0 || repeatOnHoldMs < threshold) {
+    repeatOnHoldEnabled = false;
+  }
 }
 
 void Button::enableRepeatOnHold() {

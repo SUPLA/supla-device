@@ -229,7 +229,7 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
     }
 
     if (activeActionsFromServer & SUPLA_ACTION_CAP_HOLD) {
-      attachedButton->disableRepeatOnHold();
+      attachedButton->disableRepeatOnHold(1000);
     } else {
       attachedButton->enableRepeatOnHold();
     }

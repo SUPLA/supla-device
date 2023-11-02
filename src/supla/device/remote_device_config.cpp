@@ -573,9 +573,12 @@ void RemoteDeviceConfig::fillHomeScreenContentConfig(
     return;
   }
   int8_t value = 0;
+
   cfg->getInt8(Supla::HomeScreenContentTag, &value);
-  SUPLA_LOG_DEBUG("Setting HomeScreenContent to %d (0x%02X)", value, value);
   config->HomeScreenContent = HomeScreenIntToBit(value);
+  SUPLA_LOG_DEBUG("Setting HomeScreenContent to %d (0x%02X)",
+                  config->HomeScreenContent,
+                  config->HomeScreenContent);
   SUPLA_LOG_DEBUG("Setting ModesAvailabe to 0x%04X",
                   homeScreenContentAvailable);
   config->ContentAvailable = homeScreenContentAvailable;

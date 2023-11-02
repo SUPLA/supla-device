@@ -38,7 +38,7 @@ ScreenBrightnessParameters::~ScreenBrightnessParameters() {
 void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    int32_t cfgBrightness = 0;  // default value
+    int32_t cfgBrightness = -1;  // default value
     cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &cfgBrightness);
     bool automatic = false;
     if (cfgBrightness == -1) {

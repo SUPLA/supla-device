@@ -839,6 +839,10 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
 }
 
 void SuplaDeviceClass::saveStateToStorage() {
+  if (triggerResetToFacotrySettings) {
+    return;
+  }
+
   Supla::Storage::PrepareState();
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {

@@ -17,7 +17,7 @@
 #ifndef SRC_SUPLA_VERSION_H_
 #define SRC_SUPLA_VERSION_H_
 
-#define SUPLA_SHORT_VERSION "23.10.01"
+#define SUPLA_SHORT_VERSION "23.11"
 const char suplaDeviceVersion[] = "SDK " SUPLA_SHORT_VERSION "-dev";
 
 #endif  // SRC_SUPLA_VERSION_H_

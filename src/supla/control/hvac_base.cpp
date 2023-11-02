@@ -4017,3 +4017,8 @@ void HvacBase::updateTimerValue() {
         true);
   }
 }
+
+void HvacBase::clearWaitingFlags() {
+  lastConfigChangeTimestampMs = 0;
+  lastIterateTimestampMs = 0;
+}

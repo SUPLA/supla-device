@@ -370,6 +370,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   _supla_int16_t getSecondaryTemp();
 
   bool isWeelkySchedulManualOverrideMode() const;
+  void clearWaitingFlags();
 
  private:
   _supla_int16_t getTemperature(int channelNo);

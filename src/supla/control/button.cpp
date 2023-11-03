@@ -282,8 +282,7 @@ void Button::setHoldTime(unsigned int timeMs) {
   SUPLA_LOG_DEBUG("Button[%d]::setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
 
-void Button::setMulticlickTime(unsigned int timeMs,
-                                               bool bistableButton) {
+void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
   multiclickTimeMs = timeMs;
   if (bistableButton) {
     buttonType = ButtonType::BISTABLE;
@@ -344,8 +343,8 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
 
     uint32_t multiclickTimeMsValue = 0;
     if (cfg->getUInt32(Supla::Html::BtnMulticlickTag, &multiclickTimeMsValue)) {
-      if (multiclickTimeMsValue < 300) {
-        multiclickTimeMsValue = 300;
+      if (multiclickTimeMsValue < 200) {
+        multiclickTimeMsValue = 200;
       }
       if (multiclickTimeMsValue > 10000) {
         multiclickTimeMsValue = 10000;
@@ -358,8 +357,8 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
 
     uint32_t holdTimeMsValue = CFG_MODE_ON_HOLD_TIME;
     if (cfg->getUInt32(Supla::Html::BtnHoldTag, &holdTimeMsValue)) {
-      if (holdTimeMsValue < 300) {
-        holdTimeMsValue = 300;
+      if (holdTimeMsValue < 200) {
+        holdTimeMsValue = 200;
       }
       if (holdTimeMsValue > 10000) {
         holdTimeMsValue = 10000;

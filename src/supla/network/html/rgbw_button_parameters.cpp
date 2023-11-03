@@ -29,7 +29,7 @@
 
 using Supla::Html::RgbwButtonParameters;
 
-RgbwButtonParameters::RgbwButtonParameters(int id) {
+RgbwButtonParameters::RgbwButtonParameters(int id, const char *labelValue) {
   if (id >= 0) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     Supla::Config::generateKey(key, id, RgbwButtonTag);
@@ -45,15 +45,19 @@ RgbwButtonParameters::RgbwButtonParameters(int id) {
   }
 
   char label[100] = {};
-  if (id >= 0) {
-    snprintf(label, sizeof(label), "#%d %s output controlled by IN", id,
-        channelType == SUPLA_CHANNELTYPE_DIMMER ? "Dimmer" :
-        (channelType == SUPLA_CHANNELTYPE_RGBLEDCONTROLLER ? "RGB" :
-        "RGBW"));
+  if (labelValue != nullptr) {
+    setLabel(labelValue);
   } else {
-    snprintf(label, sizeof(label), "RGBW output controlled by IN");
+    if (id >= 0) {
+      snprintf(label, sizeof(label), "#%d %s output controlled by IN", id,
+          channelType == SUPLA_CHANNELTYPE_DIMMER ? "Dimmer" :
+          (channelType == SUPLA_CHANNELTYPE_RGBLEDCONTROLLER ? "RGB" :
+           "RGBW"));
+    } else {
+      snprintf(label, sizeof(label), "RGBW output controlled by IN");
+    }
+    setLabel(label);
   }
-  setLabel(label);
 
   switch (channelType) {
     case SUPLA_CHANNELTYPE_DIMMER: {

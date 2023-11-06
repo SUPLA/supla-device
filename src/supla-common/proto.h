@@ -582,8 +582,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
   0x0040                                                   // ver. >= 12
                                                            // DEPRECATED
 #define SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS 0x0080  // ver. >= 17
-#define SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED \
-  0x0100  // ver. >= 21
+#define SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED 0x0100  // ver. >= 21
 // Free bits for future use:  0x0200, 0x0400, 0x0800
 #define SUPLA_CHANNEL_FLAG_RS_AUTO_CALIBRATION 0x1000    // ver. >= 15
 #define SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS 0x2000  // ver. >= 15
@@ -1973,7 +1972,7 @@ typedef struct {
   char onOff;
   char command;  // RGBW_COMMAND_, requires
                  // SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED v. >= 21
-} TRGBW_Value;  // v. >= 10
+} TRGBW_Value;   // v. >= 10
 
 #define SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF 0x1
 
@@ -2430,6 +2429,7 @@ typedef struct {
 typedef struct {
   unsigned char ScreenBrightness;  // 0-100%
   unsigned char Automatic;         // 0 - false; 1 - true
+  signed char AdjustmentForAutomatic;
 } TDeviceConfig_ScreenBrightness;  // v. >= 21
 
 typedef struct {

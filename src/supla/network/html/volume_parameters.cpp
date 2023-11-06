@@ -49,7 +49,8 @@ void VolumeParameters::send(Supla::WebSender* sender) {
     sender->sendLabelFor(Supla::Html::VolumeCfgTag,
                          "Button volume");
     sender->send(
-        "<input type=\"number\" min=\"0\" max=\"100\" step=\"1\" ");
+        "<input type=\"range\" min=\"0\" max=\"100\" step=\"1\" "
+        "class=\"range-slider\" ");
     sender->sendNameAndId(Supla::Html::VolumeCfgTag);
     sender->send(" value=\"");
     sender->send(value, 0);

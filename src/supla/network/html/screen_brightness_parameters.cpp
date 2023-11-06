@@ -39,7 +39,10 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t cfgBrightness = -1;  // default value
+    int32_t cfgAdjustmentForAutomatic = 0;  // default value
     cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &cfgBrightness);
+    cfg->getInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+                  &cfgAdjustmentForAutomatic);
     bool automatic = false;
     if (cfgBrightness == -1) {
       automatic = true;
@@ -49,6 +52,11 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
       cfgBrightness = 1;
     } else if (cfgBrightness > 100) {
       cfgBrightness = 100;
+    }
+    if (cfgAdjustmentForAutomatic < -100) {
+      cfgAdjustmentForAutomatic = -100;
+    } else if (cfgAdjustmentForAutomatic > 100) {
+      cfgAdjustmentForAutomatic = 100;
     }
 
     // form-field BEGIN
@@ -66,6 +74,33 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
     sender->send("</div>");
     // form-field END
 
+    // adjustment for auto
+    sender->send("<div id=\"adjustment_auto_box\" style=\"display: ");
+    if (automatic) {
+      sender->send("block\">");
+    } else {
+      sender->send("none\">");
+    }
+
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(
+        Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+        "Brightness adjustment for automatic mode");
+    sender->send(
+        "<input type=\"range\" min=\"-100\" max=\"100\" step=\"10\" "
+        "class=\"range-slider\"");
+    sender->sendNameAndId(Supla::Html::ScreenAdjustmentForAutomaticCfgTag);
+    sender->send(" value=\"");
+    sender->send(cfgAdjustmentForAutomatic, 0);
+    sender->send("\">");
+    sender->send(
+        "<div style=\"text-align: center;\">0</div>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
+
+
+    // form-field BEGIN
     sender->send("<div id=\"brightness_settings_box\" style=\"display: ");
     if (automatic) {
       sender->send("none\">");
@@ -73,26 +108,30 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
       sender->send("block\">");
     }
 
-    // form-field BEGIN
     sender->send("<div class=\"form-field\">");
     sender->sendLabelFor(Supla::Html::ScreenBrightnessCfgTag,
                          "Screen brightness");
     sender->send(
-        "<input type=\"number\" min=\"1\" max=\"100\" step=\"1\" ");
-    sender->sendNameAndId(Supla::Html::ScreenBrightnessCfgTag);
+        "<input type=\"range\" min=\"1\" max=\"100\" step=\"1\" "
+        "class=\"range-slider\" ");
+        sender->sendNameAndId(Supla::Html::ScreenBrightnessCfgTag);
     sender->send(" value=\"");
     sender->send(cfgBrightness, 0);
     sender->send("\">");
     sender->send("</div>");
     sender->send("</div>");  // time setting box end
+
     sender->send("<script>"
          "function showHideBrightnessSettingsToggle() {"
             "var checkBox = document.getElementById(\"auto_bright\");"
-            "var text = document.getElementById(\"brightness_settings_box\");"
+            "var text1 = document.getElementById(\"brightness_settings_box\");"
+            "var text2 = document.getElementById(\"adjustment_auto_box\");"
             "if (checkBox.checked == true){"
-              "text.style.display = \"none\";"
+              "text1.style.display = \"none\";"
+              "text2.style.display = \"block\";"
             "} else {"
-              "text.style.display = \"block\";"
+              "text1.style.display = \"block\";"
+              "text2.style.display = \"none\";"
             "}"
           "}"
         "</script>");
@@ -138,9 +177,33 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
       Supla::Element::NotifyElementsAboutConfigChange(
           SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS);
     }
-
     return true;
   }
+
+  if (cfg &&
+      strcmp(key, Supla::Html::ScreenAdjustmentForAutomaticCfgTag) == 0) {
+    if (!checkboxFound) {
+      return true;
+    }
+    int32_t param = stringToInt(value);
+    if (param < -100) {
+      param = -100;
+    } else if (param > 100) {
+      param = 100;
+    }
+
+    int32_t currentValue = 0;  // default value
+    cfg->getInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+                  &currentValue);
+    if (currentValue != param) {
+      cfg->setInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag, param);
+      cfg->setDeviceConfigChangeFlag();
+      Supla::Element::NotifyElementsAboutConfigChange(
+          SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS);
+    }
+    return true;
+  }
+
   return false;
 }
 

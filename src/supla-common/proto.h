@@ -2429,7 +2429,7 @@ typedef struct {
 typedef struct {
   unsigned char ScreenBrightness;  // 0-100%
   unsigned char Automatic;         // 0 - false; 1 - true
-  signed char AdjustmentForAutomatic;
+  signed char AdjustmentForAutomatic;  // -100 to 100
 } TDeviceConfig_ScreenBrightness;  // v. >= 21
 
 typedef struct {

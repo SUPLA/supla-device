@@ -349,6 +349,7 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
     TDeviceConfig_ScreenBrightness *config) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
+    bool change = false;
     int32_t currentValue = -1;
     int32_t newValue = -1;
     cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &currentValue);
@@ -366,8 +367,32 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
     if (newValue != currentValue) {
       SUPLA_LOG_INFO("Setting ScreenBrightness to %d", newValue);
       cfg->setInt32(Supla::Html::ScreenBrightnessCfgTag, newValue);
-      cfg->saveWithDelay(1000);
+      change = true;
+    }
 
+    int32_t currentAdjustmentForAutomaticValue = 0;
+    int32_t newAdjustmentForAutomaticValue = 0;
+    cfg->getInt32(
+        Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+        &currentAdjustmentForAutomaticValue);
+
+    newAdjustmentForAutomaticValue = config->AdjustmentForAutomatic;
+    if (newAdjustmentForAutomaticValue > 100) {
+      newAdjustmentForAutomaticValue = 100;
+    }
+    if (newAdjustmentForAutomaticValue < -100) {
+      newAdjustmentForAutomaticValue = -100;
+    }
+    if (newAdjustmentForAutomaticValue != currentAdjustmentForAutomaticValue) {
+      SUPLA_LOG_INFO("Setting AdjustmentForAutomatic to %d",
+                     newAdjustmentForAutomaticValue);
+      cfg->setInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+                    newAdjustmentForAutomaticValue);
+      change = true;
+    }
+
+    if (change) {
+      cfg->saveWithDelay(1000);
       Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
     }
   }
@@ -546,6 +571,18 @@ void RemoteDeviceConfig::fillScreenBrightnessConfig(
           "Setting ScreenBrightness to %d (0x%X)", value, value);
       config->ScreenBrightness = value;
     }
+
+    int32_t adjustmentForAutomaticValue = 0;
+    cfg->getInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+                  &adjustmentForAutomaticValue);
+    if (adjustmentForAutomaticValue > 100) {
+      adjustmentForAutomaticValue = 100;
+    }
+    if (adjustmentForAutomaticValue < -100) {
+      adjustmentForAutomaticValue = -100;
+    }
+    config->AdjustmentForAutomatic =
+        static_cast<signed char>(adjustmentForAutomaticValue);
   }
 }
 

@@ -312,7 +312,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
 
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED);
+            SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED);
 
 
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;

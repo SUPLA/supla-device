@@ -1,5 +1,35 @@
 # CHANGELOG.md
 
+## 23.11 (2023-11.07)
+
+  - Change: LocalAction: changed variable that holds actions and events to uint16_t
+  - Change: Button: Html fields now allow 200 ms as minimum time to be set (was 300 ms)
+  - Change: Html: HVAC www reorganized
+  - Change: HVAC: add reporting thermometer error when aux temperature protection is enabled, but thermometer reading is missing.
+  - Change: Add handlig of "disabled" function from server (device will not try to send config for this channel to server anymore)
+  - Fix: HVAC: change output behavior to respect min on/off time settings for anti-freeze/overheat protection and aux min/max setpoints.
+  - Fix: HVAC: aux min/max setpoint should not override "off" mode
+  - Fix: Relay: always send timer update to server on reconnect
+  - Fix: HVAC: add earlier cleanup of HVAC flags for some scenarios
+  - Fix: Relay: make sure that attached button was initialized before we read the state. It call onInit on button, so make sure that this method can be called multiple times.
+  - Fix: RGBW, Dimmer: fix invalid value on analog write when turning off channel with configured max limit
+  - Fix: RemoteDeviceConfig: fix handling of home screen off delay config from server
+  - Fix: SRPC layer: add deinitialization of srpc and proto in order to cleanup data buffer on reconnect.
+  - Fix: SuplaDevice: skip saving Storage and Config storage on soft reset request during reset to factory settings
+  - Fix: ImpulseCounter: add initialization of previous GPIO state based on actual reading state from GPIO
+  - Add: ActionTrigger: restored repeated "ON HOLD" action sending, however it has to be configured for >= 1000 ms. Otherwise AT for ON HOLD repeating is disabled.
+  - Add: Html: add screen brightness HTML config
+  - Add: Html CustomParameter: add default value
+  - Add: MQTT: add support for Thermostat in MQTT and HA autodiscovery.
+  - Add: ProtocolLayer: add config change notification
+  - Add: SuplaDevice & Clock: add SUPLA_DEVICE_FLAG_CALCFG_SET_TIME support
+  - Add: HVAC: add method to clear extra delay timestamps (i.e. after config change)
+  - Add: Html: add H3 tag
+  - Add: Html: RgbwButtonParameter - add option to specify custom field label
+  - Add: RemoteDeviceConfig: Add "AjustmentForAutomatic" support for screen brightness. Adjusted HTML.
+  - CSS: add class for input form range
+
+
 ## 23.10.01 (2023-10-17)
 
   - Change: HVAC: rename "screensaver" -> "home screen"

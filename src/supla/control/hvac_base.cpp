@@ -434,6 +434,7 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
                   channel.getHvacSetpointTemperatureCool(),
                   channel.getHvacFlags());
   Supla::Element::onRegistered(suplaSrpc);
+  serverChannelFunctionValid = true;
   configFinishedReceived = false;
   if (channelConfigChangedOffline) {
     channelConfigChangedOffline = 1;

@@ -331,7 +331,8 @@ void Supla::Sensor::ThermHygroMeter::handleSetChannelConfigResult(
 
   switch (result->ConfigType) {
     case SUPLA_CONFIG_TYPE_DEFAULT: {
-      SUPLA_LOG_INFO("set channel config %s (%d)",
+      SUPLA_LOG_INFO("ThermHygroMeter[%d] Set channel config %s (%d)",
+                     getChannelNumber(),
                      success ? "succeeded" : "failed",
                      result->Result);
       clearChannelConfigChangedFlag();

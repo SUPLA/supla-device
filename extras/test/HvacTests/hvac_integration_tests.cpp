@@ -3706,7 +3706,8 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
       .Times(1)
       .WillOnce([](const char *key, char *value, size_t blobSize) {
          TChannelConfig_HVAC config = {};
-         // empty config is invalid
+         config.UsedAlgorithm = 123;
+         // invalid used algorithm
          memcpy(value, &config, blobSize);
          return true;
       });
@@ -3855,7 +3856,6 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
     t1->iterateConnected();
     time.advance(100);
   }
-
 }
 
 TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {

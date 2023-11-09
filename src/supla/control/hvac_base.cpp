@@ -913,9 +913,9 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
   }
 
   // main thermometer is mandatory and has to be set to a local thermometer
-  if (!isChannelThermometer(newConfig->MainThermometerChannelNo)) {
-    return false;
-  }
+//  if (!isChannelThermometer(newConfig->MainThermometerChannelNo)) {
+//    return false;
+//  }
 
   // heater cooler thermometer is optional, but if set, it has to be set to a
   // local thermometer
@@ -1891,7 +1891,7 @@ bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
     }
     return true;
   }
-  return false;
+  return true;
 }
 
 uint8_t HvacBase::getMainThermometerChannelNo() const {

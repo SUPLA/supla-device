@@ -328,9 +328,10 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
+  // main thermometer is not set, however we accept such config
   configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   TChannelConfig_HVAC *hvacConfig =
       reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
@@ -344,15 +345,16 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
 
   hvacConfig->MainThermometerChannelNo = 0;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   hvacConfig->MainThermometerChannelNo = 2;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
 
+  // invalid thermometer channel number
   hvacConfig->MainThermometerChannelNo = 3;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_DATA_ERROR);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->AuxThermometerType =
@@ -769,7 +771,7 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   hvac.setAntiFreezeAndHeatProtectionEnabled(false);
   EXPECT_FALSE(hvac.isAntiFreezeAndHeatProtectionEnabled());
 
-  EXPECT_FALSE(hvac.setMainThermometerChannelNo(0));
+  EXPECT_TRUE(hvac.setMainThermometerChannelNo(0));
   EXPECT_FALSE(hvac.setAuxThermometerChannelNo(10));
   EXPECT_EQ(hvac.getAuxThermometerType(),
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);

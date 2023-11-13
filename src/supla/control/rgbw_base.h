@@ -32,16 +32,21 @@ class BrightnessAdjuster {
  public:
   virtual ~BrightnessAdjuster() = default;
   virtual int adjustBrightness(int input) = 0;
+  virtual void setMaxHwValue(int maxHwValue) = 0;
 };
 
 class GeometricBrightnessAdjuster : public BrightnessAdjuster {
  public:
-  explicit GeometricBrightnessAdjuster(double power = 1.505, int offset = 0);
+  explicit GeometricBrightnessAdjuster(double power = 1.505,
+                                       int offset = 0,
+                                       int maxHwValue = 1023);
+  void setMaxHwValue(int maxHwValue) override;
   int adjustBrightness(int input) override;
 
  private:
   double power = 1.505;
   int offset = 0;
+  int maxHwValue = 1023;
 };
 
 class Button;
@@ -75,7 +80,8 @@ class RGBWBase : public ChannelElement, public ActionHandler {
                        int blue,
                        int colorBrightness,
                        int brightness,
-                       bool toggle = false);
+                       bool toggle = false,
+                       bool instant = false);
 
   int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   virtual void turnOn();
@@ -120,6 +126,7 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
   int getCurrentDimmerBrightness() const;
   int getCurrentRGBBrightness() const;
+  void setMaxHwValue(int newMaxHwValue);
 
  protected:
   uint8_t addWithLimit(int value, int addition, int limit = 255);
@@ -130,7 +137,11 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   // Returns value in range 0-1023 adjusted by selected function.
   int adjustBrightness(int value);
 
-  double getStep(int step, int target, double current, int distance);
+  int getStep(int step, int target, int current, int distance) const;
+  bool calculateAndUpdate(int targetValue,
+                          int *hwValue,
+                          int distance,
+                          uint32_t *lastChangeMs) const;
 
   uint8_t buttonStep = 10;               // 10
   uint8_t curRed = 0;                   // 0 - 255
@@ -141,13 +152,14 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   uint8_t lastColorBrightness = 100;      // 0 - 100
   uint8_t lastBrightness = 100;           // 0 - 100
   uint8_t defaultDimmedBrightness = 20;  // 20
+  int maxHwValue = 1023;
   bool dimIterationDirection = false;
   int fadeEffect = 500;
-  double hwRed = 0;              // 0 - 1023
-  double hwGreen = 0;            // 0 - 1023
-  double hwBlue = 0;             // 0 - 1023
-  double hwColorBrightness = 0;  // 0 - 1023
-  double hwBrightness = 0;       // 0 - 1023
+  int hwRed = 0;              // 0 - maxHwValue
+  int hwGreen = 0;            // 0 - maxHwValue
+  int hwBlue = 0;             // 0 - maxHwValue
+  int hwColorBrightness = 0;  // 0 - maxHwValue
+  int hwBrightness = 0;       // 0 - maxHwValue
   int minBrightness = 1;
   int maxBrightness = 1023;
   int minColorBrightness = 1;
@@ -158,8 +170,14 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   int colorBrightnessDistance = 0;
   int brightnessDistance = 0;
   bool resetDisance = false;
+  bool instant = false;
   uint16_t minMaxIterationDelay = 750;
   uint32_t lastTick = 0;
+  uint32_t lastChangeRedMs = 0;
+  uint32_t lastChangeGreenMs = 0;
+  uint32_t lastChangeBlueMs = 0;
+  uint32_t lastChangeColorBrightnessMs = 0;
+  uint32_t lastChangeBrightnessMs = 0;
   uint32_t lastMsgReceivedMs = 0;
   uint32_t lastIterateDimmerTimestamp = 0;
   uint32_t iterationDelayTimestamp = 0;

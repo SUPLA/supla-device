@@ -22,20 +22,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rgbw_base.h"
 
 namespace Supla {
+class Io;
 namespace Control {
 class RGBWLeds : public RGBWBase {
  public:
+  RGBWLeds(
+      Supla::Io *io, int redPin, int greenPin, int bluePin, int brightnessPin);
   RGBWLeds(int redPin, int greenPin, int bluePin, int brightnessPin);
 
   void setRGBWValueOnDevice(uint32_t red,
                             uint32_t green,
                             uint32_t blue,
                             uint32_t colorBrightness,
-                            uint32_t brightness);
+                            uint32_t brightness) override;
 
-  void onInit();
+  void onInit() override;
 
  protected:
+  Supla::Io *io = nullptr;
   int redPin;
   int greenPin;
   int bluePin;

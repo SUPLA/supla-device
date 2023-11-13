@@ -43,8 +43,9 @@ namespace Supla {
 namespace Control {
 
 GeometricBrightnessAdjuster::GeometricBrightnessAdjuster(double power,
-                                                         int offset)
-    : power(power), offset(offset) {
+                                                         int offset,
+                                                         int maxHwValue)
+    : power(power), offset(offset), maxHwValue(maxHwValue) {
 }
 
 int GeometricBrightnessAdjuster::adjustBrightness(int input) {
@@ -53,14 +54,18 @@ int GeometricBrightnessAdjuster::adjustBrightness(int input) {
   }
   double result = (input + offset) / (100.0 + offset);
   result = pow(result, power);
-  result = result * 1023.0;
-  if (result > 1023) {
-    result = 1023;
+  result = result * maxHwValue;
+  if (result > maxHwValue) {
+    result = maxHwValue;
   }
   if (result < 0) {
     result = 0;
   }
   return round(result);
+}
+
+void GeometricBrightnessAdjuster::setMaxHwValue(int maxHwValue) {
+  this->maxHwValue = maxHwValue;
 }
 
 
@@ -93,6 +98,7 @@ void RGBWBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
     delete brightnessAdjuster;
   }
   brightnessAdjuster = adjuster;
+  brightnessAdjuster->setMaxHwValue(maxHwValue);
 }
 
 void RGBWBase::setRGBW(int red,
@@ -100,7 +106,8 @@ void RGBWBase::setRGBW(int red,
                        int blue,
                        int colorBrightness,
                        int brightness,
-                       bool toggle) {
+                       bool toggle,
+                       bool instant) {
   if (toggle) {
     lastMsgReceivedMs = 1;
   } else {
@@ -136,6 +143,7 @@ void RGBWBase::setRGBW(int red,
     curBrightness = brightness;
   }
 
+  this->instant = instant;
   resetDisance = true;
 
   SUPLA_LOG_DEBUG("RGBW: %d,%d,%d,%d,%d", curRed, curGreen, curBlue,
@@ -162,6 +170,17 @@ int RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   uint8_t blue = static_cast<uint8_t>(newValue->value[2]);
   uint8_t colorBrightness = static_cast<uint8_t>(newValue->value[1]);
   uint8_t brightness = static_cast<uint8_t>(newValue->value[0]);
+
+  SUPLA_LOG_DEBUG(
+      "RGBW: red=%d, green=%d, blue=%d, colorBrightness=%d, "
+      "brightness=%d, command=%d, toggleOnOff=%d",
+      red,
+      green,
+      blue,
+      colorBrightness,
+      brightness,
+      command,
+      toggleOnOff);
 
   if (brightness > 100) {
     brightness = 100;
@@ -543,7 +562,9 @@ void RGBWBase::iterateDimmerRGBW(int rgbStep, int wStep) {
           -1,
           -1,
           addWithLimit(curColorBrightness, rgbStep, 100),
-          addWithLimit(curBrightness, wStep, 100));
+          addWithLimit(curBrightness, wStep, 100),
+          false,
+          true);
 }
 
 void RGBWBase::setStep(int step) {
@@ -562,25 +583,20 @@ int RGBWBase::adjustBrightness(int value) {
   if (brightnessAdjuster) {
     return brightnessAdjuster->adjustBrightness(value);
   }
-  return adjustRange(value, 0, 100, 0, 1023);
+  return adjustRange(value, 0, 100, 0, maxHwValue);
 }
 
-double RGBWBase::getStep(int step, int target, double current, int distance) {
-  if (step) {
-    double result = step;
+int RGBWBase::getStep(int step, int target, int current, int distance) const {
+  (void)(distance);
+  if (step && target != current) {
+    int result = step;
     if (target > current) {
-      if (fadeEffect > 0 && distance < 100) {
-        result = step / 3.0;
-      }
       if (current + result > target) {
         result = target - current;
       }
       return result;
     } else if (target < current) {
       result = -step;
-      if (fadeEffect > 0 && distance < 100) {
-        result = result / 3.0;
-      }
       if (current + result < target) {
         result = target - current;
       }
@@ -590,9 +606,51 @@ double RGBWBase::getStep(int step, int target, double current, int distance) {
   return 0;
 }
 
+bool RGBWBase::calculateAndUpdate(int targetValue,
+                                  int *hwValue,
+                                  int distance,
+                                  uint32_t *lastChangeMs) const {
+  if (targetValue != *hwValue) {
+    uint32_t timeDiff = millis() - *lastChangeMs;
+    if (timeDiff == 0) {
+      return false;
+    }
+
+    int currentFadeEffectTime = fadeEffect;
+    if (distance < maxHwValue / 10) {
+      currentFadeEffectTime = fadeEffect / 3;
+    }
+
+    double divider = 1.0 * currentFadeEffectTime / timeDiff;
+    if (divider <= 1) {
+      divider = 1;
+    }
+
+    int step = distance / divider;
+    if (step < 1) {
+      step = 1;
+    }
+
+    int valueStep = getStep(step, targetValue, *hwValue, distance);
+    if (valueStep != 0) {
+      *hwValue += valueStep;
+      *lastChangeMs = millis();
+      return true;
+    }
+  } else {
+    *lastChangeMs = millis();
+  }
+  return false;
+}
+
 void RGBWBase::onFastTimer() {
   if (lastTick == 0) {
     lastTick = millis();
+    lastChangeRedMs = millis();
+    lastChangeGreenMs = millis();
+    lastChangeBlueMs = millis();
+    lastChangeBrightnessMs = millis();
+    lastChangeColorBrightnessMs = millis();
     return;
   }
   uint32_t timeDiff = millis() - lastTick;
@@ -624,22 +682,12 @@ void RGBWBase::onFastTimer() {
   }
 
   if (timeDiff > 0) {
-    double divider = 1.0 * fadeEffect / timeDiff;
-    if (divider <= 0) {
-      divider = 1;
-    }
-
-    int step = 1023 / divider;
-    if (step < 1) {
-      return;
-    }
-
     lastTick = millis();
 
-    // target values are in 0..1023 range
-    int targetRed = adjustRange(curRed, 0, 255, 0, 1023);
-    int targetGreen = adjustRange(curGreen, 0, 255, 0, 1023);
-    int targetBlue = adjustRange(curBlue, 0, 255, 0, 1023);
+    // target values are in 0..maxHwValue range
+    int targetRed = adjustRange(curRed, 0, 255, 0, maxHwValue);
+    int targetGreen = adjustRange(curGreen, 0, 255, 0, maxHwValue);
+    int targetBlue = adjustRange(curBlue, 0, 255, 0, maxHwValue);
     int targetColorBrightness = adjustBrightness(curColorBrightness);
     int targetBrightness = adjustBrightness(curBrightness);
 
@@ -653,54 +701,59 @@ void RGBWBase::onFastTimer() {
       brightnessDistance = abs(targetBrightness - hwBrightness);
     }
 
-    auto redStep = getStep(step, targetRed, hwRed, redDistance);
-    if (redStep != 0) {
+    if (instant) {
+      hwRed = targetRed;
+      hwGreen = targetGreen;
+      hwBlue = targetBlue;
+      hwColorBrightness = targetColorBrightness;
+      hwBrightness = targetBrightness;
       valueChanged = true;
-      hwRed += redStep;
+      instant = false;
+    } else {
+      if (calculateAndUpdate(
+              targetRed, &hwRed, redDistance, &lastChangeRedMs)) {
+        valueChanged = true;
+      }
+      if (calculateAndUpdate(
+              targetGreen, &hwGreen, greenDistance, &lastChangeGreenMs)) {
+        valueChanged = true;
+      }
+      if (calculateAndUpdate(
+              targetBlue, &hwBlue, blueDistance, &lastChangeBlueMs)) {
+        valueChanged = true;
+      }
+      if (calculateAndUpdate(targetColorBrightness,
+                             &hwColorBrightness,
+                             colorBrightnessDistance,
+                             &lastChangeColorBrightnessMs)) {
+        valueChanged = true;
+      }
+      if (calculateAndUpdate(targetBrightness,
+                             &hwBrightness,
+                             brightnessDistance,
+                             &lastChangeBrightnessMs)) {
+        valueChanged = true;
+      }
     }
 
-    auto greenStep = getStep(step, targetGreen, hwGreen, greenDistance);
-    if (greenStep != 0) {
-      valueChanged = true;
-      hwGreen += greenStep;
-    }
-
-    auto blueStep = getStep(step, targetBlue, hwBlue, blueDistance);
-    if (blueStep != 0) {
-      valueChanged = true;
-      hwBlue += blueStep;
-    }
-
-    auto colorBrightnessStep = getStep(step,
-                                       targetColorBrightness,
-                                       hwColorBrightness,
-                                       colorBrightnessDistance);
-    if (colorBrightnessStep != 0) {
-      valueChanged = true;
-      hwColorBrightness += colorBrightnessStep;
-    }
-
-    auto brightnessStep =
-        getStep(step, targetBrightness, hwBrightness, brightnessDistance);
-    if (brightnessStep != 0) {
-      valueChanged = true;
-      hwBrightness += brightnessStep;
-    }
     if (valueChanged) {
       uint32_t adjColorBrightness = hwColorBrightness;
       if (hwColorBrightness > 0) {
         adjColorBrightness = adjustRange(adjColorBrightness,
                                          1,
-                                         1023,
+                                         maxHwValue,
                                          minColorBrightness,
                                          maxColorBrightness);
+      } else {
+        hwColorBrightness = 0;
       }
       uint32_t adjBrightness = hwBrightness;
       if (hwBrightness > 0) {
-        adjBrightness =
-            adjustRange(adjBrightness, 1, 1023, minBrightness, maxBrightness);
+        adjBrightness = adjustRange(
+            adjBrightness, 1, maxHwValue, minBrightness, maxBrightness);
+      } else {
+        hwBrightness = 0;
       }
-
       setRGBWValueOnDevice(
           hwRed, hwGreen, hwBlue, adjColorBrightness, adjBrightness);
       valueChanged = false;
@@ -885,6 +938,7 @@ void RGBWBase::onLoadState() {
                             sizeof(lastColorBrightness));
   Supla::Storage::ReadState((unsigned char *)&lastBrightness,
                             sizeof(lastBrightness));
+
   SUPLA_LOG_DEBUG(
       "RGBWBase[%d] loaded state: red=%d, green=%d, blue=%d, "
       "colorBrightness=%d, brightness=%d",
@@ -920,8 +974,8 @@ RGBWBase &RGBWBase::setBrightnessLimits(int min, int max) {
   if (min < 0) {
     min = 0;
   }
-  if (max > 1023) {
-    max = 1023;
+  if (max > maxHwValue) {
+    setMaxHwValue(maxHwValue);
   }
   if (min > max) {
     min = max;
@@ -934,8 +988,8 @@ RGBWBase &RGBWBase::setColorBrightnessLimits(int min, int max) {
   if (min < 0) {
     min = 0;
   }
-  if (max > 1023) {
-    max = 1023;
+  if (max > maxHwValue) {
+    setMaxHwValue(maxHwValue);
   }
   if (min > max) {
     min = max;
@@ -992,6 +1046,14 @@ int RGBWBase::getCurrentDimmerBrightness() const {
 int RGBWBase::getCurrentRGBBrightness() const {
   return curColorBrightness;
 }
+
+void RGBWBase::setMaxHwValue(int newMaxHwValue) {
+  maxHwValue = newMaxHwValue;
+  if (brightnessAdjuster) {
+    brightnessAdjuster->setMaxHwValue(newMaxHwValue);
+  }
+}
+
 
 };  // namespace Control
 };  // namespace Supla

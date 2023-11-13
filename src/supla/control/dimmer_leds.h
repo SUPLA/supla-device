@@ -22,21 +22,24 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "dimmer_base.h"
 
 namespace Supla {
+class Io;
 namespace Control {
 class DimmerLeds : public DimmerBase {
  public:
+  explicit DimmerLeds(Supla::Io *io, int brightnessPin);
   explicit DimmerLeds(int brightnessPin);
 
   void setRGBWValueOnDevice(uint32_t red,
                             uint32_t green,
                             uint32_t blue,
                             uint32_t colorBrightness,
-                            uint32_t brightness);
+                            uint32_t brightness) override;
 
-  void onInit();
+  void onInit() override;
 
  protected:
-  int brightnessPin;
+  Supla::Io *io = nullptr;
+  int brightnessPin = -1;
 };
 
 };  // namespace Control

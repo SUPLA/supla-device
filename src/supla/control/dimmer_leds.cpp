@@ -22,6 +22,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern int esp32PwmChannelCounter;
 #endif
 
+Supla::Control::DimmerLeds::DimmerLeds(Supla::Io *io, int brightnessPin)
+    : DimmerLeds(brightnessPin) {
+  this->io = io;
+}
+
 Supla::Control::DimmerLeds::DimmerLeds(int brightnessPin)
     : brightnessPin(brightnessPin) {
 }
@@ -43,25 +48,35 @@ void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
-  ledcWrite(brightnessPin, brightnessAdj);
+  if (io) {
+    Supla::Io::analogWrite(brightnessPin, brightnessAdj, io);
+  } else {
+    // TODO(klew): move to IO for ESP32
+    ledcWrite(brightnessPin, brightnessAdj);
+  }
 #else
-  Supla::Io::analogWrite(brightnessPin, brightnessAdj);
+  Supla::Io::analogWrite(brightnessPin, brightnessAdj, io);
 #endif
 }
 
 void Supla::Control::DimmerLeds::onInit() {
 #ifdef ARDUINO_ARCH_ESP32
-  SUPLA_LOG_DEBUG("Dimmer: attaching pin %d to PWM channel %d",
-                  brightnessPin, esp32PwmChannelCounter);
+  if (io) {
+    Supla::Io::pinMode(brightnessPin, OUTPUT, io);
+  } else {
+    // TODO(klew): move to IO for ESP32
+    SUPLA_LOG_DEBUG("Dimmer: attaching pin %d to PWM channel %d",
+        brightnessPin, esp32PwmChannelCounter);
 
-  ledcSetup(esp32PwmChannelCounter, 1000, 10);
-  ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
-  // on ESP32 we write to PWM channels instead of pins, so we copy channel
-  // number as pin in order to reuse variable
-  brightnessPin = esp32PwmChannelCounter;
-  esp32PwmChannelCounter++;
+    ledcSetup(esp32PwmChannelCounter, 1000, 10);
+    ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
+    // on ESP32 we write to PWM channels instead of pins, so we copy channel
+    // number as pin in order to reuse variable
+    brightnessPin = esp32PwmChannelCounter;
+    esp32PwmChannelCounter++;
+  }
 #else
-  Supla::Io::pinMode(brightnessPin, OUTPUT);
+  Supla::Io::pinMode(brightnessPin, OUTPUT, io);
 
 #ifdef ARDUINO_ARCH_ESP8266
   analogWriteRange(1024);

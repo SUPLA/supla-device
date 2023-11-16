@@ -21,6 +21,12 @@ set(BOARD_SRC
 
 link_libraries( "$<$<AND:$<CXX_COMPILER_ID:GNU>,$<VERSION_LESS:$<CXX_COMPILER_VERSION>,9.0>>:-lstdc++fs>" )
 # supladevice library target is used in porting/linux cmake
+
+if(NOT DEFINED ENV{SUPLA_DEVICE_PATH})
+  set(ENV{SUPLA_DEVICE_PATH} "../../../")
+  #  message(FATAL_ERROR "SUPLA_DEVICE_PATH env variable is not set")
+endif()
+
 add_library(supladevice "")
 add_subdirectory($ENV{SUPLA_DEVICE_PATH} supla-device)
 add_subdirectory($ENV{SUPLA_DEVICE_PATH}/extras/porting/linux supla-porting-linux)

@@ -234,7 +234,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
             "<div class=\"mqtt\">");
       } else {
         sender->send(
-            "<div class=\"box\" class=\"mqtt\">");
+            "<div class=\"box mqtt\">");
         sender->send(
             "<h3>MQTT Settings</h3>");
       }

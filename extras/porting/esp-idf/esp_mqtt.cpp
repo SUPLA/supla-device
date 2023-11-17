@@ -107,7 +107,9 @@ static void mqttEventHandler(void *handler_args,
     case MQTT_EVENT_ERROR:
       SUPLA_LOG_DEBUG("MQTT_EVENT_ERROR");
       espMqtt->setConnectionError();
-      if (event->error_handle->error_type == MQTT_ERROR_TYPE_TCP_TRANSPORT) {
+      // MQTT_ERROR_TYPE_ESP_TLS  for backward compatibility
+      // On ESP32 it was replaced with MQTT_ERROR_TYPE_TCP_TRANSPORT
+      if (event->error_handle->error_type == MQTT_ERROR_TYPE_ESP_TLS) {
         if (lastError != Supla::EspMqttStatus_transportError) {
           lastError = Supla::EspMqttStatus_transportError;
           espMqtt->getSdc()->addLastStateLog(
@@ -117,10 +119,12 @@ static void mqttEventHandler(void *handler_args,
             event->error_handle->esp_tls_last_esp_err);
         SUPLA_LOG_DEBUG("Last tls stack error number: 0x%x",
                         event->error_handle->esp_tls_stack_err);
+#ifdef SUPLA_DEVICE_ESP32
         SUPLA_LOG_DEBUG(
             "Last captured errno : %d (%s)",
             event->error_handle->esp_transport_sock_errno,
             strerror(event->error_handle->esp_transport_sock_errno));
+#endif
       } else if (event->error_handle->error_type ==
                  MQTT_ERROR_TYPE_CONNECTION_REFUSED) {
         switch (event->error_handle->connect_return_code) {
@@ -194,6 +198,15 @@ void Supla::Protocol::EspMqtt::onInit() {
   Supla::Protocol::Mqtt::onInit();
 
   esp_mqtt_client_config_t mqttCfg = {};
+
+  char clientId[MQTT_CLIENTID_MAX_SIZE] = {};
+  generateClientId(clientId);
+
+  MqttTopic lastWill(prefix);
+  lastWill = lastWill / "state" / "connected";
+
+#ifdef SUPLA_DEVICE_ESP32
+// ESP32 ESP-IDF setup
   mqttCfg.broker.address.hostname = server;
   mqttCfg.broker.address.port = port;
   if (useAuth) {
@@ -207,16 +220,32 @@ void Supla::Protocol::EspMqtt::onInit() {
   }
   mqttCfg.session.keepalive = sdc->getActivityTimeout();
 
-  MqttTopic lastWill(prefix);
-  lastWill = lastWill / "state" / "connected";
   mqttCfg.session.last_will.topic = lastWill.c_str();
   mqttCfg.session.last_will.msg = "false";
   mqttCfg.session.last_will.retain = 1;
 
-  char clientId[MQTT_CLIENTID_MAX_SIZE] = {};
-  generateClientId(clientId);
-
   mqttCfg.credentials.client_id = clientId;
+#else
+// ESP866 RTOS setup
+  mqttCfg.host = server;
+  mqttCfg.port = port;
+  if (useAuth) {
+    mqttCfg.username = user;
+    mqttCfg.password = password;
+  }
+  if (useTls) {
+    mqttCfg.transport = MQTT_TRANSPORT_OVER_SSL;
+  } else {
+    mqttCfg.transport = MQTT_TRANSPORT_OVER_TCP;
+  }
+  mqttCfg.keepalive = sdc->getActivityTimeout();
+
+  mqttCfg.lwt_topic = lastWill.c_str();
+  mqttCfg.lwt_msg = "false";
+  mqttCfg.lwt_retain = 1;
+
+  mqttCfg.client_id = clientId;
+#endif
 
   client = esp_mqtt_client_init(&mqttCfg);
   esp_mqtt_client_register_event(

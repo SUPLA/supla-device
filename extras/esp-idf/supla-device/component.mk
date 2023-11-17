@@ -88,6 +88,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/control/sequence_button.o \
   ../../../src/supla/control/simple_button.o \
   ../../../src/supla/control/virtual_relay.o \
+  ../../../src/supla/control/hvac_base.o \
 	\
   ../../../src/supla/condition.o \
   ../../../src/supla/condition_getter.o \
@@ -139,6 +140,7 @@ COMPONENT_OBJS := \
   ../../porting/esp-idf/esp_idf_mutex.o \
   ../../porting/esp-idf/esp_idf_ota.o \
   ../../porting/esp-idf/esp_idf_client.o \
+  ../../porting/esp-idf/esp_mqtt.o \
 
 
 COMPONENT_SRCDIRS := ../../../src/supla-common \

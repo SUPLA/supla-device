@@ -95,6 +95,7 @@ class Relay : public ChannelElement, public ActionHandler {
   void disableCountdownTimerFunction();
   void enableCountdownTimerFunction();
   bool isCountdownTimerFunctionEnabled() const;
+  void setMinimumAllowedDurationMs(uint32_t durationMs);
 
  protected:
   void setChannelFunction(_supla_int_t newFunction);
@@ -109,6 +110,7 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
+  uint32_t minimumAllowedDurationMs = 0;
 
   uint32_t lastDurationMsOnTimerUpdate = 0;
   uint32_t timerUpdateTimestamp = 0;

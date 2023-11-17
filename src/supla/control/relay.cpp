@@ -176,6 +176,11 @@ bool Relay::iterateConnected() {
 int Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   int result = -1;
   if (newValue->value[0] == 1) {
+    if (newValue->DurationMS < minimumAllowedDurationMs) {
+      SUPLA_LOG_DEBUG("Relay[%d] override duration with min value",
+                      channel.getChannelNumber());
+      newValue->DurationMS = minimumAllowedDurationMs;
+    }
     if (isImpulseFunction()) {
       storedTurnOnDurationMs = newValue->DurationMS;
     }
@@ -475,4 +480,8 @@ void Relay::enableCountdownTimerFunction() {
 
 bool Relay::isCountdownTimerFunctionEnabled() const {
   return channel.getFlags() & SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED;
+}
+
+void Relay::setMinimumAllowedDurationMs(uint32_t durationMs) {
+  minimumAllowedDurationMs = durationMs;
 }

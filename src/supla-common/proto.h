@@ -291,9 +291,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_SC_CALL_CHANNEL_CONFIG_UPDATE_OR_RESULT 1210    // ver. >= 21
 #define SUPLA_CS_CALL_SET_CHANNEL_CONFIG 1220                 // ver. >= 21
 #define SUPLA_CS_CALL_GET_DEVICE_CONFIG 1240                  // ver. >= 21
-#define SUPLA_SC_CALL_DEVICE_CONFIG_UPDATE 1250               // ver. >= 21
-#define SUPLA_CS_CALL_SET_DEVICE_CONFIG 1260                  // ver. >= 21
-#define SUPLA_SC_CALL_SET_DEVICE_CONFIG_RESULT 1270           // ver. >= 21
+#define SUPLA_SC_CALL_DEVICE_CONFIG_UPDATE_OR_RESULT 1250     // ver. >= 21
 
 #define SUPLA_RESULT_RESPONSE_TIMEOUT -8
 #define SUPLA_RESULT_CANT_CONNECT_TO_HOST -7
@@ -543,6 +541,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_MFR_DGF 13
 #define SUPLA_MFR_COMELIT 14
 #define SUPLA_MFR_POLIER 15
+#define SUPLA_MFR_ERGO_ENERGIA 16
 
 // BIT map definition for TDS_SuplaRegisterDevice_*::Flags (32 bit)
 #define SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE 0x0010    // ver. >= 17
@@ -1609,13 +1608,21 @@ typedef struct {
 #define EM_VAR_CURRENT_OVER_65A 0x1000
 #define EM_VAR_FORWARD_ACTIVE_ENERGY_BALANCED 0x2000
 #define EM_VAR_REVERSE_ACTIVE_ENERGY_BALANCED 0x4000
-#define EM_VAR_ALL 0xFFFF
+
+#define EM_VAR_VOLTAGE_PHASE_ANGLE_12 0x10000  // ver. >= 22
+#define EM_VAR_VOLTAGE_PHASE_ANGLE_13 0x20000  // ver. >= 22
+#define EM_VAR_VOLTAGE_PHASE_SEQUENCE 0x40000  // ver. >= 22
+#define EM_VAR_CURRENT_PHASE_SEQUENCE 0x80000  // ver. >= 22
 
 #define EM_VAR_POWER_ACTIVE_KW 0x100000
 #define EM_VAR_POWER_REACTIVE_KVAR 0x200000
 #define EM_VAR_POWER_APPARENT_KVA 0x400000
 
-#ifdef __AVR__
+#define EM_PHASE_SEQUENCE_VOLTAGE 0x01
+#define EM_PHASE_SEQUENCE_CURRENT 0x02
+
+#if defined(__AVR__) || defined(ESP8266) || defined(ESP32) ||                  \
+    defined(ESP_PLATFORM) || defined(ARDUINO) || defined(SUPLA_DEVICE)
 #define EM_MEASUREMENT_COUNT 1
 #else
 #define EM_MEASUREMENT_COUNT 5
@@ -1671,6 +1678,43 @@ typedef struct {
   TElectricityMeter_Measurement m[EM_MEASUREMENT_COUNT];  // Last variable in
                                                           // struct!
 } TElectricityMeter_ExtendedValue_V2;                     // v. >= 12
+
+// [IODevice->Server->Client]
+typedef struct {
+  unsigned _supla_int64_t total_forward_active_energy[3];    // * 0.00001 kWh
+  unsigned _supla_int64_t total_reverse_active_energy[3];    // * 0.00001 kWh
+  unsigned _supla_int64_t total_forward_reactive_energy[3];  // * 0.00001 kvarh
+  unsigned _supla_int64_t total_reverse_reactive_energy[3];  // * 0.00001 kvarh
+  unsigned _supla_int64_t
+      total_forward_active_energy_balanced;  // * 0.00001 kWh
+                                             // Vector phase-to-phase balancing
+  unsigned _supla_int64_t
+      total_reverse_active_energy_balanced;  // * 0.00001 kWh
+                                             // Vector phase-to-phase balancing
+
+  // Voltage phase angle between phase 1 and 2
+  unsigned _supla_int16_t voltage_phase_angle_12;   // * 0.1 degree, 0..360
+  // Voltage phase angle between phase 1 and 3
+  unsigned _supla_int16_t voltage_phase_angle_13;   // * 0.1 degree, 0..360
+  unsigned char phase_sequence;  // bit 0x1 - voltage, bit 0x2 current
+                                 // EM_PHASE_SEQUENCE_*
+                                 // bit value: 0 - 123 (clockwise)
+                                 // bit value: 1 - 132 (counter-clockwise)
+
+  // The price per unit, total cost and currency is overwritten by the server
+  // total_cost == SUM(total_forward_active_energy[n] * price_per_unit
+  _supla_int_t total_cost;           // * 0.01
+  _supla_int_t total_cost_balanced;  // * 0.01
+  _supla_int_t price_per_unit;       // * 0.0001
+  // Currency Code A https://www.nationsonline.org/oneworld/currencies.htm
+  char currency[3];
+
+  _supla_int_t measured_values;
+  _supla_int_t period;  // Approximate period between measurements in seconds
+  _supla_int_t m_count;
+  TElectricityMeter_Measurement m[EM_MEASUREMENT_COUNT];  // Last variable in
+                                                          // struct!
+} TElectricityMeter_ExtendedValue_V3;                     // v. >= 22
 
 #define EM_VALUE_FLAG_PHASE1_ON 0x01
 #define EM_VALUE_FLAG_PHASE2_ON 0x02
@@ -2385,9 +2429,8 @@ typedef struct {
   unsigned char zero[9];  // for future use
 } TSDS_SetDeviceConfigResult;
 
-// SUPLA_CS_CALL_SET_DEVICE_CONFIG
 typedef struct {
-  _supla_int_t ChannelId;       // Any channel ID belonging to the device
+  _supla_int_t DeviceId;
   unsigned char EndOfDataFlag;  // 1 - last message; 0 - more messages will come
   unsigned char zero[8];        // for future use
   unsigned _supla_int64_t
@@ -2397,26 +2440,19 @@ typedef struct {
   char Config[SUPLA_DEVICE_CONFIG_MAXSIZE];  // Last variable in struct!
 } TSCS_DeviceConfig;                         // v. >= 21
 
-// SUPLA_SC_CALL_DEVICE_CONFIG_UPDATE
+// SUPLA_SC_CALL_DEVICE_CONFIG_UPDATE_OR_RESULT
 typedef struct {
   unsigned char Result;      // SUPLA_CONFIG_RESULT_*. It matters when it is a
                              // response to SUPLA_CS_CALL_GET_DEVICE_CONFIG
   TSCS_DeviceConfig Config;  // Last variable in struct!
-} TSC_DeviceConfigUpdate;
+} TSC_DeviceConfigUpdateOrResult;
 
 // SUPLA_CS_CALL_GET_DEVICE_CONFIG
 typedef struct {
-  _supla_int_t ChannelId;          // Any channel ID belonging to the device
+  _supla_int_t DeviceId;
   unsigned _supla_int64_t Fields;  // bit map of SUPLA_DEVICE_CONFIG_FIELD_
   unsigned char zero[8];           // for future use
 } TCS_GetDeviceConfigRequest;
-
-// SUPLA_SC_CALL_SET_DEVICE_CONFIG_RESULT
-typedef struct {
-  _supla_int_t ChannelId;  // Any channel ID belonging to the device
-  unsigned char Result;    // SUPLA_CONFIG_RESULT_*
-  unsigned char zero[8];   // for future use
-} TSC_SetDeviceConfigResult;
 
 #define SUPLA_DEVCFG_STATUS_LED_ON_WHEN_CONNECTED 0
 #define SUPLA_DEVCFG_STATUS_LED_OFF_WHEN_CONNECTED 1
@@ -2429,7 +2465,7 @@ typedef struct {
 typedef struct {
   unsigned char ScreenBrightness;  // 0-100%
   unsigned char Automatic;         // 0 - false; 1 - true
-  signed char AdjustmentForAutomatic;  // -100 to 100
+  signed char AdjustmentForAutomatic;
 } TDeviceConfig_ScreenBrightness;  // v. >= 21
 
 typedef struct {
@@ -2483,6 +2519,7 @@ typedef struct {
 #define SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED 4
 #define SUPLA_CONFIG_RESULT_LOCAL_CONFIG_DISABLED 5
 #define SUPLA_CONFIG_RESULT_NOT_ALLOWED 6
+#define SUPLA_CONFIG_RESULT_DEVICE_NOT_FOUND 7
 
 // SUPLA_CS_CALL_GET_CHANNEL_CONFIG
 typedef struct {

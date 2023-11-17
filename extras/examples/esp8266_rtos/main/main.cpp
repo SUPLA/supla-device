@@ -35,13 +35,21 @@
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/time.h>
+#include <esp_log.h>
 
 extern "C" void cpp_main(void*);
 
 extern const uint8_t suplaOrgCertPemStart[] asm(
     "_binary_supla_org_cert_pem_start");
 
+extern const uint8_t supla3rdCertPemStart[] asm(
+    "_binary_supla_3rd_cert_pem_start");
+
 void cpp_main(void* param) {
+  // Show all SUPLA related logs
+  esp_log_level_set("*", ESP_LOG_INFO);
+  esp_log_level_set("SUPLA", ESP_LOG_DEBUG);
+
   new Supla::EspIdfWifi;
   new Supla::SpiffsStorage(512);
   new Supla::NvsConfig;
@@ -68,13 +76,18 @@ void cpp_main(void* param) {
 
   SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SuplaDevice.setName("SUPLA-Example");
+
   SuplaDevice.setSuplaCACert(
       reinterpret_cast<const char*>(suplaOrgCertPemStart));
+  SuplaDevice.setSupla3rdPartyCACert(
+      reinterpret_cast<const char*>(supla3rdCertPemStart));
+
   SuplaDevice.begin();
+
   SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
-  unsigned int lastTime = 0;
-  unsigned int lastTimeHeap = 0;
+  uint32_t lastTime = 0;
+  uint32_t lastTimeHeap = 0;
   SUPLA_LOG_DEBUG("Starting main loop");
   while (true) {
     SuplaDevice.iterate();

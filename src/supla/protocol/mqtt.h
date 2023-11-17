@@ -57,7 +57,11 @@ enum HADeviceClass {
   HADeviceClass_PowerFactor,
   HADeviceClass_Power,
   HADeviceClass_ReactivePower,
-  HADeviceClass_Voltage
+  HADeviceClass_Voltage,
+  HADeviceClass_Outlet,
+  HADeviceClass_Gate,
+  HADeviceClass_Door,
+  HADeviceClass_Garage
 };
 
 class Mqtt : public ProtocolLayer {
@@ -137,6 +141,7 @@ class Mqtt : public ProtocolLayer {
   void publishDeviceStatus(bool onRegistration = false);
   void publishHADiscovery(int channel);
   void publishHADiscoveryRelay(Supla::Element *);
+  void publishHADiscoveryRelayImpulse(Supla::Element *);
   void publishHADiscoveryThermometer(Supla::Element *);
   void publishHADiscoveryHumidity(Supla::Element *);
   void publishHADiscoveryActionTrigger(Supla::Element *);
@@ -162,6 +167,8 @@ class Mqtt : public ProtocolLayer {
   virtual void subscribeImp(const char *topic, int qos) = 0;
   const char *getStateClassStr(Supla::Protocol::HAStateClass stateClass);
   const char *getDeviceClassStr(Supla::Protocol::HADeviceClass deviceClass);
+
+  const char *getRelayChannelName(int channelFunction) const;
 
   bool isPayloadOn(const char *);
 

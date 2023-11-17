@@ -358,7 +358,19 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
   switch (ch->getChannelType()) {
     case SUPLA_CHANNELTYPE_RELAY: {
       // publish relay state
-      publishBool((topic / "on").c_str(), ch->getValueBool(), -1, 1);
+      switch (ch->getDefaultFunction()) {
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
+          publish((topic / "on").c_str(), "closed", -1, 1);
+          break;
+        }
+        default: {
+          publishBool((topic / "on").c_str(), ch->getValueBool(), -1, 1);
+          break;
+        }
+      }
       break;
     }
     case SUPLA_CHANNELTYPE_THERMOMETER: {
@@ -886,7 +898,7 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
   }
 }
 
-void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
+void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element) {
   if (element == nullptr) {
     return;
   }
@@ -896,16 +908,39 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
     return;
   }
 
-  bool lightType = true;
-
-  if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_POWERSWITCH) {
-    lightType = false;
-  }
-
   char objectId[30] = {};
   generateObjectId(objectId, element->getChannelNumber(), 0);
 
-  auto topic = getHADiscoveryTopic(lightType ? "light" : "switch", objectId);
+  MqttTopic topic;
+  auto chFunction = ch->getDefaultFunction();
+  HADeviceClass deviceClass = HADeviceClass_None;
+  switch (chFunction) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE: {
+      deviceClass = HADeviceClass_Gate;
+      topic = getHADiscoveryTopic("cover", objectId);
+      break;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR: {
+      deviceClass = HADeviceClass_Garage;
+      topic = getHADiscoveryTopic("cover", objectId);
+      break;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK: {
+      deviceClass = HADeviceClass_Door;
+      topic = getHADiscoveryTopic("cover", objectId);
+      break;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
+      deviceClass = HADeviceClass_Door;
+      topic = getHADiscoveryTopic("cover", objectId);
+      break;
+    }
+    default: {
+      SUPLA_LOG_WARNING("Mqtt: channel function %d not supported",
+          chFunction);
+      return;
+    }
+  }
 
   const char cfg[] =
       "{"
@@ -919,15 +954,17 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
         "\"name\":\"%s\","
         "\"sw\":\"%s\""
       "},"
-      "\"name\":\"#%i %s switch\","
+      "\"name\":\"#%i %s\","
       "\"uniq_id\":\"supla_%s\","
       "\"qos\":0,"
       "\"ret\":false,"
       "\"opt\":false,"
       "\"stat_t\":\"~/state/on\","
       "\"cmd_t\":\"~/set/on\","
-      "\"pl_on\":\"true\","
-      "\"pl_off\":\"false\""
+      "\"payload_open\":\"true\","
+      "\"payload_close\":null,"  // button disabled in HA
+      "\"payload_stop\":null"    // button disabled in HA
+      "%s"  // dev_cla
       "}";
 
   char c = '\0';
@@ -947,8 +984,102 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
             Supla::Channel::reg_dev.Name,
             Supla::Channel::reg_dev.SoftVer,
             element->getChannelNumber(),
-            lightType ? "Light" : "Power",
-            objectId)
+            getRelayChannelName(chFunction),
+            objectId,
+            getDeviceClassStr(deviceClass))
+        + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
+void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), 0);
+
+  MqttTopic topic;
+  auto chFunction = ch->getDefaultFunction();
+  HADeviceClass deviceClass = HADeviceClass_None;
+  switch (chFunction) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
+      publishHADiscoveryRelayImpulse(element);
+      return;
+    }
+    case SUPLA_CHANNELFNC_POWERSWITCH: {
+      topic = getHADiscoveryTopic("switch", objectId);
+      break;
+    }
+    default: {
+      topic = getHADiscoveryTopic("light", objectId);
+      break;
+    }
+  }
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i %s\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"stat_t\":\"~/state/on\","
+      "\"cmd_t\":\"~/set/on\","
+      "\"pl_on\":\"true\","
+      "\"pl_off\":\"false\""
+      "%s"  // dev_cla
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
+            Supla::Channel::reg_dev.Name,
+            Supla::Channel::reg_dev.SoftVer,
+            element->getChannelNumber(),
+            getRelayChannelName(chFunction),
+            objectId,
+            getDeviceClassStr(deviceClass))
         + 1;
 
     if (i == 0) {
@@ -1644,6 +1775,14 @@ const char *Supla::Protocol::Mqtt::getDeviceClassStr(
       return ",\"dev_cla\":\"power\"";
     case HADeviceClass_ReactivePower:
       return ",\"dev_cla\":\"reactive_power\"";
+    case HADeviceClass_Outlet:
+      return ",\"dev_cla\":\"outlet\"";
+    case HADeviceClass_Gate:
+      return ",\"dev_cla\":\"gate\"";
+    case HADeviceClass_Door:
+      return ",\"dev_cla\":\"door\"";
+    case HADeviceClass_Garage:
+      return ",\"dev_cla\":\"garage\"";
     case HADeviceClass_None:
     default:
       return "";
@@ -2188,5 +2327,31 @@ void Mqtt::notifyConfigChange(int channelNumber) {
   if (channelNumber >= 0 && channelNumber < 255) {
     // set bit on configChangedBit[8]:
     configChangedBit[channelNumber / 8] |= (1 << (channelNumber % 8));
+  }
+}
+
+const char *Mqtt::getRelayChannelName(int channelFunction) const {
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_POWERSWITCH: {
+      return "Power switch";
+    }
+    case SUPLA_CHANNELFNC_LIGHTSWITCH: {
+      return "Light switch";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE: {
+      return "Gate";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK: {
+      return "Door lock";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR: {
+      return "Garage door";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
+      return "Gateway lock";
+    }
+    default: {
+      return "Relay";
+    }
   }
 }

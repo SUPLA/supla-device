@@ -225,6 +225,11 @@ void Relay::turnOn(_supla_int_t duration) {
             channel.getChannelNumber(),
             duration);
   durationMs = duration;
+
+  if (minimumAllowedDurationMs > 0 && storedTurnOnDurationMs == 0) {
+    storedTurnOnDurationMs = durationMs;
+  }
+
   if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
     durationMs = storedTurnOnDurationMs;
   }

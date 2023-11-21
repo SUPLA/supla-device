@@ -298,7 +298,6 @@ void Supla::Protocol::EspMqtt::publishChannelSetup(int channelNumber) {
 }
 
 bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
-  (void)(_millis);
   if (!isEnabled()) {
     return false;
   }

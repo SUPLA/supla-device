@@ -28,18 +28,17 @@ class Uptime {
 
   void iterate(uint32_t millis);
   void resetConnectionUptime();
-  void setConnectionLostCause(unsigned char cause);
+  void setConnectionLostCause(uint8_t cause);
 
-  unsigned _supla_int_t getUptime() const;
-  unsigned _supla_int_t getConnectionUptime() const;
-  unsigned char getLastResetCause() const;
+  uint32_t getUptime() const;
+  uint32_t getConnectionUptime() const;
+  uint8_t getLastResetCause() const;
 
  protected:
   uint32_t lastMillis = 0;;
-  unsigned _supla_int_t deviceUptime = 0;
-  unsigned _supla_int_t connectionUptime = 0;
-  unsigned char lastConnectionResetCause =
-      SUPLA_LASTCONNECTIONRESETCAUSE_UNKNOWN;
+  uint32_t deviceUptime = 0;
+  uint32_t connectionUptime = 0;
+  uint8_t lastConnectionResetCause = SUPLA_LASTCONNECTIONRESETCAUSE_UNKNOWN;
   bool acceptConnectionLostCause = false;
 };
 

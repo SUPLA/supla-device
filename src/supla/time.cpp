@@ -47,7 +47,7 @@ void delayMicroseconds(uint64_t delayMicro) {
 #include <esp_timer.h>
 
 uint32_t millis(void) {
-  return esp_timer_get_time() / 1000;
+  return static_cast<uint64_t>(esp_timer_get_time()) / 1000ULL;
 }
 
 void delay(uint64_t delayMs) {

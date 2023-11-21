@@ -27,6 +27,19 @@
 namespace Supla {
 class ArduinoEspClient : public Client {
  public:
+  ~ArduinoEspClient() {
+    if (wifiClient) {
+      wifiClient->stop(500);
+      delete wifiClient;
+    }
+#ifdef ARDUINO_ARCH_ESP8266
+    if (caCert) {
+      delete caCert;
+      caCert = nullptr;
+    }
+#endif
+  }
+
   int available() override {
     if (wifiClient) {
       return wifiClient->available();
@@ -36,7 +49,7 @@ class ArduinoEspClient : public Client {
 
   void stop() override {
     if (wifiClient) {
-      wifiClient->stop();
+      wifiClient->stop(500);
       delete wifiClient;
       wifiClient = nullptr;
     }
@@ -57,9 +70,6 @@ class ArduinoEspClient : public Client {
  protected:
   int connectImp(const char *host, uint16_t port) override {
     WiFiClientSecure *clientSec = nullptr;
-#ifdef ARDUINO_ARCH_ESP8266
-    X509List *caCert = nullptr;
-#endif
 
     stop();
 
@@ -75,6 +85,7 @@ class ArduinoEspClient : public Client {
         static bool timeConfigured = false;
 
         if (!timeConfigured) {
+          timeConfigured = true;
           configTime(0, 0, "pool.ntp.org", "time.nist.gov");
           SUPLA_LOG_DEBUG("Waiting for NTP time sync");
           time_t now = time(nullptr);
@@ -84,7 +95,9 @@ class ArduinoEspClient : public Client {
           }
         }
 
-        caCert = new BearSSL::X509List(rootCACert);
+        if (caCert == nullptr) {
+          caCert = new BearSSL::X509List(rootCACert);
+        }
         clientSec->setTrustAnchors(caCert);
       } else if (fingerprint.length() > 0) {
         clientSec->setFingerprint(fingerprint.c_str());
@@ -116,12 +129,6 @@ class ArduinoEspClient : public Client {
         SUPLA_LOG_ERROR("SSL error: %d, %s", lastErr, buf);
       }
     }
-#ifdef ARDUINO_ARCH_ESP8266
-    if (caCert) {
-      delete caCert;
-      caCert = nullptr;
-    }
-#endif
 
     return result;
   }
@@ -150,6 +157,9 @@ class ArduinoEspClient : public Client {
   WiFiClient *wifiClient = nullptr;
   String fingerprint;
   uint16_t timeoutMs = 3000;
+#ifdef ARDUINO_ARCH_ESP8266
+    X509List *caCert = nullptr;
+#endif
 };
 };  // namespace Supla
 

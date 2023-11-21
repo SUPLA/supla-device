@@ -29,7 +29,7 @@ class ArduinoEspClient : public Client {
  public:
   ~ArduinoEspClient() {
     if (wifiClient) {
-      wifiClient->stop(500);
+      wifiClient->stop();
       delete wifiClient;
     }
 #ifdef ARDUINO_ARCH_ESP8266
@@ -49,7 +49,7 @@ class ArduinoEspClient : public Client {
 
   void stop() override {
     if (wifiClient) {
-      wifiClient->stop(500);
+      wifiClient->stop();
       delete wifiClient;
       wifiClient = nullptr;
     }

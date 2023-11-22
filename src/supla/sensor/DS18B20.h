@@ -143,11 +143,11 @@ class DS18B20 : public Thermometer {
   }
 
   void iterateAlways() {
-    if (myBus->lastReadTime + 10000 < millis()) {
+    if (millis() - myBus->lastReadTime > 10000) {
       myBus->sensors.requestTemperatures();
       myBus->lastReadTime = millis();
     }
-    if (myBus->lastReadTime + 5000 < millis() &&
+    if (millis() - myBus->lastReadTime > 5000 &&
         (lastReadTime != myBus->lastReadTime)) {
       channel.setNewValue(getValue());
       lastReadTime = myBus->lastReadTime;

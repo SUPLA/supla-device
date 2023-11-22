@@ -32,7 +32,7 @@ class GeneralPurposeMeasurementBase : public ChannelElement {
   virtual double getValue() = 0;
 
   void iterateAlways() {
-    if (lastReadTime + 1000 < millis()) {
+    if (millis() - lastReadTime > 1000) {
       lastReadTime = millis();
       channel.setNewValue(getValue());
     }

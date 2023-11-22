@@ -45,7 +45,7 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   channel.setType(SUPLA_CHANNELTYPE_HVAC);
   channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-
+  channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   addPrimaryOutput(primaryOutput);
   addSecondaryOutput(secondaryOutput);
 

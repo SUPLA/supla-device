@@ -46,7 +46,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
       Supla::Condition *condition,
       bool alwaysEnabled = false);
 
-  bool isEventAlreadyUsed(int event) override;
+  bool isEventAlreadyUsed(int event, bool ignoreAlwaysEnabled) override;
 
   void runAction(int event) override;
 

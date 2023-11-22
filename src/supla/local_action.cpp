@@ -117,10 +117,11 @@ ActionHandlerClient *LocalAction::getClientListPtr() {
   return ActionHandlerClient::begin;
 }
 
-bool LocalAction::isEventAlreadyUsed(int event) {
+bool LocalAction::isEventAlreadyUsed(int event, bool ignoreAlwaysEnabled) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
-    if (ptr->trigger == this && ptr->onEvent == event) {
+    if (ptr->trigger == this && ptr->onEvent == event &&
+        (!ignoreAlwaysEnabled || !ptr->isAlwaysEnabled())) {
       return true;
     }
     ptr = ptr->next;

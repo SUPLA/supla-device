@@ -62,7 +62,7 @@ class LocalAction {
 
   virtual void runAction(int event);
 
-  virtual bool isEventAlreadyUsed(int event);
+  virtual bool isEventAlreadyUsed(int event, bool ignoreAlwaysEnabled);
   virtual ActionHandlerClient *getHandlerForFirstClient(int event);
   virtual ActionHandlerClient *getHandlerForClient(ActionHandler *client,
                                                    int event);

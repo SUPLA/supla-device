@@ -35,6 +35,12 @@ class Button : public SimpleButton {
     MOTION_SENSOR
   };
 
+  enum class OnLoadConfigType {
+    LOAD_FULL_CONFIG,
+    LOAD_BUTTON_SETUP_ONLY,
+    DONT_LOAD_CONFIG
+  };
+
   explicit Button(Supla::Io *io,
                   int pin,
                   bool pullUp = false,
@@ -66,6 +72,7 @@ class Button : public SimpleButton {
   virtual void configureAsConfigButton(SuplaDeviceClass *sdc);
   bool disableActionsInConfigMode() override;
   void dontUseOnLoadConfig();
+  void setOnLoadConfigType(OnLoadConfigType type);
 
   uint8_t getMaxMulticlickValue();
   int8_t getButtonNumber() const override;
@@ -87,7 +94,7 @@ class Button : public SimpleButton {
   unsigned int holdSend = 0;
   ButtonType buttonType = ButtonType::MONOSTABLE;
   bool configButton = false;
-  bool useOnLoadConfig = true;
+  enum OnLoadConfigType onLoadConfigType = OnLoadConfigType::LOAD_FULL_CONFIG;
   int8_t buttonNumber = -1;
 
   static int buttonCounter;

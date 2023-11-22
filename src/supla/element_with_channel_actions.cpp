@@ -45,10 +45,11 @@ void Supla::ElementWithChannelActions::runAction(int event) {
   }
 }
 
-bool Supla::ElementWithChannelActions::isEventAlreadyUsed(int event) {
+bool Supla::ElementWithChannelActions::isEventAlreadyUsed(
+    int event, bool ignoreAlwaysEnabled) {
   auto channel = getChannel();
   if (channel) {
-    return channel->isEventAlreadyUsed(event);
+    return channel->isEventAlreadyUsed(event, ignoreAlwaysEnabled);
   }
   return false;
 }

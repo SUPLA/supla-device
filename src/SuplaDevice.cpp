@@ -334,6 +334,11 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
 
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
+    if (configEmpty) {
+      // For empty configuration we don't want to show all missing fields,
+      // so we clear logger
+      lastStateLogger->clear();
+    }
     enterConfigMode();
   } else {
     enterNormalMode();

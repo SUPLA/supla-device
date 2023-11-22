@@ -28,6 +28,7 @@ class LastStateLogger {
   LastStateLogger();
   virtual ~LastStateLogger();
   virtual void log(const char *);
+  virtual void clear();
   virtual char *getLog();
   virtual bool prepareLastStateLog();
 

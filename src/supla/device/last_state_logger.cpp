@@ -65,6 +65,11 @@ void LastStateLogger::log(const char *state) {
   delete [] copy;
 }
 
+void LastStateLogger::clear() {
+  Supla::AutoLock autoLock(mutex);
+  memset(buffer, 0, LAST_STATE_LOGGER_BUFFER_SIZE);
+}
+
 char *LastStateLogger::getLog() {
   if (buffer[index]) {
     if (index == 0) {

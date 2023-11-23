@@ -20,6 +20,7 @@
 #include <supla/log_wrapper.h>
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
+#include <supla/clock/clock.h>
 
 #include "tools.h"
 #include "supla/network/client.h"
@@ -82,7 +83,7 @@ class ArduinoEspClient : public Client {
       clientSec->setBufferSizes(1024, 512);  // EXPERIMENTAL
       if (rootCACert) {
         // Set time via NTP, as required for x.509 validation
-        static bool timeConfigured = false;
+        static bool timeConfigured = Supla::Clock::isReady();
 
         if (!timeConfigured) {
           timeConfigured = true;

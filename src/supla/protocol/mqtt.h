@@ -61,7 +61,9 @@ enum HADeviceClass {
   HADeviceClass_Outlet,
   HADeviceClass_Gate,
   HADeviceClass_Door,
-  HADeviceClass_Garage
+  HADeviceClass_Garage,
+  HADeviceClass_Moisture,
+  HADeviceClass_Window
 };
 
 class Mqtt : public ProtocolLayer {
@@ -92,6 +94,8 @@ class Mqtt : public ProtocolLayer {
                bool payload,
                int qos = -1,
                int retain = -1);
+  void publishOnOff(const char *topic, bool payload, int qos, int retain);
+  void publishOpenClosed(const char *topic, bool payload, int qos, int retain);
   void publishDouble(const char *topic,
                double payload,
                int qos = -1,
@@ -149,6 +153,7 @@ class Mqtt : public ProtocolLayer {
   void publishHADiscoveryRGB(Supla::Element *);
   void publishHADiscoveryDimmer(Supla::Element *);
   void publishHADiscoveryHVAC(Supla::Element *);
+  void publishHADiscoveryBinarySensor(Supla::Element *);
 
   // parameterName has to be ASCII string with small caps and underscores
   // between words i.e. "total_forward_active_energy".
@@ -169,8 +174,10 @@ class Mqtt : public ProtocolLayer {
   const char *getDeviceClassStr(Supla::Protocol::HADeviceClass deviceClass);
 
   const char *getRelayChannelName(int channelFunction) const;
+  const char *getBinarySensorChannelName(int channelFunction) const;
 
   bool isPayloadOn(const char *);
+  bool isOpenClosedBinarySensorFunction(int channelFunction) const;
 
   char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
   int32_t port = -1;

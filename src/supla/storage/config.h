@@ -53,6 +53,9 @@ class Config {
   virtual bool isMinimalConfigReady();
   virtual bool isConfigModeSupported();
 
+  // Override this method and setup all default value if needed
+  virtual void initDefaultDeviceConfig();
+
   // Generic getters and setters
   virtual bool setString(const char* key, const char* value) = 0;
   virtual bool getString(const char* key, char* value, size_t maxSize) = 0;

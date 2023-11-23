@@ -502,4 +502,7 @@ bool Config::clearDeviceConfigChangeFlag() {
   return true;
 }
 
+void Config::initDefaultDeviceConfig() {
+}
+
 }  // namespace Supla

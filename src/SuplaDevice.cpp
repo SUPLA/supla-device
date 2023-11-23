@@ -127,6 +127,10 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   SUPLA_LOG_DEBUG("Supla - starting initialization");
 
+  if (protoVersion >= 21) {
+    addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
+  }
+
   // Initialize protocol layers
   createSrpcLayerIfNeeded();
   srpcLayer->setVersion(protoVersion);

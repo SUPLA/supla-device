@@ -3741,8 +3741,10 @@ void HvacBase::initDefaultWeeklySchedule() {
   // We define default values for HEAT, COOL, AUTO, DOMESTIC_HOT_WATER later
   memset(&weeklySchedule, 0, sizeof(weeklySchedule));
   memset(&altWeeklySchedule, 0, sizeof(altWeeklySchedule));
+  bool prevInitDone = initDone;
   if (initDone) {
     weeklyScheduleChangedOffline = 1;
+    initDone = false;
   }
 
   // first we init Program in schedule
@@ -3846,6 +3848,7 @@ void HvacBase::initDefaultWeeklySchedule() {
     }
   }
 
+  initDone = prevInitDone;
   saveWeeklySchedule();
 }
 

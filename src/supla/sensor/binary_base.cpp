@@ -38,14 +38,13 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    loadFunctionFromConfig();
 
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, BinarySensorServerInvertedLogicTag);
     uint8_t storedServerInvertLogic = 0;
     cfg->getUInt8(key, &storedServerInvertLogic);
-
     setServerInvertLogic(storedServerInvertLogic > 0);
-
     SUPLA_LOG_INFO("Binary[%d] config serverInvertLogic %d",
                    getChannelNumber(),
                    storedServerInvertLogic);
@@ -69,6 +68,18 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
 
   if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+  }
+
+  auto newFunction = newConfig->Func;
+  if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
+    SUPLA_LOG_INFO("Binary[%d]: function changed to %d",
+                   getChannelNumber(),
+                   newFunction);
+    setAndSaveFunction(newFunction);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->notifyConfigChange(getChannelNumber());
+    }
   }
 
   if (newConfig->ConfigSize < sizeof(TChannelConfig_BinarySensor)) {
@@ -126,6 +137,10 @@ void BinaryBase::handleChannelConfigFinished() {
     TSD_ChannelConfig defaultConfig = {};
     defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
     handleChannelConfig(&defaultConfig, true);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->getChannelConfig(getChannelNumber(), SUPLA_CONFIG_TYPE_DEFAULT);
+    }
   }
 }
 

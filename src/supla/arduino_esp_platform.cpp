@@ -83,7 +83,7 @@ class ArduinoEspClient : public Client {
       clientSec->setBufferSizes(1024, 512);  // EXPERIMENTAL
       if (rootCACert) {
         // Set time via NTP, as required for x.509 validation
-        static bool timeConfigured = Supla::Clock::isReady();
+        static bool timeConfigured = Supla::Clock::IsReady();
 
         if (!timeConfigured) {
           timeConfigured = true;

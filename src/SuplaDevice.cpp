@@ -227,25 +227,14 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     Supla::WebServer::Instance()->setSuplaDeviceClass(this);
   }
 
-  bool generateGuidAndAuthkey = false;
   if (isArrayEmpty(Supla::Channel::reg_dev.GUID, SUPLA_GUID_SIZE)) {
-    // when config storage is available, GUID will be generated automatically
-    if (!Supla::Storage::IsConfigStorageAvailable()) {
-      status(STATUS_INVALID_GUID, "Missing GUID");
-      return false;
-    } else {
-      generateGuidAndAuthkey = true;
-    }
+    status(STATUS_INVALID_GUID, "Missing GUID");
+    return false;
   }
 
   if (isArrayEmpty(Supla::Channel::reg_dev.AuthKey, SUPLA_AUTHKEY_SIZE)) {
-    // when config storage is available, AuthKey will be generated automatically
-    if (!Supla::Storage::IsConfigStorageAvailable()) {
-      status(STATUS_INVALID_AUTHKEY, "Missing AuthKey");
-      return false;
-    } else {
-      generateGuidAndAuthkey = true;
-    }
+    status(STATUS_INVALID_AUTHKEY, "Missing AuthKey");
+    return false;
   }
 
   if (!configComplete) {
@@ -267,28 +256,6 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   if (verificationSuccess == false) {
     // this may happen only when Supla::Storage::Config is not used
     return false;
-  }
-
-  if (generateGuidAndAuthkey) {
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (cfg && cfg->generateGuidAndAuthkey()) {
-      SUPLA_LOG_INFO("Successfully generated GUID and AuthKey");
-      char buf[512] = {};
-      if (cfg->getGUID(buf)) {
-        setGUID(buf);
-      }
-      if (cfg->getAuthKey(buf)) {
-        setAuthKey(buf);
-      }
-      generateHexString(
-          Supla::Channel::reg_dev.AuthKey, buf, SUPLA_AUTHKEY_SIZE);
-      SUPLA_LOG_DEBUG("New AuthKey: %s", buf);
-    } else {
-      SUPLA_LOG_ERROR("Failed to generate GUID and AuthKey");
-      status(STATUS_INVALID_GUID, "Missing GUID");
-      status(STATUS_INVALID_AUTHKEY, "Missing AuthKey");
-      return false;
-    }
   }
 
   char buf[SUPLA_GUID_SIZE * 2 + 1] = {};
@@ -600,7 +567,7 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
 
   bool configComplete = true;
-  char buf[256] = {};
+  char buf[512] = {};
 
   // Device generic config
   memset(buf, 0, sizeof(buf));
@@ -608,15 +575,40 @@ bool SuplaDeviceClass::loadDeviceConfig() {
     setName(buf);
   }
 
+  bool generateGuidAndAuthkey = false;
   memset(buf, 0, sizeof(buf));
   if (cfg->getGUID(buf)) {
     setGUID(buf);
+  } else {
+    generateGuidAndAuthkey = true;
   }
 
   memset(buf, 0, sizeof(buf));
   if (cfg->getAuthKey(buf)) {
     setAuthKey(buf);
+  } else {
+    generateGuidAndAuthkey = true;
   }
+
+  if (generateGuidAndAuthkey) {
+    if (cfg->generateGuidAndAuthkey()) {
+      SUPLA_LOG_INFO("Successfully generated GUID and AuthKey");
+      if (cfg->getGUID(buf)) {
+        setGUID(buf);
+      }
+      if (cfg->getAuthKey(buf)) {
+        setAuthKey(buf);
+      }
+      generateHexString(
+          Supla::Channel::reg_dev.AuthKey, buf, SUPLA_AUTHKEY_SIZE);
+      SUPLA_LOG_DEBUG("New AuthKey: %s", buf);
+      cfg->initDefaultDeviceConfig();
+    } else {
+      SUPLA_LOG_ERROR("Failed to generate GUID and AuthKey");
+      return true;
+    }
+  }
+
 
   deviceMode = cfg->getDeviceMode();
   if (deviceMode == Supla::DEVICE_MODE_NOT_SET) {
@@ -1015,6 +1007,7 @@ void SuplaDeviceClass::resetToFactorySettings() {
     cfg->removeAll();
     cfg->setGUID(Supla::Channel::reg_dev.GUID);
     cfg->setAuthKey(Supla::Channel::reg_dev.AuthKey);
+    cfg->initDefaultDeviceConfig();
     cfg->commit();
   }
 

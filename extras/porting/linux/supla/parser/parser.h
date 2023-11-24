@@ -21,6 +21,7 @@
 
 #include <map>
 #include <string>
+#include <cstdint>
 
 namespace Supla {
 namespace Parser {

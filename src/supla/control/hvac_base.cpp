@@ -2981,7 +2981,8 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
     channel.setHvacFlagCountdownTimer(true);
   }
 
-  if (!channel.isHvacFlagWeeklySchedule() && mode != SUPLA_HVAC_MODE_OFF) {
+  if (!channel.isHvacFlagWeeklySchedule() && mode != SUPLA_HVAC_MODE_OFF &&
+      !channel.isHvacFlagCountdownTimer()) {
     // in manual mode we store last manual temperatures
     if (mode == SUPLA_HVAC_MODE_AUTO || mode == SUPLA_HVAC_MODE_COOL ||
         mode == SUPLA_HVAC_MODE_HEAT) {

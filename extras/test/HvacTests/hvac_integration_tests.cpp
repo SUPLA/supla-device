@@ -3675,6 +3675,72 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     t1->iterateConnected();
     time.advance(1000);
   }
+
+  // send timer and then break it with CMD_SWITCH_TO_MANUAL
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
+                  SUPLA_HVAC_VALUE_FLAG_HEATING |
+                  SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2300);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 3000);
+    });
+
+  hvacValue->Mode = SUPLA_HVAC_MODE_HEAT;
+  hvacValue->SetpointTemperatureHeat = 2300;
+  hvacValue->SetpointTemperatureCool = 3000;
+  newValue.DurationSec = 20;
+
+  EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
+
+  // time +10 s, so in the middle of countdown timer
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(1000);
+  }
+
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seqPrimary)
+    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+                 uint32_t validityTimeSec) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
+                  SUPLA_HVAC_VALUE_FLAG_HEATING);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 1900);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
+    });
+
+  hvacValue->Mode = SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL;
+  hvacValue->SetpointTemperatureHeat = 0;
+  hvacValue->SetpointTemperatureCool = 0;
+  hvacValue->Flags = 0;
+  newValue.DurationSec = 0;
+
+  EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
+
+  for (int i = 0; i < 20; ++i) {
+    hvac->iterateAlways();
+    t1->iterateAlways();
+    hvac->iterateConnected();
+    t1->iterateConnected();
+    time.advance(1000);
+  }
 }
 
 // When stored config is invalid, device should use SW default configuration

@@ -21,6 +21,7 @@
 #include <WiFiClient.h>
 #include <WiFiClientSecure.h>
 #include <supla/clock/clock.h>
+#include <SuplaDevice.h>
 
 #include "tools.h"
 #include "supla/network/client.h"
@@ -128,6 +129,10 @@ class ArduinoEspClient : public Client {
 
       if (lastErr) {
         SUPLA_LOG_ERROR("SSL error: %d, %s", lastErr, buf);
+        if (sdc && (lastConnErr != lastErr)) {
+          lastConnErr = lastErr;
+          sdc->addLastStateLog(buf);
+        }
       }
     }
 
@@ -158,6 +163,7 @@ class ArduinoEspClient : public Client {
   WiFiClient *wifiClient = nullptr;
   String fingerprint;
   uint16_t timeoutMs = 3000;
+  int lastConnErr = 0;
 #ifdef ARDUINO_ARCH_ESP8266
     X509List *caCert = nullptr;
 #endif

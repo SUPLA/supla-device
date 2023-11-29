@@ -34,7 +34,7 @@ namespace Control {
 class ExtPCA9685 : public Supla::Io {
  public:
   explicit ExtPCA9685(uint8_t address = 0x40)
-      : pca(address), address(address), Supla::Io(false) {
+      : pca(address), Supla::Io(false) {
     if (!pca.begin()) {
       SUPLA_LOG_DEBUG("Unable to find PCA9685");
     } else {

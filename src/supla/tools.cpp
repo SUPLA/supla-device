@@ -410,6 +410,10 @@ bool stringToColor(const char *payload,
 
   return true;
 #else
+  (void)(payload);
+  (void)(red);
+  (void)(green);
+  (void)(blue);
   return false;
 #endif
 }

@@ -53,27 +53,33 @@ class ActionHandlerClient {
 class LocalAction {
  public:
   virtual ~LocalAction();
-  virtual void addAction(int action,
+  virtual void addAction(uint16_t action,
       ActionHandler &client,   // NOLINT(runtime/references)
-      int event,
+      uint16_t event,
       bool alwaysEnabled = false);
-  virtual void addAction(int action, ActionHandler *client, int event,
+  virtual void addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled = false);
 
-  virtual void runAction(int event);
+  virtual void runAction(uint16_t event);
 
-  virtual bool isEventAlreadyUsed(int event, bool ignoreAlwaysEnabled);
-  virtual ActionHandlerClient *getHandlerForFirstClient(int event);
+  virtual bool isEventAlreadyUsed(uint16_t event, bool ignoreAlwaysEnabled);
+  virtual ActionHandlerClient *getHandlerForFirstClient(uint16_t event);
   virtual ActionHandlerClient *getHandlerForClient(ActionHandler *client,
-                                                   int event);
+                                                   uint16_t event);
 
-  virtual void disableOtherClients(const ActionHandler &client, int event);
-  virtual void enableOtherClients(const ActionHandler &client, int event);
-  virtual void disableOtherClients(const ActionHandler *client, int event);
-  virtual void enableOtherClients(const ActionHandler *client, int event);
+  virtual void disableOtherClients(const ActionHandler &client, uint16_t event);
+  virtual void enableOtherClients(const ActionHandler &client, uint16_t event);
+  virtual void disableOtherClients(const ActionHandler *client, uint16_t event);
+  virtual void enableOtherClients(const ActionHandler *client, uint16_t event);
 
-  virtual void disableAction(int action, ActionHandler *client, int event);
-  virtual void enableAction(int action, ActionHandler *client, int event);
+  // action and event are internally uint16_t type, however -1 is used
+  // as "all events/actions", so here we pass int32_t
+  virtual void disableAction(int32_t action,
+                             ActionHandler *client,
+                             int32_t event);
+  virtual void enableAction(int32_t action,
+                            ActionHandler *client,
+                            int32_t event);
 
   virtual bool disableActionsInConfigMode();
 

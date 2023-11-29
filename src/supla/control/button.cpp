@@ -185,18 +185,22 @@ void Button::onTimer() {
   }
 }
 
-void Button::addAction(int action, ActionHandler *client, int event,
+void Button::addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled) {
   SimpleButton::addAction(action, client, event, alwaysEnabled);
   evaluateMaxMulticlickValue();
 }
 
-void Button::disableAction(int action, ActionHandler *client, int event) {
+void Button::disableAction(int32_t action,
+                           ActionHandler *client,
+                           int32_t event) {
   SimpleButton::disableAction(action, client, event);
   evaluateMaxMulticlickValue();
 }
 
-void Button::enableAction(int action, ActionHandler *client, int event) {
+void Button::enableAction(int32_t action,
+                          ActionHandler *client,
+                          int32_t event) {
   SimpleButton::enableAction(action, client, event);
   evaluateMaxMulticlickValue();
 }
@@ -269,7 +273,7 @@ void Button::evaluateMaxMulticlickValue() {
   }
 }
 
-void Button::addAction(int action, ActionHandler &client, int event,
+void Button::addAction(uint16_t action, ActionHandler &client, uint16_t event,
       bool alwaysEnabled) {
   Button::addAction(action, &client, event, alwaysEnabled);
 }

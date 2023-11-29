@@ -37,9 +37,9 @@ class ThermHygroPressMeter : public ThermHygroMeter {
 
   // Override local action methods in order to delegate execution to Channel and
   // Secondary Channel
-  void addAction(int action, ActionHandler &client, int event,
+  void addAction(uint16_t action, ActionHandler &client, uint16_t event,
       bool alwaysEnabled = false) override;
-  void addAction(int action, ActionHandler *client, int event,
+  void addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled = false) override;
 
  protected:

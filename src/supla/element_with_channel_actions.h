@@ -32,23 +32,23 @@ class Condition;
 class ElementWithChannelActions : public Element, public LocalAction {
  public:
   // Override local action methods in order to delegate execution to Channel
-  void addAction(int action,
+  void addAction(uint16_t action,
       ActionHandler &client,  // NOLINT(runtime/references)
-      int event,
+      uint16_t event,
       bool alwaysEnabled = false) override;
-  void addAction(int action, ActionHandler *client, int event,
+  void addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled = false) override;
-  virtual void addAction(int action,
+  virtual void addAction(uint16_t action,
       ActionHandler &client,  // NOLINT(runtime/references)
       Supla::Condition *condition,
       bool alwaysEnabled = false);
-  virtual void addAction(int action, ActionHandler *client,
+  virtual void addAction(uint16_t action, ActionHandler *client,
       Supla::Condition *condition,
       bool alwaysEnabled = false);
 
-  bool isEventAlreadyUsed(int event, bool ignoreAlwaysEnabled) override;
+  bool isEventAlreadyUsed(uint16_t event, bool ignoreAlwaysEnabled) override;
 
-  void runAction(int event) override;
+  void runAction(uint16_t event) override;
 
   virtual bool loadFunctionFromConfig();
   // returns true if function was changed (previous one was different)

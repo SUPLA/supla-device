@@ -21,9 +21,9 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 
-void Supla::ElementWithChannelActions::addAction(int action,
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler &client,
-    int event,
+    uint16_t event,
     bool alwaysEnabled) {
   auto channel = getChannel();
   if (channel) {
@@ -31,14 +31,14 @@ void Supla::ElementWithChannelActions::addAction(int action,
   }
 }
 
-void Supla::ElementWithChannelActions::addAction(int action,
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler *client,
-    int event,
+    uint16_t event,
     bool alwaysEnabled) {
   ElementWithChannelActions::addAction(action, *client, event, alwaysEnabled);
 }
 
-void Supla::ElementWithChannelActions::runAction(int event) {
+void Supla::ElementWithChannelActions::runAction(uint16_t event) {
   auto channel = getChannel();
   if (channel) {
     channel->runAction(event);
@@ -46,7 +46,7 @@ void Supla::ElementWithChannelActions::runAction(int event) {
 }
 
 bool Supla::ElementWithChannelActions::isEventAlreadyUsed(
-    int event, bool ignoreAlwaysEnabled) {
+    uint16_t event, bool ignoreAlwaysEnabled) {
   auto channel = getChannel();
   if (channel) {
     return channel->isEventAlreadyUsed(event, ignoreAlwaysEnabled);
@@ -54,7 +54,7 @@ bool Supla::ElementWithChannelActions::isEventAlreadyUsed(
   return false;
 }
 
-void Supla::ElementWithChannelActions::addAction(int action,
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler &client,
     Supla::Condition *condition,
     bool alwaysEnabled) {
@@ -66,7 +66,7 @@ void Supla::ElementWithChannelActions::addAction(int action,
   }
 }
 
-void Supla::ElementWithChannelActions::addAction(int action,
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler *client,
     Supla::Condition *condition,
     bool alwaysEnabled) {

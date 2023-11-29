@@ -50,12 +50,16 @@ class Button : public SimpleButton {
   void onTimer() override;
   void onLoadConfig(SuplaDeviceClass *) override;
   void onInit() override;
-  void addAction(int action, ActionHandler &client, int event,
+  void addAction(uint16_t action, ActionHandler &client, uint16_t event,
       bool alwaysEnabled = false) override;
-  void addAction(int action, ActionHandler *client, int event,
+  void addAction(uint16_t action, ActionHandler *client, uint16_t event,
       bool alwaysEnabled = false) override;
-  void disableAction(int action, ActionHandler *client, int event) override;
-  void enableAction(int action, ActionHandler *client, int event) override;
+  void disableAction(int32_t action,
+                     ActionHandler *client,
+                     int32_t event) override;
+  void enableAction(int32_t action,
+                    ActionHandler *client,
+                    int32_t event) override;
 
   void setHoldTime(unsigned int timeMs);
   void repeatOnHoldEvery(unsigned int timeMs);

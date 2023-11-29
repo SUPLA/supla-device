@@ -143,7 +143,7 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
   }
 
   // check size first
-  int dataIndex = 0;
+  uint32_t dataIndex = 0;
   uint64_t fieldBit = 1;
   while (dataIndex < config->ConfigSize && fieldBit) {
     if (fieldBit & config->Fields) {

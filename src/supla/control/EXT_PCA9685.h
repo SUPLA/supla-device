@@ -69,7 +69,6 @@ class ExtPCA9685 : public Supla::Io {
 
  protected:
   ::PCA9685 pca;
-  uint8_t address;
   bool isConnected = false;
 };
 

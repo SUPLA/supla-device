@@ -16,7 +16,7 @@ WORKDIR /supla
 # Download and install espressif toolset and esp-idf
 RUN mkdir esp && \
     cd esp && \
-    git clone -b v5.1.1 --recursive https://github.com/espressif/esp-idf.git esp-idf && \
+    git clone -b v5.1.2 --recursive https://github.com/espressif/esp-idf.git esp-idf && \
     cd esp-idf && \
     ./install.sh all
 

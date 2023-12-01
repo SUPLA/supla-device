@@ -872,6 +872,11 @@ uint32_t Supla::Protocol::SuplaSrpc::getActivityTimeout() {
 }
 
 bool Supla::Protocol::SuplaSrpc::isUpdatePending() {
+  if (sdc->isRemoteDeviceConfigEnabled()) {
+    if (!setDeviceConfigReceivedAfterRegistration) {
+      return true;
+    }
+  }
   return Supla::Element::IsAnyUpdatePending();
 }
 

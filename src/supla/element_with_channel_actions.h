@@ -27,6 +27,14 @@
 
 namespace Supla {
 
+enum class ChannelConfigState {
+  None = 0,
+  LocalChangePending = 1,
+  SetChannelConfigSend = 2,
+  SetChannelConfigFailed = 3,
+  WaitForConfigFinished = 4
+};
+
 class Condition;
 
 class ElementWithChannelActions : public Element, public LocalAction {
@@ -50,9 +58,17 @@ class ElementWithChannelActions : public Element, public LocalAction {
 
   void runAction(uint16_t event) override;
 
-  virtual bool loadFunctionFromConfig();
   // returns true if function was changed (previous one was different)
   virtual bool setAndSaveFunction(_supla_int_t channelFunction);
+  virtual bool loadFunctionFromConfig();
+  virtual bool saveConfigChangeFlag();
+  virtual bool loadConfigChangeFlag();
+  bool isAnyUpdatePending() override;
+
+ protected:
+  Supla::ChannelConfigState channelConfigState =
+      Supla::ChannelConfigState::None;
+  bool waitForChannelConfigAndIgnoreIt = false;
 };
 
 };  // namespace Supla

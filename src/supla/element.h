@@ -123,6 +123,8 @@ class Element {
 
   Element &disableChannelState();
 
+  virtual bool isAnyUpdatePending();
+
  protected:
   static Element *firstPtr;
   static bool invalidatePtr;

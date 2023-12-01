@@ -64,11 +64,7 @@ class ThermHygroMeter : public ChannelElement {
 
   uint32_t lastReadTime = 0;
   uint16_t refreshIntervalMs = 10000;
-  bool waitForChannelConfigAndIgnoreIt = false;
   bool configFinishedReceived = false;
-  bool defaultConfigReceived = false;
-  int8_t setChannelStateFlag = 0;
-  uint8_t setChannelResult = 0;
 };
 
 };  // namespace Sensor

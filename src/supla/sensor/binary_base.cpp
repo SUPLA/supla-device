@@ -137,10 +137,8 @@ void BinaryBase::handleChannelConfigFinished() {
     TSD_ChannelConfig defaultConfig = {};
     defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
     handleChannelConfig(&defaultConfig, true);
-    for (auto proto = Supla::Protocol::ProtocolLayer::first();
-        proto != nullptr; proto = proto->next()) {
-      proto->getChannelConfig(getChannelNumber(), SUPLA_CONFIG_TYPE_DEFAULT);
-    }
+
+    channel.requestChannelConfig();
   }
 }
 

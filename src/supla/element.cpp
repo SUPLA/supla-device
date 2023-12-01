@@ -76,8 +76,7 @@ Element *Element::getElementByChannelNumber(int channelNumber) {
 bool Element::IsAnyUpdatePending() {
   Element *element = begin();
   while (element != nullptr) {
-    auto ch = element->getChannel();
-    if (ch && ch->isUpdateReady()) {
+    if (element->isAnyUpdatePending()) {
       return true;
     }
     element = element->next();
@@ -265,5 +264,10 @@ bool Element::IsInvalidPtrSet() {
 void Element::ClearInvalidPtr() {
   invalidatePtr = false;
 }
+
+bool Element::isAnyUpdatePending() {
+  return false;
+}
+
 
 };  // namespace Supla

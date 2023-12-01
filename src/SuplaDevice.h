@@ -181,6 +181,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // 0 - no offline mode
   void allowWorkInOfflineMode(int mode = 1);
 
+  bool isRemoteDeviceConfigEnabled() const;
+
  protected:
   int networkIsNotReadyCounter = 0;
 

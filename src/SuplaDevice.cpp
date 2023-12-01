@@ -1203,4 +1203,9 @@ void SuplaDeviceClass::allowWorkInOfflineMode(int mode) {
   allowOfflineMode = mode;
 }
 
+bool SuplaDeviceClass::isRemoteDeviceConfigEnabled() const {
+  return Supla::Channel::reg_dev.Flags &
+         SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED;
+}
+
 SuplaDeviceClass SuplaDevice;

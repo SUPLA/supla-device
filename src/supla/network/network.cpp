@@ -126,6 +126,13 @@ bool Network::IsSuplaSSLEnabled() {
   return false;
 }
 
+bool Network::IsIpSetupTimeout() {
+  if (Instance() != nullptr) {
+    return Instance()->isIpSetupTimeout();
+  }
+  return false;
+}
+
 Network::Network(unsigned char *ip) {
   netIntf = this;
 
@@ -231,6 +238,10 @@ void Network::setSetupNeeded() {
 
 bool Network::isSuplaSSLEnabled() {
   return sslEnabled;
+}
+
+bool Network::isIpSetupTimeout() {
+  return false;
 }
 
 };  // namespace Supla

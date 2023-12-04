@@ -68,6 +68,9 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
   cfg.timeout_ms = timeoutMs;
   cfg.non_block = false;
 
+  bool isFirstConnectAfterInit = firstConnectAfterInit;
+  firstConnectAfterInit = false;
+
   client = esp_tls_init();
   if (!client) {
     SUPLA_LOG_ERROR("ESP TLS INIT FAILED");
@@ -91,9 +94,11 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
               errorHandle->last_error,
               errorHandle->esp_tls_error_code,
               errorHandle->esp_tls_flags);
-    logConnReason(errorHandle->last_error,
-                  errorHandle->esp_tls_error_code,
-                  errorHandle->esp_tls_flags);
+    if (!isFirstConnectAfterInit) {
+      logConnReason(errorHandle->last_error,
+          errorHandle->esp_tls_error_code,
+          errorHandle->esp_tls_flags);
+    }
     isConnected = false;
     esp_tls_conn_destroy(client);
     client = nullptr;
@@ -187,6 +192,7 @@ int Supla::EspIdfClient::readImp(uint8_t *buf, std::size_t size) {
 
 void Supla::EspIdfClient::stop() {
   Supla::AutoLock autoLock(mutex);
+  firstConnectAfterInit = true;
   isConnected = false;
   if (client != nullptr) {
     esp_tls_conn_destroy(client);

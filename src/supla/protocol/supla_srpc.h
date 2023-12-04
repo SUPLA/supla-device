@@ -147,6 +147,7 @@ class SuplaSrpc : public ProtocolLayer {
   uint16_t connectionFailCounter = 0;
   bool enabled = true;
   bool setDeviceConfigReceivedAfterRegistration = false;
+  bool firstConnectionAttempt = true;
 
   int port = -1;
 

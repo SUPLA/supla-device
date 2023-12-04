@@ -29,6 +29,7 @@
 #include <supla/storage/storage.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 #include <cstring>
 
@@ -55,14 +56,21 @@ static void eventHandler(void *arg,
                          esp_event_base_t eventBase,
                          int32_t eventId,
                          void *eventData) {
+  static bool firstWiFiScanDone = false;
   if (eventBase == WIFI_EVENT) {
     switch (eventId) {
+      case WIFI_EVENT_STA_STOP: {
+        firstWiFiScanDone = false;
+        break;
+      }
       case WIFI_EVENT_STA_START: {
         SUPLA_LOG_DEBUG("Starting connection to AP");
+        firstWiFiScanDone = false;
         esp_wifi_connect();
         break;
       }
       case WIFI_EVENT_STA_CONNECTED: {
+        firstWiFiScanDone = true;
         if (netIntfPtr) {
           netIntfPtr->setWifiConnected(true);
         }
@@ -75,7 +83,10 @@ static void eventHandler(void *arg,
         if (netIntfPtr) {
           netIntfPtr->setIpReady(false);
           netIntfPtr->setWifiConnected(false);
-          netIntfPtr->logWifiReason(data->reason);
+          if (firstWiFiScanDone) {
+            // we ignore connection error if it happens first time
+            netIntfPtr->logWifiReason(data->reason);
+          }
         }
         if (!netIntfPtr->isInConfigMode()) {
           esp_wifi_connect();
@@ -83,6 +94,7 @@ static void eventHandler(void *arg,
                     "connect to the AP fail (reason %d). Trying again",
                     data->reason);
         }
+        firstWiFiScanDone = true;
         break;
       }
     }
@@ -157,6 +169,7 @@ void Supla::EspIdfWifi::setup() {
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+    wifi_config.sta.failure_retry_cnt = 2;
 
     if (strlen(reinterpret_cast<char *>(wifi_config.sta.password))) {
       wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
@@ -244,10 +257,12 @@ void Supla::EspIdfWifi::fillStateData(TDSC_ChannelState *channelState) {
 }
 
 void Supla::EspIdfWifi::setIpReady(bool ready) {
+  connectedToWifiTimestamp = 0;
   isIpReady = ready;
 }
 
 void Supla::EspIdfWifi::setWifiConnected(bool state) {
+  connectedToWifiTimestamp = millis();
   isWifiConnected = state;
 }
 
@@ -343,5 +358,12 @@ void Supla::EspIdfWifi::logWifiReason(int reason) {
       }
     }
   }
+}
+
+bool Supla::EspIdfWifi::isIpSetupTimeout() {
+  if (connectedToWifiTimestamp && millis() - connectedToWifiTimestamp > 3000) {
+    return true;
+  }
+  return false;
 }
 

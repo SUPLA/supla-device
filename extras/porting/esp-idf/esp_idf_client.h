@@ -43,6 +43,7 @@ class EspIdfClient : public Client {
 
   Supla::Mutex *mutex = nullptr;
   bool isConnected = false;
+  bool firstConnectAfterInit = true;
   esp_tls_t *client = nullptr;
   uint16_t timeoutMs = 10000;
   int lastConnErr = 0;

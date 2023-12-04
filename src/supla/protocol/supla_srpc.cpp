@@ -659,12 +659,21 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       SUPLA_LOG_INFO("Connected to Supla Server");
       initializeSrpc();
     } else {
-      sdc->status(STATUS_SERVER_DISCONNECTED, "Not connected to Supla server");
+      if (!firstConnectionAttempt) {
+        sdc->status(STATUS_SERVER_DISCONNECTED,
+                    "Not connected to Supla server");
+      }
       SUPLA_LOG_DEBUG("Connection fail (%d). Server: %s",
                       result,
                       Supla::Channel::reg_dev.ServerName);
+      if (firstConnectionAttempt) {
+        waitForIterate = 1000;
+      } else {
+        waitForIterate = 10000;
+      }
+
       disconnect();
-      waitForIterate = 10000;
+      firstConnectionAttempt = false;
       connectionFailCounter++;
       if (connectionFailCounter % 6 == 0) {
         requestNetworkRestart = true;
@@ -766,6 +775,7 @@ void Supla::Protocol::SuplaSrpc::disconnect() {
     return;
   }
 
+  firstConnectionAttempt = true;
   registered = 0;
   client->stop();
   deinitializeSrpc();

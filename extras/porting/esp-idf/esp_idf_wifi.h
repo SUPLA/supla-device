@@ -52,6 +52,7 @@ class EspIdfWifi : public Supla::Wifi {
   void setIpReady(bool ready);
   void setIpv4Addr(unsigned _supla_int_t);
   void setWifiConnected(bool state);
+  bool isIpSetupTimeout() override;
 
   bool isInConfigMode();
   void logWifiReason(int);
@@ -65,6 +66,7 @@ class EspIdfWifi : public Supla::Wifi {
   uint8_t lastChannel = 0;
   int lastReasons[SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX] = {};
   int lastReasonIdx = 0;
+  uint32_t connectedToWifiTimestamp = 0;
 #ifdef SUPLA_DEVICE_ESP32
   esp_netif_t *staNetIf = nullptr;
   esp_netif_t *apNetIf = nullptr;

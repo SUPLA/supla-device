@@ -513,9 +513,10 @@ int SuplaDeviceClass::getCurrentStatus() {
 }
 
 void SuplaDeviceClass::fillStateData(TDSC_ChannelState *channelState) {
-  channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_UPTIME;
-
-  channelState->Uptime = uptime.getUptime();
+  if (showUptimeInChannelState) {
+    channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_UPTIME;
+    channelState->Uptime = uptime.getUptime();
+  }
 
   if (!isSleepingDeviceEnabled()) {
     channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_CONNECTIONUPTIME;
@@ -684,7 +685,7 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
   }
 
   // Restart network after >1 min of failed connection attempts
-  if (requestNetworkLayerRestart) {
+  if (requestNetworkLayerRestart || Supla::Network::IsIpSetupTimeout()) {
     requestNetworkLayerRestart = false;
     SUPLA_LOG_WARNING(
         "Network layer restart requested. Trying to setup network "
@@ -934,7 +935,7 @@ void SuplaDeviceClass::scheduleSoftRestart(int timeout) {
 }
 
 void SuplaDeviceClass::addLastStateLog(const char *msg) {
-  if (lastStateLogger) {
+  if (lastStateLogEnabled && lastStateLogger) {
     lastStateLogger->log(msg);
   }
 }
@@ -1206,6 +1207,18 @@ void SuplaDeviceClass::allowWorkInOfflineMode(int mode) {
 bool SuplaDeviceClass::isRemoteDeviceConfigEnabled() const {
   return Supla::Channel::reg_dev.Flags &
          SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED;
+}
+
+void SuplaDeviceClass::enableLastStateLog() {
+  lastStateLogEnabled = true;
+}
+
+void SuplaDeviceClass::disableLastStateLog() {
+  lastStateLogEnabled = false;
+}
+
+void SuplaDeviceClass::setShowUptimeInChannelState(bool value) {
+  showUptimeInChannelState = value;
 }
 
 SuplaDeviceClass SuplaDevice;

@@ -695,7 +695,7 @@ bool SuplaDeviceClass::iterateNetworkSetup() {
   }
 
   if (!Supla::Network::IsReady()) {
-    if (networkIsNotReadyCounter == 100) {  // > 10 s
+    if (networkIsNotReadyCounter == 200) {  // > 20 s
       status(STATUS_NETWORK_DISCONNECTED, "No connection to network");
       uptime.setConnectionLostCause(
           SUPLA_LASTCONNECTIONRESETCAUSE_WIFI_CONNECTION_LOST);

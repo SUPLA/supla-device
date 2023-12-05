@@ -180,6 +180,7 @@ void Supla::EspIdfWifi::setup() {
   }
   ESP_ERROR_CHECK(esp_wifi_start());
 
+  allowDisable = true;
   initDone = true;
 #ifndef SUPLA_DEVICE_ESP32
   // ESP8266 hostname settings have to be done after esp_wifi_start
@@ -189,6 +190,11 @@ void Supla::EspIdfWifi::setup() {
 }
 
 void Supla::EspIdfWifi::disable() {
+  if (!allowDisable) {
+    return;
+  }
+
+  allowDisable = false;
   SUPLA_LOG_DEBUG("WiFi: disabling WiFi connection");
   DisconnectProtocols();
   uint8_t channel = 0;

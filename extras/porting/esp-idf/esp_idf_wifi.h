@@ -61,6 +61,7 @@ class EspIdfWifi : public Supla::Wifi {
   bool initDone = false;
   bool isWifiConnected = false;
   bool isIpReady = false;
+  bool allowDisable = false;
   EventGroupHandle_t wifiEventGroup;
   unsigned _supla_int_t ipv4 = 0;
   uint8_t lastChannel = 0;

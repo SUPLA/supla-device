@@ -169,7 +169,9 @@ void Supla::EspIdfWifi::setup() {
     wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;
     wifi_config.sta.scan_method = WIFI_ALL_CHANNEL_SCAN;
     wifi_config.sta.sort_method = WIFI_CONNECT_AP_BY_SIGNAL;
+#ifdef SUPLA_DEVICE_ESP32
     wifi_config.sta.failure_retry_cnt = 2;
+#endif
 
     if (strlen(reinterpret_cast<char *>(wifi_config.sta.password))) {
       wifi_config.sta.threshold.authmode = WIFI_AUTH_WPA2_PSK;

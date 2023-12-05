@@ -40,7 +40,7 @@ void StatusLedParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = 0;
-    cfg->getInt8("statusled", &value);
+    cfg->getInt8(Supla::Device::StatusLedCfgTag, &value);
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");

@@ -22,6 +22,7 @@
 #include "../element.h"
 
 namespace Supla {
+class Mutex;
 
 enum LedState { NOT_INITIALIZED, ON, OFF };
 
@@ -98,6 +99,7 @@ class StatusLed : public Element {
   LedSequence currentSequence = NETWORK_CONNECTING;
   LedMode ledMode = LED_ON_WHEN_CONNECTED;
   Supla::Io *io = nullptr;
+  Supla::Mutex *mutex = nullptr;
 };
 
 }  // namespace Device

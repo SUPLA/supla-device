@@ -107,6 +107,7 @@ void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
 
   // load config changed offline flags
   loadConfigChangeFlag();
+  lastReadTime = 0;
 }
 
 int16_t Supla::Sensor::ThermHygroMeter::readCorrectionFromIndex(int index) {

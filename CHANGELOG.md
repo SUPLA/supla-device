@@ -1,6 +1,47 @@
 # CHANGELOG.md
 
-## 23.11 (2023-11.07)
+## 23.12 (2023-12-05)
+
+  - Change: HVAC: allow invalid config with invalid main thermometer channel number.  Thermostat will be in "off" with theremometer error.
+  - Change: RGBW, RGB, Dimmer: adjusted fading algorithm for smaller distances (target vs actuall PWM setting)
+  - Change: MQTT: increased max username and password size to 255 chars.
+  - Change: SuplaDevice: clear "LAST STATE" from detailed information about missing parameters in cofniguration in case of startup of fresh device with fully empty config. It will only have "Config mode" last state
+  - Change: Button, ActionHandler: local actions which are "always enabled" are now not added to list of actions which are shown in Cloud as "disablesLocalOperation"
+  - Change: SuplaDevice: enabled remote device config flag by default for proto >= 21
+  - Change: ESP-IDF: version inrement to 5.1.2
+  - Change: Adjusted isAnyUpdatePending method (used for sleeping devices) to runtime channel config support.
+  - Change: SuplaDevice: change reporting "no connection to network" state from 10s to 20s timeout
+  - Fix: HVAC: fix sending config after function being set to "none" and then to proper one
+  - Fix: Linux: fix setting thermometer type for HVAC
+  - Fix: CSS: restored label width 250px
+  - Fix: HTML: fix for not concurent protocol selector HTML (Supla or MQTT)
+  - Fix: ESP8266 RTOS example: update and adjustment to SDK changes. New default sdkconfig values.
+  - Fix: Relay: fix manual turnOn command with no storage and with minimumAllowedDurationMs set
+  - Fix: Clock::isReady fix fox DS1307RTC and DS3231RTC (thanks for @lukfud)
+  - Fix: Uptime: calculation protection against invalid value in millis
+  - Fix: Arduino ESP8266: SSL connection seems to have some memory leak and on each connection restart there is ~1 KB of memory less, which lead to quick OOM situation and board reset. Added Wi-Fi connection restart in case of lost SSL connection, which clears memory properly.
+  - Fix: Arduino ESP8266: skip NTP time check for secured connection when Supla::Clock was already initialized earlier (thanks @lukfud)
+  - Fix: HVAC: fix for multiple "weekly schedule save" problem on function change (thanks @lukfud)
+  - Fix: HVAC: fix returning to manual mode during countdown timer in manual mode with different temperature setpoint
+  - Fix: ESP-IDF: improved reconncetion procedure: add Wi-Fi connection retry on esp-idf level, add timeout for "got ip" event after wifi connection was established, for quicker reconnect, add ignoring first occurence of connection error (i.e. wifi scan may sometimes fail, so first occurence is ignored, but we report it when it repeats).
+  - Fix: StatusLed: add mutex on access to interface methods in order to prevent potential error with led status change during runtime
+  - Add: SuplaDevice: add setShowUptimeInChannelState(bool value) method to enable/disable uptime reporting by device (it may be disabled for deep sleep mode).
+  - Add: PCA9685 expander support (thanks @lukfud)
+  - Add: Hvac: add SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED flag
+  - Add: ESP8266 RTOS: add support for local MQTT
+  - Add: MQTT: add publishing of impulse relay functions (gate, door, garage door, gateway) as "always closed" with "open" button available for integration with step-by-step devices.
+  - Add: MQTT: add support for binary sensor (with Home Assistant autodiscovery)
+  - Add: RGBW, RGB, Dimmer: add option to specify PWM range. Add option to define Supla::Io interface for "leds" classes.
+  - Add: Linux: add script for building the example and cmake improvements
+  - Add: Relay: add minimum allowed duration ms parameter. If there will be turn on will lower (or 0) duration, then minumum value will be enforced.
+  - Add: BinarySensor: add storing and obtaining function set on server
+  - Add: Config: add method to provide default device config on device initialization and on factory reset
+  - Add: Arduino ESP8266, ESP32: add logging SSL connection error to LAST STATE
+  - Add: SuplaDevice: add method isRemoteDeviceConfigEnabled()
+  - Add: ESP-IDF DS18B20: add sensor readout instant refresh after config change
+  - Add: ESP-IDF: add bool guard for calling "disable" method, so it will be executed only when "start" was called before
+
+## 23.11 (2023-11-07)
 
   - Change: LocalAction: changed variable that holds actions and events to uint16_t
   - Change: Button: Html fields now allow 200 ms as minimum time to be set (was 300 ms)

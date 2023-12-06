@@ -181,17 +181,19 @@ static void mqttEventHandler(void *handler_args,
 
 Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
   : Supla::Protocol::Mqtt(sdc) {
-    mutex = Supla::Mutex::Create();
-    mutexEventHandler = Supla::Mutex::Create();
-    mutexEventHandler->unlock();
-    espMqtt = this;
-  }
+  espMqtt = this;
+}
 
 Supla::Protocol::EspMqtt::~EspMqtt() {
   espMqtt = nullptr;
 }
 
 void Supla::Protocol::EspMqtt::onInit() {
+  if (mutex == nullptr) {
+    mutex = Supla::Mutex::Create();
+    mutex->lock();
+    mutexEventHandler = Supla::Mutex::Create();
+  }
   if (!isEnabled()) {
     return;
   }
@@ -283,6 +285,7 @@ void Supla::Protocol::EspMqtt::disconnect() {
     }
     esp_mqtt_client_destroy(client);
     onInit();
+    mutex->lock();
   }
   enterRegisteredAndReady = false;
 }

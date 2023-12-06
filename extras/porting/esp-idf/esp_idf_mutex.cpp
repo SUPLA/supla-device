@@ -27,6 +27,11 @@ Supla::EspIdfMutex::~EspIdfMutex() {
 
 Supla::EspIdfMutex::EspIdfMutex() {
   mutex = xSemaphoreCreateMutex();
+  // there is some issue with mutex creation and its default state when two
+  // tasks try to use them. As a workaround we take and give mutex back and
+  // after such calls it works always as expected.
+  xSemaphoreTake(mutex, portMAX_DELAY);
+  xSemaphoreGive(mutex);
 }
 
 void Supla::EspIdfMutex::lock() {

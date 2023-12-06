@@ -201,7 +201,7 @@ void Supla::Device::StatusLed::iterateAlways() {
         currentSequence = PACZKOW_WE_HAVE_A_PROBLEM;
         break;
       }
-      if (proto->isConnecting()) {
+      if (proto->isConnecting() && !SuplaDevice.isSleepingDeviceEnabled()) {
         currentSequence = SERVER_CONNECTING;
       }
     }

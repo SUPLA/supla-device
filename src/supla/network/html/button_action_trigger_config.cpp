@@ -44,9 +44,9 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = 0;
-    char key[16] = {};
-    snprintf(key, sizeof(key),
-        "%s%d", BtnActionTriggerCfgTagPrefix, channelNumber);
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(key, channelNumber,
+                             Supla::Html::BtnActionTriggerCfgTagPrefix);
     cfg->getInt32(key, &value);
 
     char label[100] = {};
@@ -81,9 +81,9 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
 bool ButtonActionTriggerConfig::handleResponse(const char* key,
                                                const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  char keyRef[16] = {};
-  snprintf(keyRef, sizeof(keyRef),
-      "%s%d", BtnActionTriggerCfgTagPrefix, channelNumber);
+  char keyRef[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  Supla::Config::generateKey(keyRef, channelNumber,
+      Supla::Html::BtnActionTriggerCfgTagPrefix);
   if (strcmp(key, keyRef) == 0) {
     int atType = stringToUInt(value);
     switch (atType) {

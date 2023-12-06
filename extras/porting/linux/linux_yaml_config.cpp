@@ -684,12 +684,6 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
   if (ch["aux_thermometer_channel_no"]) {
     paramCount++;
     auxThermometerChannelNo = ch["aux_thermometer_channel_no"].as<int>();
-  } else {
-    SUPLA_LOG_ERROR(
-        "Channel[%d] config: missing mandatory \"aux_thermometer_channel_no\" "
-        "parameter",
-        channelNumber);
-    return false;
   }
 
   if (ch["binary_sensor_channel_no"]) {

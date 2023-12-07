@@ -340,6 +340,35 @@ void HvacBase::onLoadState() {
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastManualMode),
         sizeof(lastManualMode));
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] onLoadState. hvacValue: IsOn: %d, Mode: %d, "
+        "SetpointTemperatureCool: %d, SetpointTemperatureHeat: %d, "
+        "Flags: %d",
+        getChannelNumber(),
+        hvacValue->IsOn,
+        hvacValue->Mode,
+        hvacValue->SetpointTemperatureCool,
+        hvacValue->SetpointTemperatureHeat,
+        hvacValue->Flags);
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] onLoadState. lastWorkingMode: IsOn: %d, Mode: %d, "
+        "SetpointTemperatureCool: %d, SetpointTemperatureHeat: %d, "
+        "Flags: %d",
+        getChannelNumber(),
+        lastWorkingMode.IsOn,
+        lastWorkingMode.Mode,
+        lastWorkingMode.SetpointTemperatureCool,
+        lastWorkingMode.SetpointTemperatureHeat,
+        lastWorkingMode.Flags);
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] onLoadState. countdownTimerEnds: %d, "
+        "lastManualSetpointCool: %d, lastManualSetpointHeat: %d, "
+        "lastManualMode: %d",
+        getChannelNumber(),
+        countdownTimerEnds,
+        lastManualSetpointCool,
+        lastManualSetpointHeat,
+        lastManualMode);
   }
 }
 

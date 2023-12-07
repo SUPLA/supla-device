@@ -56,11 +56,11 @@ void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
 }
 
 void RemoteDeviceConfig::SetHomeScreenContentAvailable(uint64_t allValues) {
-  SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%08llx",
-                 allValues);
-  homeScreenContentAvailable = allValues;
-  SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%08llx",
+  if (allValues != homeScreenContentAvailable) {
+    homeScreenContentAvailable = allValues;
+    SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%08llx",
                  homeScreenContentAvailable);
+  }
 }
 
 enum Supla::HomeScreenContent RemoteDeviceConfig::HomeScreenContentBitToEnum(

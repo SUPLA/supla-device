@@ -68,7 +68,7 @@ class ExtPCA9685 : public Supla::Io {
   }
 
   // Default frequency: 200 Hz
-  void setPWMFrequency(uint8_t frequency_) {
+  void setPWMFrequency(uint16_t frequency_) {
     if (isConnected) {
       pca.setFrequency(frequency_);
       SUPLA_LOG_DEBUG("PCA9685 - setting PWM frequency to: %d Hz",

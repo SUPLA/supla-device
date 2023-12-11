@@ -66,7 +66,7 @@ class ExtPCA9685 : public Supla::Io {
   int customAnalogRead(int channelNumber, uint8_t pin) override {
     return 0;
   }
-  
+
   // Default frequency: 200 Hz
   void setPWMFrequency(uint8_t frequency_) {
     if (isConnected) {

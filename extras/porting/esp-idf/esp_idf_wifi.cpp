@@ -369,9 +369,10 @@ void Supla::EspIdfWifi::logWifiReason(int reason) {
 }
 
 bool Supla::EspIdfWifi::isIpSetupTimeout() {
-  if (connectedToWifiTimestamp && millis() - connectedToWifiTimestamp > 3000) {
-    return true;
-  }
+  //  if (connectedToWifiTimestamp && millis() - connectedToWifiTimestamp >
+  //  3000) {
+  //    return true;
+  //  }
   return false;
 }
 

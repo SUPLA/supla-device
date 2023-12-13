@@ -16,26 +16,28 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "supla/storage/key_value.h"
 #ifndef SUPLA_EXCLUDE_LITTLEFS_CONFIG
 
 #if !defined(ARDUINO_ARCH_AVR)
 // don't compile it on Arduino Mega
 
-#include <LittleFS.h>
-#include "littlefs_config.h"
+#include <supla/storage/key_value.h>
 #include <supla/log_wrapper.h>
+#include <LittleFS.h>
+#include <string.h>
+#include "littlefs_config.h"
 
 namespace Supla {
   const char ConfigFileName[] = "/supla-dev.cfg";
   const char CustomCAFileName[] = "/custom_ca.pem";
 };
 
-#define SUPLA_LITTLEFS_CONFIG_BUF_SIZE 1024
 
 #define BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE 32
 
-Supla::LittleFsConfig::LittleFsConfig() {}
+Supla::LittleFsConfig::LittleFsConfig(int configMaxSize)
+    : configMaxSize(configMaxSize) {
+}
 
 Supla::LittleFsConfig::~LittleFsConfig() {}
 
@@ -62,14 +64,22 @@ bool Supla::LittleFsConfig::init() {
     int fileSize = cfg.size();
 
     SUPLA_LOG_DEBUG("LittleFsConfig: config file size %d", fileSize);
-    if (fileSize > SUPLA_LITTLEFS_CONFIG_BUF_SIZE) {
+    if (fileSize > configMaxSize) {
       SUPLA_LOG_ERROR("LittleFsConfig: config file is too big");
       cfg.close();
       LittleFS.end();
       return false;
     }
 
-    uint8_t buf[SUPLA_LITTLEFS_CONFIG_BUF_SIZE] = {};
+    uint8_t *buf = new uint8_t[configMaxSize];
+    if (buf == nullptr) {
+      SUPLA_LOG_ERROR("LittleFsConfig: failed to allocate memory");
+      cfg.close();
+      LittleFS.end();
+      return false;
+    }
+
+    memset(buf, 0, configMaxSize);
     int bytesRead = cfg.read(buf, fileSize);
 
     cfg.close();
@@ -79,12 +89,14 @@ bool Supla::LittleFsConfig::init() {
           "LittleFsConfig: read bytes %d, while file is %d bytes",
           bytesRead,
           fileSize);
+      delete []buf;
       return false;
     }
 
     SUPLA_LOG_DEBUG("LittleFsConfig: initializing storage from file...");
     auto result =  initFromMemory(buf, fileSize);
     SUPLA_LOG_DEBUG("LittleFsConfig: init result %d", result);
+    delete []buf;
     return result;
   } else {
     SUPLA_LOG_DEBUG("LittleFsConfig:: config file missing");
@@ -94,9 +106,15 @@ bool Supla::LittleFsConfig::init() {
 }
 
 void Supla::LittleFsConfig::commit() {
-  uint8_t buf[SUPLA_LITTLEFS_CONFIG_BUF_SIZE] = {};
+  uint8_t *buf = new uint8_t[configMaxSize];
+  if (buf == nullptr) {
+    SUPLA_LOG_ERROR("LittleFsConfig: failed to allocate memory");
+    return;
+  }
 
-  size_t dataSize = serializeToMemory(buf, SUPLA_LITTLEFS_CONFIG_BUF_SIZE);
+  memset(buf, 0, configMaxSize);
+
+  size_t dataSize = serializeToMemory(buf, configMaxSize);
 
   if (!initLittleFs()) {
     return;
@@ -111,6 +129,7 @@ void Supla::LittleFsConfig::commit() {
 
   cfg.write(buf, dataSize);
   cfg.close();
+  delete []buf;
   LittleFS.end();
 }
 
@@ -333,5 +352,5 @@ int Supla::LittleFsConfig::getBlobSize(const char* key) {
 }
 
 
-#endif
+#endif  // !defined(ARDUINO_ARCH_AVR)
 #endif  // SUPLA_EXCLUDE_LITTLEFS_CONFIG

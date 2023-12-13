@@ -21,13 +21,15 @@
 
 #ifndef SUPLA_EXCLUDE_LITTLEFS_CONFIG
 
+#define SUPLA_LITTLEFS_CONFIG_BUF_SIZE 1024
+
 #include "key_value.h"
 
 namespace Supla {
 
 class LittleFsConfig : public KeyValue {
  public:
-  LittleFsConfig();
+  explicit LittleFsConfig(int configMaxSize = SUPLA_LITTLEFS_CONFIG_BUF_SIZE);
   virtual ~LittleFsConfig();
   bool init() override;
   void commit() override;
@@ -44,6 +46,7 @@ class LittleFsConfig : public KeyValue {
  protected:
   int getBlobSize(const char* key) override;
   bool initLittleFs();
+  int configMaxSize = SUPLA_LITTLEFS_CONFIG_BUF_SIZE;
 };
 };  // namespace Supla
 

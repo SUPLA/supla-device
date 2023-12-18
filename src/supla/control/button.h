@@ -18,6 +18,7 @@
 #define SRC_SUPLA_CONTROL_BUTTON_H_
 
 #include <stdint.h>
+#include <supla/action_handler.h>
 #include "action_trigger.h"
 #include "simple_button.h"
 
@@ -26,7 +27,7 @@ class SuplaDeviceClass;
 namespace Supla {
 namespace Control {
 
-class Button : public SimpleButton {
+class Button : public SimpleButton, public ActionHandler {
  public:
   friend class ActionTrigger;
   enum class ButtonType {
@@ -82,6 +83,11 @@ class Button : public SimpleButton {
   int8_t getButtonNumber() const override;
   void setButtonNumber(int8_t number);
 
+  void handleAction(int event, int action) override;
+
+  void disableButton();
+  void enableButton();
+
  protected:
   void evaluateMaxMulticlickValue();
   // disbles repeating "on hold" if repeat time is lower than threshold
@@ -100,6 +106,7 @@ class Button : public SimpleButton {
   bool configButton = false;
   enum OnLoadConfigType onLoadConfigType = OnLoadConfigType::LOAD_FULL_CONFIG;
   int8_t buttonNumber = -1;
+  bool disabled = false;
 
   static int buttonCounter;
 };

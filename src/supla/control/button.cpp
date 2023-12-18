@@ -40,12 +40,16 @@ Button::Button(Supla::Io *io, int pin, bool pullUp, bool invertLogic)
     : SimpleButton(io, pin, pullUp, invertLogic) {
   buttonNumber = buttonCounter;
   buttonCounter++;
+  SUPLA_LOG_VERBOSE("Button[%d] created, GPIO: %d, pullUp: %d, invertLogic: %d",
+                    getButtonNumber(), pin, pullUp, invertLogic);
 }
 
 Button::Button(int pin, bool pullUp, bool invertLogic)
     : SimpleButton(pin, pullUp, invertLogic) {
   buttonNumber = buttonCounter;
   buttonCounter++;
+  SUPLA_LOG_VERBOSE("Button[%d] created, GPIO: %d, pullUp: %d, invertLogic: %d",
+                    getButtonNumber(), pin, pullUp, invertLogic);
 }
 
 void Button::onInit() {
@@ -53,10 +57,15 @@ void Button::onInit() {
 }
 
 void Button::onTimer() {
+  if (disabled) {
+    return;
+  }
+
   uint32_t timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
   int stateResult = state.update();
   if (stateResult == TO_PRESSED) {
+    SUPLA_LOG_VERBOSE("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
     runAction(ON_PRESS);
     runAction(ON_CHANGE);
@@ -65,6 +74,7 @@ void Button::onTimer() {
       runAction(CONDITIONAL_ON_CHANGE);
     }
   } else if (stateResult == TO_RELEASED) {
+    SUPLA_LOG_VERBOSE("Button[%d] released", getButtonNumber());
     stateChanged = true;
     runAction(ON_RELEASE);
     runAction(ON_CHANGE);
@@ -452,4 +462,38 @@ void Button::disableRepeatOnHold(uint32_t threshold) {
 
 void Button::enableRepeatOnHold() {
   repeatOnHoldEnabled = (repeatOnHoldMs > 0);
+}
+
+void Button::disableButton() {
+  SUPLA_LOG_DEBUG("Button[%d]: disabling button", getButtonNumber());
+  disabled = true;
+}
+
+void Button::enableButton() {
+  SUPLA_LOG_DEBUG("Button[%d]: enabling button", getButtonNumber());
+  disabled = false;
+}
+
+void Button::handleAction(int event, int action) {
+  (void)(event);
+  switch (action) {
+    case Supla::TURN_ON:
+    case Supla::ENABLE: {
+      enableButton();
+      break;
+    }
+    case Supla::TURN_OFF:
+    case Supla::DISABLE: {
+      disableButton();
+      break;
+    }
+    case Supla::TOGGLE: {
+      if (disabled) {
+        enableButton();
+      } else {
+        disableButton();
+      }
+      break;
+    }
+  }
 }

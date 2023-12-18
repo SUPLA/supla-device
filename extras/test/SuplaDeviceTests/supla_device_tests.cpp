@@ -732,15 +732,34 @@ TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
   sd.generateHostname(buf, 2);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-0000");
 
-  /*
-  sd.setName("SuplaDevice 3.14");
+  sd.setName("- - TEST   DupliCate");
   sd.generateHostname(buf, 2);
-  EXPECT_STREQ(buf, "SUPLA-DEVICE-3-14-0000");
+  EXPECT_STREQ(buf, "TEST-DUPLICATE-0000");
 
+  /*
   sd.setName("My Device 2.54");
   sd.generateHostname(buf, 2);
   EXPECT_STREQ(buf, "SUPLA-MY-DEVICE-2-54-0000");
   */
+}
+
+TEST_F(SuplaDeviceTests, GenerateHostnameForOHTests) {
+  NetworkMockWithMac net;
+  SuplaDeviceClass sd;
+  char buf[200];
+  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "");
+  sd.setName("OH! Amazing!! Device");
+
+  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(true));
+
+  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "OH! Amazing!! Device");
+
+  sd.generateHostname(buf, 6);
+  EXPECT_STREQ(buf, "SUPLA-AMAZING-DEVI-000000000000");
+
+  sd.setName("OH!Really???");
+  sd.generateHostname(buf, 6);
+  EXPECT_STREQ(buf, "SUPLA-REALLY-000000000000");
 }
 
 TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {

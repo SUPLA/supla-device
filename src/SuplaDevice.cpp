@@ -873,19 +873,31 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
     srcName = Supla::Channel::reg_dev.Name;
   }
 
-  int nameLength = strlen(srcName);
-
-  if (nameLength + appendixSize > 31) {
-    nameLength = 31 - appendixSize;
-  }
-
-  if (nameLength == 0) {
-    setName("SUPLA-DEVICE");
-    nameLength = strlen(srcName);
-  }
+  int srcNameLength = strlen(srcName);
+  int targetNameLength = srcNameLength;
 
   int destIdx = 0;
-  for (int i = 0; i < nameLength; i++) {
+  int i = 0;
+
+  if (strncmp(srcName, "OH!", 3) == 0) {
+    strncpy(name, "SUPLA-", 7);
+    destIdx = 6;
+    i = 3;
+    targetNameLength += 3;
+  }
+
+  int skipBytes = 0;
+
+  if (targetNameLength + appendixSize > 31) {
+    skipBytes = (targetNameLength + appendixSize) - 31;
+  }
+
+  if (srcNameLength == 0) {
+    setName("SUPLA-DEVICE");
+    srcNameLength = strlen(srcName);
+  }
+
+  for (; i < srcNameLength - skipBytes; i++) {
     if (srcName[i] < 32) {
       continue;
     } else if (srcName[i] < 48) {
@@ -901,12 +913,27 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
     } else if (srcName[i] < 123) {
       name[destIdx++] = srcName[i] - 32;  // capitalize small chars
     }
+    if (destIdx == 1) {
+      if (name[0] == '-') {
+        if (skipBytes) {
+          skipBytes--;
+        }
+        destIdx--;
+      }
+    } else if (name[destIdx - 2] == '-' && name[destIdx - 1] == '-') {
+      if (skipBytes) {
+        skipBytes--;
+      }
+      destIdx--;
+    }
   }
 
   if (macSize > 0) {
     uint8_t mac[6] = {};
     if (Supla::Network::GetMacAddr(mac)) {
-      name[destIdx++] = '-';
+      if (name[destIdx - 1] != '-') {
+        name[destIdx++] = '-';
+      }
       destIdx +=
           generateHexString(mac + (6 - macSize), &(name[destIdx]), macSize);
     }
@@ -914,6 +941,7 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
 
   name[destIdx++] = 0;
   strncpy(buf, name, 32);
+  buf[31] = 0;
 
   return destIdx;
 }

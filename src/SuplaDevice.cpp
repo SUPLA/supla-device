@@ -964,7 +964,7 @@ void SuplaDeviceClass::scheduleSoftRestart(int timeout) {
 
 void SuplaDeviceClass::addLastStateLog(const char *msg) {
   if (lastStateLogEnabled && lastStateLogger) {
-    lastStateLogger->log(msg);
+    lastStateLogger->log(msg, uptime.getUptime());
   }
 }
 

@@ -40,16 +40,12 @@ Button::Button(Supla::Io *io, int pin, bool pullUp, bool invertLogic)
     : SimpleButton(io, pin, pullUp, invertLogic) {
   buttonNumber = buttonCounter;
   buttonCounter++;
-  SUPLA_LOG_VERBOSE("Button[%d] created, GPIO: %d, pullUp: %d, invertLogic: %d",
-                    getButtonNumber(), pin, pullUp, invertLogic);
 }
 
 Button::Button(int pin, bool pullUp, bool invertLogic)
     : SimpleButton(pin, pullUp, invertLogic) {
   buttonNumber = buttonCounter;
   buttonCounter++;
-  SUPLA_LOG_VERBOSE("Button[%d] created, GPIO: %d, pullUp: %d, invertLogic: %d",
-                    getButtonNumber(), pin, pullUp, invertLogic);
 }
 
 void Button::onInit() {

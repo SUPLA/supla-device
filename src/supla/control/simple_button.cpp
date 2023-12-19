@@ -105,16 +105,21 @@ void SimpleButton::onTimer() {
 }
 
 void SimpleButton::onInit() {
-  state.init();
+  state.init(getButtonNumber());
 }
 
-void ButtonState::init() {
+void ButtonState::init(int buttonNumber) {
   if (prevState == -1) {
     Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
     prevState = Supla::Io::digitalRead(pin, io);
     newStatusCandidate = prevState;
-    SUPLA_LOG_DEBUG("Pin %d, pullUp %d, invertLogic %d, state %d", pin, pullUp,
-        invertLogic, prevState);
+    SUPLA_LOG_DEBUG(
+        "Button[%d]: Initialized: pin %d, pullUp %d, invertLogic %d, state %d",
+        buttonNumber,
+        pin,
+        pullUp,
+        invertLogic,
+        prevState);
   }
 }
 

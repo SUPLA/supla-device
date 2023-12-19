@@ -57,6 +57,8 @@ class Relay : public ChannelElement, public ActionHandler {
         _supla_int_t functions = (0xFF ^
                                   SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
 
+  virtual ~Relay();
+
   virtual Relay &setDefaultStateOn();
   virtual Relay &setDefaultStateOff();
   virtual Relay &setDefaultStateRestore();
@@ -98,6 +100,11 @@ class Relay : public ChannelElement, public ActionHandler {
   void setMinimumAllowedDurationMs(uint32_t durationMs);
 
  protected:
+  struct ButtonListElement {
+    Supla::Control::Button *button = nullptr;
+    ButtonListElement *next = nullptr;
+  };
+
   void setChannelFunction(_supla_int_t newFunction);
   void updateTimerValue();
   int pin = -1;
@@ -117,7 +124,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool lastStateOnTimerUpdate = false;
 
   Supla::Io *io = nullptr;
-  Supla::Control::Button *attachedButton = nullptr;
+  ButtonListElement *buttonList = nullptr;
 };
 
 };  // namespace Control

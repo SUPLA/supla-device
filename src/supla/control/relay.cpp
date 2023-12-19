@@ -19,11 +19,6 @@
  * by setting LOW or HIGH output on selected GPIO.
  */
 
-/*
- * TODO(klew):
- *  - add sending timer value to server
- */
-
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/tools.h>
@@ -51,6 +46,15 @@ Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   channel.setFuncList(functions);
+}
+
+Relay::~Relay() {
+  ButtonListElement* currentElement = buttonList;
+  while (currentElement) {
+    ButtonListElement* nextElement = currentElement->next;
+    delete currentElement;
+    currentElement = nextElement;
+  }
 }
 
 void Relay::onRegistered(
@@ -117,23 +121,28 @@ void Relay::onInit() {
     stateOn = true;
   }
 
-  if (attachedButton) {
-    attachedButton->onInit();  // make sure button was initialized
-    if (attachedButton->isMonostable()) {
-      attachedButton->addAction(
-          Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
-    } else if (attachedButton->isBistable()) {
-      attachedButton->addAction(
-          Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
-    } else if (attachedButton->isMotionSensor()) {
-      attachedButton->addAction(
-          Supla::TURN_ON, this, Supla::ON_PRESS);
-      attachedButton->addAction(
-          Supla::TURN_OFF, this, Supla::ON_RELEASE);
-      if (attachedButton->getLastState() == Supla::Control::PRESSED) {
-        stateOn = true;
-      } else {
-        stateOn = false;
+
+  for (auto buttonListElement = buttonList; buttonListElement;
+       buttonListElement = buttonListElement->next) {
+    auto attachedButton = buttonListElement->button;
+    if (attachedButton) {
+      attachedButton->onInit();  // make sure button was initialized
+      if (attachedButton->isMonostable()) {
+        attachedButton->addAction(
+            Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
+      } else if (attachedButton->isBistable()) {
+        attachedButton->addAction(
+            Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
+      } else if (attachedButton->isMotionSensor()) {
+        attachedButton->addAction(
+            Supla::TURN_ON, this, Supla::ON_PRESS);
+        attachedButton->addAction(
+            Supla::TURN_OFF, this, Supla::ON_RELEASE);
+        if (attachedButton->getLastState() == Supla::Control::PRESSED) {
+          stateOn = true;
+        } else {
+          stateOn = false;
+        }
       }
     }
   }
@@ -416,7 +425,29 @@ unsigned _supla_int_t Relay::getStoredTurnOnDurationMs() {
 }
 
 void Relay::attach(Supla::Control::Button *button) {
-  attachedButton = button;
+  if (button == nullptr) {
+    return;
+  }
+
+  SUPLA_LOG_DEBUG("Relay[%d]: attaching button %d", channel.getChannelNumber(),
+                  button->getButtonNumber());
+  auto lastButtonListElement = buttonList;
+  while (lastButtonListElement && lastButtonListElement->next) {
+    lastButtonListElement = lastButtonListElement->next;
+  }
+
+  if (lastButtonListElement) {
+    lastButtonListElement->next = new ButtonListElement;
+    lastButtonListElement = lastButtonListElement->next;
+  } else {
+    lastButtonListElement = new ButtonListElement;
+  }
+
+  lastButtonListElement->button = button;
+
+  if (buttonList == nullptr) {
+    buttonList = lastButtonListElement;
+  }
 }
 
 

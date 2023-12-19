@@ -26,7 +26,7 @@ namespace Device {
 class FileStateLogger : public LastStateLogger {
  public:
   explicit FileStateLogger(const std::string &);
-  void log(const char *) override;
+  void log(const char *, int) override;
   void addToFile(const char *line);
 
  protected:

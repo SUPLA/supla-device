@@ -47,9 +47,9 @@ Supla::Device::FileStateLogger::FileStateLogger(const std::string &path) {
   addToFile("Starting supla-device");
 }
 
-void Supla::Device::FileStateLogger::log(const char *logLine) {
+void Supla::Device::FileStateLogger::log(const char *logLine, int uptime) {
   addToFile(logLine);
-  Supla::Device::LastStateLogger::log(logLine);
+  Supla::Device::LastStateLogger::log(logLine, uptime);
 }
 
 void Supla::Device::FileStateLogger::addToFile(const char *line) {

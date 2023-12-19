@@ -39,7 +39,7 @@ class ButtonState {
   ButtonState(int pin, bool pullUp, bool invertLogic);
   enum StateResults update();
   enum StateResults getLastState() const;
-  void init();
+  void init(int buttonNumber);
 
   void setSwNoiseFilterDelay(unsigned int newDelayMs);
   void setDebounceDelay(unsigned int newDelayMs);

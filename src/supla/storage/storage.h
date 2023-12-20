@@ -23,7 +23,7 @@
 
 #define STORAGE_SECTION_TYPE_DEVICE_CONFIG  1
 #define STORAGE_SECTION_TYPE_ELEMENT_CONFIG 2
-#define STORAGE_SECTION_TYPE_ELEMENT_STATE         3
+#define STORAGE_SECTION_TYPE_ELEMENT_STATE  3
 
 namespace Supla {
 
@@ -43,6 +43,10 @@ class Storage {
   static void ScheduleSave(uint32_t delayMs);
   static void SetConfigInstance(Config *instance);
   static bool IsConfigStorageAvailable();
+
+  static bool IsStateStorageValid();
+  static void LoadStateStorage();
+  static void WriteStateStorage();
 
   // Register special section in storage data (outside of State storage)
   // sectionId - user selected sectionId

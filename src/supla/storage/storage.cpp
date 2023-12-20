@@ -20,6 +20,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/crc16.h>
+#include <supla/element.h>
 
 #include "config.h"
 #include "storage.h"
@@ -272,6 +273,7 @@ bool Storage::finalizeSaveState() {
   preamble.size = newSectionSize;
   preamble.crc1 = crc;
   preamble.crc2 = crc;
+  elementStateSize = newSectionSize;
 
   crc = 0xFFFF;
 
@@ -611,6 +613,44 @@ bool Storage::deleteSection(int sectionId) {
   }
   SUPLA_LOG_ERROR("Storage: can't find sectionId %d", sectionId);
   return false;
+}
+
+bool Storage::IsStateStorageValid() {
+  if (Supla::Storage::PrepareState(true)) {
+    SUPLA_LOG_DEBUG(
+        "Validating storage state section with current device configuration");
+    for (auto element = Supla::Element::begin(); element != nullptr;
+         element = element->next()) {
+      element->onSaveState();
+      delay(0);
+    }
+    // If state storage validation was successful, perform read state
+    if (Supla::Storage::FinalizeSaveState()) {
+      SUPLA_LOG_INFO("Storage state section validation successful");
+      return true;
+    }
+  }
+  return false;
+}
+
+void Storage::LoadStateStorage() {
+  // Iterate all elements and load state
+  Supla::Storage::PrepareState();
+  for (auto element = Supla::Element::begin(); element != nullptr;
+      element = element->next()) {
+    element->onLoadState();
+    delay(0);
+  }
+}
+
+void Storage::WriteStateStorage() {
+  Supla::Storage::PrepareState();
+  for (auto element = Supla::Element::begin(); element != nullptr;
+       element = element->next()) {
+    element->onSaveState();
+    delay(0);
+  }
+  Supla::Storage::FinalizeSaveState();
 }
 
 }  // namespace Supla

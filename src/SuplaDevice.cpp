@@ -184,27 +184,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   // Pefrorm dry run of write state to validate stored state section with
   // current device configuration
-  if (Supla::Storage::PrepareState(true)) {
-    SUPLA_LOG_DEBUG(
-        "Validating storage state section with current device configuration");
-    for (auto element = Supla::Element::begin(); element != nullptr;
-         element = element->next()) {
-      element->onSaveState();
-      delay(0);
-    }
-    // If state storage validation was successful, perform read state
-    if (Supla::Storage::FinalizeSaveState()) {
-      SUPLA_LOG_INFO(
-          "Storage state section validation completed. Loading elements "
-          "state...");
-      // Iterate all elements and load state
-      Supla::Storage::PrepareState();
-      for (auto element = Supla::Element::begin(); element != nullptr;
-           element = element->next()) {
-        element->onLoadState();
-        delay(0);
-      }
-    }
+  if (Supla::Storage::IsStateStorageValid()) {
+    Supla::Storage::LoadStateStorage();
   }
 
   // Initialize elements
@@ -844,14 +825,7 @@ void SuplaDeviceClass::saveStateToStorage() {
   if (triggerResetToFacotrySettings) {
     return;
   }
-
-  Supla::Storage::PrepareState();
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    element->onSaveState();
-    delay(0);
-  }
-  Supla::Storage::FinalizeSaveState();
+  Supla::Storage::WriteStateStorage();
 }
 
 int SuplaDeviceClass::generateHostname(char *buf, int macSize) {

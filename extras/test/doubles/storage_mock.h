@@ -41,4 +41,40 @@ class StorageMock: public Supla::Storage {
   MOCK_METHOD(bool, init, (), (override));
 };
 
+#define STORAGE_SIMULATOR_SIZE 1000
+
+class StorageMockSimulator: public Supla::Storage {
+ public:
+  MOCK_METHOD(void, commit, (), (override));
+
+  int readStorage(unsigned int offset,
+                  unsigned char *data,
+                  int size,
+                  bool log) override {
+    if (offset + size >= STORAGE_SIMULATOR_SIZE) {
+      assert(false && "StorageMockSimulator out of bounds");
+      return 0;
+    }
+    memcpy(data, &storageSimulatorData[offset], size);
+    return size;
+  }
+
+    int writeStorage(unsigned int offset,
+                     const unsigned char *data,
+                     int size) override {
+      if (noWriteExpected) {
+        assert(false && "StorageMockSimulator write not expected");
+      }
+      if (offset + size >= STORAGE_SIMULATOR_SIZE) {
+        assert(false && "StorageMockSimulator out of bounds");
+        return 0;
+      }
+      memcpy(&storageSimulatorData[offset], data, size);
+      return size;
+    }
+
+  uint8_t storageSimulatorData[STORAGE_SIMULATOR_SIZE] = {};
+  bool noWriteExpected = false;
+};
+
 #endif  // EXTRAS_TEST_DOUBLES_STORAGE_MOCK_H_

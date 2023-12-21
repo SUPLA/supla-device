@@ -1318,4 +1318,5 @@ void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
     srpc_free(srpc);
     srpc = nullptr;
   }
+  setDeviceConfigReceivedAfterRegistration = false;
 }

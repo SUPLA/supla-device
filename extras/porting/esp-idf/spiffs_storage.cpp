@@ -142,7 +142,7 @@ int SpiffsStorage::writeStorage(unsigned int offset,
 void SpiffsStorage::commit() {
   if (dataChanged) {
     // write to file
-    SUPLA_LOG_DEBUG("Storage: commit");
+    SUPLA_LOG_DEBUG("Storage: datachange, commit");
     FILE *file = fopen("/spiffs/storage.bin", "wb");
     if (file) {
       uint32_t bytesWritten = fwrite(buffer, 1, bufferSize, file);

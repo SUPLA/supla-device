@@ -86,7 +86,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   // Below functions are used to set device capabilities.
   void setHeatingAndCoolingSupported(bool supported);
-  void setAutoSupported(bool supported);
+  void setHeatCoolSupported(bool supported);
   void setFanSupported(bool supported);
   void setDrySupported(bool supported);
 
@@ -153,8 +153,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setTemperatureAuxMax(_supla_int16_t temperature);
   void setTemperatureHisteresisMin(_supla_int16_t temperature);
   void setTemperatureHisteresisMax(_supla_int16_t temperature);
-  void setTemperatureAutoOffsetMin(_supla_int16_t temperature);
-  void setTemperatureAutoOffsetMax(_supla_int16_t temperature);
+  void setTemperatureHeatCoolOffsetMin(_supla_int16_t temperature);
+  void setTemperatureHeatCoolOffsetMax(_supla_int16_t temperature);
   _supla_int16_t getTemperatureRoomMin(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureRoomMax(
@@ -167,9 +167,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHisteresisMax(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureAutoOffsetMin(
+  _supla_int16_t getTemperatureHeatCoolOffsetMin(
       const THVACTemperatureCfg *temperatures) const;
-  _supla_int16_t getTemperatureAutoOffsetMax(
+  _supla_int16_t getTemperatureHeatCoolOffsetMax(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureRoomMin() const;
   _supla_int16_t getTemperatureRoomMax() const;
@@ -177,8 +177,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   _supla_int16_t getTemperatureAuxMax() const;
   _supla_int16_t getTemperatureHisteresisMin() const;
   _supla_int16_t getTemperatureHisteresisMax() const;
-  _supla_int16_t getTemperatureAutoOffsetMin() const;
-  _supla_int16_t getTemperatureAutoOffsetMax() const;
+  _supla_int16_t getTemperatureHeatCoolOffsetMin() const;
+  _supla_int16_t getTemperatureHeatCoolOffsetMax() const;
 
   // Below functions are used to set device configuration - those can
   // be modified by user within limits defined by set* functions above.
@@ -229,7 +229,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // Even if function is supported, it doesn't mean that new mode setting will
   // be valid, becuase this depends on configured Function.
   bool isHeatingAndCoolingSupported() const;
-  bool isAutoSupported() const;
+  bool isHeatCoolSupported() const;
   bool isFanSupported() const;
   bool isDrySupported() const;
 
@@ -278,7 +278,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // validates temperature against current configuration
   bool isTemperatureAuxMaxSetpointValid(
       _supla_int16_t temperature) const;
-  bool isTemperatureInAutoConstrain(_supla_int16_t tHeat,
+  bool isTemperatureInHeatCoolConstrain(_supla_int16_t tHeat,
                                     _supla_int16_t tCool) const;
 
   bool isTemperatureFreezeProtectionValid(

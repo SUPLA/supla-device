@@ -124,8 +124,8 @@ void setup() {
   hvac->setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR);
   hvac->setTemperatureHisteresisMin(20);  // 0.2 degree
   hvac->setTemperatureHisteresisMax(1000);  // 10 degree
-  hvac->setTemperatureAutoOffsetMin(200);   // 2 degrees
-  hvac->setTemperatureAutoOffsetMax(1000);  // 10 degrees
+  hvac->setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
+  hvac->setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
   hvac->setTemperatureAuxMin(500);  // 5 degrees
   hvac->setTemperatureAuxMax(7500);  // 75 degrees
 

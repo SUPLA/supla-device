@@ -61,8 +61,8 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
     hvac->setTemperatureRoomMax(5000);          // 50 degrees
     hvac->setTemperatureHisteresisMin(20);      // 0.2 degree
     hvac->setTemperatureHisteresisMax(1000);    // 10 degree
-    hvac->setTemperatureAutoOffsetMin(200);     // 2 degrees
-    hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
+    hvac->setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+    hvac->setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
     hvac->setTemperatureAuxMin(500);   // 5 degrees
     hvac->setTemperatureAuxMax(7500);  // 75 degrees
     hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
@@ -176,7 +176,7 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 
   EXPECT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2400, 0));
   EXPECT_FALSE(hvac->setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2300));
-  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_AUTO, 1800, 2400));
+  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2400));
   EXPECT_TRUE(hvac->setProgram(4, SUPLA_HVAC_MODE_HEAT, 1900, 0));
 
   TWeeklyScheduleProgram program1 = {SUPLA_HVAC_MODE_HEAT, {2400}, {0}};
@@ -207,15 +207,15 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
         hvac->calculateIndex(Supla::DayOfWeek_Tuesday, 0, 0)),
             1);
 
-  hvac->setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+  hvac->setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
   EXPECT_TRUE(hvac->setProgram(1, SUPLA_HVAC_MODE_HEAT, 2400, 0));
   EXPECT_TRUE(hvac->setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2300));
-  EXPECT_TRUE(hvac->setProgram(3, SUPLA_HVAC_MODE_AUTO, 1800, 2400));
+  EXPECT_TRUE(hvac->setProgram(3, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2400));
   EXPECT_TRUE(hvac->setProgram(4, SUPLA_HVAC_MODE_HEAT, 1900, 0));
-  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_AUTO, 1800, 1900));
-  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_AUTO, 500, 2600));
+  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 1900));
+  EXPECT_FALSE(hvac->setProgram(3, SUPLA_HVAC_MODE_HEAT_COOL, 500, 2600));
 
-  TWeeklyScheduleProgram program3 = {SUPLA_HVAC_MODE_AUTO, {1800}, {2400}};
+  TWeeklyScheduleProgram program3 = {SUPLA_HVAC_MODE_HEAT_COOL, {1800}, {2400}};
   result = hvac->getProgramById(3);
   EXPECT_EQ(memcmp(&result, &program3, sizeof(result)), 0);
 

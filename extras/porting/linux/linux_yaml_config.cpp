@@ -704,8 +704,8 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
   }
   hvac->setTemperatureHisteresisMin(20);  // 0.2 degree
   hvac->setTemperatureHisteresisMax(1000);  // 10 degree
-  hvac->setTemperatureAutoOffsetMin(200);   // 2 degrees
-  hvac->setTemperatureAutoOffsetMax(1000);  // 10 degrees
+  hvac->setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
+  hvac->setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
   hvac->setTemperatureAuxMin(500);  // 5 degrees
   hvac->setTemperatureAuxMax(7500);  // 75 degrees
   hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
@@ -721,16 +721,17 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
     } else if (function == "cool") {
       hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
       hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
-    } else if (function == "auto") {
+    } else if (function == "heat_cool") {
       if (cmdOnSecondary.empty() || cmdOffSecondary.empty()) {
         SUPLA_LOG_ERROR(
             "Channel[%d] config: missing mandatory \"cmd_on_secondary\" or "
-            "\"cmd_off_secondary\" parameter when setting \"auto\" function",
+            "\"cmd_off_secondary\" parameter when setting \"heat_cool\" "
+            "function",
             channelNumber);
         return false;
       }
       hvac->getChannel()->setDefaultFunction(
-          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
     } else if (function == "dhw") {
       hvac->enableDomesticHotWaterFunctionSupport();
       hvac->getChannel()->setDefaultFunction(

@@ -77,11 +77,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
         "Domestic hot water",
         channelFunc == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
   }
-  if (hvac->isFunctionSupported(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO)) {
+  if (hvac->isFunctionSupported(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL)) {
     sender->sendSelectItem(
-        SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO,
-        "Auto (heat + cool)",
-        channelFunc == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+        SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL,
+        "Heat + cool",
+        channelFunc == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
   }
   if (hvac->isFunctionSupported(
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL)) {
@@ -147,11 +147,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
         "Cool",
         hvacMode == SUPLA_HVAC_MODE_COOL);
   }
-  if (hvac->isModeSupported(SUPLA_HVAC_MODE_AUTO)) {
+  if (hvac->isModeSupported(SUPLA_HVAC_MODE_HEAT_COOL)) {
     sender->sendSelectItem(
-        SUPLA_HVAC_MODE_AUTO,
-        "Auto (heat + cool)",
-        hvacMode == SUPLA_HVAC_MODE_AUTO &&
+        SUPLA_HVAC_MODE_HEAT_COOL,
+        "Heat + cool",
+        hvacMode == SUPLA_HVAC_MODE_HEAT_COOL &&
         !hvac->getChannel()->isHvacFlagWeeklySchedule());
   }
   if (hvac->isModeSupported(SUPLA_HVAC_MODE_CMD_TURN_ON)) {

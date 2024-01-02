@@ -51,8 +51,8 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
 
   setTemperatureHisteresisMin(20);  // 0.2 degree
   setTemperatureHisteresisMax(1000);  // 10 degree
-  setTemperatureAutoOffsetMin(200);   // 2 degrees
-  setTemperatureAutoOffsetMax(1000);  // 10 degrees
+  setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
+  setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
   setTemperatureAuxMin(500);  // 5 degrees
   setTemperatureAuxMax(7500);  // 75 degrees
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
@@ -131,8 +131,8 @@ void HvacBase::handleAction(int event, int action) {
       applyNewRuntimeSettings(SUPLA_HVAC_MODE_COOL, 0);
       break;
     }
-    case Supla::SWITCH_TO_MANUAL_MODE_AUTO: {
-      applyNewRuntimeSettings(SUPLA_HVAC_MODE_AUTO, 0);
+    case Supla::SWITCH_TO_MANUAL_MODE_HEAT_COOL: {
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_HEAT_COOL, 0);
       break;
     }
     case Supla::TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES: {
@@ -399,9 +399,9 @@ void HvacBase::onInit() {
   // init default channel function when it wasn't read from config or
   // set by user
   if (channel.getDefaultFunction() == 0) {
-    // set default to auto when both heat and cool are supported
-    if (isAutoSupported()) {
-      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+    // set default to heat_cool when both heat and cool are supported
+    if (isHeatCoolSupported()) {
+      setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
     } else if (isHeatingAndCoolingSupported()) {
       setAndSaveFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
     } else if (isDrySupported()) {
@@ -616,7 +616,7 @@ void HvacBase::iterateAlways() {
   }
 
   switch (channel.getHvacMode()) {
-    case SUPLA_HVAC_MODE_AUTO: {
+    case SUPLA_HVAC_MODE_HEAT_COOL: {
       int heatNewOutputValue =
           evaluateHeatOutputValue(t1, getTemperatureSetpointHeat());
       int coolNewOutputValue =
@@ -674,16 +674,16 @@ void HvacBase::setHeatingAndCoolingSupported(bool supported) {
     channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
   } else {
     channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
-    setAutoSupported(false);
+    setHeatCoolSupported(false);
   }
 }
 
-void HvacBase::setAutoSupported(bool supported) {
+void HvacBase::setHeatCoolSupported(bool supported) {
   if (supported) {
-    channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+    channel.addToFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL);
     setHeatingAndCoolingSupported(true);
   } else {
-    channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+    channel.removeFromFuncList(SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL);
   }
 }
 
@@ -701,8 +701,8 @@ bool HvacBase::isHeatingAndCoolingSupported() const {
   return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_THERMOSTAT;
 }
 
-bool HvacBase::isAutoSupported() const {
-  return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO;
+bool HvacBase::isHeatCoolSupported() const {
+  return channel.getFuncList() & SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL;
 }
 
 bool HvacBase::isFanSupported() const {
@@ -1153,10 +1153,10 @@ bool HvacBase::isTemperatureInRoomConstrain(_supla_int16_t temperature) const {
   return temperature >= tMin && temperature <= tMax;
 }
 
-bool HvacBase::isTemperatureInAutoConstrain(_supla_int16_t tHeat,
+bool HvacBase::isTemperatureInHeatCoolConstrain(_supla_int16_t tHeat,
                                             _supla_int16_t tCool) const {
-  auto offsetMin = getTemperatureAutoOffsetMin();
-  auto offsetMax = getTemperatureAutoOffsetMax();
+  auto offsetMin = getTemperatureHeatCoolOffsetMin();
+  auto offsetMax = getTemperatureHeatCoolOffsetMax();
   return (tCool - tHeat >= offsetMin) && (tCool - tHeat <= offsetMax) &&
          isTemperatureInRoomConstrain(tHeat) &&
          isTemperatureInRoomConstrain(tCool);
@@ -1256,7 +1256,7 @@ bool HvacBase::isTemperatureAuxMinSetpointValid(
 
   auto tMin = getTemperatureAuxMin();
   auto tMax = getTemperatureAuxMax();
-  auto tOffsetMin = getTemperatureAutoOffsetMin();
+  auto tOffsetMin = getTemperatureHeatCoolOffsetMin();
 
   auto tMaxSetpoint = getTemperatureAuxMaxSetpoint();
 
@@ -1284,7 +1284,7 @@ bool HvacBase::isTemperatureAuxMaxSetpointValid(
   // min and max values are taken from device config
   auto tMin = getTemperatureAuxMin();
   auto tMax = getTemperatureAuxMax();
-  auto tOffsetMin = getTemperatureAutoOffsetMin();
+  auto tOffsetMin = getTemperatureHeatCoolOffsetMin();
 
   // current min setpoint is taken from current device config
   auto tMinSetpoint = getTemperatureAuxMinSetpoint();
@@ -1458,8 +1458,8 @@ bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
       return isHeatingAndCoolingSupported();
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
-      return isAutoSupported();
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL:
+      return isHeatCoolSupported();
     case SUPLA_CHANNELFNC_HVAC_FAN:
       return isFanSupported();
     case SUPLA_CHANNELFNC_HVAC_DRYER:
@@ -1539,14 +1539,14 @@ void HvacBase::setTemperatureHisteresisMax(_supla_int16_t temperature) {
       &config.Temperatures, TEMPERATURE_HISTERESIS_MAX, temperature);
 }
 
-void HvacBase::setTemperatureAutoOffsetMin(_supla_int16_t temperature) {
+void HvacBase::setTemperatureHeatCoolOffsetMin(_supla_int16_t temperature) {
   setTemperatureInStruct(
-      &config.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, temperature);
+      &config.Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MIN, temperature);
 }
 
-void HvacBase::setTemperatureAutoOffsetMax(_supla_int16_t temperature) {
+void HvacBase::setTemperatureHeatCoolOffsetMax(_supla_int16_t temperature) {
   setTemperatureInStruct(
-      &config.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, temperature);
+      &config.Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MAX, temperature);
 }
 
 
@@ -1731,13 +1731,15 @@ _supla_int16_t HvacBase::getTemperatureHisteresisMax(
     const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS_MAX);
 }
-_supla_int16_t HvacBase::getTemperatureAutoOffsetMin(
+_supla_int16_t HvacBase::getTemperatureHeatCoolOffsetMin(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET_MIN);
+  return getTemperatureFromStruct(temperatures,
+                                  TEMPERATURE_HEAT_COOL_OFFSET_MIN);
 }
-_supla_int16_t HvacBase::getTemperatureAutoOffsetMax(
+_supla_int16_t HvacBase::getTemperatureHeatCoolOffsetMax(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUTO_OFFSET_MAX);
+  return getTemperatureFromStruct(temperatures,
+                                  TEMPERATURE_HEAT_COOL_OFFSET_MAX);
 }
 
 _supla_int16_t HvacBase::getTemperatureRoomMin() const {
@@ -1764,12 +1766,12 @@ _supla_int16_t HvacBase::getTemperatureHisteresisMax() const {
   return getTemperatureHisteresisMax(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureAutoOffsetMin() const {
-  return getTemperatureAutoOffsetMin(&config.Temperatures);
+_supla_int16_t HvacBase::getTemperatureHeatCoolOffsetMin() const {
+  return getTemperatureHeatCoolOffsetMin(&config.Temperatures);
 }
 
-_supla_int16_t HvacBase::getTemperatureAutoOffsetMax() const {
-  return getTemperatureAutoOffsetMax(&config.Temperatures);
+_supla_int16_t HvacBase::getTemperatureHeatCoolOffsetMax() const {
+  return getTemperatureHeatCoolOffsetMax(&config.Temperatures);
 }
 
 _supla_int16_t HvacBase::getTemperatureFreezeProtection(
@@ -1999,7 +2001,7 @@ bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
   auto func = channel.getDefaultFunction();
   switch (func) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL:
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
       return config.AntiFreezeAndOverheatProtectionEnabled;
     }
@@ -2024,7 +2026,7 @@ bool HvacBase::isAuxMinMaxSetpointEnabled() const {
   auto func = channel.getDefaultFunction();
   switch (func) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO:
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL:
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
       return config.AuxMinMaxSetpointEnabled;
     }
@@ -2318,7 +2320,7 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
 
   if (program.Mode != SUPLA_HVAC_MODE_COOL
       && program.Mode != SUPLA_HVAC_MODE_HEAT
-      && program.Mode != SUPLA_HVAC_MODE_AUTO) {
+      && program.Mode != SUPLA_HVAC_MODE_HEAT_COOL) {
     return false;
   }
 
@@ -2354,8 +2356,8 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
     case SUPLA_HVAC_MODE_COOL: {
       return isTemperatureInRoomConstrain(program.SetpointTemperatureCool);
     }
-    case SUPLA_HVAC_MODE_AUTO: {
-      return isTemperatureInAutoConstrain(program.SetpointTemperatureHeat,
+    case SUPLA_HVAC_MODE_HEAT_COOL: {
+      return isTemperatureInHeatCoolConstrain(program.SetpointTemperatureHeat,
                                           program.SetpointTemperatureCool);
     }
     default: {
@@ -2369,7 +2371,7 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
 bool HvacBase::isModeSupported(int mode) const {
   bool heatSupported = false;
   bool coolSupported = false;
-  bool autoSupported = false;
+  bool heatCoolSupported = false;
   bool drySupported = false;
   bool fanSupported = isFanSupported();
   bool onOffSupported = true;
@@ -2384,8 +2386,8 @@ bool HvacBase::isModeSupported(int mode) const {
       heatSupported = true;
       break;
     }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
-      autoSupported = true;
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
+      heatCoolSupported = true;
       heatSupported = true;
       coolSupported = true;
       drySupported = isDrySupported();
@@ -2411,8 +2413,8 @@ bool HvacBase::isModeSupported(int mode) const {
     case SUPLA_HVAC_MODE_COOL: {
       return coolSupported;
     }
-    case SUPLA_HVAC_MODE_AUTO: {
-      return autoSupported;
+    case SUPLA_HVAC_MODE_HEAT_COOL: {
+      return heatCoolSupported;
     }
     case SUPLA_HVAC_MODE_FAN_ONLY: {
       return fanSupported;
@@ -2721,7 +2723,7 @@ void HvacBase::setOutput(int value, bool force) {
       output->setOutputValue(value);
       runAction(Supla::ON_HVAC_COOLING);
     }
-  } else if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
+  } else if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
     if (secondaryOutput == nullptr) {
       return;
     }
@@ -2912,8 +2914,8 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) const {
   hvac->setTemperatureAuxMax(getTemperatureAuxMax());
   hvac->setTemperatureHisteresisMin(getTemperatureHisteresisMin());
   hvac->setTemperatureHisteresisMax(getTemperatureHisteresisMax());
-  hvac->setTemperatureAutoOffsetMin(getTemperatureAutoOffsetMin());
-  hvac->setTemperatureAutoOffsetMax(getTemperatureAutoOffsetMax());
+  hvac->setTemperatureHeatCoolOffsetMin(getTemperatureHeatCoolOffsetMin());
+  hvac->setTemperatureHeatCoolOffsetMax(getTemperatureHeatCoolOffsetMax());
 }
 
 void HvacBase::copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const {
@@ -2959,7 +2961,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
     mode = lastManualMode;
     if (mode == SUPLA_HVAC_MODE_NOT_SET) {
       mode = getDefaultManualMode();
-      if (mode == SUPLA_HVAC_MODE_AUTO) {
+      if (mode == SUPLA_HVAC_MODE_HEAT_COOL) {
         if (tHeat == INT16_MIN && tCool > INT16_MIN) {
           mode = SUPLA_HVAC_MODE_COOL;
         } else if (tHeat > INT16_MIN && tCool == INT16_MIN) {
@@ -3013,7 +3015,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
   if (!channel.isHvacFlagWeeklySchedule() && mode != SUPLA_HVAC_MODE_OFF &&
       !channel.isHvacFlagCountdownTimer()) {
     // in manual mode we store last manual temperatures
-    if (mode == SUPLA_HVAC_MODE_AUTO || mode == SUPLA_HVAC_MODE_COOL ||
+    if (mode == SUPLA_HVAC_MODE_HEAT_COOL || mode == SUPLA_HVAC_MODE_COOL ||
         mode == SUPLA_HVAC_MODE_HEAT) {
       lastManualMode = mode;
     }
@@ -3150,8 +3152,8 @@ int HvacBase::getDefaultManualMode() {
       case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
         return SUPLA_HVAC_MODE_HEAT;
       }
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
-        return SUPLA_HVAC_MODE_AUTO;
+      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
+        return SUPLA_HVAC_MODE_HEAT_COOL;
       }
     }
   return SUPLA_HVAC_MODE_OFF;
@@ -3272,7 +3274,7 @@ void HvacBase::addPrimaryOutput(Supla::Control::OutputInterface *output) {
   setHeatingAndCoolingSupported(true);
 
   if (secondaryOutput != nullptr) {
-    setAutoSupported(true);
+    setHeatCoolSupported(true);
   }
 }
 
@@ -3280,12 +3282,12 @@ void HvacBase::addSecondaryOutput(Supla::Control::OutputInterface *output) {
   secondaryOutput = output;
 
   if (secondaryOutput == nullptr) {
-    setAutoSupported(false);
+    setHeatCoolSupported(false);
     return;
   }
 
   if (primaryOutput != nullptr) {
-    setAutoSupported(true);
+    setHeatCoolSupported(true);
   }
 }
 
@@ -3298,7 +3300,7 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT:
     case SUPLA_HVAC_MODE_COOL:
-    case SUPLA_HVAC_MODE_AUTO: {
+    case SUPLA_HVAC_MODE_HEAT_COOL: {
       if (!isSensorTempValid(t1)) {
         return false;
       }
@@ -3518,14 +3520,14 @@ void HvacBase::fixTemperatureSetpoints() {
       }
       break;
     }
-    case SUPLA_HVAC_MODE_AUTO: {
+    case SUPLA_HVAC_MODE_HEAT_COOL: {
       bool tHeatValid = isSensorTempValid(curTHeat);
       bool tCoolValid = isSensorTempValid(curTCool);
 
       if (tHeatValid && tCoolValid) {
-        if (!isTemperatureInAutoConstrain(curTHeat, curTCool)) {
-          auto offsetMin = getTemperatureAutoOffsetMin();
-          auto offsetMax = getTemperatureAutoOffsetMax();
+        if (!isTemperatureInHeatCoolConstrain(curTHeat, curTCool)) {
+          auto offsetMin = getTemperatureHeatCoolOffsetMin();
+          auto offsetMax = getTemperatureHeatCoolOffsetMax();
           if (curTCool - curTHeat < offsetMin) {
             if (isTemperatureInRoomConstrain(curTHeat + offsetMin)) {
               setTemperatureSetpointCool(curTHeat + offsetMin);
@@ -3633,7 +3635,7 @@ int HvacBase::channelFunctionToIndex(int channelFunction) const {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
       return 1;
     }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
       return 2;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
@@ -3768,7 +3770,8 @@ void HvacBase::initDefaultWeeklySchedule() {
   isWeeklyScheduleConfigured = true;
   // init weekly schedule to zeros. It will just have program "off" for whole
   // time.
-  // We define default values for HEAT, COOL, AUTO, DOMESTIC_HOT_WATER later
+  // We define default values for HEAT, COOL, HEAT_COOL, DOMESTIC_HOT_WATER
+  // later
   memset(&weeklySchedule, 0, sizeof(weeklySchedule));
   memset(&altWeeklySchedule, 0, sizeof(altWeeklySchedule));
   bool prevInitDone = initDone;
@@ -3798,9 +3801,9 @@ void HvacBase::initDefaultWeeklySchedule() {
       break;
     }
 
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
-      setProgram(1, SUPLA_HVAC_MODE_AUTO, 1800, 2500);
-      setProgram(2, SUPLA_HVAC_MODE_AUTO, 2100, 2400);
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
+      setProgram(1, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2500);
+      setProgram(2, SUPLA_HVAC_MODE_HEAT_COOL, 2100, 2400);
       setProgram(3, SUPLA_HVAC_MODE_HEAT, 2300, 0);
       setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2400);
       break;
@@ -3860,7 +3863,7 @@ void HvacBase::initDefaultWeeklySchedule() {
       }
     }
   }
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
+  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
     for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
       int program = 1;
       for (int hour = 0; hour < 24; hour++) {
@@ -3984,7 +3987,7 @@ void HvacBase::changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool) {
                               INT16_MIN);
       break;
     }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
       applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
                               getTemperatureSetpointHeat() + tHeat,
                               getTemperatureSetpointCool() + tCool);
@@ -4000,11 +4003,11 @@ void HvacBase::fixTempearturesConfig() {
   switch (function) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT:
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER:
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO: {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
       auto tAuxSetpointMin = getTemperatureAuxMinSetpoint();
       auto tAuxSetpointMax = getTemperatureAuxMaxSetpoint();
       if (tAuxSetpointMin != INT16_MIN && tAuxSetpointMax != INT16_MIN) {
-        auto tOffsetMin = getTemperatureAutoOffsetMin();
+        auto tOffsetMin = getTemperatureHeatCoolOffsetMin();
         if (tOffsetMin == INT16_MIN) {
           tOffsetMin = 200;
         }
@@ -4024,11 +4027,11 @@ void HvacBase::fixTempearturesConfig() {
   }
 
   // Anti-freeze and overheat corrections
-  if (function == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
+  if (function == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
     auto tAntiFreeze = getTemperatureFreezeProtection();
     auto tOverheat = getTemperatureHeatProtection();
     if (tAntiFreeze != INT16_MIN && tOverheat != INT16_MIN) {
-      auto tOffsetMin = getTemperatureAutoOffsetMin();
+      auto tOffsetMin = getTemperatureHeatCoolOffsetMin();
       if (tOffsetMin == INT16_MIN) {
         tOffsetMin = 200;
       }

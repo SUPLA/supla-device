@@ -73,8 +73,8 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
     hvac->setTemperatureRoomMax(5000);          // 50 degrees
     hvac->setTemperatureHisteresisMin(20);      // 0.2 degree
     hvac->setTemperatureHisteresisMax(1000);    // 10 degree
-    hvac->setTemperatureAutoOffsetMin(200);     // 2 degrees
-    hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
+    hvac->setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+    hvac->setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
     hvac->setTemperatureAuxMin(500);   // 5 degrees
     hvac->setTemperatureAuxMax(7500);  // 75 degrees
     hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
@@ -105,7 +105,7 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
       ch->getFlags() & SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE, 0);
 
   EXPECT_TRUE(hvac.isHeatingAndCoolingSupported());
-  EXPECT_FALSE(hvac.isAutoSupported());
+  EXPECT_FALSE(hvac.isHeatCoolSupported());
   EXPECT_FALSE(hvac.isFanSupported());
   EXPECT_FALSE(hvac.isDrySupported());
 
@@ -121,15 +121,15 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
   EXPECT_FALSE(hvac.isDrySupported());  // dry is not implemented
   EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 
-  // check auto
-  hvac.setAutoSupported(true);
-  EXPECT_TRUE(hvac.isAutoSupported());
-  EXPECT_EQ(
-      ch->getFuncList(),
-      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+  // check HeatCool
+  hvac.setHeatCoolSupported(true);
+  EXPECT_TRUE(hvac.isHeatCoolSupported());
+  EXPECT_EQ(ch->getFuncList(),
+            SUPLA_BIT_FUNC_HVAC_THERMOSTAT |
+                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL);
 
   // check heating&cooling
-  // auto is also removed, because it requires both heat and cool support
+  // HeatCool is also removed, because it requires both heat and cool support
   hvac.setHeatingAndCoolingSupported(false);
   EXPECT_FALSE(hvac.isHeatingAndCoolingSupported());
   EXPECT_EQ(ch->getFuncList(), 0);
@@ -144,9 +144,9 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
   EXPECT_FALSE(hvac.isDrySupported());
   EXPECT_EQ(ch->getFuncList(), 0);
 
-  // check auto
-  hvac.setAutoSupported(false);
-  EXPECT_FALSE(hvac.isAutoSupported());
+  // check HeatCool
+  hvac.setHeatCoolSupported(false);
+  EXPECT_FALSE(hvac.isHeatCoolSupported());
   EXPECT_EQ(ch->getFuncList(), 0);
 
   // check heating&cooling
@@ -154,22 +154,22 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
   EXPECT_TRUE(hvac.isHeatingAndCoolingSupported());
   EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 
-  // check if set auto will also set cool and heat
+  // check if set HeatCool will also set cool and heat
   hvac.setHeatingAndCoolingSupported(false);
   EXPECT_FALSE(hvac.isHeatingAndCoolingSupported());
-  EXPECT_FALSE(hvac.isAutoSupported());
+  EXPECT_FALSE(hvac.isHeatCoolSupported());
 
-  hvac.setAutoSupported(true);
-  EXPECT_TRUE(hvac.isAutoSupported());
+  hvac.setHeatCoolSupported(true);
+  EXPECT_TRUE(hvac.isHeatCoolSupported());
   EXPECT_TRUE(hvac.isHeatingAndCoolingSupported());
-  EXPECT_EQ(
-      ch->getFuncList(),
-      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(ch->getFuncList(),
+            SUPLA_BIT_FUNC_HVAC_THERMOSTAT |
+                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL);
 
   hvac.enableDifferentialFunctionSupport();
   EXPECT_EQ(ch->getFuncList(),
             SUPLA_BIT_FUNC_HVAC_THERMOSTAT |
-                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO |
+                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL |
                 SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL);
 }
 
@@ -190,8 +190,8 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
   EXPECT_EQ(hvac.getUsedAlgorithm(),
             SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
-  // check auto
-  hvac.setAutoSupported(true);
+  // check HeatCool
+  hvac.setHeatCoolSupported(true);
   // init doesn't change default function when it was previously set
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
@@ -201,16 +201,17 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
             SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
 
-  // clear default function and check auto again
+  // clear default function and check HeatCool again
   ch->setDefault(0);
   hvac.onInit();
-  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(ch->getDefaultFunction(),
+            SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
   EXPECT_EQ(hvac.getUsedAlgorithm(),
             SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check heating & cooling
   hvac.setHeatingAndCoolingSupported(true);
-  hvac.setAutoSupported(false);
+  hvac.setHeatCoolSupported(false);
   ch->setDefault(0);
   hvac.onInit();
   EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
@@ -221,7 +222,7 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
 
   // check dry - not implemented yet
   hvac.setHeatingAndCoolingSupported(false);
-  hvac.setAutoSupported(false);
+  hvac.setHeatCoolSupported(false);
   hvac.setDrySupported(true);
   ch->setDefault(0);
   hvac.onInit();
@@ -229,7 +230,7 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
 
   // check fan - not implemented yet
   hvac.setHeatingAndCoolingSupported(false);
-  hvac.setAutoSupported(false);
+  hvac.setHeatCoolSupported(false);
   hvac.setDrySupported(false);
   hvac.setFanSupported(true);
   ch->setDefault(0);
@@ -238,18 +239,19 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
 
   // check with all options enabled
   hvac.setHeatingAndCoolingSupported(true);
-  hvac.setAutoSupported(true);
+  hvac.setHeatCoolSupported(true);
   hvac.setDrySupported(true);
   hvac.setFanSupported(true);
   ch->setDefault(0);
   hvac.onInit();
-  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(ch->getDefaultFunction(),
+            SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
   EXPECT_EQ(hvac.getUsedAlgorithm(),
             SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   // check will all options disabled
   hvac.setHeatingAndCoolingSupported(false);
-  hvac.setAutoSupported(false);
+  hvac.setHeatCoolSupported(false);
   hvac.setDrySupported(false);
   hvac.setFanSupported(false);
   ch->setDefault(0);
@@ -271,14 +273,15 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInitWithTwoOutputs) {
 
   hvac.onInit();
   // check default function
-  EXPECT_EQ(ch->getDefaultFunction(), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(ch->getDefaultFunction(),
+            SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
 
-  EXPECT_EQ(
-      ch->getFuncList(),
-      SUPLA_BIT_FUNC_HVAC_THERMOSTAT | SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO);
+  EXPECT_EQ(ch->getFuncList(),
+            SUPLA_BIT_FUNC_HVAC_THERMOSTAT |
+                SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL);
 
   hvac.enableDifferentialFunctionSupport();
-  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO |
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL |
                             SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL |
                             SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
 }
@@ -301,8 +304,8 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   hvac.setTemperatureRoomMax(5000);          // 50 degrees
   hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
   hvac.setTemperatureHisteresisMax(1000);    // 10 degree
-  hvac.setTemperatureAutoOffsetMin(200);     // 2 degrees
-  hvac.setTemperatureAutoOffsetMax(1000);    // 10 degrees
+  hvac.setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+  hvac.setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
   hvac.setTemperatureAuxMin(500);   // 5 degrees
   hvac.setTemperatureAuxMax(7500);  // 75 degrees
 
@@ -623,8 +626,8 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   hvac.setTemperatureRoomMax(5000);          // 50 degrees
   hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
   hvac.setTemperatureHisteresisMax(1000);    // 10 degree
-  hvac.setTemperatureAutoOffsetMin(200);     // 2 degrees
-  hvac.setTemperatureAutoOffsetMax(1000);    // 10 degrees
+  hvac.setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+  hvac.setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
   hvac.setTemperatureAuxMin(500);   // 5 degrees
   hvac.setTemperatureAuxMax(7500);  // 75 degrees
 
@@ -632,8 +635,8 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_EQ(hvac.getTemperatureRoomMax(), 5000);
   EXPECT_EQ(hvac.getTemperatureHisteresisMin(), 20);
   EXPECT_EQ(hvac.getTemperatureHisteresisMax(), 1000);
-  EXPECT_EQ(hvac.getTemperatureAutoOffsetMin(), 200);
-  EXPECT_EQ(hvac.getTemperatureAutoOffsetMax(), 1000);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMin(), 200);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMax(), 1000);
   EXPECT_EQ(hvac.getTemperatureAuxMin(), 500);
   EXPECT_EQ(hvac.getTemperatureAuxMax(), 7500);
 
@@ -642,8 +645,8 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_EQ(hvac.getTemperatureRoomMax(), 5000);
   EXPECT_EQ(hvac.getTemperatureHisteresisMin(), 20);
   EXPECT_EQ(hvac.getTemperatureHisteresisMax(), 1000);
-  EXPECT_EQ(hvac.getTemperatureAutoOffsetMin(), 200);
-  EXPECT_EQ(hvac.getTemperatureAutoOffsetMax(), 1000);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMin(), 200);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMax(), 1000);
   EXPECT_EQ(hvac.getTemperatureAuxMin(), 500);
   EXPECT_EQ(hvac.getTemperatureAuxMax(), 7500);
 
@@ -936,9 +939,13 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+                &expectedData.Temperatures,
+                TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+                200);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+                &expectedData.Temperatures,
+                TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+                1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_AUX_MIN, 500);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1068,9 +1075,13 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+                &expectedData.Temperatures,
+                TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+                200);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+                &expectedData.Temperatures,
+                TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+                1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_AUX_MIN, 500);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1248,9 +1259,13 @@ TEST_F(HvacTestWithChannelSetupF,
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+                &expectedData.Temperatures,
+                TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+                200);
             Supla::Control::HvacBase::setTemperatureInStruct(
-                &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+                &expectedData.Temperatures,
+                TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+                1000);
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_AUX_MIN, 500);
             Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1412,9 +1427,13 @@ TEST_F(HvacTestWithChannelSetupF,
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+              &expectedData.Temperatures,
+              TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+              200);
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+              &expectedData.Temperatures,
+              TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+              1000);
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_AUX_MIN, 500);
           Supla::Control::HvacBase::setTemperatureInStruct(
@@ -1471,8 +1490,8 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
                                     5000);   // 50 degrees
   hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
   hvac.setTemperatureHisteresisMax(1000);    // 10 degree
-  hvac.setTemperatureAutoOffsetMin(200);     // 2 degrees
-  hvac.setTemperatureAutoOffsetMax(1000);    // 10 degrees
+  hvac.setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+  hvac.setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
   hvac.setTemperatureAuxMin(500);   // 5 degrees
   hvac.setTemperatureAuxMax(7500);  // 75 degrees
   hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
@@ -1482,8 +1501,8 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
   EXPECT_EQ(hvac.getTemperatureRoomMax(), 5000);
   EXPECT_EQ(hvac.getTemperatureHisteresisMin(), 20);
   EXPECT_EQ(hvac.getTemperatureHisteresisMax(), 1000);
-  EXPECT_EQ(hvac.getTemperatureAutoOffsetMin(), 200);
-  EXPECT_EQ(hvac.getTemperatureAutoOffsetMax(), 1000);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMin(), 200);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMax(), 1000);
   EXPECT_EQ(hvac.getTemperatureAuxMin(), 500);
   EXPECT_EQ(hvac.getTemperatureAuxMax(), 7500);
   EXPECT_EQ(hvac.getUsedAlgorithm(),
@@ -1501,8 +1520,8 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
   EXPECT_EQ(hvac2.getTemperatureRoomMax(), 5000);
   EXPECT_EQ(hvac2.getTemperatureHisteresisMin(), 20);
   EXPECT_EQ(hvac2.getTemperatureHisteresisMax(), 1000);
-  EXPECT_EQ(hvac2.getTemperatureAutoOffsetMin(), 200);
-  EXPECT_EQ(hvac2.getTemperatureAutoOffsetMax(), 1000);
+  EXPECT_EQ(hvac2.getTemperatureHeatCoolOffsetMin(), 200);
+  EXPECT_EQ(hvac2.getTemperatureHeatCoolOffsetMax(), 1000);
   EXPECT_EQ(hvac2.getTemperatureAuxMin(), 500);
   EXPECT_EQ(hvac2.getTemperatureAuxMax(), 7500);
   EXPECT_EQ(hvac.getUsedAlgorithm(),
@@ -1668,9 +1687,13 @@ TEST_F(HvacTestWithChannelSetupF,
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_HISTERESIS_MAX, 1000);
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MIN, 200);
+              &expectedData.Temperatures,
+              TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+              200);
           Supla::Control::HvacBase::setTemperatureInStruct(
-              &expectedData.Temperatures, TEMPERATURE_AUTO_OFFSET_MAX, 1000);
+              &expectedData.Temperatures,
+              TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+              1000);
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_AUX_MIN, 500);
           Supla::Control::HvacBase::setTemperatureInStruct(

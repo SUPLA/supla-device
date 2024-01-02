@@ -1038,8 +1038,8 @@ const char *Channel::getHvacModeCstr(int mode) const {
       return "HEAT";
     case SUPLA_HVAC_MODE_COOL:
       return "COOL";
-    case SUPLA_HVAC_MODE_AUTO:
-      return "AUTO";
+    case SUPLA_HVAC_MODE_HEAT_COOL:
+      return "HEAT_COOL";
     case SUPLA_HVAC_MODE_FAN_ONLY:
       return "FAN ONLY";
     case SUPLA_HVAC_MODE_DRY :

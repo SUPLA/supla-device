@@ -341,9 +341,6 @@ void SuplaDeviceClass::iterate(void) {
   }
 
   uint32_t _millis = millis();
-//  if (_millis == lastIterateTime) {
-//    return;
-//  }
 
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {

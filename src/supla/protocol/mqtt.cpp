@@ -499,7 +499,7 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
             publish((topic / "mode").c_str(), "cool", -1, 1);
             break;
           }
-          case SUPLA_HVAC_MODE_AUTO: {
+          case SUPLA_HVAC_MODE_HEAT_COOL: {
             publish((topic / "mode").c_str(), "heat_cool", -1, 1);
             break;
           }
@@ -511,7 +511,8 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
           }
         }
       }
-      if (ch->getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO) {
+      if (ch->getDefaultFunction() ==
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
         publish((topic / "temperature_setpoint").c_str(), "", -1, 1);
         int16_t setpointHeat = ch->getHvacSetpointTemperatureHeat();
         if (setpointHeat > INT16_MIN) {
@@ -2387,12 +2388,12 @@ void Mqtt::publishHADiscoveryHVAC(Supla::Element *element) {
             humidityTopic,
             static_cast<double>(tempMax) / 100.0,
             static_cast<double>(tempMin) / 100.0,
-            (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO
+            (hvac->getChannelFunction() ==
+                     SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL
                  ? "\"heat\",\"cool\",\"heat_cool\""
-                 :
-                 (hvac->isCoolingSubfunction()
-                  ? "\"cool\"" : "\"heat\"")),
-            (hvac->getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO
+                 : (hvac->isCoolingSubfunction() ? "\"cool\"" : "\"heat\"")),
+            (hvac->getChannelFunction() ==
+                     SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL
                  ? "\"temperature_high_command_topic\":\""
                    "~/set/temperature_setpoint_cool/\","
                    "\"temperature_high_state_topic\":\""
@@ -2485,7 +2486,7 @@ void Mqtt::processHVACRequest(const char *topic,
       hvacValue->Mode = SUPLA_HVAC_MODE_COOL;
       element->handleNewValueFromServer(&newValue);
     } else if (strncmpInsensitive(payload, "heat_cool", 10) == 0) {
-      hvacValue->Mode = SUPLA_HVAC_MODE_AUTO;
+      hvacValue->Mode = SUPLA_HVAC_MODE_HEAT_COOL;
       element->handleNewValueFromServer(&newValue);
     } else {
       SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);

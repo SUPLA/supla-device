@@ -66,8 +66,8 @@ class HvacIntegrationScheduleF : public ::testing::Test {
     hvac->setTemperatureRoomMax(5000);          // 50 degrees
     hvac->setTemperatureHisteresisMin(20);      // 0.2 degree
     hvac->setTemperatureHisteresisMax(1000);    // 10 degree
-    hvac->setTemperatureAutoOffsetMin(200);     // 2 degrees
-    hvac->setTemperatureAutoOffsetMax(1000);    // 10 degrees
+    hvac->setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+    hvac->setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
     hvac->setTemperatureAuxMin(500);   // 5 degrees
     hvac->setTemperatureAuxMax(7500);  // 75 degrees
     hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
@@ -537,8 +537,8 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg,
-              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO))
+  EXPECT_CALL(
+      cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL))
       .Times(1)
       .WillOnce(Return(true));
 
@@ -612,7 +612,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
-        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_AUTO);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
@@ -708,7 +708,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET);
         EXPECT_EQ(hvacValue->IsOn, 0);
-        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_AUTO);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT_COOL);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2050);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2700);
     });

@@ -119,7 +119,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 // CS  - client -> server
 // SC  - server -> client
 
-#define SUPLA_PROTO_VERSION 21
+#define SUPLA_PROTO_VERSION 22
 #define SUPLA_PROTO_VERSION_MIN 1
 #if defined(ARDUINO_ARCH_AVR)     // Arduino IDE for Arduino HW
 #define SUPLA_MAX_DATA_SIZE 1248  // Registration header + 32 channels x 21 B
@@ -320,6 +320,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_RESULTCODE_CLIENT_LIMITEXCEEDED 12
 #define SUPLA_RESULTCODE_DEVICE_LIMITEXCEEDED 13
 #define SUPLA_RESULTCODE_GUID_ERROR 14
+#define SUPLA_RESULTCODE_DEVICE_LOCKED 15                          // ver. >= 22
 #define SUPLA_RESULTCODE_REGISTRATION_DISABLED 17                  // ver. >= 7
 #define SUPLA_RESULTCODE_ACCESSID_NOT_ASSIGNED 18                  // ver. >= 7
 #define SUPLA_RESULTCODE_AUTHKEY_ERROR 19                          // ver. >= 7
@@ -414,7 +415,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELTYPE_VALVE_OPENCLOSE 7000              // ver. >= 12
 #define SUPLA_CHANNELTYPE_VALVE_PERCENTAGE 7010             // ver. >= 12
 #define SUPLA_CHANNELTYPE_BRIDGE 8000                       // ver. >= 12
-#define SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT 9000  // ver. >= 21
+#define SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT 9000  // ver. >= 22
 #define SUPLA_CHANNELTYPE_ENGINE 10000                      // ver. >= 12
 #define SUPLA_CHANNELTYPE_ACTIONTRIGGER 11000               // ver. >= 16
 #define SUPLA_CHANNELTYPE_DIGIGLASS 12000                   // ver. >= 12
@@ -467,14 +468,14 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELFNC_IC_SECONDS 360                    // ver. >= 21
 #define SUPLA_CHANNELFNC_THERMOSTAT_HEATPOL_HOMEPLUS 410   // ver. >= 11
 #define SUPLA_CHANNELFNC_HVAC_THERMOSTAT 420               // ver. >= 21
-#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_AUTO 422          // ver. >= 21
+#define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL 422     // ver. >= 21
 #define SUPLA_CHANNELFNC_HVAC_DRYER 423                    // ver. >= 21
 #define SUPLA_CHANNELFNC_HVAC_FAN 424                      // ver. >= 21
 #define SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL 425  // ver. >= 21
 #define SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER 426       // ver. >= 21
 #define SUPLA_CHANNELFNC_VALVE_OPENCLOSE 500               // ver. >= 12
 #define SUPLA_CHANNELFNC_VALVE_PERCENTAGE 510              // ver. >= 12
-#define SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT 520   // ver. >= 21
+#define SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT 520   // ver. >= 22
 #define SUPLA_CHANNELFNC_CONTROLLINGTHEENGINESPEED 600     // ver. >= 12
 #define SUPLA_CHANNELFNC_ACTIONTRIGGER 700                 // ver. >= 16
 #define SUPLA_CHANNELFNC_DIGIGLASS_HORIZONTAL 800          // ver. >= 14
@@ -499,7 +500,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW 0x00008000      // ver. >= 13
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND 0x00010000     // ver. >= 17
 #define SUPLA_BIT_FUNC_HVAC_THERMOSTAT 0x00020000               // ver. >= 21
-#define SUPLA_BIT_FUNC_HVAC_THERMOSTAT_AUTO 0x00040000          // ver. >= 21
+#define SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL 0x00040000     // ver. >= 21
 #define SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL 0x00080000  // ver. >= 21
 #define SUPLA_BIT_FUNC_HVAC_DOMESTIC_HOT_WATER 0x00100000       // ver. >= 21
 
@@ -548,6 +549,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED 0x0020       // ver. >= 18
 #define SUPLA_DEVICE_FLAG_CALCFG_SET_TIME 0x0040          // ver. >= 21
 #define SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED 0x0080  // ver. >= 21
+#define SUPLA_DEVICE_FLAG_DEVICE_LOCKED 0x0100            // ver. >= 22
 
 // BIT map definition for TDS_SuplaRegisterDevice_F::ConfigFields (64 bit)
 // type: TDeviceConfig_StatusLed
@@ -784,7 +786,7 @@ typedef struct {
 #define SUPLA_HVAC_MODE_OFF 1
 #define SUPLA_HVAC_MODE_HEAT 2
 #define SUPLA_HVAC_MODE_COOL 3
-#define SUPLA_HVAC_MODE_AUTO 4
+#define SUPLA_HVAC_MODE_HEAT_COOL 4
 #define SUPLA_HVAC_MODE_FAN_ONLY 6
 #define SUPLA_HVAC_MODE_DRY 7
 // TURN ON mode is a command. Device will use it to turn on and then it will
@@ -1621,7 +1623,7 @@ typedef struct {
 #define EM_PHASE_SEQUENCE_VOLTAGE 0x01
 #define EM_PHASE_SEQUENCE_CURRENT 0x02
 
-#if defined(__AVR__) || defined(ESP8266) || defined(ESP32) ||                  \
+#if defined(__AVR__) || defined(ESP8266) || defined(ESP32) || \
     defined(ESP_PLATFORM) || defined(ARDUINO) || defined(SUPLA_DEVICE)
 #define EM_MEASUREMENT_COUNT 1
 #else
@@ -1693,9 +1695,9 @@ typedef struct {
                                              // Vector phase-to-phase balancing
 
   // Voltage phase angle between phase 1 and 2
-  unsigned _supla_int16_t voltage_phase_angle_12;   // * 0.1 degree, 0..360
+  unsigned _supla_int16_t voltage_phase_angle_12;  // * 0.1 degree, 0..360
   // Voltage phase angle between phase 1 and 3
-  unsigned _supla_int16_t voltage_phase_angle_13;   // * 0.1 degree, 0..360
+  unsigned _supla_int16_t voltage_phase_angle_13;  // * 0.1 degree, 0..360
   unsigned char phase_sequence;  // bit 0x1 - voltage, bit 0x2 current
                                  // EM_PHASE_SEQUENCE_*
                                  // bit value: 0 - 123 (clockwise)
@@ -2138,10 +2140,10 @@ typedef struct {
 #define TEMPERATURE_HISTERESIS_MIN (1ULL << 14)
 // Maximum histereis value
 #define TEMPERATURE_HISTERESIS_MAX (1ULL << 15)
-// Minimum temperature offset in AUTO mode
-#define TEMPERATURE_AUTO_OFFSET_MIN (1ULL << 16)
-// Maximum temperature offset in AUTO mode
-#define TEMPERATURE_AUTO_OFFSET_MAX (1ULL << 17)
+// Minimum temperature offset in HEAT_COOL mode
+#define TEMPERATURE_HEAT_COOL_OFFSET_MIN (1ULL << 16)
+// Maximum temperature offset in HEAT_COOL mode
+#define TEMPERATURE_HEAT_COOL_OFFSET_MAX (1ULL << 17)
 // 6 values left for future use
 
 #define SUPLA_TEMPERATURE_INVALID_INT16 -32768
@@ -2153,7 +2155,7 @@ typedef struct {
   _supla_int16_t Temperature[24];
 } THVACTemperatureCfg;
 
-// Thermostat configuration commands - ver. >= 11
+// Heatpol: Thermostat configuration commands - ver. >= 11
 #define SUPLA_THERMOSTAT_CMD_TURNON 1
 #define SUPLA_THERMOSTAT_CMD_SET_MODE_AUTO 2
 #define SUPLA_THERMOSTAT_CMD_SET_MODE_COOL 3
@@ -2679,11 +2681,6 @@ typedef struct {
 #define SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE (1ULL << 0)
 #define SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST (1ULL << 1)
 
-// TODO(klew): should we have separate structures for configuration specific
-// to selected algorithm? I.e. histeresis should be applicable to on/off
-// algorithm, while i.e. PID requires different parameters to work (or can
-// those be adjusted automatically by software?)
-
 // HVAC channel validation rules for thermometers:
 // - MainThermometerChannelNo must be set
 // - AuxThermometerChannelNo is validated and used only when
@@ -2698,7 +2695,7 @@ typedef struct {
 //     AuxThermometerChannelNo is ignored, it can be set to 0.
 
 // HVAC channel validation for AntiFreezeAndOverheatProtectionEnabled:
-// - function is available for channel functions: HEAT, COOL, AUTO
+// - function is available for channel functions: HEAT, COOL, HEAT_COOL
 // - for other channel functions, this parameter is ignored
 // - AntiFreeze/Overheat protection always use MainThermometerChannelNo as
 //     temperature source
@@ -2733,8 +2730,8 @@ typedef struct {
 // - Temperatures (t_min, t_max) in "Auto Constrain" means:
 //     TEMPERATURE_ROOM_MIN <= t_min <= TEMPERATURE_ROOM_MAX AND
 //     TEMPERATURE_ROOM_MIN <= t_max <= TEMPERATURE_ROOM_MAX AND
-//     (t_max - t_min >= TEMPERATURE_AUTO_OFFSET_MIN) AND
-//     (t_max - t_min <= TEMPERATURE_AUTO_OFFSET_MAX)
+//     (t_max - t_min >= TEMPERATURE_HEAT_COOL_OFFSET_MIN) AND
+//     (t_max - t_min <= TEMPERATURE_HEAT_COOL_OFFSET_MAX)
 
 // TEMPERATURE_FREEZE_PROTECTION - has to be in Room Constrain when
 //   AntiFreezeAndOverheatProtectionEnabled is set
@@ -2742,7 +2739,7 @@ typedef struct {
 // TEMPERATURE_COMFORT - has to be in Room Constrain
 // TEMPERATURE_BOOST - has to be in Room Constrain
 // TEMPERATURE_HEAT_PROTECTION - has to be in Room Constrain when function
-//   is COOL or AUTO
+//   is COOL or HEAT_COOL
 // TEMPERATURE_HISTERESIS - has to be
 //   TEMPERATURE_HISTERESIS_MIN <= t <= TEMPERATURE_HISTERESIS_MAX
 // TEMPERATURE_BELOW_ALARM - has to be in Room Constrain
@@ -2757,7 +2754,7 @@ typedef struct {
 // TEMPERATURE_ROOM_MIN < TEMPERATURE_ROOM_MAX
 // TEMPERATURE_AUX_MIN < TEMPERATURE_AUX_MAX
 // TEMPERATURE_HISTERESIS_MIN < TEMPERATURE_HISTERESIS_MAX
-// TEMPERATURE_AUTO_OFFSET_MIN < TEMPERATURE_AUTO_OFFSET_MAX
+// TEMPERATURE_HEAT_COOL_OFFSET_MIN < TEMPERATURE_HEAT_COOL_OFFSET_MAX
 
 // Subfunction for SUPLA_CHANNELFNC_HVAC_THERMOSTAT
 // Other channel functions dont' use subfunction setting (yet)
@@ -2807,14 +2804,72 @@ typedef struct {
   unsigned char TemperatureSetpointChangeSwitchesToManualMode;  // 0 - off,
                                                                 // 1 - on (def)
   unsigned char AuxMinMaxSetpointEnabled;  // 0 - off (default), 1 - on
-  // For AUTO thermostats we have two outpus. They can either use
+  // For HEAT_COOL thermostats we have two outpus. They can either use
   // shared output for heating/cooling action and second output for heat vs
   // cool mode selection, or they can use separate outputs - one for heating
   // and one for cooling
-  unsigned char AutoUseSeparateHeatCoolOutputs;  // 0 - off (default), 1 - on
+  unsigned char UseSeparateHeatCoolOutputs;  // 0 - off (default), 1 - on
   unsigned char Reserved[48];
   THVACTemperatureCfg Temperatures;
 } TChannelConfig_HVAC;  // v. >= 21
+
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_CHART_TYPE_LINEAR 0
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_CHART_TYPE_BAR 1
+
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_DATA_SOURCE_TYPE_MEASUREMENT 0
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_DATA_SOURCE_TYPE_INCREMENTAL 1
+
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_VALUE_TYPE_DOUBLE 0
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_VALUE_TYPE_INT64 1
+
+#define SUPLA_GENERAL_PURPOSE_MEASUEMENT_UNIT_DATA_SIZE 15
+
+// General Purpose Mesurement channel config:
+// Calculated value is: (value / ValueDivider) + ValueAdded
+typedef struct {
+  // Value divider
+  _supla_int_t ValueDivider;  // 0.001 units; 0 is considered as 1
+  // Value added
+  _supla_int64_t ValueAdded;  // 0.001 units
+  // Display precicion
+  unsigned char ValuePrecision;  // 0 - 10 decimal points
+  // Display unit prefix - UTF8 including the terminating null byte ('\0')
+  char UnitPrefix[SUPLA_GENERAL_PURPOSE_MEASUEMENT_UNIT_DATA_SIZE];
+  // Display unit suffix - UTF8 including the terminating null byte ('\0')
+  char UnitSuffix[SUPLA_GENERAL_PURPOSE_MEASUEMENT_UNIT_DATA_SIZE];
+  // Keep history on server
+  unsigned char KeepHistory;  // 0 - no (default), 1 - yes
+  // Chart type linear/bar
+  unsigned char ChartType;  // SUPLA_GENERAL_PURPOSE_MEASUEMENT_CHART_TYPE_*
+  // Include value added in history
+  unsigned char IncludeValueAddedInHistory;  // 0 - no (default), 1 - yes
+                                             //
+  // Fill missing data (for incremental type)
+  unsigned char FillMissingData;  // 0 - no (default), 1 - yes
+  // Allow counter reset (for incremental type)
+  unsigned char AllowCounterReset;  // 0 - no (default), 1 - yes
+
+  // Readonly and default parameters
+  // Channel value[8] format: int64, double
+  unsigned char ValueType;  // SUPLA_GENERAL_PURPOSE_MEASUEMENT_VALUE_TYPE_*
+  // Data source type - incremental/measurement
+  unsigned char
+      DataSourceType;  // SUPLA_GENERAL_PURPOSE_MEASUEMENT_DATA_SOURCE_TYPE_*
+
+  // Default value divider
+  _supla_int_t DefaultValueDivider;  // 0.001 units; 0 is considered
+                                     // as 1
+  // Default value added
+  _supla_int64_t DefaultValueAdded;  // 0.001 units
+  // Default display precicion
+  unsigned char DefaultValuePrecision;  // 0 - 10 decimal points
+  // Default unit prefix - UTF8 including the terminating null byte ('\0')
+  char DefaultUnitPrefix[SUPLA_GENERAL_PURPOSE_MEASUEMENT_UNIT_DATA_SIZE];
+  // Default unit suffix - UTF8 including the terminating null byte ('\0')
+  char DefaultUnitSuffix[SUPLA_GENERAL_PURPOSE_MEASUEMENT_UNIT_DATA_SIZE];
+
+  unsigned char Reserved[8];
+} TChannelConfig_GeneralPurposeMeasuement;
 
 typedef struct {
   _supla_int_t ChannelID;

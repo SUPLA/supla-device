@@ -100,7 +100,8 @@ void CustomCheckboxParameter::send(Supla::WebSender* sender) {
   }
 }
 
-bool CustomCheckboxParameter::handleResponse(const char* key, const char* value) {
+bool CustomCheckboxParameter::handleResponse(
+                                          const char* key, const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg && tag != nullptr && strcmp(key, tag) == 0) {
     checkboxFound = true;

@@ -309,14 +309,14 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->sendLabelFor(key,
                        "Enable auxiliary min and max setpoints");
   sender->send("<label>");
-  sender->send("<div class=\"switch\">");
+  sender->send("<span class=\"switch\">");
   sender->send("<input type=\"checkbox\" value=\"on\" ");
   sender->send(
       checked(hvac->isAuxMinMaxSetpointEnabled()));
   sender->sendNameAndId(key);
   sender->send(" onchange=\"auxSetpointEnabledChange();\">");
   sender->send("<span class=\"slider\"></span>");
-  sender->send("</div>");
+  sender->send("</span>");
   sender->send("</label>");
   sender->send("</div>");
   // form-field END
@@ -385,13 +385,13 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->send("<div class=\"form-field right-checkbox\">");
   sender->sendLabelFor(key, "Enable anti-freeze and overheat protection");
   sender->send("<label>");
-  sender->send("<div class=\"switch\">");
+  sender->send("<span class=\"switch\">");
   sender->send("<input type=\"checkbox\" value=\"on\" ");
   sender->send(checked(hvac->isAntiFreezeAndHeatProtectionEnabled()));
   sender->sendNameAndId(key);
   sender->send(" onchange=\"antiFreezeAndHeatProtectionChange();\">");
   sender->send("<span class=\"slider\"></span>");
-  sender->send("</div>");
+  sender->send("</span>");
   sender->send("</label>");
   sender->send("</div>");
   // form-field END
@@ -604,14 +604,14 @@ void HvacParameters::send(Supla::WebSender* sender) {
   sender->sendLabelFor(key,
                        "Temperature setpoint change switches to manual mode");
   sender->send("<label>");
-  sender->send("<div class=\"switch\">");
+  sender->send("<span class=\"switch\">");
   sender->send("<input type=\"checkbox\" value=\"on\" ");
   sender->send(
       checked(hvac->isTemperatureSetpointChangeSwitchesToManualMode()));
   sender->sendNameAndId(key);
   sender->send(">");
   sender->send("<span class=\"slider\"></span>");
-  sender->send("</div>");
+  sender->send("</span>");
   sender->send("</label>");
   sender->send("</div>");
   // form-field END

@@ -63,13 +63,13 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
     sender->send("<div class=\"form-field right-checkbox\">");
     sender->sendLabelFor("auto_bright", "Automatic screen brightness");
     sender->send("<label>");
-    sender->send("<div class=\"switch\">");
+    sender->send("<span class=\"switch\">");
     sender->send("<input type=\"checkbox\" value=\"on\" ");
     sender->send(checked(automatic));
     sender->sendNameAndId("auto_bright");
     sender->send(" onclick=\"showHideBrightnessSettingsToggle()\">");
     sender->send("<span class=\"slider\"></span>");
-    sender->send("</div>");
+    sender->send("</span>");
     sender->send("</label>");
     sender->send("</div>");
     // form-field END

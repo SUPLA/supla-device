@@ -20,6 +20,7 @@
 #define SRC_SUPLA_NETWORK_WEB_SERVER_H_
 
 #include <supla/network/html_generator.h>
+#include "supla/network/html_element.h"
 
 class SuplaDeviceClass;
 
@@ -43,6 +44,7 @@ class WebServer {
                          int size,
                          bool lastChunk = true);
   virtual void resetParser();
+  void setBetaProcessing();
 
   Supla::HtmlGenerator *htmlGenerator = nullptr;
 
@@ -54,6 +56,8 @@ class WebServer {
   int partialSize = 0;
   char key[HTML_KEY_LENGTH] = {};
   char *value = nullptr;
+  enum Supla::HtmlSection excludeSection =
+      Supla::HtmlSection::HTML_SECTION_BETA_FORM;
 };
 
 };  // namespace Supla

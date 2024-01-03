@@ -95,12 +95,12 @@ void DS18B20Parameters::send(Supla::WebSender* sender) {
     sender->send("<div class=\"form-field right-checkbox\">");
     sender->sendLabelFor(key, "Reset assignement?");
     sender->send("<label>");
-    sender->send("<div class=\"switch\">");
+    sender->send("<span class=\"switch\">");
     sender->send("<input type=\"checkbox\" value=\"on\"");
     sender->sendNameAndId(key);
     sender->send(">");
     sender->send("<span class=\"slider\"></span>");
-    sender->send("</div>");
+    sender->send("</span>");
     sender->send("</label>");
     sender->send("</div>");
   }

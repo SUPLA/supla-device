@@ -52,13 +52,13 @@ void TimeParameters::send(Supla::WebSender* sender) {
     sender->send("<div class=\"form-field right-checkbox\">");
     sender->sendLabelFor(Supla::AutomaticTimeSyncCfgTag, "Automatic time sync");
     sender->send("<label>");
-    sender->send("<div class=\"switch\">");
+    sender->send("<span class=\"switch\">");
     sender->send("<input type=\"checkbox\" value=\"on\" ");
     sender->send(checked(value == 1));
     sender->sendNameAndId(Supla::AutomaticTimeSyncCfgTag);
     sender->send(" onclick=\"showHideTimeSettingsToggle()\">");
     sender->send("<span class=\"slider\"></span>");
-    sender->send("</div>");
+    sender->send("</span>");
     sender->send("</label>");
     sender->send("</div>");
     // form-field BEGIN
@@ -73,12 +73,12 @@ void TimeParameters::send(Supla::WebSender* sender) {
     sender->send("<div class=\"form-field right-checkbox\">");
     sender->sendLabelFor("set_time_toggle", "Set time?");
     sender->send("<label>");
-    sender->send("<div class=\"switch\">");
+    sender->send("<span class=\"switch\">");
     sender->send("<input type=\"checkbox\" value=\"on\" ");
     sender->sendNameAndId("set_time_toggle");
     sender->send(" onclick=\"showHideTimeSettings()\">");
     sender->send("<span class=\"slider\"></span>");
-    sender->send("</div>");
+    sender->send("</span>");
     sender->send("</label>");
     sender->send("</div>");
 

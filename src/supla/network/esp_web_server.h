@@ -52,7 +52,7 @@ class EspWebServer : public Supla::WebServer, public Supla::Element {
   void stop() override;
   void iterateAlways() override;
 
-  bool handlePost();
+  bool handlePost(bool beta = false);
   ::ESPWebServer *getServerPtr();
 
   bool dataSaved = false;

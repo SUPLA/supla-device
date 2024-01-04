@@ -37,7 +37,7 @@ CustomCheckboxParameter::CustomCheckboxParameter(const char* paramTag,
 }
 
 void CustomCheckboxParameter::setTag(const char* tagValue) {
-  auto size = strnlen(tagValue);
+  auto size = strnlen(tagValue, SUPLA_CONFIG_MAX_KEY_SIZE);
   if (size >= SUPLA_CONFIG_MAX_KEY_SIZE) {
     size = SUPLA_CONFIG_MAX_KEY_SIZE - 1;
     SUPLA_LOG_WARNING("Tag too long: \"%s\"; truncating", tagValue);
@@ -54,7 +54,7 @@ void CustomCheckboxParameter::setTag(const char* tagValue) {
 }
 
 void CustomCheckboxParameter::setLabel(const char *labelValue) {
-  auto size = strnlen(labelValue);
+  auto size = strnlen(labelValue, MAX_LABEL_SIZE);
   if (label != nullptr) {
     delete []label;
     label = nullptr;
@@ -62,7 +62,7 @@ void CustomCheckboxParameter::setLabel(const char *labelValue) {
   if (labelValue == nullptr || size == 0) {
     return;
   }
-  if (size < 500) {
+  if (size < MAX_LABEL_SIZE) {
     label = new char[size + 1];
     strncpy(label, labelValue, size + 1);
   }
@@ -103,9 +103,10 @@ void CustomCheckboxParameter::send(Supla::WebSender* sender) {
 bool CustomCheckboxParameter::handleResponse(
                                           const char* key, const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg && tag != nullptr && strncmp(key, tag) == 0) {
+  if (cfg && tag != nullptr &&
+                           strncmp(key, tag, SUPLA_CONFIG_MAX_KEY_SIZE) == 0) {
     checkboxFound = true;
-    uint8_t inFormValue = (strncmp(value, "on") == 0 ? 1 : 0);
+    uint8_t inFormValue = (strncmp(value, "on", 3) == 0 ? 1 : 0);
     cfg->setUInt8(tag, inFormValue);
     return true;
   }

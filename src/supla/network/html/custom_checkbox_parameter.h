@@ -32,6 +32,8 @@ namespace Html {
  * paramLabel provides label which is displayed next to input in www.
  */
 
+#define MAX_LABEL_SIZE 500
+
 class CustomCheckboxParameter : public HtmlElement {
  public:
   CustomCheckboxParameter(const char *paramTag,

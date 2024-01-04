@@ -36,7 +36,7 @@ class CustomCheckboxParameter : public HtmlElement {
  public:
   CustomCheckboxParameter(const char *paramTag,
                           const char *paramLabel,
-                          uint8_t defaultValue = false);
+                          uint8_t defaultValue = 0);
   virtual ~CustomCheckboxParameter();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;

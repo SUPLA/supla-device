@@ -54,9 +54,10 @@ TEST(StorageStateTests, preambleInitialization) {
 
   EXPECT_CALL(storage, commit()).Times(1);
 
+  EXPECT_TRUE(storage.isEmpty());
   EXPECT_TRUE(Supla::Storage::Init());
 
-  EXPECT_EQ(memcmp(&preamble, storage.storageSimulatorData, 8), 0);
+  EXPECT_TRUE(storage.isPreampleInitialized());
 }
 
 TEST(StorageStateTests, preambleAlreadyInitialized) {
@@ -66,14 +67,26 @@ TEST(StorageStateTests, preambleAlreadyInitialized) {
   Supla::Preamble preamble;
   memcpy(preamble.suplaTag, "SUPLA", 5);
   preamble.version = 1;
-  preamble.sectionsCount = 0;
+  preamble.sectionsCount = 1;
 
-  memcpy(storage.storageSimulatorData, &preamble, 8);
+  Supla::SectionPreamble sectionPreamble = {STORAGE_SECTION_TYPE_ELEMENT_STATE,
+                                            0,
+                                            0,
+                                            0};
+
+  EXPECT_TRUE(storage.isEmpty());
+  memcpy(storage.storageSimulatorData, &preamble, sizeof(preamble));
+  memcpy(storage.storageSimulatorData + sizeof(Supla::Preamble),
+         &sectionPreamble,
+         sizeof(sectionPreamble));
 
   EXPECT_CALL(storage, commit()).Times(0);
 
+  EXPECT_TRUE(storage.isPreampleInitialized(1));
+  EXPECT_TRUE(storage.isEmptySimpleStatePreamplePresent());
   EXPECT_TRUE(Supla::Storage::Init());
-  EXPECT_EQ(memcmp(&preamble, storage.storageSimulatorData, 8), 0);
+  EXPECT_TRUE(storage.isPreampleInitialized(1));
+  EXPECT_TRUE(storage.isEmptySimpleStatePreamplePresent());
 }
 
 TEST(StorageStateTests, invalidPreambleAlreadyInitialized) {
@@ -85,17 +98,16 @@ TEST(StorageStateTests, invalidPreambleAlreadyInitialized) {
   memcpy(invalidPreamble.suplaTag, "SuPLa", 5);
   invalidPreamble.version = 1;
   invalidPreamble.sectionsCount = 0;
-  memcpy(storage.storageSimulatorData, &invalidPreamble, 8);
 
-  Supla::Preamble preamble;
-  memcpy(preamble.suplaTag, "SUPLA", 5);
-  preamble.version = 1;
-  preamble.sectionsCount = 0;
+  EXPECT_TRUE(storage.isEmpty());
+  memcpy(storage.storageSimulatorData, &invalidPreamble, 8);
+  EXPECT_FALSE(storage.isPreampleInitialized(0));
 
   EXPECT_CALL(storage, commit()).Times(1);
 
   EXPECT_TRUE(Supla::Storage::Init());
-  EXPECT_EQ(memcmp(&preamble, storage.storageSimulatorData, 8), 0);
+  EXPECT_TRUE(storage.isPreampleInitialized(1));
+  EXPECT_TRUE(storage.isEmptySimpleStatePreamplePresent());
 }
 
 
@@ -110,14 +122,11 @@ TEST(StorageStateTests, preambleInitializationWithElement) {
   preamble.version = 1;
   preamble.sectionsCount = 0;
 
+  EXPECT_TRUE(storage.isEmpty());
   memcpy(storage.storageSimulatorData, &preamble, 8);
+  EXPECT_TRUE(storage.isPreampleInitialized(0));
 
-  Supla::Preamble preambleWithStateSection;
-  memcpy(preambleWithStateSection.suplaTag, "SUPLA", 5);
-  preambleWithStateSection.version = 1;
-  preambleWithStateSection.sectionsCount = 1;
-
-  EXPECT_CALL(storage, commit()).Times(2);
+  EXPECT_CALL(storage, commit()).Times(3);
 
   EXPECT_TRUE(Supla::Storage::Init());
   ASSERT_FALSE(Supla::Storage::IsStateStorageValid());
@@ -135,9 +144,7 @@ TEST(StorageStateTests, preambleInitializationWithElement) {
   Supla::Storage::LoadStateStorage();
   EXPECT_EQ(el.stateValue, 123456);
 
-
-  EXPECT_EQ(memcmp(&preambleWithStateSection, storage.storageSimulatorData, 8),
-            0);
+  EXPECT_TRUE(storage.isPreampleInitialized(1));
 
   Supla::SectionPreamble secPreamble = {};
   secPreamble.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;
@@ -158,7 +165,9 @@ TEST(StorageStateTests, preambleAlreadyInitializedWithElement) {
   preamble.version = 1;
   preamble.sectionsCount = 1;
 
+  EXPECT_TRUE(storage.isEmpty());
   memcpy(storage.storageSimulatorData, &preamble, 8);
+  EXPECT_TRUE(storage.isPreampleInitialized(1));
 
   Supla::SectionPreamble secPreamble = {};
   secPreamble.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;

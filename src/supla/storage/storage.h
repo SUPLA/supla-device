@@ -21,24 +21,32 @@
 
 #include <stdint.h>
 
-#define STORAGE_SECTION_TYPE_DEVICE_CONFIG  1
-#define STORAGE_SECTION_TYPE_ELEMENT_CONFIG 2
-#define STORAGE_SECTION_TYPE_ELEMENT_STATE  3
+#define STORAGE_SECTION_TYPE_DEVICE_CONFIG           1
+#define STORAGE_SECTION_TYPE_ELEMENT_CONFIG          2
+#define STORAGE_SECTION_TYPE_ELEMENT_STATE           3
+#define STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE   4
+#define STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR 5
 
 namespace Supla {
 
 class Config;
 class SpecialSectionInfo;
+class StateStorageInterface;
 
 class Storage {
+  enum class WearLevelingMode {
+    OFF = 0,
+    BYTE_WRITE_MODE = 1,   // Used i.e. for EEPROM memory
+    SECTOR_WRITE_MODE = 2  // Used i.e. for FLASH memory
+  };
+
  public:
+  friend class StateStorageInterface;
   static Storage *Instance();
   static Config *ConfigInstance();
   static bool Init();
   static bool ReadState(unsigned char *, int);
   static bool WriteState(const unsigned char *, int);
-  static bool PrepareState(bool dryRun = false);
-  static bool FinalizeSaveState();
   static bool SaveStateAllowed(uint32_t);
   static void ScheduleSave(uint32_t delayMs);
   static void SetConfigInstance(Config *instance);
@@ -66,24 +74,38 @@ class Storage {
   // Delete content of section
   static bool DeleteSection(int sectionId);
 
-  explicit Storage(unsigned int storageStartingOffset = 0);
+  explicit Storage(unsigned int storageStartingOffset = 0,
+                   unsigned int availableSize = 0,
+                   enum WearLevelingMode = WearLevelingMode::OFF);
   virtual ~Storage();
 
   // Changes default state save period time
   virtual void setStateSavePeriod(uint32_t periodMs);
 
+  virtual void deleteAll();
+
+ protected:
+  static bool PrepareState(bool dryRun = false);
+  static bool FinalizeSaveState();
+
   virtual bool init();
+  virtual int readStorage(unsigned int address,
+                          unsigned char *buf,
+                          int size,
+                          bool logs = true) = 0;
+  virtual int writeStorage(unsigned int address,
+                           const unsigned char *buf,
+                           int size) = 0;
+  virtual void commit() = 0;
+
   virtual bool readState(unsigned char *, int);
   virtual bool writeState(const unsigned char *, int);
+  virtual int updateStorage(unsigned int, const unsigned char *, int);
 
   virtual bool prepareState(bool performDryRun);
   virtual bool finalizeSaveState();
   virtual bool saveStateAllowed(uint32_t);
   virtual void scheduleSave(uint32_t delayMs);
-
-  virtual void commit() = 0;
-
-  virtual void deleteAll();
 
   bool registerSection(int sectionId, int offset, int size, bool addCrc,
       bool addBackupCopy);
@@ -91,29 +113,18 @@ class Storage {
   bool writeSection(int sectionId, const unsigned char *data, int size);
   bool deleteSection(int sectionId);
 
- protected:
-  virtual int readStorage(unsigned int, unsigned char *, int, bool = true) = 0;
-  virtual int writeStorage(unsigned int, const unsigned char *, int) = 0;
-  virtual int updateStorage(unsigned int, const unsigned char *, int);
 
-  unsigned int storageStartingOffset = 0;
-  unsigned int elementStateOffset = 0;
-
-  bool elementStateCrcCValid = false;
-
-  unsigned int elementStateSize = 0;
-
-  unsigned int currentStateOffset = 0;
-
-  unsigned int newSectionSize = 0;
-  int sectionsCount = 0;
-  bool dryRun = false;
+  const uint32_t storageStartingOffset = 0;
+  const uint32_t availableSize = 0;
+  const enum WearLevelingMode wearLevelingMode = WearLevelingMode::OFF;
 
   uint32_t saveStatePeriod = 1000;
   uint32_t lastWriteTimestamp = 0;
-  uint16_t crc = 0;
+
+  bool dryRun = false;
 
   SpecialSectionInfo *firstSectionInfo = nullptr;
+  StateStorageInterface *stateStorage = nullptr;
 
   static Storage *instance;
   static Config *configInstance;

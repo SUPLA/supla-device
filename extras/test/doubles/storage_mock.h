@@ -59,22 +59,48 @@ class StorageMockSimulator: public Supla::Storage {
     return size;
   }
 
-    int writeStorage(unsigned int offset,
-                     const unsigned char *data,
-                     int size) override {
-      if (noWriteExpected) {
-        assert(false && "StorageMockSimulator write not expected");
-      }
-      if (offset + size >= STORAGE_SIMULATOR_SIZE) {
-        assert(false && "StorageMockSimulator out of bounds");
-        return 0;
-      }
-      memcpy(&storageSimulatorData[offset], data, size);
-      return size;
+  int writeStorage(unsigned int offset,
+      const unsigned char *data,
+      int size) override {
+    if (noWriteExpected) {
+      assert(false && "StorageMockSimulator write not expected");
     }
+    if (offset + size >= STORAGE_SIMULATOR_SIZE) {
+      assert(false && "StorageMockSimulator out of bounds");
+      return 0;
+    }
+    memcpy(&storageSimulatorData[offset], data, size);
+    return size;
+  }
 
   uint8_t storageSimulatorData[STORAGE_SIMULATOR_SIZE] = {};
   bool noWriteExpected = false;
+
+  bool isEmpty() {
+    for (int i = 0; i < STORAGE_SIMULATOR_SIZE; i++) {
+      if (storageSimulatorData[i] != 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool isPreampleInitialized(int sectionCount = 1) {
+    Supla::Preamble preamble = {{'S', 'U', 'P', 'L', 'A'}, 1, 0};
+    preamble.sectionsCount = sectionCount;
+    return memcmp(&preamble, storageSimulatorData, sizeof(preamble)) == 0;
+  }
+
+  bool isEmptySimpleStatePreamplePresent() {
+    if (isPreampleInitialized(1)) {
+      Supla::SectionPreamble sectionPreamble = {
+          STORAGE_SECTION_TYPE_ELEMENT_STATE, 0, 0, 0};
+      return memcmp(&sectionPreamble,
+                    storageSimulatorData + sizeof(Supla::Preamble),
+                    sizeof(sectionPreamble)) == 0;
+    }
+    return false;
+  }
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_STORAGE_MOCK_H_

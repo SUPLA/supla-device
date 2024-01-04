@@ -24,6 +24,8 @@
 
 #include "config.h"
 #include "storage.h"
+#include "state_storage_interface.h"
+#include "simple_state.h"
 
 #define SUPLA_STORAGE_VERSION 1
 
@@ -157,8 +159,12 @@ bool Storage::DeleteSection(int sectionId) {
   return false;
 }
 
-Storage::Storage(unsigned int storageStartingOffset)
-    : storageStartingOffset(storageStartingOffset) {
+Storage::Storage(unsigned int storageStartingOffset,
+                 unsigned int availableSize,
+                 enum WearLevelingMode wearLevelingMode)
+    : storageStartingOffset(storageStartingOffset),
+      availableSize(availableSize),
+      wearLevelingMode(wearLevelingMode) {
   instance = this;
 }
 
@@ -172,145 +178,80 @@ Storage::~Storage() {
     delete ptr;
     ptr = nextPtr;
   }
+  if (stateStorage != nullptr) {
+    delete stateStorage;
+    stateStorage = nullptr;
+  }
 }
 
 bool Storage::prepareState(bool performDryRun) {
   dryRun = performDryRun;
-  newSectionSize = 0;
-  currentStateOffset = elementStateOffset + sizeof(SectionPreamble);
-  crc = 0xFFFF;
-  return true;
+  return stateStorage && stateStorage->prepareState(performDryRun);
 }
 
 bool Storage::readState(unsigned char *buf, int size) {
-  if (!elementStateCrcCValid) {
-    // don't read state if CRC was invalid
-    return false;
-  }
-
-  if (elementStateOffset + sizeof(SectionPreamble) + elementStateSize <
-      currentStateOffset + size) {
-    SUPLA_LOG_DEBUG(
-              "Warning! Attempt to read state outside of section size");
-    return false;
-  }
-  currentStateOffset += readStorage(currentStateOffset, buf, size);
-  return true;
+  return stateStorage && stateStorage->readState(buf, size);
 }
 
 bool Storage::writeState(const unsigned char *buf, int size) {
-  newSectionSize += size;
-
-  if (size == 0) {
-    return true;
-  }
-
-  if (elementStateSize > 0 &&
-      elementStateOffset + sizeof(SectionPreamble) + elementStateSize <
-          currentStateOffset + size) {
-    SUPLA_LOG_DEBUG(
-              "Warning! Attempt to write state outside of section size.");
-    SUPLA_LOG_DEBUG(
-        "Storage: rewriting element state section. All data will be lost.");
-    elementStateSize = 0;
-    elementStateOffset = 0;
-    return false;
-  }
-
-  if (dryRun) {
-    currentStateOffset += size;
-    return true;
-  }
-
-  // Calculation of offset for section data - in case sector is missing
-  if (elementStateOffset == 0) {
-    elementStateOffset = storageStartingOffset + sizeof(Preamble);
-    SUPLA_LOG_DEBUG(
-              "Initialization of elementStateOffset: %d",
-              elementStateOffset);
-
-    currentStateOffset = elementStateOffset + sizeof(SectionPreamble);
-
-    sectionsCount++;
-
-    // Update Storage preamble with new section count
-    SUPLA_LOG_DEBUG("Updating Storage preamble");
-    unsigned char suplaTag[] = {'S', 'U', 'P', 'L', 'A'};
-    Preamble preamble;
-    memcpy(preamble.suplaTag, suplaTag, 5);
-    preamble.version = SUPLA_STORAGE_VERSION;
-    preamble.sectionsCount = sectionsCount;
-
-    updateStorage(
-        storageStartingOffset, (unsigned char *)&preamble, sizeof(preamble));
-  }
-
-  for (int i = 0; i < size; i++) {
-    crc = crc16_update(crc, buf[i]);
-  }
-
-  currentStateOffset += updateStorage(currentStateOffset, buf, size);
-
-  return true;
+  return stateStorage && stateStorage->writeState(buf, size);
 }
 
 bool Storage::finalizeSaveState() {
-  if (dryRun) {
-    dryRun = false;
-    if (elementStateSize != newSectionSize) {
-      SUPLA_LOG_DEBUG(
-                "Element state section size doesn't match current device "
-                "configuration");
-      elementStateOffset = 0;
-      elementStateSize = 0;
-      return false;
-    }
-    return true;
-  }
-
-  SectionPreamble preamble;
-  preamble.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;
-  preamble.size = newSectionSize;
-  preamble.crc1 = crc;
-  preamble.crc2 = crc;
-  elementStateSize = newSectionSize;
-
-  crc = 0xFFFF;
-
-  updateStorage(
-      elementStateOffset, (unsigned char *)&preamble, sizeof(preamble));
-
-  commit();
-
-  elementStateCrcCValid = true;
-
-  return true;
+  dryRun = false;
+  return stateStorage && stateStorage->finalizeSaveState();
 }
 
 bool Storage::init() {
   SUPLA_LOG_DEBUG("Storage initialization");
   unsigned int currentOffset = storageStartingOffset;
   Preamble preamble = {};
-  currentOffset +=
-      readStorage(currentOffset, (unsigned char *)&preamble, sizeof(preamble));
+  currentOffset += readStorage(currentOffset,
+                               reinterpret_cast<unsigned char *>(&preamble),
+                               sizeof(preamble));
 
   unsigned char suplaTag[] = {'S', 'U', 'P', 'L', 'A'};
 
-  if (memcmp(suplaTag, preamble.suplaTag, 5)) {
-    SUPLA_LOG_DEBUG("Storage: missing Supla tag. Rewriting...");
+  bool suplaTagValid = memcmp(suplaTag, preamble.suplaTag, 5) == 0;
 
+  if (!suplaTagValid || preamble.sectionsCount == 0) {
+    if (!suplaTagValid) {
+      SUPLA_LOG_DEBUG("Storage: missing Supla tag. Rewriting...");
+    } else {
+      SUPLA_LOG_DEBUG("Storage: sectionsCount == 0. Rewriting...");
+    }
     memcpy(preamble.suplaTag, suplaTag, 5);
     preamble.version = SUPLA_STORAGE_VERSION;
-    preamble.sectionsCount = 0;
-
-    writeStorage(
-        storageStartingOffset, (unsigned char *)&preamble, sizeof(preamble));
+    if (stateStorage != nullptr) {
+      delete stateStorage;
+      stateStorage = nullptr;
+    }
+    SectionPreamble section = {};
+    switch (wearLevelingMode) {
+      case WearLevelingMode::OFF: {
+        section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;
+        stateStorage = new Supla::SimpleState(this, currentOffset, &section);
+        break;
+      }
+      case WearLevelingMode::BYTE_WRITE_MODE: {
+        section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE;
+        // TODO(klew): implement
+        break;
+      }
+      case WearLevelingMode::SECTOR_WRITE_MODE: {
+        section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR;
+        // TODO(klew): implement
+        break;
+      }
+    }
+    preamble.sectionsCount = 1;
+    writeStorage(storageStartingOffset,
+                 reinterpret_cast<unsigned char *>(&preamble),
+                 sizeof(preamble));
+    if (stateStorage != nullptr) {
+      stateStorage->writeSectionPreamble();
+    }
     commit();
-
-    elementStateSize = 0;
-    elementStateOffset = 0;
-    elementStateCrcCValid = false;
-
   } else if (preamble.version != SUPLA_STORAGE_VERSION) {
     SUPLA_LOG_DEBUG(
               "Storage: storage version [%d] is not supported. Storage not "
@@ -321,7 +262,7 @@ bool Storage::init() {
     SUPLA_LOG_DEBUG("Storage: Number of sections %d", preamble.sectionsCount);
   }
 
-  if (preamble.sectionsCount == 0) {
+  if (stateStorage != nullptr) {
     return true;
   }
 
@@ -329,8 +270,9 @@ bool Storage::init() {
     SUPLA_LOG_DEBUG("Reading section: %d", i);
     SectionPreamble section;
     unsigned int sectionOffset = currentOffset;
-    currentOffset +=
-        readStorage(currentOffset, (unsigned char *)&section, sizeof(section));
+    currentOffset += readStorage(currentOffset,
+                                 reinterpret_cast<unsigned char *>(&section),
+                                 sizeof(section));
 
     SUPLA_LOG_DEBUG(
               "Section type: %d; size: %d",
@@ -343,29 +285,14 @@ bool Storage::init() {
           "storage hardware");
     }
 
-    // calculate CRC
-    crc = 0xFFFF;
-    for (int i = 0; i < section.size; i++) {
-      uint8_t buf = 0;
-      readStorage(sectionOffset + sizeof(SectionPreamble) + i, &buf, 1, false);
-      crc = crc16_update(crc, buf);
-    }
-
-    SUPLA_LOG_DEBUG("CRC1 %d, CRC2 %d, CRC calc %d", section.crc1, section.crc2,
-        crc);
-
-    bool crcValid = true;
-    if (crc != section.crc1 && crc != section.crc2
-        && (section.crc1 != 0 || section.crc2 != 0)) {
-      SUPLA_LOG_ERROR("Storage: invalid CRC for state data");
-      crcValid = false;
-    }
-
     switch (section.type) {
       case STORAGE_SECTION_TYPE_ELEMENT_STATE: {
-        elementStateOffset = sectionOffset;
-        elementStateSize = section.size;
-        elementStateCrcCValid = crcValid;
+        if (stateStorage != nullptr) {
+          SUPLA_LOG_ERROR("Storage: state storage already initialized");
+          delete stateStorage;
+        }
+        stateStorage = new Supla::SimpleState(this, sectionOffset, &section);
+        stateStorage->init();
         break;
       }
       default: {
@@ -373,6 +300,7 @@ bool Storage::init() {
         break;
       }
     }
+
     currentOffset += section.size;
   }
 
@@ -383,10 +311,10 @@ void Storage::deleteAll() {
   char emptyTag[5] = {};
   writeStorage(
       storageStartingOffset, (unsigned char *)&emptyTag, sizeof(emptyTag));
+  if (stateStorage != nullptr) {
+    stateStorage->deleteAll();
+  }
   commit();
-  elementStateSize = 0;
-  elementStateOffset = 0;
-  elementStateCrcCValid = false;
 }
 
 int Storage::updateStorage(unsigned int offset,
@@ -644,6 +572,9 @@ void Storage::LoadStateStorage() {
 }
 
 void Storage::WriteStateStorage() {
+  if (!Instance()) {
+    return;
+  }
   Supla::Storage::PrepareState();
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {

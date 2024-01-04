@@ -268,8 +268,8 @@ TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgainAndResetDev) {
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
   // In tests we can't reset board, so this method will be called few times
   EXPECT_CALL(board, deviceSoftwareReset()).Times(AtLeast(1));
-  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  EXPECT_CALL(el1, onSaveState()).Times(0);
+  EXPECT_CALL(el2, onSaveState()).Times(0);
   sd.setAutomaticResetOnConnectionProblem(100);
 
   for (int i = 0; i < 102*10; i++) {

@@ -46,6 +46,8 @@ set(SUPLA_DEVICE_SRCS
   src/supla/storage/storage.cpp
   src/supla/storage/config.cpp
   src/supla/storage/key_value.cpp
+  src/supla/storage/simple_state.cpp
+  src/supla/storage/state_storage_interface.cpp
 
   src/supla/network/network.cpp
   src/supla/network/html_element.cpp

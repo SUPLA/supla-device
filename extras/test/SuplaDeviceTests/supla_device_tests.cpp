@@ -14,43 +14,44 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <SuplaDevice.h>
+#include <arduino_mock.h>
+#include <clock_mock.h>
+#include <element_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
-#include <srpc_mock.h>
-#include <timer_mock.h>
-#include <SuplaDevice.h>
-#include <supla/clock/clock.h>
-#include <supla/storage/storage.h>
-#include <element_mock.h>
-#include <supla/protocol/supla_srpc.h>
 #include <network_client_mock.h>
 #include <network_with_mac_mock.h>
-#include <clock_mock.h>
+#include <srpc_mock.h>
+#include <supla/clock/clock.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/storage/storage.h>
+#include <timer_mock.h>
+#include <storage_mock.h>
+#include <string.h>
 
-using ::testing::Return;
 using ::testing::_;
+using ::testing::Return;
 
 class SuplaDeviceTests : public ::testing::Test {
-  protected:
-    virtual void SetUp() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-    }
-    virtual void TearDown() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
-    }
-
+ protected:
+  virtual void SetUp() {
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  }
+  virtual void TearDown() {
+    Supla::Channel::lastCommunicationTimeMs = 0;
+    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  }
 };
 
 class TimeInterfaceStub : public TimeInterface {
-  public:
-    virtual uint32_t millis() override {
-      static uint32_t value = 0;
-      value += 1000;
-      return value;
-    }
+ public:
+  virtual uint32_t millis() override {
+    static uint32_t value = 0;
+    value += 1000;
+    return value;
+  }
 };
 
 TEST_F(SuplaDeviceTests, DefaultValuesTest) {
@@ -90,52 +91,42 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElements) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_NETWORK_INTERFACE);
 }
 
-class StorageMock2: public Supla::Storage {
- public:
-  MOCK_METHOD(bool, init, (), (override));
-  MOCK_METHOD(bool, prepareState, (bool), (override));
-  MOCK_METHOD(bool, finalizeSaveState, (), (override));
-  MOCK_METHOD(void, commit, (), (override));
-  MOCK_METHOD(int, readStorage, (unsigned int, unsigned char *, int, bool), (override));
-  MOCK_METHOD(int, writeStorage, (unsigned int, const unsigned char *, int), (override));
-
-};
-
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElementsWithStorage) {
-  ::testing::InSequence seq;
   NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   TimerMock timer;
-  StorageMock2 storage;
+  StorageMockSimulator storage;
 
   ASSERT_EQ(Supla::Element::begin(), nullptr);
-  EXPECT_CALL(storage, init());
-  EXPECT_CALL(storage, prepareState(true)).WillOnce(Return(true));;
-  EXPECT_CALL(storage, finalizeSaveState()).WillOnce(Return(false));
-  
+  EXPECT_CALL(storage, commit()).Times(1);
+
+  ::testing::InSequence seq;
   EXPECT_CALL(timer, initTimers());
+
+  EXPECT_TRUE(storage.isEmpty());
 
   EXPECT_FALSE(sd.begin());
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_NETWORK_INTERFACE);
+
+  EXPECT_TRUE(storage.isPreampleInitialized());
 }
 
-TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElementsWithStorageAndDataLoadAttempt) {
-  ::testing::InSequence seq;
+TEST_F(SuplaDeviceTests,
+       StartWithoutNetworkInterfaceNoElementsWithStorageAndDataLoadAttempt) {
   NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   TimerMock timer;
-  StorageMock2 storage;
+  StorageMockSimulator storage;
+  EXPECT_CALL(storage, commit()).Times(1);
 
+  ::testing::InSequence seq;
   ASSERT_EQ(Supla::Element::begin(), nullptr);
-  EXPECT_CALL(storage, init());
-  EXPECT_CALL(storage, prepareState(true)).WillOnce(Return(true));
-  EXPECT_CALL(storage, finalizeSaveState()).WillOnce(Return(true));
-  EXPECT_CALL(storage, prepareState(false));
-  
   EXPECT_CALL(timer, initTimers());
 
+  EXPECT_TRUE(storage.isEmpty());
   EXPECT_FALSE(sd.begin());
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_NETWORK_INTERFACE);
+  EXPECT_TRUE(storage.isPreampleInitialized());
 }
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElements) {
@@ -150,14 +141,12 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElements) {
 
   EXPECT_CALL(el1, onInit());
   EXPECT_CALL(el2, onInit());
-  
+
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(el1, onTimer());
   EXPECT_CALL(el2, onTimer());
   EXPECT_CALL(el1, onFastTimer());
   EXPECT_CALL(el2, onFastTimer());
-
-
 
   EXPECT_FALSE(sd.begin());
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_NETWORK_INTERFACE);
@@ -166,33 +155,32 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElements) {
 }
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElementsWithStorage) {
-  ::testing::InSequence seq;
   NetworkClientMock *client = new NetworkClientMock;
-  StorageMock2 storage;
+  StorageMockSimulator storage;
+  EXPECT_CALL(storage, commit()).Times(1);
   SuplaDeviceClass sd;
   TimerMock timer;
   ElementMock el1;
   ElementMock el2;
 
+  ::testing::InSequence seq;
   ASSERT_NE(Supla::Element::begin(), nullptr);
 
-  EXPECT_CALL(storage, init());
-  EXPECT_CALL(storage, prepareState(true)).WillOnce(Return(true));
   EXPECT_CALL(el1, onSaveState());
   EXPECT_CALL(el2, onSaveState());
-  
-  EXPECT_CALL(storage, finalizeSaveState()).WillOnce(Return(true));
-  EXPECT_CALL(storage, prepareState(false));
+
   EXPECT_CALL(el1, onLoadState());
   EXPECT_CALL(el2, onLoadState());
 
   EXPECT_CALL(el1, onInit());
   EXPECT_CALL(el2, onInit());
-  
+
   EXPECT_CALL(timer, initTimers());
 
+  EXPECT_TRUE(storage.isEmpty());
   EXPECT_FALSE(sd.begin());
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_NETWORK_INTERFACE);
+  EXPECT_TRUE(storage.isPreampleInitialized());
 }
 
 TEST_F(SuplaDeviceTests, BeginStopsAtEmptyGUID) {
@@ -263,8 +251,6 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyEmail) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_MISSING_CREDENTIALS);
 }
 
-
-
 TEST_F(SuplaDeviceTests, SuccessfulBegin) {
   SrpcMock srpc;
   NetworkMockWithMac net;
@@ -289,8 +275,6 @@ TEST_F(SuplaDeviceTests, SuccessfulBegin) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 }
 
-
-
 TEST_F(SuplaDeviceTests, SuccessfulBeginAlternative) {
   SrpcMock srpc;
   NetworkMockWithMac net;
@@ -309,7 +293,6 @@ TEST_F(SuplaDeviceTests, SuccessfulBeginAlternative) {
   EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 }
-
 
 TEST_F(SuplaDeviceTests, FailedBeginAlternativeOnEmptyAUTHKEY) {
   ::testing::InSequence seq;
@@ -333,7 +316,8 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   SrpcMock srpc;
   NetworkMockWithMac net;
   EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
-  StorageMock2 storage;
+  StorageMockSimulator storage;
+  EXPECT_CALL(storage, commit()).Times(2);
   TimerMock timer;
   TimeInterfaceStub time;
   NetworkClientMock *client = new NetworkClientMock;
@@ -341,13 +325,9 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   ElementMock el1;
   ElementMock el2;
   int dummy;
-  EXPECT_CALL(storage, prepareState(true)).WillOnce(Return(true));
-  EXPECT_CALL(storage, init());
   EXPECT_CALL(el1, onSaveState());
   EXPECT_CALL(el2, onSaveState());
 
-  EXPECT_CALL(storage, finalizeSaveState()).WillOnce(Return(true));
-  EXPECT_CALL(storage, prepareState(false));
   EXPECT_CALL(el1, onLoadState());
   EXPECT_CALL(el2, onLoadState());
 
@@ -359,18 +339,18 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
 
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+  EXPECT_TRUE(storage.isEmpty());
   EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   EXPECT_CALL(el1, iterateAlways()).Times(2);
   EXPECT_CALL(el2, iterateAlways()).Times(2);
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(false));
 
-  EXPECT_CALL(storage, prepareState(false));
   EXPECT_CALL(el1, onSaveState());
   EXPECT_CALL(el2, onSaveState());
-  EXPECT_CALL(storage, finalizeSaveState());
 
   for (int i = 0; i < 2; i++) sd.iterate();
+  EXPECT_TRUE(storage.isPreampleInitialized());
 }
 
 TEST_F(SuplaDeviceTests, OnVersionErrorShouldCallDisconnect) {
@@ -674,7 +654,6 @@ TEST_F(SuplaDeviceTests, OnRegisterResultUnknownError) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_UNKNOWN_ERROR);
 }
 
-
 TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
   NetworkMockWithMac net;
   SuplaDeviceClass sd;
@@ -726,7 +705,6 @@ TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
 
   sd.generateHostname(buf, 2);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-EVEN-WITH-A-0000");
-
 
   memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
   sd.generateHostname(buf, 2);
@@ -820,6 +798,3 @@ TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {
   EXPECT_STREQ(buf, "SUPLA-MY-DEVICE-2-54-0000");
   */
 }
-
-
-

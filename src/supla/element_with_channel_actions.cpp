@@ -76,20 +76,20 @@ void Supla::ElementWithChannelActions::addAction(uint16_t action,
 
 bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
+  auto channel = getChannel();
+  if (cfg && channel) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, "fnc");
     int32_t channelFunc = 0;
     if (cfg->getInt32(key, &channelFunc)) {
-      SUPLA_LOG_INFO("Channel function loaded successfully (%d)",
+      SUPLA_LOG_INFO("Channel[%d] function loaded successfully (%d)",
+                     channel->getChannelNumber(),
                      channelFunc);
-      auto channel = getChannel();
-      if (channel) {
-        channel->setDefault(channelFunc);
-      }
+      channel->setDefault(channelFunc);
       return true;
     } else {
-      SUPLA_LOG_INFO("Channel function missing. Using SW defaults");
+      SUPLA_LOG_INFO("Channel[%d] function missing. Using SW defaults",
+                     channel->getChannelNumber());
     }
   }
   return false;

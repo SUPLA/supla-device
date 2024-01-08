@@ -75,6 +75,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   void handleAction(int event, int action) override;
 
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
   void onInit() override;
   void onLoadState() override;
   void onSaveState() override;

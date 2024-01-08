@@ -57,6 +57,14 @@ Relay::~Relay() {
   }
 }
 
+void Relay::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    loadFunctionFromConfig();
+  }
+}
+
 void Relay::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
   Supla::Element::onRegistered(suplaSrpc);
@@ -74,6 +82,17 @@ uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
       result->ConfigType,
       result->ConfigSize);
   setChannelFunction(result->Func);
+  auto newFunction = result->Func;
+  if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
+    SUPLA_LOG_INFO("Relay[%d]: function changed to %d",
+                   getChannelNumber(),
+                   newFunction);
+    setAndSaveFunction(newFunction);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->notifyConfigChange(getChannelNumber());
+    }
+  }
   switch (result->Func) {
     default:
     case SUPLA_CHANNELFNC_LIGHTSWITCH:

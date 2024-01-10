@@ -110,14 +110,22 @@ void StorageMock::defaultInitialization(int elementStateSize) {
   if (elementStateSize == 0) {
     EXPECT_CALL(*this, commit()).Times(1);
     EXPECT_CALL(*this, readStorage(0, ::testing::_, 8, ::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(8));
+      .WillOnce(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+          Supla::Preamble preamble = {};
+          memcpy(data, &preamble, sizeof(preamble));
+          return sizeof(preamble);
+          });
     EXPECT_CALL(*this, writeStorage(0, ::testing::_, 8))
       .Times(1)
       .WillOnce(::testing::Return(8));
     EXPECT_CALL(*this, readStorage(8, ::testing::_, 7, ::testing::_))
-      .Times(1)
-      .WillOnce(::testing::Return(7));
+      .WillOnce(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+          Supla::SectionPreamble preamble = {};
+          memcpy(data, &preamble, sizeof(preamble));
+          return sizeof(preamble);
+          });
     EXPECT_CALL(*this, writeStorage(8, ::testing::_, 7))
       .Times(1)
       .WillOnce(::testing::Return(7));

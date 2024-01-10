@@ -1477,7 +1477,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   Supla::Control::ActionTrigger at;
   ActionHandlerMock ah;
 
-  storage.defaultInitialization();
+  storage.defaultInitialization(4);
   // initial configuration
   b1.addAction(Supla::TOGGLE, ah, Supla::ON_PRESS);
   b1.addAction(Supla::TURN_OFF, ah, Supla::ON_HOLD, true);  // always enabled
@@ -1495,19 +1495,25 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
 
   EXPECT_CALL(storage, scheduleSave(2000));
 
-  // onLoadState expectations
-  uint32_t storedActionsFromServer = 0;
-  EXPECT_CALL(storage, readStorage(_, _, 4, _))
-      .WillOnce(DoAll(SetArgPointee<1>(storedActionsFromServer), Return(4)));
+  // updates of section preamble
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
 
-  EXPECT_CALL(storage, writeStorage(_, Pointee(storedActionsFromServer), 4))
-      .Times(1);
+  // onLoadState expectations
+  EXPECT_CALL(storage, readStorage(_, _, 4, _))
+      .Times(2)
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+          uint32_t storageData = 0;
+          memcpy(data, &storageData, sizeof(storageData));
+          return sizeof(storageData);
+          });
 
   // on init call is executed in SuplaDevice.setup()
   at.onLoadConfig(nullptr);
-  at.onLoadState();
+  Supla::Storage::LoadStateStorage();
   at.onInit();
-  at.onSaveState();
+  Supla::Storage::WriteStateStorage();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1, false));
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -1869,23 +1875,28 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_PRESS, false));
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_RELEASE, false));
 
-  EXPECT_CALL(storage, scheduleSave(2000)).Times(2);
+  storage.defaultInitialization(4);
 
-  storage.defaultInitialization();
+  EXPECT_CALL(storage, scheduleSave(2000)).Times(2);
+  // updates of section preamble
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
 
   // onLoadState expectations
-  uint32_t storedActionsFromServer = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-      .WillOnce(DoAll(SetArgPointee<1>(storedActionsFromServer), Return(4)));
-
-  // onSaveState expectations
-  EXPECT_CALL(storage, writeStorage(_, Pointee(storedActionsFromServer), 4));
+      .Times(2)
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+          uint32_t storageData = 0;
+          memcpy(data, &storageData, sizeof(storageData));
+          return sizeof(storageData);
+          });
 
   // on init call is executed in SuplaDevice.setup()
   at.onLoadConfig(nullptr);
-  at.onLoadState();
+  Supla::Storage::LoadStateStorage();
   at.onInit();
-  at.onSaveState();
+  Supla::Storage::WriteStateStorage();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1, false));
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -2017,21 +2028,27 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_RELEASE, false));
 
   EXPECT_CALL(storage, scheduleSave(2000)).Times(2);
-  storage.defaultInitialization();
+  storage.defaultInitialization(4);
+
+  // updates of section preamble
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
 
   // onLoadState expectations
-  uint32_t storedActionsFromServer = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-      .WillOnce(DoAll(SetArgPointee<1>(storedActionsFromServer), Return(4)));
-
-  // onSaveState expectations
-  EXPECT_CALL(storage, writeStorage(_, Pointee(storedActionsFromServer), 4));
+      .Times(2)
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+          uint32_t storageData = 0;
+          memcpy(data, &storageData, sizeof(storageData));
+          return sizeof(storageData);
+          });
 
   // on init call is executed in SuplaDevice.setup()
   at.onLoadConfig(nullptr);
-  at.onLoadState();
+  Supla::Storage::LoadStateStorage();
   at.onInit();
-  at.onSaveState();
+  Supla::Storage::WriteStateStorage();
 
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_CLICK_1, false));
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());

@@ -30,13 +30,15 @@ class StateStorageInterface {
   explicit StateStorageInterface(Storage *storage);
   virtual ~StateStorageInterface();
   virtual bool writeSectionPreamble() = 0;
-  virtual bool init() = 0;
+  virtual bool initFromStorage() = 0;
   virtual void deleteAll() = 0;
-  virtual bool prepareState(bool performDryRun) = 0;
+  virtual bool prepareSaveState() = 0;
+  virtual bool prepareSizeCheck() = 0;
+  virtual bool prepareLoadState() = 0;
   virtual bool readState(unsigned char *, int) = 0;
   virtual bool writeState(const unsigned char *, int) = 0;
   virtual bool finalizeSaveState() = 0;
-
+  virtual bool finalizeSizeCheck() = 0;
 
  protected:
   int readStorage(unsigned int address,

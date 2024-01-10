@@ -22,25 +22,7 @@
 #include <storage_mock.h>
 #include <string.h>
 #include <stdio.h>
-#include <supla/element.h>
-
-class ElementWithStorage : public Supla::Element {
- public:
-  ElementWithStorage() {
-  }
-
-  void onLoadState() {
-    Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(&stateValue),
-                              sizeof(stateValue));
-  }
-
-  void onSaveState() {
-    Supla::Storage::WriteState(reinterpret_cast<unsigned char *>(&stateValue),
-                               sizeof(stateValue));
-  }
-
-  int32_t stateValue = -1;
-};
+#include <element_with_storage.h>
 
 TEST(StorageStateTests, preambleInitialization) {
   EXPECT_FALSE(Supla::Storage::Init());

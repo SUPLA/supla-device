@@ -26,6 +26,7 @@
 #include "storage.h"
 #include "state_storage_interface.h"
 #include "simple_state.h"
+#include "state_wear_leveling_byte.h"
 
 #define SUPLA_STORAGE_VERSION 1
 
@@ -77,29 +78,15 @@ bool Storage::Init() {
 }
 
 bool Storage::ReadState(unsigned char *buf, int size) {
-  if (Instance()) {
-    return Instance()->readState(buf, size);
+  if (Instance() && Instance()->stateStorage) {
+    return Instance()->stateStorage->readState(buf, size);
   }
   return false;
 }
 
 bool Storage::WriteState(const unsigned char *buf, int size) {
-  if (Instance()) {
-    return Instance()->writeState(buf, size);
-  }
-  return false;
-}
-
-bool Storage::PrepareState(bool dryRun) {
-  if (Instance()) {
-    return Instance()->prepareState(dryRun);
-  }
-  return false;
-}
-
-bool Storage::FinalizeSaveState() {
-  if (Instance()) {
-    return Instance()->finalizeSaveState();
+  if (Instance() && Instance()->stateStorage) {
+    return Instance()->stateStorage->writeState(buf, size);
   }
   return false;
 }
@@ -184,24 +171,6 @@ Storage::~Storage() {
   }
 }
 
-bool Storage::prepareState(bool performDryRun) {
-  dryRun = performDryRun;
-  return stateStorage && stateStorage->prepareState(performDryRun);
-}
-
-bool Storage::readState(unsigned char *buf, int size) {
-  return stateStorage && stateStorage->readState(buf, size);
-}
-
-bool Storage::writeState(const unsigned char *buf, int size) {
-  return stateStorage && stateStorage->writeState(buf, size);
-}
-
-bool Storage::finalizeSaveState() {
-  dryRun = false;
-  return stateStorage && stateStorage->finalizeSaveState();
-}
-
 bool Storage::init() {
   SUPLA_LOG_DEBUG("Storage initialization");
   unsigned int currentOffset = storageStartingOffset;
@@ -235,12 +204,20 @@ bool Storage::init() {
       }
       case WearLevelingMode::BYTE_WRITE_MODE: {
         section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE;
-        // TODO(klew): implement
+        uint32_t reservedSize = 0;
+        if (availableSize > sizeof(Preamble)) {
+          reservedSize = availableSize - sizeof(Preamble);
+        }
+        section.size = reservedSize;
+        stateStorage =
+            new Supla::StateWearLevelingByte(this, currentOffset, &section);
         break;
       }
       case WearLevelingMode::SECTOR_WRITE_MODE: {
         section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR;
         // TODO(klew): implement
+        // stateStorage = new Supla::StateWearLevelingSector(
+        //     this, currentOffset, &section, availableSize, sectorSize);
         break;
       }
     }
@@ -280,7 +257,7 @@ bool Storage::init() {
               section.size);
 
     if (section.crc1 != section.crc2) {
-      SUPLA_LOG_DEBUG(
+      SUPLA_LOG_WARNING(
           "Warning! CRC copies on section doesn't match. Please check your "
           "storage hardware");
     }
@@ -292,7 +269,21 @@ bool Storage::init() {
           delete stateStorage;
         }
         stateStorage = new Supla::SimpleState(this, sectionOffset, &section);
-        stateStorage->init();
+        stateStorage->initFromStorage();
+        break;
+      }
+      case STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE: {
+        if (stateStorage != nullptr) {
+          SUPLA_LOG_ERROR("Storage: state storage already initialized");
+          delete stateStorage;
+        }
+        stateStorage = new Supla::StateWearLevelingByte(
+            this, sectionOffset, &section);
+        stateStorage->initFromStorage();
+        break;
+      }
+      case STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR: {
+        // TODO(klew): implement
         break;
       }
       default: {
@@ -456,11 +447,6 @@ bool Storage::readSection(int sectionId, unsigned char *data, int size) {
 }
 
 bool Storage::writeSection(int sectionId, const unsigned char *data, int size) {
-  // skip any write during dryRun
-  if (dryRun) {
-    return true;
-  }
-
   auto ptr = firstSectionInfo;
   while (ptr) {
     if (ptr->sectionId != sectionId) {
@@ -544,7 +530,11 @@ bool Storage::deleteSection(int sectionId) {
 }
 
 bool Storage::IsStateStorageValid() {
-  if (Supla::Storage::PrepareState(true)) {
+  if (!Instance() || Instance()->stateStorage == nullptr) {
+    return false;
+  }
+
+  if (Instance()->stateStorage->prepareSizeCheck()) {
     SUPLA_LOG_DEBUG(
         "Validating storage state section with current device configuration");
     for (auto element = Supla::Element::begin(); element != nullptr;
@@ -553,7 +543,7 @@ bool Storage::IsStateStorageValid() {
       delay(0);
     }
     // If state storage validation was successful, perform read state
-    if (Supla::Storage::FinalizeSaveState()) {
+    if (Instance()->stateStorage->finalizeSizeCheck()) {
       SUPLA_LOG_INFO("Storage state section validation successful");
       return true;
     }
@@ -562,26 +552,30 @@ bool Storage::IsStateStorageValid() {
 }
 
 void Storage::LoadStateStorage() {
+  if (!Instance() || Instance()->stateStorage == nullptr) {
+    return;
+  }
   // Iterate all elements and load state
-  Supla::Storage::PrepareState();
-  for (auto element = Supla::Element::begin(); element != nullptr;
-      element = element->next()) {
-    element->onLoadState();
-    delay(0);
+  if (Instance()->stateStorage->prepareLoadState()) {
+    for (auto element = Supla::Element::begin(); element != nullptr;
+        element = element->next()) {
+      element->onLoadState();
+      delay(0);
+    }
   }
 }
 
 void Storage::WriteStateStorage() {
-  if (!Instance()) {
+  if (!Instance() || Instance()->stateStorage == nullptr) {
     return;
   }
-  Supla::Storage::PrepareState();
+  Instance()->stateStorage->prepareSaveState();
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {
     element->onSaveState();
     delay(0);
   }
-  Supla::Storage::FinalizeSaveState();
+  Instance()->stateStorage->finalizeSaveState();
 }
 
 }  // namespace Supla

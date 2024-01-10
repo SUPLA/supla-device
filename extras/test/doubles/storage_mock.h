@@ -21,6 +21,7 @@
 
 #include <gmock/gmock.h>
 #include <supla/storage/storage.h>
+#include "supla/storage/state_wear_leveling_byte.h"
 
 class StorageMock: public Supla::Storage {
  public:
@@ -34,73 +35,36 @@ class StorageMock: public Supla::Storage {
               writeStorage,
               (unsigned int, const unsigned char *, int),
               (override));
-  MOCK_METHOD(bool, readState, (unsigned char *, int), (override));
-  MOCK_METHOD(bool, writeState, (const unsigned char *, int), (override));
-  MOCK_METHOD(bool, prepareState, (bool), (override));
-  MOCK_METHOD(bool, finalizeSaveState, (), (override));
-  MOCK_METHOD(bool, init, (), (override));
+
+  void defaultInitialization(int elementStateSize = 0);
 };
 
-#define STORAGE_SIMULATOR_SIZE 1000
+#define STORAGE_SIMULATOR_SIZE 50000
 
 class StorageMockSimulator: public Supla::Storage {
  public:
   MOCK_METHOD(void, commit, (), (override));
 
+  StorageMockSimulator(uint32_t offset = 0,
+                       uint32_t size = 0,
+                       enum Supla::Storage::WearLevelingMode mode =
+                           Supla::Storage::WearLevelingMode::OFF);
+
   int readStorage(unsigned int offset,
                   unsigned char *data,
                   int size,
-                  bool log) override {
-    if (offset + size >= STORAGE_SIMULATOR_SIZE) {
-      assert(false && "StorageMockSimulator out of bounds");
-      return 0;
-    }
-    memcpy(data, &storageSimulatorData[offset], size);
-    return size;
-  }
-
+                  bool log) override;
   int writeStorage(unsigned int offset,
-      const unsigned char *data,
-      int size) override {
-    if (noWriteExpected) {
-      assert(false && "StorageMockSimulator write not expected");
-    }
-    if (offset + size >= STORAGE_SIMULATOR_SIZE) {
-      assert(false && "StorageMockSimulator out of bounds");
-      return 0;
-    }
-    memcpy(&storageSimulatorData[offset], data, size);
-    return size;
-  }
+                   const unsigned char *data,
+                   int size) override;
 
+  bool isEmpty();
+  bool isPreampleInitialized(int sectionCount = 1);
+  bool isEmptySimpleStatePreamplePresent();
+  Supla::SectionPreamble *getSectionPreamble();
+  Supla::StateEntryAddress *getStateEntryAddress(bool backup = false);
   uint8_t storageSimulatorData[STORAGE_SIMULATOR_SIZE] = {};
   bool noWriteExpected = false;
-
-  bool isEmpty() {
-    for (int i = 0; i < STORAGE_SIMULATOR_SIZE; i++) {
-      if (storageSimulatorData[i] != 0) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  bool isPreampleInitialized(int sectionCount = 1) {
-    Supla::Preamble preamble = {{'S', 'U', 'P', 'L', 'A'}, 1, 0};
-    preamble.sectionsCount = sectionCount;
-    return memcmp(&preamble, storageSimulatorData, sizeof(preamble)) == 0;
-  }
-
-  bool isEmptySimpleStatePreamplePresent() {
-    if (isPreampleInitialized(1)) {
-      Supla::SectionPreamble sectionPreamble = {
-          STORAGE_SECTION_TYPE_ELEMENT_STATE, 0, 0, 0};
-      return memcmp(&sectionPreamble,
-                    storageSimulatorData + sizeof(Supla::Preamble),
-                    sizeof(sectionPreamble)) == 0;
-    }
-    return false;
-  }
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_STORAGE_MOCK_H_

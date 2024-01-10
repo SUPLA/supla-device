@@ -129,23 +129,26 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
               setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
-      .WillRepeatedly([](unsigned char *data, int size) {
-        THVACValue hvacValue = {};
-        memcpy(data, &hvacValue, sizeof(THVACValue));
-        return sizeof(THVACValue);
-      });
-  EXPECT_CALL(storage, readState(_, sizeof(int16_t)))
-      .WillRepeatedly([](unsigned char *data, int size) {
-        int16_t value = INT16_MIN;
-        memcpy(data, &value, sizeof(int16_t));
-        return sizeof(int16_t);
-      });
-  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
-      .WillRepeatedly([](unsigned char *data, int size) {
-        *data = 0;
-        return sizeof(uint8_t);
-      });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(THVACValue), _))
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+            THVACValue hvacValue = {};
+            memcpy(data, &hvacValue, sizeof(THVACValue));
+            return sizeof(THVACValue);
+          });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(int16_t), _))
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+            int16_t value = INT16_MIN;
+            memcpy(data, &value, sizeof(int16_t));
+            return sizeof(int16_t);
+          });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+            *data = 0;
+            return sizeof(uint8_t);
+          });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -555,23 +558,26 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
               setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(storage, readState(_, sizeof(THVACValue)))
-      .WillRepeatedly([](unsigned char *data, int size) {
-        THVACValue hvacValue = {};
-        memcpy(data, &hvacValue, sizeof(THVACValue));
-        return sizeof(THVACValue);
-      });
-  EXPECT_CALL(storage, readState(_, sizeof(int16_t)))
-      .WillRepeatedly([](unsigned char *data, int size) {
-        int16_t value = INT16_MIN;
-        memcpy(data, &value, sizeof(int16_t));
-        return sizeof(int16_t);
-      });
-  EXPECT_CALL(storage, readState(_, sizeof(uint8_t)))
-      .WillRepeatedly([](unsigned char *data, int size) {
-        *data = 0;
-        return sizeof(uint8_t);
-      });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(THVACValue), _))
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+            THVACValue hvacValue = {};
+            memcpy(data, &hvacValue, sizeof(THVACValue));
+            return sizeof(THVACValue);
+          });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(int16_t), _))
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+            int16_t value = INT16_MIN;
+            memcpy(data, &value, sizeof(int16_t));
+            return sizeof(int16_t);
+          });
+  EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
+      .WillRepeatedly(
+          [](uint32_t address, unsigned char *data, int size, bool) {
+            *data = 0;
+            return sizeof(uint8_t);
+          });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));

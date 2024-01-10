@@ -62,7 +62,7 @@ bool SimpleState::writeSectionPreamble() {
   return true;
 }
 
-bool SimpleState::init() {
+bool SimpleState::initFromStorage() {
   // calculate crc
   crc = 0xFFFF;
   elementStateOffset = sectionOffset + sizeof(SectionPreamble);
@@ -93,11 +93,25 @@ void SimpleState::deleteAll() {
   crc = 0;
 }
 
-bool SimpleState::prepareState(bool performDryRun) {
-  dryRun = performDryRun;
+bool SimpleState::prepareSaveState() {
+  dryRun = false;
   stateSectionNewSize = 0;
   currentStateOffset = elementStateOffset;
   crc = 0xFFFF;
+  return true;
+}
+
+bool SimpleState::prepareSizeCheck() {
+  dryRun = true;
+  stateSectionNewSize = 0;
+  currentStateOffset = elementStateOffset;
+  crc = 0xFFFF;
+  return true;
+}
+
+bool SimpleState::prepareLoadState() {
+  dryRun = false;
+  currentStateOffset = elementStateOffset;
   return true;
 }
 
@@ -176,23 +190,23 @@ bool SimpleState::writeState(const unsigned char *buf, int size) {
 }
 
 bool SimpleState::finalizeSaveState() {
-  if (dryRun) {
-    dryRun = false;
-    if (elementStateSize != stateSectionNewSize) {
-      SUPLA_LOG_DEBUG(
-                "Element state section size doesn't match current device "
-                "configuration");
-      elementStateOffset = 0;
-      elementStateSize = 0;
-      return false;
-    }
-    return true;
-  }
-
   elementStateSize = stateSectionNewSize;
   writeSectionPreamble();
   commit();
   crc = 0xFFFF;
   elementStateCrcCValid = true;
+  return true;
+}
+
+bool SimpleState::finalizeSizeCheck() {
+  dryRun = false;
+  if (elementStateSize != stateSectionNewSize) {
+    SUPLA_LOG_DEBUG(
+        "Element state section size doesn't match current device "
+        "configuration");
+    elementStateOffset = 0;
+    elementStateSize = 0;
+    return false;
+  }
   return true;
 }

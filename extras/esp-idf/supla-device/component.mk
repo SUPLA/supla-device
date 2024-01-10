@@ -35,6 +35,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/storage/config.o \
   ../../../src/supla/storage/simple_state.o \
   ../../../src/supla/storage/state_storage_interface.o \
+	../../../src/supla/storage/state_wear_leveling_byte.o \
 	\
   ../../../src/supla/network/network.o \
   ../../../src/supla/network/netif_wifi.o \

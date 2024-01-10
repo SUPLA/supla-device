@@ -34,27 +34,28 @@ class SpecialSectionInfo;
 class StateStorageInterface;
 
 class Storage {
+ public:
   enum class WearLevelingMode {
     OFF = 0,
     BYTE_WRITE_MODE = 1,   // Used i.e. for EEPROM memory
     SECTOR_WRITE_MODE = 2  // Used i.e. for FLASH memory
   };
 
- public:
   friend class StateStorageInterface;
   static Storage *Instance();
   static Config *ConfigInstance();
-  static bool Init();
-  static bool ReadState(unsigned char *, int);
-  static bool WriteState(const unsigned char *, int);
-  static bool SaveStateAllowed(uint32_t);
-  static void ScheduleSave(uint32_t delayMs);
   static void SetConfigInstance(Config *instance);
   static bool IsConfigStorageAvailable();
 
+  static bool Init();
+  static bool SaveStateAllowed(uint32_t);
+  static void ScheduleSave(uint32_t delayMs);
   static bool IsStateStorageValid();
   static void LoadStateStorage();
   static void WriteStateStorage();
+
+  static bool ReadState(unsigned char *, int);
+  static bool WriteState(const unsigned char *, int);
 
   // Register special section in storage data (outside of State storage)
   // sectionId - user selected sectionId
@@ -85,9 +86,6 @@ class Storage {
   virtual void deleteAll();
 
  protected:
-  static bool PrepareState(bool dryRun = false);
-  static bool FinalizeSaveState();
-
   virtual bool init();
   virtual int readStorage(unsigned int address,
                           unsigned char *buf,
@@ -98,21 +96,16 @@ class Storage {
                            int size) = 0;
   virtual void commit() = 0;
 
-  virtual bool readState(unsigned char *, int);
-  virtual bool writeState(const unsigned char *, int);
   virtual int updateStorage(unsigned int, const unsigned char *, int);
 
-  virtual bool prepareState(bool performDryRun);
-  virtual bool finalizeSaveState();
   virtual bool saveStateAllowed(uint32_t);
   virtual void scheduleSave(uint32_t delayMs);
 
-  bool registerSection(int sectionId, int offset, int size, bool addCrc,
-      bool addBackupCopy);
+  bool registerSection(
+      int sectionId, int offset, int size, bool addCrc, bool addBackupCopy);
   bool readSection(int sectionId, unsigned char *data, int size);
   bool writeSection(int sectionId, const unsigned char *data, int size);
   bool deleteSection(int sectionId);
-
 
   const uint32_t storageStartingOffset = 0;
   const uint32_t availableSize = 0;
@@ -120,8 +113,6 @@ class Storage {
 
   uint32_t saveStatePeriod = 1000;
   uint32_t lastWriteTimestamp = 0;
-
-  bool dryRun = false;
 
   SpecialSectionInfo *firstSectionInfo = nullptr;
   StateStorageInterface *stateStorage = nullptr;

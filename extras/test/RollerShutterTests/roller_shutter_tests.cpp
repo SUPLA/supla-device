@@ -171,17 +171,25 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
   }
 }
 
+using ::testing::Return;
+
 TEST_F(RollerShutterFixture, movementTests) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
+  storage.defaultInitialization(9);
   EXPECT_CALL(storage, scheduleSave(_)).Times(AtLeast(0));
+
+  // updates of section preamble
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
 
   {
     ::testing::InSequence seq;
 
-    EXPECT_CALL(storage, readState(_, /* sizeof(RollerShutterStateData) */ 9))
-        .WillOnce([](unsigned char *data, int size) {
+    EXPECT_CALL(
+        storage, readStorage(_, _, /* sizeof(RollerShutterStateData) */ 9, _))
+        .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
           RollerShutterStateDataTests rsData = {.closingTimeMs = 10000,
                                                 .openingTimeMs = 10000,
                                                 .currentPosition = 0};
@@ -227,7 +235,7 @@ TEST_F(RollerShutterFixture, movementTests) {
     EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
   }
 
-  rs.onLoadState();
+  Supla::Storage::LoadStateStorage();
   rs.onInit();
 
   for (int i = 0; i < 10; i++) {
@@ -286,13 +294,19 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
+  storage.defaultInitialization(9);
   EXPECT_CALL(storage, scheduleSave(_)).Times(AtLeast(0));
+
+  // updates of section preamble
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
 
   {
     ::testing::InSequence seq;
 
-    EXPECT_CALL(storage, readState(_, /* sizeof(RollerShutterStateData) */ 9))
-        .WillOnce([](unsigned char *data, int size) {
+    EXPECT_CALL(
+        storage, readStorage(_, _, /* sizeof(RollerShutterStateData) */ 9, _))
+        .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
           RollerShutterStateDataTests rsData = {.closingTimeMs = 10000,
                                                 .openingTimeMs = 10000,
                                                 .currentPosition = 0};
@@ -382,7 +396,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
     EXPECT_CALL(ioMock, digitalWrite(gpioUp, 1));
   }
 
-  rs.onLoadState();
+  Supla::Storage::LoadStateStorage();
   rs.onInit();
 
   for (int i = 0; i < 10; i++) {

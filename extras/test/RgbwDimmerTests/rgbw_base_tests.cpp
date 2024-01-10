@@ -19,7 +19,7 @@
 #include <arduino_mock.h>
 #include <supla/control/rgbw_base.h>
 #include <supla/actions.h>
-#include <supla/storage/storage.h>
+#include <storage_mock.h>
 #include <simple_time.h>
 
 using ::testing::Return;
@@ -1300,22 +1300,6 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 }
 
-class StorageMock : public Supla::Storage {
- public:
-  MOCK_METHOD(void, scheduleSave, (uint32_t), (override));
-  MOCK_METHOD(void, commit, (), (override));
-  MOCK_METHOD(int,
-              readStorage,
-              (unsigned int, unsigned char *, int, bool),
-              (override));
-  MOCK_METHOD(int,
-              writeStorage,
-              (unsigned int, const unsigned char *, int),
-              (override));
-  MOCK_METHOD(bool, readState, (unsigned char *, int), (override));
-  MOCK_METHOD(bool, writeState, (const unsigned char *, int), (override));
-};
-
 using ::testing::_;
 using ::testing::SetArgPointee;
 using ::testing::DoAll;
@@ -1323,46 +1307,60 @@ using ::testing::Pointee;
 
 TEST(RgbwDimmerTests, RgbwStorageTests) {
   SimpleTime time;
-  ::testing::InSequence seq;
+//  ::testing::InSequence seq;
 
   StorageMock storage;
   RgbwBaseForTest rgb;
+  storage.defaultInitialization(8);
 
   // setRGBW should call scheduleSave on storage once
   EXPECT_CALL(storage, scheduleSave(5000));
+
+  // updates of section preamble
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
 
   uint8_t red = 1;
   uint8_t green = 2;
   uint8_t blue = 3;
   uint8_t colorBrightness = 4;
   uint8_t brightness = 5;
-  uint8_t lastColorBrightness = 6;
-  uint8_t lastBrightness = 7;
 
   // onLoadState expectations
-  EXPECT_CALL(storage, readState(_, 1))
-     .WillOnce(DoAll(SetArgPointee<0>(red), Return(true)))
-     .WillOnce(DoAll(SetArgPointee<0>(green), Return(true)))
-     .WillOnce(DoAll(SetArgPointee<0>(blue), Return(true)))
-     .WillOnce(DoAll(SetArgPointee<0>(colorBrightness), Return(true)))
-     .WillOnce(DoAll(SetArgPointee<0>(brightness), Return(true)))
-     .WillOnce(DoAll(SetArgPointee<0>(lastColorBrightness), Return(true)))
-     .WillOnce(DoAll(SetArgPointee<0>(lastBrightness), Return(true)))
-     ;
+  EXPECT_CALL(storage, readStorage(_, _, 1, _))
+     // read LoadStateStorage
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     // read before onSaveState
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+     .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)));
 
   // onSaveState expectations
-  EXPECT_CALL(storage, writeState(Pointee(red), 1));
-  EXPECT_CALL(storage, writeState(Pointee(green), 1));
-  EXPECT_CALL(storage, writeState(Pointee(blue), 1));
-  EXPECT_CALL(storage, writeState(Pointee(colorBrightness), 1));
-  EXPECT_CALL(storage, writeState(Pointee(brightness), 1));
-  EXPECT_CALL(storage, writeState(Pointee(lastColorBrightness), 1));
-  EXPECT_CALL(storage, writeState(Pointee(lastBrightness), 1));
+  EXPECT_CALL(storage, writeStorage(_, Pointee(red), 1)).WillOnce(Return(1));
+  EXPECT_CALL(storage, writeStorage(_, Pointee(green), 1)).WillOnce(Return(1));
+  EXPECT_CALL(storage, writeStorage(_, Pointee(blue), 1)).WillOnce(Return(1));
+  // colorBrightness and lastColorBrightness are saved in the same way
+  EXPECT_CALL(storage, writeStorage(_, Pointee(colorBrightness), 1))
+      .Times(2)
+      .WillRepeatedly(Return(1));
+  // birghtness and lastBrightness are saved in the same way
+  EXPECT_CALL(storage, writeStorage(_, Pointee(brightness), 1))
+      .Times(2)
+      .WillRepeatedly(Return(1));
 
+  Supla::Storage::LoadStateStorage();
   rgb.setRGBW(1, 2, 3, 4, 5, false);
-
-  rgb.onLoadState();
-  rgb.onSaveState();
+  Supla::Storage::WriteStateStorage();
 }
 
 // TurnOnOff flag from server (msg[5]) can have value 1, 2, or 3, which in

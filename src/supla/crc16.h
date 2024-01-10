@@ -22,5 +22,6 @@
 #include <stdint.h>
 
 uint16_t crc16_update(uint16_t crc, uint8_t a);
+uint16_t calculateCrc16(const uint8_t *data, int size);
 
 #endif  // SRC_SUPLA_CRC16_H_

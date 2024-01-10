@@ -23,7 +23,7 @@
 
 namespace Supla {
 
-class SectionPreamble;
+struct SectionPreamble;
 
 class SimpleState : public StateStorageInterface {
  public:
@@ -33,12 +33,15 @@ class SimpleState : public StateStorageInterface {
   ~SimpleState();
 
   bool writeSectionPreamble() override;
-  bool init() override;
+  bool initFromStorage() override;
   void deleteAll() override;
-  bool prepareState(bool performDryRun) override;
+  bool prepareSaveState() override;
+  bool prepareSizeCheck() override;
+  bool prepareLoadState() override;
   bool readState(unsigned char *, int) override;
   bool writeState(const unsigned char *, int) override;
   bool finalizeSaveState() override;
+  bool finalizeSizeCheck() override;
 
  private:
   uint32_t sectionOffset = 0;

@@ -64,7 +64,7 @@
 #include <supla/sensor/distance.h>
 #include <supla/sensor/electricity_meter.h>
 #include <supla/sensor/electricity_meter_parsed.h>
-#include <supla/sensor/general_purpose_measurement_base.h>
+#include <supla/sensor/general_purpose_channel_base.h>
 #include <supla/sensor/hygro_meter.h>
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/normally_open.h>

@@ -21,17 +21,17 @@
 
 #include <stdint.h>
 
+#include "measurement_driver.h"
+
 #define TEMPERATURE_NOT_AVAILABLE -275.0
 
 namespace Supla {
 namespace Sensor {
-class ThermometerDriver {
+class ThermometerDriver : public MeasurementDriver {
  public:
   ThermometerDriver();
-  virtual ~ThermometerDriver();
+  virtual ~ThermometerDriver() = default;
 
-  virtual void initialize() = 0;
-  virtual double getValue() = 0;
   virtual int16_t getTempInt16();
 };
 

@@ -97,6 +97,7 @@ set(SRCS
   supla/sensor/hygro_meter.cpp
   supla/sensor/thermometer.cpp
   supla/sensor/thermometer_driver.cpp
+  supla/sensor/general_purpose_channel_base.cpp
   supla/sensor/electricity_meter.cpp
   supla/sensor/binary.cpp
   supla/sensor/binary_base.cpp

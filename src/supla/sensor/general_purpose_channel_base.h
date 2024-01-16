@@ -16,33 +16,38 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_SENSOR_GENERAL_PURPOSE_MEASUREMENT_BASE_H_
-#define SRC_SUPLA_SENSOR_GENERAL_PURPOSE_MEASUREMENT_BASE_H_
+#ifndef SRC_SUPLA_SENSOR_GENERAL_PURPOSE_CHANNEL_BASE_H_
+#define SRC_SUPLA_SENSOR_GENERAL_PURPOSE_CHANNEL_BASE_H_
 
-#include "supla/channel_element.h"
+#include <supla/channel_element.h>
 
 namespace Supla {
 namespace Sensor {
-class GeneralPurposeMeasurementBase : public ChannelElement {
+
+class MeasurementDriver;
+
+class GeneralPurposeChannelBase : public ChannelElement {
  public:
-  GeneralPurposeMeasurementBase() : lastReadTime(0) {
-    channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT);
-  }
+  explicit GeneralPurposeChannelBase(MeasurementDriver *driver);
+  virtual ~GeneralPurposeChannelBase() = default;
 
-  virtual double getValue() = 0;
+  void setRefreshIntervalMs(int intervalMs);
 
-  void iterateAlways() {
-    if (millis() - lastReadTime > 1000) {
-      lastReadTime = millis();
-      channel.setNewValue(getValue());
-    }
-  }
+  // For custom sensor, please provide either class that inherits from
+  // Supla::Sensor::MeasurementDriver or override below getValue() method
+  virtual double getValue();
+
+  void onInit() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
+  void iterateAlways() override;
 
  protected:
-  uint32_t lastReadTime;
+  MeasurementDriver *driver = nullptr;
+  uint16_t refreshIntervalMs = 10000;
+  uint32_t lastReadTime = 0;
 };
 
 };  // namespace Sensor
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_SENSOR_GENERAL_PURPOSE_MEASUREMENT_BASE_H_
+#endif  // SRC_SUPLA_SENSOR_GENERAL_PURPOSE_CHANNEL_BASE_H_

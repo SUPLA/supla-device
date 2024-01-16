@@ -16,24 +16,20 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#include "thermometer_driver.h"
+#ifndef SRC_SUPLA_SENSOR_MEASUREMENT_DRIVER_H_
+#define SRC_SUPLA_SENSOR_MEASUREMENT_DRIVER_H_
 
-using Supla::Sensor::ThermometerDriver;
+namespace Supla {
+namespace Sensor {
+class MeasurementDriver {
+ public:
+  MeasurementDriver() = default;
+  virtual ~MeasurementDriver() = default;
 
-ThermometerDriver::ThermometerDriver() {
-}
+  virtual void initialize() = 0;
+  virtual double getValue() = 0;
+};
 
-int16_t ThermometerDriver::getTempInt16() {
-  double temp = getValue();
-  if (temp <= TEMPERATURE_NOT_AVAILABLE) {
-    return INT16_MIN;
-  }
-  temp *= 100;
-  if (temp > INT16_MAX) {
-    return INT16_MAX;
-  }
-  if (temp <= INT16_MIN) {
-    return INT16_MIN + 1;
-  }
-  return temp;
-}
+}  // namespace Sensor
+}  // namespace Supla
+#endif  // SRC_SUPLA_SENSOR_MEASUREMENT_DRIVER_H_

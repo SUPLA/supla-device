@@ -55,6 +55,15 @@ class ElementWithChannelActions : public Element, public LocalAction {
       bool alwaysEnabled = false);
 
   bool isEventAlreadyUsed(uint16_t event, bool ignoreAlwaysEnabled) override;
+  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
+  bool iterateConnected() override;
+  void handleChannelConfigFinished() override;
+  uint8_t handleChannelConfig(TSD_ChannelConfig *result, bool local) override;
+  virtual uint8_t applyChannelConfig(TSD_ChannelConfig *result);
+  void handleSetChannelConfigResult(
+      TSDS_SetChannelConfigResult *result) override;
+
+  void clearChannelConfigChangedFlag();
 
   void runAction(uint16_t event) override;
 
@@ -63,12 +72,13 @@ class ElementWithChannelActions : public Element, public LocalAction {
   virtual bool loadFunctionFromConfig();
   virtual bool saveConfigChangeFlag();
   virtual bool loadConfigChangeFlag();
+  virtual void fillChannelConfig(void *channelConfig, int *size);
   bool isAnyUpdatePending() override;
 
  protected:
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
-  bool waitForChannelConfigAndIgnoreIt = false;
+  bool configFinishedReceived = false;
 };
 
 };  // namespace Supla

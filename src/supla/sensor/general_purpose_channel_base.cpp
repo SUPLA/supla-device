@@ -195,8 +195,6 @@ void GeneralPurposeChannelBase::setChannelRefreshIntervalMs(
     intervalMs = 5000;
   } else if (intervalMs < 200) {
     intervalMs = 200;
-  } else if (intervalMs > 65535) {
-    intervalMs = 65535;
   }
   refreshIntervalMs = intervalMs;
 }

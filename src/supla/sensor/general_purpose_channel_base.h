@@ -37,15 +37,15 @@ class GeneralPurposeChannelBase : public ChannelElement {
     uint8_t noSpaceAfterValue = 0;
     uint8_t keepHistory = 0;
     uint8_t chartType = 0;
-    char unitBeforeValue[SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE] = {};
-    char unitAfterValue[SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE] = {};
+    uint16_t refreshIntervalMs = 0;
+    char unitBeforeValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
+    char unitAfterValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
   };
 #pragma pack(pop)
 
   explicit GeneralPurposeChannelBase(MeasurementDriver *driver = nullptr);
   virtual ~GeneralPurposeChannelBase() = default;
 
-  void setRefreshIntervalMs(int intervalMs);
 
   // For custom sensor, please provide either class that inherits from
   // Supla::Sensor::MeasurementDriver or override below getValue() method
@@ -73,6 +73,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   void getDefaultUnitBeforeValue(char *unit);
   void getDefaultUnitAfterValue(char *unit);
 
+  uint16_t getRefreshIntervalMs() const;
   int32_t getValueDivider() const;
   int32_t getValueMultiplier() const;
   int64_t getValueAdded() const;
@@ -83,6 +84,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   uint8_t getKeepHistory() const;
   uint8_t getChartType() const;
 
+  void setRefreshIntervalMs(int intervalMs, bool local = true);
   void setValueDivider(int32_t divider, bool local = true);
   void setValueMultiplier(int32_t multiplier, bool local = true);
   void setValueAdded(int64_t added, bool local = true);
@@ -94,6 +96,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
   void setChartType(uint8_t chartType, bool local = true);
 
  protected:
+  void saveConfig();
+  void setChannelRefreshIntervalMs(uint16_t intervalMs);
+
   MeasurementDriver *driver = nullptr;
   uint16_t refreshIntervalMs = 10000;
   uint32_t lastReadTime = 0;
@@ -103,12 +108,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
   int64_t defaultValueAdded = 0;  // 0.001 units
   uint8_t defaultValuePrecision = 0;  // 0 - 4 decimal points
   // Default unit (before value) - UTF8 including the terminating null byte '\0'
-  char
-      defaultUnitBeforeValue[SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE] =
-          {};
+  char defaultUnitBeforeValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
   // Default unit (after value) - UTF8 including the terminating null byte '\0'
-  char defaultUnitAfterValue[SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE] =
-      {};
+  char defaultUnitAfterValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
 
   GPMCommonConfig commonConfig = {};
 };

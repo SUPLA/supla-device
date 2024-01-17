@@ -78,45 +78,12 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result) {
   setCounterType(config->CounterType, false);
   setIncludeValueAddedInHistory(config->IncludeValueAddedInHistory, false);
   setFillMissingData(config->FillMissingData, false);
+  setRefreshIntervalMs(config->RefreshIntervalMs, false);
 
-  // print to logs all parameters from config:
-  SUPLA_LOG_INFO("GPM[%d]: ValueDivider: %d", getChannelNumber(),
-                 config->ValueDivider);
-  SUPLA_LOG_INFO("GPM[%d]: ValueMultiplier: %d", getChannelNumber(),
-                 config->ValueMultiplier);
-  SUPLA_LOG_INFO("GPM[%d]: ValueAdded: %d", getChannelNumber(),
-                 config->ValueAdded);
-  SUPLA_LOG_INFO("GPM[%d]: ValuePrecision: %d", getChannelNumber(),
-                 config->ValuePrecision);
-  SUPLA_LOG_INFO("GPM[%d]: NoSpaceAfterValue: %d", getChannelNumber(),
-                 config->NoSpaceAfterValue);
-  SUPLA_LOG_INFO("GPM[%d]: KeepHistory: %d", getChannelNumber(),
-                 config->KeepHistory);
-  SUPLA_LOG_INFO("GPM[%d]: ChartType: %d", getChannelNumber(),
-                 config->ChartType);
-  SUPLA_LOG_INFO("GPM[%d]: UnitBeforeValue: %s", getChannelNumber(),
-                 config->UnitBeforeValue);
-  SUPLA_LOG_INFO("GPM[%d]: UnitAfterValue: %s", getChannelNumber(),
-                 config->UnitAfterValue);
-  SUPLA_LOG_INFO("GPM[%d]: CounterType: %d", getChannelNumber(),
-                 config->CounterType);
-  SUPLA_LOG_INFO("GPM[%d]: IncludeValueAddedInHistory: %d", getChannelNumber(),
-                 config->IncludeValueAddedInHistory);
-  SUPLA_LOG_INFO("GPM[%d]: FillMissingData: %d", getChannelNumber(),
-                 config->FillMissingData);
-  SUPLA_LOG_INFO("GPM[%d]: DefaultValueDivider: %d", getChannelNumber(),
-                 config->DefaultValueDivider);
-  SUPLA_LOG_INFO("GPM[%d]: DefaultValueMultiplier: %d", getChannelNumber(),
-                 config->DefaultValueMultiplier);
-  SUPLA_LOG_INFO("GPM[%d]: DefaultValueAdded: %d", getChannelNumber(),
-                 config->DefaultValueAdded);
-  SUPLA_LOG_INFO("GPM[%d]: DefaultValuePrecision: %d", getChannelNumber(),
-                 config->DefaultValuePrecision);
-  SUPLA_LOG_INFO("GPM[%d]: DefaultUnitBeforeValue: %s", getChannelNumber(),
-      config->DefaultUnitBeforeValue);
-  SUPLA_LOG_INFO("GPM[%d]: DefaultUnitAfterValue: %s", getChannelNumber(),
-      config->DefaultUnitAfterValue);
-
+  if (channelConfigState == Supla::ChannelConfigState::LocalChangePending) {
+    saveConfig();
+    saveMeterSpecificConfig();
+  }
 
   if (config->DefaultValueDivider != getDefaultValueDivider() ||
       config->DefaultValueMultiplier != getDefaultValueMultiplier() ||
@@ -124,10 +91,10 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result) {
       config->DefaultValuePrecision != getDefaultValuePrecision() ||
       strncmp(config->DefaultUnitBeforeValue,
               defaultUnitBeforeValue,
-              SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE) ||
+              SUPLA_GENERAL_PURPOSE_UNIT_SIZE) ||
       strncmp(config->DefaultUnitAfterValue,
               defaultUnitAfterValue,
-              SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE)) {
+              SUPLA_GENERAL_PURPOSE_UNIT_SIZE)) {
     SUPLA_LOG_INFO("GPM[%d]: meter config changed", getChannelNumber());
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
     saveConfigChangeFlag();
@@ -161,6 +128,7 @@ void GeneralPurposeMeter::fillChannelConfig(void *channelConfig, int *size) {
   config->CounterType = getCounterType();
   config->IncludeValueAddedInHistory = getIncludeValueAddedInHistory();
   config->FillMissingData = getFillMissingData();
+  config->RefreshIntervalMs = getRefreshIntervalMs();
 
   config->DefaultValueDivider = getDefaultValueDivider();
   config->DefaultValueMultiplier = getDefaultValueMultiplier();
@@ -190,6 +158,7 @@ void GeneralPurposeMeter::setCounterType(uint8_t counterType, bool local) {
   meterSpecificConfig.counterType = counterType;
   if (counterType != oldCounterType && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveMeterSpecificConfig();
     saveConfigChangeFlag();
   }
 }
@@ -200,6 +169,7 @@ void GeneralPurposeMeter::setIncludeValueAddedInHistory(
   meterSpecificConfig.includeValueAddedInHistory = includeValueAddedInHistory;
   if (includeValueAddedInHistory != oldIncludeValueAddedInHistory && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveMeterSpecificConfig();
     saveConfigChangeFlag();
   }
 }
@@ -210,7 +180,30 @@ void GeneralPurposeMeter::setFillMissingData(uint8_t fillMissingData,
   meterSpecificConfig.fillMissingData = fillMissingData;
   if (fillMissingData != oldFillMissingData && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveMeterSpecificConfig();
     saveConfigChangeFlag();
   }
 }
 
+void GeneralPurposeMeter::saveMeterSpecificConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    SUPLA_LOG_WARNING("GPM[%d]: Failed to save config", getChannelNumber());
+    return;
+  }
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "gpm_meter");
+  if (cfg->setBlob(key,
+        reinterpret_cast<char *>(&meterSpecificConfig),
+        sizeof(GPMMeterSpecificConfig))) {
+    SUPLA_LOG_INFO("GPM[%d]: meter specific config saved successfully",
+                   getChannelNumber());
+    cfg->saveWithDelay(5000);
+  }
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first();
+      proto != nullptr; proto = proto->next()) {
+    proto->notifyConfigChange(getChannelNumber());
+  }
+}

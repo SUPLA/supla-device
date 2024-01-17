@@ -49,6 +49,8 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase {
   void setFillMissingData(uint8_t fillMissingData, bool local = true);
 
  protected:
+  void saveMeterSpecificConfig();
+
   GPMMeterSpecificConfig meterSpecificConfig = {};
 };
 

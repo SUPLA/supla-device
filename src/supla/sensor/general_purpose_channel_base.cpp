@@ -54,15 +54,6 @@ void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
   lastReadTime = 0;
 }
 
-void GeneralPurposeChannelBase::setRefreshIntervalMs(int intervalMs) {
-  if (intervalMs < 500) {
-    intervalMs = 500;
-  } else if (intervalMs > 60000) {
-    intervalMs = 60000;
-  }
-  refreshIntervalMs = intervalMs;
-}
-
 double GeneralPurposeChannelBase::getValue() {
   if (driver) {
     return driver->getValue();
@@ -113,9 +104,7 @@ void GeneralPurposeChannelBase::setDefaultUnitBeforeValue(const char *unit) {
   if (unit) {
     SUPLA_LOG_DEBUG(
         "GPM[%d]: DefaultUnitBeforeValue \"%s\"", getChannelNumber(), unit);
-    strncpy(defaultUnitBeforeValue,
-            unit,
-            SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+    strncpy(defaultUnitBeforeValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   }
 }
 
@@ -123,9 +112,7 @@ void GeneralPurposeChannelBase::setDefaultUnitAfterValue(const char *unit) {
   if (unit) {
     SUPLA_LOG_DEBUG(
         "GPM[%d]: DefaultUnitAfterValue \"%s\"", getChannelNumber(), unit);
-    strncpy(defaultUnitAfterValue,
-        unit,
-        SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+    strncpy(defaultUnitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   }
 }
 
@@ -147,17 +134,13 @@ uint8_t GeneralPurposeChannelBase::getDefaultValuePrecision() const {
 
 void GeneralPurposeChannelBase::getDefaultUnitBeforeValue(char *unit) {
   if (unit) {
-    strncpy(unit,
-        defaultUnitBeforeValue,
-        SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+    strncpy(unit, defaultUnitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   }
 }
 
 void GeneralPurposeChannelBase::getDefaultUnitAfterValue(char *unit) {
   if (unit) {
-    strncpy(unit,
-        defaultUnitAfterValue,
-        SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+    strncpy(unit, defaultUnitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   }
 }
 
@@ -179,17 +162,14 @@ uint8_t GeneralPurposeChannelBase::getValuePrecision() const {
 
 void GeneralPurposeChannelBase::getUnitBeforeValue(char *unit) const {
   if (unit) {
-    strncpy(unit,
-            commonConfig.unitBeforeValue,
-            SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+    strncpy(
+        unit, commonConfig.unitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   }
 }
 
 void GeneralPurposeChannelBase::getUnitAfterValue(char *unit) const {
   if (unit) {
-    strncpy(unit,
-            commonConfig.unitAfterValue,
-            SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+    strncpy(unit, commonConfig.unitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   }
 }
 
@@ -205,11 +185,46 @@ uint8_t GeneralPurposeChannelBase::getChartType() const {
   return commonConfig.chartType;
 }
 
+uint16_t GeneralPurposeChannelBase::getRefreshIntervalMs() const {
+  return commonConfig.refreshIntervalMs;
+}
+
+void GeneralPurposeChannelBase::setChannelRefreshIntervalMs(
+    uint16_t intervalMs) {
+  if (intervalMs == 0) {
+    intervalMs = 5000;
+  } else if (intervalMs < 200) {
+    intervalMs = 200;
+  } else if (intervalMs > 65535) {
+    intervalMs = 65535;
+  }
+  refreshIntervalMs = intervalMs;
+}
+
+void GeneralPurposeChannelBase::setRefreshIntervalMs(int intervalMs,
+                                                     bool local) {
+  // RefreshIntervalMs in config contain value from server/Cloud. We don't
+  // adjust it to internal value.
+  if (intervalMs < 0) {
+    intervalMs = 0;
+  } else if (intervalMs > 65535) {
+    intervalMs = 65535;
+  }
+  auto oldIntervalMs = getRefreshIntervalMs();
+  commonConfig.refreshIntervalMs = intervalMs;
+  if (intervalMs != oldIntervalMs && local) {
+    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
+    saveConfigChangeFlag();
+  }
+}
+
 void GeneralPurposeChannelBase::setValueDivider(int32_t divider, bool local) {
   auto oldDivider = getValueDivider();
   commonConfig.divider = divider;
   if (divider != oldDivider && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
@@ -220,6 +235,7 @@ void GeneralPurposeChannelBase::setValueMultiplier(int32_t multiplier,
   commonConfig.multiplier = multiplier;
   if (multiplier != oldMultiplier && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
@@ -229,6 +245,7 @@ void GeneralPurposeChannelBase::setValueAdded(int64_t added, bool local) {
   commonConfig.added = added;
   if (added != oldAdded && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
@@ -242,23 +259,22 @@ void GeneralPurposeChannelBase::setValuePrecision(uint8_t precision,
   commonConfig.precision = precision;
   if (precision != oldPrecision && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
 
 void GeneralPurposeChannelBase::setUnitBeforeValue(const char *unit,
                                                    bool local) {
-  char oldUnit[SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE];
+  char oldUnit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE];
   getUnitBeforeValue(oldUnit);
 
-  if (unit && strncmp(unit,
-                      oldUnit,
-                      SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE) != 0) {
-    strncpy(commonConfig.unitBeforeValue,
-            unit,
-            SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+  if (unit && strncmp(unit, oldUnit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE) != 0) {
+    strncpy(
+        commonConfig.unitBeforeValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
     if (local) {
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      saveConfig();
       saveConfigChangeFlag();
     }
   }
@@ -266,17 +282,14 @@ void GeneralPurposeChannelBase::setUnitBeforeValue(const char *unit,
 
 void GeneralPurposeChannelBase::setUnitAfterValue(const char *unit,
                                                   bool local) {
-  char oldUnit[SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE];
+  char oldUnit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE];
   getUnitAfterValue(oldUnit);
 
-  if (unit && strncmp(unit,
-                      oldUnit,
-                      SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE) != 0) {
-    strncpy(commonConfig.unitAfterValue,
-            unit,
-            SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE);
+  if (unit && strncmp(unit, oldUnit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE) != 0) {
+    strncpy(commonConfig.unitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
     if (local) {
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      saveConfig();
       saveConfigChangeFlag();
     }
   }
@@ -288,6 +301,7 @@ void GeneralPurposeChannelBase::setNoSpaceAfterValue(uint8_t noSpaceAfterValue,
   commonConfig.noSpaceAfterValue = noSpaceAfterValue;
   if (noSpaceAfterValue != oldNoSpaceAfterValue && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
@@ -297,6 +311,7 @@ void GeneralPurposeChannelBase::setKeepHistory(uint8_t keepHistory,
   commonConfig.keepHistory = keepHistory;
   if (keepHistory != oldKeepHistory && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
@@ -306,6 +321,7 @@ void GeneralPurposeChannelBase::setChartType(uint8_t chartType, bool local) {
   commonConfig.chartType = chartType;
   if (chartType != oldChartType && local) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
     saveConfigChangeFlag();
   }
 }
@@ -334,6 +350,11 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
   setChartType(config->ChartType, false);
   setUnitBeforeValue(config->UnitBeforeValue, false);
   setUnitAfterValue(config->UnitAfterValue, false);
+  setRefreshIntervalMs(config->RefreshIntervalMs, false);
+
+  if (channelConfigState == Supla::ChannelConfigState::LocalChangePending) {
+    saveConfig();
+  }
 
   if (config->DefaultValueDivider != getDefaultValueDivider() ||
       config->DefaultValueMultiplier != getDefaultValueMultiplier() ||
@@ -341,10 +362,10 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
       config->DefaultValuePrecision != getDefaultValuePrecision() ||
       strncmp(config->DefaultUnitBeforeValue,
               defaultUnitBeforeValue,
-              SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE) ||
+              SUPLA_GENERAL_PURPOSE_UNIT_SIZE) ||
       strncmp(config->DefaultUnitAfterValue,
               defaultUnitAfterValue,
-              SUPLA_GENERAL_PURPOSE_MEASUREMENT_UNIT_DATA_SIZE)) {
+              SUPLA_GENERAL_PURPOSE_UNIT_SIZE)) {
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
     saveConfigChangeFlag();
   }
@@ -374,6 +395,7 @@ void GeneralPurposeChannelBase::fillChannelConfig(void *channelConfig,
   config->NoSpaceAfterValue = getNoSpaceAfterValue();
   config->KeepHistory = getKeepHistory();
   config->ChartType = getChartType();
+  config->RefreshIntervalMs = getRefreshIntervalMs();
 
   config->DefaultValueDivider = getDefaultValueDivider();
   config->DefaultValueMultiplier = getDefaultValueMultiplier();
@@ -386,3 +408,25 @@ void GeneralPurposeChannelBase::fillChannelConfig(void *channelConfig,
   getDefaultUnitAfterValue(config->DefaultUnitAfterValue);
 }
 
+void GeneralPurposeChannelBase::saveConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    SUPLA_LOG_WARNING("GPM[%d]: Failed to save config", getChannelNumber());
+    return;
+  }
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, "gpm_common");
+  if (cfg->setBlob(key,
+        reinterpret_cast<char *>(&commonConfig),
+        sizeof(GPMCommonConfig))) {
+    SUPLA_LOG_INFO("GPM[%d]: common config saved successfully",
+                   getChannelNumber());
+    cfg->saveWithDelay(5000);
+  }
+
+  for (auto proto = Supla::Protocol::ProtocolLayer::first();
+      proto != nullptr; proto = proto->next()) {
+    proto->notifyConfigChange(getChannelNumber());
+  }
+}

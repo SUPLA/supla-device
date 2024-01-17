@@ -128,6 +128,8 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/thermometer.cpp
   src/supla/sensor/thermometer_driver.cpp
   src/supla/sensor/general_purpose_channel_base.cpp
+  src/supla/sensor/general_purpose_measurement.cpp
+  src/supla/sensor/general_purpose_meter.cpp
   src/supla/sensor/virtual_binary.cpp
   src/supla/sensor/ntc10k.cpp
 )

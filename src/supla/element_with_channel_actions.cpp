@@ -180,7 +180,8 @@ bool Supla::ElementWithChannelActions::isAnyUpdatePending() {
 }
 
 void Supla::ElementWithChannelActions::clearChannelConfigChangedFlag() {
-  if (channelConfigState != Supla::ChannelConfigState::None) {
+  if (channelConfigState != Supla::ChannelConfigState::None &&
+      channelConfigState != Supla::ChannelConfigState::SetChannelConfigFailed) {
     channelConfigState = Supla::ChannelConfigState::None;
     saveConfigChangeFlag();
   }
@@ -243,6 +244,11 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
 
             return true;
           }
+        } else {
+          SUPLA_LOG_WARNING(
+              "Channel[%d]: set channel config implementation missing",
+              getChannelNumber());
+          channelConfigState = Supla::ChannelConfigState::None;
         }
       }
     }
@@ -298,6 +304,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     // But don't send it if it failed in previous attempt
     if (channelConfigState !=
         Supla::ChannelConfigState::SetChannelConfigFailed) {
+      SUPLA_LOG_DEBUG("Channel[%d] no config on server", getChannelNumber());
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
     }
     return SUPLA_CONFIG_RESULT_TRUE;

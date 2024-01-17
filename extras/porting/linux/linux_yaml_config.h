@@ -169,6 +169,12 @@ class LinuxYamlConfig : public KeyValue {
                       bool mandatory);
   bool addActionTriggerParsed(const YAML::Node& ch,
                       int channnelNumber);
+  bool addGeneralPurposeMeasurementParsed(const YAML::Node& ch,
+                      int channelNumber,
+                      Supla::Parser::Parser* parser);
+  bool addGeneralPurposeMeterParsed(const YAML::Node& ch,
+                      int channelNumber,
+                      Supla::Parser::Parser* parser);
 
   std::string file;
   YAML::Node config;

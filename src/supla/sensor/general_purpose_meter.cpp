@@ -70,6 +70,7 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result) {
   setValueMultiplier(config->ValueMultiplier, false);
   setValueAdded(config->ValueAdded, false);
   setValuePrecision(config->ValuePrecision, false);
+  setNoSpaceBeforeValue(config->NoSpaceBeforeValue, false);
   setNoSpaceAfterValue(config->NoSpaceAfterValue, false);
   setKeepHistory(config->KeepHistory, false);
   setChartType(config->ChartType, false);
@@ -122,6 +123,7 @@ void GeneralPurposeMeter::fillChannelConfig(void *channelConfig, int *size) {
   config->ValueMultiplier = getValueMultiplier();
   config->ValueAdded = getValueAdded();
   config->ValuePrecision = getValuePrecision();
+  config->NoSpaceBeforeValue = getNoSpaceBeforeValue();
   config->NoSpaceAfterValue = getNoSpaceAfterValue();
   config->KeepHistory = getKeepHistory();
   config->ChartType = getChartType();

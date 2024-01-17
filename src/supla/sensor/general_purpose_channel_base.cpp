@@ -173,6 +173,10 @@ void GeneralPurposeChannelBase::getUnitAfterValue(char *unit) const {
   }
 }
 
+uint8_t GeneralPurposeChannelBase::getNoSpaceBeforeValue() const {
+  return commonConfig.noSpaceBeforeValue;
+}
+
 uint8_t GeneralPurposeChannelBase::getNoSpaceAfterValue() const {
   return commonConfig.noSpaceAfterValue;
 }
@@ -293,6 +297,17 @@ void GeneralPurposeChannelBase::setUnitAfterValue(const char *unit,
   }
 }
 
+void GeneralPurposeChannelBase::setNoSpaceBeforeValue(
+    uint8_t noSpaceBeforeValue, bool local) {
+  auto oldNoSpaceBeforeValue = getNoSpaceBeforeValue();
+  commonConfig.noSpaceBeforeValue = noSpaceBeforeValue;
+  if (noSpaceBeforeValue != oldNoSpaceBeforeValue && local) {
+    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
+    saveConfigChangeFlag();
+  }
+}
+
 void GeneralPurposeChannelBase::setNoSpaceAfterValue(uint8_t noSpaceAfterValue,
                                                      bool local) {
   auto oldNoSpaceAfterValue = getNoSpaceAfterValue();
@@ -303,6 +318,7 @@ void GeneralPurposeChannelBase::setNoSpaceAfterValue(uint8_t noSpaceAfterValue,
     saveConfigChangeFlag();
   }
 }
+
 void GeneralPurposeChannelBase::setKeepHistory(uint8_t keepHistory,
                                                bool local) {
   auto oldKeepHistory = getKeepHistory();
@@ -343,6 +359,7 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
   setValueMultiplier(config->ValueMultiplier, false);
   setValueAdded(config->ValueAdded, false);
   setValuePrecision(config->ValuePrecision, false);
+  setNoSpaceBeforeValue(config->NoSpaceBeforeValue, false);
   setNoSpaceAfterValue(config->NoSpaceAfterValue, false);
   setKeepHistory(config->KeepHistory, false);
   setChartType(config->ChartType, false);
@@ -390,6 +407,7 @@ void GeneralPurposeChannelBase::fillChannelConfig(void *channelConfig,
   config->ValueMultiplier = getValueMultiplier();
   config->ValueAdded = getValueAdded();
   config->ValuePrecision = getValuePrecision();
+  config->NoSpaceBeforeValue = getNoSpaceBeforeValue();
   config->NoSpaceAfterValue = getNoSpaceAfterValue();
   config->KeepHistory = getKeepHistory();
   config->ChartType = getChartType();

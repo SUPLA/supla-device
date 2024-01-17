@@ -34,6 +34,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
     int32_t multiplier = 0;
     int64_t added = 0;
     uint8_t precision = 0;
+    uint8_t noSpaceBeforeValue = 0;
     uint8_t noSpaceAfterValue = 0;
     uint8_t keepHistory = 0;
     uint8_t chartType = 0;
@@ -80,6 +81,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   uint8_t getValuePrecision() const;
   void getUnitBeforeValue(char *unit) const;
   void getUnitAfterValue(char *unit) const;
+  uint8_t getNoSpaceBeforeValue() const;
   uint8_t getNoSpaceAfterValue() const;
   uint8_t getKeepHistory() const;
   uint8_t getChartType() const;
@@ -91,6 +93,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   void setValuePrecision(uint8_t precision, bool local = true);
   void setUnitBeforeValue(const char *unit, bool local = true);
   void setUnitAfterValue(const char *unit, bool local = true);
+  void setNoSpaceBeforeValue(uint8_t noSpaceBeforeValue, bool local = true);
   void setNoSpaceAfterValue(uint8_t noSpaceAfterValue, bool local = true);
   void setKeepHistory(uint8_t keepHistory, bool local = true);
   void setChartType(uint8_t chartType, bool local = true);

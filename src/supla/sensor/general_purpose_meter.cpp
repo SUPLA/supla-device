@@ -34,13 +34,13 @@ GeneralPurposeMeter::GeneralPurposeMeter(
 
 
 void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
+  GeneralPurposeChannelBase::onLoadConfig(sdc);
+
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     SUPLA_LOG_WARNING("GPM[%d]: Failed to load config", getChannelNumber());
     return;
   }
-
-  GeneralPurposeChannelBase::onLoadConfig(sdc);
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "gpm_meter");

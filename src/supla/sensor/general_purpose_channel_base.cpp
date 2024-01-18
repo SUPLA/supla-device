@@ -36,22 +36,39 @@ GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver)
 void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg) {
+  bool configLoaded = false;
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, "gpm_common");
+    if (cfg->getBlob(key,
+          reinterpret_cast<char *>(&commonConfig),
+          sizeof(GPMCommonConfig))) {
+      SUPLA_LOG_INFO("GPM[%d]: config loaded successfully", getChannelNumber());
+      configLoaded = true;
+    }
+
+    // load config changed offline flags
+    loadConfigChangeFlag();
+    lastReadTime = 0;
+  } else {
     SUPLA_LOG_WARNING("GPM[%d]: Failed to load config", getChannelNumber());
-    return;
   }
 
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  generateKey(key, "gpm_common");
-  if (cfg->getBlob(key,
-        reinterpret_cast<char *>(&commonConfig),
-        sizeof(GPMCommonConfig))) {
-    SUPLA_LOG_INFO("GPM[%d]: config loaded successfully", getChannelNumber());
+  if (!configLoaded) {
+    setValueAdded(getDefaultValueAdded(), false);
+    setValueMultiplier(getDefaultValueMultiplier(), false);
+    setValueDivider(getDefaultValueDivider(), false);
+    setValuePrecision(getDefaultValuePrecision(), false);
+    char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
+    getDefaultUnitBeforeValue(unit);
+    setUnitBeforeValue(unit, false);
+    getDefaultUnitAfterValue(unit);
+    setUnitAfterValue(unit, false);
+    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    saveConfig();
+    saveConfigChangeFlag();
   }
-
-  // load config changed offline flags
-  loadConfigChangeFlag();
-  lastReadTime = 0;
+  return;
 }
 
 double GeneralPurposeChannelBase::getValue() {
@@ -215,6 +232,7 @@ void GeneralPurposeChannelBase::setRefreshIntervalMs(int intervalMs,
   auto oldIntervalMs = getRefreshIntervalMs();
   commonConfig.refreshIntervalMs = intervalMs;
   if (intervalMs != oldIntervalMs && local) {
+    setChannelRefreshIntervalMs(intervalMs);
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
     saveConfig();
     saveConfigChangeFlag();
@@ -254,9 +272,6 @@ void GeneralPurposeChannelBase::setValueAdded(int64_t added, bool local) {
 
 void GeneralPurposeChannelBase::setValuePrecision(uint8_t precision,
                                                   bool local) {
-  if (precision > 4) {
-    precision = 4;
-  }
   auto oldPrecision = getValuePrecision();
   commonConfig.precision = precision;
   if (precision != oldPrecision && local) {
@@ -355,6 +370,9 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
   auto config = reinterpret_cast<TChannelConfig_GeneralPurposeMeasurement *>(
       result->Config);
 
+  GPMCommonConfig oldConfig = {};
+  memcpy(&oldConfig, &commonConfig, sizeof(commonConfig));
+
   setValueDivider(config->ValueDivider, false);
   setValueMultiplier(config->ValueMultiplier, false);
   setValueAdded(config->ValueAdded, false);
@@ -367,7 +385,7 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
   setUnitAfterValue(config->UnitAfterValue, false);
   setRefreshIntervalMs(config->RefreshIntervalMs, false);
 
-  if (channelConfigState == Supla::ChannelConfigState::LocalChangePending) {
+  if (memcmp(&oldConfig, &commonConfig, sizeof(commonConfig)) != 0) {
     saveConfig();
   }
 

@@ -103,7 +103,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   void setChannelRefreshIntervalMs(uint16_t intervalMs);
 
   MeasurementDriver *driver = nullptr;
-  uint16_t refreshIntervalMs = 10000;
+  uint16_t refreshIntervalMs = 5000;
   uint32_t lastReadTime = 0;
 
   int32_t defaultValueDivider = 0;  // 0.001 units; 0 is considered as 1

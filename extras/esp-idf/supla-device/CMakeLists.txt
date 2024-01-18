@@ -132,6 +132,8 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/sensor/thermometer.cpp
   ../../../src/supla/sensor/thermometer_driver.cpp
   ../../../src/supla/sensor/general_purpose_channel_base.cpp
+  ../../../src/supla/sensor/general_purpose_meter.cpp
+  ../../../src/supla/sensor/memory_variable_driver.cpp
   ../../../src/supla/sensor/virtual_binary.cpp
   ../../../src/supla/sensor/distance.cpp
   ../../../src/supla/sensor/HC_SR04.cpp

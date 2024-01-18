@@ -26,6 +26,7 @@ class MeasurementDriverMock : public Supla::Sensor::MeasurementDriver {
  public:
   MOCK_METHOD(void, initialize, (), (override));
   MOCK_METHOD(double, getValue, (), (override));
+  MOCK_METHOD(void, setValue, (const double &), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_MEASUREMENT_DRIVER_MOCK_H_

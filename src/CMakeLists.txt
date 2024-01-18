@@ -100,6 +100,7 @@ set(SRCS
   supla/sensor/general_purpose_channel_base.cpp
   supla/sensor/general_purpose_measurement.cpp
   supla/sensor/general_purpose_meter.cpp
+  supla/sensor/memory_variable_driver.cpp
   supla/sensor/electricity_meter.cpp
   supla/sensor/binary.cpp
   supla/sensor/binary_base.cpp

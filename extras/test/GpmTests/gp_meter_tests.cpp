@@ -702,3 +702,23 @@ TEST_F(GpMeterTestsFixture, localConfigChangeShouldBeSavedAndSend) {
   EXPECT_EQ(gp.getValueMultiplier(), 10);
   EXPECT_EQ(gp.getCounterType(), 2);
 }
+
+TEST_F(GpMeterTestsFixture, byDefaultVirtualMode) {
+  Supla::Sensor::GeneralPurposeMeter gp;
+  SimpleTime time;
+
+  gp.setValue(42);
+  gp.onInit();
+
+  EXPECT_DOUBLE_EQ(gp.getChannel()->getValueDouble(), 42);
+
+  gp.setValue(100);
+  EXPECT_DOUBLE_EQ(gp.getChannel()->getValueDouble(), 42);
+
+  gp.iterateAlways();
+  EXPECT_DOUBLE_EQ(gp.getChannel()->getValueDouble(), 42);
+
+  time.advance(6000);
+  gp.iterateAlways();
+  EXPECT_DOUBLE_EQ(gp.getChannel()->getValueDouble(), 100);
+}

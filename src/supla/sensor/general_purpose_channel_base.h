@@ -45,12 +45,16 @@ class GeneralPurposeChannelBase : public ChannelElement {
 #pragma pack(pop)
 
   explicit GeneralPurposeChannelBase(MeasurementDriver *driver = nullptr);
-  virtual ~GeneralPurposeChannelBase() = default;
+  virtual ~GeneralPurposeChannelBase();
 
 
   // For custom sensor, please provide either class that inherits from
   // Supla::Sensor::MeasurementDriver or override below getValue() method
   virtual double getValue();
+
+  // Use setValue for virtual sensors. Requires GPM class with no driver in
+  // constructor.
+  virtual void setValue(const double &value);
 
   void onInit() override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
@@ -105,6 +109,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   MeasurementDriver *driver = nullptr;
   uint16_t refreshIntervalMs = 5000;
   uint32_t lastReadTime = 0;
+  bool deleteDriver = false;
 
   int32_t defaultValueDivider = 0;  // 0.001 units; 0 is considered as 1
   int32_t defaultValueMultiplier = 0;  // 0.001 units; 0 is considered as 1

@@ -121,6 +121,7 @@ COMPONENT_OBJS := \
 	../../../src/supla/sensor/general_purpose_channel_base.o \
 	../../../src/supla/sensor/general_purpose_measurement.o \
 	../../../src/supla/sensor/general_purpose_meter.o \
+	../../../src/supla/sensor/memory_variable_driver.o \
   ../../../src/supla/sensor/virtual_binary.o \
   ../../../src/supla/sensor/distance.o \
   ../../../src/supla/sensor/HC_SR04.o \

@@ -16,21 +16,28 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_SENSOR_MEASUREMENT_DRIVER_H_
-#define SRC_SUPLA_SENSOR_MEASUREMENT_DRIVER_H_
+#ifndef SRC_SUPLA_SENSOR_MEMORY_VARIABLE_DRIVER_H_
+#define SRC_SUPLA_SENSOR_MEMORY_VARIABLE_DRIVER_H_
+
+#include <math.h>
+
+#include "measurement_driver.h"
 
 namespace Supla {
 namespace Sensor {
-class MeasurementDriver {
+class MemoryVariableDriver : public MeasurementDriver {
  public:
-  MeasurementDriver() = default;
-  virtual ~MeasurementDriver() = default;
+  MemoryVariableDriver() = default;
+  ~MemoryVariableDriver() = default;
 
-  virtual void initialize() = 0;
-  virtual double getValue() = 0;
-  virtual void setValue(const double &) {}
+  void initialize() override;
+  double getValue() override;
+  void setValue(const double &value) override;
+
+ private:
+  double value = NAN;
 };
-
 }  // namespace Sensor
 }  // namespace Supla
-#endif  // SRC_SUPLA_SENSOR_MEASUREMENT_DRIVER_H_
+
+#endif  // SRC_SUPLA_SENSOR_MEMORY_VARIABLE_DRIVER_H_

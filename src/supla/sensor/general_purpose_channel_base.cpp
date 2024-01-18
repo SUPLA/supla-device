@@ -25,12 +25,26 @@
 #include <supla/storage/config.h>
 
 #include "measurement_driver.h"
+#include "memory_variable_driver.h"
 
 using Supla::Sensor::GeneralPurposeChannelBase;
 
 GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver)
     : driver(driver) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+
+  if (this->driver == nullptr) {
+    this->driver = new MemoryVariableDriver;
+    deleteDriver = true;
+  }
+}
+
+GeneralPurposeChannelBase::~GeneralPurposeChannelBase() {
+  if (deleteDriver && driver) {
+    delete driver;
+    driver = nullptr;
+    deleteDriver = false;
+  }
 }
 
 void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
@@ -462,5 +476,11 @@ void GeneralPurposeChannelBase::saveConfig() {
   for (auto proto = Supla::Protocol::ProtocolLayer::first();
       proto != nullptr; proto = proto->next()) {
     proto->notifyConfigChange(getChannelNumber());
+  }
+}
+
+void GeneralPurposeChannelBase::setValue(const double &value) {
+  if (driver) {
+    driver->setValue(value);
   }
 }

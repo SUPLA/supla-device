@@ -22,6 +22,7 @@
 #include <supla/tools.h>
 #include <supla/events.h>
 #include <supla/correction.h>
+#include <math.h>
 
 #include "channel.h"
 
@@ -75,8 +76,12 @@ void Channel::setNewValue(double dbl) {
   if (setNewValue(newValue)) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d.%d", channelNumber,
-        static_cast<int>(dbl), static_cast<int>(dbl*100)%100);
+    if (isnan(dbl)) {
+      SUPLA_LOG_DEBUG("Channel(%d) value changed to NaN", channelNumber);
+    } else {
+      SUPLA_LOG_DEBUG("Channel(%d) value changed to %d.%02d", channelNumber,
+          static_cast<int>(dbl), abs(static_cast<int>(dbl*100)%100));
+    }
   }
 }
 

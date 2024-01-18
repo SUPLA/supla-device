@@ -18,7 +18,7 @@
 
 #include <arduino_mock.h>
 #include <gtest/gtest.h>
-#include <supla/sensor/general_purpose_measurement.h>
+#include <supla/sensor/general_purpose_meter.h>
 #include <measurement_driver_mock.h>
 #include <config_mock.h>
 #include <simple_time.h>
@@ -30,7 +30,7 @@ using ::testing::StrEq;
 using ::testing::DoAll;
 using ::testing::SetArgPointee;
 
-class GpMeasurementTestsFixture : public ::testing::Test {
+class GpMeterTestsFixture : public ::testing::Test {
  protected:
   virtual void SetUp() {
     Supla::Channel::lastCommunicationTimeMs = 0;
@@ -44,9 +44,9 @@ class GpMeasurementTestsFixture : public ::testing::Test {
 };
 
 
-TEST_F(GpMeasurementTestsFixture, initNaNValue) {
+TEST_F(GpMeterTestsFixture, initNaNValue) {
   MeasurementDriverMock driver;
-  Supla::Sensor::GeneralPurposeMeasurement gp(&driver);
+  Supla::Sensor::GeneralPurposeMeter gp(&driver);
 
   EXPECT_CALL(driver, initialize()).Times(1);
   EXPECT_CALL(driver, getValue()).Times(1).WillOnce(Return(NAN));
@@ -57,9 +57,9 @@ TEST_F(GpMeasurementTestsFixture, initNaNValue) {
   EXPECT_TRUE(std::isnan(gp.getChannel()->getValueDouble()));
 }
 
-TEST_F(GpMeasurementTestsFixture, initValue) {
+TEST_F(GpMeterTestsFixture, initValue) {
   MeasurementDriverMock driver;
-  Supla::Sensor::GeneralPurposeMeasurement gp(&driver);
+  Supla::Sensor::GeneralPurposeMeter gp(&driver);
 
   EXPECT_CALL(driver, initialize()).Times(1);
   EXPECT_CALL(driver, getValue()).Times(1).WillOnce(Return(3.1415));
@@ -70,9 +70,9 @@ TEST_F(GpMeasurementTestsFixture, initValue) {
   EXPECT_DOUBLE_EQ(gp.getChannel()->getValueDouble(), 3.1415);
 }
 
-TEST_F(GpMeasurementTestsFixture, valueUpdateDefaultRefresh) {
+TEST_F(GpMeterTestsFixture, valueUpdateDefaultRefresh) {
   MeasurementDriverMock driver;
-  Supla::Sensor::GeneralPurposeMeasurement gp(&driver);
+  Supla::Sensor::GeneralPurposeMeter gp(&driver);
   SimpleTime time;
 
   EXPECT_CALL(driver, initialize()).Times(1);
@@ -123,9 +123,9 @@ TEST_F(GpMeasurementTestsFixture, valueUpdateDefaultRefresh) {
   EXPECT_EQ(gp.getRefreshIntervalMs(), 0);
 }
 
-TEST_F(GpMeasurementTestsFixture, valueUpdateQuickRefresh) {
+TEST_F(GpMeterTestsFixture, valueUpdateQuickRefresh) {
   MeasurementDriverMock driver;
-  Supla::Sensor::GeneralPurposeMeasurement gp(&driver);
+  Supla::Sensor::GeneralPurposeMeter gp(&driver);
   SimpleTime time;
 
   EXPECT_CALL(driver, initialize()).Times(1);
@@ -153,9 +153,9 @@ TEST_F(GpMeasurementTestsFixture, valueUpdateQuickRefresh) {
   EXPECT_EQ(gp.getRefreshIntervalMs(), 500);
 }
 
-TEST_F(GpMeasurementTestsFixture, valueUpdate200Refresh) {
+TEST_F(GpMeterTestsFixture, valueUpdate200Refresh) {
   MeasurementDriverMock driver;
-  Supla::Sensor::GeneralPurposeMeasurement gp(&driver);
+  Supla::Sensor::GeneralPurposeMeter gp(&driver);
   SimpleTime time;
 
   EXPECT_CALL(driver, initialize()).Times(1);
@@ -189,9 +189,9 @@ TEST_F(GpMeasurementTestsFixture, valueUpdate200Refresh) {
   EXPECT_EQ(gp.getRefreshIntervalMs(), 100);
 }
 
-TEST_F(GpMeasurementTestsFixture, valueUpdateRestoreDefaultRefresh) {
+TEST_F(GpMeterTestsFixture, valueUpdateRestoreDefaultRefresh) {
   MeasurementDriverMock driver;
-  Supla::Sensor::GeneralPurposeMeasurement gp(&driver);
+  Supla::Sensor::GeneralPurposeMeter gp(&driver);
   SimpleTime time;
 
   EXPECT_CALL(driver, initialize()).Times(1);
@@ -224,8 +224,8 @@ TEST_F(GpMeasurementTestsFixture, valueUpdateRestoreDefaultRefresh) {
   // in config it should stay 0
   EXPECT_EQ(gp.getRefreshIntervalMs(), 0);
 }
-TEST_F(GpMeasurementTestsFixture, initialConfigValues) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, initialConfigValues) {
+  Supla::Sensor::GeneralPurposeMeter gp;
 
   EXPECT_EQ(gp.getDefaultValueDivider(), 0);
   EXPECT_EQ(gp.getDefaultValueMultiplier(), 0);
@@ -240,6 +240,9 @@ TEST_F(GpMeasurementTestsFixture, initialConfigValues) {
   EXPECT_EQ(gp.getNoSpaceAfterValue(), 0);
   EXPECT_EQ(gp.getKeepHistory(), 0);
   EXPECT_EQ(gp.getChartType(), 0);
+  EXPECT_EQ(gp.getCounterType(), 0);
+  EXPECT_EQ(gp.getFillMissingData(), 0);
+  EXPECT_EQ(gp.getIncludeValueAddedInHistory(), 0);
 
   char testString[100] = {};
   gp.getUnitBeforeValue(testString);
@@ -255,8 +258,8 @@ TEST_F(GpMeasurementTestsFixture, initialConfigValues) {
   EXPECT_STREQ(testString, "");
 }
 
-TEST_F(GpMeasurementTestsFixture, setConfigValues) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, setConfigValues) {
+  Supla::Sensor::GeneralPurposeMeter gp;
 
   // set some value - they may be not proper for a given parameter,
   // but we don't validate them
@@ -273,6 +276,9 @@ TEST_F(GpMeasurementTestsFixture, setConfigValues) {
   gp.setNoSpaceAfterValue(11);
   gp.setKeepHistory(12);
   gp.setChartType(13);
+  gp.setCounterType(14);
+  gp.setFillMissingData(15);
+  gp.setIncludeValueAddedInHistory(16);
 
   EXPECT_EQ(gp.getDefaultValueDivider(), 1);
   EXPECT_EQ(gp.getDefaultValueMultiplier(), 2);
@@ -287,6 +293,9 @@ TEST_F(GpMeasurementTestsFixture, setConfigValues) {
   EXPECT_EQ(gp.getNoSpaceAfterValue(), 11);
   EXPECT_EQ(gp.getKeepHistory(), 12);
   EXPECT_EQ(gp.getChartType(), 13);
+  EXPECT_EQ(gp.getCounterType(), 14);
+  EXPECT_EQ(gp.getFillMissingData(), 15);
+  EXPECT_EQ(gp.getIncludeValueAddedInHistory(), 16);
 
   gp.setDefaultValueDivider(-1);
   gp.setDefaultValueMultiplier(-2);
@@ -366,8 +375,8 @@ TEST_F(GpMeasurementTestsFixture, setConfigValues) {
   EXPECT_STREQ(testString, "4");
 }
 
-TEST_F(GpMeasurementTestsFixture, defaultParametersShouldInitializeConfig) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, defaultParametersShouldInitializeConfig) {
+  Supla::Sensor::GeneralPurposeMeter gp;
 
   gp.setDefaultValueAdded(1);
   gp.setDefaultValueDivider(2);
@@ -403,8 +412,8 @@ TEST_F(GpMeasurementTestsFixture, defaultParametersShouldInitializeConfig) {
   EXPECT_STREQ(testString, "after");
 }
 
-TEST_F(GpMeasurementTestsFixture, defaultParametersShouldntOverwriteConfig) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, defaultParametersShouldntOverwriteConfig) {
+  Supla::Sensor::GeneralPurposeMeter gp;
   ConfigMock config;
 
   EXPECT_CALL(config, saveWithDelay(_)).Times(0);
@@ -426,6 +435,22 @@ TEST_F(GpMeasurementTestsFixture, defaultParametersShouldntOverwriteConfig) {
             config.unitBeforeValue, "test1", SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
         strncpy(
             config.unitAfterValue, "test2", SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+        memcpy(value, &config, blobSize);
+        return blobSize;
+      });
+  EXPECT_CALL(
+      config,
+      getBlob(
+          StrEq("0_gpm_meter"),
+          _,
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)))
+      .Times(1)
+      .WillOnce([](const char *key, char *value, size_t blobSize) {
+        Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig config = {};
+        EXPECT_EQ(blobSize, sizeof(config));
+        config.counterType = 15;
+        config.fillMissingData = 16;
+        config.includeValueAddedInHistory = 17;
         memcpy(value, &config, blobSize);
         return blobSize;
       });
@@ -468,11 +493,11 @@ TEST_F(GpMeasurementTestsFixture, defaultParametersShouldntOverwriteConfig) {
   EXPECT_STREQ(testString, "test2");
 }
 
-TEST_F(GpMeasurementTestsFixture, handleChannelConfigCheck) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, handleChannelConfigCheck) {
+  Supla::Sensor::GeneralPurposeMeter gp;
   ConfigMock cfg;
 
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(1);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
   EXPECT_CALL(
       cfg,
       setBlob(
@@ -482,16 +507,25 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigCheck) {
       .Times(1)
       .WillOnce(Return(
           sizeof(Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig)));
+  EXPECT_CALL(
+      cfg,
+      setBlob(
+          _,
+          _,
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)))
+      .Times(1)
+      .WillOnce(Return(
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)));
   EXPECT_CALL(cfg, setUInt8(_, _)).Times(0);
 
   gp.onInit();
 
   TSD_ChannelConfig config = {};
-  auto gpConfig = reinterpret_cast<TChannelConfig_GeneralPurposeMeasurement *>(
+  auto gpConfig = reinterpret_cast<TChannelConfig_GeneralPurposeMeter *>(
       config.Config);
   config.ChannelNumber = 0;
-  config.ConfigSize = sizeof(TChannelConfig_GeneralPurposeMeasurement);
-  config.Func = SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT;
+  config.ConfigSize = sizeof(TChannelConfig_GeneralPurposeMeter);
+  config.Func = SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER;
   config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   gpConfig->ChartType = 1;
   gpConfig->RefreshIntervalMs = 1000;
@@ -502,6 +536,9 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigCheck) {
   gpConfig->ValueDivider = 6;
   gpConfig->ValueMultiplier = 7;
   gpConfig->ValuePrecision = 8;
+  gpConfig->CounterType = 9;
+  gpConfig->IncludeValueAddedInHistory = 10;
+  gpConfig->FillMissingData = 11;
   strncpy(gpConfig->UnitBeforeValue, "before", SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   strncpy(gpConfig->UnitAfterValue, "after", SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
 
@@ -516,6 +553,10 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigCheck) {
   EXPECT_EQ(gp.getValueDivider(), 6);
   EXPECT_EQ(gp.getValueMultiplier(), 7);
   EXPECT_EQ(gp.getValuePrecision(), 8);
+  EXPECT_EQ(gp.getCounterType(), 9);
+  EXPECT_EQ(gp.getIncludeValueAddedInHistory(), 10);
+  EXPECT_EQ(gp.getFillMissingData(), 11);
+
   EXPECT_EQ(gp.getDefaultValueAdded(), 0);
   EXPECT_EQ(gp.getDefaultValueDivider(), 0);
   EXPECT_EQ(gp.getDefaultValueMultiplier(), 0);
@@ -538,11 +579,11 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigCheck) {
 // When server sends config and default values differ from GPM defaults,
 // then GPM applies config, but not default values. Then it sets config change
 // flag which will result in sending config change to server.
-TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, handleChannelConfigWithInvalidDefaults) {
+  Supla::Sensor::GeneralPurposeMeter gp;
   ConfigMock cfg;
 
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(3);
   EXPECT_CALL(
       cfg,
       setBlob(
@@ -552,6 +593,15 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
       .Times(1)
       .WillOnce(Return(
           sizeof(Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig)));
+  EXPECT_CALL(
+      cfg,
+      setBlob(
+          _,
+          _,
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)))
+      .Times(1)
+      .WillOnce(Return(
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
       .Times(1)
       .WillOnce(Return(1));
@@ -559,11 +609,11 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
   gp.onInit();
 
   TSD_ChannelConfig config = {};
-  auto gpConfig = reinterpret_cast<TChannelConfig_GeneralPurposeMeasurement *>(
+  auto gpConfig = reinterpret_cast<TChannelConfig_GeneralPurposeMeter *>(
       config.Config);
   config.ChannelNumber = 0;
-  config.ConfigSize = sizeof(TChannelConfig_GeneralPurposeMeasurement);
-  config.Func = SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT;
+  config.ConfigSize = sizeof(TChannelConfig_GeneralPurposeMeter);
+  config.Func = SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER;
   config.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   gpConfig->ChartType = 1;
   gpConfig->RefreshIntervalMs = 1000;
@@ -574,6 +624,9 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
   gpConfig->ValueDivider = 6;
   gpConfig->ValueMultiplier = 7;
   gpConfig->ValuePrecision = 8;
+  gpConfig->CounterType = 9;
+  gpConfig->IncludeValueAddedInHistory = 10;
+  gpConfig->FillMissingData = 11;
   strncpy(gpConfig->UnitBeforeValue, "before", SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   strncpy(gpConfig->UnitAfterValue, "after", SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
   // Invalid defaults from server
@@ -590,6 +643,10 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
   EXPECT_EQ(gp.getValueDivider(), 6);
   EXPECT_EQ(gp.getValueMultiplier(), 7);
   EXPECT_EQ(gp.getValuePrecision(), 8);
+  EXPECT_EQ(gp.getCounterType(), 9);
+  EXPECT_EQ(gp.getIncludeValueAddedInHistory(), 10);
+  EXPECT_EQ(gp.getFillMissingData(), 11);
+
   EXPECT_EQ(gp.getDefaultValueAdded(), 0);  // not changed
   EXPECT_EQ(gp.getDefaultValueDivider(), 0);
   EXPECT_EQ(gp.getDefaultValueMultiplier(), 0);
@@ -609,11 +666,11 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
   EXPECT_STREQ(testString, "");
 }
 
-TEST_F(GpMeasurementTestsFixture, localConfigChangeShouldBeSavedAndSend) {
-  Supla::Sensor::GeneralPurposeMeasurement gp;
+TEST_F(GpMeterTestsFixture, localConfigChangeShouldBeSavedAndSend) {
+  Supla::Sensor::GeneralPurposeMeter gp;
   ConfigMock cfg;
 
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(4);
   EXPECT_CALL(
       cfg,
       setBlob(
@@ -623,13 +680,25 @@ TEST_F(GpMeasurementTestsFixture, localConfigChangeShouldBeSavedAndSend) {
       .Times(1)
       .WillOnce(Return(
           sizeof(Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig)));
-  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
+  EXPECT_CALL(
+      cfg,
+      setBlob(
+          _,
+          _,
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)))
       .Times(1)
+      .WillOnce(Return(
+          sizeof(Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig)));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
+      .Times(2)
+      .WillOnce(Return(1))
       .WillOnce(Return(1));
 
   gp.onInit();
 
   gp.setValueMultiplier(10);
+  gp.setCounterType(2);
 
   EXPECT_EQ(gp.getValueMultiplier(), 10);
+  EXPECT_EQ(gp.getCounterType(), 2);
 }

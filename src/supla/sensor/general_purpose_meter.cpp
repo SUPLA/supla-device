@@ -66,6 +66,11 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result) {
   auto config = reinterpret_cast<TChannelConfig_GeneralPurposeMeter *>(
       result->Config);
 
+  GPMCommonConfig oldConfig = {};
+  memcpy(&oldConfig, &commonConfig, sizeof(commonConfig));
+  GPMMeterSpecificConfig oldMeterConfig = {};
+  memcpy(&oldMeterConfig, &meterSpecificConfig, sizeof(meterSpecificConfig));
+
   setValueDivider(config->ValueDivider, false);
   setValueMultiplier(config->ValueMultiplier, false);
   setValueAdded(config->ValueAdded, false);
@@ -81,7 +86,9 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result) {
   setFillMissingData(config->FillMissingData, false);
   setRefreshIntervalMs(config->RefreshIntervalMs, false);
 
-  if (channelConfigState == Supla::ChannelConfigState::LocalChangePending) {
+  if (memcmp(&oldConfig, &commonConfig, sizeof(commonConfig)) != 0 ||
+      memcmp(&oldMeterConfig, &meterSpecificConfig,
+             sizeof(meterSpecificConfig)) != 0) {
     saveConfig();
     saveMeterSpecificConfig();
   }

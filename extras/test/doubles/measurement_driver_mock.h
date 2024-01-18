@@ -16,8 +16,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef EXTRAS_TEST_DOUBLES_MEASURMENT_DRIVER_MOCK_H_
-#define EXTRAS_TEST_DOUBLES_MEASURMENT_DRIVER_MOCK_H_
+#ifndef EXTRAS_TEST_DOUBLES_MEASUREMENT_DRIVER_MOCK_H_
+#define EXTRAS_TEST_DOUBLES_MEASUREMENT_DRIVER_MOCK_H_
 
 #include <gmock/gmock.h>
 #include <supla/sensor/measurement_driver.h>
@@ -28,4 +28,4 @@ class MeasurementDriverMock : public Supla::Sensor::MeasurementDriver {
   MOCK_METHOD(double, getValue, (), (override));
 };
 
-#endif  // EXTRAS_TEST_DOUBLES_MEASURMENT_DRIVER_MOCK_H_
+#endif  // EXTRAS_TEST_DOUBLES_MEASUREMENT_DRIVER_MOCK_H_

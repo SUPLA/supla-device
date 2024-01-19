@@ -15,6 +15,9 @@
 */
 
 #include "condition.h"
+
+#include <math.h>
+
 #include "events.h"
 #include "element.h"
 
@@ -79,8 +82,11 @@ void Supla::Condition::handleAction(int event, int action) {
             ? source->getChannel()->getValueColorBrightness()
             : source->getChannel()->getValueBrightness();
           break;
-          /* case SUPLA_CHANNELTYPE_ELECTRICITY_METER: */
-
+        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER:
+        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
+          value = source->getChannel()->getValueDouble();
+          break;
+        /* case SUPLA_CHANNELTYPE_ELECTRICITY_METER: */
         default:
           return;
       }
@@ -100,6 +106,10 @@ void Supla::Condition::handleAction(int event, int action) {
         case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR:
         case SUPLA_CHANNELTYPE_HUMIDITYSENSOR:
           isValid = useAlternativeValue ? value >= 0 : value >= -273;
+          break;
+        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER:
+        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
+          isValid = std::isnan(value) ? false : true;
           break;
       }
     }

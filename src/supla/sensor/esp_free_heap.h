@@ -16,6 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+// DEPRECATED: please use channel based on GPM instead (gpm_esp_free_heap.h)
+
 #ifndef SRC_SUPLA_SENSOR_ESP_FREE_HEAP_H_
 #define SRC_SUPLA_SENSOR_ESP_FREE_HEAP_H_
 

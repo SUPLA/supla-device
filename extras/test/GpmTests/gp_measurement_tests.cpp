@@ -654,3 +654,122 @@ TEST_F(GpMeasurementTestsFixture, byDefaultVirtualMode) {
   gp.iterateAlways();
   EXPECT_DOUBLE_EQ(gp.getChannel()->getValueDouble(), 1.4142);
 }
+
+TEST_F(GpMeasurementTestsFixture, getCalculatedValueTests) {
+  Supla::Sensor::GeneralPurposeMeasurement gp;
+  SimpleTime time;
+
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 0);
+  gp.onInit();
+  EXPECT_TRUE(std::isnan(gp.getChannel()->getValueDouble()));
+
+  // channel value is updated periodically, so time has to advance
+  gp.setValue(3.1415);
+  EXPECT_TRUE(std::isnan(gp.getChannel()->getValueDouble()));
+
+  time.advance(6000);
+  gp.iterateAlways();
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 3.1415);
+
+  gp.setValueAdded(1111);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 4.2525);
+
+  gp.setValueAdded(0);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 3.1415);
+
+  gp.setValueAdded(-1111);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 2.0305);
+
+  gp.setValueMultiplier(1000000);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 3140.3890);
+
+  gp.setValueDivider(1000000);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 2.0305);
+
+  gp.setValueAdded(0);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 3.1415);
+
+  gp.setValueMultiplier(0);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 0.0031415);
+
+  gp.setValueDivider(1);
+  EXPECT_DOUBLE_EQ(gp.getCalculatedValue(), 3141.5);
+}
+
+TEST_F(GpMeasurementTestsFixture, getFormattedValueTests) {
+  Supla::Sensor::GeneralPurposeMeasurement gp;
+  SimpleTime time;
+
+  char testString[100] = {};
+
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "0");
+
+  gp.onInit();
+
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "---");  // NaN
+
+  gp.setUnitBeforeValue("before");
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before ---");  // NaN
+
+  gp.setUnitAfterValue("after");
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before --- after");  // NaN
+
+  gp.setNoSpaceBeforeValue(1);
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before--- after");
+
+  gp.setNoSpaceAfterValue(1);
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before---after");
+
+  gp.setNoSpaceBeforeValue(0);
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before ---after");
+
+  gp.setNoSpaceAfterValue(0);
+  gp.setValue(3.14159265358);
+  time.advance(6000);
+  gp.iterateAlways();
+
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before 3 after");
+
+  gp.setValuePrecision(1);
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before 3.1 after");
+
+  gp.setValuePrecision(8);
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "before 3.14159265 after");
+
+  gp.setUnitBeforeValue("");
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "3.14159265 after");
+
+  gp.setValuePrecision(2);
+  gp.setValue(1.004);
+  time.advance(6000);
+  gp.iterateAlways();
+
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "1.00 after");
+
+  gp.setValuePrecision(2);
+  gp.setValue(1.0051);
+  time.advance(6000);
+  gp.iterateAlways();
+
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "1.01 after");
+
+  gp.setValue(-1.0051);
+  time.advance(6000);
+  gp.iterateAlways();
+
+  gp.getFormattedValue(testString, 100);
+  EXPECT_STREQ(testString, "-1.01 after");
+}

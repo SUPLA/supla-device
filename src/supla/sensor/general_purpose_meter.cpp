@@ -32,7 +32,6 @@ GeneralPurposeMeter::GeneralPurposeMeter(
   channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER);
 }
 
-
 void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
   GeneralPurposeChannelBase::onLoadConfig(sdc);
 
@@ -216,3 +215,4 @@ void GeneralPurposeMeter::saveMeterSpecificConfig() {
     proto->notifyConfigChange(getChannelNumber());
   }
 }
+

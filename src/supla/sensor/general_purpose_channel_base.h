@@ -47,6 +47,8 @@ class GeneralPurposeChannelBase : public ChannelElement {
   explicit GeneralPurposeChannelBase(MeasurementDriver *driver = nullptr);
   virtual ~GeneralPurposeChannelBase();
 
+  double getCalculatedValue();
+  void getFormattedValue(char *result, int maxSize);
 
   // For custom sensor, please provide either class that inherits from
   // Supla::Sensor::MeasurementDriver or override below getValue() method

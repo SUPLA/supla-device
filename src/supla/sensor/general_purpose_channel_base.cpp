@@ -18,10 +18,11 @@
 
 #include "general_purpose_channel_base.h"
 
+#include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
-#include <string.h>
 #include <supla/storage/config.h>
 
 #include "measurement_driver.h"
@@ -44,6 +45,68 @@ GeneralPurposeChannelBase::~GeneralPurposeChannelBase() {
     delete driver;
     driver = nullptr;
     deleteDriver = false;
+  }
+}
+
+double GeneralPurposeChannelBase::getCalculatedValue() {
+  double channelRawValue = getChannel()->getValueDouble();
+  if (std::isnan(channelRawValue)) {
+    return channelRawValue;
+  }
+
+  double valueMultiplier = 1;
+  double valueDivider = 1;
+  if (getValueMultiplier() != 0) {
+    valueMultiplier = getValueMultiplier() / 1000.0;
+  }
+  if (getValueDivider() != 0) {
+    valueDivider = getValueDivider() / 1000.0;
+  }
+  double valueAdded = getValueAdded() / 1000.0;
+
+  return channelRawValue * valueMultiplier / valueDivider + valueAdded;
+}
+
+void GeneralPurposeChannelBase::getFormattedValue(char *result, int maxSize) {
+  if (result == nullptr) {
+    return;
+  }
+  char unitBefore[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
+  getUnitBeforeValue(unitBefore);
+  char unitAfter[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] = {};
+  getUnitAfterValue(unitAfter);
+  uint8_t precision = getValuePrecision();
+  char space[2] = " ";
+  char noSpace[1] = "";
+  bool noSpaceBeforeValue = getNoSpaceBeforeValue();
+  bool noSpaceAfterValue = getNoSpaceAfterValue();
+  if (unitBefore[0] == '\0') {
+    noSpaceBeforeValue = true;
+  }
+  if (unitAfter[0] == '\0') {
+    noSpaceAfterValue = true;
+  }
+
+  double calculatedValue = getCalculatedValue();
+
+  if (std::isnan(calculatedValue)) {
+    snprintf(result,
+        maxSize,
+        "%s%s---%s%s",
+        unitBefore,
+        noSpaceBeforeValue ? noSpace : space,
+        noSpaceAfterValue ? noSpace : space,
+        unitAfter);
+  } else {
+    snprintf(result,
+        maxSize,
+        "%s%s%.*f%s%s",
+        unitBefore,
+        noSpaceBeforeValue ? noSpace : space,
+        precision,
+        getCalculatedValue(),
+        noSpaceAfterValue ? noSpace : space,
+        unitAfter);
   }
 }
 

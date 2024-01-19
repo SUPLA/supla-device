@@ -25,7 +25,8 @@ namespace Supla {
 namespace Sensor {
 class GeneralPurposeMeasurement : public GeneralPurposeChannelBase {
  public:
-  explicit GeneralPurposeMeasurement(MeasurementDriver *driver = nullptr);
+  explicit GeneralPurposeMeasurement(MeasurementDriver *driver = nullptr,
+      bool addMemoryVariableDriver = true);
 
  protected:
 };

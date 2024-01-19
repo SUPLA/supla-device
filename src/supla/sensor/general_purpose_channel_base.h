@@ -44,7 +44,8 @@ class GeneralPurposeChannelBase : public ChannelElement {
   };
 #pragma pack(pop)
 
-  explicit GeneralPurposeChannelBase(MeasurementDriver *driver = nullptr);
+  explicit GeneralPurposeChannelBase(MeasurementDriver *driver = nullptr,
+      bool addMemoryVariableDriver = true);
   virtual ~GeneralPurposeChannelBase();
 
   double getCalculatedValue();

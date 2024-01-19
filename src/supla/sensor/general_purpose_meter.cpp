@@ -26,8 +26,8 @@
 using Supla::Sensor::GeneralPurposeMeter;
 
 GeneralPurposeMeter::GeneralPurposeMeter(
-    Supla::Sensor::MeasurementDriver *driver)
-    : GeneralPurposeChannelBase(driver) {
+    Supla::Sensor::MeasurementDriver *driver, bool addMemoryVariableDriver)
+    : GeneralPurposeChannelBase(driver, addMemoryVariableDriver) {
   channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER);
   channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER);
 }

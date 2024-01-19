@@ -30,11 +30,12 @@
 
 using Supla::Sensor::GeneralPurposeChannelBase;
 
-GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver)
+GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver,
+    bool addMemoryVariableDriver)
     : driver(driver) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 
-  if (this->driver == nullptr) {
+  if (this->driver == nullptr && addMemoryVariableDriver) {
     this->driver = new MemoryVariableDriver;
     deleteDriver = true;
   }
@@ -50,7 +51,7 @@ GeneralPurposeChannelBase::~GeneralPurposeChannelBase() {
 
 double GeneralPurposeChannelBase::getCalculatedValue() {
   double channelRawValue = getChannel()->getValueDouble();
-  if (std::isnan(channelRawValue)) {
+  if (isnan(channelRawValue)) {
     return channelRawValue;
   }
 
@@ -89,7 +90,7 @@ void GeneralPurposeChannelBase::getFormattedValue(char *result, int maxSize) {
 
   double calculatedValue = getCalculatedValue();
 
-  if (std::isnan(calculatedValue)) {
+  if (isnan(calculatedValue)) {
     snprintf(result,
         maxSize,
         "%s%s---%s%s",

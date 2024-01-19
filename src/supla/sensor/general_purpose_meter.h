@@ -33,7 +33,8 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase {
   };
 #pragma pack(pop)
 
-  explicit GeneralPurposeMeter(MeasurementDriver *driver = nullptr);
+  explicit GeneralPurposeMeter(MeasurementDriver *driver = nullptr,
+                               bool addMemoryVariableDriver = true);
 
   void onLoadConfig(SuplaDeviceClass *sdc) override;
   uint8_t applyChannelConfig(TSD_ChannelConfig *result) override;

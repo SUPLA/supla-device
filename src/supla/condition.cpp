@@ -109,7 +109,7 @@ void Supla::Condition::handleAction(int event, int action) {
           break;
         case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER:
         case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
-          isValid = std::isnan(value) ? false : true;
+          isValid = isnan(value) ? false : true;
           break;
       }
     }

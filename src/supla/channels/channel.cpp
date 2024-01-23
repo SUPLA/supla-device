@@ -67,7 +67,7 @@ void Channel::setNewValue(double dbl) {
     dbl += Correction::get(getChannelNumber());
   }
 
-  char newValue[SUPLA_CHANNELVALUE_SIZE];
+  char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
   if (sizeof(double) == 8) {
     memcpy(newValue, &dbl, 8);
   } else if (sizeof(double) == 4) {

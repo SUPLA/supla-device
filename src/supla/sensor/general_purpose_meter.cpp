@@ -21,7 +21,9 @@
 #include <supla/sensor/measurement_driver.h>
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
+#include <supla/actions.h>
 #include <string.h>
+#include <math.h>
 
 using Supla::Sensor::GeneralPurposeMeter;
 
@@ -30,6 +32,7 @@ GeneralPurposeMeter::GeneralPurposeMeter(
     : GeneralPurposeChannelBase(driver, addMemoryVariableDriver) {
   channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER);
   channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 }
 
 void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
@@ -216,3 +219,66 @@ void GeneralPurposeMeter::saveMeterSpecificConfig() {
   }
 }
 
+void GeneralPurposeMeter::handleAction(int event, int action) {
+  (void)(event);
+  switch (action) {
+    case Supla::RESET: {
+      setCounter(resetToValue);
+      break;
+    }
+    case Supla::INCREMENT: {
+      incCounter();
+      break;
+    }
+    case Supla::DECREMENT: {
+      decCounter();
+      break;
+    }
+  }
+}
+
+int GeneralPurposeMeter::handleCalcfgFromServer(
+    TSD_DeviceCalCfgRequest *request) {
+  if (request) {
+    if (request->Command == SUPLA_CALCFG_CMD_RESET_COUNTERS) {
+      if (!request->SuperUserAuthorized) {
+        return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+      }
+      setCounter(resetToValue);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+  }
+  return SUPLA_CALCFG_RESULT_FALSE;
+}
+
+void GeneralPurposeMeter::setCounter(double newValue) {
+  setValue(newValue);
+}
+
+void GeneralPurposeMeter::incCounter() {
+  setValue(getValue() + valueStep);
+}
+
+void GeneralPurposeMeter::decCounter() {
+  setValue(getValue() - valueStep);
+}
+
+void GeneralPurposeMeter::setValueStep(double newValueStep) {
+  if (!isnan(newValueStep)) {
+    valueStep = newValueStep;
+  }
+}
+
+void GeneralPurposeMeter::setResetToValue(double newResetToValue) {
+  if (!isnan(newResetToValue)) {
+    resetToValue = newResetToValue;
+  }
+}
+
+void GeneralPurposeMeter::setCounterResetSupportFlag(bool support) {
+  if (support) {
+    channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
+  } else {
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
+  }
+}

@@ -77,6 +77,7 @@ enum Action {
   // Impulse counter
   RESET,
   INCREMENT,
+  DECREMENT,
   ENABLE,
   DISABLE,
 

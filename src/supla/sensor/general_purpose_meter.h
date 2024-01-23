@@ -20,10 +20,12 @@
 #define SRC_SUPLA_SENSOR_GENERAL_PURPOSE_METER_H_
 
 #include "general_purpose_channel_base.h"
+#include <supla/action_handler.h>
 
 namespace Supla {
 namespace Sensor {
-class GeneralPurposeMeter : public GeneralPurposeChannelBase {
+class GeneralPurposeMeter : public GeneralPurposeChannelBase,
+                            public ActionHandler {
  public:
 #pragma pack(push, 1)
   struct GPMMeterSpecificConfig {
@@ -39,6 +41,19 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase {
   void onLoadConfig(SuplaDeviceClass *sdc) override;
   uint8_t applyChannelConfig(TSD_ChannelConfig *result) override;
   void fillChannelConfig(void *channelConfig, int *size) override;
+  void handleAction(int event, int action) override;
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
+
+  // Set counter to a given value
+  void setCounter(double newValue);
+  // Increment the counter by valueStep
+  void incCounter();
+  // Decrement the counter by valueStep
+  void decCounter();
+  void setValueStep(double newValueStep);
+  void setResetToValue(double newResetToValue);
+
+  void setCounterResetSupportFlag(bool support);
 
   uint8_t getCounterType() const;
   uint8_t getIncludeValueAddedInHistory() const;
@@ -51,6 +66,9 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase {
 
  protected:
   void saveMeterSpecificConfig();
+  double valueStep = 1;
+  double resetToValue = 0;
+  bool isCounterResetSupported = true;
 
   GPMMeterSpecificConfig meterSpecificConfig = {};
 };

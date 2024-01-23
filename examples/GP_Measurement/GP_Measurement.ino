@@ -44,7 +44,7 @@ Supla::Html::WifiParameters htmlWifi;
 Supla::Html::ProtocolParameters htmlProto;
 Supla::Html::StatusLedParameters htmlStatusLed;
 
-Supla::Sensor::GeneralPurposeMeter *gpm = nullptr;
+Supla::Sensor::GeneralPurposeMeasurement *gpm = nullptr;
 
 void setup() {
   Serial.begin(115200);

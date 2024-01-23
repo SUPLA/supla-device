@@ -48,7 +48,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
       bool addMemoryVariableDriver = true);
   virtual ~GeneralPurposeChannelBase();
 
+  // Return calculated value
   double getCalculatedValue();
+  // Returns formatted value as char array (including units, precision, etc.)
   void getFormattedValue(char *result, int maxSize);
 
   // For custom sensor, please provide either class that inherits from
@@ -67,11 +69,19 @@ class GeneralPurposeChannelBase : public ChannelElement {
 
   // default parameters should be configured in software. GPM doesn't store
   // it by itself
+  // Sets default value divider. Unit 0.001. 0 is ignored
   void setDefaultValueDivider(int32_t divider);
+  // Sets default value multiplier. Unit 0.001. 0 is ignored
   void setDefaultValueMultiplier(int32_t multiplier);
+  // Sets default value added. Unit 0.001
   void setDefaultValueAdded(int64_t added);
+  // Sets default precision of value (nuber of decimal places). Range 0-4.
   void setDefaultValuePrecision(uint8_t precision);
+  // Sets default unit which is displayed before value (15 bytes, including
+  // terminating null byte)
   void setDefaultUnitBeforeValue(const char *unit);
+  // Sets default unit which is displayed after value (15 bytes, including
+  // terminating null byte)
   void setDefaultUnitAfterValue(const char *unit);
 
   int32_t getDefaultValueDivider() const;
@@ -80,6 +90,41 @@ class GeneralPurposeChannelBase : public ChannelElement {
   uint8_t getDefaultValuePrecision() const;
   void getDefaultUnitBeforeValue(char *unit);
   void getDefaultUnitAfterValue(char *unit);
+
+  // Below setters modify channel config, which will be send to server as well.
+  // Sets refresh interval in milliseconds.
+  void setRefreshIntervalMs(int intervalMs, bool local = true);
+  // Sets value divider. Unit 0.001. 0 is ignored
+  void setValueDivider(int32_t divider, bool local = true);
+  // Sets value multiplier. Unit 0.001. 0 is ignored
+  void setValueMultiplier(int32_t multiplier, bool local = true);
+  // Sets value added. Unit 0.001
+  void setValueAdded(int64_t added, bool local = true);
+  // Sets precision of value (number of decimal places). Range 0-4.
+  void setValuePrecision(uint8_t precision, bool local = true);
+  // Sets unit which is displayed before value (15 bytes, including
+  // terminating null byte)
+  void setUnitBeforeValue(const char *unit, bool local = true);
+  // Sets unit which is displayed after value (15 bytes, including
+  // terminating null byte)
+  void setUnitAfterValue(const char *unit, bool local = true);
+  // If set to true, there will be no space added between value and unit
+  // before value
+  void setNoSpaceBeforeValue(uint8_t noSpaceBeforeValue, bool local = true);
+  // If set to true, there will be no space added between value and unit
+  // after value
+  void setNoSpaceAfterValue(uint8_t noSpaceAfterValue, bool local = true);
+  // Sets keep history flag
+  void setKeepHistory(uint8_t keepHistory, bool local = true);
+  // Sets chart type. Allowed values:
+  // For Measurement channel:
+  // SUPLA_GENERAL_PURPOSE_MEASUREMENT_CHART_TYPE_LINEAR
+  // SUPLA_GENERAL_PURPOSE_MEASUREMENT_CHART_TYPE_BAR
+  // SUPLA_GENERAL_PURPOSE_MEASUREMENT_CHART_TYPE_CANDLE
+  // For Meter channel:
+  // SUPLA_GENERAL_PURPOSE_METER_CHART_TYPE_BAR
+  // SUPLA_GENERAL_PURPOSE_METER_CHART_TYPE_LINEAR
+  void setChartType(uint8_t chartType, bool local = true);
 
   uint16_t getRefreshIntervalMs() const;
   int32_t getValueDivider() const;
@@ -92,18 +137,6 @@ class GeneralPurposeChannelBase : public ChannelElement {
   uint8_t getNoSpaceAfterValue() const;
   uint8_t getKeepHistory() const;
   uint8_t getChartType() const;
-
-  void setRefreshIntervalMs(int intervalMs, bool local = true);
-  void setValueDivider(int32_t divider, bool local = true);
-  void setValueMultiplier(int32_t multiplier, bool local = true);
-  void setValueAdded(int64_t added, bool local = true);
-  void setValuePrecision(uint8_t precision, bool local = true);
-  void setUnitBeforeValue(const char *unit, bool local = true);
-  void setUnitAfterValue(const char *unit, bool local = true);
-  void setNoSpaceBeforeValue(uint8_t noSpaceBeforeValue, bool local = true);
-  void setNoSpaceAfterValue(uint8_t noSpaceAfterValue, bool local = true);
-  void setKeepHistory(uint8_t keepHistory, bool local = true);
-  void setChartType(uint8_t chartType, bool local = true);
 
  protected:
   void saveConfig();

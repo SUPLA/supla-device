@@ -119,7 +119,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 // CS  - client -> server
 // SC  - server -> client
 
-#define SUPLA_PROTO_VERSION 22
+#define SUPLA_PROTO_VERSION 23
 #define SUPLA_PROTO_VERSION_MIN 1
 #if defined(ARDUINO_ARCH_AVR)     // Arduino IDE for Arduino HW
 #define SUPLA_MAX_DATA_SIZE 1248  // Registration header + 32 channels x 21 B
@@ -184,6 +184,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_DS_CALL_REGISTER_DEVICE_D 68  // ver. >= 7
 #define SUPLA_DS_CALL_REGISTER_DEVICE_E 69  // ver. >= 10
 #define SUPLA_SD_CALL_REGISTER_DEVICE_RESULT 70
+#define SUPLA_DS_CALL_REGISTER_DEVICE_F 75  // ver. >= 23
 #define SUPLA_CS_CALL_REGISTER_CLIENT 80
 #define SUPLA_CS_CALL_REGISTER_CLIENT_B 85  // ver. >= 6
 #define SUPLA_CS_CALL_REGISTER_CLIENT_C 86  // ver. >= 7
@@ -201,7 +202,6 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_DS_CALL_CHANNEL_SET_VALUE_RESULT 120
 #define SUPLA_SC_CALL_LOCATION_UPDATE 130
 #define SUPLA_SC_CALL_LOCATIONPACK_UPDATE 140
-#define SUPLA_SC_CALL_CHANNEL_UPDATE 150
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE 160
 #define SUPLA_SC_CALL_CHANNEL_VALUE_UPDATE 170
 #define SUPLA_SC_CALL_CHANNEL_VALUE_UPDATE_B 171
@@ -220,9 +220,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE_B 360                // ver. >= 8
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE_C 361                // ver. >= 10
 #define SUPLA_SC_CALL_CHANNELPACK_UPDATE_D 362                // ver. >= 15
-#define SUPLA_SC_CALL_CHANNEL_UPDATE_B 370                    // ver. >= 8
-#define SUPLA_SC_CALL_CHANNEL_UPDATE_C 371                    // ver. >= 10
-#define SUPLA_SC_CALL_CHANNEL_UPDATE_D 372                    // ver. >= 15
+#define SUPLA_SC_CALL_CHANNELPACK_UPDATE_E 363                // ver. >= 23
 #define SUPLA_SC_CALL_CHANNELGROUP_PACK_UPDATE 380            // ver. >= 9
 #define SUPLA_SC_CALL_CHANNELGROUP_PACK_UPDATE_B 381          // ver. >= 10
 #define SUPLA_SC_CALL_CHANNELGROUP_RELATION_PACK_UPDATE 390   // ver. >= 9
@@ -838,6 +836,33 @@ typedef struct {
 typedef struct {
   // device -> server
 
+  unsigned char Number;
+  _supla_int_t Type;
+
+  union {
+    _supla_int_t FuncList;
+    unsigned _supla_int_t ActionTriggerCaps;  // ver. >= 16
+  };
+
+  _supla_int_t Default;
+  _supla_int64_t Flags;
+
+  unsigned char Offline;
+  unsigned _supla_int_t ValueValidityTimeSec;
+
+  union {
+    char value[SUPLA_CHANNELVALUE_SIZE];
+    TActionTriggerProperties actionTriggerProperties;  // ver. >= 16
+    THVACValue hvacValue;
+  };
+
+  unsigned char DefaultIcon;
+
+} TDS_SuplaDeviceChannel_D;  // ver. >= 23
+
+typedef struct {
+  // device -> server
+
   _supla_int_t LocationID;
   char LocationPWD[SUPLA_LOCATION_PWD_MAXSIZE];  // UTF8
 
@@ -907,6 +932,28 @@ typedef struct {
   TDS_SuplaDeviceChannel_C
       channels[SUPLA_CHANNELMAXCOUNT];  // Last variable in struct!
 } TDS_SuplaRegisterDevice_E;            // ver. >= 10
+
+typedef struct {
+  // device -> server
+
+  char Email[SUPLA_EMAIL_MAXSIZE];  // UTF8
+  char AuthKey[SUPLA_AUTHKEY_SIZE];
+
+  char GUID[SUPLA_GUID_SIZE];
+
+  char Name[SUPLA_DEVICE_NAME_MAXSIZE];  // UTF8
+  char SoftVer[SUPLA_SOFTVER_MAXSIZE];
+
+  char ServerName[SUPLA_SERVER_NAME_MAXSIZE];
+
+  _supla_int_t Flags;  // SUPLA_DEVICE_FLAG_*
+  _supla_int16_t ManufacturerID;
+  _supla_int16_t ProductID;
+
+  unsigned char channel_count;
+  TDS_SuplaDeviceChannel_D
+      channels[SUPLA_CHANNELMAXCOUNT];  // Last variable in struct!
+} TDS_SuplaRegisterDevice_F;            // ver. >= 32
 
 typedef struct {
   // server -> device
@@ -1143,6 +1190,32 @@ typedef struct {
 
 typedef struct {
   // server -> client
+  char EOL;  // End Of List
+
+  _supla_int_t Id;
+  _supla_int_t DeviceID;
+  _supla_int_t LocationID;
+  _supla_int_t Type;
+  _supla_int_t Func;
+  _supla_int_t AltIcon;
+  _supla_int_t UserIcon;
+  _supla_int16_t ManufacturerID;
+  _supla_int16_t ProductID;
+  unsigned _supla_int_t DefaultConfigCRC32;
+
+  unsigned _supla_int64_t Flags;
+  unsigned char ProtocolVersion;
+  char online;
+
+  TSuplaChannelValue_B value;
+
+  unsigned _supla_int_t
+      CaptionSize;  // including the terminating null byte ('\0')
+  char Caption[SUPLA_CHANNEL_CAPTION_MAXSIZE];  // Last variable in struct!
+} TSC_SuplaChannel_E;                           // ver. >= 23
+
+typedef struct {
+  // server -> client
 
   _supla_int_t count;
   _supla_int_t total_left;
@@ -1158,6 +1231,15 @@ typedef struct {
   TSC_SuplaChannel_D
       items[SUPLA_CHANNELPACK_MAXCOUNT];  // Last variable in struct!
 } TSC_SuplaChannelPack_D;                 // ver. >= 15
+
+typedef struct {
+  // server -> client
+
+  _supla_int_t count;
+  _supla_int_t total_left;
+  TSC_SuplaChannel_E
+      items[SUPLA_CHANNELPACK_MAXCOUNT];  // Last variable in struct!
+} TSC_SuplaChannelPack_E;                 // ver. >= 23
 
 typedef struct {
   // server -> client

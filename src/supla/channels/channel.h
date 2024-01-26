@@ -147,6 +147,8 @@ class Channel : public LocalAction {
   void setActionTriggerCaps(_supla_int_t caps);
   _supla_int_t getActionTriggerCaps();
 
+  void setDefaultIconId(uint8_t iconId);
+
   void setValidityTimeSec(unsigned _supla_int_t);
   void setUpdateReady();
   void clearUpdateReady();
@@ -171,7 +173,11 @@ class Channel : public LocalAction {
   void requestChannelConfig();
 
   static uint32_t lastCommunicationTimeMs;
+#ifdef ARDUINO_ARCH_AVR
   static TDS_SuplaRegisterDevice_E reg_dev;
+#else
+  static TDS_SuplaRegisterDevice_F reg_dev;
+#endif
 
  protected:
   bool valueChanged;

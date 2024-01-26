@@ -718,7 +718,11 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
             static_cast<uint8_t>(Supla::Channel::reg_dev.channels[i].value[7]));
       }
     }
+#if defined(ARDUINO_ARCH_AVR)
     if (!srpc_ds_async_registerdevice_e(srpc, &Supla::Channel::reg_dev)) {
+#else
+    if (!srpc_ds_async_registerdevice_f(srpc, &Supla::Channel::reg_dev)) {
+#endif
       SUPLA_LOG_WARNING("Fatal SRPC failure!");
     }
     return false;
@@ -982,7 +986,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
     return;
   }
   srpc_ds_async_channel_value_changed_c(srpc, channelNumber, value,
-      offline, validityTimeSec);
+      offline, offline ? 0 : validityTimeSec);
 }
 
 void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(

@@ -58,6 +58,8 @@ class SrpcInterface {
   virtual void srpc_set_proto_version(void *_srpc, unsigned char version) = 0;
   virtual _supla_int_t srpc_ds_async_registerdevice_e(
       void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) = 0;
+  virtual _supla_int_t srpc_ds_async_registerdevice_f(
+      void *_srpc, TDS_SuplaRegisterDevice_F *registerdevice) = 0;
   virtual _supla_int_t srpc_dcs_async_ping_server(void *_srpc) = 0;
   virtual _supla_int_t srpc_csd_async_channel_state_result(
       void *_srpc, TDSC_ChannelState *state) = 0;
@@ -125,6 +127,10 @@ class SrpcMock : public SrpcInterface {
   MOCK_METHOD(_supla_int_t,
               srpc_ds_async_registerdevice_e,
               (void *, TDS_SuplaRegisterDevice_E *),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              srpc_ds_async_registerdevice_f,
+              (void *, TDS_SuplaRegisterDevice_F *),
               (override));
   MOCK_METHOD(_supla_int_t, srpc_dcs_async_ping_server, (void *), (override));
   MOCK_METHOD(_supla_int_t,

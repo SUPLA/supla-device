@@ -39,6 +39,7 @@ add_executable(supla-device-linux
   ${BOARD_SRC}
 )
 
+add_definitions( -DSUPLA_TARGET_LINUX )
 set_target_properties(supla-device-linux PROPERTIES LINK_LIBRARIES -pthread)
 target_link_libraries (supla-device-linux LINK_PUBLIC
   supladevice

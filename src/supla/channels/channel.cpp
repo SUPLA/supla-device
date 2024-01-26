@@ -29,7 +29,11 @@
 namespace Supla {
 
 uint32_t Channel::lastCommunicationTimeMs = 0;
+#ifdef ARDUINO_ARCH_AVR
 TDS_SuplaRegisterDevice_E Channel::reg_dev;
+#else
+TDS_SuplaRegisterDevice_F Channel::reg_dev;
+#endif
 
 Channel::Channel() : valueChanged(false), channelConfig(false),
   channelNumber(-1), validityTimeSec(0) {
@@ -576,6 +580,9 @@ double Channel::getLastTemperature() {
 
 void Channel::setValidityTimeSec(unsigned _supla_int_t timeSec) {
   validityTimeSec = timeSec;
+#ifndef ARDUINO_ARCH_AVR
+    reg_dev.channels[channelNumber].ValueValidityTimeSec = timeSec;
+#endif
 }
 
 bool Channel::isSleepingEnabled() {
@@ -1089,6 +1096,10 @@ void Channel::setOffline() {
   if (offline == false) {
     offline = true;
     setUpdateReady();
+#ifndef ARDUINO_ARCH_AVR
+    reg_dev.channels[channelNumber].Offline = 1;
+    reg_dev.channels[channelNumber].ValueValidityTimeSec = 0;
+#endif
   }
 }
 
@@ -1096,6 +1107,18 @@ void Channel::setOnline() {
   if (offline == true) {
     offline = false;
     setUpdateReady();
+#ifndef ARDUINO_ARCH_AVR
+    reg_dev.channels[channelNumber].Offline = 0;
+    reg_dev.channels[channelNumber].ValueValidityTimeSec = validityTimeSec;
+#endif
+  }
+}
+
+void Channel::setDefaultIconId(uint8_t iconId) {
+  if (channelNumber >= 0) {
+#ifndef ARDUINO_ARCH_AVR
+    reg_dev.channels[channelNumber].DefaultIcon = iconId;
+#endif
   }
 }
 

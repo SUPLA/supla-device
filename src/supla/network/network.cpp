@@ -162,6 +162,8 @@ void Network::fillStateData(TDSC_ChannelState *channelState) {
 
 #ifdef ARDUINO
 #define TMP_STRING_SIZE 1024
+#elif defined(SUPLA_TARGET_LINUX)
+#define TMP_STRING_SIZE 100000
 #else
 #define TMP_STRING_SIZE 2048
 #endif

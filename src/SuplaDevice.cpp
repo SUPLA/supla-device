@@ -925,6 +925,7 @@ void SuplaDeviceClass::disableCfgModeTimeout() {
 
 void SuplaDeviceClass::scheduleSoftRestart(int timeout) {
   SUPLA_LOG_INFO("Triggering soft restart");
+  status(STATUS_SOFTWARE_RESET, "Software reset");
   if (timeout <= 0) {
     forceRestartTimeMs = 1;
   } else {

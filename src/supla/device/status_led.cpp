@@ -133,7 +133,9 @@ void Supla::Device::StatusLed::iterateAlways() {
       break;
 
     case STATUS_SOFTWARE_RESET:
-      currentSequence = REGISTERED_AND_READY;
+      offDuration = 1000;
+      onDuration = 0;
+      currentSequence = CUSTOM_SEQUENCE;
       break;
 
     case STATUS_OFFLINE_MODE:

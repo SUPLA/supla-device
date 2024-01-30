@@ -74,7 +74,7 @@ TEST(StorageStateWlByteTests, preambleInitializationNoElements) {
   preamble.version = 1;
   preamble.sectionsCount = 0;
 
-  EXPECT_CALL(storage, commit()).Times(2);
+  EXPECT_CALL(storage, commit()).Times(1);
 
   EXPECT_TRUE(storage.isEmpty());
   EXPECT_TRUE(Supla::Storage::Init());

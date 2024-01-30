@@ -283,6 +283,7 @@ bool StateWearLevelingByte::prepareSaveState() {
     return false;
   }
   dryRun = false;
+  dataChanged = false;
   stateSlotNewSize = 0;
   if (writeCount % 2) {
     currentStateOffset = getNextSlotAddress(currentSlotAddress);
@@ -381,6 +382,7 @@ bool StateWearLevelingByte::finalizeSaveState() {
   }
 
   elementStateSize = stateSlotNewSize;
+
   // Update section preamble
   writeSectionPreamble();
   // Write state slot header
@@ -388,9 +390,25 @@ bool StateWearLevelingByte::finalizeSaveState() {
   stateWlByteHeader.writeCount = writeCount;
   stateWlByteHeader.crc = crc;
   uint32_t slotAddress = currentSlotAddress;
+  uint32_t alternateSlotAddress = getNextSlotAddress(slotAddress);
   if (writeCount % 2) {
-    slotAddress = getNextSlotAddress(slotAddress);
+    auto copy = slotAddress;
+    slotAddress = alternateSlotAddress;
+    alternateSlotAddress = copy;
   }
+
+  StateWlByteHeader currentHeader = {};
+  readStorage(slotAddress, reinterpret_cast<unsigned char *>(&currentHeader),
+      sizeof(currentHeader));
+
+  if (!dataChanged && !isDataDifferent(slotAddress + sizeof(StateWlByteHeader),
+      alternateSlotAddress + sizeof(StateWlByteHeader), elementStateSize)) {
+    return true;
+  }
+  SUPLA_LOG_DEBUG("WearLevelingByte: wrote state, writeCount = %d, offset = %d",
+                  writeCount,
+                  slotAddress);
+
   updateStorage(slotAddress,
       reinterpret_cast<unsigned char *>(&stateWlByteHeader),
       sizeof(stateWlByteHeader));
@@ -408,6 +426,8 @@ bool StateWearLevelingByte::finalizeSaveState() {
   writeCount++;
   if (writeCount > repeatBeforeSwitchToAnotherSlot) {
     currentSlotAddress = getNextSlotAddress(currentSlotAddress);
+    SUPLA_LOG_DEBUG("WearLevelingByte: Switching to next slot at address %d",
+        currentSlotAddress);
     writeCount = 1;
     // update state entry header is done after next state write (after new
     // slot is actually wrote
@@ -446,7 +466,7 @@ void StateWearLevelingByte::checkIfIsEnoughSpaceForState() {
   }
 
   if (stateSlotsCount > 1) {
-    SUPLA_LOG_DEBUG("StateWearLevelingByte: slots count: %d", stateSlotsCount);
+//  SUPLA_LOG_DEBUG("StateWearLevelingByte: slots count: %d", stateSlotsCount);
     if (stateSlotsCount < 20) {
       SUPLA_LOG_WARNING(
           "StateWearLevelingByte: low amount of slots available: %d",
@@ -460,3 +480,21 @@ void StateWearLevelingByte::checkIfIsEnoughSpaceForState() {
   }
 }
 
+void StateWearLevelingByte::notifyUpdate() {
+  dataChanged = true;
+}
+
+bool StateWearLevelingByte::isDataDifferent(uint32_t firstAddress,
+                                            uint32_t secondAddress,
+                                            int size) {
+  for (int i = 0; i < size; i++) {
+    uint8_t data1 = 0;
+    uint8_t data2 = 0;
+    readStorage(firstAddress + i, &data1, 1);
+    readStorage(secondAddress + i, &data2, 1);
+    if (data1 != data2) {
+      return true;
+    }
+  }
+  return false;
+}

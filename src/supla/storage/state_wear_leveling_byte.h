@@ -96,6 +96,7 @@ class StateWearLevelingByte : public StateStorageInterface {
   bool writeState(const unsigned char *, int) override;
   bool finalizeSaveState() override;
   bool finalizeSizeCheck() override;
+  void notifyUpdate() override;
 
  private:
   void checkIfIsEnoughSpaceForState();
@@ -103,6 +104,7 @@ class StateWearLevelingByte : public StateStorageInterface {
   uint32_t getNextSlotAddress(uint32_t slotAddress) const;
   uint32_t slotSize() const;
   uint32_t updateStateEntryAddress();
+  bool isDataDifferent(uint32_t firstAddress, uint32_t secondAddress, int size);
   uint32_t sectionOffset = 0;
   uint32_t reservedSize;
   uint32_t elementStateSize = 0;
@@ -113,6 +115,7 @@ class StateWearLevelingByte : public StateStorageInterface {
   bool dryRun = false;
   bool storageStateOk = false;
   bool initDone = false;
+  bool dataChanged = false;
   int repeatBeforeSwitchToAnotherSlot = 0;
 
   uint16_t writeCount = 0;

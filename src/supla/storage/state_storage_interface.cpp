@@ -62,3 +62,6 @@ void StateStorageInterface::commit() {
   }
   storage->commit();
 }
+
+void StateStorageInterface::notifyUpdate() {
+}

@@ -244,6 +244,8 @@ int GeneralPurposeMeter::handleCalcfgFromServer(
       if (!request->SuperUserAuthorized) {
         return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
       }
+      SUPLA_LOG_INFO("GPM[%d]: CALCFG reset counter received",
+                     getChannelNumber());
       setCounter(resetToValue);
       return SUPLA_CALCFG_RESULT_DONE;
     }

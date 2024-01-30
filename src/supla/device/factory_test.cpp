@@ -258,5 +258,10 @@ bool FactoryTest::checkTestStep() {
   return true;
 }
 
+void FactoryTest::setTestFailed(int reason) {
+  testFailed = true;
+  failReason = reason;
+}
+
 }  // namespace Device
 }  // namespace Supla

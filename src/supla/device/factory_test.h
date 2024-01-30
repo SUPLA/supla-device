@@ -55,6 +55,8 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   virtual void waitForConfigButtonPress();
   virtual bool checkTestStep();
 
+  void setTestFailed(int reason);
+
  protected:
   bool testFailed = false;
   bool testFinished = false;

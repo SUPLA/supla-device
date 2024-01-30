@@ -39,6 +39,7 @@ class StateStorageInterface {
   virtual bool writeState(const unsigned char *, int) = 0;
   virtual bool finalizeSaveState() = 0;
   virtual bool finalizeSizeCheck() = 0;
+  virtual void notifyUpdate();
 
  protected:
   int readStorage(unsigned int address,

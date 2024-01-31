@@ -315,6 +315,11 @@ bool Button::isMotionSensor() const {
 }
 
 void Button::onLoadConfig(SuplaDeviceClass *sdc) {
+  if (sdc->getDeviceMode() == Supla::DEVICE_MODE_TEST) {
+    SUPLA_LOG_DEBUG("Button[%d] test mode", getButtonNumber());
+    setButtonType(ButtonType::MONOSTABLE);
+    return;
+  }
   if (onLoadConfigType == OnLoadConfigType::DONT_LOAD_CONFIG) {
     SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: skip", getButtonNumber());
     return;

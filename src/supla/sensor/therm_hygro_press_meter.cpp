@@ -31,7 +31,7 @@ double Supla::Sensor::ThermHygroPressMeter::getPressure() {
 }
 
 void Supla::Sensor::ThermHygroPressMeter::iterateAlways() {
-  if (millis() - lastReadTime > 10000) {
+  if (millis() - lastReadTime > refreshIntervalMs) {
     pressureChannel.setNewValue(getPressure());
   }
   ThermHygroMeter::iterateAlways();
@@ -46,7 +46,7 @@ bool Supla::Sensor::ThermHygroPressMeter::iterateConnected() {
     response = false;
   }
 
-  if (!Element::iterateConnected()) {
+  if (!ThermHygroMeter::iterateConnected()) {
     response = false;
   }
   return response;

@@ -286,9 +286,6 @@ void Button::addAction(uint16_t action, ActionHandler &client, uint16_t event,
 
 void Button::setHoldTime(unsigned int timeMs) {
   holdTimeMs = timeMs;
-  if (isBistable() || isMotionSensor()) {
-    holdTimeMs = 0;
-  }
   SUPLA_LOG_DEBUG("Button[%d]::setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
 
@@ -296,9 +293,6 @@ void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
   multiclickTimeMs = timeMs;
   if (bistableButton) {
     buttonType = ButtonType::BISTABLE;
-  }
-  if (isBistable() || isMotionSensor()) {
-    holdTimeMs = 0;
   }
   SUPLA_LOG_DEBUG(
       "Button[%d]::setMulticlickTime: %u", getButtonNumber(), timeMs);
@@ -331,6 +325,8 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     Supla::Config::generateKey(key, getButtonNumber(), Supla::Html::BtnTypeTag);
     int32_t btnTypeValue = 0;
+    bool saveConfig = false;
+
     if (cfg->getInt32(key, &btnTypeValue)) {
       SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: btnType: %d",
                       getButtonNumber(),
@@ -347,9 +343,16 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
           setButtonType(ButtonType::MOTION_SENSOR);
           break;
       }
+    } else {
+      saveConfig = true;
+      if (isMotionSensor()) {
+        cfg->setInt32(key, 2);
+      } else if (isBistable()) {
+        cfg->setInt32(key, 1);
+      } else {
+        cfg->setInt32(key, 0);
+      }
     }
-
-    bool saveConfig = false;
 
     uint32_t multiclickTimeMsValue = 0;
     if (cfg->getUInt32(Supla::Html::BtnMulticlickTag, &multiclickTimeMsValue)) {

@@ -45,7 +45,9 @@ bool LastStateLogger::prepareLastStateLog() {
 void LastStateLogger::log(const char *state, int uptimeSec) {
   int newStateSize = strlen(state);
   char timestamp[32] = {};
-  snprintf(timestamp, sizeof(timestamp), " (%d)", uptimeSec);
+  if (uptimeSec > 7) {
+    snprintf(timestamp, sizeof(timestamp), " (%d)", uptimeSec);
+  }
   int timestampSize = strlen(timestamp);
 
   if (newStateSize + timestampSize + 1 > LAST_STATE_LOGGER_BUFFER_SIZE) {

@@ -34,12 +34,6 @@ class ArduinoEspClient : public Client {
       wifiClient->stop();
       delete wifiClient;
     }
-#ifdef ARDUINO_ARCH_ESP8266
-    if (caCert) {
-      delete caCert;
-      caCert = nullptr;
-    }
-#endif
   }
 
   int available() override {
@@ -72,6 +66,9 @@ class ArduinoEspClient : public Client {
  protected:
   int connectImp(const char *host, uint16_t port) override {
     WiFiClientSecure *clientSec = nullptr;
+#ifdef ARDUINO_ARCH_ESP8266
+    X509List *caCert = nullptr;
+#endif
 
     stop();
 
@@ -135,7 +132,12 @@ class ArduinoEspClient : public Client {
         }
       }
     }
-
+#ifdef ARDUINO_ARCH_ESP8266
+    if (caCert) {
+      delete caCert;
+      caCert = nullptr;
+    }
+#endif
     return result;
   }
 
@@ -164,9 +166,6 @@ class ArduinoEspClient : public Client {
   String fingerprint;
   uint16_t timeoutMs = 3000;
   int lastConnErr = 0;
-#ifdef ARDUINO_ARCH_ESP8266
-    X509List *caCert = nullptr;
-#endif
 };
 };  // namespace Supla
 

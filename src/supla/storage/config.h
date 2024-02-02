@@ -36,7 +36,7 @@
 
 namespace Supla {
 
-enum DeviceMode {
+enum DeviceMode : uint8_t {
   DEVICE_MODE_NOT_SET = 0,
   DEVICE_MODE_TEST = 1,
   DEVICE_MODE_NORMAL = 2,

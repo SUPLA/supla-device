@@ -82,17 +82,17 @@ class Network {
 
  protected:
   static Network *netIntf;
-  SuplaDeviceClass *sdc = nullptr;
 
-  enum DeviceMode mode = DEVICE_MODE_NORMAL;
-  bool setupNeeded = false;
-  bool useLocalIp;
+  SuplaDeviceClass *sdc = nullptr;
+  const char *rootCACert = nullptr;
+  unsigned int rootCACertSize = 0;
   unsigned char localIp[4];
   char hostname[32] = {};
 
+  enum DeviceMode mode = DEVICE_MODE_NORMAL;
+  bool setupNeeded = false;
+  bool useLocalIp = false;
   bool sslEnabled = true;
-  const char *rootCACert = nullptr;
-  unsigned int rootCACertSize = 0;
 };
 
 };  // namespace Supla

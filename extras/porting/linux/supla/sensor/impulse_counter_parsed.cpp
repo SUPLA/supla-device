@@ -36,7 +36,7 @@ void Supla::Sensor::ImpulseCounterParsed::onInit() {
   channel.setNewValue(getValue());
 }
 
-unsigned _supla_int64_t Supla::Sensor::ImpulseCounterParsed::getValue() {
+uint64_t Supla::Sensor::ImpulseCounterParsed::getValue() {
   double value = 0;
 
   if (isParameterConfigured(Supla::Parser::Counter)) {
@@ -57,5 +57,5 @@ unsigned _supla_int64_t Supla::Sensor::ImpulseCounterParsed::getValue() {
     SUPLA_LOG_WARNING(
               "ImpulseCounterParsed: \"counter\" parameter is not configured");
   }
-  return static_cast<unsigned _supla_int64_t>(value);
+  return static_cast<uint64_t>(value);
 }

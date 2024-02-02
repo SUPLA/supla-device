@@ -133,26 +133,27 @@ class SuplaSrpc : public ProtocolLayer {
   void initializeSrpc();
   void deinitializeSrpc();
 
-  void *srpc = nullptr;
-  int version = 0;
-  int8_t registered = 0;
+  uint8_t version = 0;
+  uint8_t activityTimeoutS = 30;
   uint8_t securityLevel = 0;
+  int8_t registered = 0;
   bool requestNetworkRestart = false;
-  uint32_t activityTimeoutS = 30;
+  bool enabled = true;
+  bool setDeviceConfigReceivedAfterRegistration = false;
+  bool firstConnectionAttempt = true;
+  uint16_t connectionFailCounter = 0;
+
   uint32_t lastPingTimeMs = 0;
   uint32_t waitForIterate = 0;
   uint32_t lastIterateTime = 0;
   uint32_t lastResponseMs = 0;
   uint32_t lastSentMs = 0;
-  uint16_t connectionFailCounter = 0;
-  bool enabled = true;
-  bool setDeviceConfigReceivedAfterRegistration = false;
-  bool firstConnectionAttempt = true;
 
   int port = -1;
 
   const char *suplaCACert = nullptr;
   const char *supla3rdPartyCACert = nullptr;
+  void *srpc = nullptr;
 
  private:
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;

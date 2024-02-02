@@ -587,6 +587,9 @@ void Supla::Protocol::SuplaSrpc::onSetActivityTimeoutResult(
 
 void Supla::Protocol::SuplaSrpc::setActivityTimeout(
     uint32_t activityTimeoutSec) {
+  if (activityTimeoutSec < 6) {
+    activityTimeoutSec = 6;
+  }
   activityTimeoutS = activityTimeoutSec;
 }
 
@@ -594,11 +597,14 @@ bool Supla::Protocol::SuplaSrpc::ping() {
   uint32_t _millis = millis();
   // If time from last response is longer than "server_activity_timeout + 10 s",
   // then inform about failure in communication
-  if ((_millis - lastResponseMs) / 1000 >= (activityTimeoutS + 10)) {
+  if ((_millis - lastResponseMs) / 1000 >=
+      (static_cast<uint32_t>(activityTimeoutS) + 10)) {
     return false;
   } else if (_millis - lastPingTimeMs >= 5000 &&
-             ((_millis - lastResponseMs) / 1000 >= (activityTimeoutS - 5) ||
-              (_millis - lastSentMs) / 1000 >= (activityTimeoutS - 5))) {
+             ((_millis - lastResponseMs) / 1000 >=
+                  (static_cast<uint32_t>(activityTimeoutS) - 5) ||
+              (_millis - lastSentMs) / 1000 >=
+                  (static_cast<uint32_t>(activityTimeoutS) - 5))) {
     lastPingTimeMs = _millis;
     srpc_dcs_async_ping_server(srpc);
   }

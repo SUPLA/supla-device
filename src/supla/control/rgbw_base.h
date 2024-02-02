@@ -25,6 +25,10 @@
 #include "../actions.h"
 #include "../channel_element.h"
 
+#define RGBW_STATE_ON_INIT_RESTORE -1
+#define RGBW_STATE_ON_INIT_OFF     0
+#define RGBW_STATE_ON_INIT_ON      1
+
 namespace Supla {
 namespace Control {
 
@@ -53,14 +57,14 @@ class Button;
 
 class RGBWBase : public ChannelElement, public ActionHandler {
  public:
-  enum ButtonControlType {
+  enum ButtonControlType : uint8_t {
     BUTTON_FOR_RGBW,
     BUTTON_FOR_RGB,
     BUTTON_FOR_W,
     BUTTON_NOT_USED
   };
 
-  enum class AutoIterateMode {
+  enum class AutoIterateMode : uint8_t {
     OFF,
     DIMMER,
     RGB,
@@ -139,39 +143,48 @@ class RGBWBase : public ChannelElement, public ActionHandler {
 
   int getStep(int step, int target, int current, int distance) const;
   bool calculateAndUpdate(int targetValue,
-                          int *hwValue,
+                          uint16_t *hwValue,
                           int distance,
                           uint32_t *lastChangeMs) const;
 
+  bool valueChanged = true;
   uint8_t buttonStep = 10;               // 10
   uint8_t curRed = 0;                   // 0 - 255
-  uint8_t curGreen = 0;                 // 0 - 255
+  uint8_t curGreen = 255;                 // 0 - 255
   uint8_t curBlue = 0;                  // 0 - 255
   uint8_t curColorBrightness = 0;       // 0 - 100
   uint8_t curBrightness = 0;            // 0 - 100
   uint8_t lastColorBrightness = 100;      // 0 - 100
   uint8_t lastBrightness = 100;           // 0 - 100
   uint8_t defaultDimmedBrightness = 20;  // 20
-  int maxHwValue = 1023;
   bool dimIterationDirection = false;
-  int fadeEffect = 500;
-  int hwRed = 0;              // 0 - maxHwValue
-  int hwGreen = 0;            // 0 - maxHwValue
-  int hwBlue = 0;             // 0 - maxHwValue
-  int hwColorBrightness = 0;  // 0 - maxHwValue
-  int hwBrightness = 0;       // 0 - maxHwValue
-  int minBrightness = 1;
-  int maxBrightness = 1023;
-  int minColorBrightness = 1;
-  int maxColorBrightness = 1023;
-  int redDistance = 0;
-  int greenDistance = 0;
-  int blueDistance = 0;
-  int colorBrightnessDistance = 0;
-  int brightnessDistance = 0;
   bool resetDisance = false;
   bool instant = false;
+  int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
+  uint8_t minIterationBrightness = 1;
+
+  enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
+  enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;
+
+  uint16_t maxHwValue = 1023;
+  uint16_t hwRed = 0;              // 0 - maxHwValue
+  uint16_t hwGreen = 0;            // 0 - maxHwValue
+  uint16_t hwBlue = 0;             // 0 - maxHwValue
+  uint16_t hwColorBrightness = 0;  // 0 - maxHwValue
+  uint16_t hwBrightness = 0;       // 0 - maxHwValue
+  uint16_t minBrightness = 1;
+  uint16_t maxBrightness = 1023;
+  uint16_t minColorBrightness = 1;
+  uint16_t maxColorBrightness = 1023;
+  uint16_t redDistance = 0;
+  uint16_t greenDistance = 0;
+  uint16_t blueDistance = 0;
+  uint16_t colorBrightnessDistance = 0;
+  uint16_t brightnessDistance = 0;
+
   uint16_t minMaxIterationDelay = 750;
+  uint16_t fadeEffect = 500;
+
   uint32_t lastTick = 0;
   uint32_t lastChangeRedMs = 0;
   uint32_t lastChangeGreenMs = 0;
@@ -181,15 +194,10 @@ class RGBWBase : public ChannelElement, public ActionHandler {
   uint32_t lastMsgReceivedMs = 0;
   uint32_t lastIterateDimmerTimestamp = 0;
   uint32_t iterationDelayTimestamp = 0;
-  int8_t stateOnInit = -1;
-  uint8_t minIterationBrightness = 1;
-  BrightnessAdjuster *brightnessAdjuster = nullptr;
-  bool valueChanged = true;
-  Supla::Control::Button *attachedButton = nullptr;
-  enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
-
-  enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;
   uint32_t lastAutoIterateStartTimestamp = 0;
+
+  BrightnessAdjuster *brightnessAdjuster = nullptr;
+  Supla::Control::Button *attachedButton = nullptr;
 };
 
 };  // namespace Control

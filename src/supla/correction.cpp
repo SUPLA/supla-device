@@ -51,12 +51,12 @@ double Supla::Correction::get(uint8_t channelNumber, bool forSecondaryValue) {
   return 0;
 }
 
-Supla::Correction::Correction(uint8_t channelNumber, double correction,
-    bool forSecondaryValue)
-  : next(nullptr),
-  channelNumber(channelNumber),
-  correction(correction),
-  forSecondaryValue(forSecondaryValue) {
+Supla::Correction::Correction(uint8_t channelNumber,
+                              double correction,
+                              bool forSecondaryValue)
+    : correction(correction),
+      channelNumber(channelNumber),
+      forSecondaryValue(forSecondaryValue) {
   if (first == nullptr) {
     first = this;
   } else {

@@ -31,7 +31,7 @@ VirtualImpulseCounter::VirtualImpulseCounter() {
 void VirtualImpulseCounter::onInit() {
 }
 
-unsigned _supla_int64_t VirtualImpulseCounter::getCounter() const {
+uint64_t VirtualImpulseCounter::getCounter() const {
   return counter;
 }
 
@@ -40,13 +40,13 @@ void VirtualImpulseCounter::onSaveState() {
 }
 
 void VirtualImpulseCounter::onLoadState() {
-  unsigned _supla_int64_t data = {};
+  uint64_t data = {};
   if (Supla::Storage::ReadState((unsigned char *)&data, sizeof(data))) {
     setCounter(data);
   }
 }
 
-void VirtualImpulseCounter::setCounter(unsigned _supla_int64_t value) {
+void VirtualImpulseCounter::setCounter(uint64_t value) {
   counter = value;
   channel.setNewValue(value);
   SUPLA_LOG_DEBUG(

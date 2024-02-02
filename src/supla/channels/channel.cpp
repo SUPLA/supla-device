@@ -31,8 +31,7 @@ namespace Supla {
 uint32_t Channel::lastCommunicationTimeMs = 0;
 TDS_SuplaRegisterDevice_E Channel::reg_dev;
 
-Channel::Channel() : valueChanged(false), channelConfig(false),
-  channelNumber(-1), validityTimeSec(0) {
+Channel::Channel() {
   if (reg_dev.channel_count < SUPLA_CHANNELMAXCOUNT) {
     channelNumber = reg_dev.channel_count;
 
@@ -134,7 +133,7 @@ void Channel::setNewValue(double temp, double humi) {
   }
 }
 
-void Channel::setNewValue(unsigned _supla_int64_t value) {
+void Channel::setNewValue(uint64_t value) {
   char newValue[SUPLA_CHANNELVALUE_SIZE];
 
   memset(newValue, 0, SUPLA_CHANNELVALUE_SIZE);
@@ -575,6 +574,10 @@ double Channel::getLastTemperature() {
 }
 
 void Channel::setValidityTimeSec(unsigned _supla_int_t timeSec) {
+  if (timeSec > UINT16_MAX) {
+    SUPLA_LOG_WARNING("Channel: too high validity time: %d", timeSec);
+    timeSec = UINT16_MAX;
+  }
   validityTimeSec = timeSec;
 }
 

@@ -39,18 +39,19 @@ ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
 
 enum Supla::Control::StateResults ButtonState::update() {
   uint32_t curMillis = millis();
-  if (debounceDelayMs == 0 || curMillis - debounceTimeMs > debounceDelayMs) {
+  if (debounceDelayMs == 0 ||
+      curMillis - debounceTimestampMs > debounceDelayMs) {
     int currentState = Supla::Io::digitalRead(pin, io);
     if (currentState != prevState) {
       // If status is changed, then make sure that it will be kept at
       // least swNoiseFilterDelayMs ms to avoid noise
       if (swNoiseFilterDelayMs != 0 && currentState != newStatusCandidate) {
         newStatusCandidate = currentState;
-        filterTimeMs = curMillis;
-      } else if (curMillis - filterTimeMs > swNoiseFilterDelayMs) {
+        filterTimestampMs = curMillis;
+      } else if (curMillis - filterTimestampMs > swNoiseFilterDelayMs) {
         // If new status is kept at least swNoiseFilterDelayMs ms, then apply
         // change of status
-        debounceTimeMs = curMillis;
+        debounceTimestampMs = curMillis;
         prevState = currentState;
         if (currentState == valueOnPress()) {
           return TO_PRESSED;

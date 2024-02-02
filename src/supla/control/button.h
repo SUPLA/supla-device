@@ -30,13 +30,13 @@ namespace Control {
 class Button : public SimpleButton, public ActionHandler {
  public:
   friend class ActionTrigger;
-  enum class ButtonType {
+  enum class ButtonType : uint8_t {
     MONOSTABLE,
     BISTABLE,
     MOTION_SENSOR
   };
 
-  enum class OnLoadConfigType {
+  enum class OnLoadConfigType : uint8_t {
     LOAD_FULL_CONFIG,
     LOAD_BUTTON_SETUP_ONLY,
     DONT_LOAD_CONFIG
@@ -94,17 +94,18 @@ class Button : public SimpleButton, public ActionHandler {
   // threshold 0 disables always
   void disableRepeatOnHold(uint32_t threshold = 0);
   void enableRepeatOnHold();
-  unsigned int holdTimeMs = 0;
-  unsigned int repeatOnHoldMs = 0;
-  bool repeatOnHoldEnabled = false;
-  unsigned int multiclickTimeMs = 0;
+  uint32_t multiclickTimeMs = 0;
   uint32_t lastStateChangeMs = 0;
+  uint16_t repeatOnHoldMs = 0;
+  uint16_t holdSend = 0;
+  uint16_t holdTimeMs = 0;
+  ButtonType buttonType = ButtonType::MONOSTABLE;
+  enum OnLoadConfigType onLoadConfigType = OnLoadConfigType::LOAD_FULL_CONFIG;
+
   uint8_t clickCounter = 0;
   uint8_t maxMulticlickValueConfigured = 0;
-  unsigned int holdSend = 0;
-  ButtonType buttonType = ButtonType::MONOSTABLE;
+  bool repeatOnHoldEnabled = false;
   bool configButton = false;
-  enum OnLoadConfigType onLoadConfigType = OnLoadConfigType::LOAD_FULL_CONFIG;
   int8_t buttonNumber = -1;
   bool disabled = false;
 

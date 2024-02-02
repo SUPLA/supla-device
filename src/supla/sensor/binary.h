@@ -37,10 +37,10 @@ class Binary : public BinaryBase {
   void onInit() override;
 
  protected:
-  int pin = -1;
+  Supla::Io *io = nullptr;
+  int16_t pin = -1;
   bool pullUp = false;
   bool invertLogic = false;
-  Supla::Io *io = nullptr;
 };
 
 };  // namespace Sensor

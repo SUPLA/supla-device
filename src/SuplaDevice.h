@@ -195,9 +195,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t enterConfigModeTimestamp = 0;
   unsigned int forceRestartTimeMs = 0;
   unsigned int resetOnConnectionFailTimeoutSec = 0;
+  int allowOfflineMode = 0;
+  int currentStatus = STATUS_UNKNOWN;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
-  int currentStatus = STATUS_UNKNOWN;
   Supla::Device::RequestConfigModeType goToConfigModeAsap = Supla::Device::None;
   bool triggerResetToFacotrySettings = false;
   bool triggerStartLocalWebServer = false;
@@ -207,27 +208,22 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool isNetworkSetupOk = false;
   bool skipNetwork = false;
   bool storageInitResult = false;
-  int allowOfflineMode = 0;
   bool configEmpty = true;
   bool showUptimeInChannelState = true;
-  Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
-  Supla::Device::SwUpdate *swUpdate = nullptr;
-  const uint8_t *rsaPublicKey = nullptr;
-  Supla::Element *iterateConnectedPtr = nullptr;
-
-  _impl_arduino_status impl_arduino_status = nullptr;
-
-  Supla::Device::LastStateLogger *lastStateLogger = nullptr;
   bool lastStateLogEnabled = true;
-
-  char *customHostnamePrefix = nullptr;
-
   // used to indicate if begin() method was called - it will be set to
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
 
-  void setString(char *dst, const char *src, int max_size);
+  Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
+  Supla::Device::SwUpdate *swUpdate = nullptr;
+  const uint8_t *rsaPublicKey = nullptr;
+  Supla::Element *iterateConnectedPtr = nullptr;
+  _impl_arduino_status impl_arduino_status = nullptr;
+  Supla::Device::LastStateLogger *lastStateLogger = nullptr;
+  char *customHostnamePrefix = nullptr;
 
+  void setString(char *dst, const char *src, int max_size);
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();
   bool iterateSuplaProtocol(uint32_t _millis);

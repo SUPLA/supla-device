@@ -49,30 +49,31 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
   void iterateAlways() override;
 
   // Returns value of a counter at given Supla channel
-  unsigned _supla_int64_t getCounter();
+  uint64_t getCounter();
 
   // Set counter to a given value
-  void setCounter(unsigned _supla_int64_t value);
+  void setCounter(uint64_t value);
 
   // Increment the counter by 1
   void incCounter();
 
  protected:
-  int prevState = 0;  // Store previous state of pin (LOW/HIGH). It is used to
-                      // track changes on pin state.
-  int impulsePin = -1;  // Pin where impulses are counted
+  uint64_t counter = 0;  // Actual count of impulses
 
+  Supla::Io *io = nullptr;
+  uint32_t lastReadTime = 0;
   uint32_t lastImpulseMillis =
       0;  // Stores timestamp of last impulse (used to ignore
           // changes of state during 10 ms timeframe)
-  unsigned int debounceDelay = 10;
+
+  int16_t impulsePin = -1;  // Pin where impulses are counted
+  uint16_t debounceDelay = 10;
+
   bool detectLowToHigh = false;  // defines if we count raining (LOW to HIGH) or
                                  // falling (HIGH to LOW) edge
   bool inputPullup = true;
-
-  unsigned _supla_int64_t counter = 0;  // Actual count of impulses
-  uint32_t lastReadTime = 0;
-  Supla::Io *io = nullptr;
+  int8_t prevState = 0;  // Store previous state of pin (LOW/HIGH). It is used
+                         // to track changes on pin state.
 };
 
 }  // namespace Sensor

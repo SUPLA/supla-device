@@ -538,5 +538,8 @@ bool Relay::isCountdownTimerFunctionEnabled() const {
 }
 
 void Relay::setMinimumAllowedDurationMs(uint32_t durationMs) {
+  if (durationMs > UINT16_MAX) {
+    durationMs = UINT16_MAX;
+  }
   minimumAllowedDurationMs = durationMs;
 }

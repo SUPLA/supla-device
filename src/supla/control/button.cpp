@@ -94,7 +94,8 @@ void Button::onTimer() {
   if (!stateChanged && lastStateChangeMs) {
     if (isMonostable() && stateResult == PRESSED) {
       if (clickCounter <= 1 && holdTimeMs > 0 &&
-          timeDelta > (holdTimeMs + holdSend * repeatOnHoldMs) &&
+          timeDelta >
+              (holdTimeMs + static_cast<uint32_t>(holdSend) * repeatOnHoldMs) &&
           (repeatOnHoldEnabled || holdSend == 0)) {
         runAction(ON_HOLD);
         ++holdSend;
@@ -285,6 +286,9 @@ void Button::addAction(uint16_t action, ActionHandler &client, uint16_t event,
 }
 
 void Button::setHoldTime(unsigned int timeMs) {
+  if (timeMs > UINT16_MAX) {
+    timeMs = UINT16_MAX;
+  }
   holdTimeMs = timeMs;
   SUPLA_LOG_DEBUG("Button[%d]::setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
@@ -299,6 +303,9 @@ void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
 }
 
 void Button::repeatOnHoldEvery(unsigned int timeMs) {
+  if (timeMs > UINT16_MAX) {
+    timeMs = UINT16_MAX;
+  }
   repeatOnHoldMs = timeMs;
   repeatOnHoldEnabled = (timeMs > 0);
 }

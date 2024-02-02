@@ -36,16 +36,16 @@ class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
   void handleAction(int event, int action) override;
 
   // Returns value of a counter at given Supla channel
-  unsigned _supla_int64_t getCounter() const;
+  uint64_t getCounter() const;
 
   // Set counter to a given value
-  void setCounter(unsigned _supla_int64_t value);
+  void setCounter(uint64_t value);
 
   // Increment the counter by 1
   void incCounter();
 
  protected:
-  unsigned _supla_int64_t counter = 0;  // Actual count of impulses
+  uint64_t counter = 0;  // Actual count of impulses
 };
 
 }  // namespace Sensor

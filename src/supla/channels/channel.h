@@ -44,7 +44,7 @@ class Channel : public LocalAction {
                    uint8_t blue,
                    uint8_t colorBrightness,
                    uint8_t brightness);
-  void setNewValue(unsigned _supla_int64_t value);
+  void setNewValue(uint64_t value);
   void setNewValue(const TDSC_RollerShutterValue &value);
   bool setNewValue(char *newValue);
 
@@ -174,12 +174,12 @@ class Channel : public LocalAction {
   static TDS_SuplaRegisterDevice_E reg_dev;
 
  protected:
-  bool valueChanged;
-  bool channelConfig;
-  int channelNumber;
-  unsigned _supla_int_t validityTimeSec;
-  unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
+  bool valueChanged = false;
+  bool channelConfig = false;
   bool offline = false;
+  unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
+  int16_t channelNumber = -1;
+  uint16_t validityTimeSec = 0;
 };
 
 };  // namespace Supla

@@ -216,7 +216,7 @@ TEST(ConditionTests, handleActionTestsForInt64) {
   // channel should be initialized to 0, so condition should be met
   cond->handleAction(Supla::ON_CHANGE, action1);
 
-  unsigned _supla_int64_t newValue = 10000344422234;
+  uint64_t newValue = 10000344422234;
   channel->setNewValue(newValue);
 
   // newValue is not less than 15.1, so nothing should happen

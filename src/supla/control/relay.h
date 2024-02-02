@@ -108,24 +108,24 @@ class Relay : public ChannelElement, public ActionHandler {
 
   void setChannelFunction(_supla_int_t newFunction);
   void updateTimerValue();
-  int pin = -1;
-  bool highIsOn = true;
   int channelFunction = 0;
-  bool keepTurnOnDurationMs = false;
-
-  int8_t stateOnInit = STATE_ON_INIT_OFF;
-
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
-  uint32_t minimumAllowedDurationMs = 0;
 
-  uint32_t lastDurationMsOnTimerUpdate = 0;
   uint32_t timerUpdateTimestamp = 0;
-  bool lastStateOnTimerUpdate = false;
 
   Supla::Io *io = nullptr;
   ButtonListElement *buttonList = nullptr;
+
+  uint16_t minimumAllowedDurationMs = 0;
+  int16_t pin = -1;
+
+  bool highIsOn = true;
+  bool keepTurnOnDurationMs = false;
+  bool lastStateOnTimerUpdate = false;
+
+  int8_t stateOnInit = STATE_ON_INIT_OFF;
 };
 
 };  // namespace Control

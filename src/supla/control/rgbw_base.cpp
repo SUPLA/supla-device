@@ -35,10 +35,6 @@
 int esp32PwmChannelCounter = 0;
 #endif
 
-#define RGBW_STATE_ON_INIT_RESTORE -1
-#define RGBW_STATE_ON_INIT_OFF     0
-#define RGBW_STATE_ON_INIT_ON      1
-
 namespace Supla {
 namespace Control {
 
@@ -69,25 +65,7 @@ void GeometricBrightnessAdjuster::setMaxHwValue(int maxHwValue) {
 }
 
 
-RGBWBase::RGBWBase()
-    : buttonStep(5),
-      curRed(0),
-      curGreen(255),
-      curBlue(0),
-      curColorBrightness(0),
-      curBrightness(0),
-      lastColorBrightness(100),
-      lastBrightness(100),
-      defaultDimmedBrightness(20),
-      dimIterationDirection(false),
-      fadeEffect(500),
-      hwRed(0),
-      hwGreen(0),
-      hwBlue(0),
-      hwColorBrightness(0),
-      hwBrightness(0),
-      stateOnInit(RGBW_STATE_ON_INIT_RESTORE),
-      minIterationBrightness(1) {
+RGBWBase::RGBWBase() {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
@@ -607,7 +585,7 @@ int RGBWBase::getStep(int step, int target, int current, int distance) const {
 }
 
 bool RGBWBase::calculateAndUpdate(int targetValue,
-                                  int *hwValue,
+                                  uint16_t *hwValue,
                                   int distance,
                                   uint32_t *lastChangeMs) const {
   if (targetValue != *hwValue) {

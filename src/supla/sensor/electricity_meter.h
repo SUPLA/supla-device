@@ -254,13 +254,13 @@ class ElectricityMeter : public ElementWithChannelActions,
   Channel *getChannel() override;
 
  protected:
-  TElectricityMeter_ExtendedValue_V2 emValue;
+  TElectricityMeter_ExtendedValue_V2 emValue = {};
   ChannelExtended extChannel;
-  unsigned _supla_int_t rawCurrent[MAX_PHASES];
-  bool valueChanged;
-  bool currentMeasurementAvailable;
-  uint32_t lastReadTime;
-  unsigned int refreshRateSec;
+  unsigned _supla_int_t rawCurrent[MAX_PHASES] = {};
+  uint32_t lastReadTime = 0;
+  uint8_t refreshRateSec = 5;
+  bool valueChanged = false;
+  bool currentMeasurementAvailable = false;
 };
 
 };  // namespace Sensor

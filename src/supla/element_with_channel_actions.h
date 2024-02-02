@@ -27,7 +27,7 @@
 
 namespace Supla {
 
-enum class ChannelConfigState {
+enum class ChannelConfigState : uint8_t {
   None = 0,
   LocalChangePending = 1,
   SetChannelConfigSend = 2,

@@ -25,13 +25,11 @@
 #include "../events.h"
 #include "electricity_meter.h"
 
-Supla::Sensor::ElectricityMeter::ElectricityMeter()
-    : valueChanged(false), lastReadTime(0), refreshRateSec(5) {
+Supla::Sensor::ElectricityMeter::ElectricityMeter() {
   extChannel.setType(SUPLA_CHANNELTYPE_ELECTRICITY_METER);
   extChannel.setDefault(SUPLA_CHANNELFNC_ELECTRICITY_METER);
   extChannel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 
-  memset(&emValue, 0, sizeof(emValue));
   emValue.period = 5;
   for (int i = 0; i < MAX_PHASES; i++) {
     rawCurrent[i] = 0;

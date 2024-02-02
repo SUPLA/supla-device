@@ -42,7 +42,7 @@ RollerShutter::RollerShutter(Supla::Io *io,
 }
 
 RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
-    : highIsOn(highIsOn), pinUp(pinUp), pinDown(pinDown) {
+    : pinUp(pinUp), pinDown(pinDown), highIsOn(highIsOn) {
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setDefault(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER);

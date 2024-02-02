@@ -36,10 +36,12 @@ class Correction {
   ~Correction();
 
   static Correction *first;
-  Correction *next;
-  uint8_t channelNumber;
-  double correction;
-  bool forSecondaryValue;
+
+  double correction = 0;
+  Correction *next = nullptr;
+
+  uint8_t channelNumber = 0;
+  bool forSecondaryValue = false;
 };
 
 };  // namespace Supla

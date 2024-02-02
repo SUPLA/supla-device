@@ -88,6 +88,16 @@ class RollerShutter : public ChannelElement, public ActionHandler {
 
   uint32_t closingTimeMs = 0;
   uint32_t openingTimeMs = 0;
+  int16_t pinUp = -1;
+  int16_t pinDown = -1;
+
+  uint32_t lastMovementStartTime = 0;
+  uint32_t doNothingTime = 0;
+  uint32_t calibrationTime = 0;
+  Supla::Io *io = nullptr;
+
+  uint16_t operationTimeout = 0;
+
   bool calibrate =
       true;  // set to true when new closing/opening time is given -
              // calibration is done to sync roller shutter position
@@ -105,15 +115,6 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   int8_t currentPosition = UNKNOWN_POSITION;  // 0 - closed; 100 - opened
   int8_t targetPosition = STOP_POSITION;      // 0-100
   int8_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
-
-  int pinUp = -1;
-  int pinDown = -1;
-
-  uint32_t lastMovementStartTime = 0;
-  uint32_t doNothingTime = 0;
-  uint32_t calibrationTime = 0;
-  uint32_t operationTimeout = 0;
-  Supla::Io *io = nullptr;
 };
 
 }  // namespace Control

@@ -251,7 +251,7 @@ void FactoryTest::waitForConfigButtonPress() {
       "TEST[%d,%d]: waiting for config button press", testStage, testStep);
   // led blink
   testStage = Supla::TestStage_WaitForCfgButton;
-  sdc->status(STATUS_TEST_WAIT_FOR_CFG_BUTTON, "Wait for config button");
+  sdc->status(STATUS_TEST_WAIT_FOR_CFG_BUTTON, F("Wait for config button"));
 }
 
 bool FactoryTest::checkTestStep() {

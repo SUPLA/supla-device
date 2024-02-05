@@ -25,7 +25,8 @@
 #include <supla/device/last_state_logger.h>
 #include <supla/action_handler.h>
 #include <supla/protocol/supla_srpc.h>
-#include "supla/local_action.h"
+#include <supla/log_wrapper.h>
+#include <supla/local_action.h>
 
 #define STATUS_UNKNOWN                   -1
 #define STATUS_ALREADY_INITIALIZED       1
@@ -66,6 +67,12 @@
 #define STATUS_OFFLINE_MODE              80
 
 typedef void (*_impl_arduino_status)(int status, const char *msg);
+
+#ifdef ARDUINO
+class __FlashStringHelper;
+#else
+#define __FlashStringHelper char
+#endif
 
 namespace Supla {
 namespace Device {
@@ -118,7 +125,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void onFastTimer(void);
   void iterate(void);
 
-  void status(int status, const char *msg, bool alwaysLog = false);
+  void status(int status,
+              const __FlashStringHelper *msg,
+              bool alwaysLog = false);
   void setStatusFuncImpl(_impl_arduino_status impl_arduino_status);
   void setServerPort(int value);
 

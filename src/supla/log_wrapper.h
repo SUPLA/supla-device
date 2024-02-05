@@ -40,7 +40,6 @@ void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...);
 
 #define F(argument_F) (argument_F)
 #define supla_logf supla_log
-
 #endif
 
 // #define SUPLA_DISABLE_LOGS

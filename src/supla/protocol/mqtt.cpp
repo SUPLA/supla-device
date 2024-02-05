@@ -101,7 +101,8 @@ bool Supla::Protocol::Mqtt::verifyConfig() {
   }
 
   if (strlen(server) <= 0) {
-    sdc->status(STATUS_UNKNOWN_SERVER_ADDRESS, "MQTT: Missing server address");
+    sdc->status(STATUS_UNKNOWN_SERVER_ADDRESS,
+                F("MQTT: Missing server address"));
     if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
       return false;
     }
@@ -109,13 +110,13 @@ bool Supla::Protocol::Mqtt::verifyConfig() {
 
   if (useAuth) {
     if (strlen(user) <= 0) {
-      sdc->status(STATUS_MISSING_CREDENTIALS, "MQTT: Missing username");
+      sdc->status(STATUS_MISSING_CREDENTIALS, F("MQTT: Missing username"));
       if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
         return false;
       }
     }
     if (strlen(password) <= 0) {
-      sdc->status(STATUS_MISSING_CREDENTIALS, "MQTT: Missing password");
+      sdc->status(STATUS_MISSING_CREDENTIALS, F("MQTT: Missing password"));
       if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
         return false;
       }

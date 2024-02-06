@@ -632,6 +632,15 @@ void Channel::setHvacMode(uint8_t mode) {
   if (value != nullptr && value->Mode != mode && mode <= SUPLA_HVAC_MODE_DRY) {
     setUpdateReady();
     value->Mode = mode;
+    if (mode == SUPLA_HVAC_MODE_OFF) {
+      runAction(ON_HVAC_MODE_OFF);
+    } else if (mode == SUPLA_HVAC_MODE_HEAT) {
+      runAction(ON_HVAC_MODE_HEAT);
+    } else if (mode == SUPLA_HVAC_MODE_COOL) {
+      runAction(ON_HVAC_MODE_COOL);
+    } else if (mode == SUPLA_HVAC_MODE_HEAT_COOL) {
+      runAction(ON_HVAC_MODE_HEAT_COOL);
+    }
   }
 }
 
@@ -777,6 +786,11 @@ void Channel::setHvacFlagWeeklySchedule(bool value) {
       flags &= ~SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE;
     }
     setHvacFlags(flags);
+    if (value) {
+      runAction(ON_HVAC_WEEKLY_SCHEDULE_ENABLED);
+    } else {
+      runAction(ON_HVAC_WEEKLY_SCHEDULE_DISABLED);
+    }
   }
 }
 

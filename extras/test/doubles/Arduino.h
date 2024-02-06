@@ -15,7 +15,9 @@ typedef std::string String;
 #define LOW 0
 
 
+#ifndef F
 #define F(string_literal) string_literal
+#endif
 
 void digitalWrite(uint8_t pin, uint8_t val);
 int digitalRead(uint8_t pin);

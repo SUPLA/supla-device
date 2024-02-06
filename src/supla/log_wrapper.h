@@ -38,7 +38,10 @@ void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...);
 
 #else
 
+#ifndef F
 #define F(argument_F) (argument_F)
+#endif
+
 #define supla_logf supla_log
 #endif
 

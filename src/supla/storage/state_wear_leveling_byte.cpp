@@ -25,11 +25,16 @@
 
 using Supla::StateWearLevelingByte;
 
-StateWearLevelingByte::StateWearLevelingByte(Storage *storage,
-                       uint32_t offset,
-                       SectionPreamble *preamble) :
-  StateStorageInterface(storage),
-  sectionOffset(offset) {
+StateWearLevelingByte::StateWearLevelingByte(Storage *storage, uint32_t offset)
+    : StateStorageInterface(storage,
+                            STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE),
+      sectionOffset(offset) {
+}
+
+StateWearLevelingByte::~StateWearLevelingByte() {
+}
+
+void StateWearLevelingByte::initSectionPreamble(SectionPreamble *preamble) {
   if (preamble) {
     reservedSize = preamble->size;
     if (preamble->crc1 == preamble->crc2) {
@@ -41,9 +46,6 @@ StateWearLevelingByte::StateWearLevelingByte(Storage *storage,
   if (elementStateSize > 0) {
     checkIfIsEnoughSpaceForState();
   }
-}
-
-StateWearLevelingByte::~StateWearLevelingByte() {
 }
 
 uint32_t StateWearLevelingByte::slotSize() const {
@@ -378,7 +380,7 @@ bool StateWearLevelingByte::writeState(const unsigned char *buf, int size) {
 
 bool StateWearLevelingByte::finalizeSaveState() {
   if (!storageStateOk) {
-    return false;
+    return true;
   }
 
   elementStateSize = stateSlotNewSize;
@@ -497,4 +499,16 @@ bool StateWearLevelingByte::isDataDifferent(uint32_t firstAddress,
     }
   }
   return false;
+}
+
+bool StateWearLevelingByte::finalizeLoadState() {
+  return true;
+}
+
+uint16_t StateWearLevelingByte::getSizeValue(uint16_t availableSize) {
+  uint16_t reservedSize = 0;
+  if (availableSize > sizeof(Preamble)) {
+    reservedSize = availableSize - sizeof(Preamble);
+  }
+  return reservedSize;
 }

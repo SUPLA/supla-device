@@ -24,11 +24,14 @@
 namespace Supla {
 
 class Storage;
+struct SectionPreamble;
 
 class StateStorageInterface {
  public:
-  explicit StateStorageInterface(Storage *storage);
+  explicit StateStorageInterface(Storage *storage, uint8_t sectionType);
   virtual ~StateStorageInterface();
+  virtual bool loadPreambles(uint32_t storageStartingOffset, uint16_t size);
+  virtual void initSectionPreamble(Supla::SectionPreamble *preamble) = 0;
   virtual bool writeSectionPreamble() = 0;
   virtual bool initFromStorage() = 0;
   virtual void deleteAll() = 0;
@@ -39,6 +42,7 @@ class StateStorageInterface {
   virtual bool writeState(const unsigned char *, int) = 0;
   virtual bool finalizeSaveState() = 0;
   virtual bool finalizeSizeCheck() = 0;
+  virtual bool finalizeLoadState() = 0;
   virtual void notifyUpdate();
 
  protected:
@@ -49,8 +53,11 @@ class StateStorageInterface {
   int writeStorage(unsigned int address, const unsigned char *buf, int size);
   int updateStorage(unsigned int address, const unsigned char *buf, int size);
   void commit();
+  void eraseSector(unsigned int address, int size);
+  virtual uint16_t getSizeValue(uint16_t availableSize);
 
   Storage *storage = nullptr;
+  const uint8_t sectionType;
 };
 }  // namespace Supla
 

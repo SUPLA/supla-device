@@ -21,6 +21,8 @@
 
 #include <stdint.h>
 
+#define SUPLA_STORAGE_VERSION 1
+
 #define STORAGE_SECTION_TYPE_DEVICE_CONFIG           1
 #define STORAGE_SECTION_TYPE_ELEMENT_CONFIG          2
 #define STORAGE_SECTION_TYPE_ELEMENT_STATE           3
@@ -35,6 +37,8 @@ class StateStorageInterface;
 
 class Storage {
  public:
+  static bool storageInitDone;
+
   enum class WearLevelingMode {
     OFF = 0,
     BYTE_WRITE_MODE = 1,   // Used i.e. for EEPROM memory
@@ -94,6 +98,7 @@ class Storage {
   virtual int writeStorage(unsigned int address,
                            const unsigned char *buf,
                            int size) = 0;
+  virtual void eraseSector(unsigned int address, int size);
   virtual void commit() = 0;
 
   virtual int updateStorage(unsigned int, const unsigned char *, int);
@@ -129,7 +134,7 @@ struct Preamble {
 };
 
 struct SectionPreamble {
-  unsigned char type;
+  uint8_t type;
   uint16_t size;
   uint16_t crc1;
   uint16_t crc2;

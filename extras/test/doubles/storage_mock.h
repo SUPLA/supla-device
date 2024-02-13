@@ -21,7 +21,8 @@
 
 #include <gmock/gmock.h>
 #include <supla/storage/storage.h>
-#include "supla/storage/state_wear_leveling_byte.h"
+#include <supla/storage/state_wear_leveling_byte.h>
+#include <supla/storage/state_wear_leveling_sector.h>
 
 class StorageMock: public Supla::Storage {
  public:
@@ -60,11 +61,30 @@ class StorageMockSimulator: public Supla::Storage {
 
   bool isEmpty();
   bool isPreampleInitialized(int sectionCount = 1);
+  bool isBackupPreampleInitialized(int sectionCount = 1);
   bool isEmptySimpleStatePreamplePresent();
   Supla::SectionPreamble *getSectionPreamble();
+  Supla::SectionPreamble *getBackupSectionPreamble();
   Supla::StateEntryAddress *getStateEntryAddress(bool backup = false);
   uint8_t storageSimulatorData[STORAGE_SIMULATOR_SIZE] = {};
   bool noWriteExpected = false;
+};
+
+class StorageMockFlashSimulator: public StorageMockSimulator {
+ public:
+  StorageMockFlashSimulator(uint32_t offset = 0,
+                       uint32_t size = 0,
+                       enum Supla::Storage::WearLevelingMode mode =
+                           Supla::Storage::WearLevelingMode::OFF);
+
+  Supla::StateWlSectorConfig *getStateWlSectorConfig();
+
+  int writeStorage(unsigned int offset,
+                   const unsigned char *data,
+                   int size) override;
+  void eraseSector(unsigned int address, int size) override;
+
+  bool isEmpty();
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_STORAGE_MOCK_H_

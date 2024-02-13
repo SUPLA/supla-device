@@ -27,8 +27,7 @@
 #include "state_storage_interface.h"
 #include "simple_state.h"
 #include "state_wear_leveling_byte.h"
-
-#define SUPLA_STORAGE_VERSION 1
+#include "state_wear_leveling_sector.h"
 
 namespace Supla {
 
@@ -43,7 +42,7 @@ class SpecialSectionInfo {
 };
 
 
-static bool storageInitDone = false;
+bool Supla::Storage::storageInitDone = false;
 static bool configInitDone = false;
 Storage *Storage::instance = nullptr;
 Config *Storage::configInstance = nullptr;
@@ -173,129 +172,37 @@ Storage::~Storage() {
 
 bool Storage::init() {
   SUPLA_LOG_DEBUG("Storage initialization");
-  unsigned int currentOffset = storageStartingOffset;
-  Preamble preamble = {};
-  currentOffset += readStorage(currentOffset,
-                               reinterpret_cast<unsigned char *>(&preamble),
-                               sizeof(preamble));
-
-  unsigned char suplaTag[] = {'S', 'U', 'P', 'L', 'A'};
-
-  bool suplaTagValid = memcmp(suplaTag, preamble.suplaTag, 5) == 0;
-
-  if (!suplaTagValid || preamble.sectionsCount == 0) {
-    if (!suplaTagValid) {
-      SUPLA_LOG_DEBUG("Storage: missing Supla tag. Rewriting...");
-    } else {
-      SUPLA_LOG_DEBUG("Storage: sectionsCount == 0. Rewriting...");
-    }
-    memcpy(preamble.suplaTag, suplaTag, 5);
-    preamble.version = SUPLA_STORAGE_VERSION;
-    if (stateStorage != nullptr) {
-      delete stateStorage;
-      stateStorage = nullptr;
-    }
-    SectionPreamble section = {};
-    switch (wearLevelingMode) {
-      case WearLevelingMode::OFF: {
-        section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;
-        stateStorage = new Supla::SimpleState(this, currentOffset, &section);
-        break;
-      }
-      case WearLevelingMode::BYTE_WRITE_MODE: {
-        section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE;
-        uint32_t reservedSize = 0;
-        if (availableSize > sizeof(Preamble)) {
-          reservedSize = availableSize - sizeof(Preamble);
-        }
-        section.size = reservedSize;
-        stateStorage =
-            new Supla::StateWearLevelingByte(this, currentOffset, &section);
-        break;
-      }
-      case WearLevelingMode::SECTOR_WRITE_MODE: {
-        section.type = STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR;
-        // TODO(klew): implement
-        // stateStorage = new Supla::StateWearLevelingSector(
-        //     this, currentOffset, &section, availableSize, sectorSize);
-        break;
-      }
-    }
-    preamble.sectionsCount = 1;
-    writeStorage(storageStartingOffset,
-                 reinterpret_cast<unsigned char *>(&preamble),
-                 sizeof(preamble));
-    if (stateStorage != nullptr) {
-      stateStorage->writeSectionPreamble();
-    }
-    commit();
-  } else if (preamble.version != SUPLA_STORAGE_VERSION) {
-    SUPLA_LOG_DEBUG(
-              "Storage: storage version [%d] is not supported. Storage not "
-              "initialized",
-              preamble.version);
-    return false;
-  } else {
-    SUPLA_LOG_DEBUG("Storage: Number of sections %d", preamble.sectionsCount);
-  }
-
   if (stateStorage != nullptr) {
-    return true;
+    SUPLA_LOG_WARNING("Storage: stateStorage not null");
+    delete stateStorage;
+    stateStorage = nullptr;
   }
 
-  for (int i = 0; i < preamble.sectionsCount; i++) {
-    SUPLA_LOG_DEBUG("Reading section: %d", i);
-    SectionPreamble section;
-    unsigned int sectionOffset = currentOffset;
-    currentOffset += readStorage(currentOffset,
-                                 reinterpret_cast<unsigned char *>(&section),
-                                 sizeof(section));
-
-    SUPLA_LOG_DEBUG(
-              "Section type: %d; size: %d",
-              static_cast<int>(section.type),
-              section.size);
-
-    if (section.crc1 != section.crc2) {
-      SUPLA_LOG_WARNING(
-          "Warning! CRC copies on section doesn't match. Please check your "
-          "storage hardware");
+  uint32_t stateSectionPreambleOffset =
+      storageStartingOffset + sizeof(Preamble);
+  switch (wearLevelingMode) {
+    case WearLevelingMode::OFF: {
+      stateStorage = new Supla::SimpleState(this, stateSectionPreambleOffset);
+      break;
     }
-
-    switch (section.type) {
-      case STORAGE_SECTION_TYPE_ELEMENT_STATE: {
-        if (stateStorage != nullptr) {
-          SUPLA_LOG_ERROR("Storage: state storage already initialized");
-          delete stateStorage;
-        }
-        stateStorage = new Supla::SimpleState(this, sectionOffset, &section);
-        stateStorage->initFromStorage();
-        break;
-      }
-      case STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_BYTE: {
-        if (stateStorage != nullptr) {
-          SUPLA_LOG_ERROR("Storage: state storage already initialized");
-          delete stateStorage;
-        }
-        stateStorage = new Supla::StateWearLevelingByte(
-            this, sectionOffset, &section);
-        stateStorage->initFromStorage();
-        break;
-      }
-      case STORAGE_SECTION_TYPE_ELEMENT_STATE_WL_SECTOR: {
-        // TODO(klew): implement
-        break;
-      }
-      default: {
-        SUPLA_LOG_DEBUG("Warning! Unknown section type");
-        break;
-      }
+    case WearLevelingMode::BYTE_WRITE_MODE: {
+      stateStorage =
+        new Supla::StateWearLevelingByte(this, stateSectionPreambleOffset);
+      break;
     }
-
-    currentOffset += section.size;
+    case WearLevelingMode::SECTOR_WRITE_MODE: {
+      stateStorage = new Supla::StateWearLevelingSector(
+          this, stateSectionPreambleOffset, availableSize);
+      break;
+    }
   }
 
-  return true;
+  if (stateStorage == nullptr) {
+    SUPLA_LOG_WARNING("Storage: stateStorage is null, abort");
+    return false;
+  }
+
+  return stateStorage->loadPreambles(storageStartingOffset, availableSize);
 }
 
 void Storage::deleteAll() {
@@ -565,6 +472,7 @@ void Storage::LoadStateStorage() {
       element->onLoadState();
       delay(0);
     }
+    Instance()->stateStorage->finalizeLoadState();
   }
 }
 
@@ -572,13 +480,26 @@ void Storage::WriteStateStorage() {
   if (!Instance() || Instance()->stateStorage == nullptr) {
     return;
   }
-  Instance()->stateStorage->prepareSaveState();
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    element->onSaveState();
-    delay(0);
+  // Repeat save two times if finalizeSaveState returns false
+  // It is used i.e. in WearLevelingSector mode, where first save pefroms
+  // check if data changed compared to previously stored data
+  for (int i = 0; i < 2; i++) {
+    Instance()->stateStorage->prepareSaveState();
+    for (auto element = Supla::Element::begin(); element != nullptr;
+        element = element->next()) {
+      element->onSaveState();
+      delay(0);
+    }
+    bool result = Instance()->stateStorage->finalizeSaveState();
+    if (result) {
+      break;
+    }
   }
-  Instance()->stateStorage->finalizeSaveState();
+}
+
+void Storage::eraseSector(unsigned int address, int size) {
+  (void)(address);
+  (void)(size);
 }
 
 }  // namespace Supla

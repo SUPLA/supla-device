@@ -36,6 +36,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/storage/simple_state.cpp
   ../../../src/supla/storage/state_storage_interface.cpp
   ../../../src/supla/storage/state_wear_leveling_byte.cpp
+  ../../../src/supla/storage/state_wear_leveling_sector.cpp
 
   ../../../src/supla/network/network.cpp
   ../../../src/supla/network/netif_wifi.cpp

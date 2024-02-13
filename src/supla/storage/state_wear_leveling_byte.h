@@ -82,10 +82,10 @@ struct SectionPreamble;
 class StateWearLevelingByte : public StateStorageInterface {
  public:
   explicit StateWearLevelingByte(Storage *storage,
-                       uint32_t offset,
-                       SectionPreamble *preamble);
+                       uint32_t offset);
   ~StateWearLevelingByte();
 
+  void initSectionPreamble(SectionPreamble *preamble) override;
   bool writeSectionPreamble() override;
   bool initFromStorage() override;
   void deleteAll() override;
@@ -96,9 +96,11 @@ class StateWearLevelingByte : public StateStorageInterface {
   bool writeState(const unsigned char *, int) override;
   bool finalizeSaveState() override;
   bool finalizeSizeCheck() override;
+  bool finalizeLoadState() override;
   void notifyUpdate() override;
 
  private:
+  uint16_t getSizeValue(uint16_t availableSize) override;
   void checkIfIsEnoughSpaceForState();
   uint32_t getFirstSlotAddress() const;
   uint32_t getNextSlotAddress(uint32_t slotAddress) const;

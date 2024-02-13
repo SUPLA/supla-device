@@ -27,10 +27,10 @@ struct SectionPreamble;
 
 class SimpleState : public StateStorageInterface {
  public:
-  explicit SimpleState(Storage *storage,
-                       uint32_t offset,
-                       SectionPreamble *preamble);
+  explicit SimpleState(Storage *storage, uint32_t offset);
   ~SimpleState();
+
+  void initSectionPreamble(SectionPreamble *preamble) override;
 
   bool writeSectionPreamble() override;
   bool initFromStorage() override;
@@ -42,6 +42,7 @@ class SimpleState : public StateStorageInterface {
   bool writeState(const unsigned char *, int) override;
   bool finalizeSaveState() override;
   bool finalizeSizeCheck() override;
+  bool finalizeLoadState() override;
 
  private:
   uint32_t sectionOffset = 0;

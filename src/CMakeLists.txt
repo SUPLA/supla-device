@@ -32,6 +32,7 @@ set(SRCS
   supla/storage/simple_state.cpp
   supla/storage/state_storage_interface.cpp
   supla/storage/state_wear_leveling_byte.cpp
+  supla/storage/state_wear_leveling_sector.cpp
 
   supla/control/internal_pin_output.cpp
   supla/control/pin_status_led.cpp

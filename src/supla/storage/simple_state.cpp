@@ -24,10 +24,14 @@
 
 using Supla::SimpleState;
 
-SimpleState::SimpleState(Storage *storage,
-                         uint32_t offset,
-                         SectionPreamble *preamble)
-    : StateStorageInterface(storage), sectionOffset(offset) {
+SimpleState::SimpleState(Storage *storage, uint32_t offset)
+    : StateStorageInterface(storage, STORAGE_SECTION_TYPE_ELEMENT_STATE),
+      sectionOffset(offset) {
+}
+
+SimpleState::~SimpleState() {}
+
+void SimpleState::initSectionPreamble(Supla::SectionPreamble *preamble) {
   if (preamble) {
     elementStateSize = preamble->size;
     if (preamble->crc1 == preamble->crc2) {
@@ -38,8 +42,6 @@ SimpleState::SimpleState(Storage *storage,
     }
   }
 }
-
-SimpleState::~SimpleState() {}
 
 bool SimpleState::writeSectionPreamble() {
   if (sectionOffset == 0) {
@@ -208,5 +210,9 @@ bool SimpleState::finalizeSizeCheck() {
     elementStateSize = 0;
     return false;
   }
+  return true;
+}
+
+bool SimpleState::finalizeLoadState() {
   return true;
 }

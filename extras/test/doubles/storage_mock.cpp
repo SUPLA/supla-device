@@ -19,6 +19,8 @@
 #include "storage_mock.h"
 #include "supla/storage/storage.h"
 
+using Supla::StateWlSectorConfig;
+
 StorageMockSimulator::StorageMockSimulator(
     uint32_t offset, uint32_t size, enum Supla::Storage::WearLevelingMode mode)
     : Supla::Storage(offset, size, mode) {
@@ -75,6 +77,14 @@ bool StorageMockSimulator::isPreampleInitialized(int sectionCount) {
                 sizeof(preamble)) == 0;
 }
 
+bool StorageMockSimulator::isBackupPreampleInitialized(int sectionCount) {
+  Supla::Preamble preamble = {{'S', 'U', 'P', 'L', 'A'}, 1, 0};
+  preamble.sectionsCount = sectionCount;
+  return memcmp(&preamble,
+                storageSimulatorData + storageStartingOffset + 4096,
+                sizeof(preamble)) == 0;
+}
+
 bool StorageMockSimulator::isEmptySimpleStatePreamplePresent() {
   if (isPreampleInitialized(1)) {
     Supla::SectionPreamble sectionPreamble = {
@@ -88,6 +98,12 @@ bool StorageMockSimulator::isEmptySimpleStatePreamplePresent() {
 Supla::SectionPreamble *StorageMockSimulator::getSectionPreamble() {
   return reinterpret_cast<Supla::SectionPreamble *>(
       storageSimulatorData + storageStartingOffset + sizeof(Supla::Preamble));
+}
+
+Supla::SectionPreamble *StorageMockSimulator::getBackupSectionPreamble() {
+  return reinterpret_cast<Supla::SectionPreamble *>(
+      storageSimulatorData + storageStartingOffset + sizeof(Supla::Preamble) +
+      4096);
 }
 
 Supla::StateEntryAddress *StorageMockSimulator::getStateEntryAddress(
@@ -151,4 +167,54 @@ void StorageMock::defaultInitialization(int elementStateSize) {
 }
 
   init();
+}
+
+StorageMockFlashSimulator::StorageMockFlashSimulator(
+    uint32_t offset, uint32_t size, enum Supla::Storage::WearLevelingMode mode)
+    : StorageMockSimulator(offset, size, mode) {
+  // init flash to FF
+  memset(storageSimulatorData, 0xFF, STORAGE_SIMULATOR_SIZE);
+}
+
+int StorageMockFlashSimulator::writeStorage(unsigned int offset,
+    const unsigned char *data,
+    int size) {
+  if (noWriteExpected) {
+    assert(false && "StorageMockFlashSimulator write not expected");
+  }
+  if (offset + size >= STORAGE_SIMULATOR_SIZE) {
+    assert(false && "StorageMockFlashSimulator out of bounds");
+    return 0;
+  }
+  for (int i = 0; i < size; i++) {
+    // flash is NAND memory, so it can only clear bits (set from 1 to 0)
+    storageSimulatorData[offset + i] &= data[i];
+  }
+  return size;
+}
+
+void StorageMockFlashSimulator::eraseSector(unsigned int address, int size) {
+  if (noWriteExpected) {
+    assert(false && "StorageMockFlashSimulator write not expected");
+  }
+  assert(size == 4096 && "StorageMockFlashSimulator erase size not 4096");
+  assert(address % 4096 == 0 &&
+         "StorageMockFlashSimulator erase address not multiple of 4096");
+
+  memset(&storageSimulatorData[address], 0xFF, size);
+}
+
+bool StorageMockFlashSimulator::isEmpty() {
+  for (int i = 0; i < STORAGE_SIMULATOR_SIZE; i++) {
+    if (storageSimulatorData[i] != 0xFF) {
+      return false;
+    }
+  }
+  return true;
+}
+
+StateWlSectorConfig *StorageMockFlashSimulator::getStateWlSectorConfig() {
+  return reinterpret_cast<Supla::StateWlSectorConfig *>(
+      storageSimulatorData + storageStartingOffset + sizeof(Supla::Preamble) +
+      sizeof(Supla::SectionPreamble));
 }

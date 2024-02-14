@@ -1,5 +1,30 @@
 # CHANGELOG.md
 
+## 24.02 (2024-02-14)
+
+  - Fix: StatusLed: disable blinking for sleeping devices when other protocols are connected
+  - Fix: WebServer: fix for invalid checkbox handling on beta web page
+  - Fix: memory usage optimization
+  - Change: Linux HVAC: "aux_thermometer_channel_no" is no longer mandatory
+  - Change: SuplaDevice: default proto version increased to 21 (requires server version at least 23.11)
+  - Change: LastStateLogger and HTML device info: add device uptime (seconds) information.
+  - Change: HVAC: renamed "auto" mode and function to "heat_cool". WARNING: This may break compilation. Please rename all thermostat AUTO names to HEAT_COOL (in defines/consts) and "Auto" to "HeatCool" (in method names)
+  - Change: StatusLed: disable status LED on soft reset state;
+  - Add: GeneralPurposeMeasurement: add support
+  - Add: GeneralPurposeMeter: add support
+  - Add: LittleFsConfig: add option to define max buffer size for larger configs
+  - Add: ExtPCA9685 - adding "setPWMFrequency" method (thanks lukfud)
+  - Add: SuplaDevice: add hostname/wifi ssid generator support for "OH!" Supla devices. Improve method so it won't add "-" at the begining and it won't add duplicated "-".
+  - Add: Button: add ActionHandler interface, add handling of ENABLE, TURN_ON, DISABLE, TURN_OFF, and TOGGLE actions which fully disables/enables the button
+  - Add: Relay: add option to attach() multiple buttons.
+  - Add: Relay: add storing and restoring configured function in Config storage
+  - Add: HTML: add custom checkbox class (thanks lukfud)
+  - Add: Storage: add wear leveling implementation for "byte access and write" memory types (like EEPROM, FRAM)
+  - Add: Storage: add wear leveling implementation for "sector" mode (memory types like FLASH)
+  - Add: Arduino IDE: add examples for GPM (KPOP & KLOP): GPM_BH1750_light_sensor, GP_Measurement, GPM_EspFreeHeap, GPM_MAX44009_light_sensor
+  - Add: new sensors based on GPM added: BH1750, MAX44099, GpmEspFreeHeap
+  - Add: HVAC: add events: ON_HVAC_WEEKLY_SCHEDULE_ENABLED, ON_HVAC_WEEKLY_SCHEDULE_ENABLED, ON_HVAC_WEEKLY_SCHEDULE_DISABLED, ON_HVAC_MODE_OFF, ON_HVAC_MODE_HEAT, ON_HVAC_MODE_COOL, ON_HVAC_MODE_HEAT_COOL
+
 ## 23.12 (2023-12-05)
 
   - Change: HVAC: allow invalid config with invalid main thermometer channel number.  Thermostat will be in "off" with theremometer error.

@@ -367,6 +367,9 @@ const char *getManufacturer(int16_t id) {
     case SUPLA_MFR_ERGO_ENERGIA: {
       return "ERGO energia";
     }
+    case SUPLA_MFR_SOMEF: {
+      return "Somef";
+    }
   }
 
   return "Unknown";

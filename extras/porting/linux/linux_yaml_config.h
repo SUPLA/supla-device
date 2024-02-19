@@ -161,6 +161,9 @@ class LinuxYamlConfig : public KeyValue {
   bool addWeightParsed(const YAML::Node& ch,
                             int channelNumber,
                             Supla::Parser::Parser* parser);
+  bool addDistanceParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser);
   void addCommonParameters(const YAML::Node& ch,
                             Supla::Sensor::SensorParsedBase* sensor,
                             int *paramCount,

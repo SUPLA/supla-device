@@ -135,6 +135,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/virtual_binary.cpp
   src/supla/sensor/ntc10k.cpp
   src/supla/sensor/weight.cpp
+  src/supla/sensor/distance.cpp
 )
 
 set(NETTLE_SRCS

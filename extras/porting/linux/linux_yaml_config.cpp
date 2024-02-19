@@ -36,6 +36,7 @@
 #include <supla/sensor/pressure_parsed.h>
 #include <supla/sensor/rain_parsed.h>
 #include <supla/sensor/weight_parsed.h>
+#include <supla/sensor/distance_parsed.h>
 #include <supla/sensor/thermometer_parsed.h>
 #include <supla/sensor/wind_parsed.h>
 #include <supla/sensor/general_purpose_measurement_parsed.h>
@@ -488,6 +489,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addWeightParsed(ch, channelNumber, parser);
+    } else if (type == "DistanceParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addDistanceParsed(ch, channelNumber, parser);
     } else if (type == "ThermHygroMeterParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -1752,6 +1759,37 @@ bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
   }
 
   addCommonParameters(ch, weight, &paramCount, parser);
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,
+                                           int channelNumber,
+                                           Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding DistanceParsed", channelNumber);
+  auto distance = new Supla::Sensor::DistanceParsed(parser);
+  if (ch[Supla::Parser::Distance]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Distance].as<int>();
+      distance->setMapping(Supla::Parser::Distance, index);
+    } else {
+      std::string key = ch[Supla::Parser::Distance].as<std::string>();
+      distance->setMapping(Supla::Parser::Distance, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Distance);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    distance->setMultiplier(Supla::Parser::Distance, multiplier);
+  }
+
+  addCommonParameters(ch, distance, &paramCount, parser);
 
   return true;
 }

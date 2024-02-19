@@ -134,6 +134,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/memory_variable_driver.cpp
   src/supla/sensor/virtual_binary.cpp
   src/supla/sensor/ntc10k.cpp
+  src/supla/sensor/weight.cpp
 )
 
 set(NETTLE_SRCS

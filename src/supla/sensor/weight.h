@@ -31,37 +31,19 @@ namespace Supla {
 namespace Sensor {
 class Weight : public ChannelElement, public ActionHandler {
  public:
-  Weight() {
-    channel.setType(SUPLA_CHANNELTYPE_WEIGHTSENSOR);
-    channel.setDefault(SUPLA_CHANNELFNC_WEIGHTSENSOR);
-    channel.setNewValue(WEIGHT_NOT_AVAILABLE);
-  }
+  Weight();
 
-  virtual double getValue() {
-    return WEIGHT_NOT_AVAILABLE;
-  }
+  void setRefreshIntervalMs(int intervalMs);
 
+  virtual double getValue();
   virtual void tareScales() = 0;
 
-  void handleAction(int event, int action) {
-  (void) (event);
-  switch (action) {
-    case Supla::TARE_SCALES: {
-      tareScales();
-      break;
-    }
-  }
-  }
-
-  void iterateAlways() {
-    if (millis() - lastReadTime > 10000) {
-      lastReadTime = millis();
-      channel.setNewValue(getValue());
-    }
-  }
+  void handleAction(int event, int action) override;
+  void iterateAlways() override;
 
  protected:
   uint32_t lastReadTime = 0;
+  uint16_t refreshIntervalMs = 10000;
 };
 
 };  // namespace Sensor

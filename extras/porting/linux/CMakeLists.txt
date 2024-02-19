@@ -60,6 +60,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/sensor/pressure_parsed.cpp
   supla/sensor/rain_parsed.cpp
   supla/sensor/wind_parsed.cpp
+  supla/sensor/weight_parsed.cpp
   supla/sensor/therm_hygro_meter_parsed.cpp
   supla/sensor/general_purpose_measurement_parsed.cpp
   supla/sensor/general_purpose_meter_parsed.cpp

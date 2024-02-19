@@ -158,6 +158,13 @@ class LinuxYamlConfig : public KeyValue {
   bool addWindParsed(const YAML::Node& ch,
                             int channelNumber,
                             Supla::Parser::Parser* parser);
+  bool addWeightParsed(const YAML::Node& ch,
+                            int channelNumber,
+                            Supla::Parser::Parser* parser);
+  void addCommonParameters(const YAML::Node& ch,
+                            Supla::Sensor::SensorParsedBase* sensor,
+                            int *paramCount,
+                            Supla::Parser::Parser* parser);
   void loadGuidAuthFromPath(const std::string& path);
   bool saveGuidAuth(const std::string& path);
   bool addStateParser(const YAML::Node& ch,

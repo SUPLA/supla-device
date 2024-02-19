@@ -35,6 +35,7 @@
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/pressure_parsed.h>
 #include <supla/sensor/rain_parsed.h>
+#include <supla/sensor/weight_parsed.h>
 #include <supla/sensor/thermometer_parsed.h>
 #include <supla/sensor/wind_parsed.h>
 #include <supla/sensor/general_purpose_measurement_parsed.h>
@@ -469,20 +470,24 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addPressureParsed(ch, channelNumber, parser);
-    }
-    if (type == "WindParsed") {
+    } else if (type == "WindParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addWindParsed(ch, channelNumber, parser);
-    }
-    if (type == "RainParsed") {
+    } else if (type == "RainParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
         return false;
       }
       return addRainParsed(ch, channelNumber, parser);
+    } else if (type == "WeightParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addWeightParsed(ch, channelNumber, parser);
     } else if (type == "ThermHygroMeterParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -1719,3 +1724,57 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
   }
   return true;
 }
+
+bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
+                                           int channelNumber,
+                                           Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding WeightParsed", channelNumber);
+  auto weight = new Supla::Sensor::WeightParsed(parser);
+  if (ch[Supla::Parser::Weight]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Weight].as<int>();
+      weight->setMapping(Supla::Parser::Weight, index);
+    } else {
+      std::string key = ch[Supla::Parser::Weight].as<std::string>();
+      weight->setMapping(Supla::Parser::Weight, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Weight);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    weight->setMultiplier(Supla::Parser::Weight, multiplier);
+  }
+
+  addCommonParameters(ch, weight, &paramCount, parser);
+
+  return true;
+}
+
+void Supla::LinuxYamlConfig::addCommonParameters(
+    const YAML::Node& ch,
+    Supla::Sensor::SensorParsedBase* sensor,
+    int* paramCount,
+    Supla::Parser::Parser* parser) {
+  if (ch[Supla::Sensor::BatteryLevel]) {
+    (*paramCount)++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
+      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
+    } else {
+      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
+      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
+    }
+  }
+  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
+    (*paramCount)++;
+    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
+    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
+  }
+}
+

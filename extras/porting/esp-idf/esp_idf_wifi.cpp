@@ -16,7 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#include <esp_netif.h>
+#include "esp_idf_network_common.h"
 
 #ifdef SUPLA_DEVICE_ESP32
 #include <esp_mac.h>
@@ -24,12 +24,13 @@
 
 #include <SuplaDevice.h>
 #include <fcntl.h>
-#include <nvs_flash.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <esp_event.h>
+#include <esp_netif.h>
 
 #include <cstring>
 
@@ -124,11 +125,7 @@ static void eventHandler(void *arg,
 void Supla::EspIdfWifi::setup() {
   setIpReady(false);
   if (!initDone) {
-    nvs_flash_init();
-    esp_netif_init();
-
-    wifiEventGroup = xEventGroupCreate();
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
+    Supla::initEspNetif();
 
 #ifdef SUPLA_DEVICE_ESP32
     apNetIf = esp_netif_create_default_wifi_ap();
@@ -237,7 +234,6 @@ void Supla::EspIdfWifi::uninit() {
 
     esp_wifi_deinit();
 
-    vEventGroupDelete(wifiEventGroup);
     esp_event_loop_delete_default();
   }
 }

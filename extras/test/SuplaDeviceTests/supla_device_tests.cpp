@@ -666,52 +666,82 @@ TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
   EXPECT_STREQ(Supla::Channel::reg_dev.Name, "Supla Device");
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-000000000000");
 
   sd.generateHostname(buf, 1);
+  net.setHostname(buf, 1);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-00");
 
   sd.generateHostname(buf, 2);
+  net.setHostname(buf, 2);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-0000");
 
   sd.generateHostname(buf, 3);
+  net.setHostname(buf, 3);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-000000");
 
   sd.generateHostname(buf, 4);
+  net.setHostname(buf, 4);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-00000000");
 
   sd.generateHostname(buf, 5);
+  net.setHostname(buf, 5);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-0000000000");
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-000000000000");
 
   sd.generateHostname(buf, 7);
+  net.setHostname(buf, 7);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-000000000000");
 
   sd.generateHostname(buf, 0);
+  net.setHostname(buf, 0);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE");
 
   sd.generateHostname(buf, -1);
+  net.setHostname(buf, -1);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE");
 
   sd.setName("SuPlA Is SuPeR");
   sd.generateHostname(buf, -1);
+  net.setHostname(buf, -1);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER");
 
   sd.setName("SuPlA Is SuPeR Even with a very long device name");
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-EVE-000000000000");
 
   sd.generateHostname(buf, 2);
+  net.setHostname(buf, 2);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-EVEN-WITH-A-0000");
 
   memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
   sd.generateHostname(buf, 2);
+  net.setHostname(buf, 2);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-0000");
 
   sd.setName("- - TEST   DupliCate");
   sd.generateHostname(buf, 2);
+  net.setHostname(buf, 2);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "TEST-DUPLICATE-0000");
 
   /*
@@ -733,10 +763,14 @@ TEST_F(SuplaDeviceTests, GenerateHostnameForOHTests) {
   EXPECT_STREQ(Supla::Channel::reg_dev.Name, "OH! Amazing!! Device");
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-AMAZING-DEVI-000000000000");
 
   sd.setName("OH!Really???");
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-REALLY-000000000000");
 }
 
@@ -752,40 +786,58 @@ TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {
   EXPECT_STREQ(Supla::Channel::reg_dev.Name, "Amazing Device");
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "AMAZING-DEVICE-000000000000");
 
   char prefix[] = "My prefix";
   sd.setCustomHostnamePrefix(prefix);
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "MY-PREFIX-000000000000");
 
   sd.generateHostname(buf, 7);
+  net.setHostname(buf, 7);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "MY-PREFIX-000000000000");
 
   sd.generateHostname(buf, 0);
+  net.setHostname(buf, 0);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "MY-PREFIX");
 
   sd.generateHostname(buf, -1);
+  net.setHostname(buf, -1);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "MY-PREFIX");
 
   sd.setName("SuPlA Is SuPeR");
   sd.generateHostname(buf, -1);
+  net.setHostname(buf, -1);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "MY-PREFIX");
 
   sd.setCustomHostnamePrefix(nullptr);
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-000000000000");
 
   char emptyPrefix[1] = {};
   sd.setCustomHostnamePrefix(emptyPrefix);
 
   sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-000000000000");
 
   memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
   sd.generateHostname(buf, 2);
+  net.setHostname(buf, 2);
+  net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-0000");
 
   /*

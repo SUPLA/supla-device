@@ -27,9 +27,18 @@
 class SuplaDeviceClass;
 
 namespace Supla {
+
+const char NetIntfTypeTag[] = "netintf_type";
+
 class Network {
  public:
+  enum class IntfType {
+    Ethernet = 0,
+    WiFi = 1,
+  };
+
   static Network *Instance();
+  static Network *FirstInstance();
   static void DisconnectProtocols();
   static void Setup();
   static void Disable();
@@ -40,22 +49,26 @@ class Network {
   static void SetNormalMode();
   static void SetSetupNeeded();
   static bool PopSetupNeeded();
+  // returns MAX addres of the main network interface
   static bool GetMacAddr(uint8_t *);
-  static void SetHostname(const char *);
+  static void SetHostname(const char *, int macSize);
   static bool IsSuplaSSLEnabled();
   static bool IsIpSetupTimeout();
+  static void LoadConfig();
 
   static void printData(const char *prefix, const void *buf, const int count);
 
   explicit Network(uint8_t ip[4]);
   virtual ~Network();
+//  virtual void onLoadConfig();
   virtual void setup() = 0;
   virtual void disable() = 0;
   virtual void uninit();
   virtual void setConfigMode();
   virtual void setNormalMode();
   virtual bool getMacAddr(uint8_t *);
-  virtual void setHostname(const char *);
+  virtual void setHostname(const char *, int macSize);
+  void generateHostname(const char *prefix, int macSize, char *output);
   virtual bool isSuplaSSLEnabled();
   virtual bool isIpSetupTimeout();
 
@@ -80,16 +93,22 @@ class Network {
   void setSetupNeeded();
   bool popSetupNeeded();
 
+  enum IntfType getIntfType() const;
+
  protected:
   static Network *netIntf;
+  static Network *firstNetIntf;
 
+  Network *nextNetIntf = nullptr;
   SuplaDeviceClass *sdc = nullptr;
   const char *rootCACert = nullptr;
   unsigned int rootCACertSize = 0;
   unsigned char localIp[4];
   char hostname[32] = {};
 
-  enum DeviceMode mode = DEVICE_MODE_NORMAL;
+  enum IntfType intfType = IntfType::Ethernet;
+
+  static enum DeviceMode mode;
   bool setupNeeded = false;
   bool useLocalIp = false;
   bool sslEnabled = true;

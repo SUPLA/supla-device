@@ -32,6 +32,10 @@ class NetworkMockWithMac : public Supla::Network {
   MOCK_METHOD(bool, isReady, (), (override));
   MOCK_METHOD(bool, iterate, (), (override));
   MOCK_METHOD(bool, getMacAddr, (uint8_t*), (override));
+
+  void getHostName(char* buffer) {
+    memcpy(buffer, hostname, 32);
+  }
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_NETWORK_WITH_MAC_MOCK_H_

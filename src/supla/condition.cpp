@@ -158,3 +158,7 @@ void Supla::Condition::activateAction(int action) {
     client->activateAction(action);
   }
 }
+
+void Supla::Condition::setThreshold(double val) {
+  threshold = val;
+}

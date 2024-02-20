@@ -168,6 +168,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_idf_ota.cpp
   ../../porting/esp-idf/esp_idf_client.cpp
   ../../porting/esp-idf/esp_mqtt.cpp
+  ../../porting/esp-idf/esp_idf_network_common.cpp
 )
 
 

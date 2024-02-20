@@ -17,28 +17,28 @@
 #include "netif_wifi.h"
 #include <string.h>
 
-namespace Supla {
+using Supla::Wifi;
 
-  Wifi::Wifi(const char *wifiSsid, const char *wifiPassword, unsigned char *ip)
-    : Network(ip) {
-      setSsid(wifiSsid);
-      setPassword(wifiPassword);
-    }
-
-  void Wifi::setSsid(const char *wifiSsid) {
-    if (wifiSsid) {
-      strncpy(ssid, wifiSsid, MAX_SSID_SIZE);
-    }
+Wifi::Wifi(const char *wifiSsid, const char *wifiPassword, unsigned char *ip)
+  : Network(ip) {
+    setSsid(wifiSsid);
+    setPassword(wifiPassword);
+    intfType = IntfType::WiFi;
   }
 
-  void Wifi::setPassword(const char *wifiPassword) {
-    if (wifiPassword) {
-      strncpy(password, wifiPassword, MAX_WIFI_PASSWORD_SIZE);
-    }
+void Wifi::setSsid(const char *wifiSsid) {
+  if (wifiSsid) {
+    strncpy(ssid, wifiSsid, MAX_SSID_SIZE);
   }
+}
 
-  bool Wifi::isWifiConfigRequired() {
-    return true;
+void Wifi::setPassword(const char *wifiPassword) {
+  if (wifiPassword) {
+    strncpy(password, wifiPassword, MAX_WIFI_PASSWORD_SIZE);
   }
+}
 
-};  // namespace Supla
+bool Wifi::isWifiConfigRequired() {
+  return true;
+}
+

@@ -21,7 +21,6 @@
 
 // FreeRTOS includes
 #include <freertos/FreeRTOS.h>
-#include <freertos/event_groups.h>
 #include <freertos/task.h>
 // ESP-IDF includes
 #include <esp_tls.h>
@@ -62,7 +61,6 @@ class EspIdfWifi : public Supla::Wifi {
   bool isWifiConnected = false;
   bool isIpReady = false;
   bool allowDisable = false;
-  EventGroupHandle_t wifiEventGroup;
   unsigned _supla_int_t ipv4 = 0;
   uint8_t lastChannel = 0;
   int lastReasons[SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX] = {};

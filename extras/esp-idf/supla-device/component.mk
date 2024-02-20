@@ -149,6 +149,7 @@ COMPONENT_OBJS := \
   ../../porting/esp-idf/esp_idf_ota.o \
   ../../porting/esp-idf/esp_idf_client.o \
   ../../porting/esp-idf/esp_mqtt.o \
+  ../../porting/esp-idf/esp_idf_network_common.o \
 
 
 COMPONENT_SRCDIRS := ../../../src/supla-common \

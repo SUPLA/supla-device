@@ -41,6 +41,8 @@ class Condition : public ActionHandler {
 
   virtual bool checkConditionFor(double val, bool isValid = true);
 
+  void setThreshold(double val);
+
  protected:
   virtual bool condition(double val, bool isValid = true) = 0;
 

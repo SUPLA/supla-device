@@ -281,7 +281,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   SUPLA_LOG_DEBUG("Initializing network layer");
   char hostname[32] = {};
   generateHostname(hostname, 6);
-  Supla::Network::SetHostname(hostname);
+  Supla::Network::SetHostname(hostname, 6);
 
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
        proto = proto->next()) {
@@ -912,17 +912,6 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
         skipBytes--;
       }
       destIdx--;
-    }
-  }
-
-  if (macSize > 0) {
-    uint8_t mac[6] = {};
-    if (Supla::Network::GetMacAddr(mac)) {
-      if (name[destIdx - 1] != '-') {
-        name[destIdx++] = '-';
-      }
-      destIdx +=
-          generateHexString(mac + (6 - macSize), &(name[destIdx]), macSize);
     }
   }
 

@@ -182,7 +182,13 @@ void Supla::Protocol::Mqtt::onInit() {
   if (customPrefixLength > 0) {
     customPrefixLength++;  // add one char for '/'
   }
-  sdc->generateHostname(hostname, 3);
+  const int mqttMacSuffixSize = 3;
+  sdc->generateHostname(hostname, mqttMacSuffixSize);
+  // MQTT hostname is generated based on first network interface
+  auto net = Network::FirstInstance();
+  if (net) {
+    net->generateHostname(hostname, mqttMacSuffixSize, hostname);
+  }
   for (int i = 0; i < 32; i++) {
     hostname[i] = static_cast<char>(tolower(hostname[i]));
   }

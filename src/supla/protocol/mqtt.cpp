@@ -244,10 +244,14 @@ void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
     publishInt("state/connection_uptime", uptime.getConnectionUptime());
   }
 
-  int8_t rssi = 0;
-  memcpy(&rssi, &channelState.WiFiRSSI, 1);
-  publishInt("state/rssi", rssi);
-  publishInt("state/wifi_signal_strength", channelState.WiFiSignalStrength);
+  if (channelState.Fields & SUPLA_CHANNELSTATE_FIELD_WIFIRSSI) {
+    int8_t rssi = 0;
+    memcpy(&rssi, &channelState.WiFiRSSI, 1);
+    publishInt("state/rssi", rssi);
+  }
+  if (channelState.Fields & SUPLA_CHANNELSTATE_FIELD_WIFISIGNALSTRENGTH) {
+    publishInt("state/wifi_signal_strength", channelState.WiFiSignalStrength);
+  }
 }
 
 void Supla::Protocol::Mqtt::publish(const char *topic,

@@ -22,6 +22,7 @@
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <supla/sensor/electricity_meter.h>
+#include "gmock/gmock.h"
 
 
 class ActionHandlerMock2 : public Supla::ActionHandler {
@@ -563,4 +564,46 @@ TEST(ConditionTests, handleActionTestsForGPMesurement) {
   cond->handleAction(Supla::ON_CHANGE, action3);
 
   delete cond;
+}
+
+TEST(ConditionTests, setThresholdCheck) {
+  ActionHandlerMock2 ahMock;
+  const int action1 = 15;
+  EXPECT_CALL(ahMock, activateAction(action1));
+
+  ::testing::InSequence seq;
+
+  Supla::ChannelElement channelElement;
+  auto channel = channelElement.getChannel();
+
+  auto cond = OnLess(15.1);
+  cond->setSource(channelElement);
+  cond->setClient(ahMock);
+  channelElement.addAction(action1, ahMock, cond);
+
+  channel->setType(SUPLA_CHANNELTYPE_WINDSENSOR);
+
+  // channel should be initialized to 0, so condition should be met
+  // however channel value was already 0, so there is no change to its value.
+  // As a result condition is not executed
+  channel->setNewValue(0.0);
+
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(1);
+  channel->setNewValue(1.0);
+
+  // 100 is not less than 15.1, so nothing should happen
+  channel->setNewValue(100.0);
+
+  cond->setThreshold(90);
+
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(1);
+  channel->setNewValue(89.0);
+
+  channel->setNewValue(100.0);
+
+  // setting updating threshold above actual value, should tirgger action
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1)).Times(1);
+  cond->setThreshold(110);
+
+  cond->setThreshold(120);
 }

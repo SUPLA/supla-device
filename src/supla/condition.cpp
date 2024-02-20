@@ -17,9 +17,9 @@
 #include "condition.h"
 
 #include <math.h>
+#include <supla/element_with_channel_actions.h>
 
 #include "events.h"
-#include "element.h"
 
 Supla::Condition::Condition(double threshold, bool useAlternativeValue)
   : threshold(threshold),
@@ -137,7 +137,7 @@ bool Supla::Condition::checkConditionFor(double val, bool isValid) {
   return false;
 }
 
-void Supla::Condition::setSource(Supla::Element *src) {
+void Supla::Condition::setSource(Supla::ElementWithChannelActions *src) {
   source = src;
 }
 
@@ -145,7 +145,7 @@ void Supla::Condition::setClient(Supla::ActionHandler *clientPtr) {
   client = clientPtr;
 }
 
-void Supla::Condition::setSource(Supla::Element &src) {
+void Supla::Condition::setSource(Supla::ElementWithChannelActions &src) {
   setSource(&src);
 }
 
@@ -161,4 +161,7 @@ void Supla::Condition::activateAction(int action) {
 
 void Supla::Condition::setThreshold(double val) {
   threshold = val;
+  if (source) {
+    source->runAction(Supla::ON_CHANGE);
+  }
 }

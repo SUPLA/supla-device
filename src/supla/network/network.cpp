@@ -193,7 +193,18 @@ void Network::LoadConfig() {
   }
 }
 
-Network::Network(unsigned char *ip) {
+Network::Network(unsigned char *ip) : Network() {
+  if (ip == nullptr) {
+    useLocalIp = false;
+  } else {
+    useLocalIp = true;
+    memcpy(localIp, ip, 4);
+  }
+}
+
+Network::Network() {
+  mode = DEVICE_MODE_NORMAL;
+  setSSLEnabled(true);
   if (netIntf == nullptr) {
     // first created interface is the default one
     netIntf = this;
@@ -206,13 +217,6 @@ Network::Network(unsigned char *ip) {
     ptr->nextNetIntf = this;
   } else {
     firstNetIntf = this;
-  }
-
-  if (ip == nullptr) {
-    useLocalIp = false;
-  } else {
-    useLocalIp = true;
-    memcpy(localIp, ip, 4);
   }
 }
 

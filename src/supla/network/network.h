@@ -62,6 +62,7 @@ class Network {
   static void printData(const char *prefix, const void *buf, const int count);
 
   explicit Network(uint8_t ip[4]);
+  Network();
   virtual ~Network();
 //  virtual void onLoadConfig();
   virtual void setup() = 0;

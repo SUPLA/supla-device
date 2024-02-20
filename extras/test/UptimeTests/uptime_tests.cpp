@@ -82,10 +82,10 @@ TEST(UptimeTests, OverflowTest) {
 
   bool wasOverflow = false;
   uint32_t previousMillis = 0;
-  for (int i = 0; i < 10000000; i++) {
-    millis += 1000;
+  for (int i = 0; i < 100000; i++) {
+    millis += 100000;
     uptime.iterate(millis);
-    ASSERT_EQ(uptime.getUptime(), i + 1);
+    ASSERT_EQ(uptime.getUptime(), (i + 1) * 100);
 
     if (previousMillis > millis) {
       wasOverflow = true;

@@ -26,6 +26,7 @@
 #include <supla/network/network.h>
 #include <supla/storage/config.h>
 #include <supla/tools.h>
+#include <supla/protocol/supla_srpc.h>
 
 namespace Supla {
 
@@ -73,10 +74,15 @@ void Network::Uninit() {
 }
 
 bool Network::IsReady() {
-  if (Instance() != nullptr) {
-    return Instance()->isReady();
+  auto ptr = firstNetIntf;
+  bool result = false;
+  while (ptr) {
+    if (ptr->isReady()) {
+      result = true;
+    }
+    ptr = ptr->nextNetIntf;
   }
-  return false;
+  return result;
 }
 
 bool Network::Iterate() {
@@ -146,13 +152,6 @@ void Network::SetHostname(const char *buf, int macSize) {
     ptr->setHostname(buf, macSize);
     ptr = ptr->nextNetIntf;
   }
-}
-
-bool Network::IsSuplaSSLEnabled() {
-  if (Instance() != nullptr) {
-    return Instance()->isSuplaSSLEnabled();
-  }
-  return false;
 }
 
 bool Network::IsIpSetupTimeout() {
@@ -328,11 +327,7 @@ bool Network::isWifiConfigRequired() {
 }
 
 void Network::setSSLEnabled(bool enabled) {
-  sslEnabled = enabled;
-}
-
-void Network::setCACert(const char *rootCA) {
-  rootCACert = rootCA;
+  Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = enabled;
 }
 
 bool Network::popSetupNeeded() {
@@ -345,10 +340,6 @@ bool Network::popSetupNeeded() {
 
 void Network::setSetupNeeded() {
   setupNeeded = true;
-}
-
-bool Network::isSuplaSSLEnabled() {
-  return sslEnabled;
 }
 
 bool Network::isIpSetupTimeout() {

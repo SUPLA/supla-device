@@ -53,6 +53,8 @@ class CalCfgResultPending {
 
 class SuplaSrpc : public ProtocolLayer {
  public:
+  static bool isSuplaSSLEnabled;
+
   explicit SuplaSrpc(SuplaDeviceClass *sdc, int version = 16);
   ~SuplaSrpc();
 

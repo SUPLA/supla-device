@@ -39,6 +39,7 @@ struct CalCfgResultPendingItem {
 };
 }  // namespace Supla::Protocol
 
+bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
 
 Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
     : Supla::Protocol::ProtocolLayer(sdc), version(version) {
@@ -84,8 +85,7 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       configComplete = false;
     }
 
-    if (port == 2016 ||
-        (port == -1 && Supla::Network::IsSuplaSSLEnabled())) {
+    if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
       client->setSSLEnabled(true);
       bool usePublicServer = isSuplaPublicServerConfigured();
       auto certificate = suplaCACert;
@@ -155,8 +155,7 @@ void Supla::Protocol::SuplaSrpc::onInit() {
     return;
   }
 
-  if (port == 2016 ||
-      (port == -1 && Supla::Network::IsSuplaSSLEnabled())) {
+  if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
     client->setSSLEnabled(true);
 
     auto cfg = Supla::Storage::ConfigInstance();
@@ -645,7 +644,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
 #ifdef ARDUINO_ARCH_ESP8266
       // Arduino ESP8266 seems to leak memory on SSL reconnect.
       // Workaround: Resetting Wi-Fi cleans it up
-      if (Supla::Network::IsSuplaSSLEnabled()) {
+      if (isSuplaSSLEnabled) {
         requestNetworkRestart = true;
       }
 #endif
@@ -655,7 +654,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     }
 
     if (port == -1) {
-      if (Supla::Network::IsSuplaSSLEnabled()) {
+      if (isSuplaSSLEnabled) {
         port = 2016;
       } else {
         port = 2015;

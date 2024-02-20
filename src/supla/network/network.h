@@ -49,10 +49,9 @@ class Network {
   static void SetNormalMode();
   static void SetSetupNeeded();
   static bool PopSetupNeeded();
-  // returns MAX addres of the main network interface
+  // returns MAC addres of the main network interface
   static bool GetMacAddr(uint8_t *);
   static void SetHostname(const char *, int macSize);
-  static bool IsSuplaSSLEnabled();
   static bool IsIpSetupTimeout();
   static void LoadConfig();
 
@@ -69,7 +68,6 @@ class Network {
   virtual bool getMacAddr(uint8_t *);
   virtual void setHostname(const char *, int macSize);
   void generateHostname(const char *prefix, int macSize, char *output);
-  virtual bool isSuplaSSLEnabled();
   virtual bool isIpSetupTimeout();
 
   virtual bool isReady() = 0;
@@ -83,9 +81,7 @@ class Network {
   virtual void setPassword(const char *wifiPassword);
 
   // SSL configuration
-  virtual void setSSLEnabled(bool enabled);
-  bool isSSLEnabled();
-  void setCACert(const char *rootCA);
+  static void setSSLEnabled(bool enabled);
 
   void clearTimeCounters();
   void setSuplaDeviceClass(SuplaDeviceClass *);
@@ -111,7 +107,7 @@ class Network {
   static enum DeviceMode mode;
   bool setupNeeded = false;
   bool useLocalIp = false;
-  bool sslEnabled = true;
+  bool isNetIntfEnabled = true;
 };
 
 };  // namespace Supla

@@ -341,8 +341,6 @@ class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
 TEST(ChannelTests, SendUpdateTest) {
   SuplaDeviceClass sd;
   SuplaSrpcStub *suplaSrpc = nullptr;
-  new NetworkClientMock;  // it will be destroyed in
-                          // Supla::Protocol::SuplaSrpc
   suplaSrpc = new SuplaSrpcStub(&sd);
   suplaSrpc->setRegisteredAndReady();
   Supla::Channel channel;

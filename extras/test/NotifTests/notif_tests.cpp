@@ -20,7 +20,6 @@
 #include <gtest/gtest.h>
 #include <supla/device/notifications.h>
 #include <supla_srpc_layer_mock.h>
-#include <network_client_mock.h>
 
 using Supla::Notification;
 using ::testing::_;
@@ -60,9 +59,6 @@ TEST(Notification, RegisterNotification) {
 
 TEST(Notification, Send) {
   ASSERT_FALSE(Notification::IsNotificationUsed());
-
-  new NetworkClientMock;  // it will be destroyed in
-                          // Supla::Protocol::SuplaSrpc
 
   Notification notif;
   SuplaSrpcLayerMock srpcMock;

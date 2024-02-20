@@ -52,7 +52,7 @@ class SuplaDeviceTests : public ::testing::Test {
   }
 };
 
-class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
+class SuplaDeviceTestsFullStartupNoClient : public SuplaDeviceTests {
  protected:
   SrpcMock srpc;
   NetworkMock net;
@@ -65,8 +65,6 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
   NetworkClientMock *client = nullptr;
 
   virtual void SetUp() {
-    client = new NetworkClientMock;  // it will be destroyed in
-                                     // Supla::Protocol::SuplaSrpc
     SuplaDeviceTests::SetUp();
 
     EXPECT_CALL(el1, onInit());
@@ -82,6 +80,16 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTests {
 
   virtual void TearDown() {
     SuplaDeviceTests::TearDown();
+    client = nullptr;
+  }
+};
+
+class SuplaDeviceTestsFullStartup : public SuplaDeviceTestsFullStartupNoClient {
+ public:
+  virtual void SetUp() {
+    client = new NetworkClientMock;  // it will be destroyed in
+                                     // Supla::Protocol::SuplaSrpc
+    SuplaDeviceTestsFullStartupNoClient::SetUp();
   }
 };
 
@@ -116,10 +124,10 @@ class SuplaDeviceTestsFullStartupManual : public SuplaDeviceTests {
 
 using ::testing::AtLeast;
 
-TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgain) {
+TEST_F(SuplaDeviceTestsFullStartupNoClient, NoNetworkShouldCallSetupAgain) {
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(false));
   EXPECT_CALL(net, setup()).Times(3);
-  EXPECT_CALL(*client, stop()).Times(2);
+//  EXPECT_CALL(*client, stop()).Times(2);
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
 
@@ -260,10 +268,10 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
 }
 
-TEST_F(SuplaDeviceTestsFullStartup, NoNetworkShouldCallSetupAgainAndResetDev) {
+TEST_F(SuplaDeviceTestsFullStartupNoClient,
+       NoNetworkShouldCallSetupAgainAndResetDev) {
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(false));
   EXPECT_CALL(net, setup()).Times(2);
-  EXPECT_CALL(*client, stop()).Times(1);
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
   // In tests we can't reset board, so this method will be called few times

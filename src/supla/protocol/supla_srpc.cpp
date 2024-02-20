@@ -41,16 +41,51 @@ struct CalCfgResultPendingItem {
 
 bool Supla::Protocol::SuplaSrpc::isSuplaSSLEnabled = true;
 
+static const char wrongCert[] = "SUPLA";
+
 Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
     : Supla::Protocol::ProtocolLayer(sdc), version(version) {
-  client = Supla::ClientBuilder();
-  client->setDebugLogs(true);
-  client->setSdc(sdc);
 }
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
-  delete client;
-  client = nullptr;
+  if (client) {
+    delete client;
+    client = nullptr;
+  }
+  if (selectedCertificate) {
+    if (selectedCertificate != suplaCACert &&
+        selectedCertificate != supla3rdPartyCACert &&
+        selectedCertificate != wrongCert) {
+      delete [] selectedCertificate;
+    }
+  }
+}
+
+void Supla::Protocol::SuplaSrpc::setNetworkClient(Supla::Client *newClient) {
+  bool debugLogs = true;
+  if (client) {
+    debugLogs = client->isDebugLogs();
+    delete client;
+  }
+  client = newClient;
+  client->setDebugLogs(debugLogs);
+  initClient();
+}
+
+void Supla::Protocol::SuplaSrpc::initClient() {
+  if (client == nullptr) {
+    if (Supla::Network::Instance()) {
+      client = Supla::Network::Instance()->createClient();
+    } else {
+      client = Supla::ClientBuilder();
+    }
+    client->setDebugLogs(true);
+  }
+  client->setSdc(sdc);
+  if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
+    client->setSSLEnabled(true);
+    client->setCACert(selectedCertificate);
+  }
 }
 
 bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
@@ -86,14 +121,13 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
     }
 
     if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
-      client->setSSLEnabled(true);
       bool usePublicServer = isSuplaPublicServerConfigured();
-      auto certificate = suplaCACert;
+      selectedCertificate = suplaCACert;
 
       // Public Supla server use different root CA for server certificate
       // validation then CA used for private servers
       if (!usePublicServer) {
-        certificate = supla3rdPartyCACert;
+        selectedCertificate = supla3rdPartyCACert;
       }
 
       cfg->getUInt8("security_level", &securityLevel);
@@ -102,7 +136,6 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       }
 
       SUPLA_LOG_DEBUG("Security level: %d", securityLevel);
-      static const char wrongCert[] = "SUPLA";
       switch (securityLevel) {
         default:
         case 0: {
@@ -111,13 +144,12 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
           // SuplaDevice.begin() is called.
           // If it is null, we just assign "SUPLA" as a certificate value, which
           // will of course fail the certificate validation (which is intended).
-          if (certificate == nullptr) {
+          if (selectedCertificate == nullptr) {
             SUPLA_LOG_ERROR(
                 "Supla CA ceritificate is selected, but it is not set. "
                 "Connection will fail");
-            certificate = wrongCert;
+            selectedCertificate = wrongCert;
           }
-          client->setCACert(certificate);
           break;
         }
         case 1: {
@@ -128,17 +160,18 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
             auto cert = new char[len];
             memset(cert, 0, len);
             cfg->getCustomCA(cert, len);
-            client->setCACert(cert, true);
+            selectedCertificate = cert;
           } else {
             SUPLA_LOG_ERROR(
                 "Custom CA is selected, but certificate is"
                 " missing in config. Connect will fail");
-            client->setCACert(wrongCert);
+            selectedCertificate = wrongCert;
           }
           break;
         }
         case 2: {
           // Skip certificate validation (INSECURE)
+          selectedCertificate = nullptr;
           break;
         }
       }
@@ -156,27 +189,23 @@ void Supla::Protocol::SuplaSrpc::onInit() {
   }
 
   if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
-    client->setSSLEnabled(true);
-
     auto cfg = Supla::Storage::ConfigInstance();
 
     if (!cfg && (suplaCACert != nullptr || supla3rdPartyCACert != nullptr)) {
-      auto certificate = suplaCACert;
+      selectedCertificate = suplaCACert;
       if (suplaCACert != nullptr && supla3rdPartyCACert != nullptr) {
         bool usePublicServer = isSuplaPublicServerConfigured();
 
         // Public Supla server use different root CA for server certificate
         // validation then CA used for private servers
         if (!usePublicServer) {
-          certificate = supla3rdPartyCACert;
+          selectedCertificate = supla3rdPartyCACert;
         }
       }
 
       if (suplaCACert == nullptr) {
-        certificate = supla3rdPartyCACert;
+        selectedCertificate = supla3rdPartyCACert;
       }
-
-      client->setCACert(certificate);
     }
   }
 
@@ -632,6 +661,10 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     lastIterateTime = _millis;
   }
 
+  if (client == nullptr) {
+    initClient();
+  }
+
   // Establish connection with Supla server
   if (!client->connected()) {
     deinitializeSrpc();
@@ -788,7 +821,9 @@ void Supla::Protocol::SuplaSrpc::disconnect() {
 
   firstConnectionAttempt = true;
   registered = 0;
-  client->stop();
+  if (client) {
+    client->stop();
+  }
   deinitializeSrpc();
 }
 

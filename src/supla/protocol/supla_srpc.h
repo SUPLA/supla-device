@@ -60,6 +60,8 @@ class SuplaSrpc : public ProtocolLayer {
 
   static bool isSuplaPublicServerConfigured();
 
+  void setNetworkClient(Supla::Client *newClient);
+
   void onInit() override;
   bool onLoadConfig() override;
   bool verifyConfig() override;
@@ -69,6 +71,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool isNetworkRestartRequested() override;
   uint32_t getConnectionFailTime() override;
   bool isRegisteredAndReady() override;
+  void initClient();
 
   void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
   void sendRegisterNotification(
@@ -155,6 +158,7 @@ class SuplaSrpc : public ProtocolLayer {
 
   const char *suplaCACert = nullptr;
   const char *supla3rdPartyCACert = nullptr;
+  const char *selectedCertificate = nullptr;
   void *srpc = nullptr;
 
  private:

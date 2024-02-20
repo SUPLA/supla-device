@@ -53,9 +53,10 @@ class Client {
 
   // SSL configuration
   virtual void setSSLEnabled(bool enabled);
-  void setCACert(const char *rootCA, bool destroyCertOnExit = false);
+  void setCACert(const char *rootCA);
 
   void setDebugLogs(bool);
+  bool isDebugLogs() const;
   void setSdc(SuplaDeviceClass *sdc);
 
  protected:
@@ -65,7 +66,6 @@ class Client {
 
   bool sslEnabled = false;
   bool debugLogs = false;
-  bool destroyCertOnExit = false;
   const char *rootCACert = nullptr;
   unsigned int rootCACertSize = 0;
   SuplaDeviceClass *sdc = nullptr;

@@ -57,8 +57,6 @@ class ActionTriggerTests : public ::testing::Test {
   SuplaSrpcStub *suplaSrpc = nullptr;
 
   virtual void SetUp() {
-    new NetworkClientMock;  // it will be destroyed in
-                            // Supla::Protocol::SuplaSrpc
     suplaSrpc = new SuplaSrpcStub(&sd);
     suplaSrpc->setRegisteredAndReady();
     Supla::Channel::lastCommunicationTimeMs = 0;

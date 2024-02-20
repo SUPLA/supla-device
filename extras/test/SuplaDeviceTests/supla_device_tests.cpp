@@ -20,7 +20,6 @@
 #include <element_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <network_client_mock.h>
 #include <network_with_mac_mock.h>
 #include <srpc_mock.h>
 #include <supla/clock/clock.h>
@@ -47,7 +46,7 @@ class SuplaDeviceTests : public ::testing::Test {
 
 class TimeInterfaceStub : public TimeInterface {
  public:
-  virtual uint32_t millis() override {
+  uint32_t millis() override {
     static uint32_t value = 0;
     value += 1000;
     return value;
@@ -64,7 +63,6 @@ TEST_F(SuplaDeviceTests, DefaultValuesTest) {
 }
 
 TEST_F(SuplaDeviceTests, ClockMethods) {
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
@@ -80,7 +78,6 @@ TEST_F(SuplaDeviceTests, ClockMethods) {
 }
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElements) {
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   TimerMock timer;
 
@@ -92,7 +89,6 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElements) {
 }
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElementsWithStorage) {
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   TimerMock timer;
   StorageMockSimulator storage;
@@ -113,7 +109,6 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElementsWithStorage) {
 
 TEST_F(SuplaDeviceTests,
        StartWithoutNetworkInterfaceNoElementsWithStorageAndDataLoadAttempt) {
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   TimerMock timer;
   StorageMockSimulator storage;
@@ -131,7 +126,6 @@ TEST_F(SuplaDeviceTests,
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElements) {
   ::testing::InSequence seq;
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   TimerMock timer;
   ElementMock el1;
@@ -155,7 +149,6 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElements) {
 }
 
 TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceWithElementsWithStorage) {
-  NetworkClientMock *client = new NetworkClientMock;
   StorageMockSimulator storage;
   EXPECT_CALL(storage, commit()).Times(1);
   SuplaDeviceClass sd;
@@ -188,7 +181,6 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyGUID) {
   NetworkMockWithMac net;
   TimerMock timer;
 
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
 
   EXPECT_CALL(timer, initTimers());
@@ -202,7 +194,6 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyAuthkey) {
   NetworkMockWithMac net;
   TimerMock timer;
 
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
 
   EXPECT_CALL(timer, initTimers());
@@ -218,7 +209,6 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyServer) {
   NetworkMockWithMac net;
   TimerMock timer;
 
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
 
   EXPECT_CALL(timer, initTimers());
@@ -237,7 +227,6 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyEmail) {
   NetworkMockWithMac net;
   TimerMock timer;
 
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
 
   EXPECT_CALL(timer, initTimers());
@@ -259,7 +248,6 @@ TEST_F(SuplaDeviceTests, SuccessfulBegin) {
   EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
 
   ::testing::InSequence seq;
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   int dummy;
 
@@ -282,7 +270,6 @@ TEST_F(SuplaDeviceTests, SuccessfulBeginAlternative) {
   EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
 
   ::testing::InSequence seq;
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   int dummy;
 
@@ -300,7 +287,6 @@ TEST_F(SuplaDeviceTests, FailedBeginAlternativeOnEmptyAUTHKEY) {
   NetworkMockWithMac net;
   TimerMock timer;
 
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   int dummy;
 
@@ -320,7 +306,6 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   EXPECT_CALL(storage, commit()).Times(2);
   TimerMock timer;
   TimeInterfaceStub time;
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   ElementMock el1;
   ElementMock el2;
@@ -355,10 +340,7 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
 
 TEST_F(SuplaDeviceTests, OnVersionErrorShouldCallDisconnect) {
   NetworkMockWithMac net;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
-
-  EXPECT_CALL(*client, stop()).Times(1);
 
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
@@ -370,7 +352,6 @@ TEST_F(SuplaDeviceTests, OnVersionErrorShouldCallDisconnect) {
 }
 
 TEST_F(SuplaDeviceTests, OnRegisterResultOK) {
-  NetworkClientMock *client = new NetworkClientMock;
   NetworkMockWithMac net;
   SrpcMock srpc;
   TimeInterfaceStub time;
@@ -394,12 +375,10 @@ TEST_F(SuplaDeviceTests, OnRegisterResultBadCredentials) {
   NetworkMockWithMac net;
   SrpcMock srpc;
   TimeInterfaceStub time;
-  NetworkClientMock *client = new NetworkClientMock;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_BAD_CREDENTIALS;
@@ -415,13 +394,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultBadCredentials) {
 TEST_F(SuplaDeviceTests, OnRegisterResultTemporairlyUnavailable) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_TEMPORARILY_UNAVAILABLE;
@@ -437,13 +414,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultTemporairlyUnavailable) {
 TEST_F(SuplaDeviceTests, OnRegisterResultLocationConflict) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_LOCATION_CONFLICT;
@@ -459,13 +434,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultLocationConflict) {
 TEST_F(SuplaDeviceTests, OnRegisterResultChannelConflict) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_CHANNEL_CONFLICT;
@@ -481,13 +454,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultChannelConflict) {
 TEST_F(SuplaDeviceTests, OnRegisterResultDeviceDisabled) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_DEVICE_DISABLED;
@@ -503,13 +474,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultDeviceDisabled) {
 TEST_F(SuplaDeviceTests, OnRegisterResultLocationDisabled) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_LOCATION_DISABLED;
@@ -525,13 +494,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultLocationDisabled) {
 TEST_F(SuplaDeviceTests, OnRegisterResultDeviceLimitExceeded) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_DEVICE_LIMITEXCEEDED;
@@ -547,13 +514,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultDeviceLimitExceeded) {
 TEST_F(SuplaDeviceTests, OnRegisterResultGuidError) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_GUID_ERROR;
@@ -569,13 +534,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultGuidError) {
 TEST_F(SuplaDeviceTests, OnRegisterResultAuthKeyError) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_AUTHKEY_ERROR;
@@ -591,13 +554,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultAuthKeyError) {
 TEST_F(SuplaDeviceTests, OnRegisterResultRegistrationDisabled) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_REGISTRATION_DISABLED;
@@ -613,13 +574,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultRegistrationDisabled) {
 TEST_F(SuplaDeviceTests, OnRegisterResultNoLocationAvailable) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = SUPLA_RESULTCODE_NO_LOCATION_AVAILABLE;
@@ -635,13 +594,11 @@ TEST_F(SuplaDeviceTests, OnRegisterResultNoLocationAvailable) {
 TEST_F(SuplaDeviceTests, OnRegisterResultUnknownError) {
   NetworkMockWithMac net;
   SrpcMock srpc;
-  NetworkClientMock *client = new NetworkClientMock;
   TimeInterfaceStub time;
   SuplaDeviceClass sd;
   Supla::Protocol::SuplaSrpc srpcLayer(&sd);
 
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(0);
-  EXPECT_CALL(*client, stop()).Times(1);
 
   TSD_SuplaRegisterDeviceResult register_device_result{};
   register_device_result.result_code = 666;

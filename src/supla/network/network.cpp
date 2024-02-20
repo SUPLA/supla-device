@@ -28,6 +28,8 @@
 #include <supla/tools.h>
 #include <supla/protocol/supla_srpc.h>
 
+#include "client.h"
+
 namespace Supla {
 
 Network *Network::netIntf = nullptr;
@@ -142,12 +144,6 @@ bool Network::GetMacAddr(uint8_t *buf) {
 
 void Network::SetHostname(const char *buf, int macSize) {
   auto ptr = firstNetIntf;
-  if (macSize < 0) {
-    macSize = 0;
-  }
-  if (macSize > 6) {
-    macSize = 6;
-  }
   while (ptr) {
     ptr->setHostname(buf, macSize);
     ptr = ptr->nextNetIntf;
@@ -155,10 +151,15 @@ void Network::SetHostname(const char *buf, int macSize) {
 }
 
 bool Network::IsIpSetupTimeout() {
-  if (Instance() != nullptr) {
-    return Instance()->isIpSetupTimeout();
+  bool result = true;
+  auto ptr = firstNetIntf;
+  while (ptr) {
+    if (!ptr->isIpSetupTimeout()) {
+      result = false;
+    }
+    ptr = ptr->nextNetIntf;
   }
-  return false;
+  return result;
 }
 
 void Network::LoadConfig() {
@@ -232,6 +233,10 @@ Network::~Network() {
   if (netIntf == this) {
     netIntf = firstNetIntf;
   }
+}
+
+Supla::Client *Network::createClient() {
+  return Supla::ClientBuilder();
 }
 
 bool Network::iterate() {

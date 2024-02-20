@@ -30,6 +30,8 @@ namespace Supla {
 
 const char NetIntfTypeTag[] = "netintf_type";
 
+class Client;
+
 class Network {
  public:
   enum class IntfType {
@@ -51,7 +53,9 @@ class Network {
   static bool PopSetupNeeded();
   // returns MAC addres of the main network interface
   static bool GetMacAddr(uint8_t *);
-  static void SetHostname(const char *, int macSize);
+  // Initialize hostname on all network interfaces with given prefix
+  static void SetHostname(const char *prefix, int macSize);
+  // Returns true when all network interfaces are in timeout
   static bool IsIpSetupTimeout();
   static void LoadConfig();
 
@@ -69,6 +73,8 @@ class Network {
   virtual void setHostname(const char *, int macSize);
   void generateHostname(const char *prefix, int macSize, char *output);
   virtual bool isIpSetupTimeout();
+
+  virtual Supla::Client *createClient();
 
   virtual bool isReady() = 0;
   virtual bool iterate();

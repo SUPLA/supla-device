@@ -23,6 +23,8 @@
 #include <supla/log_wrapper.h>
 #include <SuplaDevice.h>
 #include <supla/time.h>
+#include <lwip/sockets.h>
+#include <lwip/netif.h>
 
 #include <string.h>
 
@@ -58,6 +60,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
     SUPLA_LOG_ERROR("client ptr should be null when trying to connect");
     return 0;
   }
+  srcIp = 0;
 
   esp_tls_cfg_t cfg = {};
   if (rootCACert) {
@@ -83,6 +86,21 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
     int socketFd = 0;
     if (esp_tls_get_conn_sockfd(client, &socketFd) == ESP_OK) {
       fcntl(socketFd, F_SETFL, O_NONBLOCK);
+
+      // store connection source IP address
+      struct sockaddr_in addr = {};
+      socklen_t addrLen = sizeof(addr);
+      getsockname(socketFd, (struct sockaddr *)&addr, &addrLen);
+      struct ifreq ifr = {};
+      strncpy(ifr.ifr_name, inet_ntoa(addr.sin_addr), IFNAMSIZ);
+      srcIp = addr.sin_addr.s_addr;
+      uint8_t ipArr[4];
+      for (int i = 0; i < 4; i++) {
+        ipArr[i] = (srcIp >> (i * 8)) & 0xFF;
+      }
+
+      SUPLA_LOG_INFO("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
+          ipArr[2], ipArr[3]);
     }
 
   } else {
@@ -90,10 +108,10 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
     esp_tls_get_error_handle(client, &errorHandle);
 
     SUPLA_LOG_DEBUG(
-              "last errors %d %d %d",
-              errorHandle->last_error,
-              errorHandle->esp_tls_error_code,
-              errorHandle->esp_tls_flags);
+        "last errors %d %d %d",
+        errorHandle->last_error,
+        errorHandle->esp_tls_error_code,
+        errorHandle->esp_tls_flags);
     if (!isFirstConnectAfterInit) {
       logConnReason(errorHandle->last_error,
           errorHandle->esp_tls_error_code,
@@ -110,7 +128,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
 }
 
 std::size_t Supla::EspIdfClient::writeImp(const uint8_t *buf,
-                                          std::size_t size) {
+    std::size_t size) {
   Supla::AutoLock autoLock(mutex);
   if (client == nullptr) {
     return 0;
@@ -270,3 +288,4 @@ void Supla::EspIdfClient::setTimeoutMs(uint16_t _timeoutMs) {
 Supla::Client *Supla::ClientBuilder() {
   return new Supla::EspIdfClient;
 }
+

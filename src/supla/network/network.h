@@ -41,6 +41,7 @@ class Network {
 
   static Network *Instance();
   static Network *FirstInstance();
+  static Network *GetInstanceByIP(uint32_t ip);
   static void DisconnectProtocols();
   static void Setup();
   static void Disable();
@@ -64,7 +65,7 @@ class Network {
   explicit Network(uint8_t ip[4]);
   Network();
   virtual ~Network();
-//  virtual void onLoadConfig();
+  virtual void onLoadConfig();
   virtual void setup() = 0;
   virtual void disable() = 0;
   virtual void uninit();
@@ -74,6 +75,7 @@ class Network {
   virtual void setHostname(const char *, int macSize);
   void generateHostname(const char *prefix, int macSize, char *output);
   virtual bool isIpSetupTimeout();
+  virtual uint32_t getIP();
 
   virtual Supla::Client *createClient();
 
@@ -97,6 +99,7 @@ class Network {
   bool popSetupNeeded();
 
   enum IntfType getIntfType() const;
+  virtual const char* getIntfName() const;
 
  protected:
   static Network *netIntf;

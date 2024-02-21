@@ -16,7 +16,15 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#include "esp_idf_network_common.h"
+#include "esp_idf_wifi.h"
+
+// FreeRTOS includes
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+// ESP-IDF includes
+#include <esp_tls.h>
+#include <esp_wifi.h>
+
 
 #ifdef SUPLA_DEVICE_ESP32
 #include <esp_mac.h>
@@ -34,19 +42,19 @@
 
 #include <cstring>
 
-#include "esp_idf_wifi.h"
+#include "esp_idf_network_common.h"
 
-static Supla::EspIdfWifi *netIntfPtr = nullptr;
+static Supla::EspIdfWifi *thisNetIntfPtr = nullptr;
 
 Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
                               const char *wifiPassword,
                               unsigned char *ip)
     : Wifi(wifiSsid, wifiPassword, ip) {
-  netIntfPtr = this;
+  thisNetIntfPtr = this;
 }
 
 Supla::EspIdfWifi::~EspIdfWifi() {
-  netIntfPtr = nullptr;
+  thisNetIntfPtr = nullptr;
 }
 
 bool Supla::EspIdfWifi::isReady() {
@@ -58,6 +66,10 @@ static void eventHandler(void *arg,
                          int32_t eventId,
                          void *eventData) {
   static bool firstWiFiScanDone = false;
+  if (thisNetIntfPtr == nullptr) {
+    return;
+  }
+
   if (eventBase == WIFI_EVENT) {
     switch (eventId) {
       case WIFI_EVENT_STA_STOP: {
@@ -65,34 +77,36 @@ static void eventHandler(void *arg,
         break;
       }
       case WIFI_EVENT_STA_START: {
-        SUPLA_LOG_DEBUG("Starting connection to AP");
+        SUPLA_LOG_DEBUG("[%s] Starting connection to AP",
+                        thisNetIntfPtr->getIntfName());
         firstWiFiScanDone = false;
         esp_wifi_connect();
         break;
       }
       case WIFI_EVENT_STA_CONNECTED: {
         firstWiFiScanDone = true;
-        if (netIntfPtr) {
-          netIntfPtr->setWifiConnected(true);
+        if (thisNetIntfPtr) {
+          thisNetIntfPtr->setWifiConnected(true);
         }
-        SUPLA_LOG_DEBUG("Connected to AP");
+        SUPLA_LOG_DEBUG("[%s] Connected to AP", thisNetIntfPtr->getIntfName());
         break;
       }
       case WIFI_EVENT_STA_DISCONNECTED: {
         wifi_event_sta_disconnected_t *data =
             reinterpret_cast<wifi_event_sta_disconnected_t *>(eventData);
-        if (netIntfPtr) {
-          netIntfPtr->setIpReady(false);
-          netIntfPtr->setWifiConnected(false);
+        if (thisNetIntfPtr) {
+          thisNetIntfPtr->setIpReady(false);
+          thisNetIntfPtr->setWifiConnected(false);
           if (firstWiFiScanDone) {
             // we ignore connection error if it happens first time
-            netIntfPtr->logWifiReason(data->reason);
+            thisNetIntfPtr->logWifiReason(data->reason);
           }
         }
-        if (!netIntfPtr->isInConfigMode()) {
+        if (!thisNetIntfPtr->isInConfigMode()) {
           esp_wifi_connect();
           SUPLA_LOG_DEBUG(
-                    "connect to the AP fail (reason %d). Trying again",
+                    "[%s] Connect to the AP fail (reason %d). Trying again",
+                    thisNetIntfPtr->getIntfName(),
                     data->reason);
         }
         firstWiFiScanDone = true;
@@ -103,23 +117,32 @@ static void eventHandler(void *arg,
     switch (eventId) {
       case IP_EVENT_STA_GOT_IP: {
         ip_event_got_ip_t *event = static_cast<ip_event_got_ip_t *>(eventData);
-        if (netIntfPtr) {
-          netIntfPtr->setIpReady(true);
-          netIntfPtr->setIpv4Addr(event->ip_info.ip.addr);
+        if (thisNetIntfPtr) {
+          thisNetIntfPtr->setIpReady(true);
+          thisNetIntfPtr->setIpv4Addr(event->ip_info.ip.addr);
         }
-        SUPLA_LOG_INFO("got ip " IPSTR, IP2STR(&event->ip_info.ip));
+        SUPLA_LOG_INFO("[%s] Got IP " IPSTR,
+                       thisNetIntfPtr->getIntfName(),
+                       IP2STR(&event->ip_info.ip));
         break;
       }
       case IP_EVENT_STA_LOST_IP: {
-        if (netIntfPtr) {
-          netIntfPtr->setIpReady(false);
-          netIntfPtr->setIpv4Addr(0);
+        if (thisNetIntfPtr) {
+          thisNetIntfPtr->setIpReady(false);
+          thisNetIntfPtr->setIpv4Addr(0);
         }
-        SUPLA_LOG_DEBUG("lost ip");
+        SUPLA_LOG_DEBUG("[%s] Lost IP", thisNetIntfPtr->getIntfName());
         break;
       }
     }
   }
+}
+
+uint32_t Supla::EspIdfWifi::getIP() {
+  if (isReady()) {
+    return ipv4;
+  }
+  return 0;
 }
 
 void Supla::EspIdfWifi::setup() {
@@ -159,7 +182,8 @@ void Supla::EspIdfWifi::setup() {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
   } else {
-    SUPLA_LOG_INFO("Wi-Fi: establishing connection with SSID: \"%s\"", ssid);
+    SUPLA_LOG_INFO(
+        "[%s] establishing connection with SSID: \"%s\"", getIntfName(), ssid);
     wifi_config_t wifi_config = {};
     memcpy(wifi_config.sta.ssid, ssid, MAX_SSID_SIZE);
     memcpy(wifi_config.sta.password, password, MAX_WIFI_PASSWORD_SIZE);
@@ -194,12 +218,15 @@ void Supla::EspIdfWifi::disable() {
   }
 
   allowDisable = false;
-  SUPLA_LOG_DEBUG("WiFi: disabling WiFi connection");
+  SUPLA_LOG_DEBUG("[%s] disabling WiFi connection", getIntfName());
   DisconnectProtocols();
   uint8_t channel = 0;
   wifi_second_chan_t secondChannel = {};
   if (esp_wifi_get_channel(&channel, &secondChannel) == ESP_OK) {
-    SUPLA_LOG_DEBUG("Storing Wi-Fi channel %d (%d)", channel, secondChannel);
+    SUPLA_LOG_DEBUG("[%s] Storing Wi-Fi channel %d (%d)",
+                    getIntfName(),
+                    channel,
+                    secondChannel);
     lastChannel = channel;
   }
   esp_wifi_disconnect();
@@ -211,7 +238,7 @@ void Supla::EspIdfWifi::uninit() {
   setIpReady(false);
   DisconnectProtocols();
   if (initDone) {
-    SUPLA_LOG_DEBUG("Wi-Fi: stopping WiFi connection");
+    SUPLA_LOG_DEBUG("[%s] stopping WiFi connection", getIntfName());
     esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_GOT_IP, eventHandler);
     esp_event_handler_unregister(IP_EVENT, IP_EVENT_STA_LOST_IP, eventHandler);
     esp_event_handler_unregister(WIFI_EVENT, ESP_EVENT_ANY_ID, eventHandler);
@@ -270,7 +297,7 @@ void Supla::EspIdfWifi::setWifiConnected(bool state) {
   isWifiConnected = state;
 }
 
-void Supla::EspIdfWifi::setIpv4Addr(unsigned _supla_int_t ip) {
+void Supla::EspIdfWifi::setIpv4Addr(uint32_t ip) {
   ipv4 = ip;
 }
 
@@ -372,3 +399,6 @@ bool Supla::EspIdfWifi::isIpSetupTimeout() {
   return false;
 }
 
+const char* Supla::EspIdfWifi::getIntfName() const {
+  return "WiFi";
+}

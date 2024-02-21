@@ -638,7 +638,7 @@ TEST_F(FullStartupWithConfig,
         *buf = 1;
         return true;
       }
-      EXPECT_TRUE(false);
+      EXPECT_TRUE(false) << "Unexpected config key: " << key;
       return false;
     });
   EXPECT_CALL(cfg, getCustomCASize())
@@ -770,7 +770,7 @@ TEST_F(FullStartupWithConfig,
         *buf = 1;
         return true;
       }
-      EXPECT_TRUE(false);
+      EXPECT_TRUE(false) << "Unexpected config key: " << key;
       return false;
     });
   EXPECT_CALL(cfg, getCustomCASize())
@@ -898,7 +898,7 @@ TEST_F(FullStartupWithConfig,
         *buf = 2;
         return true;
       }
-      EXPECT_TRUE(false);
+      EXPECT_TRUE(false) << "Unexpected config key: " << key;
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {

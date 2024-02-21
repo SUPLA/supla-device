@@ -47,14 +47,6 @@ bool Supla::LinuxNetwork::iterate() {
 }
 
 void Supla::LinuxNetwork::fillStateData(TDSC_ChannelState *channelState) {
-  channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_IPV4;
-
-  // TODO(klew): add obtaining local ip address for channel state info
-/*
-  struct sockaddr_in address = {};
-  socklen_t len = sizeof(address);
-  getsockname(connectionFd, (struct sockaddr *)&address, &len);
-  channelState->IPv4 =
-      static_cast<unsigned _supla_int_t>(address.sin_addr.s_addr);
-*/
+  // Source IP address will be configured by SuplaSrpc class
+  // TODO(klew): add obtaining MAC address based on IP
 }

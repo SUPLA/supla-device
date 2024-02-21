@@ -627,6 +627,7 @@ bool SuplaDeviceClass::loadDeviceConfig() {
 
   // WiFi specific config
   auto net = Supla::Network::Instance();
+  Supla::Network::LoadConfig();
 
   if (net != nullptr && net->isWifiConfigRequired()) {
     memset(buf, 0, sizeof(buf));

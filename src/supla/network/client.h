@@ -59,6 +59,8 @@ class Client {
   bool isDebugLogs() const;
   void setSdc(SuplaDeviceClass *sdc);
 
+  uint32_t getSrcConnectionIPAddress() const;
+
  protected:
   virtual int connectImp(const char *host, uint16_t port) = 0;
   virtual size_t writeImp(const uint8_t *buf, size_t size) = 0;
@@ -69,6 +71,7 @@ class Client {
   const char *rootCACert = nullptr;
   unsigned int rootCACertSize = 0;
   SuplaDeviceClass *sdc = nullptr;
+  uint32_t srcIp = 0;
 };
 
 extern Client *ClientBuilder();

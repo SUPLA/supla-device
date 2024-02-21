@@ -161,3 +161,8 @@ bool Supla::Client::isDebugLogs() const {
 void Supla::Client::setSdc(SuplaDeviceClass *newSdc) {
   sdc = newSdc;
 }
+
+uint32_t Supla::Client::getSrcConnectionIPAddress() const {
+  // when 0 is returned, supla-device will use default network interface address
+  return srcIp;
+}

@@ -44,6 +44,17 @@ Network *Network::FirstInstance() {
   return firstNetIntf;
 }
 
+Network *Network::GetInstanceByIP(uint32_t ip) {
+  auto ptr = firstNetIntf;
+  while (ptr) {
+    if (ip == ptr->getIP()) {
+      return ptr;
+    }
+    ptr = ptr->nextNetIntf;
+  }
+  return nullptr;
+}
+
 void Network::DisconnectProtocols() {
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
       proto = proto->next()) {
@@ -168,29 +179,33 @@ void Network::LoadConfig() {
     return;
   }
 
-  uint8_t netIntfType = 255;
-  cfg->getUInt8(Supla::NetIntfTypeTag, &netIntfType);
-  enum IntfType selectedIntfType = IntfType::WiFi;
-  switch (netIntfType) {
-    case 0: {
-      SUPLA_LOG_INFO("Using WiFi as default network interface");
-      selectedIntfType = IntfType::WiFi;
-      break;
-    }
-    case 1: {
-      SUPLA_LOG_INFO("Using Ethernet as default network interface");
-      selectedIntfType = IntfType::Ethernet;
-      break;
-    }
-  }
+//  uint8_t netIntfType = 255;
+//  cfg->getUInt8(Supla::NetIntfTypeTag, &netIntfType);
+//  enum IntfType selectedIntfType = IntfType::WiFi;
+//  switch (netIntfType) {
+//    case 0: {
+//      SUPLA_LOG_INFO("Using WiFi as default network interface");
+//      selectedIntfType = IntfType::WiFi;
+//      break;
+//    }
+//    case 1: {
+//      SUPLA_LOG_INFO("Using Ethernet as default network interface");
+//      selectedIntfType = IntfType::Ethernet;
+//      break;
+//    }
+//  }
 
   auto ptr = firstNetIntf;
-  while (ptr && ptr->getIntfType() != selectedIntfType) {
+  while (ptr) {
+//    if (ptr->getIntfType() == selectedIntfType) {
+//      netIntf = ptr;
+//    }
+    ptr->onLoadConfig();
     ptr = ptr->nextNetIntf;
   }
-  if (ptr) {
-    netIntf = ptr;
-  }
+}
+
+void Network::onLoadConfig() {
 }
 
 Network::Network(unsigned char *ip) : Network() {
@@ -252,7 +267,8 @@ void Network::clearTimeCounters() {
 
 void Network::fillStateData(TDSC_ChannelState *channelState) {
   (void)(channelState);
-  SUPLA_LOG_DEBUG("fillStateData is not implemented for this interface");
+  SUPLA_LOG_DEBUG("[%s] fillStateData is not implemented for this interface",
+      getIntfName());
 }
 
 #ifdef ARDUINO
@@ -324,8 +340,13 @@ void Network::generateHostname(const char *prefix, int macSize, char *output) {
 
 void Network::setHostname(const char *buf, int macSize) {
   generateHostname(buf, macSize, hostname);
-  SUPLA_LOG_DEBUG("Network AP/hostname: %s", hostname);
+  SUPLA_LOG_DEBUG("[%s] Network AP/hostname: %s", getIntfName(), hostname);
 }
+
+const char* Network::getIntfName() const {
+  return "NA";
+}
+
 
 void Network::setSuplaDeviceClass(SuplaDeviceClass *ptr) {
   sdc = ptr;
@@ -357,6 +378,10 @@ bool Network::isIpSetupTimeout() {
 
 enum Network::IntfType Network::getIntfType() const {
   return intfType;
+}
+
+uint32_t Network::getIP() {
+  return 0;
 }
 
 };  // namespace Supla

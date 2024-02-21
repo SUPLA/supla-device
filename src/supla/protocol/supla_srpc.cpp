@@ -914,7 +914,18 @@ void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
   TDSC_ChannelState state = {};
   state.ReceiverID = receiverId;
   state.ChannelNumber = channelNo;
-  Supla::Network::Instance()->fillStateData(&state);
+  if (client->getSrcConnectionIPAddress() != 0) {
+    state.Fields |= SUPLA_CHANNELSTATE_FIELD_IPV4;
+    state.IPv4 = client->getSrcConnectionIPAddress();
+  }
+
+  auto network =
+      Supla::Network::GetInstanceByIP(client->getSrcConnectionIPAddress());
+  if (network) {
+    network->fillStateData(&state);
+  } else {
+    Supla::Network::Instance()->fillStateData(&state);
+  }
   getSdc()->fillStateData(&state);
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element) {

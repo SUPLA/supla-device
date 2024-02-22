@@ -51,7 +51,6 @@ class EspIdfWifi : public Supla::Wifi {
   bool isInConfigMode();
   void logWifiReason(int);
 
-  const char* getIntfName() const override;
   uint32_t getIP() override;
 
  protected:

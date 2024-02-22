@@ -23,6 +23,7 @@
 #include <supla/network/web_sender.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
+#include <string.h>
 
 namespace Supla {
 
@@ -58,13 +59,26 @@ void DeviceInfo::send(Supla::WebSender *sender) {
   generateHexString(Supla::Channel::reg_dev.GUID, buf, SUPLA_GUID_SIZE);
   sender->send(buf);
   uint8_t mac[6] = {};
-  if (Supla::Network::GetMacAddr(mac)) {
+  if (Supla::Network::GetMainMacAddr(mac)) {
     sender->send("<br>MAC: ");
     generateHexString(mac, buf, 6, ':');
     sender->send(buf);
   }
-  sender->send("</span>");
-  sender->send("<span><br>Uptime: ");
+  sender->send("</span><span>");
+  if (Supla::Network::GetNetIntfCount() > 1) {
+    for (auto net = Supla::Network::FirstInstance(); net;
+         net = net->NextInstance(net)) {
+      uint8_t curMac[6] = {};
+      if (net->getMacAddr(curMac) && memcmp(curMac, mac, 6) != 0) {
+        generateHexString(curMac, buf, 6, ':');
+        sender->send("<br>");
+        sender->send(net->getIntfName());
+        sender->send(" MAC: ");
+        sender->send(buf);
+      }
+    }
+  }
+  sender->send("<br>Uptime: ");
   sender->send(sdc->uptime.getUptime());
   sender->send(" s</span>");
 }

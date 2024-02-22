@@ -219,7 +219,11 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     return false;
   }
 
-  Supla::Network::Instance()->setSuplaDeviceClass(this);
+  for (auto net = Supla::Network::FirstInstance(); net != nullptr;
+       net = Supla::Network::NextInstance(net)) {
+    net->setSuplaDeviceClass(this);
+  }
+
   if (Supla::WebServer::Instance()) {
     Supla::WebServer::Instance()->setSuplaDeviceClass(this);
   }

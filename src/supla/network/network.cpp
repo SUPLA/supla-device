@@ -44,6 +44,13 @@ Network *Network::FirstInstance() {
   return firstNetIntf;
 }
 
+Network *Network::NextInstance(Network *instance) {
+  if (instance) {
+    return instance->nextNetIntf;
+  }
+  return nullptr;
+}
+
 Network *Network::GetInstanceByIP(uint32_t ip) {
   auto ptr = firstNetIntf;
   while (ptr) {
@@ -53,6 +60,16 @@ Network *Network::GetInstanceByIP(uint32_t ip) {
     ptr = ptr->nextNetIntf;
   }
   return nullptr;
+}
+
+int Network::GetNetIntfCount() {
+  int count = 0;
+  auto ptr = firstNetIntf;
+  while (ptr) {
+    count++;
+    ptr = ptr->nextNetIntf;
+  }
+  return count;
 }
 
 void Network::DisconnectProtocols() {
@@ -65,7 +82,9 @@ void Network::DisconnectProtocols() {
 void Network::Setup() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    ptr->setup();
+    if (!ptr->isIntfDisabledInConfig()) {
+      ptr->setup();
+    }
     ptr = ptr->nextNetIntf;
   }
 }
@@ -73,7 +92,9 @@ void Network::Setup() {
 void Network::Disable() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    ptr->disable();
+    if (!ptr->isIntfDisabledInConfig()) {
+      ptr->disable();
+    }
     ptr = ptr->nextNetIntf;
   }
 }
@@ -81,7 +102,9 @@ void Network::Disable() {
 void Network::Uninit() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    ptr->uninit();
+    if (!ptr->isIntfDisabledInConfig()) {
+      ptr->uninit();
+    }
     ptr = ptr->nextNetIntf;
   }
 }
@@ -90,8 +113,10 @@ bool Network::IsReady() {
   auto ptr = firstNetIntf;
   bool result = false;
   while (ptr) {
-    if (ptr->isReady()) {
-      result = true;
+    if (!ptr->isIntfDisabledInConfig()) {
+      if (ptr->isReady()) {
+        result = true;
+      }
     }
     ptr = ptr->nextNetIntf;
   }
@@ -102,8 +127,10 @@ bool Network::Iterate() {
   bool result = false;
   auto ptr = firstNetIntf;
   while (ptr) {
-    if (ptr->iterate()) {
-      result = true;
+    if (!ptr->isIntfDisabledInConfig()) {
+      if (ptr->iterate()) {
+        result = true;
+      }
     }
     ptr = ptr->nextNetIntf;
   }
@@ -113,7 +140,9 @@ bool Network::Iterate() {
 void Network::SetConfigMode() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    ptr->setConfigMode();
+    if (!ptr->isIntfDisabledInConfig()) {
+      ptr->setConfigMode();
+    }
     ptr = ptr->nextNetIntf;
   }
 }
@@ -121,7 +150,9 @@ void Network::SetConfigMode() {
 void Network::SetNormalMode() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    ptr->setNormalMode();
+    if (!ptr->isIntfDisabledInConfig()) {
+      ptr->setNormalMode();
+    }
     ptr = ptr->nextNetIntf;
   }
 }
@@ -129,7 +160,9 @@ void Network::SetNormalMode() {
 void Network::SetSetupNeeded() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    ptr->setSetupNeeded();
+    if (!ptr->isIntfDisabledInConfig()) {
+      ptr->setSetupNeeded();
+    }
     ptr = ptr->nextNetIntf;
   }
 }
@@ -138,19 +171,30 @@ bool Network::PopSetupNeeded() {
   bool setupNeeded = false;
   auto ptr = firstNetIntf;
   while (ptr) {
-    if (ptr->popSetupNeeded()) {
-      setupNeeded = true;
+    if (!ptr->isIntfDisabledInConfig()) {
+      if (ptr->popSetupNeeded()) {
+        setupNeeded = true;
+      }
     }
     ptr = ptr->nextNetIntf;
   }
   return setupNeeded;
 }
 
-bool Network::GetMacAddr(uint8_t *buf) {
-  if (Instance() != nullptr) {
-    return Instance()->getMacAddr(buf);
+bool Network::GetMainMacAddr(uint8_t *buf) {
+  auto ptr = firstNetIntf;
+  if (ptr == nullptr) {
+    return false;
   }
-  return false;
+  // Returns WiFi MAC address by default. If WiFi interface is missing, then
+  // returns first Network instance MAC address
+  while (ptr) {
+    if (ptr->getIntfType() == IntfType::WiFi) {
+      return ptr->getMacAddr(buf);
+    }
+    ptr = ptr->nextNetIntf;
+  }
+  return firstNetIntf->getMacAddr(buf);
 }
 
 void Network::SetHostname(const char *buf, int macSize) {
@@ -174,38 +218,58 @@ bool Network::IsIpSetupTimeout() {
 }
 
 void Network::LoadConfig() {
+  auto ptr = firstNetIntf;
+  Network *mainIntf = netIntf;
+  while (ptr) {
+    ptr->onLoadConfig();
+    if (ptr->isIntfDisabledInConfig() && ptr == mainIntf) {
+      mainIntf = nullptr;
+    }
+    ptr = ptr->nextNetIntf;
+  }
+
+  ptr = firstNetIntf;
+  while (ptr) {
+    if (!ptr->isIntfDisabledInConfig() && mainIntf == nullptr) {
+      mainIntf = ptr;
+    }
+    if (!ptr->isIntfDisabledInConfig() &&
+        ptr->getIntfType() != IntfType::WiFi) {
+      mainIntf = ptr;
+    }
+    ptr = ptr->nextNetIntf;
+  }
+  if (mainIntf != nullptr) {
+    netIntf = mainIntf;
+  }
+}
+
+void Network::onLoadConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     return;
   }
 
-//  uint8_t netIntfType = 255;
-//  cfg->getUInt8(Supla::NetIntfTypeTag, &netIntfType);
-//  enum IntfType selectedIntfType = IntfType::WiFi;
-//  switch (netIntfType) {
-//    case 0: {
-//      SUPLA_LOG_INFO("Using WiFi as default network interface");
-//      selectedIntfType = IntfType::WiFi;
-//      break;
-//    }
-//    case 1: {
-//      SUPLA_LOG_INFO("Using Ethernet as default network interface");
-//      selectedIntfType = IntfType::Ethernet;
-//      break;
-//    }
-//  }
-
-  auto ptr = firstNetIntf;
-  while (ptr) {
-//    if (ptr->getIntfType() == selectedIntfType) {
-//      netIntf = ptr;
-//    }
-    ptr->onLoadConfig();
-    ptr = ptr->nextNetIntf;
+  uint8_t intfDisabled = 0;
+  switch (getIntfType()) {
+    case IntfType::WiFi: {
+      cfg->getUInt8(Supla::WifiDisableTag, &intfDisabled);
+      break;
+    }
+    case IntfType::Ethernet: {
+      cfg->getUInt8(Supla::EthDisableTag, &intfDisabled);
+      break;
+    }
+    case IntfType::Unknown: {
+      break;
+    }
   }
-}
-
-void Network::onLoadConfig() {
+  if (intfDisabled) {
+    SUPLA_LOG_INFO("[%s] network interface disabled", getIntfName());
+    intfDisabledInConfig = true;
+  } else {
+    intfDisabledInConfig = false;
+  }
 }
 
 Network::Network(unsigned char *ip) : Network() {
@@ -369,6 +433,9 @@ bool Network::popSetupNeeded() {
 }
 
 void Network::setSetupNeeded() {
+  if (isIntfDisabledInConfig()) {
+    return;
+  }
   setupNeeded = true;
 }
 
@@ -382,6 +449,10 @@ enum Network::IntfType Network::getIntfType() const {
 
 uint32_t Network::getIP() {
   return 0;
+}
+
+bool Network::isIntfDisabledInConfig() const {
+  return intfDisabledInConfig;
 }
 
 };  // namespace Supla

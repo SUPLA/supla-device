@@ -226,7 +226,7 @@ void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
     publishBool("state/connected", true, -1, 1);
     uint8_t mac[6] = {};
     char macStr[12 + 6] = {};
-    if (Supla::Network::GetMacAddr(mac)) {
+    if (Supla::Network::GetMainMacAddr(mac)) {
       generateHexString(mac, macStr, 6, ':');
     }
 
@@ -1359,7 +1359,7 @@ void Supla::Protocol::Mqtt::generateObjectId(char *result, int channelNumber,
     SUPLA_LOG_DEBUG("Mqtt: invalid channel number");
     return;
   }
-  Supla::Network::GetMacAddr(mac);
+  Supla::Network::GetMainMacAddr(mac);
   generateHexString(mac, result, 6);
   for (int i = 0; i < 12; i++) {
     result[i] = static_cast<char>(tolower(result[i]));

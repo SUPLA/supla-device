@@ -37,6 +37,27 @@ void WifiParameters::send(Supla::WebSender* sender) {
     sender->send("<h3>Wi-Fi Settings</h3>");
     char buf[256] = {};
 
+    if (Supla::Network::GetNetIntfCount() > 1) {
+      // form-field START
+      const char wifiEn[] = "wifi_en";  // HTML field
+      uint8_t wifiDisabled = 0;
+      cfg->getUInt8(Supla::WifiDisableTag, &wifiDisabled);
+
+      sender->send("<div class=\"form-field right-checkbox\">");
+      sender->sendLabelFor(wifiEn, "Enable Wi-Fi");
+      sender->send("<label>");
+      sender->send("<span class=\"switch\">");
+      sender->send("<input type=\"checkbox\" value=\"on\" ");
+      sender->send(checked(wifiDisabled == 0));
+      sender->sendNameAndId(wifiEn);
+      sender->send(">");
+      sender->send("<span class=\"slider\"></span>");
+      sender->send("</span>");
+      sender->send("</label>");
+      sender->send("</div>");
+      // form-field END
+    }
+
     // form-field START
     sender->send("<div class=\"form-field\">");
     const char key[] = "sid";
@@ -73,9 +94,23 @@ bool WifiParameters::handleResponse(const char* key, const char* value) {
       cfg->setWiFiPassword(value);
     }
     return true;
+  } else if (strcmp(key, "wifi_en") == 0) {
+    checkboxFound = true;
+    uint8_t wifiDisVale = (strncmp(value, "on", 3) == 0 ? 0 : 1);
+    cfg->setUInt8(Supla::WifiDisableTag, wifiDisVale);
+    return true;
   }
 
   return false;
+}
+
+void WifiParameters::onProcessingEnd() {
+  if (!checkboxFound && Supla::Network::GetNetIntfCount() > 1) {
+    // checkbox doesn't send value when it is not checked, so on processing end
+    // we check if it was found earlier, and if not, then we process it as "off"
+    handleResponse("wifi_en", "off");
+  }
+  checkboxFound = false;
 }
 
 };  // namespace Html

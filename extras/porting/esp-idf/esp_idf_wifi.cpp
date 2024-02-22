@@ -399,6 +399,3 @@ bool Supla::EspIdfWifi::isIpSetupTimeout() {
   return false;
 }
 
-const char* Supla::EspIdfWifi::getIntfName() const {
-  return "WiFi";
-}

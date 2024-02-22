@@ -46,6 +46,7 @@ bool Wifi::isWifiConfigRequired() {
 
 
 void Wifi::onLoadConfig() {
+  Network::onLoadConfig();
   auto cfg = Supla::Storage::ConfigInstance();
   char buf[100] = {};
   memset(buf, 0, sizeof(buf));
@@ -57,4 +58,8 @@ void Wifi::onLoadConfig() {
   if (cfg->getWiFiPassword(buf) && strlen(buf) > 0) {
     setPassword(buf);
   }
+}
+
+const char* Wifi::getIntfName() const {
+  return "Wi-Fi";
 }

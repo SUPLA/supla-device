@@ -34,6 +34,7 @@ class Wifi : public Supla::Network {
   void setSsid(const char *wifiSsid) override;
   void setPassword(const char *wifiPassword) override;
   bool isWifiConfigRequired() override;
+  const char* getIntfName() const override;
 
   void onLoadConfig() override;
  protected:

@@ -140,9 +140,7 @@ bool Network::Iterate() {
 void Network::SetConfigMode() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    if (!ptr->isIntfDisabledInConfig()) {
-      ptr->setConfigMode();
-    }
+    ptr->setConfigMode();
     ptr = ptr->nextNetIntf;
   }
 }
@@ -150,9 +148,7 @@ void Network::SetConfigMode() {
 void Network::SetNormalMode() {
   auto ptr = firstNetIntf;
   while (ptr) {
-    if (!ptr->isIntfDisabledInConfig()) {
-      ptr->setNormalMode();
-    }
+    ptr->setNormalMode();
     ptr = ptr->nextNetIntf;
   }
 }
@@ -452,6 +448,10 @@ uint32_t Network::getIP() {
 }
 
 bool Network::isIntfDisabledInConfig() const {
+  if (mode == Supla::DEVICE_MODE_CONFIG && getIntfType() == IntfType::WiFi) {
+    // If device is in config mode we alaways enable WiFi
+    return false;
+  }
   return intfDisabledInConfig;
 }
 

@@ -415,14 +415,20 @@ bool Config::isMinimalConfigReady() {
 
   // Common part
   memset(buf, 0, sizeof(buf));
-  if (!getWiFiSSID(buf) || strlen(buf) == 0) {
-    SUPLA_LOG_DEBUG("Wi-Fi SSID missing");
-    return false;
-  }
-  memset(buf, 0, sizeof(buf));
-  if (!getWiFiPassword(buf) || strlen(buf) == 0) {
-    SUPLA_LOG_DEBUG("Wi-Fi password missing");
-    return false;
+  auto net = Supla::Network::Instance();
+  Supla::Network::LoadConfig();
+
+  if (net != nullptr && !net->isIntfDisabledInConfig() &&
+      net->isWifiConfigRequired()) {
+    if (!getWiFiSSID(buf) || strlen(buf) == 0) {
+      SUPLA_LOG_DEBUG("Wi-Fi SSID missing");
+      return false;
+    }
+    memset(buf, 0, sizeof(buf));
+    if (!getWiFiPassword(buf) || strlen(buf) == 0) {
+      SUPLA_LOG_DEBUG("Wi-Fi password missing");
+      return false;
+    }
   }
 
   // Supla protocol part

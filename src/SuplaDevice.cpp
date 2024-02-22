@@ -633,7 +633,8 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   auto net = Supla::Network::Instance();
   Supla::Network::LoadConfig();
 
-  if (net != nullptr && net->isWifiConfigRequired()) {
+  if (net != nullptr && !net->isIntfDisabledInConfig() &&
+      net->isWifiConfigRequired()) {
     memset(buf, 0, sizeof(buf));
     if (cfg->getWiFiSSID(buf) && strlen(buf) > 0) {
       net->setSsid(buf);

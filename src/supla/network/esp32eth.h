@@ -37,7 +37,7 @@
 
 #include <Arduino.h>
 #include <ETH.h>
-#include <supla/network/network.h>
+#include <supla/network/netif_lan.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
 
@@ -63,15 +63,17 @@
 // Pin# of the I²C IO signal for the Ethernet PHY
 #define ETH_MDIO_PIN 18
 
-static bool eth_connected = false;
+namespace Supla {
+class ESPETH;
+}  // namespace Supla
 
-// TODO(klew): change logs to supla_log
+static Supla::ESPETH *thisEth = nullptr;
 
 namespace Supla {
-class ESPETH : public Supla::Network {
+class ESPETH : public Supla::LAN {
  public:
-  explicit ESPETH(uint8_t ethmode, unsigned char *ip = nullptr)
-      : Network(ip) {
+  explicit ESPETH(uint8_t ethmode) {
+    thisEth = this;
     if (ethmode == 0) {
       ETH_ADDRESS = 0;
     } else {
@@ -79,14 +81,16 @@ class ESPETH : public Supla::Network {
     }
   }
 
-  bool isReady() override {
-    return eth_connected;
+  ~ESPETH() {
+    if (thisEth == this) {
+      thisEth = nullptr;
+    }
   }
 
   void setup() override {
-    WiFiEventId_t event_gotIP = WiFi.onEvent(
+    WiFi.onEvent(
         [](WiFiEvent_t event, WiFiEventInfo_t info) {
-          Serial.print(F("local IP: "));
+          Serial.print(F("[Ethernet] local IP: "));
           Serial.println(ETH.localIP());
           Serial.print(F("subnetMask: "));
           Serial.println(ETH.subnetMask());
@@ -99,39 +103,68 @@ class ESPETH : public Supla::Network {
           }
           Serial.print(ETH.linkSpeed());
           Serial.println(F("Mbps"));
-          eth_connected = true;
+          if (thisEth) {
+            thisEth->setIpv4Addr(ETH.localIP());
+          }
         },
-        WiFiEvent_t::ARDUINO_EVENT_ETH_GOT_IP);  // ESP core 2.0.2
-    (void)(event_gotIP);
-    WiFiEventId_t event_disconnected = WiFi.onEvent(
+        WiFiEvent_t::ARDUINO_EVENT_ETH_GOT_IP);
+    WiFi.onEvent(
         [](WiFiEvent_t event, WiFiEventInfo_t info) {
-          Serial.println(F("Station disconnected"));
-          eth_connected = false;
+          Serial.println(F("[Ethernet] Disconnected"));
+          if (thisEth) {
+            thisEth->setIpv4Addr(0);
+          }
         },
         WiFiEvent_t::ARDUINO_EVENT_ETH_DISCONNECTED);  // ESP core 2.0.2
-    (void)(event_disconnected);
-    Serial.println(F("establishing Lan connection"));
+
+    Serial.println(F("[Ethernet] establishing LAN connection"));
+    allowDisable = true;
     ETH.begin(ETH_ADDRESS,
               ETH_POWER_PIN,
               ETH_MDC_PIN,
               ETH_MDIO_PIN,
               ETH_TYPE,
               ETH_CLK_MODE);
+
+    char newHostname[32] = {};
+    generateHostname(hostname, macSizeForHostname, newHostname);
+    strncpy(hostname, newHostname, sizeof(hostname) - 1);
+    SUPLA_LOG_DEBUG("[%s] Network AP/hostname: %s", getIntfName(), hostname);
+    ETH.setHostname(hostname);
+    initDone = true;
   }
 
   void disable() override {
+    if (!allowDisable) {
+      return;
+    }
+
+    allowDisable = false;
+    SUPLA_LOG_DEBUG("[%s] disabling ETH connection", getIntfName());
+    DisconnectProtocols();
+//    ETH.end();
   }
 
-  void fillStateData(TDSC_ChannelState *channelState) override {
-    channelState->Fields |=
-        SUPLA_CHANNELSTATE_FIELD_IPV4 | SUPLA_CHANNELSTATE_FIELD_MAC;
-    channelState->IPv4 = ETH.localIP();
-    ETH.macAddress(channelState->MAC);  // ESP core 2.0.2
+  bool getMacAddr(uint8_t *mac) override {
+    if (initDone) {
+      ETH.macAddress(mac);
+    }
+    return true;
   }
+
+  void setHostname(const char *prefix, int macSize) override {
+    macSizeForHostname = macSize;
+    strncpy(hostname, prefix, sizeof(hostname) - 1);
+    SUPLA_LOG_DEBUG("[%s] Network AP/hostname: %s", getIntfName(), hostname);
+}
 
  protected:
   uint8_t ETH_ADDRESS = {};
+  bool allowDisable = false;
+  int macSizeForHostname = 0;
+  bool initDone = false;
 };
 };  // namespace Supla
+
 
 #endif  // SRC_SUPLA_NETWORK_ESP32ETH_H_

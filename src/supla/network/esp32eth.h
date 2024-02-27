@@ -88,6 +88,11 @@ class ESPETH : public Supla::LAN {
   }
 
   void setup() override {
+    allowDisable = true;
+    if (initDone) {
+      return;
+    }
+
     WiFi.onEvent(
         [](WiFiEvent_t event, WiFiEventInfo_t info) {
           Serial.print(F("[Ethernet] local IP: "));
@@ -118,20 +123,19 @@ class ESPETH : public Supla::LAN {
         WiFiEvent_t::ARDUINO_EVENT_ETH_DISCONNECTED);  // ESP core 2.0.2
 
     Serial.println(F("[Ethernet] establishing LAN connection"));
-    allowDisable = true;
     ETH.begin(ETH_ADDRESS,
               ETH_POWER_PIN,
               ETH_MDC_PIN,
               ETH_MDIO_PIN,
               ETH_TYPE,
               ETH_CLK_MODE);
+    initDone = true;
 
     char newHostname[32] = {};
     generateHostname(hostname, macSizeForHostname, newHostname);
     strncpy(hostname, newHostname, sizeof(hostname) - 1);
     SUPLA_LOG_DEBUG("[%s] Network AP/hostname: %s", getIntfName(), hostname);
     ETH.setHostname(hostname);
-    initDone = true;
   }
 
   void disable() override {

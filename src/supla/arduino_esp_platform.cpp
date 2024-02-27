@@ -115,6 +115,16 @@ class ArduinoEspClient : public Client {
     }
 
     int result = wifiClient->connect(host, port);
+    if (result == 1) {
+      srcIp = wifiClient->localIP();
+      uint8_t ipArr[4];
+      for (int i = 0; i < 4; i++) {
+        ipArr[i] = (srcIp >> (i * 8)) & 0xFF;
+      }
+
+      SUPLA_LOG_INFO("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
+          ipArr[2], ipArr[3]);
+    }
     if (clientSec) {
       char buf[200];
       int lastErr = 0;

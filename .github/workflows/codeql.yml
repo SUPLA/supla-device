@@ -74,6 +74,7 @@ jobs:
 
     - run: |
         echo "Run, Build Application using script"
+        sudo apt update
         sudo apt install libssl-dev build-essential libyaml-cpp-dev cmake
         ./extras/examples/linux/build_linux_example.sh
 

@@ -372,6 +372,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isWeelkySchedulManualOverrideMode() const;
   void clearWaitingFlags();
 
+  void allowWrapAroundTemperatureSetpoints();
+
  private:
   _supla_int16_t getTemperature(int channelNo);
   // returns true if forced off should be set
@@ -453,6 +455,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   uint32_t timerUpdateTimestamp = 0;
   bool serverChannelFunctionValid = true;
+  bool wrapAroundTemperatureSetpoints = false;
 };
 
 }  // namespace Control

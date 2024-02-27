@@ -3965,32 +3965,49 @@ void HvacBase::setButtonTemperatureStep(int16_t step) {
 
 void HvacBase::changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool) {
   auto function = getChannelFunction();
+  int16_t newHeat = getTemperatureSetpointHeat() + tHeat;
+  if (wrapAroundTemperatureSetpoints) {
+    if (newHeat > getTemperatureRoomMax()) {
+      newHeat = getTemperatureRoomMin();
+    } else if (newHeat < getTemperatureRoomMin()) {
+      newHeat = getTemperatureRoomMax();
+    }
+  }
+
+  int16_t newCool = getTemperatureSetpointCool() + tCool;
+  if (wrapAroundTemperatureSetpoints) {
+    if (newCool > getTemperatureRoomMax()) {
+      newCool = getTemperatureRoomMin();
+    } else if (newCool < getTemperatureRoomMin()) {
+      newCool = getTemperatureRoomMax();
+    }
+  }
 
   switch (function) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
       if (isHeatingSubfunction()) {
         applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                                getTemperatureSetpointHeat() + tHeat,
+                                newHeat,
                                 INT16_MIN);
       }
       if (isCoolingSubfunction()) {
         applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
                                 INT16_MIN,
-                                getTemperatureSetpointCool() + tCool);
+                                newCool);
       }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
       applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                              getTemperatureSetpointHeat() + tHeat,
+                              newHeat,
                               INT16_MIN);
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
       applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                              getTemperatureSetpointHeat() + tHeat,
-                              getTemperatureSetpointCool() + tCool);
+                              newHeat,
+                              newCool);
       break;
     }
   }
@@ -4077,4 +4094,8 @@ void HvacBase::updateTimerValue() {
 void HvacBase::clearWaitingFlags() {
   lastConfigChangeTimestampMs = 0;
   lastIterateTimestampMs = 0;
+}
+
+void HvacBase::allowWrapAroundTemperatureSetpoints() {
+  wrapAroundTemperatureSetpoints = true;
 }

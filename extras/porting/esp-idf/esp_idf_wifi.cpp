@@ -381,8 +381,25 @@ void Supla::EspIdfWifi::logWifiReason(int reason) {
         sdc->addLastStateLog("Wi-Fi: roaming");
         break;
       }
+      case 210: {
+        sdc->addLastStateLog(
+            "Wi-Fi: SSID found but with incompatible security");
+        break;
+      }
+      case 211: {
+        sdc->addLastStateLog(
+            "Wi-Fi: AP found but with incompatible authmode (at least WPA2 PSK "
+            "is required)");
+        break;
+      }
+      case 212: {
+        sdc->addLastStateLog("Wi-Fi: AP found but RSSI is too low");
+        break;
+      }
       default: {
         char buf[100] = {};
+        // see:
+        // https://docs.espressif.com/projects/esp-idf/en/stable/esp32/api-guides/wifi.html#wi-fi-reason-code
         snprintf(buf, sizeof(buf), "Wi-Fi: disconnect reason %d", reason);
         sdc->addLastStateLog(buf);
         break;

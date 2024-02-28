@@ -92,6 +92,7 @@ class SuplaSrpc : public ProtocolLayer {
       uint8_t configType) override;
 
   bool setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig) override;
+  bool setInitialCaption(uint8_t channelNumber, const char *caption) override;
   void sendRemainingTimeValue(uint8_t channelNumber,
                               uint32_t timeMs,
                               uint8_t state,

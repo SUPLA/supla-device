@@ -115,6 +115,10 @@ bool ProtocolLayer::setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig) {
   return false;
 }
 
+bool ProtocolLayer::setInitialCaption(uint8_t, const char *) {
+  return false;
+}
+
 bool ProtocolLayer::isConfigEmpty() {
   return configEmpty;
 }

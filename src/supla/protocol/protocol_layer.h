@@ -78,6 +78,7 @@ class ProtocolLayer {
   virtual void notifyConfigChange(int channelNumber);
 
   virtual bool setDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
+  virtual bool setInitialCaption(uint8_t channelNumber, const char *caption);
 
   virtual void sendRegisterNotification(
       TDS_RegisterPushNotification *notification);

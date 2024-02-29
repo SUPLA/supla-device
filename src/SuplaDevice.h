@@ -195,6 +195,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool isRemoteDeviceConfigEnabled() const;
   void setShowUptimeInChannelState(bool value);
 
+  void setProtoVerboseLog(bool value);
+
  protected:
   int networkIsNotReadyCounter = 0;
 

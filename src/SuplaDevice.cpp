@@ -1232,4 +1232,11 @@ void SuplaDeviceClass::setShowUptimeInChannelState(bool value) {
   showUptimeInChannelState = value;
 }
 
+void SuplaDeviceClass::setProtoVerboseLog(bool value) {
+  createSrpcLayerIfNeeded();
+  if (srpcLayer) {
+    srpcLayer->setVerboseLog(value);
+  }
+}
+
 SuplaDeviceClass SuplaDevice;

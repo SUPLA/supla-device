@@ -62,7 +62,7 @@ Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
 }
 
 void Supla::Protocol::SuplaSrpc::setNetworkClient(Supla::Client *newClient) {
-  bool debugLogs = true;
+  bool debugLogs = verboseLog;
   if (client) {
     debugLogs = client->isDebugLogs();
     delete client;
@@ -79,7 +79,7 @@ void Supla::Protocol::SuplaSrpc::initClient() {
     } else {
       client = Supla::ClientBuilder();
     }
-    client->setDebugLogs(true);
+    client->setDebugLogs(verboseLog);
   }
   client->setSdc(sdc);
   if (port == 2016 || (port == -1 && isSuplaSSLEnabled)) {
@@ -1394,4 +1394,8 @@ void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
     srpc = nullptr;
   }
   setDeviceConfigReceivedAfterRegistration = false;
+}
+
+void Supla::Protocol::SuplaSrpc::setVerboseLog(bool value) {
+  verboseLog = value;
 }

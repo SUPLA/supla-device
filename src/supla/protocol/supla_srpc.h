@@ -133,6 +133,7 @@ class SuplaSrpc : public ProtocolLayer {
                                void *data = nullptr);
 
   static const char *configResultToCStr(int result);
+  void setVerboseLog(bool value);
 
  protected:
   bool ping();
@@ -147,6 +148,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool enabled = true;
   bool setDeviceConfigReceivedAfterRegistration = false;
   bool firstConnectionAttempt = true;
+  bool verboseLog = true;
   uint16_t connectionFailCounter = 0;
 
   uint32_t lastPingTimeMs = 0;

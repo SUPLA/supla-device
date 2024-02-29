@@ -239,5 +239,13 @@ srpc_evtool_v2_extended2emextended(const TSuplaChannelExtendedValue *ev,
   return 1;
 }
 
+_supla_int_t srpc_dcs_async_set_channel_caption(void *_srpc,
+                                                TDCS_SetCaption *caption) {
+  assert(SrpcInterface::instance);
+  assert(caption);
+  return SrpcInterface::instance->setChannelCaption(caption->ChannelNumber,
+      caption->Caption);
+}
+
 SrpcMock::SrpcMock() {}
 SrpcMock::~SrpcMock() {}

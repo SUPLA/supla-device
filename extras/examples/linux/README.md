@@ -237,6 +237,10 @@ Supported channel types:
 * `PressureParsed` - related class `Supla::Sensor::PressureParsed`
 * `WindParsed` - related class `Supla::Sensor::WindParsed`
 * `RainParsed` - related class `Supla::Sensor::RainParsed`
+* `GeneralPurposeMeasurementParsed` - related class `Supla::Sensor::GeneralPurposeMeasurement`
+* `GeneralPurposeMeterParsed` - related class `Supla::Sensor::GeneralPurposeMeter`
+* `WeightParsed` - related class `Supla::Sensor::Weight`
+* `DistanceParsed` - related class `Supla::Sensor::Distance`
 
 Example channels configuration (details are exaplained later):
 
@@ -760,6 +764,51 @@ Optional parameter: `multiplier` - defines multiplier for fetched value
 Add channel with "rain" type.
 
 Mandatory parameter: `rain` - defines key/index by which data is fetched
+from `parser`.
+Optional parameter: `multiplier` - defines multiplier for fetched value
+(you can put any floating point number).
+
+### `GeneralPurposeMeasurementParsed`
+Add channel with "general purpose measurement" type.
+
+Mandatory parameter: `value` - defines key/index by which data is fetched
+from `parser`.
+Optional parameters:
+* `multiplier` - defines multiplier for fetched value (you can put any floating point number).
+* `default_value_multiplier` - defines default multiplier for value (you can put any floating point number).
+* `default_value_divider` - defines default divider for value (you can put any floating point number).
+* `default_value_added` - defines default added value (you can put any floating point number).
+* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 0, 1, 2, 3, 4.
+* `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
+* `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
+
+### `GeneralPurposeMeterParsed`
+Add channel with "general purpose meter" type.
+
+Mandatory parameter: `value` - defines key/index by which data is fetched
+from `parser`.
+Optional parameters:
+* `multiplier` - defines multiplier for fetched value (you can put any floating point number).
+* `default_value_multiplier` - defines default multiplier for value (you can put any floating point number).
+* `default_value_divider` - defines default divider for value (you can put any floating point number).
+* `default_value_added` - defines default added value (you can put any floating point number).
+* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 0, 1, 2, 3, 4.
+* `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
+* `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
+
+### `WeightParsed`
+Add channel with "weight" type.
+
+Mandatory parameter: `weight` - defines key/index by which data is fetched
+from `parser`.
+Optional parameter: `multiplier` - defines multiplier for fetched value
+(you can put any floating point number).
+
+
+### `DistanceParsed`
+Add channel with "distance" type.
+
+Mandatory parameter: `distance` - defines key/index by which data is fetched
 from `parser`.
 Optional parameter: `multiplier` - defines multiplier for fetched value
 (you can put any floating point number).

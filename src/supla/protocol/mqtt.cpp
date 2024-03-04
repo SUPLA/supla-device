@@ -220,7 +220,15 @@ void Supla::Protocol::Mqtt::onInit() {
 void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
   buttonNumber = 0;
   TDSC_ChannelState channelState = {};
-  Supla::Network::Instance()->fillStateData(&channelState);
+
+  // TODO(klew): esp-idf MQTT currently doesn't provide interface to obtain
+  // connection source IP address. Fix it later
+  // For now we fill it with IP address of any network
+  for (auto network = Supla::Network::FirstInstance();
+       network && channelState.IPv4 == 0;
+       network = Supla::Network::NextInstance(network)) {
+    network->fillStateData(&channelState);
+  }
 
   if (onRegistration) {
     publishBool("state/connected", true, -1, 1);
@@ -1789,8 +1797,21 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
         Supla::Protocol::HADeviceClass_Energy);
   }
 
-  parameterId += 2;  // we add 2 here, because it is left for meters with
-                     // balanced energy values (not yet implemented here)
+  parameterId++;
+  if (ElectricityMeter::isFwdBalancedActEnergyUsed(extEMValue)) {
+    publishHADiscoveryEMParameter(element, parameterId,
+        "total_forward_active_energy_balanced", "kWh",
+        Supla::Protocol::HAStateClass_TotalIncreasing,
+        Supla::Protocol::HADeviceClass_Energy);
+  }
+
+  parameterId++;
+  if (ElectricityMeter::isRvrBalancedActEnergyUsed(extEMValue)) {
+    publishHADiscoveryEMParameter(element, parameterId,
+        "total_reverse_active_energy_balanced", "kWh",
+        Supla::Protocol::HAStateClass_TotalIncreasing,
+        Supla::Protocol::HADeviceClass_Energy);
+  }
 
   for (int phase = 0; phase < MAX_PHASES; phase++) {
     if ((phase == 0 &&

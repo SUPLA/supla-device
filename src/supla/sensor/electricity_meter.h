@@ -33,10 +33,27 @@ namespace Sensor {
 
 #pragma pack(push, 1)
 struct EnergyMeasurmentsStorage {
-  _supla_int64_t totalFwdActEnergy = 0;
-  _supla_int64_t totalRvrActEnergy = 0;
-  _supla_int64_t totalFwdReactEnergy = 0;
-  _supla_int64_t totalRvrReactEnergy = 0;
+  union {
+    _supla_int64_t totalFwdActEnergy = 0;
+    _supla_int64_t fwdActEnergy;
+  };
+  union {
+    _supla_int64_t totalRvrActEnergy = 0;
+    _supla_int64_t rvrActEnergy;
+  };
+  union {
+    _supla_int64_t totalFwdReactEnergy = 0;
+    _supla_int64_t fwdReactEnergy;
+  };
+  union {
+    _supla_int64_t totalRvrReactEnergy = 0;
+    _supla_int64_t rvrReactEnergy;
+  };
+};
+
+struct VectorBalancedEnergyStorage {
+  _supla_int64_t fwdActEnergyBalanced = 0;
+  _supla_int64_t rvrActEnergyBalanced = 0;
 };
 #pragma pack(pop)
 

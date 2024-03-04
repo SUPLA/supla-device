@@ -138,11 +138,14 @@ class PowerActiveWGetter : public ConditionGetter {
       if (measuredValues & EM_VAR_POWER_ACTIVE) {
         *isValid = true;
         return measurement->power_active[phase] / 100000.0;
+      } else if (measuredValues & EM_VAR_POWER_ACTIVE_KW) {
+        *isValid = true;
+        return measurement->power_active[phase] / 100.0;
       }
     }
-
     return 0;
   }
+
  protected:
   int8_t phase = 0;
 };
@@ -154,12 +157,15 @@ class TotalPowerActiveWGetter : public ConditionGetter {
 
     _supla_int_t measuredValues = 0;
     if (auto measurement = getMeasurement(element, &measuredValues)) {
+      double totalPower =
+        measurement->power_active[0] + measurement->power_active[1] +
+        measurement->power_active[2];
       if (measuredValues & EM_VAR_POWER_ACTIVE) {
-        double totalPower =
-          measurement->power_active[0] + measurement->power_active[1] +
-          measurement->power_active[2];
         *isValid = true;
         return totalPower / 100000.0;
+      } else if (measuredValues & EM_VAR_POWER_ACTIVE_KW) {
+        *isValid = true;
+        return totalPower / 100.0;
       }
     }
 
@@ -182,11 +188,15 @@ class PowerApparentVAGetter : public ConditionGetter {
       if (measuredValues & EM_VAR_POWER_APPARENT) {
         *isValid = true;
         return measurement->power_apparent[phase] / 100000.0;
+      } else if (measuredValues & EM_VAR_POWER_APPARENT_KVA) {
+        *isValid = true;
+        return measurement->power_apparent[phase] / 100.0;
       }
     }
 
     return 0;
   }
+
  protected:
   int8_t phase = 0;
 };
@@ -198,12 +208,15 @@ class TotalPowerApparentVAGetter : public ConditionGetter {
 
     _supla_int_t measuredValues = 0;
     if (auto measurement = getMeasurement(element, &measuredValues)) {
+      double totalPower =
+        measurement->power_apparent[0] + measurement->power_apparent[1] +
+        measurement->power_apparent[2];
       if (measuredValues & EM_VAR_POWER_APPARENT) {
-        double totalPower =
-          measurement->power_apparent[0] + measurement->power_apparent[1] +
-          measurement->power_apparent[2];
         *isValid = true;
         return totalPower / 100000.0;
+      } else if (measuredValues & EM_VAR_POWER_APPARENT_KVA) {
+        *isValid = true;
+        return totalPower / 100.0;
       }
     }
 
@@ -226,11 +239,14 @@ class PowerReactiveVarGetter : public ConditionGetter {
       if (measuredValues & EM_VAR_POWER_REACTIVE) {
         *isValid = true;
         return measurement->power_reactive[phase] / 100000.0;
+      } else if (measuredValues & EM_VAR_POWER_REACTIVE_KVAR) {
+        *isValid = true;
+        return measurement->power_reactive[phase] / 100.0;
       }
     }
-
     return 0;
   }
+
  protected:
   int8_t phase = 0;
 };
@@ -242,12 +258,15 @@ class TotalPowerReactiveVarGetter : public ConditionGetter {
 
     _supla_int_t measuredValues = 0;
     if (auto measurement = getMeasurement(element, &measuredValues)) {
+      double totalPower =
+        measurement->power_reactive[0] + measurement->power_reactive[1] +
+        measurement->power_reactive[2];
       if (measuredValues & EM_VAR_POWER_REACTIVE) {
-        double totalPower =
-          measurement->power_reactive[0] + measurement->power_reactive[1] +
-          measurement->power_reactive[2];
         *isValid = true;
         return totalPower / 100000.0;
+      } else if (measuredValues & EM_VAR_POWER_REACTIVE_KVAR) {
+        *isValid = true;
+        return totalPower / 100.0;
       }
     }
 

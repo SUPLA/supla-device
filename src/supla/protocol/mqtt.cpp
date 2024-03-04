@@ -646,6 +646,20 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
             -1, -1, 4);
       }
 
+      if (ElectricityMeter::isFwdBalancedActEnergyUsed(extEMValue)) {
+        publishDouble(
+            (topic / "total_forward_balanced_active_energy").c_str(),
+            ElectricityMeter::getFwdBalancedActEnergy(extEMValue) / 100000.0,
+            -1, -1, 4);
+      }
+
+      if (ElectricityMeter::isRvrBalancedActEnergyUsed(extEMValue)) {
+        publishDouble(
+            (topic / "total_reverse_balanced_active_energy").c_str(),
+            ElectricityMeter::getRvrBalancedActEnergy(extEMValue) / 100000.0,
+            -1, -1, 4);
+      }
+
       for (int phase = 0; phase < MAX_PHASES; phase++) {
         if ((phase == 0 &&
               ch->getFlags() & SUPLA_CHANNEL_FLAG_PHASE1_UNSUPPORTED) ||

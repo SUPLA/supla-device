@@ -289,11 +289,13 @@ void Supla::Protocol::Mqtt::publish(const char *topic,
     mqttTopic.append(topic);
   }
 
-  SUPLA_LOG_DEBUG("MQTT publish(qos: %d, retain: %d): \"%s\" - \"%s\"",
-      qos,
-      retainValue,
-      mqttTopic.c_str(),
-      payload);
+  if (verboseLog) {
+    SUPLA_LOG_VERBOSE("MQTT publish(qos: %d, retain: %d): \"%s\" - \"%s\"",
+        qos,
+        retainValue,
+        mqttTopic.c_str(),
+        payload);
+  }
   publishImp(mqttTopic.c_str(), payload, qos, retainValue);
 }
 
@@ -581,7 +583,8 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
       break;
     }
     default:
-      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+      SUPLA_LOG_WARNING(
+          "Mqtt: publish channel state: channel type %d not supported",
           ch->getChannelType());
       break;
   }
@@ -746,7 +749,8 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
       break;
     }
     default:
-      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported for extended value",
+      SUPLA_LOG_WARNING(
+          "Mqtt: channel type %d not supported for extended value",
           ch->getChannelType());
       break;
   }
@@ -804,9 +808,13 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
       subscribe((topic / "set" / "temperature_setpoint_cool").c_str());
       break;
     }
+    case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
+      // no subscriptions for EM
+      break;
+    }
 
     default:
-      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+      SUPLA_LOG_WARNING("Mqtt: subscribe: channel type %d not supported",
           ch->getChannelType());
       break;
   }
@@ -893,7 +901,7 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
 
     // Not supported
     default:
-      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+      SUPLA_LOG_WARNING("Mqtt: processData: channel type %d not supported",
           ch->getChannelType());
       break;
   }
@@ -986,7 +994,8 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
 
     // TODO(klew): add more channels here
     default:
-      SUPLA_LOG_DEBUG("Mqtt: channel type %d not supported",
+      SUPLA_LOG_WARNING(
+          "Mqtt: publishHADiscovery: channel type %d not supported",
           ch->getChannelType());
       break;
   }

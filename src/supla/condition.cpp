@@ -165,3 +165,10 @@ void Supla::Condition::setThreshold(double val) {
     source->runAction(Supla::ON_CHANGE);
   }
 }
+
+Supla::ActionHandler *Supla::Condition::getRealClient() {
+  if (client) {
+    return client;
+  }
+  return this;
+}

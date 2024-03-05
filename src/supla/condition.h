@@ -38,6 +38,7 @@ class Condition : public ActionHandler {
   void activateAction(int action) override;
   void handleAction(int event, int action) override;
   bool deleteClient() override;
+  ActionHandler *getRealClient() override;
 
   virtual bool checkConditionFor(double val, bool isValid = true);
 

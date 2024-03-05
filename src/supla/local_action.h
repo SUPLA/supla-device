@@ -72,6 +72,10 @@ class LocalAction {
   virtual void disableOtherClients(const ActionHandler *client, uint16_t event);
   virtual void enableOtherClients(const ActionHandler *client, uint16_t event);
 
+  static void DeleteActionsHandledBy(const ActionHandler *client);
+  static void DeleteActionsTriggeredBy(const LocalAction *action);
+  static void NullifyActionsHandledBy(const ActionHandler *client);
+
   // action and event are internally uint16_t type, however -1 is used
   // as "all events/actions", so here we pass int32_t
   virtual void disableAction(int32_t action,

@@ -31,6 +31,11 @@ ActionHandlerClient::ActionHandlerClient() {
 }
 
 ActionHandlerClient::~ActionHandlerClient() {
+  if (client && client->deleteClient()) {
+    delete client;
+    client = nullptr;
+  }
+
   if (begin == this) {
     begin = next;
     return;
@@ -70,19 +75,7 @@ bool ActionHandlerClient::isAlwaysEnabled() {
 ActionHandlerClient *ActionHandlerClient::begin = nullptr;
 
 LocalAction::~LocalAction() {
-  auto ptr = ActionHandlerClient::begin;
-  while (ptr) {
-    if (ptr->trigger == this) {
-      auto tbdptr = ptr;
-      ptr = ptr->next;
-      if (tbdptr->client->deleteClient()) {
-        delete tbdptr->client;
-      }
-      delete tbdptr;
-    } else {
-      ptr = ptr->next;
-    }
-  }
+  DeleteActionsTriggeredBy(this);
 }
 
 void LocalAction::addAction(uint16_t action,
@@ -110,7 +103,8 @@ void LocalAction::addAction(uint16_t action,
 void LocalAction::runAction(uint16_t event) {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
-    if (ptr->trigger == this && ptr->onEvent == event && ptr->isEnabled()) {
+    if (ptr->client && ptr->trigger == this && ptr->onEvent == event &&
+        ptr->isEnabled()) {
       ptr->client->handleAction(event, ptr->action);
     }
     ptr = ptr->next;
@@ -242,4 +236,37 @@ void LocalAction::enableAction(int32_t action,
   }
 }
 
+void LocalAction::DeleteActionsHandledBy(const ActionHandler *client) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    auto next = ptr->next;
+    if (ptr->client && ptr->client->getRealClient() == client) {
+      delete ptr;
+      next = ActionHandlerClient::begin;
+    }
+    ptr = next;
+  }
+}
+
+void LocalAction::DeleteActionsTriggeredBy(const LocalAction *trigger) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    auto next = ptr->next;
+    if (ptr->trigger == trigger) {
+      delete ptr;
+      next = ActionHandlerClient::begin;
+    }
+    ptr = next;
+  }
+}
+
+void LocalAction::NullifyActionsHandledBy(const ActionHandler *client) {
+  auto ptr = ActionHandlerClient::begin;
+  while (ptr) {
+    if (ptr->client && ptr->client->getRealClient() == client) {
+      ptr->client = nullptr;
+    }
+    ptr = ptr->next;
+  }
+}
 };  // namespace Supla

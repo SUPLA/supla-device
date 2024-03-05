@@ -24,8 +24,8 @@ class ActionHandler {
   virtual void handleAction(int event, int action) = 0;
   virtual void activateAction(int action);
   virtual bool deleteClient();
+  virtual ActionHandler *getRealClient();
 };
 
-};
-
+}  // namespace Supla
 #endif  // SRC_SUPLA_ACTION_HANDLER_H_

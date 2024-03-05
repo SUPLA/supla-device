@@ -98,6 +98,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
       for (int i = 0; i < 4; i++) {
         ipArr[i] = (srcIp >> (i * 8)) & 0xFF;
       }
+      (void)(ipArr);
 
       SUPLA_LOG_INFO("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
           ipArr[2], ipArr[3]);

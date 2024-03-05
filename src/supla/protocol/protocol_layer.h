@@ -38,6 +38,7 @@ class ProtocolLayer {
   ProtocolLayer *next();
   SuplaDeviceClass *getSdc();
 
+  void setVerboseLog(bool value);
   virtual void onInit() = 0;
   virtual bool onLoadConfig() = 0;
   virtual bool verifyConfig() = 0;
@@ -92,6 +93,7 @@ class ProtocolLayer {
   ProtocolLayer *nextPtr = nullptr;
   SuplaDeviceClass *sdc = nullptr;
   bool configEmpty = true;
+  bool verboseLog = true;
 };
 
 }  // namespace Protocol

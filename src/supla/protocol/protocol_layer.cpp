@@ -165,5 +165,9 @@ void ProtocolLayer::notifyConfigChange(int channelNumber) {
   (void)(channelNumber);
 }
 
+void ProtocolLayer::setVerboseLog(bool value) {
+  verboseLog = value;
+}
+
 }  // namespace Protocol
 }  // namespace Supla

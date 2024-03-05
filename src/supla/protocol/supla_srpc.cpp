@@ -1396,6 +1396,3 @@ void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
   setDeviceConfigReceivedAfterRegistration = false;
 }
 
-void Supla::Protocol::SuplaSrpc::setVerboseLog(bool value) {
-  verboseLog = value;
-}

@@ -135,11 +135,9 @@ void Supla::EspIdfLan8720::setup() {
     eth_mac_config_t macConfig = ETH_MAC_DEFAULT_CONFIG();
     eth_phy_config_t phyConfig = ETH_PHY_DEFAULT_CONFIG();
 
-    macConfig.sw_reset_timeout_ms = 500;
-
     // Automatically detect PHY address
     phyConfig.phy_addr = -1;
-    phyConfig.reset_timeout_ms = 500;
+    phyConfig.autonego_timeout_ms = 500;
     // no hw reset
     phyConfig.reset_gpio_num = -1;
     eth_esp32_emac_config_t esp32EmacConfig = ETH_ESP32_EMAC_DEFAULT_CONFIG();
@@ -169,11 +167,10 @@ void Supla::EspIdfLan8720::setup() {
           IP_EVENT, IP_EVENT_ETH_GOT_IP, &eventHandler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(
           IP_EVENT, IP_EVENT_ETH_LOST_IP, &eventHandler, NULL));
-  } else {
-    disable();
+
+    esp_eth_start(ethHandle);
   }
 
-  esp_eth_start(ethHandle);
 
   allowDisable = true;
   initDone = true;

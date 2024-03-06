@@ -91,9 +91,7 @@ bool ChannelCorrection::handleResponse(const char* key, const char* value) {
       if (currentValue != correction) {
         cfg->setInt32(keyRef, correction);
 
-        char keyCfg[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        Supla::Config::generateKey(keyCfg, channelNumber, "cfg_chng");
-        cfg->setUInt8(keyCfg, 1);
+        cfg->setChannelConfigChangeFlag(channelNumber);
       }
     }
     return true;

@@ -101,20 +101,14 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
   }
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, "cfg_chng");
-    uint8_t cfgChangeFlag = 0;
-    if (cfg->getUInt8(key, &cfgChangeFlag)) {
-      SUPLA_LOG_INFO("Channel[%d] config changed offline flag %d",
-                     getChannelNumber(),
-                     cfgChangeFlag);
-      if (cfgChangeFlag) {
-        channelConfigState = Supla::ChannelConfigState::LocalChangePending;
-      } else {
-        channelConfigState = Supla::ChannelConfigState::None;
-      }
-      return true;
+    if (cfg->isChannelConfigChangeFlagSet(getChannelNumber())) {
+      SUPLA_LOG_INFO("Channel[%d] config changed offline flag is set",
+                     getChannelNumber());
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    } else {
+      channelConfigState = Supla::ChannelConfigState::None;
     }
+    return true;
   }
   return false;
 }
@@ -125,14 +119,12 @@ bool Supla::ElementWithChannelActions::saveConfigChangeFlag() {
   }
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, "cfg_chng");
     if (channelConfigState == Supla::ChannelConfigState::None ||
         channelConfigState ==
             Supla::ChannelConfigState::WaitForConfigFinished) {
-      cfg->setUInt8(key, 0);
+      cfg->clearChannelConfigChangeFlag(getChannelNumber(), 0);
     } else {
-      cfg->setUInt8(key, 1);
+      cfg->setChannelConfigChangeFlag(getChannelNumber(), 0);
     }
     cfg->saveWithDelay(5000);
     return true;

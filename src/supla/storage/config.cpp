@@ -511,4 +511,42 @@ bool Config::clearDeviceConfigChangeFlag() {
 void Config::initDefaultDeviceConfig() {
 }
 
+bool Config::setChannelConfigChangeFlag(int channelNo, int configType) {
+  switch (configType) {
+    case 0: {
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, channelNo, "cfg_chng");
+      return setUInt8(key, 1);
+    }
+  }
+  SUPLA_LOG_ERROR("Unknown config type");
+  return false;
+}
+
+bool Config::clearChannelConfigChangeFlag(int channelNo, int configType) {
+  switch (configType) {
+    case 0: {
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, channelNo, "cfg_chng");
+      return setUInt8(key, 0);
+    }
+  }
+  SUPLA_LOG_ERROR("Unknown config type");
+  return false;
+}
+
+bool Config::isChannelConfigChangeFlagSet(int channelNo, int configType) {
+  switch (configType) {
+    case 0: {
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      generateKey(key, channelNo, "cfg_chng");
+      uint8_t result = 0;
+      getUInt8(key, &result);
+      return result == 1;
+    }
+  }
+  SUPLA_LOG_ERROR("Unknown config type");
+  return false;
+}
+
 }  // namespace Supla

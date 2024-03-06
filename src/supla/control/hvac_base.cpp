@@ -292,17 +292,14 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     }
 
     // load config changed offline flags
-    generateKey(key, "cfg_chng");
-    uint8_t flag = 0;
-    cfg->getUInt8(key, &flag);
-    SUPLA_LOG_INFO("HVAC config changed offline flag %d", flag);
-    if (flag) {
+    if (cfg->isChannelConfigChangeFlagSet(getChannelNumber())) {
+      SUPLA_LOG_INFO("HVAC config changed offline flag is set");
       channelConfigChangedOffline = 1;
     } else {
       channelConfigChangedOffline = 0;
     }
 
-    flag = 0;
+    uint8_t flag = 0;
     generateKey(key, "weekly_chng");
     cfg->getUInt8(key, &flag);
     SUPLA_LOG_INFO("HVAC weekly schedule config changed offline flag %d", flag);
@@ -2129,11 +2126,10 @@ void HvacBase::saveConfig() {
       SUPLA_LOG_INFO("HVAC failed to save config");
     }
 
-    generateKey(key, "cfg_chng");
     if (channelConfigChangedOffline) {
-      cfg->setUInt8(key, 1);
+      cfg->setChannelConfigChangeFlag(getChannelNumber());
     } else {
-      cfg->setUInt8(key, 0);
+      cfg->clearChannelConfigChangeFlag(getChannelNumber());
     }
 
     cfg->saveWithDelay(5000);
@@ -2221,9 +2217,7 @@ void HvacBase::clearChannelConfigChangedFlag() {
     channelConfigChangedOffline = 0;
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
-      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, "cfg_chng");
-      cfg->setUInt8(key, 0);
+      cfg->clearChannelConfigChangeFlag(getChannelNumber());
       cfg->saveWithDelay(1000);
     }
   }

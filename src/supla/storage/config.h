@@ -145,6 +145,10 @@ class Config {
   virtual bool setDeviceConfigChangeFlag();
   virtual bool clearDeviceConfigChangeFlag();
 
+  virtual bool setChannelConfigChangeFlag(int channelNo, int configType = 0);
+  virtual bool clearChannelConfigChangeFlag(int channelNo, int configType = 0);
+  virtual bool isChannelConfigChangeFlagSet(int channelNo, int configType = 0);
+
  protected:
   virtual int getBlobSize(const char* key) = 0;
   uint32_t saveDelayTimestamp = 0;

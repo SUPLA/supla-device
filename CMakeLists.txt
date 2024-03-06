@@ -82,6 +82,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/disable_user_interface_parameter.cpp
   src/supla/network/html/h2_tag.cpp
   src/supla/network/html/h3_tag.cpp
+  src/supla/network/html/em_phase_led.cpp
 
   src/supla/network/client.cpp
   src/supla/network/ip_address.cpp

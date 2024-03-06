@@ -1,0 +1,52 @@
+/*
+   Copyright (C) AC SOFTWARE SP. Z O.O
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+   */
+
+#ifndef SRC_SUPLA_NETWORK_HTML_EM_PHASE_LED_H_
+#define SRC_SUPLA_NETWORK_HTML_EM_PHASE_LED_H_
+
+#include <supla/network/html/select_input_parameter.h>
+
+namespace Supla {
+class Element;
+
+namespace Html {
+
+const char EmPhaseLedTag[] = "em_led";
+const char EmPhaseLedVoltageLowTag[] = "em_led_vl";
+const char EmPhaseLedVoltageHighTag[] = "em_led_vh";
+const char EmPhaseLedPowerLowTag[] = "em_led_pl";
+const char EmPhaseLedPowerHighTag[] = "em_led_ph";
+
+class EmPhaseLedParameters : public SelectInputParameter {
+ public:
+  explicit EmPhaseLedParameters(int channelNo, Supla::Element *notify);
+  virtual ~EmPhaseLedParameters();
+  void send(Supla::WebSender* sender) override;
+  bool handleResponse(const char* key, const char* value) override;
+  void onProcessingEnd() override;
+
+ private:
+  int channelNo = 0;
+  Supla::Element *notify = nullptr;
+  bool channelConfigChanged = false;
+};
+
+};  // namespace Html
+};  // namespace Supla
+
+#endif  // SRC_SUPLA_NETWORK_HTML_EM_PHASE_LED_H_

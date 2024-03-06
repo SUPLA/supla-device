@@ -85,6 +85,7 @@ set(SRCS
   supla/network/html/h3_tag.cpp
   supla/network/html/screen_brightness_parameters.cpp
   supla/network/html/screen_delay_parameters.cpp
+  supla/network/html/em_phase_led.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

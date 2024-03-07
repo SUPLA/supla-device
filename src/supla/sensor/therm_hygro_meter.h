@@ -43,7 +43,7 @@ class ThermHygroMeter : public ChannelElement {
   int16_t getTempInt16();
   int16_t getHumiInt16();
 
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result) override;
+  uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local) override;
 
   int16_t getConfiguredTemperatureCorrection();
   int16_t getConfiguredHumidityCorrection();

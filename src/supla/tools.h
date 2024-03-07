@@ -88,6 +88,7 @@ const char *getManufacturer(int16_t id);
 
 namespace Supla {
 int getPlatformId();
+int getBitNumber(uint64_t value);
 }  // namespace Supla
 
 

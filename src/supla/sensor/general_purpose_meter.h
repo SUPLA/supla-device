@@ -39,7 +39,7 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase,
                                bool addMemoryVariableDriver = true);
 
   void onLoadConfig(SuplaDeviceClass *sdc) override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result) override;
+  uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local) override;
   void fillChannelConfig(void *channelConfig, int *size) override;
   void handleAction(int event, int action) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;

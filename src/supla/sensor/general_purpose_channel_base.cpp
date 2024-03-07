@@ -434,7 +434,8 @@ void GeneralPurposeChannelBase::setChartType(uint8_t chartType, bool local) {
 }
 
 uint8_t GeneralPurposeChannelBase::applyChannelConfig(
-    TSD_ChannelConfig *result) {
+    TSD_ChannelConfig *result, bool local) {
+  (void)(local);
   if (result == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }

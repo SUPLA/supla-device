@@ -20,6 +20,10 @@
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
 #include <supla/actions.h>
+#include <supla/tools.h>
+#include <supla/storage/config.h>
+#include <supla/network/html/em_phase_led.h>
+#include <supla/network/html/em_ct_type.h>
 
 #include "../condition.h"
 #include "../events.h"
@@ -121,8 +125,11 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   }
 
   // Prepare extended channel value
-  srpc_evtool_v2_emextended2extended(&emValue, extChannel.getExtValue());
-  extChannel.setNewValue(emValue);
+  if (lastChannelUpdateTime == 0 || millis() - lastChannelUpdateTime >= 5000) {
+    lastChannelUpdateTime = millis();
+    srpc_evtool_v2_emextended2extended(&emValue, extChannel.getExtValue());
+    extChannel.setNewValue(emValue);
+  }
   runAction(Supla::ON_CHANGE);
 }
 
@@ -307,6 +314,268 @@ void Supla::Sensor::ElectricityMeter::resetReadParameters() {
 // It will be called every 5 s. Use set methods defined above in order to
 // set values on channel. Don't use any other method to modify channel values.
 void Supla::Sensor::ElectricityMeter::readValuesFromDevice() {
+}
+
+void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg && (availablePhaseLedTypes || availableCtTypes)) {
+    // load config changed offline flags
+    loadConfigChangeFlag();
+
+    int8_t value = 0;
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::Html::EmCtTypeTag);
+    if (cfg->getInt8(key, &value)) {
+      if (value > 63) {
+        value = 63;
+      }
+      usedCtType = value;
+    }
+    SUPLA_LOG_INFO("EM: CT type is %d", usedCtType);
+
+    generateKey(key, Supla::Html::EmPhaseLedTag);
+    if (cfg->getInt8(key, &value)) {
+      if (value > 63) {
+        value = 63;
+      }
+      usedPhaseLedType = value;
+    }
+    SUPLA_LOG_INFO("EM: Phase LED type is %d", usedPhaseLedType);
+
+    int32_t value32 = 0;
+    generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
+    if (cfg->getInt32(key, &value32)) {
+      ledVoltageLow = value32;
+    }
+
+    generateKey(key, Supla::Html::EmPhaseLedVoltageHighTag);
+    if (cfg->getInt32(key, &value32)) {
+      ledVoltageHigh = value32;
+    }
+
+    generateKey(key, Supla::Html::EmPhaseLedPowerLowTag);
+    if (cfg->getInt32(key, &value32)) {
+      ledPowerLow = value32;
+    }
+
+    generateKey(key, Supla::Html::EmPhaseLedPowerHighTag);
+    if (cfg->getInt32(key, &value32)) {
+      ledPowerHigh = value32;
+    }
+
+    bool configChange = false;
+
+    const int32_t MinPowerValue = -2000000000;
+    const int32_t MaxPowerValue = 2000000000;
+    const int32_t MinVoltageValue = 15000;
+    const int32_t MaxVoltageValue = 100000;
+    const int32_t MinValuesDistance = 1000;
+
+    generateKey(key, Supla::Html::EmPhaseLedPowerLowTag);
+    cfg->getInt32(key, &ledPowerLow);
+    if (ledPowerLow < MinPowerValue) {
+      ledPowerLow = MinPowerValue;
+      cfg->setInt32(key, ledPowerLow);
+      configChange = true;
+    }
+    if (ledPowerLow > MaxPowerValue - MinValuesDistance) {
+      ledPowerLow = MaxPowerValue - MinValuesDistance;
+      cfg->setInt32(key, ledPowerLow);
+      configChange = true;
+    }
+
+    generateKey(key, Supla::Html::EmPhaseLedPowerHighTag);
+    cfg->getInt32(key, &ledPowerHigh);
+    if (ledPowerHigh > MaxPowerValue) {
+      ledPowerHigh = MaxPowerValue;
+      cfg->setInt32(key, ledPowerHigh);
+      configChange = true;
+    }
+    if (ledPowerHigh < ledPowerLow) {
+      ledPowerHigh = ledPowerLow + MinValuesDistance;
+      cfg->setInt32(key, ledPowerHigh);
+      configChange = true;
+    }
+
+    generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
+    cfg->getInt32(key, &ledVoltageLow);
+    if (ledVoltageLow < MinVoltageValue) {
+      ledVoltageLow = MinVoltageValue;
+      cfg->setInt32(key, ledVoltageLow);
+      configChange = true;
+    }
+    if (ledVoltageLow > MaxVoltageValue - MinValuesDistance) {
+      ledVoltageLow = MaxVoltageValue - MinValuesDistance;
+      cfg->setInt32(key, ledVoltageLow);
+      configChange = true;
+    }
+
+    generateKey(key, Supla::Html::EmPhaseLedVoltageHighTag);
+    cfg->getInt32(key, &ledVoltageHigh);
+    if (ledVoltageHigh > MaxVoltageValue) {
+      ledVoltageHigh = MaxVoltageValue;
+      cfg->setInt32(key, ledVoltageHigh);
+      configChange = true;
+    }
+    if (ledVoltageHigh < ledVoltageLow) {
+      ledVoltageHigh = ledVoltageLow + MinValuesDistance;
+      cfg->setInt32(key, ledVoltageHigh);
+      configChange = true;
+    }
+
+    if (configChange) {
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      saveConfigChangeFlag();
+    }
+
+    SUPLA_LOG_INFO(
+        "EM: Voltage low: %d, Voltage high: %d, Power low: %d, Power high: %d",
+        ledVoltageLow,
+        ledVoltageHigh,
+        ledPowerLow,
+        ledPowerHigh);
+  }
+}
+
+uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
+    TSD_ChannelConfig *config, bool) {
+  if (config == nullptr) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+  if (config->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
+    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+
+  if (config->Func == SUPLA_CHANNELFNC_ELECTRICITY_METER) {
+    if (config->ConfigSize < sizeof(TChannelConfig_ElectricityMeter)) {
+      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    }
+    auto configFromServer =
+        reinterpret_cast<TChannelConfig_ElectricityMeter *>(config->Config);
+
+    bool configChanged = false;
+    bool configValid = true;
+
+    if (usedCtType != static_cast<int8_t>(configFromServer->UsedCTType)) {
+      if ((configFromServer->UsedCTType & availableCtTypes) != 0) {
+        configValid = false;
+      } else {
+        usedCtType = configFromServer->UsedCTType;
+        char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+        generateKey(key, Supla::Html::EmCtTypeTag);
+        cfg->setInt8(key, usedCtType);
+        configChanged = true;
+      }
+    }
+
+    if (usedPhaseLedType !=
+        static_cast<int8_t>(configFromServer->UsedPhaseLedType)) {
+      if ((configFromServer->UsedPhaseLedType & availablePhaseLedTypes) != 0) {
+        configValid = false;
+      } else {
+        usedPhaseLedType = configFromServer->UsedPhaseLedType;
+        char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+        generateKey(key, Supla::Html::EmPhaseLedTag);
+        cfg->setInt8(key, usedPhaseLedType);
+        configChanged = true;
+      }
+    }
+
+    if (usedPhaseLedType == 3) {
+      if (ledVoltageLow != configFromServer->PhaseLedParam1) {
+        ledVoltageLow = configFromServer->PhaseLedParam1;
+        char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+        generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
+        cfg->setInt32(key, ledVoltageLow);
+        configChanged = true;
+      }
+      if (ledVoltageHigh != configFromServer->PhaseLedParam2) {
+        ledVoltageHigh = configFromServer->PhaseLedParam2;
+        char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+        generateKey(key, Supla::Html::EmPhaseLedVoltageHighTag);
+        cfg->setInt32(key, ledVoltageHigh);
+        configChanged = true;
+      }
+    }
+
+    if (usedPhaseLedType == 4) {
+      if (ledPowerLow != configFromServer->PhaseLedParam1) {
+        ledPowerLow = configFromServer->PhaseLedParam1;
+        char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+        generateKey(key, Supla::Html::EmPhaseLedPowerLowTag);
+        cfg->setInt32(key, ledPowerLow);
+        configChanged = true;
+      }
+      if (ledPowerHigh != configFromServer->PhaseLedParam2) {
+        ledPowerHigh = configFromServer->PhaseLedParam2;
+        char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+        generateKey(key, Supla::Html::EmPhaseLedPowerHighTag);
+        cfg->setInt32(key, ledPowerHigh);
+        configChanged = true;
+      }
+    }
+
+    if (configChanged) {
+      cfg->commit();
+    }
+
+    if (configFromServer->AvailablePhaseLedTypes != availablePhaseLedTypes ||
+        configFromServer->AvailableCTTypes != availableCtTypes ||
+        !configValid) {
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      saveConfigChangeFlag();
+    }
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+  return SUPLA_CONFIG_RESULT_TRUE;
+}
+
+void Supla::Sensor::ElectricityMeter::fillChannelConfig(void *channelConfig,
+                                                        int *size) {
+  if (size) {
+    *size = 0;
+  } else {
+    return;
+  }
+  if (channelConfig == nullptr) {
+    return;
+  }
+
+  auto config = reinterpret_cast<TChannelConfig_ElectricityMeter *>(
+      channelConfig);
+  *size = sizeof(TChannelConfig_ElectricityMeter);
+
+  config->AvailableCTTypes = availableCtTypes;
+  if (usedCtType >= 0 && usedCtType <= 63) {
+    config->UsedCTType = (1ULL << usedCtType);
+  }
+
+  config->AvailablePhaseLedTypes = availablePhaseLedTypes;
+  if (usedPhaseLedType >= 0 && usedPhaseLedType <= 63) {
+    config->UsedPhaseLedType = (1ULL << usedPhaseLedType);
+  }
+
+  if (usedPhaseLedType == 3) {
+    config->PhaseLedParam1 = ledVoltageLow;
+    config->PhaseLedParam2 = ledVoltageHigh;
+  } else if (usedPhaseLedType == 4) {
+    config->PhaseLedParam1 = ledPowerLow;
+    config->PhaseLedParam2 = ledPowerHigh;
+  }
+  SUPLA_LOG_DEBUG(
+      "EM: fillChannelConfig: usedCtType=%d, usedPhaseLedType=%d"
+      ", availableCtTypes=%d, availablePhaseLedTypes=%d"
+      ", param1=%d, param2=%d",
+      static_cast<uint32_t>(config->UsedCTType),
+      static_cast<uint32_t>(config->UsedPhaseLedType),
+      static_cast<uint32_t>(config->AvailableCTTypes),
+      static_cast<uint32_t>(config->AvailablePhaseLedTypes),
+      config->PhaseLedParam1,
+      config->PhaseLedParam2);
 }
 
 // Put here initialization code for electricity meter device.
@@ -700,3 +969,61 @@ bool Supla::Sensor::ElectricityMeter::isPhaseAngleUsed(
   return emValue.measured_values & EM_VAR_PHASE_ANGLE;
 }
 
+
+void Supla::Sensor::ElectricityMeter::addPhaseLedType(uint64_t phaseLedType) {
+  if (availablePhaseLedTypes == 0 && phaseLedType != 0 &&
+      usedPhaseLedType == -1) {
+    int bitNumber = Supla::getBitNumber(phaseLedType);
+    if (bitNumber >= 0) {
+      usedPhaseLedType = bitNumber;
+    }
+  }
+  availablePhaseLedTypes |= phaseLedType;
+  enableChannelConfig();
+}
+
+void Supla::Sensor::ElectricityMeter::enableChannelConfig() {
+  extChannel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+}
+
+void Supla::Sensor::ElectricityMeter::addCtType(uint64_t ctType) {
+  if (availableCtTypes == 0 && ctType != 0 && usedCtType == -1) {
+    int bitNumber = Supla::getBitNumber(ctType);
+    if (bitNumber >= 0) {
+      usedCtType = bitNumber;
+    }
+  }
+  availableCtTypes |= ctType;
+  enableChannelConfig();
+}
+
+int8_t Supla::Sensor::ElectricityMeter::getPhaseLedType() const {
+  return usedPhaseLedType;
+}
+
+int32_t Supla::Sensor::ElectricityMeter::getLedVoltageLow() const {
+  return ledVoltageLow;
+}
+
+int32_t Supla::Sensor::ElectricityMeter::getLedVoltageHigh() const {
+  return ledVoltageHigh;
+}
+
+int32_t Supla::Sensor::ElectricityMeter::getLedPowerLow() const {
+  return ledPowerLow;
+}
+
+int32_t Supla::Sensor::ElectricityMeter::getLedPowerHigh() const {
+  return ledPowerHigh;
+}
+
+bool Supla::Sensor::ElectricityMeter::isPhaseLedTypeSupported(
+    uint64_t ledType) const {
+  return (availablePhaseLedTypes & ledType) != 0;
+}
+
+void Supla::Sensor::ElectricityMeter::onRegistered(
+    Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  lastChannelUpdateTime = 0;
+  Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
+}

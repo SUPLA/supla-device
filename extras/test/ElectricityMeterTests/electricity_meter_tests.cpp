@@ -20,6 +20,7 @@
 #include <gmock/gmock.h>
 #include <srpc_mock.h>
 #include <supla/sensor/electricity_meter.h>
+#include <simple_time.h>
 
 class EMForTest : public Supla::Sensor::ElectricityMeter {
  public:
@@ -29,6 +30,7 @@ class EMForTest : public Supla::Sensor::ElectricityMeter {
 };
 
 TEST(ElectricityMeterTests, SettersAndGetters) {
+  SimpleTime time;
   Supla::Sensor::ElectricityMeter em;
 
   int number = em.getChannel()->getChannelNumber();
@@ -321,6 +323,7 @@ TEST(ElectricityMeterTests, SettersAndGetters) {
 }
 
 TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
+  SimpleTime time;
   Supla::Sensor::ElectricityMeter em;
 
   int number = em.getChannel()->getChannelNumber();
@@ -431,6 +434,7 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
 }
 
 TEST(ElectricityMeterTests, ParametersOverBasicRange) {
+  SimpleTime time;
   EMForTest em;
 
   int number = em.getChannel()->getChannelNumber();

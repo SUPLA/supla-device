@@ -22,6 +22,7 @@
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <supla/sensor/electricity_meter.h>
+#include <simple_time.h>
 #include "gmock/gmock.h"
 
 
@@ -30,7 +31,6 @@ class ActionHandlerMock2 : public Supla::ActionHandler {
   MOCK_METHOD(void, handleAction, (int, int), (override));
   MOCK_METHOD(void, activateAction, (int), (override));
 };
-
 
 using ::testing::_;
 using ::testing::ElementsAreArray;
@@ -429,6 +429,7 @@ TEST(OnLessTests, OnLessConditionTests) {
 }
 
 TEST(ConditionTests, handleActionTestsWithCustomGetter) {
+  SimpleTime time;
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;

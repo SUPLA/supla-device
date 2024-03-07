@@ -273,6 +273,11 @@ class ElectricityMeter : public ElementWithChannelActions,
   // set values on channel. Don't use any other method to modify channel values.
   virtual void readValuesFromDevice();
 
+  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
+  uint8_t applyChannelConfig(TSD_ChannelConfig *config, bool local) override;
+  void fillChannelConfig(void *channelConfig, int *size) override;
+
   // Put here initialization code for electricity meter device.
   // It will be called within SuplaDevce.begin method.
   // It should also read first data set, so at the end it should call those two
@@ -298,9 +303,21 @@ class ElectricityMeter : public ElementWithChannelActions,
 
   Channel *getChannel() override;
 
+  void enableChannelConfig();
+  void addCtType(uint64_t ctType);
+  void addPhaseLedType(uint64_t ledType);
+
+  int8_t getPhaseLedType() const;
+  int32_t getLedVoltageLow() const;
+  int32_t getLedVoltageHigh() const;
+  int32_t getLedPowerLow() const;
+  int32_t getLedPowerHigh() const;
+  bool isPhaseLedTypeSupported(uint64_t ledType) const;
+
  protected:
   TElectricityMeter_ExtendedValue_V2 emValue = {};
   ChannelExtended extChannel;
+  uint32_t lastChannelUpdateTime = 0;
   uint32_t rawCurrent[MAX_PHASES] = {};
   int64_t rawActivePower[MAX_PHASES] = {};
   int64_t rawReactivePower[MAX_PHASES] = {};
@@ -313,6 +330,18 @@ class ElectricityMeter : public ElementWithChannelActions,
   bool powerActiveMeasurementAvailable = false;
   bool powerReactiveMeasurementAvailable = false;
   bool powerApparentMeasurementAvailable = false;
+
+  uint64_t availableCtTypes = 0;  // from proto EM_CT_TYPE_
+  uint64_t availablePhaseLedTypes = 0;  // from proto EM_PHASE_LED_TYPE_
+  bool channelConfigUsed = false;
+  int8_t usedCtType = 0;         // correspond with bit position of CT type
+                                 // Value -1 - default/not used
+  int8_t usedPhaseLedType = 0;   // correspond with bit position of LED type
+                                 // Value -1 - default/not used
+  int32_t ledVoltageLow = 21000;   // 210.00 V
+  int32_t ledVoltageHigh = 25000;  // 250.00 V
+  int32_t ledPowerLow = -5000;     // -50.00 W
+  int32_t ledPowerHigh = 5000;     //  50.00 W
 };
 
 };  // namespace Sensor

@@ -16,38 +16,35 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_NETWORK_HTML_EM_PHASE_LED_H_
-#define SRC_SUPLA_NETWORK_HTML_EM_PHASE_LED_H_
+#ifndef SRC_SUPLA_NETWORK_HTML_EM_CT_TYPE_H_
+#define SRC_SUPLA_NETWORK_HTML_EM_CT_TYPE_H_
 
-#include <supla/network/html_element.h>
+#include <supla/network/html/select_input_parameter.h>
 
 namespace Supla {
-namespace Sensor {
-class ElectricityMeter;
-}  // namespace Sensor
+class Element;
 
 namespace Html {
 
-const char EmPhaseLedTag[] = "em_led";
-const char EmPhaseLedVoltageLowTag[] = "em_led_vl";
-const char EmPhaseLedVoltageHighTag[] = "em_led_vh";
-const char EmPhaseLedPowerLowTag[] = "em_led_pl";
-const char EmPhaseLedPowerHighTag[] = "em_led_ph";
+const char EmCtTypeTag[] = "em_ct";
 
-class EmPhaseLedParameters : public HtmlElement {
+class EmCtTypeParameters : public SelectInputParameter {
  public:
-  explicit EmPhaseLedParameters(Supla::Sensor::ElectricityMeter *em);
-  virtual ~EmPhaseLedParameters();
+  explicit EmCtTypeParameters(int channelNo, Supla::Element *notify);
+  virtual ~EmCtTypeParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
   void onProcessingEnd() override;
 
  private:
-  Supla::Sensor::ElectricityMeter *em = nullptr;
+  int channelNo = 0;
+  Supla::Element *notify = nullptr;
   bool channelConfigChanged = false;
 };
 
 };  // namespace Html
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_NETWORK_HTML_EM_PHASE_LED_H_
+
+
+#endif  // SRC_SUPLA_NETWORK_HTML_EM_CT_TYPE_H_

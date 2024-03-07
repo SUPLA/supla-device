@@ -21,6 +21,7 @@
 #include <supla/element.h>
 #include <supla/channel_element.h>
 #include <supla/sensor/electricity_meter.h>
+#include <simple_time.h>
 
 using ::testing::_;
 using ::testing::ElementsAreArray;
@@ -28,6 +29,7 @@ using ::testing::Args;
 using ::testing::ElementsAre;
 
 TEST(EmGetterTests, VoltageGetter) {
+  SimpleTime time;
   auto getter = EmVoltage();
 
   bool isValid = true;
@@ -76,6 +78,7 @@ TEST(EmGetterTests, VoltageGetter) {
 }
 
 TEST(EmGetterTests, CurrentGetter) {
+  SimpleTime time;
   auto getter = EmCurrent();
 
   bool isValid = true;
@@ -124,6 +127,7 @@ TEST(EmGetterTests, CurrentGetter) {
 }
 
 TEST(EmGetterTests, TotalCurrentGetter) {
+  SimpleTime time;
   auto getter = EmTotalCurrent();
 
   bool isValid = true;
@@ -166,6 +170,7 @@ TEST(EmGetterTests, TotalCurrentGetter) {
 }
 
 TEST(EmGetterTests, PowerActiveWGetter) {
+  SimpleTime time;
   auto getter = EmPowerActiveW();
 
   bool isValid = true;
@@ -216,6 +221,7 @@ TEST(EmGetterTests, PowerActiveWGetter) {
 }
 
 TEST(EmGetterTests, TotalPowerActiveWGetter) {
+  SimpleTime time;
   auto getter = EmTotalPowerActiveW();
 
   bool isValid = true;
@@ -260,6 +266,7 @@ TEST(EmGetterTests, TotalPowerActiveWGetter) {
 }
 
 TEST(EmGetterTests, PowerApparentGetter) {
+  SimpleTime time;
   auto getter = EmPowerApparentVA();
 
   bool isValid = true;
@@ -310,6 +317,7 @@ TEST(EmGetterTests, PowerApparentGetter) {
 }
 
 TEST(EmGetterTests, TotalPowerApparentGetter) {
+  SimpleTime time;
   auto getter = EmTotalPowerApparentVA();
 
   bool isValid = true;
@@ -354,6 +362,7 @@ TEST(EmGetterTests, TotalPowerApparentGetter) {
 }
 
 TEST(EmGetterTests, PowerReactiveGetter) {
+  SimpleTime time;
   auto getter = EmPowerReactiveVar();
 
   bool isValid = true;
@@ -404,6 +413,7 @@ TEST(EmGetterTests, PowerReactiveGetter) {
 }
 
 TEST(EmGetterTests, TotalPowerReactiveGetter) {
+  SimpleTime time;
   auto getter = EmTotalPowerReactiveVar();
 
   bool isValid = true;

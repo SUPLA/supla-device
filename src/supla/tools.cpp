@@ -420,3 +420,17 @@ bool stringToColor(const char *payload,
   return false;
 #endif
 }
+
+int Supla::getBitNumber(uint64_t value) {
+  if (value == 0 || (value & (value - 1)) != 0) {
+    // more than 1 bit set
+    return -1;
+  }
+  int position = 0;
+  while ((value & 1) != 1) {
+    value >>= 1;
+    position++;
+  }
+
+  return position;
+}

@@ -249,17 +249,8 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
   return result;
 }
 
-void Supla::ElementWithChannelActions::fillChannelConfig(void *channelConfig,
-                                                         int *size) {
-  (void)(channelConfig);
-  if (size) {
-    *size = 0;
-  }
-}
-
 uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     TSD_ChannelConfig *result, bool local) {
-  (void)(local);
   SUPLA_LOG_DEBUG(
       "Channel[%d]: handleChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
@@ -302,15 +293,24 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
-  return applyChannelConfig(result);
+  return applyChannelConfig(result, local);
 }
 
 uint8_t Supla::ElementWithChannelActions::applyChannelConfig(
-    TSD_ChannelConfig *result) {
+    TSD_ChannelConfig *result, bool local) {
   (void)(result);
+  (void)(local);
   SUPLA_LOG_WARNING("Channel[%d]: applyChannelConfig missing",
                   getChannelNumber());
   return SUPLA_CONFIG_RESULT_TRUE;
+}
+
+void Supla::ElementWithChannelActions::fillChannelConfig(void *channelConfig,
+                                                         int *size) {
+  (void)(channelConfig);
+  if (size) {
+    *size = 0;
+  }
 }
 
 void Supla::ElementWithChannelActions::handleSetChannelConfigResult(

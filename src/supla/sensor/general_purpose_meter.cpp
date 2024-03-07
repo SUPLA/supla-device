@@ -54,7 +54,9 @@ void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
-uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result) {
+uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result,
+    bool local) {
+  (void)(local);
   if (result == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }

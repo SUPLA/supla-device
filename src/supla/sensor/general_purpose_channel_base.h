@@ -64,7 +64,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
   void onInit() override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
   void iterateAlways() override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result) override;
+  uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local) override;
   void fillChannelConfig(void *channelConfig, int *size) override;
 
   // default parameters should be configured in software. GPM doesn't store

@@ -24,23 +24,26 @@
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/element.h>
+#include <supla/sensor/electricity_meter.h>
 #include <stdio.h>
 
 using Supla::Html::EmPhaseLedParameters;
 
-EmPhaseLedParameters::EmPhaseLedParameters(int channelNo,
-                                           Supla::Element* notify)
-    : channelNo(channelNo), notify(notify) {
+EmPhaseLedParameters::EmPhaseLedParameters(Supla::Sensor::ElectricityMeter *em)
+    : em(em) {
 }
 
 EmPhaseLedParameters::~EmPhaseLedParameters() {
 }
 
 void EmPhaseLedParameters::send(Supla::WebSender* sender) {
+  if (!em) {
+    return;
+  }
   auto cfg = Supla::Storage::ConfigInstance();
   int8_t value = 1;  // default
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  Supla::Config::generateKey(key, channelNo, EmPhaseLedTag);
+  Supla::Config::generateKey(key, em->getChannelNumber(), EmPhaseLedTag);
 
   if (!cfg) {
     return;
@@ -51,32 +54,36 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
   sender->send("<div class=\"form-field\">");
   sender->sendLabelFor(key, "Phase indicator LED");
   sender->send("<div>");
-  sender->send(
-      "<select ");
+  sender->send("<select ");
   sender->sendNameAndId(key);
-  sender->send(
-      " onChange=\"emPhaseChange(this.value)\">"
-      "<option value=\"0\"");
-  sender->send(selected(value == 0));
-  sender->send(
-      ">OFF</option>"
-      "<option value=\"1\"");
-  sender->send(selected(value == 1));
-  sender->send(
-      ">Voltage indicator</option>"
-      "<option value=\"2\"");
-  sender->send(selected(value == 2));
-  sender->send(
-      ">No voltage indicator</option>"
-      "<option value=\"3\"");
-  sender->send(selected(value == 3));
-  sender->send(
-      ">Voltage level</option>"
-      "<option value=\"4\"");
-  sender->send(selected(value == 4));
-  sender->send(
-      ">Active power direction</option>"
-      "</select>");
+  sender->send(" onChange=\"emPhaseChange(this.value)\">");
+  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_OFF)) {
+    sender->send("<option value=\"0\"");
+    sender->send(selected(value == 0));
+    sender->send(">OFF</option>");
+  }
+  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_VOLTAGE_PRESENCE)) {
+    sender->send("<option value=\"1\"");
+    sender->send(selected(value == 1));
+    sender->send(">Voltage indicator</option>");
+  }
+  if (em->isPhaseLedTypeSupported(
+          EM_PHASE_LED_TYPE_VOLTAGE_PRESENCE_INVERTED)) {
+    sender->send("<option value=\"2\"");
+    sender->send(selected(value == 2));
+    sender->send(">No voltage indicator</option>");
+  }
+  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_VOLTAGE_LEVEL)) {
+    sender->send("<option value=\"3\"");
+    sender->send(selected(value == 3));
+    sender->send(">Voltage level</option>");
+  }
+  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_POWER_ACTIVE_DIRECTION)) {
+    sender->send("<option value=\"4\"");
+    sender->send(selected(value == 4));
+    sender->send(">Active power direction</option>");
+  }
+  sender->send("</select>");
   sender->send("</div>");
   sender->send("</div>");
   // form-field END
@@ -86,9 +93,11 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
       "<script>"
       "function emPhaseChange(value) {"
       "  if (value == 3) {"
-      "    document.getElementById('em_phase_voltage').style.display = 'block';"
+      "    document.getElementById('em_phase_voltage').style.display = "
+      "'block';"
       "  } else {"
-      "    document.getElementById('em_phase_voltage').style.display = 'none';"
+      "    document.getElementById('em_phase_voltage').style.display = "
+      "'none';"
       "  }"
       "  if (value == 4) {"
       "    document.getElementById('em_phase_power').style.display = 'block';"
@@ -107,8 +116,9 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
   }
 
   // form-field BEGIN
-  Supla::Config::generateKey(key, channelNo, EmPhaseLedVoltageLowTag);
-  int32_t voltageLow = 21000;  // 210.00
+  Supla::Config::generateKey(
+      key, em->getChannelNumber(), EmPhaseLedVoltageLowTag);
+  int32_t voltageLow = em->getLedVoltageLow();
   cfg->getInt32(key, &voltageLow);
   sender->send("<div class=\"form-field\">");
   sender->sendLabelFor(key, "Low voltage level [V]");
@@ -124,8 +134,9 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
   // form-field END
 
   // form-field BEGIN
-  Supla::Config::generateKey(key, channelNo, EmPhaseLedVoltageHighTag);
-  int32_t voltageHigh = 25000;  // 250.00
+  Supla::Config::generateKey(
+      key, em->getChannelNumber(), EmPhaseLedVoltageHighTag);
+  int32_t voltageHigh = em->getLedVoltageHigh();
   cfg->getInt32(key, &voltageHigh);
   sender->send("<div class=\"form-field\">");
   sender->sendLabelFor(key, "High voltage level [V]");
@@ -150,8 +161,9 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
   }
 
   // form-field BEGIN
-  Supla::Config::generateKey(key, channelNo, EmPhaseLedPowerLowTag);
-  int32_t powerLow = -5000;  // -50.00 W
+  Supla::Config::generateKey(
+      key, em->getChannelNumber(), EmPhaseLedPowerLowTag);
+  int32_t powerLow = em->getLedPowerLow();
   cfg->getInt32(key, &powerLow);
   sender->send("<div class=\"form-field\">");
   sender->sendLabelFor(key, "Low power level [W]");
@@ -166,8 +178,9 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
   // form-field END
 
   // form-field BEGIN
-  Supla::Config::generateKey(key, channelNo, EmPhaseLedPowerHighTag);
-  int32_t powerHigh = 5000;  // 50.00 W
+  Supla::Config::generateKey(
+      key, em->getChannelNumber(), EmPhaseLedPowerHighTag);
+  int32_t powerHigh = em->getLedPowerHigh();
   cfg->getInt32(key, &powerHigh);
   sender->send("<div class=\"form-field\">");
   sender->sendLabelFor(key, "High power level [W]");
@@ -185,9 +198,12 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
 }
 
 bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
+  if (!em) {
+    return false;
+  }
   auto cfg = Supla::Storage::ConfigInstance();
   char keyTag[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  Supla::Config::generateKey(keyTag, channelNo, EmPhaseLedTag);
+  Supla::Config::generateKey(keyTag, em->getChannelNumber(), EmPhaseLedTag);
   if (strcmp(keyTag, key) == 0) {
     int ledType = stringToUInt(value);
     int8_t valueInCfg = 1;
@@ -202,10 +218,11 @@ bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  Supla::Config::generateKey(keyTag, channelNo, EmPhaseLedVoltageLowTag);
+  Supla::Config::generateKey(
+      keyTag, em->getChannelNumber(), EmPhaseLedVoltageLowTag);
   if (strcmp(keyTag, key) == 0) {
     int32_t voltageLow = floatStringToInt(value, 2);
-    int32_t valueInCfg = 21000;
+    int32_t valueInCfg = em->getLedVoltageLow();
     cfg->getInt32(keyTag, &valueInCfg);
     if (valueInCfg != voltageLow) {
       cfg->setInt32(keyTag, voltageLow);
@@ -214,10 +231,11 @@ bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  Supla::Config::generateKey(keyTag, channelNo, EmPhaseLedVoltageHighTag);
+  Supla::Config::generateKey(
+      keyTag, em->getChannelNumber(), EmPhaseLedVoltageHighTag);
   if (strcmp(keyTag, key) == 0) {
     int32_t voltageHigh = floatStringToInt(value, 2);
-    int32_t valueInCfg = 25000;
+    int32_t valueInCfg = em->getLedVoltageHigh();
     cfg->getInt32(keyTag, &valueInCfg);
     if (valueInCfg != voltageHigh) {
       cfg->setInt32(keyTag, voltageHigh);
@@ -226,10 +244,11 @@ bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-    Supla::Config::generateKey(keyTag, channelNo, EmPhaseLedPowerLowTag);
+  Supla::Config::generateKey(
+      keyTag, em->getChannelNumber(), EmPhaseLedPowerLowTag);
   if (strcmp(keyTag, key) == 0) {
     int32_t powerLow = floatStringToInt(value, 2);
-    int32_t valueInCfg = -5000;
+    int32_t valueInCfg = em->getLedPowerLow();
     cfg->getInt32(keyTag, &valueInCfg);
     if (valueInCfg != powerLow) {
       cfg->setInt32(keyTag, powerLow);
@@ -238,10 +257,11 @@ bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  Supla::Config::generateKey(keyTag, channelNo, EmPhaseLedPowerHighTag);
+  Supla::Config::generateKey(
+      keyTag, em->getChannelNumber(), EmPhaseLedPowerHighTag);
   if (strcmp(keyTag, key) == 0) {
     int32_t powerHigh = floatStringToInt(value, 2);
-    int32_t valueInCfg = 5000;
+    int32_t valueInCfg = em->getLedPowerHigh();
     cfg->getInt32(keyTag, &valueInCfg);
     if (valueInCfg != powerHigh) {
       cfg->setInt32(keyTag, powerHigh);
@@ -254,13 +274,13 @@ bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
 }
 
 void EmPhaseLedParameters::onProcessingEnd() {
-  if (channelConfigChanged) {
+  if (channelConfigChanged && em) {
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
-      cfg->setChannelConfigChangeFlag(channelNo);
+      cfg->setChannelConfigChangeFlag(em->getChannelNumber());
     }
-    if (notify) {
-      notify->onLoadConfig(nullptr);
+    if (em) {
+      em->onLoadConfig(nullptr);
     }
   }
   channelConfigChanged = false;

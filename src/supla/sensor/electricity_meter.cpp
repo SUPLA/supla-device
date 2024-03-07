@@ -322,17 +322,18 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     // load config changed offline flags
     loadConfigChangeFlag();
 
-    int8_t value = 0;
+    int32_t value32 = 0;
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, Supla::Html::EmCtTypeTag);
-    if (cfg->getInt8(key, &value)) {
-      if (value > 63) {
-        value = 63;
+    if (cfg->getInt32(key, &value32)) {
+      if (value32 > 63) {
+        value32 = 63;
       }
-      usedCtType = value;
+      usedCtType = value32;
     }
     SUPLA_LOG_INFO("EM: CT type is %d", usedCtType);
 
+    int8_t value = 0;
     generateKey(key, Supla::Html::EmPhaseLedTag);
     if (cfg->getInt8(key, &value)) {
       if (value > 63) {
@@ -342,7 +343,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     }
     SUPLA_LOG_INFO("EM: Phase LED type is %d", usedPhaseLedType);
 
-    int32_t value32 = 0;
+    value32 = 0;
     generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
     if (cfg->getInt32(key, &value32)) {
       ledVoltageLow = value32;
@@ -461,7 +462,7 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
     bool configValid = true;
 
     if (usedCtType != static_cast<int8_t>(configFromServer->UsedCTType)) {
-      if ((configFromServer->UsedCTType & availableCtTypes) != 0) {
+      if (isCtTypeSupported(configFromServer->UsedCTType)) {
         configValid = false;
       } else {
         usedCtType = configFromServer->UsedCTType;
@@ -474,7 +475,7 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
 
     if (usedPhaseLedType !=
         static_cast<int8_t>(configFromServer->UsedPhaseLedType)) {
-      if ((configFromServer->UsedPhaseLedType & availablePhaseLedTypes) != 0) {
+      if (isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
         configValid = false;
       } else {
         usedPhaseLedType = configFromServer->UsedPhaseLedType;
@@ -1015,6 +1016,10 @@ int32_t Supla::Sensor::ElectricityMeter::getLedPowerLow() const {
 
 int32_t Supla::Sensor::ElectricityMeter::getLedPowerHigh() const {
   return ledPowerHigh;
+}
+
+bool Supla::Sensor::ElectricityMeter::isCtTypeSupported(uint64_t ctType) const {
+  return (availableCtTypes & ctType) != 0;
 }
 
 bool Supla::Sensor::ElectricityMeter::isPhaseLedTypeSupported(

@@ -306,6 +306,7 @@ class ElectricityMeter : public ElementWithChannelActions,
   void enableChannelConfig();
   void addCtType(uint64_t ctType);
   void addPhaseLedType(uint64_t ledType);
+  bool isCtTypeSupported(uint64_t ctType) const;
 
   int8_t getPhaseLedType() const;
   int32_t getLedVoltageLow() const;
@@ -334,9 +335,9 @@ class ElectricityMeter : public ElementWithChannelActions,
   uint64_t availableCtTypes = 0;  // from proto EM_CT_TYPE_
   uint64_t availablePhaseLedTypes = 0;  // from proto EM_PHASE_LED_TYPE_
   bool channelConfigUsed = false;
-  int8_t usedCtType = 0;         // correspond with bit position of CT type
+  int8_t usedCtType = -1;         // correspond with bit position of CT type
                                  // Value -1 - default/not used
-  int8_t usedPhaseLedType = 0;   // correspond with bit position of LED type
+  int8_t usedPhaseLedType = -1;   // correspond with bit position of LED type
                                  // Value -1 - default/not used
   int32_t ledVoltageLow = 21000;   // 210.00 V
   int32_t ledVoltageHigh = 25000;  // 250.00 V

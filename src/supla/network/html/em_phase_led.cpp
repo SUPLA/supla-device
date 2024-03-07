@@ -37,18 +37,14 @@ EmPhaseLedParameters::~EmPhaseLedParameters() {
 }
 
 void EmPhaseLedParameters::send(Supla::WebSender* sender) {
-  if (!em) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!em || !cfg) {
     return;
   }
-  auto cfg = Supla::Storage::ConfigInstance();
-  int8_t value = 1;  // default
+
+  int8_t value = em->getPhaseLedType();
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   Supla::Config::generateKey(key, em->getChannelNumber(), EmPhaseLedTag);
-
-  if (!cfg) {
-    return;
-  }
-  cfg->getInt8(key, &value);
 
   // form-field BEGIN
   sender->send("<div class=\"form-field\">");
@@ -206,7 +202,7 @@ bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
   Supla::Config::generateKey(keyTag, em->getChannelNumber(), EmPhaseLedTag);
   if (strcmp(keyTag, key) == 0) {
     int ledType = stringToUInt(value);
-    int8_t valueInCfg = 1;
+    int8_t valueInCfg = em->getPhaseLedType();
     cfg->getInt8(keyTag, &valueInCfg);
     if (valueInCfg != ledType) {
       if (ledType > 4) {

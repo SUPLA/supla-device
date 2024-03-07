@@ -45,11 +45,13 @@ class SelectInputParameter : public HtmlElement, public LocalAction {
   void registerValue(const char *name, int value);
   void setTag(const char *tagValue);
   void setLabel(const char *labelValue);
+  void onProcessingEnd() override;
 
  protected:
   char *tag = nullptr;
   char *label = nullptr;
   SelectValueMapElement *firstValue = nullptr;
+  bool configChanged = false;
 };
 
 };  // namespace Html

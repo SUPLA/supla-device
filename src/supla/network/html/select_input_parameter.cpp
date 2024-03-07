@@ -147,7 +147,12 @@ bool SelectInputParameter::handleResponse(const char* key, const char* value) {
       if (strncmp(ptr->name, value, strlen(ptr->name) + 1) == 0) {
         // we set value registered for a given name
         if (cfg) {
-          cfg->setInt32(tag, ptr->value);
+          int32_t valueInCfg = 0;
+          cfg->getInt32(tag, &valueInCfg);
+          if (valueInCfg != ptr->value) {
+            cfg->setInt32(tag, ptr->value);
+            configChanged = true;
+          }
         }
         return true;
       }
@@ -175,6 +180,10 @@ void SelectInputParameter::registerValue(const char* name, int value) {
   int size = strlen(name) + 1;
   ptr->name = new char[size];
   snprintf(ptr->name, size, "%s", name);
+}
+
+void SelectInputParameter::onProcessingEnd() {
+  configChanged = false;
 }
 
 };  // namespace Html

@@ -22,7 +22,9 @@
 #include <supla/network/html/select_input_parameter.h>
 
 namespace Supla {
-class Element;
+namespace Sensor {
+class ElectricityMeter;
+}  // namespace Sensor
 
 namespace Html {
 
@@ -30,15 +32,11 @@ const char EmCtTypeTag[] = "em_ct";
 
 class EmCtTypeParameters : public SelectInputParameter {
  public:
-  explicit EmCtTypeParameters(int channelNo, Supla::Element *notify);
-  virtual ~EmCtTypeParameters();
-  void send(Supla::WebSender* sender) override;
-  bool handleResponse(const char* key, const char* value) override;
+  explicit EmCtTypeParameters(Supla::Sensor::ElectricityMeter *em);
   void onProcessingEnd() override;
 
  private:
-  int channelNo = 0;
-  Supla::Element *notify = nullptr;
+  Supla::Sensor::ElectricityMeter *em = nullptr;
   bool channelConfigChanged = false;
 };
 

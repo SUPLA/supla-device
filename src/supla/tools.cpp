@@ -19,7 +19,12 @@
 #include "tools.h"
 #include <string.h>
 #include <supla-common/proto.h>
+
+#if defined(ARDUINO_ARCH_AVR)
 #include <stdlib.h>
+#else
+#include <cstdlib>
+#endif
 
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder) {
   (void)(byteOrder);

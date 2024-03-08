@@ -320,7 +320,7 @@ int Supla::LinuxYamlConfig::getProtoVersion() {
   } catch (const YAML::Exception& ex) {
     SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
-  return 20;
+  return 22;
 }
 
 bool Supla::LinuxYamlConfig::setGUID(const char* guidRaw) {

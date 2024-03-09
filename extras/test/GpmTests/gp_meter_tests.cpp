@@ -328,19 +328,20 @@ TEST_F(GpMeterTestsFixture, setConfigValues) {
   gp.setDefaultUnitBeforeValue("default unit before VALUE");
   gp.setDefaultUnitAfterValue("default unit after VALUE");
 
-  char testString[100] = {};
+  char testString[15] = {};
   gp.getUnitBeforeValue(testString);
   // values are truncated to 15 bytes
-  EXPECT_STREQ(testString, "unit before VAL");
+  EXPECT_STREQ(testString, "unit before VA");
+  EXPECT_EQ(testString[14], 0);
 
   gp.getUnitAfterValue(testString);
-  EXPECT_STREQ(testString, "unit after VALU");
+  EXPECT_STREQ(testString, "unit after VAL");
 
   gp.getDefaultUnitBeforeValue(testString);
-  EXPECT_STREQ(testString, "default unit be");
+  EXPECT_STREQ(testString, "default unit b");
 
   gp.getDefaultUnitAfterValue(testString);
-  EXPECT_STREQ(testString, "default unit af");
+  EXPECT_STREQ(testString, "default unit a");
 
   gp.setUnitBeforeValue("");
   gp.setUnitAfterValue("");

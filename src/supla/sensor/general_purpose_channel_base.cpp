@@ -199,7 +199,8 @@ void GeneralPurposeChannelBase::setDefaultUnitBeforeValue(const char *unit) {
   if (unit) {
     SUPLA_LOG_DEBUG(
         "GPM[%d]: DefaultUnitBeforeValue \"%s\"", getChannelNumber(), unit);
-    strncpy(defaultUnitBeforeValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(defaultUnitBeforeValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    defaultUnitBeforeValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
@@ -207,7 +208,8 @@ void GeneralPurposeChannelBase::setDefaultUnitAfterValue(const char *unit) {
   if (unit) {
     SUPLA_LOG_DEBUG(
         "GPM[%d]: DefaultUnitAfterValue \"%s\"", getChannelNumber(), unit);
-    strncpy(defaultUnitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(defaultUnitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    defaultUnitAfterValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
@@ -229,13 +231,15 @@ uint8_t GeneralPurposeChannelBase::getDefaultValuePrecision() const {
 
 void GeneralPurposeChannelBase::getDefaultUnitBeforeValue(char *unit) {
   if (unit) {
-    strncpy(unit, defaultUnitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(unit, defaultUnitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
 void GeneralPurposeChannelBase::getDefaultUnitAfterValue(char *unit) {
   if (unit) {
-    strncpy(unit, defaultUnitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(unit, defaultUnitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
@@ -257,14 +261,18 @@ uint8_t GeneralPurposeChannelBase::getValuePrecision() const {
 
 void GeneralPurposeChannelBase::getUnitBeforeValue(char *unit) const {
   if (unit) {
-    strncpy(
-        unit, commonConfig.unitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(unit,
+            commonConfig.unitBeforeValue,
+            SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
 void GeneralPurposeChannelBase::getUnitAfterValue(char *unit) const {
   if (unit) {
-    strncpy(unit, commonConfig.unitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(
+        unit, commonConfig.unitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
@@ -365,8 +373,10 @@ void GeneralPurposeChannelBase::setUnitBeforeValue(const char *unit,
   getUnitBeforeValue(oldUnit);
 
   if (unit && strncmp(unit, oldUnit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE) != 0) {
-    strncpy(
-        commonConfig.unitBeforeValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(commonConfig.unitBeforeValue,
+            unit,
+            SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    commonConfig.unitBeforeValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
     if (local) {
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
       saveConfig();
@@ -381,7 +391,9 @@ void GeneralPurposeChannelBase::setUnitAfterValue(const char *unit,
   getUnitAfterValue(oldUnit);
 
   if (unit && strncmp(unit, oldUnit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE) != 0) {
-    strncpy(commonConfig.unitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
+    strncpy(
+        commonConfig.unitAfterValue, unit, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    commonConfig.unitAfterValue[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
     if (local) {
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
       saveConfig();

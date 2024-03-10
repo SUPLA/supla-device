@@ -17,16 +17,11 @@
 #ifndef SRC_SUPLA_CHANNEL_ELEMENT_H_
 #define SRC_SUPLA_CHANNEL_ELEMENT_H_
 
-#include "element.h"
-#include "channel.h"
-#include "local_action.h"
-#include "action_handler.h"
-#include "condition.h"
+#include <supla/channels/channel.h>
+
 #include "element_with_channel_actions.h"
 
 namespace Supla {
-
-class Condition;
 
 class ChannelElement : public ElementWithChannelActions {
  public:

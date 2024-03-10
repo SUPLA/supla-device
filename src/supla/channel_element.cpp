@@ -16,11 +16,6 @@
 
 #include "channel_element.h"
 
-#include <supla/storage/config.h>
-#include <supla/log_wrapper.h>
-
-#include "events.h"
-
 Supla::Channel *Supla::ChannelElement::getChannel() {
   return &channel;
 }

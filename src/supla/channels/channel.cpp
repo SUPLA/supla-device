@@ -51,6 +51,10 @@ Channel::~Channel() {
   if (reg_dev.channel_count != 0) {
     reg_dev.channel_count--;
   }
+  if (initialCaption != nullptr) {
+    delete[] initialCaption;
+    initialCaption = nullptr;
+  }
 }
 
 void Channel::setNewValue(double dbl) {
@@ -1114,6 +1118,29 @@ void Channel::setOnline() {
     offline = false;
     setUpdateReady();
   }
+}
+
+void Channel::setInitialCaption(const char *caption) {
+  if (initialCaption != nullptr) {
+    delete [] initialCaption;
+    initialCaption = nullptr;
+  }
+  int len = strnlen(caption, SUPLA_CAPTION_MAXSIZE - 1);
+  if (len > 0) {
+    initialCaption = new char[len + 1];
+    strncpy(initialCaption, caption, len);
+    initialCaption[len] = '\0';
+    SUPLA_LOG_DEBUG("Channel[%d] initial caption set to '%s'", channelNumber,
+                    initialCaption);
+  }
+}
+
+const char* Channel::getInitialCaption() const {
+  return initialCaption;
+}
+
+bool Channel::isInitialCaptionSet() const {
+  return initialCaption != nullptr;
 }
 
 }  // namespace Supla

@@ -170,10 +170,15 @@ class Channel : public LocalAction {
 
   void requestChannelConfig();
 
+  void setInitialCaption(const char *caption);
+  bool isInitialCaptionSet() const;
+  const char* getInitialCaption() const;
+
   static uint32_t lastCommunicationTimeMs;
   static TDS_SuplaRegisterDevice_E reg_dev;
 
  protected:
+  char *initialCaption = nullptr;
   bool valueChanged = false;
   bool channelConfig = false;
   bool offline = false;

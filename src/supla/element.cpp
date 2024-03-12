@@ -102,14 +102,21 @@ void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   }
   auto ch = getChannel();
 
-  if (ch != nullptr && ch->isSleepingEnabled()) {
-    suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
-    ch->setUpdateReady();
-  }
-  ch = getSecondaryChannel();
-  if (ch != nullptr && ch->isSleepingEnabled()) {
-    suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
-    ch->setUpdateReady();
+  while (ch) {
+    if (ch->isInitialCaptionSet()) {
+      suplaSrpc->setInitialCaption(ch->getChannelNumber(),
+                                   ch->getInitialCaption());
+    }
+    if (ch->isSleepingEnabled()) {
+      suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
+      ch->setUpdateReady();
+    }
+
+    if (ch == getSecondaryChannel()) {
+      ch = nullptr;
+    } else {
+      ch = getSecondaryChannel();
+    }
   }
 }
 
@@ -269,5 +276,17 @@ bool Element::isAnyUpdatePending() {
   return false;
 }
 
+void Element::setInitialCaption(const char *caption, bool secondaryChannel) {
+  Supla::Channel *ch = nullptr;
+  if (!secondaryChannel) {
+    ch = getChannel();
+  } else {
+    ch = getSecondaryChannel();
+  }
+
+  if (ch) {
+    ch->setInitialCaption(caption);
+  }
+}
 
 };  // namespace Supla

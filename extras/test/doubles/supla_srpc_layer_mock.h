@@ -61,6 +61,8 @@ class SuplaSrpcLayerMock : public Supla::Protocol::SuplaSrpc {
       sendNotification,
       (int context, const char *title, const char *message, int soundId),
       (override));
+  MOCK_METHOD(bool, setInitialCaption,
+      (uint8_t channelNumber, const char *caption), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_SUPLA_SRPC_LAYER_MOCK_H_

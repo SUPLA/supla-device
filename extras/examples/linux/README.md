@@ -384,6 +384,11 @@ channel.
 
 More examples can be found in subfolders of `extras/examples/linux`.
 
+### Common parameters
+
+All channels accept following parameter:
+`initial_caption` - allows to define initial caption for channel.
+
 ### VirtualRelay
 
 `VirtualRelay` is pretending to be a relay channel in Supla. You can turn it on

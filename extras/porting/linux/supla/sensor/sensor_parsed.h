@@ -22,11 +22,11 @@
 #include <supla/parser/parser.h>
 
 #include <supla-common/proto.h>
+#include <supla/control/action_trigger.h>
 #include <map>
 #include <string>
 #include <vector>
 #include <utility>
-#include "supla/control/action_trigger.h"
 
 namespace Supla {
 
@@ -35,7 +35,6 @@ class ActionTriggerParsed;
 }  // namespace Control
 
 namespace Sensor {
-
 const char BatteryLevel[] = "battery_level";
 const char MultiplierBatteryLevel[] = "multiplier_battery_level";
 
@@ -69,6 +68,8 @@ class SensorParsedBase {
   static void registerAtName(std::string,
                              Supla::Control::ActionTriggerParsed *);
 
+  virtual void setInitialCaption(const std::string &caption) = 0;
+
  protected:
   double getParameterValue(const std::string &parameter);
 
@@ -99,6 +100,7 @@ template <typename T> class SensorParsed : public T, public SensorParsedBase {
   explicit SensorParsed(Supla::Parser::Parser *);
 
   void handleGetChannelState(TDSC_ChannelState *channelState) override;
+  void setInitialCaption(const std::string &caption) override;
 };
 
 template <typename T>
@@ -122,6 +124,11 @@ void SensorParsed<T>::handleGetChannelState(TDSC_ChannelState *channelState) {
   }
 
   T::handleGetChannelState(channelState);
+}
+
+template <typename T>
+void SensorParsed<T>::setInitialCaption(const std::string &caption) {
+  T::setInitialCaption(caption.c_str());
 }
 
 };  // namespace Sensor

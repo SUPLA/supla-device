@@ -63,6 +63,8 @@ void setup() {
   // Channel #0 MAX44009 with "lx" units
   auto lightSensor = new Supla::Sensor::Max44009(MAX44009_I2C_ADDR, &Wire);
 
+  lightSensor->setInitialCaption("Light sensor 🌞");
+
   // If you want to change default units to klx, then uncomment below lines:
   // lightSensor->setDefaultUnitAfterValue("klx");
   // lightSensor->setDefaultValueDivider(1000000);  // in 0.001 units

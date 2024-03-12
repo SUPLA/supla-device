@@ -125,6 +125,8 @@ class Element {
 
   virtual bool isAnyUpdatePending();
 
+  void setInitialCaption(const char *caption, bool secondaryChannel = false);
+
  protected:
   static Element *firstPtr;
   static bool invalidatePtr;

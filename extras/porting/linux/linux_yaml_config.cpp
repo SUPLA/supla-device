@@ -64,6 +64,8 @@ namespace Supla {
 const char Multiplier[] = "multiplier";
 const char MultiplierTemp[] = "multiplier_temp";
 const char MultiplierHumi[] = "multiplier_humi";
+const char InitialCaption[] = "initial_caption";
+
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
 const char ReadWriteConfigStorage[] = "/config_storage.bin";
@@ -538,6 +540,7 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
       vr->setDefaultStateRestore();
     }
   }
+  addCommonParameters(ch, vr, &paramCount);
   return true;
 }
 
@@ -583,6 +586,8 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
     return false;
   }
 
+  addCommonParametersParsed(ch, cr, &paramCount, parser);
+
   return true;
 }
 
@@ -610,7 +615,8 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
         deviceId);
 
     IPAddress ipAddr(ip);
-    new Supla::PV::Fronius(ipAddr, port, deviceId);
+    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
+    addCommonParameters(ch, fronius, &paramCount);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
                     channelNumber);
@@ -652,7 +658,8 @@ bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch, int channelNumber) {
         loginAndPassword.c_str());
 
     IPAddress ipAddr(ip);
-    new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());
+    auto afore = new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());
+    addCommonParameters(ch, afore, &paramCount);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
                     channelNumber);
@@ -767,6 +774,8 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
     }
   }
+  addCommonParameters(ch, hvac, &paramCount);
+
   return true;
 }
 
@@ -799,22 +808,7 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
     therm->setMultiplier(Supla::Parser::Temperature, multiplier);
   }
 
-  auto sensor = therm;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, therm, &paramCount, parser);
 
   return true;
 }
@@ -907,22 +901,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
     gpm->setDefaultUnitAfterValue(unit.c_str());
   }
 
-  auto sensor = gpm;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, gpm, &paramCount, parser);
+
   return true;
 }
 
@@ -1014,22 +994,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
     gpm->setDefaultUnitAfterValue(unit.c_str());
   }
 
-  auto sensor = gpm;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, gpm, &paramCount, parser);
+
   return true;
 }
 
@@ -1059,22 +1025,7 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
     ic->setMultiplier(Supla::Parser::Counter, multiplier);
   }
 
-  auto sensor = ic;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, ic, &paramCount, parser);
 
   return true;
 }
@@ -1143,22 +1094,7 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
     }
   }
 
-  auto sensor = em;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, em, &paramCount, parser);
 
   return true;
 }
@@ -1173,24 +1109,9 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
     return false;
   }
 
-  auto sensor = binary;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, binary, &paramCount, parser);
 
-  if (!addActionTriggerActions(ch, sensor, false)) {
+  if (!addActionTriggerActions(ch, binary, false)) {
     return false;
   }
 
@@ -1430,22 +1351,7 @@ bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(
     thermHumi->setMultiplier(Supla::Parser::Temperature, multiplier);
   }
 
-  auto sensor = thermHumi;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, thermHumi, &paramCount, parser);
 
   return true;
 }
@@ -1476,22 +1382,7 @@ bool Supla::LinuxYamlConfig::addHumidityParsed(const YAML::Node& ch,
     humi->setMultiplier(Supla::Parser::Humidity, multiplier);
   }
 
-  auto sensor = humi;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, humi, &paramCount, parser);
 
   return true;
 }
@@ -1522,22 +1413,7 @@ bool Supla::LinuxYamlConfig::addPressureParsed(const YAML::Node& ch,
     pressure->setMultiplier(Supla::Parser::Pressure, multiplier);
   }
 
-  auto sensor = pressure;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, pressure, &paramCount, parser);
 
   return true;
 }
@@ -1568,22 +1444,7 @@ bool Supla::LinuxYamlConfig::addWindParsed(const YAML::Node& ch,
     wind->setMultiplier(Supla::Parser::Wind, multiplier);
   }
 
-  auto sensor = wind;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, wind, &paramCount, parser);
 
   return true;
 }
@@ -1614,22 +1475,7 @@ bool Supla::LinuxYamlConfig::addRainParsed(const YAML::Node& ch,
     rain->setMultiplier(Supla::Parser::Rain, multiplier);
   }
 
-  auto sensor = rain;
-  if (ch[Supla::Sensor::BatteryLevel]) {
-    paramCount++;
-    if (parser->isBasedOnIndex()) {
-      int index = ch[Supla::Sensor::BatteryLevel].as<int>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, index);
-    } else {
-      std::string key = ch[Supla::Sensor::BatteryLevel].as<std::string>();
-      sensor->setMapping(Supla::Sensor::BatteryLevel, key);
-    }
-  }
-  if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    paramCount++;
-    double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
-    sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
-  }
+  addCommonParametersParsed(ch, rain, &paramCount, parser);
 
   return true;
 }
@@ -1758,7 +1604,7 @@ bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
     weight->setMultiplier(Supla::Parser::Weight, multiplier);
   }
 
-  addCommonParameters(ch, weight, &paramCount, parser);
+  addCommonParametersParsed(ch, weight, &paramCount, parser);
 
   return true;
 }
@@ -1789,12 +1635,12 @@ bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,
     distance->setMultiplier(Supla::Parser::Distance, multiplier);
   }
 
-  addCommonParameters(ch, distance, &paramCount, parser);
+  addCommonParametersParsed(ch, distance, &paramCount, parser);
 
   return true;
 }
 
-void Supla::LinuxYamlConfig::addCommonParameters(
+void Supla::LinuxYamlConfig::addCommonParametersParsed(
     const YAML::Node& ch,
     Supla::Sensor::SensorParsedBase* sensor,
     int* paramCount,
@@ -1814,5 +1660,19 @@ void Supla::LinuxYamlConfig::addCommonParameters(
     double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
     sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
   }
+  if (ch[Supla::InitialCaption]) {
+    (*paramCount)++;
+    sensor->setInitialCaption(
+        ch[Supla::InitialCaption].as<std::string>().c_str());
+  }
 }
 
+void Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
+                            Supla::Element* element,
+                            int *paramCount) {
+  if (ch[Supla::InitialCaption]) {
+    (*paramCount)++;
+    element->setInitialCaption(
+        ch[Supla::InitialCaption].as<std::string>().c_str());
+  }
+}

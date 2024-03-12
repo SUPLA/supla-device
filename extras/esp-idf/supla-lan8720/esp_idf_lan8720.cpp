@@ -137,7 +137,7 @@ void Supla::EspIdfLan8720::setup() {
 
     // Automatically detect PHY address
     phyConfig.phy_addr = -1;
-    phyConfig.autonego_timeout_ms = 500;
+    phyConfig.autonego_timeout_ms = 1000;
     // no hw reset
     phyConfig.reset_gpio_num = -1;
     eth_esp32_emac_config_t esp32EmacConfig = ETH_ESP32_EMAC_DEFAULT_CONFIG();

@@ -289,4 +289,11 @@ void Element::setInitialCaption(const char *caption, bool secondaryChannel) {
   }
 }
 
+void Element::setDefaultFunction(int32_t defaultFunction) {
+  Supla::Channel *ch = getChannel();
+  if (ch) {
+    ch->setDefaultFunction(defaultFunction);
+  }
+}
+
 };  // namespace Supla

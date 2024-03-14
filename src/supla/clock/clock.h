@@ -65,6 +65,8 @@ class Clock : public Element {
 
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 
+  void setUseAutomaticTimeSyncRemoteConfig(bool value);
+
  protected:
   void setSystemTime(time_t newTime);
   time_t localtime = {};
@@ -72,6 +74,7 @@ class Clock : public Element {
   uint32_t lastMillis = 0;
   bool isClockReady = false;
   bool automaticTimeSync = true;
+  bool useAutomaticTimeSyncRemoteConfig = true;
 };
 
 };  // namespace Supla

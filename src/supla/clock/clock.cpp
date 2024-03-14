@@ -255,18 +255,20 @@ bool Clock::iterateConnected() {
 void Clock::onLoadConfig(SuplaDeviceClass *sdc) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    // register DeviceConfig field bit:
-    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
-        SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
-    if (sdc) {
-      sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_TIME);
-    }
+    if (useAutomaticTimeSyncRemoteConfig) {
+      // register DeviceConfig field bit:
+      Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+          SUPLA_DEVICE_CONFIG_FIELD_AUTOMATIC_TIME_SYNC);
+      if (sdc) {
+        sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_TIME);
+      }
 
-    // load automaticTimeSync from storage
-    uint8_t value = 1;
-    cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
-    automaticTimeSync = (value == 1);
-    SUPLA_LOG_DEBUG("Clock: automaticTimeSync: %d", automaticTimeSync);
+      // load automaticTimeSync from storage
+      uint8_t value = 1;
+      cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
+      automaticTimeSync = (value == 1);
+      SUPLA_LOG_DEBUG("Clock: automaticTimeSync: %d", automaticTimeSync);
+    }
   }
 }
 
@@ -309,6 +311,10 @@ void Clock::setSystemTime(time_t newTime) {
         getMin(),
         getSec());
   }
+}
+
+void Clock::setUseAutomaticTimeSyncRemoteConfig(bool value) {
+  useAutomaticTimeSyncRemoteConfig = value;
 }
 
 };  // namespace Supla

@@ -374,6 +374,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   void allowWrapAroundTemperatureSetpoints();
 
+  void enableInitialConfig();
+
  private:
   _supla_int16_t getTemperature(int channelNo);
   // returns true if forced off should be set
@@ -400,6 +402,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void updateTimerValue();
 
   TChannelConfig_HVAC config = {};
+  TChannelConfig_HVAC *initialConfig = nullptr;
   TChannelConfig_WeeklySchedule weeklySchedule = {};
   TChannelConfig_WeeklySchedule altWeeklySchedule = {};
   bool isWeeklyScheduleConfigured = false;

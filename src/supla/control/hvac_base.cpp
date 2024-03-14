@@ -1548,6 +1548,11 @@ void HvacBase::setTemperatureHeatCoolOffsetMax(_supla_int16_t temperature) {
 
 
 bool HvacBase::setTemperatureFreezeProtection(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_FREEZE_PROTECTION,
+                           temperature);
+  }
   if (!isTemperatureFreezeProtectionValid(temperature)) {
     return false;
   }
@@ -1563,6 +1568,11 @@ bool HvacBase::setTemperatureFreezeProtection(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureHeatProtection(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_HEAT_PROTECTION,
+                           temperature);
+  }
   if (!isTemperatureHeatProtectionValid(temperature)) {
     return false;
   }
@@ -1578,6 +1588,11 @@ bool HvacBase::setTemperatureHeatProtection(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureEco(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_ECO,
+                           temperature);
+  }
   if (!isTemperatureEcoValid(temperature)) {
     return false;
   }
@@ -1593,6 +1608,11 @@ bool HvacBase::setTemperatureEco(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureComfort(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_COMFORT,
+                           temperature);
+  }
   if (!isTemperatureComfortValid(temperature)) {
     return false;
   }
@@ -1608,6 +1628,11 @@ bool HvacBase::setTemperatureComfort(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureBoost(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_BOOST,
+                           temperature);
+  }
   if (!isTemperatureBoostValid(temperature)) {
     return false;
   }
@@ -1623,6 +1648,11 @@ bool HvacBase::setTemperatureBoost(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureHisteresis(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_HISTERESIS,
+                           temperature);
+  }
   if (!isTemperatureHisteresisValid(temperature)) {
     return false;
   }
@@ -1638,6 +1668,11 @@ bool HvacBase::setTemperatureHisteresis(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_BELOW_ALARM,
+                           temperature);
+  }
   if (!isTemperatureBelowAlarmValid(temperature)) {
     return false;
   }
@@ -1653,6 +1688,11 @@ bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
 }
 
 bool HvacBase::setTemperatureAboveAlarm(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_ABOVE_ALARM,
+                           temperature);
+  }
   if (!isTemperatureAboveAlarmValid(temperature)) {
     return false;
   }
@@ -1669,6 +1709,11 @@ bool HvacBase::setTemperatureAboveAlarm(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureAuxMinSetpoint(
     _supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_AUX_MIN_SETPOINT,
+                           temperature);
+  }
   if (!isTemperatureAuxMinSetpointValid(temperature)) {
     return false;
   }
@@ -1686,6 +1731,11 @@ bool HvacBase::setTemperatureAuxMinSetpoint(
 
 bool HvacBase::setTemperatureAuxMaxSetpoint(
     _supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_AUX_MAX_SETPOINT,
+                           temperature);
+  }
   if (!isTemperatureAuxMaxSetpointValid(temperature)) {
     return false;
   }
@@ -1870,6 +1920,9 @@ _supla_int16_t HvacBase::getTemperatureAuxMaxSetpoint() const {
 }
 
 bool HvacBase::setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm) {
+  if (initialConfig && !initDone) {
+    initialConfig->UsedAlgorithm = newAlgorithm;
+  }
   if (isAlgorithmValid(newAlgorithm)) {
     if (config.UsedAlgorithm != newAlgorithm) {
       config.UsedAlgorithm = newAlgorithm;
@@ -1884,6 +1937,9 @@ bool HvacBase::setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm) {
 }
 
 void HvacBase::setSubfunction(uint8_t subfunction) {
+  if (initialConfig && !initDone) {
+    initialConfig->Subfunction = subfunction;
+  }
   if (config.Subfunction != subfunction) {
     config.Subfunction = subfunction;
     if (initDone) {
@@ -1898,6 +1954,9 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
 }
 
 bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
+  if (initialConfig && !initDone) {
+    initialConfig->MainThermometerChannelNo = channelNo;
+  }
   if (!initDone) {
     config.MainThermometerChannelNo = channelNo;
     defaultMainThermometer = channelNo;
@@ -1927,6 +1986,9 @@ uint8_t HvacBase::getMainThermometerChannelNo() const {
 }
 
 bool HvacBase::setAuxThermometerChannelNo(uint8_t channelNo) {
+  if (initialConfig && !initDone) {
+    initialConfig->AuxThermometerChannelNo = channelNo;
+  }
   if (!initDone) {
     config.AuxThermometerChannelNo = channelNo;
     defaultAuxThermometer = channelNo;
@@ -1971,6 +2033,9 @@ uint8_t HvacBase::getAuxThermometerChannelNo() const {
 }
 
 void HvacBase::setAuxThermometerType(uint8_t type) {
+  if (initialConfig && !initDone) {
+    initialConfig->AuxThermometerType = type;
+  }
   if (config.AuxThermometerType != type) {
     config.AuxThermometerType = type;
     if (initDone) {
@@ -1985,6 +2050,9 @@ uint8_t HvacBase::getAuxThermometerType() const {
 }
 
 void HvacBase::setAntiFreezeAndHeatProtectionEnabled(bool enabled) {
+  if (initialConfig && !initDone) {
+    initialConfig->AntiFreezeAndOverheatProtectionEnabled = enabled;
+  }
   if (config.AntiFreezeAndOverheatProtectionEnabled != enabled) {
     config.AntiFreezeAndOverheatProtectionEnabled = enabled;
     if (initDone) {
@@ -2010,6 +2078,9 @@ bool HvacBase::isAntiFreezeAndHeatProtectionEnabled() const {
 }
 
 void HvacBase::setAuxMinMaxSetpointEnabled(bool enabled) {
+  if (initialConfig && !initDone) {
+    initialConfig->AuxMinMaxSetpointEnabled = enabled;
+  }
   if (config.AuxMinMaxSetpointEnabled != enabled) {
     config.AuxMinMaxSetpointEnabled = enabled;
     if (initDone) {
@@ -2035,6 +2106,9 @@ bool HvacBase::isAuxMinMaxSetpointEnabled() const {
 }
 
 void HvacBase::setTemperatureSetpointChangeSwitchesToManualMode(bool enabled) {
+  if (initialConfig && !initDone) {
+    initialConfig->TemperatureSetpointChangeSwitchesToManualMode = enabled;
+  }
   if (config.TemperatureSetpointChangeSwitchesToManualMode != enabled) {
     config.TemperatureSetpointChangeSwitchesToManualMode = enabled;
     if (initDone) {
@@ -2054,6 +2128,9 @@ bool HvacBase::isMinOnOffTimeValid(uint16_t seconds) const {
 }
 
 bool HvacBase::setMinOnTimeS(uint16_t seconds) {
+  if (initialConfig && !initDone) {
+    initialConfig->MinOnTimeS = seconds;
+  }
   if (isMinOnOffTimeValid(seconds)) {
     if (config.MinOnTimeS != seconds) {
       config.MinOnTimeS = seconds;
@@ -2072,6 +2149,9 @@ uint16_t HvacBase::getMinOnTimeS() const {
 }
 
 bool HvacBase::setMinOffTimeS(uint16_t seconds) {
+  if (initialConfig && !initDone) {
+    initialConfig->MinOffTimeS = seconds;
+  }
   if (isMinOnOffTimeValid(seconds)) {
     if (config.MinOffTimeS != seconds) {
       config.MinOffTimeS = seconds;
@@ -2095,6 +2175,9 @@ bool HvacBase::setOutputValueOnError(signed char value) {
   }
   if (value < -100) {
     value = -100;
+  }
+  if (initialConfig && !initDone) {
+    initialConfig->OutputValueOnError = value;
   }
 
   if (config.OutputValueOnError != value) {
@@ -2319,6 +2402,7 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
   }
 
   auto channelFunction = channel.getDefaultFunction();
+  SUPLA_LOG_DEBUG("HVAC: channel function %d", channelFunction);
   if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     if (program.Mode == SUPLA_HVAC_MODE_HEAT) {
       if (isAltWeeklySchedule) {
@@ -2548,6 +2632,14 @@ bool HvacBase::setProgram(int programId,
                           _supla_int16_t tHeat,
                           _supla_int16_t tCool,
                           bool isAltWeeklySchedule) {
+  SUPLA_LOG_DEBUG("HVAC[%d]: set%sProgram(%d, %d, %d, %d, %d)",
+                  channel.getChannelNumber(),
+                  isAltWeeklySchedule ? "Alt" : "Main",
+                  programId,
+                  mode,
+                  tHeat,
+                  tCool);
+
   TWeeklyScheduleProgram program = {mode, {tHeat}, {tCool}};
 
   if (!isProgramValid(program, isAltWeeklySchedule)) {
@@ -3659,7 +3751,7 @@ _supla_int16_t HvacBase::getDefaultTemperatureRoomMin() const {
   auto defaultTemperature = defaultTemperatureRoomMin[channelFunctionToIndex(
       channelFunction)];
   if (defaultTemperature == INT16_MIN) {
-    defaultTemperature = defaultTemperatureRoomMin[channelFunctionToIndex(0)];
+    defaultTemperature = defaultTemperatureRoomMin[0];
   }
   if (defaultTemperature == INT16_MIN) {
     defaultTemperature = 500;  // return 5 degree if nothing else is set
@@ -3672,7 +3764,7 @@ _supla_int16_t HvacBase::getDefaultTemperatureRoomMax() const {
   auto defaultTemperature = defaultTemperatureRoomMax[channelFunctionToIndex(
       channelFunction)];
   if (defaultTemperature == INT16_MIN) {
-    defaultTemperature = defaultTemperatureRoomMax[channelFunctionToIndex(0)];
+    defaultTemperature = defaultTemperatureRoomMax[0];
   }
   if (defaultTemperature == INT16_MIN) {
     defaultTemperature = 4000;  // return 40 degree if nothing else is set
@@ -3685,6 +3777,11 @@ _supla_int16_t HvacBase::getDefaultTemperatureRoomMax() const {
 // assignement is not modified here, while in factory default config it is
 // set to predefined values.
 void HvacBase::initDefaultConfig() {
+  if (initialConfig) {
+    memcpy(&config, initialConfig, sizeof(config));
+    return;
+  }
+
   TChannelConfig_HVAC newConfig = {};
   // init new config with current configuration values
   memcpy(&newConfig, &config, sizeof(newConfig));
@@ -4092,4 +4189,23 @@ void HvacBase::clearWaitingFlags() {
 
 void HvacBase::allowWrapAroundTemperatureSetpoints() {
   wrapAroundTemperatureSetpoints = true;
+}
+
+void HvacBase::enableInitialConfig() {
+  if (initialConfig == nullptr) {
+    initialConfig = new TChannelConfig_HVAC;
+  }
+  if (initialConfig != nullptr) {
+    memset(initialConfig, 0, sizeof(TChannelConfig_HVAC));
+    setTemperatureInStruct(&initialConfig->Temperatures,
+                           TEMPERATURE_ROOM_MIN,
+                           getDefaultTemperatureRoomMin());
+    setTemperatureInStruct(&initialConfig->Temperatures,
+                           TEMPERATURE_ROOM_MAX,
+                           getDefaultTemperatureRoomMax());
+
+    initialConfig->MainThermometerChannelNo = defaultMainThermometer;
+    initialConfig->AuxThermometerChannelNo = defaultAuxThermometer;
+    initialConfig->BinarySensorChannelNo = defaultBinarySensor;
+  }
 }

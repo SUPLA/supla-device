@@ -43,22 +43,24 @@ void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    int8_t value = 0;
-    if (cfg->getInt8(StatusLedCfgTag, &value)) {
-      switch (value) {
-        default:
-        case 0: {
-          setMode(LED_ON_WHEN_CONNECTED);
-          break;
-        }
-        case 1: {
-          setMode(LED_OFF_WHEN_CONNECTED);
-          break;
-        }
-        case 2: {
-          setMode(LED_ALWAYS_OFF);
-          break;
-        }
+    int8_t value = defaultMode;
+    if (!cfg->getInt8(StatusLedCfgTag, &value)) {
+      // update default value in config if it is missing
+      cfg->setInt8(Supla::Device::StatusLedCfgTag, defaultMode);
+    }
+    switch (value) {
+      default:
+      case 0: {
+        setMode(LED_ON_WHEN_CONNECTED);
+        break;
+      }
+      case 1: {
+        setMode(LED_OFF_WHEN_CONNECTED);
+        break;
+      }
+      case 2: {
+        setMode(LED_ALWAYS_OFF);
+        break;
       }
     }
 
@@ -327,4 +329,8 @@ void Supla::Device::StatusLed::onDeviceConfigChange(uint64_t fieldBit) {
     SUPLA_LOG_DEBUG("StatusLed: reload config");
     onLoadConfig(nullptr);
   }
+}
+
+void Supla::Device::StatusLed::setDefaultMode(enum LedMode newMode) {
+  defaultMode = static_cast<int8_t>(newMode);
 }

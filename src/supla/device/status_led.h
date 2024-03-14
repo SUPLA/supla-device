@@ -84,6 +84,7 @@ class StatusLed : public Element {
   void setMode(LedMode newMode);
   LedMode getMode() const;
   void storeModeToConfig();
+  void setDefaultMode(enum LedMode newMode);
 
  protected:
   void updatePin();
@@ -100,6 +101,7 @@ class StatusLed : public Element {
   LedMode ledMode = LED_ON_WHEN_CONNECTED;
   Supla::Io *io = nullptr;
   Supla::Mutex *mutex = nullptr;
+  int8_t defaultMode = 0;
 };
 
 }  // namespace Device

@@ -50,7 +50,7 @@ class Config {
   virtual ~Config();
   virtual bool init() = 0;
   virtual void removeAll() = 0;
-  virtual bool isMinimalConfigReady();
+  virtual bool isMinimalConfigReady(bool showLogs = true);
   virtual bool isConfigModeSupported();
 
   // Override this method and setup all default value if needed

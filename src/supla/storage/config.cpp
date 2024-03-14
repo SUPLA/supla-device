@@ -408,7 +408,7 @@ void Config::generateKey(char *output, int number, const char *key) {
   snprintf(output, SUPLA_CONFIG_MAX_KEY_SIZE, "%d_%s", number, key);
 }
 
-bool Config::isMinimalConfigReady() {
+bool Config::isMinimalConfigReady(bool showLogs) {
   char buf[512] = {};
   // TODO(klew): minimal config check for protocol related params shoud be
   // moved to protocol layer level.
@@ -421,12 +421,16 @@ bool Config::isMinimalConfigReady() {
   if (net != nullptr && !net->isIntfDisabledInConfig() &&
       net->isWifiConfigRequired()) {
     if (!getWiFiSSID(buf) || strlen(buf) == 0) {
-      SUPLA_LOG_DEBUG("Wi-Fi SSID missing");
+      if (showLogs) {
+        SUPLA_LOG_DEBUG("Wi-Fi SSID missing");
+      }
       return false;
     }
     memset(buf, 0, sizeof(buf));
     if (!getWiFiPassword(buf) || strlen(buf) == 0) {
-      SUPLA_LOG_DEBUG("Wi-Fi password missing");
+      if (showLogs) {
+        SUPLA_LOG_DEBUG("Wi-Fi password missing");
+      }
       return false;
     }
   }
@@ -435,12 +439,16 @@ bool Config::isMinimalConfigReady() {
   // TODO(klew): move to supla srpc layer
   if (isSuplaCommProtocolEnabled()) {
     if (!getSuplaServer(buf) || strlen(buf) == 0) {
-      SUPLA_LOG_DEBUG("Supla server missing");
+      if (showLogs) {
+        SUPLA_LOG_DEBUG("Supla server missing");
+      }
       return false;
     }
     memset(buf, 0, sizeof(buf));
     if (!getEmail(buf) || strlen(buf) == 0) {
-      SUPLA_LOG_DEBUG("Mail address missing");
+      if (showLogs) {
+        SUPLA_LOG_DEBUG("Mail address missing");
+      }
       return false;
     }
   }
@@ -449,20 +457,26 @@ bool Config::isMinimalConfigReady() {
   if (isMqttCommProtocolEnabled()) {
     memset(buf, 0, sizeof(buf));
     if (!getMqttServer(buf) || strlen(buf) == 0) {
-      SUPLA_LOG_DEBUG("MQTT: Missing server address");
+      if (showLogs) {
+        SUPLA_LOG_DEBUG("MQTT: Missing server address");
+      }
       return false;
     }
 
     if (isMqttAuthEnabled()) {
       memset(buf, 0, sizeof(buf));
       if (!getMqttUser(buf) || strlen(buf) == 0) {
-        SUPLA_LOG_DEBUG("MQTT: Missing username");
+        if (showLogs) {
+          SUPLA_LOG_DEBUG("MQTT: Missing username");
+        }
         return false;
       }
 
       memset(buf, 0, sizeof(buf));
       if (!getMqttPassword(buf) || strlen(buf) == 0) {
-        SUPLA_LOG_DEBUG("MQTT: Missing password");
+        if (showLogs) {
+          SUPLA_LOG_DEBUG("MQTT: Missing password");
+        }
         return false;
       }
     }

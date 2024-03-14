@@ -1,5 +1,38 @@
 # CHANGELOG.md
 
+## 24.03 (2024-03-14 Pi day)
+
+  - Fix: MQTT: publish WiFi RSSI and signal strength only when those fields are available
+  - Fix: Arduino esp32eth: code adjustment to changes in Network classes
+  - Fix: GPM: fix for units longer than 14 bytes (last byte has to be null)
+  - Change: sd4linux: update readme and airly_example.yaml with GPM classes descritpion
+  - Change: sd4linux: change default proto version from 20 to 22
+  - Change: esp-idf: supla-i2c-driver renamed to supla-i2c-deprecated, becasue esp-idf 5.2 introduced new format for i2c component. This should be removed when all components will be migrated to new driver
+  - Change: Docker: update esp-idf to v5.2 in stable version
+  - Add: Element, Channel: add setInitialCaption method which allow to define initial channel caption in Cloud and Apps
+  - Add: Network: add option to define client builder in Network interface (createClient() method). Move network client initialization in supla srpc layer to later phase. By default supla srpc will use default network interface to build client instance.
+  - Add: SuplaSrpc: add option to override client instance with setClient(Supla::Client\*) method
+  - Add: Condition: add setThreshold method to update condition threshold. After calling setThreshold, condition is checked again and it will trigger when condition is met.
+  - Add: Linux: add DistanceParsed channel
+  - Add: esp-idf: add LAN8720 support
+  - Add: Network: add obtaining of connection source IP address based on network client connection. Channel "state data" will be filled with source IP and then remaining state data is filled by network interface matching the source IP address. Add onLoadConfig to network classes.
+  - Add: Linux: add IP address reporting in channel state.
+  - Add: HTML: wifi parameters will show toggle for disabling this interface when more than one network interface is installed.
+  - Add: HTML: add ethernet parameters to disable/enable ethernet interface.
+  - Add: esp-idf: add SPI driver
+  - Add: HVAC: add allowWrapAroundTemperatureSetpoints which enables wraping around on increase/decrease setpoint actions when they reach min and max setpoint value, i.e. setpoint 40 + 1 -> will set temeprature 5 (min)
+  - Add: Esp-idf: add Wi-Fi connection fail return codes intruduced in esp-idf-v5.2
+  - Add: SuplaDevice: add SuplaDevice.setProtoVerboseLog(true/false) to enable/disable Supla communiation logs
+  - Add: ElectricityMeter: add support for vector balance parameters, add support for power active/reactive/apparent in kilo units
+  - Add: MQTT: add filling IP address. Add publishing total fwd/rvr active energy vector balanced
+  - Add: LocalAction, ActionHandlerClient: add methods to delete all actions related to trigger or client
+  - Add: Config: add getter and setters for channel "cfg_chng" flag
+  - Add: Html: add EmPhaseLed configuration for electricity meter phase indication LEDs.
+  - Add: SelectInputParameter: add bool flag with information whether there was parameter change.
+  - Add: Html: add EmCtTypeParameters for CT selection in EM
+  - Add: Element: add setter for default channel function (setDefaultFunction)
+  - Add: esp-idf: new version of supla-i2c-driver
+
 ## 24.02 (2024-02-14)
 
   - Fix: StatusLed: disable blinking for sleeping devices when other protocols are connected

@@ -20,10 +20,20 @@
 
 #include <supla/log_wrapper.h>
 #include <driver/i2c_master.h>
+#include <supla/mutex.h>
 
 using Supla::I2CDriver;
 
 I2CDriver::I2CDriver(int sda, int scl) : sda(sda), scl(scl) {
+  mutex = Supla::Mutex::Create();
+  mutex->unlock();
+}
+
+I2CDriver::~I2CDriver() {
+  if (mutex) {
+    delete mutex;
+    mutex = nullptr;
+  }
 }
 
 void I2CDriver::initialize() {
@@ -78,5 +88,13 @@ i2c_master_dev_handle_t *I2CDriver::addDevice(uint8_t address,
 
 bool I2CDriver::isInitialized() const {
   return initialized;
+}
+
+void I2CDriver::aquire() {
+  mutex->lock();
+}
+
+void I2CDriver::release() {
+  mutex->unlock();
 }
 

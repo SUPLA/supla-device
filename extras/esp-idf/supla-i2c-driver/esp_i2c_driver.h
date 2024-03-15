@@ -22,12 +22,18 @@
 #include <driver/i2c_types.h>
 
 namespace Supla {
+class Mutex;
+
 class I2CDriver {
  public:
   I2CDriver(int sda, int scl);
+  ~I2CDriver();
 
   void initialize();
   bool isInitialized() const;
+
+  void aquire();
+  void release();
 
   i2c_master_dev_handle_t *addDevice(uint8_t address, uint32_t frequency);
 
@@ -36,6 +42,7 @@ class I2CDriver {
   int scl = 0;
   bool initialized = false;
   i2c_master_bus_handle_t busHandle;
+  Supla::Mutex *mutex = nullptr;
 };
 
 }  // namespace Supla

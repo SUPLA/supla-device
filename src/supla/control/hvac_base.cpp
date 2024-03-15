@@ -1471,6 +1471,9 @@ bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
 }
 
 void HvacBase::addAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
+  if (initialConfig && !initDone) {
+    initialConfig->AvailableAlgorithms |= algorithm;
+  }
   config.AvailableAlgorithms |= algorithm;
 }
 
@@ -1507,41 +1510,75 @@ void HvacBase::clearTemperatureInStruct(THVACTemperatureCfg *temperatures,
 }
 
 void HvacBase::setTemperatureRoomMin(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_ROOM_MIN, temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_ROOM_MIN, temperature);
 }
 
 void HvacBase::setTemperatureRoomMax(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_ROOM_MAX, temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_ROOM_MAX, temperature);
 }
 
 void HvacBase::setTemperatureAuxMin(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_AUX_MIN, temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_AUX_MIN, temperature);
 }
 
 void HvacBase::setTemperatureAuxMax(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_AUX_MAX, temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_AUX_MAX, temperature);
 }
 
 void HvacBase::setTemperatureHisteresisMin(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_HISTERESIS_MIN, temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HISTERESIS_MIN, temperature);
 }
 
 void HvacBase::setTemperatureHisteresisMax(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_HISTERESIS_MAX, temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HISTERESIS_MAX, temperature);
 }
 
 void HvacBase::setTemperatureHeatCoolOffsetMin(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+      temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MIN, temperature);
 }
 
 void HvacBase::setTemperatureHeatCoolOffsetMax(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(
+      &initialConfig->Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+      temperature);
+  }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MAX, temperature);
 }

@@ -122,6 +122,7 @@ void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
           reinterpret_cast<char *>(&commonConfig),
           sizeof(GPMCommonConfig))) {
       SUPLA_LOG_INFO("GPM[%d]: config loaded successfully", getChannelNumber());
+      setChannelRefreshIntervalMs(commonConfig.refreshIntervalMs);
       configLoaded = true;
     }
 
@@ -304,6 +305,8 @@ void GeneralPurposeChannelBase::setChannelRefreshIntervalMs(
     intervalMs = 200;
   }
   refreshIntervalMs = intervalMs;
+  SUPLA_LOG_DEBUG("GPM[%d]: RefreshIntervalMs %d ms", getChannelNumber(),
+                  refreshIntervalMs);
 }
 
 void GeneralPurposeChannelBase::setRefreshIntervalMs(int intervalMs,
@@ -317,8 +320,8 @@ void GeneralPurposeChannelBase::setRefreshIntervalMs(int intervalMs,
   }
   auto oldIntervalMs = getRefreshIntervalMs();
   commonConfig.refreshIntervalMs = intervalMs;
+  setChannelRefreshIntervalMs(intervalMs);
   if (intervalMs != oldIntervalMs && local) {
-    setChannelRefreshIntervalMs(intervalMs);
     channelConfigState = Supla::ChannelConfigState::LocalChangePending;
     saveConfig();
     saveConfigChangeFlag();

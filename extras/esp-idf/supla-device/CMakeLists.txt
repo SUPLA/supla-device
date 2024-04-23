@@ -55,6 +55,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/sw_update.cpp
   ../../../src/supla/network/html/button_multiclick_parameters.cpp
   ../../../src/supla/network/html/custom_parameter.cpp
+  ../../../src/supla/network/html/custom_text_parameter.cpp
   ../../../src/supla/network/html/channel_correction.cpp
   ../../../src/supla/network/html/hide_show_container.cpp
   ../../../src/supla/network/html/div.cpp
@@ -173,6 +174,7 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_idf_client.cpp
   ../../porting/esp-idf/esp_mqtt.cpp
   ../../porting/esp-idf/esp_idf_network_common.cpp
+  ../../porting/esp-idf/esp_idf_sector_wl_storage.cpp
 )
 
 
@@ -194,6 +196,7 @@ idf_component_register(SRCS
     driver
     mqtt
     esp_timer
+    esp_partition
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )
 

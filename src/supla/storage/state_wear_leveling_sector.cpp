@@ -526,7 +526,7 @@ bool StateWearLevelingSector::finalizeSaveState() {
 
     // Check if data changed
     if (!isDataDifferent(currentSlotAddress, dataBuffer, slotSize())) {
-      SUPLA_LOG_DEBUG("WearLevelingSector: state not changed");
+//      SUPLA_LOG_DEBUG("WearLevelingSector: state not changed");
       delete[] dataBuffer;
       dataBuffer = nullptr;
       return true;

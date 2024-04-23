@@ -237,8 +237,8 @@ int Storage::updateStorage(unsigned int offset,
 }
 
 void Storage::setStateSavePeriod(uint32_t periodMs) {
-  if (periodMs < 1000) {
-    saveStatePeriod = 1000;
+  if (periodMs < 500) {
+    saveStatePeriod = 500;
   } else {
     saveStatePeriod = periodMs;
   }

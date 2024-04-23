@@ -100,6 +100,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool isCountdownTimerFunctionEnabled() const;
   void setMinimumAllowedDurationMs(uint32_t durationMs);
 
+  static void setRelayStorageSaveDelay(int delayMs);
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
@@ -126,6 +128,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool lastStateOnTimerUpdate = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
+
+  static int16_t relayStorageSaveDelay;
 };
 
 };  // namespace Control

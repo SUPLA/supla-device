@@ -32,6 +32,12 @@
 
 using Supla::Control::Relay;
 
+int16_t Relay::relayStorageSaveDelay = 5000;
+
+void Relay::setRelayStorageSaveDelay(int delayMs) {
+  relayStorageSaveDelay = delayMs;
+}
+
 Relay::Relay(Supla::Io *io,
              int pin,
              bool highIsOn,
@@ -108,7 +114,7 @@ uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
                 ->TimeMS;
         if (newDurationMs != storedTurnOnDurationMs) {
           storedTurnOnDurationMs = newDurationMs;
-          Supla::Storage::ScheduleSave(2000);
+          Supla::Storage::ScheduleSave(relayStorageSaveDelay);
         }
       }
       break;
@@ -272,7 +278,7 @@ void Relay::turnOn(_supla_int_t duration) {
   channel.setNewValue(true);
 
   // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(5000);
+  Supla::Storage::ScheduleSave(relayStorageSaveDelay);
 }
 
 void Relay::turnOff(_supla_int_t duration) {
@@ -291,7 +297,7 @@ void Relay::turnOff(_supla_int_t duration) {
   channel.setNewValue(false);
 
   // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(5000);
+  Supla::Storage::ScheduleSave(relayStorageSaveDelay);
 }
 
 bool Relay::isOn() {
@@ -486,10 +492,10 @@ void Relay::setChannelFunction(_supla_int_t newFunction) {
   bool wasStaircaseFunction = isStaircaseFunction();
   channelFunction = newFunction;
   if (wasImpulseFunction != isImpulseFunction()) {
-    Supla::Storage::ScheduleSave(2000);
+    Supla::Storage::ScheduleSave(relayStorageSaveDelay);
   }
   if (wasStaircaseFunction != isStaircaseFunction()) {
-    Supla::Storage::ScheduleSave(2000);
+    Supla::Storage::ScheduleSave(relayStorageSaveDelay);
   }
 
   if (isStaircaseFunction() || isImpulseFunction()) {

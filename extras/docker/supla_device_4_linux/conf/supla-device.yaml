@@ -1,0 +1,35 @@
+name: My fancy device
+log_level: debug
+state_files_path: "./auth"
+security_level: 2 # disable certificate verification
+
+supla:
+  server: supla.gorale
+  mail: goral64@gmail.com
+
+channels:
+  - type: ThermometerParsed
+    name: t1
+    temperature: 0
+    multiplier: 1
+    parser:
+      name: parser_1
+      type: Simple
+      refresh_time_ms: 200
+    source:
+      name: s1
+      type: File
+      file: data/temp.txt
+
+  - type: ThermHygroMeterParsed
+    name: th1
+    source:
+      type: File
+      file: data/temp_humi.txt
+    parser:
+      type: Simple
+      refresh_time_ms: 200
+    temperature: 0
+    humidity: 1
+    multiplier_temp: 1
+    multiplier_humi: 1

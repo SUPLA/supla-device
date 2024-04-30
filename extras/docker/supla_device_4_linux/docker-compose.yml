@@ -1,0 +1,11 @@
+version: '3.7'
+
+services:
+  sd4l:
+    build:
+      context: .
+    image: supla/supla-device-4-linux:local
+    restart: unless-stopped
+    container_name: sd4l
+    volumes:
+      - .:/supla-device

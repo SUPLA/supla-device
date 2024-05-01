@@ -4,3 +4,6 @@
 [submodule "extras/esp-idf/esp32-ds18b20"]
 	path = extras/esp-idf/esp32-ds18b20
 	url = https://github.com/SUPLA/esp32-ds18b20.git
+[submodule "extras/porting/linux/mqtt-c"]
+	path = extras/porting/linux/mqtt-c
+	url = https://github.com/LiamBindle/MQTT-C.git

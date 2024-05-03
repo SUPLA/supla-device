@@ -86,6 +86,9 @@
 #include <supla/tools.h>
 #include <supla/uptime.h>
 
+#include <cstdlib>
+
+#include <linux_mqtt_client.h>
 
 // reguired by linux_log.c
 int logLevel = LOG_INFO;
@@ -187,6 +190,8 @@ int main(int argc, char* argv[]) {
       SUPLA_LOG_INFO("Incomplete configuration. Please fix it and try again");
       exit(1);
     }
+
+    Supla::LinuxMqttClient::start();
 
     while (st_app_terminate == 0) {
       SuplaDevice.iterate();

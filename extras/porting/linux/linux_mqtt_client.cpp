@@ -1,6 +1,20 @@
-//
-// Created by Mariusz on 01.05.2024.
-//
+/*
+ * Copyright (C) AC SOFTWARE SP. Z O.O
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 
 #include <linux_mqtt_client.h>
 #include <mqtt_client.h>
@@ -64,7 +78,8 @@ void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic, int qos) {
 
 void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
   topics.erase(topic);
-  auto reconnect_state = static_cast<reconnect_state_t*>(mq_client->reconnect_state);
+  auto reconnect_state =
+      static_cast<reconnect_state_t*>(mq_client->reconnect_state);
   reconnect_state->topics.erase(topic);
   mqtt_unsubscribe(mq_client, topic.c_str());
   SUPLA_LOG_DEBUG("unsubscribing %s", topic.c_str());
@@ -83,20 +98,25 @@ int LinuxMqttClient::mqttClientInit() {
 }
 void LinuxMqttClient::publishCallback(void** unused,
                                       struct mqtt_response_publish* published) {
-  char *topic_name = static_cast<char *>(published->topic_name);
-  char *application_message = static_cast<char *>(published->application_message);
+  char* topic_name = static_cast<char*>(published->topic_name);
+  char* application_message =
+      static_cast<char*>(published->application_message);
   std::string topic_name_string(topic_name, published->topic_name_size);
-  std::string application_message_string(application_message, published->application_message_size);
+  std::string application_message_string(application_message,
+                                         published->application_message_size);
 
   topics[topic_name_string] = application_message_string;
 
-  SUPLA_LOG_DEBUG("Linux MQTT client received message from %s: %s", topic_name_string.c_str(), application_message_string.c_str());
+  SUPLA_LOG_DEBUG("Linux MQTT client received message from %s: %s",
+                  topic_name_string.c_str(),
+                  application_message_string.c_str());
 
   for (const auto& topic : topics) {
     // Wydrukuj nazwę topicu oraz ostatnią wiadomość
-    SUPLA_LOG_DEBUG("Topic: %s, Last Message: %s", topic.first.c_str(), topic.second.c_str());
+    SUPLA_LOG_DEBUG("Topic: %s, Last Message: %s",
+                    topic.first.c_str(),
+                    topic.second.c_str());
   }
-
 }
 
 }  // namespace Supla

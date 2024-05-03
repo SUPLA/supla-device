@@ -14,7 +14,7 @@ https://cloud.supla.org.
 
 For Debian based distributions:
 
-    sudo apt install git libssl-dev build-essential libyaml-cpp-dev cmake
+    sudo apt install git libssl-dev build-essential libyaml-cpp-dev cmake gcc make
 
 ## Get supla-device sources
 
@@ -30,11 +30,10 @@ was cloned.
     cd supla-device/extras/examples/linux
     mkdir build
     cd build
-    cmake ..
-    make
+    cmake .. && make
 
 If you want to speed up compilation you can call `make -j5` instead of `make`.
-It will run 5 parallel compilation jobs. However it is not recommended to use
+It will run 5 parallel compilation jobs. However, it is not recommended to use
 on a PC with low RAM.
 
 It should produce `supla-device-linux` binary file. Check if it is working:
@@ -50,16 +49,16 @@ instructions.
 
 supla-device may work in 3 modes:
 1. "normal" - default mode, when you call `./supla-device-linux` from command
-line. In this mode logs are printed to console (standard output). Application
-working directory depends on current working directory in a console.
+   line. In this mode logs are printed to console (standard output). Application
+   working directory depends on current working directory in a console.
 2. "daemon" - can be started by calling `./supla-device-linux -d`. Application
-is forked and runs in background. Logs are routed to syslog
-(see /var/log/syslog). Current working directory is changed to `/`.
-supla-device doesn't create PID file.
+   is forked and runs in background. Logs are routed to syslog
+   (see /var/log/syslog). Current working directory is changed to `/`.
+   supla-device doesn't create PID file.
 3. "service" - can be started by calling `./supla-device-linux -s`. Logs are
-routed to syslog and current working directory is changed to `/`
-(as in daemon mode). However separate process isn't forked and application
-runs in foreground.
+   routed to syslog and current working directory is changed to `/`
+   (as in daemon mode). However separate process isn't forked and application
+   runs in foreground.
 
 ## Logs, problems, bugs, help
 
@@ -167,10 +166,10 @@ Example:
 
 Defines if Supla server ceritficate should be validated against root CA.
 Values:
- - 0 - Supla root CA is used for validation (default) - not implemented yet
- - 2 - skip certificate validation - not recommended, however this is the only
- option for now.
-Parameter is optional. Default value 0.
+- 0 - Supla root CA is used for validation (default) - not implemented yet
+- 2 - skip certificate validation - not recommended, however this is the only
+  option for now.
+  Parameter is optional. Default value 0.
 
 Example:
 
@@ -203,6 +202,71 @@ Example:
       server: svr12.supla.org
       port: 2016
       mail: user@my_mail_server.com
+
+### MQTT broker connection
+
+Below parameters should be defined under `mqtt` key (as in examples below).
+Required if using [`MQTT` as source](#parsed-channel-source-parameter)
+
+#### Parameter `host`
+
+Defines MQTT broker address (IP or host name).
+Mandatory.
+
+#### Parameter `port`
+
+Defines MQTT broker port to which device should connect to. This application
+can use SSL/TLS encrypted connection, but by default port 1883 is used in MQTT
+broker as not SSL/TLS.
+Parameter is optional - default value: 1883.
+
+#### Parameter `username`
+
+Defines username which is used for user account on MQTT broker.
+Parameter is optional - default value: "".
+
+#### Parameter `password`
+
+Defines password which is used for user account on MQTT broker.
+Parameter is optional - default value: "".
+
+#### Parameter `client_name`
+
+Defines unique id for this client device.
+Mandatory.
+
+#### Parameter `use_ssl`
+
+Defines whether an encrypted SSL/TLS connection is to be used.
+Parameter is optional - default value: false.
+
+#### Parameter `secure`
+
+Defines whether the MQTT broker certificate is to be verified.
+Parameter is optional - default value: false.
+
+#### Parameter `ca_file` - not implemented yet
+
+Defines the location of the CA certificate file that will be
+used to verify the MQTT broker certificate.
+Parameter is optional - default value: "".
+
+Example (no SSL/TSL, anonymous):
+
+    mqtt:
+      host: mqtt.example.org
+      port: 1883
+      client_name: sl4d_client_001
+
+Example (with SSL/TSL with login):
+
+    mqtt:
+      host: mqtt-ssl.example.org
+      port: 8883
+      username: my_username
+      password: my_s3cr3t-PSWD
+      client_name: sl4d_client_001
+      use_ssl: true
 
 # Supla channels configuration
 
@@ -377,6 +441,31 @@ Example channels configuration (details are exaplained later):
         battery_level: 2
         multiplier_battery_level: 100
 
+    # with new MQTT source
+    - type: ThermometerParsed
+      name: t2m
+      temperature: temperature
+      multiplier: 1
+      parser:
+        name: parser_3m
+        type: Json
+        refresh_time_ms: 200
+      source:
+        name: s3m
+        type: MQTT
+        state_topic: "sensors/temphum/0/state"
+
+    - type: ThermHygroMeterParsed
+      name: th2m
+      temperature: temperature
+      humidity: humidity
+      multiplier_temp: 1
+      multiplier_humi: 1
+      parser:
+        use: parser_3m
+      source:
+        use: s3m
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -461,16 +550,18 @@ source, then it can be reused for multiple parsers.
 
 There are two supported parser types:
 1. `File` - use file as an input. File name is provided by `file` parameter and
-additionally you can define `expiration_time_sec` parameter. If last modification
-time of a file is older than `expiration_time_sec` then this source will be
-considered as invalid. `expiration_time_sec` is by default set to 10 minutes. 
-In order to disable time expiration check, please set `expiration_time_sec` to 0.
+   additionally you can define `expiration_time_sec` parameter. If last modification
+   time of a file is older than `expiration_time_sec` then this source will be
+   considered as invalid. `expiration_time_sec` is by default set to 10 minutes.
+   In order to disable time expiration check, please set `expiration_time_sec` to 0.
 2. `Cmd` - use Linux command line as an input. Command is provided by `commonad`
-field.
-
-If source was already defined earlier and you want to reuse it, you can specify
-`use` parameter with proper name of previously defined source. When `use`
-parameter is used, then no other source configuration parameters are allowed.
+   field.
+3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
+   section. A subscribed topic name containing status information is provided by
+   `state_topic`.
+   If source was already defined earlier and you want to reuse it, you can specify
+   `use` parameter with proper name of previously defined source. When `use`
+   parameter is used, then no other source configuration parameters are allowed.
 
 ## Parsed channel `parser` parameter
 
@@ -479,14 +570,14 @@ value which can be used for a parsed channel value.
 
 There are two parsers defined:
 1. `Simple` - it takes input from source and try to convert each line of text
-to a floating point number. Value from each line can be referenced later by
-using line index number (index counting starts with 0). I.e. please take a look
-at `t1` channel above.
+   to a floating point number. Value from each line can be referenced later by
+   using line index number (index counting starts with 0). I.e. please take a look
+   at `t1` channel above.
 2. `Json` - it takes input from source and parse it as JSON format. Values can
-be referenced in parsed channel by JSON key name or by JSON pointer and each
-value is converted to a floating point number. I.e. please check `i1`
-channel above. More details about parsing JSON can be found in JSON parser
-section of this document.
+   be referenced in parsed channel by JSON key name or by JSON pointer and each
+   value is converted to a floating point number. I.e. please check `i1`
+   channel above. More details about parsing JSON can be found in JSON parser
+   section of this document.
 
 Type of a parser is selected with a `type` parameter. You can provide a name for
 your parser with `name` parameter (named parsers can be reused for different
@@ -621,8 +712,8 @@ specific phases.
 Global parameters:
 * `frequency` - defines mapping for fetching voltage frequency from parser
 * `multiplier` - defines multiplier value for frequency (default unit is Hz, so
-if your data source provide data in Hz, you can put `multiplier: 1` or remove
-this parameter completely.
+  if your data source provide data in Hz, you can put `multiplier: 1` or remove
+  this parameter completely.
 
 Phase specific parameters:
 
@@ -738,7 +829,7 @@ I.e. action 3 corresponds with:
     #define SUPLA_ACTION_CAP_TOGGLE_x2 (1 << 3)
 
 (last number in bracket is action number, please check above link to `proto.h`
- for more details). Currently in Supla only actions
+for more details). Currently in Supla only actions
 for buttons are defined, so we reuse them here.
 
 ### `HumidityParsed`
@@ -884,4 +975,3 @@ Example output:
     maj 18 14:38:54 supla-dev-01 supla-device-linux[7944]: Current status: [10] Register in progress
     maj 18 14:38:54 supla-dev-01 supla-device-linux[7944]: LAST STATE ADDED: Registered and ready
     maj 18 14:38:54 supla-dev-01 supla-device-linux[7944]: Current status: [17] Registered and ready
-

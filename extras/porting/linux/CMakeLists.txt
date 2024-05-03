@@ -34,18 +34,24 @@ if(NOT cxxopts_POPULATED)
 endif()
 
 set(SUPLA_DEVICE_LINUX_SRCS
+  mqtt-c/mqtt.c
+  mqtt-c/mqtt_pal.c
+
   linux_network.cpp
   linux_yaml_config.cpp
   linux_platform.cpp
   linux_file_state_logger.cpp
   linux_client.cpp
   linux_file_storage.cpp
+  linux_mqtt_client.cpp
+  mqtt_client.cpp
 
   linux_timers.cpp
   linux_clock.cpp
 
   supla/source/cmd.cpp
   supla/source/file.cpp
+  supla/source/mqtt_src.cpp
 
   supla/parser/parser.cpp
   supla/parser/simple.cpp

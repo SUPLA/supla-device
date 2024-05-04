@@ -22,9 +22,9 @@
 #include <supla/source/source.h>
 
 #include <map>
-#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
+#include <nlohmann/json.hpp>
 
 #include "parser.h"
 

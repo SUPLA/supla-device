@@ -1501,8 +1501,19 @@ bool Supla::LinuxYamlConfig::addStateParser(
     }
     if (ch[Supla::Parser::StateOnValues]) {
       paramCount++;
-      sensor->setOnValues(
-          ch[Supla::Parser::StateOnValues].as<std::vector<int>>());
+      std::vector<std::variant<int, bool, std::string>> onValues;
+      for(const auto& val : ch[Supla::Parser::StateOnValues]) {
+        onValues.push_back(parseStateValue(val));
+      }
+      sensor->setOnValues(onValues);
+    }
+    if (ch[Supla::Parser::StateOffValues]) {
+      paramCount++;
+      std::vector<std::variant<int, bool, std::string>> offValues;
+      for(const auto& val : ch[Supla::Parser::StateOffValues]) {
+        offValues.push_back(parseStateValue(val));
+      }
+      sensor->setOffValues(offValues);
     }
   } else {
     if (mandatory) {
@@ -1674,5 +1685,25 @@ void Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
     (*paramCount)++;
     element->setInitialCaption(
         ch[Supla::InitialCaption].as<std::string>().c_str());
+  }
+}
+
+std::variant<int,bool,std::string> Supla::LinuxYamlConfig::parseStateValue(const YAML::Node& node) {
+  try {
+    return node.as<int>();
+  } catch (...) {}
+  try {
+    std::string strVal = node.as<std::string>();
+    std::string lowerStr = strVal;
+    std::transform(lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+    if (lowerStr == "true" || lowerStr == "false") {
+      throw std::runtime_error("Looks boolean.");
+    }
+    return strVal;
+  } catch (...) {}
+  try {
+    return node.as<bool>();
+  } catch (...) {
+    return 0;
   }
 }

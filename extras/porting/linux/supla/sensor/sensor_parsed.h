@@ -19,14 +19,15 @@
 #ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_SENSOR_PARSED_H_
 #define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_SENSOR_PARSED_H_
 
-#include <supla/parser/parser.h>
-
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger.h>
+#include <supla/parser/parser.h>
+
 #include <map>
 #include <string>
-#include <vector>
 #include <utility>
+#include <variant>
+#include <vector>
 
 namespace Supla {
 
@@ -55,7 +56,8 @@ class SensorParsedBase {
   // Returns -1 on invalid source/parser/value,
   // Otherwise returns >= 0 read from parser.
   int getStateValue();
-  void setOnValues(const std::vector<int> &onValues);
+  void setOnValues(const std::vector<std::variant<int, bool, std::string>> &onValues);
+  void setOffValues(const std::vector<std::variant<int, bool, std::string>> &offValues);
   bool addAtOnState(const std::vector<int> &onState);
   bool addAtOnValue(const std::vector<int> &onValue);
   bool addAtOnStateChange(const std::vector<int> &onState);
@@ -78,7 +80,8 @@ class SensorParsedBase {
   Supla::Parser::Parser *parser = nullptr;
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
-  std::vector<int> stateOnValues;
+  std::vector<std::variant<int, bool, std::string>> stateOnValues;
+  std::vector<std::variant<int, bool, std::string>> stateOffValues;
 
   // action trigger configuration
   std::string atName;
@@ -91,6 +94,8 @@ class SensorParsedBase {
   std::map<std::pair<int, int>, int> atOnValueChangeFromTo;
 
   static std::map<std::string, Supla::Control::ActionTriggerParsed *> atMap;
+
+  std::variant<int, bool, std::string> getStateParameterValue(const std::string &parameter);
 
   // TODO(klew): add local action
 };

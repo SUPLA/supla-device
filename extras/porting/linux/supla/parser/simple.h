@@ -39,9 +39,10 @@ class Simple : public Parser {
   bool refreshSource() override;
 
   double getValue(const std::string &key) override;
+  std::variant<int, bool, std::string> getStateValue(const std::string &key) override;
 
  protected:
-  std::map<int, double> values;
+  std::map<int, std::variant<int, bool, std::string, double>> values;
 };
 };  // namespace Parser
 };  // namespace Supla

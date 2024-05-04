@@ -206,6 +206,7 @@ class LinuxYamlConfig : public KeyValue {
   int sourceCount = 0;
 
   bool initDone = false;
+  std::variant<int,bool,std::string> parseStateValue(const YAML::Node& node);
 };
 };  // namespace Supla
 

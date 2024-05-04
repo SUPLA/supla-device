@@ -66,6 +66,11 @@ double SensorParsedBase::getParameterValue(
   return parser->getValue(parameterToKey[parameter]) * multiplier;
 }
 
+std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
+    const std::string &parameter) {
+  return parser->getStateValue(parameterToKey[parameter]);
+}
+
 bool SensorParsedBase::refreshParserSource() {
   if (parser && parser->refreshParserSource()) {
     return true;
@@ -79,37 +84,45 @@ bool SensorParsedBase::isParameterConfigured(
 }
 
 int SensorParsedBase::getStateValue() {
-  int value = -1;
+  std::variant<int, bool, std::string> value = -1;
+  int state = -1;
 
   if (isParameterConfigured(Supla::Parser::State)) {
     if (refreshParserSource()) {
-      double result = getParameterValue(Supla::Parser::State);
-      value = round(result);
-      if (!parser->isValid()) {
-        value = -1;
-        setLastValue(value);
-      } else {
-        setLastValue(value);
+      std::variant<int, bool, std::string> result = getStateParameterValue(Supla::Parser::State);
 
+      std::visit([&value](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        value = arg;
+      }, result);
+
+      if (!parser->isValid()) {
+        setLastValue(state);
+      } else {
         if (!stateOnValues.empty()) {
           // if value is in stateOnValues vector
           if (std::find(stateOnValues.begin(), stateOnValues.end(), value)
               != stateOnValues.end()) {
-            value = 1;
+            state = 1;
           } else {
-            if (value != -1) {
-              value = 0;
+            if (state != -1) {
+              state = 0;
             }
           }
         }
+        setLastValue(state);
       }
     }
   }
-  return value;
+  return state;
 }
 
-void SensorParsedBase::setOnValues(const std::vector<int> &onValues) {
+void SensorParsedBase::setOnValues(const std::vector<std::variant<int, bool, std::string>> &onValues) {
   stateOnValues = onValues;
+}
+
+void SensorParsedBase::setOffValues(const std::vector<std::variant<int, bool, std::string>> &offValues) {
+  stateOffValues = offValues;
 }
 
 bool SensorParsedBase::addAtOnState(const std::vector<int> &onState) {

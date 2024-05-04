@@ -28,6 +28,7 @@ namespace Supla {
 namespace Parser {
 const char State[] = "state";
 const char StateOnValues[] = "state_on_values";
+const char StateOffValues[] = "state_off_values";
 const char ActionTrigger[] = "action_trigger";
 };
 

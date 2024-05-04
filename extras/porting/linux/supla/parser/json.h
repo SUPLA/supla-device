@@ -38,6 +38,7 @@ class Json : public Parser {
   bool refreshSource() override;
 
   double getValue(const std::string &key) override;
+  std::variant<int, bool, std::string> getStateValue(const std::string &key) override;
 
   bool isBasedOnIndex() override;
   bool isValid() override;

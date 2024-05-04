@@ -15,13 +15,15 @@
 */
 
 #include "simple.h"
+
 #include <sstream>
 
 Supla::Parser::Simple::Simple(Supla::Source::Source *src)
-  : Supla::Parser::Parser(src) {
+    : Supla::Parser::Parser(src) {
 }
 
-Supla::Parser::Simple::~Simple() {}
+Supla::Parser::Simple::~Simple() {
+}
 
 double Supla::Parser::Simple::getValue(const std::string &key) {
   int index = keys[key];
@@ -30,11 +32,11 @@ double Supla::Parser::Simple::getValue(const std::string &key) {
     return 0;
   }
   std::variant<int, bool, std::string, double> val = values[index];
-  if(std::holds_alternative<double>(val)){
+  if (std::holds_alternative<double>(val)) {
     return std::get<double>(val);
   } else if (std::holds_alternative<int>(val)) {
     return static_cast<double>(std::get<int>(val));
-  }else{
+  } else {
     valid = false;
     return 0;
   }
@@ -48,20 +50,19 @@ std::variant<int, bool, std::string> Supla::Parser::Simple::getStateValue(
     return 0;
   }
   std::variant<int, bool, std::string, double> val = values[index];
-  if(std::holds_alternative<int>(val)){
+  if (std::holds_alternative<int>(val)) {
     return std::get<int>(val);
-  }else if(std::holds_alternative<bool>(val)){
+  } else if (std::holds_alternative<bool>(val)) {
     return std::get<bool>(val);
-  }else if(std::holds_alternative<std::string>(val)){
+  } else if (std::holds_alternative<std::string>(val)) {
     return std::get<std::string>(val);
-  }else if(std::holds_alternative<double>(val)){
+  } else if (std::holds_alternative<double>(val)) {
     return static_cast<int>(std::get<double>(val));
-  }else{
+  } else {
     valid = false;
     return 0;
   }
 }
-
 
 bool Supla::Parser::Simple::refreshSource() {
   if (source) {

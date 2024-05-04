@@ -56,8 +56,10 @@ class SensorParsedBase {
   // Returns -1 on invalid source/parser/value,
   // Otherwise returns >= 0 read from parser.
   int getStateValue();
-  void setOnValues(const std::vector<std::variant<int, bool, std::string>> &onValues);
-  void setOffValues(const std::vector<std::variant<int, bool, std::string>> &offValues);
+  void setOnValues(
+      const std::vector<std::variant<int, bool, std::string>> &onValues);
+  void setOffValues(
+      const std::vector<std::variant<int, bool, std::string>> &offValues);
   bool addAtOnState(const std::vector<int> &onState);
   bool addAtOnValue(const std::vector<int> &onValue);
   bool addAtOnStateChange(const std::vector<int> &onState);
@@ -95,12 +97,14 @@ class SensorParsedBase {
 
   static std::map<std::string, Supla::Control::ActionTriggerParsed *> atMap;
 
-  std::variant<int, bool, std::string> getStateParameterValue(const std::string &parameter);
+  std::variant<int, bool, std::string> getStateParameterValue(
+      const std::string &parameter);
 
   // TODO(klew): add local action
 };
 
-template <typename T> class SensorParsed : public T, public SensorParsedBase {
+template <typename T>
+class SensorParsed : public T, public SensorParsedBase {
  public:
   explicit SensorParsed(Supla::Parser::Parser *);
 

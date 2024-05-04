@@ -38,13 +38,13 @@ SensorParsedBase::SensorParsedBase(Supla::Parser::Parser *parser)
 }
 
 void SensorParsedBase::setMapping(const std::string &parameter,
-                                                const std::string &key) {
+                                  const std::string &key) {
   parameterToKey[parameter] = key;
   parser->addKey(key, -1);  // ignore index
 }
 
 void SensorParsedBase::setMapping(const std::string &parameter,
-                                                const int index) {
+                                  const int index) {
   std::string key = parameter;
   key += "_";
   key += std::to_string(id);
@@ -53,12 +53,11 @@ void SensorParsedBase::setMapping(const std::string &parameter,
 }
 
 void SensorParsedBase::setMultiplier(const std::string &parameter,
-                                                   double multiplier) {
+                                     double multiplier) {
   parameterMultiplier[parameter] = multiplier;
 }
 
-double SensorParsedBase::getParameterValue(
-    const std::string &parameter) {
+double SensorParsedBase::getParameterValue(const std::string &parameter) {
   double multiplier = 1;
   if (parameterMultiplier.count(parameter)) {
     multiplier = parameterMultiplier[parameter];
@@ -78,8 +77,7 @@ bool SensorParsedBase::refreshParserSource() {
   return false;
 }
 
-bool SensorParsedBase::isParameterConfigured(
-    const std::string &parameter) {
+bool SensorParsedBase::isParameterConfigured(const std::string &parameter) {
   return parameterToKey.count(parameter) > 0;
 }
 
@@ -89,20 +87,23 @@ int SensorParsedBase::getStateValue() {
 
   if (isParameterConfigured(Supla::Parser::State)) {
     if (refreshParserSource()) {
-      std::variant<int, bool, std::string> result = getStateParameterValue(Supla::Parser::State);
+      std::variant<int, bool, std::string> result =
+          getStateParameterValue(Supla::Parser::State);
 
-      std::visit([&value](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        value = arg;
-      }, result);
+      std::visit(
+          [&value](auto &&arg) {
+            using T = std::decay_t<decltype(arg)>;
+            value = arg;
+          },
+          result);
 
       if (!parser->isValid()) {
         setLastValue(state);
       } else {
         if (!stateOnValues.empty()) {
           // if value is in stateOnValues vector
-          if (std::find(stateOnValues.begin(), stateOnValues.end(), value)
-              != stateOnValues.end()) {
+          if (std::find(stateOnValues.begin(), stateOnValues.end(), value) !=
+              stateOnValues.end()) {
             state = 1;
           } else {
             if (state != -1) {
@@ -117,18 +118,20 @@ int SensorParsedBase::getStateValue() {
   return state;
 }
 
-void SensorParsedBase::setOnValues(const std::vector<std::variant<int, bool, std::string>> &onValues) {
+void SensorParsedBase::setOnValues(
+    const std::vector<std::variant<int, bool, std::string>> &onValues) {
   stateOnValues = onValues;
 }
 
-void SensorParsedBase::setOffValues(const std::vector<std::variant<int, bool, std::string>> &offValues) {
+void SensorParsedBase::setOffValues(
+    const std::vector<std::variant<int, bool, std::string>> &offValues) {
   stateOffValues = offValues;
 }
 
 bool SensorParsedBase::addAtOnState(const std::vector<int> &onState) {
   if (onState.size() != 2) {
     SUPLA_LOG_ERROR("Invalid on_state vector size: %d, expected 2",
-        onState.size());
+                    onState.size());
     return false;
   }
   atOnState[onState[0]] = onState[1];
@@ -138,7 +141,7 @@ bool SensorParsedBase::addAtOnState(const std::vector<int> &onState) {
 bool SensorParsedBase::addAtOnValue(const std::vector<int> &onValue) {
   if (onValue.size() != 2) {
     SUPLA_LOG_ERROR("Invalid on_value vector size: %d, expected 2",
-        onValue.size());
+                    onValue.size());
     return false;
   }
   atOnValue[onValue[0]] = onValue[1];
@@ -149,11 +152,11 @@ bool SensorParsedBase::addAtOnStateChange(
     const std::vector<int> &onStateChange) {
   if (onStateChange.size() != 3) {
     SUPLA_LOG_ERROR("Invalid on_state_change vector size: %d, expected 3",
-        onStateChange.size());
+                    onStateChange.size());
     return false;
   }
   atOnStateChangeFromTo[std::make_pair(onStateChange[0], onStateChange[1])] =
-    onStateChange[2];
+      onStateChange[2];
   return true;
 }
 
@@ -161,11 +164,11 @@ bool SensorParsedBase::addAtOnValueChange(
     const std::vector<int> &onValueChange) {
   if (onValueChange.size() != 3) {
     SUPLA_LOG_ERROR("Invalid on_value_change vector size: %d, expected 3",
-        onValueChange.size());
+                    onValueChange.size());
     return false;
   }
   atOnValueChangeFromTo[std::make_pair(onValueChange[0], onValueChange[1])] =
-    onValueChange[2];
+      onValueChange[2];
   return true;
 }
 
@@ -175,7 +178,7 @@ void SensorParsedBase::setLastState(int newState) {
     if (atIt != atMap.end()) {
       auto at = atIt->second;
       if (auto it =
-          atOnStateChangeFromTo.find(std::make_pair(lastState, newState));
+              atOnStateChangeFromTo.find(std::make_pair(lastState, newState));
           it != atOnStateChangeFromTo.end()) {
         at->sendActionTrigger(it->second);
       }
@@ -198,7 +201,7 @@ void SensorParsedBase::setLastValue(int newValue) {
     if (atIt != atMap.end()) {
       auto at = atIt->second;
       if (auto it =
-          atOnValueChangeFromTo.find(std::make_pair(lastValue, newValue));
+              atOnValueChangeFromTo.find(std::make_pair(lastValue, newValue));
           it != atOnValueChangeFromTo.end()) {
         at->sendActionTrigger(it->second);
       }
@@ -209,7 +212,6 @@ void SensorParsedBase::setLastValue(int newValue) {
   }
   lastValue = newValue;
 }
-
 
 void SensorParsedBase::registerActions() {
   if (atName.length() == 0) {

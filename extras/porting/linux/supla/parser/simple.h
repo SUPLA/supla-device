@@ -21,9 +21,9 @@
 
 #include <supla/source/source.h>
 
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
 #include "parser.h"
 
@@ -39,7 +39,8 @@ class Simple : public Parser {
   bool refreshSource() override;
 
   double getValue(const std::string &key) override;
-  std::variant<int, bool, std::string> getStateValue(const std::string &key) override;
+  std::variant<int, bool, std::string> getStateValue(
+      const std::string &key) override;
 
  protected:
   std::map<int, std::variant<int, bool, std::string, double>> values;

@@ -22,9 +22,9 @@
 #include <supla/source/source.h>
 
 #include <map>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <vector>
-#include <nlohmann/json.hpp>
 
 #include "parser.h"
 
@@ -38,7 +38,8 @@ class Json : public Parser {
   bool refreshSource() override;
 
   double getValue(const std::string &key) override;
-  std::variant<int, bool, std::string> getStateValue(const std::string &key) override;
+  std::variant<int, bool, std::string> getStateValue(
+      const std::string &key) override;
 
   bool isBasedOnIndex() override;
   bool isValid() override;
@@ -49,6 +50,6 @@ class Json : public Parser {
 
   nlohmann::json json;
 };
-};      // namespace Parser
-};      // namespace Supla
+};  // namespace Parser
+};  // namespace Supla
 #endif  // EXTRAS_PORTING_LINUX_SUPLA_PARSER_JSON_H_

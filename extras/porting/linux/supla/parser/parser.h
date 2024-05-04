@@ -30,12 +30,14 @@ namespace Parser {
 class Parser {
  public:
   explicit Parser(Supla::Source::Source *);
-  virtual ~Parser() {}
+  virtual ~Parser() {
+  }
   bool refreshParserSource();
 
   virtual void addKey(const std::string &key, int index);
   virtual double getValue(const std::string &key) = 0;
-  virtual std::variant<int, bool, std::string> getStateValue(const std::string &key) = 0;
+  virtual std::variant<int, bool, std::string> getStateValue(
+      const std::string &key) = 0;
 
   virtual bool isValid();
   virtual bool isBasedOnIndex() = 0;

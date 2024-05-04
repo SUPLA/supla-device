@@ -245,7 +245,7 @@ Parameter is optional - default value: false.
 Defines whether the MQTT broker certificate is to be verified.
 Parameter is optional - default value: false.
 
-#### Parameter `ca_file` - not implemented yet
+#### Parameter `ca_file`
 
 Defines the location of the CA certificate file that will be
 used to verify the MQTT broker certificate.
@@ -267,6 +267,17 @@ Example (with SSL/TSL with login):
       password: my_s3cr3t-PSWD
       client_name: sl4d_client_001
       use_ssl: true
+
+It is recommended to verify the server certificate with an encrypted connection,
+so we should set `secure` to `true`
+
+      secure: true
+
+If the server is trusted but its certificate is self-signed or its CA is not in 
+the system's trusted certificates tray, we can use a PEM file with the certificate
+path and specify the file location as `ca_file`.
+
+      ca_file: ca_chain.pem
 
 # Supla channels configuration
 

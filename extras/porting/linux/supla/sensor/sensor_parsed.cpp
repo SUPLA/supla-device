@@ -18,11 +18,11 @@
 
 #include "sensor_parsed.h"
 
-#include <math.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/log_wrapper.h>
 #include <supla/sensor/binary_parsed.h>
 
+#include <cmath>
 #include <algorithm>
 #include <utility>
 
@@ -121,11 +121,6 @@ int SensorParsedBase::getStateValue() {
 void SensorParsedBase::setOnValues(
     const std::vector<std::variant<int, bool, std::string>> &onValues) {
   stateOnValues = onValues;
-}
-
-void SensorParsedBase::setOffValues(
-    const std::vector<std::variant<int, bool, std::string>> &offValues) {
-  stateOffValues = offValues;
 }
 
 bool SensorParsedBase::addAtOnState(const std::vector<int> &onState) {

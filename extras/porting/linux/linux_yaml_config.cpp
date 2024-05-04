@@ -1500,14 +1500,6 @@ bool Supla::LinuxYamlConfig::addStateParser(
       }
       sensor->setOnValues(onValues);
     }
-    if (ch[Supla::Parser::StateOffValues]) {
-      paramCount++;
-      std::vector<std::variant<int, bool, std::string>> offValues;
-      for (const auto& val : ch[Supla::Parser::StateOffValues]) {
-        offValues.push_back(parseStateValue(val));
-      }
-      sensor->setOffValues(offValues);
-    }
   } else {
     if (mandatory) {
       SUPLA_LOG_ERROR("Channel config: missing \"%s\" parameter",

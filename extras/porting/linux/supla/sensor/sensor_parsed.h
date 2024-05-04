@@ -58,8 +58,6 @@ class SensorParsedBase {
   int getStateValue();
   void setOnValues(
       const std::vector<std::variant<int, bool, std::string>> &onValues);
-  void setOffValues(
-      const std::vector<std::variant<int, bool, std::string>> &offValues);
   bool addAtOnState(const std::vector<int> &onState);
   bool addAtOnValue(const std::vector<int> &onValue);
   bool addAtOnStateChange(const std::vector<int> &onState);
@@ -83,7 +81,6 @@ class SensorParsedBase {
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
   std::vector<std::variant<int, bool, std::string>> stateOnValues;
-  std::vector<std::variant<int, bool, std::string>> stateOffValues;
 
   // action trigger configuration
   std::string atName;

@@ -23,6 +23,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include "linux_mqtt_client.h"
 #include "source.h"
@@ -32,7 +33,7 @@ namespace Supla::Source {
 class Mqtt : public Source {
  public:
   Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
-       const std::string& topic,
+       const std::vector<std::string>& topics,
        int qos);
   ~Mqtt();
 
@@ -41,7 +42,7 @@ class Mqtt : public Source {
  protected:
   std::shared_ptr<Supla::LinuxMqttClient> client;
   std::string latestMessage;
-  std::string topic;
+  std::vector<std::string> topics;
   int qos;
 };
 }  // namespace Supla::Source

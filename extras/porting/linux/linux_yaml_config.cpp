@@ -1307,9 +1307,19 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       std::string cmd = source["command"].as<std::string>();
       src = new Supla::Source::Cmd(cmd.c_str());
     } else if (type == "MQTT") {
-      std::string state_topic = source["state_topic"].as<std::string>();
+      auto state_topic = source["state_topic"].as<std::string>();
       int qos = source["qos"].as<int>(0);
-      src = new Supla::Source::Mqtt(*this, state_topic, qos);
+      std::vector<std::string> allSubTopics;
+      if (source["sub_topics"] && source["sub_topics"].size() > 0) {
+        auto sub_topics = source["sub_topics"].as<std::vector<std::string>>();
+        for (auto& sub_topic : sub_topics) {
+          state_topic.append("/").append(sub_topic);
+          allSubTopics.push_back(state_topic);
+        }
+      } else {
+        allSubTopics.push_back(state_topic);
+      }
+      src = new Supla::Source::Mqtt(*this, allSubTopics, qos);
     } else {
       SUPLA_LOG_ERROR("Config: unknown source type \"%s\"", type.c_str());
       return nullptr;
@@ -1786,7 +1796,7 @@ std::variant<int, bool, std::string> Supla::LinuxYamlConfig::parseStateValue(
   } catch (...) {
   }
   try {
-    std::string strVal = node.as<std::string>();
+    auto strVal = node.as<std::string>();
     std::string lowerStr = strVal;
     std::transform(
         lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);

@@ -22,30 +22,47 @@
 #include <linux_yaml_config.h>
 #include <supla/log_wrapper.h>
 
+#include <vector>
+
 namespace Supla::Source {
 
 Mqtt::Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
-           const std::string& topic,
+           const std::vector<std::string>& topics,
            int qos)
-    : topic(topic), qos(qos) {
+    : topics(topics), qos(qos) {
   client = Supla::LinuxMqttClient::getInstance(yamlConfig);
-  SUPLA_LOG_DEBUG("Mark topic %s to subscribe", topic.c_str());
-  client->subscribeTopic(topic, qos);
+  for (auto& topic : topics) {
+    SUPLA_LOG_DEBUG("Mark topic %s to subscribe", topic.c_str());
+    client->subscribeTopic(topic, qos);
+  }
 }
 
 Mqtt::~Mqtt() {
   if (client) {
-    SUPLA_LOG_DEBUG("Mark topic %s to unsubscribe", topic.c_str());
-    client->unsubscribeTopic(topic);
+    for (auto& topic : topics) {
+      SUPLA_LOG_DEBUG("Mark topic %s to unsubscribe", topic.c_str());
+      client->unsubscribeTopic(topic);
+    }
   }
 }
 
 std::string Supla::Source::Mqtt::getContent() {
-  if (client->topics.find(topic) != client->topics.end()) {
-    latestMessage = client->topics[topic];
-    SUPLA_LOG_VERBOSE(
-        "get latest message %s for %s", latestMessage.c_str(), topic.c_str());
+  std::string combinedMessages;
+  for (const auto& topic : topics) {
+    if (client->topics.find(topic) != client->topics.end()) {
+      std::string currentMessage = client->topics[topic];
+      SUPLA_LOG_VERBOSE("get latest message %s for %s",
+                        currentMessage.c_str(),
+                        topic.c_str());
+      if (combinedMessages.empty()) {
+        combinedMessages = currentMessage;
+      } else {
+        combinedMessages += "\n" + currentMessage;
+      }
+    }
   }
+  SUPLA_LOG_VERBOSE("get latest message %s", combinedMessages.c_str());
+  latestMessage = combinedMessages;
   return latestMessage;
 }
 

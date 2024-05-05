@@ -111,12 +111,10 @@ int SensorParsedBase::getStateValue() {
             state = 1;
           }
         }
-        if(state == -1) {
-          if(value == valueOn)
-          {
+        if (state == -1) {
+          if (value == valueOn) {
             state = 1;
-          }
-          else if (value == valueOff) {
+          } else if (value == valueOff) {
             state = 0;
           }
         }

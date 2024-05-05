@@ -24,7 +24,7 @@
 
 namespace Supla::Source {
 
-Mqtt::Mqtt(Supla::LinuxYamlConfig& yamlConfig,
+Mqtt::Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
            const std::string& topic,
            int qos)
     : topic(topic), qos(qos) {

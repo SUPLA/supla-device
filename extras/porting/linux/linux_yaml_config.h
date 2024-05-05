@@ -123,14 +123,14 @@ class LinuxYamlConfig : public KeyValue {
   bool isMqttSource();
   bool isValidMqttConfig();
 
-  bool getMqttHost(char* result);
-  int32_t getMqttPort();
-  bool getMqttUsername(char* result);
-  bool getMqttPassword(char* result);
-  bool getMqttClientName(char* result);
-  bool getMqttUseSSL();
-  bool getMqttVerifyCA();
-  bool getMqttFileCA(char* result);
+  bool getMqttHost(char* result) const;
+  int32_t getMqttPort() const;
+  bool getMqttUsername(char* result) const;
+  bool getMqttPassword(char* result) const;
+  bool getMqttClientName(char* result) const;
+  bool getMqttUseSSL() const;
+  bool getMqttVerifyCA() const;
+  bool getMqttFileCA(char* result) const;
 
  protected:
   bool parseChannel(const YAML::Node& ch, int channelNumber);

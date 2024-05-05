@@ -19,10 +19,10 @@
 #include <linux_mqtt_client.h>
 #include <mqtt_client.h>
 #include <supla/time.h>
-#include <tools.h>
 
 #include <cstdlib>
-#include <iostream>
+#include <memory>
+#include <unordered_map>
 
 namespace Supla {
 
@@ -31,7 +31,8 @@ std::shared_ptr<Supla::LinuxMqttClient> Supla::LinuxMqttClient::instance =
 
 std::unordered_map<std::string, std::string> Supla::LinuxMqttClient::topics;
 
-Supla::LinuxMqttClient::LinuxMqttClient(Supla::LinuxYamlConfig& yamlConfig)
+Supla::LinuxMqttClient::LinuxMqttClient(
+    const Supla::LinuxYamlConfig& yamlConfig)
     : port(yamlConfig.getMqttPort()),
       verifyCA(yamlConfig.getMqttVerifyCA()),
       useSSL(yamlConfig.getMqttUseSSL()) {
@@ -41,9 +42,9 @@ Supla::LinuxMqttClient::LinuxMqttClient(Supla::LinuxYamlConfig& yamlConfig)
   username = yamlConfig.getMqttUsername(buffer) ? buffer : "";
   password = yamlConfig.getMqttPassword(buffer) ? buffer : "";
   fileCA = yamlConfig.getMqttFileCA(buffer) ? buffer : "";
-  sendbuf = (uint8_t*)malloc(8192 * sizeof(uint8_t));
+  sendbuf = reinterpret_cast<uint8_t*>(malloc(8192 * sizeof(uint8_t)));
   sendbufsz = 8192 * sizeof(uint8_t);
-  recvbuf = (uint8_t*)malloc(2048 * sizeof(uint8_t));
+  recvbuf = reinterpret_cast<uint8_t*>(malloc(2048 * sizeof(uint8_t)));
   recvbufsz = 2048 * sizeof(uint8_t);
   SUPLA_LOG_DEBUG("Linux MQTT Client create.");
 }
@@ -64,7 +65,7 @@ std::shared_ptr<LinuxMqttClient>& LinuxMqttClient::getInstance() {
 }
 
 std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
-    Supla::LinuxYamlConfig& yamlConfig) {
+    const Supla::LinuxYamlConfig& yamlConfig) {
   if (!instance) {
     instance.reset(new Supla::LinuxMqttClient(yamlConfig));
   }
@@ -85,22 +86,16 @@ void Supla::LinuxMqttClient::unsubscribeTopic(const std::string& topic) {
   SUPLA_LOG_DEBUG("unsubscribing %s", topic.c_str());
 }
 
-void LinuxMqttClient::setMessageHandler(
-    std::function<void(const std::string& message)> handler) {
-  // implementacja metody ustawiającej funkcję wywoływaną, kiedy klient
-  // otrzymuje nową wiadomość
-}
-
 int LinuxMqttClient::mqttClientInit() {
   SUPLA_LOG_DEBUG("Linux MQTT client init.");
   return mqtt_client_init(
-      host, port, username, password, clientName, 3, topics, publishCallback);
+      host, port, username, password, clientName, topics, publishCallback);
 }
 void LinuxMqttClient::publishCallback(void** unused,
                                       struct mqtt_response_publish* published) {
-  char* topic_name = static_cast<char*>(published->topic_name);
-  char* application_message =
-      static_cast<char*>(published->application_message);
+  auto* topic_name = reinterpret_cast<char*>(published->topic_name);
+  auto* application_message =
+      reinterpret_cast<char*>(published->application_message);
   std::string topic_name_string(topic_name, published->topic_name_size);
   std::string application_message_string(application_message,
                                          published->application_message_size);
@@ -112,11 +107,9 @@ void LinuxMqttClient::publishCallback(void** unused,
                   application_message_string.c_str());
 
   for (const auto& topic : topics) {
-    // Wydrukuj nazwę topicu oraz ostatnią wiadomość
     SUPLA_LOG_DEBUG("Topic: %s, Last Message: %s",
                     topic.first.c_str(),
                     topic.second.c_str());
   }
 }
-
 }  // namespace Supla

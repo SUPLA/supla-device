@@ -16,14 +16,16 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef SUPLA_DEVICE_LINUX_LINUX_MQTT_CLIENT_H
-#define SUPLA_DEVICE_LINUX_LINUX_MQTT_CLIENT_H
+#ifndef EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_
+#define EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_
 
 #include <mqtt-c/mqtt.h>
 #include <mqtt-c/mqtt_pal.h>
 
 #include <functional>
 #include <string>
+#include <unordered_map>
+#include <memory>
 
 #include "linux_yaml_config.h"
 #include "yaml-cpp/yaml.h"
@@ -35,7 +37,7 @@ class LinuxMqttClient {
   ~LinuxMqttClient();
 
   static std::shared_ptr<LinuxMqttClient>& getInstance(
-      LinuxYamlConfig& yamlConfig);
+      const LinuxYamlConfig& yamlConfig);
   static std::shared_ptr<LinuxMqttClient>& getInstance();
 
   static void start();
@@ -44,7 +46,6 @@ class LinuxMqttClient {
 
   void subscribeTopic(const std::string& topic, int qos);
 
-  void setMessageHandler(std::function<void(const std::string&)> handler);
   static void publishCallback(void** unused,
                               struct mqtt_response_publish* published);
 
@@ -57,7 +58,7 @@ class LinuxMqttClient {
   std::string fileCA;
 
  private:
-  explicit LinuxMqttClient(LinuxYamlConfig& yamlConfig);
+  explicit LinuxMqttClient(const LinuxYamlConfig& yamlConfig);
 
   LinuxMqttClient(const LinuxMqttClient&) = delete;
   LinuxMqttClient& operator=(const LinuxMqttClient&) = delete;
@@ -80,4 +81,4 @@ class LinuxMqttClient {
 
 }  // namespace Supla
 
-#endif  // SUPLA_DEVICE_LINUX_LINUX_MQTT_CLIENT_H
+#endif  // EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_

@@ -16,11 +16,12 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef SUPLA_DEVICE_LINUX_MQTT_H
-#define SUPLA_DEVICE_LINUX_MQTT_H
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_SOURCE_MQTT_SRC_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_SOURCE_MQTT_SRC_H_
 
 #include <linux_yaml_config.h>
 
+#include <memory>
 #include <string>
 
 #include "linux_mqtt_client.h"
@@ -30,7 +31,9 @@ namespace Supla::Source {
 
 class Mqtt : public Source {
  public:
-  Mqtt(Supla::LinuxYamlConfig& yamlConfig, const std::string& topic, int qos);
+  Mqtt(const Supla::LinuxYamlConfig& yamlConfig,
+       const std::string& topic,
+       int qos);
   ~Mqtt();
 
   std::string getContent() override;
@@ -43,4 +46,4 @@ class Mqtt : public Source {
 };
 }  // namespace Supla::Source
 
-#endif  // SUPLA_DEVICE_LINUX_MQTT_H
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_SOURCE_MQTT_SRC_H_

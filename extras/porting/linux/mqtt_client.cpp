@@ -25,6 +25,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 #include "linux_mqtt_client.h"
 
@@ -43,10 +44,10 @@ SSL_CTX* ssl_ctx;
 
 BIO* open_nb_socket(const char* addr, const char* port) {
   // Address and port definitions
-  char* addr_copy = (char*)malloc(strlen(addr) + 1);
-  strcpy(addr_copy, addr);
-  char* port_copy = (char*)malloc(strlen(port) + 1);
-  strcpy(port_copy, port);
+  char* addr_copy = reinterpret_cast<char*>(malloc(strlen(addr) + 1));
+  snprintf(addr_copy, strlen(addr) + 1, "%s", addr);
+  char* port_copy = reinterpret_cast<char*>(malloc(strlen(port) + 1));
+  snprintf(port_copy, strlen(port) + 1, "%s", port);
 
   // Default behaviour (Assuming non-encrypted connection)
   BIO* bio = BIO_new_connect(addr_copy);
@@ -83,11 +84,11 @@ BIO* open_nb_socket(const char* addr, const char* port) {
     bio = BIO_push(ssl_bio, bio);
 
     /* wait for connect with 10 second timeout */
-    int start_time = (int)time(nullptr);
-    int do_connect_rv = (int)BIO_do_connect(bio);
+    int start_time = static_cast<int>(time(nullptr));
+    int do_connect_rv = static_cast<int>(BIO_do_connect(bio));
     while (do_connect_rv <= 0 && BIO_should_retry(bio) &&
-           (int)time(nullptr) - start_time < 10) {
-      do_connect_rv = (int)BIO_do_connect(bio);
+           static_cast<int>(time(nullptr)) - start_time < 10) {
+      do_connect_rv = static_cast<int>(BIO_do_connect(bio));
     }
     if (do_connect_rv <= 0) {
       SUPLA_LOG_ERROR("%s", ERR_reason_error_string(ERR_get_error()));
@@ -137,7 +138,7 @@ int open_nb_socket(const char* addr, uint16_t port) {
   struct addrinfo *p, *servinfo;
 
   char port_buffer[6];
-  sprintf(port_buffer, "%d", port);
+  snprintf(port_buffer, sizeof(port_buffer), "%d", port);
 
   /* get address information */
   rv = getaddrinfo(addr, port_buffer, &hints, &servinfo);
@@ -186,7 +187,7 @@ void* mqtt_client_loop(void* client) {
 
 void close_client(int sockfd, pthread_t* client_daemon) {
 #if defined(MQTT_USE_BIO)
-  BIO* bio = (BIO*)(intptr_t)sockfd;
+  BIO* bio = reinterpret_cast<BIO*>(static_cast<intptr_t>(sockfd));
   BIO_free_all(bio);
 #else
   close(sockfd);
@@ -199,14 +200,15 @@ int mqtt_client_init(std::string addr,
                      std::string username,
                      std::string password,
                      std::string client_name,
-                     uint8_t protocol_version,
-                     std::unordered_map<std::string, std::string>& topics,
+                     const std::unordered_map<std::string, std::string>& topics,
                      void (*publish_response_callback)(
                          void** state, struct mqtt_response_publish* publish)) {
   reconnect_state = new reconnect_state_t();
-  reconnect_state->sendbuf = (uint8_t*)malloc(8192 * sizeof(uint8_t));
+  reconnect_state->sendbuf =
+      static_cast<uint8_t*>(malloc(8192 * sizeof(uint8_t)));
   reconnect_state->sendbufsz = 8192 * sizeof(uint8_t);
-  reconnect_state->recvbuf = (uint8_t*)malloc(2048 * sizeof(uint8_t));
+  reconnect_state->recvbuf =
+      static_cast<uint8_t*>(malloc(2048 * sizeof(uint8_t)));
   reconnect_state->recvbufsz = 2048 * sizeof(uint8_t);
   reconnect_state->hostname = addr;
   reconnect_state->port = port;
@@ -255,7 +257,7 @@ void mqtt_client_publish(const char* topic,
   SUPLA_LOG_DEBUG("publishing %s", topic);
 
   mqtt_publish(
-      mq_client, topic, (void*)payload, strlen(payload), publish_flags);
+      mq_client, topic, (const char*)payload, strlen(payload), publish_flags);
 }
 
 void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
@@ -265,7 +267,7 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
   /* Close the clients socket if this isn't the initial reconnect call */
   if (client->error != MQTT_ERROR_INITIAL_RECONNECT) {
 #if defined(MQTT_USE_BIO)
-    BIO* bio = (BIO*)client->socketfd;
+    BIO* bio = reinterpret_cast<BIO*>(client->socketfd);
     BIO_free_all(bio);
     SSL_CTX_free(ssl_ctx);
 #else
@@ -293,11 +295,12 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
   void* sockfd = nullptr;
   try {
 #if defined(MQTT_USE_BIO)
-    sockfd = (void*)open_nb_socket(reconnect_state->hostname.c_str(),
-                                   to_string(reconnect_state->port).c_str());
+    sockfd = reinterpret_cast<void*>(
+        open_nb_socket(reconnect_state->hostname.c_str(),
+                       std::to_string(reconnect_state->port).c_str()));
 #else
-    sockfd = (void*)(intptr_t)open_nb_socket(reconnect_state->hostname.c_str(),
-                                             reconnect_state->port);
+    sockfd = reinterpret_cast<void*>((intptr_t)open_nb_socket(
+        reconnect_state->hostname.c_str(), reconnect_state->port));
 #endif
   } catch (const std::runtime_error& e) {
     SUPLA_LOG_ERROR("An socket error occurred: %s", e.what());
@@ -314,23 +317,25 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
     free(reconnect_state->sendbuf);
     free(reconnect_state->recvbuf);
 
-    reconnect_state->sendbuf = (uint8_t*)malloc(8192 * sizeof(uint8_t));
+    reconnect_state->sendbuf =
+        reinterpret_cast<uint8_t*>(malloc(8192 * sizeof(uint8_t)));
     reconnect_state->sendbufsz = 8192 * sizeof(uint8_t);
-    reconnect_state->recvbuf = (uint8_t*)malloc(2048 * sizeof(uint8_t));
+    reconnect_state->recvbuf =
+        reinterpret_cast<uint8_t*>(malloc(2048 * sizeof(uint8_t)));
     reconnect_state->recvbufsz = 2048 * sizeof(uint8_t);
   }
 
   /* Reinitialize the client. */
 #if defined(MQTT_USE_BIO)
   mqtt_reinit(client,
-              (BIO*)sockfd,
+              reinterpret_cast<BIO*>(sockfd),
               reconnect_state->sendbuf,
               reconnect_state->sendbufsz,
               reconnect_state->recvbuf,
               reconnect_state->recvbufsz);
 #else
   mqtt_reinit(client,
-              (int)(intptr_t)sockfd,
+              static_cast<int>((intptr_t)sockfd),
               reconnect_state->sendbuf,
               reconnect_state->sendbufsz,
               reconnect_state->recvbuf,
@@ -365,8 +370,8 @@ void mqtt_client_free() {
   }
 
 #if defined(MQTT_USE_BIO)
-  void* sockfd = (void*)mq_client->socketfd;
-  BIO* bio = (BIO*)sockfd;
+  void* sockfd = reinterpret_cast<void*>(mq_client->socketfd);
+  BIO* bio = reinterpret_cast<BIO*>(sockfd);
   BIO_free_all(bio);
   SSL_CTX_free(ssl_ctx);
 #else

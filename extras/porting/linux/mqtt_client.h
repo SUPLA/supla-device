@@ -34,8 +34,10 @@
 #include <iostream>
 #include <unordered_map>
 #include <vector>
+#include <string>
 
-using namespace std;
+using std::vector;
+using std::string;
 
 struct reconnect_state_t {
   std::string hostname;
@@ -58,8 +60,7 @@ int mqtt_client_init(std::string addr,
                      std::string username,
                      std::string password,
                      std::string client_name,
-                     uint8_t protocol_version,
-                     std::unordered_map<std::string, std::string>& topics,
+                     const std::unordered_map<std::string, std::string>& topics,
                      void (*publish_response_callback)(
                          void** state, struct mqtt_response_publish* publish));
 void mqtt_client_publish(const char* topic,

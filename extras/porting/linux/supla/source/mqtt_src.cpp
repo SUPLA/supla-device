@@ -43,7 +43,7 @@ Mqtt::~Mqtt() {
 std::string Supla::Source::Mqtt::getContent() {
   if (client->topics.find(topic) != client->topics.end()) {
     latestMessage = client->topics[topic];
-    SUPLA_LOG_DEBUG(
+    SUPLA_LOG_VERBOSE(
         "get latest message %s for %s", latestMessage.c_str(), topic.c_str());
   }
   return latestMessage;

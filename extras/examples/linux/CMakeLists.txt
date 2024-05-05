@@ -29,7 +29,6 @@ endif()
 
 include_directories(
         .
-        ./mqtt-c
 )
 
 add_definitions(-DMQTT_USE_BIO)
@@ -47,3 +46,5 @@ set_target_properties(supla-device-linux PROPERTIES LINK_LIBRARIES -pthread)
 find_package(OpenSSL REQUIRED)
 
 target_link_libraries(supla-device-linux LINK_PUBLIC supladevice OpenSSL::SSL OpenSSL::Crypto -ldl)
+
+#target_compile_options(supla-device-linux PRIVATE -Wall -Wextra -Wpedantic -Werror)

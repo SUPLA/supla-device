@@ -107,7 +107,7 @@ void LinuxMqttClient::publishCallback(void** unused,
                   application_message_string.c_str());
 
   for (const auto& topic : topics) {
-    SUPLA_LOG_DEBUG("Topic: %s, Last Message: %s",
+    SUPLA_LOG_VERBOSE("Topic: %s, Last Message: %s",
                     topic.first.c_str(),
                     topic.second.c_str());
   }

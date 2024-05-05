@@ -14,7 +14,7 @@ https://cloud.supla.org.
 
 For Debian based distributions:
 
-    sudo apt install git libssl-dev build-essential libyaml-cpp-dev cmake gcc make
+    sudo apt install git libssl-dev build-essential libyaml-cpp-dev cmake
 
 ## Get supla-device sources
 
@@ -42,27 +42,27 @@ It should produce `supla-device-linux` binary file. Check if it is working:
 
 # Usage
 
-Currently there is no automated installation available. So please follow below
+Currently, there is no automated installation available. So please follow below
 instructions.
 
 ## Working modes
 
 supla-device may work in 3 modes:
 1. "normal" - default mode, when you call `./supla-device-linux` from command
-   line. In this mode logs are printed to console (standard output). Application
-   working directory depends on current working directory in a console.
+line. In this mode logs are printed to console (standard output). Application
+working directory depends on current working directory in a console.
 2. "daemon" - can be started by calling `./supla-device-linux -d`. Application
-   is forked and runs in background. Logs are routed to syslog
-   (see /var/log/syslog). Current working directory is changed to `/`.
-   supla-device doesn't create PID file.
+is forked and runs in background. Logs are routed to syslog
+(see /var/log/syslog). Current working directory is changed to `/`.
+supla-device doesn't create PID file.
 3. "service" - can be started by calling `./supla-device-linux -s`. Logs are
-   routed to syslog and current working directory is changed to `/`
-   (as in daemon mode). However separate process isn't forked and application
-   runs in foreground.
+routed to syslog and current working directory is changed to `/`
+(as in daemon mode). However, separate process isn't forked and application
+runs in foreground.
 
 ## Logs, problems, bugs, help
 
-In case of any problem, please check first logs from supla-device. By default
+In case of any problem, please check first logs from supla-device. By default,
 they are printed on a console, however in daemon/service mode those can be
 found in syslog:
 
@@ -166,10 +166,10 @@ Example:
 
 Defines if Supla server ceritficate should be validated against root CA.
 Values:
-- 0 - Supla root CA is used for validation (default) - not implemented yet
-- 2 - skip certificate validation - not recommended, however this is the only
-  option for now.
-  Parameter is optional. Default value 0.
+ - 0 - Supla root CA is used for validation (default) - not implemented yet
+ - 2 - skip certificate validation - not recommended, however this is the only
+ option for now.
+Parameter is optional. Default value 0.
 
 Example:
 
@@ -434,6 +434,16 @@ Example channels configuration (details are exaplained later):
         parser:
           use: parser_1
 
+      - type: BinaryParsed
+        state: 1
+        state_on_values: [1, true, "ON"]
+        parser:
+          type: JSON
+          refresh_time_ms: 1000
+        source:
+          type: File
+          file: bs01.json
+
       - type: ThermHygroMeterParsed
         name: th1
         source:
@@ -533,9 +543,9 @@ Parameter `offline_on_invalid_state` set to `true` will change channel to "offli
 when its state is invalid (i.e. source file wasn't modfified for a long time, or
 value was set to -1).
 
-Paramter `state_on_values` allows to define array of integers which are interpreted
-as state "on". I.e. `state_on_values = [3, 4, 5]` will set channel to "on"
-when state is 3, 4 or 5. Otherwise it will set channel to "off" with exception to
+Parameter `state_on_values` allows to define array of integers, bools or strings, which are interpreted
+as state "on". I.e. `state_on_values = [3, true, "ON"]` will set channel to "on"
+when state is 3, true or ON. Otherwise, it will set channel to "off" with exception to
 value -1 which is used as invalid state.
 
 Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send actions
@@ -561,10 +571,10 @@ source, then it can be reused for multiple parsers.
 
 There are two supported parser types:
 1. `File` - use file as an input. File name is provided by `file` parameter and
-   additionally you can define `expiration_time_sec` parameter. If last modification
-   time of a file is older than `expiration_time_sec` then this source will be
-   considered as invalid. `expiration_time_sec` is by default set to 10 minutes.
-   In order to disable time expiration check, please set `expiration_time_sec` to 0.
+additionally you can define `expiration_time_sec` parameter. If last modification
+time of a file is older than `expiration_time_sec` then this source will be
+considered as invalid. `expiration_time_sec` is by default set to 10 minutes. 
+In order to disable time expiration check, please set `expiration_time_sec` to 0.
 2. `Cmd` - use Linux command line as an input. Command is provided by `commonad`
    field.
 3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
@@ -581,14 +591,14 @@ value which can be used for a parsed channel value.
 
 There are two parsers defined:
 1. `Simple` - it takes input from source and try to convert each line of text
-   to a floating point number. Value from each line can be referenced later by
-   using line index number (index counting starts with 0). I.e. please take a look
-   at `t1` channel above.
+to a floating point number. Value from each line can be referenced later by
+using line index number (index counting starts with 0). I.e. please take a look
+at `t1` channel above.
 2. `Json` - it takes input from source and parse it as JSON format. Values can
-   be referenced in parsed channel by JSON key name or by JSON pointer and each
-   value is converted to a floating point number. I.e. please check `i1`
-   channel above. More details about parsing JSON can be found in JSON parser
-   section of this document.
+be referenced in parsed channel by JSON key name or by JSON pointer and each
+value is converted to a floating point number. I.e. please check `i1`
+channel above. More details about parsing JSON can be found in JSON parser
+section of this document.
 
 Type of a parser is selected with a `type` parameter. You can provide a name for
 your parser with `name` parameter (named parsers can be reused for different
@@ -723,8 +733,8 @@ specific phases.
 Global parameters:
 * `frequency` - defines mapping for fetching voltage frequency from parser
 * `multiplier` - defines multiplier value for frequency (default unit is Hz, so
-  if your data source provide data in Hz, you can put `multiplier: 1` or remove
-  this parameter completely.
+if your data source provide data in Hz, you can put `multiplier: 1` or remove
+this parameter completely.
 
 Phase specific parameters:
 
@@ -840,7 +850,7 @@ I.e. action 3 corresponds with:
     #define SUPLA_ACTION_CAP_TOGGLE_x2 (1 << 3)
 
 (last number in bracket is action number, please check above link to `proto.h`
-for more details). Currently in Supla only actions
+ for more details). Currently in Supla only actions
 for buttons are defined, so we reuse them here.
 
 ### `HumidityParsed`

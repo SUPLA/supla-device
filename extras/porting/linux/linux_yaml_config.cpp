@@ -1,21 +1,20 @@
 /*
-Copyright (C) AC SOFTWARE SP. Z O.O.
+ Copyright (C) AC SOFTWARE SP. Z O.O.
 
-This program is free software; you can redistribute it and/or
-   modify it under the terms of the GNU General Public License
-       as published by the Free Software Foundation; either version 2
-   of the License, or (at your option) any later version.
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
 
-       This program is distributed in the hope that it will be useful,
-   but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
 
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-       Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307,
-USA.
-                                                                         */
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ */
 
 #include "linux_yaml_config.h"
 
@@ -1601,8 +1600,11 @@ bool Supla::LinuxYamlConfig::addStateParser(
     }
     if (ch[Supla::Parser::StateOnValues]) {
       paramCount++;
-      sensor->setOnValues(
-          ch[Supla::Parser::StateOnValues].as<std::vector<int>>());
+      std::vector<std::variant<int, bool, std::string>> onValues;
+      for (const auto& val : ch[Supla::Parser::StateOnValues]) {
+        onValues.push_back(parseStateValue(val));
+      }
+      sensor->setOnValues(onValues);
     }
   } else {
     if (mandatory) {
@@ -1774,5 +1776,29 @@ void Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
     (*paramCount)++;
     element->setInitialCaption(
         ch[Supla::InitialCaption].as<std::string>().c_str());
+  }
+}
+
+std::variant<int, bool, std::string> Supla::LinuxYamlConfig::parseStateValue(
+    const YAML::Node& node) {
+  try {
+    return node.as<int>();
+  } catch (...) {
+  }
+  try {
+    std::string strVal = node.as<std::string>();
+    std::string lowerStr = strVal;
+    std::transform(
+        lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
+    if (lowerStr == "true" || lowerStr == "false") {
+      throw std::runtime_error("Looks boolean.");
+    }
+    return strVal;
+  } catch (...) {
+  }
+  try {
+    return node.as<bool>();
+  } catch (...) {
+    return 0;
   }
 }

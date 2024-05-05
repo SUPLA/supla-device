@@ -29,7 +29,7 @@ namespace Parser {
 const char State[] = "state";
 const char StateOnValues[] = "state_on_values";
 const char ActionTrigger[] = "action_trigger";
-};
+};  // namespace Parser
 
 namespace Sensor {
 

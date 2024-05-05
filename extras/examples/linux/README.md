@@ -464,28 +464,59 @@ Example channels configuration (details are exaplained later):
 
     # with new MQTT source
     - type: ThermometerParsed
-      name: t2m
       temperature: temperature
       multiplier: 1
       parser:
-        name: parser_3m
         type: Json
         refresh_time_ms: 200
       source:
-        name: s3m
         type: MQTT
-        state_topic: "sensors/temphum/0/state"
+        state_topic: "sd4l/sensors/temp/0/state"
 
     - type: ThermHygroMeterParsed
-      name: th2m
       temperature: temperature
       humidity: humidity
       multiplier_temp: 1
       multiplier_humi: 1
       parser:
-        use: parser_3m
+        type: Json
+        refresh_time_ms: 200
       source:
-        use: s3m
+        type: MQTT
+        state_topic: "sd4l/sensors/temphum/0/state"
+
+    - type: ThermHygroMeterParsed
+      name: th5
+      temperature: 0
+      humidity: 1
+      multiplier_temp: 1
+      multiplier_humi: 1
+      parser:
+        type: Simple
+        refresh_time_ms: 200
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/temphum/2/state"
+        sub_topics: [temperature, humidity]
+
+    - type: BinaryParsed
+      state: state
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/binary/4/state"
+
+    - type: BinaryParsed
+      state: state
+      state_on_values: ["connect"]
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/binary/2/state"
 
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
@@ -532,21 +563,23 @@ memory to keep it's state, which will be always consistent with last executed
 action on relay channel. Such state can be saved to Storage.
 
 Another option for `CmdRelay` is to define `state` parameter. When `state`
-parameter is defined, it require to use `Parser` instance (and underlying `Source`)
+parameter is defined, it requires to use `Parser` instance (and underlying `Source`)
 which is used to read state of this relay channel. It works exactly the same as
 for `BinaryParsed` channel. So you can define data source as file or command and
 use any available `Parser` to read your relay state. Please remember to keep
-state refresh rate at reasonable level (i.e. fetching data remotly every
+state refresh rate at reasonable level (i.e. fetching data remotely every
 100 ms may not be the best idea :) ).
 
 Parameter `offline_on_invalid_state` set to `true` will change channel to "offline"
-when its state is invalid (i.e. source file wasn't modfified for a long time, or
+when its state is invalid (i.e. source file wasn't modified for a long time, or
 value was set to -1).
 
 Parameter `state_on_values` allows to define array of integers, bools or strings, which are interpreted
-as state "on". I.e. `state_on_values = [3, true, "ON"]` will set channel to "on"
-when state is 3, true or ON. Otherwise, it will set channel to "off" with exception to
-value -1 which is used as invalid state.
+as state "on". I.e. `state_on_values = [3, "connect", "online"]` will set channel to "on"
+when state is `3`, `"connect"` or `"online"`. Otherwise, it will set channel to "off" with exception to
+value -1 which is used as invalid state. The default values for `state_on_values` are used. In addition 
+to the value `1`, the following values will be treated as state on: `true`, `"ON"`, `"On"`, `"on"`, `"Y"`,
+`"YES"`, `"Yes"` and `"yes"`.
 
 Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send actions
 to Supla server depending on channel state (or value). Example:
@@ -556,7 +589,7 @@ to Supla server depending on channel state (or value). Example:
       on_state: [1, 0]
       on_state: [2, 1]
 
-Exact values and configuration is exaplained in `ActionTriggerParsed` section.
+Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
 to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 
@@ -579,8 +612,11 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    field.
 3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
    section. A subscribed topic name containing status information is provided by
-   `state_topic`.
-   If source was already defined earlier and you want to reuse it, you can specify
+   `state_topic`. If we need more simple data that are in different subtopics, 
+   we can define them as a `sub_topics` array and assign them an index in this array 
+   in the parameters, just like with the `Simple` parser (index counting starts with 0).
+   I.e. please take a look at `th5` channel above.
+   If source was already defined earlier, and you want to reuse it, you can specify
    `use` parameter with proper name of previously defined source. When `use`
    parameter is used, then no other source configuration parameters are allowed.
 
@@ -600,14 +636,14 @@ value is converted to a floating point number. I.e. please check `i1`
 channel above. More details about parsing JSON can be found in JSON parser
 section of this document.
 
-Type of a parser is selected with a `type` parameter. You can provide a name for
+Type of parser is selected with a `type` parameter. You can provide a name for
 your parser with `name` parameter (named parsers can be reused for different
-channels). Additionally parsers allow to configure `refresh_time_ms` parameter
+channels). Additionally, parsers allow to configure `refresh_time_ms` parameter
 which provides period of time in ms, how often parser will try to refresh data
 from source. Please keep in mind that it doesn't override refresh times which
 are used in channel itself. I.e. thermometers are refreshed every 10 s, while
-binary senosors are refereshed every 100 ms. Default refresh time for parser is
-set to 5 s, so in that case thermomenter value will update every 10 s, and
+binary sensors are refreshed every 100 ms. Default refresh time for parser is
+set to 5 s, so in that case thermometer value will update every 10 s, and
 binary sensor every 5 s. If you'll set `refresh_time_ms` to `200`, then
 thermometer value will still refresh every 10 s, but binary sensor value will
 update every 200 ms.
@@ -648,7 +684,7 @@ Alternatively you can use JSON pointer to access the same value:
     temperature: "/my_temperature"
 
 All keys are considered as JSON pointer when they start with "/", otherwise
-keys are expected to be name of parameter in the root structure.
+keys are expected to be named of parameter in the root structure.
 
 In order to access humidity or pressure values, you have to specify JSON
 pointer, becuase they are not in the root:
@@ -895,7 +931,8 @@ Optional parameters:
 * `default_value_multiplier` - defines default multiplier for value (you can put any floating point number).
 * `default_value_divider` - defines default divider for value (you can put any floating point number).
 * `default_value_added` - defines default added value (you can put any floating point number).
-* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 0, 1, 2, 3, 4.
+* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 
+0, 1, 2, 3, 4.
 * `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
 * `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
 
@@ -909,7 +946,8 @@ Optional parameters:
 * `default_value_multiplier` - defines default multiplier for value (you can put any floating point number).
 * `default_value_divider` - defines default divider for value (you can put any floating point number).
 * `default_value_added` - defines default added value (you can put any floating point number).
-* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 0, 1, 2, 3, 4.
+* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values:
+0, 1, 2, 3, 4.
 * `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
 * `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
 

@@ -19,8 +19,8 @@
 #ifndef EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_
 #define EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_
 
-#include <mqtt-c/mqtt.h>
-#include <mqtt-c/mqtt_pal.h>
+#include <mqtt.h>
+#include <mqtt_pal.h>
 
 #include <functional>
 #include <string>

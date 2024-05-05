@@ -20,8 +20,8 @@
 #define EXTRAS_PORTING_LINUX_MQTT_CLIENT_H_
 
 #include <fcntl.h>
-#include <mqtt-c/mqtt.h>
-#include <mqtt-c/mqtt_pal.h>
+#include <mqtt.h>
+#include <mqtt_pal.h>
 #include <netdb.h>
 #include <pthread.h>
 #include <supla/log_wrapper.h>

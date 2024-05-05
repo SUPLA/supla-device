@@ -93,9 +93,9 @@ int LinuxMqttClient::mqttClientInit() {
 }
 void LinuxMqttClient::publishCallback(void** unused,
                                       struct mqtt_response_publish* published) {
-  auto* topic_name = reinterpret_cast<char*>(published->topic_name);
+  auto* topic_name = reinterpret_cast<const char*>(published->topic_name);
   auto* application_message =
-      reinterpret_cast<char*>(published->application_message);
+      reinterpret_cast<const char*>(published->application_message);
   std::string topic_name_string(topic_name, published->topic_name_size);
   std::string application_message_string(application_message,
                                          published->application_message_size);

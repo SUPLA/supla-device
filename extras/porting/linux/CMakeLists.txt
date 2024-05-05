@@ -34,9 +34,6 @@ if(NOT cxxopts_POPULATED)
 endif()
 
 set(SUPLA_DEVICE_LINUX_SRCS
-  mqtt-c/mqtt.c
-  mqtt-c/mqtt_pal.c
-
   linux_network.cpp
   linux_yaml_config.cpp
   linux_platform.cpp

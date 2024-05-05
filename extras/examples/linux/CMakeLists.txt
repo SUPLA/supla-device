@@ -28,6 +28,8 @@ if(NOT DEFINED ENV{SUPLA_DEVICE_PATH})
 endif()
 
 add_definitions(-DMQTT_USE_BIO)
+set(MQTT_C_OpenSSL_SUPPORT ON CACHE BOOL "Build MQTT-C with OpenSSL support?")
+set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?")
 
 include(FetchContent)
 
@@ -39,6 +41,8 @@ FetchContent_Declare(
 
 FetchContent_GetProperties(mqttc)
 if(NOT mqttc_POPULATED)  # Have we downloaded mqttc yet?
+  set(MQTT_C_OpenSSL_SUPPORT ON CACHE BOOL "Build MQTT-C with OpenSSL support?")
+  set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?")
   FetchContent_Populate(mqttc)
   add_subdirectory(${mqttc_SOURCE_DIR} ${mqttc_BINARY_DIR})
 endif()

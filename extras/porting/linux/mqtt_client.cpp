@@ -278,7 +278,8 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
   /* Perform error handling here. */
   if (client->error != MQTT_ERROR_INITIAL_RECONNECT) {
     SUPLA_LOG_ERROR("mqtt client error %s", mqtt_error_str(client->error));
-    // sleep(5);
+    SUPLA_LOG_DEBUG("another connection attempt in 30 s");
+    delay(30000);
   }
 
   SUPLA_LOG_DEBUG("connecting to MQTT broker %s on port %d",

@@ -83,6 +83,8 @@ bool SensorParsedBase::isParameterConfigured(const std::string &parameter) {
 
 int SensorParsedBase::getStateValue() {
   std::variant<int, bool, std::string> value = -1;
+  std::variant<int, bool, std::string> valueOn = 1;
+  std::variant<int, bool, std::string> valueOff = 0;
   int state = -1;
 
   if (isParameterConfigured(Supla::Parser::State)) {
@@ -105,10 +107,15 @@ int SensorParsedBase::getStateValue() {
           if (std::find(stateOnValues.begin(), stateOnValues.end(), value) !=
               stateOnValues.end()) {
             state = 1;
-          } else {
-            if (state != -1) {
-              state = 0;
-            }
+          }
+        }
+        if(state == -1) {
+          if(value == valueOn)
+          {
+            state = 1;
+          }
+          else if (value == valueOff) {
+            state = 0;
           }
         }
         setLastValue(state);

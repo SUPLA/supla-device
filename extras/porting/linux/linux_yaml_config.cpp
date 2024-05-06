@@ -1791,24 +1791,16 @@ void Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
 
 std::variant<int, bool, std::string> Supla::LinuxYamlConfig::parseStateValue(
     const YAML::Node& node) {
-  try {
-    return node.as<int>();
-  } catch (...) {
-  }
-  try {
-    auto strVal = node.as<std::string>();
-    std::string lowerStr = strVal;
-    std::transform(
-        lowerStr.begin(), lowerStr.end(), lowerStr.begin(), ::tolower);
-    if (lowerStr == "true" || lowerStr == "false") {
-      throw std::runtime_error("Looks boolean.");
+  if (node.Type() == YAML::NodeType::Scalar) {
+    try {
+      return node.as<int>();
+    } catch (...) {
+      std::string strVal = node.Scalar();
+      if (strVal == "true" || strVal == "false")
+        return node.as<bool>();
+      else
+        return strVal;
     }
-    return strVal;
-  } catch (...) {
   }
-  try {
-    return node.as<bool>();
-  } catch (...) {
-    return 0;
-  }
+  return 0;
 }

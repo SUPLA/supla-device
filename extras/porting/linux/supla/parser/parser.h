@@ -30,7 +30,8 @@ namespace Parser {
 class Parser {
  public:
   explicit Parser(Supla::Source::Source *);
-  virtual ~Parser() {}
+  virtual ~Parser() {
+  }
   bool refreshParserSource();
 
   virtual void addKey(const std::string &key, int index);

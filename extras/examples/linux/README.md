@@ -575,7 +575,7 @@ when its state is invalid (i.e. source file wasn't modified for a long time, or
 value was set to -1).
 
 Parameter `state_on_values` allows to define array of integers, bools or strings, which are interpreted
-as state "on". I.e. `state_on_values = [3, "connect", "online"]` will set channel to "on"
+s state "on". I.e. `state_on_values = [3, "connect", "online"]` will set channel to "on"
 when state is `3`, `"connect"` or `"online"`. Otherwise, it will set channel to "off" with exception to
 value -1 which is used as invalid state. The default values for `state_on_values` are used. In addition 
 to the value `1`, the following values will be treated as state on: `true`, `"ON"`, `"On"`, `"on"`, `"Y"`,

@@ -15,13 +15,15 @@
 */
 
 #include "simple.h"
+
 #include <sstream>
 
 Supla::Parser::Simple::Simple(Supla::Source::Source *src)
-  : Supla::Parser::Parser(src) {
+    : Supla::Parser::Parser(src) {
 }
 
-Supla::Parser::Simple::~Simple() {}
+Supla::Parser::Simple::~Simple() {
+}
 
 double Supla::Parser::Simple::getValue(const std::string &key) {
   int index = keys[key];

@@ -74,6 +74,54 @@ double Supla::Parser::Json::getValue(const std::string& key) {
   return 0;
 }
 
+std::variant<int, bool, std::string> Supla::Parser::Json::getStateValue(
+    const std::string& key) {
+  try {
+    if (key[0] == '/') {
+      return json[nlohmann::json::json_pointer(key)].get<bool>();
+    } else {
+      return json[key].get<bool>();
+    }
+  }
+  catch (nlohmann::json::type_error& ex) {
+    try {
+      if (key[0] == '/') {
+        return json[nlohmann::json::json_pointer(key)].get<int>();
+      } else {
+        return json[key].get<int>();
+      }
+    }
+    catch (nlohmann::json::type_error& ex) {
+      try {
+        if (key[0] == '/') {
+          return json[nlohmann::json::json_pointer(key)].get<std::string>();
+        } else {
+          return json[key].get<std::string>();
+        }
+      }
+      catch (nlohmann::json::type_error& ex) {
+        valid = false;
+      }
+      catch (...) {
+        SUPLA_LOG_ERROR(
+            "JSON exception during getStateValue for key \"%s\"", key.c_str());
+        valid = false;
+      }
+    }
+    catch (...) {
+      SUPLA_LOG_ERROR(
+          "JSON exception during getStateValue for key \"%s\"", key.c_str());
+      valid = false;
+    }
+  }
+  catch (...) {
+    SUPLA_LOG_ERROR(
+        "JSON exception during getStateValue for key \"%s\"", key.c_str());
+    valid = false;
+  }
+  return 0;
+}
+
 bool Supla::Parser::Json::isBasedOnIndex() {
   return false;
 }

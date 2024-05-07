@@ -65,8 +65,8 @@ channels:
 #include <supla/sensor/sensor_parsed.h>
 #include <supla/source/source.h>
 #include <supla/storage/config.h>
-#include <yaml-cpp/yaml.h>
 #include <supla/storage/key_value.h>
+#include <yaml-cpp/yaml.h>
 
 #include <map>
 #include <string>
@@ -126,14 +126,15 @@ class LinuxYamlConfig : public KeyValue {
   Supla::Source::Source* addSource(const YAML::Node& ch);
 
   bool addVirtualRelay(const YAML::Node& ch, int channelNumber);
-  bool addCmdRelay(const YAML::Node& ch, int channelNumber,
-      Supla::Parser::Parser*);
+  bool addCmdRelay(const YAML::Node& ch,
+                   int channelNumber,
+                   Supla::Parser::Parser*);
   bool addFronius(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);
   void addCommonParameters(const YAML::Node& ch,
-                            Supla::Element* element,
-                            int* paramCount);
+                           Supla::Element* element,
+                           int* paramCount);
   bool addThermometerParsed(const YAML::Node& ch,
                             int channelNumber,
                             Supla::Parser::Parser* parser);
@@ -147,30 +148,30 @@ class LinuxYamlConfig : public KeyValue {
                        int channelNumber,
                        Supla::Parser::Parser* parser);
   bool addThermHygroMeterParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                                int channelNumber,
+                                Supla::Parser::Parser* parser);
   bool addHumidityParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                         int channelNumber,
+                         Supla::Parser::Parser* parser);
   bool addPressureParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                         int channelNumber,
+                         Supla::Parser::Parser* parser);
   bool addRainParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                     int channelNumber,
+                     Supla::Parser::Parser* parser);
   bool addWindParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                     int channelNumber,
+                     Supla::Parser::Parser* parser);
   bool addWeightParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                       int channelNumber,
+                       Supla::Parser::Parser* parser);
   bool addDistanceParsed(const YAML::Node& ch,
-                            int channelNumber,
-                            Supla::Parser::Parser* parser);
+                         int channelNumber,
+                         Supla::Parser::Parser* parser);
   void addCommonParametersParsed(const YAML::Node& ch,
-                            Supla::Sensor::SensorParsedBase* sensor,
-                            int *paramCount,
-                            Supla::Parser::Parser* parser);
+                                 Supla::Sensor::SensorParsedBase* sensor,
+                                 int* paramCount,
+                                 Supla::Parser::Parser* parser);
   void loadGuidAuthFromPath(const std::string& path);
   bool saveGuidAuth(const std::string& path);
   bool addStateParser(const YAML::Node& ch,
@@ -178,16 +179,15 @@ class LinuxYamlConfig : public KeyValue {
                       Supla::Parser::Parser* parser,
                       bool mandatory);
   bool addActionTriggerActions(const YAML::Node& ch,
-                      Supla::Sensor::SensorParsedBase *sensor,
-                      bool mandatory);
-  bool addActionTriggerParsed(const YAML::Node& ch,
-                      int channnelNumber);
+                               Supla::Sensor::SensorParsedBase* sensor,
+                               bool mandatory);
+  bool addActionTriggerParsed(const YAML::Node& ch, int channnelNumber);
   bool addGeneralPurposeMeasurementParsed(const YAML::Node& ch,
-                      int channelNumber,
-                      Supla::Parser::Parser* parser);
+                                          int channelNumber,
+                                          Supla::Parser::Parser* parser);
   bool addGeneralPurposeMeterParsed(const YAML::Node& ch,
-                      int channelNumber,
-                      Supla::Parser::Parser* parser);
+                                    int channelNumber,
+                                    Supla::Parser::Parser* parser);
 
   std::string file;
   YAML::Node config;
@@ -206,6 +206,7 @@ class LinuxYamlConfig : public KeyValue {
   int sourceCount = 0;
 
   bool initDone = false;
+  std::variant<int, bool, std::string> parseStateValue(const YAML::Node& node);
 };
 };  // namespace Supla
 

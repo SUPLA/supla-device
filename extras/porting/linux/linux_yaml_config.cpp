@@ -30,17 +30,17 @@
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
 #include <supla/sensor/binary_parsed.h>
+#include <supla/sensor/distance_parsed.h>
 #include <supla/sensor/electricity_meter_parsed.h>
+#include <supla/sensor/general_purpose_measurement_parsed.h>
+#include <supla/sensor/general_purpose_meter_parsed.h>
 #include <supla/sensor/humidity_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/pressure_parsed.h>
 #include <supla/sensor/rain_parsed.h>
-#include <supla/sensor/weight_parsed.h>
-#include <supla/sensor/distance_parsed.h>
 #include <supla/sensor/thermometer_parsed.h>
+#include <supla/sensor/weight_parsed.h>
 #include <supla/sensor/wind_parsed.h>
-#include <supla/sensor/general_purpose_measurement_parsed.h>
-#include <supla/sensor/general_purpose_meter_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
 #include <supla/source/source.h>
@@ -65,7 +65,6 @@ const char Multiplier[] = "multiplier";
 const char MultiplierTemp[] = "multiplier_temp";
 const char MultiplierHumi[] = "multiplier_humi";
 const char InitialCaption[] = "initial_caption";
-
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
 const char ReadWriteConfigStorage[] = "/config_storage.bin";
@@ -112,7 +111,7 @@ bool Supla::LinuxYamlConfig::init() {
                    readWriteConfigFilePath.c_str());
 
     std::ifstream rwConfigFile(readWriteConfigFilePath,
-                            std::ifstream::in | std::ios::binary);
+                               std::ifstream::in | std::ios::binary);
 
     unsigned char c = rwConfigFile.get();
 
@@ -735,12 +734,12 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
   if (hvac->getChannelNumber() != auxThermometerChannelNo) {
     hvac->setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR);
   }
-  hvac->setTemperatureHisteresisMin(20);  // 0.2 degree
-  hvac->setTemperatureHisteresisMax(1000);  // 10 degree
+  hvac->setTemperatureHisteresisMin(20);        // 0.2 degree
+  hvac->setTemperatureHisteresisMax(1000);      // 10 degree
   hvac->setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
   hvac->setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
-  hvac->setTemperatureAuxMin(500);  // 5 degrees
-  hvac->setTemperatureAuxMax(7500);  // 75 degrees
+  hvac->setTemperatureAuxMin(500);              // 5 degrees
+  hvac->setTemperatureAuxMax(7500);             // 75 degrees
   hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
 
   hvac->setTemperatureHisteresis(40);
@@ -855,9 +854,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
     int64_t divider =
         std::lround(1000 * ch["default_value_divider"].as<double>());
     if (divider > INT32_MAX || divider < INT32_MIN) {
-      SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_value_divider out of range",
-          channelNumber);
+      SUPLA_LOG_ERROR("Channel[%d] config: default_value_divider out of range",
+                      channelNumber);
       return false;
     }
     gpm->setDefaultValueDivider(divider);
@@ -882,9 +880,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
     paramCount++;
     std::string unit = ch["default_unit_before_value"].as<std::string>();
     if (unit.length() > 14) {
-      SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_unit_before_value too long",
-          channelNumber);
+      SUPLA_LOG_ERROR("Channel[%d] config: default_unit_before_value too long",
+                      channelNumber);
       return false;
     }
     gpm->setDefaultUnitBeforeValue(unit.c_str());
@@ -893,9 +890,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
     paramCount++;
     std::string unit = ch["default_unit_after_value"].as<std::string>();
     if (unit.length() > 14) {
-      SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_unit_after_value too long",
-          channelNumber);
+      SUPLA_LOG_ERROR("Channel[%d] config: default_unit_after_value too long",
+                      channelNumber);
       return false;
     }
     gpm->setDefaultUnitAfterValue(unit.c_str());
@@ -948,9 +944,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
     int64_t divider =
         std::lround(1000 * ch["default_value_divider"].as<double>());
     if (divider > INT32_MAX || divider < INT32_MIN) {
-      SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_value_divider out of range",
-          channelNumber);
+      SUPLA_LOG_ERROR("Channel[%d] config: default_value_divider out of range",
+                      channelNumber);
       return false;
     }
     gpm->setDefaultValueDivider(divider);
@@ -975,9 +970,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
     paramCount++;
     std::string unit = ch["default_unit_before_value"].as<std::string>();
     if (unit.length() > 14) {
-      SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_unit_before_value too long",
-          channelNumber);
+      SUPLA_LOG_ERROR("Channel[%d] config: default_unit_before_value too long",
+                      channelNumber);
       return false;
     }
     gpm->setDefaultUnitBeforeValue(unit.c_str());
@@ -986,9 +980,8 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
     paramCount++;
     std::string unit = ch["default_unit_after_value"].as<std::string>();
     if (unit.length() > 14) {
-      SUPLA_LOG_ERROR(
-          "Channel[%d] config: default_unit_after_value too long",
-          channelNumber);
+      SUPLA_LOG_ERROR("Channel[%d] config: default_unit_after_value too long",
+                      channelNumber);
       return false;
     }
     gpm->setDefaultUnitAfterValue(unit.c_str());
@@ -1501,8 +1494,11 @@ bool Supla::LinuxYamlConfig::addStateParser(
     }
     if (ch[Supla::Parser::StateOnValues]) {
       paramCount++;
-      sensor->setOnValues(
-          ch[Supla::Parser::StateOnValues].as<std::vector<int>>());
+      std::vector<std::variant<int, bool, std::string>> onValues;
+      for (const auto& val : ch[Supla::Parser::StateOnValues]) {
+        onValues.push_back(parseStateValue(val));
+      }
+      sensor->setOnValues(onValues);
     }
   } else {
     if (mandatory) {
@@ -1579,8 +1575,8 @@ bool Supla::LinuxYamlConfig::addActionTriggerParsed(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
-                                           int channelNumber,
-                                           Supla::Parser::Parser* parser) {
+                                             int channelNumber,
+                                             Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding WeightParsed", channelNumber);
   auto weight = new Supla::Sensor::WeightParsed(parser);
   if (ch[Supla::Parser::Weight]) {
@@ -1610,8 +1606,8 @@ bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,
-                                           int channelNumber,
-                                           Supla::Parser::Parser* parser) {
+                                               int channelNumber,
+                                               Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding DistanceParsed", channelNumber);
   auto distance = new Supla::Sensor::DistanceParsed(parser);
   if (ch[Supla::Parser::Distance]) {
@@ -1668,11 +1664,27 @@ void Supla::LinuxYamlConfig::addCommonParametersParsed(
 }
 
 void Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
-                            Supla::Element* element,
-                            int *paramCount) {
+                                                 Supla::Element* element,
+                                                 int* paramCount) {
   if (ch[Supla::InitialCaption]) {
     (*paramCount)++;
     element->setInitialCaption(
         ch[Supla::InitialCaption].as<std::string>().c_str());
   }
+}
+
+std::variant<int, bool, std::string> Supla::LinuxYamlConfig::parseStateValue(
+    const YAML::Node& node) {
+  if (node.Type() == YAML::NodeType::Scalar) {
+    try {
+      return node.as<int>();
+    } catch (...) {
+      std::string strVal = node.Scalar();
+      if (strVal == "true" || strVal == "false")
+        return node.as<bool>();
+      else
+        return strVal;
+    }
+  }
+  return 0;
 }

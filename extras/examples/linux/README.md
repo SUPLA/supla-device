@@ -34,7 +34,7 @@ was cloned.
     make
 
 If you want to speed up compilation you can call `make -j5` instead of `make`.
-It will run 5 parallel compilation jobs. However it is not recommended to use
+It will run 5 parallel compilation jobs. However, it is not recommended to use
 on a PC with low RAM.
 
 It should produce `supla-device-linux` binary file. Check if it is working:
@@ -43,7 +43,7 @@ It should produce `supla-device-linux` binary file. Check if it is working:
 
 # Usage
 
-Currently there is no automated installation available. So please follow below
+Currently, there is no automated installation available. So please follow below
 instructions.
 
 ## Working modes
@@ -58,12 +58,12 @@ is forked and runs in background. Logs are routed to syslog
 supla-device doesn't create PID file.
 3. "service" - can be started by calling `./supla-device-linux -s`. Logs are
 routed to syslog and current working directory is changed to `/`
-(as in daemon mode). However separate process isn't forked and application
+(as in daemon mode). However, separate process isn't forked and application
 runs in foreground.
 
 ## Logs, problems, bugs, help
 
-In case of any problem, please check first logs from supla-device. By default
+In case of any problem, please check first logs from supla-device. By default,
 they are printed on a console, however in daemon/service mode those can be
 found in syslog:
 
@@ -359,6 +359,16 @@ Example channels configuration (details are exaplained later):
         parser:
           use: parser_1
 
+      - type: BinaryParsed
+        state: 1
+        state_on_values: [1, true, "ON"]
+        parser:
+          type: JSON
+          refresh_time_ms: 1000
+        source:
+          type: File
+          file: bs01.json
+
       - type: ThermHygroMeterParsed
         name: th1
         source:
@@ -433,9 +443,9 @@ Parameter `offline_on_invalid_state` set to `true` will change channel to "offli
 when its state is invalid (i.e. source file wasn't modfified for a long time, or
 value was set to -1).
 
-Paramter `state_on_values` allows to define array of integers which are interpreted
-as state "on". I.e. `state_on_values = [3, 4, 5]` will set channel to "on"
-when state is 3, 4 or 5. Otherwise it will set channel to "off" with exception to
+Parameter `state_on_values` allows to define array of integers, bools or strings, which are interpreted
+as state "on". I.e. `state_on_values = [3, true, "ON"]` will set channel to "on"
+when state is 3, true or ON. Otherwise, it will set channel to "off" with exception to
 value -1 which is used as invalid state.
 
 Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send actions

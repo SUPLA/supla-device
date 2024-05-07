@@ -67,7 +67,7 @@ double SensorParsedBase::getParameterValue(const std::string &parameter) {
 
 std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
     const std::string &parameter) {
- std::variant<int, bool, std::string> stateValue =
+  std::variant<int, bool, std::string> stateValue =
       parser->getStateValue(parameterToKey[parameter]);
   return stateValue;
 }

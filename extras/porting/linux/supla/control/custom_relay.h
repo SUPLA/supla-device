@@ -1,13 +1,6 @@
-/*
- Copyright (c) 2024. Lorem ipsum dolor sit amet, consectetur adipiscing elit.
- Morbi non lorem porttitor neque feugiat blandit. Ut vitae ipsum eget quam lacinia accumsan.
- Etiam sed turpis ac ipsum condimentum fringilla. Maecenas magna.
- Proin dapibus sapien vel ante. Aliquam erat volutpat. Pellentesque sagittis ligula eget metus.
- Vestibulum commodo. Ut rhoncus gravida arcu.
- */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_LINUX_RELAY_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_LINUX_RELAY_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_RELAY_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_RELAY_H_
 
 #include <supla/control/virtual_relay.h>
 #include <supla/sensor/sensor_parsed.h>
@@ -47,4 +40,4 @@ class CustomRelay : public Sensor::SensorParsed<VirtualRelay> {
 };  // namespace Control
 };  // namespace Supla
 
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_LINUX_RELAY_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_RELAY_H_

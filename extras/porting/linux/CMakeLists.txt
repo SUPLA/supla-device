@@ -72,6 +72,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/control/cmd_relay.cpp
   supla/control/action_trigger_parsed.cpp
   supla/control/hvac_parsed.cpp
+  supla/control/custom_relay.cpp
 
   ../../../src/supla/pv/fronius.cpp
   ../../../src/supla/pv/afore.cpp

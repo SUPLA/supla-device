@@ -141,6 +141,9 @@ class LinuxYamlConfig : public KeyValue {
   bool addCmdRelay(const YAML::Node& ch,
                    int channelNumber,
                    Supla::Parser::Parser*);
+  bool addCustomRelay(const YAML::Node& ch,
+                     int channelNumber,
+                     Parser::Parser* parser);
   bool addFronius(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);

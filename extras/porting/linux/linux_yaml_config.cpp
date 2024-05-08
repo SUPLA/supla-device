@@ -21,6 +21,7 @@
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
+#include <supla/control/custom_relay.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
@@ -520,6 +521,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addVirtualRelay(ch, channelNumber);
     } else if (type == "CmdRelay") {
       return addCmdRelay(ch, channelNumber, parser);
+    } else if (type == "CustomRelay") {
+      return addCustomRelay(ch, channelNumber, parser);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -677,6 +680,64 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
     paramCount++;
     auto cmdOff = ch["cmd_off"].as<std::string>();
     cr->setCmdOff(cmdOff);
+  }
+
+  if (!addStateParser(ch, cr, parser, false)) {
+    return false;
+  }
+
+  if (!addActionTriggerActions(ch, cr, false)) {
+    return false;
+  }
+
+  addCommonParametersParsed(ch, cr, &paramCount, parser);
+
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
+                                         int channelNumber,
+                                            Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding CustomRelay", channelNumber);
+  auto cr = new Supla::Control::CustomRelay(parser);
+  if (ch["initial_state"]) {
+    paramCount++;
+    auto initialState = ch["initial_state"].as<std::string>();
+    if (initialState == "on") {
+      cr->setDefaultStateOn();
+    } else if (initialState == "off") {
+      cr->setDefaultStateOff();
+    } else if (initialState == "restore") {
+      cr->setDefaultStateRestore();
+    }
+  }
+
+  if (ch["offline_on_invalid_state"]) {
+    paramCount++;
+    auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
+    cr->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
+  }
+
+  if (ch["cmd_on"]) {
+    paramCount++;
+    auto cmdOn = ch["cmd_on"].as<std::string>();
+    cr->setCmdOn(cmdOn);
+  }
+  if (ch["cmd_off"]) {
+    paramCount++;
+    auto cmdOff = ch["cmd_off"].as<std::string>();
+    cr->setCmdOff(cmdOff);
+  }
+
+  if (ch["set_on"]) {
+    paramCount++;
+    auto setOn = ch["set_on"].as<std::string>();
+    cr->setTurnOn(setOn);
+  }
+  if (ch["set_off"]) {
+    paramCount++;
+    auto setOff = ch["set_off"].as<std::string>();
+    cr->setTurnOff(setOff);
   }
 
   if (!addStateParser(ch, cr, parser, false)) {

@@ -1307,17 +1307,18 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       std::string cmd = source["command"].as<std::string>();
       src = new Supla::Source::Cmd(cmd.c_str());
     } else if (type == "MQTT") {
-      auto state_topic = source["state_topic"].as<std::string>();
+      auto base_state_topic = source["state_topic"].as<std::string>();
       int qos = source["qos"].as<int>(0);
       std::vector<std::string> allSubTopics;
       if (source["sub_topics"] && source["sub_topics"].size() > 0) {
         auto sub_topics = source["sub_topics"].as<std::vector<std::string>>();
         for (auto& sub_topic : sub_topics) {
+          std::string state_topic = base_state_topic;
           state_topic.append("/").append(sub_topic);
           allSubTopics.push_back(state_topic);
         }
       } else {
-        allSubTopics.push_back(state_topic);
+        allSubTopics.push_back(base_state_topic);
       }
       src = new Supla::Source::Mqtt(*this, allSubTopics, qos);
     } else {

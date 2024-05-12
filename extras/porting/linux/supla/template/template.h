@@ -19,8 +19,10 @@
 
 #include <supla/output/output.h>
 
-#include <string>
 #include <map>
+#include <string>
+#include <variant>
+
 namespace Supla {
 namespace Template {
 
@@ -32,6 +34,10 @@ class Template {
 
   virtual void addKey(const std::string &key, int index);
   virtual bool isBasedOnIndex() = 0;
+
+  void turnOn(std::variant<int, bool, std::string> onValue);
+
+  void turnOff(std::variant<int, bool, std::string> offValue);
 
  protected:
   std::map<std::string, int> keys;

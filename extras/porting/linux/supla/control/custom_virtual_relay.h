@@ -14,27 +14,15 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_OUTPUT_OUTPUT_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_OUTPUT_OUTPUT_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_VIRTUAL_RELAY_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_VIRTUAL_RELAY_H_
 
-#include <string>
-#include <variant>
-#include <vector>
+#include <supla/control/virtual_relay.h>
 
 namespace Supla {
+namespace Control {
+class CustomVirtualRelay : public virtual Supla::Control::VirtualRelay {};
+}  // namespace Control
+}  // namespace Supla
 
-namespace Output {
-class Output {
- public:
-  virtual ~Output() {
-  }
-
-  virtual bool putContent(int payload) = 0;
-  virtual bool putContent(bool payload) = 0;
-  virtual bool putContent(const std::string &payload) = 0;
-  virtual bool putContent(const std::vector<int> &payload) = 0;
-};
-};  // namespace Output
-};  // namespace Supla
-
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_OUTPUT_OUTPUT_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_VIRTUAL_RELAY_H_

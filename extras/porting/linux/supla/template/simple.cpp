@@ -14,27 +14,14 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_OUTPUT_OUTPUT_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_OUTPUT_OUTPUT_H_
+#include "simple.h"
 
-#include <string>
-#include <variant>
-#include <vector>
+Supla::Template::Simple::Simple(Supla::Output::Output *out)
+    : Supla::Template::Template(out) {
+}
 
-namespace Supla {
-
-namespace Output {
-class Output {
- public:
-  virtual ~Output() {
-  }
-
-  virtual bool putContent(int payload) = 0;
-  virtual bool putContent(bool payload) = 0;
-  virtual bool putContent(const std::string &payload) = 0;
-  virtual bool putContent(const std::vector<int> &payload) = 0;
-};
-};  // namespace Output
-};  // namespace Supla
-
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_OUTPUT_OUTPUT_H_
+Supla::Template::Simple::~Simple() {
+}
+bool Supla::Template::Simple::isBasedOnIndex() {
+  return true;
+}

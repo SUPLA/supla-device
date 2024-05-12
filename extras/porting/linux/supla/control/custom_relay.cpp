@@ -18,13 +18,18 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/sensor/binary_parsed.h>
+#include <supla/template/template.h>
 #include <supla/time.h>
 
 #include <cstdio>
 
-Supla::Control::CustomRelay::CustomRelay(Supla::Parser::Parser *parser,
-                                   _supla_int_t functions)
-    : Supla::Sensor::SensorParsed<Supla::Control::VirtualRelay>(parser) {
+Supla::Control::CustomRelay::CustomRelay(
+    Supla::Parser::Parser *parser,
+    Supla::Template::Template *templateValue,
+    _supla_int_t functions)
+    : Supla::Sensor::SensorParsed<Supla::Control::CustomVirtualRelay>(parser),
+      Supla::Template::ControlTemplate<Supla::Control::CustomVirtualRelay>(
+          templateValue) {
   channel.setFuncList(functions);
 }
 
@@ -37,6 +42,8 @@ void Supla::Control::CustomRelay::turnOn(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOn(duration);
   channel.setNewValue(isOn());
 
+  templateValue->turnOn(setOnValue);
+
   if (cmdOn.length() > 0) {
     auto p = popen(cmdOn.c_str(), "r");
     pclose(p);
@@ -46,6 +53,8 @@ void Supla::Control::CustomRelay::turnOn(_supla_int_t duration) {
 void Supla::Control::CustomRelay::turnOff(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOff(duration);
   channel.setNewValue(isOn());
+
+  templateValue->turnOff(setOffValue);
 
   if (cmdOff.length() > 0) {
     auto p = popen(cmdOff.c_str(), "r");

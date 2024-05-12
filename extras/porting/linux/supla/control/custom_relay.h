@@ -17,18 +17,30 @@
 #ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_RELAY_H_
 #define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CUSTOM_RELAY_H_
 
+#include <supla/control/control_template.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/sensor/sensor_parsed.h>
+#include <supla/template/template.h>
 
 #include <string>
 
+#include "custom_virtual_relay.h"
+
 namespace Supla {
+namespace Template {
+const char State[] = "set_state";
+const char SetOn[] = "set_on";
+const char SetOff[] = "set_off";
+};  // namespace Template
+
 namespace Control {
-class CustomRelay : public Sensor::SensorParsed<VirtualRelay> {
+class CustomRelay : public Sensor::SensorParsed<CustomVirtualRelay>,
+                    public Template::ControlTemplate<CustomVirtualRelay> {
  public:
   CustomRelay(Supla::Parser::Parser *parser,
-             _supla_int_t functions =
-                 (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+              Supla::Template::Template *templateValue,
+              _supla_int_t functions =
+                  (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
 
   void onInit() override;
   void turnOn(_supla_int_t duration = 0) override;

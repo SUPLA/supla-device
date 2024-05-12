@@ -21,10 +21,13 @@
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
+#include <supla/control/control_template.h>
 #include <supla/control/custom_relay.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
+#include <supla/output/cmd.h>
+#include <supla/output/output.h>
 #include <supla/parser/json.h>
 #include <supla/parser/parser.h>
 #include <supla/parser/simple.h>
@@ -46,6 +49,7 @@
 #include <supla/source/file.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
+#include <supla/template/simple.h>
 #include <supla/tools.h>
 
 #include <chrono>  // NOLINT(build/c++11)
@@ -493,6 +497,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
 
     Supla::Source::Source* source = nullptr;
     Supla::Parser::Parser* parser = nullptr;
+    Supla::Output::Output* output = nullptr;
+    Supla::Template::Template* templateValue = nullptr;
 
     if (ch["source"]) {
       paramCount++;
@@ -511,6 +517,23 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       parserCount++;
     }
 
+    if (ch["output"]) {
+      paramCount++;
+      if (!(output = addOutput(ch["output"]))) {
+        SUPLA_LOG_ERROR("Adding output failed");
+        return false;
+      }
+    }
+
+    if (ch["template"]) {
+      paramCount++;
+      if (!(templateValue = addTemplate(ch["template"], output))) {
+        SUPLA_LOG_ERROR("Adding template failed");
+        return false;
+      }
+      templateCount++;
+    }
+
     if (ch["name"]) {  // optional
       paramCount++;
       std::string name = ch["name"].as<std::string>();
@@ -522,7 +545,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "CmdRelay") {
       return addCmdRelay(ch, channelNumber, parser);
     } else if (type == "CustomRelay") {
-      return addCustomRelay(ch, channelNumber, parser);
+      return addCustomRelay(ch, channelNumber, parser, templateValue);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -696,10 +719,11 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
-                                         int channelNumber,
-                                            Parser::Parser* parser) {
+                                            int channelNumber,
+                                            Parser::Parser* parser,
+                                            Template::Template* templateValue) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomRelay", channelNumber);
-  auto cr = new Supla::Control::CustomRelay(parser);
+  auto cr = new Supla::Control::CustomRelay(parser, templateValue);
   if (ch["initial_state"]) {
     paramCount++;
     auto initialState = ch["initial_state"].as<std::string>();
@@ -718,17 +742,6 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     cr->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
   }
 
-  if (ch["cmd_on"]) {
-    paramCount++;
-    auto cmdOn = ch["cmd_on"].as<std::string>();
-    cr->setCmdOn(cmdOn);
-  }
-  if (ch["cmd_off"]) {
-    paramCount++;
-    auto cmdOff = ch["cmd_off"].as<std::string>();
-    cr->setCmdOff(cmdOff);
-  }
-
   if (ch["set_on"]) {
     paramCount++;
     auto setOn = ch["set_on"].as<std::string>();
@@ -741,6 +754,10 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
   }
 
   if (!addStateParser(ch, cr, parser, false)) {
+    return false;
+  }
+
+  if (!addStateTemplate(ch, cr, templateValue, false)) {
     return false;
   }
 
@@ -1329,6 +1346,55 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
   return prs;
 }
 
+Supla::Template::Template* Supla::LinuxYamlConfig::addTemplate(
+    const YAML::Node& templateValue, Supla::Output::Output* out) {
+  Supla::Template::Template* tmpl = nullptr;
+  if (templateValue["use"]) {
+    std::string use = templateValue["use"].as<std::string>();
+    if (templateNames.count(use)) {
+      tmpl = templates[templateNames[use]];
+    }
+    if (!tmpl) {
+      SUPLA_LOG_ERROR("Config: can't find template with \"name\"=\"%s\"",
+                      use.c_str());
+      return nullptr;
+    }
+    if (templateValue["name"]) {
+      SUPLA_LOG_ERROR(
+          "Config: can't use \"name\" for template with \"use\" parameter");
+      return nullptr;
+    }
+    return tmpl;
+  }
+
+  if (templateValue["name"]) {
+    std::string name = templateValue["name"].as<std::string>();
+    templateNames[name] = templateCount;
+  }
+
+  if (!out) {
+    SUPLA_LOG_ERROR("Config: template used without output");
+    return nullptr;
+  }
+
+  if (templateValue["type"]) {
+    std::string type = templateValue["type"].as<std::string>();
+    if (type == "Simple") {
+      tmpl = new Supla::Template::Simple(out);
+    } else {
+      SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
+      return nullptr;
+    }
+  } else {
+    SUPLA_LOG_ERROR("Config: type not defined for template");
+    return nullptr;
+  }
+
+  templates[templateCount] = tmpl;
+  templateCount++;
+  return tmpl;
+}
+
 Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
     const YAML::Node& source) {
   Supla::Source::Source* src = nullptr;
@@ -1396,6 +1462,53 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
   sourceCount++;
 
   return src;
+}
+
+Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
+    const YAML::Node& output) {
+  Supla::Output::Output* out = nullptr;
+  if (output["use"]) {
+    std::string use = output["use"].as<std::string>();
+    if (outputNames.count(use)) {
+      out = outputs[outputNames[use]];
+    }
+    if (!out) {
+      SUPLA_LOG_ERROR("Config: can't find output with \"name\"=\"%s\"",
+                      use.c_str());
+      return nullptr;
+    }
+    if (output["name"]) {
+      SUPLA_LOG_ERROR(
+          "Config: can't use \"name\" for output with \"use\" parameter");
+      return nullptr;
+    }
+    return out;
+  }
+
+  if (output["name"]) {
+    std::string name = output["name"].as<std::string>();
+    outputNames[name] = outputCount;
+  }
+
+  if (output["type"]) {
+    std::string type = output["type"].as<std::string>();
+    if (type == "Cmd") {
+      std::string cmd = output["command"].as<std::string>();
+      out = new Supla::Output::Cmd(cmd.c_str());
+    } else {
+      SUPLA_LOG_ERROR("Config: unknown output type \"%s\"", type.c_str());
+      return nullptr;
+    }
+
+  } else {
+    SUPLA_LOG_ERROR("Config: type not defined for output");
+    return nullptr;
+  }
+
+  outputs[outputCount] = out;
+  outputCount++;
+
+  return out;
 }
 
 std::string Supla::LinuxYamlConfig::getStateFilesPath() {
@@ -1682,6 +1795,81 @@ bool Supla::LinuxYamlConfig::addStateParser(
     if (mandatory) {
       SUPLA_LOG_ERROR("Channel config: missing \"%s\" parameter",
                       Supla::Parser::State);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool Supla::LinuxYamlConfig::addStateTemplate(
+    const YAML::Node& ch,
+    Supla::Template::ControlTemplateBase* control,
+    Supla::Template::Template* templateValue,
+    bool mandatory) {
+  if (templateValue == nullptr && ch[Supla::Template::State]) {
+    SUPLA_LOG_ERROR("Channel config: missing parser");
+    return false;
+  }
+
+  if (ch[Supla::Template::State]) {
+    paramCount++;
+    if (templateValue->isBasedOnIndex()) {
+      int index = ch[Supla::Template::State].as<int>();
+      control->setMapping(Supla::Template::State, index);
+    } else {
+      auto key = ch[Supla::Template::State].as<std::string>();
+      control->setMapping(Supla::Template::State, key);
+    }
+    if (ch[Supla::Template::SetOn]) {
+      paramCount++;
+      std::variant<int, bool, std::string> setOnValue;
+      YAML::Node node = ch[Supla::Template::SetOn];
+
+      if (node.IsScalar()) {
+        auto value = node.as<std::string>();
+        try {
+          setOnValue = std::stoi(value);
+        } catch (const std::invalid_argument& e) {
+          if (value == "true") {
+            setOnValue = true;
+          } else if (value == "false") {
+            setOnValue = false;
+          } else {
+            setOnValue = value;
+          }
+        }
+      } else if (node.IsNull()) {
+        setOnValue = int();
+      }
+      control->setSetOnValue(setOnValue);
+    }
+    if (ch[Supla::Template::SetOff]) {
+      paramCount++;
+      std::variant<int, bool, std::string> setOffValue;
+      YAML::Node node = ch[Supla::Template::SetOff];
+
+      if (node.IsScalar()) {
+        auto value = node.as<std::string>();
+        try {
+          setOffValue = std::stoi(value);
+        } catch (const std::invalid_argument& e) {
+          if (value == "true") {
+            setOffValue = true;
+          } else if (value == "false") {
+            setOffValue = false;
+          } else {
+            setOffValue = value;
+          }
+        }
+      } else if (node.IsNull()) {
+        setOffValue = int();
+      }
+      control->setSetOffValue(setOffValue);
+    }
+  } else {
+    if (mandatory) {
+      SUPLA_LOG_ERROR("Channel config: missing \"%s\" parameter",
+                      Supla::Template::State);
       return false;
     }
   }

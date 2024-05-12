@@ -18,6 +18,7 @@
 
 #include <supla/log_wrapper.h>
 
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -26,6 +27,7 @@ Supla::Output::Cmd::Cmd(const char *cmd) : cmdLine(cmd) {
 
 Supla::Output::Cmd::~Cmd() {
 }
+
 bool Supla::Output::Cmd::putContent(int payload) {
   if (!cmdLine.empty()) {
     char buffer[256];
@@ -75,5 +77,22 @@ bool Supla::Output::Cmd::putContent(const std::string &payload) {
   return false;
 }
 bool Supla::Output::Cmd::putContent(const std::vector<int> &payload) {
+  if (!cmdLine.empty()) {
+    std::ostringstream oss;
+    for (int i : payload) {
+      oss << i << ' ';
+    }
+    std::string payloadStr = oss.str();
+    char buffer[256];
+    snprintf(buffer, sizeof(buffer), cmdLine.c_str(), payloadStr.c_str());
+    SUPLA_LOG_DEBUG("Command: %s", buffer);
+    FILE* p = popen(buffer, "r");
+    if (p == nullptr) {
+      SUPLA_LOG_WARNING("Failed to execute command: %s", buffer);
+      return false;
+    }
+    pclose(p);
+    return true;
+  }
   return false;
 }

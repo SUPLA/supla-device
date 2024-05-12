@@ -27,6 +27,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
 #include <supla/output/cmd.h>
+#include <supla/output/file.h>
 #include <supla/output/output.h>
 #include <supla/parser/json.h>
 #include <supla/parser/parser.h>
@@ -1495,6 +1496,9 @@ Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
     if (type == "Cmd") {
       std::string cmd = output["command"].as<std::string>();
       out = new Supla::Output::Cmd(cmd.c_str());
+    } else if (type == "File") {
+      std::string fileName = output["file"].as<std::string>();
+      out = new Supla::Output::File(fileName.c_str());
     } else {
       SUPLA_LOG_ERROR("Config: unknown output type \"%s\"", type.c_str());
       return nullptr;

@@ -55,6 +55,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/parser/json.cpp
 
   supla/output/cmd.cpp
+  supla/output/file.cpp
 
   supla/template/template.cpp
   supla/template/simple.cpp

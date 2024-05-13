@@ -118,8 +118,7 @@ void LinuxMqttClient::publishCallback(void** unused,
 enum MQTTErrors Supla::LinuxMqttClient::publish(const std::string& topic,
                                      const std::string& payload,
                                      int qos = MQTT_PUBLISH_QOS_0) {
-  if(mq_client == nullptr)
-  {
+  if (mq_client == nullptr) {
     SUPLA_LOG_WARNING("No connection to MQTT broker");
     return MQTTErrors::MQTT_ERROR_NULLPTR;
   }

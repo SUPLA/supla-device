@@ -21,6 +21,7 @@
 
 #include <esp_i2c_driver.h>
 #include <supla/sensor/therm_hygro_meter.h>
+#include <driver/i2c_master.h>
 
 namespace Supla {
 namespace Sensor {
@@ -44,6 +45,7 @@ class SHT30 : public ThermHygroMeter {
   int scl = 0;
   uint8_t addr = 0x44;
   Supla::I2CDriver *driver = nullptr;
+  i2c_master_dev_handle_t *devHandle = nullptr;
 };
 
 };  // namespace Sensor

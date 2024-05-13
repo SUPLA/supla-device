@@ -28,6 +28,7 @@
 #include <supla/network/ip_address.h>
 #include <supla/output/cmd.h>
 #include <supla/output/file.h>
+#include <supla/output/mqtt.h>
 #include <supla/output/output.h>
 #include <supla/parser/json.h>
 #include <supla/parser/parser.h>
@@ -1492,13 +1493,17 @@ Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
   }
 
   if (output["type"]) {
-    std::string type = output["type"].as<std::string>();
+    auto type = output["type"].as<std::string>();
     if (type == "Cmd") {
       std::string cmd = output["command"].as<std::string>();
       out = new Supla::Output::Cmd(cmd.c_str());
     } else if (type == "File") {
       std::string fileName = output["file"].as<std::string>();
       out = new Supla::Output::File(fileName.c_str());
+    } else if (type == "MQTT") {
+      std::string controlTopic = output["control_topic"].as<std::string>();
+      int qos = output["qos"].as<int>(0);
+      out = new Supla::Output::Mqtt(*this, controlTopic.c_str(), qos);
     } else {
       SUPLA_LOG_ERROR("Config: unknown output type \"%s\"", type.c_str());
       return nullptr;

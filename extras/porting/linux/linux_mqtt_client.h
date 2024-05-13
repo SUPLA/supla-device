@@ -23,9 +23,9 @@
 #include <mqtt_pal.h>
 
 #include <functional>
+#include <memory>
 #include <string>
 #include <unordered_map>
-#include <memory>
 
 #include "linux_yaml_config.h"
 #include "yaml-cpp/yaml.h"
@@ -48,6 +48,10 @@ class LinuxMqttClient {
 
   static void publishCallback(void** unused,
                               struct mqtt_response_publish* published);
+
+  enum MQTTErrors publish(const std::string& topic,
+                          const std::string& message,
+                          int qos);
 
   struct mqtt_client* mq_client;
 

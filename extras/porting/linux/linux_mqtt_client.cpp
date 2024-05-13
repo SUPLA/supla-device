@@ -61,6 +61,9 @@ void Supla::LinuxMqttClient::start() {
 }
 
 std::shared_ptr<LinuxMqttClient>& LinuxMqttClient::getInstance() {
+  if (!instance) {
+    SUPLA_LOG_ERROR("Not find Linux MQTT client instance.");
+  }
   return instance;
 }
 
@@ -108,8 +111,22 @@ void LinuxMqttClient::publishCallback(void** unused,
 
   for (const auto& topic : topics) {
     SUPLA_LOG_VERBOSE("Topic: %s, Last Message: %s",
-                    topic.first.c_str(),
-                    topic.second.c_str());
+                      topic.first.c_str(),
+                      topic.second.c_str());
   }
+}
+enum MQTTErrors Supla::LinuxMqttClient::publish(const std::string& topic,
+                                     const std::string& payload,
+                                     int qos = MQTT_PUBLISH_QOS_0) {
+  if(mq_client == nullptr)
+  {
+    SUPLA_LOG_WARNING("No connection to MQTT broker");
+    return MQTTErrors::MQTT_ERROR_NULLPTR;
+  }
+  return mqtt_publish(mq_client,
+               topic.c_str(),
+               static_cast<const void*>(payload.c_str()),
+               payload.size(),
+               qos);
 }
 }  // namespace Supla

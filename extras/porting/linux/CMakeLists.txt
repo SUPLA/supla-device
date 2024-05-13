@@ -56,6 +56,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   supla/output/cmd.cpp
   supla/output/file.cpp
+  supla/output/mqtt.cpp
 
   supla/template/template.cpp
   supla/template/simple.cpp

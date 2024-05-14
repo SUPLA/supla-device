@@ -43,7 +43,7 @@ class ADCDriver {
 
   adc_unit_t unitId;
   adc_cali_handle_t calibrationHandle;
-  adc_atten_t attenuation = ADC_ATTEN_DB_11;
+  adc_atten_t attenuation = ADC_ATTEN_DB_12;
   bool initialized = false;
   bool errorFlag = false;
   bool calibrationDone = false;

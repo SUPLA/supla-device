@@ -18,7 +18,7 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
-#include <driver/i2c.h>
+#include <driver/i2c_master.h>
 
 #include "esp_sht30.h"
 
@@ -27,54 +27,58 @@ Supla::Sensor::SHT30::SHT30(Supla::I2CDriver *driver, uint8_t addr)
 }
 
 void Supla::Sensor::SHT30::onInit() {
-  if (driver != nullptr) {
+  if (driver == nullptr) {
+    return;
+  }
+
+  if (!driver->isInitialized()) {
     driver->initialize();
+    if (!driver->isInitialized()) {
+      return;
+    }
+  }
+
+  const uint32_t frequency = 40000;
+
+  driver->aquire();
+  devHandle = driver->addDevice(addr, frequency);
+  driver->release();
+
+  if (devHandle == nullptr) {
+    SUPLA_LOG_WARNING("SHT30[0x%2X]: Failed to add i2c device", addr);
+  } else {
+    SUPLA_LOG_DEBUG("SHT30[0x%2X]: I2C device added", addr);
   }
 
   channel.setNewValue(getTemp(), getHumi());
 }
 
 void Supla::Sensor::SHT30::readSensor() {
-  if (driver == nullptr || !driver->isInitialized()) {
+  if (driver == nullptr || !driver->isInitialized() || devHandle == nullptr) {
     return;
   }
 
-  i2c_port_t port = driver->getI2CNumber();
 
   // TODO(klew): add CRC verification
-  uint8_t registerToReadByte1 = 0x2C;
-  uint8_t registerToReadByte2 = 0x06;
+  uint8_t payload[2] = {0x2C, 0x06};
   uint8_t buff[6] = {};
 
-  i2c_cmd_handle_t cmd = i2c_cmd_link_create();
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, addr << 1 | I2C_MASTER_WRITE, 1);
-  i2c_master_write_byte(cmd, registerToReadByte1, 1);
-  i2c_master_write_byte(cmd, registerToReadByte2, 1);
-  i2c_master_stop(cmd);
-  esp_err_t ret =
-      i2c_master_cmd_begin(port, cmd, 1000 / portTICK_PERIOD_MS);
-  i2c_cmd_link_delete(cmd);
+  driver->aquire();
+  auto ret = i2c_master_transmit(*devHandle, payload, 2, 200);
+  driver->release();
   if (ret != ESP_OK) {
-    SUPLA_LOG_DEBUG("SHT30: failed to send read request %d", ret);
+    SUPLA_LOG_DEBUG("SHT30: failed to start measurement");
+    return;
   }
 
   delay(30);
-  cmd = i2c_cmd_link_create();
-  i2c_master_start(cmd);
-  i2c_master_write_byte(cmd, addr << 1 | I2C_MASTER_READ, 1);
-  i2c_master_read_byte(cmd, &buff[0], I2C_MASTER_ACK);
-  i2c_master_read_byte(cmd, &buff[1], I2C_MASTER_ACK);
-  i2c_master_read_byte(cmd, &buff[2], I2C_MASTER_ACK);
-  i2c_master_read_byte(cmd, &buff[3], I2C_MASTER_ACK);
-  i2c_master_read_byte(cmd, &buff[4], I2C_MASTER_ACK);
-  i2c_master_read_byte(cmd, &buff[5], I2C_MASTER_NACK);
-  i2c_master_stop(cmd);
-  ret = i2c_master_cmd_begin(port, cmd, 1000 / portTICK_PERIOD_MS);
-  i2c_cmd_link_delete(cmd);
+  driver->aquire();
+  ret = i2c_master_receive(*devHandle, buff, 6, 400);
+  driver->release();
   if (ret != ESP_OK) {
     SUPLA_LOG_DEBUG("SHT30: failed to read measurement");
   }
+
   double temperature = 0;
   double humidity = 0;
   uint16_t tempRaw = buff[0] << 8 | buff[1];

@@ -41,24 +41,20 @@ void Supla::Sensor::SHT30::onInit() {
   const uint32_t frequency = 40000;
 
   driver->aquire();
-
   devHandle = driver->addDevice(addr, frequency);
-  if (devHandle == nullptr) {
-    SUPLA_LOG_WARNING("SHT30[0x%2X]: Failed to add i2c device",
-                      addr);
-    return;
-  }
-  SUPLA_LOG_DEBUG("SHT30[0x%2X]: I2C device added",
-                  addr);
-
-
   driver->release();
+
+  if (devHandle == nullptr) {
+    SUPLA_LOG_WARNING("SHT30[0x%2X]: Failed to add i2c device", addr);
+  } else {
+    SUPLA_LOG_DEBUG("SHT30[0x%2X]: I2C device added", addr);
+  }
 
   channel.setNewValue(getTemp(), getHumi());
 }
 
 void Supla::Sensor::SHT30::readSensor() {
-  if (driver == nullptr || !driver->isInitialized()) {
+  if (driver == nullptr || !driver->isInitialized() || devHandle == nullptr) {
     return;
   }
 

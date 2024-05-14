@@ -52,6 +52,7 @@
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
 #include <supla/template/simple.h>
+#include <supla/template/json.h>
 #include <supla/tools.h>
 
 #include <chrono>  // NOLINT(build/c++11)
@@ -747,12 +748,12 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
   if (ch["set_on"]) {
     paramCount++;
     auto setOn = ch["set_on"].as<std::string>();
-    cr->setTurnOn(setOn);
+    cr->setSetOnValue(setOn);
   }
   if (ch["set_off"]) {
     paramCount++;
     auto setOff = ch["set_off"].as<std::string>();
-    cr->setTurnOff(setOff);
+    cr->setSetOffValue(setOff);
   }
 
   if (!addStateParser(ch, cr, parser, false)) {
@@ -1352,7 +1353,7 @@ Supla::Template::Template* Supla::LinuxYamlConfig::addTemplate(
     const YAML::Node& templateValue, Supla::Output::Output* out) {
   Supla::Template::Template* tmpl = nullptr;
   if (templateValue["use"]) {
-    std::string use = templateValue["use"].as<std::string>();
+    auto use = templateValue["use"].as<std::string>();
     if (templateNames.count(use)) {
       tmpl = templates[templateNames[use]];
     }
@@ -1383,6 +1384,8 @@ Supla::Template::Template* Supla::LinuxYamlConfig::addTemplate(
     std::string type = templateValue["type"].as<std::string>();
     if (type == "Simple") {
       tmpl = new Supla::Template::Simple(out);
+    } else if (type == "Json") {
+        tmpl = new Supla::Template::Json(out);
     } else {
       SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
       return nullptr;

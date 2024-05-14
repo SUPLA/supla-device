@@ -42,7 +42,7 @@ class ControlTemplateBase {
   // template configuration
   int id;
   Supla::Template::Template* templateValue = nullptr;
-  std::map<std::string, std::string> parameterToKey;
+  std::map<std::string, std::string> parameter2Key;
   std::variant<int, bool, std::string> setOnValue;
   std::variant<int, bool, std::string> setOffValue;
 };

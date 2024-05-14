@@ -35,9 +35,11 @@ class Template {
   virtual void addKey(const std::string &key, int index);
   virtual bool isBasedOnIndex() = 0;
 
-  void turnOn(std::variant<int, bool, std::string> onValue);
+  virtual void turnOn(const std::string &key,
+                      std::variant<int, bool, std::string> onValue) = 0;
 
-  void turnOff(std::variant<int, bool, std::string> offValue);
+  virtual void turnOff(const std::string &key,
+                       std::variant<int, bool, std::string> offValue) = 0;
 
  protected:
   std::map<std::string, int> keys;

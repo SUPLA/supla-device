@@ -27,7 +27,7 @@ Supla::Template::ControlTemplateBase::ControlTemplateBase(
 
 void Supla::Template::ControlTemplateBase::setMapping(
     const std::string& parameter, const std::string& key) {
-  parameterToKey[parameter] = key;
+  parameter2Key[parameter] = key;
   templateValue->addKey(key, -1);  // ignore index
 }
 
@@ -36,7 +36,7 @@ void Supla::Template::ControlTemplateBase::setMapping(
   std::string key = parameter;
   key += "_";
   key += std::to_string(id);
-  parameterToKey[parameter] = key;
+  parameter2Key[parameter] = key;
   templateValue->addKey(key, index);
 }
 

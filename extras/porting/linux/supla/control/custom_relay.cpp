@@ -42,40 +42,14 @@ void Supla::Control::CustomRelay::turnOn(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOn(duration);
   channel.setNewValue(isOn());
 
-  templateValue->turnOn(setOnValue);
-
-  if (cmdOn.length() > 0) {
-    auto p = popen(cmdOn.c_str(), "r");
-    pclose(p);
-  }
+  templateValue->turnOn(parameter2Key[Supla::Template::State], setOnValue);
 }
 
 void Supla::Control::CustomRelay::turnOff(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOff(duration);
   channel.setNewValue(isOn());
 
-  templateValue->turnOff(setOffValue);
-
-  if (cmdOff.length() > 0) {
-    auto p = popen(cmdOff.c_str(), "r");
-    pclose(p);
-  }
-}
-
-void Supla::Control::CustomRelay::setCmdOn(const std::string &newCmdOn) {
-  cmdOn = newCmdOn;
-}
-
-void Supla::Control::CustomRelay::setCmdOff(const std::string &newCmdOff) {
-  cmdOff = newCmdOff;
-}
-
-void Supla::Control::CustomRelay::setTurnOn(const std::string &newSetOn) {
-  setOn = newSetOn;
-}
-
-void Supla::Control::CustomRelay::setTurnOff(const std::string &newSetOff) {
-  setOff = newSetOff;
+  templateValue->turnOff(parameter2Key[Supla::Template::State], setOffValue);
 }
 
 bool Supla::Control::CustomRelay::isOn() {

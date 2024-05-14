@@ -60,6 +60,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   supla/template/template.cpp
   supla/template/simple.cpp
+  supla/template/json.cpp
 
   supla/sensor/sensor_parsed.cpp
   supla/sensor/thermometer_parsed.cpp

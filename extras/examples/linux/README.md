@@ -518,6 +518,58 @@ Example channels configuration (details are exaplained later):
         type: MQTT
         state_topic: "sd4l/sensors/binary/2/state"
 
+    - type: CustomRelay
+      name: custom_relay_1
+      state: state
+      set_state: 0
+      set_on: 1
+      set_off: 0
+      source:
+        type: File
+        file: "state0.json"
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      output:
+        type: Cmd
+        command: "echo %d > custom_relay_1.out"
+      template:
+        type: Simple
+    - type: CustomRelay
+      name: custom_relay_2
+      state: state
+      set_state: 0
+      set_on: "ON"
+      set_off: "OFF"
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/binary/2/state"
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      output:
+        type: MQTT
+        control_topic: "sd4l/relays/2/set"
+      template:
+        type: Simple
+    - type: CustomRelay
+      name: custom_relay_3
+      state: state
+      set_state: state
+      set_on: "ON"
+      set_off: "OFF"
+      source:
+        type: MQTT
+        state_topic: "sd4l/relays/2/state"
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      output:
+        type: MQTT
+        control_topic: "sd4l/relays/2/state"
+      template:
+        type: Json
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -593,10 +645,18 @@ Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
 to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 
+### CustomRelay
+
+`CustomRelay` is pretending to be a relay channel in Supla. It is very similar to `VirtualRelay`,
+but additionally allows you to configure publishing state according to a sub elements `template` 
+to a specific `output` with each turn on/off action. Currently, there are 2 templates available: 
+`Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
+Templates are functionally similar to parsers and outputs are functionally similar to sources.
+
 ## Parsed channel `source` parameter
 
 `source` defines from where supla-device will get data for `parser` to parsed
-channel. It should be defined as a subelement of a channel.
+channel. It should be defined as a sub element of a channel.
 
 `source` have one common mandatory parameter `type` which defines type
 of used source. There is also optional `name` parameter. If you name your
@@ -687,7 +747,7 @@ All keys are considered as JSON pointer when they start with "/", otherwise
 keys are expected to be named of parameter in the root structure.
 
 In order to access humidity or pressure values, you have to specify JSON
-pointer, becuase they are not in the root:
+pointer, because they are not in the root:
 
     pressure: "/measurements/1/value"
     humidity: "/measurements/0/value"

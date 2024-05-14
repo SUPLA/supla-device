@@ -24,31 +24,3 @@ Supla::Template::Template::Template(Supla::Output::Output* out) : output(out) {
 void Supla::Template::Template::addKey(const std::string& key, int index) {
   keys[key] = index;
 }
-void Supla::Template::Template::turnOn(
-    std::variant<int, bool, std::string> onValue) {
-  std::visit(
-      [this](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, int>)
-          output->putContent(arg);
-        else if constexpr (std::is_same_v<T, bool>)
-          output->putContent(static_cast<int>(arg));
-        else if constexpr (std::is_same_v<T, std::string>)
-          output->putContent(arg);
-      },
-      onValue);
-}
-void Supla::Template::Template::turnOff(
-    std::variant<int, bool, std::string> offValue) {
-  std::visit(
-      [this](auto&& arg) {
-        using T = std::decay_t<decltype(arg)>;
-        if constexpr (std::is_same_v<T, int>)
-          output->putContent(arg);
-        else if constexpr (std::is_same_v<T, bool>)
-          output->putContent(static_cast<int>(arg));
-        else if constexpr (std::is_same_v<T, std::string>)
-          output->putContent(arg);
-      },
-      offValue);
-}

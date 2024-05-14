@@ -49,17 +49,9 @@ class CustomRelay : public Sensor::SensorParsed<CustomVirtualRelay>,
   void iterateAlways() override;
   bool isOffline();  // add override
 
-  void setCmdOn(const std::string &);
-  void setCmdOff(const std::string &);
-  void setTurnOn(const std::string &);
-  void setTurnOff(const std::string &);
   void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
 
  protected:
-  std::string cmdOn;
-  std::string cmdOff;
-  std::string setOn;
-  std::string setOff;
   uint32_t lastReadTime = 0;
   bool useOfflineOnInvalidState = false;
 };

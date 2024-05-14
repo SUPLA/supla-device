@@ -16,6 +16,8 @@
 
 #include "simple.h"
 
+#include <string>
+
 Supla::Template::Simple::Simple(Supla::Output::Output *out)
     : Supla::Template::Template(out) {
 }
@@ -24,4 +26,33 @@ Supla::Template::Simple::~Simple() {
 }
 bool Supla::Template::Simple::isBasedOnIndex() {
   return true;
+}
+
+void Supla::Template::Simple::turnOn(
+    const std::string &key, std::variant<int, bool, std::string> onValue) {
+  std::visit(
+      [this](auto &&arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int>)
+          output->putContent(arg);
+        else if constexpr (std::is_same_v<T, bool>)
+          output->putContent(static_cast<int>(arg));
+        else if constexpr (std::is_same_v<T, std::string>)
+          output->putContent(arg);
+      },
+      onValue);
+}
+void Supla::Template::Simple::turnOff(
+    const std::string &key, std::variant<int, bool, std::string> offValue) {
+  std::visit(
+      [this](auto &&arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, int>)
+          output->putContent(arg);
+        else if constexpr (std::is_same_v<T, bool>)
+          output->putContent(static_cast<int>(arg));
+        else if constexpr (std::is_same_v<T, std::string>)
+          output->putContent(arg);
+      },
+      offValue);
 }

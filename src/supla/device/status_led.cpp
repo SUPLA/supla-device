@@ -41,6 +41,10 @@ Supla::Device::StatusLed::StatusLed(uint8_t outPin, bool invert)
 
 void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
+  if (getMode() == LED_IN_CONFIG_MODE_ONLY) {
+    return;
+  }
+
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = defaultMode;
@@ -209,6 +213,12 @@ void Supla::Device::StatusLed::iterateAlways() {
         currentSequence = SERVER_CONNECTING;
       }
     }
+  }
+
+  if (getMode() == LED_IN_CONFIG_MODE_ONLY && currentSequence != CONFIG_MODE) {
+    onDuration = 0;
+    offDuration = 1000;
+    return;
   }
 
   switch (currentSequence) {

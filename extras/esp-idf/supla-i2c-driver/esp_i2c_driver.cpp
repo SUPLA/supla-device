@@ -38,11 +38,6 @@ I2CDriver::~I2CDriver() {
 
 void I2CDriver::initialize() {
   if (!isInitialized()) {
-    static int i2cCounter = 0;
-
-    auto i2cNumber = static_cast<i2c_port_num_t>(i2cCounter);
-    i2cCounter++;
-
     i2c_master_bus_config_t conf = {};
 
     conf.clk_source = I2C_CLK_SRC_DEFAULT;
@@ -54,7 +49,7 @@ void I2CDriver::initialize() {
     esp_err_t err = i2c_new_master_bus(&conf, &busHandle);
 
     if (err == ESP_OK) {
-      SUPLA_LOG_INFO("I2C driver initialized, %d", i2cNumber);
+      SUPLA_LOG_INFO("I2C driver initialized");
       initialized = true;
     } else {
       SUPLA_LOG_WARNING("Failed to init i2c (%d)", err);
@@ -84,6 +79,13 @@ i2c_master_dev_handle_t *I2CDriver::addDevice(uint8_t address,
     SUPLA_LOG_WARNING("Failed to add i2c device (%d)", err);
   }
   return devHandle;
+}
+
+void I2CDriver::releaseDevice(i2c_master_dev_handle_t *handle) {
+  if (handle == nullptr) {
+    return;
+  }
+  i2c_master_bus_rm_device(*handle);
 }
 
 bool I2CDriver::isInitialized() const {

@@ -36,6 +36,7 @@ class I2CDriver {
   void release();
 
   i2c_master_dev_handle_t *addDevice(uint8_t address, uint32_t frequency);
+  void releaseDevice(i2c_master_dev_handle_t *handle);
 
  protected:
   int sda = 0;

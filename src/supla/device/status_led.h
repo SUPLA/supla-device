@@ -86,6 +86,7 @@ class StatusLed : public Element {
   LedMode getMode() const;
   void storeModeToConfig();
   void setDefaultMode(enum LedMode newMode);
+  void setUseDeviceConfig(bool value);
 
  protected:
   void updatePin();
@@ -94,6 +95,7 @@ class StatusLed : public Element {
 
   uint8_t outPin = 0;
   bool invert = false;
+  bool useDeviceConfig = true;
   unsigned int onDuration = 0;
   unsigned int offDuration = 1000;
   uint32_t lastUpdate = 0;

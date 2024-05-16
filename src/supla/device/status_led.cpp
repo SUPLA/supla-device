@@ -41,7 +41,7 @@ Supla::Device::StatusLed::StatusLed(uint8_t outPin, bool invert)
 
 void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
-  if (getMode() == LED_IN_CONFIG_MODE_ONLY) {
+  if (getMode() == LED_IN_CONFIG_MODE_ONLY || !useDeviceConfig) {
     return;
   }
 
@@ -343,4 +343,8 @@ void Supla::Device::StatusLed::onDeviceConfigChange(uint64_t fieldBit) {
 
 void Supla::Device::StatusLed::setDefaultMode(enum LedMode newMode) {
   defaultMode = static_cast<int8_t>(newMode);
+}
+
+void Supla::Device::StatusLed::setUseDeviceConfig(bool value) {
+  useDeviceConfig = value;
 }

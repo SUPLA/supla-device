@@ -4246,3 +4246,8 @@ void HvacBase::enableInitialConfig() {
     initialConfig->BinarySensorChannelNo = defaultBinarySensor;
   }
 }
+
+time_t HvacBase::getCountDownTimerEnds() const {
+  return countdownTimerEnds;
+}
+

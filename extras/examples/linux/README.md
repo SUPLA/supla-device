@@ -233,14 +233,14 @@ Parameter is optional - default value: "".
 #### Parameter `client_name`
 
 Defines unique id for this client device.
-Mandatory.
+Parameter is optional - default value: hostname.
 
 #### Parameter `use_ssl`
 
 Defines whether an encrypted SSL/TLS connection is to be used.
 Parameter is optional - default value: false.
 
-#### Parameter `secure`
+#### Parameter `verify_ca`
 
 Defines whether the MQTT broker certificate is to be verified.
 Parameter is optional - default value: false.
@@ -269,9 +269,9 @@ Example (with SSL/TSL with login):
       use_ssl: true
 
 It is recommended to verify the server certificate with an encrypted connection,
-so we should set `secure` to `true`
+so we should set `verify_ca` to `true`
 
-      secure: true
+      verify_ca: true
 
 If the server is trusted but its certificate is self-signed or its CA is not in 
 the system's trusted certificates tray, we can use a PEM file with the certificate
@@ -462,7 +462,7 @@ Example channels configuration (details are exaplained later):
         battery_level: 2
         multiplier_battery_level: 100
 
-    # with new MQTT source
+    # with MQTT source/output
     - type: ThermometerParsed
       temperature: temperature
       multiplier: 1
@@ -522,8 +522,8 @@ Example channels configuration (details are exaplained later):
       name: custom_relay_1
       state: state
       set_state: 0
-      set_on: 1
-      set_off: 0
+      turn_on_payload: 1
+      turn_off_payload: 0
       source:
         type: File
         file: "state0.json"
@@ -535,12 +535,13 @@ Example channels configuration (details are exaplained later):
         command: "echo %d > custom_relay_1.out"
       template:
         type: Simple
+
     - type: CustomRelay
       name: custom_relay_2
       state: state
       set_state: 0
-      set_on: "ON"
-      set_off: "OFF"
+      turn_on_payload: "ON"
+      turn_off_payload: "OFF"
       source:
         type: MQTT
         state_topic: "sd4l/sensors/binary/2/state"
@@ -552,12 +553,13 @@ Example channels configuration (details are exaplained later):
         control_topic: "sd4l/relays/2/set"
       template:
         type: Simple
+
     - type: CustomRelay
       name: custom_relay_3
       state: state
       set_state: state
-      set_on: "ON"
-      set_off: "OFF"
+      turn_on_payload: "ON"
+      turn_off_payload: "OFF"
       source:
         type: MQTT
         state_topic: "sd4l/relays/2/state"
@@ -653,6 +655,36 @@ to a specific `output` with each turn on/off action. Currently, there are 2 temp
 `Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
 Templates are functionally similar to parsers and outputs are functionally similar to sources.
 
+`CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
+three extra configuration options:\
+`set_state` - `state` equivalent for `template`,\
+`turn_on_payload` - value to be published on turn on,\
+`turn_off_payload` - value to be published on turn on.
+
+#### channel `output` parameter
+`output` specifies where supla device will publish data for `template` to change 
+channel state. It must be defined as a channel sub-element.
+
+`output` have one common mandatory parameter `type` which defines type
+of used output. There is also optional `name` parameter. If you name your
+source, then it can be reused for multiple parsers.
+
+There are three supported parser types:
+1. `File` - use file as an output. File name is provided by `file` parameter
+2. `Cmd` - use Linux command line as an output. Command is provided by `command`
+   field.
+3. `MQTT` - use published topic to MQTT broker. A published topic name containing
+control information is provided by `control_topic`.
+
+#### channel `template` parameter
+`template` converts channel state change values to values to be published to 
+a predefined `output`, based on the `set_state`, `turn_on_payload` and `turn_off_payload` 
+specified in the channel.
+
+There are two templates defined:
+1. `Simple`
+2. `Json`
+
 ## Parsed channel `source` parameter
 
 `source` defines from where supla-device will get data for `parser` to parsed
@@ -662,7 +694,7 @@ channel. It should be defined as a sub element of a channel.
 of used source. There is also optional `name` parameter. If you name your
 source, then it can be reused for multiple parsers.
 
-There are two supported parser types:
+There are three supported parser types:
 1. `File` - use file as an input. File name is provided by `file` parameter and
 additionally you can define `expiration_time_sec` parameter. If last modification
 time of a file is older than `expiration_time_sec` then this source will be
@@ -744,7 +776,7 @@ Alternatively you can use JSON pointer to access the same value:
     temperature: "/my_temperature"
 
 All keys are considered as JSON pointer when they start with "/", otherwise
-keys are expected to be named of parameter in the root structure.
+keys are expected to be name of parameter in the root structure.
 
 In order to access humidity or pressure values, you have to specify JSON
 pointer, because they are not in the root:

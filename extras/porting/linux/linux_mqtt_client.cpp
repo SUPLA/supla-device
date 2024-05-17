@@ -38,14 +38,18 @@ Supla::LinuxMqttClient::LinuxMqttClient(
       useSSL(yamlConfig.getMqttUseSSL()) {
   char buffer[256];
   host = yamlConfig.getMqttHost(buffer) ? buffer : "";
-  clientName = yamlConfig.getMqttClientName(buffer) ? buffer : "";
+  if (!yamlConfig.getMqttClientName(buffer)) {
+    if (gethostname(buffer, sizeof(buffer)) == 0) {
+      clientName = buffer;
+    } else {
+      clientName = "";
+    }
+  } else {
+    clientName = buffer;
+  }
   username = yamlConfig.getMqttUsername(buffer) ? buffer : "";
   password = yamlConfig.getMqttPassword(buffer) ? buffer : "";
   fileCA = yamlConfig.getMqttFileCA(buffer) ? buffer : "";
-  sendbuf = reinterpret_cast<uint8_t*>(malloc(8192 * sizeof(uint8_t)));
-  sendbufsz = 8192 * sizeof(uint8_t);
-  recvbuf = reinterpret_cast<uint8_t*>(malloc(2048 * sizeof(uint8_t)));
-  recvbufsz = 2048 * sizeof(uint8_t);
   SUPLA_LOG_DEBUG("Linux MQTT Client create.");
 }
 
@@ -94,7 +98,8 @@ int LinuxMqttClient::mqttClientInit() {
   return mqtt_client_init(
       host, port, username, password, clientName, topics, publishCallback);
 }
-void LinuxMqttClient::publishCallback(void** unused,
+
+void LinuxMqttClient::publishCallback(void**,
                                       struct mqtt_response_publish* published) {
   auto* topic_name = reinterpret_cast<const char*>(published->topic_name);
   auto* application_message =
@@ -108,24 +113,18 @@ void LinuxMqttClient::publishCallback(void** unused,
   SUPLA_LOG_DEBUG("Linux MQTT client received message from %s: %s",
                   topic_name_string.c_str(),
                   application_message_string.c_str());
-
-  for (const auto& topic : topics) {
-    SUPLA_LOG_VERBOSE("Topic: %s, Last Message: %s",
-                      topic.first.c_str(),
-                      topic.second.c_str());
-  }
 }
 enum MQTTErrors Supla::LinuxMqttClient::publish(const std::string& topic,
-                                     const std::string& payload,
-                                     int qos = MQTT_PUBLISH_QOS_0) {
+                                                const std::string& payload,
+                                                int qos = MQTT_PUBLISH_QOS_0) {
   if (mq_client == nullptr) {
     SUPLA_LOG_WARNING("No connection to MQTT broker");
     return MQTTErrors::MQTT_ERROR_NULLPTR;
   }
   return mqtt_publish(mq_client,
-               topic.c_str(),
-               static_cast<const void*>(payload.c_str()),
-               payload.size(),
-               qos);
+                      topic.c_str(),
+                      static_cast<const void*>(payload.c_str()),
+                      payload.size(),
+                      qos);
 }
 }  // namespace Supla

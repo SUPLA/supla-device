@@ -42,16 +42,14 @@ using std::string;
 struct reconnect_state_t {
   std::string hostname;
   int port;
-  bool useSSL;
-  bool verifyCA;
+  bool useSSL = false;
+  bool verifyCA = false;
   std::string fileCA;
   std::string username;
   std::string password;
   std::string clientName;
-  uint8_t* sendbuf;
-  size_t sendbufsz;
-  uint8_t* recvbuf;
-  size_t recvbufsz;
+  std::array<uint8_t, 8192> sendbuf;
+  std::array<uint8_t, 2048> recvbuf;
   std::unordered_map<std::string, std::string> topics;
 };
 
@@ -63,10 +61,12 @@ int mqtt_client_init(std::string addr,
                      const std::unordered_map<std::string, std::string>& topics,
                      void (*publish_response_callback)(
                          void** state, struct mqtt_response_publish* publish));
+
 void mqtt_client_publish(const char* topic,
                          const char* payload,
                          char retain,
                          char qos);
+
 void mqtt_client_free();
 
 #endif  // EXTRAS_PORTING_LINUX_MQTT_CLIENT_H_

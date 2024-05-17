@@ -30,8 +30,10 @@
 #include "linux_mqtt_client.h"
 
 pthread_t mqtt_deamon_thread = 0;
+
 struct reconnect_state_t* reconnect_state;
 
+int delay_time = 5;
 void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr);
 
 #if defined(MQTT_USE_BIO)
@@ -204,12 +206,6 @@ int mqtt_client_init(std::string addr,
                      void (*publish_response_callback)(
                          void** state, struct mqtt_response_publish* publish)) {
   reconnect_state = new reconnect_state_t();
-  reconnect_state->sendbuf =
-      static_cast<uint8_t*>(malloc(8192 * sizeof(uint8_t)));
-  reconnect_state->sendbufsz = 8192 * sizeof(uint8_t);
-  reconnect_state->recvbuf =
-      static_cast<uint8_t*>(malloc(2048 * sizeof(uint8_t)));
-  reconnect_state->recvbufsz = 2048 * sizeof(uint8_t);
   reconnect_state->hostname = addr;
   reconnect_state->port = port;
   reconnect_state->username = username;
@@ -240,19 +236,22 @@ void mqtt_client_publish(const char* topic,
                          char retain,
                          char qos) {
   auto& mq_client = Supla::LinuxMqttClient::getInstance()->mq_client;
-  if (mq_client == nullptr || mq_client->error != MQTT_OK) return;
+  if (mq_client == nullptr || mq_client->error != MQTT_OK) {
+    return;
+  }
 
   uint8_t publish_flags = 0;
   if (retain) {
     publish_flags |= MQTT_PUBLISH_RETAIN;
   }
 
-  if (qos == 0)
+  if (qos == 0) {
     publish_flags |= MQTT_PUBLISH_QOS_0;
-  else if (qos == 1)
+  } else if (qos == 1) {
     publish_flags |= MQTT_PUBLISH_QOS_1;
-  else if (qos == 2)
+  } else if (qos == 2) {
     publish_flags |= MQTT_PUBLISH_QOS_2;
+  }
 
   SUPLA_LOG_DEBUG("publishing %s", topic);
 
@@ -278,15 +277,23 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
   /* Perform error handling here. */
   if (client->error != MQTT_ERROR_INITIAL_RECONNECT) {
     SUPLA_LOG_ERROR("mqtt client error %s", mqtt_error_str(client->error));
-    SUPLA_LOG_DEBUG("another connection attempt in 30 s");
-    delay(30000);
+    SUPLA_LOG_DEBUG("another connection attempt in %d s", delay_time);
+    delay(delay_time * 1000);
+    delay_time = (delay_time >= 900) ? 900 : delay_time + 30;
+  } else {
+    delay_time = 5;
   }
 
   SUPLA_LOG_DEBUG("connecting to MQTT broker %s on port %d",
                   reconnect_state->hostname.c_str(),
                   reconnect_state->port);
 
-  if (reconnect_state->username.length() > 0) {
+  if (!reconnect_state->clientName.empty()) {
+    SUPLA_LOG_DEBUG("using client name %s",
+                    reconnect_state->clientName.c_str());
+  }
+
+  if (!reconnect_state->username.empty()) {
     SUPLA_LOG_DEBUG("using credentials %s %s",
                     reconnect_state->username.c_str(),
                     reconnect_state->password.c_str());
@@ -313,34 +320,21 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
     return;
   }
 
-  /* Reinitialize buffers */
-  if (client->error != MQTT_ERROR_INITIAL_RECONNECT) {
-    free(reconnect_state->sendbuf);
-    free(reconnect_state->recvbuf);
-
-    reconnect_state->sendbuf =
-        reinterpret_cast<uint8_t*>(malloc(8192 * sizeof(uint8_t)));
-    reconnect_state->sendbufsz = 8192 * sizeof(uint8_t);
-    reconnect_state->recvbuf =
-        reinterpret_cast<uint8_t*>(malloc(2048 * sizeof(uint8_t)));
-    reconnect_state->recvbufsz = 2048 * sizeof(uint8_t);
-  }
-
   /* Reinitialize the client. */
 #if defined(MQTT_USE_BIO)
   mqtt_reinit(client,
               reinterpret_cast<BIO*>(sockfd),
-              reconnect_state->sendbuf,
-              reconnect_state->sendbufsz,
-              reconnect_state->recvbuf,
-              reconnect_state->recvbufsz);
+              reconnect_state->sendbuf.data(),
+              reconnect_state->sendbuf.size(),
+              reconnect_state->recvbuf.data(),
+              reconnect_state->recvbuf.size());
 #else
   mqtt_reinit(client,
               static_cast<int>((intptr_t)sockfd),
-              reconnect_state->sendbuf,
-              reconnect_state->sendbufsz,
-              reconnect_state->recvbuf,
-              reconnect_state->recvbufsz);
+              reconnect_state->sendbuf.data(),
+              reconnect_state->sendbuf.size(),
+              reconnect_state->recvbuf.data(),
+              reconnect_state->recvbuf.size());
 #endif
 
   const char* username = !reconnect_state->username.empty()
@@ -364,7 +358,9 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
 
 void mqtt_client_free() {
   auto& mq_client = Supla::LinuxMqttClient::getInstance()->mq_client;
-  if (mq_client != nullptr) mqtt_disconnect(mq_client);
+  if (mq_client != nullptr) {
+    mqtt_disconnect(mq_client);
+  }
 
   if (mqtt_deamon_thread != 0) {
     pthread_cancel(mqtt_deamon_thread);
@@ -382,10 +378,10 @@ void mqtt_client_free() {
 #endif
 
   if (reconnect_state != nullptr) {
-    free(reconnect_state->recvbuf);
-    free(reconnect_state->sendbuf);
     delete reconnect_state;
+    reconnect_state = nullptr;
   }
 
   delete mq_client;
+  mq_client = nullptr;
 }

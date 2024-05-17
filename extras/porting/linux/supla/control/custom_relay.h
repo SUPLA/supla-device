@@ -29,8 +29,8 @@
 namespace Supla {
 namespace Template {
 const char State[] = "set_state";
-const char SetOn[] = "set_on";
-const char SetOff[] = "set_off";
+const char TurnOnPayload[] = "turn_on_payload";
+const char TurnOffPayload[] = "turn_off_payload";
 };  // namespace Template
 
 namespace Control {

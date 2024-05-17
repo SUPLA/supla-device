@@ -19,16 +19,15 @@
 #ifndef EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_
 #define EXTRAS_PORTING_LINUX_LINUX_MQTT_CLIENT_H_
 
+#include <linux_yaml_config.h>
 #include <mqtt.h>
 #include <mqtt_pal.h>
+#include <yaml-cpp/yaml.h>
 
 #include <functional>
 #include <memory>
 #include <string>
 #include <unordered_map>
-
-#include "linux_yaml_config.h"
-#include "yaml-cpp/yaml.h"
 
 namespace Supla {
 
@@ -46,19 +45,18 @@ class LinuxMqttClient {
 
   void subscribeTopic(const std::string& topic, int qos);
 
-  static void publishCallback(void** unused,
-                              struct mqtt_response_publish* published);
+  static void publishCallback(void**, struct mqtt_response_publish* published);
 
   enum MQTTErrors publish(const std::string& topic,
                           const std::string& message,
                           int qos);
 
-  struct mqtt_client* mq_client;
+  struct mqtt_client* mq_client = nullptr;
 
   static std::unordered_map<std::string, std::string> topics;
 
-  bool useSSL;
-  bool verifyCA;
+  bool useSSL = false;
+  bool verifyCA = false;
   std::string fileCA;
 
  private:
@@ -75,10 +73,8 @@ class LinuxMqttClient {
   std::string password;
   std::string clientName;
 
-  uint8_t* sendbuf;
-  size_t sendbufsz;
-  uint8_t* recvbuf;
-  size_t recvbufsz;
+  std::array<uint8_t, 8192> sendbuf;
+  std::array<uint8_t, 2048> recvbuf;
 
   static std::shared_ptr<Supla::LinuxMqttClient> instance;
 };

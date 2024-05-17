@@ -51,8 +51,8 @@
 #include <supla/source/file.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
-#include <supla/template/simple.h>
 #include <supla/template/json.h>
+#include <supla/template/simple.h>
 #include <supla/tools.h>
 
 #include <chrono>  // NOLINT(build/c++11)
@@ -62,6 +62,7 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 #include "supla/control/action_trigger.h"
 #include "supla/control/hvac_parsed.h"
@@ -367,7 +368,8 @@ bool Supla::LinuxYamlConfig::getMqttHost(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["host"]) {
       auto mqtt_host = config["mqtt"]["host"].as<std::string>();
-      strncpy(result, mqtt_host.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
+      std::copy(mqtt_host.begin(), mqtt_host.end(), result);
+      result[mqtt_host.size()] = '\0';
       return true;
     }
   } catch (const YAML::Exception& ex) {
@@ -385,14 +387,15 @@ int32_t Supla::LinuxYamlConfig::getMqttPort() const {
   } catch (const YAML::Exception& ex) {
     SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
-  return 1883;
+  return config["mqtt"] && config["mqtt"]["use_ssl"] ? 8883 : 1883;
 }
 
 bool Supla::LinuxYamlConfig::getMqttUsername(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["username"]) {
       auto mqtt_username = config["mqtt"]["username"].as<std::string>("");
-      strncpy(result, mqtt_username.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
+      std::copy(mqtt_username.begin(), mqtt_username.end(), result);
+      result[mqtt_username.size()] = '\0';
       return true;
     }
   } catch (const YAML::Exception& ex) {
@@ -405,7 +408,8 @@ bool Supla::LinuxYamlConfig::getMqttPassword(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["password"]) {
       auto mqtt_password = config["mqtt"]["password"].as<std::string>("");
-      strncpy(result, mqtt_password.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
+      std::copy(mqtt_password.begin(), mqtt_password.end(), result);
+      result[mqtt_password.size()] = '\0';
       return true;
     }
   } catch (const YAML::Exception& ex) {
@@ -418,7 +422,8 @@ bool Supla::LinuxYamlConfig::getMqttClientName(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["client_name"]) {
       auto mqtt_client_name = config["mqtt"]["client_name"].as<std::string>();
-      strncpy(result, mqtt_client_name.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
+      std::copy(mqtt_client_name.begin(), mqtt_client_name.end(), result);
+      result[mqtt_client_name.size()] = '\0';
       return true;
     }
   } catch (const YAML::Exception& ex) {
@@ -441,8 +446,8 @@ bool Supla::LinuxYamlConfig::getMqttUseSSL() const {
 
 bool Supla::LinuxYamlConfig::getMqttVerifyCA() const {
   try {
-    if (config["mqtt"] && config["mqtt"]["secure"]) {
-      auto mqtt_secure = config["mqtt"]["secure"].as<bool>();
+    if (config["mqtt"] && config["mqtt"]["verify_ca"]) {
+      auto mqtt_secure = config["mqtt"]["verify_ca"].as<bool>();
       return mqtt_secure;
     }
   } catch (const YAML::Exception& ex) {
@@ -455,7 +460,8 @@ bool Supla::LinuxYamlConfig::getMqttFileCA(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["ca_file"]) {
       auto mqtt_ca_file = config["mqtt"]["ca_file"].as<std::string>("");
-      strncpy(result, mqtt_ca_file.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
+      std::copy(mqtt_ca_file.begin(), mqtt_ca_file.end(), result);
+      result[mqtt_ca_file.size()] = '\0';
       return true;
     }
   } catch (const YAML::Exception& ex) {
@@ -745,15 +751,15 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     cr->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
   }
 
-  if (ch["set_on"]) {
+  if (ch["turn_on_payload"]) {
     paramCount++;
-    auto setOn = ch["set_on"].as<std::string>();
-    cr->setSetOnValue(setOn);
+    auto turnOnPayload = ch["turn_on_payload"].as<std::string>();
+    cr->setSetOnValue(turnOnPayload);
   }
-  if (ch["set_off"]) {
+  if (ch["turn_off_payload"]) {
     paramCount++;
-    auto setOff = ch["set_off"].as<std::string>();
-    cr->setSetOffValue(setOff);
+    auto turnOffPayload = ch["turn_off_payload"].as<std::string>();
+    cr->setSetOffValue(turnOffPayload);
   }
 
   if (!addStateParser(ch, cr, parser, false)) {
@@ -1385,7 +1391,7 @@ Supla::Template::Template* Supla::LinuxYamlConfig::addTemplate(
     if (type == "Simple") {
       tmpl = new Supla::Template::Simple(out);
     } else if (type == "Json") {
-        tmpl = new Supla::Template::Json(out);
+      tmpl = new Supla::Template::Json(out);
     } else {
       SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
       return nullptr;
@@ -1832,10 +1838,10 @@ bool Supla::LinuxYamlConfig::addStateTemplate(
       auto key = ch[Supla::Template::State].as<std::string>();
       control->setMapping(Supla::Template::State, key);
     }
-    if (ch[Supla::Template::SetOn]) {
+    if (ch[Supla::Template::TurnOnPayload]) {
       paramCount++;
       std::variant<int, bool, std::string> setOnValue;
-      YAML::Node node = ch[Supla::Template::SetOn];
+      YAML::Node node = ch[Supla::Template::TurnOnPayload];
 
       if (node.IsScalar()) {
         auto value = node.as<std::string>();
@@ -1855,10 +1861,10 @@ bool Supla::LinuxYamlConfig::addStateTemplate(
       }
       control->setSetOnValue(setOnValue);
     }
-    if (ch[Supla::Template::SetOff]) {
+    if (ch[Supla::Template::TurnOffPayload]) {
       paramCount++;
       std::variant<int, bool, std::string> setOffValue;
-      YAML::Node node = ch[Supla::Template::SetOff];
+      YAML::Node node = ch[Supla::Template::TurnOffPayload];
 
       if (node.IsScalar()) {
         auto value = node.as<std::string>();

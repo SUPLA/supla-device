@@ -51,9 +51,6 @@ std::string Supla::Source::Mqtt::getContent() {
   for (const auto& topic : topics) {
     if (client->topics.find(topic) != client->topics.end()) {
       std::string currentMessage = client->topics[topic];
-      SUPLA_LOG_VERBOSE("get latest message %s for %s",
-                        currentMessage.c_str(),
-                        topic.c_str());
       if (combinedMessages.empty()) {
         combinedMessages = currentMessage;
       } else {
@@ -61,7 +58,6 @@ std::string Supla::Source::Mqtt::getContent() {
       }
     }
   }
-  SUPLA_LOG_VERBOSE("get latest message %s", combinedMessages.c_str());
   latestMessage = combinedMessages;
   return latestMessage;
 }

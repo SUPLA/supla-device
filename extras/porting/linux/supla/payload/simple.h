@@ -14,19 +14,19 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_TEMPLATE_SIMPLE_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_TEMPLATE_SIMPLE_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_PAYLOAD_SIMPLE_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_PAYLOAD_SIMPLE_H_
 
 #include <supla/output/output.h>
 
 #include <string>
 
-#include "template.h"
+#include "payload.h"
 
 namespace Supla {
-namespace Template {
+namespace Payload {
 
-class Simple : public Template {
+class Simple : public Payload {
  public:
   explicit Simple(Supla::Output::Output *);
   virtual ~Simple();
@@ -38,7 +38,7 @@ class Simple : public Template {
 
   bool isBasedOnIndex() override;
 };
-};  // namespace Template
+};  // namespace Payload
 };  // namespace Supla
 
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_TEMPLATE_SIMPLE_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_PAYLOAD_SIMPLE_H_

@@ -16,21 +16,21 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CONTROL_TEMPLATE_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CONTROL_TEMPLATE_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CONTROL_PAYLOAD_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CONTROL_PAYLOAD_H_
 
-#include <supla/template/template.h>
+#include <supla/payload/payload.h>
 
 #include <string>
 #include <variant>
 #include <map>
 
 namespace Supla {
-namespace Template {
+namespace Payload {
 
-class ControlTemplateBase {
+class ControlPayloadBase {
  public:
-  explicit ControlTemplateBase(Supla::Template::Template*);
+  explicit ControlPayloadBase(Supla::Payload::Payload*);
 
   void setMapping(const std::string &parameter, const std::string &key);
   void setMapping(const std::string &parameter, const int index);
@@ -39,26 +39,26 @@ class ControlTemplateBase {
   void setSetOffValue(const std::variant<int, bool, std::string>& value);
 
  protected:
-  // template configuration
+  // payload configuration
   int id;
-  Supla::Template::Template* templateValue = nullptr;
+  Supla::Payload::Payload* payload = nullptr;
   std::map<std::string, std::string> parameter2Key;
   std::variant<int, bool, std::string> setOnValue;
   std::variant<int, bool, std::string> setOffValue;
 };
 
 template <typename T>
-class ControlTemplate : public T, public ControlTemplateBase {
+class ControlPayload : public T, public ControlPayloadBase {
  public:
-  explicit ControlTemplate(Supla::Template::Template *);
+  explicit ControlPayload(Supla::Payload::Payload *);
 };
 
 template <typename T>
-ControlTemplate<T>::ControlTemplate(Supla::Template::Template *templateValue)
-    : ControlTemplateBase(templateValue) {
+ControlPayload<T>::ControlPayload(Supla::Payload::Payload *payload)
+    : ControlPayloadBase(payload) {
 }
 
-}  // namespace Template
+}  // namespace Payload
 }  // namespace Supla
 
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CONTROL_TEMPLATE_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CONTROL_PAYLOAD_H_

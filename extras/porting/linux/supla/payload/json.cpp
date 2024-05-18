@@ -22,17 +22,17 @@
 
 #include <string>
 
-Supla::Template::Json::Json(Supla::Output::Output* out)
-    : Supla::Template::Template(out) {
+Supla::Payload::Json::Json(Supla::Output::Output* out)
+    : Supla::Payload::Payload(out) {
 }
 
-Supla::Template::Json::~Json() {
+Supla::Payload::Json::~Json() {
 }
 
-bool Supla::Template::Json::isBasedOnIndex() {
+bool Supla::Payload::Json::isBasedOnIndex() {
   return false;
 }
-void Supla::Template::Json::turnOn(
+void Supla::Payload::Json::turnOn(
     const std::string& key, std::variant<int, bool, std::string> onValue) {
   std::visit(
       [this, &key](auto&& arg) {
@@ -49,7 +49,7 @@ void Supla::Template::Json::turnOn(
       },
       onValue);
 }
-void Supla::Template::Json::turnOff(
+void Supla::Payload::Json::turnOff(
     const std::string& key, std::variant<int, bool, std::string> offValue) {
   std::visit(
       [this, &key](auto&& arg) {

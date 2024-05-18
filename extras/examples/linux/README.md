@@ -533,7 +533,7 @@ Example channels configuration (details are exaplained later):
       output:
         type: Cmd
         command: "echo %d > custom_relay_1.out"
-      template:
+      payload:
         type: Simple
 
     - type: CustomRelay
@@ -551,7 +551,7 @@ Example channels configuration (details are exaplained later):
       output:
         type: MQTT
         control_topic: "sd4l/relays/2/set"
-      template:
+      payload:
         type: Simple
 
     - type: CustomRelay
@@ -569,7 +569,7 @@ Example channels configuration (details are exaplained later):
       output:
         type: MQTT
         control_topic: "sd4l/relays/2/state"
-      template:
+      payload:
         type: Json
 
 There are some new classes (compared to standard non-Linux supla-device) which
@@ -650,19 +650,19 @@ to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 ### CustomRelay
 
 `CustomRelay` is pretending to be a relay channel in Supla. It is very similar to `VirtualRelay`,
-but additionally allows you to configure publishing state according to a sub elements `template` 
+but additionally allows you to configure publishing state according to a sub elements `payload` 
 to a specific `output` with each turn on/off action. Currently, there are 2 templates available: 
 `Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
 Templates are functionally similar to parsers and outputs are functionally similar to sources.
 
 `CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
 three extra configuration options:\
-`set_state` - `state` equivalent for `template`,\
+`set_state` - `state` equivalent for `payload`,\
 `turn_on_payload` - value to be published on turn on,\
 `turn_off_payload` - value to be published on turn on.
 
 #### channel `output` parameter
-`output` specifies where supla device will publish data for `template` to change 
+`output` specifies where supla device will publish data for `payload` to change 
 channel state. It must be defined as a channel sub-element.
 
 `output` have one common mandatory parameter `type` which defines type
@@ -676,8 +676,8 @@ There are three supported parser types:
 3. `MQTT` - use published topic to MQTT broker. A published topic name containing
 control information is provided by `control_topic`.
 
-#### channel `template` parameter
-`template` converts channel state change values to values to be published to 
+#### channel `payload` parameter
+`payload` converts channel state change values to values to be published to 
 a predefined `output`, based on the `set_state`, `turn_on_payload` and `turn_off_payload` 
 specified in the channel.
 

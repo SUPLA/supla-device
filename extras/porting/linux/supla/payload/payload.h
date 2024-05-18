@@ -14,8 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_TEMPLATE_TEMPLATE_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_TEMPLATE_TEMPLATE_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_PAYLOAD_PAYLOAD_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_PAYLOAD_PAYLOAD_H_
 
 #include <supla/output/output.h>
 
@@ -24,12 +24,12 @@
 #include <variant>
 
 namespace Supla {
-namespace Template {
+namespace Payload {
 
-class Template {
+class Payload {
  public:
-  explicit Template(Supla::Output::Output *);
-  virtual ~Template() {
+  explicit Payload(Supla::Output::Output *);
+  virtual ~Payload() {
   }
 
   virtual void addKey(const std::string &key, int index);
@@ -45,7 +45,7 @@ class Template {
   std::map<std::string, int> keys;
   Supla::Output::Output *output = nullptr;
 };
-};  // namespace Template
+};  // namespace Payload
 };  // namespace Supla
 
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_TEMPLATE_TEMPLATE_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_PAYLOAD_PAYLOAD_H_

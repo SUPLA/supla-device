@@ -18,18 +18,18 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/sensor/binary_parsed.h>
-#include <supla/template/template.h>
+#include <supla/payload/payload.h>
 #include <supla/time.h>
 
 #include <cstdio>
 
 Supla::Control::CustomRelay::CustomRelay(
     Supla::Parser::Parser *parser,
-    Supla::Template::Template *templateValue,
+    Supla::Payload::Payload *payload,
     _supla_int_t functions)
     : Supla::Sensor::SensorParsed<Supla::Control::CustomVirtualRelay>(parser),
-      Supla::Template::ControlTemplate<Supla::Control::CustomVirtualRelay>(
-          templateValue) {
+      Supla::Payload::ControlPayload<Supla::Control::CustomVirtualRelay>(
+          payload) {
   channel.setFuncList(functions);
 }
 
@@ -42,14 +42,14 @@ void Supla::Control::CustomRelay::turnOn(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOn(duration);
   channel.setNewValue(isOn());
 
-  templateValue->turnOn(parameter2Key[Supla::Template::State], setOnValue);
+  payload->turnOn(parameter2Key[Supla::Payload::State], setOnValue);
 }
 
 void Supla::Control::CustomRelay::turnOff(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOff(duration);
   channel.setNewValue(isOn());
 
-  templateValue->turnOff(parameter2Key[Supla::Template::State], setOffValue);
+  payload->turnOff(parameter2Key[Supla::Payload::State], setOffValue);
 }
 
 bool Supla::Control::CustomRelay::isOn() {

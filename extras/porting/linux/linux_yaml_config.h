@@ -60,7 +60,7 @@ channels:
 #define EXTRAS_PORTING_LINUX_LINUX_YAML_CONFIG_H_
 
 #include <supla/channel_element.h>
-#include <supla/control/control_template.h>
+#include <supla/control/control_payload.h>
 #include <supla/output/output.h>
 #include <supla/parser/parser.h>
 #include <supla/sensor/electricity_meter_parsed.h>
@@ -68,7 +68,7 @@ channels:
 #include <supla/source/source.h>
 #include <supla/storage/config.h>
 #include <supla/storage/key_value.h>
-#include <supla/template/template.h>
+#include <supla/payload/payload.h>
 #include <yaml-cpp/yaml.h>
 
 #include <map>
@@ -139,7 +139,7 @@ class LinuxYamlConfig : public KeyValue {
   Supla::Parser::Parser* addParser(const YAML::Node& parser,
                                    Supla::Source::Source* src);
   Supla::Source::Source* addSource(const YAML::Node& ch);
-  Supla::Template::Template* addTemplate(const YAML::Node& templateValue,
+  Supla::Payload::Payload* addPayload(const YAML::Node& payload,
                                          Supla::Output::Output* out);
   Supla::Output::Output* addOutput(const YAML::Node& ch);
 
@@ -150,7 +150,7 @@ class LinuxYamlConfig : public KeyValue {
   bool addCustomRelay(const YAML::Node& ch,
                       int channelNumber,
                       Parser::Parser* parser,
-                      Template::Template* templateValue);
+                      Payload::Payload* payload);
   bool addFronius(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);
@@ -200,9 +200,9 @@ class LinuxYamlConfig : public KeyValue {
                       Supla::Sensor::SensorParsedBase* sensor,
                       Supla::Parser::Parser* parser,
                       bool mandatory);
-  bool addStateTemplate(const YAML::Node& ch,
-                        Supla::Template::ControlTemplateBase* control,
-                        Template::Template* templateValue,
+  bool addStatePayload(const YAML::Node& ch,
+                        Supla::Payload::ControlPayloadBase* control,
+                        Payload::Payload* payload,
                         bool mandatory);
   bool addActionTriggerActions(const YAML::Node& ch,
                                Supla::Sensor::SensorParsedBase* sensor,
@@ -224,17 +224,17 @@ class LinuxYamlConfig : public KeyValue {
   std::map<std::string, int> channelNames;
   std::map<std::string, int> parserNames;
   std::map<std::string, int> sourceNames;
-  std::map<std::string, int> templateNames;
+  std::map<std::string, int> payloadNames;
   std::map<std::string, int> outputNames;
   std::map<int, Supla::Parser::Parser*> parsers;
   std::map<int, Supla::Source::Source*> sources;
-  std::map<int, Supla::Template::Template*> templates;
+  std::map<int, Supla::Payload::Payload*> payloads;
   std::map<int, Supla::Output::Output*> outputs;
 
   int paramCount = 0;
   int parserCount = 0;
   int sourceCount = 0;
-  int templateCount = 0;
+  int payloadCount = 0;
   int outputCount = 0;
 
   bool initDone = false;

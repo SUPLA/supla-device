@@ -21,7 +21,7 @@
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
-#include <supla/control/control_template.h>
+#include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/log_wrapper.h>
@@ -51,8 +51,8 @@
 #include <supla/source/file.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
-#include <supla/template/json.h>
-#include <supla/template/simple.h>
+#include <supla/payload/json.h>
+#include <supla/payload/simple.h>
 #include <supla/tools.h>
 
 #include <chrono>  // NOLINT(build/c++11)
@@ -507,7 +507,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     Supla::Source::Source* source = nullptr;
     Supla::Parser::Parser* parser = nullptr;
     Supla::Output::Output* output = nullptr;
-    Supla::Template::Template* templateValue = nullptr;
+    Supla::Payload::Payload* payload = nullptr;
 
     if (ch["source"]) {
       paramCount++;
@@ -534,13 +534,13 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       }
     }
 
-    if (ch["template"]) {
+    if (ch["payload"]) {
       paramCount++;
-      if (!(templateValue = addTemplate(ch["template"], output))) {
-        SUPLA_LOG_ERROR("Adding template failed");
+      if (!(payload = addPayload(ch["payload"], output))) {
+        SUPLA_LOG_ERROR("Adding payload failed");
         return false;
       }
-      templateCount++;
+      payloadCount++;
     }
 
     if (ch["name"]) {  // optional
@@ -554,7 +554,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "CmdRelay") {
       return addCmdRelay(ch, channelNumber, parser);
     } else if (type == "CustomRelay") {
-      return addCustomRelay(ch, channelNumber, parser, templateValue);
+      return addCustomRelay(ch, channelNumber, parser, payload);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -730,9 +730,9 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
 bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
                                             int channelNumber,
                                             Parser::Parser* parser,
-                                            Template::Template* templateValue) {
+                                            Payload::Payload* payload) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomRelay", channelNumber);
-  auto cr = new Supla::Control::CustomRelay(parser, templateValue);
+  auto cr = new Supla::Control::CustomRelay(parser, payload);
   if (ch["initial_state"]) {
     paramCount++;
     auto initialState = ch["initial_state"].as<std::string>();
@@ -766,7 +766,7 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     return false;
   }
 
-  if (!addStateTemplate(ch, cr, templateValue, false)) {
+  if (!addStatePayload(ch, cr, payload, false)) {
     return false;
   }
 
@@ -1355,54 +1355,54 @@ Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
   return prs;
 }
 
-Supla::Template::Template* Supla::LinuxYamlConfig::addTemplate(
-    const YAML::Node& templateValue, Supla::Output::Output* out) {
-  Supla::Template::Template* tmpl = nullptr;
-  if (templateValue["use"]) {
-    auto use = templateValue["use"].as<std::string>();
-    if (templateNames.count(use)) {
-      tmpl = templates[templateNames[use]];
+Supla::Payload::Payload* Supla::LinuxYamlConfig::addPayload(
+    const YAML::Node& payload, Supla::Output::Output* out) {
+  Supla::Payload::Payload* tmpl = nullptr;
+  if (payload["use"]) {
+    auto use = payload["use"].as<std::string>();
+    if (payloadNames.count(use)) {
+      tmpl = payloads[payloadNames[use]];
     }
     if (!tmpl) {
-      SUPLA_LOG_ERROR("Config: can't find template with \"name\"=\"%s\"",
+      SUPLA_LOG_ERROR("Config: can't find payload with \"name\"=\"%s\"",
                       use.c_str());
       return nullptr;
     }
-    if (templateValue["name"]) {
+    if (payload["name"]) {
       SUPLA_LOG_ERROR(
-          "Config: can't use \"name\" for template with \"use\" parameter");
+          "Config: can't use \"name\" for payload with \"use\" parameter");
       return nullptr;
     }
     return tmpl;
   }
 
-  if (templateValue["name"]) {
-    std::string name = templateValue["name"].as<std::string>();
-    templateNames[name] = templateCount;
+  if (payload["name"]) {
+    std::string name = payload["name"].as<std::string>();
+    payloadNames[name] = payloadCount;
   }
 
   if (!out) {
-    SUPLA_LOG_ERROR("Config: template used without output");
+    SUPLA_LOG_ERROR("Config: payload used without output");
     return nullptr;
   }
 
-  if (templateValue["type"]) {
-    std::string type = templateValue["type"].as<std::string>();
+  if (payload["type"]) {
+    std::string type = payload["type"].as<std::string>();
     if (type == "Simple") {
-      tmpl = new Supla::Template::Simple(out);
+      tmpl = new Supla::Payload::Simple(out);
     } else if (type == "Json") {
-      tmpl = new Supla::Template::Json(out);
+      tmpl = new Supla::Payload::Json(out);
     } else {
-      SUPLA_LOG_ERROR("Config: unknown parser type \"%s\"", type.c_str());
+      SUPLA_LOG_ERROR("Config: unknown payload type \"%s\"", type.c_str());
       return nullptr;
     }
   } else {
-    SUPLA_LOG_ERROR("Config: type not defined for template");
+    SUPLA_LOG_ERROR("Config: type not defined for payload");
     return nullptr;
   }
 
-  templates[templateCount] = tmpl;
-  templateCount++;
+  payloads[payloadCount] = tmpl;
+  payloadCount++;
   return tmpl;
 }
 
@@ -1819,29 +1819,29 @@ bool Supla::LinuxYamlConfig::addStateParser(
   return true;
 }
 
-bool Supla::LinuxYamlConfig::addStateTemplate(
+bool Supla::LinuxYamlConfig::addStatePayload(
     const YAML::Node& ch,
-    Supla::Template::ControlTemplateBase* control,
-    Supla::Template::Template* templateValue,
+    Supla::Payload::ControlPayloadBase* control,
+    Supla::Payload::Payload* payload,
     bool mandatory) {
-  if (templateValue == nullptr && ch[Supla::Template::State]) {
-    SUPLA_LOG_ERROR("Channel config: missing parser");
+  if (payload == nullptr && ch[Supla::Payload::State]) {
+    SUPLA_LOG_ERROR("Channel config: missing payload");
     return false;
   }
 
-  if (ch[Supla::Template::State]) {
+  if (ch[Supla::Payload::State]) {
     paramCount++;
-    if (templateValue->isBasedOnIndex()) {
-      int index = ch[Supla::Template::State].as<int>();
-      control->setMapping(Supla::Template::State, index);
+    if (payload->isBasedOnIndex()) {
+      int index = ch[Supla::Payload::State].as<int>();
+      control->setMapping(Supla::Payload::State, index);
     } else {
-      auto key = ch[Supla::Template::State].as<std::string>();
-      control->setMapping(Supla::Template::State, key);
+      auto key = ch[Supla::Payload::State].as<std::string>();
+      control->setMapping(Supla::Payload::State, key);
     }
-    if (ch[Supla::Template::TurnOnPayload]) {
+    if (ch[Supla::Payload::TurnOnPayload]) {
       paramCount++;
       std::variant<int, bool, std::string> setOnValue;
-      YAML::Node node = ch[Supla::Template::TurnOnPayload];
+      YAML::Node node = ch[Supla::Payload::TurnOnPayload];
 
       if (node.IsScalar()) {
         auto value = node.as<std::string>();
@@ -1861,10 +1861,10 @@ bool Supla::LinuxYamlConfig::addStateTemplate(
       }
       control->setSetOnValue(setOnValue);
     }
-    if (ch[Supla::Template::TurnOffPayload]) {
+    if (ch[Supla::Payload::TurnOffPayload]) {
       paramCount++;
       std::variant<int, bool, std::string> setOffValue;
-      YAML::Node node = ch[Supla::Template::TurnOffPayload];
+      YAML::Node node = ch[Supla::Payload::TurnOffPayload];
 
       if (node.IsScalar()) {
         auto value = node.as<std::string>();
@@ -1887,7 +1887,7 @@ bool Supla::LinuxYamlConfig::addStateTemplate(
   } else {
     if (mandatory) {
       SUPLA_LOG_ERROR("Channel config: missing \"%s\" parameter",
-                      Supla::Template::State);
+                      Supla::Payload::State);
       return false;
     }
   }

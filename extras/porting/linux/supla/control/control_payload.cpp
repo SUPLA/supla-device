@@ -16,36 +16,36 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "control_template.h"
+#include "control_payload.h"
 
-Supla::Template::ControlTemplateBase::ControlTemplateBase(
-    Supla::Template::Template* templateValue)
-    : templateValue(templateValue) {
+Supla::Payload::ControlPayloadBase::ControlPayloadBase(
+    Supla::Payload::Payload* payload)
+    : payload(payload) {
   static int instanceCounter = 0;
   id = instanceCounter++;
 }
 
-void Supla::Template::ControlTemplateBase::setMapping(
+void Supla::Payload::ControlPayloadBase::setMapping(
     const std::string& parameter, const std::string& key) {
   parameter2Key[parameter] = key;
-  templateValue->addKey(key, -1);  // ignore index
+  payload->addKey(key, -1);  // ignore index
 }
 
-void Supla::Template::ControlTemplateBase::setMapping(
+void Supla::Payload::ControlPayloadBase::setMapping(
     const std::string& parameter, const int index) {
   std::string key = parameter;
   key += "_";
   key += std::to_string(id);
   parameter2Key[parameter] = key;
-  templateValue->addKey(key, index);
+  payload->addKey(key, index);
 }
 
-void Supla::Template::ControlTemplateBase::setSetOnValue(
+void Supla::Payload::ControlPayloadBase::setSetOnValue(
     const std::variant<int, bool, std::string>& value) {
   setOnValue = value;
 }
 
-void Supla::Template::ControlTemplateBase::setSetOffValue(
+void Supla::Payload::ControlPayloadBase::setSetOffValue(
     const std::variant<int, bool, std::string>& value) {
   setOffValue = value;
 }

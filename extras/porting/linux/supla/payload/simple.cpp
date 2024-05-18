@@ -18,17 +18,17 @@
 
 #include <string>
 
-Supla::Template::Simple::Simple(Supla::Output::Output *out)
-    : Supla::Template::Template(out) {
+Supla::Payload::Simple::Simple(Supla::Output::Output *out)
+    : Supla::Payload::Payload(out) {
 }
 
-Supla::Template::Simple::~Simple() {
+Supla::Payload::Simple::~Simple() {
 }
-bool Supla::Template::Simple::isBasedOnIndex() {
+bool Supla::Payload::Simple::isBasedOnIndex() {
   return true;
 }
 
-void Supla::Template::Simple::turnOn(
+void Supla::Payload::Simple::turnOn(
     const std::string &key, std::variant<int, bool, std::string> onValue) {
   std::visit(
       [this](auto &&arg) {
@@ -42,7 +42,7 @@ void Supla::Template::Simple::turnOn(
       },
       onValue);
 }
-void Supla::Template::Simple::turnOff(
+void Supla::Payload::Simple::turnOff(
     const std::string &key, std::variant<int, bool, std::string> offValue) {
   std::visit(
       [this](auto &&arg) {

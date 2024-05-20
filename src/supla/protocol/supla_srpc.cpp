@@ -791,7 +791,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       SUPLA_LOG_INFO("Sending new device config to server");
       remoteDeviceConfig = new Supla::Device::RemoteDeviceConfig();
       TSDS_SetDeviceConfig deviceConfig = {};
-      if (remoteDeviceConfig->fillFullSetDeviceConfig(&deviceConfig)) {
+      if (remoteDeviceConfig->fillSetDeviceConfig(&deviceConfig)) {
         srpc_ds_async_set_device_config_request(srpc, &deviceConfig);
       } else {
         cfg->clearDeviceConfigChangeFlag();
@@ -1138,7 +1138,7 @@ void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
 
     if (remoteDeviceConfig->isSetDeviceConfigRequired()) {
       TSDS_SetDeviceConfig deviceConfig = {};
-      if (remoteDeviceConfig->fillFullSetDeviceConfig(&deviceConfig)) {
+      if (remoteDeviceConfig->fillSetDeviceConfig(&deviceConfig)) {
         srpc_ds_async_set_device_config_request(srpc, &deviceConfig);
       } else {
         auto cfg = Supla::Storage::ConfigInstance();

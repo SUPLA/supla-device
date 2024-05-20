@@ -59,7 +59,7 @@ class RemoteDeviceConfig {
   bool isEndFlagReceived() const;
   bool isSetDeviceConfigRequired() const;
   // returns false when it failed to build cfg message
-  bool fillFullSetDeviceConfig(TSDS_SetDeviceConfig *config) const;
+  bool fillSetDeviceConfig(TSDS_SetDeviceConfig *config) const;
   void handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult *result);
 
  private:
@@ -77,6 +77,8 @@ class RemoteDeviceConfig {
                                      TDeviceConfig_AutomaticTimeSync *config);
   void processDisableUserInterfaceConfig(
       uint64_t fieldBit, TDeviceConfig_DisableUserInterface *config);
+  void processHomeScreenDelayTypeConfig(
+      uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
 
   void fillStatusLedConfig(TDeviceConfig_StatusLed *config) const;
   void fillScreenBrightnessConfig(TDeviceConfig_ScreenBrightness *config) const;
@@ -89,12 +91,14 @@ class RemoteDeviceConfig {
       TDeviceConfig_AutomaticTimeSync *config) const;
   void fillDisableUserInterfaceConfig(
       TDeviceConfig_DisableUserInterface *config) const;
+  void fillHomeScreenDelayTypeConfig(
+      TDeviceConfig_HomeScreenOffDelayType *config) const;
 
   bool endFlagReceived = false;
   uint8_t resultCode = 255;
   int messageCounter = 0;
-  bool requireSetDeviceConfig = false;
   bool firstDeviceConfigAfterRegistration = false;
+  uint64_t requireSetDeviceConfigFields = 0;
 
   static uint64_t fieldBitsUsedByDevice;
   static uint64_t homeScreenContentAvailable;

@@ -58,9 +58,11 @@ void SuplaDeviceClass::status(int newStatus,
   if ((currentStatus == STATUS_CONFIG_MODE ||
        currentStatus == STATUS_TEST_WAIT_FOR_CFG_BUTTON) &&
       newStatus != STATUS_SOFTWARE_RESET && newStatus != STATUS_INVALID_GUID &&
-      newStatus != STATUS_INVALID_AUTHKEY) {
+      newStatus != STATUS_INVALID_AUTHKEY &&
+      newStatus != STATUS_OFFLINE_MODE) {
     // Config mode and testing is final state and the only exit goes through
-    // reset with exception for invalid GUID and AUTHKEY
+    // reset with exception for: invalid GUID and AUTHKEY, offline mode (2)
+    // after timeout (it goes from config mode to offline mode)
     return;
   }
 
@@ -152,7 +154,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   storageInitResult = Supla::Storage::Init();
 
-  bool atLeastOneProtoIsEnabled = false;
+  atLeastOneProtoIsEnabled = false;
   bool configComplete = true;
   if (Supla::Storage::IsConfigStorageAvailable()) {
     if (!lastStateLogger) {
@@ -295,14 +297,21 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   status(STATUS_INITIALIZED, F("SuplaDevice initialized"));
 
+  setupDeviceMode();
+
+  return true;
+}
+
+void SuplaDeviceClass::setupDeviceMode() {
   if ((allowOfflineMode == 1 && deviceMode == Supla::DEVICE_MODE_CONFIG &&
        configEmpty) ||
       (allowOfflineMode == 2 && deviceMode == Supla::DEVICE_MODE_CONFIG &&
-       !atLeastOneProtoIsEnabled)) {
+       (!atLeastOneProtoIsEnabled || goToOfflineModeTimeout == 1))) {
     deviceMode = Supla::DEVICE_MODE_NORMAL;
     SUPLA_LOG_INFO("Disabling network setup, device work in offline mode");
     skipNetwork = true;
     status(STATUS_OFFLINE_MODE, F("Offline mode"));
+    goToOfflineModeTimeout = 2;
   }
 
   if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
@@ -313,10 +322,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
     enterConfigMode();
   } else {
+    goToOfflineModeTimeout = 2;
     enterNormalMode();
   }
-
-  return true;
 }
 
 void SuplaDeviceClass::setName(const char *Name) {
@@ -361,6 +369,14 @@ void SuplaDeviceClass::iterate(void) {
   }
 
   uint32_t _millis = millis();
+
+  // in allowOfflineMode(2) device starts in "offline" mode with cfg mode
+  // enabled for 1h. After that time, it will switch to full offline mode.
+  if (goToOfflineModeTimeout == 0 && _millis > 60*60*1000) {
+    SUPLA_LOG_INFO("Offline mode timeout triggered");
+    goToOfflineModeTimeout = 1;
+    leaveConfigModeWithoutRestart();
+  }
 
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
@@ -753,6 +769,23 @@ void SuplaDeviceClass::enterConfigMode() {
   status(STATUS_CONFIG_MODE, F("Config mode"), true);
 }
 
+void SuplaDeviceClass::leaveConfigModeWithoutRestart() {
+  if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
+    return;
+  }
+  enterConfigModeTimestamp = 0;
+
+  if (Supla::WebServer::Instance()) {
+    Supla::WebServer::Instance()->stop();
+  }
+
+  setupDeviceMode();
+
+  if (Supla::Network::PopSetupNeeded()) {
+    Supla::Network::Setup();
+  }
+}
+
 void SuplaDeviceClass::softRestart() {
   status(STATUS_SOFTWARE_RESET, F("Software reset"));
 
@@ -931,6 +964,8 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
 void SuplaDeviceClass::disableCfgModeTimeout() {
   if (!forceRestartTimeMs) {
     deviceRestartTimeoutTimestamp = 0;
+    goToOfflineModeTimeout = 2;
+    runAction(Supla::ON_DEVICE_STATUS_CHANGE);
   }
 }
 
@@ -1135,7 +1170,7 @@ void SuplaDeviceClass::createSrpcLayerIfNeeded() {
   }
 }
 
-enum Supla::DeviceMode SuplaDeviceClass::getDeviceMode() {
+enum Supla::DeviceMode SuplaDeviceClass::getDeviceMode() const {
   return deviceMode;
 }
 
@@ -1237,6 +1272,11 @@ void SuplaDeviceClass::setProtoVerboseLog(bool value) {
   if (srpcLayer) {
     srpcLayer->setVerboseLog(value);
   }
+}
+
+bool SuplaDeviceClass::isOfflineModeDuringConfig() const {
+  return goToOfflineModeTimeout == 0 &&
+         getDeviceMode() == Supla::DEVICE_MODE_CONFIG;
 }
 
 SuplaDeviceClass SuplaDevice;

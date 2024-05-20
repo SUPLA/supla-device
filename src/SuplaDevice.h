@@ -134,6 +134,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
 
   void enterConfigMode();
+  void leaveConfigModeWithoutRestart();
   void enterNormalMode();
   // Schedules timeout to restart device. When provided timeout is 0
   // then restart will be done asap.
@@ -154,7 +155,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void disableLastStateLog();
   void setRsaPublicKeyPtr(const uint8_t *ptr);
   const uint8_t *getRsaPublicKey();
-  enum Supla::DeviceMode getDeviceMode();
+  enum Supla::DeviceMode getDeviceMode() const;
 
   void setActivityTimeout(_supla_int_t newActivityTimeout);
   uint32_t getActivityTimeout();
@@ -196,6 +197,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setShowUptimeInChannelState(bool value);
 
   void setProtoVerboseLog(bool value);
+  bool isOfflineModeDuringConfig() const;
 
  protected:
   int networkIsNotReadyCounter = 0;
@@ -220,11 +222,14 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool skipNetwork = false;
   bool storageInitResult = false;
   bool configEmpty = true;
+  bool atLeastOneProtoIsEnabled = false;
   bool showUptimeInChannelState = true;
   bool lastStateLogEnabled = true;
   // used to indicate if begin() method was called - it will be set to
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
+
+  uint8_t goToOfflineModeTimeout = 0;
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
@@ -241,6 +246,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void handleLocalActionTriggers();
   void checkIfRestartIsNeeded(uint32_t _millis);
   void createSrpcLayerIfNeeded();
+  void setupDeviceMode();
 };
 
 extern SuplaDeviceClass SuplaDevice;

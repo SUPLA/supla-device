@@ -29,6 +29,7 @@
 #include <supla/network/html/screen_delay_parameters.h>
 #include <supla/network/html/home_screen_content.h>
 #include <supla/network/html/disable_user_interface_parameter.h>
+#include <supla/network/html/screen_delay_type_parameters.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -122,12 +123,14 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
     resultCode = SUPLA_CONFIG_RESULT_TRUE;
     if (firstDeviceConfigAfterRegistration &&
         config->AvailableFields != fieldBitsUsedByDevice) {
-      requireSetDeviceConfig = true;
+      requireSetDeviceConfigFields =
+          config->AvailableFields ^ fieldBitsUsedByDevice;
       SUPLA_LOG_INFO(
           "RemoteDeviceConfig: Config fields mismatch (0x%08llx != 0x%08llx) - "
-          "sending full device config",
+          "sending device config for fields 0x%08llx",
           config->AvailableFields,
-          fieldBitsUsedByDevice);
+          fieldBitsUsedByDevice,
+          requireSetDeviceConfigFields);
     }
   }
 
@@ -137,7 +140,7 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
         "RemoteDeviceConfig: local config change flag set, ignore set device "
         "config from server");
     if (cfg->isDeviceConfigChangeReadyToSend()) {
-      requireSetDeviceConfig = true;
+      requireSetDeviceConfigFields = fieldBitsUsedByDevice;
     }
     return;
   }
@@ -174,6 +177,10 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
         }
         case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_CONTENT: {
           dataIndex += sizeof(TDeviceConfig_HomeScreenContent);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY_TYPE: {
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
           break;
         }
         default: {
@@ -301,6 +308,21 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
               reinterpret_cast<TDeviceConfig_HomeScreenContent *>(
                   config->Config + dataIndex));
           dataIndex += sizeof(TDeviceConfig_HomeScreenContent);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY_TYPE: {
+          SUPLA_LOG_DEBUG("Processing HomeScreenOffDelayType config");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenOffDelayType) >
+              config->ConfigSize) {
+            SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
+            resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
+            return;
+          }
+          processHomeScreenDelayTypeConfig(
+              fieldBit,
+              reinterpret_cast<TDeviceConfig_HomeScreenOffDelayType *>(
+                  config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelay);
           break;
         }
         default: {
@@ -698,10 +720,10 @@ void RemoteDeviceConfig::fillDisableUserInterfaceConfig(
 }
 
 bool RemoteDeviceConfig::isSetDeviceConfigRequired() const {
-  return requireSetDeviceConfig;
+  return requireSetDeviceConfigFields != 0;
 }
 
-bool RemoteDeviceConfig::fillFullSetDeviceConfig(
+bool RemoteDeviceConfig::fillSetDeviceConfig(
     TSDS_SetDeviceConfig *config) const {
   if (config == nullptr) {
     return false;
@@ -713,6 +735,9 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
 
   int dataIndex = 0;
   uint64_t remainingFileds = fieldBitsUsedByDevice;
+  if (requireSetDeviceConfigFields != 0) {
+    remainingFileds = requireSetDeviceConfigFields;
+  }
   uint64_t fieldBit = 1;
   while (remainingFileds != 0) {
     if (fieldBit & remainingFileds) {
@@ -811,6 +836,19 @@ bool RemoteDeviceConfig::fillFullSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_HomeScreenContent);
           break;
         }
+        case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY_TYPE: {
+          SUPLA_LOG_DEBUG("Adding HomeScreenOffDelayType config field");
+          if (dataIndex + sizeof(TDeviceConfig_HomeScreenOffDelayType) >
+              SUPLA_DEVICE_CONFIG_MAXSIZE) {
+            SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
+            return false;
+          }
+          fillHomeScreenDelayTypeConfig(
+              reinterpret_cast<TDeviceConfig_HomeScreenOffDelayType *>(
+                  config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
+          break;
+        }
         default: {
           SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
                             fieldBit);
@@ -844,3 +882,42 @@ void RemoteDeviceConfig::handleSetDeviceConfigResult(
   }
 }
 
+void RemoteDeviceConfig::processHomeScreenDelayTypeConfig(uint64_t fieldBit,
+    TDeviceConfig_HomeScreenOffDelayType *config) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (config == nullptr || cfg == nullptr) {
+    return;
+  }
+  int32_t value = 0;
+  cfg->getInt32(Supla::Html::ScreenDelayTypeCfgTag, &value);
+  if (value > 1 || value < 0) {
+    value = 0;
+  }
+
+  if (value != config->HomeScreenOffDelayType) {
+    SUPLA_LOG_INFO("Setting HomeScreenOffDelayType to %d",
+                   config->HomeScreenOffDelayType);
+    cfg->setInt32(Supla::Html::ScreenDelayTypeCfgTag,
+                  config->HomeScreenOffDelayType);
+    cfg->saveWithDelay(1000);
+    Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+  }
+}
+
+void RemoteDeviceConfig::fillHomeScreenDelayTypeConfig(
+    TDeviceConfig_HomeScreenOffDelayType *config) const {
+  if (config == nullptr) {
+    return;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t value = 0;
+    cfg->getInt32(Supla::Html::ScreenDelayTypeCfgTag, &value);
+    if (value > 1 || value < 0) {
+      value = 0;
+    }
+    SUPLA_LOG_DEBUG(
+        "Setting HomeScreenOffDelayType to %d", value);
+    config->HomeScreenOffDelayType = value;
+  }
+}

@@ -36,15 +36,29 @@ bool Supla::Output::Mqtt::putContent(int payload) {
   client = Supla::LinuxMqttClient::getInstance();
   std::string payloadStr = std::to_string(payload);
   enum MQTTErrors error = client->publish(controlTopic, payloadStr, qos);
-  SUPLA_LOG_DEBUG(
-      "[MQTT] Sent %s to topic %s", payloadStr.c_str(), controlTopic.c_str());
+  if (error == MQTT_OK) {
+    SUPLA_LOG_DEBUG(
+        "[MQTT] Sent %s to topic %s", payloadStr.c_str(), controlTopic.c_str());
+  } else {
+    SUPLA_LOG_ERROR("[MQTT] Not sent %s to topic %s, error: %d",
+                    payloadStr.c_str(),
+                    controlTopic.c_str(),
+                    error);
+  }
   return error == MQTT_OK;
 }
 bool Supla::Output::Mqtt::putContent(const std::string& payload) {
   client = Supla::LinuxMqttClient::getInstance();
   enum MQTTErrors error = client->publish(controlTopic, payload, qos);
-  SUPLA_LOG_DEBUG(
-      "[MQTT] Sent %s to topic %s", payload.c_str(), controlTopic.c_str());
+  if (error == MQTT_OK) {
+    SUPLA_LOG_DEBUG(
+        "[MQTT] Sent %s to topic %s", payload.c_str(), controlTopic.c_str());
+  } else {
+    SUPLA_LOG_ERROR("[MQTT] Not sent %s to topic %s, error: %d",
+                    payload.c_str(),
+                    controlTopic.c_str(),
+                    error);
+  }
   return error == MQTT_OK;
 }
 bool Supla::Output::Mqtt::putContent(const std::vector<int>& payload) {
@@ -54,7 +68,14 @@ bool Supla::Output::Mqtt::putContent(bool payload) {
   client = Supla::LinuxMqttClient::getInstance();
   std::string payloadStr = payload ? "true" : "false";
   enum MQTTErrors error = client->publish(controlTopic, payloadStr, qos);
-  SUPLA_LOG_DEBUG(
-      "[MQTT] Sent %s to topic %s", payloadStr.c_str(), controlTopic.c_str());
+  if (error == MQTT_OK) {
+    SUPLA_LOG_DEBUG(
+        "[MQTT] Sent %s to topic %s", payloadStr.c_str(), controlTopic.c_str());
+  } else {
+    SUPLA_LOG_ERROR("[MQTT] Not sent %s to topic %s, error: %d",
+                    payloadStr.c_str(),
+                    controlTopic.c_str(),
+                    error);
+  }
   return error == MQTT_OK;
 }

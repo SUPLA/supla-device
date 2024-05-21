@@ -279,7 +279,7 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
     SUPLA_LOG_ERROR("mqtt client error %s", mqtt_error_str(client->error));
     SUPLA_LOG_DEBUG("another connection attempt in %d s", delay_time);
     delay(delay_time * 1000);
-    delay_time = (delay_time >= 900) ? 900 : delay_time + 30;
+    delay_time = (delay_time >= 60) ? 60 : delay_time + 15;
   } else {
     delay_time = 5;
   }
@@ -346,13 +346,14 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
   const char* client_name = reconnect_state->clientName.c_str();
 
   /* Send connection request to the broker. */
-  mqtt_connect(
+  MQTTErrors connect = mqtt_connect(
       client, client_name, nullptr, nullptr, 0, username, password, 0, 400);
 
-  /* Subscribe to the topic. */
-  for (const auto& topic : reconnect_state->topics) {
-    SUPLA_LOG_DEBUG("subscribing %s", topic.first.c_str());
-    mqtt_subscribe(client, topic.first.c_str(), 0);
+  if (connect == MQTT_OK) {
+    for (const auto& topic : reconnect_state->topics) {
+      SUPLA_LOG_DEBUG("subscribing %s", topic.first.c_str());
+      mqtt_subscribe(client, topic.first.c_str(), 0);
+    }
   }
 }
 

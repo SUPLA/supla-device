@@ -121,6 +121,9 @@ enum MQTTErrors Supla::LinuxMqttClient::publish(const std::string& topic,
     SUPLA_LOG_WARNING("No connection to MQTT broker");
     return MQTTErrors::MQTT_ERROR_NULLPTR;
   }
+  if (mq_client->error != MQTTErrors::MQTT_OK) {
+    return mq_client->error;
+  }
   return mqtt_publish(mq_client,
                       topic.c_str(),
                       static_cast<const void*>(payload.c_str()),

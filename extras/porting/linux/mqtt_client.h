@@ -35,6 +35,7 @@
 #include <unordered_map>
 #include <vector>
 #include <string>
+#include <array>
 
 using std::vector;
 using std::string;

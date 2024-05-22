@@ -1,5 +1,26 @@
 # CHANGELOG.md
 
+## 24.05.01 (2024-05-22)
+
+  - Fix: GPM: fix missing handling of "refresh interval ms" parameter
+  - Fix: esp-idf ADC driver: deprecation warning fix for v5.2
+  - Change: Storage: reduced minimum state save interval from 1 to 0.5 s
+  - Change: esp-idf i2c driver: moved all i2c related classes to new i2c driver
+  - Change: SuplaDevice: allowWorkInOfflineMode(2) will enable config mode for 1h if all protocols are not disabled.
+  - Add: sd4linux: add support of MQTT client working as a gateway to Supla (thanks @Goral64)
+  - Add: Clock: add option to disable remote device config flag setting
+  - Add: StatusLed: add option to specify device's default status led setting
+  - Add: HVAC: add initialConfig functionality which allows to define initial values of various HVAC parameters
+  - Add: Relay: add Supla::Control::Relay::setRelayStorageSaveDelay(int delayMs) to modify default delay between state change and save to state storage
+  - Add: ESP-IDF: add EspIdfSectorWlStorage class which use suplastorage partition and utilize wear leveling in "sector" mode
+  - Add: sd4linux: Add a docker image for sd4linux (thanks @Goral64)
+  - Add: sd4linux: Allow to use true/false in BinaryParsed
+  - Add: StatusLed: add option LED_IN_CONFIG_MODE_ONLY - status led will blink only in config mode, otherwise it will be off. Additionally there is no device confgi for status led with this setting
+  - Add: StatusLed: add option to disable device config usage
+  - Add: HVAC: add getCountDownTimerEnds() method to get current countdown timer end timestamp
+  - Add: DeviceConfig: add handling of ScreenDelayType
+  - Add: HTML: add ScreenDelayTypeParameters form
+
 ## 24.03 (2024-03-14 Pi day)
 
   - Fix: MQTT: publish WiFi RSSI and signal strength only when those fields are available

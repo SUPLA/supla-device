@@ -30,8 +30,7 @@ was cloned.
     cd supla-device/extras/examples/linux
     mkdir build
     cd build
-    cmake ..
-    make
+    cmake .. && make
 
 If you want to speed up compilation you can call `make -j5` instead of `make`.
 It will run 5 parallel compilation jobs. However, it is not recommended to use
@@ -203,6 +202,82 @@ Example:
       server: svr12.supla.org
       port: 2016
       mail: user@my_mail_server.com
+
+### MQTT broker connection
+
+Below parameters should be defined under `mqtt` key (as in examples below).
+Required if using [`MQTT` as source](#parsed-channel-source-parameter)
+
+#### Parameter `host`
+
+Defines MQTT broker address (IP or host name).
+Mandatory.
+
+#### Parameter `port`
+
+Defines MQTT broker port to which device should connect to. This application
+can use SSL/TLS encrypted connection, but by default port 1883 is used in MQTT
+broker as not SSL/TLS.
+Parameter is optional - default value: 1883.
+
+#### Parameter `username`
+
+Defines username which is used for user account on MQTT broker.
+Parameter is optional - default value: "".
+
+#### Parameter `password`
+
+Defines password which is used for user account on MQTT broker.
+Parameter is optional - default value: "".
+
+#### Parameter `client_name`
+
+Defines unique id for this client device.
+Parameter is optional - default value: hostname.
+
+#### Parameter `use_ssl`
+
+Defines whether an encrypted SSL/TLS connection is to be used.
+Parameter is optional - default value: false.
+
+#### Parameter `verify_ca`
+
+Defines whether the MQTT broker certificate is to be verified.
+Parameter is optional - default value: false.
+
+#### Parameter `ca_file`
+
+Defines the location of the CA certificate file that will be
+used to verify the MQTT broker certificate.
+Parameter is optional - default value: "".
+
+Example (no SSL/TSL, anonymous):
+
+    mqtt:
+      host: mqtt.example.org
+      port: 1883
+      client_name: sl4d_client_001
+
+Example (with SSL/TSL with login):
+
+    mqtt:
+      host: mqtt-ssl.example.org
+      port: 8883
+      username: my_username
+      password: my_s3cr3t-PSWD
+      client_name: sl4d_client_001
+      use_ssl: true
+
+It is recommended to verify the server certificate with an encrypted connection,
+so we should set `verify_ca` to `true`
+
+      verify_ca: true
+
+If the server is trusted but its certificate is self-signed or its CA is not in 
+the system's trusted certificates tray, we can use a PEM file with the certificate
+path and specify the file location as `ca_file`.
+
+      ca_file: ca_chain.pem
 
 # Supla channels configuration
 
@@ -387,6 +462,116 @@ Example channels configuration (details are exaplained later):
         battery_level: 2
         multiplier_battery_level: 100
 
+    # with MQTT source/output
+    - type: ThermometerParsed
+      temperature: temperature
+      multiplier: 1
+      parser:
+        type: Json
+        refresh_time_ms: 200
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/temp/0/state"
+
+    - type: ThermHygroMeterParsed
+      temperature: temperature
+      humidity: humidity
+      multiplier_temp: 1
+      multiplier_humi: 1
+      parser:
+        type: Json
+        refresh_time_ms: 200
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/temphum/0/state"
+
+    - type: ThermHygroMeterParsed
+      name: th5
+      temperature: 0
+      humidity: 1
+      multiplier_temp: 1
+      multiplier_humi: 1
+      parser:
+        type: Simple
+        refresh_time_ms: 200
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/temphum/2/state"
+        sub_topics: [temperature, humidity]
+
+    - type: BinaryParsed
+      state: state
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/binary/4/state"
+
+    - type: BinaryParsed
+      state: state
+      state_on_values: ["connect"]
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/binary/2/state"
+
+    - type: CustomRelay
+      name: custom_relay_1
+      state: state
+      set_state: 0
+      turn_on_payload: 1
+      turn_off_payload: 0
+      source:
+        type: File
+        file: "state0.json"
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      output:
+        type: Cmd
+        command: "echo %d > custom_relay_1.out"
+      payload:
+        type: Simple
+
+    - type: CustomRelay
+      name: custom_relay_2
+      state: state
+      set_state: 0
+      turn_on_payload: "ON"
+      turn_off_payload: "OFF"
+      source:
+        type: MQTT
+        state_topic: "sd4l/sensors/binary/2/state"
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      output:
+        type: MQTT
+        control_topic: "sd4l/relays/2/set"
+      payload:
+        type: Simple
+
+    - type: CustomRelay
+      name: custom_relay_3
+      state: state
+      set_state: state
+      turn_on_payload: "ON"
+      turn_off_payload: "OFF"
+      source:
+        type: MQTT
+        state_topic: "sd4l/relays/2/state"
+      parser:
+        type: Json
+        refresh_time_ms: 1000
+      output:
+        type: MQTT
+        control_topic: "sd4l/relays/2/state"
+      payload:
+        type: Json
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -432,21 +617,23 @@ memory to keep it's state, which will be always consistent with last executed
 action on relay channel. Such state can be saved to Storage.
 
 Another option for `CmdRelay` is to define `state` parameter. When `state`
-parameter is defined, it require to use `Parser` instance (and underlying `Source`)
+parameter is defined, it requires to use `Parser` instance (and underlying `Source`)
 which is used to read state of this relay channel. It works exactly the same as
 for `BinaryParsed` channel. So you can define data source as file or command and
 use any available `Parser` to read your relay state. Please remember to keep
-state refresh rate at reasonable level (i.e. fetching data remotly every
+state refresh rate at reasonable level (i.e. fetching data remotely every
 100 ms may not be the best idea :) ).
 
 Parameter `offline_on_invalid_state` set to `true` will change channel to "offline"
-when its state is invalid (i.e. source file wasn't modfified for a long time, or
+when its state is invalid (i.e. source file wasn't modified for a long time, or
 value was set to -1).
 
 Parameter `state_on_values` allows to define array of integers, bools or strings, which are interpreted
-as state "on". I.e. `state_on_values = [3, true, "ON"]` will set channel to "on"
-when state is 3, true or ON. Otherwise, it will set channel to "off" with exception to
-value -1 which is used as invalid state.
+s state "on". I.e. `state_on_values = [3, "connect", "online"]` will set channel to "on"
+when state is `3`, `"connect"` or `"online"`. Otherwise, it will set channel to "off" with exception to
+value -1 which is used as invalid state. The default values for `state_on_values` are used. In addition 
+to the value `1`, the following values will be treated as state on: `true`, `"ON"`, `"On"`, `"on"`, `"Y"`,
+`"YES"`, `"Yes"` and `"yes"`.
 
 Parameter `action_trigger` allows to use `ActionTriggerParsed` channel to send actions
 to Supla server depending on channel state (or value). Example:
@@ -456,31 +643,74 @@ to Supla server depending on channel state (or value). Example:
       on_state: [1, 0]
       on_state: [2, 1]
 
-Exact values and configuration is exaplained in `ActionTriggerParsed` section.
+Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
 to send actions. "at1" is a name of `ActionTriggerParsed` instance.
+
+### CustomRelay
+
+`CustomRelay` is pretending to be a relay channel in Supla. It is very similar to `VirtualRelay`,
+but additionally allows you to configure publishing state according to a sub elements `payload` 
+to a specific `output` with each turn on/off action. Currently, there are 2 templates available: 
+`Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
+Templates are functionally similar to parsers and outputs are functionally similar to sources.
+
+`CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
+three extra configuration options:\
+`set_state` - `state` equivalent for `payload`,\
+`turn_on_payload` - value to be published on turn on,\
+`turn_off_payload` - value to be published on turn on.
+
+#### channel `output` parameter
+`output` specifies where supla device will publish data for `payload` to change 
+channel state. It must be defined as a channel sub-element.
+
+`output` have one common mandatory parameter `type` which defines type
+of used output. There is also optional `name` parameter. If you name your
+source, then it can be reused for multiple parsers.
+
+There are three supported parser types:
+1. `File` - use file as an output. File name is provided by `file` parameter
+2. `Cmd` - use Linux command line as an output. Command is provided by `command`
+   field.
+3. `MQTT` - use published topic to MQTT broker. A published topic name containing
+control information is provided by `control_topic`.
+
+#### channel `payload` parameter
+`payload` converts channel state change values to values to be published to 
+a predefined `output`, based on the `set_state`, `turn_on_payload` and `turn_off_payload` 
+specified in the channel.
+
+There are two templates defined:
+1. `Simple`
+2. `Json`
 
 ## Parsed channel `source` parameter
 
 `source` defines from where supla-device will get data for `parser` to parsed
-channel. It should be defined as a subelement of a channel.
+channel. It should be defined as a sub element of a channel.
 
 `source` have one common mandatory parameter `type` which defines type
 of used source. There is also optional `name` parameter. If you name your
 source, then it can be reused for multiple parsers.
 
-There are two supported parser types:
+There are three supported parser types:
 1. `File` - use file as an input. File name is provided by `file` parameter and
 additionally you can define `expiration_time_sec` parameter. If last modification
 time of a file is older than `expiration_time_sec` then this source will be
 considered as invalid. `expiration_time_sec` is by default set to 10 minutes. 
 In order to disable time expiration check, please set `expiration_time_sec` to 0.
 2. `Cmd` - use Linux command line as an input. Command is provided by `commonad`
-field.
-
-If source was already defined earlier and you want to reuse it, you can specify
-`use` parameter with proper name of previously defined source. When `use`
-parameter is used, then no other source configuration parameters are allowed.
+   field.
+3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
+   section. A subscribed topic name containing status information is provided by
+   `state_topic`. If we need more simple data that are in different subtopics, 
+   we can define them as a `sub_topics` array and assign them an index in this array 
+   in the parameters, just like with the `Simple` parser (index counting starts with 0).
+   I.e. please take a look at `th5` channel above.
+   If source was already defined earlier, and you want to reuse it, you can specify
+   `use` parameter with proper name of previously defined source. When `use`
+   parameter is used, then no other source configuration parameters are allowed.
 
 ## Parsed channel `parser` parameter
 
@@ -498,14 +728,14 @@ value is converted to a floating point number. I.e. please check `i1`
 channel above. More details about parsing JSON can be found in JSON parser
 section of this document.
 
-Type of a parser is selected with a `type` parameter. You can provide a name for
+Type of parser is selected with a `type` parameter. You can provide a name for
 your parser with `name` parameter (named parsers can be reused for different
-channels). Additionally parsers allow to configure `refresh_time_ms` parameter
+channels). Additionally, parsers allow to configure `refresh_time_ms` parameter
 which provides period of time in ms, how often parser will try to refresh data
 from source. Please keep in mind that it doesn't override refresh times which
 are used in channel itself. I.e. thermometers are refreshed every 10 s, while
-binary senosors are refereshed every 100 ms. Default refresh time for parser is
-set to 5 s, so in that case thermomenter value will update every 10 s, and
+binary sensors are refreshed every 100 ms. Default refresh time for parser is
+set to 5 s, so in that case thermometer value will update every 10 s, and
 binary sensor every 5 s. If you'll set `refresh_time_ms` to `200`, then
 thermometer value will still refresh every 10 s, but binary sensor value will
 update every 200 ms.
@@ -549,7 +779,7 @@ All keys are considered as JSON pointer when they start with "/", otherwise
 keys are expected to be name of parameter in the root structure.
 
 In order to access humidity or pressure values, you have to specify JSON
-pointer, becuase they are not in the root:
+pointer, because they are not in the root:
 
     pressure: "/measurements/1/value"
     humidity: "/measurements/0/value"
@@ -793,7 +1023,8 @@ Optional parameters:
 * `default_value_multiplier` - defines default multiplier for value (you can put any floating point number).
 * `default_value_divider` - defines default divider for value (you can put any floating point number).
 * `default_value_added` - defines default added value (you can put any floating point number).
-* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 0, 1, 2, 3, 4.
+* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 
+0, 1, 2, 3, 4.
 * `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
 * `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
 
@@ -807,7 +1038,8 @@ Optional parameters:
 * `default_value_multiplier` - defines default multiplier for value (you can put any floating point number).
 * `default_value_divider` - defines default divider for value (you can put any floating point number).
 * `default_value_added` - defines default added value (you can put any floating point number).
-* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values: 0, 1, 2, 3, 4.
+* `default_value_precision` - defines default precision (number of digits after decimal point) - allowed values:
+0, 1, 2, 3, 4.
 * `default_unit_before_value` - defines unit displayed before value (you can put any string up to 14 bytes).
 * `default_unit_after_value` - defines unit displayed after value (you can put any string up to 14 bytes).
 
@@ -894,4 +1126,3 @@ Example output:
     maj 18 14:38:54 supla-dev-01 supla-device-linux[7944]: Current status: [10] Register in progress
     maj 18 14:38:54 supla-dev-01 supla-device-linux[7944]: LAST STATE ADDED: Registered and ready
     maj 18 14:38:54 supla-dev-01 supla-device-linux[7944]: Current status: [17] Registered and ready
-

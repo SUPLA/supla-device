@@ -40,16 +40,27 @@ set(SUPLA_DEVICE_LINUX_SRCS
   linux_file_state_logger.cpp
   linux_client.cpp
   linux_file_storage.cpp
+  linux_mqtt_client.cpp
+  mqtt_client.cpp
 
   linux_timers.cpp
   linux_clock.cpp
 
   supla/source/cmd.cpp
   supla/source/file.cpp
+  supla/source/mqtt_src.cpp
 
   supla/parser/parser.cpp
   supla/parser/simple.cpp
   supla/parser/json.cpp
+
+  supla/output/cmd.cpp
+  supla/output/file.cpp
+  supla/output/mqtt.cpp
+
+  supla/payload/payload.cpp
+  supla/payload/simple.cpp
+  supla/payload/json.cpp
 
   supla/sensor/sensor_parsed.cpp
   supla/sensor/thermometer_parsed.cpp
@@ -69,6 +80,8 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/control/cmd_relay.cpp
   supla/control/action_trigger_parsed.cpp
   supla/control/hvac_parsed.cpp
+  supla/control/custom_relay.cpp
+  supla/control/control_payload.cpp
 
   ../../../src/supla/pv/fronius.cpp
   ../../../src/supla/pv/afore.cpp

@@ -27,21 +27,45 @@ if(NOT DEFINED ENV{SUPLA_DEVICE_PATH})
   #  message(FATAL_ERROR "SUPLA_DEVICE_PATH env variable is not set")
 endif()
 
+add_definitions(-DMQTT_USE_BIO)
+set(MQTT_C_OpenSSL_SUPPORT ON CACHE BOOL "Build MQTT-C with OpenSSL support?")
+set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?")
+
+include(FetchContent)
+
+FetchContent_Declare(
+        mqttc
+        GIT_REPOSITORY https://github.com/LiamBindle/MQTT-C.git
+        GIT_TAG        v1.1.6
+)
+
+FetchContent_GetProperties(mqttc)
+if(NOT mqttc_POPULATED)  # Have we downloaded mqttc yet?
+  set(MQTT_C_OpenSSL_SUPPORT ON CACHE BOOL "Build MQTT-C with OpenSSL support?")
+  set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?")
+  FetchContent_Populate(mqttc)
+  add_subdirectory(${mqttc_SOURCE_DIR} ${mqttc_BINARY_DIR})
+endif()
+
+include_directories(
+        .
+        ${mqttc_SOURCE_DIR}/include
+)
+
 add_library(supladevice "")
 add_subdirectory($ENV{SUPLA_DEVICE_PATH} supla-device)
 add_subdirectory($ENV{SUPLA_DEVICE_PATH}/extras/porting/linux supla-porting-linux)
 
-include_directories(
-  .
-)
 
 add_executable(supla-device-linux
   ${BOARD_SRC}
 )
 
 set_target_properties(supla-device-linux PROPERTIES LINK_LIBRARIES -pthread)
-target_link_libraries (supla-device-linux LINK_PUBLIC
-  supladevice
-)
+#target_include_directories(supla-device-linux PRIVATE ${mqttc_SOURCE_DIR}/src/include)
+
+find_package(OpenSSL REQUIRED)
+
+target_link_libraries(supla-device-linux LINK_PUBLIC supladevice mqttc OpenSSL::SSL OpenSSL::Crypto -ldl)
 
 #target_compile_options(supla-device-linux PRIVATE -Wall -Wextra -Wpedantic -Werror)

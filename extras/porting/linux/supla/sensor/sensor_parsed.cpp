@@ -67,7 +67,9 @@ double SensorParsedBase::getParameterValue(const std::string &parameter) {
 
 std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
     const std::string &parameter) {
-  return parser->getStateValue(parameterToKey[parameter]);
+  std::variant<int, bool, std::string> stateValue =
+      parser->getStateValue(parameterToKey[parameter]);
+  return stateValue;
 }
 
 bool SensorParsedBase::refreshParserSource() {
@@ -83,8 +85,15 @@ bool SensorParsedBase::isParameterConfigured(const std::string &parameter) {
 
 int SensorParsedBase::getStateValue() {
   std::variant<int, bool, std::string> value = -1;
-  std::variant<int, bool, std::string> valueOn = 1;
-  std::variant<int, bool, std::string> valueOff = 0;
+  std::variant<int, bool, std::string> value1 = 1;
+  std::variant<int, bool, std::string> valueTrue = true;
+  std::variant<int, bool, std::string> valueON = std::string("ON");
+  std::variant<int, bool, std::string> valueOn = std::string("On");
+  std::variant<int, bool, std::string> value_on = std::string("on");
+  std::variant<int, bool, std::string> value_yes = std::string("yes");
+  std::variant<int, bool, std::string> valueYes = std::string("Yes");
+  std::variant<int, bool, std::string> valueYES = std::string("YES");
+  std::variant<int, bool, std::string> valueY = std::string("Y");
   int state = -1;
 
   if (isParameterConfigured(Supla::Parser::State)) {
@@ -110,13 +119,15 @@ int SensorParsedBase::getStateValue() {
           }
         }
         if (state == -1) {
-          if (value == valueOn) {
+          if (value == value1 || value == valueTrue || value == valueOn ||
+              value == valueON || value == value_on || value == value_yes ||
+              value == valueY || value == valueYes || value == valueYES) {
             state = 1;
-          } else if (value == valueOff) {
+          } else {
             state = 0;
           }
         }
-        setLastValue(state);
+       setLastValue(state);
       }
     }
   }

@@ -111,17 +111,17 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setEmail(const char *email);
   void setServer(const char *server);
   void setSwVersion(const char *);
-  void setManufacturerId(_supla_int16_t);
-  void setProductId(_supla_int16_t);
-  void addFlags(_supla_int_t);
-  void removeFlags(_supla_int_t);
+  void setManufacturerId(int16_t);
+  void setProductId(int16_t);
+  void addFlags(int32_t);
+  void removeFlags(int32_t);
   bool isSleepingDeviceEnabled();
 
   int generateHostname(char*, int macSize = 6);
 
   // Timer with 100 Hz frequency (10 ms)
   void onTimer(void);
-  // TImer with 2000 Hz frequency (0.5 ms)
+  // Timer with 2000 Hz frequency (0.5 ms or 1 ms)
   void onFastTimer(void);
   void iterate(void);
 
@@ -239,7 +239,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
   char *customHostnamePrefix = nullptr;
 
-  void setString(char *dst, const char *src, int max_size);
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();
   bool iterateSuplaProtocol(uint32_t _millis);

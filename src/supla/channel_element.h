@@ -25,6 +25,7 @@ namespace Supla {
 
 class ChannelElement : public ElementWithChannelActions {
  public:
+  explicit ChannelElement(int channelNumber = -1);
   Channel *getChannel() override;
 
  protected:

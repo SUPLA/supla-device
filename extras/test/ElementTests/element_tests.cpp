@@ -47,13 +47,11 @@ class ElementTests : public ::testing::Test {
     virtual void SetUp() {
       suplaSrpc = new SuplaSrpcStub(&sd);
       suplaSrpc->setRegisteredAndReady();
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+      Supla::Channel::resetToDefaults();
     }
     virtual void TearDown() {
       delete suplaSrpc;
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+      Supla::Channel::resetToDefaults();
     }
 
 };

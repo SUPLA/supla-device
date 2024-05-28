@@ -22,6 +22,7 @@
 #include <SuplaDevice.h>
 #include <config_mock.h>
 #include <network_with_mac_mock.h>
+#include <supla/device/register_device.h>
 #include <channel_element_mock.h>
 
 using testing::_;
@@ -32,12 +33,10 @@ using ::testing::Return;
 class MqttProcessDataTests : public ::testing::Test {
   protected:
     virtual void SetUp() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+      Supla::Channel::resetToDefaults();
     }
     virtual void TearDown() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+      Supla::Channel::resetToDefaults();
     }
 
 };
@@ -481,7 +480,7 @@ TEST_F(MqttProcessDataTests, executeActionTests) {
       });
 
 
-  Supla::Channel::reg_dev.channels[0].value[0] = 1;
+  Supla::RegisterDevice::getChannelValuePtr(0)[0] = 1;
   EXPECT_TRUE(mqtt.processData(
         "supla/devices/my-device-0405ab/channels/0/execute_action",
         "toGGle"));

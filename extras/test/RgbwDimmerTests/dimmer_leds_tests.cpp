@@ -32,6 +32,7 @@ class TimeInterfaceStub : public TimeInterface {
 };
 
 TEST(DimmerLedsTests, SettingNewDimValue) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
   DigitalInterfaceMock ioMock;
 

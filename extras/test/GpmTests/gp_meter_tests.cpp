@@ -33,13 +33,11 @@ using ::testing::SetArgPointee;
 class GpMeterTestsFixture : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 
   virtual void TearDown() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 };
 

@@ -14,9 +14,10 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla/protocol/protocol_layer.h>
-
 #include "at_channel.h"
+
+#include <supla/protocol/protocol_layer.h>
+#include <supla/device/register_device.h>
 
 namespace Supla {
 
@@ -57,19 +58,19 @@ namespace Supla {
   }
 
   void AtChannel::setRelatedChannel(uint8_t relatedChannel) {
-    if (channelNumber >= 0) {
+    auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+    if (valuePtr != nullptr) {
       TActionTriggerProperties *prop =
-        reinterpret_cast<TActionTriggerProperties *>
-        (reg_dev.channels[channelNumber].value);
+        reinterpret_cast<TActionTriggerProperties *>(valuePtr);
       prop->relatedChannelNumber = relatedChannel + 1;
     }
   }
 
   void AtChannel::setDisablesLocalOperation(uint32_t actions) {
-    if (channelNumber >= 0) {
+    auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+    if (valuePtr != nullptr) {
       TActionTriggerProperties *prop =
-        reinterpret_cast<TActionTriggerProperties *>
-        (reg_dev.channels[channelNumber].value);
+        reinterpret_cast<TActionTriggerProperties *>(valuePtr);
       prop->disablesLocalOperation = actions;
     }
   }

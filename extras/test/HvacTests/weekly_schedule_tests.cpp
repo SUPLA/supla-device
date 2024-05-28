@@ -44,8 +44,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
   Supla::Sensor::ThermHygroMeter *t2 = {};
 
   void SetUp() override {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
 
     hvac = new Supla::Control::HvacBase(&output);
     t1 = new Supla::Sensor::Thermometer();
@@ -69,11 +68,10 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
   }
 
   void TearDown() override {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
     delete hvac;
     delete t1;
     delete t2;
+    Supla::Channel::resetToDefaults();
   }
 };
 

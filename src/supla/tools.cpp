@@ -213,7 +213,7 @@ void urlDecodeInplace(char *buffer, int size) {
   *insertPtr = '\0';
 }
 
-int urlEncode(char *input, char *output, int outputMaxSize) {
+int urlEncode(const char *input, char *output, int outputMaxSize) {
   auto parserPtr = input;
   auto outputPtr = output;
   auto lastOutputPtr = output + outputMaxSize - 1;

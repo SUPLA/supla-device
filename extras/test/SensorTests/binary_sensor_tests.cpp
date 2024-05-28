@@ -24,6 +24,7 @@
 #include <arduino_mock.h>
 
 TEST(BinarySensorTests, VirtualBinaryValuesTest) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
   Supla::Sensor::VirtualBinary sensor;
 
@@ -52,6 +53,7 @@ TEST(BinarySensorTests, VirtualBinaryValuesTest) {
 }
 
 TEST(BinarySensorTests, BinaryValuesTest) {
+  Supla::Channel::resetToDefaults();
   DigitalInterfaceMock ioMock;
   SimpleTime time;
 
@@ -89,6 +91,7 @@ TEST(BinarySensorTests, BinaryValuesTest) {
 }
 
 TEST(BinarySensorTests, BinaryValuesWithLocalInvertTest) {
+  Supla::Channel::resetToDefaults();
   DigitalInterfaceMock ioMock;
   SimpleTime time;
 

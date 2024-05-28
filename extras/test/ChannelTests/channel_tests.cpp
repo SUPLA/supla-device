@@ -16,7 +16,7 @@
 
 #include <gtest/gtest.h>
 
-#include <supla/channel.h>
+#include <supla/channels/channel.h>
 #include <gmock/gmock.h>
 #include <srpc_mock.h>
 #include <supla/events.h>
@@ -25,17 +25,16 @@
 #include <SuplaDevice.h>
 #include <supla/protocol/supla_srpc.h>
 #include <network_client_mock.h>
+#include "supla/device/register_device.h"
 
 class ChannelTestsFixture : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 
   virtual void TearDown() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 };
 
@@ -46,7 +45,7 @@ class ActionHandlerMock : public Supla::ActionHandler {
 
 using ::testing::ElementsAreArray;
 
-TEST(ChannelTests, ChannelMethods) {
+TEST_F(ChannelTestsFixture, ChannelMethods) {
   Supla::Channel first;
   Supla::Channel second;
 
@@ -60,49 +59,49 @@ TEST(ChannelTests, ChannelMethods) {
 
   int number = first.getChannelNumber();
   char emptyArray[SUPLA_CHANNELVALUE_SIZE] = {};
-  EXPECT_EQ(number, Supla::Channel::reg_dev.channels[number].Number);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Type, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].FuncList, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Default, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+  EXPECT_EQ(number, Supla::RegisterDevice::getChannelNumber(number));
+  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           emptyArray,
                           SUPLA_CHANNELVALUE_SIZE));
 
   first.setType(10);
   EXPECT_EQ(first.getChannelType(), 10);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Type, 10);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number), 10);
 
   first.setDefault(14);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Default, 14);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number), 14);
 
   first.setFlag(2);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE | 2);
 
   first.setFlag(4);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE | 2 | 4);
 
   first.unsetFlag(2);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE | 4);
 
   first.unsetFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].Flags, 4);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number), 4);
 
   first.setFuncList(11);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number].FuncList, 11);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number), 11);
 }
 
-TEST(ChannelTests, SetNewValue) {
+TEST_F(ChannelTestsFixture, SetNewValue) {
   Supla::Channel channel;
   int number = channel.getChannelNumber();
   char emptyArray[SUPLA_CHANNELVALUE_SIZE] = {};
 
   EXPECT_EQ(0,
-            memcmp(Supla::Channel::reg_dev.channels[number].value,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                    emptyArray,
                    SUPLA_CHANNELVALUE_SIZE));
   EXPECT_FALSE(channel.isUpdateReady());
@@ -110,7 +109,7 @@ TEST(ChannelTests, SetNewValue) {
   char array[SUPLA_CHANNELVALUE_SIZE] = {0, 1, 2, 3, 4, 5, 6, 7};
   channel.setNewValue(array);
   EXPECT_EQ(0,
-            memcmp(Supla::Channel::reg_dev.channels[number].value,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                    array,
                    SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -119,14 +118,14 @@ TEST(ChannelTests, SetNewValue) {
   EXPECT_FALSE(channel.isUpdateReady());
 
   channel.setNewValue(array);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           array,
                           SUPLA_CHANNELVALUE_SIZE));
   EXPECT_FALSE(channel.isUpdateReady());
 
   array[4] = 15;
   channel.setNewValue(array);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           array,
                           SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -134,7 +133,7 @@ TEST(ChannelTests, SetNewValue) {
   ASSERT_EQ(sizeof(double), 8);
   double temp = 3.1415;
   channel.setNewValue(temp);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &temp,
                           SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -143,7 +142,7 @@ TEST(ChannelTests, SetNewValue) {
   char arrayBool[SUPLA_CHANNELVALUE_SIZE] = {};
   arrayBool[0] = true;
   channel.setNewValue(true);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           arrayBool,
                           SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -151,7 +150,7 @@ TEST(ChannelTests, SetNewValue) {
 
   channel.setNewValue(false);
   arrayBool[0] = false;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           arrayBool,
                           SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -160,7 +159,7 @@ TEST(ChannelTests, SetNewValue) {
   int value = 1234;
   ASSERT_EQ(sizeof(int), 4);
   channel.setNewValue(value);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &value,
                           sizeof(int)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -169,7 +168,7 @@ TEST(ChannelTests, SetNewValue) {
   uint64_t value64 = 124346;
   ASSERT_EQ(sizeof(value64), 8);
   channel.setNewValue(value64);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &value64,
                           sizeof(value64)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -182,10 +181,10 @@ TEST(ChannelTests, SetNewValue) {
   int expectedHumi = humi * 1000;
 
   channel.setNewValue(temp, humi);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedTemp,
                           sizeof(expectedTemp)));
-  EXPECT_EQ(0, memcmp(&(Supla::Channel::reg_dev.channels[number].value[4]),
+  EXPECT_EQ(0, memcmp(&(Supla::RegisterDevice::getChannelValuePtr(number)[4]),
                           &expectedHumi,
                           sizeof(expectedHumi)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -194,7 +193,7 @@ TEST(ChannelTests, SetNewValue) {
   // RGBW channel setting
   channel.setNewValue(1, 2, 3, 4, 5);
   char rgbwArray[SUPLA_CHANNELVALUE_SIZE] = {5, 4, 3, 2, 1, 0, 0, 0};
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           rgbwArray,
                           SUPLA_CHANNELVALUE_SIZE));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -212,7 +211,7 @@ TEST(ChannelTests, SetNewValue) {
   expectedValue.total_forward_active_energy = (1000 + 2000 + 4000) / 1000;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -227,7 +226,7 @@ TEST(ChannelTests, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -241,7 +240,7 @@ TEST(ChannelTests, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE2_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -255,7 +254,7 @@ TEST(ChannelTests, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE3_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -269,7 +268,7 @@ TEST(ChannelTests, SetNewValue) {
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
@@ -284,14 +283,14 @@ TEST(ChannelTests, SetNewValue) {
                          EM_VALUE_FLAG_PHASE2_ON;
 
   channel.setNewValue(emVal);
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[number].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 }
 
-TEST(ChannelTests, ChannelValueGetters) {
+TEST_F(ChannelTestsFixture, ChannelValueGetters) {
   Supla::Channel channel;
 
   EXPECT_DOUBLE_EQ(channel.getValueDouble(), 0);
@@ -338,7 +337,7 @@ class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
   }
 };
 
-TEST(ChannelTests, SendUpdateTest) {
+TEST_F(ChannelTestsFixture, SendUpdateTest) {
   SuplaDeviceClass sd;
   SuplaSrpcStub *suplaSrpc = nullptr;
   suplaSrpc = new SuplaSrpcStub(&sd);
@@ -362,7 +361,7 @@ TEST(ChannelTests, SendUpdateTest) {
   delete suplaSrpc;
 }
 
-TEST(ChannelTests, BoolChannelWithLocalActions) {
+TEST_F(ChannelTestsFixture, BoolChannelWithLocalActions) {
   Supla::Channel ch1;
 
   ::testing::InSequence seq;
@@ -394,7 +393,7 @@ TEST(ChannelTests, BoolChannelWithLocalActions) {
   ch1.setNewValue(true);  // nothing should be called on mocks
 }
 
-TEST(ChannelTests, Int32ChannelWithLocalActions) {
+TEST_F(ChannelTestsFixture, Int32ChannelWithLocalActions) {
   Supla::Channel ch1;
 
   ::testing::InSequence seq;
@@ -427,7 +426,7 @@ TEST(ChannelTests, Int32ChannelWithLocalActions) {
   ch1.setNewValue(value);
 }
 
-TEST(ChannelTests, Int64ChannelWithLocalActions) {
+TEST_F(ChannelTestsFixture, Int64ChannelWithLocalActions) {
   Supla::Channel ch1;
 
   ::testing::InSequence seq;
@@ -460,7 +459,7 @@ TEST(ChannelTests, Int64ChannelWithLocalActions) {
   ch1.setNewValue(value);
 }
 
-TEST(ChannelTests, DoubleChannelWithLocalActions) {
+TEST_F(ChannelTestsFixture, DoubleChannelWithLocalActions) {
   Supla::Channel ch1;
 
   ::testing::InSequence seq;
@@ -491,7 +490,7 @@ TEST(ChannelTests, DoubleChannelWithLocalActions) {
   ch1.setNewValue(value);
 }
 
-TEST(ChannelTests, DoubleFloatChannelWithLocalActions) {
+TEST_F(ChannelTestsFixture, DoubleFloatChannelWithLocalActions) {
   Supla::Channel ch1;
 
   ::testing::InSequence seq;
@@ -523,7 +522,7 @@ TEST(ChannelTests, DoubleFloatChannelWithLocalActions) {
   ch1.setNewValue(value1, value2);
 }
 
-TEST(ChannelTests, RgbwChannelWithLocalActions) {
+TEST_F(ChannelTestsFixture, RgbwChannelWithLocalActions) {
   Supla::Channel ch1;
 
   ActionHandlerMock mock1;
@@ -612,7 +611,7 @@ TEST(ChannelTests, RgbwChannelWithLocalActions) {
   ch1.setNewValue(10, 20, 0, 0, 0);
 }
 
-TEST(ChannelTests, SetNewValueWithCorrection) {
+TEST_F(ChannelTestsFixture, SetNewValueWithCorrection) {
   Supla::Channel channel1;
   Supla::Channel channel2;
 
@@ -820,4 +819,63 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   EXPECT_EQ(ch.getHvacSetpointTemperatureCool(), 0);
   EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureHeatSet());
   EXPECT_TRUE(ch.isHvacFlagSetpointTemperatureCoolSet());
+}
+
+TEST_F(ChannelTestsFixture, ChannelArbitaryNumbersLegacyWay) {
+  Supla::Channel first;
+  Supla::Channel second;
+  Supla::Channel third;
+
+  EXPECT_EQ(first.getChannelNumber(), 0);
+  EXPECT_EQ(second.getChannelNumber(), 1);
+  EXPECT_EQ(third.getChannelNumber(), 2);
+
+  // register message should have the same order as creation order
+  EXPECT_EQ(Supla::RegisterDevice::getChannelNumber(0), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelNumber(1), 1);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelNumber(2), 2);
+
+  EXPECT_EQ(first.getFlags(), SUPLA_CHANNEL_FLAG_CHANNELSTATE);
+  EXPECT_EQ(second.getFlags(), SUPLA_CHANNEL_FLAG_CHANNELSTATE);
+  EXPECT_EQ(third.getFlags(), SUPLA_CHANNEL_FLAG_CHANNELSTATE);
+
+  first.setNewValue(1);
+  second.setNewValue(2);
+  third.setNewValue(3);
+
+  EXPECT_EQ(first.getValueInt32(), 1);
+  EXPECT_EQ(second.getValueInt32(), 2);
+  EXPECT_EQ(third.getValueInt32(), 3);
+}
+
+TEST_F(ChannelTestsFixture, ChannelArbitaryNumbers) {
+  Supla::Channel first(5);
+  Supla::Channel second;
+  Supla::Channel third(2);
+
+  EXPECT_EQ(first.getChannelNumber(), 5);
+  EXPECT_EQ(second.getChannelNumber(), 0);
+  EXPECT_EQ(third.getChannelNumber(), 2);
+
+  // register message should have the same order as creation order
+  EXPECT_EQ(Supla::RegisterDevice::getChannelNumber(0), 5);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelNumber(1), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelNumber(2), 2);
+
+  first.setNewValue(1);
+  second.setNewValue(2);
+  third.setNewValue(3);
+
+  EXPECT_EQ(first.getValueInt32(), 1);
+  EXPECT_EQ(second.getValueInt32(), 2);
+  EXPECT_EQ(third.getValueInt32(), 3);
+
+  // channel number 0 is for "second"
+  EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(0)[0], 2);
+
+  // channel number 5 is for "first"
+  EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(5)[0], 1);
+
+  // channel number 2 is for "third"
+  EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(2)[0], 3);
 }

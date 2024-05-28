@@ -43,12 +43,10 @@ using ::testing::ReturnPointee;
 class SuplaDeviceTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 };
 
@@ -91,12 +89,6 @@ class SuplaDeviceTestsFullStartup : public SuplaDeviceTestsFullStartupNoClient {
                                      // Supla::Protocol::SuplaSrpc
     SuplaDeviceTestsFullStartupNoClient::SetUp();
   }
-};
-
-class SuplaDeviceElementWithSecondaryChannel
-    : public SuplaDeviceTestsFullStartup {
- protected:
-  Supla::Sensor::ThermHygroPressMeter thpm;
 };
 
 class SuplaDeviceTestsFullStartupManual : public SuplaDeviceTests {
@@ -833,7 +825,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   EXPECT_EQ(client->getRootCACert(), myCA2);
 }
 
-TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
+TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartupDoubleChannel) {
+  Supla::Sensor::ThermHygroPressMeter thpm;
   bool isConnected = false;
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));
@@ -893,7 +886,8 @@ TEST_F(SuplaDeviceElementWithSecondaryChannel, SuccessfulStartup) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
 }
 
-TEST_F(SuplaDeviceElementWithSecondaryChannel, SleepingChannel) {
+TEST_F(SuplaDeviceTestsFullStartup, SleepingChannelDoubleChannel) {
+  Supla::Sensor::ThermHygroPressMeter thpm;
   bool isConnected = false;
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));

@@ -25,6 +25,17 @@
 #include <simple_time.h>
 #include "gmock/gmock.h"
 
+class ConditionTestsFixture : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    Supla::Channel::resetToDefaults();
+  }
+
+  virtual void TearDown() {
+    Supla::Channel::resetToDefaults();
+  }
+};
+
 
 class ActionHandlerMock2 : public Supla::ActionHandler {
  public:
@@ -37,7 +48,7 @@ using ::testing::ElementsAreArray;
 using ::testing::Args;
 using ::testing::ElementsAre;
 
-TEST(ConditionTests, handleActionTestsForDouble) {
+TEST_F(ConditionTestsFixture, handleActionTestsForDouble) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -196,7 +207,7 @@ TEST(ConditionTests, handleActionTestsForDouble) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsForInt64) {
+TEST_F(ConditionTestsFixture, handleActionTestsForInt64) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -231,7 +242,7 @@ TEST(ConditionTests, handleActionTestsForInt64) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsForDouble2) {
+TEST_F(ConditionTestsFixture, handleActionTestsForDouble2) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -288,7 +299,7 @@ TEST(ConditionTests, handleActionTestsForDouble2) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsForNotSupportedChannel) {
+TEST_F(ConditionTestsFixture, handleActionTestsForNotSupportedChannel) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -319,7 +330,7 @@ TEST(ConditionTests, handleActionTestsForNotSupportedChannel) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsForFirstDouble) {
+TEST_F(ConditionTestsFixture, handleActionTestsForFirstDouble) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -362,7 +373,7 @@ TEST(ConditionTests, handleActionTestsForFirstDouble) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsForSecondDouble) {
+TEST_F(ConditionTestsFixture, handleActionTestsForSecondDouble) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -407,7 +418,7 @@ TEST(ConditionTests, handleActionTestsForSecondDouble) {
   delete cond;
 }
 
-TEST(OnLessTests, OnLessConditionTests) {
+TEST_F(ConditionTestsFixture, OnLessConditionTests) {
   auto cond = OnLess(10);
 
   EXPECT_TRUE(cond->checkConditionFor(5));
@@ -428,7 +439,7 @@ TEST(OnLessTests, OnLessConditionTests) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsWithCustomGetter) {
+TEST_F(ConditionTestsFixture, handleActionTestsWithCustomGetter) {
   SimpleTime time;
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
@@ -459,7 +470,7 @@ TEST(ConditionTests, handleActionTestsWithCustomGetter) {
   em.updateChannelValues();
 }
 
-TEST(ConditionTests, handleActionTestsForGPMeter) {
+TEST_F(ConditionTestsFixture, handleActionTestsForGPMeter) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -513,7 +524,7 @@ TEST(ConditionTests, handleActionTestsForGPMeter) {
   delete cond;
 }
 
-TEST(ConditionTests, handleActionTestsForGPMesurement) {
+TEST_F(ConditionTestsFixture, handleActionTestsForGPMesurement) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   const int action2 = 16;
@@ -567,7 +578,7 @@ TEST(ConditionTests, handleActionTestsForGPMesurement) {
   delete cond;
 }
 
-TEST(ConditionTests, setThresholdCheck) {
+TEST_F(ConditionTestsFixture, setThresholdCheck) {
   ActionHandlerMock2 ahMock;
   const int action1 = 15;
   EXPECT_CALL(ahMock, activateAction(action1));

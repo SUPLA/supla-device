@@ -30,6 +30,7 @@ class ActionHandlerMock : public Supla::ActionHandler {
 
 
 TEST(ChannelElementTests, ActionDelegationToChannel) {
+  Supla::Channel::resetToDefaults();
   ASSERT_EQ(Supla::LocalAction::getClientListPtr(), nullptr);
   Supla::ChannelElement element;
 
@@ -61,6 +62,7 @@ TEST(ChannelElementTests, ActionDelegationToChannel) {
 }
 
 TEST(ChannelElementTests, ActionDelegationToConditions) {
+  Supla::Channel::resetToDefaults();
   ASSERT_EQ(Supla::LocalAction::getClientListPtr(), nullptr);
 
   ActionHandlerMock mock1;

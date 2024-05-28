@@ -33,6 +33,7 @@
 #include <supla/protocol/mqtt_topic.h>
 #include <supla/sensor/electricity_meter.h>
 #include <supla/control/hvac_base.h>
+#include <supla/device/register_device.h>
 
 using Supla::Protocol::Mqtt;
 
@@ -153,18 +154,19 @@ void Supla::Protocol::Mqtt::generateClientId(
     char result[MQTT_CLIENTID_MAX_SIZE]) {
   memset(result, 0, MQTT_CLIENTID_MAX_SIZE);
 
+  const char* guid = Supla::RegisterDevice::getGUID();
   // GUID is truncated here, because of client_id parameter limitation
   snprintf(
       result, MQTT_CLIENTID_MAX_SIZE,
       "SUPLA-%02X%02X%02X%02X%02X%02X%02X%02X",
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[0]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[1]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[2]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[3]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[4]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[5]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[6]),
-      static_cast<unsigned char>(Supla::Channel::reg_dev.GUID[7]));
+      static_cast<unsigned char>(guid[0]),
+      static_cast<unsigned char>(guid[1]),
+      static_cast<unsigned char>(guid[2]),
+      static_cast<unsigned char>(guid[3]),
+      static_cast<unsigned char>(guid[4]),
+      static_cast<unsigned char>(guid[5]),
+      static_cast<unsigned char>(guid[6]),
+      static_cast<unsigned char>(guid[7]));
 }
 
 void Supla::Protocol::Mqtt::onInit() {
@@ -214,7 +216,7 @@ void Supla::Protocol::Mqtt::onInit() {
     SUPLA_LOG_ERROR("Mqtt: failed to generate prefix");
   }
 
-  channelsCount = Supla::Channel::reg_dev.channel_count;
+  channelsCount = Supla::RegisterDevice::getChannelCount();
 }
 
 void Supla::Protocol::Mqtt::publishDeviceStatus(bool onRegistration) {
@@ -1083,9 +1085,9 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             getBinarySensorChannelName(chFunction),
             objectId,
@@ -1190,9 +1192,9 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element) {
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             getRelayChannelName(chFunction),
             objectId,
@@ -1283,9 +1285,9 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             getRelayChannelName(chFunction),
             objectId,
@@ -1360,9 +1362,9 @@ void Supla::Protocol::Mqtt::publishHADiscoveryThermometer(
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             objectId,
             static_cast<int>(sdc->getActivityTimeout())
@@ -1461,9 +1463,9 @@ void Supla::Protocol::Mqtt::publishHADiscoveryHumidity(
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             objectId,
             static_cast<int>(sdc->getActivityTimeout()))
@@ -1592,9 +1594,9 @@ void Supla::Protocol::Mqtt::publishHADiscoveryActionTrigger(
           snprintf(i ? payload : &c, i ? bufferSize : 1,
               cfg,
               hostname,
-              getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-              Supla::Channel::reg_dev.Name,
-              Supla::Channel::reg_dev.SoftVer,
+              getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+              Supla::RegisterDevice::getName(),
+              Supla::RegisterDevice::getSoftVer(),
               prefix,
               ch->getChannelNumber(),
               atType,
@@ -1746,9 +1748,9 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEMParameter(
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             humanReadableParameterName,
             objectId,
@@ -2078,9 +2080,9 @@ void Mqtt::publishHADiscoveryRGB(Supla::Element *element) {
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             objectId,
             subId == 1 ? "/rgb" : "",
             subId == 1 ? "/rgb" : ""
@@ -2158,9 +2160,9 @@ void Mqtt::publishHADiscoveryDimmer(Supla::Element *element) {
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             objectId,
             subchannels ? "/dimmer" : "",
             subchannels ? "/dimmer" : ""
@@ -2434,9 +2436,9 @@ void Mqtt::publishHADiscoveryHVAC(Supla::Element *element) {
             prefix,
             ch->getChannelNumber(),
             hostname,
-            getManufacturer(Supla::Channel::reg_dev.ManufacturerID),
-            Supla::Channel::reg_dev.Name,
-            Supla::Channel::reg_dev.SoftVer,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
             objectId,
             temperatureTopic,

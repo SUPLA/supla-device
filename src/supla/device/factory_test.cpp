@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <supla/actions.h>
+#include <supla/device/register_device.h>
 
 #include "factory_test.h"
 
@@ -51,21 +52,21 @@ void FactoryTest::onInit() {
 
   testStage = Supla::TestStage_Init;
 
-  if (Supla::Channel::reg_dev.ManufacturerID != getManufacturerId()) {
+  if (Supla::RegisterDevice::getManufacturerId() != getManufacturerId()) {
     SUPLA_LOG_ERROR("TEST failed: invalid ManufacturerID");
     testFailed = true;
     failReason = 1;
     return;
   }
 
-  if (Supla::Channel::reg_dev.ProductID == 0) {
+  if (Supla::RegisterDevice::getProductId() == 0) {
     SUPLA_LOG_ERROR("TEST failed: ProductID is empty");
     testFailed = true;
     failReason = 2;
     return;
   }
 
-  if (strnlen(Supla::Channel::reg_dev.Name, SUPLA_DEVICE_NAME_MAXSIZE) == 0) {
+  if (!Supla::RegisterDevice::isNameValid()) {
     SUPLA_LOG_ERROR("TEST failed: device name is empty");
     testFailed = true;
     failReason = 3;

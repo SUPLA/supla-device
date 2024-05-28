@@ -30,6 +30,7 @@
 #include <supla/control/button.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/protocol/supla_srpc.h>
+#include <supla/device/register_device.h>
 #include <storage_mock.h>
 #include "supla/actions.h"
 #include "supla/events.h"
@@ -59,13 +60,11 @@ class ActionTriggerTests : public ::testing::Test {
   virtual void SetUp() {
     suplaSrpc = new SuplaSrpcStub(&sd);
     suplaSrpc->setRegisteredAndReady();
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {
     delete suplaSrpc;
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 };
 
@@ -145,7 +144,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -230,7 +229,7 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 2);
   EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1);
@@ -309,7 +308,7 @@ TEST_F(ActionTriggerTests, AttachToMotionSensorButton) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 2);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -413,25 +412,25 @@ TEST_F(ActionTriggerTests, RelatedChannel) {
   Supla::ChannelElement che4;
   Supla::Control::ActionTrigger at;
 
-  EXPECT_EQ((Supla::Channel::reg_dev.channels)[at.getChannelNumber()].value[0],
-            0);
+  EXPECT_EQ(
+      (Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()))[0], 0);
 
   at.setRelatedChannel(&che4);
-  EXPECT_EQ((Supla::Channel::reg_dev.channels)[at.getChannelNumber()].value[0],
-            5);
+  EXPECT_EQ(
+      (Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()))[0], 5);
 
   at.setRelatedChannel(&ch0);
-  EXPECT_EQ((Supla::Channel::reg_dev.channels)[at.getChannelNumber()].value[0],
-            1);
+  EXPECT_EQ(
+      (Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()))[0], 1);
 
   at.setRelatedChannel(ch3);
-  EXPECT_EQ((Supla::Channel::reg_dev.channels)[at.getChannelNumber()].value[0],
-            4);
+  EXPECT_EQ(
+      (Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()))[0], 4);
 
   at.setRelatedChannel(che1);
   EXPECT_EQ(che1.getChannelNumber(), 1);
-  EXPECT_EQ((Supla::Channel::reg_dev.channels)[at.getChannelNumber()].value[0],
-            2);
+  EXPECT_EQ(
+      (Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()))[0], 2);
 }
 
 TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
@@ -516,7 +515,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -654,7 +653,7 @@ TEST_F(ActionTriggerTests,
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -789,7 +788,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -927,7 +926,7 @@ TEST_F(ActionTriggerTests,
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -1067,7 +1066,7 @@ TEST_F(ActionTriggerTests,
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_HOLD);
@@ -1197,7 +1196,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1 |
@@ -1327,7 +1326,7 @@ TEST_F(ActionTriggerTests,
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation, SUPLA_ACTION_CAP_TOGGLE_x1);
@@ -1460,7 +1459,7 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -1570,15 +1569,16 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
             SUPLA_ACTION_CAP_SHORT_PRESS_x1);
 
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[at.getChannelNumber()].FuncList,
-            SUPLA_ACTION_CAP_SHORT_PRESS_x1 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
-                SUPLA_ACTION_CAP_SHORT_PRESS_x5);
+  EXPECT_EQ(
+      Supla::RegisterDevice::getChannelFunctionList(at.getChannelNumber()),
+      SUPLA_ACTION_CAP_SHORT_PRESS_x1 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
+          SUPLA_ACTION_CAP_SHORT_PRESS_x5);
 }
 
 TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
@@ -1663,7 +1663,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
@@ -1830,15 +1830,16 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
             SUPLA_ACTION_CAP_SHORT_PRESS_x1);
 
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[at.getChannelNumber()].FuncList,
-            SUPLA_ACTION_CAP_SHORT_PRESS_x1 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
-                SUPLA_ACTION_CAP_SHORT_PRESS_x5);
+  EXPECT_EQ(
+      Supla::RegisterDevice::getChannelFunctionList(at.getChannelNumber()),
+      SUPLA_ACTION_CAP_SHORT_PRESS_x1 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
+          SUPLA_ACTION_CAP_SHORT_PRESS_x5);
 }
 
 TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
@@ -1986,16 +1987,16 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,
             SUPLA_ACTION_CAP_SHORT_PRESS_x1);
 
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[at.getChannelNumber()].FuncList,
-            SUPLA_ACTION_CAP_SHORT_PRESS_x1 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
-                SUPLA_ACTION_CAP_SHORT_PRESS_x4 |
-                SUPLA_ACTION_CAP_SHORT_PRESS_x5);
+  EXPECT_EQ(
+      Supla::RegisterDevice::getChannelFunctionList(at.getChannelNumber()),
+      SUPLA_ACTION_CAP_SHORT_PRESS_x1 | SUPLA_ACTION_CAP_SHORT_PRESS_x3 |
+          SUPLA_ACTION_CAP_SHORT_PRESS_x4 | SUPLA_ACTION_CAP_SHORT_PRESS_x5);
 }
 
 TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
@@ -2216,7 +2217,7 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
 
   TActionTriggerProperties *propInRegister =
       reinterpret_cast<TActionTriggerProperties *>(
-          Supla::Channel::reg_dev.channels[at.getChannelNumber()].value);
+          Supla::RegisterDevice::getChannelValuePtr(at.getChannelNumber()));
 
   EXPECT_EQ(propInRegister->relatedChannelNumber, 0);
   EXPECT_EQ(propInRegister->disablesLocalOperation,

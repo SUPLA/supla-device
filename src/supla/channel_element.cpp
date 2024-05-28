@@ -16,6 +16,10 @@
 
 #include "channel_element.h"
 
+Supla::ChannelElement::ChannelElement(int channelNumber)
+    : channel(channelNumber) {
+}
+
 Supla::Channel *Supla::ChannelElement::getChannel() {
   return &channel;
 }

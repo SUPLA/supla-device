@@ -74,7 +74,7 @@ void urlDecodeInplace(char *buffer, int size);
 
 // Encode url string from input to output
 // Returns number of non-null bytes added to output
-int urlEncode(char *input, char *output, int outputMaxSize);
+int urlEncode(const char *input, char *output, int outputMaxSize);
 
 int stringAppend(char *output, const char *input, int maxSize);
 

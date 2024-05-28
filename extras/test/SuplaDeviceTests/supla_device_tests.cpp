@@ -28,6 +28,7 @@
 #include <timer_mock.h>
 #include <storage_mock.h>
 #include <string.h>
+#include <supla/device/register_device.h>
 
 using ::testing::_;
 using ::testing::Return;
@@ -35,12 +36,10 @@ using ::testing::Return;
 class SuplaDeviceTests : public ::testing::Test {
  protected:
   virtual void SetUp() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 };
 
@@ -615,12 +614,12 @@ TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
   NetworkMockWithMac net;
   SuplaDeviceClass sd;
   char buf[200];
-  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "");
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "");
   sd.setName("Supla Device");
 
   EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(true));
 
-  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "Supla Device");
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "Supla Device");
 
   sd.generateHostname(buf, 6);
   net.setHostname(buf, 6);
@@ -689,7 +688,7 @@ TEST_F(SuplaDeviceTests, GenerateHostnameTests) {
   net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-EVEN-WITH-A-0000");
 
-  memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  Supla::Channel::resetToDefaults();
   sd.generateHostname(buf, 2);
   net.setHostname(buf, 2);
   net.getHostName(buf);
@@ -712,12 +711,12 @@ TEST_F(SuplaDeviceTests, GenerateHostnameForOHTests) {
   NetworkMockWithMac net;
   SuplaDeviceClass sd;
   char buf[200];
-  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "");
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "");
   sd.setName("OH! Amazing!! Device");
 
   EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(true));
 
-  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "OH! Amazing!! Device");
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "OH! Amazing!! Device");
 
   sd.generateHostname(buf, 6);
   net.setHostname(buf, 6);
@@ -735,12 +734,12 @@ TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {
   NetworkMockWithMac net;
   SuplaDeviceClass sd;
   char buf[200];
-  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "");
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "");
   sd.setName("Amazing Device");
 
   EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(true));
 
-  EXPECT_STREQ(Supla::Channel::reg_dev.Name, "Amazing Device");
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "Amazing Device");
 
   sd.generateHostname(buf, 6);
   net.setHostname(buf, 6);
@@ -791,7 +790,7 @@ TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {
   net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-IS-SUPER-000000000000");
 
-  memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+  Supla::Channel::resetToDefaults();
   sd.generateHostname(buf, 2);
   net.setHostname(buf, 2);
   net.getHostName(buf);

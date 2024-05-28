@@ -29,6 +29,7 @@
 #include <supla/sha256.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+#include <supla/device/register_device.h>
 
 #include <cerrno>
 
@@ -77,7 +78,8 @@ void Supla::EspIdfOta::iterate() {
                      URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-    snprintf(buf, sizeof(buf), "%d", Supla::Channel::reg_dev.ManufacturerID);
+    snprintf(
+        buf, sizeof(buf), "%d", Supla::RegisterDevice::getManufacturerId());
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
@@ -86,7 +88,7 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&productId=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-    snprintf(buf, sizeof(buf), "%d", Supla::Channel::reg_dev.ProductID);
+    snprintf(buf, sizeof(buf), "%d", Supla::RegisterDevice::getProductId());
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
@@ -95,7 +97,7 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&productName=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-    urlEncode(Supla::Channel::reg_dev.Name, buf, BUF_SIZE);
+    urlEncode(Supla::RegisterDevice::getName(), buf, BUF_SIZE);
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
@@ -113,7 +115,7 @@ void Supla::EspIdfOta::iterate() {
         queryParams + curPos, "&version=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
-    urlEncode(Supla::Channel::reg_dev.SoftVer, buf, BUF_SIZE);
+    urlEncode(Supla::RegisterDevice::getSoftVer(), buf, BUF_SIZE);
     v = stringAppend(queryParams + curPos, buf, URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
@@ -124,8 +126,9 @@ void Supla::EspIdfOta::iterate() {
     curPos += v;
     {
       Supla::Sha256 hash;
-      hash.update(reinterpret_cast<uint8_t *>(Supla::Channel::reg_dev.GUID),
-                  SUPLA_GUID_SIZE);
+      hash.update(
+          reinterpret_cast<const uint8_t *>(Supla::RegisterDevice::getGUID()),
+          SUPLA_GUID_SIZE);
 
       uint8_t sha[32] = {};
       hash.digest(sha);
@@ -138,13 +141,13 @@ void Supla::EspIdfOta::iterate() {
       }
     }
 
-    if (strlen(Supla::Channel::reg_dev.Email) > 0) {
+    if (Supla::RegisterDevice::isEmailValid()) {
       v = stringAppend(
           queryParams + curPos, "&userEmailHash=", URL_SIZE - curPos - 1);
       if (v == 0) break;
       curPos += v;
       Supla::Sha256 hash;
-      strncpy(buf, Supla::Channel::reg_dev.Email, BUF_SIZE);
+      strncpy(buf, Supla::RegisterDevice::getEmail(), BUF_SIZE);
       auto bufPtr = buf;
       int size = 0;
       while (*bufPtr) {

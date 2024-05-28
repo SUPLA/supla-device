@@ -55,6 +55,7 @@ class SimpleTime : public TimeInterface {
 };
 
 TEST(DimmerTests, InitializationWithDefaultValues) {
+  Supla::Channel::resetToDefaults();
   TimeInterfaceStub time;
 
   DimmerBaseForTest dimmer;
@@ -88,6 +89,7 @@ TEST(DimmerTests, InitializationWithDefaultValues) {
 }
 
 TEST(DimmerTests, DimmerShouldIgnoreRGBValues) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   DimmerBaseForTest dimmer;
@@ -142,6 +144,7 @@ TEST(DimmerTests, DimmerShouldIgnoreRGBValues) {
 }
 
 TEST(DimmerTests, HandleActionTests) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   DimmerBaseForTest dimmer;
@@ -239,6 +242,7 @@ TEST(DimmerTests, HandleActionTests) {
 }
 
 TEST(DimmerTests, IterateDimmerChangeDirection) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   DimmerBaseForTest dimmer;

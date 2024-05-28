@@ -52,6 +52,7 @@ void setValues(TRGBW_Value *value,
 }
 
 TEST(RgbwDimmerTests, InitializationWithDefaultValues) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -90,6 +91,7 @@ TEST(RgbwDimmerTests, InitializationWithDefaultValues) {
 }
 
 TEST(RgbwDimmerTests, FrequentSetCommandShouldNotChangeChannelValue) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -215,6 +217,7 @@ TEST(RgbwDimmerTests, FrequentSetCommandShouldNotChangeChannelValue) {
 }
 
 TEST(RgbwDimmerTests, SetValueFromServer) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -313,6 +316,7 @@ TEST(RgbwDimmerTests, SetValueFromServer) {
 }
 
 TEST(RgbwDimmerTests, TurnOnOffToggleTests) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -386,6 +390,7 @@ TEST(RgbwDimmerTests, TurnOnOffToggleTests) {
 }
 
 TEST(RgbwDimmerTests, HandleActionTests) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -974,6 +979,7 @@ rgb.handleAction(1, Supla::TURN_OFF_RGB);
 
 
 TEST(RgbwDimmerTests, DefaultDimmedValue) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -1021,6 +1027,7 @@ TEST(RgbwDimmerTests, DefaultDimmedValue) {
 }
 
 TEST(RgbwDimmerTests, IterationSteps) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -1072,6 +1079,7 @@ TEST(RgbwDimmerTests, IterationSteps) {
 }
 
 TEST(RgbwDimmerTests, SetValueOnDeviceWithoutFading) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
   ::testing::InSequence seq;
 
@@ -1119,6 +1127,7 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithoutFading) {
 }
 
 TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
   ::testing::InSequence seq;
 
@@ -1242,6 +1251,7 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
 }
 
 TEST(RgbwDimmerTests, MinAndMaxLimits) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
   ::testing::InSequence seq;
 
@@ -1306,6 +1316,7 @@ using ::testing::DoAll;
 using ::testing::Pointee;
 
 TEST(RgbwDimmerTests, RgbwStorageTests) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 //  ::testing::InSequence seq;
 
@@ -1366,6 +1377,7 @@ TEST(RgbwDimmerTests, RgbwStorageTests) {
 // TurnOnOff flag from server (msg[5]) can have value 1, 2, or 3, which in
 // practice should have exactly the same result on rgbw channel
 TEST(RgbwDimmerTests, SetValueFromServerTurnOnOff) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;
@@ -1556,6 +1568,7 @@ TEST(RgbwDimmerTests, SetValueFromServerTurnOnOff) {
 
 // RGBW commands
 TEST(RgbwDimmerTests, RgbwCommandsTest) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbwBaseForTest rgb;

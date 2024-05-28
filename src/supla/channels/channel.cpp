@@ -23,34 +23,46 @@
 #include <supla/events.h>
 #include <supla/correction.h>
 #include <math.h>
+#include <supla/device/register_device.h>
 
 #include "channel.h"
 
-namespace Supla {
+using Supla::Channel;
 
 uint32_t Channel::lastCommunicationTimeMs = 0;
-TDS_SuplaRegisterDevice_E Channel::reg_dev;
 
-Channel::Channel() {
-  if (reg_dev.channel_count < SUPLA_CHANNELMAXCOUNT) {
-    channelNumber = reg_dev.channel_count;
+#ifdef SUPLA_TEST
+// Method used in tests to restore default values for static members
+void Supla::Channel::resetToDefaults() {
+  Supla::RegisterDevice::resetToDefaults();
+  lastCommunicationTimeMs = 0;
+}
+#endif
 
-    memset(&reg_dev.channels[channelNumber], 0,
-        sizeof(reg_dev.channels[channelNumber]));
-    reg_dev.channels[channelNumber].Number = channelNumber;
-
-    reg_dev.channel_count++;
-  } else {
-// TODO(klew): add status CHANNEL_LIMIT_EXCEEDED
+Channel::Channel(int number) {
+  if (number == -1) {
+    int nextFreeNumber = Supla::RegisterDevice::getNextFreeChannelNumber();
+    if (nextFreeNumber == -1) {
+      SUPLA_LOG_ERROR("Channel limit exceeded");
+      // TODO(klew): add status CHANNEL_LIMIT_EXCEEDED
+      return;
+    }
+    number = nextFreeNumber;
   }
+
+  if (!Supla::RegisterDevice::isChannelNumberFree(number)) {
+    SUPLA_LOG_ERROR("Channel with number %d already exists", number);
+    return;
+  }
+
+  channelNumber = number;
+  Supla::RegisterDevice::addChannel(number);
 
   setFlag(SUPLA_CHANNEL_FLAG_CHANNELSTATE);
 }
 
 Channel::~Channel() {
-  if (reg_dev.channel_count != 0) {
-    reg_dev.channel_count--;
-  }
+  Supla::RegisterDevice::removeChannel(channelNumber);
   if (initialCaption != nullptr) {
     delete[] initialCaption;
     initialCaption = nullptr;
@@ -130,10 +142,10 @@ void Channel::setNewValue(double temp, double humi) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
     SUPLA_LOG_DEBUG(
-              "Channel(%d) value changed to temp(%f), humi(%f)",
-              channelNumber,
-              temp,
-              humi);
+        "Channel(%d) value changed to temp(%f), humi(%f)",
+        channelNumber,
+        temp,
+        humi);
   }
 }
 
@@ -183,45 +195,44 @@ void Channel::setNewValue(bool value) {
   }
 }
 
-void Channel::setNewValue(const TElectricityMeter_ExtendedValue_V2 &emValue) {
+void Channel::setNewValue(
+    const TElectricityMeter_ExtendedValue_V2 &emExtValue) {
   // Prepare standard channel value
   if (sizeof(TElectricityMeter_Value) <= SUPLA_CHANNELVALUE_SIZE) {
     const TElectricityMeter_Measurement *m = nullptr;
-    TElectricityMeter_Value v;
-    memset(&v, 0, sizeof(TElectricityMeter_Value));
+    TElectricityMeter_Value emValue;
+    memset(&emValue, 0, sizeof(TElectricityMeter_Value));
 
-    unsigned _supla_int64_t fae_sum = emValue.total_forward_active_energy[0] +
-                                      emValue.total_forward_active_energy[1] +
-                                      emValue.total_forward_active_energy[2];
+    unsigned _supla_int64_t fae_sum =
+        emExtValue.total_forward_active_energy[0] +
+        emExtValue.total_forward_active_energy[1] +
+        emExtValue.total_forward_active_energy[2];
 
-    v.total_forward_active_energy = fae_sum / 1000;
+    emValue.total_forward_active_energy = fae_sum / 1000;
 
-    if (emValue.m_count && emValue.measured_values & EM_VAR_VOLTAGE) {
-      m = &emValue.m[emValue.m_count - 1];
+    if (emExtValue.m_count && emExtValue.measured_values & EM_VAR_VOLTAGE) {
+      m = &emExtValue.m[emExtValue.m_count - 1];
 
       if (m->voltage[0] > 0) {
-        v.flags |= EM_VALUE_FLAG_PHASE1_ON;
+        emValue.flags |= EM_VALUE_FLAG_PHASE1_ON;
       }
 
       if (m->voltage[1] > 0) {
-        v.flags |= EM_VALUE_FLAG_PHASE2_ON;
+        emValue.flags |= EM_VALUE_FLAG_PHASE2_ON;
       }
 
       if (m->voltage[2] > 0) {
-        v.flags |= EM_VALUE_FLAG_PHASE3_ON;
+        emValue.flags |= EM_VALUE_FLAG_PHASE3_ON;
       }
     }
 
-    memcpy(reg_dev.channels[channelNumber].value,
-           &v,
-           sizeof(TElectricityMeter_Value));
+    Supla::RegisterDevice::setRawValue(channelNumber, &emValue);
     setUpdateReady();
   }
 }
 
 bool Channel::setNewValue(char *newValue) {
-  if (memcmp(newValue, reg_dev.channels[channelNumber].value, 8) != 0) {
-    memcpy(reg_dev.channels[channelNumber].value, newValue, 8);
+  if (Supla::RegisterDevice::setRawValue(channelNumber, newValue)) {
     setUpdateReady();
     return true;
   }
@@ -229,76 +240,53 @@ bool Channel::setNewValue(char *newValue) {
 }
 
 void Channel::setType(_supla_int_t type) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].Type = type;
-  }
+  Supla::RegisterDevice::setChannelType(channelNumber, type);
 }
 
 void Channel::setDefault(_supla_int_t value) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].Default = value;
-  }
+  Supla::RegisterDevice::setChannelDefaultFunction(channelNumber, value);
 }
 
 void Channel::setDefaultFunction(_supla_int_t function) {
-  setDefault(function);
+  Supla::RegisterDevice::setChannelDefaultFunction(channelNumber, function);
 }
 
 int32_t Channel::getDefaultFunction() const {
-  if (channelNumber >= 0) {
-    return reg_dev.channels[channelNumber].Default;
-  }
-  return 0;
+  return Supla::RegisterDevice::getChannelDefaultFunction(channelNumber);
 }
 
 void Channel::setFlag(_supla_int_t flag) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].Flags |= flag;
-  }
+  Supla::RegisterDevice::setChannelFlag(channelNumber, flag);
 }
 
 void Channel::unsetFlag(_supla_int_t flag) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].Flags &= ~flag;
-  }
+  Supla::RegisterDevice::unsetChannelFlag(channelNumber, flag);
 }
 
 void Channel::setFuncList(_supla_int_t functions) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].FuncList = functions;
-  }
+  Supla::RegisterDevice::setChannelFunctionList(channelNumber, functions);
 }
 
 _supla_int_t Channel::getFuncList() const {
-  if (channelNumber >= 0) {
-    return reg_dev.channels[channelNumber].FuncList;
-  }
-  return 0;
+  return Supla::RegisterDevice::getChannelFunctionList(channelNumber);
 }
 
 void Channel::addToFuncList(_supla_int_t function) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].FuncList |= function;
-  }
+  Supla::RegisterDevice::addToChannelFunctionList(channelNumber, function);
 }
 
 void Channel::removeFromFuncList(_supla_int_t function) {
-  if (channelNumber >= 0) {
-    reg_dev.channels[channelNumber].FuncList &= ~function;
-  }
+  Supla::RegisterDevice::removeFromChannelFunctionList(channelNumber, function);
 }
 
 _supla_int_t Channel::getFlags() const {
-  if (channelNumber >= 0) {
-    return reg_dev.channels[channelNumber].Flags;
-  }
-  return 0;
+  return Supla::RegisterDevice::getChannelFlags(channelNumber);
 }
 
 void Channel::setActionTriggerCaps(_supla_int_t caps) {
   SUPLA_LOG_DEBUG("Channel[%d] setting func list: %d", channelNumber,
       caps);
-  setFuncList(caps);
+  Supla::RegisterDevice::setChannelFunctionList(channelNumber, caps);
 }
 
 _supla_int_t Channel::getActionTriggerCaps() {
@@ -319,7 +307,7 @@ void Channel::sendUpdate() {
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
         proto != nullptr; proto = proto->next()) {
       proto->sendChannelValueChanged(channelNumber,
-          reg_dev.channels[channelNumber].value,
+          Supla::RegisterDevice::getChannelValuePtr(channelNumber),
           offline,
           validityTimeSec);
     }
@@ -493,72 +481,118 @@ void Channel::setNewValue(uint8_t red,
 }
 
 _supla_int_t Channel::getChannelType() const {
-  if (channelNumber >= 0) {
-    return reg_dev.channels[channelNumber].Type;
-  }
-  return -1;
+  return Supla::RegisterDevice::getChannelType(channelNumber);
 }
 
 double Channel::getValueDouble() {
   double value;
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return NAN;
+  }
   if (sizeof(double) == 8) {
-    memcpy(&value, reg_dev.channels[channelNumber].value, 8);
+    memcpy(&value, valuePtr, 8);
   } else if (sizeof(double) == 4) {
-    value = doublePacked2float(
-        reinterpret_cast<uint8_t *>(reg_dev.channels[channelNumber].value));
+    value = doublePacked2float(reinterpret_cast<uint8_t *>(valuePtr));
   }
 
   return value;
 }
 
 double Channel::getValueDoubleFirst() {
-  _supla_int_t value;
-  memcpy(&value, reg_dev.channels[channelNumber].value, 4);
+  int32_t value = 0;
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return NAN;
+  }
+  memcpy(&value, valuePtr, 4);
 
   return value / 1000.0;
 }
 
 double Channel::getValueDoubleSecond() {
-  _supla_int_t value;
-  memcpy(&value, &(reg_dev.channels[channelNumber].value[4]), 4);
+  int32_t value = 0;
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return NAN;
+  }
+  memcpy(&value, valuePtr + 4, 4);
 
   return value / 1000.0;
 }
 
-_supla_int_t Channel::getValueInt32() {
-  _supla_int_t value;
-  memcpy(&value, reg_dev.channels[channelNumber].value, sizeof(value));
+int32_t Channel::getValueInt32() {
+  int32_t value = 0;
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+  memcpy(&value, valuePtr, sizeof(value));
   return value;
 }
 
-unsigned _supla_int64_t Channel::getValueInt64() {
-  unsigned _supla_int64_t value;
-  memcpy(&value, reg_dev.channels[channelNumber].value, sizeof(value));
+uint64_t Channel::getValueInt64() {
+  uint64_t value = 0;
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+  memcpy(&value, valuePtr, sizeof(value));
   return value;
 }
 
 bool Channel::getValueBool() {
-  return reg_dev.channels[channelNumber].value[0];
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return false;
+  }
+
+  return *valuePtr != 0;
 }
 
 uint8_t Channel::getValueRed() {
-  return reg_dev.channels[channelNumber].value[4];
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+
+  return *(valuePtr + 4);
 }
 
 uint8_t Channel::getValueGreen() {
-  return reg_dev.channels[channelNumber].value[3];
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+
+  return *(valuePtr + 3);
 }
 
 uint8_t Channel::getValueBlue() {
-  return reg_dev.channels[channelNumber].value[2];
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+
+  return *(valuePtr + 2);
 }
 
 uint8_t Channel::getValueColorBrightness() {
-  return reg_dev.channels[channelNumber].value[1];
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+
+  return *(valuePtr + 1);
 }
 
 uint8_t Channel::getValueBrightness() {
-  return reg_dev.channels[channelNumber].value[0];
+  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+  if (valuePtr == nullptr) {
+    return 0;
+  }
+
+  return *valuePtr;
 }
 
 #define TEMPERATURE_NOT_AVAILABLE -275.0
@@ -649,8 +683,12 @@ void Channel::setHvacMode(uint8_t mode) {
 }
 
 THVACValue *Channel::getValueHvac() const {
-  if (channelNumber >= 0 && getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
-    return &reg_dev.channels[channelNumber].hvacValue;
+  if (getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
+    auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
+    if (valuePtr == nullptr) {
+      return nullptr;
+    }
+    return reinterpret_cast<THVACValue *>(valuePtr);
   }
   return nullptr;
 }
@@ -939,7 +977,7 @@ bool Channel::isHvacFlagForcedOffBySensor() {
   return isHvacFlagForcedOffBySensor(getValueHvac());
 }
 
-enum HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction() {
+enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction() {
   return getHvacFlagCoolSubfunction(getValueHvac());
 }
 
@@ -1017,7 +1055,7 @@ bool Channel::isHvacFlagForcedOffBySensor(THVACValue *value) {
   return false;
 }
 
-enum HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction(
+enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction(
     THVACValue *hvacValue) {
   if (hvacValue != nullptr) {
     return (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_COOL
@@ -1143,4 +1181,3 @@ bool Channel::isInitialCaptionSet() const {
   return initialCaption != nullptr;
 }
 
-}  // namespace Supla

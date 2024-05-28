@@ -58,8 +58,6 @@ class SuplaSrpc : public ProtocolLayer {
   explicit SuplaSrpc(SuplaDeviceClass *sdc, int version = 16);
   ~SuplaSrpc();
 
-  static bool isSuplaPublicServerConfigured();
-
   void setNetworkClient(Supla::Client *newClient);
 
   void onInit() override;

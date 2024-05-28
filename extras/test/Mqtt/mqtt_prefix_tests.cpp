@@ -22,6 +22,7 @@
 #include <SuplaDevice.h>
 #include <config_mock.h>
 #include <network_with_mac_mock.h>
+#include "supla/device/register_device.h"
 
 using testing::_;
 using ::testing::SetArrayArgument;
@@ -61,23 +62,27 @@ TEST(MqttPrefixTests, mqttgenerateClientId) {
   // if client id max size change, please adjust generateClientId method
   ASSERT_EQ(MQTT_CLIENTID_MAX_SIZE, 23);
 
+  char newGuid[SUPLA_GUID_SIZE];
   for (int i = 0; i <  16; i++) {
-    Supla::Channel::reg_dev.GUID[i] = i + 1;
+    newGuid[i] = i + 1;
   }
+  Supla::RegisterDevice::setGUID(newGuid);
 
   mqtt.test_generateClientId(clientId);
   EXPECT_STREQ(clientId, "SUPLA-0102030405060708");
 
   for (int i = 0; i <  16; i++) {
-    Supla::Channel::reg_dev.GUID[i] = 16 - i;
+    newGuid[i] = 16 - i;
   }
+  Supla::RegisterDevice::setGUID(newGuid);
 
   mqtt.test_generateClientId(clientId);
   EXPECT_STREQ(clientId, "SUPLA-100F0E0D0C0B0A09");
 
   for (int i = 0; i <  16; i++) {
-    Supla::Channel::reg_dev.GUID[i] = 0;
+    newGuid[i] = 0;
   }
+  Supla::RegisterDevice::setGUID(newGuid);
 }
 
 

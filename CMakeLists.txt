@@ -42,6 +42,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/device/remote_device_config.cpp
   src/supla/device/notifications.cpp
   src/supla/device/enter_cfg_mode_after_power_cycle.cpp
+  src/supla/device/register_device.cpp
 
   src/supla/storage/storage.cpp
   src/supla/storage/config.cpp

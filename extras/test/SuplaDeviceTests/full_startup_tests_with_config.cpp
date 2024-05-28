@@ -87,8 +87,7 @@ class FullStartupWithConfig : public ::testing::Test {
       client = new NetworkClientMock;  // it will be destroyed in
                                        // Supla::Protocol::SuplaSrpc
       sd.setStatusFuncImpl(statusImpl);
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+      Supla::Channel::resetToDefaults();
       sd.setSuplaCACert(myCA1);
       sd.setSupla3rdPartyCACert(myCA2);
       sd.setActivityTimeout(45);
@@ -98,8 +97,7 @@ class FullStartupWithConfig : public ::testing::Test {
     }
 
     virtual void TearDown() {
-      Supla::Channel::lastCommunicationTimeMs = 0;
-      memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+      Supla::Channel::resetToDefaults();
       client = nullptr;
     }
 };

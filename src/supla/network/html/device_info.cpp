@@ -24,6 +24,7 @@
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
 #include <string.h>
+#include <supla/device/register_device.h>
 
 namespace Supla {
 
@@ -37,7 +38,7 @@ DeviceInfo::~DeviceInfo() {}
 
 void DeviceInfo::send(Supla::WebSender *sender) {
   sender->send("<h1>");
-  sender->send(Supla::Channel::reg_dev.Name);
+  sender->send(Supla::RegisterDevice::getName());
   sender->send("</h1><span>");
   if (sdc && sdc->prepareLastStateLog()) {
     sender->send("LAST STATE: ");
@@ -53,10 +54,10 @@ void DeviceInfo::send(Supla::WebSender *sender) {
     }
   }
   sender->send("<br>Firmware: ");
-  sender->send(Supla::Channel::reg_dev.SoftVer);
+  sender->send(Supla::RegisterDevice::getSoftVer());
   sender->send("<br>GUID: ");
   char buf[512] = {};
-  generateHexString(Supla::Channel::reg_dev.GUID, buf, SUPLA_GUID_SIZE);
+  generateHexString(Supla::RegisterDevice::getGUID(), buf, SUPLA_GUID_SIZE);
   sender->send(buf);
   uint8_t mac[6] = {};
   if (Supla::Network::GetMainMacAddr(mac)) {

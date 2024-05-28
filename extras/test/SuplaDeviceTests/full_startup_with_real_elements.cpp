@@ -54,15 +54,13 @@ class FullStartupWithRealElements : public ::testing::Test {
   NetworkClientMock *client = nullptr;
 
   virtual void SetUp() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
 
     client = new NetworkClientMock;  // it will be destroyed in
                                      // Supla::Protocol::SuplaSrpc
   }
   virtual void TearDown() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 };
 

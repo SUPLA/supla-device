@@ -127,6 +127,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/device/factory_test.cpp
   ../../../src/supla/device/remote_device_config.cpp
   ../../../src/supla/device/enter_cfg_mode_after_power_cycle.cpp
+  ../../../src/supla/device/register_device.cpp
 # not all files from sensor folder are compiled here. Some still require
 # porting from ARDUINO
   ../../../src/supla/sensor/binary.cpp

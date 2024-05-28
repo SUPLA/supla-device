@@ -113,6 +113,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/device/sw_update.o \
   ../../../src/supla/device/factory_test.o \
   ../../../src/supla/device/remote_device_config.o \
+  ../../../src/supla/device/register_device.o \
 	\
   ../../../src/supla/sensor/binary.o \
 	../../../src/supla/sensor/binary_base.o \

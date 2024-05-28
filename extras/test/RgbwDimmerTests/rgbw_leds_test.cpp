@@ -32,6 +32,7 @@ class TimeInterfaceStub : public TimeInterface {
 };
 
 TEST(RgbwLedsTests, SettingNewRGBWValue) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
   DigitalInterfaceMock ioMock;
 

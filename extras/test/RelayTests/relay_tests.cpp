@@ -25,6 +25,7 @@
 #include <supla/channel.h>
 #include <supla/control/relay.h>
 #include <protocol_layer_mock.h>
+#include <supla/device/register_device.h>
 #include "gmock/gmock.h"
 
 using ::testing::_;
@@ -48,14 +49,12 @@ class RelayFixture : public testing::Test {
   }
 
   void SetUp() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
     EXPECT_CALL(storage, scheduleSave(_)).WillRepeatedly(Return());
   }
 
   void TearDown() {
-    Supla::Channel::lastCommunicationTimeMs = 0;
-    memset(&(Supla::Channel::reg_dev), 0, sizeof(Supla::Channel::reg_dev));
+    Supla::Channel::resetToDefaults();
   }
 
   void sendConfig(Supla::Control::Relay *r, uint32_t func, uint32_t timeMs) {
@@ -87,45 +86,45 @@ TEST_F(RelayFixture, basicTests) {
   ASSERT_EQ(number1, 0);
   ASSERT_EQ(number2, 1);
   ASSERT_EQ(number3, 2);
-  EXPECT_EQ(number1, Supla::Channel::reg_dev.channels[number1].Number);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Type,
+  EXPECT_EQ(number1, Supla::RegisterDevice::getChannelNumber(number1));
+  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number1),
             SUPLA_CHANNELTYPE_RELAY);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].FuncList,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number1),
             (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Default, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number1), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
             SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   EXPECT_EQ(0,
-            memcmp(Supla::Channel::reg_dev.channels[number1].value,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number1),
                    &value,
                    SUPLA_CHANNELVALUE_SIZE));
 
-  EXPECT_EQ(number2, Supla::Channel::reg_dev.channels[number2].Number);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number2].Type,
+  EXPECT_EQ(number2, Supla::RegisterDevice::getChannelNumber(number2));
+  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number2),
             SUPLA_CHANNELTYPE_RELAY);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number2].FuncList,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number2),
             (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number2].Default, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number2].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number2), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number2),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
             SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   EXPECT_EQ(0,
-            memcmp(Supla::Channel::reg_dev.channels[number2].value,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number2),
                    &value,
                    SUPLA_CHANNELVALUE_SIZE));
 
-  EXPECT_EQ(number3, Supla::Channel::reg_dev.channels[number3].Number);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number3].Type,
+  EXPECT_EQ(number3, Supla::RegisterDevice::getChannelNumber(number3));
+  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number3),
             SUPLA_CHANNELTYPE_RELAY);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number3].FuncList,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number3),
             SUPLA_BIT_FUNC_POWERSWITCH);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number3].Default, 0);
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number3].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number3), 0);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number3),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
             SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   EXPECT_EQ(0,
-            memcmp(Supla::Channel::reg_dev.channels[number3].value,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(number3),
                    &value,
                    SUPLA_CHANNELVALUE_SIZE));
 
@@ -145,12 +144,12 @@ TEST_F(RelayFixture, basicTests) {
   r3.onInit();
 
   r1.disableCountdownTimerFunction();
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE);
   EXPECT_FALSE(r1.isCountdownTimerFunctionEnabled());
   r1.enableCountdownTimerFunction();
   EXPECT_TRUE(r1.isCountdownTimerFunctionEnabled());
-  EXPECT_EQ(Supla::Channel::reg_dev.channels[number1].Flags,
+  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
             SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
 }
@@ -335,7 +334,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
 
   char value[SUPLA_CHANNELVALUE_SIZE] = {};
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -348,7 +347,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -361,7 +360,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
 
   value[0] = 0;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -374,7 +373,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -2203,7 +2202,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
 
   char value[SUPLA_CHANNELVALUE_SIZE] = {};
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -2217,7 +2216,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -2231,7 +2230,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
 
   value[0] = 0;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 
@@ -2245,7 +2244,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::Channel::reg_dev.channels[0].value,
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
                           &value,
                           SUPLA_CHANNELVALUE_SIZE));
 

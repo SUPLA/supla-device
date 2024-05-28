@@ -56,6 +56,7 @@ class SimpleTime : public TimeInterface {
 
 
 TEST(RgbTests, InitializationWithDefaultValues) {
+  Supla::Channel::resetToDefaults();
   TimeInterfaceStub time;
 
   RgbBaseForTest rgb;
@@ -89,6 +90,7 @@ TEST(RgbTests, InitializationWithDefaultValues) {
 }
 
 TEST(RgbTests, RgbShouldIgnoreBrightnessValue) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbBaseForTest rgb;
@@ -151,6 +153,7 @@ TEST(RgbTests, RgbShouldIgnoreBrightnessValue) {
 }
 
 TEST(RgbTests, HandleActionTests) {
+  Supla::Channel::resetToDefaults();
   SimpleTime time;
 
   RgbBaseForTest rgb;

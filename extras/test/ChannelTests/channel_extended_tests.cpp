@@ -22,7 +22,7 @@
 #include <srpc_mock.h>
 #include <supla/events.h>
 #include <supla/actions.h>
-
+#include <supla/device/register_device.h>
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:
@@ -35,16 +35,25 @@ using ::testing::ElementsAreArray;
 using ::testing::Args;
 using ::testing::ElementsAre;
 
+class ChannelExtendedFixture : public ::testing::Test {
+ protected:
+  virtual void SetUp() {
+    Supla::Channel::resetToDefaults();
+  }
 
-TEST(ChannelExtendedTests, ExtendedChannelMethods) {
+  virtual void TearDown() {
+    Supla::Channel::resetToDefaults();
+  }
+};
+
+TEST_F(ChannelExtendedFixture, ExtendedChannelMethods) {
   Supla::ChannelExtended extChannel;
 
   EXPECT_TRUE(extChannel.isExtended());
   EXPECT_NE(nullptr, extChannel.getExtValue() );
-  
 }
 
-TEST(ChannelExtendedTests, SetNewValueOnExtChannel) {
+TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
   int number = 0;
   Supla::ChannelExtended extChannel;
   TElectricityMeter_ExtendedValue_V2 emVal = {};
@@ -59,70 +68,83 @@ TEST(ChannelExtendedTests, SetNewValueOnExtChannel) {
   expectedValue.total_forward_active_energy = (1000 + 2000 + 4000) / 1000;
 
   extChannel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
   extChannel.clearUpdateReady();
 
   emVal.measured_values |= EM_VAR_VOLTAGE;
-  emVal.m[0].voltage[0] = 10; 
-  emVal.m[0].voltage[1] = 0; 
-  emVal.m[0].voltage[2] = 0; 
+  emVal.m[0].voltage[0] = 10;
+  emVal.m[0].voltage[1] = 0;
+  emVal.m[0].voltage[2] = 0;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON;
 
   extChannel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
   extChannel.clearUpdateReady();
 
-  emVal.m[0].voltage[0] = 0; 
-  emVal.m[0].voltage[1] = 20; 
-  emVal.m[0].voltage[2] = 0; 
+  emVal.m[0].voltage[0] = 0;
+  emVal.m[0].voltage[1] = 20;
+  emVal.m[0].voltage[2] = 0;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE2_ON;
 
   extChannel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
   extChannel.clearUpdateReady();
 
 
-  emVal.m[0].voltage[0] = 0; 
-  emVal.m[0].voltage[1] = 0; 
-  emVal.m[0].voltage[2] = 300; 
+  emVal.m[0].voltage[0] = 0;
+  emVal.m[0].voltage[1] = 0;
+  emVal.m[0].voltage[2] = 300;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE3_ON;
 
   extChannel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
   extChannel.clearUpdateReady();
 
 
-  emVal.m[0].voltage[0] = 10; 
-  emVal.m[0].voltage[1] = 0; 
-  emVal.m[0].voltage[2] = 540; 
+  emVal.m[0].voltage[0] = 10;
+  emVal.m[0].voltage[1] = 0;
+  emVal.m[0].voltage[2] = 540;
 
   expectedValue.flags = 0;
   expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON;
 
   extChannel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
   extChannel.clearUpdateReady();
 
-  emVal.m[0].voltage[0] = 10; 
-  emVal.m[0].voltage[1] = 230; 
-  emVal.m[0].voltage[2] = 540; 
+  emVal.m[0].voltage[0] = 10;
+  emVal.m[0].voltage[1] = 230;
+  emVal.m[0].voltage[2] = 540;
 
   expectedValue.flags = 0;
-  expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON | EM_VALUE_FLAG_PHASE2_ON;
+  expectedValue.flags |= EM_VALUE_FLAG_PHASE1_ON | EM_VALUE_FLAG_PHASE3_ON |
+                         EM_VALUE_FLAG_PHASE2_ON;
 
   extChannel.setNewValue(emVal);
-  EXPECT_TRUE(0 == memcmp(Supla::Channel::reg_dev.channels[number].value, &expectedValue, sizeof(expectedValue)));
+  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
+                          &expectedValue,
+                          sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
   extChannel.clearUpdateReady();
 }

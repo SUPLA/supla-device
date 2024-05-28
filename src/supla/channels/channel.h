@@ -31,8 +31,12 @@ enum class HvacCoolSubfunctionFlag {
 
 class Channel : public LocalAction {
  public:
-  Channel();
+  explicit Channel(int number = -1);
   virtual ~Channel();
+
+#ifdef SUPLA_TEST
+  static void resetToDefaults();
+#endif
 
   void setNewValue(double dbl);
   void setNewValue(double temp, double humi);
@@ -54,8 +58,8 @@ class Channel : public LocalAction {
   double getValueDouble();
   double getValueDoubleFirst();
   double getValueDoubleSecond();
-  _supla_int_t getValueInt32();
-  unsigned _supla_int64_t getValueInt64();
+  int32_t getValueInt32();
+  uint64_t getValueInt64();
   virtual bool getValueBool();
   uint8_t getValueRed();
   uint8_t getValueGreen();
@@ -175,7 +179,6 @@ class Channel : public LocalAction {
   const char* getInitialCaption() const;
 
   static uint32_t lastCommunicationTimeMs;
-  static TDS_SuplaRegisterDevice_E reg_dev;
 
  protected:
   char *initialCaption = nullptr;

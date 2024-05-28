@@ -154,7 +154,7 @@ class LinuxYamlConfig : public KeyValue {
   bool addFronius(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);
-  void addCommonParameters(const YAML::Node& ch,
+  bool addCommonParameters(const YAML::Node& ch,
                            Supla::Element* element,
                            int* paramCount);
   bool addThermometerParsed(const YAML::Node& ch,
@@ -190,7 +190,7 @@ class LinuxYamlConfig : public KeyValue {
   bool addDistanceParsed(const YAML::Node& ch,
                          int channelNumber,
                          Supla::Parser::Parser* parser);
-  void addCommonParametersParsed(const YAML::Node& ch,
+  bool addCommonParametersParsed(const YAML::Node& ch,
                                  Supla::Sensor::SensorParsedBase* sensor,
                                  int* paramCount,
                                  Supla::Parser::Parser* parser);

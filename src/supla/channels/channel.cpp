@@ -69,6 +69,16 @@ Channel::~Channel() {
   }
 }
 
+bool Channel::setChannelNumber(int newChannelNumber) {
+  int oldChannelNumber = channelNumber;
+  if (Supla::RegisterDevice::setChannelNumber(newChannelNumber,
+                                              oldChannelNumber)) {
+    channelNumber = newChannelNumber;
+    return true;
+  }
+  return false;
+}
+
 void Channel::setNewValue(double dbl) {
   bool skipCorrection = false;
   if (getChannelType() == SUPLA_CHANNELTYPE_THERMOMETER) {

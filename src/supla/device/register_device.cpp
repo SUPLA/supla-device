@@ -21,6 +21,7 @@
 #include <supla/tools.h>
 #include <string.h>
 #include <stdint.h>
+#include <supla/log_wrapper.h>
 
 namespace {
 TDS_SuplaRegisterDevice_E reg_dev = {};
@@ -188,6 +189,29 @@ void Supla::RegisterDevice::removeChannel(int channelNumber) {
          0,
          sizeof(reg_dev.channels[lastChannelIndex]));
   reg_dev.channel_count--;
+}
+
+bool Supla::RegisterDevice::setChannelNumber(int newChannelNumber,
+                                             int oldChannelNumber) {
+  if (newChannelNumber < 0 || oldChannelNumber < 0) {
+    return false;
+  }
+  if (newChannelNumber == oldChannelNumber) {
+    return true;
+  }
+  if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
+    return false;
+  }
+
+  int channelIndex = channelMap[oldChannelNumber];
+  if (channelIndex >= reg_dev.channel_count) {
+    return false;
+  }
+  channelMap[oldChannelNumber] = 0;
+  channelMap[newChannelNumber] = channelIndex;
+  reg_dev.channels[channelIndex].Number = newChannelNumber;
+  SUPLA_LOG_INFO("Channel %d moved to %d", oldChannelNumber, newChannelNumber);
+  return true;
 }
 
 bool Supla::RegisterDevice::setRawValue(int channelNumber, const void *value) {

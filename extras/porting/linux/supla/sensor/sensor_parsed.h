@@ -71,6 +71,7 @@ class SensorParsedBase {
                              Supla::Control::ActionTriggerParsed *);
 
   virtual void setInitialCaption(const std::string &caption) = 0;
+  virtual Supla::Channel *getChannel() = 0;
 
  protected:
   double getParameterValue(const std::string &parameter);
@@ -107,6 +108,7 @@ class SensorParsed : public T, public SensorParsedBase {
 
   void handleGetChannelState(TDSC_ChannelState *channelState) override;
   void setInitialCaption(const std::string &caption) override;
+  Supla::Channel *getChannel() override;
 };
 
 template <typename T>
@@ -135,6 +137,11 @@ void SensorParsed<T>::handleGetChannelState(TDSC_ChannelState *channelState) {
 template <typename T>
 void SensorParsed<T>::setInitialCaption(const std::string &caption) {
   T::setInitialCaption(caption.c_str());
+}
+
+template <typename T>
+Supla::Channel *SensorParsed<T>::getChannel() {
+  return T::getChannel();
 }
 
 };  // namespace Sensor

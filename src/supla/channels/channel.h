@@ -37,6 +37,7 @@ class Channel : public LocalAction {
 #ifdef SUPLA_TEST
   static void resetToDefaults();
 #endif
+  bool setChannelNumber(int newChannelNumber);
 
   void setNewValue(double dbl);
   void setNewValue(double temp, double humi);

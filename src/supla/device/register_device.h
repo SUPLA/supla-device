@@ -71,6 +71,7 @@ bool isChannelNumberFree(int channelNumber);
 void addChannel(int channelNumber);
 void removeChannel(int channelNumber);
 int getChannelCount();
+bool setChannelNumber(int newChannelNumber, int oldChannelNumber);
 
 // returns true if value was changed
 bool setRawValue(int channelNumber, const void *value);

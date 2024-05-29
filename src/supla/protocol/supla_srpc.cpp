@@ -745,7 +745,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
 
-    // TODO move to chunk fetching
+    // TODO(klew) move to chunk fetching
 //      int channelCount = Supla::RegisterDevice::getChannelCount();
 //      for (int i = 0; i < channelCount; i++) {
 //        const char *value = Supla::RegisterDevice::getChannelValuePtr(i);

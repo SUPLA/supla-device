@@ -44,7 +44,7 @@ Channel::Channel(int number) {
   if (firstPtr == nullptr) {
     firstPtr = this;
   } else {
-    last()->nextPtr = this;
+    Last()->nextPtr = this;
   }
 
   if (number == -1) {
@@ -69,12 +69,12 @@ Channel::Channel(int number) {
 }
 
 Channel::~Channel() {
-  if (begin() == this) {
+  if (Begin() == this) {
     firstPtr = next();
     return;
   }
 
-  auto ptr = begin();
+  auto ptr = Begin();
   while (ptr->next() != this) {
     ptr = ptr->next();
   }
@@ -87,13 +87,21 @@ Channel::~Channel() {
   }
 }
 
-Channel *Channel::begin() {
+Channel *Channel::Begin() {
   return firstPtr;
 }
 
-Channel *Channel::last() {
+Channel *Channel::Last() {
   Channel *ptr = firstPtr;
   while (ptr && ptr->nextPtr) {
+    ptr = ptr->nextPtr;
+  }
+  return ptr;
+}
+
+Channel *Channel::GetByChannelNumber(int channelNumber) {
+  Channel *ptr = firstPtr;
+  while (ptr && ptr->channelNumber != channelNumber) {
     ptr = ptr->nextPtr;
   }
   return ptr;
@@ -105,12 +113,20 @@ Channel *Channel::next() {
 
 bool Channel::setChannelNumber(int newChannelNumber) {
   int oldChannelNumber = channelNumber;
-  if (Supla::RegisterDevice::setChannelNumber(newChannelNumber,
-                                              oldChannelNumber)) {
-    channelNumber = newChannelNumber;
+
+  if (newChannelNumber < 0 || oldChannelNumber < 0) {
+    return false;
+  }
+  if (newChannelNumber == oldChannelNumber) {
     return true;
   }
-  return false;
+  if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
+    return false;
+  }
+
+  channelNumber = newChannelNumber;
+  SUPLA_LOG_INFO("Channel %d moved to %d", oldChannelNumber, newChannelNumber);
+  return true;
 }
 
 void Channel::setNewValue(double dbl) {
@@ -207,7 +223,7 @@ void Channel::setNewValue(uint64_t value) {
   }
 }
 
-void Channel::setNewValue(_supla_int_t value) {
+void Channel::setNewValue(int32_t value) {
   char newValue[SUPLA_CHANNELVALUE_SIZE];
 
   memset(newValue, 0, SUPLA_CHANNELVALUE_SIZE);
@@ -280,7 +296,6 @@ void Channel::setNewValue(
 bool Channel::setNewValue(const char *newValue) {
   if (memcmp(value, newValue, SUPLA_CHANNELVALUE_SIZE) != 0) {
     memcpy(value, newValue, SUPLA_CHANNELVALUE_SIZE);
-    Supla::RegisterDevice::setRawValue(channelNumber, newValue);  // remove
     setUpdateReady();
     return true;
   }
@@ -289,7 +304,6 @@ bool Channel::setNewValue(const char *newValue) {
 
 void Channel::setType(_supla_int_t type) {
   channelType = protoTypeToChannelType(type);
-  Supla::RegisterDevice::setChannelType(channelNumber, type);  // remove
 }
 
 void Channel::setDefault(_supla_int_t value) {
@@ -300,9 +314,6 @@ void Channel::setDefault(_supla_int_t value) {
   }
 
   defaultFunction = value;
-
-  Supla::RegisterDevice::setChannelDefaultFunction(channelNumber,
-                                                   value);  // remove
 }
 
 void Channel::setDefaultFunction(_supla_int_t function) {
@@ -315,20 +326,14 @@ int32_t Channel::getDefaultFunction() const {
 
 void Channel::setFlag(uint64_t flag) {
   channelFlags |= flag;
-
-  Supla::RegisterDevice::setChannelFlag(channelNumber, flag);  // remove
 }
 
 void Channel::unsetFlag(uint64_t flag) {
   channelFlags &= ~flag;
-
-  Supla::RegisterDevice::unsetChannelFlag(channelNumber, flag);  // remove
 }
 
 void Channel::setFuncList(_supla_int_t functions) {
   functionsBitmap = functions;
-  Supla::RegisterDevice::setChannelFunctionList(channelNumber,
-                                                functions);  // remove
 }
 
 _supla_int_t Channel::getFuncList() const {
@@ -337,14 +342,10 @@ _supla_int_t Channel::getFuncList() const {
 
 void Channel::addToFuncList(_supla_int_t function) {
   functionsBitmap |= function;
-  Supla::RegisterDevice::addToChannelFunctionList(channelNumber,
-                                                  function);  // remove
 }
 
 void Channel::removeFromFuncList(_supla_int_t function) {
   functionsBitmap &= ~function;
-  Supla::RegisterDevice::removeFromChannelFunctionList(channelNumber,
-                                                       function);  // remove
 }
 
 uint64_t Channel::getFlags() const {
@@ -373,7 +374,7 @@ void Channel::sendUpdate() {
     for (auto proto = Supla::Protocol::ProtocolLayer::first();
         proto != nullptr; proto = proto->next()) {
       proto->sendChannelValueChanged(channelNumber,
-          Supla::RegisterDevice::getChannelValuePtr(channelNumber),
+          value,
           offline,
           validityTimeSec);
     }
@@ -548,118 +549,67 @@ void Channel::setNewValue(uint8_t red,
 
 _supla_int_t Channel::getChannelType() const {
   return channelTypeToProtoType(channelType);
-//  return Supla::RegisterDevice::getChannelType(channelNumber);
 }
 
 double Channel::getValueDouble() {
-  double value;
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return NAN;
-  }
+  double valueDouble;
   if (sizeof(double) == 8) {
-    memcpy(&value, valuePtr, 8);
+    memcpy(&valueDouble, value, 8);
   } else if (sizeof(double) == 4) {
-    value = doublePacked2float(reinterpret_cast<uint8_t *>(valuePtr));
+    valueDouble = doublePacked2float(reinterpret_cast<uint8_t *>(value));
   }
 
-  return value;
+  return valueDouble;
 }
 
 double Channel::getValueDoubleFirst() {
-  int32_t value = 0;
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return NAN;
-  }
-  memcpy(&value, valuePtr, 4);
+  int32_t valueInt = 0;
+  memcpy(&valueInt, value, 4);
 
-  return value / 1000.0;
+  return valueInt / 1000.0;
 }
 
 double Channel::getValueDoubleSecond() {
-  int32_t value = 0;
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return NAN;
-  }
-  memcpy(&value, valuePtr + 4, 4);
+  int32_t valueInt = 0;
+  memcpy(&valueInt, value + 4, 4);
 
-  return value / 1000.0;
+  return valueInt / 1000.0;
 }
 
 int32_t Channel::getValueInt32() {
-  int32_t value = 0;
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-  memcpy(&value, valuePtr, sizeof(value));
-  return value;
+  int32_t valueInt = 0;
+  memcpy(&valueInt, value, sizeof(valueInt));
+  return valueInt;
 }
 
 uint64_t Channel::getValueInt64() {
-  uint64_t value = 0;
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-  memcpy(&value, valuePtr, sizeof(value));
-  return value;
+  uint64_t valueInt = 0;
+  memcpy(&valueInt, value, sizeof(valueInt));
+  return valueInt;
 }
 
 bool Channel::getValueBool() {
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return false;
-  }
-
-  return *valuePtr != 0;
+  return value[0] != 0;
 }
 
 uint8_t Channel::getValueRed() {
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-
-  return *(valuePtr + 4);
+  return value[4];
 }
 
 uint8_t Channel::getValueGreen() {
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-
-  return *(valuePtr + 3);
+  return value[3];
 }
 
 uint8_t Channel::getValueBlue() {
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-
-  return *(valuePtr + 2);
+  return value[2];
 }
 
 uint8_t Channel::getValueColorBrightness() {
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-
-  return *(valuePtr + 1);
+  return value[1];
 }
 
 uint8_t Channel::getValueBrightness() {
-  auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-  if (valuePtr == nullptr) {
-    return 0;
-  }
-
-  return *valuePtr;
+  return value[0];
 }
 
 #define TEMPERATURE_NOT_AVAILABLE -275.0
@@ -745,13 +695,9 @@ void Channel::setHvacMode(uint8_t mode) {
   }
 }
 
-THVACValue *Channel::getValueHvac() const {
+THVACValue *Channel::getValueHvac() {
   if (channelType == ChannelType::HVAC) {
-    auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-    if (valuePtr == nullptr) {
-      return nullptr;
-    }
-    return reinterpret_cast<THVACValue *>(valuePtr);
+     return &hvacValue;
   }
   return nullptr;
 }
@@ -1145,11 +1091,7 @@ uint8_t Channel::getHvacIsOn() {
 }
 
 uint8_t Channel::getHvacMode() const {
-  auto value = getValueHvac();
-  if (value != nullptr) {
-    return value->Mode;
-  }
-  return 0;
+  return hvacValue.Mode;
 }
 
 const char *Channel::getHvacModeCstr(int mode) const {
@@ -1252,3 +1194,28 @@ uint8_t Channel::getDefaultIcon() const {
   return defaultIcon;
 }
 
+void Channel::fillDeviceChannelStruct(
+    TDS_SuplaDeviceChannel_C *deviceChannelStruct) {
+  if (deviceChannelStruct == nullptr) {
+    return;
+  }
+  memset(deviceChannelStruct, 0, sizeof(TDS_SuplaDeviceChannel_C));
+
+  deviceChannelStruct->Number = getChannelNumber();
+  deviceChannelStruct->Type = getChannelType();
+  deviceChannelStruct->FuncList = getFuncList();  // also sets ActionTriggerCaps
+  deviceChannelStruct->Default = getDefaultFunction();
+  deviceChannelStruct->Flags = getFlags();
+  memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
+}
+
+void Channel::fillRawValue(void *valueToFill) {
+  if (valueToFill == nullptr) {
+    return;
+  }
+  memcpy(valueToFill, value, SUPLA_CHANNELVALUE_SIZE);
+}
+
+char *Channel::getValuePtr() {
+  return value;
+}

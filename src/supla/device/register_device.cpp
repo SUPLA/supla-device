@@ -25,60 +25,82 @@
 #include <supla/channels/channel.h>
 
 namespace {
-TDS_SuplaRegisterDevice_E reg_dev = {};
-uint8_t channelMap[SUPLA_CHANNELMAXCOUNT];
+TDS_SuplaRegisterDeviceHeader_A reg_dev = {};
+TDS_SuplaDeviceChannel_C deviceChannelStruct = {};
 }  // namespace
 
 #ifdef SUPLA_TEST
 void Supla::RegisterDevice::resetToDefaults() {
   memset(&reg_dev, 0, sizeof(reg_dev));
-  memset(channelMap, 0, sizeof(channelMap));
+  memset(&deviceChannelStruct, 0, sizeof(deviceChannelStruct));
 }
 
 int32_t Supla::RegisterDevice::getChannelType(int channelNumber) {
-  if (channelNumber == -1) {
+  auto channel = Supla::Channel::GetByChannelNumber(channelNumber);
+  if (channel == nullptr) {
     return -1;
   }
 
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return -1;
-  }
-  return reg_dev.channels[channelIndex].Type;
+  return channel->getChannelType();
 }
 
 int32_t Supla::RegisterDevice::getChannelDefaultFunction(int channelNumber) {
-  if (channelNumber == -1) {
-    return 0;
-  }
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return 0;
+  auto channel = Supla::Channel::GetByChannelNumber(channelNumber);
+  if (channel == nullptr) {
+    return -1;
   }
 
-  return reg_dev.channels[channelIndex].Default;
+  return channel->getDefaultFunction();
 }
 
 int32_t Supla::RegisterDevice::getChannelFunctionList(int channelNumber) {
-  if (channelNumber == -1) {
+  auto channel = Supla::Channel::GetByChannelNumber(channelNumber);
+  if (channel == nullptr) {
+    return -1;
+  }
+
+  return channel->getFuncList();
+}
+
+int Supla::RegisterDevice::getChannelNumber(int index) {
+  if (index >= reg_dev.channel_count) {
+    return -1;
+  }
+
+  int currentIndex = 0;
+  Supla::Channel *ch = Supla::Channel::Begin();
+  for (; ch != nullptr && currentIndex < index; ch = ch->next()) {
+    currentIndex++;
+  }
+
+  if (ch == nullptr) {
+    return -1;
+  }
+
+  return ch->getChannelNumber();
+}
+
+char *Supla::RegisterDevice::getChannelValuePtr(int channelNumber) {
+  auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
+  if (ch == nullptr) {
+    return nullptr;
+  }
+
+  return ch->getValuePtr();
+}
+
+uint64_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
+  auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
+  if (ch == nullptr) {
     return 0;
   }
 
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return 0;
-  }
-
-  return reg_dev.channels[channelIndex].FuncList;
+  return ch->getFlags();
 }
 
 #endif
 
 TDS_SuplaRegisterDeviceHeader_A *Supla::RegisterDevice::getRegDevHeaderPtr() {
-  return reinterpret_cast<TDS_SuplaRegisterDeviceHeader_A *>(&reg_dev);
-}
-
-TDS_SuplaRegisterDevice_E *Supla::RegisterDevice::getRegDevPtr() {
   return &reg_dev;
 }
 
@@ -87,7 +109,14 @@ TDS_SuplaDeviceChannel_C *Supla::RegisterDevice::getChannelPtr(int index) {
     return nullptr;
   }
 
-  return &reg_dev.channels[index];
+  auto channel = Supla::Channel::Begin();
+  for (int i = 0; i < reg_dev.channel_count && i < index && channel; i++) {
+    channel = channel->next();
+  }
+
+  channel->fillDeviceChannelStruct(&deviceChannelStruct);
+
+  return &deviceChannelStruct;
 }
 
 bool Supla::RegisterDevice::isGUIDValid() {
@@ -176,12 +205,13 @@ const char *Supla::RegisterDevice::getServerName() {
   return reg_dev.ServerName;
 }
 
+// TODO(klew) move to channel
 int Supla::RegisterDevice::getNextFreeChannelNumber() {
   int nextFreeNumber = 0;
   bool nextFreeFound = false;
   do {
     nextFreeFound = true;
-    for (Supla::Channel *ch = Supla::Channel::begin(); ch != nullptr;
+    for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
          ch = ch->next()) {
       if (ch->getChannelNumber() == nextFreeNumber) {
         nextFreeNumber++;
@@ -198,13 +228,15 @@ int Supla::RegisterDevice::getNextFreeChannelNumber() {
   return nextFreeNumber;
 }
 
+// TODO(klew) move to channel
 bool Supla::RegisterDevice::isChannelNumberFree(int channelNumber) {
   if (channelNumber >= SUPLA_CHANNELMAXCOUNT) {
     return false;
   }
 
-  for (int i = 0; i < reg_dev.channel_count; i++) {
-    if (reg_dev.channels[i].Number == channelNumber) {
+  for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
+       ch = ch->next()) {
+    if (ch->getChannelNumber() == channelNumber) {
       return false;
     }
   }
@@ -213,14 +245,10 @@ bool Supla::RegisterDevice::isChannelNumberFree(int channelNumber) {
 }
 
 void Supla::RegisterDevice::addChannel(int channelNumber) {
-  if (channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+  if (channelNumber >= SUPLA_CHANNELMAXCOUNT || channelNumber == -1) {
     return;
   }
 
-  channelMap[channelNumber] = reg_dev.channel_count;
-  memset(&reg_dev.channels[channelMap[channelNumber]], 0,
-      sizeof(reg_dev.channels[channelMap[channelNumber]]));
-  reg_dev.channels[channelMap[channelNumber]].Number = channelNumber;
   reg_dev.channel_count++;
 }
 
@@ -229,194 +257,8 @@ void Supla::RegisterDevice::removeChannel(int channelNumber) {
     return;
   }
 
-  int channelIndex = channelMap[channelNumber];
-  channelMap[channelNumber] = 0;
-
-  int lastChannelIndex = reg_dev.channel_count - 1;
-  if (channelIndex != lastChannelIndex) {
-    reg_dev.channels[channelIndex] = reg_dev.channels[lastChannelIndex];
-    channelMap[reg_dev.channels[channelIndex].Number] = channelIndex;
-  }
-  memset(&reg_dev.channels[lastChannelIndex],
-         0,
-         sizeof(reg_dev.channels[lastChannelIndex]));
   reg_dev.channel_count--;
 }
-
-bool Supla::RegisterDevice::setChannelNumber(int newChannelNumber,
-                                             int oldChannelNumber) {
-  if (newChannelNumber < 0 || oldChannelNumber < 0) {
-    return false;
-  }
-  if (newChannelNumber == oldChannelNumber) {
-    return true;
-  }
-  if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
-    return false;
-  }
-
-  int channelIndex = channelMap[oldChannelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return false;
-  }
-  channelMap[oldChannelNumber] = 0;
-  channelMap[newChannelNumber] = channelIndex;
-  reg_dev.channels[channelIndex].Number = newChannelNumber;
-  SUPLA_LOG_INFO("Channel %d moved to %d", oldChannelNumber, newChannelNumber);
-  return true;
-}
-
-bool Supla::RegisterDevice::setRawValue(int channelNumber, const void *value) {
-  if (channelNumber == -1) {
-    return false;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return false;
-  }
-
-  if (memcmp(value, reg_dev.channels[channelIndex].value, 8) != 0) {
-    memcpy(
-        reg_dev.channels[channelIndex].value, value, SUPLA_CHANNELVALUE_SIZE);
-    return true;
-  }
-  return false;
-}
-
-bool Supla::RegisterDevice::getRawValue(int channelNumber, void *value) {
-  if (channelNumber == -1) {
-    return false;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return false;
-  }
-
-  memcpy(value, reg_dev.channels[channelIndex].value, SUPLA_CHANNELVALUE_SIZE);
-  return true;
-}
-
-int Supla::RegisterDevice::getChannelNumber(int index) {
-  if (index >= reg_dev.channel_count || index == -1) {
-    return -1;
-  }
-
-  return reg_dev.channels[index].Number;
-}
-
-char *Supla::RegisterDevice::getChannelValuePtr(int channelNumber) {
-  if (channelNumber == -1) {
-    return nullptr;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return nullptr;
-  }
-
-  return reg_dev.channels[channelIndex].value;
-}
-
-void Supla::RegisterDevice::setChannelType(int channelNumber, int32_t type) {
-  if (channelNumber == -1) {
-    return;
-  }
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].Type = type;
-}
-
-void Supla::RegisterDevice::setChannelDefaultFunction(int channelNumber,
-                                                      int32_t defaultFunction) {
-  if (channelNumber == -1) {
-    return;
-  }
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].Default = defaultFunction;
-}
-
-void Supla::RegisterDevice::setChannelFlag(int channelNumber, int32_t flag) {
-  if (channelNumber == -1) {
-    return;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].Flags |= flag;
-}
-
-void Supla::RegisterDevice::unsetChannelFlag(int channelNumber, int32_t flag) {
-    if (channelNumber == -1) {
-    return;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].Flags &= ~flag;
-}
-
-int32_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
-  if (channelNumber == -1) {
-    return 0;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return 0;
-  }
-  return reg_dev.channels[channelIndex].Flags;
-}
-
-void Supla::RegisterDevice::setChannelFunctionList(int channelNumber,
-                                                   int32_t functions) {
-  if (channelNumber == -1) {
-    return;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].FuncList = functions;
-}
-
-void Supla::RegisterDevice::addToChannelFunctionList(int channelNumber,
-                                                     int32_t function) {
-  if (channelNumber == -1) {
-    return;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].FuncList |= function;
-}
-
-void Supla::RegisterDevice::removeFromChannelFunctionList(int channelNumber,
-                                               int32_t function) {
-  if (channelNumber == -1) {
-    return;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return;
-  }
-  reg_dev.channels[channelIndex].FuncList &= ~function;
-}
-
 
 bool Supla::RegisterDevice::isSuplaPublicServerConfigured() {
   if (reg_dev.ServerName[0] != '\0') {

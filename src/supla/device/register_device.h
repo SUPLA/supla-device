@@ -27,7 +27,9 @@ namespace Supla {
 namespace RegisterDevice {
 
 TDS_SuplaRegisterDeviceHeader_A *getRegDevHeaderPtr();
-TDS_SuplaRegisterDevice_E *getRegDevPtr();
+// Returns pointer to structure, which is filled with values from channel
+// at given index. Next call will return exactly the same pointer, but with
+// data from another channel, so please be careful when using this function
 TDS_SuplaDeviceChannel_C *getChannelPtr(int index);
 
 // Device parameters
@@ -73,29 +75,15 @@ bool isChannelNumberFree(int channelNumber);
 void addChannel(int channelNumber);
 void removeChannel(int channelNumber);
 int getChannelCount();
-bool setChannelNumber(int newChannelNumber, int oldChannelNumber);
-
-// returns true if value was changed
-bool setRawValue(int channelNumber, const void *value);
-// returns false on error
-bool getRawValue(int channelNumber, void *value);
-char *getChannelValuePtr(int channelNumber);
-
-void setChannelType(int channelNumber, int32_t type);
-void setChannelDefaultFunction(int channelNumber, int32_t defaultFunction);
-void setChannelFlag(int channelNumber, int32_t flag);
-void unsetChannelFlag(int channelNumber, int32_t flag);
-int32_t getChannelFlags(int channelNumber);
-void setChannelFunctionList(int channelNumber, int32_t functions);
-void addToChannelFunctionList(int channelNumber, int32_t function);
-void removeFromChannelFunctionList(int channelNumber, int32_t function);
-int getChannelNumber(int index);
 
 #ifdef SUPLA_TEST
 void resetToDefaults();
 int32_t getChannelFunctionList(int channelNumber);
 int32_t getChannelDefaultFunction(int channelNumber);
 int32_t getChannelType(int channelNumber);
+int getChannelNumber(int index);
+char *getChannelValuePtr(int channelNumber);
+uint64_t getChannelFlags(int channelNumber);
 #endif
 
 }  // namespace RegisterDevice

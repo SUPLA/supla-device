@@ -34,13 +34,15 @@ class Channel : public LocalAction {
  public:
   explicit Channel(int number = -1);
   virtual ~Channel();
-  static Channel *begin();
-  static Channel *last();
+  static Channel *Begin();
+  static Channel *Last();
+  static Channel *GetByChannelNumber(int channelNumber);
   Channel *next();
 
 #ifdef SUPLA_TEST
   static void resetToDefaults();
 #endif
+  void fillDeviceChannelStruct(TDS_SuplaDeviceChannel_C *deviceChannelStruct);
 
   bool setChannelNumber(int newChannelNumber);
 
@@ -134,7 +136,7 @@ class Channel : public LocalAction {
   static void setHvacSetpointTemperatureCool(THVACValue *hvacValue,
                                             int16_t setpointTemperatureCool);
 
-  THVACValue *getValueHvac() const;
+  THVACValue *getValueHvac();
 
   virtual bool isExtended() const;
   bool isUpdateReady() const;
@@ -188,6 +190,8 @@ class Channel : public LocalAction {
   uint8_t getDefaultIcon() const;
 
   static uint32_t lastCommunicationTimeMs;
+  void fillRawValue(void *value);
+  char *getValuePtr();
 
  protected:
   static Channel *firstPtr;
@@ -213,7 +217,7 @@ class Channel : public LocalAction {
 
   union {
     char value[SUPLA_CHANNELVALUE_SIZE] = {};
-    TActionTriggerProperties actionTriggerProperties;  // ver. >= 16
+    TActionTriggerProperties actionTriggerProperties;
     THVACValue hvacValue;
   };
 };

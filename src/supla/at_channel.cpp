@@ -58,21 +58,11 @@ namespace Supla {
   }
 
   void AtChannel::setRelatedChannel(uint8_t relatedChannel) {
-    auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-    if (valuePtr != nullptr) {
-      TActionTriggerProperties *prop =
-        reinterpret_cast<TActionTriggerProperties *>(valuePtr);
-      prop->relatedChannelNumber = relatedChannel + 1;
-    }
+    actionTriggerProperties.relatedChannelNumber = relatedChannel + 1;
   }
 
   void AtChannel::setDisablesLocalOperation(uint32_t actions) {
-    auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
-    if (valuePtr != nullptr) {
-      TActionTriggerProperties *prop =
-        reinterpret_cast<TActionTriggerProperties *>(valuePtr);
-      prop->disablesLocalOperation = actions;
-    }
+    actionTriggerProperties.disablesLocalOperation = actions;
   }
 
 };  // namespace Supla

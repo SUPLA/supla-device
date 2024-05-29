@@ -275,19 +275,25 @@ void Channel::unsetFlag(_supla_int_t flag) {
 }
 
 void Channel::setFuncList(_supla_int_t functions) {
-  Supla::RegisterDevice::setChannelFunctionList(channelNumber, functions);
+  functionsBitmap = functions;
+  Supla::RegisterDevice::setChannelFunctionList(channelNumber,
+                                                functions);  // remove
 }
 
 _supla_int_t Channel::getFuncList() const {
-  return Supla::RegisterDevice::getChannelFunctionList(channelNumber);
+  return functionsBitmap;
 }
 
 void Channel::addToFuncList(_supla_int_t function) {
-  Supla::RegisterDevice::addToChannelFunctionList(channelNumber, function);
+  functionsBitmap |= function;
+  Supla::RegisterDevice::addToChannelFunctionList(channelNumber,
+                                                  function);  // remove
 }
 
 void Channel::removeFromFuncList(_supla_int_t function) {
-  Supla::RegisterDevice::removeFromChannelFunctionList(channelNumber, function);
+  functionsBitmap &= ~function;
+  Supla::RegisterDevice::removeFromChannelFunctionList(channelNumber,
+                                                       function);  // remove
 }
 
 _supla_int_t Channel::getFlags() const {
@@ -295,9 +301,7 @@ _supla_int_t Channel::getFlags() const {
 }
 
 void Channel::setActionTriggerCaps(_supla_int_t caps) {
-  SUPLA_LOG_DEBUG("Channel[%d] setting func list: %d", channelNumber,
-      caps);
-  Supla::RegisterDevice::setChannelFunctionList(channelNumber, caps);
+  setFuncList(caps);
 }
 
 _supla_int_t Channel::getActionTriggerCaps() {

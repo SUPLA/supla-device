@@ -189,9 +189,13 @@ class Channel : public LocalAction {
   bool channelConfig = false;
   bool offline = false;
   unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
-  int16_t channelNumber = -1;
   uint16_t validityTimeSec = 0;
+
+  // registration parameter
+  int16_t channelNumber = -1;
   ChannelType channelType = ChannelType::NOT_SET;
+
+  uint32_t functionsBitmap = 0;
 };
 
 };  // namespace Supla

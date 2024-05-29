@@ -26,7 +26,9 @@
 namespace Supla {
 namespace RegisterDevice {
 
+TDS_SuplaRegisterDeviceHeader_A *getRegDevHeaderPtr();
 TDS_SuplaRegisterDevice_E *getRegDevPtr();
+TDS_SuplaDeviceChannel_C *getChannelPtr(int index);
 
 // Device parameters
 bool isGUIDValid();

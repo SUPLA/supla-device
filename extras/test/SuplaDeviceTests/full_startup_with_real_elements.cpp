@@ -93,7 +93,7 @@ TEST_F(FullStartupWithRealElements, SleepingBinarySensor) {
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
@@ -167,7 +167,7 @@ TEST_F(FullStartupWithRealElements, SleepingThermometer) {
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
@@ -243,7 +243,7 @@ TEST_F(FullStartupWithRealElements, SleepingThermometerAndBinarySensor) {
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_e(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 

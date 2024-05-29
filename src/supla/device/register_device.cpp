@@ -35,8 +35,20 @@ void Supla::RegisterDevice::resetToDefaults() {
 }
 #endif
 
+TDS_SuplaRegisterDeviceHeader_A *Supla::RegisterDevice::getRegDevHeaderPtr() {
+  return reinterpret_cast<TDS_SuplaRegisterDeviceHeader_A *>(&reg_dev);
+}
+
 TDS_SuplaRegisterDevice_E *Supla::RegisterDevice::getRegDevPtr() {
   return &reg_dev;
+}
+
+TDS_SuplaDeviceChannel_C *Supla::RegisterDevice::getChannelPtr(int index) {
+  if (index >= reg_dev.channel_count || index == -1) {
+    return nullptr;
+  }
+
+  return &reg_dev.channels[index];
 }
 
 bool Supla::RegisterDevice::isGUIDValid() {

@@ -769,8 +769,9 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
             static_cast<uint8_t>(value[7]));
       }
     }
-    if (!srpc_ds_async_registerdevice_e(
-            srpc, Supla::RegisterDevice::getRegDevPtr())) {
+    if (!srpc_ds_async_registerdevice_in_chunks(
+            srpc, Supla::RegisterDevice::getRegDevHeaderPtr(),
+            Supla::RegisterDevice::getChannelPtr)) {
       SUPLA_LOG_WARNING("Fatal SRPC failure!");
     }
     return false;

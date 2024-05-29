@@ -135,10 +135,11 @@ void srpc_set_proto_version(void *_srpc, unsigned char version) {
   SrpcInterface::instance->srpc_set_proto_version(_srpc, version);
 }
 
-_supla_int_t srpc_ds_async_registerdevice_e(
-    void *_srpc, TDS_SuplaRegisterDevice_E *registerdevice) {
+_supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
+    void *_srpc, TDS_SuplaRegisterDeviceHeader_A *registerdevice,
+    TDS_SuplaDeviceChannel_C *(*get_channel_data_callback)(int)) {
   assert(SrpcInterface::instance);
-  return SrpcInterface::instance->srpc_ds_async_registerdevice_e(
+  return SrpcInterface::instance->srpc_ds_async_registerdevice_in_chunks(
       _srpc, registerdevice);
 }
 

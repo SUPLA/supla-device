@@ -4,6 +4,7 @@
 set(SRCS
   supla/uptime.cpp
   supla/channels/channel.cpp
+  supla/channels/channel_types.cpp
   supla/channels/binary_sensor_channel.cpp
   supla/channels/channel_extended.cpp
   supla/io.cpp

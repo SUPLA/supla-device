@@ -81,7 +81,7 @@ bool Channel::setChannelNumber(int newChannelNumber) {
 
 void Channel::setNewValue(double dbl) {
   bool skipCorrection = false;
-  if (getChannelType() == SUPLA_CHANNELTYPE_THERMOMETER) {
+  if (channelType == ChannelType::THERMOMETER) {
     if (dbl <= -273) {
       skipCorrection = true;
     }
@@ -113,8 +113,8 @@ void Channel::setNewValue(double dbl) {
 void Channel::setNewValue(double temp, double humi) {
   bool skipTempCorrection = false;
   bool skipHumiCorrection = false;
-  if (getChannelType() == SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR
-      || getChannelType() == SUPLA_CHANNELTYPE_HUMIDITYSENSOR) {
+  if (channelType == ChannelType::HUMIDITYSENSOR ||
+      channelType == ChannelType::HUMIDITYANDTEMPSENSOR) {
     if (temp <= -273) {
       skipTempCorrection = true;
     }
@@ -250,7 +250,8 @@ bool Channel::setNewValue(char *newValue) {
 }
 
 void Channel::setType(_supla_int_t type) {
-  Supla::RegisterDevice::setChannelType(channelNumber, type);
+  channelType = protoTypeToChannelType(type);
+  Supla::RegisterDevice::setChannelType(channelNumber, type);  // remove
 }
 
 void Channel::setDefault(_supla_int_t value) {
@@ -491,7 +492,8 @@ void Channel::setNewValue(uint8_t red,
 }
 
 _supla_int_t Channel::getChannelType() const {
-  return Supla::RegisterDevice::getChannelType(channelNumber);
+  return channelTypeToProtoType(channelType);
+//  return Supla::RegisterDevice::getChannelType(channelNumber);
 }
 
 double Channel::getValueDouble() {
@@ -608,11 +610,11 @@ uint8_t Channel::getValueBrightness() {
 #define TEMPERATURE_NOT_AVAILABLE -275.0
 
 double Channel::getLastTemperature() {
-  switch (getChannelType()) {
-    case SUPLA_CHANNELTYPE_THERMOMETER: {
+  switch (channelType) {
+    case ChannelType::THERMOMETER: {
       return getValueDouble();
     }
-    case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR: {
+    case ChannelType::HUMIDITYANDTEMPSENSOR: {
       return getValueDoubleFirst();
     }
     default: {
@@ -693,7 +695,7 @@ void Channel::setHvacMode(uint8_t mode) {
 }
 
 THVACValue *Channel::getValueHvac() const {
-  if (getChannelType() == SUPLA_CHANNELTYPE_HVAC) {
+  if (channelType == ChannelType::HVAC) {
     auto valuePtr = Supla::RegisterDevice::getChannelValuePtr(channelNumber);
     if (valuePtr == nullptr) {
       return nullptr;
@@ -1190,4 +1192,3 @@ const char* Channel::getInitialCaption() const {
 bool Channel::isInitialCaptionSet() const {
   return initialCaption != nullptr;
 }
-

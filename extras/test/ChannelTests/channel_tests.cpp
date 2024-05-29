@@ -69,9 +69,10 @@ TEST_F(ChannelTestsFixture, ChannelMethods) {
                           emptyArray,
                           SUPLA_CHANNELVALUE_SIZE));
 
-  first.setType(10);
-  EXPECT_EQ(first.getChannelType(), 10);
-  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number), 10);
+  first.setType(SUPLA_CHANNELTYPE_HVAC);
+  EXPECT_EQ(first.getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number),
+            SUPLA_CHANNELTYPE_HVAC);
 
   first.setDefault(14);
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number), 14);

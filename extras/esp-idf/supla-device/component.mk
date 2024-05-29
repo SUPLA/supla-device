@@ -11,6 +11,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/action_handler.o \
   ../../../src/supla/at_channel.o \
   ../../../src/supla/channels/channel.o \
+  ../../../src/supla/channels/channel_types.o \
 	../../../src/supla/channels/binary_sensor_channel.o \
   ../../../src/supla/channel_element.o \
   ../../../src/supla/element_with_channel_actions.o \

@@ -21,6 +21,7 @@
 
 #include <supla-common/proto.h>
 #include <supla/local_action.h>
+#include "channel_types.h"
 
 namespace Supla {
 
@@ -37,6 +38,7 @@ class Channel : public LocalAction {
 #ifdef SUPLA_TEST
   static void resetToDefaults();
 #endif
+
   bool setChannelNumber(int newChannelNumber);
 
   void setNewValue(double dbl);
@@ -189,6 +191,7 @@ class Channel : public LocalAction {
   unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
   int16_t channelNumber = -1;
   uint16_t validityTimeSec = 0;
+  ChannelType channelType = ChannelType::NOT_SET;
 };
 
 };  // namespace Supla

@@ -3,6 +3,7 @@ set(SUPLA_DEVICE_SRCS
 
   src/supla/uptime.cpp
   src/supla/channels/channel.cpp
+  src/supla/channels/channel_types.cpp
   src/supla/channels/binary_sensor_channel.cpp
   src/supla/channels/channel_extended.cpp
   src/supla/io.cpp

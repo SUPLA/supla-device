@@ -58,13 +58,12 @@ TEST_F(RollerShutterFixture, basicTests) {
   int number = rs.getChannelNumber();
   ASSERT_EQ(number, 0);
   TDSC_RollerShutterValue value = {};
-  EXPECT_EQ(Supla::RegisterDevice::getChannelType(number),
-            SUPLA_CHANNELTYPE_RELAY);
-  EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number),
+  EXPECT_EQ(rs.getChannel()->getChannelType(), SUPLA_CHANNELTYPE_RELAY);
+  EXPECT_EQ(rs.getChannel()->getFuncList(),
             SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER);
-  EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number),
+  EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
             SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
-  EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number),
+  EXPECT_EQ(rs.getChannel()->getFlags(),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
                 SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
   EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),

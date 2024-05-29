@@ -22,6 +22,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <supla/log_wrapper.h>
+#include <supla/channels/channel.h>
 
 namespace {
 TDS_SuplaRegisterDevice_E reg_dev = {};
@@ -33,6 +34,44 @@ void Supla::RegisterDevice::resetToDefaults() {
   memset(&reg_dev, 0, sizeof(reg_dev));
   memset(channelMap, 0, sizeof(channelMap));
 }
+
+int32_t Supla::RegisterDevice::getChannelType(int channelNumber) {
+  if (channelNumber == -1) {
+    return -1;
+  }
+
+  int channelIndex = channelMap[channelNumber];
+  if (channelIndex >= reg_dev.channel_count) {
+    return -1;
+  }
+  return reg_dev.channels[channelIndex].Type;
+}
+
+int32_t Supla::RegisterDevice::getChannelDefaultFunction(int channelNumber) {
+  if (channelNumber == -1) {
+    return 0;
+  }
+  int channelIndex = channelMap[channelNumber];
+  if (channelIndex >= reg_dev.channel_count) {
+    return 0;
+  }
+
+  return reg_dev.channels[channelIndex].Default;
+}
+
+int32_t Supla::RegisterDevice::getChannelFunctionList(int channelNumber) {
+  if (channelNumber == -1) {
+    return 0;
+  }
+
+  int channelIndex = channelMap[channelNumber];
+  if (channelIndex >= reg_dev.channel_count) {
+    return 0;
+  }
+
+  return reg_dev.channels[channelIndex].FuncList;
+}
+
 #endif
 
 TDS_SuplaRegisterDeviceHeader_A *Supla::RegisterDevice::getRegDevHeaderPtr() {
@@ -142,8 +181,9 @@ int Supla::RegisterDevice::getNextFreeChannelNumber() {
   bool nextFreeFound = false;
   do {
     nextFreeFound = true;
-    for (int i = 0; i < reg_dev.channel_count; i++) {
-      if (reg_dev.channels[i].Number == nextFreeNumber) {
+    for (Supla::Channel *ch = Supla::Channel::begin(); ch != nullptr;
+         ch = ch->next()) {
+      if (ch->getChannelNumber() == nextFreeNumber) {
         nextFreeNumber++;
         nextFreeFound = false;
         break;
@@ -290,18 +330,6 @@ void Supla::RegisterDevice::setChannelType(int channelNumber, int32_t type) {
   reg_dev.channels[channelIndex].Type = type;
 }
 
-int32_t Supla::RegisterDevice::getChannelType(int channelNumber) {
-  if (channelNumber == -1) {
-    return -1;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return -1;
-  }
-  return reg_dev.channels[channelIndex].Type;
-}
-
 void Supla::RegisterDevice::setChannelDefaultFunction(int channelNumber,
                                                       int32_t defaultFunction) {
   if (channelNumber == -1) {
@@ -312,18 +340,6 @@ void Supla::RegisterDevice::setChannelDefaultFunction(int channelNumber,
     return;
   }
   reg_dev.channels[channelIndex].Default = defaultFunction;
-}
-
-int32_t Supla::RegisterDevice::getChannelDefaultFunction(int channelNumber) {
-  if (channelNumber == -1) {
-    return 0;
-  }
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return 0;
-  }
-
-  return reg_dev.channels[channelIndex].Default;
 }
 
 void Supla::RegisterDevice::setChannelFlag(int channelNumber, int32_t flag) {
@@ -373,19 +389,6 @@ void Supla::RegisterDevice::setChannelFunctionList(int channelNumber,
     return;
   }
   reg_dev.channels[channelIndex].FuncList = functions;
-}
-
-int32_t Supla::RegisterDevice::getChannelFunctionList(int channelNumber) {
-  if (channelNumber == -1) {
-    return 0;
-  }
-
-  int channelIndex = channelMap[channelNumber];
-  if (channelIndex >= reg_dev.channel_count) {
-    return 0;
-  }
-
-  return reg_dev.channels[channelIndex].FuncList;
 }
 
 void Supla::RegisterDevice::addToChannelFunctionList(int channelNumber,

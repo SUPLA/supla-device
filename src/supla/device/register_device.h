@@ -82,20 +82,20 @@ bool getRawValue(int channelNumber, void *value);
 char *getChannelValuePtr(int channelNumber);
 
 void setChannelType(int channelNumber, int32_t type);
-int32_t getChannelType(int channelNumber);
 void setChannelDefaultFunction(int channelNumber, int32_t defaultFunction);
-int32_t getChannelDefaultFunction(int channelNumber);
 void setChannelFlag(int channelNumber, int32_t flag);
 void unsetChannelFlag(int channelNumber, int32_t flag);
 int32_t getChannelFlags(int channelNumber);
 void setChannelFunctionList(int channelNumber, int32_t functions);
-int32_t getChannelFunctionList(int channelNumber);
 void addToChannelFunctionList(int channelNumber, int32_t function);
 void removeFromChannelFunctionList(int channelNumber, int32_t function);
 int getChannelNumber(int index);
 
 #ifdef SUPLA_TEST
 void resetToDefaults();
+int32_t getChannelFunctionList(int channelNumber);
+int32_t getChannelDefaultFunction(int channelNumber);
+int32_t getChannelType(int channelNumber);
 #endif
 
 }  // namespace RegisterDevice

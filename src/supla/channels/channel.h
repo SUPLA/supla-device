@@ -34,6 +34,9 @@ class Channel : public LocalAction {
  public:
   explicit Channel(int number = -1);
   virtual ~Channel();
+  static Channel *begin();
+  static Channel *last();
+  Channel *next();
 
 #ifdef SUPLA_TEST
   static void resetToDefaults();
@@ -43,7 +46,7 @@ class Channel : public LocalAction {
 
   void setNewValue(double dbl);
   void setNewValue(double temp, double humi);
-  void setNewValue(_supla_int_t value);
+  void setNewValue(int32_t value);
   void setNewValue(bool value);
   void setNewValue(const TElectricityMeter_ExtendedValue_V2 &emValue);
   void setNewValue(uint8_t red,
@@ -53,7 +56,7 @@ class Channel : public LocalAction {
                    uint8_t brightness);
   void setNewValue(uint64_t value);
   void setNewValue(const TDSC_RollerShutterValue &value);
-  bool setNewValue(char *newValue);
+  bool setNewValue(const char *newValue);
 
   void setOffline();
   void setOnline();
@@ -144,9 +147,9 @@ class Channel : public LocalAction {
   void setDefault(_supla_int_t value);
   void setDefaultFunction(_supla_int_t function);
   int32_t getDefaultFunction() const;
-  void setFlag(_supla_int_t flag);
-  void unsetFlag(_supla_int_t flag);
-  _supla_int_t getFlags() const;
+  void setFlag(uint64_t flag);
+  void unsetFlag(uint64_t flag);
+  uint64_t getFlags() const;
   void setFuncList(_supla_int_t functions);
   _supla_int_t getFuncList() const;
   void addToFuncList(_supla_int_t function);
@@ -154,7 +157,7 @@ class Channel : public LocalAction {
   void setActionTriggerCaps(_supla_int_t caps);
   _supla_int_t getActionTriggerCaps();
 
-  void setValidityTimeSec(unsigned _supla_int_t);
+  void setValidityTimeSec(uint32_t timeSec);
   void setUpdateReady();
   void clearUpdateReady();
   virtual void sendUpdate();
@@ -181,21 +184,38 @@ class Channel : public LocalAction {
   bool isInitialCaptionSet() const;
   const char* getInitialCaption() const;
 
+  void setDefaultIcon(uint8_t iconId);
+  uint8_t getDefaultIcon() const;
+
   static uint32_t lastCommunicationTimeMs;
 
  protected:
+  static Channel *firstPtr;
+  Channel *nextPtr = nullptr;
+
   char *initialCaption = nullptr;
   bool valueChanged = false;
   bool channelConfig = false;
-  bool offline = false;
   unsigned char batteryLevel = 255;    // 0 - 100%; 255 - not used
-  uint16_t validityTimeSec = 0;
 
   // registration parameter
   int16_t channelNumber = -1;
   ChannelType channelType = ChannelType::NOT_SET;
 
   uint32_t functionsBitmap = 0;
+  uint16_t defaultFunction =
+      0;  // function in proto use 32 bit, but there are no functions defined so
+          // far that use more than 16 bits
+  uint64_t channelFlags = 0;
+  bool offline = false;
+  uint32_t validityTimeSec = 0;
+  uint8_t defaultIcon = 0;
+
+  union {
+    char value[SUPLA_CHANNELVALUE_SIZE] = {};
+    TActionTriggerProperties actionTriggerProperties;  // ver. >= 16
+    THVACValue hvacValue;
+  };
 };
 
 };  // namespace Supla

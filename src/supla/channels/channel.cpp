@@ -30,6 +30,7 @@
 using Supla::Channel;
 
 uint32_t Channel::lastCommunicationTimeMs = 0;
+Channel *Channel::firstPtr = nullptr;
 
 #ifdef SUPLA_TEST
 // Method used in tests to restore default values for static members
@@ -40,6 +41,12 @@ void Supla::Channel::resetToDefaults() {
 #endif
 
 Channel::Channel(int number) {
+  if (firstPtr == nullptr) {
+    firstPtr = this;
+  } else {
+    last()->nextPtr = this;
+  }
+
   if (number == -1) {
     int nextFreeNumber = Supla::RegisterDevice::getNextFreeChannelNumber();
     if (nextFreeNumber == -1) {
@@ -62,11 +69,38 @@ Channel::Channel(int number) {
 }
 
 Channel::~Channel() {
+  if (begin() == this) {
+    firstPtr = next();
+    return;
+  }
+
+  auto ptr = begin();
+  while (ptr->next() != this) {
+    ptr = ptr->next();
+  }
+
+  ptr->nextPtr = ptr->next()->next();
   Supla::RegisterDevice::removeChannel(channelNumber);
   if (initialCaption != nullptr) {
     delete[] initialCaption;
     initialCaption = nullptr;
   }
+}
+
+Channel *Channel::begin() {
+  return firstPtr;
+}
+
+Channel *Channel::last() {
+  Channel *ptr = firstPtr;
+  while (ptr && ptr->nextPtr) {
+    ptr = ptr->nextPtr;
+  }
+  return ptr;
+}
+
+Channel *Channel::next() {
+  return nextPtr;
 }
 
 bool Channel::setChannelNumber(int newChannelNumber) {
@@ -210,8 +244,10 @@ void Channel::setNewValue(
   // Prepare standard channel value
   if (sizeof(TElectricityMeter_Value) <= SUPLA_CHANNELVALUE_SIZE) {
     const TElectricityMeter_Measurement *m = nullptr;
-    TElectricityMeter_Value emValue;
-    memset(&emValue, 0, sizeof(TElectricityMeter_Value));
+    union {
+      char rawValue[SUPLA_CHANNELVALUE_SIZE] = {};
+      TElectricityMeter_Value emValue;
+    };
 
     unsigned _supla_int64_t fae_sum =
         emExtValue.total_forward_active_energy[0] +
@@ -236,13 +272,15 @@ void Channel::setNewValue(
       }
     }
 
-    Supla::RegisterDevice::setRawValue(channelNumber, &emValue);
+    setNewValue(rawValue);
     setUpdateReady();
   }
 }
 
-bool Channel::setNewValue(char *newValue) {
-  if (Supla::RegisterDevice::setRawValue(channelNumber, newValue)) {
+bool Channel::setNewValue(const char *newValue) {
+  if (memcmp(value, newValue, SUPLA_CHANNELVALUE_SIZE) != 0) {
+    memcpy(value, newValue, SUPLA_CHANNELVALUE_SIZE);
+    Supla::RegisterDevice::setRawValue(channelNumber, newValue);  // remove
     setUpdateReady();
     return true;
   }
@@ -255,23 +293,36 @@ void Channel::setType(_supla_int_t type) {
 }
 
 void Channel::setDefault(_supla_int_t value) {
-  Supla::RegisterDevice::setChannelDefaultFunction(channelNumber, value);
+  if (value > UINT16_MAX) {
+    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
+                    channelNumber, value);
+    value = 0;
+  }
+
+  defaultFunction = value;
+
+  Supla::RegisterDevice::setChannelDefaultFunction(channelNumber,
+                                                   value);  // remove
 }
 
 void Channel::setDefaultFunction(_supla_int_t function) {
-  Supla::RegisterDevice::setChannelDefaultFunction(channelNumber, function);
+  setDefault(function);
 }
 
 int32_t Channel::getDefaultFunction() const {
-  return Supla::RegisterDevice::getChannelDefaultFunction(channelNumber);
+  return defaultFunction;
 }
 
-void Channel::setFlag(_supla_int_t flag) {
-  Supla::RegisterDevice::setChannelFlag(channelNumber, flag);
+void Channel::setFlag(uint64_t flag) {
+  channelFlags |= flag;
+
+  Supla::RegisterDevice::setChannelFlag(channelNumber, flag);  // remove
 }
 
-void Channel::unsetFlag(_supla_int_t flag) {
-  Supla::RegisterDevice::unsetChannelFlag(channelNumber, flag);
+void Channel::unsetFlag(uint64_t flag) {
+  channelFlags &= ~flag;
+
+  Supla::RegisterDevice::unsetChannelFlag(channelNumber, flag);  // remove
 }
 
 void Channel::setFuncList(_supla_int_t functions) {
@@ -296,8 +347,8 @@ void Channel::removeFromFuncList(_supla_int_t function) {
                                                        function);  // remove
 }
 
-_supla_int_t Channel::getFlags() const {
-  return Supla::RegisterDevice::getChannelFlags(channelNumber);
+uint64_t Channel::getFlags() const {
+  return channelFlags;
 }
 
 void Channel::setActionTriggerCaps(_supla_int_t caps) {
@@ -627,11 +678,7 @@ double Channel::getLastTemperature() {
   }
 }
 
-void Channel::setValidityTimeSec(unsigned _supla_int_t timeSec) {
-  if (timeSec > UINT16_MAX) {
-    SUPLA_LOG_WARNING("Channel: too high validity time: %d", timeSec);
-    timeSec = UINT16_MAX;
-  }
+void Channel::setValidityTimeSec(uint32_t timeSec) {
   validityTimeSec = timeSec;
 }
 
@@ -1196,3 +1243,12 @@ const char* Channel::getInitialCaption() const {
 bool Channel::isInitialCaptionSet() const {
   return initialCaption != nullptr;
 }
+
+void Channel::setDefaultIcon(uint8_t iconId) {
+  defaultIcon = iconId;
+}
+
+uint8_t Channel::getDefaultIcon() const {
+  return defaultIcon;
+}
+

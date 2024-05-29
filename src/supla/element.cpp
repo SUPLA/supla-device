@@ -25,7 +25,7 @@ namespace Supla {
 Element *Element::firstPtr = nullptr;
 bool Element::invalidatePtr = false;
 
-Element::Element() : nextPtr(nullptr) {
+Element::Element() {
   if (firstPtr == nullptr) {
     firstPtr = this;
   } else {

@@ -21,6 +21,7 @@
 #include <supla/channel_element.h>
 #include <supla/events.h>
 #include <supla/actions.h>
+#include <supla/device/register_device.h>
 
 
 class ActionHandlerMock : public Supla::ActionHandler {
@@ -32,6 +33,7 @@ class ActionHandlerMock : public Supla::ActionHandler {
 using ::testing::_;
 
 TEST(OnInvalidTests, OnInvalidCondition) {
+  Supla::RegisterDevice::resetToDefaults();
   ActionHandlerMock ahMock;
   const int action1 = 15;
   const int action2 = 16;

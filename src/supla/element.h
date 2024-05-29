@@ -131,7 +131,7 @@ class Element {
  protected:
   static Element *firstPtr;
   static bool invalidatePtr;
-  Element *nextPtr;
+  Element *nextPtr = nullptr;
 };
 
 };  // namespace Supla

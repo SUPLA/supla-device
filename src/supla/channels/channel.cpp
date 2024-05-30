@@ -69,6 +69,12 @@ Channel::Channel(int number) {
 }
 
 Channel::~Channel() {
+  Supla::RegisterDevice::removeChannel(channelNumber);
+  if (initialCaption != nullptr) {
+    delete[] initialCaption;
+    initialCaption = nullptr;
+  }
+
   if (Begin() == this) {
     firstPtr = next();
     return;
@@ -80,11 +86,6 @@ Channel::~Channel() {
   }
 
   ptr->nextPtr = ptr->next()->next();
-  Supla::RegisterDevice::removeChannel(channelNumber);
-  if (initialCaption != nullptr) {
-    delete[] initialCaption;
-    initialCaption = nullptr;
-  }
 }
 
 Channel *Channel::Begin() {

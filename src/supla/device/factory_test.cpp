@@ -66,7 +66,7 @@ void FactoryTest::onInit() {
     return;
   }
 
-  if (!Supla::RegisterDevice::isNameValid()) {
+  if (Supla::RegisterDevice::isNameEmpty()) {
     SUPLA_LOG_ERROR("TEST failed: device name is empty");
     testFailed = true;
     failReason = 3;

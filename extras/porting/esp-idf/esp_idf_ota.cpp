@@ -141,7 +141,7 @@ void Supla::EspIdfOta::iterate() {
       }
     }
 
-    if (Supla::RegisterDevice::isEmailValid()) {
+    if (!Supla::RegisterDevice::isEmailEmpty()) {
       v = stringAppend(
           queryParams + curPos, "&userEmailHash=", URL_SIZE - curPos - 1);
       if (v == 0) break;

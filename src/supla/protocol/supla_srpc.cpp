@@ -893,14 +893,14 @@ bool Supla::Protocol::SuplaSrpc::verifyConfig() {
     return true;
   }
 
-  if (!Supla::RegisterDevice::isServerNameValid()) {
+  if (Supla::RegisterDevice::isServerNameEmpty()) {
     sdc->status(STATUS_UNKNOWN_SERVER_ADDRESS, F("Missing server address"));
     if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
       return false;
     }
   }
 
-  if (!Supla::RegisterDevice::isEmailValid()) {
+  if (Supla::RegisterDevice::isEmailEmpty()) {
     sdc->status(STATUS_MISSING_CREDENTIALS, F("Missing email address"));
     if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
       return false;

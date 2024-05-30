@@ -119,28 +119,28 @@ TDS_SuplaDeviceChannel_C *Supla::RegisterDevice::getChannelPtr(int index) {
   return &deviceChannelStruct;
 }
 
-bool Supla::RegisterDevice::isGUIDValid() {
-  return !isArrayEmpty(reg_dev.GUID, SUPLA_GUID_SIZE);
+bool Supla::RegisterDevice::isGUIDEmpty() {
+  return isArrayEmpty(reg_dev.GUID, SUPLA_GUID_SIZE);
 }
 
-bool Supla::RegisterDevice::isAuthKeyValid() {
-  return !isArrayEmpty(reg_dev.AuthKey, SUPLA_AUTHKEY_SIZE);
+bool Supla::RegisterDevice::isAuthKeyEmpty() {
+  return isArrayEmpty(reg_dev.AuthKey, SUPLA_AUTHKEY_SIZE);
 }
 
-bool Supla::RegisterDevice::isSoftVerValid() {
-  return strnlen(reg_dev.SoftVer, SUPLA_SOFTVER_MAXSIZE) > 0;
+bool Supla::RegisterDevice::isSoftVerEmpty() {
+  return strnlen(reg_dev.SoftVer, SUPLA_SOFTVER_MAXSIZE) == 0;
 }
 
-bool Supla::RegisterDevice::isNameValid() {
-  return strnlen(reg_dev.Name, SUPLA_DEVICE_NAME_MAXSIZE) > 0;
+bool Supla::RegisterDevice::isNameEmpty() {
+  return strnlen(reg_dev.Name, SUPLA_DEVICE_NAME_MAXSIZE) == 0;
 }
 
-bool Supla::RegisterDevice::isServerNameValid() {
-  return strnlen(reg_dev.ServerName, SUPLA_SERVER_NAME_MAXSIZE) > 0;
+bool Supla::RegisterDevice::isServerNameEmpty() {
+  return strnlen(reg_dev.ServerName, SUPLA_SERVER_NAME_MAXSIZE) == 0;
 }
 
-bool Supla::RegisterDevice::isEmailValid() {
-  return strnlen(reg_dev.Email, SUPLA_EMAIL_MAXSIZE) > 0;
+bool Supla::RegisterDevice::isEmailEmpty() {
+  return strnlen(reg_dev.Email, SUPLA_EMAIL_MAXSIZE) == 0;
 }
 
 const char *Supla::RegisterDevice::getGUID() {

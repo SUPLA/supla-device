@@ -231,12 +231,12 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     Supla::WebServer::Instance()->setSuplaDeviceClass(this);
   }
 
-  if (!Supla::RegisterDevice::isGUIDValid()) {
+  if (Supla::RegisterDevice::isGUIDEmpty()) {
     status(STATUS_INVALID_GUID, F("Missing GUID"));
     return false;
   }
 
-  if (!Supla::RegisterDevice::isAuthKeyValid()) {
+  if (Supla::RegisterDevice::isAuthKeyEmpty()) {
     status(STATUS_INVALID_AUTHKEY, F("Missing AuthKey"));
     return false;
   }
@@ -266,7 +266,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   generateHexString(Supla::RegisterDevice::getGUID(), buf, SUPLA_GUID_SIZE);
   SUPLA_LOG_INFO("GUID: %s", buf);
 
-  if (!Supla::RegisterDevice::isNameValid()) {
+  if (Supla::RegisterDevice::isNameEmpty()) {
 #if defined(ARDUINO_ARCH_ESP8266)
     setName("SUPLA-ESP8266");
 #elif defined(ARDUINO_ARCH_ESP32)
@@ -278,7 +278,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 #endif
   }
 
-  if (Supla::RegisterDevice::isSoftVerValid()) {
+  if (Supla::RegisterDevice::isSoftVerEmpty()) {
     setSwVersion(suplaDeviceVersion);
   }
   SUPLA_LOG_INFO("Device name: %s", Supla::RegisterDevice::getName());

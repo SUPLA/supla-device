@@ -33,12 +33,12 @@ TDS_SuplaRegisterDeviceHeader_A *getRegDevHeaderPtr();
 TDS_SuplaDeviceChannel_C *getChannelPtr(int index);
 
 // Device parameters
-bool isGUIDValid();
-bool isAuthKeyValid();
-bool isSoftVerValid();
-bool isNameValid();
-bool isServerNameValid();
-bool isEmailValid();
+bool isGUIDEmpty();
+bool isAuthKeyEmpty();
+bool isSoftVerEmpty();
+bool isNameEmpty();
+bool isServerNameEmpty();
+bool isEmailEmpty();
 
 const char *getGUID();
 const char *getAuthKey();

@@ -30,6 +30,8 @@
 #include <supla/storage/storage.h>
 #include <timer_mock.h>
 #include <simple_time.h>
+#include <supla/device/register_device.h>
+#include <supla/version.h>
 
 // Update this value if you change default Proto Version
 const int defaultProtoVersion = 21;
@@ -70,8 +72,8 @@ class SuplaDeviceTestsFullStartupNoClient : public SuplaDeviceTests {
 
     EXPECT_CALL(timer, initTimers());
 
-    char GUID[SUPLA_GUID_SIZE] = {1};
-    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    char GUID[SUPLA_GUID_SIZE] = "GUID";
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = "AUTHKEY";
     EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
     EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   }
@@ -209,7 +211,8 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   bool isConnected = false;
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connected()).WillRepeatedly(ReturnPointee(&isConnected));
-  EXPECT_CALL(*client, connectImp(_, _)).WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
+  EXPECT_CALL(*client, connectImp(_, _))
+      .WillRepeatedly(DoAll(Assign(&isConnected, true), Return(1)));
 
   EXPECT_CALL(net, setup()).Times(1);
   EXPECT_CALL(net, iterate()).Times(AtLeast(1));
@@ -225,7 +228,22 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   EXPECT_CALL(el1, onRegistered(_));
   EXPECT_CALL(el2, onRegistered(_));
 
-  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1)
+      .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader_A *regDevHeader) {
+        EXPECT_EQ(regDevHeader->channel_count, 0);
+        EXPECT_EQ(regDevHeader->Flags,
+                  SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
+        EXPECT_EQ(regDevHeader->ManufacturerID, 0);
+        EXPECT_EQ(regDevHeader->ProductID, 0);
+        EXPECT_STREQ(regDevHeader->Email, "superman@supla.org");
+        EXPECT_STREQ(regDevHeader->AuthKey, "AUTHKEY");
+        EXPECT_STREQ(regDevHeader->GUID, "GUID");
+        EXPECT_STREQ(regDevHeader->Name, "SUPLA-DEVICE");
+        EXPECT_STREQ(regDevHeader->SoftVer, suplaDeviceVersion);
+        EXPECT_STREQ(regDevHeader->ServerName, "supla.rulez");
+
+        return 1;
+      });
   EXPECT_CALL(srpc, srpc_dcs_async_set_activity_timeout(_, _)).Times(1);
   EXPECT_CALL(srpc, srpc_dcs_async_ping_server(_)).Times(2);
 
@@ -945,4 +963,28 @@ TEST_F(SuplaDeviceTestsFullStartup, SleepingChannelDoubleChannel) {
   }
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+}
+
+TEST_F(SuplaDeviceTests, CheckCustomNameSoftVer) {
+  TimerMock timer;
+  SuplaDeviceClass sd;
+  NetworkMock net;
+
+  sd.setName("Some name");
+  sd.setSwVersion("1.2.3");
+
+  EXPECT_CALL(timer, initTimers());
+
+  char GUID[SUPLA_GUID_SIZE] = "GUID";
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = "AUTHKEY";
+  EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_STREQ(Supla::RegisterDevice::getEmail(), "superman@supla.org");
+  EXPECT_STREQ(Supla::RegisterDevice::getServerName(), "supla.rulez");
+  EXPECT_STREQ(Supla::RegisterDevice::getGUID(), GUID);
+  EXPECT_STREQ(Supla::RegisterDevice::getAuthKey(), AUTHKEY);
+  EXPECT_STREQ(Supla::RegisterDevice::getName(), "Some name");
+  EXPECT_STREQ(Supla::RegisterDevice::getSoftVer(), "1.2.3");
+
 }

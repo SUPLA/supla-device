@@ -1196,18 +1196,42 @@ uint8_t Channel::getDefaultIcon() const {
 }
 
 void Channel::fillDeviceChannelStruct(
-    TDS_SuplaDeviceChannel_C *deviceChannelStruct) {
+    TDS_SuplaDeviceChannel_D *deviceChannelStruct) {
   if (deviceChannelStruct == nullptr) {
     return;
   }
-  memset(deviceChannelStruct, 0, sizeof(TDS_SuplaDeviceChannel_C));
+  memset(deviceChannelStruct, 0, sizeof(TDS_SuplaDeviceChannel_D));
 
   deviceChannelStruct->Number = getChannelNumber();
   deviceChannelStruct->Type = getChannelType();
   deviceChannelStruct->FuncList = getFuncList();  // also sets ActionTriggerCaps
   deviceChannelStruct->Default = getDefaultFunction();
   deviceChannelStruct->Flags = getFlags();
+  deviceChannelStruct->Offline = offline;
+  deviceChannelStruct->ValueValidityTimeSec = validityTimeSec;
+  deviceChannelStruct->DefaultIcon = getDefaultIcon();
   memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
+  SUPLA_LOG_VERBOSE(
+      "CH[%i], type: %d, FuncList: 0x%X, function: %d, flags: 0x%llX, "
+      "%s, validityTimeSec: %d, icon: %d, "
+      "value: "
+      "[%02x %02x %02x %02x %02x %02x %02x %02x]",
+      getChannelNumber(),
+      getChannelType(),
+      getFuncList(),
+      getDefaultFunction(),
+      getFlags(),
+      offline ? "offline" : "online",
+      validityTimeSec,
+      getDefaultIcon(),
+      static_cast<uint8_t>(value[0]),
+      static_cast<uint8_t>(value[1]),
+      static_cast<uint8_t>(value[2]),
+      static_cast<uint8_t>(value[3]),
+      static_cast<uint8_t>(value[4]),
+      static_cast<uint8_t>(value[5]),
+      static_cast<uint8_t>(value[6]),
+      static_cast<uint8_t>(value[7]));
 }
 
 void Channel::fillRawValue(void *valueToFill) {

@@ -35,6 +35,7 @@ class Bh1750 : public GeneralPurposeMeasurement {
   explicit Bh1750(int i2cAddress = 0x23)
       : GeneralPurposeMeasurement(nullptr, false), sensor(i2cAddress) {
     setDefaultUnitAfterValue("lx");
+    getChannel()->setDefaultIcon(14);
   }
 
   void initializeSensor() {

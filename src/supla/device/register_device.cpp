@@ -26,7 +26,7 @@
 
 namespace {
 TDS_SuplaRegisterDeviceHeader_A reg_dev = {};
-TDS_SuplaDeviceChannel_C deviceChannelStruct = {};
+TDS_SuplaDeviceChannel_D deviceChannelStruct = {};
 }  // namespace
 
 #ifdef SUPLA_TEST
@@ -104,7 +104,7 @@ TDS_SuplaRegisterDeviceHeader_A *Supla::RegisterDevice::getRegDevHeaderPtr() {
   return &reg_dev;
 }
 
-TDS_SuplaDeviceChannel_C *Supla::RegisterDevice::getChannelPtr(int index) {
+TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr(int index) {
   if (index >= reg_dev.channel_count || index == -1) {
     return nullptr;
   }

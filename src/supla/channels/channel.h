@@ -42,7 +42,7 @@ class Channel : public LocalAction {
 #ifdef SUPLA_TEST
   static void resetToDefaults();
 #endif
-  void fillDeviceChannelStruct(TDS_SuplaDeviceChannel_C *deviceChannelStruct);
+  void fillDeviceChannelStruct(TDS_SuplaDeviceChannel_D *deviceChannelStruct);
 
   bool setChannelNumber(int newChannelNumber);
 

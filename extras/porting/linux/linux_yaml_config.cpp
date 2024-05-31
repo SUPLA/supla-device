@@ -331,7 +331,7 @@ int Supla::LinuxYamlConfig::getProtoVersion() {
   } catch (const YAML::Exception& ex) {
     SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
-  return 22;
+  return 23;
 }
 
 bool Supla::LinuxYamlConfig::setGUID(const char* guidRaw) {
@@ -2032,6 +2032,14 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
       }
     }
   }
+  if (ch["icon_id"]) {  // optional
+    paramCount++;
+    int iconId = ch["icon_id"].as<int>();
+    auto ch = sensor->getChannel();
+    if (ch) {
+      ch->setDefaultIcon(iconId);
+    }
+  }
   return true;
 }
 
@@ -2052,6 +2060,14 @@ bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
         SUPLA_LOG_ERROR("Failed to set channel number: %d", channelNumber);
         return false;
       }
+    }
+  }
+  if (ch["icon_id"]) {  // optional
+    paramCount++;
+    int iconId = ch["icon_id"].as<int>();
+    auto ch = element->getChannel();
+    if (ch) {
+      ch->setDefaultIcon(iconId);
     }
   }
   return true;

@@ -744,29 +744,6 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
-
-    // TODO(klew) move to chunk fetching
-//      int channelCount = Supla::RegisterDevice::getChannelCount();
-//      for (int i = 0; i < channelCount; i++) {
-//        const char *value = Supla::RegisterDevice::getChannelValuePtr(i);
-//        SUPLA_LOG_DEBUG(
-//            "CH #%i, type: %d, FuncList: 0x%X, default: %d, flags: 0x%X, "
-//            "value: "
-//            "[%02x %02x %02x %02x %02x %02x %02x %02x]",
-//            Supla::RegisterDevice::getChannelNumber(i),
-//            Supla::RegisterDevice::getChannelType(i),
-//            Supla::RegisterDevice::getChannelFunctionList(i),
-//            Supla::RegisterDevice::getChannelDefaultFunction(i),
-//            Supla::RegisterDevice::getChannelFlags(i),
-//            static_cast<uint8_t>(value[0]),
-//            static_cast<uint8_t>(value[1]),
-//            static_cast<uint8_t>(value[2]),
-//            static_cast<uint8_t>(value[3]),
-//            static_cast<uint8_t>(value[4]),
-//            static_cast<uint8_t>(value[5]),
-//            static_cast<uint8_t>(value[6]),
-//            static_cast<uint8_t>(value[7]));
-//      }
     if (!srpc_ds_async_registerdevice_in_chunks(
             srpc, Supla::RegisterDevice::getRegDevHeaderPtr(),
             Supla::RegisterDevice::getChannelPtr)) {

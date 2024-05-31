@@ -99,9 +99,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
              const char *Server,
              const char *email,
              const char authkey[SUPLA_AUTHKEY_SIZE],
-             unsigned char protoVersion = 21);
+             unsigned char protoVersion = 23);
 
-  bool begin(unsigned char protoVersion = 21);
+  bool begin(unsigned char protoVersion = 23);
 
   // Use ASCII only in name
   void setName(const char *Name);

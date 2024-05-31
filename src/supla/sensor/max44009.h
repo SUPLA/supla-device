@@ -39,6 +39,7 @@ class Max44009 : public GeneralPurposeMeasurement {
   explicit Max44009(int i2cAddress = 0x4A, TwoWire *wire = &Wire)
       : GeneralPurposeMeasurement(nullptr, false), sensor(i2cAddress, wire) {
     setDefaultUnitAfterValue("lx");
+    getChannel()->setDefaultIcon(14);
   }
 
   void onInit() override {

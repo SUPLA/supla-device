@@ -34,7 +34,7 @@
 #include <supla/version.h>
 
 // Update this value if you change default Proto Version
-const int defaultProtoVersion = 21;
+const int defaultProtoVersion = 23;
 
 using ::testing::_;
 using ::testing::Assign;

@@ -30,7 +30,7 @@ TDS_SuplaRegisterDeviceHeader_A *getRegDevHeaderPtr();
 // Returns pointer to structure, which is filled with values from channel
 // at given index. Next call will return exactly the same pointer, but with
 // data from another channel, so please be careful when using this function
-TDS_SuplaDeviceChannel_C *getChannelPtr(int index);
+TDS_SuplaDeviceChannel_D *getChannelPtr(int index);
 
 // Device parameters
 bool isGUIDEmpty();

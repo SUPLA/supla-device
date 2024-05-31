@@ -148,6 +148,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   if (protoVersion >= 21) {
     addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
   }
+  if (protoVersion < 23) {
+    SUPLA_LOG_ERROR("Minimum supported protocol version is 23!");
+  }
 
   // Initialize protocol layers
   createSrpcLayerIfNeeded();

@@ -1,5 +1,12 @@
 # CHANGELOG.md
 
+## 24.05.02 (2024-05-31)
+
+  - Change: default Supla proto version increased to 23
+  - Change: registration message is using TDS_SuplaDeviceRegister_F and is send to server in chunks. This should reduce RAM memory usage on all boards.
+  - Change: BH1750, MAX44009: set default GPM icon to 14 ("sun with light")
+  - Add: Supla::Channel::setDefaultIcon(int) option that allow to configure initial default icon during registration of device.
+
 ## 24.05.01 (2024-05-22)
 
   - Fix: GPM: fix missing handling of "refresh interval ms" parameter

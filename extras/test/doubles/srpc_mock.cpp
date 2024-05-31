@@ -136,7 +136,7 @@ void srpc_set_proto_version(void *_srpc, unsigned char version) {
 }
 
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
-    void *_srpc, TDS_SuplaRegisterDeviceHeader_A *registerdevice,
+    void *_srpc, TDS_SuplaRegisterDeviceHeader *registerdevice,
     TDS_SuplaDeviceChannel_D *(*get_channel_data_callback)(int)) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->srpc_ds_async_registerdevice_in_chunks(

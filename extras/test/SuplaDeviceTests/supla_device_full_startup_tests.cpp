@@ -229,7 +229,7 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
   EXPECT_CALL(el2, onRegistered(_));
 
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1)
-      .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader_A *regDevHeader) {
+      .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *regDevHeader) {
         EXPECT_EQ(regDevHeader->channel_count, 0);
         EXPECT_EQ(regDevHeader->Flags,
                   SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);

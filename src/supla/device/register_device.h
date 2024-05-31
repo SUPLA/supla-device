@@ -26,7 +26,7 @@
 namespace Supla {
 namespace RegisterDevice {
 
-TDS_SuplaRegisterDeviceHeader_A *getRegDevHeaderPtr();
+TDS_SuplaRegisterDeviceHeader *getRegDevHeaderPtr();
 // Returns pointer to structure, which is filled with values from channel
 // at given index. Next call will return exactly the same pointer, but with
 // data from another channel, so please be careful when using this function

@@ -25,7 +25,7 @@
 #include <supla/channels/channel.h>
 
 namespace {
-TDS_SuplaRegisterDeviceHeader_A reg_dev = {};
+TDS_SuplaRegisterDeviceHeader reg_dev = {};
 TDS_SuplaDeviceChannel_D deviceChannelStruct = {};
 }  // namespace
 
@@ -100,7 +100,7 @@ uint64_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
 
 #endif
 
-TDS_SuplaRegisterDeviceHeader_A *Supla::RegisterDevice::getRegDevHeaderPtr() {
+TDS_SuplaRegisterDeviceHeader *Supla::RegisterDevice::getRegDevHeaderPtr() {
   return &reg_dev;
 }
 

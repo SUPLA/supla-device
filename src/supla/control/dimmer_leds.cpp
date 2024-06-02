@@ -65,15 +65,22 @@ void Supla::Control::DimmerLeds::onInit() {
     Supla::Io::pinMode(brightnessPin, OUTPUT, io);
   } else {
     // TODO(klew): move to IO for ESP32
+#ifdef ESP_ARDUINO_VERSION_MAJOR
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+    // Code for version 3.x
+    ledcAttach(brightnessPin, 1000, 10);
+#else
+    // Code for version 2.x
     SUPLA_LOG_DEBUG("Dimmer: attaching pin %d to PWM channel %d",
         brightnessPin, esp32PwmChannelCounter);
-
     ledcSetup(esp32PwmChannelCounter, 1000, 10);
     ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
     // on ESP32 we write to PWM channels instead of pins, so we copy channel
     // number as pin in order to reuse variable
     brightnessPin = esp32PwmChannelCounter;
     esp32PwmChannelCounter++;
+#endif
+#endif
   }
 #else
   Supla::Io::pinMode(brightnessPin, OUTPUT, io);

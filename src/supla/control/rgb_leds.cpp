@@ -76,6 +76,14 @@ void Supla::Control::RGBLeds::onInit() {
     Supla::Io::pinMode(bluePin, OUTPUT, io);
   } else {
     // TODO(klew): move to IO for ESP32
+#ifdef ESP_ARDUINO_VERSION_MAJOR
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+    // Code for version 3.x
+    ledcAttach(redPin, 1000, 10);
+    ledcAttach(greenPin, 1000, 10);
+    ledcAttach(bluePin, 1000, 10);
+#else
+    // Code for version 2.x
     SUPLA_LOG_DEBUG("RGB: attaching pin %d to PWM channel %d",
         redPin, esp32PwmChannelCounter);
 
@@ -95,6 +103,8 @@ void Supla::Control::RGBLeds::onInit() {
     ledcAttachPin(bluePin, esp32PwmChannelCounter);
     bluePin = esp32PwmChannelCounter;
     esp32PwmChannelCounter++;
+#endif
+#endif
   }
 #else
   Supla::Io::pinMode(redPin, OUTPUT, io);

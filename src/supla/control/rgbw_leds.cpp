@@ -78,9 +78,17 @@ void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
 
 void Supla::Control::RGBWLeds::onInit() {
 #ifdef ARDUINO_ARCH_ESP32
+#ifdef ESP_ARDUINO_VERSION_MAJOR
+#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
+  // Code for version 3.x
+  ledcAttach(redPin, 1000, 10);
+  ledcAttach(greenPin, 1000, 10);
+  ledcAttach(bluePin, 1000, 10);
+  ledcAttach(brightnessPin, 1000, 10);
+#else
+  // Code for version 2.x
   SUPLA_LOG_DEBUG("RGBW: attaching pin %d to PWM channel %d",
                   redPin, esp32PwmChannelCounter);
-
   ledcSetup(esp32PwmChannelCounter, 1000, 10);
   ledcAttachPin(redPin, esp32PwmChannelCounter);
   // on ESP32 we write to PWM channels instead of pins, so we copy channel
@@ -102,6 +110,9 @@ void Supla::Control::RGBWLeds::onInit() {
   ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
   brightnessPin = esp32PwmChannelCounter;
   esp32PwmChannelCounter++;
+
+#endif
+#endif
 
 #else
   Supla::Io::pinMode(redPin, OUTPUT);

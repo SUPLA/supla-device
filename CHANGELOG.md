@@ -1,5 +1,9 @@
 # CHANGELOG.md
 
+## 24.06 (2024-06-03)
+
+  - Fix: compilation fix for ESP32 boards for Arduino with version 3.x
+
 ## 24.05.02 (2024-05-31)
 
   - Change: default Supla proto version increased to 23

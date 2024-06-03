@@ -37,6 +37,8 @@
 #include <supla/tools.h>
 #include <supla/version.h>
 #include <supla/device/register_device.h>
+#include <supla/mutex.h>
+#include <supla/auto_lock.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -101,6 +103,7 @@ bool SuplaDeviceClass::prepareLastStateLog() {
 }
 
 SuplaDeviceClass::SuplaDeviceClass() {
+  timerAccessMutex = Supla::Mutex::Create();
 }
 
 SuplaDeviceClass::~SuplaDeviceClass() {
@@ -115,6 +118,10 @@ SuplaDeviceClass::~SuplaDeviceClass() {
   if (lastStateLogger) {
     delete lastStateLogger;
     lastStateLogger = nullptr;
+  }
+  if (timerAccessMutex) {
+    delete timerAccessMutex;
+    timerAccessMutex = nullptr;
   }
 }
 
@@ -336,6 +343,7 @@ void SuplaDeviceClass::setName(const char *name) {
 }
 
 void SuplaDeviceClass::onTimer(void) {
+  Supla::AutoLock lock(timerAccessMutex);
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {
     element->onTimer();
@@ -343,10 +351,7 @@ void SuplaDeviceClass::onTimer(void) {
 }
 
 void SuplaDeviceClass::onFastTimer(void) {
-  // Iteration over all impulse counters will count incomming impulses. It is
-  // after SuplaDevice initialization (because we have to read stored counter
-  // values) and before any other operation like connection to Supla cloud
-  // (because we want to count impulses even when we have connection issues.
+  Supla::AutoLock lock(timerAccessMutex);
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {
     element->onFastTimer();
@@ -1253,6 +1258,10 @@ void SuplaDeviceClass::setProtoVerboseLog(bool value) {
 bool SuplaDeviceClass::isOfflineModeDuringConfig() const {
   return goToOfflineModeTimeout == 0 &&
          getDeviceMode() == Supla::DEVICE_MODE_CONFIG;
+}
+
+Supla::Mutex *SuplaDeviceClass::getTimerAccessMutex() {
+  return timerAccessMutex;
 }
 
 SuplaDeviceClass SuplaDevice;

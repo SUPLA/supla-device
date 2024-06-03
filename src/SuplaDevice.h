@@ -82,8 +82,9 @@ namespace Device {
     WithoutTimeout
   };
 class SwUpdate;
-};
-};
+class Mutex;
+}  // namespace Device
+}  // namespace Supla
 
 class SuplaDeviceClass : public Supla::ActionHandler,
   public Supla::LocalAction {
@@ -199,6 +200,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setProtoVerboseLog(bool value);
   bool isOfflineModeDuringConfig() const;
 
+  Supla::Mutex *getTimerAccessMutex();
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -238,6 +241,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   _impl_arduino_status impl_arduino_status = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
   char *customHostnamePrefix = nullptr;
+  Supla::Mutex *timerAccessMutex = nullptr;
 
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();

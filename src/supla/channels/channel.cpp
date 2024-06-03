@@ -1164,6 +1164,10 @@ void Channel::setOnline() {
   }
 }
 
+bool Channel::isOnline() const {
+  return !offline;
+}
+
 void Channel::setInitialCaption(const char *caption) {
   if (initialCaption != nullptr) {
     delete [] initialCaption;

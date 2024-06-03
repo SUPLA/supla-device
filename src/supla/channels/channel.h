@@ -62,6 +62,7 @@ class Channel : public LocalAction {
 
   void setOffline();
   void setOnline();
+  bool isOnline() const;
 
   double getValueDouble();
   double getValueDoubleFirst();

@@ -49,7 +49,7 @@ int generateHexString(const void *input,
 void hexStringToArray(const char *input, char *output, int outputLength);
 
 // Converts hex string value to integer
-uint32_t hexStringToInt(const char *str, int len);
+uint32_t hexStringToInt(const char *str, int len = -1);
 
 // Converts decimal string value to unsigned integer
 uint32_t stringToUInt(const char *str, int len = -1);
@@ -89,6 +89,7 @@ const char *getManufacturer(int16_t id);
 namespace Supla {
 int getPlatformId();
 int getBitNumber(uint64_t value);
+int rssiToSignalStrength(int rssi);
 }  // namespace Supla
 
 

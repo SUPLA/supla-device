@@ -25,7 +25,6 @@
 #include <esp_tls.h>
 #include <esp_wifi.h>
 
-
 #ifdef SUPLA_DEVICE_ESP32
 #include <esp_mac.h>
 #endif
@@ -37,6 +36,7 @@
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <supla/tools.h>
 #include <esp_event.h>
 #include <esp_netif.h>
 
@@ -278,13 +278,7 @@ void Supla::EspIdfWifi::fillStateData(TDSC_ChannelState *channelState) {
   esp_wifi_sta_get_ap_info(&ap);
   int rssi = ap.rssi;
   channelState->WiFiRSSI = rssi;
-  if (rssi > -50) {
-    channelState->WiFiSignalStrength = 100;
-  } else if (rssi <= -100) {
-    channelState->WiFiSignalStrength = 0;
-  } else {
-    channelState->WiFiSignalStrength = 2 * (rssi + 100);
-  }
+  channelState->WiFiSignalStrength = Supla::rssiToSignalStrength(rssi);
 }
 
 void Supla::EspIdfWifi::setIpReady(bool ready) {

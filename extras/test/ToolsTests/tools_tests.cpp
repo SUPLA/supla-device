@@ -363,3 +363,16 @@ TEST(ToolsTest, stringToColorTests) {
   EXPECT_EQ(green, 255);
   EXPECT_EQ(blue, 255);
 }
+
+TEST(ToolsTest, rssiToSignalStrengthTests) {
+  EXPECT_EQ(Supla::rssiToSignalStrength(0), 100);
+  EXPECT_EQ(Supla::rssiToSignalStrength(10), 100);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-100), 0);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-100000), 0);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-50), 100);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-49), 100);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-51), 98);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-75), 50);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-95), 10);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-99), 2);
+}

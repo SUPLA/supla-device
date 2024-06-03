@@ -22,6 +22,7 @@
 #include <Arduino.h>
 
 #include <supla/log_wrapper.h>
+#include <supla/tools.h>
 
 #ifdef ARDUINO_ARCH_ESP8266
 #include <ESP8266WiFi.h>
@@ -144,13 +145,7 @@ class ESPWifi : public Supla::Wifi {
     WiFi.macAddress(channelState->MAC);
     int rssi = WiFi.RSSI();
     channelState->WiFiRSSI = rssi;
-    if (rssi > -50) {
-      channelState->WiFiSignalStrength = 100;
-    } else if (rssi <= -100) {
-      channelState->WiFiSignalStrength = 0;
-    } else {
-      channelState->WiFiSignalStrength = 2 * (rssi + 100);
-    }
+    channelState->WiFiSignalStrength = Supla::rssiToSignalStrength(rssi);
   }
 
   bool getMacAddr(uint8_t *out) override {

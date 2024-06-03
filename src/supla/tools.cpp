@@ -112,6 +112,10 @@ void hexStringToArray(const char *input, char *output, int outputLength) {
 }
 
 uint32_t hexStringToInt(const char *str, int len) {
+  if (len == -1) {
+    len = strlen(str);
+  }
+
   uint32_t result = 0;
 
   for (int i = 0; i < len; i++) {
@@ -438,4 +442,14 @@ int Supla::getBitNumber(uint64_t value) {
   }
 
   return position;
+}
+
+int Supla::rssiToSignalStrength(int rssi) {
+  if (rssi > -50) {
+    return 100;
+  } else if (rssi <= -100) {
+    return 0;
+  }
+
+  return 2 * (rssi + 100);
 }

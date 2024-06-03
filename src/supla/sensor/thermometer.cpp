@@ -18,7 +18,6 @@
 
 #include <supla/time.h>
 #include <supla/storage/config.h>
-#include <supla/log_wrapper.h>
 
 #include <stdio.h>
 

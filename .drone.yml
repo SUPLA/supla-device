@@ -147,6 +147,7 @@ steps:
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./WebInterface/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./AHT/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./ConfigModeInputs/
+  - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./ThermostatBasic/
 
 - name: arduino_esp32_compilation_check_part_1
   image: devel/arduino-cli
@@ -178,6 +179,7 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./ImpulseCounter/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./RGBW_WT32_ETH01/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./RGBW_ESP32_LAN8720/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./ThermostatBasic/
 
 - name: arduino_esp32_compilation_check_part_3
   image: devel/arduino-cli

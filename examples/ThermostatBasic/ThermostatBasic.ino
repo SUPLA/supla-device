@@ -134,8 +134,6 @@ void setup() {
 // from flash memory
 // hvac->getChannel()->setDefault(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_COOL);
 
-  Supla::Channel::reg_dev.Flags |= SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED;
-
   auto cfgButton = new Supla::Control::Button(CFG_BUTTON_GPIO, true, true);
   cfgButton->configureAsConfigButton(&SuplaDevice);
 

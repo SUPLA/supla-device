@@ -69,6 +69,12 @@ void NvsConfig::removeAll() {
   nvs_commit(nvsHandle);
 }
 
+bool NvsConfig::eraseKey(const char* key) {
+  SUPLA_LOG_DEBUG("NvsConfig: erase key %s", key);
+  esp_err_t err = nvs_erase_key(nvsHandle, key);
+  return err == ESP_OK;
+}
+
 // Generic getters and setters
 bool NvsConfig::setString(const char* key, const char* value) {
   esp_err_t err = nvs_set_str(nvsHandle, key, value);

@@ -355,6 +355,10 @@ void KeyValueElement::add(KeyValueElement* toBeAdded) {
   tmp->add(toBeAdded);
 }
 
+void KeyValueElement::setNext(KeyValueElement* toBeSet) {
+  next = toBeSet;
+}
+
 bool KeyValueElement::setString(const char* value) {
   unsigned int newSize = strlen(value) + 1;
   if (dataType == DATA_TYPE_NOT_SET) {
@@ -572,4 +576,24 @@ size_t KeyValueElement::serialize(uint8_t* destination, size_t maxSize) {
 
   return blockSize;
 }
+
+bool KeyValue::eraseKey(const char* key) {
+  auto elementToDelete = find(key);
+  if (elementToDelete == nullptr) {
+    return false;
+  }
+
+  // find previous:
+  auto previous = first;
+  while (previous) {
+    if (previous->getNext() == elementToDelete) {
+      previous->setNext(elementToDelete->getNext());
+      break;
+    }
+    previous = previous->getNext();
+  }
+  delete elementToDelete;
+  return true;
+}
+
 };  // namespace Supla

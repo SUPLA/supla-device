@@ -56,6 +56,7 @@ class KeyValue : public Config {
   bool setUInt8(const char* key, const uint8_t value) override;
   bool setInt32(const char* key, const int32_t value) override;
   bool setUInt32(const char* key, const uint32_t value) override;
+  bool eraseKey(const char* key) override;
 
  protected:
   int getBlobSize(const char* key) override;
@@ -81,6 +82,7 @@ class KeyValueElement {
   bool isKeyEqual(const char* keyToCheck);
   KeyValueElement* getNext();
   bool hasNext();
+  void setNext(KeyValueElement* toBeSet);
   void add(KeyValueElement* toBeAdded);
 
   size_t serialize(uint8_t* destination, size_t maxSize);

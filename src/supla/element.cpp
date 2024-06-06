@@ -92,6 +92,8 @@ void Element::onInit() {}
 
 void Element::onLoadConfig(SuplaDeviceClass *) {}
 
+void Element::purgeConfig() {}
+
 void Element::onLoadState() {}
 
 void Element::onSaveState() {}

@@ -50,6 +50,7 @@ class NvsConfig : public Config {
   bool setUInt8(const char* key, const uint8_t value) override;
   bool setInt32(const char* key, const int32_t value) override;
   bool setUInt32(const char* key, const uint32_t value) override;
+  bool eraseKey(const char* key) override;
 
   void commit() override;
 

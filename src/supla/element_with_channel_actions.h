@@ -61,6 +61,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   uint8_t handleChannelConfig(TSD_ChannelConfig *result, bool local) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
+  void purgeConfig() override;
 
   void clearChannelConfigChangedFlag();
 

@@ -44,6 +44,9 @@ class Element {
   // Element should read its configration in this method
   virtual void onLoadConfig(SuplaDeviceClass *sdc);
 
+  // Removed all configration data related to the element
+  virtual void purgeConfig();
+
   // Second method called on element in SuplaDevice.begin()
   // method called during Config initialization (i.e. read from EEPROM, FRAM).
   // Called only if Storage class is configured

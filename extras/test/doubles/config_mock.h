@@ -47,6 +47,7 @@ class ConfigMock : public Supla::Config {
               getBlob,
               (const char* key, char* value, size_t blobSize),
               (override));
+  MOCK_METHOD(bool, eraseKey, (const char* key), (override));
   MOCK_METHOD(int, getBlobSize, (const char* key), (override));
   MOCK_METHOD(bool, getInt8, (const char* key, int8_t* result), (override));
   MOCK_METHOD(bool, getUInt8, (const char* key, uint8_t* result), (override));

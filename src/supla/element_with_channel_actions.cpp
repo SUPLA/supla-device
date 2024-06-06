@@ -339,3 +339,14 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
   }
 }
 
+void Supla::ElementWithChannelActions::purgeConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  auto channel = getChannel();
+  if (cfg && channel) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, "fnc");
+    cfg->eraseKey(key);
+    generateKey(key, "cfg_chng");
+    cfg->eraseKey(key);
+  }
+}

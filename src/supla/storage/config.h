@@ -73,6 +73,7 @@ class Config {
   virtual bool setUInt8(const char* key, const uint8_t value) = 0;
   virtual bool setInt32(const char* key, const int32_t value) = 0;
   virtual bool setUInt32(const char* key, const uint32_t value) = 0;
+  virtual bool eraseKey(const char* key) = 0;
 
   static void generateKey(char *, int, const char *);
 

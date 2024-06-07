@@ -325,7 +325,7 @@ class ElectricityMeter : public ElementWithChannelActions,
   int64_t rawApparentPower[MAX_PHASES] = {};
 
   uint32_t lastReadTime = 0;
-  uint8_t refreshRateSec = 5;
+  uint16_t refreshRateSec = 5;
   bool valueChanged = false;
   bool currentMeasurementAvailable = false;
   bool powerActiveMeasurementAvailable = false;

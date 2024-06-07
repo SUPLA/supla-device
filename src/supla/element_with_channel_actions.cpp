@@ -82,10 +82,16 @@ bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
     generateKey(key, "fnc");
     int32_t channelFunc = 0;
     if (cfg->getInt32(key, &channelFunc)) {
-      SUPLA_LOG_INFO("Channel[%d] function loaded successfully (%d)",
-                     channel->getChannelNumber(),
-                     channelFunc);
-      channel->setDefault(channelFunc);
+      if (channel->isFunctionValid(channelFunc)) {
+        SUPLA_LOG_INFO("Channel[%d] function loaded successfully (%d)",
+                       channel->getChannelNumber(),
+                       channelFunc);
+        channel->setDefault(channelFunc);
+      } else {
+        SUPLA_LOG_INFO("Channel[%d] function invalid (%d)",
+                       channel->getChannelNumber(),
+                       channelFunc);
+      }
       return true;
     } else {
       SUPLA_LOG_INFO("Channel[%d] function missing. Using SW defaults",

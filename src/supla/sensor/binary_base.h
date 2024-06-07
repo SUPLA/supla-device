@@ -44,6 +44,7 @@ class BinaryBase : public ElementWithChannelActions {
 
   void setServerInvertLogic(bool invertLogic);
   void setReadIntervalMs(uint32_t intervalMs);
+  void purgeConfig() override;
 
  protected:
   uint32_t lastReadTime = 0;

@@ -51,6 +51,18 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
+void BinaryBase::purgeConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return;
+  }
+  char key[16] = {};
+  for (int i = 0; i < 2; i++) {
+    generateKey(key, BinarySensorServerInvertedLogicTag);
+    cfg->eraseKey(key);
+  }
+}
+
 void BinaryBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   configFinishedReceived = false;
   defaultConfigReceived = false;

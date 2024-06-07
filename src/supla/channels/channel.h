@@ -150,6 +150,7 @@ class Channel : public LocalAction {
   void setDefault(_supla_int_t value);
   void setDefaultFunction(_supla_int_t function);
   int32_t getDefaultFunction() const;
+  bool isFunctionValid(int32_t function) const;
   void setFlag(uint64_t flag);
   void unsetFlag(uint64_t flag);
   uint64_t getFlags() const;

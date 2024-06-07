@@ -122,7 +122,13 @@ bool Channel::setChannelNumber(int newChannelNumber) {
     return true;
   }
   if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
-    return false;
+    SUPLA_LOG_INFO("Channel with number %d already exists, swapping...",
+                   newChannelNumber);
+    channelNumber = -1;
+    auto conflictChannel = GetByChannelNumber(newChannelNumber);
+    if (conflictChannel) {
+      conflictChannel->setChannelNumber(oldChannelNumber);
+    }
   }
 
   channelNumber = newChannelNumber;
@@ -1247,4 +1253,33 @@ void Channel::fillRawValue(void *valueToFill) {
 
 char *Channel::getValuePtr() {
   return value;
+}
+
+bool Channel::isFunctionValid(int32_t function) const {
+  switch (channelType) {
+    // TODO(klew): add other functions
+    case ChannelType::BINARYSENSOR: {
+      switch (function) {
+        case SUPLA_CHANNELFNC_NOLIQUIDSENSOR:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_WINDOW:
+        case SUPLA_CHANNELFNC_HOTELCARDSENSOR:
+        case SUPLA_CHANNELFNC_ALARMARMAMENTSENSOR:
+        case SUPLA_CHANNELFNC_MAILSENSOR:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_ROLLERSHUTTER:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_ROOFWINDOW:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_GARAGEDOOR:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_GATE:
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_GATEWAY: {
+          return true;
+        }
+        default: {
+          return false;
+        }
+      }
+    }
+    default: {
+      return true;
+    }
+  }
 }

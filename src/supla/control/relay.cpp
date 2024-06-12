@@ -63,8 +63,7 @@ Relay::~Relay() {
   }
 }
 
-void Relay::onLoadConfig(SuplaDeviceClass *sdc) {
-  (void)(sdc);
+void Relay::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();

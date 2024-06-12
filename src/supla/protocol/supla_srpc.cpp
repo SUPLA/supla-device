@@ -1005,8 +1005,8 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
   if (!isRegisteredAndReady()) {
     return;
   }
-  srpc_ds_async_channel_value_changed_c(srpc, channelNumber, value,
-      offline, validityTimeSec);
+  srpc_ds_async_channel_value_changed_c(
+      srpc, channelNumber, value, offline, validityTimeSec);
 }
 
 void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(

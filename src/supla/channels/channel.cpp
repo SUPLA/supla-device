@@ -655,11 +655,11 @@ void Channel::requestChannelConfig() {
   channelConfig = true;
 }
 
-bool Channel::isBatteryPowered() {
+bool Channel::isBatteryPowered() const {
   return (batteryLevel <= 100);
 }
 
-unsigned char Channel::getBatteryLevel() {
+uint8_t Channel::getBatteryLevel() const {
   if (isBatteryPowered()) {
     return batteryLevel;
   }
@@ -668,6 +668,18 @@ unsigned char Channel::getBatteryLevel() {
 
 void Channel::setBatteryLevel(unsigned char level) {
   batteryLevel = level;
+}
+
+uint8_t Channel::getBridgeSignalStrength() const {
+  return bridgeSignalStrength;
+}
+
+void Channel::setBridgeSignalStrength(uint8_t strength) {
+  bridgeSignalStrength = strength;
+}
+
+bool Channel::isBridgeSignalStrengthAvailable() const {
+  return bridgeSignalStrength <= 100;
 }
 
 void Channel::setHvacIsOn(uint8_t isOn) {
@@ -1210,6 +1222,10 @@ void Channel::fillDeviceChannelStruct(
   if (deviceChannelStruct == nullptr) {
     return;
   }
+  // this method is called during register device message preparation, so
+  // we clear update ready flag in order to not send the same values again
+  // after registration
+  clearUpdateReady();
   memset(deviceChannelStruct, 0, sizeof(TDS_SuplaDeviceChannel_D));
 
   deviceChannelStruct->Number = getChannelNumber();

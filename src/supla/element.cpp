@@ -191,6 +191,12 @@ void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
         channelState->BatteryPowered = 1;
         channelState->BatteryLevel = channel->getBatteryLevel();
       }
+      if (channel->isBridgeSignalStrengthAvailable()) {
+        channelState->Fields |=
+            SUPLA_CHANNELSTATE_FIELD_BRIDGENODESIGNALSTRENGTH;
+        channelState->BridgeNodeSignalStrength =
+            channel->getBridgeSignalStrength();
+      }
       return;
     }
     if (channel != getSecondaryChannel()) {

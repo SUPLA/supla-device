@@ -143,6 +143,14 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
       _srpc, registerdevice);
 }
 
+_supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks_g(
+    void *_srpc, TDS_SuplaRegisterDeviceHeader *registerdevice,
+    TDS_SuplaDeviceChannel_E *(*get_channel_data_callback)(int)) {
+  assert(SrpcInterface::instance);
+  return SrpcInterface::instance->srpc_ds_async_registerdevice_in_chunks_g(
+      _srpc, registerdevice);
+}
+
 _supla_int_t srpc_dcs_async_ping_server(void *_srpc) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->srpc_dcs_async_ping_server(_srpc);

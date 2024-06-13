@@ -43,6 +43,7 @@ class Channel : public LocalAction {
   static void resetToDefaults();
 #endif
   void fillDeviceChannelStruct(TDS_SuplaDeviceChannel_D *deviceChannelStruct);
+  void fillDeviceChannelStruct(TDS_SuplaDeviceChannel_E *deviceChannelStruct);
 
   bool setChannelNumber(int newChannelNumber);
 
@@ -200,28 +201,37 @@ class Channel : public LocalAction {
   void fillRawValue(void *value);
   char *getValuePtr();
 
+  void setSubDeviceId(uint8_t subDeviceId);
+  uint8_t getSubDeviceId() const;
+
  protected:
   static Channel *firstPtr;
   Channel *nextPtr = nullptr;
 
   char *initialCaption = nullptr;
+
+  uint64_t channelFlags = 0;
+  uint32_t functionsBitmap = 0;
+  uint32_t validityTimeSec = 0;
+
+  int16_t channelNumber = -1;
+
+  uint16_t defaultFunction =
+      0;  // function in proto use 32 bit, but there are no functions defined so
+          // far that use more than 16 bits
+
   bool valueChanged = false;
   bool channelConfig = false;
+
   unsigned char batteryLevel = 255;          // 0 - 100%; 255 - not used
   unsigned char bridgeSignalStrength = 255;  // 0 - 100%; 255 - not used
 
   // registration parameter
-  int16_t channelNumber = -1;
   ChannelType channelType = ChannelType::NOT_SET;
 
-  uint32_t functionsBitmap = 0;
-  uint16_t defaultFunction =
-      0;  // function in proto use 32 bit, but there are no functions defined so
-          // far that use more than 16 bits
-  uint64_t channelFlags = 0;
   bool offline = false;
-  uint32_t validityTimeSec = 0;
   uint8_t defaultIcon = 0;
+  uint8_t subDeviceId = 0;
 
   union {
     char value[SUPLA_CHANNELVALUE_SIZE] = {};

@@ -1260,6 +1260,50 @@ void Channel::fillDeviceChannelStruct(
       static_cast<uint8_t>(value[7]));
 }
 
+void Channel::fillDeviceChannelStruct(
+    TDS_SuplaDeviceChannel_E *deviceChannelStruct) {
+  if (deviceChannelStruct == nullptr) {
+    return;
+  }
+  // this method is called during register device message preparation, so
+  // we clear update ready flag in order to not send the same values again
+  // after registration
+  clearUpdateReady();
+  memset(deviceChannelStruct, 0, sizeof(TDS_SuplaDeviceChannel_E));
+
+  deviceChannelStruct->Number = getChannelNumber();
+  deviceChannelStruct->Type = getChannelType();
+  deviceChannelStruct->FuncList = getFuncList();  // also sets ActionTriggerCaps
+  deviceChannelStruct->Default = getDefaultFunction();
+  deviceChannelStruct->Flags = getFlags();
+  deviceChannelStruct->Offline = offline;
+  deviceChannelStruct->ValueValidityTimeSec = validityTimeSec;
+  deviceChannelStruct->DefaultIcon = getDefaultIcon();
+  deviceChannelStruct->SubDeviceId = getSubDeviceId();
+  memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
+  SUPLA_LOG_VERBOSE(
+      "CH[%i], subDevId: %d, type: %d, FuncList: 0x%X, function: %d, flags: "
+      "0x%llX, %s, validityTimeSec: %d, icon: %d, value: "
+      "[%02x %02x %02x %02x %02x %02x %02x %02x]",
+      getChannelNumber(),
+      getSubDeviceId(),
+      getChannelType(),
+      getFuncList(),
+      getDefaultFunction(),
+      getFlags(),
+      offline ? "offline" : "online",
+      validityTimeSec,
+      getDefaultIcon(),
+      static_cast<uint8_t>(value[0]),
+      static_cast<uint8_t>(value[1]),
+      static_cast<uint8_t>(value[2]),
+      static_cast<uint8_t>(value[3]),
+      static_cast<uint8_t>(value[4]),
+      static_cast<uint8_t>(value[5]),
+      static_cast<uint8_t>(value[6]),
+      static_cast<uint8_t>(value[7]));
+}
+
 void Channel::fillRawValue(void *valueToFill) {
   if (valueToFill == nullptr) {
     return;
@@ -1299,3 +1343,12 @@ bool Channel::isFunctionValid(int32_t function) const {
     }
   }
 }
+
+void Channel::setSubDeviceId(uint8_t subDeviceId) {
+  this->subDeviceId = subDeviceId;
+}
+
+uint8_t Channel::getSubDeviceId() const {
+  return subDeviceId;
+}
+

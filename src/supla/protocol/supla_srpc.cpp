@@ -744,10 +744,20 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Perform registration if we are not yet registered
     registered = -1;
     sdc->status(STATUS_REGISTER_IN_PROGRESS, F("Register in progress"));
-    if (!srpc_ds_async_registerdevice_in_chunks(
-            srpc, Supla::RegisterDevice::getRegDevHeaderPtr(),
-            Supla::RegisterDevice::getChannelPtr)) {
-      SUPLA_LOG_WARNING("Fatal SRPC failure!");
+    if (version <= 24) {
+      if (!srpc_ds_async_registerdevice_in_chunks(
+              srpc,
+              Supla::RegisterDevice::getRegDevHeaderPtr(),
+              Supla::RegisterDevice::getChannelPtr_D)) {
+        SUPLA_LOG_WARNING("Fatal SRPC failure!");
+      }
+    } else {
+      if (!srpc_ds_async_registerdevice_in_chunks_g(
+              srpc,
+              Supla::RegisterDevice::getRegDevHeaderPtr(),
+              Supla::RegisterDevice::getChannelPtr_E)) {
+        SUPLA_LOG_WARNING("Fatal SRPC failure!");
+      }
     }
     return false;
   } else if (registered == -1) {
@@ -1336,7 +1346,7 @@ void Supla::Protocol::SuplaSrpc::initializeSrpc() {
     deinitializeSrpc();
   }
 
-  SUPLA_LOG_INFO("Initializing SRPC");
+  SUPLA_LOG_INFO("Initializing SRPC (proto: %d)", version);
   TsrpcParams srpcParams;
   srpc_params_init(&srpcParams);
   srpcParams.data_read = &Supla::dataRead;

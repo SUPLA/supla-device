@@ -26,13 +26,17 @@
 
 namespace {
 TDS_SuplaRegisterDeviceHeader reg_dev = {};
-TDS_SuplaDeviceChannel_D deviceChannelStruct = {};
+union {
+  TDS_SuplaDeviceChannel_E version_E = {};
+  TDS_SuplaDeviceChannel_D version_D;
+} deviceChannelStruct;
 }  // namespace
 
 #ifdef SUPLA_TEST
 void Supla::RegisterDevice::resetToDefaults() {
   memset(&reg_dev, 0, sizeof(reg_dev));
-  memset(&deviceChannelStruct, 0, sizeof(deviceChannelStruct));
+  memset(
+      &deviceChannelStruct.version_E, 0, sizeof(deviceChannelStruct.version_E));
 }
 
 int32_t Supla::RegisterDevice::getChannelType(int channelNumber) {
@@ -104,7 +108,7 @@ TDS_SuplaRegisterDeviceHeader *Supla::RegisterDevice::getRegDevHeaderPtr() {
   return &reg_dev;
 }
 
-TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr(int index) {
+TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr_D(int index) {
   if (index >= reg_dev.channel_count || index == -1) {
     return nullptr;
   }
@@ -114,9 +118,24 @@ TDS_SuplaDeviceChannel_D *Supla::RegisterDevice::getChannelPtr(int index) {
     channel = channel->next();
   }
 
-  channel->fillDeviceChannelStruct(&deviceChannelStruct);
+  channel->fillDeviceChannelStruct(&deviceChannelStruct.version_D);
 
-  return &deviceChannelStruct;
+  return &deviceChannelStruct.version_D;
+}
+
+TDS_SuplaDeviceChannel_E *Supla::RegisterDevice::getChannelPtr_E(int index) {
+  if (index >= reg_dev.channel_count || index == -1) {
+    return nullptr;
+  }
+
+  auto channel = Supla::Channel::Begin();
+  for (int i = 0; i < reg_dev.channel_count && i < index && channel; i++) {
+    channel = channel->next();
+  }
+
+  channel->fillDeviceChannelStruct(&deviceChannelStruct.version_E);
+
+  return &deviceChannelStruct.version_E;
 }
 
 bool Supla::RegisterDevice::isGUIDEmpty() {

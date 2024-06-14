@@ -137,7 +137,10 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
         securityLevel = 0;
       }
 
-      SUPLA_LOG_DEBUG("Security level: %d", securityLevel);
+      SUPLA_LOG_DEBUG("Security level: %s",
+          securityLevel == 2 ? "Skip CA check" :
+          securityLevel == 1 ? "Custom CA" :
+          "Supla CA");
       switch (securityLevel) {
         default:
         case 0: {
@@ -300,7 +303,7 @@ void Supla::messageReceived(void *srpc,
         result.DataSize = 0;
         SUPLA_LOG_DEBUG(
             "CALCFG CMD received: senderId %d, ch %d, cmd %d, suauth %d, "
-            "datatype %d, datasize %d, ",
+            "datatype %d, datasize %d",
             rd.data.sd_device_calcfg_request->SenderID,
             rd.data.sd_device_calcfg_request->ChannelNumber,
             rd.data.sd_device_calcfg_request->Command,
@@ -462,7 +465,7 @@ void Supla::messageReceived(void *srpc,
         if (request) {
           auto element = Supla::Element::getElementByChannelNumber(
               request->ChannelNumber);
-          SUPLA_LOG_INFO("Received ChannelConfigFinished for channel %d",
+          SUPLA_LOG_INFO("Received ChannelConfigFinished for channel [%d]",
               request->ChannelNumber);
 
           if (element) {
@@ -476,11 +479,12 @@ void Supla::messageReceived(void *srpc,
         break;
       }
       case SUPLA_SCD_CALL_SET_CHANNEL_CAPTION_RESULT:
-        SUPLA_LOG_DEBUG("Receieved setChannelCaptionResult for %d",
+        SUPLA_LOG_DEBUG("Receieved setChannelCaptionResult for channel [%d]",
                         rd.data.scd_set_caption_result->ChannelNumber);
         break;
       default:
-        SUPLA_LOG_WARNING("Received unknown message from server!");
+        SUPLA_LOG_WARNING("Received unknown message from server! (call_id: %d)",
+                          rd.call_id);
         break;
     }
 
@@ -531,7 +535,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       sdc->status(STATUS_REGISTERED_AND_READY, F("Registered and ready"));
 
       if (serverActivityTimeout != activityTimeoutS) {
-        SUPLA_LOG_DEBUG("Changing activity timeout to %d", activityTimeoutS);
+        SUPLA_LOG_DEBUG("Changing activity timeout to %d s", activityTimeoutS);
         TDCS_SuplaSetActivityTimeout at;
         at.activity_timeout = activityTimeoutS;
         srpc_dcs_async_set_activity_timeout(srpc, &at);
@@ -1200,7 +1204,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
   timerState->TargetValue[0] = state;
   timerState->RemainingTimeMs = timeMs;
 
-  SUPLA_LOG_DEBUG("SRPC sedning: remaining time %d, channel %d, state %d",
+  SUPLA_LOG_DEBUG("SRPC sending: remaining time %d, channel %d, state %d",
                   timeMs, channelNumber, state);
   srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
   delete value;
@@ -1236,7 +1240,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
     timerState->RemainingTimeS = remainingTime;
   }
 
-  SUPLA_LOG_DEBUG("SRPC sedning: remaining time %d %s, channel %d",
+  SUPLA_LOG_DEBUG("SRPC sending: remaining time %d %s, channel %d",
                   remainingTime,
                   useSecondsInsteadOfMs ? "s" : "ms",
                   channelNumber);

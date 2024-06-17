@@ -144,6 +144,10 @@ void FactoryTest::iterateAlways() {
   if (!testingMachineEnabled) {
     return;
   }
+  if (sdc->getCurrentStatus() == STATUS_CONFIG_MODE) {
+    // ignore factory test in config mode
+    return;
+  }
 
   if (!checkTestStep()) {
     SUPLA_LOG_ERROR("TEST[%d,%d]: check test step failed",

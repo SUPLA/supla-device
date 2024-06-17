@@ -45,9 +45,13 @@ void EnterCfgModeAfterPowerCycle::onLoadConfig(SuplaDeviceClass *sdc) {
     uint8_t disableUI = 0;
     cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &disableUI);
     enabled = (disableUI == 1);
+    if (cfg->getDeviceMode() == Supla::DeviceMode::DEVICE_MODE_TEST) {
+      enabled = true;
+    }
 
     cfg->getUInt32(Supla::Device::PowerCycleKey, &currentPowerCycle);
-    SUPLA_LOG_DEBUG("PowerCycle: %d", currentPowerCycle);
+    SUPLA_LOG_DEBUG("PowerCycle: %d (%s)", currentPowerCycle,
+                    enabled ? "enabled" : "disabled");
   }
 }
 

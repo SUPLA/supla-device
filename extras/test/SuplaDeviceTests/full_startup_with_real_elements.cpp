@@ -75,7 +75,7 @@ TEST_F(FullStartupWithRealElements, SleepingBinarySensor) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
@@ -149,7 +149,7 @@ TEST_F(FullStartupWithRealElements, SleepingThermometer) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
@@ -225,7 +225,7 @@ TEST_F(FullStartupWithRealElements, SleepingThermometerAndBinarySensor) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};

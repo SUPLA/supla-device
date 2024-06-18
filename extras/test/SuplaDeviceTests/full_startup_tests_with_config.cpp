@@ -168,8 +168,9 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
+  // proto version at least 23 is enforced by s-d
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
@@ -291,7 +292,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
@@ -415,7 +416,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
@@ -539,7 +540,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
@@ -671,7 +672,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
@@ -797,7 +798,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
@@ -922,7 +923,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
@@ -1103,7 +1104,7 @@ TEST_F(FullStartupWithConfig, OfflineModeProtoDisabled) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_)).Times(0);
   EXPECT_CALL(srpc, srpc_init(_)).Times(0);
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(0);
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23)).Times(0);
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
@@ -1260,7 +1261,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOff) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_)).Times(0);
   EXPECT_CALL(srpc, srpc_init(_)).Times(0);
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(0);
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23)).Times(0);
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
@@ -1352,7 +1353,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_)).Times(0);
   EXPECT_CALL(srpc, srpc_init(_)).Times(0);
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(0);
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23)).Times(0);
 
   EXPECT_TRUE(sd.begin(18));
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
@@ -1860,7 +1861,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_));
   EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
   EXPECT_CALL(net, setup()).Times(1);
@@ -1990,7 +1991,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_)).Times(0);
   EXPECT_CALL(srpc, srpc_init(_)).Times(0);;
-  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 18)).Times(0);
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23)).Times(0);
 
   EXPECT_CALL(net, isReady()).Times(0);
   EXPECT_CALL(net, setup()).Times(0);

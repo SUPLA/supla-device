@@ -88,6 +88,8 @@ class Button : public SimpleButton, public ActionHandler {
   void disableButton();
   void enableButton();
 
+  uint32_t getLastStateChange() const;
+
  protected:
   void evaluateMaxMulticlickValue();
   // disbles repeating "on hold" if repeat time is lower than threshold

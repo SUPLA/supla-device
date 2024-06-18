@@ -508,3 +508,7 @@ void Button::handleAction(int event, int action) {
     }
   }
 }
+
+uint32_t Button::getLastStateChange() const {
+  return lastStateChangeMs;
+}

@@ -79,6 +79,8 @@ class ActionTrigger : public Element, public ActionHandler {
   static int actionTriggerCapToActionId(uint32_t actionCap);
   static int getActionTriggerCap(int action);
 
+  bool isAnyActionEnabledOnServer() const;
+
  protected:
   void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();

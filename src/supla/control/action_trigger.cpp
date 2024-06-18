@@ -598,3 +598,8 @@ void Supla::Control::ActionTrigger::addActionToButtonAndDisableIt(int action,
   attachedButton->addAction(action, this, event);
   attachedButton->disableAction(action, this, event);
 }
+
+bool Supla::Control::ActionTrigger::isAnyActionEnabledOnServer() const {
+  return activeActionsFromServer != 0;
+}
+

@@ -72,7 +72,7 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
 
     flagsCopy = ::fcntl(connectionFd, F_GETFL, 0);
     struct timeval timeout = {};
-    timeout.tv_sec = 30;
+    timeout.tv_sec = 10;
     ::setsockopt(
         connectionFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
     ::setsockopt(
@@ -102,6 +102,8 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
       }
     }
 
+    fcntl(connectionFd, F_SETFL, flagsCopy);
+
     if (isConnected) {
       break;
     }
@@ -118,7 +120,6 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
     return 0;
   }
 
-  fcntl(connectionFd, F_SETFL, flagsCopy);
 
   if (sslEnabled) {
     if (ctx == nullptr) {

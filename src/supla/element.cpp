@@ -172,6 +172,15 @@ int Element::getChannelNumber() {
   return result;
 }
 
+int Element::getSecondaryChannelNumber() {
+  int result = -1;
+  Channel *channel = getSecondaryChannel();
+  if (channel) {
+    result = channel->getChannelNumber();
+  }
+  return result;
+}
+
 Channel *Element::getChannel() {
   return nullptr;
 }

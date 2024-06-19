@@ -25,6 +25,7 @@
 #include <supla/network/client.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/register_device.h>
+#include <supla/device/channel_conflict_resolver.h>
 
 #include <string.h>
 
@@ -256,6 +257,9 @@ void Supla::messageReceived(void *srpc,
         break;
       case SUPLA_SD_CALL_REGISTER_DEVICE_RESULT:
         suplaSrpc->onRegisterResult(rd.data.sd_register_device_result);
+        break;
+      case SUPLA_SD_CALL_REGISTER_DEVICE_RESULT_B:
+        suplaSrpc->onRegisterResultB(rd.data.sd_register_device_result_b);
         break;
       case SUPLA_SD_CALL_CHANNEL_SET_VALUE: {
         auto element = Supla::Element::getElementByChannelNumber(
@@ -507,6 +511,57 @@ void Supla::Protocol::SuplaSrpc::onVersionError(
 
   lastIterateTime = millis();
   waitForIterate = 15000;
+}
+
+void Supla::Protocol::SuplaSrpc::onRegisterResultB(
+      TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB) {
+  // Handle generic result code
+  auto regDevResult = reinterpret_cast<TSD_SuplaRegisterDeviceResult*>(
+      registerDeviceResultB);
+  onRegisterResult(regDevResult);
+
+  // Handle channel conflict report
+  SUPLA_LOG_DEBUG("onRegisterResultB: %d, report size: %d",
+                  regDevResult->result_code,
+                  registerDeviceResultB->channel_report_size);
+
+  // First, check types of conflicts reported by server
+  bool hasConfilictInvalidType = false;
+  bool hasConfilictChannelMissingOnServer = false;
+  bool hasConflictChannelMissingOnDevice = false;
+  for (int i = 0; i < registerDeviceResultB->channel_report_size; i++) {
+    if (registerDeviceResultB->channel_report[i] == 0 &&
+        !Supla::RegisterDevice::isChannelNumberFree(i)) {
+      SUPLA_LOG_WARNING(
+          "Channel[%d]: is present on device, but missing on server side", i);
+      hasConfilictChannelMissingOnServer = true;
+      continue;
+    }
+
+    if ((registerDeviceResultB->channel_report[i] &
+         CHANNEL_REPORT_CHANNEL_REGISTERED) &&
+        Supla::RegisterDevice::isChannelNumberFree(i)) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d]: is registered on server side, but missing on device",
+          i);
+      hasConflictChannelMissingOnDevice = true;
+      continue;
+    }
+
+    if ((registerDeviceResultB->channel_report[i] &
+         CHANNEL_REPORT_INCORRECT_CHANNEL_TYPE)) {
+      SUPLA_LOG_WARNING("Channel[%d]: channel type mismatch", i);
+      hasConfilictInvalidType = true;
+      continue;
+    }
+  }
+  if (channelConflictResolver) {
+    channelConflictResolver->onChannelConflictReport(
+        registerDeviceResultB->channel_report,
+        registerDeviceResultB->channel_report_size,
+        hasConfilictInvalidType, hasConfilictChannelMissingOnServer,
+        hasConflictChannelMissingOnDevice);
+  }
 }
 
 void Supla::Protocol::SuplaSrpc::onRegisterResult(
@@ -1373,3 +1428,7 @@ void Supla::Protocol::SuplaSrpc::deinitializeSrpc() {
   setDeviceConfigReceivedAfterRegistration = false;
 }
 
+void Supla::Protocol::SuplaSrpc::setChannelConflictResolver(
+    Supla::Device::ChannelConflictResolver *resolver) {
+  channelConflictResolver = resolver;
+}

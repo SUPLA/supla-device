@@ -83,6 +83,7 @@ namespace Device {
   };
 class SwUpdate;
 class Mutex;
+class ChannelConflictResolver;
 }  // namespace Device
 }  // namespace Supla
 
@@ -201,6 +202,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool isOfflineModeDuringConfig() const;
 
   Supla::Mutex *getTimerAccessMutex();
+
+  void setChannelConflictResolver(
+      Supla::Device::ChannelConflictResolver *resolver);
 
  protected:
   int networkIsNotReadyCounter = 0;

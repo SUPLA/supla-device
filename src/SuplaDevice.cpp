@@ -1266,4 +1266,10 @@ Supla::Mutex *SuplaDeviceClass::getTimerAccessMutex() {
   return timerAccessMutex;
 }
 
+void SuplaDeviceClass::setChannelConflictResolver(
+    Supla::Device::ChannelConflictResolver *resolver) {
+  createSrpcLayerIfNeeded();
+  srpcLayer->setChannelConflictResolver(resolver);
+}
+
 SuplaDeviceClass SuplaDevice;

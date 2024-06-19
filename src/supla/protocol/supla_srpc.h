@@ -31,6 +31,7 @@ namespace Supla {
 class Client;
 
 namespace Device {
+class ChannelConflictResolver;
 class RemoteDeviceConfig;
 }  // namespace Device
 
@@ -55,7 +56,7 @@ class SuplaSrpc : public ProtocolLayer {
  public:
   static bool isSuplaSSLEnabled;
 
-  explicit SuplaSrpc(SuplaDeviceClass *sdc, int version = 16);
+  explicit SuplaSrpc(SuplaDeviceClass *sdc, int version = 23);
   ~SuplaSrpc();
 
   void setNetworkClient(Supla::Client *newClient);
@@ -103,8 +104,9 @@ class SuplaSrpc : public ProtocolLayer {
 
   void onVersionError(TSDC_SuplaVersionError *versionError);
   void onRegisterResult(TSD_SuplaRegisterDeviceResult *register_device_result);
-  void onSetActivityTimeoutResult(
-      TSDC_SuplaSetActivityTimeoutResult *result);
+  void onRegisterResultB(
+      TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB);
+  void onSetActivityTimeoutResult(TSDC_SuplaSetActivityTimeoutResult *result);
   void setActivityTimeout(uint32_t activityTimeoutSec);
   uint32_t getActivityTimeout();
   void updateLastResponseTime();
@@ -131,6 +133,9 @@ class SuplaSrpc : public ProtocolLayer {
                                void *data = nullptr);
 
   static const char *configResultToCStr(int result);
+
+  void setChannelConflictResolver(
+      Supla::Device::ChannelConflictResolver *resolver);
 
  protected:
   bool ping();
@@ -159,6 +164,7 @@ class SuplaSrpc : public ProtocolLayer {
   const char *supla3rdPartyCACert = nullptr;
   const char *selectedCertificate = nullptr;
   void *srpc = nullptr;
+  Supla::Device::ChannelConflictResolver *channelConflictResolver = nullptr;
 
  private:
   Supla::Device::RemoteDeviceConfig *remoteDeviceConfig = nullptr;

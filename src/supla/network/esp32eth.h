@@ -123,11 +123,11 @@ class ESPETH : public Supla::LAN {
         WiFiEvent_t::ARDUINO_EVENT_ETH_DISCONNECTED);  // ESP core 2.0.2
 
     Serial.println(F("[Ethernet] establishing LAN connection"));
-    ETH.begin(ETH_ADDRESS,
-              ETH_POWER_PIN,
+    ETH.begin(ETH_TYPE,
+              ETH_ADDRESS,
               ETH_MDC_PIN,
               ETH_MDIO_PIN,
-              ETH_TYPE,
+              ETH_POWER_PIN,
               ETH_CLK_MODE);
     initDone = true;
 
@@ -160,7 +160,7 @@ class ESPETH : public Supla::LAN {
     macSizeForHostname = macSize;
     strncpy(hostname, prefix, sizeof(hostname) - 1);
     SUPLA_LOG_DEBUG("[%s] Network AP/hostname: %s", getIntfName(), hostname);
-}
+  }
 
  protected:
   uint8_t ETH_ADDRESS = {};

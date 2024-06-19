@@ -65,7 +65,7 @@ class WT32_ETH01 : public Supla::LAN {
       ETH_ADDRESS = 1;
     }
   }
-  
+
   ~WT32_ETH01() {
     if (thisWtEth == this) {
       thisWtEth = nullptr;

@@ -40,7 +40,7 @@ EmCtTypeParameters::EmCtTypeParameters(Supla::Sensor::ElectricityMeter *em)
     registerValue("200A/66.6mA", 1);
   }
   if (em->isCtTypeSupported(EM_CT_TYPE_400A_133mA)) {
-    registerValue("400A/133.2mA", 2);
+    registerValue("400A/133.3mA", 2);
   }
 }
 

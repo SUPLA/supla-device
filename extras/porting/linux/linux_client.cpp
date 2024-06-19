@@ -70,8 +70,14 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
       continue;
     }
 
-    flagsCopy = fcntl(connectionFd, F_GETFL, 0);
-    fcntl(connectionFd, F_SETFL, O_NONBLOCK);
+    flagsCopy = ::fcntl(connectionFd, F_GETFL, 0);
+    struct timeval timeout = {};
+    timeout.tv_sec = 30;
+    ::setsockopt(
+        connectionFd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+    ::setsockopt(
+        connectionFd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+    ::fcntl(connectionFd, F_SETFL, O_NONBLOCK);
     if (::connect(connectionFd, addr->ai_addr, addr->ai_addrlen) == 0) {
       break;
     }
@@ -84,10 +90,11 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
       pfd.fd = connectionFd;
       pfd.events = POLLOUT;
 
-      int result = poll(&pfd, 1, timeoutMs);
+      int result = ::poll(&pfd, 1, timeoutMs);
       if (result > 0) {
         socklen_t len = sizeof(err);
-        int retval = getsockopt(connectionFd, SOL_SOCKET, SO_ERROR, &err, &len);
+        int retval =
+            ::getsockopt(connectionFd, SOL_SOCKET, SO_ERROR, &err, &len);
 
         if (retval == 0 && err == 0) {
           isConnected = true;
@@ -99,7 +106,7 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
       break;
     }
     srcIp = 0;
-    close(connectionFd);
+    ::close(connectionFd);
     connectionFd = -1;
   }
 

@@ -103,15 +103,15 @@ class ESPETH : public Supla::LAN {
         }
         Serial.print(ETH.linkSpeed());
         Serial.println(F("Mbps"));
-        if (thisWtEth) {
-          thisWtEth->setIpv4Addr(ETH.localIP());
+        if (thisEth) {
+          thisEth->setIpv4Addr(ETH.localIP());
         }
         break;
       }
       case ARDUINO_EVENT_ETH_DISCONNECTED: {
         Serial.println(F("[Ethernet] Disconnected"));
-        if (thisWtEth) {
-          thisWtEth->setIpv4Addr(0);
+        if (thisEth) {
+          thisEth->setIpv4Addr(0);
         }
         break;
       }

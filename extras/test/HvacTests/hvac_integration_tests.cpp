@@ -42,8 +42,8 @@ class HvacIntegrationF : public ::testing::Test {
  protected:
   ConfigMock cfg;
   StorageMock storage;
-  OutputMock primaryOutput;
-  OutputMock secondaryOutput;
+  OutputSimulatorWithCheck primaryOutput;
+  OutputSimulatorWithCheck secondaryOutput;
   SimpleTime time;
   ProtocolLayerMock proto;
   ClockStub clock;
@@ -97,8 +97,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
-
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -159,7 +157,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
 
   ::testing::Sequence seq1;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
@@ -177,7 +175,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -195,7 +193,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -212,7 +210,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -230,7 +228,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -247,7 +245,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -265,7 +263,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -298,7 +296,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -333,7 +331,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -364,7 +362,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
       });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
@@ -598,8 +596,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -665,7 +661,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
 
   ::testing::Sequence seq1;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -697,7 +693,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -714,7 +710,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -730,7 +726,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -747,7 +743,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -778,7 +774,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -811,7 +807,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2100);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -839,7 +835,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2100);
     });
-  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -1070,9 +1066,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-  EXPECT_CALL(secondaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -1140,8 +1133,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   ::testing::Sequence seqPrimary;
   ::testing::Sequence seqSecondary;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1179,8 +1172,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1199,8 +1192,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1218,8 +1211,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1238,8 +1231,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1273,8 +1266,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -1476,8 +1469,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1505,8 +1498,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1544,8 +1537,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1637,8 +1630,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1668,8 +1661,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1688,8 +1681,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1727,8 +1720,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1802,8 +1795,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1832,8 +1825,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1876,8 +1869,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1913,9 +1906,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
-
-
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -1978,7 +1968,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(proto, sendChannelValueChanged(2, _, 0, 0)).Times(AtLeast(1));
 
   ::testing::Sequence seq1;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -2134,7 +2124,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2186,7 +2176,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2241,7 +2231,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2270,7 +2260,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2310,7 +2300,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   }
 
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2352,7 +2342,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, -1500);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2392,7 +2382,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, -100);  // -1
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2420,7 +2410,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2464,7 +2454,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
 
 
   hvac->setOutputValueOnError(100);  // change configuration on device
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -2500,9 +2490,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
-
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-  EXPECT_CALL(secondaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -2574,8 +2561,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
 
   ::testing::Sequence seqPrimary;
   ::testing::Sequence seqSecondary;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -2613,8 +2600,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -2688,8 +2675,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -2729,8 +2716,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2300);
     });
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0))
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0))
       .Times(1)
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
@@ -2766,11 +2753,8 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-  EXPECT_CALL(secondaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
-  EXPECT_CALL(primaryOutput, setOutputValue(_)).Times(AtLeast(1));
-  EXPECT_CALL(secondaryOutput, setOutputValue(_)).Times(AtLeast(1));
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(_)).Times(AtLeast(1));
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -3136,8 +3120,6 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -3209,7 +3191,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   hvac->onInit();
   t1->onInit();
   hvac->setTargetMode(SUPLA_HVAC_MODE_OFF);
@@ -3267,7 +3249,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3355,7 +3337,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3386,7 +3368,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3411,7 +3393,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3443,7 +3425,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3474,7 +3456,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3499,7 +3481,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3531,7 +3513,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3571,7 +3553,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3598,7 +3580,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3644,7 +3626,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3795,8 +3777,6 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   int32_t storedFunction = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
@@ -3869,7 +3849,7 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
 
   ::testing::Sequence seq1;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -3899,7 +3879,7 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -3976,8 +3956,6 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
-
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -4056,7 +4034,7 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
   EXPECT_CALL(proto, sendChannelValueChanged(2, _, 0, 0)).Times(AtLeast(1));
 
   ::testing::Sequence seq1;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
@@ -4086,7 +4064,7 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4178,8 +4156,6 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -4256,7 +4232,7 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   hvac->onInit();
   t1->onInit();
 
@@ -4299,7 +4275,7 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
     time.advance(100);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4383,8 +4359,6 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -4453,7 +4427,7 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
 
   ::testing::Sequence seq1;
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4468,7 +4442,7 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4484,7 +4458,7 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4556,8 +4530,6 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -4628,7 +4600,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
 
   ::testing::Sequence seq1;
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4644,7 +4616,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4661,7 +4633,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4739,9 +4711,6 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-  EXPECT_CALL(secondaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -4806,8 +4775,8 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   ::testing::Sequence seq1;
   ::testing::Sequence seq2;
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0)).Times(1).InSequence(seq2);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4823,8 +4792,8 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0)).Times(1).InSequence(seq2);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4841,8 +4810,8 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0)).Times(1).InSequence(seq2);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4858,8 +4827,8 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(-1)).Times(1).InSequence(seq2);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4876,8 +4845,8 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0)).Times(1).InSequence(seq2);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4982,8 +4951,6 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
-
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -5060,7 +5027,9 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->onLoadState();
 
   ::testing::Sequence seqPrimary;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0))
+      .Times(1)
+      .InSequence(seqPrimary);
   hvac->onInit();
   t1->onInit();
 

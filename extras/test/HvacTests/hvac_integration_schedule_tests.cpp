@@ -39,8 +39,8 @@ class HvacIntegrationScheduleF : public ::testing::Test {
  protected:
   ConfigMock cfg;
   StorageMock storage;
-  OutputMock primaryOutput;
-  OutputMock secondaryOutput;
+  OutputSimulatorWithCheck primaryOutput;
+  OutputSimulatorWithCheck secondaryOutput;
   SimpleTime time;
   ProtocolLayerMock proto;
 
@@ -85,8 +85,6 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
-
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -161,7 +159,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   hvac->onLoadState();
 
   ::testing::Sequence seq1;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
 
   hvac->onInit();
   t1->onInit();
@@ -387,7 +385,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(60*1000);  // +1 minute
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -421,7 +419,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(60*1000);  // +1 minute
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -452,7 +450,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   newValue.DurationSec = 20;
   EXPECT_EQ(hvac->handleNewValueFromServer(&newValue), 1);
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -479,7 +477,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(1000);
   }
 
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -514,8 +512,6 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
-
-  EXPECT_CALL(primaryOutput, isOnOffOnly()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
@@ -591,8 +587,8 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
 
   ::testing::Sequence seq1;
   ::testing::Sequence seq2;
-  EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(0)).Times(1).InSequence(seq2);
+  EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
+  EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
 
   hvac->onInit();
   t1->onInit();

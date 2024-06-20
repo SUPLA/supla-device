@@ -381,6 +381,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
  protected:
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
+  void updateChannelState();
 
  private:
   _supla_int16_t getTemperature(int channelNo);

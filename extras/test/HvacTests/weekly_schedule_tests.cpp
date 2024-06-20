@@ -37,7 +37,7 @@ using ::testing::AnyNumber;
 class HvacWeeklyScheduleTestsF : public ::testing::Test {
  protected:
   ConfigMock cfg;
-  OutputMock output;
+  OutputSimulatorWithCheck output;
   SimpleTime time;
   Supla::Control::HvacBase *hvac = {};
   Supla::Sensor::Thermometer *t1 = {};
@@ -76,7 +76,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
 };
 
 TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AnyNumber());
   EXPECT_CALL(cfg, setInt32(_, _))
       .Times(AnyNumber())
@@ -225,7 +225,7 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   ::testing::Sequence s1;
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
@@ -342,7 +342,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -430,7 +430,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -604,7 +604,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 
   EXPECT_CALL(cfg,

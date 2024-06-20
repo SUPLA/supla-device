@@ -518,6 +518,8 @@ void HvacBase::iterateAlways() {
     lastIterateTimestampMs = 0;
   }
 
+  updateChannelState();
+
   if (lastIterateTimestampMs && millis() - lastIterateTimestampMs < 1000) {
     return;
   }
@@ -4256,5 +4258,119 @@ void HvacBase::enableInitialConfig() {
 
 time_t HvacBase::getCountDownTimerEnds() const {
   return countdownTimerEnds;
+}
+
+void HvacBase::updateChannelState() {
+  if (primaryOutput == nullptr) {
+    // zero state here?
+    return;
+  }
+  auto channelFunction = channel.getDefaultFunction();
+
+  if (isHeatingSubfunction() ||
+      channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
+      channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    channel.setHvacFlagCooling(false);
+
+    int primaryOutputValue = primaryOutput->getOutputValue();
+
+    if (primaryOutputValue <= 0) {
+      if (channel.isHvacFlagHeating()) {
+        channel.setHvacFlagHeating(false);
+        channel.setHvacIsOn(0);
+        runAction(Supla::ON_HVAC_STANDBY);
+      }
+    } else {
+      if (channel.getHvacIsOn() != primaryOutputValue) {
+        bool runOnHvacHeating = false;
+        if (!channel.isHvacFlagHeating()) {
+          runOnHvacHeating = true;
+        }
+        channel.setHvacFlagHeating(true);
+        channel.setHvacIsOn(primaryOutputValue);
+        if (runOnHvacHeating) {
+          runAction(Supla::ON_HVAC_HEATING);
+        }
+      }
+    }
+  } else if (isCoolingSubfunction()) {
+    channel.setHvacFlagHeating(false);
+    auto output = primaryOutput;
+    if (secondaryOutput) {
+      output = secondaryOutput;
+    }
+
+    int outputValue = output->getOutputValue();
+
+    if (outputValue >= 0) {
+      if (channel.isHvacFlagCooling()) {
+        channel.setHvacFlagCooling(false);
+        channel.setHvacIsOn(0);
+        runAction(Supla::ON_HVAC_STANDBY);
+      }
+    } else {
+      // HvacIsOn is always 0..100 range
+      if (channel.getHvacIsOn() != -outputValue) {
+        bool runOnHvacCooling = false;
+        if (!channel.isHvacFlagCooling()) {
+          runOnHvacCooling = true;
+        }
+        channel.setHvacFlagCooling(true);
+        channel.setHvacIsOn(outputValue);
+
+        if (runOnHvacCooling) {
+          runAction(Supla::ON_HVAC_COOLING);
+        }
+      }
+    }
+  } else if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
+    if (secondaryOutput == nullptr) {
+      return;
+    }
+
+    int primaryOutputValue = primaryOutput->getOutputValue();
+    int secondaryOutputValue = secondaryOutput->getOutputValue();
+
+    if (primaryOutputValue == 0 && secondaryOutputValue == 0) {
+      bool runOnHvacStandby = false;
+      if (channel.isHvacFlagCooling() || channel.isHvacFlagHeating()) {
+        runOnHvacStandby = true;
+      }
+
+      channel.setHvacFlagCooling(false);
+      channel.setHvacFlagHeating(false);
+      channel.setHvacIsOn(0);
+
+      if (runOnHvacStandby) {
+        runAction(Supla::ON_HVAC_STANDBY);
+      }
+    } else if (primaryOutputValue >= 1) {
+      bool runOnHvacHeating = false;
+      if (!channel.isHvacFlagHeating()) {
+        runOnHvacHeating = true;
+      }
+
+      channel.setHvacFlagCooling(false);
+      channel.setHvacFlagHeating(true);
+      channel.setHvacIsOn(primaryOutputValue);
+
+      if (runOnHvacHeating) {
+        runAction(Supla::ON_HVAC_HEATING);
+      }
+    } else if (secondaryOutputValue <= -1) {
+      bool runOnHvacCooling = false;
+      if (!channel.isHvacFlagCooling()) {
+        runOnHvacCooling = true;
+      }
+
+      channel.setHvacFlagCooling(true);
+      channel.setHvacFlagHeating(false);
+      channel.setHvacIsOn(secondaryOutputValue);
+
+      if (runOnHvacCooling) {
+        runAction(Supla::ON_HVAC_COOLING);
+      }
+    }
+  }
 }
 

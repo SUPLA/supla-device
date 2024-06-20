@@ -22,14 +22,24 @@
 #include <gmock/gmock.h>
 #include <supla/control/output_interface.h>
 
-class OutputMock : public Supla::Control::OutputInterface {
+class OutputSimulator : public Supla::Control::OutputInterface {
  public:
-  OutputMock();
-  virtual ~OutputMock();
+  OutputSimulator();
+  virtual ~OutputSimulator();
 
-  MOCK_METHOD(int, getOutputValue, (), (override));
-  MOCK_METHOD(void, setOutputValue, (int value), (override));
-  MOCK_METHOD(bool, isOnOffOnly, (), (const override));
+  int getOutputValue() override;
+  void setOutputValue(int value) override;
+  bool isOnOffOnly() const override;
+
+  virtual void setOutputValueCheck(int value);
+
+  int outputValue = 0;
+  bool onOffOnly = true;
+};
+
+class OutputSimulatorWithCheck : public OutputSimulator {
+ public:
+  MOCK_METHOD(void, setOutputValueCheck, (int), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_OUTPUT_MOCK_H_

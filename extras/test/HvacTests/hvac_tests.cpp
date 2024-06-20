@@ -48,7 +48,7 @@ class HvacTestsF : public ::testing::Test {
 class HvacTestWithChannelSetupF : public HvacTestsF {
  protected:
   ConfigMock cfg;
-  OutputMock output;
+  OutputSimulatorWithCheck output;
 
   Supla::Control::HvacBase *hvac = {};
   Supla::Sensor::Thermometer *t1 = {};
@@ -87,7 +87,7 @@ class HvacTestWithChannelSetupF : public HvacTestsF {
 };
 
 TEST_F(HvacTestsF, BasicChannelSetup) {
-  OutputMock output;
+  OutputSimulatorWithCheck output;
   Supla::Control::HvacBase hvac(&output);
 
   auto ch = hvac.getChannel();
@@ -172,10 +172,10 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
 }
 
 TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
-  OutputMock output;
+  OutputSimulatorWithCheck output;
   Supla::Control::HvacBase hvac(&output);
 
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
 
   auto *ch = hvac.getChannel();
   EXPECT_EQ(ch->getDefaultFunction(), 0);
@@ -259,12 +259,12 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {
 }
 
 TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInitWithTwoOutputs) {
-  OutputMock output1;
-  OutputMock output2;
+  OutputSimulatorWithCheck output1;
+  OutputSimulatorWithCheck output2;
   Supla::Control::HvacBase hvac(&output1, &output2);
 
-  EXPECT_CALL(output1, setOutputValue(0)).Times(1);
-  EXPECT_CALL(output2, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output1, setOutputValueCheck(0)).Times(1);
+  EXPECT_CALL(output2, setOutputValueCheck(0)).Times(1);
 
   auto *ch = hvac.getChannel();
   EXPECT_EQ(ch->getDefaultFunction(), 0);
@@ -285,12 +285,12 @@ TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInitWithTwoOutputs) {
 }
 
 TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
-  OutputMock output;
+  OutputSimulatorWithCheck output;
   Supla::Control::HvacBase hvac(&output);
 
   Supla::Sensor::Thermometer t1;
   Supla::Sensor::ThermHygroMeter t2;
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
 
   ASSERT_EQ(hvac.getChannelNumber(), 0);
   ASSERT_EQ(t1.getChannelNumber(), 1);
@@ -854,7 +854,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 2000);
 
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
       .WillOnce(Return(false));
@@ -981,7 +981,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -1151,7 +1151,7 @@ TEST_F(HvacTestWithChannelSetupF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -1532,7 +1532,7 @@ TEST_F(HvacTestWithChannelSetupF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -1742,10 +1742,10 @@ TEST_F(HvacTestWithChannelSetupF,
 }
 
 TEST_F(HvacTestsF, checkInitizationForDHW) {
-  OutputMock output;
+  OutputSimulatorWithCheck output;
   Supla::Control::HvacBase hvac(&output);
 
-  EXPECT_CALL(output, setOutputValue(0)).Times(1);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
 
   auto *ch = hvac.getChannel();
   EXPECT_EQ(ch->getDefaultFunction(), 0);

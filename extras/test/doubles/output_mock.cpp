@@ -18,9 +18,24 @@
 
 #include "output_mock.h"
 
-OutputMock::OutputMock() {
+OutputSimulator::OutputSimulator() {
 }
 
-OutputMock::~OutputMock() {
+OutputSimulator::~OutputSimulator() {
 }
 
+int OutputSimulator::getOutputValue() {
+  return outputValue;
+}
+
+void OutputSimulator::setOutputValue(int value) {
+  outputValue = value;
+  setOutputValueCheck(value);
+}
+
+bool OutputSimulator::isOnOffOnly() const {
+  return onOffOnly;
+}
+
+void OutputSimulator::setOutputValueCheck(int) {
+}

@@ -109,6 +109,7 @@ class SensorParsed : public T, public SensorParsedBase {
   void handleGetChannelState(TDSC_ChannelState *channelState) override;
   void setInitialCaption(const std::string &caption) override;
   Supla::Channel *getChannel() override;
+  const Supla::Channel *getChannel() const override;
 };
 
 template <typename T>
@@ -141,6 +142,11 @@ void SensorParsed<T>::setInitialCaption(const std::string &caption) {
 
 template <typename T>
 Supla::Channel *SensorParsed<T>::getChannel() {
+  return T::getChannel();
+}
+
+template <typename T>
+const Supla::Channel *SensorParsed<T>::getChannel() const {
   return T::getChannel();
 }
 

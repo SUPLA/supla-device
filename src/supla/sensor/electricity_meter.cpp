@@ -606,6 +606,10 @@ Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() {
   return &extChannel;
 }
 
+const Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() const {
+  return &extChannel;
+}
+
 void Supla::Sensor::ElectricityMeter::setRefreshRate(unsigned int sec) {
   refreshRateSec = sec;
   if (refreshRateSec == 0) {

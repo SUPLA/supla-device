@@ -62,6 +62,9 @@ class ElementWithChannel : public Supla::Element {
     Supla::Channel *getChannel() {
       return &channel;
     }
+    const Supla::Channel *getChannel() const {
+      return &channel;
+    }
     Supla::Channel channel;
 };
 

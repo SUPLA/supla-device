@@ -1340,6 +1340,10 @@ bool HvacBase::isTemperatureAboveAlarmValid(
 }
 
 bool HvacBase::isChannelThermometer(uint8_t channelNo) const {
+  if (getChannelNumber() == channelNo) {
+    // skip checking for self (Hvac)
+    return false;
+  }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
     SUPLA_LOG_WARNING("HVAC: thermometer not found for channel %d", channelNo);
@@ -2838,7 +2842,7 @@ void HvacBase::setOutput(int value, bool force) {
     } else {
       channel.setHvacFlagCooling(true);
       if (primaryOutput->isOnOffOnly()) {
-        value = 1;
+        value = -1;
       } else {
         value = -value;
       }
@@ -2875,7 +2879,7 @@ void HvacBase::setOutput(int value, bool force) {
       primaryOutput->setOutputValue(0);
 
       if (secondaryOutput->isOnOffOnly()) {
-        value = 1;
+        value = -1;
       } else {
         value = -value;
       }
@@ -3725,11 +3729,14 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                                       int id) {
   SUPLA_LOG_DEBUG("HVAC[%d]:", id);
   SUPLA_LOG_DEBUG("  Main: %d", config->MainThermometerChannelNo);
-  SUPLA_LOG_DEBUG("  Aux: %d", config->AuxThermometerChannelNo);
+  SUPLA_LOG_DEBUG("  Aux: %d%s",
+                  config->AuxThermometerChannelNo,
+                  (config->AuxThermometerChannelNo == id ? " (disabled)" : ""));
   SUPLA_LOG_DEBUG("  Aux type: %d", config->AuxThermometerType);
   SUPLA_LOG_DEBUG("  AntiFreezeAndOverheatProtectionEnabled: %d",
                   config->AntiFreezeAndOverheatProtectionEnabled);
-  SUPLA_LOG_DEBUG("  Sensor: %d", config->BinarySensorChannelNo);
+  SUPLA_LOG_DEBUG("  Sensor: %d%s", config->BinarySensorChannelNo,
+                  (config->BinarySensorChannelNo == id ? " (disabled)" : ""));
   SUPLA_LOG_DEBUG("  Algorithms: %d", config->AvailableAlgorithms);
   SUPLA_LOG_DEBUG("  UsedAlgorithm: %d", config->UsedAlgorithm);
   SUPLA_LOG_DEBUG("  MinOnTimeS: %d", config->MinOnTimeS);

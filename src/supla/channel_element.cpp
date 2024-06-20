@@ -23,3 +23,8 @@ Supla::ChannelElement::ChannelElement(int channelNumber)
 Supla::Channel *Supla::ChannelElement::getChannel() {
   return &channel;
 }
+
+const Supla::Channel *Supla::ChannelElement::getChannel() const {
+  return &channel;
+}
+

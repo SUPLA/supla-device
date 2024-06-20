@@ -129,6 +129,10 @@ Supla::Channel *BinaryBase::getChannel() {
   return &channel;
 }
 
+const Supla::Channel *BinaryBase::getChannel() const {
+  return &channel;
+}
+
 void BinaryBase::setServerInvertLogic(bool invertLogic) {
   channel.setServerInvertLogic(invertLogic);
 }

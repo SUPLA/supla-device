@@ -697,7 +697,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -730,7 +730,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -778,7 +778,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -839,7 +839,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2100);
     });
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -1506,7 +1506,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
   }
 
   EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(1))
+  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1638,7 +1638,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     });
 
   EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(1))
+  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1803,7 +1803,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
   }
 
   EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(1))
+  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -1877,7 +1877,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
     });
 
   EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seqPrimary);
-  EXPECT_CALL(secondaryOutput, setOutputValue(1))
+  EXPECT_CALL(secondaryOutput, setOutputValue(-1))
       .Times(1)
       .InSequence(seqSecondary);
 
@@ -4644,7 +4644,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     });
 
-  EXPECT_CALL(primaryOutput, setOutputValue(1)).Times(1).InSequence(seq1);
+  EXPECT_CALL(primaryOutput, setOutputValue(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
@@ -4859,7 +4859,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
     });
 
   EXPECT_CALL(primaryOutput, setOutputValue(0)).Times(1).InSequence(seq1);
-  EXPECT_CALL(secondaryOutput, setOutputValue(1)).Times(1).InSequence(seq2);
+  EXPECT_CALL(secondaryOutput, setOutputValue(-1)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
     .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,

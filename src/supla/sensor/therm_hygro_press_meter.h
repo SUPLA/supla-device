@@ -34,6 +34,7 @@ class ThermHygroPressMeter : public ThermHygroMeter {
   bool iterateConnected() override;
   Element &disableChannelState();
   Channel *getSecondaryChannel() override;
+  const Channel *getSecondaryChannel() const override;
 
   // Override local action methods in order to delegate execution to Channel and
   // Secondary Channel

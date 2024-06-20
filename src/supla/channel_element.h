@@ -27,6 +27,7 @@ class ChannelElement : public ElementWithChannelActions {
  public:
   explicit ChannelElement(int channelNumber = -1);
   Channel *getChannel() override;
+  const Channel *getChannel() const override;
 
  protected:
   Channel channel;

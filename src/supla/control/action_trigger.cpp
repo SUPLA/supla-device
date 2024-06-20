@@ -57,6 +57,10 @@ Supla::Channel *Supla::Control::ActionTrigger::getChannel() {
   return &channel;
 }
 
+const Supla::Channel *Supla::Control::ActionTrigger::getChannel() const {
+  return &channel;
+}
+
 void Supla::Control::ActionTrigger::activateAction(int action) {
   channel.activateAction(getActionTriggerCap(action));
 }

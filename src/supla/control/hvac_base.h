@@ -65,8 +65,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   void handleAction(int event, int action) override;
 
-  // 0 = off, >= 1 enable heating, <= -1 enable cooling
-  void setOutput(int value, bool force = false);
   void setTargetMode(int mode, bool keepSchedule = false);
   void clearTemperatureSetpointHeat();
   void clearTemperatureSetpointCool();
@@ -379,6 +377,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // returns Linux timestamp in seconds when current countdown timer will end.
   // It return 1 if countdown timer is not set
   time_t getCountDownTimerEnds() const;
+
+ protected:
+  // 0 = off, >= 1 enable heating, <= -1 enable cooling
+  void setOutput(int value, bool force = false);
 
  private:
   _supla_int16_t getTemperature(int channelNo);

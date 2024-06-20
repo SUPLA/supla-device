@@ -64,6 +64,7 @@ class ActionTrigger : public Element, public ActionHandler {
   void handleAction(int event, int action) override;
   void activateAction(int action) override;
   Supla::Channel *getChannel() override;
+  const Supla::Channel *getChannel() const override;
   void onInit() override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *result,

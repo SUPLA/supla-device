@@ -61,6 +61,11 @@ Supla::Channel *Supla::Sensor::ThermHygroPressMeter::getSecondaryChannel() {
   return &pressureChannel;
 }
 
+const Supla::Channel *Supla::Sensor::ThermHygroPressMeter::getSecondaryChannel()
+    const {
+  return &pressureChannel;
+}
+
 void Supla::Sensor::ThermHygroPressMeter::addAction(uint16_t action,
                                             ActionHandler &client,
                                             uint16_t event,

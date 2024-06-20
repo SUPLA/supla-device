@@ -134,14 +134,17 @@ Supla::Control::InternalPinOutput::setDurationMs(_supla_int_t duration) {
 }
 
 int Supla::Control::InternalPinOutput::getOutputValue() {
-  return isOn() ? 1: 0;
+  return lastOutputValue;
 }
 
 void Supla::Control::InternalPinOutput::setOutputValue(int value) {
-  if (value) {
-    turnOn();
-  } else {
-    turnOff();
+  if (value != lastOutputValue) {
+    lastOutputValue = value;
+    if (value != 0) {
+      turnOn();
+    } else {
+      turnOff();
+    }
   }
 }
 

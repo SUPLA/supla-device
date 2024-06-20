@@ -682,8 +682,13 @@ bool Channel::isBridgeSignalStrengthAvailable() const {
   return bridgeSignalStrength <= 100;
 }
 
-void Channel::setHvacIsOn(uint8_t isOn) {
+void Channel::setHvacIsOn(int8_t isOn) {
+  // channel isOn has range 0..100. However internally negative isOn values
+  // are used for cooling indication. Here we convert it to 0..100 range
   auto value = getValueHvac();
+  if (isOn < 0) {
+    isOn = -isOn;
+  }
   if (value != nullptr && value->IsOn != isOn) {
     if (value->IsOn == 0 && isOn != 0) {
       runAction(Supla::ON_TURN_ON);

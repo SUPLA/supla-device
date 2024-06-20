@@ -302,6 +302,7 @@ class ElectricityMeter : public ElementWithChannelActions,
   void setRefreshRate(unsigned int sec);
 
   Channel *getChannel() override;
+  const Channel *getChannel() const override;
 
   void enableChannelConfig();
   void addCtType(uint64_t ctType);

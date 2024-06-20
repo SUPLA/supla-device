@@ -36,6 +36,7 @@ class BinaryBase : public ElementWithChannelActions {
   virtual bool getValue() = 0;
   void iterateAlways() override;
   Channel *getChannel() override;
+  const Channel *getChannel() const override;
   void onLoadConfig(SuplaDeviceClass *) override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,

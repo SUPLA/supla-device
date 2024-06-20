@@ -78,7 +78,7 @@ class Channel : public LocalAction {
   uint8_t getValueBrightness();
   double getLastTemperature();
 
-  void setHvacIsOn(uint8_t isOn);
+  void setHvacIsOn(int8_t isOn);
   void setHvacMode(uint8_t mode);
   void setHvacSetpointTemperatureHeat(int16_t setpointTemperatureHeat);
   void setHvacSetpointTemperatureCool(int16_t setpointTemperatureCool);

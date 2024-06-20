@@ -118,8 +118,10 @@ class Element {
 
   virtual void handleChannelConfigFinished();
 
-  int getChannelNumber();
-  int getSecondaryChannelNumber();
+  int getChannelNumber() const;
+  int getSecondaryChannelNumber() const;
+  virtual const Channel *getChannel() const;
+  virtual const Channel *getSecondaryChannel() const;
   virtual Channel *getChannel();
   virtual Channel *getSecondaryChannel();
 

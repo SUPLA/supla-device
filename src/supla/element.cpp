@@ -163,22 +163,30 @@ void Element::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
   (void)(value);
 }
 
-int Element::getChannelNumber() {
+int Element::getChannelNumber() const {
   int result = -1;
-  Channel *channel = getChannel();
+  auto channel = getChannel();
   if (channel) {
     result = channel->getChannelNumber();
   }
   return result;
 }
 
-int Element::getSecondaryChannelNumber() {
+int Element::getSecondaryChannelNumber() const {
   int result = -1;
-  Channel *channel = getSecondaryChannel();
+  auto channel = getSecondaryChannel();
   if (channel) {
     result = channel->getChannelNumber();
   }
   return result;
+}
+
+const Channel *Element::getChannel() const {
+  return nullptr;
+}
+
+const Channel *Element::getSecondaryChannel() const {
+  return nullptr;
 }
 
 Channel *Element::getChannel() {

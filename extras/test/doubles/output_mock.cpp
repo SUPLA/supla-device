@@ -24,7 +24,7 @@ OutputSimulator::OutputSimulator() {
 OutputSimulator::~OutputSimulator() {
 }
 
-int OutputSimulator::getOutputValue() {
+int OutputSimulator::getOutputValue() const {
   return outputValue;
 }
 

@@ -56,7 +56,7 @@ class InternalPinOutput : public Element,
   void onInit() override;
   void iterateAlways() override;
 
-  int getOutputValue() override;
+  int getOutputValue() const override;
   void setOutputValue(int value) override;
   bool isOnOffOnly() const override;
 

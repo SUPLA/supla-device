@@ -97,6 +97,7 @@ class Channel : public LocalAction {
   void setHvacFlagForcedOffBySensor(bool value);
   void setHvacFlagCoolSubfunction(enum HvacCoolSubfunctionFlag flag);
   void setHvacFlagWeeklyScheduleTemporalOverride(bool value);
+  void clearHvacState();
 
   uint8_t getHvacIsOn();
   uint8_t getHvacMode() const;

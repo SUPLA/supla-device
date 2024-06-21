@@ -502,16 +502,7 @@ void HvacBase::iterateAlways() {
     previousSubfunction = config.Subfunction;
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
     lastManualMode = 0;
-    channel.clearHvacSetpointTemperatureCool();
-    channel.clearHvacSetpointTemperatureHeat();
-    channel.setHvacMode(SUPLA_HVAC_MODE_OFF);
-    channel.setHvacFlagWeeklySchedule(false);
-    channel.setHvacFlagHeating(false);
-    channel.setHvacFlagCooling(false);
-    channel.setHvacFlagFanEnabled(false);
-    channel.setHvacFlagThermometerError(false);
-    channel.setHvacFlagClockError(false);
-    channel.setHvacFlagCountdownTimer(false);
+    channel.clearHvacState();
     clearLastOutputValue();
     setOutput(0, true);
     fixTemperatureSetpoints();
@@ -2809,27 +2800,19 @@ void HvacBase::setOutput(int value, bool force) {
   if (isHeatingSubfunction() ||
       channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
       channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    channel.setHvacFlagCooling(false);
     if (secondaryOutput) {
       secondaryOutput->setOutputValue(0);
     }
 
     if (value <= 0) {
-      channel.setHvacFlagHeating(false);
-      channel.setHvacIsOn(0);
       primaryOutput->setOutputValue(0);
-      runAction(Supla::ON_HVAC_STANDBY);
     } else {
-      channel.setHvacFlagHeating(true);
       if (primaryOutput->isOnOffOnly()) {
         value = 1;
       }
-      channel.setHvacIsOn(value);
       primaryOutput->setOutputValue(value);
-      runAction(Supla::ON_HVAC_HEATING);
     }
   } else if (isCoolingSubfunction()) {
-    channel.setHvacFlagHeating(false);
     auto output = primaryOutput;
     if (secondaryOutput) {
       output = secondaryOutput;
@@ -2837,20 +2820,14 @@ void HvacBase::setOutput(int value, bool force) {
     }
 
     if (value >= 0) {
-      channel.setHvacFlagCooling(false);
-      channel.setHvacIsOn(0);
       output->setOutputValue(0);
-      runAction(Supla::ON_HVAC_STANDBY);
     } else {
-      channel.setHvacFlagCooling(true);
       if (primaryOutput->isOnOffOnly()) {
         value = -1;
       } else {
         value = -value;
       }
-      channel.setHvacIsOn(value);
       output->setOutputValue(value);
-      runAction(Supla::ON_HVAC_COOLING);
     }
   } else if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
     if (secondaryOutput == nullptr) {
@@ -2858,26 +2835,16 @@ void HvacBase::setOutput(int value, bool force) {
     }
 
     if (value == 0) {
-      channel.setHvacFlagCooling(false);
-      channel.setHvacFlagHeating(false);
-      channel.setHvacIsOn(0);
       primaryOutput->setOutputValue(0);
       secondaryOutput->setOutputValue(0);
-      runAction(Supla::ON_HVAC_STANDBY);
     } else if (value >= 1) {
-      channel.setHvacFlagCooling(false);
-      channel.setHvacFlagHeating(true);
       secondaryOutput->setOutputValue(0);
 
       if (primaryOutput->isOnOffOnly()) {
         value = 1;
       }
-      channel.setHvacIsOn(value);
       primaryOutput->setOutputValue(value);
-      runAction(Supla::ON_HVAC_HEATING);
     } else if (value <= -1) {
-      channel.setHvacFlagCooling(true);
-      channel.setHvacFlagHeating(false);
       primaryOutput->setOutputValue(0);
 
       if (secondaryOutput->isOnOffOnly()) {
@@ -2886,11 +2853,10 @@ void HvacBase::setOutput(int value, bool force) {
         value = -value;
       }
 
-      channel.setHvacIsOn(value);
       secondaryOutput->setOutputValue(value);
-      runAction(Supla::ON_HVAC_COOLING);
     }
   }
+  updateChannelState();
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
@@ -3584,16 +3550,7 @@ void HvacBase::changeFunction(int newFunction, bool changedLocally) {
 
   initDefaultConfig();
 
-  channel.clearHvacSetpointTemperatureCool();
-  channel.clearHvacSetpointTemperatureHeat();
-  channel.setHvacMode(SUPLA_HVAC_MODE_OFF);
-  channel.setHvacFlagWeeklySchedule(false);
-  channel.setHvacFlagHeating(false);
-  channel.setHvacFlagCooling(false);
-  channel.setHvacFlagFanEnabled(false);
-  channel.setHvacFlagThermometerError(false);
-  channel.setHvacFlagClockError(false);
-  channel.setHvacFlagCountdownTimer(false);
+  channel.clearHvacState();
 
   initDefaultWeeklySchedule();
 

@@ -27,7 +27,7 @@ class OutputSimulator : public Supla::Control::OutputInterface {
   OutputSimulator();
   virtual ~OutputSimulator();
 
-  int getOutputValue() override;
+  int getOutputValue() const override;
   void setOutputValue(int value) override;
   bool isOnOffOnly() const override;
 

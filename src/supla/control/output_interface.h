@@ -26,7 +26,7 @@ namespace Control {
 class OutputInterface {
  public:
   virtual ~OutputInterface() {}
-  virtual int getOutputValue() = 0;
+  virtual int getOutputValue() const = 0;
   virtual void setOutputValue(int value) = 0;
   virtual bool isOnOffOnly() const = 0;
 };

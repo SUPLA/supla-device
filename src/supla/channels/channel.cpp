@@ -970,6 +970,20 @@ void Channel::setHvacFlagWeeklyScheduleTemporalOverride(bool value) {
   }
 }
 
+void Channel::clearHvacState() {
+  clearHvacSetpointTemperatureCool();
+  clearHvacSetpointTemperatureHeat();
+  setHvacMode(SUPLA_HVAC_MODE_OFF);
+  setHvacFlagWeeklySchedule(false);
+  setHvacFlagHeating(false);
+  setHvacFlagCooling(false);
+  setHvacIsOn(0);
+  setHvacFlagFanEnabled(false);
+  setHvacFlagThermometerError(false);
+  setHvacFlagClockError(false);
+  setHvacFlagCountdownTimer(false);
+}
+
 bool Channel::isHvacFlagSetpointTemperatureCoolSet() {
   return isHvacFlagSetpointTemperatureCoolSet(getValueHvac());
 }

@@ -133,7 +133,7 @@ Supla::Control::InternalPinOutput::setDurationMs(_supla_int_t duration) {
   return *this;
 }
 
-int Supla::Control::InternalPinOutput::getOutputValue() {
+int Supla::Control::InternalPinOutput::getOutputValue() const {
   return lastOutputValue;
 }
 

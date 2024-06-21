@@ -32,7 +32,7 @@ class CmdOutput : public OutputInterface {
  public:
   CmdOutput(std::string cmdOn, std::string cmdOff);
 
-  int getOutputValue() override;
+  int getOutputValue() const override;
   void setOutputValue(int value) override;
   bool isOnOffOnly() const override;
 
@@ -50,7 +50,7 @@ CmdOutput::CmdOutput(std::string cmdOn, std::string cmdOff) :
   cmdOn(cmdOn), cmdOff(cmdOff) {
 }
 
-int CmdOutput::getOutputValue() {
+int CmdOutput::getOutputValue() const {
   return lastState;
 }
 

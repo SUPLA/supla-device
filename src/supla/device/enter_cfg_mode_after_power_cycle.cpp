@@ -30,8 +30,11 @@ const char PowerCycleKey[] = "power_cycle";
 }  // namespace Supla::Device
 
 EnterCfgModeAfterPowerCycle::EnterCfgModeAfterPowerCycle(uint32_t timeoutMs,
-                                                         uint32_t powerCycles)
-    : timeoutMs(timeoutMs), maxPowerCycles(powerCycles) {
+                                                         uint32_t powerCycles,
+                                                         bool alwaysEnabled)
+    : timeoutMs(timeoutMs),
+      maxPowerCycles(powerCycles),
+      alwaysEnabled(alwaysEnabled) {
 }
 
 void EnterCfgModeAfterPowerCycle::onLoadConfig(SuplaDeviceClass *sdc) {
@@ -42,11 +45,13 @@ void EnterCfgModeAfterPowerCycle::onLoadConfig(SuplaDeviceClass *sdc) {
   }
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    uint8_t disableUI = 0;
-    cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &disableUI);
-    enabled = (disableUI == 1);
-    if (cfg->getDeviceMode() == Supla::DeviceMode::DEVICE_MODE_TEST) {
-      enabled = true;
+    if (!alwaysEnabled) {
+      uint8_t disableUI = 0;
+      cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &disableUI);
+      enabled = (disableUI == 1);
+      if (cfg->getDeviceMode() == Supla::DeviceMode::DEVICE_MODE_TEST) {
+        enabled = true;
+      }
     }
 
     cfg->getUInt32(Supla::Device::PowerCycleKey, &currentPowerCycle);
@@ -85,4 +90,9 @@ void EnterCfgModeAfterPowerCycle::iterateAlways() {
       cfg->saveWithDelay(1000);
     }
   }
+}
+
+void EnterCfgModeAfterPowerCycle::setAlwaysEnabled(bool alwaysEnabled) {
+  this->alwaysEnabled = alwaysEnabled;
+  enabled = alwaysEnabled;
 }

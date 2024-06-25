@@ -4244,7 +4244,8 @@ void HvacBase::updateChannelState() {
           runOnHvacHeating = true;
         }
         channel.setHvacFlagHeating(true);
-        channel.setHvacIsOn(primaryOutputValue);
+        channel.setHvacIsOn(primaryOutput->isOnOffOnly() ? 1 :
+            primaryOutputValue + 1);
         if (runOnHvacHeating) {
           runAction(Supla::ON_HVAC_HEATING);
         }
@@ -4273,7 +4274,7 @@ void HvacBase::updateChannelState() {
           runOnHvacCooling = true;
         }
         channel.setHvacFlagCooling(true);
-        channel.setHvacIsOn(outputValue);
+        channel.setHvacIsOn(output->isOnOffOnly() ? 1 : outputValue - 1);
 
         if (runOnHvacCooling) {
           runAction(Supla::ON_HVAC_COOLING);
@@ -4309,7 +4310,8 @@ void HvacBase::updateChannelState() {
 
       channel.setHvacFlagCooling(false);
       channel.setHvacFlagHeating(true);
-      channel.setHvacIsOn(primaryOutputValue);
+      channel.setHvacIsOn(
+          primaryOutput->isOnOffOnly() ? 1 : primaryOutputValue + 1);
 
       if (runOnHvacHeating) {
         runAction(Supla::ON_HVAC_HEATING);
@@ -4322,7 +4324,8 @@ void HvacBase::updateChannelState() {
 
       channel.setHvacFlagCooling(true);
       channel.setHvacFlagHeating(false);
-      channel.setHvacIsOn(secondaryOutputValue);
+      channel.setHvacIsOn(
+          secondaryOutput->isOnOffOnly() ? 1 : secondaryOutputValue - 1);
 
       if (runOnHvacCooling) {
         runAction(Supla::ON_HVAC_COOLING);

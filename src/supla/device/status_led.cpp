@@ -115,7 +115,9 @@ void Supla::Device::StatusLed::onInit() {
 
 void Supla::Device::StatusLed::iterateAlways() {
   Supla::AutoLock autoLock(mutex);
-  if (ledMode == LED_ALWAYS_OFF) {
+  int currentStatus = SuplaDevice.getCurrentStatus();
+  if (ledMode == LED_ALWAYS_OFF && currentStatus != STATUS_SW_DOWNLOAD &&
+      currentStatus != STATUS_CONFIG_MODE) {
     offDuration = 1000;
     onDuration = 0;
     return;
@@ -125,7 +127,6 @@ void Supla::Device::StatusLed::iterateAlways() {
     return;
   }
 
-  int currentStatus = SuplaDevice.getCurrentStatus();
   bool checkProtocolsStatus = false;
   switch (currentStatus) {
     case STATUS_INITIALIZED:

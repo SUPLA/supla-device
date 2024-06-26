@@ -63,6 +63,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/device_info.cpp
   src/supla/network/html/protocol_parameters.cpp
   src/supla/network/html/status_led_parameters.cpp
+  src/supla/network/html/power_status_led_parameters.cpp
   src/supla/network/html/wifi_parameters.cpp
   src/supla/network/html/ethernet_parameters.cpp
   src/supla/network/html/sw_update_beta.cpp

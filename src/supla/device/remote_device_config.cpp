@@ -30,6 +30,7 @@
 #include <supla/network/html/home_screen_content.h>
 #include <supla/network/html/disable_user_interface_parameter.h>
 #include <supla/network/html/screen_delay_type_parameters.h>
+#include <supla/network/html/power_status_led_parameters.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -155,6 +156,10 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_StatusLed);
           break;
         }
+        case SUPLA_DEVICE_CONFIG_FIELD_POWER_STATUS_LED: {
+          dataIndex += sizeof(TDeviceConfig_PowerStatusLed);
+          break;
+        }
         case SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS: {
           dataIndex += sizeof(TDeviceConfig_ScreenBrightness);
           break;
@@ -218,6 +223,21 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
                                  reinterpret_cast<TDeviceConfig_StatusLed *>(
                                      config->Config + dataIndex));
           dataIndex += sizeof(TDeviceConfig_StatusLed);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_POWER_STATUS_LED: {
+          SUPLA_LOG_DEBUG("Processing PowerStatusLed config");
+          if (dataIndex + sizeof(TDeviceConfig_PowerStatusLed) >
+              config->ConfigSize) {
+            SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
+            resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
+            return;
+          }
+          processPowerStatusLedConfig(
+              fieldBit,
+              reinterpret_cast<TDeviceConfig_PowerStatusLed *>(config->Config +
+                                                               dataIndex));
+          dataIndex += sizeof(TDeviceConfig_PowerStatusLed);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS: {
@@ -360,6 +380,24 @@ void RemoteDeviceConfig::processStatusLedConfig(
     if (value >= 0 && value <= 2 && value != config->StatusLedType) {
       SUPLA_LOG_INFO("Setting StatusLedType to %d", config->StatusLedType);
       cfg->setInt8(Supla::Device::StatusLedCfgTag, config->StatusLedType);
+      cfg->saveWithDelay(1000);
+
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+  }
+}
+
+void RemoteDeviceConfig::processPowerStatusLedConfig(
+    uint64_t fieldBit, TDeviceConfig_PowerStatusLed *config) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int8_t value = -1;
+    cfg->getInt8(Supla::Html::PowerStatusLedCfgTag, &value);
+    if (value >= 0 && value <= 1 && value != config->PowerStatusLedType) {
+      SUPLA_LOG_INFO("Setting PowerStatusLedType to %d",
+                     config->PowerStatusLedType);
+      cfg->setInt8(Supla::Html::PowerStatusLedCfgTag,
+                   config->PowerStatusLedType);
       cfg->saveWithDelay(1000);
 
       Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
@@ -557,8 +595,6 @@ void RemoteDeviceConfig::processDisableUserInterfaceConfig(uint64_t fieldBit,
   }
 }
 
-
-
 void RemoteDeviceConfig::fillStatusLedConfig(
     TDeviceConfig_StatusLed *config) const {
   if (config == nullptr) {
@@ -575,6 +611,24 @@ void RemoteDeviceConfig::fillStatusLedConfig(
     config->StatusLedType = value;
   }
 }
+
+void RemoteDeviceConfig::fillPowerStatusLedConfig(
+    TDeviceConfig_PowerStatusLed *config) const {
+  if (config == nullptr) {
+    return;
+  }
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int8_t value = 0;
+    cfg->getInt8(Supla::Html::PowerStatusLedCfgTag, &value);
+    if (value < 0 || value > 1) {
+      value = 0;
+    }
+    SUPLA_LOG_DEBUG("Setting PowerStatusLedType to %d (0x%X)", value, value);
+    config->PowerStatusLedType = value;
+  }
+}
+
 
 void RemoteDeviceConfig::fillScreenBrightnessConfig(
     TDeviceConfig_ScreenBrightness *config) const {
@@ -756,6 +810,19 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
           fillStatusLedConfig(reinterpret_cast<TDeviceConfig_StatusLed *>(
               config->Config + dataIndex));
           dataIndex += sizeof(TDeviceConfig_StatusLed);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_POWER_STATUS_LED: {
+          SUPLA_LOG_DEBUG("Adding PowerStatusLed config field");
+          if (dataIndex + sizeof(TDeviceConfig_PowerStatusLed) >
+              SUPLA_DEVICE_CONFIG_MAXSIZE) {
+            SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
+            return false;
+          }
+          fillPowerStatusLedConfig(
+              reinterpret_cast<TDeviceConfig_PowerStatusLed *>(config->Config +
+                                                               dataIndex));
+          dataIndex += sizeof(TDeviceConfig_PowerStatusLed);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS: {

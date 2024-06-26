@@ -26,7 +26,7 @@
   - Add: ESP-IDF: add EspIdfSectorWlStorage class which use suplastorage partition and utilize wear leveling in "sector" mode
   - Add: sd4linux: Add a docker image for sd4linux (thanks @Goral64)
   - Add: sd4linux: Allow to use true/false in BinaryParsed
-  - Add: StatusLed: add option LED_IN_CONFIG_MODE_ONLY - status led will blink only in config mode, otherwise it will be off. Additionally there is no device confgi for status led with this setting
+  - Add: StatusLed: add option LED_IN_CONFIG_MODE_ONLY - status led will blink only in config mode, otherwise it will be off. Additionally there is no device config for status led with this setting
   - Add: StatusLed: add option to disable device config usage
   - Add: HVAC: add getCountDownTimerEnds() method to get current countdown timer end timestamp
   - Add: DeviceConfig: add handling of ScreenDelayType

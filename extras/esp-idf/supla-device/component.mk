@@ -49,6 +49,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/wifi_parameters.o \
   ../../../src/supla/network/html/protocol_parameters.o \
   ../../../src/supla/network/html/status_led_parameters.o \
+  ../../../src/supla/network/html/power_status_led_parameters.o \
   ../../../src/supla/network/html/custom_sw_update.o \
   ../../../src/supla/network/html/sw_update_beta.o \
   ../../../src/supla/network/html/sw_update.o \

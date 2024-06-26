@@ -65,6 +65,8 @@ class RemoteDeviceConfig {
  private:
   void processStatusLedConfig(uint64_t fieldBit,
                               TDeviceConfig_StatusLed *config);
+  void processPowerStatusLedConfig(uint64_t fieldBit,
+                              TDeviceConfig_PowerStatusLed *config);
   void processScreenBrightnessConfig(uint64_t fieldBit,
                                     TDeviceConfig_ScreenBrightness *config);
   void processButtonVolumeConfig(uint64_t fieldBit,
@@ -81,6 +83,7 @@ class RemoteDeviceConfig {
       uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
 
   void fillStatusLedConfig(TDeviceConfig_StatusLed *config) const;
+  void fillPowerStatusLedConfig(TDeviceConfig_PowerStatusLed *config) const;
   void fillScreenBrightnessConfig(TDeviceConfig_ScreenBrightness *config) const;
   void fillButtonVolumeConfig(TDeviceConfig_ButtonVolume *config) const;
   void fillHomeScreenContentConfig(

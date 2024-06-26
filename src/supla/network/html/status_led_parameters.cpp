@@ -92,6 +92,8 @@ bool StatusLedParameters::handleResponse(const char* key, const char* value) {
         }
       }
       cfg->setDeviceConfigChangeFlag();
+      Supla::Element::NotifyElementsAboutConfigChange(
+          SUPLA_DEVICE_CONFIG_FIELD_STATUS_LED);
     }
     return true;
   }

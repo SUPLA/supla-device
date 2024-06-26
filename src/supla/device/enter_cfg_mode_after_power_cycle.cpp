@@ -35,6 +35,7 @@ EnterCfgModeAfterPowerCycle::EnterCfgModeAfterPowerCycle(uint32_t timeoutMs,
     : timeoutMs(timeoutMs),
       maxPowerCycles(powerCycles),
       alwaysEnabled(alwaysEnabled) {
+  enabled = alwaysEnabled;
 }
 
 void EnterCfgModeAfterPowerCycle::onLoadConfig(SuplaDeviceClass *sdc) {

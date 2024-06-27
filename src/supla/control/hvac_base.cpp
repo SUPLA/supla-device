@@ -185,6 +185,7 @@ bool HvacBase::iterateConnected() {
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
            proto = proto->next()) {
+        config.ParameterFlags = parameterFlags;
         if (proto->setChannelConfig(getChannelNumber(),
                                     channel.getDefaultFunction(),
                                     reinterpret_cast<void *>(&config),
@@ -753,6 +754,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   auto hvacConfig =
       reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
 
+  bool readonlyChanged = fixReadonlyParameters(hvacConfig);
+  (void)(readonlyChanged);  // TODO(klew): implement
+
   if (applyServerConfig) {
     SUPLA_LOG_DEBUG("Current config:");
     debugPrintConfigStruct(&config, getChannelNumber());
@@ -824,6 +828,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   config.TemperatureSetpointChangeSwitchesToManualMode =
       hvacConfig->TemperatureSetpointChangeSwitchesToManualMode;
   config.AuxMinMaxSetpointEnabled = hvacConfig->AuxMinMaxSetpointEnabled;
+  config.UseSeparateHeatCoolOutputs = hvacConfig->UseSeparateHeatCoolOutputs;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -958,15 +963,18 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     case SUPLA_HVAC_AUX_THERMOMETER_TYPE_GENERIC_HEATER:
       break;
     default:
+      SUPLA_LOG_WARNING("HVAC: invalid aux thermometer type %d",
+                        newConfig->AuxThermometerType);
       return false;
   }
 
   if (newConfig->BinarySensorChannelNo != channel.getChannelNumber()) {
     if (!isChannelBinarySensor(newConfig->BinarySensorChannelNo)) {
+      SUPLA_LOG_WARNING("HVAC: invalid binary sensor %d",
+                        newConfig->BinarySensorChannelNo);
       return false;
     }
   }
-
 
   if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     switch (newConfig->Subfunction) {
@@ -1472,6 +1480,19 @@ void HvacBase::addAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
     initialConfig->AvailableAlgorithms |= algorithm;
   }
   config.AvailableAlgorithms |= algorithm;
+  SUPLA_LOG_DEBUG(" *********** Adding algorithm %X %X",
+                  algorithm,
+                  config.AvailableAlgorithms);
+}
+
+void HvacBase::removeAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
+  if (initialConfig && !initDone) {
+    initialConfig->AvailableAlgorithms &= ~algorithm;
+  }
+  config.AvailableAlgorithms &= ~algorithm;
+  SUPLA_LOG_DEBUG(" *********** Removing algorithm %X %X",
+                  algorithm,
+                  config.AvailableAlgorithms);
 }
 
 void HvacBase::setTemperatureInStruct(THVACTemperatureCfg *temperatures,
@@ -2154,6 +2175,23 @@ void HvacBase::setTemperatureSetpointChangeSwitchesToManualMode(bool enabled) {
 
 bool HvacBase::isTemperatureSetpointChangeSwitchesToManualMode() const {
   return config.TemperatureSetpointChangeSwitchesToManualMode;
+}
+
+void HvacBase::setUseSeparateHeatCoolOutputs(bool enabled) {
+  if (initialConfig && !initDone) {
+    initialConfig->UseSeparateHeatCoolOutputs = enabled;
+  }
+  if (config.UseSeparateHeatCoolOutputs != enabled) {
+    config.UseSeparateHeatCoolOutputs = enabled;
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+}
+
+bool HvacBase::isUseSeparateHeatCoolOutputs() const {
+  return config.UseSeparateHeatCoolOutputs;
 }
 
 bool HvacBase::isMinOnOffTimeValid(uint16_t seconds) const {
@@ -3423,9 +3461,14 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
     channel.setHvacFlagThermometerError(true);
     return getOutputValueOnError();
   }
+  channel.setHvacFlagThermometerError(false);
   if (!isSensorTempValid(tTarget)) {
     SUPLA_LOG_DEBUG("HVAC: tTarget not valid");
     return getOutputValueOnError();
+  }
+
+  if (!isOutputControlledInternally()) {
+    return 0;
   }
 
   initDefaultAlgorithm();
@@ -3471,7 +3514,6 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
     }
   }
 
-  channel.setHvacFlagThermometerError(false);
   return output;
 }
 
@@ -3482,9 +3524,15 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
     channel.setHvacFlagThermometerError(true);
     return getOutputValueOnError();
   }
+  channel.setHvacFlagThermometerError(false);
+
   if (!isSensorTempValid(tTarget)) {
     SUPLA_LOG_DEBUG("HVAC: tTarget not valid");
     return getOutputValueOnError();
+  }
+
+  if (!isOutputControlledInternally()) {
+    return 0;
   }
 
   initDefaultAlgorithm();
@@ -3531,7 +3579,6 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
     }
   }
 
-  channel.setHvacFlagThermometerError(false);
   return output;
 }
 void HvacBase::changeFunction(int newFunction, bool changedLocally) {
@@ -3709,6 +3756,8 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   (config->TemperatureSetpointChangeSwitchesToManualMode == 1)
                       ? "switches to manual"
                       : "keeps weekly");
+  SUPLA_LOG_DEBUG("  UseSeparateHeatCoolOutputs: %d",
+                  config->UseSeparateHeatCoolOutputs);
   SUPLA_LOG_DEBUG("  AuxMinMaxSetpointEnabled: %d",
                   config->AuxMinMaxSetpointEnabled);
   SUPLA_LOG_DEBUG("  Temperatures:");
@@ -4032,7 +4081,7 @@ bool HvacBase::setBinarySensorChannelNo(uint8_t channelNo) {
     defaultBinarySensor = channelNo;
     return true;
   }
-  if (isChannelBinarySensor(channelNo)) {
+  if (isChannelBinarySensor(channelNo) || channelNo == getChannelNumber()) {
     if (config.BinarySensorChannelNo != channelNo) {
       config.BinarySensorChannelNo = channelNo;
       if (initDone) {
@@ -4332,5 +4381,362 @@ void HvacBase::updateChannelState() {
       }
     }
   }
+}
+
+// returns true if readonly params were modified and fixed
+bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
+  if (hvacConfig == nullptr) {
+    return false;
+  }
+  bool readonlyViolation = false;
+
+  if (parameterFlags.MainThermometerChannelNoReadonly) {
+    if (config.MainThermometerChannelNo !=
+        hvacConfig->MainThermometerChannelNo) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] MainThermometerChannelNo change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.MainThermometerChannelNo,
+          hvacConfig->MainThermometerChannelNo);
+      hvacConfig->MainThermometerChannelNo = config.MainThermometerChannelNo;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.AuxThermometerChannelNoReadonly) {
+    if (config.AuxThermometerChannelNo !=
+        hvacConfig->AuxThermometerChannelNo) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] AuxThermometerChannelNo change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.AuxThermometerChannelNo,
+          hvacConfig->AuxThermometerChannelNo);
+      hvacConfig->AuxThermometerChannelNo = config.AuxThermometerChannelNo;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.BinarySensorChannelNoReadonly) {
+    if (config.BinarySensorChannelNo != hvacConfig->BinarySensorChannelNo) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] BinarySensorChannelNo change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.BinarySensorChannelNo,
+          hvacConfig->BinarySensorChannelNo);
+      hvacConfig->BinarySensorChannelNo = config.BinarySensorChannelNo;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.AuxThermometerTypeReadonly) {
+    if (config.AuxThermometerType != hvacConfig->AuxThermometerType) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] AuxThermometerType change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.AuxThermometerType,
+          hvacConfig->AuxThermometerType);
+      hvacConfig->AuxThermometerType = config.AuxThermometerType;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.AntiFreezeAndOverheatProtectionEnabledReadonly) {
+    if (config.AntiFreezeAndOverheatProtectionEnabled !=
+        hvacConfig->AntiFreezeAndOverheatProtectionEnabled) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] AntiFreezeAndOverheatProtection change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.AntiFreezeAndOverheatProtectionEnabled,
+          hvacConfig->AntiFreezeAndOverheatProtectionEnabled);
+      hvacConfig->AntiFreezeAndOverheatProtectionEnabled =
+          config.AntiFreezeAndOverheatProtectionEnabled;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.UsedAlgorithmReadonly) {
+    if (config.UsedAlgorithm != hvacConfig->UsedAlgorithm) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] UsedAlgorithm change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.UsedAlgorithm,
+          hvacConfig->UsedAlgorithm);
+      hvacConfig->UsedAlgorithm = config.UsedAlgorithm;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.MinOnTimeSReadonly) {
+    if (config.MinOnTimeS != hvacConfig->MinOnTimeS) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] MinOnTimeS change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.MinOnTimeS,
+          hvacConfig->MinOnTimeS);
+      hvacConfig->MinOnTimeS = config.MinOnTimeS;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.MinOffTimeSReadonly) {
+    if (config.MinOffTimeS != hvacConfig->MinOffTimeS) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] MinOffTimeS change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.MinOffTimeS,
+          hvacConfig->MinOffTimeS);
+      hvacConfig->MinOffTimeS = config.MinOffTimeS;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.OutputValueOnErrorReadonly) {
+    if (config.OutputValueOnError != hvacConfig->OutputValueOnError) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] OutputValueOnError change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.OutputValueOnError,
+          hvacConfig->OutputValueOnError);
+      hvacConfig->OutputValueOnError = config.OutputValueOnError;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.SubfunctionReadonly) {
+    if (config.Subfunction != hvacConfig->Subfunction) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] Subfunction change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.Subfunction,
+          hvacConfig->Subfunction);
+      hvacConfig->Subfunction = config.Subfunction;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperatureSetpointChangeSwitchesToManualModeReadonly) {
+    if (config.TemperatureSetpointChangeSwitchesToManualMode !=
+        hvacConfig->TemperatureSetpointChangeSwitchesToManualMode) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureSetpointChangeSwitchesToManualMode change from "
+          "%d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.TemperatureSetpointChangeSwitchesToManualMode,
+          hvacConfig->TemperatureSetpointChangeSwitchesToManualMode);
+      hvacConfig->TemperatureSetpointChangeSwitchesToManualMode =
+          config.TemperatureSetpointChangeSwitchesToManualMode;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.AuxMinMaxSetpointEnabledReadonly) {
+    if (config.AuxMinMaxSetpointEnabled !=
+        hvacConfig->AuxMinMaxSetpointEnabled) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] AuxMinMaxSetpointEnabled change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.AuxMinMaxSetpointEnabled,
+          hvacConfig->AuxMinMaxSetpointEnabled);
+      hvacConfig->AuxMinMaxSetpointEnabled = config.AuxMinMaxSetpointEnabled;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.UseSeparateHeatCoolOutputsReadonly) {
+    if (config.UseSeparateHeatCoolOutputs !=
+        hvacConfig->UseSeparateHeatCoolOutputs) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] UseSeparateHeatCoolOutputs change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.UseSeparateHeatCoolOutputs,
+          hvacConfig->UseSeparateHeatCoolOutputs);
+      hvacConfig->UseSeparateHeatCoolOutputs =
+          config.UseSeparateHeatCoolOutputs;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesFreezeProtectionReadonly) {
+    if (getTemperatureFreezeProtection() !=
+        getTemperatureFreezeProtection(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureFreezeProtection change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureFreezeProtection(),
+          getTemperatureFreezeProtection(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures,
+                             TEMPERATURE_FREEZE_PROTECTION,
+                             getTemperatureFreezeProtection());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesEcoReadonly) {
+    if (getTemperatureEco() != getTemperatureEco(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureEco change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureEco(),
+          getTemperatureEco(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO,
+                             getTemperatureEco());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesComfortReadonly) {
+    if (getTemperatureComfort() !=
+        getTemperatureComfort(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureComfort change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureComfort(),
+          getTemperatureComfort(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_COMFORT,
+                             getTemperatureComfort());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesBoostReadonly) {
+    if (getTemperatureBoost() !=
+        getTemperatureBoost(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureBoost change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureBoost(),
+          getTemperatureBoost(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_BOOST,
+                             getTemperatureBoost());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesHeatProtectionReadonly) {
+    if (getTemperatureHeatProtection() !=
+        getTemperatureHeatProtection(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureHeatProtection change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureHeatProtection(),
+          getTemperatureHeatProtection(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures,
+                             TEMPERATURE_HEAT_PROTECTION,
+                             getTemperatureHeatProtection());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesHisteresisReadonly) {
+    if (getTemperatureHisteresis() !=
+        getTemperatureHisteresis(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureHisteresis change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureHisteresis(),
+          getTemperatureHisteresis(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_HISTERESIS,
+                             getTemperatureHisteresis());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesAboveAlarmReadonly) {
+    if (getTemperatureAboveAlarm() !=
+        getTemperatureAboveAlarm(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureAboveAlarm change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureAboveAlarm(),
+          getTemperatureAboveAlarm(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM,
+                             getTemperatureAboveAlarm());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesBelowAlarmReadonly) {
+    if (getTemperatureBelowAlarm() !=
+        getTemperatureBelowAlarm(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureBelowAlarm change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureBelowAlarm(),
+          getTemperatureBelowAlarm(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures,
+                             TEMPERATURE_BELOW_ALARM,
+                             getTemperatureBelowAlarm());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesAuxMinSetpointReadonly) {
+    if (getTemperatureAuxMinSetpoint() !=
+        getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureAuxMinSetpoint change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureAuxMinSetpoint(),
+          getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures,
+                             TEMPERATURE_AUX_MIN_SETPOINT,
+                             getTemperatureAuxMinSetpoint());
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.TemperaturesAuxMaxSetpointReadonly) {
+    if (getTemperatureAuxMaxSetpoint() !=
+        getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures)) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] TemperatureAuxMaxSetpoint change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          getTemperatureAuxMaxSetpoint(),
+          getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
+      setTemperatureInStruct(&hvacConfig->Temperatures,
+                             TEMPERATURE_AUX_MAX_SETPOINT,
+                             getTemperatureAuxMaxSetpoint());
+      readonlyViolation = true;
+    }
+  }
+
+  return readonlyViolation;
+}
+
+bool HvacBase::isOutputControlledInternally() const {
+  if (config.AvailableAlgorithms == 0) {
+    return false;
+  }
+
+  return true;
 }
 

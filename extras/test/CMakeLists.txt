@@ -63,6 +63,7 @@ file(GLOB TEST_SRC
   NotifTests/*.cpp
   RelayTests/*.cpp
   GpmTests/*.cpp
+  ../../src/supla-common/proto_check.cpp
   )
 
 file(GLOB DOUBLE_SRC doubles/*.cpp)

@@ -3,6 +3,7 @@ set(SUPLA_COMMONM_SRCS
   ../../../src/supla-common/log.c
   ../../../src/supla-common/proto.c
   ../../../src/supla-common/srpc.c
+  ../../../src/supla-common/proto_check.cpp
 )
 
 set(SUPLA_DEVICE_SRCS

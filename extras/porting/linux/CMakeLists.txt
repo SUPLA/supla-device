@@ -88,6 +88,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   ../../../src/supla-common/tools.c
   ../../../src/supla-common/eh.c
+  ../../../src/supla-common/proto_check.cpp
 
   linux_log.c
 )
@@ -103,7 +104,7 @@ target_include_directories (supladevice
   ${YAML_INCLUDE_DIRS}
   )
 
-target_compile_definitions(supladevice PUBLIC SUPLA_LINUX)
+target_compile_definitions(supladevice PUBLIC SUPLA_LINUX SUPLA_DEVICE)
 
 #target_compile_options(supladevice PRIVATE -Wall -Wextra -Wpedantic -Werror)
 

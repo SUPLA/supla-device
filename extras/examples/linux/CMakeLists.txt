@@ -27,7 +27,7 @@ if(NOT DEFINED ENV{SUPLA_DEVICE_PATH})
   #  message(FATAL_ERROR "SUPLA_DEVICE_PATH env variable is not set")
 endif()
 
-add_definitions(-DMQTT_USE_BIO)
+add_definitions(-DMQTT_USE_BIO -DSUPLA_DEVICE)
 set(MQTT_C_OpenSSL_SUPPORT ON CACHE BOOL "Build MQTT-C with OpenSSL support?")
 set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?")
 

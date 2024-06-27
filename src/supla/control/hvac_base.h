@@ -89,6 +89,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setDrySupported(bool supported);
 
   void addAvailableAlgorithm(unsigned _supla_int16_t algorithm);
+  void removeAvailableAlgorithm(unsigned _supla_int16_t algorithm);
+  bool isOutputControlledInternally() const;
   // use this function to set value based on local config change
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
   unsigned _supla_int16_t getUsedAlgorithm() const;
@@ -118,6 +120,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   void setTemperatureSetpointChangeSwitchesToManualMode(bool enabled);
   bool isTemperatureSetpointChangeSwitchesToManualMode() const;
+
+  // only for HEAT_COOL thremostats:
+  void setUseSeparateHeatCoolOutputs(bool enabled);
+  bool isUseSeparateHeatCoolOutputs() const;
 
   // use this function to set value based on local config change
   bool setMinOnTimeS(uint16_t seconds);
@@ -378,6 +384,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // It return 1 if countdown timer is not set
   time_t getCountDownTimerEnds() const;
 
+  HvacParameterFlags parameterFlags = {};
+
  protected:
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
@@ -407,6 +415,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int channelFunctionToIndex(int channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
+  bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_HVAC *initialConfig = nullptr;

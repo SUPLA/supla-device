@@ -39,6 +39,7 @@
 #include <supla/device/register_device.h>
 #include <supla/mutex.h>
 #include <supla/auto_lock.h>
+#include <supla/device/subdevice_pairing_handler.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -824,7 +825,8 @@ void SuplaDeviceClass::removeFlags(int32_t flags) {
   Supla::RegisterDevice::removeFlags(flags);
 }
 
-int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
+int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
+                                             TDS_DeviceCalCfgResult *result) {
   if (request) {
     if (request->SuperUserAuthorized != 1) {
       return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
@@ -851,6 +853,28 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
           return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
         }
       }
+      case SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING: {
+        SUPLA_LOG_INFO("CALCFG START SUBDEVICE PAIRING received");
+        if (subdevicePairingHandler) {
+          TCalCfg_SubdevicePairingResult pairingResult = {};
+          auto cmdResult = subdevicePairingHandler->startPairing(getSrpcLayer(),
+                                                      &pairingResult);
+          if (result && sizeof(pairingResult) <= SUPLA_CALCFG_DATA_MAXSIZE) {
+            memcpy(result->Data, &pairingResult, sizeof(pairingResult));
+            result->DataSize = sizeof(pairingResult);
+          } else {
+            SUPLA_LOG_WARNING(
+                "No result buffer provided, or size is too big %d > %d",
+                sizeof(pairingResult),
+                SUPLA_CALCFG_DATA_MAXSIZE);
+          }
+          return cmdResult;
+        } else {
+          SUPLA_LOG_WARNING("No SubdevicePairingHandler configured");
+          return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+        }
+      }
+
       default:
         break;
     }
@@ -955,7 +979,7 @@ void SuplaDeviceClass::disableCfgModeTimeout() {
 }
 
 void SuplaDeviceClass::scheduleSoftRestart(int timeout) {
-  SUPLA_LOG_INFO("Triggering soft restart");
+  SUPLA_LOG_INFO("Scheduling soft restart in %d ms", timeout);
   status(STATUS_SOFTWARE_RESET, F("Software reset"));
   if (timeout <= 0) {
     forceRestartTimeMs = 1;
@@ -963,6 +987,16 @@ void SuplaDeviceClass::scheduleSoftRestart(int timeout) {
     forceRestartTimeMs = timeout;
   }
   deviceRestartTimeoutTimestamp = millis();
+}
+
+void SuplaDeviceClass::scheduleProtocolsRestart(int timeout) {
+  SUPLA_LOG_INFO("Scheduling protocols restart in %d ms", timeout);;
+  if (timeout <= 0) {
+    protocolRestartTimeMs = 1;
+  } else {
+    protocolRestartTimeMs = timeout;
+  }
+  protocolRestartTimeoutTimestamp = millis();
 }
 
 void SuplaDeviceClass::addLastStateLog(const char *msg) {
@@ -1113,6 +1147,13 @@ void SuplaDeviceClass::checkIfRestartIsNeeded(uint32_t _millis) {
                      longestConnectionFailTime);
       softRestart();
     }
+  }
+  if (protocolRestartTimeoutTimestamp != 0 &&
+      _millis - protocolRestartTimeoutTimestamp > protocolRestartTimeMs) {
+    SUPLA_LOG_INFO("Restarting connections...");
+    protocolRestartTimeoutTimestamp = 0;
+    protocolRestartTimeMs = 0;
+    Supla::Network::DisconnectProtocols();
   }
 }
 
@@ -1270,6 +1311,11 @@ void SuplaDeviceClass::setChannelConflictResolver(
     Supla::Device::ChannelConflictResolver *resolver) {
   createSrpcLayerIfNeeded();
   srpcLayer->setChannelConflictResolver(resolver);
+}
+
+void SuplaDeviceClass::setSubdevicePairingHandler(
+      Supla::Device::SubdevicePairingHandler *handler) {
+  subdevicePairingHandler = handler;
 }
 
 SuplaDeviceClass SuplaDevice;

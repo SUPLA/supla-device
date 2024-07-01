@@ -33,7 +33,7 @@
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {
-  uint8_t channelNo = 0;
+  int16_t channelNo = 0;
   int32_t receiverId = 0;
   int32_t command = 0;
 
@@ -319,7 +319,15 @@ void Supla::messageReceived(void *srpc,
           // calcfg with channel == -1 are for whole device, so we route
           // it to SuplaDeviceClass instance
           result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
-              rd.data.sd_device_calcfg_request);
+              rd.data.sd_device_calcfg_request, &result);
+          if (result.Command == SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING &&
+              result.Result != SUPLA_CALCFG_RESULT_FALSE &&
+              result.Result != SUPLA_CALCFG_RESULT_NOT_SUPPORTED &&
+              result.Result != SUPLA_CALCFG_RESULT_IN_PROGRESS &&
+              result.Result != SUPLA_CALCFG_RESULT_UNAUTHORIZED) {
+            suplaSrpc->calCfgResultPending.set(
+                result.ChannelNumber, result.ReceiverID, result.Command);
+          }
         } else {
           auto element = Supla::Element::getElementByChannelNumber(
               rd.data.sd_device_calcfg_request->ChannelNumber);
@@ -337,6 +345,9 @@ void Supla::messageReceived(void *srpc,
           }
         }
         if (result.Result >= 0) {
+          SUPLA_LOG_DEBUG("Sending CALCFG result: CMD %d result: %d",
+                          result.Command,
+                          result.Result);
           srpc_ds_async_device_calcfg_result(srpc, &result);
         }
         break;
@@ -1303,7 +1314,7 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(
   delete value;
 }
 
-void Supla::Protocol::CalCfgResultPending::set(uint8_t channelNo,
+void Supla::Protocol::CalCfgResultPending::set(int16_t channelNo,
                                                int32_t receiverId,
                                                int32_t command) {
   auto ptr = first;
@@ -1330,7 +1341,7 @@ void Supla::Protocol::CalCfgResultPending::set(uint8_t channelNo,
   }
 }
 
-void Supla::Protocol::CalCfgResultPending::clear(uint8_t channelNo) {
+void Supla::Protocol::CalCfgResultPending::clear(int16_t channelNo) {
   auto ptr = first;
   CalCfgResultPendingItem *prev = nullptr;
   while (ptr) {
@@ -1360,7 +1371,7 @@ Supla::Protocol::CalCfgResultPending::~CalCfgResultPending() {
 }
 
 Supla::Protocol::CalCfgResultPendingItem *
-Supla::Protocol::CalCfgResultPending::get(uint8_t channelNo) {
+Supla::Protocol::CalCfgResultPending::get(int16_t channelNo) {
   auto ptr = first;
   while (ptr) {
     if (ptr->channelNo == channelNo) {
@@ -1371,7 +1382,7 @@ Supla::Protocol::CalCfgResultPending::get(uint8_t channelNo) {
   return nullptr;
 }
 
-void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(uint8_t channelNo,
+void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(int16_t channelNo,
                                                          int32_t resultId,
                                                          int32_t command,
                                                          int dataSize,
@@ -1397,7 +1408,13 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(uint8_t channelNo,
     dataSize = SUPLA_CALCFG_DATA_MAXSIZE;
   }
   memcpy(result.Data, data, dataSize);
+  SUPLA_LOG_DEBUG("Sending CALCFG result: CMD %d result: %d", result.Command,
+                  result.Result);
   srpc_ds_async_device_calcfg_result(srpc, &result);
+}
+
+void Supla::Protocol::SuplaSrpc::clearPendingCalCfgResult(int16_t channelNo) {
+  calCfgResultPending.clear(channelNo);
 }
 
 void Supla::Protocol::SuplaSrpc::initializeSrpc() {

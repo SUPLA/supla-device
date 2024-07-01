@@ -84,6 +84,7 @@ namespace Device {
 class SwUpdate;
 class Mutex;
 class ChannelConflictResolver;
+class SubdevicePairingHandler;
 }  // namespace Device
 }  // namespace Supla
 
@@ -133,7 +134,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setStatusFuncImpl(_impl_arduino_status impl_arduino_status);
   void setServerPort(int value);
 
-  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
+                             TDS_DeviceCalCfgResult *result = nullptr);
 
   void enterConfigMode();
   void leaveConfigModeWithoutRestart();
@@ -141,6 +143,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // Schedules timeout to restart device. When provided timeout is 0
   // then restart will be done asap.
   void scheduleSoftRestart(int timeout = 0);
+  void scheduleProtocolsRestart(int timeout = 0);
   void softRestart();
   void saveStateToStorage();
   void disableCfgModeTimeout();
@@ -205,16 +208,20 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setChannelConflictResolver(
       Supla::Device::ChannelConflictResolver *resolver);
+  void setSubdevicePairingHandler(
+      Supla::Device::SubdevicePairingHandler *handler);
 
  protected:
   int networkIsNotReadyCounter = 0;
 
   uint32_t deviceRestartTimeoutTimestamp = 0;
+  uint32_t protocolRestartTimeoutTimestamp = 0;
   uint32_t waitForIterate = 0;
   uint32_t lastIterateTime = 0;
   uint32_t enterConfigModeTimestamp = 0;
-  unsigned int forceRestartTimeMs = 0;
-  unsigned int resetOnConnectionFailTimeoutSec = 0;
+  uint32_t forceRestartTimeMs = 0;
+  uint32_t protocolRestartTimeMs = 0;
+  uint32_t resetOnConnectionFailTimeoutSec = 0;
   int allowOfflineMode = 0;
   int currentStatus = STATUS_UNKNOWN;
 
@@ -246,6 +253,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
   char *customHostnamePrefix = nullptr;
   Supla::Mutex *timerAccessMutex = nullptr;
+  Supla::Device::SubdevicePairingHandler *subdevicePairingHandler = nullptr;
 
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();

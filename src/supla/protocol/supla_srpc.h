@@ -42,9 +42,9 @@ struct CalCfgResultPendingItem;
 class CalCfgResultPending {
  public:
   friend class SuplaSrpc;
-  void set(uint8_t channelNo, int32_t receiverId, int32_t command);
-  void clear(uint8_t channelNo);
-  CalCfgResultPendingItem *get(uint8_t channelNo);
+  void set(int16_t channelNo, int32_t receiverId, int32_t command);
+  void clear(int16_t channelNo);
+  CalCfgResultPendingItem *get(int16_t channelNo);
 
  protected:
   CalCfgResultPending();
@@ -126,11 +126,13 @@ class SuplaSrpc : public ProtocolLayer {
 
   Supla::Client *client = nullptr;
   CalCfgResultPending calCfgResultPending;
-  void sendPendingCalCfgResult(uint8_t channelNo,
+  void sendPendingCalCfgResult(int16_t channelNo,
                                int32_t result,
                                int32_t command,
                                int dataSize = 0,
                                void *data = nullptr);
+
+  void clearPendingCalCfgResult(int16_t channelNo);
 
   static const char *configResultToCStr(int result);
 

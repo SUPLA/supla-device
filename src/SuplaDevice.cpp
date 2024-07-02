@@ -855,10 +855,10 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       }
       case SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING: {
         SUPLA_LOG_INFO("CALCFG START SUBDEVICE PAIRING received");
-        if (subdevicePairingHandler) {
+        if (subdevicePairingHandler &&
+            Supla::RegisterDevice::isPairingSubdeviceEnabled()) {
           TCalCfg_SubdevicePairingResult pairingResult = {};
-          auto cmdResult = subdevicePairingHandler->startPairing(getSrpcLayer(),
-                                                      &pairingResult);
+          subdevicePairingHandler->startPairing(getSrpcLayer(), &pairingResult);
           if (result && sizeof(pairingResult) <= SUPLA_CALCFG_DATA_MAXSIZE) {
             memcpy(result->Data, &pairingResult, sizeof(pairingResult));
             result->DataSize = sizeof(pairingResult);
@@ -867,8 +867,9 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
                 "No result buffer provided, or size is too big %d > %d",
                 sizeof(pairingResult),
                 SUPLA_CALCFG_DATA_MAXSIZE);
+            return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
           }
-          return cmdResult;
+          return SUPLA_CALCFG_RESULT_TRUE;
         } else {
           SUPLA_LOG_WARNING("No SubdevicePairingHandler configured");
           return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;

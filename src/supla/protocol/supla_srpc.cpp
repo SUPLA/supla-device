@@ -321,10 +321,7 @@ void Supla::messageReceived(void *srpc,
           result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
               rd.data.sd_device_calcfg_request, &result);
           if (result.Command == SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING &&
-              result.Result != SUPLA_CALCFG_RESULT_FALSE &&
-              result.Result != SUPLA_CALCFG_RESULT_NOT_SUPPORTED &&
-              result.Result != SUPLA_CALCFG_RESULT_IN_PROGRESS &&
-              result.Result != SUPLA_CALCFG_RESULT_UNAUTHORIZED) {
+              result.Result == SUPLA_CALCFG_RESULT_TRUE) {
             suplaSrpc->calCfgResultPending.set(
                 result.ChannelNumber, result.ReceiverID, result.Command);
           }

@@ -60,6 +60,7 @@ const char *getServerName();
 bool isSuplaPublicServerConfigured();
 bool isSleepingDeviceEnabled();
 bool isRemoteDeviceConfigEnabled();
+bool isPairingSubdeviceEnabled();
 
 void setManufacturerId(int16_t mfrId);
 void setProductId(int16_t productId);

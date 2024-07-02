@@ -33,9 +33,8 @@ class SubdevicePairingHandler {
  public:
   virtual ~SubdevicePairingHandler() = default;
 
-  // returns SUPLA_CALCFG_RESULT_
-  virtual int startPairing(Supla::Protocol::SuplaSrpc *srpc,
-                          TCalCfg_SubdevicePairingResult *result) = 0;
+  virtual bool startPairing(Supla::Protocol::SuplaSrpc *srpc,
+                            TCalCfg_SubdevicePairingResult *result) = 0;
 };
 
 }  // namespace Device

@@ -318,6 +318,10 @@ bool Supla::RegisterDevice::isSleepingDeviceEnabled() {
   return (reg_dev.Flags & SUPLA_DEVICE_FLAG_SLEEP_MODE_ENABLED) != 0;
 }
 
+bool Supla::RegisterDevice::isPairingSubdeviceEnabled() {
+  return (reg_dev.Flags & SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING) != 0;
+}
+
 bool Supla::RegisterDevice::isRemoteDeviceConfigEnabled() {
   return reg_dev.Flags & SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED;
 }

@@ -591,13 +591,34 @@ void HvacBase::iterateAlways() {
     return;
   }
 
-  if (getForcedOffSensorState()) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit", getChannelNumber());
-    channel.setHvacFlagForcedOffBySensor(true);
-    setOutput(0, false);
-    return;
+  if (isOutputControlledInternally()) {
+    if (getForcedOffSensorState()) {
+      SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit",
+                      getChannelNumber());
+      channel.setHvacFlagForcedOffBySensor(true);
+      setOutput(0, false);
+      return;
+    } else {
+      channel.setHvacFlagForcedOffBySensor(false);
+    }
   } else {
-    channel.setHvacFlagForcedOffBySensor(false);
+    if (getForcedOffSensorState()) {
+      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF) {
+        channel.setHvacFlagForcedOffBySensor(true);
+        setTargetMode(SUPLA_HVAC_MODE_OFF);
+        SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit (with turn off)",
+                        getChannelNumber());
+        return;
+      }
+    } else {
+      if (channel.isHvacFlagForcedOffBySensor()) {
+        channel.setHvacFlagForcedOffBySensor(false);
+        setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
+        SUPLA_LOG_DEBUG("HVAC[%d]: turn on by sensor state",
+                        getChannelNumber());
+        return;
+      }
+    }
   }
 
   if (checkAuxProtection(t2)) {
@@ -755,7 +776,6 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
 
   bool readonlyChanged = fixReadonlyParameters(hvacConfig);
-  (void)(readonlyChanged);  // TODO(klew): implement
 
   if (applyServerConfig) {
     SUPLA_LOG_DEBUG("Current config:");
@@ -798,8 +818,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   // check if readonly fields have correct values on server
   // if not, then send update to server
   // Check is done only on first config after registration
-  if (!configFinishedReceived) {
-    if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
+  if (!configFinishedReceived || readonlyChanged) {
+    if (readonlyChanged ||
+        hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
       channelConfigChangedOffline = 1;
     }
   }
@@ -2908,6 +2929,12 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
     }
   }
 
+  if (!isOutputControlledInternally() &&
+      channel.isHvacFlagForcedOffBySensor() &&
+      mode != SUPLA_HVAC_MODE_OFF) {
+    return;
+  }
+
   if (!keepScheduleOn && mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     lastProgramManualOverride = -1;
   }
@@ -4581,9 +4608,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureFreezeProtection(),
           getTemperatureFreezeProtection(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures,
-                             TEMPERATURE_FREEZE_PROTECTION,
-                             getTemperatureFreezeProtection());
+      if (getTemperatureFreezeProtection() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_FREEZE_PROTECTION);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_FREEZE_PROTECTION,
+                               getTemperatureFreezeProtection());
+      }
       readonlyViolation = true;
     }
   }
@@ -4596,8 +4628,12 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureEco(),
           getTemperatureEco(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO,
-                             getTemperatureEco());
+      if (getTemperatureEco() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO,
+            getTemperatureEco());
+      }
       readonlyViolation = true;
     }
   }
@@ -4611,8 +4647,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureComfort(),
           getTemperatureComfort(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_COMFORT,
-                             getTemperatureComfort());
+      if (getTemperatureComfort() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_COMFORT);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_COMFORT,
+                               getTemperatureComfort());
+      }
       readonlyViolation = true;
     }
   }
@@ -4626,8 +4668,13 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureBoost(),
           getTemperatureBoost(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_BOOST,
-                             getTemperatureBoost());
+      if (getTemperatureBoost() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_BOOST);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_BOOST,
+                               getTemperatureBoost());
+      }
       readonlyViolation = true;
     }
   }
@@ -4642,9 +4689,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureHeatProtection(),
           getTemperatureHeatProtection(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures,
-                             TEMPERATURE_HEAT_PROTECTION,
-                             getTemperatureHeatProtection());
+      if (getTemperatureHeatProtection() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_HEAT_PROTECTION);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_HEAT_PROTECTION,
+                               getTemperatureHeatProtection());
+      }
       readonlyViolation = true;
     }
   }
@@ -4658,8 +4710,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureHisteresis(),
           getTemperatureHisteresis(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_HISTERESIS,
-                             getTemperatureHisteresis());
+      if (getTemperatureHisteresis() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_HISTERESIS);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_HISTERESIS,
+                               getTemperatureHisteresis());
+      }
       readonlyViolation = true;
     }
   }
@@ -4673,8 +4731,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureAboveAlarm(),
           getTemperatureAboveAlarm(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM,
-                             getTemperatureAboveAlarm());
+      if (getTemperatureAboveAlarm() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_ABOVE_ALARM);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_ABOVE_ALARM,
+                               getTemperatureAboveAlarm());
+      }
       readonlyViolation = true;
     }
   }
@@ -4688,9 +4752,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureBelowAlarm(),
           getTemperatureBelowAlarm(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures,
-                             TEMPERATURE_BELOW_ALARM,
-                             getTemperatureBelowAlarm());
+      if (getTemperatureBelowAlarm() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_BELOW_ALARM);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_BELOW_ALARM,
+                               getTemperatureBelowAlarm());
+      }
       readonlyViolation = true;
     }
   }
@@ -4705,9 +4774,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureAuxMinSetpoint(),
           getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures,
-                             TEMPERATURE_AUX_MIN_SETPOINT,
-                             getTemperatureAuxMinSetpoint());
+      if (getTemperatureAuxMinSetpoint() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_AUX_MIN_SETPOINT);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_AUX_MIN_SETPOINT,
+                               getTemperatureAuxMinSetpoint());
+      }
       readonlyViolation = true;
     }
   }
@@ -4722,9 +4796,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           getChannelNumber(),
           getTemperatureAuxMaxSetpoint(),
           getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
-      setTemperatureInStruct(&hvacConfig->Temperatures,
-                             TEMPERATURE_AUX_MAX_SETPOINT,
-                             getTemperatureAuxMaxSetpoint());
+      if (getTemperatureAuxMaxSetpoint() == INT16_MIN) {
+        clearTemperatureInStruct(&hvacConfig->Temperatures,
+            TEMPERATURE_AUX_MAX_SETPOINT);
+      } else {
+        setTemperatureInStruct(&hvacConfig->Temperatures,
+                               TEMPERATURE_AUX_MAX_SETPOINT,
+                               getTemperatureAuxMaxSetpoint());
+      }
       readonlyViolation = true;
     }
   }

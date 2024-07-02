@@ -109,4 +109,22 @@ void WebSender::sendSelectItem(int value, const char *label, bool selected) {
   send(buf);
 }
 
+void WebSender::sendHidden(bool hidden) {
+  if (hidden) {
+    send(" hidden");
+  }
+}
+
+void WebSender::sendReadonly(bool readonly) {
+  if (readonly) {
+    send(" readonly");
+  }
+}
+
+void WebSender::sendDisabled(bool disabled) {
+  if (disabled) {
+    send(" disabled");
+  }
+}
+
 };  // namespace Supla

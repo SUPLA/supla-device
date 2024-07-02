@@ -1880,7 +1880,6 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
             SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
 
 // Start of readonly testing
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_MAIN_THERMOMETER);
   hvac.parameterFlags.MainThermometerChannelNoReadonly = 1;
   hvacConfig->MainThermometerChannelNo = 2;
 
@@ -1888,205 +1887,198 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), 1);
 
-//  hvac.clearParameterReadonly(SUPLA_HVAC_RO_PARAM_BIT_MAIN_THERMOMETER);
   hvac.parameterFlags.MainThermometerChannelNoReadonly = 0;
   hvacConfig->MainThermometerChannelNo = 2;
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), 2);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_AUX_THERMOMETER);
   hvac.parameterFlags.AuxThermometerChannelNoReadonly = 1;
   hvacConfig->AuxThermometerChannelNo = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getBinarySensorChannelNo(), 0);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_BINARY_SENSOR);
   hvac.parameterFlags.BinarySensorChannelNoReadonly = 1;
   hvacConfig->BinarySensorChannelNo = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getBinarySensorChannelNo(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getAuxThermometerType(), 0);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_AUX_THERMOMETER_TYPE);
   hvac.parameterFlags.AuxThermometerTypeReadonly = 1;
   hvacConfig->AuxThermometerType = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getAuxThermometerType(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.isAntiFreezeAndHeatProtectionEnabled(), 0);
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_ANTI_FREEZE_PROTECTION);
   hvac.parameterFlags.AntiFreezeAndOverheatProtectionEnabledReadonly = 1;
   hvacConfig->AntiFreezeAndOverheatProtectionEnabled = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.isAntiFreezeAndHeatProtectionEnabled(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
     EXPECT_EQ(hvac.getUsedAlgorithm(), 1);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_USED_ALGORITHM);
   hvac.parameterFlags.UsedAlgorithmReadonly = 1;
   hvacConfig->UsedAlgorithm = 2;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getUsedAlgorithm(), 1);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getMinOnTimeS(), 0);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_MIN_ON_TIME_S);
   hvac.parameterFlags.MinOnTimeSReadonly = 1;
   hvacConfig->MinOnTimeS = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getMinOnTimeS(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getMinOffTimeS(), 0);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_MIN_OFF_TIME_S);
     hvac.parameterFlags.MinOffTimeSReadonly = 1;
   hvacConfig->MinOffTimeS = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getMinOffTimeS(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getOutputValueOnError(), 0);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_OUTPUT_VALUE_ON_ERROR);
   hvac.parameterFlags.OutputValueOnErrorReadonly = 1;
   hvacConfig->OutputValueOnError = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getOutputValueOnError(), 0);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_TRUE(hvac.isHeatingSubfunction());
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_SUBFUNCTION);
   hvac.parameterFlags.SubfunctionReadonly = 1;
   hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_COOL;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_TRUE(hvac.isHeatingSubfunction());
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_FALSE(hvac.isTemperatureSetpointChangeSwitchesToManualMode());
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_SETPOINT_CHANGE);
   hvac.parameterFlags.TemperatureSetpointChangeSwitchesToManualModeReadonly = 1;
   hvacConfig->TemperatureSetpointChangeSwitchesToManualMode = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(hvac.isTemperatureSetpointChangeSwitchesToManualMode());
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_FALSE(hvac.isAuxMinMaxSetpointEnabled());
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_AUX_MIN_MAX_SETPOINT_ENABLED);
   hvac.parameterFlags.AuxMinMaxSetpointEnabledReadonly = 1;
   hvacConfig->AuxMinMaxSetpointEnabled = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(hvac.isAuxMinMaxSetpointEnabled());
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_FALSE(hvac.isUseSeparateHeatCoolOutputs());
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_USE_SEPARATE_HEAT_COOL_OUTPUTS);
   hvac.parameterFlags.UseSeparateHeatCoolOutputsReadonly = 1;
   hvacConfig->UseSeparateHeatCoolOutputs = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(hvac.isUseSeparateHeatCoolOutputs());
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureFreezeProtection(), 1000);
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_FREEZE_PROTECTION);
   hvac.parameterFlags.TemperaturesFreezeProtectionReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_FREEZE_PROTECTION, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureFreezeProtection(), 1000);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureEco(), 1600);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_ECO);
   hvac.parameterFlags.TemperaturesEcoReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ECO, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureEco(), 1600);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureComfort(), 2200);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_COMFORT);
   hvac.parameterFlags.TemperaturesComfortReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_COMFORT, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureComfort(), 2200);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureBoost(), 4000);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_BOOST);
   hvac.parameterFlags.TemperaturesBoostReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BOOST, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureBoost(), 4000);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureHeatProtection(), 3400);
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_HEAT_PROTECTION);
   hvac.parameterFlags.TemperaturesHeatProtectionReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HEAT_PROTECTION, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureHeatProtection(), 3400);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureHisteresis(), 100);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_HISTERESIS);
   hvac.parameterFlags.TemperaturesHisteresisReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureHisteresis(), 100);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureBelowAlarm(), 1800);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_BELOW_ALARM);
   hvac.parameterFlags.TemperaturesBelowAlarmReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureBelowAlarm(), 1800);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureAboveAlarm(), 3500);
-//  hvac.setParameterAsReadonly(SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_ABOVE_ALARM);
   hvac.parameterFlags.TemperaturesAboveAlarmReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_ABOVE_ALARM, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureAboveAlarm(), 3500);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureAuxMinSetpoint(), 1000);
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_AUX_MIN_SETPOINT);
   hvac.parameterFlags.TemperaturesAuxMinSetpointReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureAuxMinSetpoint(), 1000);
+  hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getTemperatureAuxMaxSetpoint(), 2000);
-//  hvac.setParameterAsReadonly(
-//      SUPLA_HVAC_RO_PARAM_BIT_TEMPERATURE_AUX_MAX_SETPOINT);
   hvac.parameterFlags.TemperaturesAuxMaxSetpointReadonly = 1;
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_AUX_MAX_SETPOINT, 2345);
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureAuxMaxSetpoint(), 2000);
+  hvac.clearChannelConfigChangedFlag();
 }

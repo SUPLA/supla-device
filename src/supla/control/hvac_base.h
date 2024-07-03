@@ -416,6 +416,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
+  bool fixReadonlyTemperature(int temperatureIndex,
+                              THVACTemperatureCfg *newTemp);
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_HVAC *initialConfig = nullptr;

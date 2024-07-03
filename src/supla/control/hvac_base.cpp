@@ -1501,9 +1501,6 @@ void HvacBase::addAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
     initialConfig->AvailableAlgorithms |= algorithm;
   }
   config.AvailableAlgorithms |= algorithm;
-  SUPLA_LOG_DEBUG(" *********** Adding algorithm %X %X",
-                  algorithm,
-                  config.AvailableAlgorithms);
 }
 
 void HvacBase::removeAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
@@ -1511,9 +1508,6 @@ void HvacBase::removeAvailableAlgorithm(unsigned _supla_int16_t algorithm) {
     initialConfig->AvailableAlgorithms &= ~algorithm;
   }
   config.AvailableAlgorithms &= ~algorithm;
-  SUPLA_LOG_DEBUG(" *********** Removing algorithm %X %X",
-                  algorithm,
-                  config.AvailableAlgorithms);
 }
 
 void HvacBase::setTemperatureInStruct(THVACTemperatureCfg *temperatures,
@@ -4599,216 +4593,106 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (parameterFlags.TemperaturesFreezeProtectionReadonly) {
-    if (getTemperatureFreezeProtection() !=
-        getTemperatureFreezeProtection(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureFreezeProtection change from %d to %d not "
-          "allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureFreezeProtection(),
-          getTemperatureFreezeProtection(&hvacConfig->Temperatures));
-      if (getTemperatureFreezeProtection() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_FREEZE_PROTECTION);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_FREEZE_PROTECTION,
-                               getTemperatureFreezeProtection());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_FREEZE_PROTECTION,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesEcoReadonly) {
-    if (getTemperatureEco() != getTemperatureEco(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureEco change from %d to %d not allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureEco(),
-          getTemperatureEco(&hvacConfig->Temperatures));
-      if (getTemperatureEco() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO,
-            getTemperatureEco());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_ECO,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesComfortReadonly) {
-    if (getTemperatureComfort() !=
-        getTemperatureComfort(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureComfort change from %d to %d not allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureComfort(),
-          getTemperatureComfort(&hvacConfig->Temperatures));
-      if (getTemperatureComfort() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_COMFORT);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_COMFORT,
-                               getTemperatureComfort());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_COMFORT,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesBoostReadonly) {
-    if (getTemperatureBoost() !=
-        getTemperatureBoost(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureBoost change from %d to %d not allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureBoost(),
-          getTemperatureBoost(&hvacConfig->Temperatures));
-      if (getTemperatureBoost() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures, TEMPERATURE_BOOST);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_BOOST,
-                               getTemperatureBoost());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_BOOST,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesHeatProtectionReadonly) {
-    if (getTemperatureHeatProtection() !=
-        getTemperatureHeatProtection(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureHeatProtection change from %d to %d not "
-          "allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureHeatProtection(),
-          getTemperatureHeatProtection(&hvacConfig->Temperatures));
-      if (getTemperatureHeatProtection() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_HEAT_PROTECTION);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_HEAT_PROTECTION,
-                               getTemperatureHeatProtection());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HEAT_PROTECTION,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesHisteresisReadonly) {
-    if (getTemperatureHisteresis() !=
-        getTemperatureHisteresis(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureHisteresis change from %d to %d not allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureHisteresis(),
-          getTemperatureHisteresis(&hvacConfig->Temperatures));
-      if (getTemperatureHisteresis() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_HISTERESIS);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_HISTERESIS,
-                               getTemperatureHisteresis());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HISTERESIS,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesAboveAlarmReadonly) {
-    if (getTemperatureAboveAlarm() !=
-        getTemperatureAboveAlarm(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureAboveAlarm change from %d to %d not allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureAboveAlarm(),
-          getTemperatureAboveAlarm(&hvacConfig->Temperatures));
-      if (getTemperatureAboveAlarm() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_ABOVE_ALARM);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_ABOVE_ALARM,
-                               getTemperatureAboveAlarm());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_ABOVE_ALARM,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesBelowAlarmReadonly) {
-    if (getTemperatureBelowAlarm() !=
-        getTemperatureBelowAlarm(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureBelowAlarm change from %d to %d not allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureBelowAlarm(),
-          getTemperatureBelowAlarm(&hvacConfig->Temperatures));
-      if (getTemperatureBelowAlarm() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_BELOW_ALARM);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_BELOW_ALARM,
-                               getTemperatureBelowAlarm());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_BELOW_ALARM,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesAuxMinSetpointReadonly) {
-    if (getTemperatureAuxMinSetpoint() !=
-        getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureAuxMinSetpoint change from %d to %d not "
-          "allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureAuxMinSetpoint(),
-          getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
-      if (getTemperatureAuxMinSetpoint() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_AUX_MIN_SETPOINT);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_AUX_MIN_SETPOINT,
-                               getTemperatureAuxMinSetpoint());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_AUX_MIN_SETPOINT,
+                           &hvacConfig->Temperatures);
   }
 
   if (parameterFlags.TemperaturesAuxMaxSetpointReadonly) {
-    if (getTemperatureAuxMaxSetpoint() !=
-        getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures)) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d] TemperatureAuxMaxSetpoint change from %d to %d not "
-          "allowed "
-          "(readonly)",
-          getChannelNumber(),
-          getTemperatureAuxMaxSetpoint(),
-          getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
-      if (getTemperatureAuxMaxSetpoint() == INT16_MIN) {
-        clearTemperatureInStruct(&hvacConfig->Temperatures,
-            TEMPERATURE_AUX_MAX_SETPOINT);
-      } else {
-        setTemperatureInStruct(&hvacConfig->Temperatures,
-                               TEMPERATURE_AUX_MAX_SETPOINT,
-                               getTemperatureAuxMaxSetpoint());
-      }
-      readonlyViolation = true;
-    }
+    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_AUX_MAX_SETPOINT,
+                           &hvacConfig->Temperatures);
   }
 
+  if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] AvailableAlgorithms change from %d to %d not allowed "
+        "(readonly)",
+        getChannelNumber(),
+        hvacConfig->AvailableAlgorithms,
+        config.AvailableAlgorithms);
+    hvacConfig->AvailableAlgorithms = config.AvailableAlgorithms;
+    readonlyViolation = true;
+  }
+
+  readonlyViolation |=
+      fixReadonlyTemperature(TEMPERATURE_ROOM_MIN, &hvacConfig->Temperatures);
+  readonlyViolation |=
+      fixReadonlyTemperature(TEMPERATURE_ROOM_MAX, &hvacConfig->Temperatures);
+  readonlyViolation |=
+      fixReadonlyTemperature(TEMPERATURE_AUX_MIN, &hvacConfig->Temperatures);
+  readonlyViolation |=
+      fixReadonlyTemperature(TEMPERATURE_AUX_MAX, &hvacConfig->Temperatures);
+  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MIN,
+                                              &hvacConfig->Temperatures);
+  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MAX,
+                                              &hvacConfig->Temperatures);
+  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+                                              &hvacConfig->Temperatures);
+  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+                                              &hvacConfig->Temperatures);
+
   return readonlyViolation;
+}
+
+bool HvacBase::fixReadonlyTemperature(int temperatureIndex,
+                              THVACTemperatureCfg *newTemps) {
+  auto currentTemperature = getTemperatureFromStruct(&config.Temperatures,
+      temperatureIndex);
+  auto newTemperature = getTemperatureFromStruct(newTemps, temperatureIndex);
+  if (currentTemperature != newTemperature) {
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] Temperatures[%d] change from %d to %d not allowed (readonly)",
+        getChannelNumber(),
+        temperatureIndex,
+        currentTemperature,
+        newTemperature);
+    if (currentTemperature == INT16_MIN) {
+      clearTemperatureInStruct(newTemps, temperatureIndex);
+    } else {
+      setTemperatureInStruct(newTemps, temperatureIndex, currentTemperature);
+    }
+    return true;
+  }
+  return false;
 }
 
 bool HvacBase::isOutputControlledInternally() const {

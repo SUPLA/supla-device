@@ -77,6 +77,7 @@ bool isChannelNumberFree(int channelNumber);
 void addChannel(int channelNumber);
 void removeChannel(int channelNumber);
 int getChannelCount();
+int getMaxChannelNumberUsed();
 
 #ifdef SUPLA_TEST
 void resetToDefaults();

@@ -104,6 +104,18 @@ uint64_t Supla::RegisterDevice::getChannelFlags(int channelNumber) {
 
 #endif
 
+int Supla::RegisterDevice::getMaxChannelNumberUsed() {
+  int max = -1;
+  for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
+      ch = ch->next()) {
+    if (ch->getChannelNumber() > max) {
+      max = ch->getChannelNumber();
+    }
+  }
+
+  return max;
+}
+
 TDS_SuplaRegisterDeviceHeader *Supla::RegisterDevice::getRegDevHeaderPtr() {
   return &reg_dev;
 }

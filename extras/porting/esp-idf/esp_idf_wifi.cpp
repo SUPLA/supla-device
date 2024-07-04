@@ -203,6 +203,10 @@ void Supla::EspIdfWifi::setup() {
   }
   ESP_ERROR_CHECK(esp_wifi_start());
 
+  if (maxTxPower >= 0) {
+    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(maxTxPower));
+  }
+
   allowDisable = true;
   initDone = true;
 #ifndef SUPLA_DEVICE_ESP32
@@ -410,3 +414,6 @@ bool Supla::EspIdfWifi::isIpSetupTimeout() {
   return false;
 }
 
+void Supla::EspIdfWifi::setMaxTxPower(int power) {
+  maxTxPower = power;
+}

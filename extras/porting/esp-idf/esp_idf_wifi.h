@@ -52,6 +52,7 @@ class EspIdfWifi : public Supla::Wifi {
   void logWifiReason(int);
 
   uint32_t getIP() override;
+  void setMaxTxPower(int power);
 
  protected:
   bool initDone = false;
@@ -63,6 +64,7 @@ class EspIdfWifi : public Supla::Wifi {
   int lastReasons[SUPLA_ESP_IDF_WIFI_LAST_REASON_MAX] = {};
   int lastReasonIdx = 0;
   uint32_t connectedToWifiTimestamp = 0;
+  int maxTxPower = -1;
 #ifdef SUPLA_DEVICE_ESP32
   esp_netif_t *staNetIf = nullptr;
   esp_netif_t *apNetIf = nullptr;

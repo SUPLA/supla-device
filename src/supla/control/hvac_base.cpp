@@ -776,6 +776,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
       reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
 
   bool readonlyChanged = fixReadonlyParameters(hvacConfig);
+  bool additionalValidationChanged = applyAdditionalValidation(hvacConfig);
 
   if (applyServerConfig) {
     SUPLA_LOG_DEBUG("Current config:");
@@ -818,11 +819,8 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   // check if readonly fields have correct values on server
   // if not, then send update to server
   // Check is done only on first config after registration
-  if (!configFinishedReceived || readonlyChanged) {
-    if (readonlyChanged ||
-        hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
-      channelConfigChangedOffline = 1;
-    }
+  if (readonlyChanged || additionalValidationChanged) {
+    channelConfigChangedOffline = 1;
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;
@@ -4703,3 +4701,7 @@ bool HvacBase::isOutputControlledInternally() const {
   return true;
 }
 
+bool HvacBase::applyAdditionalValidation(TChannelConfig_HVAC *) {
+  // implenent it in derived class if needed
+  return false;
+}

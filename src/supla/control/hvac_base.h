@@ -390,6 +390,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);
   void updateChannelState();
+  // Implement this method to apply additional validations and corrections
+  // to HVAC configuration. Return true when correction was done and it will
+  // be shared with server.
+  virtual bool applyAdditionalValidation(TChannelConfig_HVAC *hvacConfig);
 
  private:
   _supla_int16_t getTemperature(int channelNo);

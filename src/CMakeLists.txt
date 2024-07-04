@@ -117,6 +117,7 @@ set(SRCS
   supla/sensor/virtual_impulse_counter.cpp
   supla/sensor/weight.cpp
   supla/sensor/distance.cpp
+  supla/sensor/temperature_drop_sensor.cpp
 )
 
 add_library(supladevicelib SHARED ${SRCS})

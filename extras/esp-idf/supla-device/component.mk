@@ -132,6 +132,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/sensor/virtual_binary.o \
   ../../../src/supla/sensor/distance.o \
   ../../../src/supla/sensor/HC_SR04.o \
+  ../../../src/supla/sensor/temperature_drop_sensor.o \
 	\
   ../../../src/nettle/bignum.o \
   ../../../src/nettle/gmp-glue.o \

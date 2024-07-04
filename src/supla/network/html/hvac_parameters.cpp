@@ -330,7 +330,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
     hvac->generateKey(key, "aux_ctrl");
     sender->send("<div class=\"form-field right-checkbox\">");
     sender->sendLabelFor(key,
-        "Enable auxiliary min and max setpoints");
+        "Enable auxiliary min. and max. setpoints");
     sender->send("<label>");
     sender->send("<span class=\"switch\">");
     sender->send("<input type=\"checkbox\" value=\"on\" ");
@@ -396,7 +396,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
       // form-field BEGIN
       hvac->generateKey(key, "t_aux_max");
       sender->send("<div class=\"form-field\">");
-      sender->sendLabelFor(key, "Aux max temperature setpoint [°C]");
+      sender->sendLabelFor(key, "Aux max. temperature setpoint [°C]");
       sender->send("<div>");
       sender->send("<input type=\"number\" step=\"0.1\" ");
       sender->sendNameAndId(key);

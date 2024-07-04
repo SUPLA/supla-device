@@ -36,12 +36,14 @@ class TemperatureDropSensor : public Supla::Element {
   void onInit() override;
   void iterateAlways() override;
 
+  bool isDropDetected() const;
+
  private:
   Supla::Sensor::VirtualBinary virtualBinary;
   ThermHygroMeter *thermometer = nullptr;
 
   int16_t getAverage(int fromIndex, int toIndex) const;
-  bool isDropDetected(int16_t temperature, int16_t *average) const;
+  bool detectTemperatureDrop(int16_t temperature, int16_t *average) const;
 
   uint32_t lastTemperatureUpdate = 0;
 

@@ -30,10 +30,10 @@ TemperatureDropSensor::TemperatureDropSensor(
   }
   measurementIndex = 0;
   virtualBinary.setDefaultFunction(SUPLA_CHANNELFNC_OPENINGSENSOR_WINDOW);
+  virtualBinary.set();  // by default "window" is considered to be closed
 }
 
 void TemperatureDropSensor::onInit() {
-  virtualBinary.set();  // by default "window" is considered to be closed
 }
 
 void TemperatureDropSensor::iterateAlways() {
@@ -51,7 +51,7 @@ void TemperatureDropSensor::iterateAlways() {
 
     if (dropDetectionTimestamp) {
       if (temperature - averageAtDropDetection > temperatureDropThreshold / 2) {
-        if (!isDropDetected(temperature, &averageAtDropDetection)) {
+        if (!detectTemperatureDrop(temperature, &averageAtDropDetection)) {
           virtualBinary.set();
           dropDetectionTimestamp = 0;
         }
@@ -63,7 +63,7 @@ void TemperatureDropSensor::iterateAlways() {
         dropDetectionTimestamp = 0;
       }
     } else {
-      if (isDropDetected(temperature, &averageAtDropDetection)) {
+      if (detectTemperatureDrop(temperature, &averageAtDropDetection)) {
         virtualBinary.clear();
         dropDetectionTimestamp = millis();
       }
@@ -71,7 +71,7 @@ void TemperatureDropSensor::iterateAlways() {
   }
 }
 
-bool TemperatureDropSensor::isDropDetected(int16_t temperature,
+bool TemperatureDropSensor::detectTemperatureDrop(int16_t temperature,
                                            int16_t *average) const {
   // calculate 10 min average starting 3 min ago (measurements are stored
   // every probeIntervalMs)
@@ -113,4 +113,8 @@ int16_t TemperatureDropSensor::getAverage(int fromIndex,
   }
 
   return sum / count;
+}
+
+bool TemperatureDropSensor::isDropDetected() const {
+  return dropDetectionTimestamp != 0;
 }

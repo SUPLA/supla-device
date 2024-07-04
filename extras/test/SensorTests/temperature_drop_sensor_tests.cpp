@@ -32,9 +32,12 @@ TEST(TemperatureDropSensorTests, ThermometerMissing) {
   ASSERT_NE(ch, nullptr);
 
   sensor.onInit();
+  elBinary->onInit();
   sensor.iterateAlways();
+  elBinary->iterateAlways();
 
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 }
 
 TEST(TemperatureDropSensorTests, InitialState) {
@@ -49,8 +52,11 @@ TEST(TemperatureDropSensorTests, InitialState) {
 
   sensor.onInit();
   sensor.iterateAlways();
+  elBinary->onInit();
+  elBinary->iterateAlways();
 
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 }
 
 
@@ -68,8 +74,10 @@ TEST(TemperatureDropSensorTests, DropFrom23To22) {
   thermometer.onInit();
   elBinary->onInit();
   sensor.onInit();
+  elBinary->iterateAlways();
 
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   // forward time by 30 min with 10 seconds per step
   for (int i = 0; i < 6*30; i++) {
@@ -78,7 +86,8 @@ TEST(TemperatureDropSensorTests, DropFrom23To22) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(22);
   // forward time by 30 min with 10 seconds per step
@@ -88,7 +97,8 @@ TEST(TemperatureDropSensorTests, DropFrom23To22) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 }
 
 
@@ -106,8 +116,10 @@ TEST(TemperatureDropSensorTests, DropFrom23To19) {
   thermometer.onInit();
   elBinary->onInit();
   sensor.onInit();
+  elBinary->iterateAlways();
 
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   // forward time by 30 min with 10 seconds per step
   for (int i = 0; i < 6*30; i++) {
@@ -116,7 +128,8 @@ TEST(TemperatureDropSensorTests, DropFrom23To19) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(19);
   // forward time by 1 min with 10 seconds per step
@@ -126,7 +139,8 @@ TEST(TemperatureDropSensorTests, DropFrom23To19) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
   // forward time by 25 min with 10 seconds per step
   for (int i = 0; i < 6*25; i++) {
@@ -135,7 +149,8 @@ TEST(TemperatureDropSensorTests, DropFrom23To19) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
 
   // forward time by 6 min with 10 seconds per step
@@ -145,7 +160,8 @@ TEST(TemperatureDropSensorTests, DropFrom23To19) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 }
 
 TEST(TemperatureDropSensorTests, DropFrom24To20ThenBackTo23) {
@@ -162,8 +178,10 @@ TEST(TemperatureDropSensorTests, DropFrom24To20ThenBackTo23) {
   thermometer.onInit();
   elBinary->onInit();
   sensor.onInit();
+  elBinary->iterateAlways();
 
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   // forward time by 30 min with 10 seconds per step
   for (int i = 0; i < 6*30; i++) {
@@ -172,7 +190,8 @@ TEST(TemperatureDropSensorTests, DropFrom24To20ThenBackTo23) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(20);
   // forward time by 1 min with 10 seconds per step
@@ -182,7 +201,8 @@ TEST(TemperatureDropSensorTests, DropFrom24To20ThenBackTo23) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
   // forward time by 15 min with 10 seconds per step
   for (int i = 0; i < 6*15; i++) {
@@ -191,7 +211,8 @@ TEST(TemperatureDropSensorTests, DropFrom24To20ThenBackTo23) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
   thermometer.setValue(23.2);
   // forward time by 6 min with 10 seconds per step
@@ -201,7 +222,8 @@ TEST(TemperatureDropSensorTests, DropFrom24To20ThenBackTo23) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 }
 
 TEST(TemperatureDropSensorTests, TemperatureChanges) {
@@ -218,8 +240,10 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
   thermometer.onInit();
   elBinary->onInit();
   sensor.onInit();
+  elBinary->iterateAlways();
 
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   // forward time by 2 min with 10 seconds per step
   for (int i = 0; i < 6*2; i++) {
@@ -228,7 +252,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(20);
   // forward time by 2 min with 10 seconds per step
@@ -238,7 +263,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
   thermometer.setValue(23.2);
   // forward time by 2 min with 10 seconds per step
@@ -248,7 +274,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(35);
   // forward time by 2 min with 10 seconds per step
@@ -258,7 +285,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(34);
   // forward time by 2 min with 10 seconds per step
@@ -268,7 +296,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(33);
   // forward time by 2 min with 10 seconds per step
@@ -278,7 +307,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(32);
   // forward time by 2 min with 10 seconds per step
@@ -288,7 +318,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(31);
   // forward time by 2 min with 10 seconds per step
@@ -298,7 +329,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(310.0);
   // forward time by 2 min with 10 seconds per step
@@ -308,7 +340,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 
   thermometer.setValue(-103.0);
   // forward time by 2 min with 10 seconds per step
@@ -318,7 +351,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
   thermometer.setValue(53.0);
   // forward time by 2 min with 10 seconds per step
@@ -328,7 +362,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
 
   thermometer.setValue(90.0);
   // forward time by 2 min with 10 seconds per step
@@ -338,7 +373,8 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
     elBinary->iterateAlways();
     time.advance(10000);
   }
-  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
 }
 
 

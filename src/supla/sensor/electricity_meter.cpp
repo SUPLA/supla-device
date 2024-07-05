@@ -461,24 +461,31 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
     bool configChanged = false;
     bool configValid = true;
 
-    if (usedCtType != static_cast<int8_t>(configFromServer->UsedCTType)) {
-      if (isCtTypeSupported(configFromServer->UsedCTType)) {
+    int8_t bitNumberCtTypeInNewConfig =
+        Supla::getBitNumber(configFromServer->UsedCTType);
+    if (usedCtType != bitNumberCtTypeInNewConfig) {
+      if (!isCtTypeSupported(configFromServer->UsedCTType)) {
+        SUPLA_LOG_DEBUG("CT type %d not supported",
+                        configFromServer->UsedCTType);
         configValid = false;
       } else {
-        usedCtType = configFromServer->UsedCTType;
+        usedCtType = bitNumberCtTypeInNewConfig;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
         generateKey(key, Supla::Html::EmCtTypeTag);
-        cfg->setInt8(key, usedCtType);
+        cfg->setInt32(key, usedCtType);
         configChanged = true;
       }
     }
 
-    if (usedPhaseLedType !=
-        static_cast<int8_t>(configFromServer->UsedPhaseLedType)) {
-      if (isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
+    int8_t bitNumberPhaseLedTypeInNewConfig =
+        Supla::getBitNumber(configFromServer->UsedPhaseLedType);
+    if (usedPhaseLedType != bitNumberPhaseLedTypeInNewConfig) {
+      if (!isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
+        SUPLA_LOG_DEBUG("Phase LED type %d not supported",
+                        configFromServer->UsedPhaseLedType);
         configValid = false;
       } else {
-        usedPhaseLedType = configFromServer->UsedPhaseLedType;
+        usedPhaseLedType = bitNumberPhaseLedTypeInNewConfig;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
         generateKey(key, Supla::Html::EmPhaseLedTag);
         cfg->setInt8(key, usedPhaseLedType);
@@ -527,6 +534,14 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
     if (configFromServer->AvailablePhaseLedTypes != availablePhaseLedTypes ||
         configFromServer->AvailableCTTypes != availableCtTypes ||
         !configValid) {
+      SUPLA_LOG_WARNING(
+          "Invalid config received from server %llu %llu %llu %llu, "
+          "configValid %d",
+          configFromServer->AvailablePhaseLedTypes,
+          configFromServer->AvailableCTTypes,
+          availablePhaseLedTypes,
+          availableCtTypes,
+          configValid);
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
       saveConfigChangeFlag();
     }

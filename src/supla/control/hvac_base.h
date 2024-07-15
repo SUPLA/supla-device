@@ -383,6 +383,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // returns Linux timestamp in seconds when current countdown timer will end.
   // It return 1 if countdown timer is not set
   time_t getCountDownTimerEnds() const;
+  int32_t getRemainingCountDownTimeSec() const;
+  void stopCountDownTimer();
 
   HvacParameterFlags parameterFlags = {};
 

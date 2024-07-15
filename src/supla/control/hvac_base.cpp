@@ -4705,3 +4705,22 @@ bool HvacBase::applyAdditionalValidation(TChannelConfig_HVAC *) {
   // implenent it in derived class if needed
   return false;
 }
+
+void HvacBase::stopCountDownTimer() {
+  countdownTimerEnds = 1;
+}
+
+int32_t HvacBase::getRemainingCountDownTimeSec() const {
+  if (countdownTimerEnds <= 1) {
+    return 0;
+  }
+  if (!Supla::Clock::IsReady()) {
+    return -1;
+  }
+  int32_t remainingTimeSec = countdownTimerEnds - Supla::Clock::GetTimeStamp();
+  if (remainingTimeSec < 0) {
+    remainingTimeSec = 0;
+  }
+  return remainingTimeSec;
+}
+

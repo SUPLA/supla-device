@@ -196,8 +196,6 @@ time_t Clock::getTimeStamp() {
 void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
   struct tm timeinfo {};
 
-  isClockReady = true;
-
   SUPLA_LOG_DEBUG(
             "Current local time: %d-%d-%d %d:%d:%d",
             getYear(),
@@ -217,6 +215,8 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
   time_t newTime = mktime(&timeinfo);
 
   setSystemTime(newTime);
+
+  isClockReady = true;
 }
 
 void Clock::onTimer() {

@@ -46,6 +46,7 @@ class RemoteDeviceConfig {
   // Configures screen saver available modes. Set all available modes
   // in single call (this method overwrites previous values)
   static void SetHomeScreenContentAvailable(uint64_t allValues);
+  static uint64_t GetHomeScreenContentAvailable();
   static enum HomeScreenContent HomeScreenContentBitToEnum(uint64_t fieldBit);
   static uint64_t HomeScreenEnumToBit(enum HomeScreenContent type);
   static uint64_t HomeScreenIntToBit(int mode);

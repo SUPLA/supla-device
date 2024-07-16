@@ -47,11 +47,14 @@ class SelectInputParameter : public HtmlElement, public LocalAction {
   void setLabel(const char *labelValue);
   void onProcessingEnd() override;
 
+  void setBaseTypeBitCount(uint8_t value);
+
  protected:
   char *tag = nullptr;
   char *label = nullptr;
   SelectValueMapElement *firstValue = nullptr;
   bool configChanged = false;
+  uint8_t baseTypeBitCount = 32;
 };
 
 };  // namespace Html

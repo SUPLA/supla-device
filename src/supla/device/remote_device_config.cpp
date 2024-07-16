@@ -65,6 +65,10 @@ void RemoteDeviceConfig::SetHomeScreenContentAvailable(uint64_t allValues) {
   }
 }
 
+uint64_t RemoteDeviceConfig::GetHomeScreenContentAvailable() {
+  return homeScreenContentAvailable;
+}
+
 enum Supla::HomeScreenContent RemoteDeviceConfig::HomeScreenContentBitToEnum(
     uint64_t fieldBit) {
   if (fieldBit == 0 || (fieldBit & (fieldBit - 1)) != 0) {

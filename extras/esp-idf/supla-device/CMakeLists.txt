@@ -76,6 +76,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/volume_parameters.cpp
   ../../../src/supla/network/html/screen_delay_parameters.cpp
   ../../../src/supla/network/html/screen_delay_type_parameters.cpp
+  ../../../src/supla/network/html/home_screen_content.cpp
   ../../../src/supla/network/html/disable_user_interface_parameter.cpp
   ../../../src/supla/network/html/h2_tag.cpp
   ../../../src/supla/network/html/h3_tag.cpp

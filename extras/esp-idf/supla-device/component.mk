@@ -67,6 +67,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/screen_delay_parameters.o \
   ../../../src/supla/network/html/screen_delay_type_parameters.o \
   ../../../src/supla/network/html/screen_brightness_parameters.o \
+	../../../src/supla/network/html/home_screen_content.o \
   ../../../src/supla/network/html/em_phase_led.o \
   ../../../src/supla/network/html/em_ct_type.o \
   ../../../src/supla/network/client.o \

@@ -26,8 +26,6 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 
-#include "button_multiclick_parameters.h"
-
 namespace Supla {
 
 namespace Html {
@@ -70,7 +68,10 @@ void SelectInputParameter::setTag(const char* tagValue) {
 }
 
 void SelectInputParameter::setLabel(const char *labelValue) {
-  auto size = strlen(labelValue);
+  int size = 0;
+  if (labelValue != nullptr) {
+    size = strlen(labelValue);
+  }
 
   if (label != nullptr) {
     delete []label;
@@ -112,7 +113,17 @@ void SelectInputParameter::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   int32_t value = 0;
   if (cfg) {
-    cfg->getInt32(tag, &value);
+    int8_t value8 = 0;
+    switch (baseTypeBitCount) {
+      case 8:
+        cfg->getInt8(tag, &value8);
+        value = value8;
+        break;
+      default:
+      case 32:
+        cfg->getInt32(tag, &value);
+        break;
+    }
   }
 
   // form-field BEGIN
@@ -148,9 +159,27 @@ bool SelectInputParameter::handleResponse(const char* key, const char* value) {
         // we set value registered for a given name
         if (cfg) {
           int32_t valueInCfg = 0;
-          cfg->getInt32(tag, &valueInCfg);
+          int8_t value8 = 0;
+          switch (baseTypeBitCount) {
+            case 8:
+              cfg->getInt8(tag, &value8);
+              valueInCfg = value8;
+              break;
+            default:
+            case 32:
+              cfg->getInt32(tag, &valueInCfg);
+              break;
+          }
           if (valueInCfg != ptr->value) {
-            cfg->setInt32(tag, ptr->value);
+            switch (baseTypeBitCount) {
+              case 8:
+                cfg->setInt8(tag, ptr->value);
+                break;
+              default:
+              case 32:
+                cfg->setInt32(tag, ptr->value);
+                break;
+            }
             configChanged = true;
           }
         }
@@ -184,6 +213,10 @@ void SelectInputParameter::registerValue(const char* name, int value) {
 
 void SelectInputParameter::onProcessingEnd() {
   configChanged = false;
+}
+
+void SelectInputParameter::setBaseTypeBitCount(uint8_t value) {
+  baseTypeBitCount = value;
 }
 
 };  // namespace Html

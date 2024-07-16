@@ -442,6 +442,14 @@ void HvacBase::onInit() {
     }
   }
 
+  if (channel.isHvacFlagWeeklySchedule()) {
+    if (!processWeeklySchedule()) {
+      return;
+    }
+  } else {
+    channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
+  }
+
   uint8_t mode = channel.getHvacMode();
   if (mode == SUPLA_HVAC_MODE_NOT_SET) {
     turnOn();

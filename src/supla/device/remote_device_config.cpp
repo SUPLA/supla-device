@@ -101,6 +101,9 @@ enum Supla::HomeScreenContent RemoteDeviceConfig::HomeScreenContentBitToEnum(
     case (1 << 6): {
       return Supla::HomeScreenContent::HOME_SCREEN_MAIN_AND_AUX_TEMPERATURE;
     }
+    case (1 << 7): {
+      return Supla::HomeScreenContent::HOME_SCREEN_MODE_OR_TEMPERATURE;
+    }
   }
 }
 

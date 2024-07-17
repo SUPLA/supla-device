@@ -3787,6 +3787,14 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   config->UseSeparateHeatCoolOutputs);
   SUPLA_LOG_DEBUG("  AuxMinMaxSetpointEnabled: %d",
                   config->AuxMinMaxSetpointEnabled);
+  SUPLA_LOG_DEBUG("  Master thermostat: %d", config->MasterThermostatIsSet ?
+                  config->MasterThermostatChannelNo : -1);
+  SUPLA_LOG_DEBUG("  Heat or cold source switch channel: %d",
+                  config->HeatOrColdSourceSwitchIsSet
+                      ? config->HeatOrColdSourceSwitchChannelNo
+                      : -1);
+  SUPLA_LOG_DEBUG("  Pump switch channel: %d", config->PumpSwitchIsSet ?
+                  config->PumpSwitchChannelNo : -1);
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
     if ((1 << i) & config->Temperatures.Index) {

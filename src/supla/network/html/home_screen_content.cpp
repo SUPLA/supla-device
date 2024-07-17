@@ -31,30 +31,30 @@ HomeScreenContentParameters::HomeScreenContentParameters(const char *label) {
 
 void HomeScreenContentParameters::initFields(uint64_t fieldBits) {
   if (fieldBits & SUPLA_DEVCFG_HOME_SCREEN_CONTENT_NONE) {
-    registerValue("None", 1);
+    registerValue("None", 0);
   }
   if (fieldBits & SUPLA_DEVCFG_HOME_SCREEN_CONTENT_TEMPERATURE) {
-    registerValue("Temperature", 2);
+    registerValue("Temperature", 1);
   }
   if (fieldBits &
              SUPLA_DEVCFG_HOME_SCREEN_CONTENT_TEMPERATURE_AND_HUMIDITY) {
-    registerValue("Temperature and humidity", 3);
+    registerValue("Temperature and humidity", 2);
   }
   if (fieldBits & SUPLA_DEVCFG_HOME_SCREEN_CONTENT_TIME) {
-    registerValue("Time", 4);
+    registerValue("Time", 3);
   }
   if (fieldBits & SUPLA_DEVCFG_HOME_SCREEN_CONTENT_TIME_DATE) {
-    registerValue("Time and date", 5);
+    registerValue("Time and date", 4);
   }
   if (fieldBits & SUPLA_DEVCFG_HOME_SCREEN_CONTENT_TEMPERATURE_TIME) {
-    registerValue("Temperature and time", 6);
+    registerValue("Temperature and time", 5);
   }
   if (fieldBits &
              SUPLA_DEVCFG_HOME_SCREEN_CONTENT_MAIN_AND_AUX_TEMPERATURE) {
-    registerValue("Main and auxiliary temperature", 7);
+    registerValue("Main and auxiliary temperature", 6);
   }
   if (fieldBits & SUPLA_DEVCFG_HOME_SCREEN_CONTENT_MODE_OR_TEMPERATURE) {
-    registerValue("Mode or temperature", 8);
+    registerValue("Mode or temperature", 7);
   }
 }
 

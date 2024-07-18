@@ -31,8 +31,10 @@ static Supla::ESPETHSPI *thisSpiEth = nullptr;
 
 namespace Supla {
 class ESPETHSPI : public Supla::LAN {
-  public:
-    explicit ESPETHSPI( eth_phy_type_t type, int32_t phy_addr, int cs, int irq, int rst, spi_host_device_t spi_host, int sck = -1, int miso = -1, int mosi = -1) {
+ public:
+    explicit ESPETHSPI(eth_phy_type_t type, int32_t phy_addr,
+                       int cs, int irq, int rst, spi_host_device_t spi_host,
+                       int sck = -1, int miso = -1, int mosi = -1) {
       thisSpiEth = this;
       ethspi_type = type;
       ethspi_phy_addr = phy_addr;
@@ -133,7 +135,7 @@ class ESPETHSPI : public Supla::LAN {
       SUPLA_LOG_DEBUG("[%s] Network Lam/hostname: %s", getIntfName(), hostname);
     }
 
-  protected:
+ protected:
     eth_phy_type_t ethspi_type;
     int32_t ethspi_phy_addr;
     int cs_pin;

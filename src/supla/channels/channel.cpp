@@ -122,8 +122,6 @@ bool Channel::setChannelNumber(int newChannelNumber) {
     return true;
   }
   if (!Supla::RegisterDevice::isChannelNumberFree(newChannelNumber)) {
-    SUPLA_LOG_INFO("Channel with number %d already exists, swapping...",
-                   newChannelNumber);
     channelNumber = -1;
     auto conflictChannel = GetByChannelNumber(newChannelNumber);
     if (conflictChannel) {
@@ -132,7 +130,6 @@ bool Channel::setChannelNumber(int newChannelNumber) {
   }
 
   channelNumber = newChannelNumber;
-  SUPLA_LOG_INFO("Channel %d moved to %d", oldChannelNumber, newChannelNumber);
   return true;
 }
 

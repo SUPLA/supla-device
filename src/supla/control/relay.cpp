@@ -82,7 +82,8 @@ uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
                                    bool local) {
   (void)(local);
   SUPLA_LOG_DEBUG(
-      "Relay::handleChannelConfig, func %d, configtype %d, configsize %d",
+      "Relay[%d]:handleChannelConfig, func %d, configtype %d, configsize %d",
+      getChannelNumber(),
       result->Func,
       result->ConfigType,
       result->ConfigSize);

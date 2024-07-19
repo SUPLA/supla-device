@@ -311,13 +311,13 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE;
 
+  // change to function 0 (none/disabled) is allowed
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED);
-
+            SUPLA_CONFIG_RESULT_TRUE);
 
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
-            SUPLA_CONFIG_RESULT_FUNCTION_NOT_SUPPORTED);
+            SUPLA_CONFIG_RESULT_TRUE);
 
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),

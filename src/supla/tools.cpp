@@ -379,6 +379,9 @@ const char *getManufacturer(int16_t id) {
     case SUPLA_MFR_SOMEF: {
       return "Somef";
     }
+    case SUPLA_MFR_AURATON: {
+      return "Auraton";
+    }
   }
 
   return "Unknown";

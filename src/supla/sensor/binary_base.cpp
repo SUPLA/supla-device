@@ -95,6 +95,11 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   if (newConfig->ConfigSize < sizeof(TChannelConfig_BinarySensor)) {
+    if (newConfig->ConfigSize == 0) {
+      SUPLA_LOG_DEBUG("Binary[%d]: config missing on server",
+                      getChannelNumber());
+      return SUPLA_CONFIG_RESULT_TRUE;
+    }
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 

@@ -151,7 +151,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
   initializationDone = true;
 
-  SUPLA_LOG_DEBUG("Supla - starting initialization");
+  SUPLA_LOG_DEBUG("Supla - starting initialization (platform %d)",
+                  Supla::getPlatformId());
 
   if (protoVersion >= 21) {
     addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);

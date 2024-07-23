@@ -79,6 +79,7 @@ class SuplaSrpc : public ProtocolLayer {
                       const char *title,
                       const char *message,
                       int soundId) override;
+  void sendSubdeviceDetails(TDS_SubdeviceDetails *subdeviceDetails) override;
   void getUserLocaltime() override;
   void sendChannelValueChanged(uint8_t channelNumber, char *value,
       unsigned char offline, uint32_t validityTimeSec) override;

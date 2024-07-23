@@ -83,6 +83,11 @@ class SrpcInterface {
       unsigned char TitleSize,
       unsigned char BodySize,
       const signed char *TitleAndBody) = 0;
+  virtual _supla_int_t setSubdeviceDetails(int subDeviceId,
+                                           char *name,
+                                           char *productCode,
+                                           char *serialNumber,
+                                           char *softwareVersion) = 0;
 
   virtual _supla_int_t setChannelCaption(int channelNumber,
                                          const char *caption) = 0;
@@ -175,6 +180,14 @@ class SrpcMock : public SrpcInterface {
               setChannelCaption,
               (int channelNumber,
                const char *caption),
+              (override));
+  MOCK_METHOD(_supla_int_t,
+              setSubdeviceDetails,
+              (int subDeviceId,
+               char *name,
+               char *productCode,
+               char *serialNumber,
+               char *softwareVersion),
               (override));
 };
 

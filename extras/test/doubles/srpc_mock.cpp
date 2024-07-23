@@ -176,6 +176,16 @@ _supla_int_t srpc_ds_async_register_push_notification(
     reg->Context, reg->ServerManagedFields);
 }
 
+_supla_int_t srpc_ds_async_set_subdevice_details(
+    void *_srpc, TDS_SubdeviceDetails *reg) {
+  assert(SrpcInterface::instance);
+  assert(reg);
+  return SrpcInterface::instance->setSubdeviceDetails(
+    reg->SubDeviceId, reg->Name, reg->ProductCode, reg->SerialNumber,
+    reg->SoftVer);
+}
+
+
 _supla_int_t srpc_ds_async_send_push_notification(void *_srpc,
                                                   TDS_PushNotification *push) {
   assert(SrpcInterface::instance);

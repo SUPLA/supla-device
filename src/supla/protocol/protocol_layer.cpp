@@ -139,6 +139,9 @@ bool ProtocolLayer::sendNotification(int context,
   return false;
 }
 
+void ProtocolLayer::sendSubdeviceDetails(TDS_SubdeviceDetails *) {
+}
+
 void ProtocolLayer::sendRemainingTimeValue(uint8_t channelNumber,
                                            uint32_t timeMs,
                                            uint8_t state,

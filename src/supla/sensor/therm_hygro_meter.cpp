@@ -116,8 +116,12 @@ void Supla::Sensor::ThermHygroMeter::purgeConfig() {
     return;
   }
   char key[16] = {};
-  for (int i = 0; i < 2; i++) {
-    snprintf(key, sizeof(key), "corr_%d_%d", getChannelNumber(), i);
+  for (uint8_t i = 0; i < 2; i++) {
+    snprintf(key,
+             sizeof(key),
+             "corr_%d_%d",
+             static_cast<int16_t>(getChannelNumber()),
+             i);
     cfg->eraseKey(key);
   }
 }

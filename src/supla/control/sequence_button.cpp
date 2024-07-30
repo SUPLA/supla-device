@@ -21,7 +21,6 @@
 #include <supla/time.h>
 
 #include "sequence_button.h"
-#include "supla/control/simple_button.h"
 
 Supla::Control::SequenceButton::SequenceButton(Supla::Io *io,
                                                int pin,

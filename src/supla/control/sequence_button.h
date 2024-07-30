@@ -19,7 +19,9 @@
 #ifndef SRC_SUPLA_CONTROL_SEQUENCE_BUTTON_H_
 #define SRC_SUPLA_CONTROL_SEQUENCE_BUTTON_H_
 
-#include "button.h"
+#include <stdint.h>
+
+#include "simple_button.h"
 
 namespace Supla {
 namespace Control {

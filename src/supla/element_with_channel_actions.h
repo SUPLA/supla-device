@@ -32,7 +32,9 @@ enum class ChannelConfigState : uint8_t {
   LocalChangePending = 1,
   SetChannelConfigSend = 2,
   SetChannelConfigFailed = 3,
-  WaitForConfigFinished = 4
+  WaitForConfigFinished = 4,
+  OcrConfigPending = 5,
+  SetChannelOcrConfigSend = 6,
 };
 
 class Condition;
@@ -77,8 +79,12 @@ class ElementWithChannelActions : public Element, public LocalAction {
   // methods to override for channels with runtime config support
   virtual uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local);
   virtual void fillChannelConfig(void *channelConfig, int *size);
+  virtual void fillChannelOcrConfig(void *channelConfig, int *size);
 
  protected:
+  virtual bool hasOcrConfig();
+  virtual bool isOcrConfigMissing();
+  virtual void clearOcrConfig();
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
   bool configFinishedReceived = false;

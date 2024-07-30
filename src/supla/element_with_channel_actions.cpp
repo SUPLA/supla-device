@@ -166,6 +166,10 @@ bool Supla::ElementWithChannelActions::isAnyUpdatePending() {
 
   if (channelConfigState == Supla::ChannelConfigState::LocalChangePending ||
       channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
+      channelConfigState ==
+          Supla::ChannelConfigState::OcrConfigPending ||
+      channelConfigState ==
+          Supla::ChannelConfigState::SetChannelOcrConfigSend ||
       channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished) {
     return true;
   }
@@ -187,10 +191,13 @@ void Supla::ElementWithChannelActions::clearChannelConfigChangedFlag() {
 
 void Supla::ElementWithChannelActions::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  clearOcrConfig();
   configFinishedReceived = false;
   Supla::Element::onRegistered(suplaSrpc);
   switch (channelConfigState) {
     case Supla::ChannelConfigState::None:
+    case Supla::ChannelConfigState::OcrConfigPending:
+    case Supla::ChannelConfigState::SetChannelOcrConfigSend:
     case Supla::ChannelConfigState::WaitForConfigFinished: {
       channelConfigState = Supla::ChannelConfigState::WaitForConfigFinished;
       break;
@@ -235,7 +242,7 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
                                       reinterpret_cast<void *>(channelConfig),
                                       channelConfigSize,
                                       SUPLA_CONFIG_TYPE_DEFAULT)) {
-            SUPLA_LOG_INFO("Channel[%d]: Sending channel config",
+            SUPLA_LOG_INFO("Channel[%d]: channel config send",
                            getChannelNumber());
             channelConfigState =
                 Supla::ChannelConfigState::SetChannelConfigSend;
@@ -249,6 +256,43 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
           channelConfigState = Supla::ChannelConfigState::None;
         }
       }
+    } else if (channelConfigState ==
+               Supla::ChannelConfigState::OcrConfigPending) {
+      for (auto proto = Supla::Protocol::ProtocolLayer::first();
+           proto != nullptr;
+           proto = proto->next()) {
+        uint8_t channelConfig[SUPLA_CHANNEL_CONFIG_MAXSIZE] = {};
+        int channelConfigSize = 0;
+        fillChannelOcrConfig(reinterpret_cast<void *>(channelConfig),
+                          &channelConfigSize);
+        if (channelConfigSize > 0) {
+          int defaultFunction = 0;
+          if (getChannel()) {
+            defaultFunction = getChannel()->getDefaultFunction();
+          }
+          if (proto->setChannelConfig(getChannelNumber(),
+                                      defaultFunction,
+                                      reinterpret_cast<void *>(channelConfig),
+                                      channelConfigSize,
+                                      SUPLA_CONFIG_TYPE_OCR)) {
+            SUPLA_LOG_INFO("Channel[%d]: channel OCR config send",
+                           getChannelNumber());
+            channelConfigState =
+                Supla::ChannelConfigState::SetChannelOcrConfigSend;
+
+            return true;
+          }
+        } else {
+          SUPLA_LOG_WARNING(
+              "Channel[%d]: set channel OCR config implementation missing",
+              getChannelNumber());
+          channelConfigState = Supla::ChannelConfigState::None;
+        }
+      }
+    }
+    if (channelConfigState == Supla::ChannelConfigState::None &&
+        isOcrConfigMissing()) {
+      channelConfigState = Supla::ChannelConfigState::OcrConfigPending;
     }
   }
 
@@ -271,7 +315,8 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   }
 
   if (channelConfigState == Supla::ChannelConfigState::LocalChangePending &&
-      !local) {
+      !local &&
+      result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
     SUPLA_LOG_INFO(
         "Channel[%d]: Ignoring config (local config changed offline)",
         getChannelNumber());
@@ -283,7 +328,8 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
-  if (result->ConfigType != 0) {
+  if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT &&
+      hasOcrConfig() && result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
     SUPLA_LOG_DEBUG("Channel[%d] invalid configtype", getChannelNumber());
     return SUPLA_CONFIG_RESULT_FALSE;
   }
@@ -299,21 +345,29 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
+  if (result->ConfigType == SUPLA_CONFIG_TYPE_OCR) {
+    if (channelConfigState ==
+        Supla::ChannelConfigState::SetChannelOcrConfigSend) {
+      channelConfigState = Supla::ChannelConfigState::None;
+    }
+  }
   return applyChannelConfig(result, local);
 }
 
 uint8_t Supla::ElementWithChannelActions::applyChannelConfig(
-    TSD_ChannelConfig *result, bool local) {
-  (void)(result);
-  (void)(local);
+    TSD_ChannelConfig *, bool) {
   SUPLA_LOG_WARNING("Channel[%d]: applyChannelConfig missing",
-                  getChannelNumber());
+                    getChannelNumber());
   return SUPLA_CONFIG_RESULT_TRUE;
 }
 
-void Supla::ElementWithChannelActions::fillChannelConfig(void *channelConfig,
-                                                         int *size) {
-  (void)(channelConfig);
+void Supla::ElementWithChannelActions::fillChannelConfig(void *, int *size) {
+  if (size) {
+    *size = 0;
+  }
+}
+
+void Supla::ElementWithChannelActions::fillChannelOcrConfig(void *, int *size) {
   if (size) {
     *size = 0;
   }
@@ -340,6 +394,13 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
       clearChannelConfigChangedFlag();
       break;
     }
+    case SUPLA_CONFIG_TYPE_OCR: {
+      SUPLA_LOG_INFO("Channel[%d] Set channel OCR config %s (%d)",
+                     getChannelNumber(),
+                     success ? "succeeded" : "failed",
+                     result->Result);
+      break;
+    }
     default:
       break;
   }
@@ -355,4 +416,16 @@ void Supla::ElementWithChannelActions::purgeConfig() {
     generateKey(key, "cfg_chng");
     cfg->eraseKey(key);
   }
+}
+
+bool Supla::ElementWithChannelActions::hasOcrConfig() {
+  return false;
+}
+
+bool Supla::ElementWithChannelActions::isOcrConfigMissing() {
+  return false;
+}
+
+void Supla::ElementWithChannelActions::clearOcrConfig() {
+  return;
 }

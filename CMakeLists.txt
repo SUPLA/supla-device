@@ -133,6 +133,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/hygro_meter.cpp
   src/supla/sensor/impulse_counter.cpp
   src/supla/sensor/virtual_impulse_counter.cpp
+  src/supla/sensor/ocr_impulse_counter.cpp
   src/supla/sensor/therm_hygro_meter.cpp
   src/supla/sensor/therm_hygro_press_meter.cpp
   src/supla/sensor/thermometer.cpp

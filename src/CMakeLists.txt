@@ -116,6 +116,7 @@ set(SRCS
   supla/sensor/virtual_binary.cpp
   supla/sensor/impulse_counter.cpp
   supla/sensor/virtual_impulse_counter.cpp
+  supla/sensor/ocr_impulse_counter.cpp
   supla/sensor/weight.cpp
   supla/sensor/distance.cpp
   supla/sensor/temperature_drop_sensor.cpp

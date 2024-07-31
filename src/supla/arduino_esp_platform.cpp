@@ -186,13 +186,12 @@ void deviceSoftwareReset() {
 
 bool isLastResetSoft() {
   rst_info *resetInfo = ESP.getResetInfoPtr();
-  return rst_info->reason == REASON_SOFT_RESTART;
+  return resetInfo->reason == REASON_SOFT_RESTART;
 }
 
 bool Supla::isLastResetPower() {
   rst_info *resetInfo = ESP.getResetInfoPtr();
-  return rst_info->reason == REASON_DEFAULT;
-  return false;
+  return resetInfo->reason == REASON_DEFAULT;
 }
 
 Supla::Client *Supla::ClientBuilder() {

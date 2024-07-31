@@ -185,13 +185,25 @@ void deviceSoftwareReset() {
 }
 
 bool isLastResetSoft() {
+#ifdef ARDUINO_ARCH_ESP8266
   rst_info *resetInfo = ESP.getResetInfoPtr();
   return resetInfo->reason == REASON_SOFT_RESTART;
+#elif defined(ARDUINO_ARCH_ESP32)
+  return esp_reset_reason() == ESP_RST_SW;
+#else
+  return false;
+#endif
 }
 
 bool Supla::isLastResetPower() {
+#ifdef ARDUINO_ARCH_ESP8266
   rst_info *resetInfo = ESP.getResetInfoPtr();
-  return resetInfo->reason == REASON_DEFAULT;
+  return resetInfo->reason == REASON_DEFAULT_RST;
+#elif defined(ARDUINO_ARCH_ESP32)
+  return esp_reset_reason() == ESP_RST_POWERON;
+#else
+  return false;
+#endif
 }
 
 Supla::Client *Supla::ClientBuilder() {

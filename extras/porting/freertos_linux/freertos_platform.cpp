@@ -27,6 +27,11 @@ bool isLastResetSoft() {
   return false;
 }
 
+bool Supla::isLastResetPower() {
+  // TODO(klew): implement
+  return false;
+}
+
 int Supla::getPlatformId() {
   // TODO(klew): implement when needed
   return 0;

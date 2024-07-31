@@ -90,6 +90,7 @@ namespace Supla {
 int getPlatformId();
 int getBitNumber(uint64_t value);
 int rssiToSignalStrength(int rssi);
+bool isLastResetPower();
 }  // namespace Supla
 
 

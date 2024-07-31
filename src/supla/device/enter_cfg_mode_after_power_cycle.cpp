@@ -22,6 +22,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/network/html/disable_user_interface_parameter.h>
+#include "supla/tools.h"
 
 using Supla::Device::EnterCfgModeAfterPowerCycle;
 
@@ -66,6 +67,13 @@ void EnterCfgModeAfterPowerCycle::iterateAlways() {
     return;
   }
 
+  if (incrementOnlyOnPowerResetReason) {
+    if (!Supla::isLastResetPower()) {
+      // this will skip incrementing
+      incremented = true;
+    }
+  }
+
   if (!incremented) {
     currentPowerCycle++;
 
@@ -96,4 +104,9 @@ void EnterCfgModeAfterPowerCycle::iterateAlways() {
 void EnterCfgModeAfterPowerCycle::setAlwaysEnabled(bool alwaysEnabled) {
   this->alwaysEnabled = alwaysEnabled;
   enabled = alwaysEnabled;
+}
+
+void EnterCfgModeAfterPowerCycle::setIncrementOnlyOnPowerResetReason(
+    bool value) {
+  incrementOnlyOnPowerResetReason = value;
 }

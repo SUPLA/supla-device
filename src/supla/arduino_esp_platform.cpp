@@ -185,7 +185,13 @@ void deviceSoftwareReset() {
 }
 
 bool isLastResetSoft() {
-  // TODO(klew): implement
+  rst_info *resetInfo = ESP.getResetInfoPtr();
+  return rst_info->reason == REASON_SOFT_RESTART;
+}
+
+bool Supla::isLastResetPower() {
+  rst_info *resetInfo = ESP.getResetInfoPtr();
+  return rst_info->reason == REASON_DEFAULT;
   return false;
 }
 

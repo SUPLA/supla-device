@@ -74,6 +74,11 @@ bool isLastResetSoft() {
   return false;
 }
 
+bool Supla::isLastResetPower() {
+  // TODO(klew): implement
+  return false;
+}
+
 Supla::Client *Supla::ClientBuilder() {
   return new Supla::ArduinoMegaClient;
 }

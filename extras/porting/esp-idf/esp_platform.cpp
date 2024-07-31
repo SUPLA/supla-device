@@ -30,6 +30,10 @@ bool isLastResetSoft() {
   return esp_reset_reason() == ESP_RST_SW;
 }
 
+bool Supla::isLastResetPower() {
+  return esp_reset_reason() == ESP_RST_POWERON;
+}
+
 int Supla::getPlatformId() {
 #ifdef SUPLA_DEVICE_ESP32
   esp_chip_info_t chipInfo = {};

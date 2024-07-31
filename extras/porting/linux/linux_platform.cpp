@@ -28,6 +28,11 @@ bool isLastResetSoft() {
   return false;
 }
 
+bool Supla::isLastResetPower() {
+  // TODO(klew): implement
+  return false;
+}
+
 int Supla::getPlatformId() {
   // TODO(klew): do we need platfom id for linux SW?
   return 0;

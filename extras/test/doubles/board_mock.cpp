@@ -44,6 +44,11 @@ bool isLastResetSoft() {
   return false;
 }
 
+bool Supla::isLastResetPower() {
+  // TODO(klew): implement
+  return false;
+}
+
 int Supla::getPlatformId() {
   return 43;
 }

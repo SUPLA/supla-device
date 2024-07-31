@@ -33,6 +33,7 @@ class EnterCfgModeAfterPowerCycle : public Supla::Element {
   void onLoadConfig(SuplaDeviceClass *sdc) override;
   void iterateAlways() override;
   void setAlwaysEnabled(bool alwaysEnabled);
+  void setIncrementOnlyOnPowerResetReason(bool value);
 
  private:
   SuplaDeviceClass *sdc = nullptr;
@@ -43,6 +44,7 @@ class EnterCfgModeAfterPowerCycle : public Supla::Element {
   bool incremented = false;
   bool enabled = false;
   bool alwaysEnabled = false;
+  bool incrementOnlyOnPowerResetReason = false;
 };
 
 }  // namespace Supla::Device

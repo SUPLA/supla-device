@@ -103,9 +103,11 @@ uint8_t OcrImpulseCounter::applyChannelConfig(TSD_ChannelConfig *result,
         SUPLA_LOG_DEBUG("    AuthKey: %s", ocrConfig.AuthKey);
         SUPLA_LOG_DEBUG("    Host: %s", ocrConfig.Host);
         SUPLA_LOG_DEBUG("    PhotoIntervalSec: %d", ocrConfig.PhotoIntervalSec);
-        SUPLA_LOG_DEBUG("    LightingMode: %d", ocrConfig.LightingMode);
+        SUPLA_LOG_DEBUG("    LightingMode: %" PRIu64, ocrConfig.LightingMode);
         SUPLA_LOG_DEBUG("    LightingLevel: %d", ocrConfig.LightingLevel);
-        SUPLA_LOG_DEBUG("    AvailableLightingModes: %d",
+        SUPLA_LOG_DEBUG("    MaximumIncrement: %" PRIu64,
+                        ocrConfig.MaximumIncrement);
+        SUPLA_LOG_DEBUG("    AvailableLightingModes: %" PRIu64,
                         ocrConfig.AvailableLightingModes);
         if (ocrConfig.AvailableLightingModes != availableLightingModes) {
           SUPLA_LOG_DEBUG("OcrIC: invalid AvailableLightingModes");
@@ -355,7 +357,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
 
   lastUUIDToCheck[0] = '\0';
   bool setNewCounterValue = false;
-  uint64_t maxIncrementAllowedPerPhoto = 1000;  // ocrConfig.MaximumIncrement;
+  uint64_t maxIncrementAllowedPerPhoto = ocrConfig.MaximumIncrement;
   time_t now = Supla::Clock::GetTimeStamp();
   // There is no previous counter value available, or user reset the counter,
   // so we just set current reading as a new counter value

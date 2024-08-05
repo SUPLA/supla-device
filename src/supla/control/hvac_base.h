@@ -407,7 +407,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool checkAuxProtection(_supla_int16_t t);
   bool isAuxProtectionEnabled() const;
   bool processWeeklySchedule();
-  void setSetpointTemperaturesForCurrentMode(int tHeat, int tCool);
+  void setSetpointTemperaturesForCurrentMode(int16_t tHeat, int16_t tCool);
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
                                              _supla_int16_t t2) const;
   int evaluateHeatOutputValue(_supla_int16_t tMeasured,
@@ -422,7 +422,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
-  bool fixReadonlyTemperature(int temperatureIndex,
+  bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);
 
   TChannelConfig_HVAC config = {};

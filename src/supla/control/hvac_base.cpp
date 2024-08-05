@@ -3496,7 +3496,8 @@ bool HvacBase::processWeeklySchedule() {
   return true;
 }
 
-void HvacBase::setSetpointTemperaturesForCurrentMode(int tHeat, int tCool) {
+void HvacBase::setSetpointTemperaturesForCurrentMode(int16_t tHeat,
+                                                     int16_t tCool) {
   if (!channel.isHvacFlagWeeklySchedule()) {
     if (tHeat == INT16_MIN) {
       tHeat = lastManualSetpointHeat;
@@ -4782,7 +4783,7 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   return readonlyViolation;
 }
 
-bool HvacBase::fixReadonlyTemperature(int temperatureIndex,
+bool HvacBase::fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemps) {
   auto currentTemperature = getTemperatureFromStruct(&config.Temperatures,
       temperatureIndex);

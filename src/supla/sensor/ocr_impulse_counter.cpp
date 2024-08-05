@@ -30,6 +30,9 @@
 #include <stdio.h>
 #include <inttypes.h>
 
+// Not supported on Arduino Mega
+#ifndef ARDUINO_ARCH_AVR
+
 #define OCR_DEFAULT_PHOTO_INTERVAL_SEC 120
 #define OCR_DEFAULT_LIGHTING_LEVEL 50
 #define OCR_DEFAULT_RESULT_FETCH_INTERVAL_SEC 10
@@ -446,3 +449,5 @@ void OcrImpulseCounter::handleLedStateAfterPhoto() {
     ledTurnOnTimestamp = 0;
   }
 }
+
+#endif  // ARDUINO_ARCH_AVR

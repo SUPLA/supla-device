@@ -93,7 +93,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
 
   // Below setters modify channel config, which will be send to server as well.
   // Sets refresh interval in milliseconds.
-  void setRefreshIntervalMs(int intervalMs, bool local = true);
+  void setRefreshIntervalMs(int32_t intervalMs, bool local = true);
   // Sets value divider. Unit 0.001. 0 is ignored
   void setValueDivider(int32_t divider, bool local = true);
   // Sets value multiplier. Unit 0.001. 0 is ignored

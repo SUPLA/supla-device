@@ -284,7 +284,7 @@ void Clock::onDeviceConfigChange(uint64_t fieldBit) {
 }
 
 void Clock::setSystemTime(time_t newTime) {
-  if (newTime == -1) {
+  if (newTime == 0) {
     SUPLA_LOG_WARNING("Clock: failed to set new time");
     return;
   }

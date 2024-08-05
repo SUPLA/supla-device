@@ -39,6 +39,7 @@ class ArduinoMegaClient : public Client {
   }
 
   void setTimeoutMs(uint16_t timeoutMs) override {
+    (void)(timeoutMs);
 // setConnectionTimeout is not available in both UIPEthenet and EthernetShield
 // libraries.
 //    arduinoClient.setConnectionTimeout(timeoutMs);

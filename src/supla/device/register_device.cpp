@@ -24,6 +24,8 @@
 #include <supla/log_wrapper.h>
 #include <supla/channels/channel.h>
 
+#include <stdio.h>
+
 namespace {
 TDS_SuplaRegisterDeviceHeader reg_dev = {};
 union {
@@ -176,6 +178,30 @@ bool Supla::RegisterDevice::isEmailEmpty() {
 
 const char *Supla::RegisterDevice::getGUID() {
   return reg_dev.GUID;
+}
+
+void Supla::RegisterDevice::fillGUIDText(char text[37]) {
+  // GUID format used by server:
+  snprintf(
+      text,
+      37,
+      "%02X%02X%02X%02X-%02X%02X-%02X%02X-%02X%02X-%02X%02X%02X%02X%02X%02X",
+      reg_dev.GUID[0],
+      reg_dev.GUID[1],
+      reg_dev.GUID[2],
+      reg_dev.GUID[3],
+      reg_dev.GUID[4],
+      reg_dev.GUID[5],
+      reg_dev.GUID[6],
+      reg_dev.GUID[7],
+      reg_dev.GUID[8],
+      reg_dev.GUID[9],
+      reg_dev.GUID[10],
+      reg_dev.GUID[11],
+      reg_dev.GUID[12],
+      reg_dev.GUID[13],
+      reg_dev.GUID[14],
+      reg_dev.GUID[15]);
 }
 
 const char *Supla::RegisterDevice::getAuthKey() {

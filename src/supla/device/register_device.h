@@ -45,6 +45,7 @@ const char *getGUID();
 const char *getAuthKey();
 const char *getSoftVer();
 const char *getName();
+void fillGUIDText(char text[37]);
 
 void setGUID(const char *GUID);
 void setAuthKey(const char *AuthKey);

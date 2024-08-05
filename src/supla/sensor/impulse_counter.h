@@ -20,15 +20,14 @@
 #define SRC_SUPLA_SENSOR_IMPULSE_COUNTER_H_
 
 #include <supla-common/proto.h>
-#include <supla/action_handler.h>
-#include <supla/channel_element.h>
+#include <supla/sensor/virtual_impulse_counter.h>
 
 namespace Supla {
 
 class Io;
 
 namespace Sensor {
-class ImpulseCounter : public ChannelElement, public ActionHandler {
+class ImpulseCounter : public VirtualImpulseCounter {
  public:
   ImpulseCounter(Supla::Io *io,
                  int _impulsePin,
@@ -41,27 +40,10 @@ class ImpulseCounter : public ChannelElement, public ActionHandler {
                  unsigned int _debounceDelay = 10);
 
   void onInit() override;
-  void onLoadState() override;
-  void onSaveState() override;
   void onFastTimer() override;
-  void handleAction(int event, int action) override;
-  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
-  void iterateAlways() override;
-
-  // Returns value of a counter at given Supla channel
-  uint64_t getCounter();
-
-  // Set counter to a given value
-  void setCounter(uint64_t value);
-
-  // Increment the counter by 1
-  void incCounter();
 
  protected:
-  uint64_t counter = 0;  // Actual count of impulses
-
   Supla::Io *io = nullptr;
-  uint32_t lastReadTime = 0;
   uint32_t lastImpulseMillis =
       0;  // Stores timestamp of last impulse (used to ignore
           // changes of state during 10 ms timeframe)

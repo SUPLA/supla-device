@@ -24,8 +24,7 @@
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 
-namespace Supla {
-namespace Sensor {
+using Supla::Sensor::ImpulseCounter;
 
 ImpulseCounter::ImpulseCounter(Supla::Io *io,
                                int _impulsePin,
@@ -45,9 +44,6 @@ ImpulseCounter::ImpulseCounter(int _impulsePin,
       debounceDelay(_debounceDelay),
       detectLowToHigh(_detectLowToHigh),
       inputPullup(_inputPullup) {
-  channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
-
   prevState = (detectLowToHigh == true ? LOW : HIGH);
 
   SUPLA_LOG_DEBUG(
@@ -71,33 +67,6 @@ void ImpulseCounter::onInit() {
       Supla::Io::digitalRead(channel.getChannelNumber(), impulsePin, io);
 }
 
-uint64_t ImpulseCounter::getCounter() {
-  return counter;
-}
-
-void ImpulseCounter::onSaveState() {
-  Supla::Storage::WriteState((unsigned char *)&counter, sizeof(counter));
-}
-
-void ImpulseCounter::onLoadState() {
-  uint64_t data;
-  if (Supla::Storage::ReadState((unsigned char *)&data, sizeof(data))) {
-    setCounter(data);
-  }
-}
-
-void ImpulseCounter::setCounter(uint64_t value) {
-  counter = value;
-  SUPLA_LOG_DEBUG(
-            "ImpulseCounter[%d] - set counter to %d",
-            channel.getChannelNumber(),
-            static_cast<int>(counter));
-}
-
-void ImpulseCounter::incCounter() {
-  counter++;
-}
-
 void ImpulseCounter::onFastTimer() {
   int currentState =
       Supla::Io::digitalRead(channel.getChannelNumber(), impulsePin, io);
@@ -112,37 +81,3 @@ void ImpulseCounter::onFastTimer() {
   prevState = currentState;
 }
 
-void ImpulseCounter::handleAction(int event, int action) {
-  (void)(event);
-  switch (action) {
-    case RESET: {
-      setCounter(0);
-      break;
-    }
-  }
-}
-
-int ImpulseCounter::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
-  if (request) {
-    if (request->Command == SUPLA_CALCFG_CMD_RESET_COUNTERS) {
-      if (!request->SuperUserAuthorized) {
-        return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
-      }
-      SUPLA_LOG_INFO("ImpulseCounter[%d] - CALCFG reset counter received",
-                     channel.getChannelNumber());
-      setCounter(0);
-      return SUPLA_CALCFG_RESULT_DONE;
-    }
-  }
-  return SUPLA_CALCFG_RESULT_FALSE;
-}
-
-void ImpulseCounter::iterateAlways() {
-  if (millis() - lastReadTime > 1000) {
-    lastReadTime = millis();
-    channel.setNewValue(counter);
-  }
-}
-
-}  // namespace Sensor
-}  // namespace Supla

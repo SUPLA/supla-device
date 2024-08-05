@@ -33,7 +33,9 @@ class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
   void onInit() override;
   void onLoadState() override;
   void onSaveState() override;
+  void iterateAlways() override;
   void handleAction(int event, int action) override;
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
 
   // Returns value of a counter at given Supla channel
   uint64_t getCounter() const;
@@ -44,8 +46,11 @@ class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
   // Increment the counter by 1
   void incCounter();
 
+  virtual void resetCounter();
+
  protected:
   uint64_t counter = 0;  // Actual count of impulses
+  uint32_t lastReadTime = 0;
 };
 
 }  // namespace Sensor

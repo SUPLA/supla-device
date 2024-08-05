@@ -21,11 +21,13 @@
 #include <supla/actions.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
+#include <supla/time.h>
 
 using Supla::Sensor::VirtualImpulseCounter;
 
 VirtualImpulseCounter::VirtualImpulseCounter() {
   channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 }
 
 void VirtualImpulseCounter::onInit() {
@@ -57,14 +59,20 @@ void VirtualImpulseCounter::setCounter(uint64_t value) {
 
 void VirtualImpulseCounter::incCounter() {
   counter++;
-  channel.setNewValue(getCounter());
+}
+
+void VirtualImpulseCounter::iterateAlways() {
+  if (millis() - lastReadTime > 500) {
+    lastReadTime = millis();
+    channel.setNewValue(counter);
+  }
 }
 
 void VirtualImpulseCounter::handleAction(int event, int action) {
   (void)(event);
   switch (action) {
     case RESET: {
-      setCounter(0);
+      resetCounter();
       break;
     }
     case INCREMENT: {
@@ -74,3 +82,22 @@ void VirtualImpulseCounter::handleAction(int event, int action) {
   }
 }
 
+void VirtualImpulseCounter::resetCounter() {
+  setCounter(0);
+}
+
+int VirtualImpulseCounter::handleCalcfgFromServer(
+    TSD_DeviceCalCfgRequest *request) {
+  if (request) {
+    if (request->Command == SUPLA_CALCFG_CMD_RESET_COUNTERS) {
+      if (!request->SuperUserAuthorized) {
+        return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+      }
+      SUPLA_LOG_INFO("ImpulseCounter[%d] - CALCFG reset counter received",
+                     channel.getChannelNumber());
+      resetCounter();
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+  }
+  return SUPLA_CALCFG_RESULT_FALSE;
+}

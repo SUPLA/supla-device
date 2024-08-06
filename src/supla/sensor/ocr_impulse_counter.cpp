@@ -334,24 +334,41 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
         "ready yet");
     return;
   }
-  SUPLA_LOG_DEBUG(
-      "OcrIC: parseStatus - processedAt: %s", processedAtStart);
 
   // get resultMeasurement as int
-  const char *resultMeasurementStart = strstr(status, "\"resultMeasurement\":");
-  if (!resultMeasurementStart) {
+  const char *resultMeasurementTagStart =
+      strstr(status, "\"resultMeasurement\":");
+  if (!resultMeasurementTagStart) {
     SUPLA_LOG_WARNING(
         "OcrIC: parseStatus failed - missing resultMeasurement");
     return;
   }
-  resultMeasurementStart += 22;
-  const char *resultMeasurementEnd = strstr(resultMeasurementStart, ",");
+  const char *resultMeasurementStart = resultMeasurementTagStart + 20;
+  const char *resultMeasurementEnd =
+      strstr(status + (resultMeasurementTagStart - status), ",\"");
+  if (!resultMeasurementEnd) {
+    resultMeasurementEnd =
+        strstr(status + (resultMeasurementTagStart - status), "}");
+  }
   if (!resultMeasurementEnd) {
     SUPLA_LOG_WARNING(
         "OcrIC: parseStatus failed - missing resultMeasurement end");
     return;
   }
-  uint64_t resultMeasurement = strtoull(resultMeasurementStart, nullptr, 10);
+  if (resultMeasurementEnd - resultMeasurementStart > 100) {
+    SUPLA_LOG_WARNING(
+        "OcrIC: parseStatus failed - resultMeasurement too long, %d > 100",
+        resultMeasurementEnd - resultMeasurementStart);
+    return;
+  }
+  char buf[100] = {};
+  strncpy(buf,
+          resultMeasurementStart,
+          resultMeasurementEnd - resultMeasurementStart);
+  buf[resultMeasurementEnd - resultMeasurementStart] = '\0';
+  SUPLA_LOG_DEBUG("OcrIC: parseStatus - resultMeasurement: %s",
+                  buf);
+  uint64_t resultMeasurement = strtoull(buf, nullptr, 10);
   if (resultMeasurement == 0) {
     SUPLA_LOG_WARNING(
         "OcrIC: parseStatus failed - resultMeasurement = 0");

@@ -1,5 +1,8 @@
 # CHANGELOG.md
 
+## 24.08.01 (2024-08-07)
+  - Version increased to 24.08.01 for internal use
+
 ## 24.08 (2024-08-07)
 
   - Fix: Arduino ESP32: fix for generating device hostname and softAP name which is based on device's mac address. On ESP32 3.0.0 boards onwards, WiFi.macAddress() returns 0 when it's called before initialization of WiFi.

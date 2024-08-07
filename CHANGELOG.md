@@ -1,5 +1,57 @@
 # CHANGELOG.md
 
+## 24.08 (2024-08-07)
+
+  - Fix: Arduino ESP32: fix for generating device hostname and softAP name which is based on device's mac address. On ESP32 3.0.0 boards onwards, WiFi.macAddress() returns 0 when it's called before initialization of WiFi.
+  - Fix: HTML: rename current transformer "133.2mA" to "133.3mA"
+  - Fix: sd4linux: fix for rare random hang on connect()
+  - Fix: Arduino IDE (ESP32): ETH classes update, compilation fix for ESP32 Arduino boards version 3.x,  wt32_eth01: code adjustment to changes in Network classes (thanks @lukfud)
+  - Fix: StatusLed: fix not updateing status led settings when it was changed via cfg mode
+  - Fix: StatusLed: ignore "always off" setting for config mode and sw update mode
+  - Fix: ElectricityMeter: fix invalid handling of server channel config for CT type and PhaseLedType
+  - Fix: Clock: moved "isReady" flag setting to last step of paring time from server.
+  - Fix: HVAC: add extra weekly schedule initialization in "onInit" in order to apply proper program based on clock availability in early startup.
+  - Change: ElectricityMeter, SolarEdge integration: change refreshRateSec to uint16_t, to allow 6 min refresh rate set in SolarEdge
+  - Change: SuplaDevice: enforcing proto version >= 23
+  - Change: HVAC: move setOutput() method to protected section. Allow setting negative value to OutputInterface in setOutputValue, adjusted getOutputValue to return last set output value.
+  - Change: Hvac: outputs working in 0..100% mode, will report channel value IsOn as 0 or 2..101 in order to distinguish on/off (1/0) mode from 0..100% mode
+  - Change: ImpulseCounter: change base class to VirtualImpulseCounter and make implementation shared.
+  - Add: ESP32-LAN-SPI support with Arduino IDE examples (thanks @ermaya)
+  - Add: Tools: add Supla::rssiToSignalStrength(int) method
+  - Add: SuplaDevice: add timer execution/access mutex to prevent concurrent element creation/deletion and timer execution on it
+  - Add:Channel: add isOnline() method
+  - Add: Config: add eraseKey(key) method
+  - Add: Thermometer, ThermHygroMeter: add purgeConfig method to cleanup config structures related to current class.
+  - Add: Channel: setChannelNumber will swap channel numbers if we try to set it to value already used by other channel. Add isFunctionValid for channel function validation against channel type (currently implemented only for binary sensors).
+  - Add: BinaryBase: add purgeConfig() implementation
+  - Add: Channel: add bridge signal strength parameter to channel state report.
+  - Add: FactoryTest: suspend test, when device entered cfg mode.
+  - Add: PowerCycle: enable power cycle eneter to config mode, when device mode is not "normal" (i.e. when factory test is enabled)
+  - Add: support for registerdevice_g variant (with SubDeviceId) - requires proto >= 25
+  - Add: ActionTrigger: add isAnyActionEnabledOnServer() getter
+  - Add: Button: add getLastStateChange() method for getting last timestamp of change
+  - Add: logs with detailed information about channel conflict from server (proto >= 25).
+  - Add: ChannelConflictResolver interface class - if device is able to resolve conflicts in some way, this functionality can be implemented in this class
+  - Add: HvacBase: add ability to set channel state based on OutputInterface values (i.e. from external thermostat)
+  - Add: EnterCfgModeAfterPowerCycle: add option to always enable this function, regardless of other config parameter values - add parameter in ctr and explicit method setAlwaysEnabled(bool)
+  - Add: RemoteDeviceConfig: add support for PowerStatusLed option.
+  - Add: Html: add form for PowerStatusLed settings
+  - Add: HvacBase: add parameterFlags for readonly and hidden properties
+  - Add: HVAC: add option to mark parameter as readonly (it's change won't be accepted and device will send back corrected config to server), add option to set parameter as hidden (for Cloud and also used in local cfg web page)
+  - Add: SuplaDevice: add scheduleProtocolsRestart(timeMs) method
+  - Add: SubdevicePairingHandler which is responsible for processing subdevice parining requests from server
+  - Add: esp-idf: add setMaxTxPower to Wi-Fi class
+  - Add: HVAC: add applyAdditionalValidation method for extra validations on HVAC derived classes (i.e. some MinTimeOffS limitations, etc.)
+  - Add: TemperatureDropSensor, which tries to detect open window based on rapid temperature drop.
+  - Add: HVAC: add HvacBase::stopCountDownTimer
+  - Add: Html: add HomeScreenContentParameters to select what should be visible on device's screen/display via local cfg mode
+  - Add: HVAC: add fixing readonly parameters in onLoadConfig and apply additional validations (if defined), add resetting channel config to defauls when funciton is set to "none"
+  - Add: PowerCycle: add option to count power cycle only after power on reset
+  - Add: RegisterDevice: add helper method to get "server compatible" text representation of device's GUID
+  - Add: VirtualImpulseCounter: add handling of CALCFG reset counters.
+  - Add: Supla::Sensor::OcrImpulseCounter - base class for impulse counter which sends photos to OCR server
+  - Add: Supla::OrcIc - esp-idf implementation for Supla::Sensor::OcrImpulseCounter
+
 ## 24.06 (2024-06-03)
 
   - Fix: compilation fix for ESP32 boards for Arduino with version 3.x

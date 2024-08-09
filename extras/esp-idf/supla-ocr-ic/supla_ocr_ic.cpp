@@ -133,9 +133,16 @@ void OcrIc::onInit() {
 }
 
 bool OcrIc::takePhoto() {
-  SUPLA_LOG_INFO("CAMERA: fetching image...");
+  SUPLA_LOG_INFO("CAMERA: fetching first image...");
   photoDataBuffer = nullptr;
   photoDataSize = 0;
+  fb = esp_camera_fb_get();
+  if (!fb) {
+    SUPLA_LOG_ERROR("Camera Capture Failed");
+    return false;
+  }
+  releasePhoto();
+  SUPLA_LOG_INFO("CAMERA: fetching second image...");
   fb = esp_camera_fb_get();
   if (!fb) {
     SUPLA_LOG_ERROR("Camera Capture Failed");

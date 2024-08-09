@@ -232,7 +232,8 @@ TEST_F(SuplaDeviceTestsFullStartup, SuccessfulStartup) {
       .WillOnce([](void *, TDS_SuplaRegisterDeviceHeader *regDevHeader) {
         EXPECT_EQ(regDevHeader->channel_count, 0);
         EXPECT_EQ(regDevHeader->Flags,
-                  SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
+                  SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED |
+                  SUPLA_DEVICE_FLAG_CALCFG_RESTART_DEVICE);
         EXPECT_EQ(regDevHeader->ManufacturerID, 0);
         EXPECT_EQ(regDevHeader->ProductID, 0);
         EXPECT_STREQ(regDevHeader->Email, "superman@supla.org");

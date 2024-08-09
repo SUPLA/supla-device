@@ -39,6 +39,10 @@ void deviceSoftwareReset() {
   BoardInterface::instance->deviceSoftwareReset();
 }
 
+bool isDeviceSoftwareResetSupported() {
+  return true;
+}
+
 bool isLastResetSoft() {
   // TODO(klew): implement
   return false;

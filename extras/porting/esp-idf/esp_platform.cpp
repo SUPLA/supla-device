@@ -26,6 +26,10 @@ void deviceSoftwareReset() {
   esp_restart();
 }
 
+bool isDeviceSoftwareResetSupported() {
+  return true;
+}
+
 bool isLastResetSoft() {
   return esp_reset_reason() == ESP_RST_SW;
 }

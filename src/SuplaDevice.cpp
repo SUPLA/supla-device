@@ -162,6 +162,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
         "Minimum supported protocol version is 23! Setting to 23 anyway");
     protoVersion = 23;
   }
+  if (isDeviceSoftwareResetSupported()) {
+    addFlags(SUPLA_DEVICE_FLAG_CALCFG_RESTART_DEVICE);
+  }
 
   // Initialize protocol layers
   createSrpcLayerIfNeeded();
@@ -836,6 +839,11 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       case SUPLA_CALCFG_CMD_ENTER_CFG_MODE: {
         SUPLA_LOG_INFO("CALCFG ENTER CFGMODE received");
         requestCfgMode(Supla::Device::WithTimeout);
+        return SUPLA_CALCFG_RESULT_DONE;
+      }
+      case SUPLA_CALCFG_CMD_RESTART_DEVICE: {
+        SUPLA_LOG_INFO("CALCFG RESTART DEVICE received");
+        scheduleSoftRestart(1);
         return SUPLA_CALCFG_RESULT_DONE;
       }
       case SUPLA_CALCFG_CMD_SET_TIME: {

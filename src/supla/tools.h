@@ -82,6 +82,7 @@ int strncmpInsensitive(const char *s1, const char *s2, int size);
 
 // This method should be implemented in platform specific cpp file
 void deviceSoftwareReset();
+bool isDeviceSoftwareResetSupported();
 bool isLastResetSoft();
 
 const char *getManufacturer(int16_t id);

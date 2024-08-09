@@ -184,6 +184,10 @@ void deviceSoftwareReset() {
   ESP.restart();
 }
 
+bool isDeviceSoftwareResetSupported() {
+  return true;
+}
+
 bool isLastResetSoft() {
 #ifdef ARDUINO_ARCH_ESP8266
   rst_info *resetInfo = ESP.getResetInfoPtr();

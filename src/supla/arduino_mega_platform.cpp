@@ -70,6 +70,10 @@ void deviceSoftwareReset() {
   // TODO(klew): implement software reset for Arduino IDE based targets
 }
 
+bool isDeviceSoftwareResetSupported() {
+  return false;
+}
+
 bool isLastResetSoft() {
   // TODO(klew): implement
   return false;

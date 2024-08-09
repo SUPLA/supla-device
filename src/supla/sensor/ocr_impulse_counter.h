@@ -33,7 +33,6 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
   void onLoadState() override;
   void onSaveState() override;
   void onInit() override;
-  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc = nullptr) override;
   bool iterateConnected() override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
 

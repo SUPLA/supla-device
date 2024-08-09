@@ -218,9 +218,6 @@ void OcrImpulseCounter::onLoadState() {
       lastCorrectOcrReadingTimestamp);
 }
 
-void OcrImpulseCounter::onRegistered(Supla::Protocol::SuplaSrpc *) {
-}
-
 bool OcrImpulseCounter::iterateConnected() {
   auto result = VirtualImpulseCounter::iterateConnected();
   bool photoTaken = false;

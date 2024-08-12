@@ -41,7 +41,7 @@ ProtocolParameters::~ProtocolParameters() {
 void ProtocolParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    if (!concurrent) {
+    if (!concurrent && addMqtt) {
       // Protocol selector
       sender->send("<div class=\"box\">");
 

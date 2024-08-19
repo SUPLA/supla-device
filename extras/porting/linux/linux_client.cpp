@@ -169,7 +169,7 @@ int Supla::LinuxClient::connectImp(const char *server, uint16_t port) {
     ipArr[i] = (srcIp >> (i * 8)) & 0xFF;
   }
 
-  SUPLA_LOG_INFO("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
+  SUPLA_LOG_DEBUG("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
       ipArr[2], ipArr[3]);
 
   return 1;

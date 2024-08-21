@@ -211,6 +211,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setSubdevicePairingHandler(
       Supla::Device::SubdevicePairingHandler *handler);
 
+  void setMacLengthInHostname(int value);
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -244,6 +246,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool initializationDone = false;
 
   uint8_t goToOfflineModeTimeout = 0;
+  uint8_t macLengthInHostname = 6;
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;

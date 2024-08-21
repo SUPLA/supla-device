@@ -304,8 +304,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   SUPLA_LOG_DEBUG("Initializing network layer");
   char hostname[32] = {};
-  generateHostname(hostname, 6);
-  Supla::Network::SetHostname(hostname, 6);
+  generateHostname(hostname, macLengthInHostname);
+  Supla::Network::SetHostname(hostname, macLengthInHostname);
 
   for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
        proto = proto->next()) {
@@ -1326,6 +1326,16 @@ void SuplaDeviceClass::setChannelConflictResolver(
 void SuplaDeviceClass::setSubdevicePairingHandler(
       Supla::Device::SubdevicePairingHandler *handler) {
   subdevicePairingHandler = handler;
+}
+
+void SuplaDeviceClass::setMacLengthInHostname(int value) {
+  if (value < 0) {
+    value = 0;
+  }
+  if (value > 6) {
+    value = 6;
+  }
+  macLengthInHostname = value;
 }
 
 SuplaDeviceClass SuplaDevice;

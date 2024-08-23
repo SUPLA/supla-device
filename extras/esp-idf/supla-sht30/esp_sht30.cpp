@@ -91,7 +91,7 @@ void Supla::Sensor::SHT30::readSensor() {
   if (humidity > 100) {
     humidity = 100;
   }
-  SUPLA_LOG_DEBUG("Temp: %f, humi %f", temperature, humidity);
+  SUPLA_LOG_DEBUG("Temp: %.2f, humi %.2f", temperature, humidity);
   lastValidTemp = temperature;
   lastValidHumi = humidity;
 }

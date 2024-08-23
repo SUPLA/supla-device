@@ -29,7 +29,7 @@ void Supla::Sensor::NTC10k::onInit() {
 
 void Supla::Sensor::NTC10k::readSensor() {
 //  double temperature = 0;
-//  SUPLA_LOG_DEBUG("NTC10k: temp: %f", temperature);
+//  SUPLA_LOG_DEBUG("NTC10k: temp: %.2f", temperature);
 //  lastValidTemp = temperature;
 }
 

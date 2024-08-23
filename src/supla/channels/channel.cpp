@@ -206,7 +206,7 @@ void Channel::setNewValue(double temp, double humi) {
     runAction(ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
     SUPLA_LOG_DEBUG(
-        "Channel(%d) value changed to temp(%f), humi(%f)",
+        "Channel(%d) value changed to temp(%.2f), humi(%.2f)",
         channelNumber,
         temp,
         humi);
@@ -1186,6 +1186,7 @@ uint16_t Channel::getHvacFlags() {
 
 void Channel::setOffline() {
   if (offline == false) {
+    SUPLA_LOG_DEBUG("Channel[%d] go offline", channelNumber);
     offline = true;
     setUpdateReady();
   }
@@ -1193,6 +1194,7 @@ void Channel::setOffline() {
 
 void Channel::setOnline() {
   if (offline == true) {
+    SUPLA_LOG_DEBUG("Channel[%d] go online", channelNumber);
     offline = false;
     setUpdateReady();
   }

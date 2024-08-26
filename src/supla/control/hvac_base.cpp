@@ -337,24 +337,35 @@ void HvacBase::onLoadState() {
     auto hvacValue = channel.getValueHvac();
     Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(hvacValue),
                             sizeof(THVACValue));
+
+    memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastWorkingMode),
         sizeof(lastWorkingMode));
+
+    countdownTimerEnds = 1;
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&countdownTimerEnds),
         sizeof(countdownTimerEnds));
     if (countdownTimerEnds == 0) {
       countdownTimerEnds = 1;
     }
+
+    lastManualSetpointHeat = INT16_MIN;
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastManualSetpointHeat),
         sizeof(lastManualSetpointHeat));
+
+    lastManualSetpointCool = INT16_MIN;
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastManualSetpointCool),
         sizeof(lastManualSetpointCool));
+
+    lastManualMode = 0;
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastManualMode),
         sizeof(lastManualMode));
+
     SUPLA_LOG_DEBUG(
         "HVAC[%d] onLoadState. hvacValue: IsOn: %d, Mode: %d, "
         "SetpointTemperatureCool: %d, SetpointTemperatureHeat: %d, "
@@ -595,10 +606,14 @@ void HvacBase::iterateAlways() {
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
     setOutput(getOutputValueOnError(), true);
+    if (lastTemperature != INT16_MIN) {
+      SUPLA_LOG_WARNING(
+          "HVAC[%d]: invalid temperature readout - check if your thermometer "
+          "is "
+          "correctly connected and configured",
+          getChannelNumber());
+    }
     lastTemperature = INT16_MIN;
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d]: invalid temperature readout - check if your thermometer is "
-        "correctly connected and configured", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
     channel.setHvacFlagForcedOffBySensor(false);
     return;
@@ -2349,7 +2364,7 @@ void HvacBase::saveConfig() {
                      sizeof(TChannelConfig_HVAC))) {
       SUPLA_LOG_INFO("HVAC[%d]: config saved successfully", getChannelNumber());
     } else {
-      SUPLA_LOG_INFO("HVAC[%d]: failed to save config", getChannelNumber());
+      SUPLA_LOG_WARNING("HVAC[%d]: failed to save config", getChannelNumber());
     }
 
     if (channelConfigChangedOffline) {
@@ -2378,7 +2393,7 @@ void HvacBase::saveWeeklySchedule() {
       SUPLA_LOG_INFO("HVAC[%d]: weekly schedule saved successfully",
                      getChannelNumber());
     } else {
-      SUPLA_LOG_INFO("HVAC[%d]: failed to save weekly schedule",
+      SUPLA_LOG_WARNING("HVAC[%d]: failed to save weekly schedule",
                      getChannelNumber());
     }
 
@@ -2391,7 +2406,7 @@ void HvacBase::saveWeeklySchedule() {
         SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule saved successfully",
                        getChannelNumber());
       } else {
-        SUPLA_LOG_INFO("HVAC[%d]: failed to save alt weekly schedule",
+        SUPLA_LOG_WARNING("HVAC[%d]: failed to save alt weekly schedule",
                        getChannelNumber());
       }
     }
@@ -2486,7 +2501,7 @@ bool HvacBase::isWeeklyScheduleValid(TChannelConfig_WeeklySchedule *newSchedule,
   for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
     debugPrintProgram(&(newSchedule->Program[i]), i);
     if (!isProgramValid(newSchedule->Program[i], isAltWeeklySchedule)) {
-      SUPLA_LOG_DEBUG(
+      SUPLA_LOG_WARNING(
           "HVAC[%d]: weekly schedule validation failed: invalid program %d",
           getChannelNumber(),
           i);
@@ -2501,7 +2516,7 @@ bool HvacBase::isWeeklyScheduleValid(TChannelConfig_WeeklySchedule *newSchedule,
   for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
     int programId = getWeeklyScheduleProgramId(newSchedule, i);
     if (programId != 0 && !programIsUsed[programId - 1]) {
-      SUPLA_LOG_DEBUG(
+      SUPLA_LOG_WARNING(
           "HVAC[%d]: weekly schedule validation failed: not configured program "
           "used in schedule %d",
           getChannelNumber(),
@@ -3430,7 +3445,7 @@ bool HvacBase::turnOnWeeklySchedlue() {
 
 bool HvacBase::processWeeklySchedule() {
   if (!channel.isHvacFlagWeeklySchedule()) {
-    SUPLA_LOG_DEBUG(
+    SUPLA_LOG_WARNING(
         "HVAC[%d]: processs weekly schedule failed - it is not enabled",
         getChannelNumber());
     return false;
@@ -3439,7 +3454,7 @@ bool HvacBase::processWeeklySchedule() {
   if (!Supla::Clock::IsReady()) {
     if (!channel.isHvacFlagClockError()) {
       // print only on first error
-      SUPLA_LOG_DEBUG(
+      SUPLA_LOG_WARNING(
           "HVAC[%d]: processs weekly schedule failed - clock is not ready",
           getChannelNumber());
     }
@@ -4347,7 +4362,12 @@ void HvacBase::updateTimerValue() {
   uint32_t remainingTimeS = 0;
 
   if (countdownTimerEnds > now) {
-    remainingTimeS = countdownTimerEnds - now;
+    if (countdownTimerEnds - now > INT32_MAX) {
+      remainingTimeS = 0;
+      countdownTimerEnds = 1;
+    } else {
+      remainingTimeS = countdownTimerEnds - now;
+    }
   }
 
   SUPLA_LOG_DEBUG("HVAC[%d]: updating timer value: remainingTime=%d s",

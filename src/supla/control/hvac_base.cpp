@@ -347,7 +347,7 @@ void HvacBase::onLoadState() {
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&countdownTimerEnds),
         sizeof(countdownTimerEnds));
-    if (countdownTimerEnds == 0) {
+    if (countdownTimerEnds <= 0) {
       countdownTimerEnds = 1;
     }
 
@@ -387,7 +387,7 @@ void HvacBase::onLoadState() {
         lastWorkingMode.SetpointTemperatureHeat,
         lastWorkingMode.Flags);
     SUPLA_LOG_DEBUG(
-        "HVAC[%d] onLoadState. countdownTimerEnds: %d, "
+        "HVAC[%d] onLoadState. countdownTimerEnds: %lld, "
         "lastManualSetpointCool: %d, lastManualSetpointHeat: %d, "
         "lastManualMode: %d",
         getChannelNumber(),
@@ -4370,9 +4370,13 @@ void HvacBase::updateTimerValue() {
     }
   }
 
-  SUPLA_LOG_DEBUG("HVAC[%d]: updating timer value: remainingTime=%d s",
+  SUPLA_LOG_DEBUG(
+      "HVAC[%d]: updating timer value: remainingTime=%d s; "
+      "countdownTimerEnds=%d; now=%d",
       channel.getChannelNumber(),
-      remainingTimeS);
+      remainingTimeS,
+      countdownTimerEnds,
+      now);
 
   for (auto proto = Supla::Protocol::ProtocolLayer::first();
       proto != nullptr; proto = proto->next()) {

@@ -470,8 +470,6 @@ void Storage::LoadStateStorage() {
           element = element->next()) {
         auto channelNumber = element->getChannelNumber();
         if (channelNumber >= 0 && channelNumber <= 255) {
-          SUPLA_LOG_DEBUG(" **** Storage: add channel number to read %d",
-                          channelNumber);
           channelsToRead[channelNumber] = 1;
           channelsCount++;
         }
@@ -538,8 +536,6 @@ void Storage::WriteElementsState() {
       auto channelNumber = element->getChannelNumber();
       if (channelNumber >= 0 && channelNumber <= 255) {
         uint8_t channelNumberByte = static_cast<uint8_t>(channelNumber);
-        SUPLA_LOG_DEBUG(" **** Storage: add channel number to write %d",
-                        channelNumberByte);
         Supla::Storage::WriteState(
             reinterpret_cast<const unsigned char *>(&channelNumberByte),
             sizeof(channelNumberByte));

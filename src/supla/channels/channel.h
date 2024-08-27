@@ -140,6 +140,7 @@ class Channel : public LocalAction {
                                             int16_t setpointTemperatureCool);
 
   THVACValue *getValueHvac();
+  static bool isHvacValueValid(THVACValue *hvacValue);
 
   virtual bool isExtended() const;
   bool isUpdateReady() const;

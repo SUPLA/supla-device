@@ -335,13 +335,25 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
 void HvacBase::onLoadState() {
   if (getChannelNumber() >= 0) {
     auto hvacValue = channel.getValueHvac();
-    Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(hvacValue),
-                            sizeof(THVACValue));
+    THVACValue hvacValueState = {};
+    Supla::Storage::ReadState(
+        reinterpret_cast<unsigned char *>(&hvacValueState), sizeof(THVACValue));
+    if (hvacValue) {
+      memcpy(hvacValue, &hvacValueState, sizeof(THVACValue));
+    }
+    if (!Supla::Channel::isHvacValueValid(hvacValue)) {
+      SUPLA_LOG_WARNING("HVAC[%d]: invalid HVAC value in state",
+                        getChannelNumber());
+    }
 
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastWorkingMode),
         sizeof(lastWorkingMode));
+    if (!Supla::Channel::isHvacValueValid(&lastWorkingMode)) {
+      SUPLA_LOG_WARNING("HVAC[%d]: invalid lastWorkingMode HVAC value in state",
+                        getChannelNumber());
+    }
 
     countdownTimerEnds = 1;
     Supla::Storage::ReadState(
@@ -365,6 +377,12 @@ void HvacBase::onLoadState() {
     Supla::Storage::ReadState(
         reinterpret_cast<unsigned char *>(&lastManualMode),
         sizeof(lastManualMode));
+    if (lastManualMode > SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL) {
+      SUPLA_LOG_WARNING(
+          "HVAC[%d]: invalid lastManualMode HVAC value in state: %d",
+          getChannelNumber(),
+          lastManualMode);
+    }
 
     SUPLA_LOG_DEBUG(
         "HVAC[%d] onLoadState. hvacValue: IsOn: %d, Mode: %d, "
@@ -401,8 +419,13 @@ void HvacBase::onLoadState() {
 void HvacBase::onSaveState() {
   if (getChannelNumber() >= 0) {
     auto hvacValue = channel.getValueHvac();
+    THVACValue hvacValueState = {};
+    if (hvacValue) {
+      memcpy(&hvacValueState, hvacValue, sizeof(THVACValue));
+    }
     Supla::Storage::WriteState(
-        reinterpret_cast<const unsigned char *>(hvacValue), sizeof(THVACValue));
+        reinterpret_cast<const unsigned char *>(&hvacValueState),
+        sizeof(THVACValue));
     Supla::Storage::WriteState(
         reinterpret_cast<const unsigned char *>(&lastWorkingMode),
         sizeof(lastWorkingMode));
@@ -3832,9 +3855,12 @@ void HvacBase::clearLastOutputValue() {
 }
 
 void HvacBase::storeLastWorkingMode() {
-  memcpy(&lastWorkingMode, channel.getValueHvac(), sizeof(lastWorkingMode));
-  if (channel.isHvacFlagWeeklySchedule()) {
-    lastWorkingMode.Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
+  auto hvacValue = channel.getValueHvac();
+  if (hvacValue) {
+    memcpy(&lastWorkingMode, hvacValue, sizeof(lastWorkingMode));
+    if (channel.isHvacFlagWeeklySchedule()) {
+      lastWorkingMode.Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;
+    }
   }
 }
 

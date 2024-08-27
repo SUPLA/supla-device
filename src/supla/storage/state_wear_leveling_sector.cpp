@@ -608,6 +608,8 @@ bool StateWearLevelingSector::finalizeSizeCheck() {
     elementStateSize = stateSlotNewSize;
     currentStateBufferOffset = 0;
     elementStateCrcCValid = false;
+    currentSlotAddress = getFirstSlotAddress();
+    lastStoredSlotAddress = currentSlotAddress;
     eraseSector(getFirstSlotAddress(), getSectorSize());
     return false;
   }

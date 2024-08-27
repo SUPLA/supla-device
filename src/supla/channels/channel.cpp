@@ -1370,3 +1370,24 @@ uint8_t Channel::getSubDeviceId() const {
   return subDeviceId;
 }
 
+bool Channel::isHvacValueValid(THVACValue *hvacValue) {
+  if (hvacValue == nullptr) {
+    return false;
+  }
+  if (hvacValue->IsOn > 102) {
+    return false;
+  }
+  // last supported mode:
+  if (hvacValue->Mode > SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL) {
+    return false;
+  }
+  if (hvacValue->Flags > (1ULL << 12)) {
+    return false;
+  }
+  if (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_COOLING &&
+      hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_HEATING) {
+    return false;
+  }
+
+  return true;
+}

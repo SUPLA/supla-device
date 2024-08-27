@@ -248,7 +248,6 @@ TEST_F(SuplaDeviceTests, SuccessfulBegin) {
 
   ::testing::InSequence seq;
   SuplaDeviceClass sd;
-  int dummy;
 
   EXPECT_CALL(timer, initTimers());
 
@@ -270,7 +269,6 @@ TEST_F(SuplaDeviceTests, SuccessfulBeginAlternative) {
 
   ::testing::InSequence seq;
   SuplaDeviceClass sd;
-  int dummy;
 
   EXPECT_CALL(timer, initTimers());
 
@@ -287,7 +285,6 @@ TEST_F(SuplaDeviceTests, FailedBeginAlternativeOnEmptyAUTHKEY) {
   TimerMock timer;
 
   SuplaDeviceClass sd;
-  int dummy;
 
   EXPECT_CALL(timer, initTimers());
 
@@ -308,7 +305,6 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   SuplaDeviceClass sd;
   ElementMock el1;
   ElementMock el2;
-  int dummy;
   EXPECT_CALL(el1, onSaveState());
   EXPECT_CALL(el2, onSaveState());
 

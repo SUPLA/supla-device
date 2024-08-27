@@ -89,6 +89,9 @@ class Storage {
 
   virtual void deleteAll();
 
+  void enableChannelNumbers();
+  bool isAddChannelNumbersEnabled() const;
+
  protected:
   virtual bool init();
   virtual int readStorage(unsigned int address,
@@ -112,6 +115,8 @@ class Storage {
   bool writeSection(int sectionId, const unsigned char *data, int size);
   bool deleteSection(int sectionId);
 
+  static void WriteElementsState();
+
   const uint32_t storageStartingOffset = 0;
   const uint32_t availableSize = 0;
   const enum WearLevelingMode wearLevelingMode = WearLevelingMode::OFF;
@@ -124,6 +129,7 @@ class Storage {
 
   static Storage *instance;
   static Config *configInstance;
+  bool addChannelNumbers = false;
 };
 
 #pragma pack(push, 1)

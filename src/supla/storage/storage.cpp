@@ -447,11 +447,7 @@ bool Storage::IsStateStorageValid() {
   if (Instance()->stateStorage->prepareSizeCheck()) {
     SUPLA_LOG_DEBUG(
         "Validating storage state section with current device configuration");
-    for (auto element = Supla::Element::begin(); element != nullptr;
-         element = element->next()) {
-      element->onSaveState();
-      delay(0);
-    }
+    WriteElementsState();
     // If state storage validation was successful, perform read state
     if (Instance()->stateStorage->finalizeSizeCheck()) {
       SUPLA_LOG_INFO("Storage state section validation successful");
@@ -467,10 +463,52 @@ void Storage::LoadStateStorage() {
   }
   // Iterate all elements and load state
   if (Instance()->stateStorage->prepareLoadState()) {
-    for (auto element = Supla::Element::begin(); element != nullptr;
-        element = element->next()) {
-      element->onLoadState();
-      delay(0);
+    if (Instance()->isAddChannelNumbersEnabled()) {
+      uint8_t channelsToRead[256] = {};
+      int channelsCount = 0;
+      for (auto element = Supla::Element::begin(); element != nullptr;
+          element = element->next()) {
+        auto channelNumber = element->getChannelNumber();
+        if (channelNumber >= 0 && channelNumber <= 255) {
+          SUPLA_LOG_DEBUG(" **** Storage: add channel number to read %d",
+                          channelNumber);
+          channelsToRead[channelNumber] = 1;
+          channelsCount++;
+        }
+        delay(0);
+      }
+
+      int channelsRead = 0;
+      while (channelsRead < channelsCount) {
+        SUPLA_LOG_DEBUG("Storage: channelsRead %d, channelsCount %d",
+            channelsRead, channelsCount);
+        uint8_t channelNumber = 0;
+        Supla::Storage::ReadState(
+            reinterpret_cast<unsigned char *>(&channelNumber),
+            sizeof(channelNumber));
+        if (channelsToRead[channelNumber] == 0) {
+          SUPLA_LOG_ERROR("Storage: invalid channel number %d", channelNumber);
+          break;
+        }
+
+        channelsToRead[channelNumber] = 0;
+
+        auto element = Supla::Element::getElementByChannelNumber(channelNumber);
+        if (element) {
+          element->onLoadState();
+          delay(0);
+        } else {
+          SUPLA_LOG_ERROR("Storage: element with channel number %d not found",
+              channelNumber);
+        }
+        channelsRead++;
+      }
+    } else {
+      for (auto element = Supla::Element::begin(); element != nullptr;
+          element = element->next()) {
+        element->onLoadState();
+        delay(0);
+      }
     }
     Instance()->stateStorage->finalizeLoadState();
   }
@@ -485,11 +523,7 @@ void Storage::WriteStateStorage() {
   // check if data changed compared to previously stored data
   for (int i = 0; i < 2; i++) {
     Instance()->stateStorage->prepareSaveState();
-    for (auto element = Supla::Element::begin(); element != nullptr;
-        element = element->next()) {
-      element->onSaveState();
-      delay(0);
-    }
+    WriteElementsState();
     bool result = Instance()->stateStorage->finalizeSaveState();
     if (result) {
       break;
@@ -497,9 +531,43 @@ void Storage::WriteStateStorage() {
   }
 }
 
+void Storage::WriteElementsState() {
+  if (Instance()->isAddChannelNumbersEnabled()) {
+    for (auto element = Supla::Element::begin(); element != nullptr;
+        element = element->next()) {
+      auto channelNumber = element->getChannelNumber();
+      if (channelNumber >= 0 && channelNumber <= 255) {
+        uint8_t channelNumberByte = static_cast<uint8_t>(channelNumber);
+        SUPLA_LOG_DEBUG(" **** Storage: add channel number to write %d",
+                        channelNumberByte);
+        Supla::Storage::WriteState(
+            reinterpret_cast<const unsigned char *>(&channelNumberByte),
+            sizeof(channelNumberByte));
+        element->onSaveState();
+      }
+      delay(0);
+    }
+  } else {
+    for (auto element = Supla::Element::begin(); element != nullptr;
+        element = element->next()) {
+      element->onSaveState();
+      delay(0);
+    }
+  }
+}
+
+
 void Storage::eraseSector(unsigned int address, int size) {
   (void)(address);
   (void)(size);
+}
+
+void Storage::enableChannelNumbers() {
+  addChannelNumbers = true;
+}
+
+bool Storage::isAddChannelNumbersEnabled() const {
+  return addChannelNumbers;
 }
 
 }  // namespace Supla

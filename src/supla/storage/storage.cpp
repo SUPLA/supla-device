@@ -478,8 +478,6 @@ void Storage::LoadStateStorage() {
 
       int channelsRead = 0;
       while (channelsRead < channelsCount) {
-        SUPLA_LOG_DEBUG("Storage: channelsRead %d, channelsCount %d",
-            channelsRead, channelsCount);
         uint8_t channelNumber = 0;
         Supla::Storage::ReadState(
             reinterpret_cast<unsigned char *>(&channelNumber),

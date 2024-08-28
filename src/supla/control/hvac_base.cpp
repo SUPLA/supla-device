@@ -3718,8 +3718,8 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
     }
   }
   // check if we should turn on cooling
-  // -1000 is a magic "not used" value... I'm sorry for that
-  if (lastValue >= 0 || lastValue == -1000) {
+  // -111 is a magic "not used" value... I'm sorry for that
+  if (lastValue >= 0 || lastValue == -111) {
     if (tMeasured > tTarget + histeresisCool) {
       output = -100;
     }
@@ -3850,7 +3850,7 @@ void HvacBase::fixTemperatureSetpoints() {
 }
 
 void HvacBase::clearLastOutputValue() {
-  lastValue = -1000;
+  lastValue = -111;
   lastOutputStateChangeTimestampMs = 0;
 }
 

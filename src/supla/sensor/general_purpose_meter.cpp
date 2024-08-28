@@ -63,6 +63,9 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result,
   if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
+  if (result->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
   if (result->ConfigSize != sizeof(TChannelConfig_GeneralPurposeMeter)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }

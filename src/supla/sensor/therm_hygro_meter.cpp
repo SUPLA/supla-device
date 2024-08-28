@@ -187,6 +187,9 @@ uint8_t Supla::Sensor::ThermHygroMeter::applyChannelConfig(
   if (result == nullptr) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
+  if (result->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
 
   if (result->Func == SUPLA_CHANNELFNC_THERMOMETER ||
       result->Func == SUPLA_CHANNELFNC_HUMIDITYANDTEMPERATURE ||

@@ -451,6 +451,10 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
+  if (config->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+
   if (config->Func == SUPLA_CHANNELFNC_ELECTRICITY_METER) {
     if (config->ConfigSize < sizeof(TChannelConfig_ElectricityMeter)) {
       return SUPLA_CONFIG_RESULT_DATA_ERROR;

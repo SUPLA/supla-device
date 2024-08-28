@@ -83,7 +83,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool iterateConnected() override;
   int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
-  uint8_t handleChannelConfig(TSD_ChannelConfig *result,
+  uint8_t applyChannelConfig(TSD_ChannelConfig *result,
                               bool local = false) override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
@@ -99,8 +99,11 @@ class Relay : public ChannelElement, public ActionHandler {
   void enableCountdownTimerFunction();
   bool isCountdownTimerFunctionEnabled() const;
   void setMinimumAllowedDurationMs(uint32_t durationMs);
+  void fillChannelConfig(void *channelConfig, int *size) override;
 
   static void setRelayStorageSaveDelay(int delayMs);
+
+  void setDefaultRelatedMeterChannelNo(int channelNo);
 
  protected:
   struct ButtonListElement {
@@ -114,6 +117,7 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
+  uint32_t overcurrentThreshold = 0;
 
   uint32_t timerUpdateTimestamp = 0;
 
@@ -128,6 +132,8 @@ class Relay : public ChannelElement, public ActionHandler {
   bool lastStateOnTimerUpdate = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
+
+  int16_t defaultRelatedMeterChannelNo = -1;
 
   static int16_t relayStorageSaveDelay;
 };

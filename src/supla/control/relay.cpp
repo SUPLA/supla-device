@@ -51,6 +51,7 @@ Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
       highIsOn(highIsOn) {
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   channel.setFuncList(functions);
 }
 
@@ -73,36 +74,32 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
 void Relay::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
   Supla::Element::onRegistered(suplaSrpc);
-  channel.requestChannelConfig();
 
   timerUpdateTimestamp = 1;
 }
 
-uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
-                                   bool local) {
-  (void)(local);
+uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "Relay[%d]:handleChannelConfig, func %d, configtype %d, configsize %d",
+      "Relay[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
+
   setChannelFunction(result->Func);
-  auto newFunction = result->Func;
-  if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
-    SUPLA_LOG_INFO("Relay[%d]: function changed to %d",
-                   getChannelNumber(),
-                   newFunction);
-    setAndSaveFunction(newFunction);
-    for (auto proto = Supla::Protocol::ProtocolLayer::first();
-        proto != nullptr; proto = proto->next()) {
-      proto->notifyConfigChange(getChannelNumber());
-    }
+
+  if (result->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
   }
+
   switch (result->Func) {
     default:
     case SUPLA_CHANNELFNC_LIGHTSWITCH:
     case SUPLA_CHANNELFNC_POWERSWITCH: {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: Ignoring config for power/light switch",
+          getChannelNumber());
+      // TODO(klew): add handlign of overcurrent threshold settings
       break;
     }
 
@@ -124,7 +121,11 @@ uint8_t Relay::handleChannelConfig(TSD_ChannelConfig *result,
     case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
-      // add here reading of duration from config when it will be added
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: Ignoring config for controlling the gate/door",
+          getChannelNumber());
+      // TODO(klew): add here reading of duration from config when it will be
+      // added
       break;
     }
   }
@@ -548,4 +549,73 @@ void Relay::setMinimumAllowedDurationMs(uint32_t durationMs) {
     durationMs = UINT16_MAX;
   }
   minimumAllowedDurationMs = durationMs;
+}
+
+void Relay::fillChannelConfig(void *channelConfig, int *size) {
+  if (size) {
+    *size = 0;
+  } else {
+    return;
+  }
+  if (channelConfig == nullptr) {
+    return;
+  }
+
+  switch (channel.getDefaultFunction()) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK: {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: fill channel config for impulse functions - missing "
+          "implementation",
+          channel.getChannelNumber());
+      // TODO(klew): add
+      break;
+    }
+    case SUPLA_CHANNELFNC_STAIRCASETIMER: {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: fill channel config for staircase function",
+          channel.getChannelNumber());
+      auto config = reinterpret_cast<TChannelConfig_StaircaseTimer *>(
+          channelConfig);
+      *size = sizeof(TChannelConfig_StaircaseTimer);
+      config->TimeMS = storedTurnOnDurationMs;
+      break;
+    }
+    case SUPLA_CHANNELFNC_POWERSWITCH:
+    case SUPLA_CHANNELFNC_LIGHTSWITCH: {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: fill channel config for power switch functions",
+          channel.getChannelNumber());
+
+      auto config = reinterpret_cast<TChannelConfig_PowerSwitch *>(
+          channelConfig);
+      *size = sizeof(TChannelConfig_PowerSwitch);
+      config->OvercurrentMaxAllowed = 0;
+      config->OvercurrentThreshold = 0;
+      config->DefaultRelatedMeterChannelNo = 0;
+      config->DefaultRelatedMeterIsSet = 0;
+      if (defaultRelatedMeterChannelNo >= 0 &&
+          defaultRelatedMeterChannelNo <= 255) {
+        config->DefaultRelatedMeterChannelNo = defaultRelatedMeterChannelNo;
+        config->DefaultRelatedMeterIsSet = 1;
+      }
+      break;
+    }
+    default:
+      SUPLA_LOG_WARNING(
+          "Relay[%d]: fill channel config for unknown function %d",
+          channel.getChannelNumber(),
+          channel.getDefaultFunction());
+      return;
+  }
+}
+
+void Relay::setDefaultRelatedMeterChannelNo(int channelNo) {
+  if (channelNo >= 0 && channelNo <= 255) {
+    SUPLA_LOG_DEBUG("Relay[%d]: DefaultRelatedMeterChannelNo set to %d",
+                    channel.getChannelNumber(), channelNo);
+    defaultRelatedMeterChannelNo = channelNo;
+  }
 }

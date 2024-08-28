@@ -93,6 +93,9 @@ uint8_t OcrImpulseCounter::applyChannelConfig(TSD_ChannelConfig *result,
   if (!result) {
     return SUPLA_CONFIG_RESULT_FALSE;
   }
+  if (result->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
 
   switch (result->ConfigType) {
     case SUPLA_CONFIG_TYPE_OCR: {

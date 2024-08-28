@@ -314,17 +314,24 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
+  auto newFunction = result->Func;
+  if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
+    SUPLA_LOG_INFO("Channel[%d]: function changed to %d",
+                   getChannelNumber(),
+                   newFunction);
+    setAndSaveFunction(newFunction);
+    for (auto proto = Supla::Protocol::ProtocolLayer::first();
+        proto != nullptr; proto = proto->next()) {
+      proto->notifyConfigChange(getChannelNumber());
+    }
+  }
+
   if (channelConfigState == Supla::ChannelConfigState::LocalChangePending &&
       !local &&
       result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
     SUPLA_LOG_INFO(
         "Channel[%d]: Ignoring config (local config changed offline)",
         getChannelNumber());
-    return SUPLA_CONFIG_RESULT_TRUE;
-  }
-
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg) {
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
@@ -342,7 +349,6 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
       SUPLA_LOG_DEBUG("Channel[%d] no config on server", getChannelNumber());
       channelConfigState = Supla::ChannelConfigState::LocalChangePending;
     }
-    return SUPLA_CONFIG_RESULT_TRUE;
   }
 
   if (result->ConfigType == SUPLA_CONFIG_TYPE_OCR) {

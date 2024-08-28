@@ -457,6 +457,10 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
   if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
+  if (result->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+
   if (result->ConfigSize != sizeof(TChannelConfig_GeneralPurposeMeasurement)) {
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }

@@ -192,7 +192,7 @@ bool HvacBase::iterateConnected() {
                                     reinterpret_cast<void *>(&config),
                                     sizeof(TChannelConfig_HVAC),
                                     SUPLA_CONFIG_TYPE_DEFAULT)) {
-          SUPLA_LOG_INFO("HVAC[%d]: default channel config send",
+          SUPLA_LOG_INFO("HVAC[%d]: channel config send",
                          getChannelNumber());
           channelConfigChangedOffline = 2;
         }

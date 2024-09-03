@@ -990,7 +990,7 @@ void RGBWBase::onLoadConfig(SuplaDeviceClass *sdc) {
         key, getChannel()->getChannelNumber(), Supla::Html::RgbwButtonTag);
     int32_t rgbwButtonControlType = 0;
     // try to read RGBW button control type from channel specific parameter
-    // and if it is missgin, read gloal value setting
+    // and if it is missing, read global value setting
     if (!cfg->getInt32(key, &rgbwButtonControlType)) {
       cfg->getInt32(Supla::Html::RgbwButtonTag, &rgbwButtonControlType);
     }

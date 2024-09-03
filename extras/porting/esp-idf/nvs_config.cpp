@@ -82,6 +82,8 @@ bool NvsConfig::init() {
       break;
     }
   }
+  SUPLA_LOG_INFO("NvsConfig: initialized NVS storage on partition %s",
+                 nvsPartitionName);
   err = nvs_open_from_partition(
       nvsPartitionName, "supla", NVS_READWRITE, &nvsHandle);
   if (err != ESP_OK) {

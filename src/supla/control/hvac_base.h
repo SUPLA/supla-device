@@ -368,6 +368,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t getBinarySensorChannelNo() const;
 
   static void debugPrintConfigStruct(const TChannelConfig_HVAC *config, int id);
+  static void debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
+                                   const TChannelConfig_HVAC *configNew,
+                                   int id);
+  static const char* temperatureName(int index);
   static void debugPrintProgram(const TWeeklyScheduleProgram *program, int id);
 
   _supla_int16_t getPrimaryTemp();

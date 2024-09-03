@@ -246,6 +246,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&storedConfig),
                      sizeof(TChannelConfig_HVAC))) {
+      SUPLA_LOG_DEBUG("HVAC[%d]: config in storage:", getChannelNumber());
+      debugPrintConfigStruct(&storedConfig, getChannelNumber());
       if (isConfigValid(&storedConfig)) {
         fixReadonlyParameters(&storedConfig);
         applyAdditionalValidation(&storedConfig);
@@ -851,10 +853,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   bool additionalValidationChanged = applyAdditionalValidation(hvacConfig);
 
   if (applyServerConfig) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: Current config:", getChannelNumber());
-    debugPrintConfigStruct(&config, getChannelNumber());
-    SUPLA_LOG_DEBUG("HVAC[%d]: New config:", getChannelNumber());
-    debugPrintConfigStruct(hvacConfig, getChannelNumber());
+    debugPrintConfigDiff(&config, hvacConfig, getChannelNumber());
   }
 
   if (applyServerConfig && !isConfigValid(hvacConfig)) {
@@ -3897,18 +3896,20 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                                       int id) {
   SUPLA_LOG_DEBUG("HVAC[%d]:", id);
   SUPLA_LOG_DEBUG("  Main: %d", config->MainThermometerChannelNo);
-  SUPLA_LOG_DEBUG("  Aux: %d%s",
+  SUPLA_LOG_DEBUG("  Aux: %d%s (type: %d)",
                   config->AuxThermometerChannelNo,
-                  (config->AuxThermometerChannelNo == id ? " (disabled)" : ""));
-  SUPLA_LOG_DEBUG("  Aux type: %d", config->AuxThermometerType);
+                  (config->AuxThermometerChannelNo == id ? " (disabled)" : ""),
+                  config->AuxThermometerType);
   SUPLA_LOG_DEBUG("  AntiFreezeAndOverheatProtectionEnabled: %d",
                   config->AntiFreezeAndOverheatProtectionEnabled);
   SUPLA_LOG_DEBUG("  Sensor: %d%s", config->BinarySensorChannelNo,
                   (config->BinarySensorChannelNo == id ? " (disabled)" : ""));
-  SUPLA_LOG_DEBUG("  Algorithms: %d", config->AvailableAlgorithms);
-  SUPLA_LOG_DEBUG("  UsedAlgorithm: %d", config->UsedAlgorithm);
-  SUPLA_LOG_DEBUG("  MinOnTimeS: %d", config->MinOnTimeS);
-  SUPLA_LOG_DEBUG("  MinOffTimeS: %d", config->MinOffTimeS);
+  SUPLA_LOG_DEBUG("  Algorithms: %d (used: %d)",
+                  config->AvailableAlgorithms,
+                  config->UsedAlgorithm);
+  SUPLA_LOG_DEBUG("  Min On/off TimeS: on: %d off: %d",
+                  config->MinOnTimeS,
+                  config->MinOffTimeS);
   SUPLA_LOG_DEBUG("  OutputValueOnError: %d", config->OutputValueOnError);
   SUPLA_LOG_DEBUG("  Subfunction: %s (%d)",
                   (config->Subfunction == 1) ? "HEAT" :
@@ -3933,9 +3934,248 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
     if ((1 << i) & config->Temperatures.Index) {
-      SUPLA_LOG_DEBUG("    %d: %d", i, config->Temperatures.Temperature[i]);
+      SUPLA_LOG_DEBUG("    %s: %d",
+                      temperatureName(1 << i),
+                      config->Temperatures.Temperature[i]);
     }
   }
+}
+
+void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
+                                   const TChannelConfig_HVAC *configNew,
+                                   int id) {
+  SUPLA_LOG_DEBUG("HVAC[%d]: config diff:", id);
+  bool changed = false;
+  if (configCurrent->MainThermometerChannelNo !=
+      configNew->MainThermometerChannelNo) {
+    SUPLA_LOG_DEBUG("  Main: %d%s -> %d%s",
+                    configCurrent->MainThermometerChannelNo,
+                    (configCurrent->MainThermometerChannelNo == id
+                     ? " (disabled)" : ""),
+                    configNew->MainThermometerChannelNo,
+                    (configNew->MainThermometerChannelNo == id
+                     ? " (disabled)" : ""));
+    changed = true;
+  }
+  if (configCurrent->AuxThermometerChannelNo !=
+      configNew->AuxThermometerChannelNo) {
+    SUPLA_LOG_DEBUG("  Aux: %d%s -> %d%s",
+                    configCurrent->AuxThermometerChannelNo,
+                    (configCurrent->AuxThermometerChannelNo == id
+                     ? " (disabled)" : ""),
+                    configNew->AuxThermometerChannelNo,
+                    (configNew->AuxThermometerChannelNo == id
+                     ? " (disabled)" : ""));
+    changed = true;
+  }
+  if (configCurrent->AuxThermometerType !=
+      configNew->AuxThermometerType) {
+    SUPLA_LOG_DEBUG("  Aux type: %d -> %d",
+                    configCurrent->AuxThermometerType,
+                    configNew->AuxThermometerType);
+    changed = true;
+  }
+  if (configCurrent->AntiFreezeAndOverheatProtectionEnabled !=
+      configNew->AntiFreezeAndOverheatProtectionEnabled) {
+    SUPLA_LOG_DEBUG("  AntiFreezeAndOverheatProtectionEnabled: %d -> %d",
+                    configCurrent->AntiFreezeAndOverheatProtectionEnabled,
+                    configNew->AntiFreezeAndOverheatProtectionEnabled);
+    changed = true;
+  }
+  if (configCurrent->BinarySensorChannelNo !=
+      configNew->BinarySensorChannelNo) {
+    SUPLA_LOG_DEBUG("  BinarySensor: %d%s -> %d%s",
+                    configCurrent->BinarySensorChannelNo,
+                    (configCurrent->BinarySensorChannelNo == id
+                     ? " (disabled)" : ""),
+                    configNew->BinarySensorChannelNo,
+                    (configNew->BinarySensorChannelNo == id
+                     ? " (disabled)" : ""));
+    changed = true;
+  }
+  if (configCurrent->AvailableAlgorithms != configNew->AvailableAlgorithms) {
+    SUPLA_LOG_DEBUG("  Algorithms: %d -> %d",
+                    configCurrent->AvailableAlgorithms,
+                    configNew->AvailableAlgorithms);
+    changed = true;
+  }
+  if (configCurrent->UsedAlgorithm != configNew->UsedAlgorithm) {
+    SUPLA_LOG_DEBUG("  UsedAlgorithm: %d -> %d",
+                    configCurrent->UsedAlgorithm,
+                    configNew->UsedAlgorithm);
+    changed = true;
+  }
+  if (configCurrent->MinOnTimeS != configNew->MinOnTimeS) {
+    SUPLA_LOG_DEBUG("  MinOnTimeS: %d -> %d",
+                    configCurrent->MinOnTimeS,
+                    configNew->MinOnTimeS);
+    changed = true;
+  }
+  if (configCurrent->MinOffTimeS != configNew->MinOffTimeS) {
+    SUPLA_LOG_DEBUG("  MinOffTimeS: %d -> %d",
+                    configCurrent->MinOffTimeS,
+                    configNew->MinOffTimeS);
+    changed = true;
+  }
+  if (configCurrent->OutputValueOnError != configNew->OutputValueOnError) {
+    SUPLA_LOG_DEBUG("  OutputValueOnError: %d -> %d",
+                    configCurrent->OutputValueOnError,
+                    configNew->OutputValueOnError);
+    changed = true;
+  }
+  if (configCurrent->Subfunction != configNew->Subfunction) {
+    SUPLA_LOG_DEBUG("  Subfunction: %s (%d) -> %s (%d)",
+                    (configCurrent->Subfunction == 1) ? "HEAT" :
+                    (configCurrent->Subfunction == 2) ? "COOL" : "N/A",
+                    configCurrent->Subfunction,
+                    (configNew->Subfunction == 1) ? "HEAT" :
+                    (configNew->Subfunction == 2) ? "COOL" : "N/A",
+                    configNew->Subfunction);
+    changed = true;
+  }
+  if (configCurrent->TemperatureSetpointChangeSwitchesToManualMode !=
+      configNew->TemperatureSetpointChangeSwitchesToManualMode) {
+    SUPLA_LOG_DEBUG(
+        "  TemperatureSetpointChangeSwitchesToManualMode: %s -> %s",
+        (configCurrent->TemperatureSetpointChangeSwitchesToManualMode == 1)
+            ? "switches to manual"
+            : "keeps weekly",
+        (configNew->TemperatureSetpointChangeSwitchesToManualMode == 1)
+            ? "switches to manual"
+            : "keeps weekly");
+    changed = true;
+  }
+  if (configCurrent->UseSeparateHeatCoolOutputs !=
+      configNew->UseSeparateHeatCoolOutputs) {
+    SUPLA_LOG_DEBUG("  UseSeparateHeatCoolOutputs: %d -> %d",
+                    configCurrent->UseSeparateHeatCoolOutputs,
+                    configNew->UseSeparateHeatCoolOutputs);
+    changed = true;
+  }
+  if (configCurrent->AuxMinMaxSetpointEnabled !=
+      configNew->AuxMinMaxSetpointEnabled) {
+    SUPLA_LOG_DEBUG("  AuxMinMaxSetpointEnabled: %d -> %d",
+                    configCurrent->AuxMinMaxSetpointEnabled,
+                    configNew->AuxMinMaxSetpointEnabled);
+    changed = true;
+  }
+  if (configCurrent->MasterThermostatIsSet !=
+      configNew->MasterThermostatIsSet ||
+      configCurrent->MasterThermostatChannelNo !=
+      configNew->MasterThermostatChannelNo) {
+    SUPLA_LOG_DEBUG("  MasterThermostatIsSet: %d%s -> %d%s",
+                    configCurrent->MasterThermostatChannelNo,
+                    (configCurrent->MasterThermostatIsSet ?
+                     "": " (disabled)"),
+                    configNew->MasterThermostatChannelNo,
+                    configNew->MasterThermostatIsSet ?
+                    "": " (disabled)");
+    changed = true;
+  }
+  if (configCurrent->HeatOrColdSourceSwitchIsSet !=
+      configNew->HeatOrColdSourceSwitchIsSet ||
+      configCurrent->HeatOrColdSourceSwitchChannelNo !=
+      configNew->HeatOrColdSourceSwitchChannelNo) {
+    SUPLA_LOG_DEBUG("  HeatOrColdSourceSwitchIsSet: %d%s -> %d%s",
+                    configCurrent->HeatOrColdSourceSwitchChannelNo,
+                    (configCurrent->HeatOrColdSourceSwitchIsSet ?
+                     "": " (disabled)"),
+                    configNew->HeatOrColdSourceSwitchChannelNo,
+                    configNew->HeatOrColdSourceSwitchIsSet ?
+                    "": " (disabled)");
+    changed = true;
+  }
+  if (configCurrent->PumpSwitchIsSet !=
+      configNew->PumpSwitchIsSet ||
+      configCurrent->PumpSwitchChannelNo !=
+      configNew->PumpSwitchChannelNo) {
+    SUPLA_LOG_DEBUG("  PumpSwitchIsSet: %d%s -> %d%s",
+                    configCurrent->PumpSwitchChannelNo,
+                    (configCurrent->PumpSwitchIsSet ?
+                     "": " (disabled)"),
+                    configNew->PumpSwitchChannelNo,
+                    configNew->PumpSwitchIsSet ?
+                    "": " (disabled)");
+    changed = true;
+  }
+  for (int i = 0; i < 24; i++) {
+    if (((1 << i) & configCurrent->Temperatures.Index ||
+         (1 << i) & configNew->Temperatures.Index) &&
+        (configCurrent->Temperatures.Temperature[i] !=
+         configNew->Temperatures.Temperature[i])) {
+      SUPLA_LOG_DEBUG(
+          "  Temperature[%s]: %d%s -> %d%s",
+          temperatureName(1 << i),
+          configCurrent->Temperatures.Temperature[i],
+          (configCurrent->Temperatures.Index & (1 << i)) ? "" : " (not set)",
+          configNew->Temperatures.Temperature[i],
+          (configNew->Temperatures.Index & (1 << i)) ? "" : " (not set)");
+    changed = true;
+    }
+  }
+  if (!changed) {
+    SUPLA_LOG_DEBUG("  No changes");
+  }
+}
+
+const char* HvacBase::temperatureName(int index) {
+  switch (index) {
+    case TEMPERATURE_FREEZE_PROTECTION: {
+      return "Freeze protection setpoint";
+    }
+    case TEMPERATURE_ECO: {
+      return "Eco setpoint";
+    }
+    case TEMPERATURE_COMFORT: {
+      return "Comfort setpoint";
+    }
+    case TEMPERATURE_BOOST: {
+      return "Boost setpoint";
+    }
+    case TEMPERATURE_HEAT_PROTECTION: {
+      return "Heat protection setpoint";
+    }
+    case TEMPERATURE_HISTERESIS: {
+      return "Histeresis setpoint";
+    }
+    case TEMPERATURE_BELOW_ALARM: {
+      return "Below alarm setpoint";
+    }
+    case TEMPERATURE_ABOVE_ALARM: {
+      return "Above alarm setpoint";
+    }
+    case TEMPERATURE_AUX_MIN_SETPOINT: {
+      return "Aux min setpoint";
+    }
+    case TEMPERATURE_AUX_MAX_SETPOINT: {
+      return "Aux max setpoint";
+    }
+    case TEMPERATURE_ROOM_MIN: {
+      return "Room min limit";
+    }
+    case TEMPERATURE_ROOM_MAX: {
+      return "Room max limit";
+    }
+    case TEMPERATURE_AUX_MIN: {
+      return "Aux min limit";
+    }
+    case TEMPERATURE_AUX_MAX: {
+      return "Aux max limit";
+    }
+    case TEMPERATURE_HISTERESIS_MIN: {
+      return "Histeresis min limit";
+    }
+    case TEMPERATURE_HISTERESIS_MAX: {
+      return "Histeresis max limit";
+    }
+    case TEMPERATURE_HEAT_COOL_OFFSET_MIN: {
+      return "Heat cool offset min limit";
+    }
+    case TEMPERATURE_HEAT_COOL_OFFSET_MAX: {
+      return "Heat cool offset max limit";
+    }
+  }
+  return "Unknown";
 }
 
 int HvacBase::channelFunctionToIndex(int channelFunction) const {

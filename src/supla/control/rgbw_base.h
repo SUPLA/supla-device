@@ -87,7 +87,7 @@ class RGBWBase : public ChannelElement, public ActionHandler {
                        bool toggle = false,
                        bool instant = false);
 
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
+  int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   virtual void turnOn();
   virtual void turnOff();
   virtual void toggle();

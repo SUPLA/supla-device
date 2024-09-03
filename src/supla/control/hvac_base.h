@@ -53,7 +53,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void iterateAlways() override;
   bool iterateConnected() override;
 
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
+  int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,
                               bool local = false) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
@@ -138,9 +138,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool setOutputValueOnError(signed char value);
   signed char getOutputValueOnError() const;
 
-  void setDefaultTemperatureRoomMin(int channelFunction,
+  void setDefaultTemperatureRoomMin(int32_t channelFunction,
                                     _supla_int16_t temperature);
-  void setDefaultTemperatureRoomMax(int channelFunction,
+  void setDefaultTemperatureRoomMax(int32_t channelFunction,
                                     _supla_int16_t temperature);
   _supla_int16_t getDefaultTemperatureRoomMin() const;
   _supla_int16_t getDefaultTemperatureRoomMax() const;
@@ -264,7 +264,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   static void clearTemperatureInStruct(THVACTemperatureCfg *temperatures,
                               unsigned _supla_int_t index);
 
-  static int getArrayIndex(int bitIndex);
+  static int32_t getArrayIndex(int32_t bitIndex);
 
   bool isTemperatureInRoomConstrain(_supla_int16_t temperature) const;
   bool isTemperatureInAuxConstrain(_supla_int16_t temperature) const;
@@ -342,7 +342,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const;
   void turnOn();
   bool turnOnWeeklySchedlue();
-  void changeFunction(int newFunction, bool changedLocally);
+  void changeFunction(int32_t newFunction, bool changedLocally);
   _supla_int_t getChannelFunction();
 
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
@@ -371,7 +371,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   static void debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
                                    const TChannelConfig_HVAC *configNew,
                                    int id);
-  static const char* temperatureName(int index);
+  static const char* temperatureName(int32_t index);
   static void debugPrintProgram(const TWeeklyScheduleProgram *program, int id);
 
   _supla_int16_t getPrimaryTemp();
@@ -422,7 +422,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void clearLastOutputValue();
   void storeLastWorkingMode();
   void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
-  int channelFunctionToIndex(int channelFunction) const;
+  int32_t channelFunctionToIndex(int32_t channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);

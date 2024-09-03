@@ -95,7 +95,7 @@ class Element {
   //  -1 - don't send reply to server
   //  0 - success==false
   //  1 - success==true
-  virtual int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue);
+  virtual int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue);
 
   virtual void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value);
 

@@ -154,7 +154,7 @@ void Element::onTimer() {}
 
 void Element::onFastTimer() {}
 
-int Element::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+int32_t Element::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   (void)(newValue);
   return -1;
 }

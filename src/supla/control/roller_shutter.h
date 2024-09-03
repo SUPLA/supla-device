@@ -44,7 +44,7 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   RollerShutter(const RollerShutter &) = delete;
   RollerShutter &operator=(const RollerShutter &) = delete;
 
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
+  int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void handleAction(int event, int action) override;
 
   void close();         // Sets target position to 100%

@@ -90,7 +90,7 @@ void BistableRelay::iterateAlways() {
   }
 }
 
-int BistableRelay::handleNewValueFromServer(
+int32_t BistableRelay::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
   // ignore new requests if we are in the middle of state change
   if (busy) {

@@ -1224,9 +1224,9 @@ bool HvacBase::isTemperatureSetInStruct(const THVACTemperatureCfg *temperatures,
   return (temperatures->Index & index) == index;
 }
 
-int HvacBase::getArrayIndex(int bitIndex) {
+int32_t HvacBase::getArrayIndex(int32_t bitIndex) {
   // convert index bit number to array index
-  int arrayIndex = 0;
+  int32_t arrayIndex = 0;
   for (; arrayIndex < 24; arrayIndex++) {
     if (bitIndex & (1 << arrayIndex)) {
       return arrayIndex;
@@ -1241,7 +1241,7 @@ _supla_int16_t HvacBase::getTemperatureFromStruct(
     return SUPLA_TEMPERATURE_INVALID_INT16;
   }
 
-  int arrayIndex = getArrayIndex(index);
+  int32_t arrayIndex = getArrayIndex(index);
   if (arrayIndex < 0) {
     return INT16_MIN;
   }
@@ -1611,7 +1611,7 @@ void HvacBase::setTemperatureInStruct(THVACTemperatureCfg *temperatures,
   }
 
   // convert index bit number to array index
-  int arrayIndex = getArrayIndex(index);
+  int32_t arrayIndex = getArrayIndex(index);
 
   if (arrayIndex < 0) {
     return;
@@ -1627,7 +1627,7 @@ void HvacBase::clearTemperatureInStruct(THVACTemperatureCfg *temperatures,
       return;
   }
 
-  int arrayIndex = getArrayIndex(index);
+  int32_t arrayIndex = getArrayIndex(index);
   if (arrayIndex < 0) {
     return;
   }
@@ -3299,7 +3299,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
   return true;
 }
 
-int HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+int32_t HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   auto hvacValue = reinterpret_cast<THVACValue *>(newValue->value);
   SUPLA_LOG_DEBUG(
       "HVAC[%d]: new value from server: mode=%s tHeat=%d tCool=%d, "
@@ -3733,7 +3733,7 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
 
   return output;
 }
-void HvacBase::changeFunction(int newFunction, bool changedLocally) {
+void HvacBase::changeFunction(int32_t newFunction, bool changedLocally) {
   auto currentFunction = channel.getDefaultFunction();
   if (currentFunction == newFunction) {
     return;
@@ -4118,7 +4118,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
   }
 }
 
-const char* HvacBase::temperatureName(int index) {
+const char* HvacBase::temperatureName(int32_t index) {
   switch (index) {
     case TEMPERATURE_FREEZE_PROTECTION: {
       return "Freeze protection setpoint";
@@ -4178,7 +4178,7 @@ const char* HvacBase::temperatureName(int index) {
   return "Unknown";
 }
 
-int HvacBase::channelFunctionToIndex(int channelFunction) const {
+int32_t HvacBase::channelFunctionToIndex(int32_t channelFunction) const {
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
       return 1;
@@ -4196,13 +4196,13 @@ int HvacBase::channelFunctionToIndex(int channelFunction) const {
   return 0;
 }
 
-void HvacBase::setDefaultTemperatureRoomMin(int channelFunction,
+void HvacBase::setDefaultTemperatureRoomMin(int32_t channelFunction,
     _supla_int16_t temperature) {
   defaultTemperatureRoomMin[channelFunctionToIndex(channelFunction)] =
       temperature;
 }
 
-void HvacBase::setDefaultTemperatureRoomMax(int channelFunction,
+void HvacBase::setDefaultTemperatureRoomMax(int32_t channelFunction,
                                     _supla_int16_t temperature) {
   defaultTemperatureRoomMax[channelFunctionToIndex(channelFunction)] =
       temperature;

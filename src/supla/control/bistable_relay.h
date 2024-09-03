@@ -50,7 +50,7 @@ class BistableRelay : public Relay {
                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
   void onInit() override;
   void iterateAlways() override;
-  int handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
+  int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void turnOn(_supla_int_t duration = 0) override;
   void turnOff(_supla_int_t duration = 0) override;
   void toggle(_supla_int_t duration = 0) override;

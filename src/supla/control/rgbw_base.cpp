@@ -140,7 +140,7 @@ void RGBWBase::iterateAlways() {
   }
 }
 
-int RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+int32_t RGBWBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   uint8_t command = static_cast<uint8_t>(newValue->value[6]);
   uint8_t toggleOnOff = static_cast<uint8_t>(newValue->value[5]);
   uint8_t red = static_cast<uint8_t>(newValue->value[4]);

@@ -208,7 +208,7 @@ bool Relay::iterateConnected() {
   return ChannelElement::iterateConnected();
 }
 
-int Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   int result = -1;
   if (newValue->value[0] == 1) {
     if (newValue->DurationMS < minimumAllowedDurationMs) {

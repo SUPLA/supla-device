@@ -71,7 +71,7 @@ void RollerShutter::onInit() {
  *
  */
 
-int RollerShutter::handleNewValueFromServer(
+int32_t RollerShutter::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
   uint32_t newClosingTime = (newValue->DurationMS & 0xFFFF) * 100;
   uint32_t newOpeningTime = ((newValue->DurationMS >> 16) & 0xFFFF) * 100;

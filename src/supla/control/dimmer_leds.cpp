@@ -71,7 +71,8 @@ void Supla::Control::DimmerLeds::onInit() {
     ledcAttach(brightnessPin, 1000, 10);
 #else
     // Code for version 2.x
-    SUPLA_LOG_DEBUG("Dimmer: attaching pin %d to PWM channel %d",
+    SUPLA_LOG_DEBUG("Dimmer[%d]: attaching pin %d to PWM channel %d",
+        getChannelNumber(),
         brightnessPin, esp32PwmChannelCounter);
     ledcSetup(esp32PwmChannelCounter, 1000, 10);
     ledcAttachPin(brightnessPin, esp32PwmChannelCounter);

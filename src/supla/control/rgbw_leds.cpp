@@ -87,8 +87,10 @@ void Supla::Control::RGBWLeds::onInit() {
   ledcAttach(brightnessPin, 1000, 10);
 #else
   // Code for version 2.x
-  SUPLA_LOG_DEBUG("RGBW: attaching pin %d to PWM channel %d",
-                  redPin, esp32PwmChannelCounter);
+  SUPLA_LOG_DEBUG("RGBW[%d]: attaching pin %d to PWM channel %d",
+                  getChannelNumber(),
+                  redPin,
+                  esp32PwmChannelCounter);
   ledcSetup(esp32PwmChannelCounter, 1000, 10);
   ledcAttachPin(redPin, esp32PwmChannelCounter);
   // on ESP32 we write to PWM channels instead of pins, so we copy channel

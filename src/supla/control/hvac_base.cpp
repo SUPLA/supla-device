@@ -5080,9 +5080,9 @@ bool HvacBase::fixReadonlyTemperature(int32_t temperatureIndex,
   auto newTemperature = getTemperatureFromStruct(newTemps, temperatureIndex);
   if (currentTemperature != newTemperature) {
     SUPLA_LOG_DEBUG(
-        "HVAC[%d] Temperatures[%d] change from %d to %d not allowed (readonly)",
+        "HVAC[%d] Temperatures[%s] change from %d to %d not allowed (readonly)",
         getChannelNumber(),
-        temperatureIndex,
+        temperatureName(temperatureIndex),
         currentTemperature,
         newTemperature);
     if (currentTemperature == INT16_MIN) {

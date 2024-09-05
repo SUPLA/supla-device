@@ -227,16 +227,26 @@ void GroupButtonControlRgbw::onLoadConfig(SuplaDeviceClass *sdc) {
 
       Supla::Config::generateKey(key, channelNo, Supla::Html::RgbwButtonTag);
       int32_t rgbwButtonControlType = 0;
-      cfg->getInt32(key, &rgbwButtonControlType);
-      if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {
-        controlType[i] =
-            static_cast<Supla::Control::RGBWBase::ButtonControlType>(
-                rgbwButtonControlType);
+      if (cfg->getInt32(key, &rgbwButtonControlType)) {
+        if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {
+          controlType[i] =
+              static_cast<Supla::Control::RGBWBase::ButtonControlType>(
+                  rgbwButtonControlType);
+        }
       }
       SUPLA_LOG_DEBUG("RGBW group[%d] button control type: %d",
           channelNo, controlType[i]);
     }
   }
+}
+
+void GroupButtonControlRgbw::setButtonControlType(int rgbwIndex,
+                            RGBWBase::ButtonControlType type) {
+  if (rgbwIndex < 0 || rgbwIndex >= rgbwCount ||
+      rgbwIndex >= SUPLA_MAX_GROUP_CONTROL_ELEMENTS) {
+    return;
+  }
+  controlType[rgbwIndex] = type;
 }
 
 void GroupButtonControlRgbw::onInit() {

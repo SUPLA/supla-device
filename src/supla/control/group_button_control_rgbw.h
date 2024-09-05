@@ -40,6 +40,9 @@ class GroupButtonControlRgbw : public ActionHandler, public Element {
   void onInit() override;
   void handleAction(int event, int action) override;
 
+  void setButtonControlType(int rgbwChannelNumber,
+                            RGBWBase::ButtonControlType type);
+
  private:
   void handleTurnOn();
   void handleTurnOff();

@@ -1,5 +1,24 @@
 # CHANGELOG.md
 
+## 24.09 (2024-09-05)
+   - Fix: Relay: change int to int32_t (potentially problem on Arduino Mega)
+   - Fix: HVAC: small mem usage reduction
+   - Fix: HVAC: add validation of stored THVACValues (currently only with warning log)
+   - Fix: HVAC: fix "countDownTimerEnds" initial value causing inifinte sending of remaining timer value to server
+   - Fix: HVAC: fix invalid initialization of some parameters
+   - Fix: WearLevelingSector: fix storage write in case of storage sector size change (i.e. when new channel was added online)
+   - Fix: HTML ProtocolParameters: fix HTML when addMqtt is false and conqurent is false
+   - Fix: SuplaOcrIc: fix config sending after device removal on Cloud
+   - Fix: SuplaOcrIc: fix picture fetching sequence, so we'll get latest photo instead of previous one. esp_camera is taking photos when photo buffer is empty (at esp_camera_fb_return and not at esp_camer_fb_get)
+   - Change: Log improvements
+   - Add: Storage: add enableChannelNumbers() option to store channel number first, before channel state data. This mode will keep state only for elements with valid channel number.
+   - Add: GroupButtonControlRgbw: add setButtonControlType(rgbwIndex, type)
+   - Add: Relay: add support for power and light switch channel config. Adjusted few classes to new handling of config for common usage in ElementWithChannelActions class.
+   - Add: esp-idf NvsConfig: add option to use "suplanvs" partition for configuration storage
+   - Add: SuplaDevice: add setMacLengthInHostname(int) to configure length of MAC part in hostname/WiFi AP name
+   - Add: SuplaDevice: add handling of SUPLA_CALCFG_CMD_RESTART_DEVICE. Add bool isDeviceSoftwareResetSupported() method.
+
+
 ## 24.08.01 (2024-08-07)
   - Version increased to 24.08.01 for internal use
 

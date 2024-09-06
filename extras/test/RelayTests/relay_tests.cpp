@@ -2690,9 +2690,89 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
     time.advance(100);
   }
   EXPECT_EQ(0, gpioValue);
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////
+}
+
+TEST_F(RelayFixture, hvacRelatedTest) {
+  // all relays can be controller locally via turnOn/Off methods, but hvac
+  // related (pump, heat or cold) can't be controlled remotely by server
+  int gpio1 = 1;
+  int gpio2 = 2;
+  int gpio3 = 3;
+  Supla::Control::Relay r1(gpio1, true, SUPLA_BIT_FUNC_PUMPSWITCH);
+  Supla::Control::Relay r2(gpio2, true, SUPLA_BIT_FUNC_HEATORCOLDSOURCESWITCH);
+  Supla::Control::Relay r3(gpio3, true, SUPLA_BIT_FUNC_POWERSWITCH);
+  r1.setDefaultFunction(SUPLA_CHANNELFNC_PUMPSWITCH);
+  r2.setDefaultFunction(SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH);
+  r3.setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
+
+  int number1 = r1.getChannelNumber();
+  int number2 = r2.getChannelNumber();
+  int number3 = r3.getChannelNumber();
+  char value[SUPLA_CHANNELVALUE_SIZE] = {};
+  ASSERT_EQ(number1, 0);
+  ASSERT_EQ(number2, 1);
+  ASSERT_EQ(number3, 2);
+
+  ::testing::InSequence seq;
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
+
+  r1.onInit();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(1);
+  EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(1);
+
+  r2.onInit();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(1);
+  EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(1);
+
+  r3.onInit();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
+  r1.turnOn();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 1)).Times(1);
+  r2.turnOn();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 1)).Times(1);
+  r3.turnOn();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
+  r1.turnOff();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(1);
+  r2.turnOff();
+
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(1);
+  r3.turnOff();
+
+  TSD_SuplaChannelNewValue newValueFromServer = {};
+  newValueFromServer.DurationMS = 0;
+  newValueFromServer.ChannelNumber = 0;
+  newValueFromServer.value[0] = 1;  // turn on
+
+  EXPECT_EQ(0, r1.handleNewValueFromServer(&newValueFromServer));
+
+  newValueFromServer.ChannelNumber = 1;
+  EXPECT_EQ(0, r2.handleNewValueFromServer(&newValueFromServer));
+
+  newValueFromServer.ChannelNumber = 2;
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 1)).Times(1);
+  EXPECT_EQ(1, r3.handleNewValueFromServer(&newValueFromServer));
+
+  newValueFromServer.ChannelNumber = 0;
+  newValueFromServer.value[0] = 0;  // turn off
+  EXPECT_EQ(0, r1.handleNewValueFromServer(&newValueFromServer));
+
+    newValueFromServer.ChannelNumber = 1;
+  EXPECT_EQ(0, r2.handleNewValueFromServer(&newValueFromServer));
+
+  newValueFromServer.ChannelNumber = 2;
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(1);
+  EXPECT_EQ(1, r3.handleNewValueFromServer(&newValueFromServer));
 }

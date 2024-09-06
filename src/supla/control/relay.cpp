@@ -209,6 +209,17 @@ bool Relay::iterateConnected() {
 }
 
 int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+  auto channelFunction = getChannel()->getDefaultFunction();
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_PUMPSWITCH:
+    case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
+      SUPLA_LOG_WARNING("Relay[%d] ignoring server request (pump/heatorcold)",
+                        getChannelNumber());
+      return 0;
+    }
+    default: {}
+  }
+
   int result = -1;
   if (newValue->value[0] == 1) {
     if (newValue->DurationMS < minimumAllowedDurationMs) {
@@ -601,6 +612,15 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
         config->DefaultRelatedMeterChannelNo = defaultRelatedMeterChannelNo;
         config->DefaultRelatedMeterIsSet = 1;
       }
+      break;
+    }
+    case SUPLA_CHANNELFNC_PUMPSWITCH:
+    case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: fill channel config for hvac related functions - missing "
+          "implementation",
+          channel.getChannelNumber());
+      // TODO(klew): add
       break;
     }
     default:

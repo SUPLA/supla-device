@@ -103,6 +103,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/control/light_relay.cpp
   ../../../src/supla/control/pin_status_led.cpp
   ../../../src/supla/control/relay.cpp
+  ../../../src/supla/control/relay_hvac_aggregator.cpp
   ../../../src/supla/control/rgb_base.cpp
   ../../../src/supla/control/rgb_leds.cpp
   ../../../src/supla/control/rgbw_base.cpp

@@ -1,0 +1,155 @@
+/*
+   Copyright (C) AC SOFTWARE SP. Z O.O
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+#include "relay_hvac_aggregator.h"
+#include <supla/control/relay.h>
+#include <supla/control/hvac_base.h>
+#include <supla/time.h>
+
+using Supla::Control::RelayHvacAggregator;
+
+namespace {
+RelayHvacAggregator *FirstInstance = nullptr;
+}
+
+
+RelayHvacAggregator::RelayHvacAggregator(int relayChannelNumber,
+                                         Supla::Control::Relay *relay)
+    : relay(relay), relayChannelNumber(relayChannelNumber) {
+  if (FirstInstance == nullptr) {
+    FirstInstance = this;
+  } else {
+    auto *ptr = FirstInstance;
+    while (ptr->nextPtr != nullptr) {
+      ptr = ptr->nextPtr;
+    }
+    ptr->nextPtr = this;
+  }
+}
+
+RelayHvacAggregator::~RelayHvacAggregator() {
+  if (FirstInstance == this) {
+    FirstInstance = nextPtr;
+  } else {
+    auto *ptr = FirstInstance;
+    while (ptr->nextPtr != this && ptr->nextPtr != nullptr) {
+      ptr = ptr->nextPtr;
+    }
+    if (ptr->nextPtr == this) {
+      ptr->nextPtr = nextPtr;
+    }
+  }
+  while (firstHvacPtr) {
+    unregisterHvac(firstHvacPtr->hvac);
+  }
+}
+
+RelayHvacAggregator *RelayHvacAggregator::Add(int relayChannelNumber,
+                                              Relay *relay) {
+  auto ptr = GetInstance(relayChannelNumber);
+  if (ptr == nullptr) {
+    ptr = new RelayHvacAggregator(relayChannelNumber, relay);
+  }
+  return ptr;
+}
+
+bool RelayHvacAggregator::Remove(int relayChannelNumber) {
+  auto *ptr = GetInstance(relayChannelNumber);
+  if (ptr != nullptr) {
+    delete ptr;
+    return true;
+  }
+  return false;
+}
+
+RelayHvacAggregator *RelayHvacAggregator::GetInstance(int relayChannelNumber) {
+  auto *ptr = FirstInstance;
+  while (ptr != nullptr) {
+    if (ptr->relayChannelNumber == relayChannelNumber) {
+      return ptr;
+    }
+    ptr = ptr->nextPtr;
+  }
+  return nullptr;
+}
+
+void RelayHvacAggregator::registerHvac(HvacBase *hvac) {
+  if (firstHvacPtr == nullptr) {
+    firstHvacPtr = new HvacPtr;
+    firstHvacPtr->hvac = hvac;
+  } else {
+    auto *ptr = firstHvacPtr;
+    while (ptr->nextPtr != nullptr) {
+      ptr = ptr->nextPtr;
+    }
+    ptr->nextPtr = new HvacPtr;
+    ptr->nextPtr->hvac = hvac;
+  }
+}
+
+void RelayHvacAggregator::unregisterHvac(HvacBase *hvac) {
+  auto *ptr = firstHvacPtr;
+  HvacPtr *prevPtr = nullptr;
+  while (ptr != nullptr) {
+    if (ptr->hvac == hvac) {
+      if (prevPtr == nullptr) {
+        firstHvacPtr = ptr->nextPtr;
+      } else {
+        prevPtr->nextPtr = ptr->nextPtr;
+      }
+      delete ptr;
+      break;
+    }
+    prevPtr = ptr;
+    ptr = ptr->nextPtr;
+  }
+}
+
+void RelayHvacAggregator::iterateAlways() {
+  if (relay == nullptr) {
+    return;
+  }
+  if (millis() - lastUpdateTimestamp < 1000) {
+    return;
+  }
+
+  lastUpdateTimestamp = millis();
+
+  bool state = false;
+  auto *ptr = firstHvacPtr;
+  while (ptr != nullptr) {
+    if (ptr->hvac != nullptr && ptr->hvac->getChannel()) {
+      state = state || ptr->hvac->getChannel()->isHvacFlagHeating() ||
+              ptr->hvac->getChannel()->isHvacFlagCooling();
+    }
+    if (state) {
+      break;
+    }
+    ptr = ptr->nextPtr;
+  }
+
+  if (state) {
+    if (!relay->isOn()) {
+      relay->turnOn();
+    }
+  } else {
+    if (relay->isOn()) {
+      relay->turnOff();
+    }
+  }
+}

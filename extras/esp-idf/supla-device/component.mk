@@ -90,6 +90,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/control/light_relay.o \
   ../../../src/supla/control/pin_status_led.o \
   ../../../src/supla/control/relay.o \
+	../../../src/supla/control/relay_hvac_aggregator.o \
   ../../../src/supla/control/rgb_base.o \
   ../../../src/supla/control/rgb_leds.o \
   ../../../src/supla/control/rgbw_base.o \

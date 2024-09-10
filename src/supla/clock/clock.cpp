@@ -197,7 +197,7 @@ void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
   struct tm timeinfo {};
 
   SUPLA_LOG_DEBUG(
-            "Current local time: %d-%d-%d %d:%d:%d",
+            "Current local time: %d-%02d-%02d %02d:%02d:%02d",
             getYear(),
             getMonth(),
             getDay(),
@@ -303,7 +303,7 @@ void Clock::setSystemTime(time_t newTime) {
                     currentTime - newTime);
 
     SUPLA_LOG_DEBUG(
-        "Clock: new local time: %d-%d-%d %d:%d:%d",
+        "Clock: new local time: %d-%02d-%02d %02d:%02d:%02d",
         getYear(),
         getMonth(),
         getDay(),

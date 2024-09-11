@@ -24,6 +24,7 @@
 #include <supla/tools.h>
 #include <supla/control/button.h>
 #include <supla/protocol/protocol_layer.h>
+#include <supla/control/relay_hvac_aggregator.h>
 
 #include "../actions.h"
 #include "../io.h"
@@ -62,12 +63,14 @@ Relay::~Relay() {
     delete currentElement;
     currentElement = nextElement;
   }
+  Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
 }
 
 void Relay::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();
+    updateRelayHvacAggregator();
   }
 }
 
@@ -87,6 +90,7 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
       result->ConfigSize);
 
   setChannelFunction(result->Func);
+  updateRelayHvacAggregator();
 
   if (result->ConfigSize == 0) {
     return SUPLA_CONFIG_RESULT_TRUE;
@@ -639,3 +643,17 @@ void Relay::setDefaultRelatedMeterChannelNo(int channelNo) {
     defaultRelatedMeterChannelNo = channelNo;
   }
 }
+
+void Relay::updateRelayHvacAggregator() {
+  auto channelFunction = getChannel()->getDefaultFunction();
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_PUMPSWITCH:
+    case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
+      Supla::Control::RelayHvacAggregator::Add(getChannelNumber(), this);
+      return;
+    }
+    default: {}
+  }
+  Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
+}
+

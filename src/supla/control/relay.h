@@ -113,6 +113,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   void setChannelFunction(_supla_int_t newFunction);
   void updateTimerValue();
+  void updateRelayHvacAggregator();
   int32_t channelFunction = 0;
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;

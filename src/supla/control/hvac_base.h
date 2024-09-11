@@ -112,6 +112,19 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setAuxThermometerType(uint8_t type);
   uint8_t getAuxThermometerType() const;
 
+  bool setPumpSwitchChannelNo(uint8_t channelNo);
+  void clearPumpSwitchChannelNo();
+  uint8_t getPumpSwitchChannelNo() const;
+  bool isPumpSwitchSet() const;
+  bool setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo);
+  void clearHeatOrColdSourceSwitchChannelNo();
+  uint8_t getHeatOrColdSourceSwitchChannelNo() const;
+  bool isHeatOrColdSourceSwitchSet() const;
+  bool setMasterThermostatChannelNo(uint8_t channelNo);
+  void clearMasterThermostatChannelNo();
+  uint8_t getMasterThermostatChannelNo() const;
+  bool isMasterThermostatSet() const;
+
   // use this function to set value based on local config change
   void setAntiFreezeAndHeatProtectionEnabled(bool enebled);
   bool isAntiFreezeAndHeatProtectionEnabled() const;
@@ -460,6 +473,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t defaultMainThermometer = 0;
   uint8_t defaultAuxThermometer = 0;
   uint8_t defaultBinarySensor = 0;
+  int16_t defaultPumpSwitch = -1;
+  int16_t defaultHeatOrColdSourceSwitch = -1;
+  int16_t defaultMasterThermostat = -1;
 
   int8_t lastProgramManualOverride = -1;
   int8_t lastValue = -111;  // set out of output value range

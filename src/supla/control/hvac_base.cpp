@@ -919,6 +919,13 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
       hvacConfig->TemperatureSetpointChangeSwitchesToManualMode;
   config.AuxMinMaxSetpointEnabled = hvacConfig->AuxMinMaxSetpointEnabled;
   config.UseSeparateHeatCoolOutputs = hvacConfig->UseSeparateHeatCoolOutputs;
+  config.PumpSwitchIsSet = hvacConfig->PumpSwitchIsSet;
+  config.PumpSwitchChannelNo = hvacConfig->PumpSwitchChannelNo;
+  config.HeatOrColdSourceSwitchIsSet = hvacConfig->HeatOrColdSourceSwitchIsSet;
+  config.HeatOrColdSourceSwitchChannelNo =
+      hvacConfig->HeatOrColdSourceSwitchChannelNo;
+  config.MasterThermostatIsSet = hvacConfig->MasterThermostatIsSet;
+  config.MasterThermostatChannelNo = hvacConfig->MasterThermostatChannelNo;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -4316,6 +4323,25 @@ void HvacBase::initDefaultConfig() {
     newConfig.BinarySensorChannelNo = defaultBinarySensor;
   }
 
+  if (defaultPumpSwitch >= 0) {
+    newConfig.PumpSwitchChannelNo = defaultPumpSwitch;
+    if (defaultPumpSwitch != getChannelNumber()) {
+      newConfig.PumpSwitchIsSet = 1;
+    }
+  }
+  if (defaultHeatOrColdSourceSwitch >= 0) {
+    newConfig.HeatOrColdSourceSwitchChannelNo = defaultHeatOrColdSourceSwitch;
+    if (defaultHeatOrColdSourceSwitch != getChannelNumber()) {
+      newConfig.HeatOrColdSourceSwitchIsSet = 1;
+    }
+  }
+  if (defaultMasterThermostat >= 0) {
+    newConfig.MasterThermostatChannelNo = defaultMasterThermostat;
+    if (defaultMasterThermostat != getChannelNumber()) {
+      newConfig.MasterThermostatIsSet = 1;
+    }
+  }
+
   memcpy(&config, &newConfig, sizeof(config));
 }
 
@@ -4680,6 +4706,25 @@ void HvacBase::enableInitialConfig() {
     initialConfig->MainThermometerChannelNo = defaultMainThermometer;
     initialConfig->AuxThermometerChannelNo = defaultAuxThermometer;
     initialConfig->BinarySensorChannelNo = defaultBinarySensor;
+    if (defaultPumpSwitch >= 0) {
+      initialConfig->PumpSwitchChannelNo = defaultPumpSwitch;
+      if (defaultPumpSwitch != getChannelNumber()) {
+        initialConfig->PumpSwitchIsSet = 1;
+      }
+    }
+    if (defaultHeatOrColdSourceSwitch >= 0) {
+      initialConfig->HeatOrColdSourceSwitchChannelNo =
+        defaultHeatOrColdSourceSwitch;
+      if (defaultHeatOrColdSourceSwitch != getChannelNumber()) {
+        initialConfig->HeatOrColdSourceSwitchIsSet = 1;
+      }
+    }
+    if (defaultMasterThermostat >= 0) {
+      initialConfig->MasterThermostatChannelNo = defaultMasterThermostat;
+      if (defaultMasterThermostat != getChannelNumber()) {
+        initialConfig->MasterThermostatIsSet = 1;
+      }
+    }
   }
 }
 
@@ -4848,6 +4893,56 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
           config.BinarySensorChannelNo,
           hvacConfig->BinarySensorChannelNo);
       hvacConfig->BinarySensorChannelNo = config.BinarySensorChannelNo;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.PumpSwitchReadonly) {
+    if (config.PumpSwitchChannelNo != hvacConfig->PumpSwitchChannelNo ||
+        config.PumpSwitchIsSet != hvacConfig->PumpSwitchIsSet) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] PumpSwitch change from %d to %d not allowed (readonly)",
+          getChannelNumber(),
+          config.PumpSwitchChannelNo,
+          hvacConfig->PumpSwitchChannelNo);
+      hvacConfig->PumpSwitchChannelNo = config.PumpSwitchChannelNo;
+      hvacConfig->PumpSwitchIsSet = config.PumpSwitchIsSet;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.HeatOrColdSourceSwitchReadonly) {
+    if (config.HeatOrColdSourceSwitchChannelNo !=
+            hvacConfig->HeatOrColdSourceSwitchChannelNo ||
+        config.HeatOrColdSourceSwitchIsSet !=
+            hvacConfig->HeatOrColdSourceSwitchIsSet) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] HeatOrColdSourceSwitch change from %d to %d not allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.HeatOrColdSourceSwitchChannelNo,
+          hvacConfig->HeatOrColdSourceSwitchChannelNo);
+      hvacConfig->HeatOrColdSourceSwitchChannelNo =
+          config.HeatOrColdSourceSwitchChannelNo;
+      hvacConfig->HeatOrColdSourceSwitchIsSet =
+          config.HeatOrColdSourceSwitchIsSet;
+      readonlyViolation = true;
+    }
+  }
+
+  if (parameterFlags.MasterThermostatChannelNoReadonly) {
+    if (config.MasterThermostatChannelNo !=
+        hvacConfig->MasterThermostatChannelNo ||
+        config.MasterThermostatIsSet != hvacConfig->MasterThermostatIsSet) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d] MasterThermostatChannelNo change from %d to %d not "
+          "allowed "
+          "(readonly)",
+          getChannelNumber(),
+          config.MasterThermostatChannelNo,
+          hvacConfig->MasterThermostatChannelNo);
+      hvacConfig->MasterThermostatChannelNo = config.MasterThermostatChannelNo;
+      hvacConfig->MasterThermostatIsSet = config.MasterThermostatIsSet;
       readonlyViolation = true;
     }
   }
@@ -5124,5 +5219,133 @@ int32_t HvacBase::getRemainingCountDownTimeSec() const {
     remainingTimeSec = 0;
   }
   return remainingTimeSec;
+}
+
+bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {
+  if (initialConfig && !initDone) {
+    initialConfig->PumpSwitchChannelNo = channelNo;
+    if (channelNo == getChannelNumber()) {
+      initialConfig->PumpSwitchIsSet = 0;
+    } else {
+      initialConfig->PumpSwitchIsSet = 1;
+    }
+  }
+  if (config.PumpSwitchChannelNo == channelNo) {
+    return true;
+  }
+
+  config.PumpSwitchChannelNo = channelNo;
+  if (channelNo == getChannelNumber()) {
+    config.PumpSwitchIsSet = 0;
+  } else {
+    config.PumpSwitchIsSet = 1;
+  }
+  if (!initDone) {
+    defaultPumpSwitch = channelNo;
+    return true;
+  }
+  if (initDone) {
+    channelConfigChangedOffline = 1;
+    saveConfig();
+  }
+  return true;
+}
+
+uint8_t HvacBase::getPumpSwitchChannelNo() const {
+  return config.PumpSwitchChannelNo;
+}
+
+bool HvacBase::isPumpSwitchSet() const {
+  return config.PumpSwitchIsSet != 0;
+}
+
+bool HvacBase::setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo) {
+  if (initialConfig && !initDone) {
+    initialConfig->HeatOrColdSourceSwitchChannelNo = channelNo;
+    if (channelNo == getChannelNumber()) {
+      initialConfig->HeatOrColdSourceSwitchIsSet = 0;
+    } else {
+      initialConfig->HeatOrColdSourceSwitchIsSet = 1;
+    }
+  }
+  if (config.HeatOrColdSourceSwitchChannelNo == channelNo) {
+    return true;
+  }
+
+  config.HeatOrColdSourceSwitchChannelNo = channelNo;
+  if (channelNo == getChannelNumber()) {
+    config.HeatOrColdSourceSwitchIsSet = 0;
+  } else {
+    config.HeatOrColdSourceSwitchIsSet = 1;
+  }
+  if (!initDone) {
+    defaultHeatOrColdSourceSwitch = channelNo;
+    return true;
+  }
+  if (initDone) {
+    channelConfigChangedOffline = 1;
+    saveConfig();
+  }
+  return true;
+}
+
+uint8_t HvacBase::getHeatOrColdSourceSwitchChannelNo() const {
+  return config.HeatOrColdSourceSwitchChannelNo;
+}
+
+bool HvacBase::isHeatOrColdSourceSwitchSet() const {
+  return config.HeatOrColdSourceSwitchIsSet != 0;
+}
+
+bool HvacBase::setMasterThermostatChannelNo(uint8_t channelNo) {
+  if (initialConfig && !initDone) {
+    initialConfig->MasterThermostatChannelNo = channelNo;
+    if (channelNo == getChannelNumber()) {
+      initialConfig->MasterThermostatIsSet = 0;
+    } else {
+      initialConfig->MasterThermostatIsSet = 1;
+    }
+  }
+  if (config.MasterThermostatChannelNo == channelNo) {
+    return true;
+  }
+  config.MasterThermostatChannelNo = channelNo;
+  if (channelNo == getChannelNumber()) {
+    config.MasterThermostatIsSet = 0;
+  } else {
+    config.MasterThermostatIsSet = 1;
+  }
+  if (!initDone) {
+    defaultMasterThermostat = channelNo;
+    return true;
+  }
+  if (initDone) {
+    channelConfigChangedOffline = 1;
+    saveConfig();
+  }
+  return true;
+}
+
+uint8_t HvacBase::getMasterThermostatChannelNo() const {
+  return config.MasterThermostatChannelNo;
+}
+
+bool HvacBase::isMasterThermostatSet() const {
+  return config.MasterThermostatIsSet != 0;
+}
+
+void HvacBase::clearPumpSwitchChannelNo() {
+  // setting to self will clear
+  setPumpSwitchChannelNo(getChannelNumber());
+}
+
+void HvacBase::clearHeatOrColdSourceSwitchChannelNo() {
+  // setting to self will clear
+  setHeatOrColdSourceSwitchChannelNo(getChannelNumber());
+}
+
+void HvacBase::clearMasterThermostatChannelNo() {
+  // setting to self will clear
+  setMasterThermostatChannelNo(getChannelNumber());
 }
 

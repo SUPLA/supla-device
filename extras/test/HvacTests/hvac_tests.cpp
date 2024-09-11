@@ -2113,4 +2113,229 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_EQ(hvac.getTemperatureAuxMaxSetpoint(), 2000);
   hvac.clearChannelConfigChangedFlag();
+
+  // pump switch
+  hvac.parameterFlags.PumpSwitchReadonly = 1;
+  hvacConfig->PumpSwitchChannelNo = 2;
+  hvacConfig->PumpSwitchIsSet = 1;
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+
+  hvac.parameterFlags.PumpSwitchReadonly = 0;
+  hvacConfig->PumpSwitchChannelNo = 2;
+  hvacConfig->PumpSwitchIsSet = 1;
+  hvac.clearChannelConfigChangedFlag();
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(hvac.isPumpSwitchSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 2);
+  hvac.clearChannelConfigChangedFlag();
+
+  // heat or cold source switch
+  hvac.parameterFlags.HeatOrColdSourceSwitchReadonly = 1;
+  hvacConfig->HeatOrColdSourceSwitchChannelNo = 3;
+  hvacConfig->HeatOrColdSourceSwitchIsSet = 1;
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+
+  hvac.parameterFlags.HeatOrColdSourceSwitchReadonly = 0;
+  hvacConfig->HeatOrColdSourceSwitchChannelNo = 3;
+  hvacConfig->HeatOrColdSourceSwitchIsSet = 1;
+  hvac.clearChannelConfigChangedFlag();
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 3);
+  hvac.clearChannelConfigChangedFlag();
+
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  // master thermostat
+  hvac.parameterFlags.MasterThermostatChannelNoReadonly = 1;
+  hvacConfig->MasterThermostatChannelNo = 4;
+  hvacConfig->MasterThermostatIsSet = 1;
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+
+  hvac.parameterFlags.MasterThermostatChannelNoReadonly = 0;
+  hvacConfig->MasterThermostatChannelNo = 4;
+  hvacConfig->MasterThermostatIsSet = 1;
+  hvac.clearChannelConfigChangedFlag();
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 4);
+  hvac.clearChannelConfigChangedFlag();
+}
+
+TEST_F(HvacTestsF, PumpHeatSourceMasterNotSetCheck) {
+  OutputSimulatorWithCheck output;
+
+  Supla::Control::HvacBase hvac(&output);
+  hvac.getChannel()->setChannelNumber(5);
+
+  auto ch = hvac.getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  EXPECT_EQ(ch->getChannelNumber(), 5);
+  EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  // default function is set in onInit based on supported modes
+  // or loaded from config
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+
+  EXPECT_CALL(output, setOutputValueCheck(0));
+
+  hvac.onInit();
+
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+}
+
+TEST_F(HvacTestsF, PumpHeatSourceMasterSetAfterInitCheck) {
+  OutputSimulatorWithCheck output;
+
+  Supla::Control::HvacBase hvac(&output);
+  hvac.getChannel()->setChannelNumber(5);
+
+  auto ch = hvac.getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  EXPECT_EQ(ch->getChannelNumber(), 5);
+  EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  // default function is set in onInit based on supported modes
+  // or loaded from config
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+
+  EXPECT_CALL(output, setOutputValueCheck(0));
+
+  hvac.onInit();
+
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+
+  hvac.setPumpSwitchChannelNo(1);
+  hvac.setHeatOrColdSourceSwitchChannelNo(2);
+  hvac.setMasterThermostatChannelNo(3);
+
+  EXPECT_TRUE(hvac.isPumpSwitchSet());
+  EXPECT_TRUE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 2);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 3);
+
+  hvac.clearPumpSwitchChannelNo();
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_TRUE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+
+  hvac.clearHeatOrColdSourceSwitchChannelNo();
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+
+  hvac.clearMasterThermostatChannelNo();
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), hvac.getChannelNumber());
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), hvac.getChannelNumber());
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), hvac.getChannelNumber());
+}
+
+TEST_F(HvacTestsF, PumpHeatSourceMasterSetBeforeInitCheck) {
+  OutputSimulatorWithCheck output;
+
+  Supla::Control::HvacBase hvac(&output);
+  hvac.getChannel()->setChannelNumber(5);
+
+  auto ch = hvac.getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  EXPECT_EQ(ch->getChannelNumber(), 5);
+  EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  // default function is set in onInit based on supported modes
+  // or loaded from config
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+
+  EXPECT_FALSE(hvac.isPumpSwitchSet());
+  EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_FALSE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(::testing::AtLeast(1));
+
+  hvac.setPumpSwitchChannelNo(1);
+  hvac.setHeatOrColdSourceSwitchChannelNo(2);
+  hvac.setMasterThermostatChannelNo(3);
+
+  hvac.onInit();
+
+  EXPECT_TRUE(hvac.isPumpSwitchSet());
+  EXPECT_TRUE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 2);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 3);
+
+  hvac.setPumpSwitchChannelNo(11);
+  hvac.setHeatOrColdSourceSwitchChannelNo(12);
+  hvac.setMasterThermostatChannelNo(13);
+
+  EXPECT_TRUE(hvac.isPumpSwitchSet());
+  EXPECT_TRUE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 11);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 12);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 13);
+
+  // resetting function will initialize defualt configuration
+  hvac.changeFunction(0, true);
+  hvac.changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT, true);
+
+  EXPECT_TRUE(hvac.isPumpSwitchSet());
+  EXPECT_TRUE(hvac.isHeatOrColdSourceSwitchSet());
+  EXPECT_TRUE(hvac.isMasterThermostatSet());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 2);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 3);
 }

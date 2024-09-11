@@ -20,6 +20,7 @@
 #include <supla/control/relay.h>
 #include <supla/control/hvac_base.h>
 #include <supla/time.h>
+#include <supla/log_wrapper.h>
 
 using Supla::Control::RelayHvacAggregator;
 
@@ -63,6 +64,7 @@ RelayHvacAggregator *RelayHvacAggregator::Add(int relayChannelNumber,
                                               Relay *relay) {
   auto ptr = GetInstance(relayChannelNumber);
   if (ptr == nullptr) {
+    SUPLA_LOG_INFO("RelayHvacAggregator[%d] created", relayChannelNumber);
     ptr = new RelayHvacAggregator(relayChannelNumber, relay);
   }
   return ptr;
@@ -72,6 +74,7 @@ bool RelayHvacAggregator::Remove(int relayChannelNumber) {
   auto *ptr = GetInstance(relayChannelNumber);
   if (ptr != nullptr) {
     delete ptr;
+    SUPLA_LOG_INFO("RelayHvacAggregator[%d] removed", relayChannelNumber);
     return true;
   }
   return false;
@@ -145,10 +148,12 @@ void RelayHvacAggregator::iterateAlways() {
 
   if (state) {
     if (!relay->isOn()) {
+      SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn on", relayChannelNumber);
       relay->turnOn();
     }
   } else {
     if (relay->isOn()) {
+      SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn off", relayChannelNumber);
       relay->turnOff();
     }
   }

@@ -66,6 +66,7 @@ class Clock : public Element {
   virtual void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result);
 
   void setUseAutomaticTimeSyncRemoteConfig(bool value);
+  void printCurrentTime(const char *prefix = nullptr);
 
  protected:
   void setSystemTime(time_t newTime);

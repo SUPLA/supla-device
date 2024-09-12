@@ -195,16 +195,7 @@ time_t Clock::getTimeStamp() {
 
 void Clock::parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
   struct tm timeinfo {};
-
-  SUPLA_LOG_DEBUG(
-            "Current local time: %d-%02d-%02d %02d:%02d:%02d",
-            getYear(),
-            getMonth(),
-            getDay(),
-            getHour(),
-            getMin(),
-            getSec());
-
+  printCurrentTime("current");
   timeinfo.tm_year = result->year - 1900;
   timeinfo.tm_mon = result->month - 1;
   timeinfo.tm_mday = result->day;
@@ -302,19 +293,24 @@ void Clock::setSystemTime(time_t newTime) {
     SUPLA_LOG_DEBUG("Clock: time diff (system-new): %d s",
                     currentTime - newTime);
 
-    SUPLA_LOG_DEBUG(
-        "Clock: new local time: %d-%02d-%02d %02d:%02d:%02d",
-        getYear(),
-        getMonth(),
-        getDay(),
-        getHour(),
-        getMin(),
-        getSec());
+    printCurrentTime("new");
   }
 }
 
 void Clock::setUseAutomaticTimeSyncRemoteConfig(bool value) {
   useAutomaticTimeSyncRemoteConfig = value;
+}
+
+void Clock::printCurrentTime(const char *prefix) {
+  SUPLA_LOG_DEBUG("Clock:%s%s time: %d-%02d-%02d %02d:%02d:%02d",
+                  prefix ? " " : "",
+                  prefix ? prefix : "",
+                  getYear(),
+                  getMonth(),
+                  getDay(),
+                  getHour(),
+                  getMin(),
+                  getSec());
 }
 
 };  // namespace Supla

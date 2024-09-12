@@ -4070,7 +4070,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
       configNew->MasterThermostatIsSet ||
       configCurrent->MasterThermostatChannelNo !=
       configNew->MasterThermostatChannelNo) {
-    SUPLA_LOG_DEBUG("  MasterThermostatIsSet: %d%s -> %d%s",
+    SUPLA_LOG_DEBUG("  MasterThermostat: %d%s -> %d%s",
                     configCurrent->MasterThermostatChannelNo,
                     (configCurrent->MasterThermostatIsSet ?
                      "": " (disabled)"),
@@ -4083,7 +4083,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
       configNew->HeatOrColdSourceSwitchIsSet ||
       configCurrent->HeatOrColdSourceSwitchChannelNo !=
       configNew->HeatOrColdSourceSwitchChannelNo) {
-    SUPLA_LOG_DEBUG("  HeatOrColdSourceSwitchIsSet: %d%s -> %d%s",
+    SUPLA_LOG_DEBUG("  HeatOrColdSourceSwitch: %d%s -> %d%s",
                     configCurrent->HeatOrColdSourceSwitchChannelNo,
                     (configCurrent->HeatOrColdSourceSwitchIsSet ?
                      "": " (disabled)"),
@@ -4096,7 +4096,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
       configNew->PumpSwitchIsSet ||
       configCurrent->PumpSwitchChannelNo !=
       configNew->PumpSwitchChannelNo) {
-    SUPLA_LOG_DEBUG("  PumpSwitchIsSet: %d%s -> %d%s",
+    SUPLA_LOG_DEBUG("  PumpSwitch: %d%s -> %d%s",
                     configCurrent->PumpSwitchChannelNo,
                     (configCurrent->PumpSwitchIsSet ?
                      "": " (disabled)"),

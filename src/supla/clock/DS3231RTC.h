@@ -24,9 +24,10 @@ use library manager to install it
 
 #include <supla/log_wrapper.h>
 #include <time.h>
-#include "RTClib.h"
 
 #include "clock.h"
+
+#include "RTClib.h"
 
 namespace Supla {
 
@@ -58,14 +59,7 @@ class DS3231RTC : public Clock {
 #elif defined(ARDUINO_ARCH_AVR)
       set_system_time(mktime(&timeinfo));
 #endif
-      SUPLA_LOG_DEBUG(
-              "Received local time from RTC: %d-%d-%d %d:%d:%d",
-              getYear(),
-              getMonth(),
-              getDay(),
-              getHour(),
-              getMin(),
-              getSec());
+      printCurrentTime("from RTC:");
 
       if (getYear() >= 2023) {
         isClockReady = true;
@@ -89,17 +83,8 @@ class DS3231RTC : public Clock {
 
   void parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {
     struct tm timeinfo {};
-
     isClockReady = true;
-
-    SUPLA_LOG_DEBUG(
-              "Current local time: %d-%d-%d %d:%d:%d",
-              getYear(),
-              getMonth(),
-              getDay(),
-              getHour(),
-              getMin(),
-              getSec());
+    printCurrentTime("current");
 
     timeinfo.tm_year = result->year - 1900;
     timeinfo.tm_mon = result->month - 1;
@@ -116,15 +101,8 @@ class DS3231RTC : public Clock {
 #elif defined(ARDUINO_ARCH_AVR)
     set_system_time(mktime(&timeinfo));
 #endif
-    SUPLA_LOG_DEBUG(
-              "Received local time from server: %d-%d-%d %d:%d:%d",
-              getYear(),
-              getMonth(),
-              getDay(),
-              getHour(),
-              getMin(),
-              getSec());
 
+    printCurrentTime("new");
     //  Update RTC if minutes or seconds are different
     //  from the time obtained from the server
     if (isRTCReady) {

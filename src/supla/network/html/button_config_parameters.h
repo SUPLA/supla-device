@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char BtnConfigTag[] = "btn_cfg";
-
 class ButtonConfigParameters : public SelectInputParameter {
  public:
   explicit ButtonConfigParameters(int id = -1);

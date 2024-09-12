@@ -20,11 +20,11 @@
 #include <supla/control/button.h>
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
-#include <supla/network/html/rgbw_button_parameters.h>
 #include <supla/actions.h>
 #include <supla/control/rgbw_base.h>
 #include <supla/time.h>
-#include "supla/control/rgb_base.h"
+#include <supla/control/rgb_base.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Control::GroupButtonControlRgbw;
 
@@ -225,7 +225,8 @@ void GroupButtonControlRgbw::onLoadConfig(SuplaDeviceClass *sdc) {
         continue;
       }
 
-      Supla::Config::generateKey(key, channelNo, Supla::Html::RgbwButtonTag);
+      Supla::Config::generateKey(
+          key, channelNo, Supla::ConfigTag::RgbwButtonTag);
       int32_t rgbwButtonControlType = 0;
       if (cfg->getInt32(key, &rgbwButtonControlType)) {
         if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {

@@ -20,11 +20,12 @@
 
 #include <supla/storage/config.h>
 #include <supla/element.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::ScreenDelayTypeParameters;
 
 ScreenDelayTypeParameters::ScreenDelayTypeParameters() {
-  setTag(Supla::Html::ScreenDelayTypeCfgTag);
+  setTag(Supla::ConfigTag::ScreenDelayTypeCfgTag);
 
   setLabel("Automatic screen off type");
 

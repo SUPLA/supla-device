@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char VolumeCfgTag[] = "volume";
-
 class VolumeParameters : public HtmlElement {
  public:
   VolumeParameters();

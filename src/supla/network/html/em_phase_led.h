@@ -28,12 +28,6 @@ class ElectricityMeter;
 
 namespace Html {
 
-const char EmPhaseLedTag[] = "em_led";
-const char EmPhaseLedVoltageLowTag[] = "em_led_vl";
-const char EmPhaseLedVoltageHighTag[] = "em_led_vh";
-const char EmPhaseLedPowerLowTag[] = "em_led_pl";
-const char EmPhaseLedPowerHighTag[] = "em_led_ph";
-
 class EmPhaseLedParameters : public HtmlElement {
  public:
   explicit EmPhaseLedParameters(Supla::Sensor::ElectricityMeter *em);

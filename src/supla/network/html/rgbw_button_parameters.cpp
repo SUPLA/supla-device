@@ -18,12 +18,12 @@
 
 #include "rgbw_button_parameters.h"
 
-#include <string.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/element.h>
+#include <supla/storage/config_tags.h>
 
 #include <stdio.h>
 
@@ -32,10 +32,10 @@ using Supla::Html::RgbwButtonParameters;
 RgbwButtonParameters::RgbwButtonParameters(int id, const char *labelValue) {
   if (id >= 0) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, id, RgbwButtonTag);
+    Supla::Config::generateKey(key, id, Supla::ConfigTag::RgbwButtonTag);
     setTag(key);
   } else {
-    setTag(RgbwButtonTag);
+    setTag(Supla::ConfigTag::RgbwButtonTag);
   }
 
   auto el = Supla::Element::getElementByChannelNumber(id);

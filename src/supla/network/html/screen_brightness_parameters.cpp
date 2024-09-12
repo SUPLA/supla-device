@@ -25,6 +25,7 @@
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
 #include <supla/clock/clock.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::ScreenBrightnessParameters;
 
@@ -40,8 +41,8 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
   if (cfg) {
     int32_t cfgBrightness = -1;  // default value
     int32_t cfgAdjustmentForAutomatic = 0;  // default value
-    cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &cfgBrightness);
-    cfg->getInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+    cfg->getInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, &cfgBrightness);
+    cfg->getInt32(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
                   &cfgAdjustmentForAutomatic);
     bool automatic = false;
     if (cfgBrightness == -1) {
@@ -84,12 +85,12 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
 
     sender->send("<div class=\"form-field\">");
     sender->sendLabelFor(
-        Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+        Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
         "Brightness adjustment for automatic mode");
     sender->send(
         "<input type=\"range\" min=\"-100\" max=\"100\" step=\"10\" "
         "class=\"range-slider\"");
-    sender->sendNameAndId(Supla::Html::ScreenAdjustmentForAutomaticCfgTag);
+    sender->sendNameAndId(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag);
     sender->send(" value=\"");
     sender->send(cfgAdjustmentForAutomatic, 0);
     sender->send("\">");
@@ -109,12 +110,12 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
     }
 
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::Html::ScreenBrightnessCfgTag,
+    sender->sendLabelFor(Supla::ConfigTag::ScreenBrightnessCfgTag,
                          "Screen brightness");
     sender->send(
         "<input type=\"range\" min=\"1\" max=\"100\" step=\"1\" "
         "class=\"range-slider\" ");
-        sender->sendNameAndId(Supla::Html::ScreenBrightnessCfgTag);
+        sender->sendNameAndId(Supla::ConfigTag::ScreenBrightnessCfgTag);
     sender->send(" value=\"");
     sender->send(cfgBrightness, 0);
     sender->send("\">");
@@ -145,17 +146,17 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
   if (cfg && strcmp(key, "auto_bright") == 0) {
     checkboxFound = true;
     int32_t currentValue = -1;  // default value
-    cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &currentValue);
+    cfg->getInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, &currentValue);
 
     if (currentValue != -1) {
-      cfg->setInt32(Supla::Html::ScreenBrightnessCfgTag, -1);
+      cfg->setInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, -1);
       cfg->setDeviceConfigChangeFlag();
       Supla::Element::NotifyElementsAboutConfigChange(
           SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS);
     }
     return true;
   }
-  if (cfg && strcmp(key, Supla::Html::ScreenBrightnessCfgTag) == 0) {
+  if (cfg && strcmp(key, Supla::ConfigTag::ScreenBrightnessCfgTag) == 0) {
     if (checkboxFound) {
       // if checkbox was found, then automatic brightness is used
       return true;
@@ -169,10 +170,10 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
     }
 
     int32_t currentValue = -1;  // default value
-    cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &currentValue);
+    cfg->getInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, &currentValue);
 
     if (currentValue != param) {
-      cfg->setInt32(Supla::Html::ScreenBrightnessCfgTag, param);
+      cfg->setInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, param);
       cfg->setDeviceConfigChangeFlag();
       Supla::Element::NotifyElementsAboutConfigChange(
           SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS);
@@ -181,7 +182,7 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
   }
 
   if (cfg &&
-      strcmp(key, Supla::Html::ScreenAdjustmentForAutomaticCfgTag) == 0) {
+      strcmp(key, Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag) == 0) {
     if (!checkboxFound) {
       return true;
     }
@@ -193,10 +194,11 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
     }
 
     int32_t currentValue = 0;  // default value
-    cfg->getInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+    cfg->getInt32(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
                   &currentValue);
     if (currentValue != param) {
-      cfg->setInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag, param);
+      cfg->setInt32(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
+                    param);
       cfg->setDeviceConfigChangeFlag();
       Supla::Element::NotifyElementsAboutConfigChange(
           SUPLA_DEVICE_CONFIG_FIELD_SCREEN_BRIGHTNESS);

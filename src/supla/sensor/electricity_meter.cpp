@@ -22,8 +22,7 @@
 #include <supla/actions.h>
 #include <supla/tools.h>
 #include <supla/storage/config.h>
-#include <supla/network/html/em_phase_led.h>
-#include <supla/network/html/em_ct_type.h>
+#include <supla/storage/config_tags.h>
 
 #include "../condition.h"
 #include "../events.h"
@@ -324,7 +323,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
 
     int32_t value32 = 0;
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::Html::EmCtTypeTag);
+    generateKey(key, Supla::ConfigTag::EmCtTypeTag);
     if (cfg->getInt32(key, &value32)) {
       if (value32 > 63) {
         value32 = 63;
@@ -334,7 +333,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     SUPLA_LOG_INFO("EM: CT type is %d", usedCtType);
 
     int8_t value = 0;
-    generateKey(key, Supla::Html::EmPhaseLedTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
     if (cfg->getInt8(key, &value)) {
       if (value > 63) {
         value = 63;
@@ -344,22 +343,22 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     SUPLA_LOG_INFO("EM: Phase LED type is %d", usedPhaseLedType);
 
     value32 = 0;
-    generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageLowTag);
     if (cfg->getInt32(key, &value32)) {
       ledVoltageLow = value32;
     }
 
-    generateKey(key, Supla::Html::EmPhaseLedVoltageHighTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageHighTag);
     if (cfg->getInt32(key, &value32)) {
       ledVoltageHigh = value32;
     }
 
-    generateKey(key, Supla::Html::EmPhaseLedPowerLowTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedPowerLowTag);
     if (cfg->getInt32(key, &value32)) {
       ledPowerLow = value32;
     }
 
-    generateKey(key, Supla::Html::EmPhaseLedPowerHighTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedPowerHighTag);
     if (cfg->getInt32(key, &value32)) {
       ledPowerHigh = value32;
     }
@@ -372,7 +371,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     const int32_t MaxVoltageValue = 100000;
     const int32_t MinValuesDistance = 1000;
 
-    generateKey(key, Supla::Html::EmPhaseLedPowerLowTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedPowerLowTag);
     cfg->getInt32(key, &ledPowerLow);
     if (ledPowerLow < MinPowerValue) {
       ledPowerLow = MinPowerValue;
@@ -385,7 +384,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       configChange = true;
     }
 
-    generateKey(key, Supla::Html::EmPhaseLedPowerHighTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedPowerHighTag);
     cfg->getInt32(key, &ledPowerHigh);
     if (ledPowerHigh > MaxPowerValue) {
       ledPowerHigh = MaxPowerValue;
@@ -398,7 +397,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       configChange = true;
     }
 
-    generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageLowTag);
     cfg->getInt32(key, &ledVoltageLow);
     if (ledVoltageLow < MinVoltageValue) {
       ledVoltageLow = MinVoltageValue;
@@ -411,7 +410,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       configChange = true;
     }
 
-    generateKey(key, Supla::Html::EmPhaseLedVoltageHighTag);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageHighTag);
     cfg->getInt32(key, &ledVoltageHigh);
     if (ledVoltageHigh > MaxVoltageValue) {
       ledVoltageHigh = MaxVoltageValue;
@@ -475,7 +474,7 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
       } else {
         usedCtType = bitNumberCtTypeInNewConfig;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        generateKey(key, Supla::Html::EmCtTypeTag);
+        generateKey(key, Supla::ConfigTag::EmCtTypeTag);
         cfg->setInt32(key, usedCtType);
         configChanged = true;
       }
@@ -491,7 +490,7 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
       } else {
         usedPhaseLedType = bitNumberPhaseLedTypeInNewConfig;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        generateKey(key, Supla::Html::EmPhaseLedTag);
+        generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
         cfg->setInt8(key, usedPhaseLedType);
         configChanged = true;
       }
@@ -501,14 +500,14 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
       if (ledVoltageLow != configFromServer->PhaseLedParam1) {
         ledVoltageLow = configFromServer->PhaseLedParam1;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        generateKey(key, Supla::Html::EmPhaseLedVoltageLowTag);
+        generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageLowTag);
         cfg->setInt32(key, ledVoltageLow);
         configChanged = true;
       }
       if (ledVoltageHigh != configFromServer->PhaseLedParam2) {
         ledVoltageHigh = configFromServer->PhaseLedParam2;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        generateKey(key, Supla::Html::EmPhaseLedVoltageHighTag);
+        generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageHighTag);
         cfg->setInt32(key, ledVoltageHigh);
         configChanged = true;
       }
@@ -518,14 +517,14 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
       if (ledPowerLow != configFromServer->PhaseLedParam1) {
         ledPowerLow = configFromServer->PhaseLedParam1;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        generateKey(key, Supla::Html::EmPhaseLedPowerLowTag);
+        generateKey(key, Supla::ConfigTag::EmPhaseLedPowerLowTag);
         cfg->setInt32(key, ledPowerLow);
         configChanged = true;
       }
       if (ledPowerHigh != configFromServer->PhaseLedParam2) {
         ledPowerHigh = configFromServer->PhaseLedParam2;
         char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-        generateKey(key, Supla::Html::EmPhaseLedPowerHighTag);
+        generateKey(key, Supla::ConfigTag::EmPhaseLedPowerHighTag);
         cfg->setInt32(key, ledPowerHigh);
         configChanged = true;
       }

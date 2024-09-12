@@ -21,8 +21,8 @@
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
-#include <supla/network/html/disable_user_interface_parameter.h>
-#include "supla/tools.h"
+#include <supla/storage/config_tags.h>
+#include <supla/tools.h>
 
 using Supla::Device::EnterCfgModeAfterPowerCycle;
 
@@ -49,7 +49,7 @@ void EnterCfgModeAfterPowerCycle::onLoadConfig(SuplaDeviceClass *sdc) {
   if (cfg) {
     if (!alwaysEnabled) {
       uint8_t disableUI = 0;
-      cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &disableUI);
+      cfg->getUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, &disableUI);
       enabled = (disableUI == 1);
       if (cfg->getDeviceMode() == Supla::DeviceMode::DEVICE_MODE_TEST) {
         enabled = true;

@@ -23,9 +23,8 @@
 #include <supla/storage/config.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/control/button.h>
-#include <stdio.h>
 #include <supla/events.h>
-#include <supla/network/html/button_action_trigger_config.h>
+#include <supla/storage/config_tags.h>
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
@@ -553,7 +552,7 @@ void Supla::Control::ActionTrigger::onLoadConfig(SuplaDeviceClass *sdc) {
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   Supla::Config::generateKey(key,
                              getChannel()->getChannelNumber(),
-                             Supla::Html::BtnActionTriggerCfgTagPrefix);
+                             Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
   cfg->getInt32(key, &value);
 
   switch (value) {

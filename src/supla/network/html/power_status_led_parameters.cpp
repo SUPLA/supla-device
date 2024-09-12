@@ -25,6 +25,7 @@
 #include <supla/tools.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/element.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::PowerStatusLedParameters;
 
@@ -39,15 +40,16 @@ void PowerStatusLedParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = 0;
-    cfg->getInt8(Supla::Html::PowerStatusLedCfgTag, &value);
+    cfg->getInt8(Supla::ConfigTag::PowerStatusLedCfgTag, &value);
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::Html::PowerStatusLedCfgTag, "Power Status LED");
+    sender->sendLabelFor(Supla::ConfigTag::PowerStatusLedCfgTag,
+                         "Power Status LED");
     sender->send("<div>");
     sender->send(
         "<select ");
-    sender->sendNameAndId(Supla::Html::PowerStatusLedCfgTag);
+    sender->sendNameAndId(Supla::ConfigTag::PowerStatusLedCfgTag);
     sender->send(">"
         "<option value=\"0\"");
     sender->send(selected(value == 0));
@@ -66,19 +68,19 @@ void PowerStatusLedParameters::send(Supla::WebSender* sender) {
 bool PowerStatusLedParameters::handleResponse(const char* key,
                                               const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (strcmp(key, Supla::Html::PowerStatusLedCfgTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::PowerStatusLedCfgTag) == 0) {
     int led = stringToUInt(value);
     int8_t valueInCfg = -1;
-    cfg->getInt8(Supla::Html::PowerStatusLedCfgTag, &valueInCfg);
+    cfg->getInt8(Supla::ConfigTag::PowerStatusLedCfgTag, &valueInCfg);
     if (valueInCfg != led) {
       switch (led) {
         default:
         case 0: {
-          cfg->setInt8(Supla::Html::PowerStatusLedCfgTag, 0);
+          cfg->setInt8(Supla::ConfigTag::PowerStatusLedCfgTag, 0);
           break;
         }
         case 1: {
-          cfg->setInt8(Supla::Html::PowerStatusLedCfgTag, led);
+          cfg->setInt8(Supla::ConfigTag::PowerStatusLedCfgTag, led);
           break;
         }
       }

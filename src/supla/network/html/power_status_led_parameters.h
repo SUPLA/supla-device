@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char PowerStatusLedCfgTag[] = "pwr_led";
-
 class PowerStatusLedParameters : public HtmlElement {
  public:
   PowerStatusLedParameters();

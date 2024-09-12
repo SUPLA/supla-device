@@ -24,7 +24,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/control/button.h>
 #include <supla/storage/config.h>
-#include <supla/network/html/rgbw_button_parameters.h>
+#include <supla/storage/config_tags.h>
 
 #include "../storage/storage.h"
 #include "../time.h"
@@ -993,12 +993,12 @@ void RGBWBase::onLoadConfig(SuplaDeviceClass *sdc) {
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     Supla::Config::generateKey(
-        key, getChannel()->getChannelNumber(), Supla::Html::RgbwButtonTag);
+        key, getChannel()->getChannelNumber(), Supla::ConfigTag::RgbwButtonTag);
     int32_t rgbwButtonControlType = 0;
     // try to read RGBW button control type from channel specific parameter
     // and if it is missing, read global value setting
     if (!cfg->getInt32(key, &rgbwButtonControlType)) {
-      cfg->getInt32(Supla::Html::RgbwButtonTag, &rgbwButtonControlType);
+      cfg->getInt32(Supla::ConfigTag::RgbwButtonTag, &rgbwButtonControlType);
     }
     if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {
       buttonControlType = static_cast<ButtonControlType>(rgbwButtonControlType);

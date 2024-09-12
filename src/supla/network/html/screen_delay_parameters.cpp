@@ -25,6 +25,7 @@
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
 #include <supla/element.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::ScreenDelayParameters;
 
@@ -39,7 +40,7 @@ void ScreenDelayParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = 0;  // default value
-    cfg->getInt32(ScreenDelayCfgTag, &value);
+    cfg->getInt32(Supla::ConfigTag::ScreenDelayCfgTag, &value);
     if (value < 0) {
       value = 0;
     }
@@ -49,11 +50,11 @@ void ScreenDelayParameters::send(Supla::WebSender* sender) {
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(ScreenDelayCfgTag,
+    sender->sendLabelFor(Supla::ConfigTag::ScreenDelayCfgTag,
                          "Turn screen off after [sec]");
     sender->send(
         "<input type=\"number\" min=\"0\" max=\"65535\" step=\"1\" ");
-    sender->sendNameAndId(ScreenDelayCfgTag);
+    sender->sendNameAndId(Supla::ConfigTag::ScreenDelayCfgTag);
     sender->send(" value=\"");
     sender->send(value, 0);
     sender->send("\">");
@@ -65,7 +66,7 @@ void ScreenDelayParameters::send(Supla::WebSender* sender) {
 bool ScreenDelayParameters::handleResponse(const char* key,
                                                 const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (strcmp(key, ScreenDelayCfgTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::ScreenDelayCfgTag) == 0) {
     int32_t param = stringToInt(value);
     if (param < 0) {
       param = 0;
@@ -75,7 +76,7 @@ bool ScreenDelayParameters::handleResponse(const char* key,
     }
 
     int32_t currentValue = 0;
-    cfg->getInt32(ScreenDelayCfgTag, &currentValue);
+    cfg->getInt32(Supla::ConfigTag::ScreenDelayCfgTag, &currentValue);
     if (currentValue < 0) {
       currentValue = 0;
     }
@@ -84,7 +85,7 @@ bool ScreenDelayParameters::handleResponse(const char* key,
     }
 
     if (param != currentValue) {
-      cfg->setInt32(ScreenDelayCfgTag, param);
+      cfg->setInt32(Supla::ConfigTag::ScreenDelayCfgTag, param);
       cfg->setDeviceConfigChangeFlag();
       Supla::Element::NotifyElementsAboutConfigChange(
           SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY);

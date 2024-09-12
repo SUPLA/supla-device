@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char BtnHoldTag[] = "btn_hold";
-
 class ButtonHoldTimeParameters : public HtmlElement {
  public:
   ButtonHoldTimeParameters();

@@ -20,11 +20,12 @@
 
 #include <supla/storage/config.h>
 #include <supla/element.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::HomeScreenContentParameters;
 
 HomeScreenContentParameters::HomeScreenContentParameters(const char *label) {
-  setTag(Supla::HomeScreenContentTag);
+  setTag(Supla::ConfigTag::HomeScreenContentTag);
   setLabel(label);
   setBaseTypeBitCount(8);
 }

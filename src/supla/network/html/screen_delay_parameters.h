@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char ScreenDelayCfgTag[] = "scr_delay";
-
 class ScreenDelayParameters : public HtmlElement {
  public:
   ScreenDelayParameters();

@@ -23,6 +23,7 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
+#include <supla/storage/config_tags.h>
 
 #include <stdio.h>
 
@@ -46,7 +47,7 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
     int32_t value = 0;
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     Supla::Config::generateKey(key, channelNumber,
-                             Supla::Html::BtnActionTriggerCfgTagPrefix);
+                             Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
     cfg->getInt32(key, &value);
 
     char label[100] = {};
@@ -83,7 +84,7 @@ bool ButtonActionTriggerConfig::handleResponse(const char* key,
   auto cfg = Supla::Storage::ConfigInstance();
   char keyRef[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   Supla::Config::generateKey(keyRef, channelNumber,
-      Supla::Html::BtnActionTriggerCfgTagPrefix);
+      Supla::ConfigTag::BtnActionTriggerCfgTagPrefix);
   if (strcmp(key, keyRef) == 0) {
     int atType = stringToUInt(value);
     switch (atType) {

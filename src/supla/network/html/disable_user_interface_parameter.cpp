@@ -25,6 +25,7 @@
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
+#include <supla/storage/config_tags.h>
 #include <stdio.h>
 
 using Supla::Html::DisableUserInterfaceParameter;
@@ -40,14 +41,14 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     uint8_t value = 0;  // default value
-    cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
+    cfg->getUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, &value);
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::Html::DisableUserInterfaceCfgTag,
+    sender->sendLabelFor(Supla::ConfigTag::DisableUserInterfaceCfgTag,
                          "Local interface restriction");
     sender->send("<select ");
-    sender->sendNameAndId(Supla::Html::DisableUserInterfaceCfgTag);
+    sender->sendNameAndId(Supla::ConfigTag::DisableUserInterfaceCfgTag);
     sender->send(" onchange=\"disableUserInterfaceChange();\">");
     sender->send("<option value=\"0\"");
     if (value == 0) {
@@ -87,7 +88,7 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
       sender->send("style=\"display:none;\">");
     }
     int32_t minTempUI = 0;
-    cfg->getInt32(Supla::Html::MinTempUICfgTag, &minTempUI);
+    cfg->getInt32(Supla::ConfigTag::MinTempUICfgTag, &minTempUI);
     if (minTempUI < INT16_MIN) {
       minTempUI = INT16_MIN;
     }
@@ -96,11 +97,11 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
     }
 
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::Html::MinTempUICfgTag,
+    sender->sendLabelFor(Supla::ConfigTag::MinTempUICfgTag,
                          "Interface minimum temperature");
     sender->send("<div>");
     sender->send("<input type=\"number\" step=\"0.1\" ");
-    sender->sendNameAndId(Supla::Html::MinTempUICfgTag);
+    sender->sendNameAndId(Supla::ConfigTag::MinTempUICfgTag);
     sender->send(" value=\"");
     char buf[100] = {};
     snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(minTempUI) / 100.0);
@@ -112,7 +113,7 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
 
     // form-field BEGIN
     int32_t maxTempUI = 0;
-    cfg->getInt32(Supla::Html::MaxTempUICfgTag, &maxTempUI);
+    cfg->getInt32(Supla::ConfigTag::MaxTempUICfgTag, &maxTempUI);
     if (maxTempUI < INT16_MIN) {
       maxTempUI = INT16_MIN;
     }
@@ -121,11 +122,11 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
     }
 
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::Html::MaxTempUICfgTag,
+    sender->sendLabelFor(Supla::ConfigTag::MaxTempUICfgTag,
                          "Interface maximum temperature");
     sender->send("<div>");
     sender->send("<input type=\"number\" step=\"0.1\" ");
-    sender->sendNameAndId(Supla::Html::MaxTempUICfgTag);
+    sender->sendNameAndId(Supla::ConfigTag::MaxTempUICfgTag);
     sender->send(" value=\"");
     snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(maxTempUI) / 100.0);
     sender->send(buf);
@@ -140,23 +141,23 @@ bool DisableUserInterfaceParameter::handleResponse(const char* key,
   if (!cfg) {
     return false;
   }
-  if (strcmp(key, Supla::Html::DisableUserInterfaceCfgTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::DisableUserInterfaceCfgTag) == 0) {
     uint8_t currentValue = 0;  // default value
-    cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &currentValue);
+    cfg->getUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, &currentValue);
     uint8_t newValue = stringToUInt(value);
     if (newValue > 2) {
       newValue = 2;
     }
 
     if (newValue != currentValue) {
-      cfg->setUInt8(Supla::Html::DisableUserInterfaceCfgTag, newValue);
+      cfg->setUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, newValue);
       change = true;
     }
     return true;
   }
-  if (strcmp(key, Supla::Html::MinTempUICfgTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::MinTempUICfgTag) == 0) {
     int32_t currentValue = 0;
-    cfg->getInt32(Supla::Html::MinTempUICfgTag, &currentValue);
+    cfg->getInt32(Supla::ConfigTag::MinTempUICfgTag, &currentValue);
     int32_t minTempUI = floatStringToInt(value, 2);
     if (minTempUI < INT16_MIN) {
       minTempUI = INT16_MIN;
@@ -165,14 +166,14 @@ bool DisableUserInterfaceParameter::handleResponse(const char* key,
       minTempUI = INT16_MAX;
     }
     if (minTempUI != currentValue) {
-      cfg->setInt32(Supla::Html::MinTempUICfgTag, minTempUI);
+      cfg->setInt32(Supla::ConfigTag::MinTempUICfgTag, minTempUI);
       change = true;
     }
     return true;
   }
-  if (strcmp(key, Supla::Html::MaxTempUICfgTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::MaxTempUICfgTag) == 0) {
     int32_t currentValue = 0;
-    cfg->getInt32(Supla::Html::MaxTempUICfgTag, &currentValue);
+    cfg->getInt32(Supla::ConfigTag::MaxTempUICfgTag, &currentValue);
     int32_t maxTempUI = floatStringToInt(value, 2);
 
     if (maxTempUI < INT16_MIN) {
@@ -182,7 +183,7 @@ bool DisableUserInterfaceParameter::handleResponse(const char* key,
       maxTempUI = INT16_MAX;
     }
     if (maxTempUI != currentValue) {
-      cfg->setInt32(Supla::Html::MaxTempUICfgTag, maxTempUI);
+      cfg->setInt32(Supla::ConfigTag::MaxTempUICfgTag, maxTempUI);
       change = true;
     }
   }

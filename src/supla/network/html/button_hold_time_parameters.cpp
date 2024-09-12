@@ -24,6 +24,7 @@
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::ButtonHoldTimeParameters;
 
@@ -35,14 +36,14 @@ void ButtonHoldTimeParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     uint32_t value = 700;  // default value
-    cfg->getUInt32(BtnHoldTag, &value);
+    cfg->getUInt32(Supla::ConfigTag::BtnHoldTag, &value);
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(BtnHoldTag, "Hold detection time [s]");
-    sender->send(
-        "<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" ");
-    sender->sendNameAndId(BtnHoldTag);
+    sender->sendLabelFor(Supla::ConfigTag::BtnHoldTag,
+                         "Hold detection time [s]");
+    sender->send("<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" ");
+    sender->sendNameAndId(Supla::ConfigTag::BtnHoldTag);
     sender->send(" value=\"");
     sender->send(value, 3);
     sender->send("\">");
@@ -54,10 +55,10 @@ void ButtonHoldTimeParameters::send(Supla::WebSender* sender) {
 bool ButtonHoldTimeParameters::handleResponse(const char* key,
                                                 const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (strcmp(key, BtnHoldTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::BtnHoldTag) == 0) {
     uint32_t param = floatStringToInt(value, 3);
     if (param >= 200 && param <= 10000) {
-      cfg->setUInt32(BtnHoldTag, param);
+      cfg->setUInt32(Supla::ConfigTag::BtnHoldTag, param);
     }
     return true;
   }

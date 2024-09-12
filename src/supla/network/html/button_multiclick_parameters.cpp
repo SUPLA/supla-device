@@ -22,6 +22,7 @@
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
+#include <supla/storage/config_tags.h>
 
 #include "button_multiclick_parameters.h"
 
@@ -40,14 +41,14 @@ void ButtonMulticlickParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     uint32_t value = 300;  // default value
-    cfg->getUInt32(BtnMulticlickTag, &value);
+    cfg->getUInt32(Supla::ConfigTag::BtnMulticlickTag, &value);
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(BtnMulticlickTag, "Multiclick detection time [s]");
-    sender->send(
-        "<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" ");
-    sender->sendNameAndId(BtnMulticlickTag);
+    sender->sendLabelFor(Supla::ConfigTag::BtnMulticlickTag,
+                         "Multiclick detection time [s]");
+    sender->send("<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" ");
+    sender->sendNameAndId(Supla::ConfigTag::BtnMulticlickTag);
     sender->send(" value=\"");
     sender->send(value, 3);
     sender->send("\">");
@@ -59,10 +60,10 @@ void ButtonMulticlickParameters::send(Supla::WebSender* sender) {
 bool ButtonMulticlickParameters::handleResponse(const char* key,
                                                 const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
-  if (strcmp(key, BtnMulticlickTag) == 0) {
+  if (strcmp(key, Supla::ConfigTag::BtnMulticlickTag) == 0) {
     uint32_t param = floatStringToInt(value, 3);
     if (param >= 200 && param <= 10000) {
-      cfg->setUInt32(BtnMulticlickTag, param);
+      cfg->setUInt32(Supla::ConfigTag::BtnMulticlickTag, param);
     }
     return true;
   }

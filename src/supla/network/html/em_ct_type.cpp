@@ -20,6 +20,7 @@
 
 #include <supla/sensor/electricity_meter.h>
 #include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Html::EmCtTypeParameters;
 
@@ -27,7 +28,8 @@ EmCtTypeParameters::EmCtTypeParameters(Supla::Sensor::ElectricityMeter *em)
     : em(em) {
   if (em) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, em->getChannelNumber(), EmCtTypeTag);
+    Supla::Config::generateKey(
+        key, em->getChannelNumber(), Supla::ConfigTag::EmCtTypeTag);
     setTag(key);
   }
 

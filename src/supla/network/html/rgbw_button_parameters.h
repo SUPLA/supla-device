@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char RgbwButtonTag[] = "rgbw_btn";
-
 class RgbwButtonParameters : public SelectInputParameter {
  public:
   // if id is -1, it is applied to all rgbw elements

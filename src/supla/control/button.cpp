@@ -19,14 +19,11 @@
 #include <supla/time.h>
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
-#include <supla/network/html/button_multiclick_parameters.h>
-#include <supla/network/html/button_hold_time_parameters.h>
-#include <supla/network/html/button_type_parameters.h>
-#include <supla/network/html/button_config_parameters.h>
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <SuplaDevice.h>
 #include <supla/log_wrapper.h>
+#include <supla/storage/config_tags.h>
 
 #include "button.h"
 
@@ -335,7 +332,8 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, getButtonNumber(), Supla::Html::BtnTypeTag);
+    Supla::Config::generateKey(
+        key, getButtonNumber(), Supla::ConfigTag::BtnTypeTag);
     int32_t btnTypeValue = 0;
     bool saveConfig = false;
 
@@ -367,7 +365,8 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     }
 
     uint32_t multiclickTimeMsValue = 0;
-    if (cfg->getUInt32(Supla::Html::BtnMulticlickTag, &multiclickTimeMsValue)) {
+    if (cfg->getUInt32(Supla::ConfigTag::BtnMulticlickTag,
+                       &multiclickTimeMsValue)) {
       if (multiclickTimeMsValue < 200) {
         multiclickTimeMsValue = 200;
       }
@@ -376,12 +375,12 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
       }
       setMulticlickTime(multiclickTimeMsValue, isBistable());
     } else {
-      cfg->setUInt32(Supla::Html::BtnMulticlickTag, multiclickTimeMs);
+      cfg->setUInt32(Supla::ConfigTag::BtnMulticlickTag, multiclickTimeMs);
       saveConfig = true;
     }
 
     uint32_t holdTimeMsValue = CFG_MODE_ON_HOLD_TIME;
-    if (cfg->getUInt32(Supla::Html::BtnHoldTag, &holdTimeMsValue)) {
+    if (cfg->getUInt32(Supla::ConfigTag::BtnHoldTag, &holdTimeMsValue)) {
       if (holdTimeMsValue < 200) {
         holdTimeMsValue = 200;
       }
@@ -390,16 +389,17 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
       }
       setHoldTime(holdTimeMsValue);
     } else {
-      cfg->setUInt32(Supla::Html::BtnHoldTag, holdTimeMs);
+      cfg->setUInt32(Supla::ConfigTag::BtnHoldTag, holdTimeMs);
       saveConfig = true;
     }
 
     if (onLoadConfigType == OnLoadConfigType::LOAD_FULL_CONFIG) {
       int32_t useInputAsConfigButtonValue = 0;
       Supla::Config::generateKey(
-          key, getButtonNumber(), Supla::Html::BtnConfigTag);
+          key, getButtonNumber(), Supla::ConfigTag::BtnConfigTag);
       if (!cfg->getInt32(key, &useInputAsConfigButtonValue)) {
-        cfg->getInt32(Supla::Html::BtnConfigTag, &useInputAsConfigButtonValue);
+        cfg->getInt32(Supla::ConfigTag::BtnConfigTag,
+                      &useInputAsConfigButtonValue);
       }
 
       if (useInputAsConfigButtonValue == 0) {

@@ -23,14 +23,8 @@
 #include <supla/storage/config.h>
 #include <supla/device/status_led.h>
 #include <supla/log_wrapper.h>
-#include <supla/network/html/screen_brightness_parameters.h>
 #include <supla/clock/clock.h>
-#include <supla/network/html/volume_parameters.h>
-#include <supla/network/html/screen_delay_parameters.h>
-#include <supla/network/html/home_screen_content.h>
-#include <supla/network/html/disable_user_interface_parameter.h>
-#include <supla/network/html/screen_delay_type_parameters.h>
-#include <supla/network/html/power_status_led_parameters.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -399,11 +393,11 @@ void RemoteDeviceConfig::processPowerStatusLedConfig(
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = -1;
-    cfg->getInt8(Supla::Html::PowerStatusLedCfgTag, &value);
+    cfg->getInt8(Supla::ConfigTag::PowerStatusLedCfgTag, &value);
     if (value >= 0 && value <= 1 && value != config->PowerStatusLedType) {
       SUPLA_LOG_INFO("Setting PowerStatusLedType to %d",
                      config->PowerStatusLedType);
-      cfg->setInt8(Supla::Html::PowerStatusLedCfgTag,
+      cfg->setInt8(Supla::ConfigTag::PowerStatusLedCfgTag,
                    config->PowerStatusLedType);
       cfg->saveWithDelay(1000);
 
@@ -419,7 +413,7 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
     bool change = false;
     int32_t currentValue = -1;
     int32_t newValue = -1;
-    cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &currentValue);
+    cfg->getInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, &currentValue);
     if (currentValue < 0 || currentValue > 100) {
       currentValue = -1;  // automatic
     }
@@ -433,14 +427,14 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
     }
     if (newValue != currentValue) {
       SUPLA_LOG_INFO("Setting ScreenBrightness to %d", newValue);
-      cfg->setInt32(Supla::Html::ScreenBrightnessCfgTag, newValue);
+      cfg->setInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, newValue);
       change = true;
     }
 
     int32_t currentAdjustmentForAutomaticValue = 0;
     int32_t newAdjustmentForAutomaticValue = 0;
     cfg->getInt32(
-        Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+        Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
         &currentAdjustmentForAutomaticValue);
 
     newAdjustmentForAutomaticValue = config->AdjustmentForAutomatic;
@@ -453,7 +447,7 @@ void RemoteDeviceConfig::processScreenBrightnessConfig(uint64_t fieldBit,
     if (newAdjustmentForAutomaticValue != currentAdjustmentForAutomaticValue) {
       SUPLA_LOG_INFO("Setting AdjustmentForAutomatic to %d",
                      newAdjustmentForAutomaticValue);
-      cfg->setInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+      cfg->setInt32(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
                     newAdjustmentForAutomaticValue);
       change = true;
     }
@@ -472,7 +466,7 @@ void RemoteDeviceConfig::processButtonVolumeConfig(uint64_t fieldBit,
     return;
   }
   uint8_t value = 100;
-  cfg->getUInt8(Supla::Html::VolumeCfgTag, &value);
+  cfg->getUInt8(Supla::ConfigTag::VolumeCfgTag, &value);
   if (value > 100) {
     value = 100;
   }
@@ -483,7 +477,7 @@ void RemoteDeviceConfig::processButtonVolumeConfig(uint64_t fieldBit,
   }
   if (newValue != value) {
     SUPLA_LOG_INFO("Setting Volume to %d", newValue);
-    cfg->setUInt8(Supla::Html::VolumeCfgTag, newValue);
+    cfg->setUInt8(Supla::ConfigTag::VolumeCfgTag, newValue);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }
@@ -506,7 +500,7 @@ void RemoteDeviceConfig::processHomeScreenContentConfig(uint64_t fieldBit,
     return;
   }
   int8_t currentValue = 0;
-  cfg->getInt8(Supla::HomeScreenContentTag, &currentValue);
+  cfg->getInt8(Supla::ConfigTag::HomeScreenContentTag, &currentValue);
   if (currentValue < 0 || currentValue > 63) {
     currentValue = 0;
   }
@@ -514,7 +508,7 @@ void RemoteDeviceConfig::processHomeScreenContentConfig(uint64_t fieldBit,
       static_cast<int>(HomeScreenContentBitToEnum(config->HomeScreenContent));
   if (newValue != currentValue) {
     SUPLA_LOG_INFO("Setting HomeScreenContent to %d", newValue);
-    cfg->setInt8(Supla::HomeScreenContentTag, newValue);
+    cfg->setInt8(Supla::ConfigTag::HomeScreenContentTag, newValue);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }
@@ -527,7 +521,7 @@ void RemoteDeviceConfig::processHomeScreenDelayConfig(uint64_t fieldBit,
     return;
   }
   int32_t value = 0;
-  cfg->getInt32(Supla::Html::ScreenDelayCfgTag, &value);
+  cfg->getInt32(Supla::ConfigTag::ScreenDelayCfgTag, &value);
   if (value < 0) {
     value = 0;
   }
@@ -538,7 +532,8 @@ void RemoteDeviceConfig::processHomeScreenDelayConfig(uint64_t fieldBit,
   if (value != config->HomeScreenOffDelayS) {
     SUPLA_LOG_INFO("Setting HomeScreenOffDelay to %d",
                    config->HomeScreenOffDelayS);
-    cfg->setInt32(Supla::Html::ScreenDelayCfgTag, config->HomeScreenOffDelayS);
+    cfg->setInt32(Supla::ConfigTag::ScreenDelayCfgTag,
+                  config->HomeScreenOffDelayS);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
   }
@@ -569,28 +564,28 @@ void RemoteDeviceConfig::processDisableUserInterfaceConfig(uint64_t fieldBit,
     uint8_t value = 0;
     int32_t minTempUI = 0;
     int32_t maxTempUI = 0;
-    cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
-    cfg->getInt32(Supla::Html::MinTempUICfgTag, &minTempUI);
-    cfg->getInt32(Supla::Html::MaxTempUICfgTag, &maxTempUI);
+    cfg->getUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, &value);
+    cfg->getInt32(Supla::ConfigTag::MinTempUICfgTag, &minTempUI);
+    cfg->getInt32(Supla::ConfigTag::MaxTempUICfgTag, &maxTempUI);
     if (value != config->DisableUserInterface &&
         config->DisableUserInterface <= 2) {
       SUPLA_LOG_INFO("Setting DisableUserInterface to %d",
                      config->DisableUserInterface);
-      cfg->setUInt8(Supla::Html::DisableUserInterfaceCfgTag,
+      cfg->setUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag,
                     config->DisableUserInterface);
       change = true;
     }
     if (minTempUI != config->minAllowedTemperatureSetpointFromLocalUI) {
       SUPLA_LOG_INFO("Setting minAllowedTemperatureSetpointFromLocalUI to %d",
                      config->minAllowedTemperatureSetpointFromLocalUI);
-      cfg->setInt32(Supla::Html::MinTempUICfgTag,
+      cfg->setInt32(Supla::ConfigTag::MinTempUICfgTag,
                     config->minAllowedTemperatureSetpointFromLocalUI);
       change = true;
     }
     if (maxTempUI != config->maxAllowedTemperatureSetpointFromLocalUI) {
       SUPLA_LOG_INFO("Setting maxAllowedTemperatureSetpointFromLocalUI to %d",
                      config->maxAllowedTemperatureSetpointFromLocalUI);
-      cfg->setInt32(Supla::Html::MaxTempUICfgTag,
+      cfg->setInt32(Supla::ConfigTag::MaxTempUICfgTag,
                     config->maxAllowedTemperatureSetpointFromLocalUI);
       change = true;
     }
@@ -627,7 +622,7 @@ void RemoteDeviceConfig::fillPowerStatusLedConfig(
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = 0;
-    cfg->getInt8(Supla::Html::PowerStatusLedCfgTag, &value);
+    cfg->getInt8(Supla::ConfigTag::PowerStatusLedCfgTag, &value);
     if (value < 0 || value > 1) {
       value = 0;
     }
@@ -645,7 +640,7 @@ void RemoteDeviceConfig::fillScreenBrightnessConfig(
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = -1;
-    cfg->getInt32(Supla::Html::ScreenBrightnessCfgTag, &value);
+    cfg->getInt32(Supla::ConfigTag::ScreenBrightnessCfgTag, &value);
     if (value == -1 || value < -1 || value > 100) {
       SUPLA_LOG_DEBUG("Setting ScreenBrightness automatic to 1 (0x01)");
       config->Automatic = 1;
@@ -656,7 +651,7 @@ void RemoteDeviceConfig::fillScreenBrightnessConfig(
     }
 
     int32_t adjustmentForAutomaticValue = 0;
-    cfg->getInt32(Supla::Html::ScreenAdjustmentForAutomaticCfgTag,
+    cfg->getInt32(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
                   &adjustmentForAutomaticValue);
     if (adjustmentForAutomaticValue > 100) {
       adjustmentForAutomaticValue = 100;
@@ -677,7 +672,7 @@ void RemoteDeviceConfig::fillButtonVolumeConfig(
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     uint8_t value = 0;
-    cfg->getUInt8(Supla::Html::VolumeCfgTag, &value);
+    cfg->getUInt8(Supla::ConfigTag::VolumeCfgTag, &value);
     if (value > 100) {
       value = 100;
     }
@@ -694,7 +689,7 @@ void RemoteDeviceConfig::fillHomeScreenContentConfig(
   }
   int8_t value = 0;
 
-  cfg->getInt8(Supla::HomeScreenContentTag, &value);
+  cfg->getInt8(Supla::ConfigTag::HomeScreenContentTag, &value);
   config->HomeScreenContent = HomeScreenIntToBit(value);
   SUPLA_LOG_DEBUG("Setting HomeScreenContent to %d (0x%02X)",
                   config->HomeScreenContent,
@@ -712,7 +707,7 @@ void RemoteDeviceConfig::fillHomeScreenDelayConfig(
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = 0;
-    cfg->getInt32(Supla::Html::ScreenDelayCfgTag, &value);
+    cfg->getInt32(Supla::ConfigTag::ScreenDelayCfgTag, &value);
     if (value < 0) {
       value = 0;
     }
@@ -752,9 +747,9 @@ void RemoteDeviceConfig::fillDisableUserInterfaceConfig(
   uint8_t value = 0;
   int32_t minTempUI = 0;
   int32_t maxTempUI = 0;
-  cfg->getUInt8(Supla::Html::DisableUserInterfaceCfgTag, &value);
-  cfg->getInt32(Supla::Html::MinTempUICfgTag, &minTempUI);
-  cfg->getInt32(Supla::Html::MaxTempUICfgTag, &maxTempUI);
+  cfg->getUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, &value);
+  cfg->getInt32(Supla::ConfigTag::MinTempUICfgTag, &minTempUI);
+  cfg->getInt32(Supla::ConfigTag::MaxTempUICfgTag, &maxTempUI);
   if (value > 2) {
     value = 2;
   }
@@ -963,7 +958,7 @@ void RemoteDeviceConfig::processHomeScreenDelayTypeConfig(uint64_t fieldBit,
     return;
   }
   int32_t value = 0;
-  cfg->getInt32(Supla::Html::ScreenDelayTypeCfgTag, &value);
+  cfg->getInt32(Supla::ConfigTag::ScreenDelayTypeCfgTag, &value);
   if (value > 1 || value < 0) {
     value = 0;
   }
@@ -971,7 +966,7 @@ void RemoteDeviceConfig::processHomeScreenDelayTypeConfig(uint64_t fieldBit,
   if (value != config->HomeScreenOffDelayType) {
     SUPLA_LOG_INFO("Setting HomeScreenOffDelayType to %d",
                    config->HomeScreenOffDelayType);
-    cfg->setInt32(Supla::Html::ScreenDelayTypeCfgTag,
+    cfg->setInt32(Supla::ConfigTag::ScreenDelayTypeCfgTag,
                   config->HomeScreenOffDelayType);
     cfg->saveWithDelay(1000);
     Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
@@ -986,7 +981,7 @@ void RemoteDeviceConfig::fillHomeScreenDelayTypeConfig(
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int32_t value = 0;
-    cfg->getInt32(Supla::Html::ScreenDelayTypeCfgTag, &value);
+    cfg->getInt32(Supla::ConfigTag::ScreenDelayTypeCfgTag, &value);
     if (value > 1 || value < 0) {
       value = 0;
     }

@@ -22,7 +22,6 @@
 #include <supla/network/html/select_input_parameter.h>
 
 namespace Supla {
-const char HomeScreenContentTag[] = "home_screen";
 
 namespace Html {
 class HomeScreenContentParameters : public SelectInputParameter {

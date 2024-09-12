@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char ScreenDelayTypeCfgTag[] = "scr_delay_t";
-
 class ScreenDelayTypeParameters : public SelectInputParameter {
  public:
   ScreenDelayTypeParameters();

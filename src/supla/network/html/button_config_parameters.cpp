@@ -18,11 +18,11 @@
 
 #include "button_config_parameters.h"
 
-#include <string.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
+#include <supla/storage/config_tags.h>
 
 #include <stdio.h>
 
@@ -31,10 +31,10 @@ using Supla::Html::ButtonConfigParameters;
 ButtonConfigParameters::ButtonConfigParameters(int id) {
   if (id >= 0) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, id, BtnConfigTag);
+    Supla::Config::generateKey(key, id, Supla::ConfigTag::BtnConfigTag);
     setTag(key);
   } else {
-    setTag(BtnConfigTag);
+    setTag(Supla::ConfigTag::BtnConfigTag);
   }
 
   char label[100] = {};

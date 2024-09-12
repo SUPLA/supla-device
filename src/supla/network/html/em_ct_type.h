@@ -28,8 +28,6 @@ class ElectricityMeter;
 
 namespace Html {
 
-const char EmCtTypeTag[] = "em_ct";
-
 class EmCtTypeParameters : public SelectInputParameter {
  public:
   explicit EmCtTypeParameters(Supla::Sensor::ElectricityMeter *em);

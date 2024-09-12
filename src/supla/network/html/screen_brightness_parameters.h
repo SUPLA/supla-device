@@ -25,9 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char ScreenBrightnessCfgTag[] = "bright";
-const char ScreenAdjustmentForAutomaticCfgTag[] = "adj_auto_br";
-
 class ScreenBrightnessParameters : public HtmlElement {
  public:
   ScreenBrightnessParameters();

@@ -25,8 +25,6 @@ namespace Supla {
 
 namespace Html {
 
-const char BtnMulticlickTag[] = "btn_multiclick";
-
 class ButtonMulticlickParameters : public HtmlElement {
  public:
   ButtonMulticlickParameters();

@@ -140,7 +140,7 @@ class GeneralPurposeChannelBase : public ChannelElement {
 
  protected:
   void saveConfig();
-  void setChannelRefreshIntervalMs(uint16_t intervalMs);
+  virtual void setChannelRefreshIntervalMs(uint16_t intervalMs);
 
   MeasurementDriver *driver = nullptr;
   uint16_t refreshIntervalMs = 5000;

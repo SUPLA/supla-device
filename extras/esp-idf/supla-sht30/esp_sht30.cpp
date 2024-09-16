@@ -19,6 +19,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <driver/i2c_master.h>
+#include <supla/network/network.h>
 
 #include "esp_sht30.h"
 
@@ -78,6 +79,7 @@ void Supla::Sensor::SHT30::readSensor() {
   if (ret != ESP_OK) {
     SUPLA_LOG_DEBUG("SHT30: failed to read measurement");
   }
+  Supla::Network::printData("SHT30", buff, 6);
 
   double temperature = 0;
   double humidity = 0;

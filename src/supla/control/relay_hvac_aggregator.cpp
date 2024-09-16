@@ -134,16 +134,22 @@ void RelayHvacAggregator::iterateAlways() {
   lastUpdateTimestamp = millis();
 
   bool state = false;
+  bool ignore = true;
   auto *ptr = firstHvacPtr;
   while (ptr != nullptr) {
     if (ptr->hvac != nullptr && ptr->hvac->getChannel()) {
-      state = state || ptr->hvac->getChannel()->isHvacFlagHeating() ||
-              ptr->hvac->getChannel()->isHvacFlagCooling();
-    }
-    if (state) {
-      break;
+      ignore = false;
+      if (ptr->hvac->getChannel()->isHvacFlagHeating() ||
+              ptr->hvac->getChannel()->isHvacFlagCooling()) {
+        state = true;
+        break;
+      }
     }
     ptr = ptr->nextPtr;
+  }
+
+  if (ignore && !turnOffWhenEmpty) {
+    return;
   }
 
   if (state) {
@@ -157,4 +163,8 @@ void RelayHvacAggregator::iterateAlways() {
       relay->turnOff();
     }
   }
+}
+
+void RelayHvacAggregator::setTurnOffWhenEmpty(bool turnOffWhenEmpty) {
+  this->turnOffWhenEmpty = turnOffWhenEmpty;
 }

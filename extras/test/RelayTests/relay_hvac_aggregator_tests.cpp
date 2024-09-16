@@ -277,3 +277,78 @@ TEST_F(RelayHvacFixture, mixedTest) {
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number2));
 }
 
+TEST_F(RelayHvacFixture, turnOffWhenEmptyTest) {
+  int gpio1 = 1;
+  int gpio2 = 2;
+  int gpio3 = 3;
+  Supla::Control::Relay r1(gpio1);
+  Supla::Control::Relay r2(gpio2);
+  Supla::Control::Relay r3(gpio3);
+
+  int number1 = r1.getChannelNumber();
+  int number2 = r2.getChannelNumber();
+  int number3 = r3.getChannelNumber();
+  ASSERT_EQ(number1, 0);
+  ASSERT_EQ(number2, 1);
+  ASSERT_EQ(number3, 2);
+
+  auto io1 = Supla::Control::InternalPinOutput(4);
+  auto io2 = Supla::Control::InternalPinOutput(5);
+  auto io3 = Supla::Control::InternalPinOutput(6);
+  Supla::Control::HvacBase hvac1(&io1);
+  Supla::Control::HvacBase hvac2(&io2);
+  Supla::Control::HvacBase hvac3(&io3);
+
+  EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
+
+  auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
+  EXPECT_NE(aggregator, nullptr);
+  EXPECT_EQ(aggregator,
+            Supla::Control::RelayHvacAggregator::GetInstance(number1));
+
+  aggregator->registerHvac(&hvac1);
+  aggregator->registerHvac(&hvac2);
+
+  // no time advance, nothing happens
+  aggregator->iterateAlways();
+
+  // hvacs are off and relay is off, so nothing happens
+  time.advance(2000);
+  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
+  aggregator->iterateAlways();
+
+  hvac1.getChannel()->setHvacFlagHeating(true);
+  // hvac1 is on and relay is off, so relay -> turn on
+  time.advance(2000);
+  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
+  aggregator->iterateAlways();
+
+  aggregator->unregisterHvac(&hvac1);
+  aggregator->unregisterHvac(&hvac2);
+  // no hvac registered, but output is on -> turn off
+  time.advance(2000);
+  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
+  aggregator->iterateAlways();
+
+  // no hvac registered, output is off -> nothing
+  time.advance(2000);
+  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
+  aggregator->iterateAlways();
+
+  // change aggregator behavior -> turnOffWhenEmpty(false)
+  // nothing should happen, regardless of relay output state
+  aggregator->setTurnOffWhenEmpty(false);
+  time.advance(2000);
+  EXPECT_CALL(ioMock, digitalRead(gpio1)).Times(0);
+  aggregator->iterateAlways();
+
+  time.advance(2000);
+  EXPECT_CALL(ioMock, digitalRead(gpio1)).Times(0);
+  aggregator->iterateAlways();
+
+  EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
+  EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
+  EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number2));
+}

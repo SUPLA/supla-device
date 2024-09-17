@@ -104,6 +104,7 @@ class Relay : public ChannelElement, public ActionHandler {
   static void setRelayStorageSaveDelay(int delayMs);
 
   void setDefaultRelatedMeterChannelNo(int channelNo);
+  void setTurnOffWhenEmptyAggregator(bool turnOff);
 
  protected:
   struct ButtonListElement {
@@ -131,6 +132,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool highIsOn = true;
   bool keepTurnOnDurationMs = false;
   bool lastStateOnTimerUpdate = false;
+  bool turnOffWhenEmptyAggregator = true;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
 

@@ -27,10 +27,11 @@
 #include <supla/clock/clock.h>
 #include <supla/actions.h>
 #include <supla/sensor/thermometer.h>
+#include <supla/events.h>
+#include <supla/channels/channel.h>
 
 #include "output_interface.h"
-#include "supla/channels/channel.h"
-#include "supla/events.h"
+#include "relay_hvac_aggregator.h"
 
 #define SUPLA_HVAC_DEFAULT_TEMP_HEAT          2100  // 21.00 C
 #define SUPLA_HVAC_DEFAULT_TEMP_COOL          2500  // 25.00 C
@@ -874,6 +875,15 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
 
   // Received config looks ok, so we apply it to channel
   if (applyServerConfig) {
+    if (config.PumpSwitchChannelNo != hvacConfig->PumpSwitchChannelNo) {
+      unregisterInAggregator(config.PumpSwitchChannelNo);
+    }
+    if (config.HeatOrColdSourceSwitchChannelNo !=
+        hvacConfig->HeatOrColdSourceSwitchChannelNo) {
+      unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+    }
+    registerInAggregator(hvacConfig->PumpSwitchChannelNo);
+    registerInAggregator(hvacConfig->HeatOrColdSourceSwitchChannelNo);
     applyConfigWithoutValidation(hvacConfig);
     fixTempearturesConfig();
     fixTemperatureSetpoints();
@@ -5234,6 +5244,8 @@ bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {
     return true;
   }
 
+  unregisterInAggregator(config.PumpSwitchChannelNo);
+  registerInAggregator(channelNo);
   config.PumpSwitchChannelNo = channelNo;
   if (channelNo == getChannelNumber()) {
     config.PumpSwitchIsSet = 0;
@@ -5272,6 +5284,8 @@ bool HvacBase::setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo) {
     return true;
   }
 
+  unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
+  registerInAggregator(channelNo);
   config.HeatOrColdSourceSwitchChannelNo = channelNo;
   if (channelNo == getChannelNumber()) {
     config.HeatOrColdSourceSwitchIsSet = 0;
@@ -5347,5 +5361,58 @@ void HvacBase::clearHeatOrColdSourceSwitchChannelNo() {
 void HvacBase::clearMasterThermostatChannelNo() {
   // setting to self will clear
   setMasterThermostatChannelNo(getChannelNumber());
+}
+
+bool HvacBase::ignoreAggregatorForRelay(int32_t relayChannelNumber) const {
+  if (relayChannelNumber == -1) {
+    return false;
+  }
+  if (defaultChannelsFlags & HVAC_BASE_FLAG_IGNORE_DEFAULT_PUMP &&
+      defaultPumpSwitch >= 0 &&
+      relayChannelNumber == defaultPumpSwitch) {
+    return true;
+  }
+  if (defaultChannelsFlags & HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD &&
+      defaultHeatOrColdSourceSwitch >= 0 &&
+      relayChannelNumber == defaultHeatOrColdSourceSwitch) {
+    return true;
+  }
+  return false;
+}
+
+void HvacBase::setIgnoreDefaultPumpForAggregator(bool flag) {
+  if (flag) {
+    defaultChannelsFlags |= HVAC_BASE_FLAG_IGNORE_DEFAULT_PUMP;
+  } else {
+    defaultChannelsFlags &= ~HVAC_BASE_FLAG_IGNORE_DEFAULT_PUMP;
+  }
+}
+
+void HvacBase::setIgnoreDefaultHeatOrColdSourceForAggregator(bool flag) {
+  if (flag) {
+    defaultChannelsFlags |= HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD;
+  } else {
+    defaultChannelsFlags &= ~HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD;
+  }
+}
+
+void HvacBase::registerInAggregator(int16_t channelNo) {
+  if (channelNo < 0) {
+    return;
+  }
+  auto aggregator = Supla::Control::RelayHvacAggregator::GetInstance(channelNo);
+  if (aggregator) {
+    aggregator->registerHvac(this);
+  }
+}
+
+void HvacBase::unregisterInAggregator(int16_t channelNo) {
+  if (channelNo < 0) {
+    return;
+  }
+  auto aggregator = Supla::Control::RelayHvacAggregator::GetInstance(channelNo);
+  if (aggregator) {
+    aggregator->unregisterHvac(this);
+  }
 }
 

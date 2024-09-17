@@ -649,7 +649,11 @@ void Relay::updateRelayHvacAggregator() {
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_PUMPSWITCH:
     case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
-      Supla::Control::RelayHvacAggregator::Add(getChannelNumber(), this);
+      auto ptr = Supla::Control::RelayHvacAggregator::Add(
+          getChannelNumber(), this);
+      if (ptr) {
+        ptr->setTurnOffWhenEmpty(turnOffWhenEmptyAggregator);
+      }
       return;
     }
     default: {}
@@ -657,3 +661,6 @@ void Relay::updateRelayHvacAggregator() {
   Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
 }
 
+void Relay::setTurnOffWhenEmptyAggregator(bool turnOff) {
+  turnOffWhenEmptyAggregator = turnOff;
+}

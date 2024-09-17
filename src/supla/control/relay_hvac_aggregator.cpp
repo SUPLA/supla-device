@@ -92,6 +92,9 @@ RelayHvacAggregator *RelayHvacAggregator::GetInstance(int relayChannelNumber) {
 }
 
 void RelayHvacAggregator::registerHvac(HvacBase *hvac) {
+  SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] hvac[%d] registered",
+                  relayChannelNumber,
+                  hvac->getChannelNumber());
   if (firstHvacPtr == nullptr) {
     firstHvacPtr = new HvacPtr;
     firstHvacPtr->hvac = hvac;
@@ -106,6 +109,9 @@ void RelayHvacAggregator::registerHvac(HvacBase *hvac) {
 }
 
 void RelayHvacAggregator::unregisterHvac(HvacBase *hvac) {
+  SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] hvac[%d] unregistered",
+                  relayChannelNumber,
+                  hvac->getChannelNumber());
   auto *ptr = firstHvacPtr;
   HvacPtr *prevPtr = nullptr;
   while (ptr != nullptr) {
@@ -138,6 +144,9 @@ void RelayHvacAggregator::iterateAlways() {
   auto *ptr = firstHvacPtr;
   while (ptr != nullptr) {
     if (ptr->hvac != nullptr && ptr->hvac->getChannel()) {
+      if (ptr->hvac->ignoreAggregatorForRelay(relayChannelNumber)) {
+        continue;
+      }
       ignore = false;
       if (ptr->hvac->getChannel()->isHvacFlagHeating() ||
               ptr->hvac->getChannel()->isHvacFlagCooling()) {
@@ -153,12 +162,14 @@ void RelayHvacAggregator::iterateAlways() {
   }
 
   if (state) {
-    if (!relay->isOn()) {
+    if (lastValueSend != 1) {
+      lastValueSend = 1;
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn on", relayChannelNumber);
       relay->turnOn();
     }
   } else {
-    if (relay->isOn()) {
+    if (lastValueSend != 0) {
+      lastValueSend = 0;
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn off", relayChannelNumber);
       relay->turnOff();
     }

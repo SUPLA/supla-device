@@ -23,6 +23,9 @@
 #include <supla/action_handler.h>
 #include <time.h>
 
+#define HVAC_BASE_FLAG_IGNORE_DEFAULT_PUMP (1 << 0)
+#define HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD (1 << 1)
+
 namespace Supla {
 
 enum DayOfWeek {
@@ -403,6 +406,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int32_t getRemainingCountDownTimeSec() const;
   void stopCountDownTimer();
 
+  bool ignoreAggregatorForRelay(int32_t relayChannelNumber) const;
+  void setIgnoreDefaultPumpForAggregator(bool);
+  void setIgnoreDefaultHeatOrColdSourceForAggregator(bool);
+
   HvacParameterFlags parameterFlags = {};
 
  protected:
@@ -442,6 +449,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);
 
+  void registerInAggregator(int16_t channelNo);
+  void unregisterInAggregator(int16_t channelNo);
+
   TChannelConfig_HVAC config = {};
   TChannelConfig_HVAC *initialConfig = nullptr;
   // primaryOutput can be used for heating or cooling (cooling is supported
@@ -476,6 +486,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int16_t defaultPumpSwitch = -1;
   int16_t defaultHeatOrColdSourceSwitch = -1;
   int16_t defaultMasterThermostat = -1;
+  int16_t defaultChannelsFlags = 0;
 
   int8_t lastProgramManualOverride = -1;
   int8_t lastValue = -111;  // set out of output value range

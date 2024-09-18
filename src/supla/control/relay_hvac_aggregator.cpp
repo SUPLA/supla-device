@@ -144,14 +144,13 @@ void RelayHvacAggregator::iterateAlways() {
   auto *ptr = firstHvacPtr;
   while (ptr != nullptr) {
     if (ptr->hvac != nullptr && ptr->hvac->getChannel()) {
-      if (ptr->hvac->ignoreAggregatorForRelay(relayChannelNumber)) {
-        continue;
-      }
-      ignore = false;
-      if (ptr->hvac->getChannel()->isHvacFlagHeating() ||
-              ptr->hvac->getChannel()->isHvacFlagCooling()) {
-        state = true;
-        break;
+      if (!ptr->hvac->ignoreAggregatorForRelay(relayChannelNumber)) {
+        ignore = false;
+        if (ptr->hvac->getChannel()->isHvacFlagHeating() ||
+            ptr->hvac->getChannel()->isHvacFlagCooling()) {
+          state = true;
+          break;
+        }
       }
     }
     ptr = ptr->nextPtr;

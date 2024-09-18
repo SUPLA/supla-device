@@ -585,6 +585,53 @@ void HvacBase::iterateAlways() {
   }
   lastIterateTimestampMs = millis();
 
+  if (isMasterThermostatSet()) {
+    auto masterCh =
+        Supla::Channel::GetByChannelNumber(getMasterThermostatChannelNo());
+    if (masterCh) {
+      auto masterMode = masterCh->getHvacMode();
+      auto myMode = channel.getHvacMode();
+      auto masterSetpointHeat = masterCh->getHvacSetpointTemperatureHeat();
+      auto masterSetpointCool = masterCh->getHvacSetpointTemperatureCool();
+      auto mySetpointHeat = channel.getHvacSetpointTemperatureHeat();
+      auto mySetpointCool = channel.getHvacSetpointTemperatureCool();
+
+      switch (masterMode) {
+        case SUPLA_HVAC_MODE_HEAT: {
+          masterSetpointCool = INT16_MIN;
+          mySetpointCool = INT16_MIN;
+          break;
+        }
+        case SUPLA_HVAC_MODE_COOL: {
+          masterSetpointHeat = INT16_MIN;
+          mySetpointHeat = INT16_MIN;
+          break;
+        }
+        case SUPLA_HVAC_MODE_OFF: {
+          masterSetpointHeat = INT16_MIN;
+          masterSetpointCool = INT16_MIN;
+          mySetpointHeat = INT16_MIN;
+          mySetpointCool = INT16_MIN;
+          break;
+        }
+      }
+
+      if (myMode != masterMode || mySetpointHeat != masterSetpointHeat ||
+          mySetpointCool != masterSetpointCool) {
+        SUPLA_LOG_INFO("HVAC[%d]: Master thermostat settings changed "
+            "mode %d->%d, heat %d->%d, cool %d->%d",
+                       getChannelNumber(),
+                       myMode, masterMode,
+                       mySetpointHeat, masterSetpointHeat,
+                       mySetpointCool, masterSetpointCool);
+        if (!applyNewRuntimeSettings(
+                masterMode, masterSetpointHeat, masterSetpointCool)) {
+          setTargetMode(SUPLA_HVAC_MODE_OFF);
+        }
+      }
+    }
+  }
+
   if (Supla::Clock::IsReady()) {
     channel.setHvacFlagClockError(false);
   } else {
@@ -3317,6 +3364,12 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
 }
 
 int32_t HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
+  if (isMasterThermostatSet()) {
+    // ignore new value from server
+    SUPLA_LOG_DEBUG("HVAC[%d]: ignore new value from server (master is set)",
+                    getChannelNumber());
+    return 0;
+  }
   auto hvacValue = reinterpret_cast<THVACValue *>(newValue->value);
   SUPLA_LOG_DEBUG(
       "HVAC[%d]: new value from server: mode=%s tHeat=%d tCool=%d, "

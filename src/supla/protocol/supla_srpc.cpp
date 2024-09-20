@@ -1085,7 +1085,7 @@ void Supla::Protocol::SuplaSrpc::getUserLocaltime() {
 void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
     uint8_t channelNumber,
     char *value,
-    unsigned char offline,
+    uint8_t offline,
     uint32_t validityTimeSec) {
   if (!isRegisteredAndReady()) {
     return;

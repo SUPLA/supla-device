@@ -63,7 +63,9 @@ class Channel : public LocalAction {
 
   void setOffline();
   void setOnline();
+  void setOnlineAndNotAvailable();
   bool isOnline() const;
+  bool isOnlineAndNotAvailable() const;
 
   double getValueDouble();
   double getValueDoubleFirst();
@@ -231,7 +233,7 @@ class Channel : public LocalAction {
   // registration parameter
   ChannelType channelType = ChannelType::NOT_SET;
 
-  bool offline = false;
+  uint8_t offline = 0;
   uint8_t defaultIcon = 0;
   uint8_t subDeviceId = 0;
 

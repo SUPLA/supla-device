@@ -1185,23 +1185,36 @@ uint16_t Channel::getHvacFlags() {
 }
 
 void Channel::setOffline() {
-  if (offline == false) {
+  if (offline != 1) {
     SUPLA_LOG_DEBUG("Channel[%d] go offline", channelNumber);
-    offline = true;
+    offline = 1;
     setUpdateReady();
   }
 }
 
 void Channel::setOnline() {
-  if (offline == true) {
+  if (offline != 0) {
     SUPLA_LOG_DEBUG("Channel[%d] go online", channelNumber);
-    offline = false;
+    offline = 0;
     setUpdateReady();
   }
 }
 
+void Channel::setOnlineAndNotAvailable() {
+  if (offline != 2) {
+    SUPLA_LOG_DEBUG("Channel[%d] is online and NOT available", channelNumber);
+    offline = 2;
+    setUpdateReady();
+  }
+}
+
+
 bool Channel::isOnline() const {
-  return !offline;
+  return offline != 1;
+}
+
+bool Channel::isOnlineAndNotAvailable() const {
+  return offline == 2;
 }
 
 void Channel::setInitialCaption(const char *caption) {
@@ -1265,7 +1278,9 @@ void Channel::fillDeviceChannelStruct(
       getFuncList(),
       getDefaultFunction(),
       getFlags(),
-      offline ? "offline" : "online",
+      offline == 0   ? "online"
+      : offline == 1 ? "offline"
+                     : "online (not available)",
       validityTimeSec,
       getDefaultIcon(),
       static_cast<uint8_t>(value[0]),
@@ -1309,7 +1324,9 @@ void Channel::fillDeviceChannelStruct(
       getFuncList(),
       getDefaultFunction(),
       getFlags(),
-      offline ? "offline" : "online",
+      offline == 0   ? "online"
+      : offline == 1 ? "offline"
+                     : "online (not available)",
       validityTimeSec,
       getDefaultIcon(),
       static_cast<uint8_t>(value[0]),

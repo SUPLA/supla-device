@@ -513,7 +513,7 @@ void HvacBase::onInit() {
     turnOn();
     setOutput(0, true);
   }
-  debugPrintConfigStruct(&config, getChannelNumber());
+//  debugPrintConfigStruct(&config, getChannelNumber());
   previousSubfunction = config.Subfunction;
 }
 

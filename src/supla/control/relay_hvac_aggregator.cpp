@@ -178,3 +178,25 @@ void RelayHvacAggregator::iterateAlways() {
 void RelayHvacAggregator::setTurnOffWhenEmpty(bool turnOffWhenEmpty) {
   this->turnOffWhenEmpty = turnOffWhenEmpty;
 }
+
+bool RelayHvacAggregator::isHvacRegistered(HvacBase *hvac) const {
+  auto *ptr = firstHvacPtr;
+  while (ptr != nullptr) {
+    if (ptr->hvac == hvac) {
+      return true;
+    }
+    ptr = ptr->nextPtr;
+  }
+  return false;
+}
+
+int RelayHvacAggregator::getHvacCount() const {
+  int count = 0;
+  auto *ptr = firstHvacPtr;
+  while (ptr != nullptr) {
+    count++;
+    ptr = ptr->nextPtr;
+  }
+  return count;
+}
+

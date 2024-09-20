@@ -40,6 +40,8 @@ class RelayHvacAggregator : public Element {
 
   void registerHvac(HvacBase *hvac);
   void unregisterHvac(HvacBase *hvac);
+  bool isHvacRegistered(HvacBase *hvac) const;
+  int getHvacCount() const;
 
   void iterateAlways() override;
   void setTurnOffWhenEmpty(bool turnOffWhenEmpty);

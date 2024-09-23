@@ -394,11 +394,11 @@ void RemoteDeviceConfig::processPowerStatusLedConfig(
   if (cfg) {
     int8_t value = -1;
     cfg->getInt8(Supla::ConfigTag::PowerStatusLedCfgTag, &value);
-    if (value >= 0 && value <= 1 && value != config->PowerStatusLedType) {
-      SUPLA_LOG_INFO("Setting PowerStatusLedType to %d",
-                     config->PowerStatusLedType);
+    if (value >= 0 && value <= 1 && value != config->Disabled) {
+      SUPLA_LOG_INFO("Setting PowerStatusLed Disabled to %d",
+                     config->Disabled);
       cfg->setInt8(Supla::ConfigTag::PowerStatusLedCfgTag,
-                   config->PowerStatusLedType);
+                   config->Disabled);
       cfg->saveWithDelay(1000);
 
       Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
@@ -626,8 +626,9 @@ void RemoteDeviceConfig::fillPowerStatusLedConfig(
     if (value < 0 || value > 1) {
       value = 0;
     }
-    SUPLA_LOG_DEBUG("Setting PowerStatusLedType to %d (0x%X)", value, value);
-    config->PowerStatusLedType = value;
+    SUPLA_LOG_DEBUG(
+        "Setting PowerStatusLed Disabled to %d (0x%X)", value, value);
+    config->Disabled = value;
   }
 }
 

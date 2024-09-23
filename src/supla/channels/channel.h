@@ -99,6 +99,7 @@ class Channel : public LocalAction {
   void setHvacFlagForcedOffBySensor(bool value);
   void setHvacFlagCoolSubfunction(enum HvacCoolSubfunctionFlag flag);
   void setHvacFlagWeeklyScheduleTemporalOverride(bool value);
+  void setHvacFlagBatteryCoverOpen(bool value);
   void clearHvacState();
 
   uint8_t getHvacIsOn();
@@ -121,6 +122,7 @@ class Channel : public LocalAction {
   bool isHvacFlagForcedOffBySensor();
   enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction();
   bool isHvacFlagWeeklyScheduleTemporalOverride();
+  bool isHvacFlagBatteryCoverOpen();
 
   static bool isHvacFlagSetpointTemperatureHeatSet(THVACValue *hvacValue);
   static bool isHvacFlagSetpointTemperatureCoolSet(THVACValue *hvacValue);
@@ -135,6 +137,7 @@ class Channel : public LocalAction {
   static enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction(
       THVACValue *hvacValue);
   static bool isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *hvacValue);
+  static bool isHvacFlagBatteryCoverOpen(THVACValue *hvacValue);
 
   static void setHvacSetpointTemperatureHeat(THVACValue *hvacValue,
                                              int16_t setpointTemperatureHeat);

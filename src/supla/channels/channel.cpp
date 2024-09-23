@@ -967,6 +967,20 @@ void Channel::setHvacFlagWeeklyScheduleTemporalOverride(bool value) {
   }
 }
 
+void Channel::setHvacFlagBatteryCoverOpen(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagBatteryCoverOpen()) {
+    setUpdateReady();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_BATTERY_COVER_OPEN;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_BATTERY_COVER_OPEN;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 void Channel::clearHvacState() {
   clearHvacSetpointTemperatureCool();
   clearHvacSetpointTemperatureHeat();
@@ -1027,6 +1041,10 @@ enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction() {
 
 bool Channel::isHvacFlagWeeklyScheduleTemporalOverride() {
   return isHvacFlagWeeklyScheduleTemporalOverride(getValueHvac());
+}
+
+bool Channel::isHvacFlagBatteryCoverOpen() {
+  return isHvacFlagBatteryCoverOpen(getValueHvac());
 }
 
 bool Channel::isHvacFlagSetpointTemperatureHeatSet(THVACValue *value) {
@@ -1113,6 +1131,13 @@ bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *value) {
   if (value != nullptr) {
     return value->Flags &
            SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE_TEMPORAL_OVERRIDE;
+  }
+  return false;
+}
+
+bool Channel::isHvacFlagBatteryCoverOpen(THVACValue *hvacValue) {
+  if (hvacValue != nullptr) {
+    return hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_BATTERY_COVER_OPEN;
   }
   return false;
 }

@@ -30,13 +30,11 @@
 #include <supla/auto_lock.h>
 
 Supla::Device::StatusLed::StatusLed(Supla::Io *io, uint8_t outPin, bool invert)
-    : StatusLed(outPin, invert) {
-  this->io = io;
+    : Supla::Control::BlinkingLed(io, outPin, invert) {
 }
 
 Supla::Device::StatusLed::StatusLed(uint8_t outPin, bool invert)
-    : outPin(outPin), invert(invert) {
-  mutex = Supla::Mutex::Create();
+    : Supla::Control::BlinkingLed(outPin, invert) {
 }
 
 void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
@@ -102,15 +100,6 @@ void Supla::Device::StatusLed::storeModeToConfig() {
       cfg->saveWithDelay(2000);
     }
   }
-}
-
-void Supla::Device::StatusLed::onInit() {
-  Supla::AutoLock autoLock(mutex);
-  updatePin();
-  if (state == NOT_INITIALIZED) {
-    turnOn();
-  }
-  Supla::Io::pinMode(outPin, OUTPUT, io);
 }
 
 void Supla::Device::StatusLed::iterateAlways() {
@@ -266,47 +255,6 @@ void Supla::Device::StatusLed::iterateAlways() {
     case CUSTOM_SEQUENCE:
     default:
       break;
-  }
-}
-
-void Supla::Device::StatusLed::onTimer() {
-  Supla::AutoLock autoLock(mutex);
-  updatePin();
-}
-
-void Supla::Device::StatusLed::setInvertedLogic(bool invertedLogic) {
-  Supla::AutoLock autoLock(mutex);
-  invert = invertedLogic;
-  updatePin();
-}
-
-void Supla::Device::StatusLed::turnOn() {
-  lastUpdate = millis();
-  state = ON;
-  Supla::Io::digitalWrite(outPin, invert ? 0 : 1, io);
-}
-
-void Supla::Device::StatusLed::turnOff() {
-  lastUpdate = millis();
-  state = OFF;
-  Supla::Io::digitalWrite(outPin, invert ? 1 : 0, io);
-}
-
-void Supla::Device::StatusLed::updatePin() {
-  if (onDuration == 0 || offDuration == 0) {
-    if ((state == ON || state == NOT_INITIALIZED) && onDuration == 0) {
-      turnOff();
-    }
-    if ((state == OFF || state == NOT_INITIALIZED) && offDuration == 0) {
-      turnOn();
-    }
-    return;
-  }
-
-  if (state == ON && millis() - lastUpdate > onDuration) {
-    turnOff();
-  } else if (state == OFF && millis() - lastUpdate > offDuration) {
-    turnOn();
   }
 }
 

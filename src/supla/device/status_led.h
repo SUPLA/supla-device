@@ -19,14 +19,11 @@
 #ifndef SRC_SUPLA_DEVICE_STATUS_LED_H_
 #define SRC_SUPLA_DEVICE_STATUS_LED_H_
 
-#include "../element.h"
+#include <supla/control/blinking_led.h>
 
 namespace Supla {
-class Mutex;
 
-enum LedState { NOT_INITIALIZED, ON, OFF };
-
-enum LedMode {
+enum LedMode : uint8_t {
   LED_ON_WHEN_CONNECTED /* default */,
   LED_OFF_WHEN_CONNECTED,
   LED_ALWAYS_OFF,
@@ -39,7 +36,7 @@ enum LedMode {
 // REGISTERED_AND_READY state. So for all states where Supla protocol has
 // SERVER_CONNECTING and REGISTERED_AND_READY we check also other protocol
 // layers state if they doesn't have any higher priority state.
-enum LedSequence {
+enum LedSequence : uint8_t {
   NETWORK_CONNECTING /* initial state 2000/2000 ms */,
   SERVER_CONNECTING /* flashing 500/500 ms */,
   REGISTERED_AND_READY /* stable ON or OFF depending on config */,
@@ -50,31 +47,22 @@ enum LedSequence {
   CUSTOM_SEQUENCE /* values set manually, state changes ignored */
 };
 
-class Io;
-
 namespace Device {
 
 const char StatusLedCfgTag[] = "statusled";
 
-class StatusLed : public Element {
+class StatusLed : public Supla::Control::BlinkingLed {
  public:
   explicit StatusLed(Supla::Io *io, uint8_t outPin, bool invert = false);
   explicit StatusLed(uint8_t outPin, bool invert = false);
 
   void onLoadConfig(SuplaDeviceClass *) override;
-  void onInit() override;
   void iterateAlways() override;
-  void onTimer() override;
   void onDeviceConfigChange(uint64_t fieldBit) override;
-
-  // Use inverted logic for GPIO output, when:
-  // false -> HIGH=ON,  LOW=OFF
-  // true  -> HIGH=OFF, LOW=ON
-  void setInvertedLogic(bool invertedLogic);
 
   // Enables custom LED sequence based on given durations.
   // Automatic sequence change will be disabled.
-  void setCustomSequence(int onDurationMs, int offDurationMs);
+  void setCustomSequence(int onDurationMs, int offDurationMs) override;
 
   // Restores automatic LED sequence change based on device state.
   // It is enabled by default, so if it wasn't disabled by calling
@@ -89,22 +77,10 @@ class StatusLed : public Element {
   void setUseDeviceConfig(bool value);
 
  protected:
-  void updatePin();
-  void turnOn();
-  void turnOff();
-
-  uint8_t outPin = 0;
-  bool invert = false;
-  bool useDeviceConfig = true;
-  unsigned int onDuration = 0;
-  unsigned int offDuration = 1000;
-  uint32_t lastUpdate = 0;
-  LedState state = NOT_INITIALIZED;
   LedSequence currentSequence = NETWORK_CONNECTING;
   LedMode ledMode = LED_ON_WHEN_CONNECTED;
-  Supla::Io *io = nullptr;
-  Supla::Mutex *mutex = nullptr;
   int8_t defaultMode = 0;
+  bool useDeviceConfig = true;
 };
 
 }  // namespace Device

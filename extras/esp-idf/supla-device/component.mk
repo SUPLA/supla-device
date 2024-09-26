@@ -100,6 +100,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/control/simple_button.o \
   ../../../src/supla/control/virtual_relay.o \
   ../../../src/supla/control/hvac_base.o \
+  ../../../src/supla/control/blinking_led.o \
 	\
   ../../../src/supla/condition.o \
   ../../../src/supla/condition_getter.o \

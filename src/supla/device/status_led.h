@@ -49,7 +49,6 @@ enum LedSequence : uint8_t {
 
 namespace Device {
 
-const char StatusLedCfgTag[] = "statusled";
 
 class StatusLed : public Supla::Control::BlinkingLed {
  public:

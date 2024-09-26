@@ -45,6 +45,7 @@ const char EmPhaseLedVoltageHighTag[] = "em_led_vh";
 const char EmPhaseLedPowerLowTag[] = "em_led_pl";
 const char EmPhaseLedPowerHighTag[] = "em_led_ph";
 const char MinBrightTag[] = "min_bright";
+const char StatusLedCfgTag[] = "statusled";
 
 }  // namespace ConfigTag
 }  // namespace Supla

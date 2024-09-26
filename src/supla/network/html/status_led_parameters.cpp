@@ -23,6 +23,7 @@
 #include <supla/tools.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/status_led.h>
+#include <supla/storage/config_tags.h>
 
 #include "status_led_parameters.h"
 
@@ -40,7 +41,7 @@ void StatusLedParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = 0;
-    cfg->getInt8(Supla::Device::StatusLedCfgTag, &value);
+    cfg->getInt8(Supla::ConfigTag::StatusLedCfgTag, &value);
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");
@@ -74,20 +75,20 @@ bool StatusLedParameters::handleResponse(const char* key, const char* value) {
   if (strcmp(key, "led") == 0) {
     int led = stringToUInt(value);
     int8_t valueInCfg = -1;
-    cfg->getInt8(Supla::Device::StatusLedCfgTag, &valueInCfg);
+    cfg->getInt8(Supla::ConfigTag::StatusLedCfgTag, &valueInCfg);
     if (valueInCfg != led) {
       switch (led) {
         default:
         case 0: {
-          cfg->setInt8(Supla::Device::StatusLedCfgTag, 0);
+          cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag, 0);
           break;
         }
         case 1: {
-          cfg->setInt8(Supla::Device::StatusLedCfgTag, led);
+          cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag, led);
           break;
         }
         case 2: {
-          cfg->setInt8(Supla::Device::StatusLedCfgTag, led);
+          cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag, led);
           break;
         }
       }

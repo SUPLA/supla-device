@@ -28,6 +28,7 @@
 #include <supla/device/remote_device_config.h>
 #include <supla/mutex.h>
 #include <supla/auto_lock.h>
+#include <supla/storage/config_tags.h>
 
 Supla::Device::StatusLed::StatusLed(Supla::Io *io, uint8_t outPin, bool invert)
     : Supla::Control::BlinkingLed(io, outPin, invert) {
@@ -46,9 +47,9 @@ void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t value = defaultMode;
-    if (!cfg->getInt8(StatusLedCfgTag, &value)) {
+    if (!cfg->getInt8(Supla::ConfigTag::StatusLedCfgTag, &value)) {
       // update default value in config if it is missing
-      cfg->setInt8(Supla::Device::StatusLedCfgTag, defaultMode);
+      cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag, defaultMode);
     }
     switch (value) {
       default:
@@ -77,21 +78,21 @@ void Supla::Device::StatusLed::storeModeToConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     int8_t currentCfgValue = 0;
-    cfg->getInt8(StatusLedCfgTag, &currentCfgValue);
+    cfg->getInt8(Supla::ConfigTag::StatusLedCfgTag, &currentCfgValue);
     if (currentCfgValue != ledMode) {
       switch (ledMode) {
         default:
         case 0: {
-          cfg->setInt8(Supla::Device::StatusLedCfgTag, 0);
+          cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag, 0);
           break;
         }
         case 1: {
-          cfg->setInt8(Supla::Device::StatusLedCfgTag,
+          cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag,
                        static_cast<int8_t>(ledMode));
           break;
         }
         case 2: {
-          cfg->setInt8(Supla::Device::StatusLedCfgTag,
+          cfg->setInt8(Supla::ConfigTag::StatusLedCfgTag,
                        static_cast<int8_t>(ledMode));
           break;
         }

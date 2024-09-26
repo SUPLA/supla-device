@@ -52,13 +52,16 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
     if (rawCurrent[i] > UINT16_MAX - 1) {
       over65A = true;
     }
-    if (rawActivePower[i] > INT32_MAX) {
+    if (rawActivePower[i] > INT32_MAX ||
+        rawActivePower[i] < INT32_MIN) {
       activePowerInKW = true;
     }
-    if (rawReactivePower[i] > INT32_MAX) {
+    if (rawReactivePower[i] > INT32_MAX ||
+        rawReactivePower[i] < INT32_MIN) {
       reactivePowerInKvar = true;
     }
-    if (rawApparentPower[i] > INT32_MAX) {
+    if (rawApparentPower[i] > INT32_MAX ||
+        rawApparentPower[i] < INT32_MIN) {
       apparentPowerInKVA = true;
     }
   }

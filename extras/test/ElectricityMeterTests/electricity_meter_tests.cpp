@@ -271,12 +271,16 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
   EXPECT_EQ(extValue->type,
             EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2);
 
-  // only energy registers are kept
+  // measured values shouldn't be cleared
   EXPECT_EQ(emExtValue->measured_values,
-                EM_VAR_FORWARD_ACTIVE_ENERGY |
+            EM_VAR_FREQ | EM_VAR_VOLTAGE | EM_VAR_CURRENT |
+                EM_VAR_POWER_ACTIVE | EM_VAR_POWER_REACTIVE |
+                EM_VAR_POWER_APPARENT | EM_VAR_POWER_FACTOR |
+                EM_VAR_PHASE_ANGLE | EM_VAR_FORWARD_ACTIVE_ENERGY |
                 EM_VAR_REVERSE_ACTIVE_ENERGY | EM_VAR_FORWARD_REACTIVE_ENERGY |
                 EM_VAR_REVERSE_REACTIVE_ENERGY);
-  EXPECT_EQ(emExtValue->m_count, 1);
+  // m_count is set to 0
+  EXPECT_EQ(emExtValue->m_count, 0);
 }
 
 TEST(ElectricityMeterTests, ParametersOverBasicRange) {

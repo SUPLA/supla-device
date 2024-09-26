@@ -42,7 +42,6 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   }
   valueChanged = false;
 
-  emValue.m_count = 1;
   // Update current messurement precision based on last updates
   bool over65A = false;
   bool activePowerInKW = false;
@@ -209,6 +208,7 @@ void Supla::Sensor::ElectricityMeter::setVoltage(
       valueChanged = true;
     }
     emValue.m[0].voltage[phase] = voltage;
+    emValue.m_count = 1;
     emValue.measured_values |= EM_VAR_VOLTAGE;
   }
 }
@@ -221,6 +221,7 @@ void Supla::Sensor::ElectricityMeter::setCurrent(
       valueChanged = true;
     }
     rawCurrent[phase] = current;
+    emValue.m_count = 1;
     currentMeasurementAvailable = true;
   }
 }
@@ -231,6 +232,7 @@ void Supla::Sensor::ElectricityMeter::setFreq(unsigned _supla_int16_t freq) {
     valueChanged = true;
   }
   emValue.m[0].freq = freq;
+  emValue.m_count = 1;
   emValue.measured_values |= EM_VAR_FREQ;
 }
 
@@ -241,6 +243,7 @@ void Supla::Sensor::ElectricityMeter::setPowerActive(int phase, int64_t power) {
       valueChanged = true;
       rawActivePower[phase] = power;
     }
+    emValue.m_count = 1;
     powerActiveMeasurementAvailable = true;
   }
 }
@@ -253,6 +256,7 @@ void Supla::Sensor::ElectricityMeter::setPowerReactive(int phase,
       valueChanged = true;
       rawReactivePower[phase] = power;
     }
+    emValue.m_count = 1;
     powerReactiveMeasurementAvailable = true;
   }
 }
@@ -265,6 +269,7 @@ void Supla::Sensor::ElectricityMeter::setPowerApparent(int phase,
       valueChanged = true;
       rawApparentPower[phase] = power;
     }
+    emValue.m_count = 1;
     powerApparentMeasurementAvailable = true;
   }
 }
@@ -277,6 +282,7 @@ void Supla::Sensor::ElectricityMeter::setPowerFactor(int phase,
       valueChanged = true;
     }
     emValue.m[0].power_factor[phase] = powerFactor;
+    emValue.m_count = 1;
     emValue.measured_values |= EM_VAR_POWER_FACTOR;
   }
 }
@@ -289,15 +295,14 @@ void Supla::Sensor::ElectricityMeter::setPhaseAngle(int phase,
       valueChanged = true;
     }
     emValue.m[0].phase_angle[phase] = phaseAngle;
+    emValue.m_count = 1;
     emValue.measured_values |= EM_VAR_PHASE_ANGLE;
   }
 }
 
 void Supla::Sensor::ElectricityMeter::resetReadParameters() {
+  emValue.m_count = 0;
   if (emValue.measured_values != 0) {
-    // we keep only energy counting registers/flags
-    emValue.measured_values &= EM_VAR_ALL_ENERGY_REGISTERS;
-
     memset(&emValue.m[0], 0, sizeof(TElectricityMeter_Measurement));
     memset(&rawCurrent, 0, sizeof(rawCurrent));
     memset(&rawActivePower, 0, sizeof(rawActivePower));

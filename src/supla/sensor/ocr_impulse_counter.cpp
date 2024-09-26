@@ -33,7 +33,8 @@
 // Not supported on Arduino Mega
 #ifndef ARDUINO_ARCH_AVR
 
-#define OCR_DEFAULT_PHOTO_INTERVAL_SEC 120
+#define OCR_MIN_PHOTO_INTERVAL_SEC (60*60)
+#define OCR_DEFAULT_PHOTO_INTERVAL_SEC OCR_MIN_PHOTO_INTERVAL_SEC
 #define OCR_DEFAULT_LIGHTING_LEVEL 50
 #define OCR_DEFAULT_RESULT_FETCH_INTERVAL_SEC 10
 
@@ -123,7 +124,8 @@ uint8_t OcrImpulseCounter::applyChannelConfig(TSD_ChannelConfig *result,
           // correct AvailableLightingModes
           ocrConfigReceived = false;
         }
-        if (ocrConfig.PhotoIntervalSec > 0 && ocrConfig.PhotoIntervalSec < 60) {
+        if (ocrConfig.PhotoIntervalSec > 0 &&
+            ocrConfig.PhotoIntervalSec < OCR_MIN_PHOTO_INTERVAL_SEC) {
           SUPLA_LOG_DEBUG("OcrIC: invalid PhotoIntervalSec");
           ocrConfig.PhotoIntervalSec = OCR_DEFAULT_PHOTO_INTERVAL_SEC;
           ocrConfigReceived = false;
@@ -228,7 +230,8 @@ bool OcrImpulseCounter::iterateConnected() {
   if (!Supla::Clock::IsReady()) {
     return result;
   }
-  if (ocrConfigReceived && ocrConfig.PhotoIntervalSec >= 60) {
+  if (ocrConfigReceived &&
+      ocrConfig.PhotoIntervalSec >= OCR_MIN_PHOTO_INTERVAL_SEC) {
     if (lastPhotoTakeTimestamp == 0 || millis() - lastPhotoTakeTimestamp >=
                                            ocrConfig.PhotoIntervalSec * 1000) {
       if (handleLedStateBeforePhoto()) {
@@ -395,7 +398,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
                     " < previous value %" PRIu64,
                     resultMeasurement,
                     lastCorrectOcrReading);
-  } else if (ocrConfig.PhotoIntervalSec >= 60) {
+  } else if (ocrConfig.PhotoIntervalSec >= OCR_MIN_PHOTO_INTERVAL_SEC) {
     time_t diff = now - lastCorrectOcrReadingTimestamp;
     int periods = (diff / ocrConfig.PhotoIntervalSec) + 1;
     uint64_t maxIncrementAllowed = maxIncrementAllowedPerPhoto * periods;

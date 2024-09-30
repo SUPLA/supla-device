@@ -126,7 +126,8 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   }
 
   // Prepare extended channel value
-  if (lastChannelUpdateTime == 0 || millis() - lastChannelUpdateTime >= 5000) {
+  if (lastChannelUpdateTime == 0 ||
+      millis() - lastChannelUpdateTime >= refreshRateSec * 1000) {
     lastChannelUpdateTime = millis();
     srpc_evtool_v2_emextended2extended(&emValue, extChannel.getExtValue());
     extChannel.setNewValue(emValue);
@@ -637,6 +638,7 @@ const Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() const {
 }
 
 void Supla::Sensor::ElectricityMeter::setRefreshRate(unsigned int sec) {
+  SUPLA_LOG_INFO("EM: setRefreshRate: %d", sec);
   refreshRateSec = sec;
   if (refreshRateSec == 0) {
     refreshRateSec = 1;

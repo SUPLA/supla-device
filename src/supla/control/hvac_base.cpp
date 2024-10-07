@@ -2941,7 +2941,7 @@ _supla_int16_t HvacBase::getSecondaryTemp() {
   }
 
   return INT16_MIN;
-  }
+}
 
 _supla_int16_t HvacBase::getTemperature(int channelNo) {
   if (channelNo >= 0 && channelNo != getChannelNumber()) {

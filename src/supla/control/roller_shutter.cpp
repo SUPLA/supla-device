@@ -22,11 +22,16 @@
 #include <supla/time.h>
 #include <supla/io.h>
 #include <supla/control/button.h>
+#include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 
 #include "../actions.h"
+#include "supla/local_action.h"
 
 namespace Supla {
 namespace Control {
+
+int16_t RollerShutter::rsStorageSaveDelay = 5000;
 
 #pragma pack(push, 1)
 struct RollerShutterStateData {
@@ -48,9 +53,15 @@ RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
     : pinUp(pinUp), pinDown(pinDown), highIsOn(highIsOn) {
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
   channel.setDefault(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
-  channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER);
+  channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
+                      SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
+                      SUPLA_BIT_FUNC_TERRACE_AWNING |
+                      SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR |
+                      SUPLA_BIT_FUNC_CURTAIN |
+                      SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
 void RollerShutter::onInit() {
@@ -61,24 +72,33 @@ void RollerShutter::onInit() {
   Supla::Io::pinMode(channel.getChannelNumber(), pinUp, OUTPUT, io);
   Supla::Io::pinMode(channel.getChannelNumber(), pinDown, OUTPUT, io);
 
+  setupButtonActions();
+}
+
+void RollerShutter::setupButtonActions() {
   if (upButton) {
     upButton->onInit();  // make sure button was initialized
     if (upButton->isMonostable()) {
-      upButton->addAction(
-          Supla::MOVE_UP_OR_STOP, this, Supla::CONDITIONAL_ON_PRESS);
+      upButton->addAction(Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP,
+                          this,
+                          Supla::CONDITIONAL_ON_PRESS);
     } else if (upButton->isBistable()) {
-      upButton->addAction(
-          Supla::MOVE_UP_OR_STOP, this, Supla::CONDITIONAL_ON_CHANGE);
+      upButton->addAction(Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP,
+                          this,
+                          Supla::CONDITIONAL_ON_CHANGE);
     }
   }
+
   if (downButton) {
     downButton->onInit();  // make sure button was initialized
     if (downButton->isMonostable()) {
-      downButton->addAction(
-          Supla::MOVE_DOWN_OR_STOP, this, Supla::CONDITIONAL_ON_PRESS);
+      downButton->addAction(Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP,
+                            this,
+                            Supla::CONDITIONAL_ON_PRESS);
     } else if (downButton->isBistable()) {
-      downButton->addAction(
-          Supla::MOVE_DOWN_OR_STOP, this, Supla::CONDITIONAL_ON_CHANGE);
+      downButton->addAction(Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP,
+                            this,
+                            Supla::CONDITIONAL_ON_CHANGE);
     }
   }
 }
@@ -165,7 +185,7 @@ void RollerShutter::setOpenCloseTime(uint32_t newClosingTimeMs,
   if (newClosingTimeMs != closingTimeMs || newOpeningTimeMs != openingTimeMs) {
     closingTimeMs = newClosingTimeMs;
     openingTimeMs = newOpeningTimeMs;
-    triggerCalibration();
+    setCalibrationNeeded();
     SUPLA_LOG_DEBUG(
         "RS[%d] new time settings received. Opening time: %d ms; "
         "closing time: %d ms. Starting calibration...",
@@ -253,11 +273,35 @@ void RollerShutter::handleAction(int event, int action) {
       }
       break;
     }
+    case INTERNAL_BUTTON_MOVE_UP_OR_STOP: {
+      if (inMove()) {
+        stop();
+      } else {
+        if (rsConfig.buttonsUpsideDown == 2) {
+          moveDown();
+        } else {
+          moveUp();
+        }
+      }
+      break;
+    }
     case MOVE_DOWN_OR_STOP: {
       if (inMove()) {
         stop();
       } else {
         moveDown();
+      }
+      break;
+    }
+    case INTERNAL_BUTTON_MOVE_DOWN_OR_STOP: {
+      if (inMove()) {
+        stop();
+      } else {
+        if (rsConfig.buttonsUpsideDown == 2) {
+          moveUp();
+        } else {
+          moveDown();
+        }
       }
       break;
     }
@@ -320,27 +364,35 @@ void RollerShutter::stopMovement() {
   currentDirection = STOP_DIR;
   doNothingTime = millis();
   // Schedule save in 5 s after stop movement of roller shutter
-  Supla::Storage::ScheduleSave(5000);
+  Supla::Storage::ScheduleSave(rsStorageSaveDelay);
 }
 
 void RollerShutter::relayDownOn() {
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? HIGH : LOW, io);
+  Supla::Io::digitalWrite(channel.getChannelNumber(),
+                          rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
+                          highIsOn ? HIGH : LOW,
+                          io);
 }
 
 void RollerShutter::relayUpOn() {
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? HIGH : LOW, io);
+  Supla::Io::digitalWrite(channel.getChannelNumber(),
+                          rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
+                          highIsOn ? HIGH : LOW,
+                          io);
 }
 
 void RollerShutter::relayDownOff() {
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH, io);
+  Supla::Io::digitalWrite(channel.getChannelNumber(),
+                          rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
+                          highIsOn ? LOW : HIGH,
+                          io);
 }
 
 void RollerShutter::relayUpOff() {
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
+  Supla::Io::digitalWrite(channel.getChannelNumber(),
+                          rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
+                          highIsOn ? LOW : HIGH,
+                          io);
 }
 
 void RollerShutter::startClosing() {
@@ -363,9 +415,13 @@ void RollerShutter::switchOffRelays() {
 }
 
 void RollerShutter::triggerCalibration() {
+  setCalibrationNeeded();
+  setTargetPosition(0);
+}
+
+void RollerShutter::setCalibrationNeeded() {
   calibrate = true;
   currentPosition = UNKNOWN_POSITION;
-  setTargetPosition(0);
 }
 
 bool RollerShutter::isCalibrationRequested() const {
@@ -385,13 +441,6 @@ void RollerShutter::onTimer() {
   }
   doNothingTime = 0;
 
-  if (operationTimeoutS != 0 &&
-      millis() - lastMovementStartTime > operationTimeoutS * 1000) {
-    setTargetPosition(STOP_POSITION);
-    operationTimeoutS = 0;
-    SUPLA_LOG_DEBUG("RS[%d]: Operation timeout", channel.getChannelNumber());
-  }
-
   if (targetPosition == STOP_POSITION && inMove()) {
     stopMovement();
     calibrationTime = 0;
@@ -408,7 +457,7 @@ void RollerShutter::onTimer() {
       if (calibrationTime == 0) {
         // If roller shutter wasn't in move when calibration is requested, we
         // select direction based on requested targetPosition
-        operationTimeoutS = 0;
+        operationTimeoutMs = 0;
         if (targetPosition > 50 || targetPosition == MOVE_DOWN_POSITION) {
           if (currentDirection == UP_DIR) {
             stopMovement();
@@ -417,7 +466,7 @@ void RollerShutter::onTimer() {
                             channel.getChannelNumber());
             calibrationTime = closingTimeMs;
             if (calibrationTime == 0) {
-              operationTimeoutS = 60;
+              operationTimeoutMs = 60000;
             }
             startClosing();
           }
@@ -429,7 +478,7 @@ void RollerShutter::onTimer() {
                             channel.getChannelNumber());
             calibrationTime = openingTimeMs;
             if (calibrationTime == 0) {
-              operationTimeoutS = 60;
+              operationTimeoutMs = 60000;
             }
             startOpening();
           }
@@ -454,14 +503,15 @@ void RollerShutter::onTimer() {
         } else {
           currentPosition = 100;
         }
+        if (targetPosition < 0) {
+          setTargetPosition(STOP_POSITION);
+        }
         stopMovement();
       }
     }
   } else if (isCalibrated()) {
-    if (!newTargetPositionAvailable &&
-        currentDirection !=
-            STOP_DIR) {  // no new command available and it is moving,
-                         // just handle roller movement/status
+    if (!newTargetPositionAvailable && currentDirection != STOP_DIR) {
+      // no new command available and it is moving, just handle movement/status
       if (currentDirection == UP_DIR && currentPosition > 0) {
         int movementDistance = lastPositionBeforeMovement;
         uint32_t timeRequired =
@@ -474,7 +524,15 @@ void RollerShutter::onTimer() {
         currentPosition = lastPositionBeforeMovement -
                           movementDistance * fractionOfMovemendDone;
         if (targetPosition >= 0 && currentPosition <= targetPosition) {
-          stopMovement();
+          if (targetPosition == 0) {
+            operationTimeoutMs = getTimeMarginValue(openingTimeMs);
+            lastMovementStartTime = millis();
+            SUPLA_LOG_DEBUG("RS[%d]: operation timeout: %d",
+                            channel.getChannelNumber(),
+                            operationTimeoutMs);
+          } else {
+            stopMovement();
+          }
         }
       } else if (currentDirection == DOWN_DIR && currentPosition < 100) {
         int movementDistance = 100 - lastPositionBeforeMovement;
@@ -488,7 +546,15 @@ void RollerShutter::onTimer() {
         currentPosition = lastPositionBeforeMovement +
                           movementDistance * fractionOfMovemendDone;
         if (targetPosition >= 0 && currentPosition >= targetPosition) {
-          stopMovement();
+          if (targetPosition == 100) {
+            operationTimeoutMs = getTimeMarginValue(closingTimeMs);
+            lastMovementStartTime = millis();
+            SUPLA_LOG_DEBUG("RS[%d]: operation timeout: %d",
+                            channel.getChannelNumber(),
+                            operationTimeoutMs);
+          } else {
+            stopMovement();
+          }
         }
       }
 
@@ -503,12 +569,19 @@ void RollerShutter::onTimer() {
       int newDirection = STOP_DIR;
       if (targetPosition == MOVE_UP_POSITION) {
         newDirection = UP_DIR;
-        operationTimeoutS = 60;
+        operationTimeoutMs = openingTimeMs + getTimeMarginValue(openingTimeMs);
+        SUPLA_LOG_DEBUG("RS[%d]: Set new direction: UP, operation timeout: %d",
+                        channel.getChannelNumber(),
+                        operationTimeoutMs);
       } else if (targetPosition == MOVE_DOWN_POSITION) {
         newDirection = DOWN_DIR;
-        operationTimeoutS = 60;
+        operationTimeoutMs = closingTimeMs + getTimeMarginValue(closingTimeMs);
+        SUPLA_LOG_DEBUG(
+            "RS[%d]: Set new direction: DOWN, operation timeout: %d",
+            channel.getChannelNumber(),
+            operationTimeoutMs);
       } else {
-        operationTimeoutS = 0;
+        operationTimeoutMs = 0;
         int newMovementValue = targetPosition - currentPosition;
         // 0 - 100 = -100 (move down); 50 -
         // 20 = 30 (move up 30%), etc
@@ -538,7 +611,7 @@ void RollerShutter::onTimer() {
     currentPosition = UNKNOWN_POSITION;
     if (newTargetPositionAvailable) {
       int newDirection = STOP_DIR;
-      operationTimeoutS = 60;
+      operationTimeoutMs = 60000;
       if (targetPosition == MOVE_UP_POSITION) {
         newDirection = UP_DIR;
       } else if (targetPosition == MOVE_DOWN_POSITION) {
@@ -565,10 +638,18 @@ void RollerShutter::onTimer() {
         }
       } else {  // else stop before changing direction
         stopMovement();
-        operationTimeoutS = 0;
+        operationTimeoutMs = 0;
       }
     }
   }
+
+  if (operationTimeoutMs != 0 &&
+      millis() - lastMovementStartTime > operationTimeoutMs) {
+    setTargetPosition(STOP_POSITION);
+    operationTimeoutMs = 0;
+    SUPLA_LOG_DEBUG("RS[%d]: Operation timeout", channel.getChannelNumber());
+  }
+
 
   // if (newCurrentPosition != currentPosition) {
   // currentPosition = newCurrentPosition;
@@ -657,6 +738,209 @@ int RollerShutter::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
     }
   }
   return SUPLA_CALCFG_RESULT_FALSE;
+}
+
+uint8_t RollerShutter::applyChannelConfig(TSD_ChannelConfig *result, bool) {
+  SUPLA_LOG_DEBUG(
+      "RS[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
+      getChannelNumber(),
+      result->Func,
+      result->ConfigType,
+      result->ConfigSize);
+
+  if (result->ConfigSize == 0) {
+    return SUPLA_CONFIG_RESULT_TRUE;
+  }
+
+  switch (result->Func) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER:
+    case SUPLA_CHANNELFNC_TERRACE_AWNING:
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR:
+    case SUPLA_CHANNELFNC_CURTAIN:
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      if (result->ConfigType == 0 &&
+          result->ConfigSize == sizeof(TChannelConfig_RollerShutter)) {
+        auto newConfig =
+            reinterpret_cast<TChannelConfig_RollerShutter *>(result->Config);
+        if (newConfig->OpeningTimeMS >= 0 && newConfig->ClosingTimeMS >= 0) {
+          setOpenCloseTime(newConfig->ClosingTimeMS, newConfig->OpeningTimeMS);
+        }
+        if (!inMove()) {
+          setTargetPosition(STOP_POSITION);
+        }
+        if (rsConfig.buttonsUpsideDown != 0) {
+          rsConfig.buttonsUpsideDown = newConfig->ButtonsUpsideDown;
+        }
+        if (rsConfig.motorUpsideDown != 0) {
+          rsConfig.motorUpsideDown = newConfig->MotorUpsideDown;
+        }
+        if (rsConfig.timeMargin != 0) {
+          rsConfig.timeMargin = newConfig->TimeMargin;
+        }
+        rsConfig.visualizationType = newConfig->VisualizationType;
+        if (rsConfig.buttonsUpsideDown < 1 || rsConfig.buttonsUpsideDown > 2) {
+          rsConfig.buttonsUpsideDown = 1;
+        }
+        if (rsConfig.motorUpsideDown < 1 || rsConfig.motorUpsideDown > 2) {
+          rsConfig.motorUpsideDown = 1;
+        }
+        if (rsConfig.timeMargin < -1 || rsConfig.timeMargin == 0) {
+          rsConfig.timeMargin = -1;
+        }
+        if (rsConfig.timeMargin > 101) {
+          rsConfig.timeMargin = 101;
+        }
+        saveConfig();
+        printConfig();
+        return SUPLA_CONFIG_RESULT_TRUE;
+      }
+      break;
+    }
+
+    default: {
+      SUPLA_LOG_WARNING("RS[%d]: Ignoring unsupported channel function %d",
+                        getChannelNumber(), result->Func);
+      break;
+    }
+  }
+  return SUPLA_CONFIG_RESULT_TRUE;
+}
+
+void RollerShutter::onLoadConfig(SuplaDeviceClass *) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    loadFunctionFromConfig();
+
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::RollerShutterTag);
+    RollerShutterConfig storedConfig = {};
+    if (cfg->getBlob(key,
+                     reinterpret_cast<char *>(&storedConfig),
+                     sizeof(RollerShutterConfig))) {
+      rsConfig = storedConfig;
+      printConfig();
+    } else {
+      SUPLA_LOG_DEBUG("RS[%d]: using default config", getChannelNumber());
+    }
+  }
+}
+
+void RollerShutter::printConfig() const {
+  SUPLA_LOG_INFO(
+      "RS[%d]: rsConfig: motor: %s, button: %s, time "
+      "margin: %d, visualization: %d",
+      getChannelNumber(),
+      rsConfig.motorUpsideDown == 2 ? "upside down" : "normal",
+      rsConfig.buttonsUpsideDown == 2 ? "upside down" : "normal",
+      rsConfig.timeMargin,
+      rsConfig.visualizationType);
+}
+
+void RollerShutter::saveConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::RollerShutterTag);
+    if (cfg->setBlob(key,
+                     reinterpret_cast<char *>(&rsConfig),
+                     sizeof(RollerShutterConfig))) {
+      cfg->saveWithDelay(2000);
+    }
+  }
+}
+
+void RollerShutter::setRsStorageSaveDelay(int delayMs) {
+  rsStorageSaveDelay = delayMs;
+}
+
+void RollerShutter::fillChannelConfig(void *channelConfig, int *size) {
+  if (size) {
+    *size = 0;
+  } else {
+    return;
+  }
+  if (channelConfig == nullptr) {
+    return;
+  }
+
+  switch (channel.getDefaultFunction()) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER:
+    case SUPLA_CHANNELFNC_TERRACE_AWNING:
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR:
+    case SUPLA_CHANNELFNC_CURTAIN:
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      SUPLA_LOG_DEBUG(
+          "Relay[%d]: fill channel config for RS functions",
+          channel.getChannelNumber());
+
+      auto config = reinterpret_cast<TChannelConfig_RollerShutter *>(
+          channelConfig);
+      *size = sizeof(TChannelConfig_RollerShutter);
+      config->ButtonsUpsideDown = rsConfig.buttonsUpsideDown;
+      config->MotorUpsideDown = rsConfig.motorUpsideDown;
+      config->TimeMargin = rsConfig.timeMargin;
+      config->VisualizationType = rsConfig.visualizationType;
+      config->OpeningTimeMS = openingTimeMs;
+      config->ClosingTimeMS = closingTimeMs;
+      break;
+    }
+    default:
+      SUPLA_LOG_WARNING(
+          "RS[%d]: fill channel config for unknown function %d",
+          channel.getChannelNumber(),
+          channel.getDefaultFunction());
+      return;
+  }
+}
+
+void RollerShutter::setRsConfigMotorUpsideDownEnabled(bool enable) {
+  if (enable) {
+    if (rsConfig.motorUpsideDown == 0) {
+      rsConfig.motorUpsideDown = 1;
+    }
+  } else {
+    rsConfig.motorUpsideDown = 0;
+  }
+}
+
+void RollerShutter::setRsConfigButtonsUpsideDownEnabled(bool enable) {
+  if (enable) {
+    if (rsConfig.buttonsUpsideDown == 0) {
+      rsConfig.buttonsUpsideDown = 1;
+    }
+  } else {
+    rsConfig.buttonsUpsideDown = 0;
+  }
+}
+
+void RollerShutter::setRsConfigTimeMarginEnabled(bool enable) {
+  if (enable) {
+    if (rsConfig.timeMargin == 0) {
+      rsConfig.timeMargin = -1;
+    }
+  } else {
+    rsConfig.timeMargin = 0;
+  }
+}
+
+uint32_t RollerShutter::getTimeMarginValue(uint32_t fullTime) const {
+  if (fullTime == 0) {
+    return 60000;
+  }
+  if (rsConfig.timeMargin <= 0) {
+    // case for -1 (device specific) and 0 (not used)
+    return fullTime * 0.3;
+  }
+  if (rsConfig.timeMargin == 1) {
+    return 50;
+  }
+  uint32_t margin = fullTime * ((rsConfig.timeMargin - 1) / 100.0);
+  if (margin < 50) {
+    return 50;
+  }
+  return margin;
 }
 
 }  // namespace Control

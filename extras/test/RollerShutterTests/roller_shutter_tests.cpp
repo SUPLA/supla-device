@@ -60,12 +60,19 @@ TEST_F(RollerShutterFixture, basicTests) {
   TDSC_RollerShutterValue value = {};
   EXPECT_EQ(rs.getChannel()->getChannelType(), SUPLA_CHANNELTYPE_RELAY);
   EXPECT_EQ(rs.getChannel()->getFuncList(),
-            SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER);
+            SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
+                      SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
+                      SUPLA_BIT_FUNC_TERRACE_AWNING |
+                      SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR |
+                      SUPLA_BIT_FUNC_CURTAIN |
+                      SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
+
   EXPECT_EQ(rs.getChannel()->getDefaultFunction(),
             SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   EXPECT_EQ(rs.getChannel()->getFlags(),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
                 SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE |
                 SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number),

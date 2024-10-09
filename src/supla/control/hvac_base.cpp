@@ -29,9 +29,11 @@
 #include <supla/sensor/thermometer.h>
 #include <supla/events.h>
 #include <supla/channels/channel.h>
+#include <supla/storage/config_tags.h>
 
 #include "output_interface.h"
 #include "relay_hvac_aggregator.h"
+#include "supla/device/status_led.h"
 
 #define SUPLA_HVAC_DEFAULT_TEMP_HEAT          2100  // 21.00 C
 #define SUPLA_HVAC_DEFAULT_TEMP_COOL          2500  // 25.00 C
@@ -242,7 +244,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     initDefaultConfig();
 
     // Generic HVAC configuration
-    generateKey(key, "hvac_cfg");
+    generateKey(key, Supla::ConfigTag::HvacCfgTag);
     TChannelConfig_HVAC storedConfig = {};
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&storedConfig),
@@ -2444,7 +2446,7 @@ void HvacBase::saveConfig() {
   if (cfg) {
     // Generic HVAC configuration
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, "hvac_cfg");
+    generateKey(key, Supla::ConfigTag::HvacCfgTag);
     if (cfg->setBlob(key,
                      reinterpret_cast<char *>(&config),
                      sizeof(TChannelConfig_HVAC))) {

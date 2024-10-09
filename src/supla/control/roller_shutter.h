@@ -20,7 +20,6 @@
 #include <stdint.h>
 
 #include "../action_handler.h"
-#include "../actions.h"
 #include "../channel_element.h"
 
 #define UNKNOWN_POSITION   -1
@@ -34,6 +33,8 @@ class Io;
 
 namespace Control {
 
+class Button;
+
 enum Directions { STOP_DIR = 0, DOWN_DIR = 1, UP_DIR = 2 };
 
 class RollerShutter : public ChannelElement, public ActionHandler {
@@ -46,6 +47,7 @@ class RollerShutter : public ChannelElement, public ActionHandler {
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void handleAction(int event, int action) override;
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
 
   void close();         // Sets target position to 100%
   void open();          // Sets target position to 0%
@@ -70,6 +72,12 @@ class RollerShutter : public ChannelElement, public ActionHandler {
 
   uint32_t getClosingTimeMs() const;
   uint32_t getOpeningTimeMs() const;
+
+  void attach(Supla::Control::Button *up, Supla::Control::Button *down);
+
+  void triggerCalibration();
+  bool isCalibrationRequested() const;
+  bool isCalibrated() const;
 
  protected:
   virtual void stopMovement();
@@ -96,7 +104,7 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   uint32_t calibrationTime = 0;
   Supla::Io *io = nullptr;
 
-  uint16_t operationTimeout = 0;
+  uint16_t operationTimeoutS = 0;
 
   bool calibrate =
       true;  // set to true when new closing/opening time is given -
@@ -115,6 +123,9 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   int8_t currentPosition = UNKNOWN_POSITION;  // 0 - closed; 100 - opened
   int8_t targetPosition = STOP_POSITION;      // 0-100
   int8_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
+
+  Supla::Control::Button *upButton = nullptr;
+  Supla::Control::Button *downButton = nullptr;
 };
 
 }  // namespace Control

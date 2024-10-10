@@ -779,10 +779,10 @@ uint8_t RollerShutter::applyChannelConfig(TSD_ChannelConfig *result, bool) {
           rsConfig.timeMargin = newConfig->TimeMargin;
         }
         rsConfig.visualizationType = newConfig->VisualizationType;
-        if (rsConfig.buttonsUpsideDown < 1 || rsConfig.buttonsUpsideDown > 2) {
+        if (rsConfig.buttonsUpsideDown > 2) {
           rsConfig.buttonsUpsideDown = 1;
         }
-        if (rsConfig.motorUpsideDown < 1 || rsConfig.motorUpsideDown > 2) {
+        if (rsConfig.motorUpsideDown > 2) {
           rsConfig.motorUpsideDown = 1;
         }
         if (rsConfig.timeMargin < -1 || rsConfig.timeMargin == 0) {
@@ -818,7 +818,16 @@ void RollerShutter::onLoadConfig(SuplaDeviceClass *) {
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&storedConfig),
                      sizeof(RollerShutterConfig))) {
-      rsConfig = storedConfig;
+      if (rsConfig.motorUpsideDown != 0) {
+        rsConfig.motorUpsideDown = storedConfig.motorUpsideDown;
+      }
+      if (rsConfig.buttonsUpsideDown != 0) {
+        rsConfig.buttonsUpsideDown = storedConfig.buttonsUpsideDown;
+      }
+      if (rsConfig.timeMargin != 0) {
+        rsConfig.timeMargin = storedConfig.timeMargin;
+      }
+      rsConfig.visualizationType = storedConfig.visualizationType;
       printConfig();
     } else {
       SUPLA_LOG_DEBUG("RS[%d]: using default config", getChannelNumber());
@@ -828,11 +837,13 @@ void RollerShutter::onLoadConfig(SuplaDeviceClass *) {
 
 void RollerShutter::printConfig() const {
   SUPLA_LOG_INFO(
-      "RS[%d]: rsConfig: motor: %s, button: %s, time "
+      "RS[%d]: rsConfig: motor: %s (%d), button: %s (%d), time "
       "margin: %d, visualization: %d",
       getChannelNumber(),
       rsConfig.motorUpsideDown == 2 ? "upside down" : "normal",
+      rsConfig.motorUpsideDown,
       rsConfig.buttonsUpsideDown == 2 ? "upside down" : "normal",
+      rsConfig.buttonsUpsideDown,
       rsConfig.timeMargin,
       rsConfig.visualizationType);
 }

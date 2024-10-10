@@ -103,6 +103,7 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   void setRsConfigTimeMarginEnabled(bool enable);
 
   static void setRsStorageSaveDelay(int delayMs);
+  virtual bool inMove();
 
  protected:
   virtual void stopMovement();
@@ -117,7 +118,6 @@ class RollerShutter : public ChannelElement, public ActionHandler {
 
   bool lastDirectionWasOpen() const;
   bool lastDirectionWasClose() const;
-  virtual bool inMove();
 
   void printConfig() const;
   void setupButtonActions();

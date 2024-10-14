@@ -247,7 +247,7 @@ void Channel::setNewValue(bool value) {
 
   newValue[0] = value;
   if (setNewValue(newValue)) {
-    if (value) {
+    if (getValueBool()) {
       runAction(Supla::ON_TURN_ON);
     } else {
       runAction(Supla::ON_TURN_OFF);

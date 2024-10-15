@@ -108,10 +108,11 @@ class DS1307RTC : public Clock {
     //  from the time obtained from the server
     if (isRTCReady) {
       DateTime now = rtc.now();
-      if ((now.minute() != getMin()) ||
-        (now.second() - getSec() > 5) || (now.second() - getSec() < -5)) {
-        rtc.adjust(DateTime(getYear(), getMonth(), getDay(),
-                            getHour(), getMin(), getSec()));
+      if ((now.year() != getYear()) || (now.month() != getMonth()) ||
+          (now.day() != getDay()) || (now.hour() != getHour()) ||
+          (now.minute() != getMin()) || (now.second() - getSec() > 5) ||
+          (now.second() - getSec() < -5)) {
+        rtc.adjust(DateTime(getTimeStamp()));
         SUPLA_LOG_DEBUG("Update RTC time from server");
       }
     }

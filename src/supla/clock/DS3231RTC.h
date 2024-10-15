@@ -25,15 +25,15 @@ use library manager to install it
 #include <supla/log_wrapper.h>
 #include <time.h>
 
-#include "clock.h"
-
 #include "RTClib.h"
+#include "clock.h"
 
 namespace Supla {
 
 class DS3231RTC : public Clock {
  public:
-  DS3231RTC() {}
+  DS3231RTC() {
+  }
 
   void onInit() {
     if (!rtc.begin()) {
@@ -69,11 +69,11 @@ class DS3231RTC : public Clock {
     }
   }
 
-  bool rtcIsReady() {
+  bool rtcIsReady() const {
     return isRTCReady;
   }
 
-  bool getRTCLostPowerFlag() {
+  bool getRTCLostPowerFlag() const {
     return RTCLostPower;
   }
 
@@ -107,14 +107,15 @@ class DS3231RTC : public Clock {
     //  from the time obtained from the server
     if (isRTCReady) {
       DateTime now = rtc.now();
-      if ((now.minute() != getMin()) ||
-        (now.second() - getSec() > 5) || (now.second() - getSec() < -5)) {
-        rtc.adjust(DateTime(getYear(), getMonth(), getDay(),
-                            getHour(), getMin(), getSec()));
+      if ((now.year() != getYear()) || (now.month() != getMonth()) ||
+          (now.day() != getDay()) || (now.hour() != getHour()) ||
+          (now.minute() != getMin()) || (now.second() - getSec() > 5) ||
+          (now.second() - getSec() < -5)) {
+        rtc.adjust(DateTime(getTimeStamp()));
         SUPLA_LOG_DEBUG("Update RTC time from server");
       }
     }
-}
+  }
 
  protected:
   RTC_DS3231 rtc;

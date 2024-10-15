@@ -616,6 +616,18 @@ uint8_t Channel::getValueBrightness() {
   return value[0];
 }
 
+uint8_t Channel::getValueClosingPercentage() const {
+  return value[0] >= 0 ? value[0] : 0;
+}
+
+bool Channel::getValueIsCalibrating() const {
+  return value[0] == -1;
+}
+
+uint8_t Channel::getValueTilt() const {
+  return value[1] >= 0 ? value[1] : 0;
+}
+
 #define TEMPERATURE_NOT_AVAILABLE -275.0
 
 double Channel::getLastTemperature() {
@@ -1371,7 +1383,7 @@ void Channel::fillRawValue(void *valueToFill) {
   memcpy(valueToFill, value, SUPLA_CHANNELVALUE_SIZE);
 }
 
-char *Channel::getValuePtr() {
+int8_t *Channel::getValuePtr() {
   return value;
 }
 
@@ -1432,4 +1444,14 @@ bool Channel::isHvacValueValid(THVACValue *hvacValue) {
   }
 
   return true;
+}
+
+bool Channel::isRollerShutterRelayType() const {
+  return (functionsBitmap &
+          (SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
+           SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
+           SUPLA_BIT_FUNC_TERRACE_AWNING | SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR |
+           SUPLA_BIT_FUNC_CURTAIN | SUPLA_BIT_FUNC_PROJECTOR_SCREEN |
+           SUPLA_BIT_FUNC_VERTICAL_BLIND |
+           SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND)) != 0;
 }

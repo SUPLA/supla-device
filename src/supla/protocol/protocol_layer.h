@@ -66,7 +66,7 @@ class ProtocolLayer {
                                       int32_t senderId,
                                       bool useSecondsInsteadOfMs);
   virtual void getUserLocaltime();
-  virtual void sendChannelValueChanged(uint8_t channelNumber, char *value,
+  virtual void sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
       uint8_t offline, uint32_t validityTimeSec) = 0;
   virtual void sendExtendedChannelValueChanged(uint8_t channelNumber,
     TSuplaChannelExtendedValue *value) = 0;

@@ -33,6 +33,8 @@ namespace Control {
 
 int16_t RollerShutter::rsStorageSaveDelay = 5000;
 
+#define RS_DEFAULT_OPERATION_TIMEOUT_MS 60000
+
 #pragma pack(push, 1)
 struct RollerShutterStateData {
   uint32_t closingTimeMs;
@@ -123,9 +125,11 @@ int32_t RollerShutter::handleNewValueFromServer(
 
   setOpenCloseTime(newClosingTime, newOpeningTime);
 
-  char task = newValue->value[0];
-  SUPLA_LOG_DEBUG("RS[%d] new value from server: %d",
-      channel.getChannelNumber(), task);
+  int8_t task = newValue->value[0];
+  int8_t tilt = newValue->value[1];
+  SUPLA_LOG_DEBUG("RS[%d] new value from server: position/task %d, tilt %d",
+      channel.getChannelNumber(), task, tilt);
+  // TODO(klew): add tilt support
   switch (task) {
     case 0: {
       stop();
@@ -461,24 +465,26 @@ void RollerShutter::onTimer() {
         if (targetPosition > 50 || targetPosition == MOVE_DOWN_POSITION) {
           if (currentDirection == UP_DIR) {
             stopMovement();
-          } else if (currentDirection == STOP_DIR) {
+          } else if (currentDirection == STOP_DIR ||
+                     currentDirection == DOWN_DIR) {
             SUPLA_LOG_DEBUG("RS[%d]: Calibration: closing",
                             channel.getChannelNumber());
             calibrationTime = closingTimeMs;
             if (calibrationTime == 0) {
-              operationTimeoutMs = 60000;
+              operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;
             }
             startClosing();
           }
         } else {
           if (currentDirection == DOWN_DIR) {
             stopMovement();
-          } else if (currentDirection == STOP_DIR) {
+          } else if (currentDirection == STOP_DIR ||
+                     currentDirection == UP_DIR) {
             SUPLA_LOG_DEBUG("RS[%d]: Calibration: opening",
                             channel.getChannelNumber());
             calibrationTime = openingTimeMs;
             if (calibrationTime == 0) {
-              operationTimeoutMs = 60000;
+              operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;
             }
             startOpening();
           }
@@ -611,7 +617,7 @@ void RollerShutter::onTimer() {
     currentPosition = UNKNOWN_POSITION;
     if (newTargetPositionAvailable) {
       int newDirection = STOP_DIR;
-      operationTimeoutMs = 60000;
+      operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;
       if (targetPosition == MOVE_UP_POSITION) {
         newDirection = UP_DIR;
       } else if (targetPosition == MOVE_DOWN_POSITION) {
@@ -938,7 +944,7 @@ void RollerShutter::setRsConfigTimeMarginEnabled(bool enable) {
 
 uint32_t RollerShutter::getTimeMarginValue(uint32_t fullTime) const {
   if (fullTime == 0) {
-    return 60000;
+    return RS_DEFAULT_OPERATION_TIMEOUT_MS;
   }
   if (rsConfig.timeMargin <= 0) {
     // case for -1 (device specific) and 0 (not used)
@@ -952,6 +958,15 @@ uint32_t RollerShutter::getTimeMarginValue(uint32_t fullTime) const {
     return 50;
   }
   return margin;
+}
+
+void RollerShutter::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
+  if (value == nullptr) {
+    return;
+  }
+
+  value->DurationMS = ((closingTimeMs / 100) & 0xFFFF) |
+                      (((openingTimeMs / 100) & 0xFFFF) << 16);
 }
 
 }  // namespace Control

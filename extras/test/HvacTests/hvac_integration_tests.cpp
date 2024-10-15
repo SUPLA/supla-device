@@ -162,7 +162,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -179,7 +179,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -197,7 +197,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -214,7 +214,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -232,7 +232,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -249,7 +249,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -267,7 +267,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -283,7 +283,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -300,7 +300,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -317,7 +317,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -335,7 +335,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -349,7 +349,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -366,7 +366,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .InSequence(seq1)
       .WillOnce([](uint8_t channelNumber,
-                   char *value,
+                   int8_t *value,
                    unsigned char offline,
                    uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
@@ -665,7 +665,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -680,7 +680,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -696,7 +696,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -713,7 +713,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -729,7 +729,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -746,7 +746,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -761,7 +761,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -777,7 +777,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -793,7 +793,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -810,7 +810,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -823,7 +823,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -838,7 +838,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigCooling) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1144,7 +1144,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1159,7 +1159,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1178,7 +1178,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1198,7 +1198,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1217,7 +1217,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1237,7 +1237,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1253,7 +1253,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1272,7 +1272,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1455,7 +1455,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1476,7 +1476,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1505,7 +1505,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1544,7 +1544,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1568,7 +1568,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1592,7 +1592,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1617,7 +1617,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1637,7 +1637,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1668,7 +1668,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1688,7 +1688,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1727,7 +1727,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1802,7 +1802,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1832,7 +1832,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1856,7 +1856,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1876,7 +1876,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -1972,7 +1972,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2101,7 +2101,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2127,7 +2127,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2179,7 +2179,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2234,7 +2234,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2263,7 +2263,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2303,7 +2303,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2330,7 +2330,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2345,7 +2345,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2371,7 +2371,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2385,7 +2385,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2413,7 +2413,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2457,7 +2457,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2572,7 +2572,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2587,7 +2587,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2606,7 +2606,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2653,7 +2653,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
   hvac->setTemperatureSetpointCool(1500);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2681,7 +2681,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2704,7 +2704,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2722,7 +2722,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
       .InSequence(seqSecondary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary, seqSecondary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2830,7 +2830,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   hvac->setTargetMode(SUPLA_HVAC_MODE_OFF);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2842,7 +2842,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
     })
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2909,7 +2909,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   }
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2943,7 +2943,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   }
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -2993,7 +2993,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   }
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3016,7 +3016,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   }
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3056,7 +3056,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3080,7 +3080,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   }
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3091,7 +3091,7 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
     })
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3198,7 +3198,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3212,7 +3212,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3252,7 +3252,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3289,7 +3289,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3315,7 +3315,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3340,7 +3340,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3371,7 +3371,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3396,7 +3396,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3428,7 +3428,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3459,7 +3459,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3484,7 +3484,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3516,7 +3516,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3540,7 +3540,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3556,7 +3556,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3583,7 +3583,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3613,7 +3613,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3629,7 +3629,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3654,7 +3654,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3680,7 +3680,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3705,7 +3705,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
   // send timer and then break it with CMD_SWITCH_TO_MANUAL
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3738,7 +3738,7 @@ TEST_F(HvacIntegrationF, countdownTimerTests) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3853,7 +3853,7 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3867,7 +3867,7 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -3882,7 +3882,7 @@ TEST_F(HvacIntegrationF, startupWithInvalidConfigLoadedFromStorage) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4038,7 +4038,7 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4052,7 +4052,7 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4067,7 +4067,7 @@ TEST_F(HvacIntegrationF, startupWithValidConfigLoadedFromStorage) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4238,7 +4238,7 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4278,7 +4278,7 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seqPrimary);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4331,7 +4331,7 @@ TEST_F(HvacIntegrationF, newValuesFromServer) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4430,7 +4430,7 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4445,7 +4445,7 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4461,7 +4461,7 @@ TEST_F(HvacIntegrationF, histeresisHeatingCheck) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4603,7 +4603,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4619,7 +4619,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4636,7 +4636,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
   EXPECT_CALL(primaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq1);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4779,7 +4779,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4796,7 +4796,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4814,7 +4814,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4831,7 +4831,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_CALL(secondaryOutput, setOutputValueCheck(-1)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -4849,7 +4849,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   EXPECT_CALL(secondaryOutput, setOutputValueCheck(0)).Times(1).InSequence(seq2);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seq1)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5035,7 +5035,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5067,7 +5067,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5092,7 +5092,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5119,7 +5119,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5146,7 +5146,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5169,7 +5169,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TURN_OFF);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5194,7 +5194,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5218,7 +5218,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5252,7 +5252,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5285,7 +5285,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::SWITCH_TO_WEEKLY_SCHEDULE_MODE);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5309,7 +5309,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::SWITCH_TO_MANUAL_MODE);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5350,7 +5350,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TURN_OFF);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5372,7 +5372,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5394,7 +5394,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5417,7 +5417,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5439,7 +5439,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5462,7 +5462,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5484,7 +5484,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5507,7 +5507,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5530,7 +5530,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5552,7 +5552,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
@@ -5575,7 +5575,7 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
   hvac->handleAction(0, Supla::TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES);
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
     .InSequence(seqPrimary)
-    .WillOnce([](uint8_t channelNumber, char *value, unsigned char offline,
+    .WillOnce([](uint8_t channelNumber, int8_t *value, unsigned char offline,
                  uint32_t validityTimeSec) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 

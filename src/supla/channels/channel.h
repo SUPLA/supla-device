@@ -79,6 +79,9 @@ class Channel : public LocalAction {
   uint8_t getValueColorBrightness();
   uint8_t getValueBrightness();
   double getLastTemperature();
+  uint8_t getValueClosingPercentage() const;
+  uint8_t getValueTilt() const;
+  bool getValueIsCalibrating() const;
 
   void setHvacIsOn(int8_t isOn);
   void setHvacMode(uint8_t mode);
@@ -206,10 +209,12 @@ class Channel : public LocalAction {
 
   static uint32_t lastCommunicationTimeMs;
   void fillRawValue(void *value);
-  char *getValuePtr();
+  int8_t *getValuePtr();
 
   void setSubDeviceId(uint8_t subDeviceId);
   uint8_t getSubDeviceId() const;
+
+  bool isRollerShutterRelayType() const;
 
  protected:
   static Channel *firstPtr;
@@ -241,7 +246,7 @@ class Channel : public LocalAction {
   uint8_t subDeviceId = 0;
 
   union {
-    char value[SUPLA_CHANNELVALUE_SIZE] = {};
+    int8_t value[SUPLA_CHANNELVALUE_SIZE] = {};
     TActionTriggerProperties actionTriggerProperties;
     THVACValue hvacValue;
   };

@@ -1084,14 +1084,17 @@ void Supla::Protocol::SuplaSrpc::getUserLocaltime() {
 
 void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
     uint8_t channelNumber,
-    char *value,
+    int8_t *value,
     uint8_t offline,
     uint32_t validityTimeSec) {
   if (!isRegisteredAndReady()) {
     return;
   }
-  srpc_ds_async_channel_value_changed_c(
-      srpc, channelNumber, value, offline, validityTimeSec);
+  srpc_ds_async_channel_value_changed_c(srpc,
+                                        channelNumber,
+                                        reinterpret_cast<char *>(value),
+                                        offline,
+                                        validityTimeSec);
 }
 
 void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(

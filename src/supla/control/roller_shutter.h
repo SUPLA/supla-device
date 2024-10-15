@@ -65,6 +65,11 @@ class RollerShutter : public ChannelElement, public ActionHandler {
                              bool local = false) override;
   void fillChannelConfig(void *channelConfig, int *size) override;
 
+  // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
+  // value for specific channel type (i.e. to prefill durationMS field when
+  // required)
+  void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
+
   void close();         // Sets target position to 100%
   void open();          // Sets target position to 0%
   virtual void stop();  // Stop motor

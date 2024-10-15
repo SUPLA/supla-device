@@ -382,6 +382,9 @@ const char *getManufacturer(int16_t id) {
     case SUPLA_MFR_AURATON: {
       return "Auraton";
     }
+    case SUPLA_MFR_HPD: {
+      return "HPD";
+    }
   }
 
   return "Unknown";

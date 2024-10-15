@@ -46,7 +46,7 @@ class SuplaSrpcLayerMock : public Supla::Protocol::SuplaSrpc {
   MOCK_METHOD(void,
               sendChannelValueChanged,
               (uint8_t channelNumber,
-               char *value,
+               int8_t *value,
                unsigned char offline,
                uint32_t validityTimeSec),
               (override));

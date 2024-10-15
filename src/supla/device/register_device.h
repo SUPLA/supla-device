@@ -86,7 +86,7 @@ int32_t getChannelFunctionList(int channelNumber);
 int32_t getChannelDefaultFunction(int channelNumber);
 int32_t getChannelType(int channelNumber);
 int getChannelNumber(int index);
-char *getChannelValuePtr(int channelNumber);
+int8_t *getChannelValuePtr(int channelNumber);
 uint64_t getChannelFlags(int channelNumber);
 #endif
 

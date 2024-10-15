@@ -86,7 +86,7 @@ int Supla::RegisterDevice::getChannelNumber(int index) {
   return ch->getChannelNumber();
 }
 
-char *Supla::RegisterDevice::getChannelValuePtr(int channelNumber) {
+int8_t *Supla::RegisterDevice::getChannelValuePtr(int channelNumber) {
   auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
   if (ch == nullptr) {
     return nullptr;

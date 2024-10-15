@@ -407,6 +407,27 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
     case SUPLA_CHANNELTYPE_RELAY: {
       // publish relay state
       switch (ch->getDefaultFunction()) {
+        case SUPLA_CHANNELFNC_VERTICAL_BLIND:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
+          publishInt(
+              (topic / "tilt").c_str(), ch->getValueTilt(), -1, 1);
+          [[fallthrough]];
+        }
+        case SUPLA_CHANNELFNC_CURTAIN:
+        case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
+        case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR:
+        case SUPLA_CHANNELFNC_TERRACE_AWNING:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
+          publishBool((topic / "is_calibrating").c_str(),
+                      ch->getValueIsCalibrating(),
+                      -1,
+                      1);
+          publishInt(
+              (topic / "shut").c_str(), ch->getValueClosingPercentage(), -1, 1);
+          break;
+        }
+
         case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE:
         case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
         case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
@@ -584,6 +605,12 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
       }
       break;
     }
+
+    case SUPLA_CHANNELTYPE_ACTIONTRIGGER: {
+      // nothing to publish
+      break;
+    }
+
     default:
       SUPLA_LOG_WARNING(
           "Mqtt: publish channel state: channel type %d not supported",
@@ -780,7 +807,12 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
 
   switch (ch->getChannelType()) {
     case SUPLA_CHANNELTYPE_RELAY: {
-      subscribe((topic / "set" / "on").c_str());
+      if (ch->isRollerShutterRelayType()) {
+        subscribe((topic / "set" / "closing_percentage").c_str());
+        subscribe((topic / "set" / "tilt").c_str());
+      } else {
+        subscribe((topic / "set" / "on").c_str());
+      }
       subscribe((topic / "execute_action").c_str());
       break;
     }
@@ -810,8 +842,9 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
       subscribe((topic / "set" / "temperature_setpoint_cool").c_str());
       break;
     }
+    case SUPLA_CHANNELTYPE_ACTIONTRIGGER:
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
-      // no subscriptions for EM
+      // no subscriptions
       break;
     }
 
@@ -880,7 +913,11 @@ bool Supla::Protocol::Mqtt::processData(const char *topic,
   switch (ch->getChannelType()) {
     // Relay
     case SUPLA_CHANNELTYPE_RELAY: {
-      processRelayRequest(part, payload, element);
+      if (ch->isRollerShutterRelayType()) {
+        processRollerShutterRequest(part, payload, element);
+      } else {
+        processRelayRequest(part, payload, element);
+      }
       break;
     }
     case SUPLA_CHANNELTYPE_DIMMER: {
@@ -952,7 +989,11 @@ void Supla::Protocol::Mqtt::publishHADiscovery(int channel) {
   switch (ch->getChannelType()) {
     case SUPLA_CHANNELTYPE_RELAY: {
       // publish relay state
-      publishHADiscoveryRelay(element);
+      if (ch->isRollerShutterRelayType()) {
+        publishHADiscoveryRollerShutter(element);
+      } else {
+        publishHADiscoveryRelay(element);
+      }
       break;
     }
     case SUPLA_CHANNELTYPE_THERMOMETER: {
@@ -1307,6 +1348,145 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
   delete[] payload;
 }
 
+void Supla::Protocol::Mqtt::publishHADiscoveryRollerShutter(
+    Supla::Element *element) {
+  if (element == nullptr) {
+    return;
+  }
+
+  auto ch = element->getChannel();
+  if (ch == nullptr) {
+    return;
+  }
+
+  char objectId[30] = {};
+  generateObjectId(objectId, element->getChannelNumber(), 0);
+
+  MqttTopic topic;
+  auto chFunction = ch->getDefaultFunction();
+  HADeviceClass deviceClass = HADeviceClass_Shutter;
+  bool addTiltSupport = false;
+  switch (chFunction) {
+    case SUPLA_CHANNELFNC_VERTICAL_BLIND:
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
+      deviceClass = HADeviceClass_Shutter;
+      addTiltSupport = true;
+      break;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
+      deviceClass = HADeviceClass_Shutter;
+      break;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      deviceClass = HADeviceClass_Window;
+      break;
+    }
+    case SUPLA_CHANNELFNC_TERRACE_AWNING: {
+      deviceClass = HADeviceClass_Awning;
+      break;
+    }
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
+      deviceClass = HADeviceClass_Garage;
+      break;
+    }
+    case SUPLA_CHANNELFNC_CURTAIN: {
+      deviceClass = HADeviceClass_Curtain;
+      break;
+    }
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN: {
+      deviceClass = HADeviceClass_Shade;
+      break;
+    }
+  }
+
+  topic = getHADiscoveryTopic("cover", objectId);
+
+  const char cfg[] =
+      "{"
+      "\"avty_t\":\"%s/state/connected\","
+      "\"pl_avail\":\"true\","
+      "\"pl_not_avail\":\"false\","
+      "\"~\":\"%s/channels/%i\","
+      "\"dev\":{"
+        "\"ids\":\"%s\","
+        "\"mf\":\"%s\","
+        "\"name\":\"%s\","
+        "\"sw\":\"%s\""
+      "},"
+      "\"name\":\"#%i %s\","
+      "\"uniq_id\":\"supla_%s\","
+      "\"qos\":0,"
+      "\"ret\":false,"
+      "\"opt\":false,"
+      "\"cmd_t\":\"~/execute_action\","
+      "\"pl_open\":\"REVEAL\","
+      "\"pl_cls\":\"SHUT\","
+      "\"pl_stop\":\"STOP\","
+      "\"set_pos_t\":\"~/set/closing_percentage\","
+      "\"pos_t\":\"~/state/shut\","
+      "\"pos_open\":0,"
+      "\"pos_clsd\":100,"
+      "\"pos_tpl\":\""
+        "{%% if value is defined %%}"
+          "{%% if value | int < 0 %%}"
+            "0"
+          "{%% elif value | int > 100 %%}"
+            "100"
+          "{%% else %%}"
+            "{{value | int}}"
+          "{%% endif %%}"
+        "{%% else %%}"
+          "0"
+        "{%% endif %%}\""
+      "%s"  // tilt support
+      "%s"  // dev_cla
+      "}";
+
+  char c = '\0';
+
+  size_t bufferSize = 0;
+  char *payload = {};
+
+  for (int i = 0; i < 2; i++) {
+    bufferSize =
+        snprintf(i ? payload : &c, i ? bufferSize : 1,
+            cfg,
+            prefix,
+            prefix,
+            ch->getChannelNumber(),
+            hostname,
+            getManufacturer(Supla::RegisterDevice::getManufacturerId()),
+            Supla::RegisterDevice::getName(),
+            Supla::RegisterDevice::getSoftVer(),
+            element->getChannelNumber(),
+            getRelayChannelName(chFunction),
+            objectId,
+            addTiltSupport ?
+              ",\"tilt_cmd_t\":\"~/set/tilt\","
+              "\"tilt_status_t\":\"~/state/tilt\","
+              "\"tilt_min\":100,\"tilt_max\":0,"
+              "\"tilt_opened_value\":0,"
+              "\"tilt_closed_value\":100,"
+              "\"tilt_status_tpl\":\""
+              "{% if int(value, default=0) <= 0 %}0"
+              "{% elif value | int > 100 %}100"
+              "{% else %}{{value | int}}{% endif %}\"" :
+              "",
+            getDeviceClassStr(deviceClass)) + 1;
+
+    if (i == 0) {
+      payload = new char[bufferSize];
+      if (payload == nullptr) {
+        return;
+      }
+    }
+  }
+
+  publish(topic.c_str(), payload, -1, 1, true);
+
+  delete[] payload;
+}
+
 void Supla::Protocol::Mqtt::publishHADiscoveryThermometer(
     Supla::Element *element) {
   if (element == nullptr) {
@@ -1366,6 +1546,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryThermometer(
             Supla::RegisterDevice::getName(),
             Supla::RegisterDevice::getSoftVer(),
             element->getChannelNumber(),
+
             objectId,
             static_cast<int>(sdc->getActivityTimeout())
             )
@@ -1942,7 +2123,7 @@ bool Supla::Protocol::Mqtt::isRegisteredAndReady() {
 
 void Supla::Protocol::Mqtt::sendChannelValueChanged(
     uint8_t channelNumber,
-    char *value,
+    int8_t *value,
     unsigned char offline,
     uint32_t validityTimeSec) {
   (void)(value);
@@ -2012,11 +2193,20 @@ const char *Supla::Protocol::Mqtt::getDeviceClassStr(
       return ",\"dev_cla\":\"moisture\"";
     case HADeviceClass_Window:
       return ",\"dev_cla\":\"window\"";
-
+    case HADeviceClass_Awning:
+      return ",\"dev_cla\":\"awning\"";
+    case HADeviceClass_Blind:
+      return ",\"dev_cla\":\"blind\"";
+    case HADeviceClass_Curtain:
+      return ",\"dev_cla\":\"curtain\"";
+    case HADeviceClass_Shutter:
+      return ",\"dev_cla\":\"shutter\"";
+    case HADeviceClass_Shade:
+      return ",\"dev_cla\":\"shade\"";
     case HADeviceClass_None:
-    default:
       return "";
   }
+  return "";
 }
 
 void Mqtt::publishHADiscoveryRGB(Supla::Element *element) {
@@ -2205,6 +2395,55 @@ void Mqtt::processRelayRequest(const char *part,
     } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
       newValue.value[0] = element->getChannel()->getValueBool() ? 0 : 1;
       element->handleNewValueFromServer(&newValue);
+    } else {
+      SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
+    }
+  } else {
+    SUPLA_LOG_DEBUG("Mqtt: received unsupported topic %s", part);
+  }
+}
+
+void Mqtt::processRollerShutterRequest(const char *part,
+                                       const char *payload,
+                                       Supla::Element *element) {
+  TSD_SuplaChannelNewValue newValue = {};
+  element->fillSuplaChannelNewValue(&newValue);
+
+  newValue.value[0] = -1;  // position setting (-1 ignores it)
+  newValue.value[1] = -1;  // tilt setting (-1 ignores it)
+
+  if (strcmp(part, "set/closing_percentage") == 0) {
+    int closingPercentage = stringToInt(payload);
+    if (closingPercentage >= 0 && closingPercentage <= 100) {
+      newValue.value[0] = closingPercentage + 10;
+    }
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(part, "set/tilt") == 0) {
+    int tilt = stringToInt(payload);
+    if (tilt >= 0 && tilt <= 100) {
+      newValue.value[1] = tilt;
+    }
+    element->handleNewValueFromServer(&newValue);
+  } else if (strcmp(part, "execute_action") == 0) {
+    if (strncmpInsensitive(payload, "stop", 5) == 0) {
+      newValue.value[0] = 0;  // STOP
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "reveal", 7) == 0) {
+      newValue.value[0] = 10;  // set position to 0
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "shut", 5) == 0) {
+      newValue.value[0] = 110;  // set position to 100
+      element->handleNewValueFromServer(&newValue);
+    } else if (strncmpInsensitive(payload, "calibrate", 10) == 0 ||
+               strncmpInsensitive(payload, "recalibrate", 12) == 0) {
+      // recalibrate
+      TSD_DeviceCalCfgRequest request = {};
+      if (element->getChannel() != nullptr) {
+        request.ChannelNumber = element->getChannel()->getChannelNumber();
+      }
+      request.Command = SUPLA_CALCFG_CMD_RECALIBRATE;
+      request.SuperUserAuthorized = 1;
+      element->handleCalcfgFromServer(&request);
     } else {
       SUPLA_LOG_DEBUG("Mqtt: unsupported action %s", payload);
     }
@@ -2580,6 +2819,31 @@ const char *Mqtt::getRelayChannelName(int channelFunction) const {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
       return "Gateway lock";
     }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
+      return "Roller shutter";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      return "Roof window";
+    }
+    case SUPLA_CHANNELFNC_TERRACE_AWNING: {
+      return "Terrace awning";
+    }
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
+      return "Roller garage door";
+    }
+    case SUPLA_CHANNELFNC_CURTAIN: {
+      return "Curtain";
+    }
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN: {
+      return "Projector screen";
+    }
+    case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
+      return "Vertical blind";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
+      return "Facade blind";
+    }
+
     default: {
       return "Relay";
     }

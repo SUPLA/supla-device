@@ -63,7 +63,12 @@ enum HADeviceClass {
   HADeviceClass_Door,
   HADeviceClass_Garage,
   HADeviceClass_Moisture,
-  HADeviceClass_Window
+  HADeviceClass_Window,
+  HADeviceClass_Awning,
+  HADeviceClass_Blind,
+  HADeviceClass_Curtain,
+  HADeviceClass_Shutter,
+  HADeviceClass_Shade,
 };
 
 class Mqtt : public ProtocolLayer {
@@ -116,7 +121,7 @@ class Mqtt : public ProtocolLayer {
   void notifyConfigChange(int channelNumber) override;
 
   void sendActionTrigger(uint8_t channelNumber, uint32_t actionId) override;
-  void sendChannelValueChanged(uint8_t channelNumber, char *value,
+  void sendChannelValueChanged(uint8_t channelNumber, int8_t *value,
       unsigned char offline, uint32_t validityTimeSec) override;
   void sendExtendedChannelValueChanged(uint8_t channelNumber,
     TSuplaChannelExtendedValue *value) override;
@@ -137,6 +142,9 @@ class Mqtt : public ProtocolLayer {
   void processHVACRequest(const char *topic,
                           const char *payload,
                           Supla::Element *element);
+  void processRollerShutterRequest(const char *topic,
+                                   const char *payload,
+                                   Supla::Element *element);
 
  protected:
   void generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]);
@@ -154,6 +162,7 @@ class Mqtt : public ProtocolLayer {
   void publishHADiscoveryDimmer(Supla::Element *);
   void publishHADiscoveryHVAC(Supla::Element *);
   void publishHADiscoveryBinarySensor(Supla::Element *);
+  void publishHADiscoveryRollerShutter(Supla::Element *);
 
   // parameterName has to be ASCII string with small caps and underscores
   // between words i.e. "total_forward_active_energy".

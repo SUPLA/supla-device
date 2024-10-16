@@ -37,8 +37,6 @@ enum class HomeScreenContent {
 
 namespace Device {
 
-const char DeviceConfigChangeCfgTag[] = "devcfg_chng";
-
 class RemoteDeviceConfig {
  public:
   // Registers config field. Register each field separately (only single bit

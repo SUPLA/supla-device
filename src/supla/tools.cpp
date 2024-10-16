@@ -459,3 +459,97 @@ int Supla::rssiToSignalStrength(int rssi) {
 
   return 2 * (rssi + 100);
 }
+
+const char *Supla::getRelayChannelName(int channelFunction) {
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_POWERSWITCH: {
+      return "Power switch";
+    }
+    case SUPLA_CHANNELFNC_LIGHTSWITCH: {
+      return "Light switch";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE: {
+      return "Gate";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK: {
+      return "Door lock";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR: {
+      return "Garage door";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
+      return "Gateway lock";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
+      return "Roller shutter";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      return "Roof window";
+    }
+    case SUPLA_CHANNELFNC_TERRACE_AWNING: {
+      return "Terrace awning";
+    }
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
+      return "Roller garage door";
+    }
+    case SUPLA_CHANNELFNC_CURTAIN: {
+      return "Curtain";
+    }
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN: {
+      return "Projector screen";
+    }
+    case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
+      return "Vertical blind";
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
+      return "Facade blind";
+    }
+
+    default: {
+      return "Relay";
+    }
+  }
+}
+
+const char *Supla::getBinarySensorChannelName(int channelFunction) {
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_GATEWAY: {
+      return "Gateway sensor";
+    }
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR: {
+      return "Door sensor";
+    }
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_GATE: {
+      return "Gate sensor";
+    }
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_GARAGEDOOR: {
+      return "Garage door sensor";
+    }
+    case SUPLA_CHANNELFNC_NOLIQUIDSENSOR: {
+      return "Liquid sensor";
+      break;
+    }
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_ROLLERSHUTTER: {
+      return "Roller shutter sensor";
+    }
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_ROOFWINDOW: {
+      return "Roof window sensor";
+    }
+    case SUPLA_CHANNELFNC_OPENINGSENSOR_WINDOW: {
+      return "Window sensor";
+      break;
+    }
+    case SUPLA_CHANNELFNC_HOTELCARDSENSOR: {
+      return "Hotel card sensor";
+    }
+    case SUPLA_CHANNELFNC_ALARMARMAMENTSENSOR: {
+      return "Alarm armament sensor";
+    }
+    case SUPLA_CHANNELFNC_MAILSENSOR: {
+      return "Mail sensor";
+    }
+    default: {
+      return "Binary sensor";
+    }
+  }
+}

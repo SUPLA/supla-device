@@ -70,6 +70,7 @@ COMPONENT_OBJS := \
 	../../../src/supla/network/html/home_screen_content.o \
   ../../../src/supla/network/html/em_phase_led.o \
   ../../../src/supla/network/html/em_ct_type.o \
+  ../../../src/supla/network/html/roller_shutter_parameters.o \
   ../../../src/supla/network/client.o \
   ../../../src/supla/network/ip_address.o \
   \

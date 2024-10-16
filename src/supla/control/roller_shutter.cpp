@@ -66,6 +66,42 @@ RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
+bool RollerShutter::isFunctionSupported(int32_t channelFunction) const {
+  switch (channelFunction) {
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
+      return getChannel()->getFuncList() &
+             SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
+      return getChannel()->getFuncList() &
+             SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW;
+    }
+    case SUPLA_CHANNELFNC_TERRACE_AWNING: {
+      return getChannel()->getFuncList() & SUPLA_BIT_FUNC_TERRACE_AWNING;
+    }
+    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
+      return getChannel()->getFuncList() &
+             SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR;
+    }
+    case SUPLA_CHANNELFNC_CURTAIN: {
+      return getChannel()->getFuncList() & SUPLA_BIT_FUNC_CURTAIN;
+    }
+    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN: {
+      return getChannel()->getFuncList() & SUPLA_BIT_FUNC_PROJECTOR_SCREEN;
+    }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
+      return getChannel()->getFuncList() &
+             SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND;
+    }
+    case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
+      return getChannel()->getFuncList() & SUPLA_BIT_FUNC_VERTICAL_BLIND;
+    }
+    default: {
+      return false;
+    }
+  }
+}
+
 void RollerShutter::onInit() {
   Supla::Io::digitalWrite(
       channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
@@ -967,6 +1003,44 @@ void RollerShutter::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
 
   value->DurationMS = ((closingTimeMs / 100) & 0xFFFF) |
                       (((openingTimeMs / 100) & 0xFFFF) << 16);
+}
+
+uint8_t RollerShutter::getMotorUpsideDown() const {
+  return rsConfig.motorUpsideDown;
+}
+
+uint8_t RollerShutter::getButtonsUpsideDown() const {
+  return rsConfig.buttonsUpsideDown;
+}
+
+int8_t RollerShutter::getTimeMargin() const {
+  return rsConfig.timeMargin;
+}
+
+bool RollerShutter::isAutoCalibrationSupported() const {
+  return false;
+  // TODO(klew): implement
+}
+
+void RollerShutter::setRsConfigMotorUpsideDownValue(uint8_t value) {
+  if (getMotorUpsideDown() != 0 && value > 0 && value < 3) {
+    rsConfig.motorUpsideDown = value;
+    saveConfig();
+  }
+}
+
+void RollerShutter::setRsConfigButtonsUpsideDownValue(uint8_t value) {
+  if (getButtonsUpsideDown() != 0 && value > 0 && value < 3) {
+    rsConfig.buttonsUpsideDown = value;
+    saveConfig();
+  }
+}
+
+void RollerShutter::setRsConfigTimeMarginValue(int8_t value) {
+  if (value >= -1 && value <= 100) {
+    rsConfig.timeMargin = value;
+    saveConfig();
+  }
 }
 
 }  // namespace Control

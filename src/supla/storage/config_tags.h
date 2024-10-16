@@ -22,6 +22,11 @@
 namespace Supla {
 namespace ConfigTag {
 
+const char DeviceConfigChangeCfgTag[] = "devcfg_chng";
+
+const char ChannelFunctionTag[] = "fnc";
+const char ChannelConfigChangedFlagTag[] = "cfg_chng";
+
 const char ScreenBrightnessCfgTag[] = "bright";
 const char ScreenAdjustmentForAutomaticCfgTag[] = "adj_auto_br";
 const char HomeScreenContentTag[] = "home_screen";
@@ -53,6 +58,11 @@ const char EmPhaseLedPowerHighTag[] = "em_led_ph";
 const char RgbwButtonTag[] = "rgbw_btn";
 
 const char RollerShutterTag[] = "rs_cfg";
+const char RollerShutterMotorUpsideDownTag[] = "usd";
+const char RollerShutterButtonsUpsideDownTag[] = "bud";
+const char RollerShutterTimeMarginTag[] = "rs_margin";
+const char RollerShutterOpeningTimeTag[] = "rs_ot";
+const char RollerShutterClosingTimeTag[] = "rs_ct";
 
 const char HvacCfgTag[] = "hvac_cfg";
 

@@ -107,8 +107,21 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   void setRsConfigButtonsUpsideDownEnabled(bool enable);
   void setRsConfigTimeMarginEnabled(bool enable);
 
+  void setRsConfigMotorUpsideDownValue(uint8_t value);
+  void setRsConfigButtonsUpsideDownValue(uint8_t value);
+  void setRsConfigTimeMarginValue(int8_t value);
+
+  uint8_t getMotorUpsideDown() const;
+  uint8_t getButtonsUpsideDown() const;
+  int8_t getTimeMargin() const;
+
   static void setRsStorageSaveDelay(int delayMs);
   virtual bool inMove();
+
+  bool isFunctionSupported(int32_t channelFunction) const;
+  bool isAutoCalibrationSupported() const;
+
+  void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
 
  protected:
   virtual void stopMovement();
@@ -119,7 +132,6 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   virtual void startClosing();
   virtual void startOpening();
   virtual void switchOffRelays();
-  void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
 
   bool lastDirectionWasOpen() const;
   bool lastDirectionWasClose() const;

@@ -31,6 +31,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/element.h>
 #include <supla/device/remote_device_config.h>
+#include "supla/storage/config_tags.h"
 
 #include "config.h"
 
@@ -491,7 +492,7 @@ bool Config::isConfigModeSupported() {
 bool Config::isDeviceConfigChangeFlagSet() {
   if (deviceConfigChangeFlag == -1) {
     uint8_t result = 0;
-    getUInt8(Supla::Device::DeviceConfigChangeCfgTag, &result);
+    getUInt8(Supla::ConfigTag::DeviceConfigChangeCfgTag, &result);
     deviceConfigChangeFlag = result;
     if (deviceConfigChangeFlag == 1) {
       // value 2 means that device config change is ready to be send.
@@ -510,14 +511,14 @@ bool Config::isDeviceConfigChangeReadyToSend() {
 bool Config::setDeviceConfigChangeFlag() {
   deviceConfigUpdateDelayTimestamp = millis();
   deviceConfigChangeFlag = 1;
-  return setUInt8(Supla::Device::DeviceConfigChangeCfgTag, 1);
+  return setUInt8(Supla::ConfigTag::DeviceConfigChangeCfgTag, 1);
 }
 
 bool Config::clearDeviceConfigChangeFlag() {
   if (deviceConfigChangeFlag == 2) {
     deviceConfigUpdateDelayTimestamp = 0;
     deviceConfigChangeFlag = 0;
-    return setUInt8(Supla::Device::DeviceConfigChangeCfgTag, 0);
+    return setUInt8(Supla::ConfigTag::DeviceConfigChangeCfgTag, 0);
   }
   return true;
 }
@@ -529,7 +530,8 @@ bool Config::setChannelConfigChangeFlag(int channelNo, int configType) {
   switch (configType) {
     case 0: {
       char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, channelNo, "cfg_chng");
+      generateKey(
+          key, channelNo, Supla::ConfigTag::ChannelConfigChangedFlagTag);
       return setUInt8(key, 1);
     }
   }
@@ -541,7 +543,8 @@ bool Config::clearChannelConfigChangeFlag(int channelNo, int configType) {
   switch (configType) {
     case 0: {
       char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, channelNo, "cfg_chng");
+      generateKey(
+          key, channelNo, Supla::ConfigTag::ChannelConfigChangedFlagTag);
       return setUInt8(key, 0);
     }
   }
@@ -553,7 +556,8 @@ bool Config::isChannelConfigChangeFlagSet(int channelNo, int configType) {
   switch (configType) {
     case 0: {
       char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, channelNo, "cfg_chng");
+      generateKey(
+          key, channelNo, Supla::ConfigTag::ChannelConfigChangedFlagTag);
       uint8_t result = 0;
       getUInt8(key, &result);
       return result == 1;

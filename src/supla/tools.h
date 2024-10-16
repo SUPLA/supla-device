@@ -92,6 +92,9 @@ int getPlatformId();
 int getBitNumber(uint64_t value);
 int rssiToSignalStrength(int rssi);
 bool isLastResetPower();
+
+const char *getRelayChannelName(int channelFunction);
+const char *getBinarySensorChannelName(int channelFunction);
 }  // namespace Supla
 
 

@@ -83,6 +83,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/screen_brightness_parameters.cpp
   ../../../src/supla/network/html/em_phase_led.cpp
   ../../../src/supla/network/html/em_ct_type.cpp
+  ../../../src/supla/network/html/roller_shutter_parameters.cpp
   ../../../src/supla/network/client.cpp
   ../../../src/supla/network/ip_address.cpp
 

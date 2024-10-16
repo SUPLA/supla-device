@@ -20,6 +20,7 @@
 #include <supla/events.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler &client,
@@ -79,7 +80,7 @@ bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
   auto channel = getChannel();
   if (cfg && channel) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, "fnc");
+    generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
     int32_t channelFunc = 0;
     if (cfg->getInt32(key, &channelFunc)) {
       if (channel->isFunctionValid(channelFunc)) {
@@ -149,7 +150,7 @@ bool Supla::ElementWithChannelActions::setAndSaveFunction(
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
       char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, "fnc");
+      generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
       cfg->setInt32(key, channelFunction);
       cfg->saveWithDelay(5000);
     }
@@ -417,9 +418,9 @@ void Supla::ElementWithChannelActions::purgeConfig() {
   auto channel = getChannel();
   if (cfg && channel) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, "fnc");
+    generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
     cfg->eraseKey(key);
-    generateKey(key, "cfg_chng");
+    generateKey(key, Supla::ConfigTag::ChannelConfigChangedFlagTag);
     cfg->eraseKey(key);
   }
 }

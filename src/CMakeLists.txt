@@ -95,6 +95,7 @@ set(SRCS
   supla/network/html/em_ct_type.cpp
   supla/network/html/status_led_parameters.cpp
   supla/network/html/power_status_led_parameters.cpp
+  supla/network/html/roller_shutter_parameters.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

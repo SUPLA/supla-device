@@ -47,12 +47,12 @@ ImpulseCounter::ImpulseCounter(int _impulsePin,
   prevState = (detectLowToHigh == true ? LOW : HIGH);
 
   SUPLA_LOG_DEBUG(
-      "Creating Impulse Counter: impulsePin(%d), "
-      "delay(%d ms)",
+      "IC[%d]: impulsePin(%d), delay(%d ms)",
+      getChannelNumber(),
       impulsePin,
       debounceDelay);
-  if (impulsePin <= 0) {
-    SUPLA_LOG_DEBUG("SuplaImpulseCounter ERROR - incorrect impulse pin number");
+  if (impulsePin < 0) {
+    SUPLA_LOG_ERROR("IC[%d]: incorrect impulse pin number", getChannelNumber());
   }
 }
 

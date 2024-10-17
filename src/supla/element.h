@@ -128,6 +128,7 @@ class Element {
   virtual void generateKey(char *, const char *);
 
   Element &disableChannelState();
+  bool isChannelStateEnabled() const;
 
   virtual bool isAnyUpdatePending();
 

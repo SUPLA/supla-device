@@ -110,7 +110,9 @@ void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
                                    ch->getInitialCaption());
     }
     if (ch->isSleepingEnabled()) {
-      suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
+      if (isChannelStateEnabled()) {
+        suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
+      }
       ch->setUpdateReady();
     }
 
@@ -120,6 +122,13 @@ void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
       ch = getSecondaryChannel();
     }
   }
+}
+
+bool Element::isChannelStateEnabled() const {
+  if (getChannel() == nullptr) {
+    return false;
+  }
+  return getChannel()->getFlags() & SUPLA_CHANNEL_FLAG_CHANNELSTATE;
 }
 
 void Element::iterateAlways() {}

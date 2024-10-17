@@ -211,11 +211,15 @@ void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
   while (channel) {
     if (channelState->ChannelNumber == channel->getChannelNumber()) {
       if (channel->isBatteryPowered()) {
-        channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERYLEVEL
-          | SUPLA_CHANNELSTATE_FIELD_BATTERYPOWERED;
-
+        channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERYPOWERED;
         channelState->BatteryPowered = 1;
+
         channelState->BatteryLevel = channel->getBatteryLevel();
+        if (channelState->BatteryLevel <= 100) {
+          channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERYLEVEL;
+        } else {
+          channelState->BatteryLevel = 0;
+        }
       }
       if (channel->isBridgeSignalStrengthAvailable()) {
         channelState->Fields |=

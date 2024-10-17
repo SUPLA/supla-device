@@ -665,18 +665,24 @@ void Channel::requestChannelConfig() {
 }
 
 bool Channel::isBatteryPowered() const {
-  return (batteryLevel <= 100);
+  return (batteryLevel <= 101);
 }
 
 uint8_t Channel::getBatteryLevel() const {
-  if (isBatteryPowered()) {
+  if (isBatteryPowered() && batteryLevel <= 100) {
     return batteryLevel;
   }
   return 255;
 }
 
-void Channel::setBatteryLevel(unsigned char level) {
-  batteryLevel = level;
+void Channel::setBatteryPowered() {
+  batteryLevel = 101;
+}
+
+void Channel::setBatteryLevel(int level) {
+  if (level >= 0 && level <= 100) {
+    batteryLevel = level;
+  }
 }
 
 uint8_t Channel::getBridgeSignalStrength() const {

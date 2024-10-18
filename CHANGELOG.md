@@ -1,5 +1,32 @@
 # CHANGELOG.md
 
+## 24.10.04 (2024-10-18 SOP edition)
+   - Change: configuration tags (names used in internal config storage) are extracted from HTML related classes and moved to ./storage/config_tags.h file in order to cleanup some mess and dependency to HTML classes in other parts of code
+   - Change: BlinkingLed: extracted base functionality from StatusLed class, so BlinkingLed can be used for purposes not related with device's status.
+   - Change: OcrImpulseCounter: change default and minimum PhotoInterval to 60 min
+   - Change: ElectricityMeter: in case of missing measurement, we set m_count to 0 and leave measured_values untouched
+   - Change: Change CALCFG reply handling from "FALSE" to "NOT_SUPPROTED" for situations where received command is not supported by a class.
+   - Fix: GPM: set setChannelRefreshIntervalMs as virtual
+   - Fix: ElectricityMeter: fix kW/kvar/kVA units for high negative values of power
+   - Fix: ElectricityMeter: fix refreshRate setting, so it will also affect how often extended value is send with measurements
+   - Fix: BinarySensor: apply server's inverted logic to ON_TURN_ON and ON_TURN_OFF events
+   - Fix: DS1397 & DS3231 RTC: fix missing RTC update in some rare scenario
+   - Add: HVAC: add "pump switch" and "heat or cold source switch" support
+   - Add: HVAC: add handling of master thermostat setting. Thermostats with configured master thermostat will ignore server and local (button) changes, and they will be overriden by master thermostat settings.  Mode and temperature setpoints are copied. If mode is not supported, thermostat is turned OFF.
+   - Add: HVAC Channel: add support for "battery cover open" HVAC value flag
+   - Add: GroupButtonControlRgbw: add setButtonControlType(rgbwIndex, type) to configure it in code instead of Config
+   - Add: RelayHvacAggregator: add class to aggregate HVAC status and control relay output based on heating state
+   - Add: Channel: add "offline=2" variant which informs server that channel in "online", but it is not available i.e. beacuse of specific configuration.
+   - Add: esp-idf: add InterruptAcToDcIo class to handle "AC alternating" input handling.
+   - Add: MQTT: add roller shutter (and similar functions) support for MQTT Autodiscovery Home Assistant
+   - Add: Channel: add getters for roller shutter value.
+   - Add: RollerShutter: add support for Config exchange with server, add handling of motor/buttons upside down, add handling for time margin setting, add support for RS related functions: terrace awning, projector screen, roof window, roller garage door, curtain.
+   - Add: RollerShutter: add HTML component for configuration
+   - Add: RollerShutter: add CALCFG recalibrate support. Add "calibration in progress" flag report.
+   - Add: SRPC layer: add sending channel state (with battery level) as extended value message after registration and periodically every 1h for battery powered channels.
+   - Add: Channel: add setBatteryPowered() method to indicate battery powered device without knowing exact battery level.
+   - Add: Element: add isOwnerOfSubDeviceId method to get element reponsible for specific subdevice handling.
+
 ## 24.09 (2024-09-05)
    - Fix: Relay: change int to int32_t (potentially problem on Arduino Mega)
    - Fix: HVAC: small mem usage reduction

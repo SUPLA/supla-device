@@ -763,7 +763,7 @@ int Supla::Sensor::ElectricityMeter::handleCalcfgFromServer(
       return SUPLA_CALCFG_RESULT_DONE;
     }
   }
-  return SUPLA_CALCFG_RESULT_FALSE;
+  return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
 }
 
 void Supla::Sensor::ElectricityMeter::handleAction(int event, int action) {

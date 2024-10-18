@@ -73,6 +73,19 @@ Element *Element::getElementByChannelNumber(int channelNumber) {
   return element;
 }
 
+Element *Element::getOwnerOfSubDeviceId(int subDeviceId) {
+  if (subDeviceId <= 0) {
+    return nullptr;
+  }
+
+  Element *element = begin();
+  while (element != nullptr && !element->isOwnerOfSubDeviceId(subDeviceId)) {
+    element = element->next();
+  }
+
+  return element;
+}
+
 bool Element::IsAnyUpdatePending() {
   Element *element = begin();
   while (element != nullptr) {
@@ -332,6 +345,10 @@ void Element::setDefaultFunction(int32_t defaultFunction) {
   if (ch) {
     ch->setDefaultFunction(defaultFunction);
   }
+}
+
+bool Element::isOwnerOfSubDeviceId(int) const {
+  return false;
 }
 
 };  // namespace Supla

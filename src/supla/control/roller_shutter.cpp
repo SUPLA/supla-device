@@ -779,7 +779,7 @@ int RollerShutter::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
       return SUPLA_CALCFG_RESULT_DONE;
     }
   }
-  return SUPLA_CALCFG_RESULT_FALSE;
+  return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
 }
 
 uint8_t RollerShutter::applyChannelConfig(TSD_ChannelConfig *result, bool) {

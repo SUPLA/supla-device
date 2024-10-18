@@ -71,7 +71,7 @@ int OcrImpulseCounter::handleCalcfgFromServer(
     TSD_DeviceCalCfgRequest *request) {
   int result = Supla::Sensor::VirtualImpulseCounter::handleCalcfgFromServer(
       request);
-  if (result != SUPLA_CALCFG_RESULT_FALSE) {
+  if (result != SUPLA_CALCFG_RESULT_NOT_SUPPORTED) {
     return result;
   }
 
@@ -86,7 +86,7 @@ int OcrImpulseCounter::handleCalcfgFromServer(
       return SUPLA_CALCFG_RESULT_DONE;
     }
   }
-  return SUPLA_CALCFG_RESULT_FALSE;
+  return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
 }
 
 uint8_t OcrImpulseCounter::applyChannelConfig(TSD_ChannelConfig *result,

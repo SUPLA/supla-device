@@ -32,6 +32,7 @@ class Element {
   static Element *begin();
   static Element *last();
   static Element *getElementByChannelNumber(int channelNumber);
+  static Element *getOwnerOfSubDeviceId(int subDeviceId);
   static bool IsAnyUpdatePending();
   static void NotifyElementsAboutConfigChange(uint64_t fieldBit);
 
@@ -120,6 +121,7 @@ class Element {
 
   int getChannelNumber() const;
   int getSecondaryChannelNumber() const;
+  virtual bool isOwnerOfSubDeviceId(int subDeviceId) const;
   virtual const Channel *getChannel() const;
   virtual const Channel *getSecondaryChannel() const;
   virtual Channel *getChannel();

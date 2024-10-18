@@ -330,11 +330,26 @@ void Supla::messageReceived(void *srpc,
           auto element = Supla::Element::getElementByChannelNumber(
               rd.data.sd_device_calcfg_request->ChannelNumber);
           if (element) {
+            // try to process calcfg by element responsible for channel
             result.Result = element->handleCalcfgFromServer(
                 rd.data.sd_device_calcfg_request);
             if (result.Result == SUPLA_SRPC_CALCFG_RESULT_PENDING) {
               suplaSrpc->calCfgResultPending.set(
                   result.ChannelNumber, result.ReceiverID, result.Command);
+            } else if (result.Result == SUPLA_CALCFG_RESULT_NOT_SUPPORTED) {
+              // if request wasn't processed by channel, try to check if there
+              // is element related to it's subdevice (if any)
+              SUPLA_LOG_DEBUG("Trying to find subdevice for channel %d",
+                              rd.data.sd_device_calcfg_request->ChannelNumber);
+              auto subdevice = element->getChannel()->getSubDeviceId();
+              if (subdevice > 0) {
+                auto subdeviceElement =
+                    Supla::Element::getOwnerOfSubDeviceId(subdevice);
+                if (subdeviceElement) {
+                  result.Result = subdeviceElement->handleCalcfgFromServer(
+                      rd.data.sd_device_calcfg_request);
+                }
+              }
             }
           } else {
             SUPLA_LOG_WARNING(

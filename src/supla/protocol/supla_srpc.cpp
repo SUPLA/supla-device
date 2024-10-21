@@ -709,7 +709,6 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
       break;
   }
 
-  disconnect();
   // server rejected registration
   registered = 2;
 }
@@ -915,6 +914,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     return true;
   } else if (registered == 2) {
     // Server rejected registration
+    disconnect();
     registered = 0;
     lastIterateTime = millis();
     waitForIterate = 10000;

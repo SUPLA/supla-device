@@ -332,22 +332,14 @@ char SRPC_ICACHE_FLASH srpc_iterate(void *_srpc) {
     return lck_unlock_r(srpc->lck, SUPLA_RESULT_FALSE);
   }
 
-  if (SUPLA_RESULT_TRUE ==
-      (result = sproto_pop_in_sdp(srpc->proto, &srpc->sdp))) {
+  while (1) {
+    if (SUPLA_RESULT_TRUE ==
+        (result = sproto_pop_in_sdp(srpc->proto, &srpc->sdp))) {
 #ifndef __EH_DISABLED
-    raise_event = sproto_in_dataexists(srpc->proto) == 1 ? 1 : 0;
+      raise_event = sproto_in_dataexists(srpc->proto) == 1 ? 1 : 0;
 #endif /*__EH_DISABLED*/
 
 #ifdef SRPC_WITHOUT_IN_QUEUE
-    if (srpc->params.on_remote_call_received) {
-      lck_unlock(srpc->lck);
-      srpc->params.on_remote_call_received(
-          srpc, srpc->sdp.rr_id, srpc->sdp.call_id, srpc->params.user_params,
-          srpc->sdp.version);
-      lck_lock(srpc->lck);
-    }
-#else
-    if (SUPLA_RESULT_TRUE == srpc_in_queue_push(srpc, &srpc->sdp)) {
       if (srpc->params.on_remote_call_received) {
         lck_unlock(srpc->lck);
         srpc->params.on_remote_call_received(
@@ -355,27 +347,42 @@ char SRPC_ICACHE_FLASH srpc_iterate(void *_srpc) {
             srpc->sdp.version);
         lck_lock(srpc->lck);
       }
+#else
+      if (SUPLA_RESULT_TRUE == srpc_in_queue_push(srpc, &srpc->sdp)) {
+        if (srpc->params.on_remote_call_received) {
+          lck_unlock(srpc->lck);
+          srpc->params.on_remote_call_received(srpc,
+                                               srpc->sdp.rr_id,
+                                               srpc->sdp.call_id,
+                                               srpc->params.user_params,
+                                               srpc->sdp.version);
+          lck_lock(srpc->lck);
+        }
 
-    } else {
-      supla_log(LOG_DEBUG, "ssrpc_in_queue_push error");
-      return lck_unlock_r(srpc->lck, SUPLA_RESULT_FALSE);
-    }
+      } else {
+        supla_log(LOG_DEBUG, "ssrpc_in_queue_push error");
+        return lck_unlock_r(srpc->lck, SUPLA_RESULT_FALSE);
+      }
 #endif /*SRPC_WITHOUT_IN_QUEUE*/
 
-  } else if (result != SUPLA_RESULT_FALSE) {
-    if (result == (char)SUPLA_RESULT_VERSION_ERROR) {
-      if (srpc->params.on_version_error) {
-        version = srpc->sdp.version;
-        lck_unlock(srpc->lck);
+    } else if (result != SUPLA_RESULT_FALSE) {
+      if (result == (char)SUPLA_RESULT_VERSION_ERROR) {
+        if (srpc->params.on_version_error) {
+          version = srpc->sdp.version;
+          lck_unlock(srpc->lck);
 
-        srpc->params.on_version_error(srpc, version, srpc->params.user_params);
-        return SUPLA_RESULT_FALSE;
+          srpc->params.on_version_error(
+              srpc, version, srpc->params.user_params);
+          return SUPLA_RESULT_FALSE;
+        }
+      } else {
+        supla_log(LOG_DEBUG, "sproto_pop_in_sdp error: %i", result);
       }
-    } else {
-      supla_log(LOG_DEBUG, "sproto_pop_in_sdp error: %i", result);
-    }
 
-    return lck_unlock_r(srpc->lck, SUPLA_RESULT_FALSE);
+      return lck_unlock_r(srpc->lck, SUPLA_RESULT_FALSE);
+    } else {
+      break;
+    }
   }
 
   // --------- OUT ---------------

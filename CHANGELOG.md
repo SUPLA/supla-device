@@ -10,7 +10,7 @@
    - Fix: ElectricityMeter: fix kW/kvar/kVA units for high negative values of power
    - Fix: ElectricityMeter: fix refreshRate setting, so it will also affect how often extended value is send with measurements
    - Fix: BinarySensor: apply server's inverted logic to ON_TURN_ON and ON_TURN_OFF events
-   - Fix: DS1397 & DS3231 RTC: fix missing RTC update in some rare scenario
+   - Fix: DS1307 & DS3231 RTC: fix missing RTC update in some rare scenario
    - Add: HVAC: add "pump switch" and "heat or cold source switch" support
    - Add: HVAC: add handling of master thermostat setting. Thermostats with configured master thermostat will ignore server and local (button) changes, and they will be overriden by master thermostat settings.  Mode and temperature setpoints are copied. If mode is not supported, thermostat is turned OFF.
    - Add: HVAC Channel: add support for "battery cover open" HVAC value flag

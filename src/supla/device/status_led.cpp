@@ -39,7 +39,10 @@ Supla::Device::StatusLed::StatusLed(uint8_t outPin, bool invert)
 }
 
 void Supla::Device::StatusLed::onLoadConfig(SuplaDeviceClass *sdc) {
-  (void)(sdc);
+  if (sdc) {
+    sdc->setStatusLed(this);
+  }
+
   if (getMode() == LED_IN_CONFIG_MODE_ONLY || !useDeviceConfig) {
     return;
   }
@@ -107,14 +110,21 @@ void Supla::Device::StatusLed::iterateAlways() {
   Supla::AutoLock autoLock(mutex);
   int currentStatus = SuplaDevice.getCurrentStatus();
   if (ledMode == LED_ALWAYS_OFF && currentStatus != STATUS_SW_DOWNLOAD &&
-      currentStatus != STATUS_CONFIG_MODE) {
+      currentStatus != STATUS_CONFIG_MODE &&
+      currentSequence != CUSTOM_SEQUENCE) {
     offDuration = 1000;
     onDuration = 0;
     return;
   }
 
   if (currentSequence == CUSTOM_SEQUENCE) {
-    return;
+    if (repeatLimit == 1 && onDuration == 0 && offDuration == 1000) {
+      autoLock.unlock();
+      setAutoSequence();
+      autoLock.lock();
+    } else {
+      return;
+    }
   }
 
   bool checkProtocolsStatus = false;
@@ -259,12 +269,14 @@ void Supla::Device::StatusLed::iterateAlways() {
   }
 }
 
-void Supla::Device::StatusLed::setCustomSequence(int onDurationMs,
-    int offDurationMs) {
-  Supla::AutoLock autoLock(mutex);
+void Supla::Device::StatusLed::setCustomSequence(uint32_t onDurationMs,
+                                                 uint32_t offDurationMs,
+                                                 uint32_t pauseDurrationMs,
+                                                 uint8_t onLimit,
+                                                 uint8_t repeatLimit) {
   currentSequence = CUSTOM_SEQUENCE;
-  onDuration = onDurationMs;
-  offDuration = offDurationMs;
+  Supla::Control::BlinkingLed::setCustomSequence(
+      onDurationMs, offDurationMs, pauseDurrationMs, onLimit, repeatLimit);
 }
 
 void Supla::Device::StatusLed::setAutoSequence() {
@@ -272,6 +284,7 @@ void Supla::Device::StatusLed::setAutoSequence() {
   // resetting to defaults will trigger automatic sequence update on
   // iterateAlways call
   currentSequence = NETWORK_CONNECTING;
+  repeatLimit = 0;
 }
 
 void Supla::Device::StatusLed::setMode(LedMode newMode) {
@@ -297,4 +310,8 @@ void Supla::Device::StatusLed::setDefaultMode(enum LedMode newMode) {
 
 void Supla::Device::StatusLed::setUseDeviceConfig(bool value) {
   useDeviceConfig = value;
+}
+
+void Supla::Device::StatusLed::identify() {
+  setCustomSequence(150, 150, 400, 3, 5);
 }

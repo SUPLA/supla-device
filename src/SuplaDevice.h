@@ -85,6 +85,7 @@ class SwUpdate;
 class Mutex;
 class ChannelConflictResolver;
 class SubdevicePairingHandler;
+class StatusLed;
 }  // namespace Device
 }  // namespace Supla
 
@@ -213,6 +214,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setMacLengthInHostname(int value);
 
+  void setStatusLed(Supla::Device::StatusLed *led);
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -257,6 +260,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   char *customHostnamePrefix = nullptr;
   Supla::Mutex *timerAccessMutex = nullptr;
   Supla::Device::SubdevicePairingHandler *subdevicePairingHandler = nullptr;
+  Supla::Device::StatusLed *statusLed = nullptr;
 
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();

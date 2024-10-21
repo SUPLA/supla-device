@@ -40,6 +40,7 @@
 #include <supla/mutex.h>
 #include <supla/auto_lock.h>
 #include <supla/device/subdevice_pairing_handler.h>
+#include <supla/device/status_led.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -884,6 +885,13 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
         }
       }
+      case SUPLA_CALCFG_CMD_IDENTIFY_DEVICE: {
+        SUPLA_LOG_INFO("CALCFG IDENTIFY DEVICE received");
+        if (statusLed) {
+          statusLed->identify();
+        }
+        return SUPLA_CALCFG_RESULT_DONE;
+      }
 
       default:
         break;
@@ -1336,6 +1344,11 @@ void SuplaDeviceClass::setMacLengthInHostname(int value) {
     value = 6;
   }
   macLengthInHostname = value;
+}
+
+void SuplaDeviceClass::setStatusLed(Supla::Device::StatusLed *led) {
+  statusLed = led;
+  addFlags(SUPLA_DEVICE_FLAG_CALCFG_IDENTIFY_DEVICE);
 }
 
 SuplaDeviceClass SuplaDevice;

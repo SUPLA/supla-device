@@ -43,7 +43,11 @@ class BlinkingLed : public Supla::Element {
 
   // Enables custom LED sequence based on given durations.
   // Automatic sequence change will be disabled.
-  virtual void setCustomSequence(int onDurationMs, int offDurationMs);
+  virtual void setCustomSequence(uint32_t onDurationMs,
+                                 uint32_t offDurationMs,
+                                 uint32_t pauseDurrationMs = 0,
+                                 uint8_t onLimit = 0,
+                                 uint8_t repeatLimit = 0);
 
  protected:
   void updatePin();
@@ -51,9 +55,13 @@ class BlinkingLed : public Supla::Element {
   void turnOff();
 
   uint8_t outPin = 0;
+  uint8_t onLimitCounter = 0;
+  uint8_t onLimit = 0;
+  uint8_t repeatLimit = 0;
   bool invert = false;
   uint32_t onDuration = 0;
   uint32_t offDuration = 1000;
+  uint32_t pauseDuration = 0;
   uint32_t lastUpdate = 0;
   LedState state = NOT_INITIALIZED;
   Supla::Io *io = nullptr;

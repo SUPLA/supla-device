@@ -81,13 +81,46 @@ void BlinkingLed::updatePin() {
 
   if (state == ON && millis() - lastUpdate > onDuration) {
     turnOff();
-  } else if (state == OFF && millis() - lastUpdate > offDuration) {
-    turnOn();
+  } else if (state == OFF) {
+    if (onLimit > 0 && pauseDuration > 0 && onLimitCounter == 0 &&
+        millis() - lastUpdate < pauseDuration) {
+      return;
+    }
+    if (millis() - lastUpdate > offDuration) {
+      if (onLimit > 0 && pauseDuration > 0 && onLimitCounter == 0) {
+        onLimitCounter = onLimit;
+        if (repeatLimit > 0) {
+          if (repeatLimit == 1) {
+            onDuration = 0;
+            offDuration = 1000;
+            onLimit = 0;
+            return;
+          }
+          repeatLimit--;
+        }
+      }
+      turnOn();
+      if (onLimitCounter > 0) {
+        onLimitCounter--;
+      }
+    }
   }
 }
 
-void BlinkingLed::setCustomSequence(int onDurationMs, int offDurationMs) {
+void BlinkingLed::setCustomSequence(uint32_t onDurationMs,
+                                    uint32_t offDurationMs,
+                                    uint32_t pauseDurrationMs,
+                                    uint8_t onLimit,
+                                    uint8_t repeatLimit) {
   Supla::AutoLock autoLock(mutex);
   onDuration = onDurationMs;
   offDuration = offDurationMs;
+  pauseDuration = pauseDurrationMs;
+  this->onLimit = onLimit;
+  onLimitCounter = onLimit;
+  this->repeatLimit = repeatLimit;
+  state = OFF;
+  lastUpdate = 0;
+  autoLock.unlock();
+  updatePin();
 }

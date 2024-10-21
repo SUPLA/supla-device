@@ -61,7 +61,11 @@ class StatusLed : public Supla::Control::BlinkingLed {
 
   // Enables custom LED sequence based on given durations.
   // Automatic sequence change will be disabled.
-  void setCustomSequence(int onDurationMs, int offDurationMs) override;
+  void setCustomSequence(uint32_t onDurationMs,
+                         uint32_t offDurationMs,
+                         uint32_t pauseDurrationMs = 0,
+                         uint8_t onLimit = 0,
+                         uint8_t repeatLimit = 0) override;
 
   // Restores automatic LED sequence change based on device state.
   // It is enabled by default, so if it wasn't disabled by calling
@@ -74,6 +78,7 @@ class StatusLed : public Supla::Control::BlinkingLed {
   void storeModeToConfig();
   void setDefaultMode(enum LedMode newMode);
   void setUseDeviceConfig(bool value);
+  void identify();
 
  protected:
   LedSequence currentSequence = NETWORK_CONNECTING;

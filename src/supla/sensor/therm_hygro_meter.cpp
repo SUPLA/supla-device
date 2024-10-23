@@ -111,6 +111,7 @@ void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void Supla::Sensor::ThermHygroMeter::purgeConfig() {
+  Supla::ElementWithChannelActions::purgeConfig();
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     return;

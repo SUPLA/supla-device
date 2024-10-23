@@ -1441,7 +1441,7 @@ bool Channel::isHvacValueValid(THVACValue *hvacValue) {
   if (hvacValue->Mode > SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL) {
     return false;
   }
-  if (hvacValue->Flags > (1ULL << 12)) {
+  if (hvacValue->Flags > 0x1FFF) {  // (1ULL << 12)) {
     return false;
   }
   if (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_COOLING &&

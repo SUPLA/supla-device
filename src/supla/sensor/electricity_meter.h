@@ -303,6 +303,7 @@ class ElectricityMeter : public ElementWithChannelActions,
 
   Channel *getChannel() override;
   const Channel *getChannel() const override;
+  void purgeConfig() override;
 
   void enableChannelConfig();
   void addCtType(uint64_t ctType);

@@ -1064,3 +1064,23 @@ void Supla::Sensor::ElectricityMeter::onRegistered(
   lastChannelUpdateTime = 0;
   Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
 }
+
+void Supla::Sensor::ElectricityMeter::purgeConfig() {
+  Supla::ElementWithChannelActions::purgeConfig();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::EmCtTypeTag);
+    cfg->eraseKey(key);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
+    cfg->eraseKey(key);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageLowTag);
+    cfg->eraseKey(key);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageHighTag);
+    cfg->eraseKey(key);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedPowerLowTag);
+    cfg->eraseKey(key);
+    generateKey(key, Supla::ConfigTag::EmPhaseLedPowerHighTag);
+    cfg->eraseKey(key);
+  }
+}

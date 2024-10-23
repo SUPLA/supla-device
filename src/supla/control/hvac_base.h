@@ -55,6 +55,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
   bool iterateConnected() override;
+  void purgeConfig() override;
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,

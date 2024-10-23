@@ -65,6 +65,10 @@ const char RollerShutterOpeningTimeTag[] = "rs_ot";
 const char RollerShutterClosingTimeTag[] = "rs_ct";
 
 const char HvacCfgTag[] = "hvac_cfg";
+const char HvacWeeklyCfgTag[] = "hvac_weekly";
+const char HvacAltWeeklyCfgTag[] = "hvac_aweekly";
+
+const char BinarySensorServerInvertedLogicTag[] = "srv_invrt";
 
 }  // namespace ConfigTag
 }  // namespace Supla

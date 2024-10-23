@@ -1043,5 +1043,15 @@ void RollerShutter::setRsConfigTimeMarginValue(int8_t value) {
   }
 }
 
+void RollerShutter::purgeConfig() {
+  Supla::ChannelElement::purgeConfig();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::RollerShutterTag);
+    cfg->eraseKey(key);
+  }
+}
+
 }  // namespace Control
 }  // namespace Supla

@@ -33,7 +33,6 @@
 
 #include "output_interface.h"
 #include "relay_hvac_aggregator.h"
-#include "supla/device/status_led.h"
 
 #define SUPLA_HVAC_DEFAULT_TEMP_HEAT          2100  // 21.00 C
 #define SUPLA_HVAC_DEFAULT_TEMP_COOL          2500  // 25.00 C
@@ -71,6 +70,7 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
 }
 
 HvacBase::~HvacBase() {
+  Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
 }
 
 void HvacBase::handleAction(int event, int action) {
@@ -269,7 +269,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     }
 
     // Weekly schedule configuration
-    generateKey(key, "hvac_weekly");
+    generateKey(key, Supla::ConfigTag::HvacWeeklyCfgTag);
     isWeeklyScheduleConfigured = false;
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&weeklySchedule),
@@ -290,7 +290,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
 
     // Alt weekly schedule (only for HVAC_THERMOSTAT function)
     if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-      generateKey(key, "hvac_aweekly");
+      generateKey(key, Supla::ConfigTag::HvacAltWeeklyCfgTag);
       if (cfg->getBlob(key,
             reinterpret_cast<char *>(&altWeeklySchedule),
             sizeof(TChannelConfig_WeeklySchedule))) {
@@ -896,13 +896,13 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  auto hvacConfig =
-      reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
-
-  bool readonlyChanged = fixReadonlyParameters(hvacConfig);
-  bool additionalValidationChanged = applyAdditionalValidation(hvacConfig);
-
+  TChannelConfig_HVAC *hvacConfig = nullptr;
+  bool readonlyChanged = false;
+  bool additionalValidationChanged = false;
   if (applyServerConfig) {
+    hvacConfig = reinterpret_cast<TChannelConfig_HVAC *>(newConfig->Config);
+    readonlyChanged = fixReadonlyParameters(hvacConfig);
+    additionalValidationChanged = applyAdditionalValidation(hvacConfig);
     debugPrintConfigDiff(&config, hvacConfig, getChannelNumber());
   }
 
@@ -1091,11 +1091,6 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
   if (newConfig == nullptr) {
     return false;
   }
-
-  // main thermometer is mandatory and has to be set to a local thermometer
-//  if (!isChannelThermometer(newConfig->MainThermometerChannelNo)) {
-//    return false;
-//  }
 
   // heater cooler thermometer is optional, but if set, it has to be set to a
   // local thermometer
@@ -2183,6 +2178,7 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
 }
 
 bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
+  SUPLA_LOG_INFO(" ********** SET MAIN THERMOMETER CHANNEL %d", channelNo);
   if (initialConfig && !initDone) {
     initialConfig->MainThermometerChannelNo = channelNo;
   }
@@ -2191,7 +2187,15 @@ bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
     defaultMainThermometer = channelNo;
     return true;
   }
-  if (isChannelThermometer(channelNo)) {
+  if (channelNo == getChannelNumber()) {
+    if (config.MainThermometerChannelNo != channelNo) {
+      config.MainThermometerChannelNo = channelNo;
+      if (initDone) {
+        channelConfigChangedOffline = 1;
+        saveConfig();
+      }
+    }
+  } else if (isChannelThermometer(channelNo)) {
     if (getAuxThermometerType() !=
         SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
       if (channelNo == getAuxThermometerChannelNo()) {
@@ -4330,6 +4334,8 @@ void HvacBase::initDefaultConfig() {
       } else if (isAlgorithmValid(
                      SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST)) {
         newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+      } else if (isAlgorithmValid(SUPLA_HVAC_ALGORITHM_PID)) {
+        newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_PID;
       }
       break;
     }
@@ -4340,6 +4346,8 @@ void HvacBase::initDefaultConfig() {
       } else if (isAlgorithmValid(
                      SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE)) {
         newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+      } else if (isAlgorithmValid(SUPLA_HVAC_ALGORITHM_PID)) {
+        newConfig.UsedAlgorithm = SUPLA_HVAC_ALGORITHM_PID;
       }
       break;
     }
@@ -5207,8 +5215,8 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
         "HVAC[%d] AvailableAlgorithms change from %d to %d not allowed "
         "(readonly)",
         getChannelNumber(),
-        hvacConfig->AvailableAlgorithms,
-        config.AvailableAlgorithms);
+        config.AvailableAlgorithms,
+        hvacConfig->AvailableAlgorithms);
     hvacConfig->AvailableAlgorithms = config.AvailableAlgorithms;
     readonlyViolation = true;
   }
@@ -5256,11 +5264,15 @@ bool HvacBase::fixReadonlyTemperature(int32_t temperatureIndex,
 }
 
 bool HvacBase::isOutputControlledInternally() const {
-  if (config.AvailableAlgorithms == 0) {
-    return false;
+  if (primaryOutput != nullptr) {
+    return primaryOutput->isControlledInternally();
   }
 
-  return true;
+  if (secondaryOutput != nullptr) {
+    return secondaryOutput->isControlledInternally();
+  }
+
+  return false;
 }
 
 bool HvacBase::applyAdditionalValidation(TChannelConfig_HVAC *) {
@@ -5471,3 +5483,17 @@ void HvacBase::unregisterInAggregator(int16_t channelNo) {
   }
 }
 
+void Supla::Control::HvacBase::purgeConfig() {
+  Supla::ElementWithChannelActions::purgeConfig();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return;
+  }
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, Supla::ConfigTag::HvacCfgTag);
+  cfg->eraseKey(key);
+  generateKey(key, Supla::ConfigTag::HvacWeeklyCfgTag);
+  cfg->eraseKey(key);
+  generateKey(key, Supla::ConfigTag::HvacAltWeeklyCfgTag);
+  cfg->eraseKey(key);
+}

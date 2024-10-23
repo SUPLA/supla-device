@@ -826,7 +826,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     }
   }
 
-  if (srpc_iterate(srpc) == SUPLA_RESULT_FALSE) {
+  if (srpc_iterate_device(srpc) == SUPLA_RESULT_FALSE) {
     sdc->status(STATUS_ITERATE_FAIL, F("Communication failure"));
     disconnect();
 

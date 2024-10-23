@@ -92,6 +92,7 @@ class RollerShutter : public ChannelElement, public ActionHandler {
   void saveConfig();
   void onLoadState() override;
   void onSaveState() override;
+  void purgeConfig() override;
 
   uint32_t getClosingTimeMs() const;
   uint32_t getOpeningTimeMs() const;

@@ -37,6 +37,7 @@ class RelayHvacAggregator : public Element {
   static RelayHvacAggregator *GetInstance(int relayChannelNumber);
   static RelayHvacAggregator *Add(int relayChannelNumber, Relay *relay);
   static bool Remove(int relayChannelNumber);
+  static void UnregisterHvac(HvacBase *hvac);
 
   void registerHvac(HvacBase *hvac);
   void unregisterHvac(HvacBase *hvac);

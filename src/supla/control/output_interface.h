@@ -29,6 +29,7 @@ class OutputInterface {
   virtual int getOutputValue() const = 0;
   virtual void setOutputValue(int value) = 0;
   virtual bool isOnOffOnly() const = 0;
+  virtual bool isControlledInternally() const { return true; }
 };
 
 }  // namespace Control

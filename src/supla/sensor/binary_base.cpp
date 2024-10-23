@@ -21,10 +21,10 @@
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Sensor::BinaryBase;
 
-const char BinarySensorServerInvertedLogicTag[] = "srv_invrt";
 
 BinaryBase::BinaryBase() {
   channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
@@ -41,7 +41,7 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
     loadFunctionFromConfig();
 
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, BinarySensorServerInvertedLogicTag);
+    generateKey(key, Supla::ConfigTag::BinarySensorServerInvertedLogicTag);
     uint8_t storedServerInvertLogic = 0;
     cfg->getUInt8(key, &storedServerInvertLogic);
     setServerInvertLogic(storedServerInvertLogic > 0);
@@ -52,15 +52,14 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void BinaryBase::purgeConfig() {
+  Supla::ElementWithChannelActions::purgeConfig();
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     return;
   }
-  char key[16] = {};
-  for (int i = 0; i < 2; i++) {
-    generateKey(key, BinarySensorServerInvertedLogicTag);
-    cfg->eraseKey(key);
-  }
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, Supla::ConfigTag::BinarySensorServerInvertedLogicTag);
+  cfg->eraseKey(key);
 }
 
 void BinaryBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
@@ -113,7 +112,7 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, BinarySensorServerInvertedLogicTag);
+    generateKey(key, Supla::ConfigTag::BinarySensorServerInvertedLogicTag);
     uint8_t storedServerInvertLogic = (config->InvertedLogic > 0) ? 1 : 0;
     cfg->setUInt8(key, storedServerInvertLogic);
     cfg->saveWithDelay(2000);

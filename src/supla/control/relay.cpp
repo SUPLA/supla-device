@@ -63,7 +63,6 @@ Relay::~Relay() {
     delete currentElement;
     currentElement = nextElement;
   }
-  auto num = getChannelNumber();
   Supla::Control::RelayHvacAggregator::Remove(getChannelNumber());
 }
 

@@ -230,6 +230,8 @@ void HvacParameters::send(Supla::WebSender* sender) {
     sender->sendDisabled(hvac->parameterFlags.MainThermometerChannelNoReadonly);
     sender->sendHidden(hvac->parameterFlags.MainThermometerChannelNoHidden);
     sender->send(">");
+    sender->sendSelectItem(hvac->getChannelNumber(), "Not set",
+        hvac->getMainThermometerChannelNo() == hvac->getChannelNumber());
     for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
         ch = ch->next()) {
       int channelNumber = ch->getChannelNumber();
@@ -562,8 +564,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
   }
   // form-field END
 
-  if (!hvac->parameterFlags.UsedAlgorithmHidden &&
-      hvac->isOutputControlledInternally()) {
+  if (!hvac->parameterFlags.UsedAlgorithmHidden) {
     // form-field BEGIN
     hvac->generateKey(key, "algorithm");
     sender->send("<div class=\"form-field\">");
@@ -584,6 +585,11 @@ void HvacParameters::send(Supla::WebSender* sender) {
           "On/Off at most",
           hvac->getUsedAlgorithm() ==
           SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
+    }
+    if (hvac->isAlgorithmValid(SUPLA_HVAC_ALGORITHM_PID)) {
+      sender->sendSelectItem(SUPLA_HVAC_ALGORITHM_PID,
+          "PID",
+          hvac->getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_PID);
     }
     sender->send("</select>");
     sender->send("</div>");

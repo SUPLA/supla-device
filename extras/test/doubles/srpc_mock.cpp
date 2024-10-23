@@ -125,7 +125,7 @@ char srpc_getdata(void *_srpc,
   return SrpcInterface::instance->srpc_getdata(_srpc, rd, rr_id);
 }
 
-char srpc_iterate(void *_srpc) {
+char srpc_iterate_device(void *_srpc) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->srpc_iterate(_srpc);
 }

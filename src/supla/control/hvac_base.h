@@ -450,7 +450,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);
 
-  void registerInAggregator(int16_t channelNo);
+  bool registerInAggregator(int16_t channelNo);
   void unregisterInAggregator(int16_t channelNo);
 
   TChannelConfig_HVAC config = {};
@@ -475,6 +475,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool initDone = false;
   bool serverChannelFunctionValid = true;
   bool wrapAroundTemperatureSetpoints = false;
+  bool registeredInRelayHvacAggregator = false;
 
   uint8_t channelConfigChangedOffline = 0;
   uint8_t weeklyScheduleChangedOffline = 0;

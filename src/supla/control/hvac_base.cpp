@@ -587,6 +587,22 @@ void HvacBase::iterateAlways() {
   }
   lastIterateTimestampMs = millis();
 
+  if (!registeredInRelayHvacAggregator) {
+    bool pumpReady = true;
+    if (isPumpSwitchSet()) {
+      if (!registerInAggregator(getPumpSwitchChannelNo())) {
+        pumpReady = false;
+      }
+    }
+    bool heatOrColdReady = true;
+    if (isHeatOrColdSourceSwitchSet()) {
+      if (!registerInAggregator(getHeatOrColdSourceSwitchChannelNo())) {
+        heatOrColdReady = false;
+      }
+    }
+    registeredInRelayHvacAggregator = pumpReady && heatOrColdReady;
+  }
+
   if (isMasterThermostatSet()) {
     auto masterCh =
         Supla::Channel::GetByChannelNumber(getMasterThermostatChannelNo());
@@ -931,6 +947,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
         hvacConfig->HeatOrColdSourceSwitchChannelNo) {
       unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
     }
+    registeredInRelayHvacAggregator = false;
     registerInAggregator(hvacConfig->PumpSwitchChannelNo);
     registerInAggregator(hvacConfig->HeatOrColdSourceSwitchChannelNo);
     applyConfigWithoutValidation(hvacConfig);
@@ -2074,10 +2091,6 @@ _supla_int16_t HvacBase::getTemperatureHisteresis(
     const THVACTemperatureCfg *temperatures) const {
   auto histeresis =
       getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
-  if (histeresis == INT16_MIN) {
-    histeresis =
-        getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS_MIN);
-  }
   return histeresis;
 }
 
@@ -3709,6 +3722,9 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
 
   auto histeresis = getTemperatureHisteresis();
   if (!isSensorTempValid(histeresis)) {
+    histeresis = getTemperatureHisteresisMin();
+  }
+  if (!isSensorTempValid(histeresis)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: histeresis not valid", getChannelNumber());
     return getOutputValueOnError();
   }
@@ -3772,6 +3788,9 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
   int output = lastValue;
 
   auto histeresis = getTemperatureHisteresis();
+  if (!isSensorTempValid(histeresis)) {
+    histeresis = getTemperatureHisteresisMin();
+  }
   if (!isSensorTempValid(histeresis)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: histeresis not valid", getChannelNumber());
     return getOutputValueOnError();
@@ -4319,6 +4338,10 @@ void HvacBase::initDefaultConfig() {
     memcpy(&config, initialConfig, sizeof(config));
     return;
   }
+
+  // unregister in all aggregators
+  Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
+  registeredInRelayHvacAggregator = false;
 
   TChannelConfig_HVAC newConfig = {};
   // init new config with current configuration values
@@ -5312,13 +5335,14 @@ bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {
   }
 
   unregisterInAggregator(config.PumpSwitchChannelNo);
-  registerInAggregator(channelNo);
-  config.PumpSwitchChannelNo = channelNo;
+  registeredInRelayHvacAggregator = false;
   if (channelNo == getChannelNumber()) {
     config.PumpSwitchIsSet = 0;
   } else {
     config.PumpSwitchIsSet = 1;
+    registerInAggregator(channelNo);
   }
+  config.PumpSwitchChannelNo = channelNo;
   if (!initDone) {
     defaultPumpSwitch = channelNo;
     return true;
@@ -5352,13 +5376,14 @@ bool HvacBase::setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo) {
   }
 
   unregisterInAggregator(config.HeatOrColdSourceSwitchChannelNo);
-  registerInAggregator(channelNo);
-  config.HeatOrColdSourceSwitchChannelNo = channelNo;
+  registeredInRelayHvacAggregator = false;
   if (channelNo == getChannelNumber()) {
     config.HeatOrColdSourceSwitchIsSet = 0;
   } else {
     config.HeatOrColdSourceSwitchIsSet = 1;
+    registerInAggregator(channelNo);
   }
+  config.HeatOrColdSourceSwitchChannelNo = channelNo;
   if (!initDone) {
     defaultHeatOrColdSourceSwitch = channelNo;
     return true;
@@ -5463,14 +5488,16 @@ void HvacBase::setIgnoreDefaultHeatOrColdSourceForAggregator(bool flag) {
   }
 }
 
-void HvacBase::registerInAggregator(int16_t channelNo) {
+bool HvacBase::registerInAggregator(int16_t channelNo) {
   if (channelNo < 0) {
-    return;
+    return false;
   }
   auto aggregator = Supla::Control::RelayHvacAggregator::GetInstance(channelNo);
   if (aggregator) {
     aggregator->registerHvac(this);
+    return true;
   }
+  return false;
 }
 
 void HvacBase::unregisterInAggregator(int16_t channelNo) {

@@ -57,6 +57,7 @@ class RelayHvacAggregator : public Element {
   Relay *relay = nullptr;
   int relayChannelNumber = 0;
   uint32_t lastUpdateTimestamp = 0;
+  uint32_t lastStateUpdateTimestamp = 0;
   bool turnOffWhenEmpty = true;
   int8_t lastValueSend = -1;
 };

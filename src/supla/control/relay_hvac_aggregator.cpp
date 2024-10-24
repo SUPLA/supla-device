@@ -153,6 +153,15 @@ void RelayHvacAggregator::iterateAlways() {
     return;
   }
 
+  if (millis() - lastStateUpdateTimestamp > 5000) {
+    if (relay->isOn()) {
+      lastValueSend = 1;
+    } else {
+      lastValueSend = 0;
+    }
+    lastStateUpdateTimestamp = millis();
+  }
+
   lastUpdateTimestamp = millis();
 
   bool state = false;
@@ -179,12 +188,14 @@ void RelayHvacAggregator::iterateAlways() {
   if (state) {
     if (lastValueSend != 1) {
       lastValueSend = 1;
+      lastStateUpdateTimestamp = millis();
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn on", relayChannelNumber);
       relay->turnOn();
     }
   } else {
     if (lastValueSend != 0) {
       lastValueSend = 0;
+      lastStateUpdateTimestamp = millis();
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn off", relayChannelNumber);
       relay->turnOff();
     }

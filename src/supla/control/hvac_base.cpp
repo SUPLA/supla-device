@@ -573,6 +573,9 @@ void HvacBase::iterateAlways() {
     previousSubfunction = config.Subfunction;
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
     lastManualMode = 0;
+    if (channel.isHvacFlagHeating() || channel.isHvacFlagCooling()) {
+      runAction(Supla::ON_HVAC_STANDBY);
+    }
     channel.clearHvacState();
     clearLastOutputValue();
     setOutput(0, true);

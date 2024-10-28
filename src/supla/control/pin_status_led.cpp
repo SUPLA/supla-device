@@ -40,7 +40,15 @@ void Supla::Control::PinStatusLed::onInit() {
 }
 
 void Supla::Control::PinStatusLed::iterateAlways() {
-  updatePin();
+  if (!workOnTimer) {
+    updatePin();
+  }
+}
+
+void Supla::Control::PinStatusLed::onTimer() {
+  if (workOnTimer) {
+    updatePin();
+  }
 }
 
 void Supla::Control::PinStatusLed::setInvertedLogic(bool invertedLogic) {
@@ -54,4 +62,8 @@ void Supla::Control::PinStatusLed::updatePin() {
   if (value != Supla::Io::digitalRead(outPin, ioOut)) {
     Supla::Io::digitalWrite(outPin, value, ioOut);
   }
+}
+
+void Supla::Control::PinStatusLed::setWorkOnTimer(bool workOnTimer) {
+  this->workOnTimer = workOnTimer;
 }

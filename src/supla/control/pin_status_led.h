@@ -35,8 +35,10 @@ class PinStatusLed : public Element {
 
   void onInit() override;
   void iterateAlways() override;
+  void onTimer() override;
 
   void setInvertedLogic(bool invertedLogic);
+  void setWorkOnTimer(bool workOnTimer);
 
  protected:
   void updatePin();
@@ -44,6 +46,7 @@ class PinStatusLed : public Element {
   uint8_t srcPin = 0;
   uint8_t outPin = 0;
   bool invert = false;
+  bool workOnTimer = false;
   Supla::Io *ioSrc = nullptr;
   Supla::Io *ioOut = nullptr;
 };

@@ -665,23 +665,30 @@ void Channel::requestChannelConfig() {
 }
 
 bool Channel::isBatteryPowered() const {
-  return (batteryLevel <= 101);
+  return batteryPowered == 1;
+}
+
+bool Channel::isBatteryPoweredFieldEnabled() const {
+  return batteryPowered;
 }
 
 uint8_t Channel::getBatteryLevel() const {
-  if (isBatteryPowered() && batteryLevel <= 100) {
+  if (batteryLevel <= 100) {
     return batteryLevel;
   }
   return 255;
 }
 
-void Channel::setBatteryPowered() {
-  batteryLevel = 101;
+void Channel::setBatteryPowered(bool value) {
+  batteryPowered = value ? 1 : 2;
 }
 
 void Channel::setBatteryLevel(int level) {
   if (level >= 0 && level <= 100) {
     batteryLevel = level;
+    if (!isBatteryPoweredFieldEnabled()) {
+      setBatteryPowered(true);
+    }
   }
 }
 

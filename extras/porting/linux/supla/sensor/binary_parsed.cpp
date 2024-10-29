@@ -27,6 +27,7 @@ Supla::Sensor::BinaryParsed::BinaryParsed(Supla::Parser::Parser *parser)
 void Supla::Sensor::BinaryParsed::onInit() {
   VirtualBinary::onInit();
   registerActions();
+  handleGetChannelState(nullptr);
 }
 
 bool Supla::Sensor::BinaryParsed::getValue() {

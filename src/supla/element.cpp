@@ -220,6 +220,9 @@ Channel *Element::getSecondaryChannel() {
 }
 
 void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
+  if (channelState == nullptr) {
+    return;
+  }
   Channel *channel = getChannel();
   while (channel) {
     if (channelState->ChannelNumber == channel->getChannelNumber()) {

@@ -117,18 +117,28 @@ SensorParsed<T>::SensorParsed(Supla::Parser::Parser *parser)
     : SensorParsedBase(parser) {
 }
 
+
 template <typename T>
 void SensorParsed<T>::handleGetChannelState(TDSC_ChannelState *channelState) {
   unsigned char batteryLevel = 255;
   if (isParameterConfigured(BatteryLevel)) {
     if (refreshParserSource()) {
       batteryLevel = getParameterValue(BatteryLevel);
+      if (!parser->isValid()) {
+        batteryLevel = 255;
+      }
     }
     if (T::getChannel()) {
-      T::getChannel()->setBatteryLevel(batteryLevel);
+      T::getChannel()->setBatteryPowered();
+      if (batteryLevel <= 100) {
+        T::getChannel()->setBatteryLevel(batteryLevel);
+      }
     }
     if (T::getSecondaryChannel()) {
-      T::getSecondaryChannel()->setBatteryLevel(batteryLevel);
+      T::getSecondaryChannel()->setBatteryPowered();
+      if (batteryLevel <= 100) {
+        T::getSecondaryChannel()->setBatteryLevel(batteryLevel);
+      }
     }
   }
 

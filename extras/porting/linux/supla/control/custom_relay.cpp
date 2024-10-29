@@ -36,6 +36,7 @@ Supla::Control::CustomRelay::CustomRelay(
 void Supla::Control::CustomRelay::onInit() {
   VirtualRelay::onInit();
   registerActions();
+  handleGetChannelState(nullptr);
 }
 
 void Supla::Control::CustomRelay::turnOn(_supla_int_t duration) {

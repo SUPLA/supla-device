@@ -34,6 +34,7 @@ Supla::Control::CmdRelay::CmdRelay(Supla::Parser::Parser *parser,
 void Supla::Control::CmdRelay::onInit() {
   VirtualRelay::onInit();
   registerActions();
+  handleGetChannelState(nullptr);
 }
 
 void Supla::Control::CmdRelay::turnOn(_supla_int_t duration) {

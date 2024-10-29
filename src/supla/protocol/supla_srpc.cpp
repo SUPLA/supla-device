@@ -30,7 +30,7 @@
 
 #include "supla_srpc.h"
 
-#define SUPLA_EXT_CHANNEL_STATE_INTERVAL_MS (60 * 60 * 1000)  // 1h
+#define SUPLA_EXT_CHANNEL_STATE_INTERVAL_MS (20 * 60 * 1000)  // 20 min
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {

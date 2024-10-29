@@ -129,13 +129,13 @@ void SensorParsed<T>::handleGetChannelState(TDSC_ChannelState *channelState) {
       }
     }
     if (T::getChannel()) {
-      T::getChannel()->setBatteryPowered();
+      T::getChannel()->setBatteryPowered(true);
       if (batteryLevel <= 100) {
         T::getChannel()->setBatteryLevel(batteryLevel);
       }
     }
     if (T::getSecondaryChannel()) {
-      T::getSecondaryChannel()->setBatteryPowered();
+      T::getSecondaryChannel()->setBatteryPowered(true);
       if (batteryLevel <= 100) {
         T::getSecondaryChannel()->setBatteryLevel(batteryLevel);
       }

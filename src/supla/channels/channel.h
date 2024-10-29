@@ -186,6 +186,7 @@ class Channel : public LocalAction {
   bool isWeeklyScheduleAvailable();
 
   // Returns true if channel is battery powered (for channel state info)
+  bool isBatteryPoweredFieldEnabled() const;
   bool isBatteryPowered() const;
   // Returns battery level
   uint8_t getBatteryLevel() const;
@@ -193,9 +194,8 @@ class Channel : public LocalAction {
   // return true
   void setBatteryLevel(int level);
 
-  // sets battery powered flag (internally use 101 battery level value)
-  // use only on channel initialization
-  void setBatteryPowered();
+  // sets battery powered flag (internally use 101 and 102 battery level value)
+  void setBatteryPowered(bool);
 
   // Sets bridge signal strength. Allowed values are 0..100, or 255 to disable
   void setBridgeSignalStrength(unsigned char level);
@@ -239,7 +239,8 @@ class Channel : public LocalAction {
   bool valueChanged = false;
   bool channelConfig = false;
 
-  unsigned char batteryLevel = 255;          // 0 - 100%; 255 - not used
+  uint8_t batteryLevel = 255;          // 0 - 100%; 255 - not used
+  uint8_t batteryPowered = 0;  // 0 - not used, 1 - true, 2 - false
   unsigned char bridgeSignalStrength = 255;  // 0 - 100%; 255 - not used
 
   // registration parameter

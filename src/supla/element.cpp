@@ -226,9 +226,9 @@ void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
   Channel *channel = getChannel();
   while (channel) {
     if (channelState->ChannelNumber == channel->getChannelNumber()) {
-      if (channel->isBatteryPowered()) {
+      if (channel->isBatteryPoweredFieldEnabled()) {
         channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_BATTERYPOWERED;
-        channelState->BatteryPowered = 1;
+        channelState->BatteryPowered = channel->isBatteryPowered() ? 1 : 0;
 
         channelState->BatteryLevel = channel->getBatteryLevel();
         if (channelState->BatteryLevel <= 100) {

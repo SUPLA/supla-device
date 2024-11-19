@@ -30,7 +30,7 @@
 
 #include "supla_srpc.h"
 
-#define SUPLA_EXT_CHANNEL_STATE_INTERVAL_MS (20 * 60 * 1000)  // 20 min
+#define SUPLA_CHANNEL_STATE_INTERVAL_MS (20 * 60 * 1000)  // 20 min
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {
@@ -635,9 +635,9 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
         delay(0);
       }
 
-      // schedule next extended channel state update in 5s
-      lastExtendedValueWithChannelStateMs =
-          millis() - SUPLA_EXT_CHANNEL_STATE_INTERVAL_MS + 5000;
+      // schedule next channel state update in 5s
+      lastChannelStateSendMs =
+          millis() - SUPLA_CHANNEL_STATE_INTERVAL_MS + 5000;
 
       return;
 
@@ -895,20 +895,19 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       disconnect();
     }
 
-    if (millis() - lastExtendedValueWithChannelStateMs >
-        SUPLA_EXT_CHANNEL_STATE_INTERVAL_MS) {
+    if (millis() - lastChannelStateSendMs > SUPLA_CHANNEL_STATE_INTERVAL_MS) {
       for (auto el= Supla::Element::begin(); el!= nullptr; el = el->next()) {
         if (el->getChannel() != nullptr && el->isChannelStateEnabled() &&
             el->getChannel()->isOnline() &&
             el->getChannel()->isBatteryPoweredFieldEnabled()) {
-          SUPLA_LOG_DEBUG("SRPC: Sending extended channel state for %d",
+          SUPLA_LOG_DEBUG("SRPC: Sending channel state for %d",
                           el->getChannelNumber());
-          sendChannelStateResult(0, el->getChannelNumber(), true);
+          sendChannelStateResult(0, el->getChannelNumber());
         }
         delay(0);
       }
 
-      lastExtendedValueWithChannelStateMs = millis();
+      lastChannelStateSendMs = millis();
     }
 
     return true;
@@ -1018,8 +1017,7 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
 
 
 void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
-                                                        uint8_t channelNo,
-                                                        bool sendAsExtended) {
+                                                        uint8_t channelNo) {
   TDSC_ChannelState state = {};
   state.ReceiverID = receiverId;
   state.ChannelNumber = channelNo;
@@ -1041,16 +1039,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
     element->handleGetChannelState(&state);
   }
 
-  TSuplaChannelExtendedValue extValue = {};
-  extValue.type = EV_TYPE_CHANNEL_STATE_V1;
-  extValue.size = sizeof(state);
-  memcpy(extValue.value, &state, sizeof(state));
-  sendExtendedChannelValueChanged(channelNo, &extValue);
-  // TODO(klew): remove below lines and keep only sending channel state
-  // as extended value
-  if (!sendAsExtended) {
-    srpc_csd_async_channel_state_result(srpc, &state);
-  }
+  srpc_csd_async_channel_state_result(srpc, &state);
 }
 
 uint32_t Supla::Protocol::SuplaSrpc::getActivityTimeout() {
@@ -1146,8 +1135,7 @@ void Supla::Protocol::SuplaSrpc::sendChannelValueChanged(
 }
 
 void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
-    uint8_t channelNumber,
-    TSuplaChannelExtendedValue *value) {
+    uint8_t channelNumber, TSuplaChannelExtendedValue *value) {
   if (!isRegisteredAndReady()) {
     return;
   }

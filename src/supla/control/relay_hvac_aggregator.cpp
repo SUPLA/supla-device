@@ -185,21 +185,24 @@ void RelayHvacAggregator::iterateAlways() {
     return;
   }
 
-  if (!ignore) {
+  if (!ignore && !turnOffWhenEmpty) {
+    SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] !ignore, lastRelayState: %d,"
+        "lastValueSend: %d",
+                    relayChannelNumber,
+                    lastRelayState,
+                    lastValueSend);
     lastValueSend = lastRelayState;
   }
 
   if (state) {
     if (lastValueSend != 1) {
       lastValueSend = 1;
-      lastStateUpdateTimestamp = millis();
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn on", relayChannelNumber);
       relay->turnOn();
     }
   } else {
     if (lastValueSend != 0) {
       lastValueSend = 0;
-      lastStateUpdateTimestamp = millis();
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn off", relayChannelNumber);
       relay->turnOff();
     }

@@ -585,6 +585,10 @@ void HvacBase::iterateAlways() {
 
   updateChannelState();
 
+  if (startupDelay && millis() > 30000) {
+    startupDelay = false;
+  }
+
   if (lastIterateTimestampMs && millis() - lastIterateTimestampMs < 1000) {
     return;
   }
@@ -656,7 +660,9 @@ void HvacBase::iterateAlways() {
   if (Supla::Clock::IsReady()) {
     channel.setHvacFlagClockError(false);
   } else {
-    channel.setHvacFlagClockError(true);
+    if (!startupDelay) {
+      channel.setHvacFlagClockError(true);
+    }
   }
 
   if (isCoolingSubfunction()) {
@@ -699,6 +705,12 @@ void HvacBase::iterateAlways() {
   }
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
+    if (startupDelay) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d]: invalid temperature readout - startup delay...",
+          getChannelNumber());
+      return;
+    }
     setOutput(getOutputValueOnError(), true);
     if (lastTemperature != INT16_MIN) {
       SUPLA_LOG_WARNING(
@@ -3566,6 +3578,14 @@ bool HvacBase::processWeeklySchedule() {
   }
 
   if (!Supla::Clock::IsReady()) {
+    if (startupDelay) {
+      SUPLA_LOG_DEBUG(
+          "HVAC[%d]: Weekly schedule enabled, clock not ready -> startup "
+          "delay...",
+          getChannelNumber());
+      return false;
+    }
+
     if (!channel.isHvacFlagClockError()) {
       // print only on first error
       SUPLA_LOG_WARNING(

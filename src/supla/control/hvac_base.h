@@ -476,6 +476,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool serverChannelFunctionValid = true;
   bool wrapAroundTemperatureSetpoints = false;
   bool registeredInRelayHvacAggregator = false;
+  bool startupDelay = true;
 
   uint8_t channelConfigChangedOffline = 0;
   uint8_t weeklyScheduleChangedOffline = 0;

@@ -148,6 +148,8 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
+  // move time by 40s to ignore startupDelay in HVAC
+  time.advance(40000);
 
   t1->setValue(21.5);
   t1->setRefreshIntervalMs(100);
@@ -344,7 +346,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
     time.advance(100);
   }
 
-  for (int i = 0; i < 15; ++i) {
+  for (int i = 0; i < 14; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
     hvac->iterateConnected();

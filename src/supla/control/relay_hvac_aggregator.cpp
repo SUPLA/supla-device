@@ -186,11 +186,6 @@ void RelayHvacAggregator::iterateAlways() {
   }
 
   if (!ignore && !turnOffWhenEmpty) {
-    SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] !ignore, lastRelayState: %d,"
-        "lastValueSend: %d",
-                    relayChannelNumber,
-                    lastRelayState,
-                    lastValueSend);
     lastValueSend = lastRelayState;
   }
 

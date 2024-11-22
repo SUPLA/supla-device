@@ -1007,6 +1007,8 @@ void Channel::setHvacFlagBatteryCoverOpen(bool value) {
 }
 
 void Channel::clearHvacState() {
+  SUPLA_LOG_INFO("HVAC[%d]: Clearing HVAC state for channel",
+                 getChannelNumber());
   clearHvacSetpointTemperatureCool();
   clearHvacSetpointTemperatureHeat();
   setHvacMode(SUPLA_HVAC_MODE_OFF);

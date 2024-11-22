@@ -502,6 +502,8 @@ void HvacBase::onInit() {
     }
   }
 
+  previousSubfunction = config.Subfunction;
+
   if (channel.isHvacFlagWeeklySchedule()) {
     if (!processWeeklySchedule()) {
       return;
@@ -515,8 +517,6 @@ void HvacBase::onInit() {
     turnOn();
     setOutput(0, true);
   }
-//  debugPrintConfigStruct(&config, getChannelNumber());
-  previousSubfunction = config.Subfunction;
 }
 
 
@@ -566,10 +566,15 @@ void HvacBase::iterateAlways() {
   if (getChannelFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_NOT_SET) {
       setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
+      previousSubfunction = config.Subfunction;
     }
   }
 
   if (previousSubfunction != config.Subfunction) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: subfunction changed from %d to %d",
+                    getChannelNumber(),
+                    previousSubfunction,
+                    config.Subfunction);
     previousSubfunction = config.Subfunction;
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
     lastManualMode = 0;
@@ -3856,6 +3861,11 @@ void HvacBase::changeFunction(int32_t newFunction, bool changedLocally) {
   if (currentFunction == newFunction) {
     return;
   }
+
+  SUPLA_LOG_DEBUG("HVAC[%d]: changing function from %d to %d",
+                  getChannelNumber(),
+                  currentFunction,
+                  newFunction);
 
   if (newFunction == 0) {
     // for "none/disbled" function we keep internal setting and then we

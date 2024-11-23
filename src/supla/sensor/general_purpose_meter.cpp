@@ -262,12 +262,12 @@ void GeneralPurposeMeter::setCounter(double newValue) {
   setValue(newValue);
 }
 
-void GeneralPurposeMeter::incCounter() {
-  setValue(getValue() + valueStep);
+void GeneralPurposeMeter::incCounter(double incrementBy) {
+  setValue(getValue() + (incrementBy == 0.0 ? valueStep : incrementBy));
 }
 
-void GeneralPurposeMeter::decCounter() {
-  setValue(getValue() - valueStep);
+void GeneralPurposeMeter::decCounter(double decrementBy) {
+  setValue(getValue() - (decrementBy == 0.0 ? valueStep : decrementBy));
 }
 
 void GeneralPurposeMeter::setValueStep(double newValueStep) {
@@ -287,5 +287,25 @@ void GeneralPurposeMeter::setCounterResetSupportFlag(bool support) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
+  }
+}
+
+void GeneralPurposeMeter::setKeepStateInStorage(bool keep) {
+  keepStateInStorage = keep;
+}
+
+void GeneralPurposeMeter::onSaveState() {
+  if (keepStateInStorage) {
+    double value = getValue();
+    Supla::Storage::WriteState((unsigned char *)&value, sizeof(value));
+  }
+}
+
+void GeneralPurposeMeter::onLoadState() {
+  if (keepStateInStorage) {
+    double value = 0.0;
+    if (Supla::Storage::ReadState((unsigned char *)&value, sizeof(value))) {
+      setCounter(value);
+    }
   }
 }

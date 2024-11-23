@@ -43,17 +43,21 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase,
   void fillChannelConfig(void *channelConfig, int *size) override;
   void handleAction(int event, int action) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
+  void onLoadState() override;
+  void onSaveState() override;
 
   // Set counter to a given value
   void setCounter(double newValue);
-  // Increment the counter by valueStep
-  void incCounter();
-  // Decrement the counter by valueStep
-  void decCounter();
+  // Increment the counter by incrementBy or by valueStep when incrementBy = 0
+  void incCounter(double incrementBy = 0);
+  // Decrement the counter by decrementBy or by valueStep when decrementBy = 0
+  void decCounter(double decrementBy = 0);
   void setValueStep(double newValueStep);
   void setResetToValue(double newResetToValue);
 
   void setCounterResetSupportFlag(bool support);
+  // Enable or disable keeping state in Storage
+  void setKeepStateInStorage(bool keep);
 
   uint8_t getCounterType() const;
   uint8_t getIncludeValueAddedInHistory() const;
@@ -69,6 +73,7 @@ class GeneralPurposeMeter : public GeneralPurposeChannelBase,
   double valueStep = 1;
   double resetToValue = 0;
   bool isCounterResetSupported = true;
+  bool keepStateInStorage = false;
 
   GPMMeterSpecificConfig meterSpecificConfig = {};
 };

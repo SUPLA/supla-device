@@ -84,7 +84,7 @@ class ThreePhasePZEMv3_ADDR : public ElectricityMeter {
       // If current reading is NAN, we assume that PZEM there is no valid
       // communication with PZEM. Sensor shouldn't show any data
       if (isnan(current)) {
-        current = 0.0;
+        resetReadParametersForPhase(i);
         continue;
       }
 

@@ -318,6 +318,24 @@ void Supla::Sensor::ElectricityMeter::resetReadParameters() {
   }
 }
 
+void Supla::Sensor::ElectricityMeter::resetReadParametersForPhase(int phase) {
+  if (phase >= 0 && phase < MAX_PHASES) {
+    emValue.m[0].voltage[phase] = 0;
+    emValue.m[0].current[phase] = 0;
+    emValue.m[0].power_active[phase] = 0;
+    emValue.m[0].power_reactive[phase] = 0;
+    emValue.m[0].power_apparent[phase] = 0;
+    emValue.m[0].power_factor[phase] = 0;
+    emValue.m[0].phase_angle[phase] = 0;
+    rawCurrent[phase] = 0;
+    rawActivePower[phase] = 0;
+    rawReactivePower[phase] = 0;
+    rawApparentPower[phase] = 0;
+
+    valueChanged = true;
+  }
+}
+
 // Please implement this class for reading value from elecricity meter device.
 // It will be called every 5 s. Use set methods defined above in order to
 // set values on channel. Don't use any other method to modify channel values.

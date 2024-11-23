@@ -267,6 +267,7 @@ class ElectricityMeter : public ElementWithChannelActions,
       const TElectricityMeter_ExtendedValue_V2 &emValue);
 
   void resetReadParameters();
+  void resetReadParametersForPhase(int phase);
 
   // Please implement this class for reading value from elecricity meter device.
   // It will be called every 5 s. Use set methods defined above in order to

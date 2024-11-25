@@ -121,6 +121,60 @@ void HvacParameters::send(Supla::WebSender* sender) {
   }
   // form-field END
 
+  int hvacCount = 0;
+  int pumpCount = 0;
+  int hocsCount = 0;
+  for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
+      ch = ch->next()) {
+    auto channelType = ch->getChannelType();
+    if (channelType == SUPLA_CHANNELTYPE_HVAC) {
+      hvacCount++;
+    } else if (channelType == SUPLA_CHANNELTYPE_RELAY) {
+      auto relayFunction = ch->getDefaultFunction();
+      if (relayFunction == SUPLA_CHANNELFNC_PUMPSWITCH) {
+        pumpCount++;
+      } else if (relayFunction == SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH) {
+        hocsCount++;
+      }
+    }
+  }
+
+  // form-field BEGIN
+  if (hvacCount > 1 && !hvac->parameterFlags.MasterThermostatChannelNoHidden) {
+    hvac->generateKey(key, "master");
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Master thermostat");
+    sender->send("<div>");
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->sendDisabled(
+        hvac->parameterFlags.MasterThermostatChannelNoReadonly);
+    sender->send(">");
+    sender->sendSelectItem(-1, "Not set", !hvac->isMasterThermostatSet());
+    for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
+        ch = ch->next()) {
+      int channelNumber = ch->getChannelNumber();
+      auto channelType = ch->getChannelType();
+      if (channelType == SUPLA_CHANNELTYPE_HVAC &&
+          channelNumber != hvac->getChannelNumber()) {
+        auto el = Supla::Element::getElementByChannelNumber(channelNumber);
+        auto otherHvac = reinterpret_cast<Supla::Control::HvacBase*>(el);
+        if (!otherHvac->isMasterThermostatSet()) {
+          char buf[100] = {};
+          snprintf(buf, sizeof(buf), "Thermostat #%d", channelNumber);
+          sender->sendSelectItem(
+              channelNumber,
+              buf,
+              hvac->getMasterThermostatChannelNo() == channelNumber);
+        }
+      }
+    }
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");
+  }
+  // form-field END
+
   // form-field BEGIN
   auto hvacMode = hvac->getChannel()->getHvacMode();
   hvac->generateKey(key, "hvac_mode");
@@ -239,7 +293,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
       if (channelType == SUPLA_CHANNELTYPE_THERMOMETER ||
           channelType == SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR) {
         char buf[100] = {};
-        snprintf(buf, sizeof(buf), "%d", channelNumber);
+        snprintf(buf, sizeof(buf), "Thermometer #%d", channelNumber);
         sender->sendSelectItem(
             channelNumber,
             buf,
@@ -272,7 +326,7 @@ void HvacParameters::send(Supla::WebSender* sender) {
       if (channelType == SUPLA_CHANNELTYPE_THERMOMETER ||
           channelType == SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR) {
         char buf[100] = {};
-        snprintf(buf, sizeof(buf), "%d", channelNumber);
+        snprintf(buf, sizeof(buf), "Thermometer #%d", channelNumber);
         sender->sendSelectItem(
             channelNumber,
             buf,
@@ -555,6 +609,77 @@ void HvacParameters::send(Supla::WebSender* sender) {
               channelNumber,
               buf,
               hvac->getBinarySensorChannelNo() == channelNumber);
+        }
+      }
+    }
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");
+  }
+  // form-field END
+
+  // form-field BEGIN
+  if (pumpCount > 0 && !hvac->parameterFlags.PumpSwitchHidden) {
+    hvac->generateKey(key, "pump");
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Pump switch");
+    sender->send("<div>");
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->sendDisabled(
+        hvac->parameterFlags.PumpSwitchReadonly);
+    sender->send(">");
+    sender->sendSelectItem(-1, "Not set", !hvac->isPumpSwitchSet());
+    for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
+        ch = ch->next()) {
+      int channelNumber = ch->getChannelNumber();
+      auto channelType = ch->getChannelType();
+      if (channelType == SUPLA_CHANNELTYPE_RELAY) {
+        auto relayFunction = ch->getDefaultFunction();
+        if (relayFunction == SUPLA_CHANNELFNC_PUMPSWITCH) {
+          char buf[100] = {};
+          snprintf(buf, sizeof(buf), "Pump switch #%d", channelNumber);
+          sender->sendSelectItem(
+              channelNumber,
+              buf,
+              hvac->getPumpSwitchChannelNo() == channelNumber);
+        }
+      }
+    }
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");
+  }
+  // form-field END
+
+  // form-field BEGIN
+  if (hocsCount > 0 && !hvac->parameterFlags.HeatOrColdSourceSwitchHidden) {
+    hvac->generateKey(key, "hocs");
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Heat or cold source switch");
+    sender->send("<div>");
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->sendDisabled(
+        hvac->parameterFlags.HeatOrColdSourceSwitchReadonly);
+    sender->send(">");
+    sender->sendSelectItem(-1, "Not set", !hvac->isHeatOrColdSourceSwitchSet());
+    for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
+        ch = ch->next()) {
+      int channelNumber = ch->getChannelNumber();
+      auto channelType = ch->getChannelType();
+      if (channelType == SUPLA_CHANNELTYPE_RELAY) {
+        auto relayFunction = ch->getDefaultFunction();
+        if (relayFunction == SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH) {
+          char buf[100] = {};
+          snprintf(buf,
+                   sizeof(buf),
+                   "Heat or cold source switch #%d",
+                   channelNumber);
+          sender->sendSelectItem(
+              channelNumber,
+              buf,
+              hvac->getHeatOrColdSourceSwitchChannelNo() == channelNumber);
         }
       }
     }
@@ -871,7 +996,6 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
   }
 
   hvac->generateKey(keyMatch, "subfnc");
-
   // channel subfunction
   if (strcmp(key, keyMatch) == 0) {
     int32_t subfunction = stringToUInt(value);
@@ -881,6 +1005,45 @@ bool HvacParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
+  hvac->generateKey(keyMatch, "master");
+  // master thermostat
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t masterId = stringToInt(value);
+    if (masterId >= 0 && masterId <= 255) {
+      hvacConfig->MasterThermostatChannelNo = masterId;
+      hvacConfig->MasterThermostatIsSet = 1;
+    } else {
+      hvacConfig->MasterThermostatChannelNo = 0;
+      hvacConfig->MasterThermostatIsSet = 0;
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "pump");
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t pumpId = stringToInt(value);
+    if (pumpId >= 0 && pumpId <= 255) {
+      hvacConfig->PumpSwitchChannelNo = pumpId;
+      hvacConfig->PumpSwitchIsSet = 1;
+    } else {
+      hvacConfig->PumpSwitchChannelNo = 0;
+      hvacConfig->PumpSwitchIsSet = 0;
+    }
+    return true;
+  }
+
+  hvac->generateKey(keyMatch, "hocs");
+  if (strcmp(key, keyMatch) == 0) {
+    int32_t hocsId = stringToInt(value);
+    if (hocsId >= 0 && hocsId <= 255) {
+      hvacConfig->HeatOrColdSourceSwitchChannelNo = hocsId;
+      hvacConfig->HeatOrColdSourceSwitchIsSet = 1;
+    } else {
+      hvacConfig->HeatOrColdSourceSwitchChannelNo = 0;
+      hvacConfig->HeatOrColdSourceSwitchIsSet = 0;
+    }
+    return true;
+  }
 
   hvac->generateKey(keyMatch, "hvac_mode");
   // channel mode

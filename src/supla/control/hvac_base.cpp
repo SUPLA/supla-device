@@ -973,6 +973,29 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     applyConfigWithoutValidation(hvacConfig);
     fixTempearturesConfig();
     fixTemperatureSetpoints();
+    if (local) {
+      // when config was changed locally, we have to verify if there is no
+      // master thermostat invlid config
+      for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
+          ch = ch->next()) {
+        int channelNumber = ch->getChannelNumber();
+        auto channelType = ch->getChannelType();
+        if (channelType == SUPLA_CHANNELTYPE_HVAC &&
+            channelNumber != getChannelNumber()) {
+          auto el = Supla::Element::getElementByChannelNumber(channelNumber);
+          auto otherHvac = reinterpret_cast<Supla::Control::HvacBase*>(el);
+          if (otherHvac &&
+              otherHvac->isMasterThermostatSet() &&
+              otherHvac->getMasterThermostatChannelNo() == getChannelNumber()) {
+            // don't allow to configure master thermostat on channel which
+            // is master to another thermostat
+            config.MasterThermostatIsSet = 0;
+            config.MasterThermostatChannelNo = 0;
+            break;
+          }
+        }
+      }
+    }
   }
 
   defaultConfigReceived = true;

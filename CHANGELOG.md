@@ -1,5 +1,27 @@
 # CHANGELOG.md
 
+## 24.11.03 (2024-11-25)
+   - Change: SuplaSrpc: remove sending ChannelState as ExtendedValue and revert to sending it only via dedicated message
+   - Change: Channel: seperated "battery powered" and "battery level" channel state fields
+   - Fix: PZEM: fix for invalid metering/measuement data when device starts and there is problem with PZEM communication. PZEM lib return read error only on first parameter read (every 200 ms). If subsequent read is performed before <200 ms, then unintialized values are returned.
+   - Fix: 3-phase PZEM: clear phase data when measurments are not available.
+   - Fix: HVAC: fix initialization of previous subfunction in order to prevent mode change when HVAC is in Weekly Program and during startup, Clock is not yet ready.
+   - Fix: RelayHvacAggregator: fix for sending turn on/off logic, fix logic to not send turn off mulitiple times for relays that can't be turned off manually (in some scenarios), fix HVAC registration
+   - Fix: HVAC: add missing ON_HVAC_STANDBY when configuration changes between heat and cool modes
+   - Fix: HVAC: fix for attempt to apply empty config from server, further additions for PID algorithm, change check if output is controlled internally from algorithm based to explicit method on Output instance.
+   - Fix: SRPC: fix for "sproto_in_buffer_append" bug
+   - Add: ElectricityMeter: add resetReadParametersForPhase(int) which clears measuement parameters for a given phase.
+   - Add: HVAC: add master thermostat parameter check for invalid values (when change was done locally).
+   - Add: HVAC HTML parameters: add ability to configure master thermostat, pump switch, and heat or cold source switch, add option to "not set" main thermometer. Add PID algorithm
+   - Add: GP Meter: add setKeepStateInStorage(bool) method, which enables storing counter value in Supla::Storage class.
+   - Add: HVAC: add startup delay (30 s) which waits with some actions at startup (like switching to Program 1 on weekly schedule, when clock is not ready, or waiting for thermometers to be ready).
+   - Add: Esp-idf: add Watchdog class implementation
+   - Add: sd4linux: add reporting battery powered when battery level is configured
+   - Add: PinStatusLed: add option to work onTimer (instead of on iterateAlways)
+   - Add: Config: add purgeConfig implementation for HVAC, EM, RollerShutter, Termomter, Thermometer+Hygrometer, Hygrometer.
+   - Add: SuplaDevice & StatusLed: add "identify device" calcfg handling. Device will repeat 3 quick blinks 5 times as identification sequence.
+
+
 ## 24.10.04 (2024-10-18 SOP edition)
    - Change: configuration tags (names used in internal config storage) are extracted from HTML related classes and moved to ./storage/config_tags.h file in order to cleanup some mess and dependency to HTML classes in other parts of code
    - Change: BlinkingLed: extracted base functionality from StatusLed class, so BlinkingLed can be used for purposes not related with device's status.

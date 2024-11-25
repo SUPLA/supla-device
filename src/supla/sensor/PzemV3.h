@@ -29,6 +29,7 @@
 #if defined(PZEM004_SOFTSERIAL)
 #include <SoftwareSerial.h>
 #endif
+#include <supla/time.h>
 
 #include "one_phase_electricity_meter.h"
 
@@ -60,6 +61,7 @@ class PZEMv3 : public OnePhaseElectricityMeter {
 #endif
 
   void onInit() {
+    lastReadTime = millis();
     readValuesFromDevice();
     updateChannelValues();
   }

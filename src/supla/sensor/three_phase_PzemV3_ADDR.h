@@ -26,6 +26,7 @@
 #if defined(PZEM004_SOFTSERIAL)
 #include <SoftwareSerial.h>
 #endif
+#include <supla/time.h>
 
 #include "electricity_meter.h"
 
@@ -73,6 +74,7 @@ class ThreePhasePZEMv3_ADDR : public ElectricityMeter {
 #endif
 
   void onInit() {
+    lastReadTime = millis();
     readValuesFromDevice();
     updateChannelValues();
   }

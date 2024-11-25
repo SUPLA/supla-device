@@ -392,7 +392,7 @@ void HvacBase::onLoadState() {
     SUPLA_LOG_DEBUG(
         "HVAC[%d] onLoadState. hvacValue: IsOn: %d, Mode: %d, "
         "SetpointTemperatureCool: %d, SetpointTemperatureHeat: %d, "
-        "Flags: %d",
+        "Flags 0x%x",
         getChannelNumber(),
         hvacValue->IsOn,
         hvacValue->Mode,
@@ -402,7 +402,7 @@ void HvacBase::onLoadState() {
     SUPLA_LOG_DEBUG(
         "HVAC[%d] onLoadState. lastWorkingMode: IsOn: %d, Mode: %d, "
         "SetpointTemperatureCool: %d, SetpointTemperatureHeat: %d, "
-        "Flags: %d",
+        "Flags 0x%x",
         getChannelNumber(),
         lastWorkingMode.IsOn,
         lastWorkingMode.Mode,

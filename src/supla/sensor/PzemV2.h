@@ -24,6 +24,7 @@
 // monitor  https://github.com/olehs/PZEM004T
 #include <PZEM004T.h>
 #include <SoftwareSerial.h>
+#include <supla/time.h>
 
 #include "one_phase_electricity_meter.h"
 
@@ -39,6 +40,7 @@ class PZEMv2 : public OnePhaseElectricityMeter {
   }
 
   void onInit() {
+    lastReadTime = millis();
     pzem.setAddress(ip);
     readValuesFromDevice();
     updateChannelValues();

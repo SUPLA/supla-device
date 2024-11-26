@@ -60,9 +60,9 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
                                     int resultBufferSize) = 0;
   void parseServerResponse(const char *response, int responseSize);
 
-  bool hasOcrConfig() override;
+  bool hasOcrConfig() const override;
   void clearOcrConfig() override;
-  bool isOcrConfigMissing() override;
+  bool isOcrConfigMissing() const override;
   uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local) override;
   void fillChannelConfig(void *channelConfig, int *size) override;
   void fillChannelOcrConfig(void *channelConfig, int *size) override;

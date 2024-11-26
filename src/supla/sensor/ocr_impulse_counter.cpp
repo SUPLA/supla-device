@@ -54,7 +54,7 @@ OcrImpulseCounter::~OcrImpulseCounter() {
 void OcrImpulseCounter::onInit() {
 }
 
-bool OcrImpulseCounter::hasOcrConfig() {
+bool OcrImpulseCounter::hasOcrConfig() const {
   return true;
 }
 
@@ -191,7 +191,7 @@ void OcrImpulseCounter::fillChannelOcrConfig(void *channelConfig, int *size) {
   }
 }
 
-bool OcrImpulseCounter::isOcrConfigMissing() {
+bool OcrImpulseCounter::isOcrConfigMissing() const {
   return !ocrConfigReceived;
 }
 

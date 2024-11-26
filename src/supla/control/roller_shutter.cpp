@@ -812,13 +812,25 @@ uint8_t RollerShutter::applyChannelConfig(TSD_ChannelConfig *result, bool) {
           setTargetPosition(STOP_POSITION);
         }
         if (rsConfig.buttonsUpsideDown != 0) {
-          rsConfig.buttonsUpsideDown = newConfig->ButtonsUpsideDown;
+          if (newConfig->ButtonsUpsideDown > 0) {
+            rsConfig.buttonsUpsideDown = newConfig->ButtonsUpsideDown;
+          } else {
+            triggerSetChannelConfig();
+          }
         }
         if (rsConfig.motorUpsideDown != 0) {
-          rsConfig.motorUpsideDown = newConfig->MotorUpsideDown;
+          if (newConfig->MotorUpsideDown > 0) {
+            rsConfig.motorUpsideDown = newConfig->MotorUpsideDown;
+          } else {
+            triggerSetChannelConfig();
+          }
         }
         if (rsConfig.timeMargin != 0) {
-          rsConfig.timeMargin = newConfig->TimeMargin;
+          if (newConfig->TimeMargin != 0) {
+            rsConfig.timeMargin = newConfig->TimeMargin;
+          } else {
+            triggerSetChannelConfig();
+          }
         }
         rsConfig.visualizationType = newConfig->VisualizationType;
         if (rsConfig.buttonsUpsideDown > 2) {
@@ -860,13 +872,14 @@ void RollerShutter::onLoadConfig(SuplaDeviceClass *) {
     if (cfg->getBlob(key,
                      reinterpret_cast<char *>(&storedConfig),
                      sizeof(RollerShutterConfig))) {
-      if (rsConfig.motorUpsideDown != 0) {
+      if (rsConfig.motorUpsideDown != 0 && storedConfig.motorUpsideDown != 0) {
         rsConfig.motorUpsideDown = storedConfig.motorUpsideDown;
       }
-      if (rsConfig.buttonsUpsideDown != 0) {
+      if (rsConfig.buttonsUpsideDown != 0 &&
+          storedConfig.buttonsUpsideDown != 0) {
         rsConfig.buttonsUpsideDown = storedConfig.buttonsUpsideDown;
       }
-      if (rsConfig.timeMargin != 0) {
+      if (rsConfig.timeMargin != 0 && storedConfig.timeMargin != 0) {
         rsConfig.timeMargin = storedConfig.timeMargin;
       }
       rsConfig.visualizationType = storedConfig.visualizationType;

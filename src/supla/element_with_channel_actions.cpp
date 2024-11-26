@@ -344,12 +344,8 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
 
   if (result->ConfigSize == 0) {
     // server doesn't have channel configuration, so we'll send it
-    // But don't send it if it failed in previous attempt
-    if (channelConfigState !=
-        Supla::ChannelConfigState::SetChannelConfigFailed) {
-      SUPLA_LOG_DEBUG("Channel[%d] no config on server", getChannelNumber());
-      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
-    }
+    SUPLA_LOG_DEBUG("Channel[%d] no config on server", getChannelNumber());
+    triggerSetChannelConfig();
   }
 
   if (result->ConfigType == SUPLA_CONFIG_TYPE_OCR) {
@@ -425,14 +421,21 @@ void Supla::ElementWithChannelActions::purgeConfig() {
   }
 }
 
-bool Supla::ElementWithChannelActions::hasOcrConfig() {
+bool Supla::ElementWithChannelActions::hasOcrConfig() const {
   return false;
 }
 
-bool Supla::ElementWithChannelActions::isOcrConfigMissing() {
+bool Supla::ElementWithChannelActions::isOcrConfigMissing() const {
   return false;
 }
 
 void Supla::ElementWithChannelActions::clearOcrConfig() {
   return;
+}
+
+void Supla::ElementWithChannelActions::triggerSetChannelConfig() {
+  // don't trigger setChannelConfig if it failed in previous attempt
+  if (channelConfigState != Supla::ChannelConfigState::SetChannelConfigFailed) {
+    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+  }
 }

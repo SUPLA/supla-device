@@ -669,7 +669,7 @@ bool Channel::isBatteryPowered() const {
 }
 
 bool Channel::isBatteryPoweredFieldEnabled() const {
-  return batteryPowered;
+  return batteryPowered != 0;
 }
 
 uint8_t Channel::getBatteryLevel() const {
@@ -686,9 +686,6 @@ void Channel::setBatteryPowered(bool value) {
 void Channel::setBatteryLevel(int level) {
   if (level >= 0 && level <= 100) {
     batteryLevel = level;
-    if (!isBatteryPoweredFieldEnabled()) {
-      setBatteryPowered(true);
-    }
   }
 }
 

@@ -190,11 +190,10 @@ class Channel : public LocalAction {
   bool isBatteryPowered() const;
   // Returns battery level
   uint8_t getBatteryLevel() const;
-  // Sets battery level. Setting to 0..100 range will make isBatteryPowered
-  // return true
+  // Sets battery level. Range 0..100
   void setBatteryLevel(int level);
 
-  // sets battery powered flag (internally use 101 and 102 battery level value)
+  // sets battery powered flag
   void setBatteryPowered(bool);
 
   // Sets bridge signal strength. Allowed values are 0..100, or 255 to disable

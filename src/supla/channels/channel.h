@@ -83,7 +83,8 @@ class Channel : public LocalAction {
   uint8_t getValueTilt() const;
   bool getValueIsCalibrating() const;
 
-  void setHvacIsOn(int8_t isOn);
+  void setHvacIsOn(bool isOn);
+  void setHvacIsOnPercent(uint8_t percent);
   void setHvacMode(uint8_t mode);
   void setHvacSetpointTemperatureHeat(int16_t setpointTemperatureHeat);
   void setHvacSetpointTemperatureCool(int16_t setpointTemperatureCool);
@@ -105,7 +106,10 @@ class Channel : public LocalAction {
   void setHvacFlagBatteryCoverOpen(bool value);
   void clearHvacState();
 
-  uint8_t getHvacIsOn();
+  uint8_t getHvacIsOnRaw() const;
+  bool getHvacIsOnBool() const;
+  uint8_t getHvacIsOnPercent() const;
+
   uint8_t getHvacMode() const;
   // returns mode as a string. If mode parameters is -1 then it returns current
   // channel mode, otherwise mode parameter is used.
@@ -148,6 +152,7 @@ class Channel : public LocalAction {
                                             int16_t setpointTemperatureCool);
 
   THVACValue *getValueHvac();
+  const THVACValue *getValueHvac() const;
   static bool isHvacValueValid(THVACValue *hvacValue);
 
   virtual bool isExtended() const;

@@ -724,7 +724,7 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
 
   // when channel type is set to HVAC, valueHvac should be not nullptr
   EXPECT_NE(ch.getValueHvac(), nullptr);
-  EXPECT_EQ(ch.getHvacIsOn(), 0);
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 0);
   EXPECT_EQ(ch.getHvacMode(), 0);
   EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureHeatSet());
   EXPECT_FALSE(ch.isHvacFlagSetpointTemperatureCoolSet());
@@ -735,10 +735,68 @@ TEST_F(ChannelTestsFixture, HvacMethodsTest) {
   EXPECT_FALSE(ch.isUpdateReady());
 
   // check all hvac setters
-  ch.setHvacIsOn(1);
+  ch.setHvacIsOn(true);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();
-  EXPECT_EQ(ch.getHvacIsOn(), 1);
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 1);
+  EXPECT_TRUE(ch.getHvacIsOnBool());
+
+  ch.setHvacIsOn(false);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 0);
+  EXPECT_FALSE(ch.getHvacIsOnBool());
+
+  ch.setHvacIsOnPercent(0);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 2);
+  EXPECT_FALSE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 0);
+
+  ch.setHvacIsOnPercent(1);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 3);
+  EXPECT_TRUE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 1);
+
+  ch.setHvacIsOnPercent(100);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 102);
+  EXPECT_TRUE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 100);
+
+  // 200 is converted to 100%, so no update ready and no change
+  ch.setHvacIsOnPercent(200);
+  EXPECT_FALSE(ch.isUpdateReady());
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 102);
+  EXPECT_TRUE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 100);
+
+
+  ch.setHvacIsOnPercent(99);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 101);
+  EXPECT_TRUE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 99);
+
+  ch.setHvacIsOnPercent(200);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 102);
+  EXPECT_TRUE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 100);
+
+  ch.setHvacIsOnPercent(0);
+  EXPECT_TRUE(ch.isUpdateReady());
+  ch.clearUpdateReady();
+  EXPECT_EQ(ch.getHvacIsOnRaw(), 2);
+  EXPECT_FALSE(ch.getHvacIsOnBool());
+  EXPECT_EQ(ch.getHvacIsOnPercent(), 0);
+
   ch.setHvacMode(2);
   EXPECT_TRUE(ch.isUpdateReady());
   ch.clearUpdateReady();

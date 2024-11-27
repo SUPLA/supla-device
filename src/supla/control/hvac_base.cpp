@@ -176,7 +176,7 @@ bool HvacBase::iterateConnected() {
     SUPLA_LOG_DEBUG(
         "HVAC[%d]: send: IsOn %d, Mode %s, tHeat %d, tCool %d, flags 0x%x",
         getChannelNumber(),
-        channel.getHvacIsOn(),
+        channel.getHvacIsOnRaw(),
         channel.getHvacModeCstr(),
         channel.getHvacSetpointTemperatureHeat(),
         channel.getHvacSetpointTemperatureCool(),
@@ -525,7 +525,7 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
       "HVAC[%d]: onRegistered send: IsOn %d, Mode %s, tHeat %d, tCool %d, "
       "flags 0x%x",
       getChannelNumber(),
-      channel.getHvacIsOn(),
+      channel.getHvacIsOnRaw(),
       channel.getHvacModeCstr(),
       channel.getHvacSetpointTemperatureHeat(),
       channel.getHvacSetpointTemperatureCool(),
@@ -4894,61 +4894,94 @@ void HvacBase::updateChannelState() {
   if (isHeatingSubfunction() ||
       channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
       channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
+    // HEATING ONLY
     channel.setHvacFlagCooling(false);
 
-    int primaryOutputValue = primaryOutput->getOutputValue();
+    int outputRawValue = primaryOutput->getOutputValue();
 
-    if (primaryOutputValue <= 0) {
-      if (channel.isHvacFlagHeating()) {
-        channel.setHvacFlagHeating(false);
-        channel.setHvacIsOn(0);
+    if (outputRawValue <= 0) {
+      bool hvacWasHeating = channel.isHvacFlagHeating();
+      channel.setHvacFlagHeating(false);
+      if (primaryOutput->isOnOffOnly()) {
+        channel.setHvacIsOn(false);
+      } else {
+        channel.setHvacIsOnPercent(0);
+      }
+      if (hvacWasHeating) {
         runAction(Supla::ON_HVAC_STANDBY);
       }
     } else {
-      if (channel.getHvacIsOn() != primaryOutputValue) {
-        bool runOnHvacHeating = false;
-        if (!channel.isHvacFlagHeating()) {
-          runOnHvacHeating = true;
+      bool runOnHvacHeating = false;
+      if (primaryOutput->isOnOffOnly()) {
+        bool outputValue = outputRawValue != 0;
+        if (channel.getHvacIsOnBool() != outputValue) {
+          if (!channel.isHvacFlagHeating()) {
+            runOnHvacHeating = true;
+          }
+          channel.setHvacFlagHeating(true);
+          channel.setHvacIsOn(outputValue);
         }
-        channel.setHvacFlagHeating(true);
-        channel.setHvacIsOn(primaryOutput->isOnOffOnly() ? 1 :
-            primaryOutputValue + 1);
-        if (runOnHvacHeating) {
-          runAction(Supla::ON_HVAC_HEATING);
+      } else {
+        if (channel.getHvacIsOnPercent() != outputRawValue) {
+          if (!channel.isHvacFlagHeating()) {
+            runOnHvacHeating = true;
+          }
+          channel.setHvacFlagHeating(true);
+          channel.setHvacIsOnPercent(outputRawValue);
         }
+      }
+      if (runOnHvacHeating) {
+        runAction(Supla::ON_HVAC_HEATING);
       }
     }
   } else if (isCoolingSubfunction()) {
+    // COOLING ONLY
     channel.setHvacFlagHeating(false);
     auto output = primaryOutput;
     if (secondaryOutput) {
       output = secondaryOutput;
     }
 
-    int outputValue = output->getOutputValue();
+    int outputRawValue = output->getOutputValue();
 
-    if (outputValue >= 0) {
-      if (channel.isHvacFlagCooling()) {
-        channel.setHvacFlagCooling(false);
-        channel.setHvacIsOn(0);
+    if (outputRawValue >= 0) {
+      bool hvacWasCooling = channel.isHvacFlagCooling();
+      channel.setHvacFlagCooling(false);
+      if (output->isOnOffOnly()) {
+        channel.setHvacIsOn(false);
+      } else {
+        channel.setHvacIsOnPercent(0);
+      }
+      if (hvacWasCooling) {
         runAction(Supla::ON_HVAC_STANDBY);
       }
     } else {
-      // HvacIsOn is always 0..100 range
-      if (channel.getHvacIsOn() != -outputValue) {
-        bool runOnHvacCooling = false;
-        if (!channel.isHvacFlagCooling()) {
-          runOnHvacCooling = true;
+      outputRawValue = -outputRawValue;
+      bool runOnHvacCooling = false;
+      if (output->isOnOffOnly()) {
+        bool outputValue = outputRawValue != 0;
+        if (channel.getHvacIsOnBool() != outputValue) {
+          if (!channel.isHvacFlagCooling()) {
+            runOnHvacCooling = true;
+          }
+          channel.setHvacFlagCooling(true);
+          channel.setHvacIsOn(outputValue);
         }
-        channel.setHvacFlagCooling(true);
-        channel.setHvacIsOn(output->isOnOffOnly() ? 1 : outputValue - 1);
-
-        if (runOnHvacCooling) {
-          runAction(Supla::ON_HVAC_COOLING);
+      } else {
+        if (channel.getHvacIsOnPercent() != outputRawValue) {
+          if (!channel.isHvacFlagCooling()) {
+            runOnHvacCooling = true;
+          }
+          channel.setHvacFlagCooling(true);
+          channel.setHvacIsOnPercent(outputRawValue);
         }
+      }
+      if (runOnHvacCooling) {
+        runAction(Supla::ON_HVAC_COOLING);
       }
     }
   } else if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
+    // HEAT + COOL
     if (secondaryOutput == nullptr) {
       return;
     }
@@ -4964,12 +4997,20 @@ void HvacBase::updateChannelState() {
 
       channel.setHvacFlagCooling(false);
       channel.setHvacFlagHeating(false);
-      channel.setHvacIsOn(0);
+      if (primaryOutput->isOnOffOnly()) {
+        channel.setHvacIsOn(false);
+      } else {
+        channel.setHvacIsOnPercent(0);
+      }
 
       if (runOnHvacStandby) {
         runAction(Supla::ON_HVAC_STANDBY);
       }
     } else if (primaryOutputValue >= 1) {
+      // TODO(klew): this code assumes that primary is controlling heating
+      // and secondary is controlling cooling. It is possible to configure
+      // HEAT_COOL in a way that primary is controlling on/off for heat/cool
+      // device, and secondary is switching between heat and cool mode. Add it.
       bool runOnHvacHeating = false;
       if (!channel.isHvacFlagHeating()) {
         runOnHvacHeating = true;
@@ -4977,8 +5018,11 @@ void HvacBase::updateChannelState() {
 
       channel.setHvacFlagCooling(false);
       channel.setHvacFlagHeating(true);
-      channel.setHvacIsOn(
-          primaryOutput->isOnOffOnly() ? 1 : primaryOutputValue + 1);
+      if (primaryOutput->isOnOffOnly()) {
+        channel.setHvacIsOn(true);
+      } else {
+        channel.setHvacIsOnPercent(primaryOutputValue);
+      }
 
       if (runOnHvacHeating) {
         runAction(Supla::ON_HVAC_HEATING);
@@ -4991,8 +5035,11 @@ void HvacBase::updateChannelState() {
 
       channel.setHvacFlagCooling(true);
       channel.setHvacFlagHeating(false);
-      channel.setHvacIsOn(
-          secondaryOutput->isOnOffOnly() ? 1 : secondaryOutputValue - 1);
+      if (secondaryOutput->isOnOffOnly()) {
+        channel.setHvacIsOn(true);
+      } else {
+        channel.setHvacIsOnPercent(-secondaryOutputValue);
+      }
 
       if (runOnHvacCooling) {
         runAction(Supla::ON_HVAC_COOLING);

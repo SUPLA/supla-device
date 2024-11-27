@@ -701,23 +701,42 @@ bool Channel::isBridgeSignalStrengthAvailable() const {
   return bridgeSignalStrength <= 100;
 }
 
-void Channel::setHvacIsOn(int8_t isOn) {
+void Channel::setHvacIsOn(bool isOn) {
   // channel isOn has range 0..100. However internally negative isOn values
   // are used for cooling indication. Here we convert it to 0..100 range
   auto value = getValueHvac();
-  if (isOn < 0) {
-    isOn = -isOn;
-  }
-  if (value != nullptr && value->IsOn != isOn) {
-    if (value->IsOn == 0 && isOn != 0) {
+  if (value != nullptr && (value->IsOn == 1) != isOn) {
+    if (value->IsOn == 0 && isOn) {
       runAction(Supla::ON_TURN_ON);
-    } else if (value->IsOn != 0 && isOn == 0) {
+    } else if (value->IsOn != 0 && !isOn) {
       runAction(Supla::ON_TURN_OFF);
     }
     runAction(Supla::ON_CHANGE);
 
+    value->IsOn = isOn ? 1 : 0;
     setUpdateReady();
-    value->IsOn = isOn;
+  }
+}
+
+void Channel::setHvacIsOnPercent(uint8_t percent) {
+  // channel isOn has range 0..100. However internally negative isOn values
+  // are used for cooling indication. Here we convert it to 0..100 range
+  auto value = getValueHvac();
+  if (percent > 100) {
+    percent = 100;
+  }
+  percent += 2;  // proto uses 2..102 for 0..100%
+  if (value != nullptr && value->IsOn != percent) {
+    // IsOn == 2 -> OFF
+    if (value->IsOn == 2 && percent != 2) {
+      runAction(Supla::ON_TURN_ON);
+    } else if (value->IsOn != 2 && percent == 2) {
+      runAction(Supla::ON_TURN_OFF);
+    }
+    runAction(Supla::ON_CHANGE);
+
+    value->IsOn = percent;
+    setUpdateReady();
   }
 }
 
@@ -736,6 +755,13 @@ void Channel::setHvacMode(uint8_t mode) {
       runAction(ON_HVAC_MODE_HEAT_COOL);
     }
   }
+}
+
+const THVACValue *Channel::getValueHvac() const {
+  if (channelType == ChannelType::HVAC) {
+     return &hvacValue;
+  }
+  return nullptr;
 }
 
 THVACValue *Channel::getValueHvac() {
@@ -1166,10 +1192,26 @@ bool Channel::isHvacFlagBatteryCoverOpen(THVACValue *hvacValue) {
   return false;
 }
 
-uint8_t Channel::getHvacIsOn() {
+uint8_t Channel::getHvacIsOnRaw() const {
   auto value = getValueHvac();
   if (value != nullptr) {
     return value->IsOn;
+  }
+  return false;
+}
+
+bool Channel::getHvacIsOnBool() const {
+  auto value = getValueHvac();
+  if (value != nullptr) {
+    return value->IsOn == 1 || value->IsOn > 2;
+  }
+  return false;
+}
+
+uint8_t Channel::getHvacIsOnPercent() const {
+  auto value = getValueHvac();
+  if (value != nullptr && value->IsOn > 2 && value->IsOn <= 102) {
+    return value->IsOn - 2;
   }
   return 0;
 }

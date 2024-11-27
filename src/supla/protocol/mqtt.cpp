@@ -2766,7 +2766,7 @@ void Mqtt::processHVACRequest(const char *topic,
       element->handleNewValueFromServer(&newValue);
     } else if (strncmpInsensitive(payload, "toggle", 7) == 0) {
       if (element && element->getChannel() &&
-          element->getChannel()->getHvacIsOn() != 0) {
+          element->getChannel()->getHvacIsOnRaw() != 0) {
         hvacValue->Mode = SUPLA_HVAC_MODE_OFF;
       } else {
         hvacValue->Mode = SUPLA_HVAC_MODE_CMD_TURN_ON;

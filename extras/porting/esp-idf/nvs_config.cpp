@@ -69,12 +69,13 @@ bool NvsConfig::init() {
     nvs_stats_t nvs_stats;
     nvs_get_stats(nvsPartitionName, &nvs_stats);
     SUPLA_LOG_DEBUG(
-        "NVS \"%s\" Count: UsedEntries = (%d), FreeEntries = (%d), AllEntries "
-        "= (%d)",
+        "NVS \"%s\" Count: UsedEntries: %d/%d, FreeEntries: %d, "
+        ", namespaces = (%d)",
         nvsPartitionName,
         nvs_stats.used_entries,
+        nvs_stats.total_entries,
         nvs_stats.free_entries,
-        nvs_stats.total_entries);
+        nvs_stats.namespace_count);
     if (firstStep) {
       firstStep = false;
       nvsPartitionName = NVS_SUPLA_PARTITION_NAME;
@@ -82,6 +83,19 @@ bool NvsConfig::init() {
       break;
     }
   }
+  if (strncmp(nvsPartitionName,
+              NVS_SUPLA_PARTITION_NAME,
+              strlen(NVS_SUPLA_PARTITION_NAME)) == 0) {
+    // we'll use suplanvs, however it may be required to cleanup main nvs
+    // partition
+    nvs_handle_t suplaNamespace;
+    err = nvs_open_from_partition(
+        NVS_DEFAULT_PARTITION_NAME, "supla", NVS_READWRITE, &suplaNamespace);
+    nvs_erase_all(suplaNamespace);
+    nvs_commit(suplaNamespace);
+    nvs_close(suplaNamespace);
+  }
+
   SUPLA_LOG_INFO("NvsConfig: initialized NVS storage on partition %s",
                  nvsPartitionName);
   err = nvs_open_from_partition(
@@ -90,6 +104,16 @@ bool NvsConfig::init() {
     SUPLA_LOG_ERROR("NvsConfig: failed to open NVS storage");
     return false;
   }
+//  nvs_iterator_t it = nullptr;
+//  esp_err_t res =
+//    nvs_entry_find(nvsPartitionName, "supla", NVS_TYPE_ANY, &it);
+//  while (res == ESP_OK) {
+//    nvs_entry_info_t info;
+//    nvs_entry_info(it, &info);
+//    SUPLA_LOG_DEBUG("  key '%s', type '%d'", info.key, info.type);
+//    res = nvs_entry_next(&it);
+//  }
+//  nvs_release_iterator(it);
   return true;
 }
 

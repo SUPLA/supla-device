@@ -84,8 +84,8 @@ TEST_F(RollerShutterFixture, onInitHighIsOn) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
   EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
   EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
   EXPECT_CALL(ioMock, pinMode(gpioDown,  OUTPUT));
 
   rs.onInit();
@@ -95,8 +95,8 @@ TEST_F(RollerShutterFixture, onInitLowIsOn) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown, false);
 
   EXPECT_CALL(ioMock, digitalWrite(gpioUp, 1));
-  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 1));
   EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 1));
   EXPECT_CALL(ioMock, pinMode(gpioDown,  OUTPUT));
 
   rs.onInit();
@@ -117,8 +117,8 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
 
   // init
   EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
-  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
   EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
   EXPECT_CALL(ioMock, pinMode(gpioDown,  OUTPUT));
 
   // move down
@@ -206,8 +206,8 @@ TEST_F(RollerShutterFixture, movementTests) {
         });
 
     EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
-    EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
     EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+    EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
     EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
 
     // move down
@@ -323,8 +323,8 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
         });
 
     EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
-    EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
     EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+    EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
     EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
 
     // move down

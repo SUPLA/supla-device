@@ -103,12 +103,16 @@ bool RollerShutter::isFunctionSupported(int32_t channelFunction) const {
 }
 
 void RollerShutter::onInit() {
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH, io);
-  Supla::Io::pinMode(channel.getChannelNumber(), pinUp, OUTPUT, io);
-  Supla::Io::pinMode(channel.getChannelNumber(), pinDown, OUTPUT, io);
+  if (pinUp >= 0) {
+    Supla::Io::digitalWrite(
+        channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
+    Supla::Io::pinMode(channel.getChannelNumber(), pinUp, OUTPUT, io);
+  }
+  if (pinDown >= 0) {
+    Supla::Io::digitalWrite(
+        channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH, io);
+    Supla::Io::pinMode(channel.getChannelNumber(), pinDown, OUTPUT, io);
+  }
 
   setupButtonActions();
 }
@@ -408,31 +412,39 @@ void RollerShutter::stopMovement() {
 }
 
 void RollerShutter::relayDownOn() {
-  Supla::Io::digitalWrite(channel.getChannelNumber(),
-                          rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
-                          highIsOn ? HIGH : LOW,
-                          io);
+  if (pinUp >= 0 && pinDown >= 0) {
+    Supla::Io::digitalWrite(channel.getChannelNumber(),
+                            rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
+                            highIsOn ? HIGH : LOW,
+                            io);
+  }
 }
 
 void RollerShutter::relayUpOn() {
-  Supla::Io::digitalWrite(channel.getChannelNumber(),
-                          rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
-                          highIsOn ? HIGH : LOW,
-                          io);
+  if (pinUp >= 0 && pinDown >= 0) {
+    Supla::Io::digitalWrite(channel.getChannelNumber(),
+                            rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
+                            highIsOn ? HIGH : LOW,
+                            io);
+  }
 }
 
 void RollerShutter::relayDownOff() {
-  Supla::Io::digitalWrite(channel.getChannelNumber(),
-                          rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
-                          highIsOn ? LOW : HIGH,
-                          io);
+  if (pinUp >= 0 && pinDown >= 0) {
+    Supla::Io::digitalWrite(channel.getChannelNumber(),
+                            rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
+                            highIsOn ? LOW : HIGH,
+                            io);
+  }
 }
 
 void RollerShutter::relayUpOff() {
-  Supla::Io::digitalWrite(channel.getChannelNumber(),
-                          rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
-                          highIsOn ? LOW : HIGH,
-                          io);
+  if (pinUp >= 0 && pinDown >= 0) {
+    Supla::Io::digitalWrite(channel.getChannelNumber(),
+                            rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
+                            highIsOn ? LOW : HIGH,
+                            io);
+  }
 }
 
 void RollerShutter::startClosing() {

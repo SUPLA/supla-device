@@ -2001,7 +2001,9 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     Supla::Sensor::SensorParsedBase* sensor,
     int* paramCount,
     Supla::Parser::Parser* parser) {
+  bool batteryAdded = false;
   if (ch[Supla::Sensor::BatteryLevel]) {
+    batteryAdded = true;
     (*paramCount)++;
     if (parser->isBasedOnIndex()) {
       int index = ch[Supla::Sensor::BatteryLevel].as<int>();
@@ -2015,6 +2017,28 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     (*paramCount)++;
     double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
     sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
+  }
+  if (ch[Supla::Sensor::BatteryPowered]) {
+    batteryAdded = true;
+    (*paramCount)++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Sensor::BatteryPowered].as<int>();
+      sensor->setMapping(Supla::Sensor::BatteryPowered, index);
+    } else {
+      std::string key = ch[Supla::Sensor::BatteryPowered].as<std::string>();
+      sensor->setMapping(Supla::Sensor::BatteryPowered, key);
+    }
+  }
+  if (ch[Supla::Sensor::ForceBatteryPowered]) {
+    (*paramCount)++;
+    auto forceBatteryPowered =
+      ch[Supla::Sensor::ForceBatteryPowered].as<bool>();
+    if (forceBatteryPowered) {
+    // we add ForceBatteryPowered, but it is not read from index 0. It is only
+    // checked if mapping was added
+      batteryAdded = true;
+      sensor->setMapping(Supla::Sensor::ForceBatteryPowered, 0);
+    }
   }
   if (ch[Supla::InitialCaption]) {
     (*paramCount)++;
@@ -2039,6 +2063,9 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     if (ch) {
       ch->setDefaultIcon(iconId);
     }
+  }
+  if (batteryAdded) {
+    sensor->updateBatteryInfoFlags();
   }
   return true;
 }

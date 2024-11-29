@@ -37,6 +37,8 @@ class ActionTriggerParsed;
 
 namespace Sensor {
 const char BatteryLevel[] = "battery_level";
+const char BatteryPowered[] = "battery_powered";
+const char ForceBatteryPowered[] = "force_battery_powered";
 const char MultiplierBatteryLevel[] = "multiplier_battery_level";
 
 class SensorParsedBase {
@@ -72,6 +74,8 @@ class SensorParsedBase {
 
   virtual void setInitialCaption(const std::string &caption) = 0;
   virtual Supla::Channel *getChannel() = 0;
+  virtual Supla::Channel *getSecondaryChannel() = 0;
+  virtual void updateBatteryInfoFlags();
 
  protected:
   double getParameterValue(const std::string &parameter);
@@ -110,6 +114,8 @@ class SensorParsed : public T, public SensorParsedBase {
   void setInitialCaption(const std::string &caption) override;
   Supla::Channel *getChannel() override;
   const Supla::Channel *getChannel() const override;
+  Supla::Channel *getSecondaryChannel() override;
+  const Supla::Channel *getSecondaryChannel() const override;
 };
 
 template <typename T>
@@ -120,27 +126,7 @@ SensorParsed<T>::SensorParsed(Supla::Parser::Parser *parser)
 
 template <typename T>
 void SensorParsed<T>::handleGetChannelState(TDSC_ChannelState *channelState) {
-  unsigned char batteryLevel = 255;
-  if (isParameterConfigured(BatteryLevel)) {
-    if (refreshParserSource()) {
-      batteryLevel = getParameterValue(BatteryLevel);
-      if (!parser->isValid()) {
-        batteryLevel = 255;
-      }
-    }
-    if (T::getChannel()) {
-      T::getChannel()->setBatteryPowered(true);
-      if (batteryLevel <= 100) {
-        T::getChannel()->setBatteryLevel(batteryLevel);
-      }
-    }
-    if (T::getSecondaryChannel()) {
-      T::getSecondaryChannel()->setBatteryPowered(true);
-      if (batteryLevel <= 100) {
-        T::getSecondaryChannel()->setBatteryLevel(batteryLevel);
-      }
-    }
-  }
+  updateBatteryInfoFlags();
 
   T::handleGetChannelState(channelState);
 }
@@ -159,6 +145,17 @@ template <typename T>
 const Supla::Channel *SensorParsed<T>::getChannel() const {
   return T::getChannel();
 }
+
+template <typename T>
+Supla::Channel *SensorParsed<T>::getSecondaryChannel() {
+  return T::getSecondaryChannel();
+}
+
+template <typename T>
+const Supla::Channel *SensorParsed<T>::getSecondaryChannel() const {
+  return T::getSecondaryChannel();
+}
+
 
 };  // namespace Sensor
 };  // namespace Supla

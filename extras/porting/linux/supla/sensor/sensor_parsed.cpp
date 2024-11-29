@@ -253,3 +253,47 @@ void SensorParsedBase::registerAtName(std::string name,
                                       Supla::Control::ActionTriggerParsed *at) {
   atMap[name] = at;
 }
+
+void SensorParsedBase::updateBatteryInfoFlags() {
+  if (auto channel = getChannel()) {
+    unsigned char batteryLevel = 255;
+    bool batteryPowered = true;
+    bool batteryPoweredConfigured = false;
+    if (isParameterConfigured(ForceBatteryPowered)) {
+      batteryPowered = true;
+      batteryPoweredConfigured = true;
+    } else {
+      if (isParameterConfigured(BatteryPowered)) {
+        batteryPoweredConfigured = true;
+        if (refreshParserSource()) {
+          batteryPowered = (getParameterValue(BatteryPowered) == 1);
+          if (!parser->isValid()) {
+            batteryPowered = true;
+          }
+        }
+      }
+    }
+    if (isParameterConfigured(BatteryLevel)) {
+      if (refreshParserSource()) {
+        batteryLevel = getParameterValue(BatteryLevel);
+        if (!parser->isValid()) {
+          batteryLevel = 255;
+        }
+      }
+      if (batteryLevel <= 100) {
+        channel->setBatteryLevel(batteryLevel);
+      }
+      if (auto secondaryChannel = getSecondaryChannel()) {
+        if (batteryLevel <= 100) {
+          secondaryChannel->setBatteryLevel(batteryLevel);
+        }
+      }
+    }
+    if (batteryPoweredConfigured) {
+      channel->setBatteryPowered(batteryPowered);
+      if (auto secondaryChannel = getSecondaryChannel()) {
+        secondaryChannel->setBatteryPowered(batteryPowered);
+      }
+    }
+  }
+}

@@ -52,6 +52,7 @@ set(SRCS
   supla/control/relay_hvac_aggregator.cpp
   supla/control/virtual_relay.cpp
   supla/control/roller_shutter.cpp
+  supla/control/roller_shutter_interface.cpp
   supla/control/bistable_roller_shutter.cpp
   supla/control/tripple_button_roller_shutter.cpp
   supla/control/hvac_base.cpp

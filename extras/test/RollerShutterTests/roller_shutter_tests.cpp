@@ -141,6 +141,7 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
 
   for (int i = 0; i < 10; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -154,6 +155,7 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
   rs.handleAction(0, Supla::MOVE_DOWN);
   for (int i = 0; i < 10; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -164,6 +166,7 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
   rs.handleAction(0, Supla::MOVE_UP);
   for (int i = 0; i < 100; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -174,6 +177,7 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
   rs.handleAction(0, Supla::STOP);
   for (int i = 0; i < 10; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 }
@@ -247,6 +251,7 @@ TEST_F(RollerShutterFixture, movementTests) {
 
   for (int i = 0; i < 10; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -258,6 +263,7 @@ TEST_F(RollerShutterFixture, movementTests) {
   rs.handleAction(0, Supla::MOVE_DOWN);
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -267,6 +273,7 @@ TEST_F(RollerShutterFixture, movementTests) {
   // relays are disabled after 60s timeout
   for (int i = 0; i < 700; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -275,6 +282,7 @@ TEST_F(RollerShutterFixture, movementTests) {
   rs.handleAction(0, Supla::STEP_BY_STEP);  // sbs - move down
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -283,6 +291,7 @@ TEST_F(RollerShutterFixture, movementTests) {
   rs.handleAction(0, Supla::STEP_BY_STEP);  // sbs - stop
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -291,6 +300,7 @@ TEST_F(RollerShutterFixture, movementTests) {
   rs.handleAction(0, Supla::STEP_BY_STEP);  // sbs - move up
   for (int i = 0; i < 700; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -408,6 +418,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
 
   for (int i = 0; i < 10; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -423,6 +434,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -433,6 +445,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   // relays are disabled after 60s timeout
   for (int i = 0; i < 700; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -442,6 +455,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -450,6 +464,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // sbs - stop
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -458,6 +473,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // sbs - move up
   for (int i = 0; i < 700; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -466,6 +482,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // sbs - move down
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -475,6 +492,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // stop
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -484,6 +502,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // down
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -492,6 +511,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // stop (down or stop)
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -500,6 +520,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // down (down or stop)
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -509,6 +530,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // stop (up or stop)
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -517,6 +539,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // up (up or stop)
   for (int i = 0; i < 11; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -526,6 +549,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // down
   for (int i = 0; i < 16; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 
@@ -535,6 +559,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   rs.handleNewValueFromServer(&newValueFromServer);  // up
   for (int i = 0; i < 16; i++) {
     rs.onTimer();
+    rs.iterateAlways();
     time.advance(100);
   }
 

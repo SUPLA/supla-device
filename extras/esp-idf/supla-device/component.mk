@@ -97,6 +97,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/control/rgbw_base.o \
   ../../../src/supla/control/rgbw_leds.o \
   ../../../src/supla/control/roller_shutter.o \
+  ../../../src/supla/control/roller_shutter_interface.o \
   ../../../src/supla/control/sequence_button.o \
   ../../../src/supla/control/simple_button.o \
   ../../../src/supla/control/virtual_relay.o \

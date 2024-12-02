@@ -50,7 +50,7 @@ void TrippleButtonRollerShutter::onInit() {
 
 void TrippleButtonRollerShutter::stopMovement() {
   relayStopOn();
-  currentDirection = STOP_DIR;
+  currentDirection = Directions::STOP_DIR;
   doNothingTime = millis();
   // Schedule save in 5 s after stop movement of roller shutter
   Supla::Storage::ScheduleSave(5000);
@@ -81,7 +81,7 @@ bool TrippleButtonRollerShutter::inMove() {
     result = true;
     newTargetPositionAvailable = false;
   }
-  return result || currentDirection != STOP_DIR;
+  return result || currentDirection != Directions::STOP_DIR;
 }
 
 };  // namespace Control

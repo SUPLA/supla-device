@@ -39,12 +39,12 @@ BistableRollerShutter::BistableRollerShutter(int pinUp,
 }
 
 void BistableRollerShutter::stopMovement() {
-  if (currentDirection == UP_DIR) {
+  if (currentDirection == Directions::UP_DIR) {
     relayUpOn();
-  } else if (currentDirection == DOWN_DIR) {
+  } else if (currentDirection == Directions::DOWN_DIR) {
     relayDownOn();
   }
-  currentDirection = STOP_DIR;
+  currentDirection = Directions::STOP_DIR;
   doNothingTime = millis();
   // Schedule save in 5 s after stop movement of roller shutter
   Supla::Storage::ScheduleSave(5000);

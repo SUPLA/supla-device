@@ -569,7 +569,7 @@ uint8_t RollerShutterInterface::applyChannelConfig(TSD_ChannelConfig *result,
         if (rsConfig.motorUpsideDown > 2) {
           rsConfig.motorUpsideDown = 1;
         }
-        if (rsConfig.timeMargin < -1 || rsConfig.timeMargin == 0) {
+        if (rsConfig.timeMargin < -1) {
           rsConfig.timeMargin = -1;
         }
         if (rsConfig.timeMargin > 101) {

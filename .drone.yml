@@ -156,14 +156,12 @@ steps:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
   - ln -s /drone/src ~/Arduino/libraries/supla-device
+  - mkdir -p /drone/arduino_cache
   - cd examples
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --board-options PartitionScheme=huge_app --export-binaries --warnings all ./Afore/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-cache-path /drone/arduino_cache --board-options PartitionScheme=huge_app --export-binaries --warnings all ./Afore/
 # OneWire library has some compilation warnings treated as errors, so this example is compiled without "warnings all"
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --board-options PartitionScheme=huge_app --export-binaries ./DallasTemperature/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --board-options PartitionScheme=huge_app --export-binaries ./DSwithNotification/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --board-options PartitionScheme=huge_app --export-binaries --warnings all ./DHT/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --board-options PartitionScheme=huge_app --export-binaries --warnings all ./Fronius/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --board-options PartitionScheme=huge_app --export-binaries --warnings all ./HX711_Weight_sensor/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-cache-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries ./DallasTemperature/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-cache-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries ./DSwithNotification/
 
 - name: arduino_esp32_compilation_check_part_2
   image: devel/arduino-cli
@@ -172,14 +170,11 @@ steps:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
   - ln -s /drone/src ~/Arduino/libraries/supla-device
+  - mkdir -p /drone/arduino_cache
   - cd examples
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./GarageParkingAssistLight/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./HC_SR04_Distance_sensor/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./HC_SR04_Distance_sensor_extended/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./ImpulseCounter/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./RGBW_WT32_ETH01/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./RGBW_ESP32_LAN8720/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./ThermostatBasic/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./GarageParkingAssistLight/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./HC_SR04_Distance_sensor/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./HC_SR04_Distance_sensor_extended/
 
 - name: arduino_esp32_compilation_check_part_3
   image: devel/arduino-cli
@@ -188,15 +183,54 @@ steps:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
   - ln -s /drone/src ~/Arduino/libraries/supla-device
+  - mkdir -p /drone/arduino_cache
   - cd examples
 #  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./Pzem_V_2/
 #  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --export-binaries --warnings all ./Pzem_V_3/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./RGBW/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./RollerShutter/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./SequenceButton/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./WebInterface/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./AHT/
-  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --export-binaries --warnings all ./ConfigModeInputs/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./RGBW/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./RollerShutter/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./SequenceButton/
+
+- name: arduino_esp32_compilation_check_part_4
+  image: devel/arduino-cli
+  pull: never
+  commands:
+  - export SUPLA_DEVICE_PATH=/drone/src
+  - rm ~/Arduino/libraries/supla-device
+  - ln -s /drone/src ~/Arduino/libraries/supla-device
+  - mkdir -p /drone/arduino_cache
+  - cd examples
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-cache-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./DHT/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-cache-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./Fronius/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-cache-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./HX711_Weight_sensor/
+
+- name: arduino_esp32_compilation_check_part_5
+  image: devel/arduino-cli
+  pull: never
+  commands:
+  - export SUPLA_DEVICE_PATH=/drone/src
+  - rm ~/Arduino/libraries/supla-device
+  - ln -s /drone/src ~/Arduino/libraries/supla-device
+  - mkdir -p /drone/arduino_cache
+  - cd examples
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./ImpulseCounter/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./RGBW_WT32_ETH01/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./RGBW_ESP32_LAN8720/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./ThermostatBasic/
+
+- name: arduino_esp32_compilation_check_part_6
+  image: devel/arduino-cli
+  pull: never
+  commands:
+  - export SUPLA_DEVICE_PATH=/drone/src
+  - rm ~/Arduino/libraries/supla-device
+  - ln -s /drone/src ~/Arduino/libraries/supla-device
+  - mkdir -p /drone/arduino_cache
+  - cd examples
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./WebInterface/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./AHT/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --board-options PartitionScheme=huge_app --optimize-for-debug --build-cache-path /drone/arduino_cache  --export-binaries --warnings all ./ConfigModeInputs/
+
 
 - name: arduino_mega_compilation_check
   image: devel/arduino-cli
@@ -257,6 +291,9 @@ steps:
                arduino_esp32_compilation_check_part_1,
                arduino_esp32_compilation_check_part_2,
                arduino_esp32_compilation_check_part_3,
+               arduino_esp32_compilation_check_part_4,
+               arduino_esp32_compilation_check_part_5,
+               arduino_esp32_compilation_check_part_6,
                arduino_esp8266_compilation_check_part_1,
                arduino_esp8266_compilation_check_part_2,
                arduino_esp8266_compilation_check_part_3,

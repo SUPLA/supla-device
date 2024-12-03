@@ -358,7 +358,13 @@ void RollerShutterInterface::setCurrentPosition(int newPosition) {
   } else if (newPosition > 100) {
     newPosition = 100;
   }
+  calibrationTime = 0;
   currentPosition = newPosition;
+  calibrate = false;
+}
+
+void RollerShutterInterface::setNotCalibrated() {
+  currentPosition = UNKNOWN_POSITION;
   calibrate = false;
 }
 
@@ -417,6 +423,11 @@ bool RollerShutterInterface::isCalibrated() const {
 bool RollerShutterInterface::isCalibrationInProgress() const {
   return calibrationTime > 0;
 }
+
+void RollerShutterInterface::setCalibrationOngoing(int calibrationTime) {
+  this->calibrationTime = calibrationTime;
+}
+
 
 void RollerShutterInterface::iterateAlways() {
   TDSC_RollerShutterValue value = {};

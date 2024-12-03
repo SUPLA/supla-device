@@ -78,6 +78,11 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   virtual void setTargetPosition(int newPosition);
   void setCurrentPosition(int newPosition);
+  void setNotCalibrated();
+  // Sets calibration ongoing flag, by setting calibration timeout.
+  // calibrationTime = 1 is used to indicate ongoing calibration for
+  // devices without explicit calibration time setting
+  void setCalibrationOngoing(int calibrationTime = 1);
 
   int getCurrentPosition() const;
   int getTargetPosition() const;

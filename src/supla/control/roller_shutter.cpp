@@ -199,7 +199,7 @@ void RollerShutter::onTimer() {
           millis() - lastMovementStartTime > calibrationTime) {
         SUPLA_LOG_DEBUG("RS[%d]: Calibration done", channel.getChannelNumber());
         calibrationTime = 0;
-        calibrate = false;
+        setCalibrate(false);
         if (currentDirection == Directions::UP_DIR) {
           setCurrentPosition(0);
         } else {

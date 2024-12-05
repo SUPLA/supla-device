@@ -32,6 +32,11 @@ using Supla::Control::RollerShutterInterface;
 
 int16_t RollerShutterInterface::rsStorageSaveDelay = 5000;
 
+#define RS_FLAG_CALIBRATE (1 << 0)
+#define RS_FLAG_CALIBRATION_LOST (1 << 1)
+#define RS_FLAG_CALIBRATION_FAILED (1 << 2)
+#define RS_FLAG_MOTOR_PROBLEM (1 << 3)
+
 #pragma pack(push, 1)
 struct RollerShutterStateData {
   uint32_t closingTimeMs;
@@ -360,12 +365,13 @@ void RollerShutterInterface::setCurrentPosition(int newPosition) {
   }
   calibrationTime = 0;
   currentPosition = newPosition;
-  calibrate = false;
+  setCalibrate(false);
 }
 
 void RollerShutterInterface::setNotCalibrated() {
   currentPosition = UNKNOWN_POSITION;
-  calibrate = false;
+  calibrationTime = 0;
+  setCalibrate(false);
 }
 
 void RollerShutterInterface::setTargetPosition(int newPosition) {
@@ -404,19 +410,19 @@ void RollerShutterInterface::triggerCalibration() {
 
 void RollerShutterInterface::setCalibrationNeeded() {
   setCurrentPosition(UNKNOWN_POSITION);
-  calibrate = true;
+  setCalibrate(true);
 }
 
 bool RollerShutterInterface::isCalibrationRequested() const {
-  return calibrate && (!isTimeSettingAvailable() ||
+  return getCalibrate() && (!isTimeSettingAvailable() ||
                        (openingTimeMs != 0 && closingTimeMs != 0));
 }
 
 bool RollerShutterInterface::isCalibrated() const {
   if (isTimeSettingAvailable()) {
-    return calibrate == false && openingTimeMs != 0 && closingTimeMs != 0;
+    return !getCalibrate() && openingTimeMs != 0 && closingTimeMs != 0;
   } else {
-    return calibrate == false && currentPosition != UNKNOWN_POSITION;
+    return !getCalibrate() && currentPosition != UNKNOWN_POSITION;
   }
 }
 
@@ -428,12 +434,25 @@ void RollerShutterInterface::setCalibrationOngoing(int calibrationTime) {
   this->calibrationTime = calibrationTime;
 }
 
+void RollerShutterInterface::setCalibrationFinished() {
+  calibrationTime = 0;
+  setCalibrate(false);
+}
 
 void RollerShutterInterface::iterateAlways() {
   TDSC_RollerShutterValue value = {};
   value.position = currentPosition;
   if (isCalibrationInProgress()) {
     value.flags |= RS_VALUE_FLAG_CALIBRATION_IN_PROGRESS;
+  }
+  if (isCalibrationFailed()) {
+    value.flags |= RS_VALUE_FLAG_CALIBRATION_FAILED;
+  }
+  if (isCalibrationLost()) {
+    value.flags |= RS_VALUE_FLAG_CALIBRATION_LOST;
+  }
+  if (isMotorProblem()) {
+    value.flags |= RS_VALUE_FLAG_MOTOR_PROBLEM;
   }
   channel.setNewValue(value);
 }
@@ -459,7 +478,7 @@ void RollerShutterInterface::onLoadState() {
     openingTimeMs = data.openingTimeMs;
     currentPosition = data.currentPosition;
     if (currentPosition >= 0) {
-      calibrate = false;
+      setCalibrate(false);
     }
     SUPLA_LOG_DEBUG(
         "RS[%d] settings restored from storage. Opening time: %d "
@@ -813,3 +832,37 @@ bool RollerShutterInterface::isTimeSettingAvailable() const {
          0;
 }
 
+bool RollerShutterInterface::isCalibrationFailed() const {
+  return flags & RS_FLAG_CALIBRATION_FAILED;
+}
+
+bool RollerShutterInterface::isCalibrationLost() const {
+  return flags & RS_FLAG_CALIBRATION_LOST;
+}
+
+bool RollerShutterInterface::isMotorProblem() const {
+  return flags & RS_FLAG_MOTOR_PROBLEM;
+}
+
+bool RollerShutterInterface::getCalibrate() const {
+  return flags & RS_FLAG_CALIBRATE;
+}
+
+void RollerShutterInterface::setCalibrate(bool value) {
+  flags = value ? flags | RS_FLAG_CALIBRATE : flags & ~RS_FLAG_CALIBRATE;
+}
+
+void RollerShutterInterface::setCalibrationFailed(bool value) {
+  flags = value ? flags | RS_FLAG_CALIBRATION_FAILED :
+                 flags & ~RS_FLAG_CALIBRATION_FAILED;
+}
+
+void RollerShutterInterface::setCalibrationLost(bool value) {
+  flags = value ? flags | RS_FLAG_CALIBRATION_LOST :
+                 flags & ~RS_FLAG_CALIBRATION_LOST;
+}
+
+void RollerShutterInterface::setMotorProblem(bool value) {
+  flags = value ? flags | RS_FLAG_MOTOR_PROBLEM :
+                 flags & ~RS_FLAG_MOTOR_PROBLEM;
+}

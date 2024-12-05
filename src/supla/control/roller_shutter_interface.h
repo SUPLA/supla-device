@@ -83,6 +83,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   // calibrationTime = 1 is used to indicate ongoing calibration for
   // devices without explicit calibration time setting
   void setCalibrationOngoing(int calibrationTime = 1);
+  void setCalibrationFinished();
 
   int getCurrentPosition() const;
   int getTargetPosition() const;
@@ -127,11 +128,18 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   virtual bool inMove();
   virtual bool isCalibrationInProgress() const;
+  bool isCalibrationFailed() const;
+  bool isCalibrationLost() const;
+  bool isMotorProblem() const;
 
   bool isFunctionSupported(int32_t channelFunction) const;
   bool isAutoCalibrationSupported() const;
 
   void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
+
+  void setCalibrationFailed(bool value);
+  void setCalibrationLost(bool value);
+  void setMotorProblem(bool value);
 
  protected:
   bool lastDirectionWasOpen() const;
@@ -139,14 +147,14 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   // returns true, when opening/closing time is setable from config
   bool isTimeSettingAvailable() const;
+  bool getCalibrate() const;
+  void setCalibrate(bool value);
 
   void printConfig() const;
   void setupButtonActions();
   uint32_t getTimeMarginValue(uint32_t fullTime) const;
 
-  bool calibrate =
-      false;  // set to true when new closing/opening time is given -
-              // calibration is done to sync roller shutter position
+  uint8_t flags = 0;
 
   uint8_t comfortDownValue = 20;
   uint8_t comfortUpValue = 80;

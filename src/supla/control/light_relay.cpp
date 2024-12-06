@@ -41,6 +41,7 @@ LightRelay::LightRelay(int pin, bool highIsOn)
 }
 
 void LightRelay::handleGetChannelState(TDSC_ChannelState *channelState) {
+  Supla::Control::Relay::handleGetChannelState(channelState);
   channelState->Fields |= SUPLA_CHANNELSTATE_FIELD_LIGHTSOURCELIFESPAN |
                           SUPLA_CHANNELSTATE_FIELD_LIGHTSOURCEOPERATINGTIME;
   channelState->LightSourceLifespan = lifespan;

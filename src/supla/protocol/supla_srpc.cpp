@@ -899,7 +899,8 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       for (auto el= Supla::Element::begin(); el!= nullptr; el = el->next()) {
         if (el->getChannel() != nullptr && el->isChannelStateEnabled() &&
             el->getChannel()->isOnline() &&
-            el->getChannel()->isBatteryPoweredFieldEnabled()) {
+            (el->getChannel()->isBatteryPoweredFieldEnabled() ||
+             el->getChannel()->getBatteryLevel() <= 100)) {
           SUPLA_LOG_DEBUG("SRPC: Sending channel state for %d",
                           el->getChannelNumber());
           sendChannelStateResult(0, el->getChannelNumber());

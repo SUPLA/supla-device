@@ -380,7 +380,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       }
       usedCtType = value32;
     }
-    SUPLA_LOG_INFO("EM: CT type is %d", usedCtType);
+    SUPLA_LOG_INFO("EM[%d]: CT type is %d", getChannelNumber(), usedCtType);
 
     int8_t value = 0;
     generateKey(key, Supla::ConfigTag::EmPhaseLedTag);
@@ -390,7 +390,8 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
       }
       usedPhaseLedType = value;
     }
-    SUPLA_LOG_INFO("EM: Phase LED type is %d", usedPhaseLedType);
+    SUPLA_LOG_INFO(
+        "EM[%d]: Phase LED type is %d", getChannelNumber(), usedPhaseLedType);
 
     value32 = 0;
     generateKey(key, Supla::ConfigTag::EmPhaseLedVoltageLowTag);
@@ -479,7 +480,9 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     }
 
     SUPLA_LOG_INFO(
-        "EM: Voltage low: %d, Voltage high: %d, Power low: %d, Power high: %d",
+        "EM[%d]: Voltage low: %d, Voltage high: %d, Power low: %d, Power high: "
+        "%d",
+        getChannelNumber(),
         ledVoltageLow,
         ledVoltageHigh,
         ledPowerLow,
@@ -518,8 +521,9 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
         Supla::getBitNumber(configFromServer->UsedCTType);
     if (usedCtType != bitNumberCtTypeInNewConfig) {
       if (!isCtTypeSupported(configFromServer->UsedCTType)) {
-        SUPLA_LOG_DEBUG("CT type %d not supported",
-                        configFromServer->UsedCTType);
+        SUPLA_LOG_WARNING("EM[%d] CT type %d not supported",
+                          getChannelNumber(),
+                          configFromServer->UsedCTType);
         configValid = false;
       } else {
         usedCtType = bitNumberCtTypeInNewConfig;
@@ -534,7 +538,8 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
         Supla::getBitNumber(configFromServer->UsedPhaseLedType);
     if (usedPhaseLedType != bitNumberPhaseLedTypeInNewConfig) {
       if (!isPhaseLedTypeSupported(configFromServer->UsedPhaseLedType)) {
-        SUPLA_LOG_DEBUG("Phase LED type %d not supported",
+        SUPLA_LOG_DEBUG("EM[%d] Phase LED type %d not supported",
+                        getChannelNumber(),
                         configFromServer->UsedPhaseLedType);
         configValid = false;
       } else {
@@ -582,14 +587,17 @@ uint8_t Supla::Sensor::ElectricityMeter::applyChannelConfig(
 
     if (configChanged) {
       cfg->commit();
+      // reload and apply config
+      onLoadConfig(nullptr);
     }
 
     if (configFromServer->AvailablePhaseLedTypes != availablePhaseLedTypes ||
         configFromServer->AvailableCTTypes != availableCtTypes ||
         !configValid) {
       SUPLA_LOG_WARNING(
-          "Invalid config received from server %llu %llu %llu %llu, "
+          "EM[%d]: Invalid config received from server %llu %llu %llu %llu, "
           "configValid %d",
+          getChannelNumber(),
           configFromServer->AvailablePhaseLedTypes,
           configFromServer->AvailableCTTypes,
           availablePhaseLedTypes,
@@ -636,9 +644,10 @@ void Supla::Sensor::ElectricityMeter::fillChannelConfig(void *channelConfig,
     config->PhaseLedParam2 = ledPowerHigh;
   }
   SUPLA_LOG_DEBUG(
-      "EM: fillChannelConfig: usedCtType=%d, usedPhaseLedType=%d"
+      "EM[%d]: fillChannelConfig: usedCtType=%d, usedPhaseLedType=%d"
       ", availableCtTypes=%d, availablePhaseLedTypes=%d"
       ", param1=%d, param2=%d",
+      getChannelNumber(),
       static_cast<uint32_t>(config->UsedCTType),
       static_cast<uint32_t>(config->UsedPhaseLedType),
       static_cast<uint32_t>(config->AvailableCTTypes),
@@ -667,7 +676,8 @@ void Supla::Sensor::ElectricityMeter::iterateAlways() {
 // Implement this method to reset stored energy value (i.e. to set energy
 // counter back to 0 kWh
 void Supla::Sensor::ElectricityMeter::resetStorage() {
-  SUPLA_LOG_DEBUG("EM: reset storage called, but implementation is missing");
+  SUPLA_LOG_DEBUG("EM[%d]: reset storage called, but implementation is missing",
+                  getChannelNumber());
 }
 
 Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() {
@@ -679,7 +689,7 @@ const Supla::Channel *Supla::Sensor::ElectricityMeter::getChannel() const {
 }
 
 void Supla::Sensor::ElectricityMeter::setRefreshRate(unsigned int sec) {
-  SUPLA_LOG_INFO("EM: setRefreshRate: %d", sec);
+  SUPLA_LOG_INFO("EM[%d]: setRefreshRate: %d", getChannelNumber(), sec);
   refreshRateSec = sec;
   if (refreshRateSec == 0) {
     refreshRateSec = 1;

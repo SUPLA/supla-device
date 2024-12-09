@@ -237,6 +237,7 @@ void Element::handleGetChannelState(TDSC_ChannelState *channelState) {
       } else {
         channelState->BatteryLevel = 0;
       }
+
       if (channel->isBridgeSignalStrengthAvailable()) {
         channelState->Fields |=
             SUPLA_CHANNELSTATE_FIELD_BRIDGENODESIGNALSTRENGTH;

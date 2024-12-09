@@ -29,12 +29,12 @@ TElectricityMeter_Measurement *ConditionGetter::getMeasurement(
   }
 
   TSuplaChannelExtendedValue *extValue = element->getChannel()->getExtValue();
-  if (extValue->type != EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2) {
+  if (extValue->type != EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V3) {
     return nullptr;
   }
 
-  TElectricityMeter_ExtendedValue_V2 *emValue =
-    reinterpret_cast<TElectricityMeter_ExtendedValue_V2 *>(extValue->value);
+  TElectricityMeter_ExtendedValue_V3 *emValue =
+    reinterpret_cast<TElectricityMeter_ExtendedValue_V3 *>(extValue->value);
 
   if (emValue->m_count < 1) {
     return nullptr;

@@ -114,6 +114,18 @@ class ElectricityMeter : public ElementWithChannelActions,
   // phase angle in 0.1 degree
   void setPhaseAngle(int phase, _supla_int_t phaseAngle);
 
+  // voltage phase angle between phase 1 and 2
+  void setVoltagePhaseAngle12(unsigned _supla_int16_t voltagePhaseAngle);
+
+  // voltage phase angle between phase 1 and 3
+  void setVoltagePhaseAngle13(unsigned _supla_int16_t voltagePhaseAngle);
+
+  // sets voltage phase sequence to clockwise or counterclockwise
+  void setVoltagePhaseSequence(bool clockwise);
+
+  // sets current phase sequence to clockwise or counterclockwise
+  void setCurrentPhaseSequence(bool clockwise);
+
   // energy 1 == 0.00001 kWh
   unsigned _supla_int64_t getFwdActEnergy(int phase);
 
@@ -156,115 +168,163 @@ class ElectricityMeter : public ElementWithChannelActions,
   // phase angle 1 == 0.1 degree
   _supla_int_t getPhaseAngle(int phase);
 
+  // Phase angle between voltage phase 1 and 2 in 0.1 degree, 0..360
+  uint16_t getVoltagePhaseAngle12() const;
+
+  // Phase angle between voltage phase 1 and 3 in 0.1 degree, 0..360
+  uint16_t getVoltagePhaseAngle13() const;
+
+  // Returns true when voltage phase sequence is set
+  bool isVoltagePhaseSequenceSet() const;
+
+  // Voltage phase sequence clockwise or counterclockwise
+  bool isVoltagePhaseSequenceClockwise() const;
+
+  // Returns true when current phase sequence is set
+  bool isCurrentPhaseSequenceSet() const;
+
+  // Current phase sequence clockwise or counterclockwise
+  bool isCurrentPhaseSequenceClockwise() const;
+
   // energy 1 == 0.00001 kWh
   static unsigned _supla_int64_t
-    getFwdActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+    getFwdActEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue,
         int phase);
 
   // energy 1 == 0.00001 kWh
   static unsigned _supla_int64_t
-    getTotalFwdActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue);
+    getTotalFwdActEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   // energy 1 == 0.00001 kWh
   static uint64_t
-    getFwdBalancedActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue);
+    getFwdBalancedActEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   // energy 1 == 0.00001 kWh
   static unsigned _supla_int64_t
-    getRvrActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+    getRvrActEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue,
         int phase);
 
   // energy 1 == 0.00001 kWh
   static unsigned _supla_int64_t
-    getTotalRvrActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue);
+    getTotalRvrActEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   // energy 1 == 0.00001 kWh
   static uint64_t
-    getRvrBalancedActEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue);
+    getRvrBalancedActEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   // energy 1 == 0.00001 kWh
   static unsigned _supla_int64_t
-    getFwdReactEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+    getFwdReactEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue,
         int phase);
 
   // energy 1 == 0.00001 kWh
   static unsigned _supla_int64_t
-    getRvrReactEnergy(const TElectricityMeter_ExtendedValue_V2 &emValue,
+    getRvrReactEnergy(const TElectricityMeter_ExtendedValue_V3 &emValue,
         int phase);
 
   // voltage 1 == 0.01 V
   static unsigned _supla_int16_t
-    getVoltage(const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+    getVoltage(const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
 
   // current 1 == 0.001 A
   static unsigned _supla_int_t
-    getCurrent(const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+    getCurrent(const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
 
   // Frequency 1 == 0.01 Hz
   static unsigned _supla_int16_t
-    getFreq(const TElectricityMeter_ExtendedValue_V2 &emValue);
+    getFreq(const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   // power 1 == 0.00001 W
   static int64_t getPowerActive(
-      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+      const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
 
   // power 1 == 0.00001 var
   static int64_t getPowerReactive(
-      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+      const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
 
   // power 1 == 0.00001 VA
   static int64_t getPowerApparent(
-      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+      const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
 
   // power 1 == 0.001
   static _supla_int_t getPowerFactor(
-      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+      const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
 
   // phase angle 1 == 0.1 degree
   static _supla_int_t getPhaseAngle(
-      const TElectricityMeter_ExtendedValue_V2 &emValue, int phase);
+      const TElectricityMeter_ExtendedValue_V3 &emValue, int phase);
+
+  // Phase angle between voltage phase 1 and 2 in 0.1 degree, 0..360
+  static uint16_t getVoltagePhaseAngle12(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  // Phase angle between voltage phase 1 and 3 in 0.1 degree, 0..360
+  static uint16_t getVoltagePhaseAngle13(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  // Returns true when voltage phase sequence is set
+  static bool isVoltagePhaseSequenceSet(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  // Voltage phase sequence clockwise or counterclockwise
+  static bool isVoltagePhaseSequenceClockwise(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  // Returns true when current phase sequence is set
+  static bool isCurrentPhaseSequenceSet(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  // Current phase sequence clockwise or counterclockwise
+  static bool isCurrentPhaseSequenceClockwise(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  static bool isVoltagePhaseAngle12Used(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
+
+  static bool isVoltagePhaseAngle13Used(
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isFwdActEnergyUsed(
-    const TElectricityMeter_ExtendedValue_V2 &emValue);
+    const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isRvrActEnergyUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isFwdReactEnergyUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isRvrReactEnergyUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isFwdBalancedActEnergyUsed(
-    const TElectricityMeter_ExtendedValue_V2 &emValue);
+    const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isRvrBalancedActEnergyUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isVoltageUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isCurrentUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isFreqUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isPowerActiveUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isPowerReactiveUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isPowerApparentUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isPowerFactorUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   static bool isPhaseAngleUsed(
-      const TElectricityMeter_ExtendedValue_V2 &emValue);
+      const TElectricityMeter_ExtendedValue_V3 &emValue);
 
   void resetReadParameters();
   void resetReadParametersForPhase(int phase);
@@ -319,7 +379,7 @@ class ElectricityMeter : public ElementWithChannelActions,
   bool isPhaseLedTypeSupported(uint64_t ledType) const;
 
  protected:
-  TElectricityMeter_ExtendedValue_V2 emValue = {};
+  TElectricityMeter_ExtendedValue_V3 emValue = {};
   ChannelExtended extChannel;
   uint32_t lastChannelUpdateTime = 0;
   uint32_t rawCurrent[MAX_PHASES] = {};

@@ -25,7 +25,7 @@
 
 class EMForTest : public Supla::Sensor::ElectricityMeter {
  public:
-  TElectricityMeter_ExtendedValue_V2 *getEmValue() {
+  TElectricityMeter_ExtendedValue_V3 *getEmValue() {
     return &emValue;
   }
 };
@@ -188,6 +188,12 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
   EXPECT_EQ(em.getPowerApparent(0), 0);
   EXPECT_EQ(em.getPowerFactor(0), 0);
   EXPECT_EQ(em.getPhaseAngle(0), 0);
+  EXPECT_EQ(em.getVoltagePhaseAngle12(), 0);
+  EXPECT_EQ(em.getVoltagePhaseAngle13(), 0);
+  EXPECT_FALSE(em.isVoltagePhaseSequenceSet());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceSet());
+  EXPECT_FALSE(em.isVoltagePhaseSequenceClockwise());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceClockwise());
 
   em.setFwdActEnergy(0, 2000);
   em.setRvrActEnergy(0, 2);
@@ -201,6 +207,9 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
   em.setPowerApparent(0, 10);
   em.setPowerFactor(0, 11);
   em.setPhaseAngle(0, 12);
+  em.setVoltagePhaseAngle12(13);
+  em.setVoltagePhaseAngle13(14);
+  em.setVoltagePhaseSequence(true);
 
   EXPECT_EQ(em.getFwdActEnergy(0), 2000);
   EXPECT_EQ(em.getRvrActEnergy(0), 2);
@@ -214,6 +223,30 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
   EXPECT_EQ(em.getPowerApparent(0), 10);
   EXPECT_EQ(em.getPowerFactor(0), 11);
   EXPECT_EQ(em.getPhaseAngle(0), 12);
+  EXPECT_EQ(em.getVoltagePhaseAngle12(), 13);
+  EXPECT_EQ(em.getVoltagePhaseAngle13(), 14);
+  EXPECT_TRUE(em.isVoltagePhaseSequenceSet());
+  EXPECT_TRUE(em.isVoltagePhaseSequenceClockwise());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceSet());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceClockwise());
+
+  em.setVoltagePhaseSequence(false);
+  EXPECT_TRUE(em.isVoltagePhaseSequenceSet());
+  EXPECT_FALSE(em.isVoltagePhaseSequenceClockwise());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceSet());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceClockwise());
+
+  em.setCurrentPhaseSequence(false);
+  EXPECT_TRUE(em.isVoltagePhaseSequenceSet());
+  EXPECT_FALSE(em.isVoltagePhaseSequenceClockwise());
+  EXPECT_TRUE(em.isCurrentPhaseSequenceSet());
+  EXPECT_FALSE(em.isCurrentPhaseSequenceClockwise());
+
+  em.setCurrentPhaseSequence(true);
+  EXPECT_TRUE(em.isVoltagePhaseSequenceSet());
+  EXPECT_FALSE(em.isVoltagePhaseSequenceClockwise());
+  EXPECT_TRUE(em.isCurrentPhaseSequenceSet());
+  EXPECT_TRUE(em.isCurrentPhaseSequenceClockwise());
 
   char emptyArray[SUPLA_CHANNELVALUE_SIZE] = {};
   auto channel = em.getChannel();
@@ -236,19 +269,21 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
 
   auto extValue = em.getChannel()->getExtValue();
   EXPECT_EQ(extValue->type,
-            EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2);
+            EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V3);
   // data structre under extValue->value is actually smaller than
-  // TElectricityMeter_ExtendedValue_V2, however we'll only read in a limit
+  // TElectricityMeter_ExtendedValue_V3, however we'll only read in a limit
   // of valid bytes
-  TElectricityMeter_ExtendedValue_V2 *emExtValue =
-      reinterpret_cast<TElectricityMeter_ExtendedValue_V2 *>(extValue->value);
+  TElectricityMeter_ExtendedValue_V3 *emExtValue =
+      reinterpret_cast<TElectricityMeter_ExtendedValue_V3 *>(extValue->value);
   EXPECT_EQ(emExtValue->measured_values,
             EM_VAR_FREQ | EM_VAR_VOLTAGE | EM_VAR_CURRENT |
                 EM_VAR_POWER_ACTIVE | EM_VAR_POWER_REACTIVE |
                 EM_VAR_POWER_APPARENT | EM_VAR_POWER_FACTOR |
                 EM_VAR_PHASE_ANGLE | EM_VAR_FORWARD_ACTIVE_ENERGY |
                 EM_VAR_REVERSE_ACTIVE_ENERGY | EM_VAR_FORWARD_REACTIVE_ENERGY |
-                EM_VAR_REVERSE_REACTIVE_ENERGY);
+                EM_VAR_REVERSE_REACTIVE_ENERGY |
+                EM_VAR_VOLTAGE_PHASE_ANGLE_12 | EM_VAR_VOLTAGE_PHASE_ANGLE_13 |
+                EM_VAR_VOLTAGE_PHASE_SEQUENCE | EM_VAR_CURRENT_PHASE_SEQUENCE);
   EXPECT_EQ(emExtValue->m_count, 1);
 
   em.resetReadParameters();
@@ -265,11 +300,17 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
   EXPECT_EQ(em.getPowerApparent(0), 0);
   EXPECT_EQ(em.getPowerFactor(0), 0);
   EXPECT_EQ(em.getPhaseAngle(0), 0);
+  EXPECT_EQ(em.getVoltagePhaseAngle12(), 0);
+  EXPECT_EQ(em.getVoltagePhaseAngle13(), 0);
+  EXPECT_TRUE(em.isVoltagePhaseSequenceSet());
+  EXPECT_TRUE(em.isCurrentPhaseSequenceSet());
+  EXPECT_TRUE(em.isVoltagePhaseSequenceClockwise());
+  EXPECT_TRUE(em.isCurrentPhaseSequenceClockwise());
 
   em.updateChannelValues();
 
   EXPECT_EQ(extValue->type,
-            EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2);
+            EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V3);
 
   // measured values shouldn't be cleared
   EXPECT_EQ(emExtValue->measured_values,
@@ -278,7 +319,9 @@ TEST(ElectricityMeterTests, ClearMeasurmentsInCaseOfError) {
                 EM_VAR_POWER_APPARENT | EM_VAR_POWER_FACTOR |
                 EM_VAR_PHASE_ANGLE | EM_VAR_FORWARD_ACTIVE_ENERGY |
                 EM_VAR_REVERSE_ACTIVE_ENERGY | EM_VAR_FORWARD_REACTIVE_ENERGY |
-                EM_VAR_REVERSE_REACTIVE_ENERGY);
+                EM_VAR_REVERSE_REACTIVE_ENERGY |
+                EM_VAR_VOLTAGE_PHASE_ANGLE_12 | EM_VAR_VOLTAGE_PHASE_ANGLE_13 |
+                EM_VAR_VOLTAGE_PHASE_SEQUENCE | EM_VAR_CURRENT_PHASE_SEQUENCE);
   // m_count is set to 0
   EXPECT_EQ(emExtValue->m_count, 0);
 }

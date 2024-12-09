@@ -51,7 +51,7 @@ class Channel : public LocalAction {
   void setNewValue(double temp, double humi);
   void setNewValue(int32_t value);
   void setNewValue(bool value);
-  void setNewValue(const TElectricityMeter_ExtendedValue_V2 &emValue);
+  void setNewValue(const TElectricityMeter_ExtendedValue_V3 &emValue);
   void setNewValue(uint8_t red,
                    uint8_t green,
                    uint8_t blue,
@@ -185,7 +185,7 @@ class Channel : public LocalAction {
   // Returns true when value was properly converted to EM value.
   // "out" has to be valid pointer to allocated structure.
   virtual bool getExtValueAsElectricityMeter(
-      TElectricityMeter_ExtendedValue_V2 *out);
+      TElectricityMeter_ExtendedValue_V3 *out);
   void setCorrection(double correction, bool forSecondaryValue = false);
   bool isSleepingEnabled();
   bool isWeeklyScheduleAvailable();

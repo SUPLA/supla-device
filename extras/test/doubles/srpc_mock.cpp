@@ -205,8 +205,8 @@ SrpcInterface::~SrpcInterface() {
 SrpcInterface *SrpcInterface::instance = nullptr;
 
 // method copied directly from srpc.c
-_supla_int_t srpc_evtool_v2_emextended2extended(
-    const TElectricityMeter_ExtendedValue_V2 *em_ev,
+_supla_int_t srpc_evtool_v3_emextended2extended(
+    const TElectricityMeter_ExtendedValue_V3 *em_ev,
     TSuplaChannelExtendedValue *ev) {
   if (em_ev == NULL || ev == NULL || em_ev->m_count > EM_MEASUREMENT_COUNT ||
       em_ev->m_count < 0) {
@@ -214,9 +214,9 @@ _supla_int_t srpc_evtool_v2_emextended2extended(
   }
 
   memset(ev, 0, sizeof(TSuplaChannelExtendedValue));
-  ev->type = EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2;
+  ev->type = EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V3;
 
-  ev->size = sizeof(TElectricityMeter_ExtendedValue_V2) -
+  ev->size = sizeof(TElectricityMeter_ExtendedValue_V3) -
              sizeof(TElectricityMeter_Measurement) * EM_MEASUREMENT_COUNT +
              sizeof(TElectricityMeter_Measurement) * em_ev->m_count;
 
@@ -230,28 +230,28 @@ _supla_int_t srpc_evtool_v2_emextended2extended(
 }
 
 _supla_int_t SRPC_ICACHE_FLASH
-srpc_evtool_v2_extended2emextended(const TSuplaChannelExtendedValue *ev,
-                                   TElectricityMeter_ExtendedValue_V2 *em_ev) {
+srpc_evtool_v3_extended2emextended(const TSuplaChannelExtendedValue *ev,
+                                   TElectricityMeter_ExtendedValue_V3 *em_ev) {
   if (em_ev == NULL || ev == NULL ||
-      ev->type != EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V2 || ev->size == 0 ||
-      ev->size > sizeof(TElectricityMeter_ExtendedValue_V2)) {
+      ev->type != EV_TYPE_ELECTRICITY_METER_MEASUREMENT_V3 || ev->size == 0 ||
+      ev->size > sizeof(TElectricityMeter_ExtendedValue_V3)) {
     return 0;
   }
 
-  memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V2));
+  memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V3));
   memcpy(em_ev, ev->value, ev->size);
 
   _supla_int_t expected_size = 0;
 
   if (em_ev->m_count <= EM_MEASUREMENT_COUNT) {
     expected_size =
-        sizeof(TElectricityMeter_ExtendedValue_V2) -
+        sizeof(TElectricityMeter_ExtendedValue_V3) -
         sizeof(TElectricityMeter_Measurement) * EM_MEASUREMENT_COUNT +
         sizeof(TElectricityMeter_Measurement) * em_ev->m_count;
   }
 
   if (ev->size != expected_size) {
-    memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V2));
+    memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V3));
     return 0;
   }
 

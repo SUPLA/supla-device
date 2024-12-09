@@ -260,7 +260,7 @@ void Channel::setNewValue(bool value) {
 }
 
 void Channel::setNewValue(
-    const TElectricityMeter_ExtendedValue_V2 &emExtValue) {
+    const TElectricityMeter_ExtendedValue_V3 &emExtValue) {
   // Prepare standard channel value
   if (sizeof(TElectricityMeter_Value) <= SUPLA_CHANNELVALUE_SIZE) {
     const TElectricityMeter_Measurement *m = nullptr;
@@ -408,8 +408,8 @@ TSuplaChannelExtendedValue *Channel::getExtValue() {
 }
 
 bool Channel::getExtValueAsElectricityMeter(
-      TElectricityMeter_ExtendedValue_V2 *out) {
-  return srpc_evtool_v2_extended2emextended(getExtValue(), out) == 1;
+      TElectricityMeter_ExtendedValue_V3 *out) {
+  return srpc_evtool_v3_extended2emextended(getExtValue(), out) == 1;
 }
 
 void Channel::setUpdateReady() {

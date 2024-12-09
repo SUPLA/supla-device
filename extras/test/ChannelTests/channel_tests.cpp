@@ -200,7 +200,7 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearUpdateReady();
 
-  TElectricityMeter_ExtendedValue_V2 emVal = {};
+  TElectricityMeter_ExtendedValue_V3 emVal = {};
   TElectricityMeter_Value expectedValue = {};
 
   emVal.m_count = 1;

@@ -668,7 +668,7 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
 
   switch (ch->getChannelType()) {
     case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
-      TElectricityMeter_ExtendedValue_V2 extEMValue = {};
+      TElectricityMeter_ExtendedValue_V3 extEMValue = {};
       if (!ch->getExtValueAsElectricityMeter(&extEMValue)) {
         SUPLA_LOG_DEBUG("Mqtt: failed to obtain ext EM value");
         return;
@@ -698,6 +698,33 @@ void Supla::Protocol::Mqtt::publishExtendedChannelState(int channel) {
             (topic / "total_reverse_balanced_active_energy").c_str(),
             ElectricityMeter::getRvrBalancedActEnergy(extEMValue) / 100000.0,
             -1, -1, 4);
+      }
+
+      if (ElectricityMeter::isVoltagePhaseAngle12Used(extEMValue)) {
+        publishDouble(
+            (topic / "voltage_phase_angle_12").c_str(),
+            ElectricityMeter::getVoltagePhaseAngle12(extEMValue) / 10.0,
+            -1,
+            -1,
+            1);
+      }
+      if (ElectricityMeter::isVoltagePhaseAngle13Used(extEMValue)) {
+        publishDouble(
+            (topic / "voltage_phase_angle_13").c_str(),
+            ElectricityMeter::getVoltagePhaseAngle13(extEMValue) / 10.0,
+            -1,
+            -1,
+            1);
+      }
+      if (ElectricityMeter::isVoltagePhaseSequenceSet(extEMValue)) {
+        publishBool((topic / "voltage_phase_sequence_clockwise").c_str(),
+            ElectricityMeter::isVoltagePhaseSequenceClockwise(extEMValue),
+            -1, -1);
+      }
+      if (ElectricityMeter::isCurrentPhaseSequenceSet(extEMValue)) {
+        publishBool((topic / "current_phase_sequence_clockwise").c_str(),
+            ElectricityMeter::isCurrentPhaseSequenceClockwise(extEMValue),
+            -1, -1);
       }
 
       for (int phase = 0; phase < MAX_PHASES; phase++) {
@@ -1966,7 +1993,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEM(Supla::Element *element) {
     return;
   }
 
-  TElectricityMeter_ExtendedValue_V2 extEMValue = {};
+  TElectricityMeter_ExtendedValue_V3 extEMValue = {};
 
   if (!ch->getExtValueAsElectricityMeter(&extEMValue)) {
     SUPLA_LOG_DEBUG("Mqtt: failed to obtain ext EM value");

@@ -56,7 +56,7 @@ TEST_F(ChannelExtendedFixture, ExtendedChannelMethods) {
 TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
   int number = 0;
   Supla::ChannelExtended extChannel;
-  TElectricityMeter_ExtendedValue_V2 emVal = {};
+  TElectricityMeter_ExtendedValue_V3 emVal = {};
   TElectricityMeter_Value expectedValue = {};
 
   emVal.m_count = 1;

@@ -896,7 +896,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     }
 
     if (millis() - lastChannelStateSendMs > SUPLA_CHANNEL_STATE_INTERVAL_MS) {
-      for (auto el= Supla::Element::begin(); el!= nullptr; el = el->next()) {
+      for (auto el = Supla::Element::begin(); el != nullptr; el = el->next()) {
         if (el->getChannel() != nullptr && el->isChannelStateEnabled() &&
             el->getChannel()->isOnline() &&
             (el->getChannel()->isBatteryPoweredFieldEnabled() ||

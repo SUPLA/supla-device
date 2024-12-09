@@ -141,8 +141,8 @@ void Supla::EspIdfLan8720::setup() {
     // no hw reset
     phyConfig.reset_gpio_num = -1;
     eth_esp32_emac_config_t esp32EmacConfig = ETH_ESP32_EMAC_DEFAULT_CONFIG();
-    esp32EmacConfig.smi_mdc_gpio_num = mdcGpio;
-    esp32EmacConfig.smi_mdio_gpio_num = mdioGpio;
+    esp32EmacConfig.smi_gpio.mdc_num = mdcGpio;
+    esp32EmacConfig.smi_gpio.mdio_num = mdioGpio;
     esp_eth_mac_t *mac = esp_eth_mac_new_esp32(&esp32EmacConfig, &macConfig);
     esp_eth_phy_t *phy = esp_eth_phy_new_lan87xx(&phyConfig);
 

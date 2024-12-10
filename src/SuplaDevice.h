@@ -115,6 +115,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setEmail(const char *email);
   void setServer(const char *server);
   void setSwVersion(const char *);
+
+  // Do not set the manufacturer ID to anything other than 0. Values other than
+  // 0 are reserved for official Supla products only
   void setManufacturerId(int16_t);
   void setProductId(int16_t);
   void addFlags(int32_t);

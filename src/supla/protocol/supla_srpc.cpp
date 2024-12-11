@@ -554,7 +554,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
   bool hasConflictChannelMissingOnServer = false;
   bool hasConflictChannelMissingOnDevice = false;
   if (registerDeviceResultB->channel_report_size <
-      Supla::RegisterDevice::getMaxChannelNumberUsed()) {
+      Supla::RegisterDevice::getMaxChannelNumberUsed() + 1) {
     SUPLA_LOG_WARNING(
         "RegisterResultB: conflict server report has %d entries, device has "
         "channel with max number %d",

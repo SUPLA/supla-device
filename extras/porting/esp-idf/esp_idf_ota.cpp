@@ -189,23 +189,27 @@ void Supla::EspIdfOta::iterate() {
   configCheckUpdate.url = url;
   configCheckUpdate.timeout_ms = 5000;
 
+  if (client) {
+    esp_http_client_cleanup(client);
+  }
   client = esp_http_client_init(&configCheckUpdate);
-  esp_http_client_set_method(client, HTTP_METHOD_POST);
-  esp_http_client_set_header(client,
-                             "Content-Type",
-                             "application/x-www-form-urlencoded");
   if (client == NULL) {
     fail("SW update: failed initialize connection with update server");
     return;
   }
+
+  esp_http_client_set_method(client, HTTP_METHOD_POST);
+  esp_http_client_set_header(client,
+                             "Content-Type",
+                             "application/x-www-form-urlencoded");
   esp_err_t err;
   err = esp_http_client_open(client, querySize);
   if (err != ESP_OK) {
     fail("SW update: failed to open connection with update server");
     return;
   }
-  esp_http_client_write(client, queryParams, querySize);
 
+  esp_http_client_write(client, queryParams, querySize);
   esp_http_client_fetch_headers(client);
 
   // Start fetching bin file and perform update
@@ -256,6 +260,10 @@ void Supla::EspIdfOta::iterate() {
     SUPLA_LOG_INFO("%s", buf);
     log(buf);
   }
+
+  esp_http_client_cleanup(client);
+  client = 0;
+
   if (cJSON_IsObject(latestUpdate)) {
     cJSON *version = cJSON_GetObjectItemCaseSensitive(latestUpdate, "version");
     cJSON *url = cJSON_GetObjectItemCaseSensitive(latestUpdate, "updateUrl");
@@ -268,7 +276,16 @@ void Supla::EspIdfOta::iterate() {
       snprintf(buf, BUF_SIZE, "SW update url: \"%s\"", url->valuestring);
       SUPLA_LOG_INFO("%s", buf);
       log(buf);
-      esp_http_client_set_url(client, url->valuestring);
+
+      esp_http_client_config_t configGet = {};
+      configGet.url = url->valuestring;
+      configGet.timeout_ms = 10000;
+      client = esp_http_client_init(&configGet);
+      if (client == NULL) {
+        fail("SW update: failed initialize GET connection with update server");
+        return;
+      }
+      esp_http_client_set_method(client, HTTP_METHOD_GET);
     } else {
       fail("SW update: no url and version received - finishing");
       return;
@@ -278,7 +295,6 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
-  esp_http_client_set_method(client, HTTP_METHOD_GET);
   err = esp_http_client_open(client, 0);
   cJSON_Delete(json);
   if (err != ESP_OK) {
@@ -320,6 +336,8 @@ void Supla::EspIdfOta::iterate() {
   }
 
   SUPLA_LOG_DEBUG("Getting file from server...");
+  int bytesRead = 0;
+  int bytesReadPrinted = 0;
   while (true) {
     int dataRead = esp_http_client_read(
         client, reinterpret_cast<char *>(otaBuffer), BUFFER_SIZE);
@@ -327,6 +345,11 @@ void Supla::EspIdfOta::iterate() {
       fail("SW update: data read error");
       return;
     } else if (dataRead > 0) {
+      bytesRead += dataRead;
+      if (bytesRead - bytesReadPrinted > 1024 * 100) {
+        bytesReadPrinted = bytesRead;
+        SUPLA_LOG_DEBUG("SW update: downloaded %d bytes...", bytesRead);
+      }
       err = esp_ota_write(updateHandle, (const void *)otaBuffer, dataRead);
       if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
         fail("SW update: image corrupted - invalid magic byte");

@@ -498,6 +498,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELFNC_PUMPSWITCH 960                    // ver. >= 25
 #define SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH 970        // ver. >= 25
 #define SUPLA_CHANNELFNC_CONTAINER 980                     // ver. >= 26
+#define SUPLA_CHANNELFNC_SEPTIC_TANK 981                   // ver. >= 26
+#define SUPLA_CHANNELFNC_WATER_TANK 982                    // ver. >= 26
 #define SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR 990        // ver. >= 26
 
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEGATEWAYLOCK 0x00000001
@@ -2113,6 +2115,7 @@ typedef struct {
 #define SUPLA_CALCFG_CMD_RESTART_DEVICE 9400              // v. >= 25
 #define SUPLA_CALCFG_CMD_RESTART_SUBDEVICE 9410           // v. >= 25
 #define SUPLA_CALCFG_CMD_TAKE_OCR_PHOTO 9420              // v. >= 25
+#define SUPLA_CALCFG_CMD_MUTE_ALARM_SOUND 9430            // v. >= 26
 
 #define SUPLA_CALCFG_DATATYPE_RS_SETTINGS 1000
 #define SUPLA_CALCFG_DATATYPE_FB_SETTINGS 1100  // v. >= 17
@@ -2323,8 +2326,14 @@ typedef struct {
       active_bits;          // Specifies which bits of the mask are not skipped
 } TCSD_Digiglass_NewValue;  // v. >= 14
 
+#define CONTAINER_FLAG_WARNING_LEVEL          (1 << 0)
+#define CONTAINER_FLAG_ALARM_LEVEL            (1 << 1)
+#define CONTAINER_FLAG_INVALID_SENSOR_STATE   (1 << 2)
+#define CONTAINER_FLAG_SOUND_ALARM_ON         (1 << 3)
+
 typedef struct {
   unsigned char level;      // 0 - unknown; 1-101 - container fill level 0-100%
+  unsigned _supla_int16_t flags;  // CONTAINER_FLAG_*
 } TContainerChannel_Value;  // v. >= 26
 
 typedef struct {
@@ -3002,7 +3011,7 @@ typedef struct {
 } TChannelConfig_TemperatureAndHumidity;  // v. >= 21
 
 // ChannelConfig for all binary sensors (all functions valid for
-// SUPLA_CHANNELTYPE_BINARYSENSOR except Container Level Sensor)
+// SUPLA_CHANNELTYPE_BINARYSENSOR)
 // Device doesn't apply this inverted logic on communication towards server.
 // It is used only for interanal purposes and for other external interfaces
 // like MQTT
@@ -3015,20 +3024,6 @@ typedef struct {
   unsigned _supla_int16_t FilteringTimeMs;  // 0 - not used, > 0 - time in ms
   unsigned char Reserved[29];
 } TChannelConfig_BinarySensor;  // v. >= 21
-
-typedef struct {
-  unsigned char InvertedLogic;              // 0 - not inverted, 1 - inverted
-  unsigned _supla_int16_t FilteringTimeMs;  // 0 - not used, > 0 - time in ms
-  unsigned char FillLevel;  // 0 - unknown, 1-101 - fill level in 0-100 %
-  union {
-    _supla_int_t ContainerChannelId;
-    struct {
-      unsigned char ContainerIsSet;  // 0 - no; 1 - yes
-      unsigned char ContainerChannelNo;
-    };
-  };
-  unsigned char Reserved[24];
-} TChannelConfig_ContainerLevelSensor;  // v. >= 26
 
 // Not set is set when there is no thermometer for "AUX" available
 // at all.
@@ -3440,17 +3435,28 @@ typedef struct {
 } TChannelConfig_ImpulseCounter;  // v. >= 25
 
 typedef struct {
+  unsigned char FillLevel;  // 0 - unknown, 1-101 - fill level in 0-100 %
+  union {
+    _supla_int_t ContainerChannelId;
+    struct {
+      unsigned char ContainerIsSet;  // 0 - no; 1 - yes
+      unsigned char ContainerChannelNo;
+    };
+  };
+} TContainer_SensorInfo;
+
+
+typedef struct {
   unsigned char WarningAboveLevel;  // 0 - not set, 1-101 for 0-100%
   unsigned char AlarmAboveLevel;    // 0 - not set, 1-101 for 0-100%
   unsigned char WarningBelowLevel;  // 0 - not set, 1-101 for 0-100%
   unsigned char AlarmBelowLevel;    // 0 - not set, 1-101 for 0-100%
 
-  unsigned char VisualizationType;  // 0 - default, other values depends on
-                                    // Cloud and App support,
-                                    // 1 - septic tank
-                                    // 2 - rainwater tank
-                                    // 3 - coal container (tbd)
-                                    // 4 - salt container (tbd)
+  unsigned char MuteAlarmSoundWithoutAdditionalAuth;  // 0 - admin login is
+                                                      // required, 1 - regular
+                                                      // user is allowed
+
+  TContainer_SensorInfo SensorInfo[10];
   unsigned char Reserved[32];
 } TChannelConfig_Container;  // v. >= 26
 

@@ -1509,3 +1509,94 @@ bool Channel::isRollerShutterRelayType() const {
            SUPLA_BIT_FUNC_VERTICAL_BLIND |
            SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND)) != 0;
 }
+
+void Channel::setContainerValue(uint8_t fillLevel) {
+  if (fillLevel > 101) {
+    fillLevel = 0;
+  }
+  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
+  if (container->level == fillLevel) {
+    return;
+  }
+  container->level = fillLevel;
+  setUpdateReady();
+}
+
+void Channel::setContainerAlarm(bool active) {
+  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
+  if (isContainerAlarmActive() == active) {
+    return;
+  }
+  if (active) {
+    container->flags |= CONTAINER_FLAG_ALARM_LEVEL;
+  } else {
+    container->flags &= ~CONTAINER_FLAG_ALARM_LEVEL;
+  }
+  setUpdateReady();
+}
+
+void Channel::setContainerWarning(bool active) {
+  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
+  if (isContainerWarningActive() == active) {
+    return;
+  }
+  if (active) {
+    container->flags |= CONTAINER_FLAG_WARNING_LEVEL;
+  } else {
+    container->flags &= ~CONTAINER_FLAG_WARNING_LEVEL;
+  }
+  setUpdateReady();
+}
+
+void Channel::setContainerInvalidSensorState(bool invalid) {
+  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
+  if (isContainerInvalidSensorStateActive() == invalid) {
+    return;
+  }
+  if (invalid) {
+    container->flags |= CONTAINER_FLAG_INVALID_SENSOR_STATE;
+  } else {
+    container->flags &= ~CONTAINER_FLAG_INVALID_SENSOR_STATE;
+  }
+  setUpdateReady();
+}
+
+
+uint8_t Channel::getContainerFillValue() const {
+  auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
+  return container->level;
+}
+
+bool Channel::isContainerAlarmActive() const {
+  auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
+  return container->flags & CONTAINER_FLAG_ALARM_LEVEL;
+}
+
+bool Channel::isContainerWarningActive() const {
+  auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
+  return container->flags & CONTAINER_FLAG_WARNING_LEVEL;
+}
+
+bool Channel::isContainerInvalidSensorStateActive() const {
+    auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
+  return container->flags & CONTAINER_FLAG_INVALID_SENSOR_STATE;
+}
+
+void Channel::setContainerSoundAlarmOn(bool soundAlarmOn) {
+  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
+  if (isContainerSoundAlarmOn() == soundAlarmOn) {
+    return;
+  }
+  if (soundAlarmOn) {
+    container->flags |= CONTAINER_FLAG_SOUND_ALARM_ON;
+  } else {
+    container->flags &= ~CONTAINER_FLAG_SOUND_ALARM_ON;
+  }
+  setUpdateReady();
+}
+
+bool Channel::isContainerSoundAlarmOn() const {
+  auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
+  return container->flags & CONTAINER_FLAG_SOUND_ALARM_ON;
+}
+

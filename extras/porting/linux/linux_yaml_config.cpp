@@ -46,6 +46,7 @@
 #include <supla/sensor/rain_parsed.h>
 #include <supla/sensor/thermometer_parsed.h>
 #include <supla/sensor/weight_parsed.h>
+#include <supla/sensor/container_parsed.h>
 #include <supla/sensor/wind_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
@@ -636,6 +637,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addWeightParsed(ch, channelNumber, parser);
+    } else if (type == "ContainerParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addContainerParsed(ch, channelNumber, parser);
     } else if (type == "DistanceParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -1965,6 +1972,35 @@ bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
   }
 
   return addCommonParametersParsed(ch, weight, &paramCount, parser);
+}
+
+bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
+                                             int channelNumber,
+                                             Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding ContainerParsed", channelNumber);
+  auto container = new Supla::Sensor::ContainerParsed(parser);
+  if (ch[Supla::Parser::Level]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Level].as<int>();
+      container->setMapping(Supla::Parser::Level, index);
+    } else {
+      std::string key = ch[Supla::Parser::Level].as<std::string>();
+      container->setMapping(Supla::Parser::Level, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Level);
+    return false;
+  }
+  if (ch[Supla::Multiplier]) {
+    paramCount++;
+    double multiplier = ch[Supla::Multiplier].as<double>();
+    container->setMultiplier(Supla::Parser::Level, multiplier);
+  }
+
+  return addCommonParametersParsed(ch, container, &paramCount, parser);
 }
 
 bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,

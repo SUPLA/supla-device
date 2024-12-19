@@ -151,6 +151,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/sensor/weight.cpp
   src/supla/sensor/distance.cpp
   src/supla/sensor/temperature_drop_sensor.cpp
+  src/supla/sensor/container.cpp
 )
 
 set(NETTLE_SRCS

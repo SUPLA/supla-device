@@ -67,6 +67,18 @@ class Channel : public LocalAction {
   bool isOnline() const;
   bool isOnlineAndNotAvailable() const;
 
+  void setContainerValue(uint8_t fillLevel);
+  void setContainerAlarm(bool active);
+  void setContainerWarning(bool active);
+  void setContainerInvalidSensorState(bool invalid);
+  void setContainerSoundAlarmOn(bool soundAlarmOn);
+
+  uint8_t getContainerFillValue() const;
+  bool isContainerAlarmActive() const;
+  bool isContainerWarningActive() const;
+  bool isContainerInvalidSensorStateActive() const;
+  bool isContainerSoundAlarmOn() const;
+
   double getValueDouble();
   double getValueDoubleFirst();
   double getValueDoubleSecond();

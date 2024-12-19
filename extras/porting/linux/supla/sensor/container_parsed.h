@@ -14,45 +14,33 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+*/
 
-#ifndef SRC_SUPLA_CHANNELS_CHANNEL_TYPES_H_
-#define SRC_SUPLA_CHANNELS_CHANNEL_TYPES_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_CONTAINER_PARSED_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_CONTAINER_PARSED_H_
 
-#include <stdint.h>
+#include <supla/parser/parser.h>
+#include <supla/sensor/container.h>
+
+#include "sensor_parsed.h"
 
 namespace Supla {
-
-enum class ChannelType : uint8_t {
-  NOT_SET,
-  BINARYSENSOR,
-  DISTANCESENSOR,
-  RELAY,
-  THERMOMETER,
-  HUMIDITYSENSOR,
-  HUMIDITYANDTEMPSENSOR,
-  WINDSENSOR,
-  PRESSURESENSOR,
-  RAINSENSOR,
-  WEIGHTSENSOR,
-  DIMMER,
-  RGBLEDCONTROLLER,
-  DIMMERANDRGBLED,
-  ELECTRICITY_METER,
-  IMPULSE_COUNTER,
-  HVAC,
-  VALVE_OPENCLOSE,
-  VALVE_PERCENTAGE,
-  GENERAL_PURPOSE_MEASUREMENT,
-  GENERAL_PURPOSE_METER,
-  ACTIONTRIGGER,
-  CONTAINER,
+namespace Parser {
+const char Level[] = "level";
 };
 
-int32_t channelTypeToProtoType(ChannelType type);
-ChannelType protoTypeToChannelType(int32_t type);
+namespace Sensor {
 
-}  // namespace Supla
+class ContainerParsed : public SensorParsed<Container> {
+ public:
+  explicit ContainerParsed(Supla::Parser::Parser *);
+  int getValue() override;
+  void onInit() override;
 
+ protected:
+  bool isDataErrorLogged = false;
+};
+};  // namespace Sensor
+};  // namespace Supla
 
-#endif  // SRC_SUPLA_CHANNELS_CHANNEL_TYPES_H_
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_SENSOR_CONTAINER_PARSED_H_

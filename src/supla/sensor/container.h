@@ -16,35 +16,44 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_SENSOR_WEIGHT_PARSED_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_SENSOR_WEIGHT_PARSED_H_
+#ifndef SRC_SUPLA_SENSOR_CONTAINER_H_
+#define SRC_SUPLA_SENSOR_CONTAINER_H_
 
-#include <supla/parser/parser.h>
-#include <supla/sensor/weight.h>
-
-#include <string>
-
-#include "sensor_parsed.h"
+#include <supla/channel_element.h>
 
 namespace Supla {
-namespace Parser {
-const char Weight[] = "weight";
-};
-
 namespace Sensor {
-
-class WeightParsed : public SensorParsed<Weight> {
+class Container : public ChannelElement {
  public:
-  explicit WeightParsed(Supla::Parser::Parser *);
-  double getValue() override;
-  void onInit() override;
+  Container();
 
-  void tareScales() override;
+  void iterateAlways() override;
+
+  virtual int getValue();
+  void setValue(int value);
+
+  void setAlarmActive(bool alarmActive);
+  bool isAlarmActive() const;
+
+  void setWarningActive(bool warningActive);
+  bool isWarningActive() const;
+
+  void setInvalidSensorStateActive(bool invalidSensorStateActive);
+  bool isInvalidSensorStateActive() const;
+
+  void setSoundAlarmOn(bool soundAlarmOn);
+  bool isSoundAlarmOn() const;
+
+  virtual void setReadIntervalMs(uint32_t timeMs);
 
  protected:
-  bool isDataErrorLogged = false;
+  uint32_t lastReadTime = 0;
+  uint32_t readIntervalMs = 1000;
+  uint8_t fillLevel = 0;
 };
+
 };  // namespace Sensor
 };  // namespace Supla
 
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_SENSOR_WEIGHT_PARSED_H_
+
+#endif  // SRC_SUPLA_SENSOR_CONTAINER_H_

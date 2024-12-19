@@ -14,45 +14,40 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+*/
 
-#ifndef SRC_SUPLA_CHANNELS_CHANNEL_TYPES_H_
-#define SRC_SUPLA_CHANNELS_CHANNEL_TYPES_H_
+#include "container_parsed.h"
 
-#include <stdint.h>
+#include <supla/log_wrapper.h>
+#include "supla/sensor/container.h"
 
-namespace Supla {
+using Supla::Sensor::ContainerParsed;
 
-enum class ChannelType : uint8_t {
-  NOT_SET,
-  BINARYSENSOR,
-  DISTANCESENSOR,
-  RELAY,
-  THERMOMETER,
-  HUMIDITYSENSOR,
-  HUMIDITYANDTEMPSENSOR,
-  WINDSENSOR,
-  PRESSURESENSOR,
-  RAINSENSOR,
-  WEIGHTSENSOR,
-  DIMMER,
-  RGBLEDCONTROLLER,
-  DIMMERANDRGBLED,
-  ELECTRICITY_METER,
-  IMPULSE_COUNTER,
-  HVAC,
-  VALVE_OPENCLOSE,
-  VALVE_PERCENTAGE,
-  GENERAL_PURPOSE_MEASUREMENT,
-  GENERAL_PURPOSE_METER,
-  ACTIONTRIGGER,
-  CONTAINER,
-};
-
-int32_t channelTypeToProtoType(ChannelType type);
-ChannelType protoTypeToChannelType(int32_t type);
-
-}  // namespace Supla
+ContainerParsed::ContainerParsed(Supla::Parser::Parser *parser)
+    : SensorParsed(parser) {
+}
 
 
-#endif  // SRC_SUPLA_CHANNELS_CHANNEL_TYPES_H_
+void ContainerParsed::onInit() {
+  channel.setNewValue(getValue());
+}
+
+int ContainerParsed::getValue() {
+  int value = 0;
+
+  if (isParameterConfigured(Supla::Parser::Level)) {
+    if (refreshParserSource()) {
+      value = getParameterValue(Supla::Parser::Level);
+    }
+    if (!parser->isValid()) {
+      if (!isDataErrorLogged) {
+        isDataErrorLogged = true;
+        SUPLA_LOG_WARNING("WeightParsed: source data error");
+      }
+      return 0;
+    }
+    isDataErrorLogged = false;
+  }
+  return value;
+}
+

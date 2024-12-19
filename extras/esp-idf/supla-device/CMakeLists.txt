@@ -157,6 +157,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/sensor/HC_SR04.cpp
   ../../../src/supla/sensor/ntc10k.cpp
   ../../../src/supla/sensor/temperature_drop_sensor.cpp
+  ../../../src/supla/sensor/container.cpp
   ../../../src/supla/pv/fronius.cpp
 )
 

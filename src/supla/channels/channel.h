@@ -67,13 +67,16 @@ class Channel : public LocalAction {
   bool isOnline() const;
   bool isOnlineAndNotAvailable() const;
 
-  void setContainerValue(uint8_t fillLevel);
+  // Sets container channel value. fillLevel should contain 0-100 value, any
+  // other value will be set to "unknown" value.
+  void setContainerFillValue(int8_t fillLevel);
   void setContainerAlarm(bool active);
   void setContainerWarning(bool active);
   void setContainerInvalidSensorState(bool invalid);
   void setContainerSoundAlarmOn(bool soundAlarmOn);
 
-  uint8_t getContainerFillValue() const;
+  // Returns 0-100 value for 0-100 %, -1 if not available
+  int8_t getContainerFillValue() const;
   bool isContainerAlarmActive() const;
   bool isContainerWarningActive() const;
   bool isContainerInvalidSensorStateActive() const;

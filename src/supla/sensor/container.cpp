@@ -26,25 +26,26 @@ using Supla::Sensor::Container;
 Container::Container() {
   channel.setType(SUPLA_CHANNELTYPE_CONTAINER);
   setDefaultFunction(SUPLA_CHANNELFNC_CONTAINER);
-  channel.setContainerValue(0);
+  channel.setContainerFillValue(-1);
 }
 
 void Container::iterateAlways() {
   if (millis() - lastReadTime >= readIntervalMs) {
     lastReadTime = millis();
-    channel.setContainerValue(getValue());
+    channel.setContainerFillValue(readNewValue());
   }
 }
 
 void Container::setValue(int value) {
-  if (value < 0 || value > 101) {
+  if (value < 0 || value > 100) {
+    fillLevel = -1;
     return;
   }
 
   fillLevel = value;
 }
 
-int Container::getValue() {
+int Container::readNewValue() {
   return fillLevel;
 }
 

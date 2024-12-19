@@ -23,13 +23,22 @@
 
 namespace Supla {
 namespace Sensor {
+
+struct SensorData {
+  uint8_t fillLevel = 0;
+  uint8_t channelNumber = 0;
+};
+
 class Container : public ChannelElement {
  public:
   Container();
 
   void iterateAlways() override;
 
-  virtual int getValue();
+  // should return 0-100 value for 0-100 %, -1 if not available
+  virtual int readNewValue();
+
+  // 0-100 value for 0-100 %, -1 if not available
   void setValue(int value);
 
   void setAlarmActive(bool alarmActive);
@@ -49,7 +58,18 @@ class Container : public ChannelElement {
  protected:
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 1000;
-  uint8_t fillLevel = 0;
+  int8_t fillLevel = -1;
+
+  uint8_t warningAboveLevel = 0;  // 0 - not set, 1-101 for 0-100%
+  uint8_t alarmAboveLevel = 0;    // 0 - not set, 1-101 for 0-100%
+  uint8_t warningBelowLevel = 0;  // 0 - not set, 1-101 for 0-100%
+  uint8_t alarmBelowLevel = 0;    // 0 - not set, 1-101 for 0-100%
+
+  bool muteAlarmSoundWithoutAdditionalAuth = 0;  // 0 - admin login is
+                                                 // required, 1 - regular
+                                                 // user is allowed
+
+  SensorData sensorData[10] = {};
 };
 
 };  // namespace Sensor

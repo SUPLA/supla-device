@@ -29,10 +29,10 @@ ContainerParsed::ContainerParsed(Supla::Parser::Parser *parser)
 
 
 void ContainerParsed::onInit() {
-  channel.setNewValue(getValue());
+  channel.setNewValue(readNewValue());
 }
 
-int ContainerParsed::getValue() {
+int ContainerParsed::readNewValue() {
   int value = 0;
 
   if (isParameterConfigured(Supla::Parser::Level)) {
@@ -42,7 +42,8 @@ int ContainerParsed::getValue() {
     if (!parser->isValid()) {
       if (!isDataErrorLogged) {
         isDataErrorLogged = true;
-        SUPLA_LOG_WARNING("WeightParsed: source data error");
+        SUPLA_LOG_WARNING("ContainerParsed[%d]: source data error",
+                          getChannelNumber());
       }
       return 0;
     }

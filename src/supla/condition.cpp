@@ -86,6 +86,8 @@ void Supla::Condition::handleAction(int event, int action) {
         case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
           value = source->getChannel()->getValueDouble();
           break;
+        case SUPLA_CHANNELTYPE_CONTAINER:
+          value = source->getChannel()->getContainerFillValue();
         /* case SUPLA_CHANNELTYPE_ELECTRICITY_METER: */
         default:
           return;
@@ -97,20 +99,28 @@ void Supla::Condition::handleAction(int event, int action) {
         case SUPLA_CHANNELTYPE_WINDSENSOR:
         case SUPLA_CHANNELTYPE_PRESSURESENSOR:
         case SUPLA_CHANNELTYPE_RAINSENSOR:
-        case SUPLA_CHANNELTYPE_WEIGHTSENSOR:
+        case SUPLA_CHANNELTYPE_WEIGHTSENSOR: {
           isValid = value >= 0;
           break;
-        case SUPLA_CHANNELTYPE_THERMOMETER:
+        }
+        case SUPLA_CHANNELTYPE_THERMOMETER: {
           isValid = value >= -273;
           break;
+        }
         case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR:
-        case SUPLA_CHANNELTYPE_HUMIDITYSENSOR:
+        case SUPLA_CHANNELTYPE_HUMIDITYSENSOR: {
           isValid = useAlternativeValue ? value >= 0 : value >= -273;
           break;
+        }
         case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER:
-        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
+        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT: {
           isValid = isnan(value) ? false : true;
           break;
+        }
+        case SUPLA_CHANNELTYPE_CONTAINER: {
+          isValid = value >= 0 && value <= 100;
+          break;
+        }
       }
     }
     if (checkConditionFor(value, isValid)) {

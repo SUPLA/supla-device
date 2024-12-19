@@ -34,7 +34,7 @@ namespace Sensor {
 class ContainerParsed : public SensorParsed<Container> {
  public:
   explicit ContainerParsed(Supla::Parser::Parser *);
-  int getValue() override;
+  int readNewValue() override;
   void onInit() override;
 
  protected:

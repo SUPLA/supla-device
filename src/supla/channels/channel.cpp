@@ -1510,15 +1510,21 @@ bool Channel::isRollerShutterRelayType() const {
            SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND)) != 0;
 }
 
-void Channel::setContainerValue(uint8_t fillLevel) {
-  if (fillLevel > 101) {
-    fillLevel = 0;
+void Channel::setContainerFillValue(int8_t fillLevel) {
+  if (fillLevel > 100) {
+    fillLevel = -1;
   }
+  if (fillLevel < -1) {
+    fillLevel = -1;
+  }
+  // internally we use 0 for unknown, 1-101 for 0-100%
+  ++fillLevel;
   auto container = reinterpret_cast<TContainerChannel_Value *>(value);
   if (container->level == fillLevel) {
     return;
   }
   container->level = fillLevel;
+  runAction(ON_CHANGE);
   setUpdateReady();
 }
 
@@ -1533,6 +1539,7 @@ void Channel::setContainerAlarm(bool active) {
     container->flags &= ~CONTAINER_FLAG_ALARM_LEVEL;
   }
   setUpdateReady();
+  runAction(active ? ON_CONTAINER_ALARM_ACTIVE : ON_CONTAINER_ALARM_INACTIVE);
 }
 
 void Channel::setContainerWarning(bool active) {
@@ -1546,6 +1553,8 @@ void Channel::setContainerWarning(bool active) {
     container->flags &= ~CONTAINER_FLAG_WARNING_LEVEL;
   }
   setUpdateReady();
+  runAction(active ? ON_CONTAINER_WARNING_ACTIVE
+                   : ON_CONTAINER_WARNING_INACTIVE);
 }
 
 void Channel::setContainerInvalidSensorState(bool invalid) {
@@ -1559,12 +1568,31 @@ void Channel::setContainerInvalidSensorState(bool invalid) {
     container->flags &= ~CONTAINER_FLAG_INVALID_SENSOR_STATE;
   }
   setUpdateReady();
+  runAction(invalid ? ON_CONTAINER_INVALID_SENSOR_STATE_ACTIVE
+                    : ON_CONTAINER_INVALID_SENSOR_STATE_INACTIVE);
 }
 
+void Channel::setContainerSoundAlarmOn(bool soundAlarmOn) {
+  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
+  if (isContainerSoundAlarmOn() == soundAlarmOn) {
+    return;
+  }
+  if (soundAlarmOn) {
+    container->flags |= CONTAINER_FLAG_SOUND_ALARM_ON;
+  } else {
+    container->flags &= ~CONTAINER_FLAG_SOUND_ALARM_ON;
+  }
+  setUpdateReady();
+  runAction(soundAlarmOn ? ON_CONTAINER_SOUND_ALARM_ACTIVE
+                         : ON_CONTAINER_SOUND_ALARM_INACTIVE);
+}
 
-uint8_t Channel::getContainerFillValue() const {
+int8_t Channel::getContainerFillValue() const {
   auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
-  return container->level;
+  if (container->level > 0 && container->level < 101) {
+    return container->level - 1;
+  }
+  return -1;
 }
 
 bool Channel::isContainerAlarmActive() const {
@@ -1582,18 +1610,6 @@ bool Channel::isContainerInvalidSensorStateActive() const {
   return container->flags & CONTAINER_FLAG_INVALID_SENSOR_STATE;
 }
 
-void Channel::setContainerSoundAlarmOn(bool soundAlarmOn) {
-  auto container = reinterpret_cast<TContainerChannel_Value *>(value);
-  if (isContainerSoundAlarmOn() == soundAlarmOn) {
-    return;
-  }
-  if (soundAlarmOn) {
-    container->flags |= CONTAINER_FLAG_SOUND_ALARM_ON;
-  } else {
-    container->flags &= ~CONTAINER_FLAG_SOUND_ALARM_ON;
-  }
-  setUpdateReady();
-}
 
 bool Channel::isContainerSoundAlarmOn() const {
   auto container = reinterpret_cast<const TContainerChannel_Value *>(value);

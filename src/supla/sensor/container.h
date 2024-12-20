@@ -24,10 +24,24 @@
 namespace Supla {
 namespace Sensor {
 
+#pragma pack(push, 1)
 struct SensorData {
   uint8_t fillLevel = 0;
-  uint8_t channelNumber = 0;
+  uint8_t channelNumber = 255;  // not used
 };
+
+struct ContainerConfig {
+  uint8_t warningAboveLevel = 0;  // 0 - not set, 1-101 for 0-100%
+  uint8_t alarmAboveLevel = 0;    // 0 - not set, 1-101 for 0-100%
+  uint8_t warningBelowLevel = 0;  // 0 - not set, 1-101 for 0-100%
+  uint8_t alarmBelowLevel = 0;    // 0 - not set, 1-101 for 0-100%
+
+  bool muteAlarmSoundWithoutAdditionalAuth = 0;  // 0 - admin login is
+                                                 // required, 1 - regular
+                                                 // user is allowed
+  SensorData sensorData[10] = {};
+};
+#pragma pack(pop)
 
 class Container : public ChannelElement {
  public:
@@ -55,21 +69,63 @@ class Container : public ChannelElement {
 
   virtual void setReadIntervalMs(uint32_t timeMs);
 
+  // set warning level as 0-101 value, where
+  // 0 - not set, 1-101 for 0-100%
+  void setWarningAboveLevel(uint8_t warningAboveLevel);
+  // returns 0-100 value for 0-100 %, 255 if not available
+  uint8_t getWarningAboveLevel() const;
+  bool isWarningAboveLevelSet() const;
+
+  // set alarm level as 0-101 value, where
+  // 0 - not set, 1-101 for 0-100%
+  void setAlarmAboveLevel(uint8_t alarmAboveLevel);
+  // returns 0-100 value for 0-100 %, 255 if not available
+  uint8_t getAlarmAboveLevel() const;
+  bool isAlarmAboveLevelSet() const;
+
+  // set warning level as 0-101 value, where
+  // 0 - not set, 1-101 for 0-100%
+  void setWarningBelowLevel(uint8_t warningBelowLevel);
+  // returns 0-100 value for 0-100 %, 255 if not available
+  uint8_t getWarningBelowLevel() const;
+  bool isWarningBelowLevelSet() const;
+
+  // set alarm level as 0-101 value, where
+  // 0 - not set, 1-101 for 0-100%
+  void setAlarmBelowLevel(uint8_t alarmBelowLevel);
+  // returns 0-100 value for 0-100 %, 255 if not available
+  uint8_t getAlarmBelowLevel() const;
+  bool isAlarmBelowLevelSet() const;
+
+  void setMuteAlarmSoundWithoutAdditionalAuth(
+      bool muteAlarmSoundWithoutAdditionalAuth);
+  bool isMuteAlarmSoundWithoutAdditionalAuth() const;
+
+  // returns true when sensor data is set successfully
+  // returns false if channel number is not set (i.e. all 10 slots are used)
+  bool setSensorData(uint8_t channelNumber, uint8_t fillLevel);
+  void removeSensorData(uint8_t channelNumber);
+
+  bool isSensorDataUsed() const;
+  bool isAlarmingUsed() const;
+
  protected:
+  void updateConfigField(uint8_t *configField, uint8_t value);
+  int8_t getHighestSensorValue() const;
+
+  // Sensor invalid state is reported when sensor with higher fill value
+  // is active, while sensor with lower fill value is NOT active
+  bool checkSensorInvalidState(const int8_t currentFillLevel) const;
+
+  // returns -1 when sensor is not configured or on error
+  // returns 0 when sensor is not active
+  // returns 1 when sensor is active
+  int8_t getSensorState(const uint8_t channelNumber) const;
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 1000;
   int8_t fillLevel = -1;
 
-  uint8_t warningAboveLevel = 0;  // 0 - not set, 1-101 for 0-100%
-  uint8_t alarmAboveLevel = 0;    // 0 - not set, 1-101 for 0-100%
-  uint8_t warningBelowLevel = 0;  // 0 - not set, 1-101 for 0-100%
-  uint8_t alarmBelowLevel = 0;    // 0 - not set, 1-101 for 0-100%
-
-  bool muteAlarmSoundWithoutAdditionalAuth = 0;  // 0 - admin login is
-                                                 // required, 1 - regular
-                                                 // user is allowed
-
-  SensorData sensorData[10] = {};
+  ContainerConfig config = {};
 };
 
 };  // namespace Sensor

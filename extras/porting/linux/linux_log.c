@@ -22,8 +22,9 @@
 #include <stdint.h>
 #include <sys/time.h>
 #include <syslog.h>
+#include <time.h>
 
-#include "log.h"
+#include <supla-common/log.h>
 
 extern int runAsDaemon;
 extern int logLevel;
@@ -42,39 +43,67 @@ void supla_vlog(int __pri, const char *message) {
   } else {
     switch (__pri) {
       case LOG_EMERG:
-        printf("EMERG");
+        printf("EME");
         break;
       case LOG_ALERT:
-        printf("ALERT");
+        printf("ALR");
         break;
       case LOG_CRIT:
-        printf("CRIT");
+        printf("CRI");
         break;
       case LOG_ERR:
         printf("ERR");
         break;
       case LOG_WARNING:
-        printf("WARNING");
+        printf("WAR");
         break;
       case LOG_NOTICE:
-        printf("NOTICE");
+        printf("NOT");
         break;
       case LOG_INFO:
-        printf("INFO");
+        printf("INF");
         break;
       case LOG_DEBUG:
-        printf("DEBUG");
+        printf("DEB");
         break;
       case LOG_VERBOSE:
-        printf("VERBOSE");
+        printf("VER");
         break;
     }
 
-    struct timeval now = {};
-    gettimeofday(&now, NULL);
-    printf("[%li.%li] ", (uint64_t)now.tv_sec, (uint64_t)now.tv_usec);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    time_t t = tv.tv_sec;
+    struct tm tms;
+    struct tm* tm_info = localtime_r(&t, &tms);
+    printf("[%02d:%02d:%02d.%03ld] ",
+           tm_info->tm_hour,
+           tm_info->tm_min,
+           tm_info->tm_sec,
+           tv.tv_usec / 1000);
+
+    switch (__pri) {
+      case LOG_EMERG:
+      case LOG_ALERT:
+      case LOG_CRIT:
+      case LOG_ERR:
+        printf("\033[1;31m");
+        break;
+      case LOG_WARNING:
+        printf("\033[1;33m");
+        break;
+      case LOG_INFO:
+        printf("\033[1;32m");
+        break;
+      case LOG_NOTICE:
+      case LOG_DEBUG:
+      case LOG_VERBOSE:
+        break;
+    }
+
+
     printf("%s", message);
-    printf("\n");
+    printf("\033[0m\n");
     fflush(stdout);
   }
 }

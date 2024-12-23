@@ -20,7 +20,7 @@
 
 #include <pthread.h>
 #include <supla/time.h>
-#include <tools.h>
+#include <supla-common/tools.h>
 #include <unistd.h>
 
 #include <cstdlib>

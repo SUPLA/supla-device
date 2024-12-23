@@ -70,6 +70,8 @@ const char HvacAltWeeklyCfgTag[] = "hvac_aweekly";
 
 const char BinarySensorServerInvertedLogicTag[] = "srv_invrt";
 
+const char ContainerTag[] = "container";
+
 }  // namespace ConfigTag
 }  // namespace Supla
 

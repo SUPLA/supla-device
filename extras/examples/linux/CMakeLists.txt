@@ -50,10 +50,11 @@ endif()
 include_directories(
         .
         ${mqttc_SOURCE_DIR}/include
+        $ENV{SUPLA_DEVICE_PATH}/src
 )
 
 add_library(supladevice "")
-add_subdirectory($ENV{SUPLA_DEVICE_PATH} supla-device)
+add_subdirectory($ENV{SUPLA_DEVICE_PATH} supladevice)
 add_subdirectory($ENV{SUPLA_DEVICE_PATH}/extras/porting/linux supla-porting-linux)
 
 

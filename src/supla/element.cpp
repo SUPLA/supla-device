@@ -299,7 +299,7 @@ void Element::handleChannelConfigFinished() {
 }
 
 
-void Element::generateKey(char *output, const char *key) {
+void Element::generateKey(char *output, const char *key) const {
   Supla::Config::generateKey(output, getChannelNumber(), key);
 }
 

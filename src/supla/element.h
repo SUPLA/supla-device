@@ -127,7 +127,7 @@ class Element {
   virtual Channel *getChannel();
   virtual Channel *getSecondaryChannel();
 
-  virtual void generateKey(char *, const char *);
+  virtual void generateKey(char *, const char *) const;
 
   Element &disableChannelState();
   bool isChannelStateEnabled() const;

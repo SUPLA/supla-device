@@ -152,7 +152,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
   initializationDone = true;
 
-  SUPLA_LOG_DEBUG("Supla - starting initialization (platform %d)",
+  SUPLA_LOG_INFO(" *** Supla - starting initialization (platform %d)",
                   Supla::getPlatformId());
 
   if (protoVersion >= 21) {
@@ -176,6 +176,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   atLeastOneProtoIsEnabled = false;
   bool configComplete = true;
   if (Supla::Storage::IsConfigStorageAvailable()) {
+    SUPLA_LOG_INFO(" *** Supla - Config initalization");
+
     if (!lastStateLogger) {
       lastStateLogger = new Supla::Device::LastStateLogger();
     }
@@ -210,12 +212,18 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
       configComplete = false;
     }
 
+    SUPLA_LOG_INFO(" *** Supla - Config load for elements");
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
          element = element->next()) {
       element->onLoadConfig(this);
       delay(0);
     }
+    SUPLA_LOG_INFO(" *** Supla - Config load for elements done");
+  }
+
+  if (Supla::Storage::Instance()) {
+    SUPLA_LOG_INFO(" *** Supla - Load state storage");
   }
 
   // Pefrorm dry run of write state to validate stored state section with
@@ -224,12 +232,18 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     Supla::Storage::LoadStateStorage();
   }
 
+  if (Supla::Storage::Instance()) {
+    SUPLA_LOG_INFO(" *** Supla - Load state storage done");
+  }
+
+  SUPLA_LOG_INFO(" *** Supla - Init elements");
   // Initialize elements
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {
     element->onInit();
     delay(0);
   }
+  SUPLA_LOG_INFO(" *** Supla - Init elements done");
 
   // Enable timers
   Supla::initTimers();
@@ -303,7 +317,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   SUPLA_LOG_INFO("Device software version: %s",
       Supla::RegisterDevice::getSoftVer());
 
-  SUPLA_LOG_DEBUG("Initializing network layer");
+  SUPLA_LOG_INFO(" *** Supla - Initializing network layer");
   char hostname[32] = {};
   generateHostname(hostname, macLengthInHostname);
   Supla::Network::SetHostname(hostname, macLengthInHostname);
@@ -318,6 +332,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   setupDeviceMode();
 
+  SUPLA_LOG_INFO(" *** Supla - Initialization done");
   return true;
 }
 

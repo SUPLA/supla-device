@@ -48,16 +48,16 @@ void Container::iterateAlways() {
       bool alarmActive = false;
       if (value >= 0 && value <= 100) {
         if (isWarningBelowLevelSet()) {
-          warningActive = value <= config.warningBelowLevel;
+          warningActive = value <= getWarningBelowLevel();
         }
         if (!warningActive && isWarningAboveLevelSet()) {
-          warningActive = value >= config.warningAboveLevel;
+          warningActive = value >= getWarningAboveLevel();
         }
         if (isAlarmBelowLevelSet()) {
-          alarmActive = value <= config.alarmBelowLevel;
+          alarmActive = value <= getAlarmBelowLevel();
         }
         if (!alarmActive && isAlarmAboveLevelSet()) {
-          alarmActive = value >= config.alarmAboveLevel;
+          alarmActive = value >= getAlarmAboveLevel();
         }
       }
       channel.setContainerWarning(warningActive);
@@ -131,11 +131,15 @@ bool Container::isSoundAlarmOn() const {
   return channel.isContainerSoundAlarmOn();
 }
 
-void Container::updateConfigField(uint8_t *configField, uint8_t value) {
+void Container::updateConfigField(uint8_t *configField, int8_t value) {
   if (configField) {
-    if (value > 101) {
-      value = 0;
+    if (value > 100) {
+      value = 100;
     }
+    if (value < -1) {
+      value = -1;
+    }
+    value = value + 1;
     bool alarmingWasUsed = isAlarmingUsed();
     *configField = value;
     if (alarmingWasUsed && !isAlarmingUsed()) {
@@ -146,35 +150,35 @@ void Container::updateConfigField(uint8_t *configField, uint8_t value) {
   }
 }
 
-void Container::setWarningAboveLevel(uint8_t warningAboveLevel) {
+void Container::setWarningAboveLevel(int8_t warningAboveLevel) {
   updateConfigField(&config.warningAboveLevel, warningAboveLevel);
 }
 
-uint8_t Container::getWarningAboveLevel() const {
+int8_t Container::getWarningAboveLevel() const {
   return config.warningAboveLevel - 1;
 }
 
-void Container::setAlarmAboveLevel(uint8_t alarmAboveLevel) {
+void Container::setAlarmAboveLevel(int8_t alarmAboveLevel) {
   updateConfigField(&config.alarmAboveLevel, alarmAboveLevel);
 }
 
-uint8_t Container::getAlarmAboveLevel() const {
+int8_t Container::getAlarmAboveLevel() const {
   return config.alarmAboveLevel - 1;
 }
 
-void Container::setWarningBelowLevel(uint8_t warningBelowLevel) {
+void Container::setWarningBelowLevel(int8_t warningBelowLevel) {
   updateConfigField(&config.warningBelowLevel, warningBelowLevel);
 }
 
-uint8_t Container::getWarningBelowLevel() const {
+int8_t Container::getWarningBelowLevel() const {
   return config.warningBelowLevel - 1;
 }
 
-void Container::setAlarmBelowLevel(uint8_t alarmBelowLevel) {
+void Container::setAlarmBelowLevel(int8_t alarmBelowLevel) {
   updateConfigField(&config.alarmBelowLevel, alarmBelowLevel);
 }
 
-uint8_t Container::getAlarmBelowLevel() const {
+int8_t Container::getAlarmBelowLevel() const {
   return config.alarmBelowLevel - 1;
 }
 
@@ -189,7 +193,7 @@ bool Container::isMuteAlarmSoundWithoutAdditionalAuth() const {
 }
 
 bool Container::setSensorData(uint8_t channelNumber, uint8_t fillLevel) {
-  if (fillLevel > 101) {
+  if (fillLevel > 100) {
     fillLevel = 0;
   }
   if (channelNumber == 255) {
@@ -241,7 +245,7 @@ bool Container::isSensorDataUsed() const {
 int8_t Container::getHighestSensorValue() const {
   // browse all sensor data and get highest value of sensor which is in
   // active state
-  int8_t highestValue = -1;
+  int8_t highestValue = 0;
   for (auto const &sensor : config.sensorData) {
     if (getSensorState(sensor.channelNumber) == 1) {
       if (sensor.fillLevel > highestValue) {
@@ -255,7 +259,7 @@ int8_t Container::getHighestSensorValue() const {
 bool Container::checkSensorInvalidState(const int8_t currentfillLevel) const {
   for (auto const &sensor : config.sensorData) {
     if (getSensorState(sensor.channelNumber) == 0) {
-      if (sensor.fillLevel < currentfillLevel) {
+      if (sensor.fillLevel <= currentfillLevel) {
         return true;
       }
     }
@@ -295,10 +299,9 @@ int8_t Container::getSensorState(const uint8_t channelNumber) const {
 }
 
 bool Container::isAlarmingUsed() const {
-  return config.alarmAboveLevel > 0 || config.alarmBelowLevel > 0 ||
-         config.warningAboveLevel > 0 || config.warningBelowLevel > 0;
+  return isWarningAboveLevelSet() || isAlarmAboveLevelSet() ||
+         isWarningBelowLevelSet() || isAlarmBelowLevelSet();
 }
-
 
 bool Container::isWarningAboveLevelSet() const {
   return config.warningAboveLevel > 0;
@@ -414,10 +417,10 @@ void Container::printConfig() const {
       "Container[%d]: warning above: %d, alarm above: %d, warning below: "
       "%d, alarm below: %d",
       getChannelNumber(),
-      config.warningAboveLevel,
-      config.alarmAboveLevel,
-      config.warningBelowLevel,
-      config.alarmBelowLevel);
+      config.warningAboveLevel - 1,
+      config.alarmAboveLevel - 1,
+      config.warningBelowLevel - 1,
+      config.alarmBelowLevel - 1);
 
   for (auto const &sensor : config.sensorData) {
     if (sensor.channelNumber == 255) {
@@ -458,7 +461,9 @@ void Container::fillChannelConfig(void *channelConfig, int *size) {
         cfg->SensorInfo[i].IsSet = 0;
         cfg->SensorInfo[i].ChannelNo = 0;
         cfg->SensorInfo[i].FillLevel = 0;
-        if (config.sensorData[i].channelNumber < 255) {
+        // set sensor only if it is set and there is a binary sensor channel
+        if (config.sensorData[i].channelNumber < 255 &&
+            getSensorState(config.sensorData[i].channelNumber) != -1) {
           cfg->SensorInfo[i].IsSet = 1;
           cfg->SensorInfo[i].ChannelNo = config.sensorData[i].channelNumber;
           cfg->SensorInfo[i].FillLevel = config.sensorData[i].fillLevel;
@@ -506,3 +511,4 @@ void Container::setSoundAlarmSupported(bool soundAlarmSupported) {
 bool Container::isSoundAlarmSupported() const {
   return soundAlarmSupported;
 }
+

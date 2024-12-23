@@ -1591,7 +1591,7 @@ void Channel::setContainerSoundAlarmOn(bool soundAlarmOn) {
 
 int8_t Channel::getContainerFillValue() const {
   auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
-  if (container->level > 0 && container->level < 101) {
+  if (container->level > 0 && container->level <= 101) {
     return container->level - 1;
   }
   return -1;

@@ -69,32 +69,32 @@ class Container : public ChannelElement {
 
   virtual void setReadIntervalMs(uint32_t timeMs);
 
-  // set warning level as 0-101 value, where
-  // 0 - not set, 1-101 for 0-100%
-  void setWarningAboveLevel(uint8_t warningAboveLevel);
-  // returns 0-100 value for 0-100 %, 255 if not available
-  uint8_t getWarningAboveLevel() const;
+  // set warning level as 0-100 value, where
+  // -1 - not set, 1-100 for 0-100%
+  void setWarningAboveLevel(int8_t warningAboveLevel);
+  // returns 0-100 value for 0-100 %, -1 if not available
+  int8_t getWarningAboveLevel() const;
   bool isWarningAboveLevelSet() const;
 
-  // set alarm level as 0-101 value, where
-  // 0 - not set, 1-101 for 0-100%
-  void setAlarmAboveLevel(uint8_t alarmAboveLevel);
-  // returns 0-100 value for 0-100 %, 255 if not available
-  uint8_t getAlarmAboveLevel() const;
+  // set alarm level as 0-100 value, where
+  // -1 - not set, 0-100 for 0-100%
+  void setAlarmAboveLevel(int8_t alarmAboveLevel);
+  // returns 0-100 value for 0-100 %, -1 if not available
+  int8_t getAlarmAboveLevel() const;
   bool isAlarmAboveLevelSet() const;
 
-  // set warning level as 0-101 value, where
-  // 0 - not set, 1-101 for 0-100%
-  void setWarningBelowLevel(uint8_t warningBelowLevel);
-  // returns 0-100 value for 0-100 %, 255 if not available
-  uint8_t getWarningBelowLevel() const;
+  // set warning level as 0-100 value, where
+  // -1 - not set, 1-100 for 0-100%
+  void setWarningBelowLevel(int8_t warningBelowLevel);
+  // returns 0-100 value for 0-100 %, -1 if not available
+  int8_t getWarningBelowLevel() const;
   bool isWarningBelowLevelSet() const;
 
-  // set alarm level as 0-101 value, where
-  // 0 - not set, 1-101 for 0-100%
-  void setAlarmBelowLevel(uint8_t alarmBelowLevel);
-  // returns 0-100 value for 0-100 %, 255 if not available
-  uint8_t getAlarmBelowLevel() const;
+  // set alarm level as 0-100 value, where
+  // -1 - not set, 1-100 for 0-100%
+  void setAlarmBelowLevel(int8_t alarmBelowLevel);
+  // returns 0-100 value for 0-100 %, -1 if not available
+  int8_t getAlarmBelowLevel() const;
   bool isAlarmBelowLevelSet() const;
 
   void setMuteAlarmSoundWithoutAdditionalAuth(
@@ -113,7 +113,7 @@ class Container : public ChannelElement {
   bool isSoundAlarmSupported() const;
 
  protected:
-  void updateConfigField(uint8_t *configField, uint8_t value);
+  void updateConfigField(uint8_t *configField, int8_t value);
   int8_t getHighestSensorValue() const;
   void setAlarmActive(bool alarmActive);
   void setWarningActive(bool warningActive);

@@ -213,164 +213,86 @@ TEST(ContainerTests, ContainerSettersAndGetters) {
   EXPECT_CALL(
       ah, handleAction(Supla::ON_CONTAINER_ALARM_ACTIVE, actionOnAlarmActive))
       .Times(1);
-  container.setAlarmActive(true);
   EXPECT_CALL(ah, handleAction(Supla::ON_CHANGE, actionOnChange)).Times(1);
-  container.setValue(50);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_TRUE(container.isAlarmActive());
-  EXPECT_FALSE(container.isWarningActive());
-  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  container.setAlarmAboveLevel(90);
+  container.setValue(100);
+  EXPECT_EQ(container.readNewValue(), 100);
 
   time.advance(2000);
   container.iterateAlways();
   EXPECT_TRUE(ch->isUpdateReady());
   ch->clearUpdateReady();
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_FALSE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
 
   EXPECT_CALL(
       ah,
       handleAction(Supla::ON_CONTAINER_WARNING_ACTIVE, actionOnWarningActive))
       .Times(1);
-  container.setWarningActive(true);
-  EXPECT_EQ(container.readNewValue(), 50);
+  container.setWarningAboveLevel(80);
+  EXPECT_EQ(container.readNewValue(), 100);
+
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearUpdateReady();
   EXPECT_TRUE(container.isAlarmActive());
   EXPECT_TRUE(container.isWarningActive());
   EXPECT_FALSE(container.isInvalidSensorStateActive());
-
-  time.advance(2000);
-  container.iterateAlways();
-  EXPECT_TRUE(ch->isUpdateReady());
-  ch->clearUpdateReady();
-
-  EXPECT_CALL(
-      ah, handleAction(Supla::ON_CONTAINER_INVALID_SENSOR_STATE_ACTIVE,
-                       actionOnInvalidSensorStateActive))
-      .Times(1);
-  container.setInvalidSensorStateActive(true);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_TRUE(container.isAlarmActive());
-  EXPECT_TRUE(container.isWarningActive());
-  EXPECT_TRUE(container.isInvalidSensorStateActive());
-
-  time.advance(2000);
-  container.iterateAlways();
-  EXPECT_TRUE(ch->isUpdateReady());
-  ch->clearUpdateReady();
 
   EXPECT_CALL(
       ah, handleAction(Supla::ON_CONTAINER_SOUND_ALARM_ACTIVE,
                        actionOnSoundAlarmActive))
       .Times(1);
-  container.setSoundAlarmOn(true);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_TRUE(container.isAlarmActive());
-  EXPECT_TRUE(container.isWarningActive());
-  EXPECT_TRUE(container.isInvalidSensorStateActive());
-  EXPECT_TRUE(container.isSoundAlarmOn());
-
+  container.setSoundAlarmSupported(true);
   time.advance(2000);
   container.iterateAlways();
   EXPECT_TRUE(ch->isUpdateReady());
   ch->clearUpdateReady();
+  EXPECT_EQ(container.readNewValue(), 100);
+
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
 
   EXPECT_CALL(
       ah,
       handleAction(Supla::ON_CONTAINER_ALARM_INACTIVE, actionOnAlarmInactive))
       .Times(1);
 
-  container.setAlarmActive(false);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_FALSE(container.isAlarmActive());
-  EXPECT_TRUE(container.isWarningActive());
-  EXPECT_TRUE(container.isInvalidSensorStateActive());
-  EXPECT_TRUE(container.isSoundAlarmOn());
+  container.setAlarmAboveLevel(0);
+  EXPECT_EQ(container.readNewValue(), 100);
 
   time.advance(2000);
   container.iterateAlways();
   EXPECT_TRUE(ch->isUpdateReady());
   ch->clearUpdateReady();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
 
   EXPECT_CALL(ah,
               handleAction(Supla::ON_CONTAINER_WARNING_INACTIVE,
                            actionOnWarningInactive))
       .Times(1);
-  container.setWarningActive(false);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_FALSE(container.isAlarmActive());
-  EXPECT_FALSE(container.isWarningActive());
-  EXPECT_TRUE(container.isInvalidSensorStateActive());
-  EXPECT_TRUE(container.isSoundAlarmOn());
+  EXPECT_CALL(ah,
+              handleAction(Supla::ON_CONTAINER_SOUND_ALARM_INACTIVE,
+                           actionOnSoundAlarmInactive))
+      .Times(1);
+  container.setWarningAboveLevel(0);
+  EXPECT_EQ(container.readNewValue(), 100);
 
   time.advance(2000);
   container.iterateAlways();
   EXPECT_TRUE(ch->isUpdateReady());
   ch->clearUpdateReady();
-
-  EXPECT_CALL(
-      ah,
-      handleAction(Supla::ON_CONTAINER_INVALID_SENSOR_STATE_INACTIVE,
-                   actionOnInvalidSensorStateInactive))
-      .Times(1);
-  container.setInvalidSensorStateActive(false);
-  EXPECT_EQ(container.readNewValue(), 50);
   EXPECT_FALSE(container.isAlarmActive());
   EXPECT_FALSE(container.isWarningActive());
   EXPECT_FALSE(container.isInvalidSensorStateActive());
-  EXPECT_TRUE(container.isSoundAlarmOn());
-
-  time.advance(2000);
-  container.iterateAlways();
-  EXPECT_TRUE(ch->isUpdateReady());
-
-  EXPECT_CALL(
-      ah,
-      handleAction(Supla::ON_CONTAINER_ALARM_ACTIVE,
-                   actionOnAlarmActive))
-      .Times(1);
-  container.setAlarmActive(true);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_TRUE(container.isAlarmActive());
-  EXPECT_FALSE(container.isWarningActive());
-  EXPECT_FALSE(container.isInvalidSensorStateActive());
-  EXPECT_TRUE(container.isSoundAlarmOn());
-
-  time.advance(2000);
-  container.iterateAlways();
-  EXPECT_TRUE(ch->isUpdateReady());
-  ch->clearUpdateReady();
-
-  EXPECT_CALL(
-      ah,
-      handleAction(Supla::ON_CONTAINER_SOUND_ALARM_INACTIVE,
-                   actionOnSoundAlarmInactive))
-      .Times(1);
-  container.setSoundAlarmOn(false);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_TRUE(container.isAlarmActive());
-  EXPECT_FALSE(container.isWarningActive());
-  EXPECT_FALSE(container.isInvalidSensorStateActive());
   EXPECT_FALSE(container.isSoundAlarmOn());
-
-  time.advance(2000);
-  container.iterateAlways();
-  EXPECT_TRUE(ch->isUpdateReady());
-  ch->clearUpdateReady();
-
-  // setters with no actual change
-  container.setAlarmActive(true);
-  container.setValue(50);
-  container.setWarningActive(false);
-  container.setInvalidSensorStateActive(false);
-  container.setSoundAlarmOn(false);
-  EXPECT_EQ(container.readNewValue(), 50);
-  EXPECT_TRUE(container.isAlarmActive());
-  EXPECT_FALSE(container.isWarningActive());
-  EXPECT_FALSE(container.isInvalidSensorStateActive());
-  EXPECT_FALSE(container.isSoundAlarmOn());
-
-  time.advance(2000);
-  container.iterateAlways();
-  EXPECT_FALSE(ch->isUpdateReady());
-  ch->clearUpdateReady();
 }
 
 TEST(ContainerTests, AlarmingTests) {
@@ -534,4 +456,82 @@ TEST(ContainerTests, AlarmingTests) {
   EXPECT_FALSE(container.isAlarmActive());
   EXPECT_FALSE(container.isWarningActive());
   EXPECT_FALSE(container.isInvalidSensorStateActive());
+}
+
+TEST(ContainerTests, SoundAlarmingTests) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Sensor::Container container;
+
+  container.setWarningAboveLevel(70);
+  container.setAlarmAboveLevel(90);
+  container.setWarningBelowLevel(30);
+  container.setAlarmBelowLevel(10);
+  container.setSoundAlarmSupported(true);
+
+  auto ch = container.getChannel();
+  EXPECT_FALSE(ch->isUpdateReady());
+
+  EXPECT_EQ(container.readNewValue(), -1);
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_FALSE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
+  container.setValue(50);
+  EXPECT_EQ(container.readNewValue(), 50);
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_FALSE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(ch->isUpdateReady());
+
+  container.setValue(88);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearUpdateReady();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
+
+  container.setValue(97);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearUpdateReady();
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
+
+  container.setValue(50);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearUpdateReady();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_FALSE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
+
+  container.setValue(97);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearUpdateReady();
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
+
+  container.setSoundAlarmSupported(false);
+  container.setValue(97);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearUpdateReady();
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
 }

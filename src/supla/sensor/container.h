@@ -48,6 +48,13 @@ class Container : public ChannelElement {
   Container();
 
   void iterateAlways() override;
+  void onLoadConfig(SuplaDeviceClass *) override;
+  uint8_t applyChannelConfig(TSD_ChannelConfig *result,
+                              bool local = false) override;
+  void fillChannelConfig(void *channelConfig, int *size) override;
+
+  void printConfig() const;
+  void saveConfig() const;
 
   // should return 0-100 value for 0-100 %, -1 if not available
   virtual int readNewValue();
@@ -55,16 +62,9 @@ class Container : public ChannelElement {
   // 0-100 value for 0-100 %, -1 if not available
   void setValue(int value);
 
-  void setAlarmActive(bool alarmActive);
   bool isAlarmActive() const;
-
-  void setWarningActive(bool warningActive);
   bool isWarningActive() const;
-
-  void setInvalidSensorStateActive(bool invalidSensorStateActive);
   bool isInvalidSensorStateActive() const;
-
-  void setSoundAlarmOn(bool soundAlarmOn);
   bool isSoundAlarmOn() const;
 
   virtual void setReadIntervalMs(uint32_t timeMs);
@@ -109,9 +109,16 @@ class Container : public ChannelElement {
   bool isSensorDataUsed() const;
   bool isAlarmingUsed() const;
 
+  void setSoundAlarmSupported(bool soundAlarmSupported);
+  bool isSoundAlarmSupported() const;
+
  protected:
   void updateConfigField(uint8_t *configField, uint8_t value);
   int8_t getHighestSensorValue() const;
+  void setAlarmActive(bool alarmActive);
+  void setWarningActive(bool warningActive);
+  void setInvalidSensorStateActive(bool invalidSensorStateActive);
+  void setSoundAlarmOn(bool soundAlarmOn);
 
   // Sensor invalid state is reported when sensor with higher fill value
   // is active, while sensor with lower fill value is NOT active
@@ -124,9 +131,14 @@ class Container : public ChannelElement {
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 1000;
   int8_t fillLevel = -1;
+  bool soundAlarmSupported = false;
 
   ContainerConfig config = {};
 };
+
+static_assert(sizeof(ContainerConfig().sensorData) / sizeof(SensorData) ==
+              sizeof(TChannelConfig_Container().SensorInfo) /
+                  sizeof(TContainer_SensorInfo));
 
 };  // namespace Sensor
 };  // namespace Supla

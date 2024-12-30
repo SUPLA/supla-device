@@ -22,6 +22,10 @@
 #include <supla/channel_element.h>
 
 namespace Supla {
+namespace Html {
+class ContainerParameters;
+}  // namespace Html
+
 namespace Sensor {
 
 #pragma pack(push, 1)
@@ -36,7 +40,7 @@ struct ContainerConfig {
   uint8_t warningBelowLevel = 0;  // 0 - not set, 1-101 for 0-100%
   uint8_t alarmBelowLevel = 0;    // 0 - not set, 1-101 for 0-100%
 
-  bool muteAlarmSoundWithoutAdditionalAuth = 0;  // 0 - admin login is
+  uint8_t muteAlarmSoundWithoutAdditionalAuth = 0;  // 0 - admin login is
                                                  // required, 1 - regular
                                                  // user is allowed
   SensorData sensorData[10] = {};
@@ -45,6 +49,7 @@ struct ContainerConfig {
 
 class Container : public ChannelElement {
  public:
+  friend class Supla::Html::ContainerParameters;
   Container();
 
   void iterateAlways() override;
@@ -54,7 +59,7 @@ class Container : public ChannelElement {
   void fillChannelConfig(void *channelConfig, int *size) override;
 
   void printConfig() const;
-  void saveConfig() const;
+  void saveConfig();
 
   // should return 0-100 value for 0-100 %, -1 if not available
   virtual int readNewValue();

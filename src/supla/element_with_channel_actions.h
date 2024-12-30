@@ -81,11 +81,12 @@ class ElementWithChannelActions : public Element, public LocalAction {
   virtual void fillChannelConfig(void *channelConfig, int *size);
   virtual void fillChannelOcrConfig(void *channelConfig, int *size);
 
+  void triggerSetChannelConfig();
+
  protected:
   virtual bool hasOcrConfig() const;
   virtual bool isOcrConfigMissing() const;
   virtual void clearOcrConfig();
-  void triggerSetChannelConfig();
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
   bool configFinishedReceived = false;

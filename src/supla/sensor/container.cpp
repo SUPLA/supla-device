@@ -346,6 +346,7 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
   } else {
     SUPLA_LOG_DEBUG("Container[%d]: no saved config found", getChannelNumber());
   }
+  loadConfigChangeFlag();
 }
 
 uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
@@ -415,12 +416,13 @@ uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
 void Container::printConfig() const {
   SUPLA_LOG_DEBUG(
       "Container[%d]: warning above: %d, alarm above: %d, warning below: "
-      "%d, alarm below: %d",
+      "%d, alarm below: %d, mute by any user: %d",
       getChannelNumber(),
       config.warningAboveLevel - 1,
       config.alarmAboveLevel - 1,
       config.warningBelowLevel - 1,
-      config.alarmBelowLevel - 1);
+      config.alarmBelowLevel - 1,
+      config.muteAlarmSoundWithoutAdditionalAuth);
 
   for (auto const &sensor : config.sensorData) {
     if (sensor.channelNumber == 255) {
@@ -481,7 +483,7 @@ void Container::fillChannelConfig(void *channelConfig, int *size) {
   }
 }
 
-void Container::saveConfig() const {
+void Container::saveConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
@@ -496,6 +498,7 @@ void Container::saveConfig() const {
                         getChannelNumber());
     }
 
+    saveConfigChangeFlag();
     cfg->saveWithDelay(5000);
   }
   for (auto proto = Supla::Protocol::ProtocolLayer::first();

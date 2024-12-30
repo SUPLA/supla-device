@@ -102,10 +102,18 @@ void WebSender::sendSafe(const char *buf, int size) {
   }
 }
 
-void WebSender::sendSelectItem(int value, const char *label, bool selected) {
+void WebSender::sendSelectItem(int value,
+                               const char *label,
+                               bool selected,
+                               bool emptyValue) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "<option value=\"%d\" %s>%s</option>", value,
-      selected ? "selected" : "", label);
+  if (emptyValue) {
+    snprintf(buf, sizeof(buf), "<option value=\"\" %s>%s</option>", selected
+        ? "selected" : "", label);
+  } else {
+    snprintf(buf, sizeof(buf), "<option value=\"%d\" %s>%s</option>", value,
+        selected ? "selected" : "", label);
+  }
   send(buf);
 }
 

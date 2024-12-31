@@ -52,6 +52,16 @@ class ThermHygroMeter : public ChannelElement {
                                   int32_t humidityCorrection,
                                   bool local = false);
 
+  // By default temperature and humidity corrections are applied on Channel
+  // level, so raw value is read from sensor, then it is corrected and
+  // send to server.
+  // However correction may be applied by a sensor device itself. In this
+  // case, correciton is send to that device and value read from sensor is
+  // already corrected.
+  //
+  // This function sets whether correction should be applied or not.
+  void setApplyCorrections(bool applyCorrections);
+
  protected:
   int16_t readCorrectionFromIndex(int index);
   void setCorrectionAtIndex(int32_t correction, int index);
@@ -60,6 +70,7 @@ class ThermHygroMeter : public ChannelElement {
 
   uint32_t lastReadTime = 0;
   uint16_t refreshIntervalMs = 10000;
+  bool applyCorrections = true;
 };
 
 };  // namespace Sensor

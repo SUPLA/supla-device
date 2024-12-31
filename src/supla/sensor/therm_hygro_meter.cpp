@@ -91,19 +91,21 @@ void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
     return;
   }
 
-  // set temperature correction
-  auto cfgTempCorrection = getConfiguredTemperatureCorrection();
-  double correction = 1.0 * cfgTempCorrection / 10.0;
-  getChannel()->setCorrection(correction);
-  SUPLA_LOG_DEBUG("Channel[%d] temperature correction %.2f",
-      getChannelNumber(), correction);
+  if (applyCorrections) {
+    // set temperature correction
+    auto cfgTempCorrection = getConfiguredTemperatureCorrection();
+    double correction = 1.0 * cfgTempCorrection / 10.0;
+    getChannel()->setCorrection(correction);
+    SUPLA_LOG_DEBUG("Channel[%d] temperature correction %.2f",
+        getChannelNumber(), correction);
 
-  // set humidity correction
-  auto cfgHumCorrection = getConfiguredHumidityCorrection();
-  correction = 1.0 * cfgHumCorrection / 10.0;
-  getChannel()->setCorrection(correction, true);
-  SUPLA_LOG_DEBUG("Channel[%d] humidity correction %.2f",
-      getChannelNumber(), correction);
+    // set humidity correction
+    auto cfgHumCorrection = getConfiguredHumidityCorrection();
+    correction = 1.0 * cfgHumCorrection / 10.0;
+    getChannel()->setCorrection(correction, true);
+    SUPLA_LOG_DEBUG("Channel[%d] humidity correction %.2f",
+        getChannelNumber(), correction);
+  }
 
   // load config changed offline flags
   loadConfigChangeFlag();
@@ -269,3 +271,7 @@ void Supla::Sensor::ThermHygroMeter::fillChannelConfig(void *channelConfig,
   config->AdjustmentAppliedByDevice = 1;
 }
 
+void Supla::Sensor::ThermHygroMeter::setApplyCorrections(
+    bool applyCorrections) {
+  this->applyCorrections = applyCorrections;
+}

@@ -22,23 +22,30 @@
 #include <supla/sensor/binary_base.h>
 
 #include "../action_handler.h"
-#include "../actions.h"
 
 namespace Supla {
 namespace Sensor {
 class VirtualBinary : public BinaryBase, public ActionHandler {
  public:
-  VirtualBinary();
+  explicit VirtualBinary(bool keepStateInStorage = false);
   bool getValue() override;
   void onInit() override;
   void handleAction(int event, int action) override;
+  void onLoadState() override;
+  void onSaveState() override;
 
   void set();
   void clear();
   void toggle();
 
+  // Configure keep state in storage only before SuplaDevice.begin() and
+  // don't change it later. If it will be changed later it will break
+  // whole storage state
+  void setKeepStateInStorage(bool);
+
  protected:
   bool state = false;
+  bool keepStateInStorage = false;
 };
 
 };  // namespace Sensor

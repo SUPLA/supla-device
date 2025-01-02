@@ -16,10 +16,18 @@
 
 #include "virtual_binary.h"
 
+#include <supla/storage/storage.h>
+#include <supla/actions.h>
+
 namespace Supla {
 namespace Sensor {
 
-VirtualBinary::VirtualBinary() {
+VirtualBinary::VirtualBinary(bool keepStateInStorage)
+    : keepStateInStorage(keepStateInStorage) {
+}
+
+void VirtualBinary::setKeepStateInStorage(bool keepStateInStorage) {
+  this->keepStateInStorage = keepStateInStorage;
 }
 
 bool VirtualBinary::getValue() {
@@ -28,6 +36,21 @@ bool VirtualBinary::getValue() {
 
 void VirtualBinary::onInit() {
   channel.setNewValue(getValue());
+}
+
+void VirtualBinary::onSaveState() {
+  if (keepStateInStorage) {
+    Supla::Storage::WriteState((unsigned char *)&state, sizeof(state));
+  }
+}
+
+void VirtualBinary::onLoadState() {
+  if (keepStateInStorage) {
+    bool value = false;
+    if (Supla::Storage::ReadState((unsigned char *)&value, sizeof(value))) {
+      state = value;
+    }
+  }
 }
 
 void VirtualBinary::handleAction(int event, int action) {

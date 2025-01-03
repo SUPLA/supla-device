@@ -2339,3 +2339,75 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetBeforeInitCheck) {
   EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 2);
   EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 3);
 }
+
+TEST_F(HvacTestsF, LocalUILockCheck) {
+  OutputSimulatorWithCheck output;
+
+  Supla::Control::HvacBase hvac(&output);
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(::testing::AtLeast(1));
+  hvac.getChannel()->setChannelNumber(5);
+
+  auto ch = hvac.getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  EXPECT_EQ(ch->getChannelNumber(), 5);
+  EXPECT_EQ(ch->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
+  EXPECT_EQ(ch->getDefaultFunction(), 0);
+  EXPECT_EQ(ch->getFuncList(), SUPLA_BIT_FUNC_HVAC_THERMOSTAT);
+
+  EXPECT_EQ(hvac.getLocalUILockCapabilities(), 0);
+  EXPECT_TRUE(hvac.setLocalUILock(Supla::LocalUILock::None));
+  EXPECT_FALSE(hvac.setLocalUILock(Supla::LocalUILock::Full));
+  EXPECT_FALSE(hvac.setLocalUILock(Supla::LocalUILock::Temperature));
+  EXPECT_FALSE(hvac.setLocalUILock(Supla::LocalUILock::NotSupported));
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), INT16_MIN);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), INT16_MIN);
+  EXPECT_EQ(hvac.getLocalUILock(), Supla::LocalUILock::None);
+
+  hvac.addLocalUILockCapability(Supla::LocalUILock::Full);
+
+  EXPECT_EQ(hvac.getLocalUILockCapabilities(), 1);
+  EXPECT_TRUE(hvac.setLocalUILock(Supla::LocalUILock::Full));
+  EXPECT_FALSE(hvac.setLocalUILock(Supla::LocalUILock::Temperature));
+  EXPECT_FALSE(hvac.setLocalUILock(Supla::LocalUILock::NotSupported));
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), INT16_MIN);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), INT16_MIN);
+
+  hvac.addLocalUILockCapability(Supla::LocalUILock::Temperature);
+
+  EXPECT_EQ(hvac.getLocalUILockCapabilities(), 3);
+  EXPECT_TRUE(hvac.setLocalUILock(Supla::LocalUILock::Temperature));
+  EXPECT_EQ(hvac.getLocalUILock(), Supla::LocalUILock::Temperature);
+  EXPECT_TRUE(hvac.setLocalUILock(Supla::LocalUILock::Full));
+  EXPECT_EQ(hvac.getLocalUILock(), Supla::LocalUILock::Full);
+  EXPECT_FALSE(hvac.setLocalUILock(Supla::LocalUILock::NotSupported));
+  EXPECT_EQ(hvac.getLocalUILock(), Supla::LocalUILock::Full);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), INT16_MIN);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), INT16_MIN);
+
+  hvac.setLocalUILockTemperatureMax(2300);
+
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), 2300);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), 0);
+
+  hvac.setLocalUILockTemperatureMin(1000);
+
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), 2300);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), 1000);
+
+  hvac.onInit();
+
+  // after onInit, room min and max is set to default 5-40, so local ui
+  // limit setters will adjust setting to limits
+  hvac.setLocalUILockTemperatureMax(23000);
+  hvac.setLocalUILockTemperatureMin(-1000);
+
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), 4000);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), 500);
+
+  hvac.setLocalUILockTemperatureMax(2150);
+  hvac.setLocalUILockTemperatureMin(1000);
+
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), 2150);
+  EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), 1000);
+}

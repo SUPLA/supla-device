@@ -38,6 +38,13 @@ enum DayOfWeek {
   DayOfWeek_Saturday = 6
 };
 
+enum class LocalUILock : uint8_t {
+  None = 0,
+  Full = 1,
+  Temperature = 2,
+  NotSupported = 255
+};
+
 namespace Control {
 
 class OutputInterface;
@@ -99,6 +106,32 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
   unsigned _supla_int16_t getUsedAlgorithm() const;
   void setButtonTemperatureStep(int16_t step);
+
+  // Local UI blocking configuration.
+  // Those options doesn't have any functional effect on HvacBase behavior.
+  // HvacBase only provides interface for setting/getting these options.
+  // If you plan to use them, please implement proper local UI logic in
+  // your application.
+  void addLocalUILockCapability(enum LocalUILock capability);
+  void removeLocalUILockCapability(enum LocalUILock capability);
+
+  enum LocalUILock getLocalUILockCapabilityAsEnum(uint8_t capability) const;
+  void setLocalUILockCapabilities(uint8_t capabilities);
+  uint8_t getLocalUILockCapabilities() const;
+  bool isLocalUILockCapabilitySupported(enum LocalUILock capability) const;
+
+  bool setLocalUILock(enum LocalUILock lock);
+  enum LocalUILock getLocalUILock() const;
+
+  void setLocalUILockTemperatureMin(int16_t min);
+  // Returns min allowed temperature setpoint via local UI.
+  // Returns INT16_MIN if configured value is not in room min/max range
+  int16_t getLocalUILockTemperatureMin() const;
+
+  void setLocalUILockTemperatureMax(int16_t max);
+  // Returns max allowed temperature setpoint via local UI.
+  // Returns INT16_MIN if configured value is not in room min/max range
+  int16_t getLocalUILockTemperatureMax() const;
 
   // Subfunction can be set only for HVAC_THERMOSTAT channel function
   // SUPLA_HVAC_SUBFUNCTION_*

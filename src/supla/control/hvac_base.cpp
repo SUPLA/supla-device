@@ -1045,6 +1045,11 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
       hvacConfig->HeatOrColdSourceSwitchChannelNo;
   config.MasterThermostatIsSet = hvacConfig->MasterThermostatIsSet;
   config.MasterThermostatChannelNo = hvacConfig->MasterThermostatChannelNo;
+  config.LocalUILock = hvacConfig->LocalUILock;
+  config.MinAllowedTemperatureSetpointFromLocalUI =
+      hvacConfig->MinAllowedTemperatureSetpointFromLocalUI;
+  config.MaxAllowedTemperatureSetpointFromLocalUI =
+      hvacConfig->MaxAllowedTemperatureSetpointFromLocalUI;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -1222,6 +1227,14 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
     SUPLA_LOG_WARNING("HVAC[%d]: invalid min off time %d",
                       channel.getChannelNumber(),
                       newConfig->MinOffTimeS);
+    return false;
+  }
+
+  if (!isLocalUILockCapabilitySupported(
+          getLocalUILockCapabilityAsEnum(newConfig->LocalUILock))) {
+    SUPLA_LOG_WARNING("HVAC[%d]: invalid local UI lock 0x%X",
+                      channel.getChannelNumber(),
+                      newConfig->LocalUILock);
     return false;
   }
 
@@ -3305,6 +3318,7 @@ void HvacBase::copyFixedChannelConfigTo(HvacBase *hvac) const {
   hvac->setTemperatureHisteresisMax(getTemperatureHisteresisMax());
   hvac->setTemperatureHeatCoolOffsetMin(getTemperatureHeatCoolOffsetMin());
   hvac->setTemperatureHeatCoolOffsetMax(getTemperatureHeatCoolOffsetMax());
+  hvac->setLocalUILockCapabilities(getLocalUILockCapabilities());
 }
 
 void HvacBase::copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const {
@@ -4082,6 +4096,14 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                       : -1);
   SUPLA_LOG_DEBUG("  Pump switch channel: %d", config->PumpSwitchIsSet ?
                   config->PumpSwitchChannelNo : -1);
+  if (config->LocalUILockingCapabilities) {
+    SUPLA_LOG_DEBUG(
+        "  Local UI lock: 0x%X (capabilities: 0x%X), temp range: %d..%d",
+        config->LocalUILock,
+        config->LocalUILockingCapabilities,
+        config->MinAllowedTemperatureSetpointFromLocalUI,
+        config->MaxAllowedTemperatureSetpointFromLocalUI);
+  }
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
     if ((1 << i) & config->Temperatures.Index) {
@@ -4249,6 +4271,30 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
                     "": " (disabled)");
     changed = true;
   }
+
+  if (configCurrent->LocalUILock != configNew->LocalUILock) {
+    SUPLA_LOG_DEBUG("  LocalUILock: 0x%X -> 0x%X",
+                    configCurrent->LocalUILock,
+                    configNew->LocalUILock);
+    changed = true;
+  }
+
+  if (configCurrent->MinAllowedTemperatureSetpointFromLocalUI !=
+      configNew->MinAllowedTemperatureSetpointFromLocalUI) {
+    SUPLA_LOG_DEBUG("  MinAllowedTemperatureSetpointFromLocalUI: %d -> %d",
+                    configCurrent->MinAllowedTemperatureSetpointFromLocalUI,
+                    configNew->MinAllowedTemperatureSetpointFromLocalUI);
+    changed = true;
+  }
+
+  if (configCurrent->MaxAllowedTemperatureSetpointFromLocalUI !=
+      configNew->MaxAllowedTemperatureSetpointFromLocalUI) {
+    SUPLA_LOG_DEBUG("  MaxAllowedTemperatureSetpointFromLocalUI: %d -> %d",
+                    configCurrent->MaxAllowedTemperatureSetpointFromLocalUI,
+                    configNew->MaxAllowedTemperatureSetpointFromLocalUI);
+    changed = true;
+  }
+
   for (int i = 0; i < 24; i++) {
     if (((1 << i) & configCurrent->Temperatures.Index ||
          (1 << i) & configNew->Temperatures.Index) &&
@@ -5287,53 +5333,63 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (parameterFlags.TemperaturesFreezeProtectionReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_FREEZE_PROTECTION,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_FREEZE_PROTECTION,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesEcoReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_ECO,
-                           &hvacConfig->Temperatures);
+    readonlyViolation =
+        (readonlyViolation ||
+         fixReadonlyTemperature(TEMPERATURE_ECO, &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesComfortReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_COMFORT,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_COMFORT,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesBoostReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_BOOST,
-                           &hvacConfig->Temperatures);
+    readonlyViolation =
+        (readonlyViolation ||
+         fixReadonlyTemperature(TEMPERATURE_BOOST, &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesHeatProtectionReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HEAT_PROTECTION,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_HEAT_PROTECTION,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesHisteresisReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HISTERESIS,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_HISTERESIS,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesAboveAlarmReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_ABOVE_ALARM,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_ABOVE_ALARM,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesBelowAlarmReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_BELOW_ALARM,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_BELOW_ALARM,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesAuxMinSetpointReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_AUX_MIN_SETPOINT,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_AUX_MIN_SETPOINT,
+                                                &hvacConfig->Temperatures));
   }
 
   if (parameterFlags.TemperaturesAuxMaxSetpointReadonly) {
-    readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_AUX_MAX_SETPOINT,
-                           &hvacConfig->Temperatures);
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_AUX_MAX_SETPOINT,
+                                                &hvacConfig->Temperatures));
   }
 
   if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
@@ -5347,22 +5403,33 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     readonlyViolation = true;
   }
 
-  readonlyViolation |=
-      fixReadonlyTemperature(TEMPERATURE_ROOM_MIN, &hvacConfig->Temperatures);
-  readonlyViolation |=
-      fixReadonlyTemperature(TEMPERATURE_ROOM_MAX, &hvacConfig->Temperatures);
-  readonlyViolation |=
-      fixReadonlyTemperature(TEMPERATURE_AUX_MIN, &hvacConfig->Temperatures);
-  readonlyViolation |=
-      fixReadonlyTemperature(TEMPERATURE_AUX_MAX, &hvacConfig->Temperatures);
-  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MIN,
-                                              &hvacConfig->Temperatures);
-  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MAX,
-                                              &hvacConfig->Temperatures);
-  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MIN,
-                                              &hvacConfig->Temperatures);
-  readonlyViolation |= fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MAX,
-                                              &hvacConfig->Temperatures);
+  if (hvacConfig->LocalUILockingCapabilities !=
+      config.LocalUILockingCapabilities) {
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] LocalUILockingCapabilities change from 0x%X to 0x%X not "
+        "allowed (readonly)",
+        getChannelNumber(),
+        config.LocalUILockingCapabilities,
+        hvacConfig->LocalUILockingCapabilities);
+    hvacConfig->LocalUILockingCapabilities =
+        config.LocalUILockingCapabilities;
+    readonlyViolation = true;
+  }
+
+  if (fixReadonlyTemperature(TEMPERATURE_ROOM_MIN, &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_ROOM_MAX, &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_AUX_MIN, &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_AUX_MAX, &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MIN,
+                             &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MAX,
+                             &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+                             &hvacConfig->Temperatures) ||
+      fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+                             &hvacConfig->Temperatures)) {
+    readonlyViolation = true;
+  }
 
   return readonlyViolation;
 }
@@ -5613,7 +5680,7 @@ void HvacBase::unregisterInAggregator(int16_t channelNo) {
   }
 }
 
-void Supla::Control::HvacBase::purgeConfig() {
+void HvacBase::purgeConfig() {
   Supla::ElementWithChannelActions::purgeConfig();
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
@@ -5627,3 +5694,149 @@ void Supla::Control::HvacBase::purgeConfig() {
   generateKey(key, Supla::ConfigTag::HvacAltWeeklyCfgTag);
   cfg->eraseKey(key);
 }
+
+
+void HvacBase::addLocalUILockCapability(enum LocalUILock capability) {
+  config.LocalUILockingCapabilities |= static_cast<uint8_t>(capability);
+}
+
+void HvacBase::removeLocalUILockCapability(enum LocalUILock capability) {
+  config.LocalUILockingCapabilities &=
+      ~static_cast<uint8_t>(capability);
+}
+
+bool HvacBase::isLocalUILockCapabilitySupported(
+    enum LocalUILock capability) const {
+  if (capability == LocalUILock::NotSupported) {
+    return false;
+  }
+  if (capability == LocalUILock::None) {
+    return true;
+  }
+  return config.LocalUILockingCapabilities & static_cast<uint8_t>(capability);
+}
+
+bool HvacBase::setLocalUILock(enum LocalUILock lock) {
+  if (!isLocalUILockCapabilitySupported(lock)) {
+    SUPLA_LOG_WARNING("HVAC[%d]: LocalUILock 0x%X not supported",
+                      getChannelNumber(),
+                      lock);
+    return false;
+  }
+
+  if (lock != getLocalUILock()) {
+    config.LocalUILock = static_cast<uint8_t>(lock);
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+  return true;
+}
+
+enum Supla::LocalUILock HvacBase::getLocalUILock() const {
+  return getLocalUILockCapabilityAsEnum(config.LocalUILock);
+}
+
+void HvacBase::setLocalUILockTemperatureMin(int16_t min) {
+  if (min == config.MinAllowedTemperatureSetpointFromLocalUI) {
+    return;
+  }
+
+  auto roomMin = getTemperatureRoomMin();
+  auto roomMax = getTemperatureRoomMax();
+  if (roomMin > INT16_MIN && min < roomMin) {
+    min = getTemperatureRoomMin();
+  }
+  if (roomMax > INT16_MIN && min > roomMax) {
+    min = getTemperatureRoomMax();
+  }
+  config.MinAllowedTemperatureSetpointFromLocalUI = min;
+  if (initDone) {
+    channelConfigChangedOffline = 1;
+    saveConfig();
+  }
+}
+
+int16_t HvacBase::getLocalUILockTemperatureMin() const {
+  auto min = config.MinAllowedTemperatureSetpointFromLocalUI;
+  auto roomMin = getTemperatureRoomMin();
+  auto roomMax = getTemperatureRoomMax();
+  if ((roomMin > INT16_MIN && min < roomMin) ||
+      (roomMax > INT16_MIN && min > roomMax)) {
+    min = INT16_MIN;
+  }
+  if (config.MinAllowedTemperatureSetpointFromLocalUI == 0 &&
+      config.MaxAllowedTemperatureSetpointFromLocalUI == 0) {
+    min = INT16_MIN;
+  }
+  return min;
+}
+
+void HvacBase::setLocalUILockTemperatureMax(int16_t max) {
+  if (max == config.MaxAllowedTemperatureSetpointFromLocalUI) {
+    return;
+  }
+  auto roomMin = getTemperatureRoomMin();
+  auto roomMax = getTemperatureRoomMax();
+  if (roomMin > INT16_MIN && max < roomMin) {
+    max = getTemperatureRoomMin();
+  }
+  if (roomMax > INT16_MIN && max > roomMax) {
+    max = getTemperatureRoomMax();
+  }
+
+  config.MaxAllowedTemperatureSetpointFromLocalUI = max;
+  if (initDone) {
+    channelConfigChangedOffline = 1;
+    saveConfig();
+  }
+}
+
+int16_t HvacBase::getLocalUILockTemperatureMax() const {
+  auto max = config.MaxAllowedTemperatureSetpointFromLocalUI;
+  auto roomMin = getTemperatureRoomMin();
+  auto roomMax = getTemperatureRoomMax();
+  if ((roomMin > INT16_MIN && max < roomMin) ||
+      (roomMax > INT16_MIN && max > roomMax)) {
+    max = INT16_MIN;
+  }
+  if (config.MinAllowedTemperatureSetpointFromLocalUI == 0 &&
+      config.MaxAllowedTemperatureSetpointFromLocalUI == 0) {
+    max = INT16_MIN;
+  }
+  return max;
+}
+
+enum Supla::LocalUILock HvacBase::getLocalUILockCapabilityAsEnum(
+    uint8_t capability) const {
+  switch (capability) {
+    case 0: {
+      return LocalUILock::None;
+    }
+    case LOCAL_UI_LOCK_FULL: {
+      return LocalUILock::Full;
+    }
+    case LOCAL_UI_LOCK_TEMPERATURE: {
+      return LocalUILock::Temperature;
+    }
+  }
+
+  SUPLA_LOG_WARNING("HVAC[%d]: Invalid LocalUILock value 0x%X",
+                    getChannelNumber(),
+                    config.LocalUILock);
+  return LocalUILock::NotSupported;
+}
+
+void HvacBase::setLocalUILockCapabilities(uint8_t capabilities) {
+  if (initialConfig && !initDone) {
+    initialConfig->LocalUILockingCapabilities |= capabilities;
+  }
+
+  config.LocalUILockingCapabilities = capabilities;
+}
+
+uint8_t HvacBase::getLocalUILockCapabilities() const {
+  return config.LocalUILockingCapabilities;
+}
+

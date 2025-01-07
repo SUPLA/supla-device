@@ -1,0 +1,11 @@
+<map id="Supla::Html::TextCmdInputParameter" name="Supla::Html::TextCmdInputParameter">
+<area shape="rect" id="Node000001" title=" " alt="" coords="207,109,382,150"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="5,13,141,38"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="114,43,253,106,250,111,112,48"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="158,17,167,26,159,34,141,38,140,32,157,30,162,26,154,21"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="230,13,359,38"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="297,54,297,108,292,108,292,54"/>
+<area shape="rect" id="Node000004" href="$structSupla_1_1Html_1_1RegisteredCmdActionMap.html" title=" " alt="" coords="383,5,566,46"/>
+<area shape="poly" id="edge4_Node000001_Node000004" title=" " alt="" coords="428,56,330,111,328,106,425,51"/>
+<area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="583,17,593,26,585,34,567,37,566,32,582,29,587,26,580,22"/>
+</map>

@@ -1,0 +1,19 @@
+<map id="Relay" name="Relay">
+<area shape="rect" id="Node000001" title=" " alt="" coords="613,70,667,96"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1Control_1_1BistableRelay.html" title=" " alt="" coords="726,5,880,46"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="680,66,742,44,744,49,682,71"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Control_1_1LightRelay.html" title=" " alt="" coords="719,70,887,96"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="682,80,718,80,718,86,682,86"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Control_1_1VirtualRelay.html" title=" " alt="" coords="715,120,891,145"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="682,95,715,106,752,116,750,121,714,111,681,100"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="411,45,565,70"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="581,71,613,76,612,81,580,76"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="183,37,363,78"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="378,55,410,55,410,60,378,60"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title=" " alt="" coords="16,20,124,45"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="139,38,182,44,182,49,139,44"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="5,69,135,94"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="150,70,182,66,183,71,151,75"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="417,94,559,120"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="574,91,613,84,613,90,575,96"/>
+</map>

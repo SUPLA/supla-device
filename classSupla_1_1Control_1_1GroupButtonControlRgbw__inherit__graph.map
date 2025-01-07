@@ -1,0 +1,7 @@
+<map id="Supla::Control::GroupButtonControlRgbw" name="Supla::Control::GroupButtonControlRgbw">
+<area shape="rect" id="Node000001" title=" " alt="" coords="61,79,241,120"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="5,5,148,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,41,135,77,131,80,96,44"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="172,5,280,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="206,44,172,80,168,77,202,41"/>
+</map>

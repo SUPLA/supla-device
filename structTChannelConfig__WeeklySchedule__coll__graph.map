@@ -1,0 +1,5 @@
+<map id="TChannelConfig_WeeklySchedule" name="TChannelConfig_WeeklySchedule">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,94,221,120"/>
+<area shape="rect" id="Node000002" href="$structTWeeklyScheduleProgram.html" title=" " alt="" coords="26,5,200,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="116,47,116,94,110,94,110,47"/>
+</map>

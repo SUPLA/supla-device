@@ -1,0 +1,15 @@
+<map id="Supla::Sensor::GeneralPurposeMeter" name="Supla::Sensor::GeneralPurposeMeter">
+<area shape="rect" id="Node000001" title=" " alt="" coords="127,330,327,371"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title=" " alt="" coords="30,241,230,282"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="165,290,207,328,203,332,161,294"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="52,168,207,193"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="132,209,132,241,127,241,127,209"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="40,79,220,120"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="132,135,132,167,127,167,127,135"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title=" " alt="" coords="5,5,113,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="82,41,114,77,110,80,78,45"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="137,5,266,31"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="182,45,149,80,145,77,178,41"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="254,249,397,274"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="302,287,251,332,248,328,299,283"/>
+</map>

@@ -1,0 +1,13 @@
+<map id="Supla::Sensor::ThreePhasePZEMv3_ADDR" name="Supla::Sensor::ThreePhasePZEMv3_ADDR">
+<area shape="rect" id="Node000001" title=" " alt="" coords="133,256,310,297"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1ElectricityMeter.html" title=" " alt="" coords="140,168,303,208"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="224,224,224,256,219,256,219,224"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="40,79,220,120"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="163,128,203,165,199,169,160,132"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title=" " alt="" coords="5,5,113,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="82,41,114,77,110,80,78,45"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="137,5,266,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="182,45,149,80,145,77,178,41"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="244,86,386,112"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="293,125,245,169,241,165,289,121"/>
+</map>

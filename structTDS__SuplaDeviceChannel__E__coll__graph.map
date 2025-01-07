@@ -1,0 +1,7 @@
+<map id="TDS_SuplaDeviceChannel_E" name="TDS_SuplaDeviceChannel_E">
+<area shape="rect" id="Node000001" title=" " alt="" coords="77,94,267,120"/>
+<area shape="rect" id="Node000002" href="$structTActionTriggerProperties.html" title=" " alt="" coords="5,5,171,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,46,87,58,92,69,105,82,121,91,119,96,101,86,87,71,82,59,81,46"/>
+<area shape="rect" id="Node000003" href="$structTHVACValue.html" title=" " alt="" coords="206,5,306,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="247,46,229,72,197,96,194,91,225,68,242,43"/>
+</map>

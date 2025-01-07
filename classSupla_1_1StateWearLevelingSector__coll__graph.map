@@ -1,0 +1,14 @@
+<map id="Supla::StateWearLevelingSector" name="Supla::StateWearLevelingSector">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,94,176,135"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1StateStorageInterface.html" title=" " alt="" coords="24,5,211,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,47,99,94,94,93,107,45"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Storage.html" title=" " alt="" coords="232,102,338,127"/>
+<area shape="poly" id="edge5_Node000003_Node000002" title=" " alt="" coords="122,46,126,58,133,68,148,78,173,87,233,101,231,107,172,92,146,83,129,72,121,60,117,48"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="260,93,212,57,158,34,160,29,214,53,263,89"/>
+<area shape="poly" id="edge6_Node000003_Node000003" title=" " alt="" coords="355,105,364,114,356,123,339,127,338,121,354,119,359,114,351,109"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1SpecialSectionInfo.html" title=" " alt="" coords="235,5,404,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="313,46,292,102,287,100,308,45"/>
+<area shape="poly" id="edge4_Node000004_Node000004" title=" " alt="" coords="421,10,431,18,423,26,405,28,405,23,421,21,426,18,418,15"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Config.html" title=" " alt="" coords="480,5,576,31"/>
+<area shape="poly" id="edge7_Node000003_Node000005" title=" " alt="" coords="485,40,403,72,320,103,318,98,402,68,484,35"/>
+</map>

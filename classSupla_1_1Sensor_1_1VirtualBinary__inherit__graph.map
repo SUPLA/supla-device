@@ -1,0 +1,13 @@
+<map id="Supla::Sensor::VirtualBinary" name="Supla::Sensor::VirtualBinary">
+<area shape="rect" id="Node000001" title=" " alt="" coords="130,241,310,267"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1BinaryBase.html" title=" " alt="" coords="43,168,216,193"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="158,201,207,239,204,243,155,205"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="40,79,220,120"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="132,135,132,167,127,167,127,135"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title=" " alt="" coords="5,5,113,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="82,41,114,77,110,80,78,45"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="137,5,266,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="182,45,149,80,145,77,178,41"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="240,168,382,193"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="286,205,237,243,234,239,282,201"/>
+</map>

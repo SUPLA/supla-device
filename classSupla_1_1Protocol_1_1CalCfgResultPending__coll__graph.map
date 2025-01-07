@@ -1,0 +1,6 @@
+<map id="Supla::Protocol::CalCfgResultPending" name="Supla::Protocol::CalCfgResultPending">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,109,196,150"/>
+<area shape="rect" id="Node000002" href="$structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html" title=" " alt="" coords="5,5,196,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="103,62,103,109,98,109,98,62"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="212,17,222,26,214,34,196,37,195,32,212,29,217,26,209,21"/>
+</map>

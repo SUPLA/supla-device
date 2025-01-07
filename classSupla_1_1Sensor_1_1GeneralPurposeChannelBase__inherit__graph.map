@@ -1,0 +1,21 @@
+<map id="Supla::Sensor::GeneralPurposeChannelBase" name="Supla::Sensor::GeneralPurposeChannelBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="300,241,500,282"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Sensor_1_1GeneralPurposeMeasurement.html" title=" " alt="" coords="188,330,388,371"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="364,294,315,332,311,327,361,289"/>
+<area shape="rect" id="Node000010" href="$classSupla_1_1Sensor_1_1GeneralPurposeMeter.html" title=" " alt="" coords="412,330,612,371"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="439,289,488,327,485,332,435,294"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="322,168,477,193"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="402,209,402,241,397,241,397,209"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="310,79,490,120"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="402,135,402,167,397,167,397,135"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title=" " alt="" coords="275,5,383,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="352,41,384,77,380,80,348,45"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="407,5,536,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="452,45,419,80,415,77,448,41"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1Sensor_1_1Bh1750.html" title=" " alt="" coords="5,419,157,444"/>
+<area shape="poly" id="edge6_Node000006_Node000007" title=" " alt="" coords="223,379,114,421,112,416,221,374"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Sensor_1_1GpmEspFreeHeap.html" title=" " alt="" coords="180,419,395,444"/>
+<area shape="poly" id="edge7_Node000006_Node000008" title=" " alt="" coords="290,386,290,418,285,418,285,386"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Sensor_1_1Max44009.html" title=" " alt="" coords="419,419,586,444"/>
+<area shape="poly" id="edge8_Node000006_Node000009" title=" " alt="" coords="356,374,470,416,468,421,355,379"/>
+</map>

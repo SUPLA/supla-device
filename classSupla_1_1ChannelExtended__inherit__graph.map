@@ -1,0 +1,7 @@
+<map id="Supla::ChannelExtended" name="Supla::ChannelExtended">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,153,166,178"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Channel.html" title=" " alt="" coords="32,79,139,105"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,120,88,152,83,152,83,120"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="21,5,150,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="88,46,88,79,83,79,83,46"/>
+</map>

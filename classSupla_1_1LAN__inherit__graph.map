@@ -1,0 +1,11 @@
+<map id="Supla::LAN" name="Supla::LAN">
+<area shape="rect" id="Node000001" title=" " alt="" coords="166,79,253,105"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ESPETH.html" title=" " alt="" coords="5,153,118,178"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="172,114,88,154,86,150,169,109"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ESPETHSPI.html" title=" " alt="" coords="142,153,277,178"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="212,120,212,152,207,152,207,120"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1WT32__ETH01.html" title=" " alt="" coords="300,153,442,178"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="252,109,344,150,342,155,250,114"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Network.html" title=" " alt="" coords="155,5,264,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="212,46,212,79,207,79,207,46"/>
+</map>

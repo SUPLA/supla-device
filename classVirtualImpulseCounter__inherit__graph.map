@@ -1,0 +1,19 @@
+<map id="VirtualImpulseCounter" name="VirtualImpulseCounter">
+<area shape="rect" id="Node000001" title=" " alt="" coords="613,63,763,88"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1Sensor_1_1ImpulseCounter.html" title=" " alt="" coords="813,5,1012,31"/>
+<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="753,56,810,41,857,29,858,34,811,46,754,61"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Sensor_1_1OcrImpulseCounter.html" title=" " alt="" coords="825,55,1000,96"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="778,73,825,73,825,78,778,78"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Sensor_1_1SecondsCounter.html" title=" " alt="" coords="811,120,1014,146"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="754,90,811,105,858,117,857,122,810,110,753,95"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="411,37,565,63"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="581,59,614,63,613,69,581,65"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="183,30,363,70"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="378,48,410,48,410,53,378,53"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title=" " alt="" coords="16,12,124,38"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="139,31,182,36,182,41,139,36"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="5,61,135,87"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="150,62,182,58,183,64,151,67"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="417,87,559,112"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="574,86,612,82,613,87,575,92"/>
+</map>

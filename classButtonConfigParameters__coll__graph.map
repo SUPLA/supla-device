@@ -1,0 +1,13 @@
+<map id="ButtonConfigParameters" name="ButtonConfigParameters">
+<area shape="rect" id="Node000001" title=" " alt="" coords="213,199,376,225"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Html_1_1SelectInputParameter.html" title=" " alt="" coords="214,109,374,150"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="297,165,297,199,292,199,292,165"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="5,13,141,38"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="114,43,253,106,250,111,112,48"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="158,17,167,26,159,34,141,38,140,32,157,30,162,26,154,21"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="230,13,359,38"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="297,54,297,108,292,108,292,54"/>
+<area shape="rect" id="Node000005" href="$structSupla_1_1Html_1_1SelectValueMapElement.html" title=" " alt="" coords="383,5,547,46"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="420,57,328,111,326,106,418,52"/>
+<area shape="poly" id="edge6_Node000005_Node000005" title=" " alt="" coords="564,17,574,26,566,34,548,37,547,32,563,29,569,26,561,21"/>
+</map>

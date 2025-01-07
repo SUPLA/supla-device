@@ -1,0 +1,39 @@
+<map id="HvacParameters" name="HvacParameters">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1244,282,1363,308"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="964,118,1099,144"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1111,146,1130,152,1178,172,1221,201,1264,242,1295,280,1291,283,1260,246,1218,205,1175,177,1128,157,1110,151"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="1003,101,1013,94,1031,91,1049,94,1060,100,1063,109,1058,119,1053,116,1058,109,1056,103,1047,99,1032,97,1014,99,1006,105"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1HvacBase.html" title=" " alt="" coords="947,167,1116,193"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="1088,196,1221,248,1280,279,1278,284,1219,253,1086,201"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="634,83,789,109"/>
+<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="805,110,858,123,911,140,935,154,967,164,966,169,933,159,909,145,857,128,804,115"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="356,52,536,92"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="552,79,634,87,634,92,551,84"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Element.html" title=" " alt="" coords="34,59,142,85"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="157,70,355,70,355,75,157,75"/>
+<area shape="poly" id="edge7_Node000006_Node000006" title=" " alt="" coords="56,42,67,35,88,33,108,35,120,41,123,51,118,60,113,58,118,50,116,45,106,40,88,38,68,40,58,46"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="23,114,153,140"/>
+<area shape="poly" id="edge8_Node000005_Node000007" title=" " alt="" coords="168,112,355,83,355,89,169,117"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Channel.html" title=" " alt="" coords="392,170,500,196"/>
+<area shape="poly" id="edge10_Node000008_Node000007" title=" " alt="" coords="169,135,332,159,392,170,391,175,331,164,168,140"/>
+<area shape="poly" id="edge9_Node000004_Node000008" title=" " alt="" coords="499,162,631,118,665,107,666,112,633,123,501,167"/>
+<area shape="poly" id="edge11_Node000008_Node000008" title=" " alt="" coords="420,153,429,146,446,143,462,146,472,152,474,161,470,171,465,168,469,161,467,155,460,151,446,149,431,151,423,157"/>
+<area shape="rect" id="Node000009" href="$structTActionTriggerProperties.html" title=" " alt="" coords="5,167,171,193"/>
+<area shape="poly" id="edge12_Node000008_Node000009" title=" " alt="" coords="186,178,392,180,392,185,186,184"/>
+<area shape="rect" id="Node000010" href="$structTHVACValue.html" title=" " alt="" coords="38,237,138,262"/>
+<area shape="poly" id="edge17_Node000001_Node000010" title=" " alt="" coords="154,253,288,262,445,267,1033,267,1145,272,1244,283,1243,289,1145,278,1033,272,444,272,287,267,153,258"/>
+<area shape="poly" id="edge13_Node000008_Node000010" title=" " alt="" coords="152,235,391,190,392,195,153,240"/>
+<area shape="rect" id="Node000011" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="640,133,783,158"/>
+<area shape="poly" id="edge14_Node000003_Node000011" title=" " alt="" coords="799,152,947,168,947,174,798,158"/>
+<area shape="rect" id="Node000012" href="$structHvacParameterFlags.html" title=" " alt="" coords="640,193,784,218"/>
+<area shape="poly" id="edge15_Node000003_Node000012" title=" " alt="" coords="799,196,947,184,947,189,800,201"/>
+<area shape="rect" id="Node000015" href="$structTChannelConfig__HVAC.html" title=" " alt="" coords="953,406,1110,432"/>
+<area shape="poly" id="edge20_Node000015_Node000012" title=" " alt="" coords="756,224,793,247,835,287,862,324,891,359,910,376,936,392,959,403,957,408,933,397,907,380,887,363,858,328,831,291,790,252,753,228"/>
+<area shape="rect" id="Node000013" href="$structTSD__SuplaChannelNewValue.html" title=" " alt="" coords="934,307,1129,333"/>
+<area shape="poly" id="edge16_Node000001_Node000013" title=" " alt="" coords="1144,308,1219,301,1243,298,1243,304,1220,306,1144,313"/>
+<area shape="rect" id="Node000014" href="$structTSD__ChannelConfig.html" title=" " alt="" coords="963,357,1100,382"/>
+<area shape="poly" id="edge18_Node000001_Node000014" title=" " alt="" coords="1115,353,1219,327,1273,306,1275,311,1220,332,1116,358"/>
+<area shape="poly" id="edge19_Node000001_Node000015" title=" " alt="" coords="1124,400,1172,386,1218,365,1258,336,1289,306,1292,310,1262,340,1221,369,1174,391,1126,405"/>
+<area shape="rect" id="Node000016" href="$structTHVACTemperatureCfg.html" title=" " alt="" coords="632,406,791,432"/>
+<area shape="poly" id="edge21_Node000015_Node000016" title=" " alt="" coords="807,416,953,416,953,422,807,422"/>
+</map>

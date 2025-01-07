@@ -1,0 +1,20 @@
+<map id="Supla::Sensor::BinaryBase" name="Supla::Sensor::BinaryBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="220,277,394,303"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="177,98,357,139"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="278,154,307,276,302,277,273,155"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="5,8,113,33"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="100,38,225,95,223,100,98,43"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="130,12,139,20,131,29,113,32,113,26,129,24,134,20,127,16"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="202,8,332,33"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="270,49,270,98,264,98,264,49"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Channel.html" title=" " alt="" coords="383,106,490,132"/>
+<area shape="poly" id="edge7_Node000006_Node000004" title=" " alt="" coords="303,39,416,103,414,108,300,43"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1BinarySensorChannel.html" title=" " alt="" coords="334,188,518,214"/>
+<area shape="poly" id="edge5_Node000001_Node000005" title=" " alt="" coords="398,226,325,279,322,274,395,221"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="435,147,430,188,425,188,430,147"/>
+<area shape="poly" id="edge8_Node000006_Node000006" title=" " alt="" coords="507,110,517,119,508,127,491,130,490,124,506,122,511,119,504,114"/>
+<area shape="rect" id="Node000007" href="$structTActionTriggerProperties.html" title=" " alt="" coords="356,8,522,33"/>
+<area shape="poly" id="edge9_Node000006_Node000007" title=" " alt="" coords="441,49,439,106,434,106,436,49"/>
+<area shape="rect" id="Node000008" href="$structTHVACValue.html" title=" " alt="" coords="556,8,655,33"/>
+<area shape="poly" id="edge10_Node000006_Node000008" title=" " alt="" coords="598,49,590,63,578,76,536,100,491,113,490,108,534,95,575,72,586,60,594,46"/>
+</map>

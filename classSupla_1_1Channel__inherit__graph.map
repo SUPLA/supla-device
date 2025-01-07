@@ -1,0 +1,11 @@
+<map id="Supla::Channel" name="Supla::Channel">
+<area shape="rect" id="Node000001" title=" " alt="" coords="188,79,295,105"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1AtChannel.html" title=" " alt="" coords="5,153,126,178"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="199,113,97,155,95,150,197,108"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1BinarySensorChannel.html" title=" " alt="" coords="149,153,334,178"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="244,120,244,152,239,152,239,120"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1ChannelExtended.html" title=" " alt="" coords="357,153,518,178"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="290,108,405,150,403,155,288,113"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="177,5,306,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="244,46,244,79,239,79,239,46"/>
+</map>

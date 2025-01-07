@@ -1,0 +1,7 @@
+<map id="Supla::EspWebServer" name="Supla::EspWebServer">
+<area shape="rect" id="Node000001" title=" " alt="" coords="64,79,210,105"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1WebServer.html" title=" " alt="" coords="5,5,130,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,40,127,77,123,80,87,44"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="154,5,261,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="187,44,151,80,147,77,183,40"/>
+</map>

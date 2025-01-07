@@ -1,0 +1,7 @@
+<map id="Supla::DS3231RTC" name="Supla::DS3231RTC">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,153,138,178"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Clock.html" title=" " alt="" coords="25,79,118,105"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,120,74,152,69,152,69,120"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="18,5,125,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,46,74,79,69,79,69,46"/>
+</map>

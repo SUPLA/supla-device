@@ -1,0 +1,5 @@
+<map id="TThermostat_ScheduleCfg" name="TThermostat_ScheduleCfg">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,94,182,120"/>
+<area shape="rect" id="Node000002" href="$structTThermostatValueGroup.html" title=" " alt="" coords="12,5,175,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,47,96,94,91,94,91,47"/>
+</map>

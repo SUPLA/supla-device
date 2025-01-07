@@ -1,0 +1,9 @@
+<map id="Supla::Html::HomeScreenContentParameters" name="Supla::Html::HomeScreenContentParameters">
+<area shape="rect" id="Node000001" title=" " alt="" coords="43,168,258,208"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Html_1_1SelectInputParameter.html" title=" " alt="" coords="70,79,230,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="153,135,153,167,148,167,148,135"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="5,5,141,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="97,40,133,77,129,80,93,44"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="164,5,294,31"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="208,44,172,81,168,77,205,40"/>
+</map>

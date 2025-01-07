@@ -1,0 +1,11 @@
+<map id="Supla::Control::InternalPinOutput" name="Supla::Control::InternalPinOutput">
+<area shape="rect" id="Node000001" title=" " alt="" coords="251,72,401,113"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title=" " alt="" coords="50,5,158,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="174,31,204,40,280,69,278,74,202,45,172,36"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="33,55,175,80"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="190,75,251,82,250,87,190,80"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="39,104,169,130"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="184,106,250,98,250,104,185,111"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1OutputInterface.html" title=" " alt="" coords="5,153,203,179"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="179,146,202,140,277,111,279,116,204,145,181,151"/>
+</map>

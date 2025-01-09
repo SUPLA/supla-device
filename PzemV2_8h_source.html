@@ -133,12 +133,14 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  <span class="keyword">explicit</span> PZEMv2(HardwareSerial *serial) : pzem(serial), ip(192, 168, 1, 1) {</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  }</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <span class="keywordtype">void</span> onInit() {</div>
+<div class="foldopen" id="foldopen00042" data-start="{" data-end="}">
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1PZEMv2.html#a98be230baedf580c98125105677b4478">   42</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1PZEMv2.html#a98be230baedf580c98125105677b4478">onInit</a>() {</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    lastReadTime = millis();</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    pzem.setAddress(ip);</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    readValuesFromDevice();</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    updateChannelValues();</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  }</div>
+</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> readValuesFromDevice() {</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    <span class="keywordtype">float</span> current = pzem.current(ip);</div>
@@ -177,14 +179,14 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  }</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>  PZEM004T pzem;</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>  <a class="code hl_class" href="classIPAddress.html">IPAddress</a> ip;</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>  IPAddress ip;</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>};</div>
 </div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>};  <span class="comment">// namespace Sensor</span></div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_PZEMV2_H_</span></div>
-<div class="ttc" id="aclassIPAddress_html"><div class="ttname"><a href="classIPAddress.html">IPAddress</a></div><div class="ttdef"><b>Definition</b> ip_address.h:30</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1PZEMv2_html_a98be230baedf580c98125105677b4478"><div class="ttname"><a href="classSupla_1_1Sensor_1_1PZEMv2.html#a98be230baedf580c98125105677b4478">Supla::Sensor::PZEMv2::onInit</a></div><div class="ttdeci">void onInit()</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> PzemV2.h:42</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

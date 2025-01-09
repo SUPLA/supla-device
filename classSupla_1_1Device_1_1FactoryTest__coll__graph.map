@@ -4,7 +4,7 @@
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="756,60,1258,54,1258,60,756,66"/>
 <area shape="rect" id="Node000004" href="$classSuplaDeviceClass.html" title=" " alt="" coords="979,262,1106,288"/>
 <area shape="poly" id="edge5_Node000004_Node000002" title=" " alt="" coords="756,67,855,80,897,91,925,106,939,125,941,144,942,163,950,184,986,227,1024,259,1021,263,983,231,945,187,937,164,936,144,934,127,922,110,895,96,854,85,755,72"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="5,110,113,136"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,110,113,136"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="84,97,120,68,169,37,225,13,255,5,285,3,1044,3,1113,6,1182,16,1296,40,1295,45,1181,21,1113,12,1044,8,285,8,255,11,226,18,171,42,124,72,87,101"/>
 <area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="40,93,46,86,59,83,71,86,78,92,80,101,77,110,72,109,74,101,73,95,68,90,59,88,49,91,44,96"/>
 <area shape="poly" id="edge20_Node000004_Node000003" title=" " alt="" coords="128,119,402,122,577,130,753,145,841,153,879,161,925,179,957,197,987,219,1031,259,1027,263,984,223,954,202,923,184,877,166,840,158,752,151,576,135,402,127,128,124"/>

@@ -238,7 +238,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    }</div>
 <div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>  }</div>
 <div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span> </div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>  <span class="keywordtype">void</span> iterateAlways() {</div>
+<div class="foldopen" id="foldopen00145" data-start="{" data-end="}">
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1DS18B20.html#a973ccb2ffac3579df9f191df268cd9b5">  145</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1DS18B20.html#a973ccb2ffac3579df9f191df268cd9b5">iterateAlways</a>() {</div>
 <div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    <span class="keywordflow">if</span> (millis() - myBus-&gt;lastReadTime &gt; 10000) {</div>
 <div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>      myBus-&gt;sensors.requestTemperatures();</div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>      myBus-&gt;lastReadTime = millis();</div>
@@ -249,6 +250,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>      lastReadTime = myBus-&gt;lastReadTime;</div>
 <div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    }</div>
 <div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>  }</div>
+</div>
 <div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
 <div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>  <span class="keywordtype">double</span> getValue() {</div>
 <div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    <span class="keywordtype">double</span> value = TEMPERATURE_NOT_AVAILABLE;</div>
@@ -282,8 +284,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  }</div>
 <div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span> </div>
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  <span class="keyword">static</span> <a class="code hl_class" href="classSupla_1_1Sensor_1_1OneWireBus.html">OneWireBus</a> *oneWireBus;</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  <a class="code hl_class" href="classSupla_1_1Sensor_1_1OneWireBus.html">OneWireBus</a> *myBus;</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  <span class="keyword">static</span> OneWireBus *oneWireBus;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  OneWireBus *myBus;</div>
 <div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  DeviceAddress address;</div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  int8_t retryCounter;</div>
 <div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>  <span class="keywordtype">double</span> lastValidValue;</div>
@@ -296,6 +298,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
 <div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_DS18B20_H_</span></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1DS18B20_html_a973ccb2ffac3579df9f191df268cd9b5"><div class="ttname"><a href="classSupla_1_1Sensor_1_1DS18B20.html#a973ccb2ffac3579df9f191df268cd9b5">Supla::Sensor::DS18B20::iterateAlways</a></div><div class="ttdeci">void iterateAlways()</div><div class="ttdoc">Method called on each SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> DS18B20.h:145</div></div>
 <div class="ttc" id="aclassSupla_1_1Sensor_1_1OneWireBus_html"><div class="ttname"><a href="classSupla_1_1Sensor_1_1OneWireBus.html">Supla::Sensor::OneWireBus</a></div><div class="ttdef"><b>Definition</b> DS18B20.h:33</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

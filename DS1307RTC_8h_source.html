@@ -128,7 +128,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> <span class="keyword">public</span>:</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  DS1307RTC() {}</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> onInit() {</div>
+<div class="foldopen" id="foldopen00037" data-start="{" data-end="}">
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="classSupla_1_1DS1307RTC.html#a99118dbee43cdec2ab3467183c6a6b8f">   37</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1DS1307RTC.html#a99118dbee43cdec2ab3467183c6a6b8f">onInit</a>() {</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordflow">if</span> (!rtc.begin()) {</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>      SUPLA_LOG_DEBUG(<span class="stringliteral">&quot;Unable to find RTC&quot;</span>);</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    } <span class="keywordflow">else</span> {</div>
@@ -161,6 +162,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>      }</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    }</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>  }</div>
+</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>  <span class="keywordtype">bool</span> rtcIsReady() {</div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordflow">return</span> isRTCReady;</div>
@@ -174,7 +176,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    RTCLostPower = <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  }</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  <span class="keywordtype">void</span> parseLocaltimeFromServer(<a class="code hl_struct" href="structTSDC__UserLocalTimeResult.html">TSDC_UserLocalTimeResult</a> *result) {</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  <span class="keywordtype">void</span> parseLocaltimeFromServer(TSDC_UserLocalTimeResult *result) {</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keyword">struct </span>tm timeinfo {};</div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    isClockReady = <span class="keyword">true</span>;</div>
@@ -222,7 +224,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
 <div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CLOCK_DS1307RTC_H_</span></div>
-<div class="ttc" id="astructTSDC__UserLocalTimeResult_html"><div class="ttname"><a href="structTSDC__UserLocalTimeResult.html">TSDC_UserLocalTimeResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2506</div></div>
+<div class="ttc" id="aclassSupla_1_1DS1307RTC_html_a99118dbee43cdec2ab3467183c6a6b8f"><div class="ttname"><a href="classSupla_1_1DS1307RTC.html#a99118dbee43cdec2ab3467183c6a6b8f">Supla::DS1307RTC::onInit</a></div><div class="ttdeci">void onInit()</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> DS1307RTC.h:37</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -2,7 +2,7 @@
 <area shape="rect" id="Node000001" title=" " alt="" coords="8,85,177,110"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="5,8,148,33"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="85,48,93,84,87,85,80,49"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="172,8,280,33"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="172,8,280,33"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="192,43,115,87,113,82,190,39"/>
 <area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="297,13,306,20,298,28,280,30,280,25,296,23,301,20,294,17"/>
 </map>

@@ -28,7 +28,7 @@
 <area shape="rect" id="Node000011" href="$classSupla_1_1Device_1_1ChannelConflictResolver.html" title=" " alt="" coords="282,609,478,650"/>
 <area shape="poly" id="edge14_Node000007_Node000011" title=" " alt="" coords="494,627,689,629,689,634,494,633"/>
 <area shape="poly" id="edge15_Node000003_Node000012" title=" " alt="" coords="1280,425,1187,423,1187,417,1280,419"/>
-<area shape="rect" id="Node000013" href="$classSupla_1_1Element.html" title=" " alt="" coords="47,204,154,230"/>
+<area shape="rect" id="Node000013" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="47,204,154,230"/>
 <area shape="poly" id="edge17_Node000003_Node000013" title=" " alt="" coords="137,194,203,160,295,118,407,76,532,40,597,26,664,17,730,14,796,16,860,26,922,43,981,70,1036,106,1054,128,1070,162,1095,250,1113,341,1122,405,1117,406,1107,342,1090,251,1065,164,1050,131,1033,110,979,74,920,48,859,31,795,21,730,19,664,23,598,31,533,45,409,81,297,123,205,165,140,199"/>
 <area shape="poly" id="edge18_Node000013_Node000013" title=" " alt="" coords="74,187,83,180,100,178,116,180,126,186,129,196,125,205,120,203,124,195,122,190,115,185,101,183,85,185,78,191"/>
 <area shape="rect" id="Node000018" href="$classSupla_1_1Control_1_1BlinkingLed.html" title=" " alt="" coords="292,426,468,451"/>

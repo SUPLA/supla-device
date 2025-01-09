@@ -132,12 +132,14 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordflow">return</span> PRESSURE_NOT_AVAILABLE;</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  }</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordtype">void</span> iterateAlways() {</div>
+<div class="foldopen" id="foldopen00041" data-start="{" data-end="}">
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1Pressure.html#ac4f83c4adb3d1cf88494c8985d960fbf">   41</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Pressure.html#ac4f83c4adb3d1cf88494c8985d960fbf">iterateAlways</a>() {</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">if</span> (millis() - lastReadTime &gt; 10000) {</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>      lastReadTime = millis();</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>      channel.setNewValue(getValue());</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    }</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  }</div>
+</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> <span class="keyword">protected</span>:</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  uint32_t lastReadTime;</div>
@@ -148,6 +150,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_PRESSURE_H_</span></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1Pressure_html_ac4f83c4adb3d1cf88494c8985d960fbf"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Pressure.html#ac4f83c4adb3d1cf88494c8985d960fbf">Supla::Sensor::Pressure::iterateAlways</a></div><div class="ttdeci">void iterateAlways()</div><div class="ttdoc">Method called on each SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> pressure.h:41</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

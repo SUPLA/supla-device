@@ -1,20 +1,7 @@
 var searchData=
 [
-  ['bh1750_0',['Bh1750',['../classSupla_1_1Sensor_1_1Bh1750.html',1,'Supla::Sensor']]],
-  ['binary_1',['Binary',['../classSupla_1_1Sensor_1_1Binary.html',1,'Supla::Sensor']]],
-  ['binarybase_2',['BinaryBase',['../classBinaryBase.html',1,'BinaryBase'],['../classSupla_1_1Sensor_1_1BinaryBase.html',1,'Supla::Sensor::BinaryBase']]],
-  ['binarysensorchannel_3',['BinarySensorChannel',['../classBinarySensorChannel.html',1,'BinarySensorChannel'],['../classSupla_1_1BinarySensorChannel.html',1,'Supla::BinarySensorChannel']]],
-  ['bistablerelay_4',['BistableRelay',['../classSupla_1_1Control_1_1BistableRelay.html',1,'Supla::Control']]],
-  ['bistablerollershutter_5',['BistableRollerShutter',['../classSupla_1_1Control_1_1BistableRollerShutter.html',1,'Supla::Control']]],
-  ['blinkingled_6',['BlinkingLed',['../classBlinkingLed.html',1,'BlinkingLed'],['../classSupla_1_1Control_1_1BlinkingLed.html',1,'Supla::Control::BlinkingLed']]],
-  ['bme280_7',['BME280',['../classSupla_1_1Sensor_1_1BME280.html',1,'Supla::Sensor']]],
-  ['brightnessadjuster_8',['BrightnessAdjuster',['../classSupla_1_1Control_1_1BrightnessAdjuster.html',1,'Supla::Control']]],
-  ['button_9',['Button',['../classButton.html',1,'Button'],['../classSupla_1_1Control_1_1Button.html',1,'Supla::Control::Button']]],
-  ['buttonactiontriggerconfig_10',['ButtonActionTriggerConfig',['../classSupla_1_1Html_1_1ButtonActionTriggerConfig.html',1,'Supla::Html']]],
-  ['buttonconfigparameters_11',['ButtonConfigParameters',['../classButtonConfigParameters.html',1,'ButtonConfigParameters'],['../classSupla_1_1Html_1_1ButtonConfigParameters.html',1,'Supla::Html::ButtonConfigParameters']]],
-  ['buttonholdtimeparameters_12',['ButtonHoldTimeParameters',['../classButtonHoldTimeParameters.html',1,'ButtonHoldTimeParameters'],['../classSupla_1_1Html_1_1ButtonHoldTimeParameters.html',1,'Supla::Html::ButtonHoldTimeParameters']]],
-  ['buttonlistelement_13',['ButtonListElement',['../structRelay_1_1ButtonListElement.html',1,'Relay::ButtonListElement'],['../structSupla_1_1Control_1_1Relay_1_1ButtonListElement.html',1,'Supla::Control::Relay::ButtonListElement']]],
-  ['buttonmulticlickparameters_14',['ButtonMulticlickParameters',['../classSupla_1_1Html_1_1ButtonMulticlickParameters.html',1,'Supla::Html']]],
-  ['buttonstate_15',['ButtonState',['../classButtonState.html',1,'ButtonState'],['../classSupla_1_1Control_1_1ButtonState.html',1,'Supla::Control::ButtonState']]],
-  ['buttontypeparameters_16',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]]
+  ['_5fcolor_5fhsv_5ft_0',['_color_hsv_t',['../struct__color__hsv__t.html',1,'']]],
+  ['_5fdbl_1',['_DBL',['../struct__DBL.html',1,'']]],
+  ['_5fdblconv_2',['_DBLCONV',['../union__DBLCONV.html',1,'']]],
+  ['_5ffloatconv_3',['_FLOATCONV',['../union__FLOATCONV.html',1,'']]]
 ];

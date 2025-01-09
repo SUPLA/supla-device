@@ -1,7 +1,4 @@
 var searchData=
 [
-  ['_5fcolor_5fhsv_5ft_0',['_color_hsv_t',['../struct__color__hsv__t.html',1,'']]],
-  ['_5fdbl_1',['_DBL',['../struct__DBL.html',1,'']]],
-  ['_5fdblconv_2',['_DBLCONV',['../union__DBLCONV.html',1,'']]],
-  ['_5ffloatconv_3',['_FLOATCONV',['../union__FLOATCONV.html',1,'']]]
+  ['1_206_20and_20older_0',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md12',1,'']]]
 ];

@@ -1,14 +1,21 @@
 var searchData=
 [
-  ['deviceinfo_0',['DeviceInfo',['../classSupla_1_1Html_1_1DeviceInfo.html',1,'Supla::Html']]],
-  ['dht_1',['DHT',['../classSupla_1_1Sensor_1_1DHT.html',1,'Supla::Sensor']]],
-  ['dimmerbase_2',['DimmerBase',['../classSupla_1_1Control_1_1DimmerBase.html',1,'Supla::Control']]],
-  ['dimmerleds_3',['DimmerLeds',['../classSupla_1_1Control_1_1DimmerLeds.html',1,'Supla::Control']]],
-  ['disableuserinterfaceparameter_4',['DisableUserInterfaceParameter',['../classDisableUserInterfaceParameter.html',1,'DisableUserInterfaceParameter'],['../classSupla_1_1Html_1_1DisableUserInterfaceParameter.html',1,'Supla::Html::DisableUserInterfaceParameter']]],
-  ['distance_5',['Distance',['../classSupla_1_1Sensor_1_1Distance.html',1,'Supla::Sensor']]],
-  ['divbegin_6',['DivBegin',['../classSupla_1_1Html_1_1DivBegin.html',1,'Supla::Html']]],
-  ['divend_7',['DivEnd',['../classSupla_1_1Html_1_1DivEnd.html',1,'Supla::Html']]],
-  ['ds1307rtc_8',['DS1307RTC',['../classSupla_1_1DS1307RTC.html',1,'Supla']]],
-  ['ds18b20_9',['DS18B20',['../classSupla_1_1Sensor_1_1DS18B20.html',1,'Supla::Sensor']]],
-  ['ds3231rtc_10',['DS3231RTC',['../classSupla_1_1DS3231RTC.html',1,'Supla']]]
+  ['begin_0',['begin',['../classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028',1,'Supla::Element']]],
+  ['bh1750_1',['Bh1750',['../classSupla_1_1Sensor_1_1Bh1750.html',1,'Supla::Sensor']]],
+  ['binary_2',['Binary',['../classSupla_1_1Sensor_1_1Binary.html',1,'Supla::Sensor']]],
+  ['binarybase_3',['BinaryBase',['../classBinaryBase.html',1,'BinaryBase'],['../classSupla_1_1Sensor_1_1BinaryBase.html',1,'Supla::Sensor::BinaryBase']]],
+  ['binarysensorchannel_4',['BinarySensorChannel',['../classBinarySensorChannel.html',1,'BinarySensorChannel'],['../classSupla_1_1BinarySensorChannel.html',1,'Supla::BinarySensorChannel']]],
+  ['bistablerelay_5',['BistableRelay',['../classSupla_1_1Control_1_1BistableRelay.html',1,'Supla::Control']]],
+  ['bistablerollershutter_6',['BistableRollerShutter',['../classSupla_1_1Control_1_1BistableRollerShutter.html',1,'Supla::Control']]],
+  ['blinkingled_7',['BlinkingLed',['../classBlinkingLed.html',1,'BlinkingLed'],['../classSupla_1_1Control_1_1BlinkingLed.html',1,'Supla::Control::BlinkingLed']]],
+  ['bme280_8',['BME280',['../classSupla_1_1Sensor_1_1BME280.html',1,'Supla::Sensor']]],
+  ['brightnessadjuster_9',['BrightnessAdjuster',['../classSupla_1_1Control_1_1BrightnessAdjuster.html',1,'Supla::Control']]],
+  ['button_10',['Button',['../classButton.html',1,'Button'],['../classSupla_1_1Control_1_1Button.html',1,'Supla::Control::Button']]],
+  ['buttonactiontriggerconfig_11',['ButtonActionTriggerConfig',['../classSupla_1_1Html_1_1ButtonActionTriggerConfig.html',1,'Supla::Html']]],
+  ['buttonconfigparameters_12',['ButtonConfigParameters',['../classButtonConfigParameters.html',1,'ButtonConfigParameters'],['../classSupla_1_1Html_1_1ButtonConfigParameters.html',1,'Supla::Html::ButtonConfigParameters']]],
+  ['buttonholdtimeparameters_13',['ButtonHoldTimeParameters',['../classButtonHoldTimeParameters.html',1,'ButtonHoldTimeParameters'],['../classSupla_1_1Html_1_1ButtonHoldTimeParameters.html',1,'Supla::Html::ButtonHoldTimeParameters']]],
+  ['buttonlistelement_14',['ButtonListElement',['../structRelay_1_1ButtonListElement.html',1,'Relay::ButtonListElement'],['../structSupla_1_1Control_1_1Relay_1_1ButtonListElement.html',1,'Supla::Control::Relay::ButtonListElement']]],
+  ['buttonmulticlickparameters_15',['ButtonMulticlickParameters',['../classSupla_1_1Html_1_1ButtonMulticlickParameters.html',1,'Supla::Html']]],
+  ['buttonstate_16',['ButtonState',['../classButtonState.html',1,'ButtonState'],['../classSupla_1_1Control_1_1ButtonState.html',1,'Supla::Control::ButtonState']]],
+  ['buttontypeparameters_17',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]]
 ];

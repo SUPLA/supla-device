@@ -1,6 +1,6 @@
 <map id="EnterCfgModeAfterPowerCycle" name="EnterCfgModeAfterPowerCycle">
 <area shape="rect" id="Node000001" title=" " alt="" coords="5,85,206,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title=" " alt="" coords="52,8,159,33"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="52,8,159,33"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="108,49,108,84,103,84,103,49"/>
 <area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="176,13,186,20,177,28,160,30,159,25,175,23,181,20,173,17"/>
 </map>

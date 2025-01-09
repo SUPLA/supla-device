@@ -1,18 +1,13 @@
 var searchData=
 [
-  ['h2tag_0',['H2Tag',['../classH2Tag.html',1,'H2Tag'],['../classSupla_1_1Html_1_1H2Tag.html',1,'Supla::Html::H2Tag']]],
-  ['h3tag_1',['H3Tag',['../classH3Tag.html',1,'H3Tag'],['../classSupla_1_1Html_1_1H3Tag.html',1,'Supla::Html::H3Tag']]],
-  ['hc_5fsr04_2',['HC_SR04',['../classSupla_1_1Sensor_1_1HC__SR04.html',1,'Supla::Sensor']]],
-  ['hideshowcontainerbegin_3',['HideShowContainerBegin',['../classSupla_1_1Html_1_1HideShowContainerBegin.html',1,'Supla::Html']]],
-  ['hideshowcontainerend_4',['HideShowContainerEnd',['../classSupla_1_1Html_1_1HideShowContainerEnd.html',1,'Supla::Html']]],
-  ['homescreencontentparameters_5',['HomeScreenContentParameters',['../classHomeScreenContentParameters.html',1,'HomeScreenContentParameters'],['../classSupla_1_1Html_1_1HomeScreenContentParameters.html',1,'Supla::Html::HomeScreenContentParameters']]],
-  ['htmlelement_6',['HtmlElement',['../classSupla_1_1HtmlElement.html',1,'Supla']]],
-  ['htmlgenerator_7',['HtmlGenerator',['../classSupla_1_1HtmlGenerator.html',1,'Supla']]],
-  ['hvacbase_8',['HvacBase',['../classHvacBase.html',1,'HvacBase'],['../classSupla_1_1Control_1_1HvacBase.html',1,'Supla::Control::HvacBase']]],
-  ['hvacparameterflags_9',['HvacParameterFlags',['../structHvacParameterFlags.html',1,'']]],
-  ['hvacparameters_10',['HvacParameters',['../classHvacParameters.html',1,'HvacParameters'],['../classSupla_1_1Html_1_1HvacParameters.html',1,'Supla::Html::HvacParameters']]],
-  ['hvacptr_11',['HvacPtr',['../structRelayHvacAggregator_1_1HvacPtr.html',1,'RelayHvacAggregator::HvacPtr'],['../structSupla_1_1Control_1_1RelayHvacAggregator_1_1HvacPtr.html',1,'Supla::Control::RelayHvacAggregator::HvacPtr']]],
-  ['hx711_12',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
-  ['hx711configdata_13',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
-  ['hygrometer_14',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
+  ['factorytest_0',['FactoryTest',['../classSupla_1_1Device_1_1FactoryTest.html',1,'Supla::Device']]],
+  ['fillsuplachannelnewvalue_1',['fillSuplaChannelNewValue',['../classSupla_1_1Control_1_1Relay.html#af091b1951026cd090e2445d6913c6eec',1,'Supla::Control::Relay::fillSuplaChannelNewValue()'],['../classSupla_1_1Control_1_1RGBWBase.html#a0967f171b60a5068199619825495a699',1,'Supla::Control::RGBWBase::fillSuplaChannelNewValue()'],['../classSupla_1_1Control_1_1RollerShutterInterface.html#aa78d3199c66cc62edd7580b411514d80',1,'Supla::Control::RollerShutterInterface::fillSuplaChannelNewValue()'],['../classSupla_1_1Element.html#aed458ad3458006b93a5a7ed4d79f77bc',1,'Supla::Element::fillSuplaChannelNewValue()'],['../classRelay.html#af091b1951026cd090e2445d6913c6eec',1,'Relay::fillSuplaChannelNewValue()'],['../classRollerShutterInterface.html#aa78d3199c66cc62edd7580b411514d80',1,'RollerShutterInterface::fillSuplaChannelNewValue()']]],
+  ['flash_20memory_2',['EEPROM/Flash memory',['../index.html#autotoc_md18',1,'']]],
+  ['folder_20structure_3',['Folder structure',['../index.html#autotoc_md10',1,'']]],
+  ['for_20arduino_20ide_4',['SuplaDevice library installation for Arduino IDE',['../index.html#autotoc_md6',1,'']]],
+  ['for_20esp_20idf_20and_20esp8266_20rtos_20sdk_20draft_5',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md21',1,'']]],
+  ['fram_20spi_6',['Adafruit FRAM SPI',['../index.html#autotoc_md19',1,'']]],
+  ['framspi_7',['FramSpi',['../classSupla_1_1FramSpi.html',1,'Supla']]],
+  ['freertos_20installation_3a_8',['FreeRTOS installation:',['../index.html#autotoc_md27',1,'']]],
+  ['fronius_9',['Fronius',['../classSupla_1_1PV_1_1Fronius.html',1,'Supla::PV']]]
 ];

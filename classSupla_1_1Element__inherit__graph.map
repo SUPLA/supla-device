@@ -1,5 +1,5 @@
 <map id="Supla::Element" name="Supla::Element">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,395,113,420"/>
+<area shape="rect" id="Node000001" title="Base class for all elements of SuplaDevice." alt="" coords="5,395,113,420"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Clock.html" title=" " alt="" coords="208,29,302,55"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="57,379,61,314,74,230,87,185,105,141,129,100,159,64,182,50,207,42,209,47,184,54,162,68,133,103,110,143,92,187,80,231,66,315,63,379"/>
 <area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1ActionTrigger.html" title=" " alt="" coords="163,79,347,104"/>

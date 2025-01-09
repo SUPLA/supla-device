@@ -1,8 +1,18 @@
 var searchData=
 [
-  ['ieeefloat_0',['IEEEfloat',['../structIEEEfloat.html',1,'']]],
-  ['impulsecounter_1',['ImpulseCounter',['../classImpulseCounter.html',1,'ImpulseCounter'],['../classSupla_1_1Sensor_1_1ImpulseCounter.html',1,'Supla::Sensor::ImpulseCounter']]],
-  ['internalpinoutput_2',['InternalPinOutput',['../classSupla_1_1Control_1_1InternalPinOutput.html',1,'Supla::Control']]],
-  ['io_3',['Io',['../classSupla_1_1Io.html',1,'Supla']]],
-  ['ipaddress_4',['IPAddress',['../classIPAddress.html',1,'']]]
+  ['generalpurposechannelbase_0',['GeneralPurposeChannelBase',['../classGeneralPurposeChannelBase.html',1,'GeneralPurposeChannelBase'],['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html',1,'Supla::Sensor::GeneralPurposeChannelBase']]],
+  ['generalpurposemeasurement_1',['GeneralPurposeMeasurement',['../classGeneralPurposeMeasurement.html',1,'GeneralPurposeMeasurement'],['../classSupla_1_1Sensor_1_1GeneralPurposeMeasurement.html',1,'Supla::Sensor::GeneralPurposeMeasurement']]],
+  ['generalpurposemeter_2',['GeneralPurposeMeter',['../classGeneralPurposeMeter.html',1,'GeneralPurposeMeter'],['../classSupla_1_1Sensor_1_1GeneralPurposeMeter.html',1,'Supla::Sensor::GeneralPurposeMeter']]],
+  ['generatekey_3',['generateKey',['../classSupla_1_1Element.html#a78bb82ab0086b3c77ddbf88bd9d4f7a8',1,'Supla::Element']]],
+  ['geometricbrightnessadjuster_4',['GeometricBrightnessAdjuster',['../classSupla_1_1Control_1_1GeometricBrightnessAdjuster.html',1,'Supla::Control']]],
+  ['getchannel_5',['getChannel',['../classSupla_1_1ChannelElement.html#acadbec4d1e404dd5790b4352c068fc91',1,'Supla::ChannelElement::getChannel()'],['../classSupla_1_1Control_1_1ActionTrigger.html#a918a973a950dc138b8d11adb71e8b908',1,'Supla::Control::ActionTrigger::getChannel()'],['../classSupla_1_1Element.html#acac389f75d48d40eba06bd7aaa2c9baf',1,'Supla::Element::getChannel()'],['../classSupla_1_1Sensor_1_1BinaryBase.html#adcebee5e4d01c3b2ab580902cd6fee83',1,'Supla::Sensor::BinaryBase::getChannel()'],['../classSupla_1_1Sensor_1_1ElectricityMeter.html#a34a674aef5e6e05e31fb9e12a5d5f5f7',1,'Supla::Sensor::ElectricityMeter::getChannel()'],['../classElectricityMeter.html#a34a674aef5e6e05e31fb9e12a5d5f5f7',1,'ElectricityMeter::getChannel()'],['../classBinaryBase.html#adcebee5e4d01c3b2ab580902cd6fee83',1,'BinaryBase::getChannel()']]],
+  ['getchannelnumber_6',['getChannelNumber',['../classSupla_1_1Element.html#a65a46e33354f59343c78ac33af27eef9',1,'Supla::Element']]],
+  ['getelementbychannelnumber_7',['getElementByChannelNumber',['../classSupla_1_1Element.html#a9822374a2d6f7a48fc0b8ef502a8d2fc',1,'Supla::Element']]],
+  ['getownerofsubdeviceid_8',['getOwnerOfSubDeviceId',['../classSupla_1_1Element.html#a149ba37de8118b80cf15373a8675a564',1,'Supla::Element']]],
+  ['getsecondarychannel_9',['getSecondaryChannel',['../classSupla_1_1Element.html#a49ba94de19d71e7c45c1621a4d7c6691',1,'Supla::Element::getSecondaryChannel()'],['../classSupla_1_1Sensor_1_1ThermHygroPressMeter.html#a372769654edb9dad9b89254c8bfe0a45',1,'Supla::Sensor::ThermHygroPressMeter::getSecondaryChannel()']]],
+  ['getsecondarychannelnumber_10',['getSecondaryChannelNumber',['../classSupla_1_1Element.html#a66ced1e93881efe2cfc6bc776df91686',1,'Supla::Element']]],
+  ['gpmcommonconfig_11',['GPMCommonConfig',['../structGeneralPurposeChannelBase_1_1GPMCommonConfig.html',1,'GeneralPurposeChannelBase::GPMCommonConfig'],['../structSupla_1_1Sensor_1_1GeneralPurposeChannelBase_1_1GPMCommonConfig.html',1,'Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig']]],
+  ['gpmespfreeheap_12',['GpmEspFreeHeap',['../classSupla_1_1Sensor_1_1GpmEspFreeHeap.html',1,'Supla::Sensor']]],
+  ['gpmmeterspecificconfig_13',['GPMMeterSpecificConfig',['../structGeneralPurposeMeter_1_1GPMMeterSpecificConfig.html',1,'GeneralPurposeMeter::GPMMeterSpecificConfig'],['../structSupla_1_1Sensor_1_1GeneralPurposeMeter_1_1GPMMeterSpecificConfig.html',1,'Supla::Sensor::GeneralPurposeMeter::GPMMeterSpecificConfig']]],
+  ['groupbuttoncontrolrgbw_14',['GroupButtonControlRgbw',['../classGroupButtonControlRgbw.html',1,'GroupButtonControlRgbw'],['../classSupla_1_1Control_1_1GroupButtonControlRgbw.html',1,'Supla::Control::GroupButtonControlRgbw']]]
 ];

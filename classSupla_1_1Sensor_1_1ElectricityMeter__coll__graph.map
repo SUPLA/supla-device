@@ -2,7 +2,7 @@
 <area shape="rect" id="Node000001" title=" " alt="" coords="954,188,1118,228"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="368,52,548,92"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="564,89,737,124,931,171,976,185,975,190,930,176,735,129,563,94"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title=" " alt="" coords="34,59,142,85"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="34,59,142,85"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="158,70,367,70,367,75,158,75"/>
 <area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="56,42,67,35,88,33,108,35,120,41,123,51,118,60,113,58,118,50,116,45,106,40,88,38,68,40,58,46"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="23,114,153,140"/>

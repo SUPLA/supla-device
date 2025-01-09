@@ -1,6 +1,6 @@
 <map id="Supla::Control::ActionTrigger" name="Supla::Control::ActionTrigger">
 <area shape="rect" id="Node000001" title=" " alt="" coords="1147,157,1331,182"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title=" " alt="" coords="172,59,280,85"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="172,59,280,85"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="295,72,475,79,658,81,802,80,870,82,944,89,1026,101,1123,122,1171,136,1211,154,1209,159,1169,141,1122,127,1025,107,943,94,870,88,802,85,658,86,475,84,295,77"/>
 <area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="203,42,211,35,226,33,240,35,248,41,251,51,247,60,242,58,245,50,244,44,238,40,226,38,213,40,207,46"/>
 <area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="499,102,684,128"/>

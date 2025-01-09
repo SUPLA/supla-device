@@ -127,9 +127,9 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>               <span class="keywordtype">bool</span> invert = <span class="keyword">false</span>);</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  PinStatusLed(uint8_t srcPin, uint8_t outPin, <span class="keywordtype">bool</span> invert = <span class="keyword">false</span>);</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordtype">void</span> onInit() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> iterateAlways() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keywordtype">void</span> onTimer() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1PinStatusLed.html#a0e12c722246137dd60e4299e49c5953b">onInit</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1PinStatusLed.html#aecce66e547032774b85ecddf090bb9a7">iterateAlways</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1PinStatusLed.html#a4f08592546702017c2a5cf2e54da2946">onTimer</a>() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  <span class="keywordtype">void</span> setInvertedLogic(<span class="keywordtype">bool</span> invertedLogic);</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordtype">void</span> setWorkOnTimer(<span class="keywordtype">bool</span> workOnTimer);</div>
@@ -150,6 +150,9 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>}  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_PIN_STATUS_LED_H_</span></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1PinStatusLed_html_a0e12c722246137dd60e4299e49c5953b"><div class="ttname"><a href="classSupla_1_1Control_1_1PinStatusLed.html#a0e12c722246137dd60e4299e49c5953b">Supla::Control::PinStatusLed::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> pin_status_led.cpp:37</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1PinStatusLed_html_a4f08592546702017c2a5cf2e54da2946"><div class="ttname"><a href="classSupla_1_1Control_1_1PinStatusLed.html#a4f08592546702017c2a5cf2e54da2946">Supla::Control::PinStatusLed::onTimer</a></div><div class="ttdeci">void onTimer() override</div><div class="ttdoc">Method called on timer interupt.</div><div class="ttdef"><b>Definition</b> pin_status_led.cpp:48</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1PinStatusLed_html_aecce66e547032774b85ecddf090bb9a7"><div class="ttname"><a href="classSupla_1_1Control_1_1PinStatusLed.html#aecce66e547032774b85ecddf090bb9a7">Supla::Control::PinStatusLed::iterateAlways</a></div><div class="ttdeci">void iterateAlways() override</div><div class="ttdoc">Method called on each SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> pin_status_led.cpp:42</div></div>
 <div class="ttc" id="aclassSupla_1_1Io_html"><div class="ttname"><a href="classSupla_1_1Io.html">Supla::Io</a></div><div class="ttdef"><b>Definition</b> io.h:33</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

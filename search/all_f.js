@@ -1,14 +1,10 @@
 var searchData=
 [
-  ['pinstatusled_0',['PinStatusLed',['../classSupla_1_1Control_1_1PinStatusLed.html',1,'Supla::Control']]],
-  ['poweractivewgetter_1',['PowerActiveWGetter',['../classSupla_1_1PowerActiveWGetter.html',1,'Supla']]],
-  ['powerapparentvagetter_2',['PowerApparentVAGetter',['../classSupla_1_1PowerApparentVAGetter.html',1,'Supla']]],
-  ['powerreactivevargetter_3',['PowerReactiveVarGetter',['../classSupla_1_1PowerReactiveVarGetter.html',1,'Supla']]],
-  ['powerstatusledparameters_4',['PowerStatusLedParameters',['../classPowerStatusLedParameters.html',1,'PowerStatusLedParameters'],['../classSupla_1_1Html_1_1PowerStatusLedParameters.html',1,'Supla::Html::PowerStatusLedParameters']]],
-  ['preamble_5',['Preamble',['../structSupla_1_1Preamble.html',1,'Supla']]],
-  ['pressure_6',['Pressure',['../classSupla_1_1Sensor_1_1Pressure.html',1,'Supla::Sensor']]],
-  ['protocollayer_7',['ProtocolLayer',['../classSupla_1_1Protocol_1_1ProtocolLayer.html',1,'Supla::Protocol']]],
-  ['protocolparameters_8',['ProtocolParameters',['../classSupla_1_1Html_1_1ProtocolParameters.html',1,'Supla::Html']]],
-  ['pzemv2_9',['PZEMv2',['../classSupla_1_1Sensor_1_1PZEMv2.html',1,'Supla::Sensor']]],
-  ['pzemv3_10',['PZEMv3',['../classSupla_1_1Sensor_1_1PZEMv3.html',1,'Supla::Sensor']]]
+  ['network_0',['Network',['../classSupla_1_1Network.html',1,'Supla']]],
+  ['network_20interfaces_1',['Network interfaces',['../index.html#autotoc_md8',1,'']]],
+  ['next_2',['next',['../classSupla_1_1Element.html#ab9d7ce67058db644bbdf3e6e8dac91c4',1,'Supla::Element']]],
+  ['normallyopen_3',['NormallyOpen',['../classSupla_1_1Sensor_1_1NormallyOpen.html',1,'Supla::Sensor']]],
+  ['notification_4',['Notification',['../classNotification.html',1,'Notification'],['../classSupla_1_1Notification.html',1,'Supla::Notification']]],
+  ['notifyelementsaboutconfigchange_5',['NotifyElementsAboutConfigChange',['../classSupla_1_1Element.html#ad7e52c7c63e007e33b840e85d90c2f78',1,'Supla::Element']]],
+  ['ntc10k_6',['NTC10k',['../classSupla_1_1Sensor_1_1NTC10k.html',1,'Supla::Sensor']]]
 ];

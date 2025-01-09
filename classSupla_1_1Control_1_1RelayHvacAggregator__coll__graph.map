@@ -1,6 +1,6 @@
 <map id="Supla::Control::RelayHvacAggregator" name="Supla::Control::RelayHvacAggregator">
 <area shape="rect" id="Node000001" title=" " alt="" coords="5,85,176,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title=" " alt="" coords="37,8,144,33"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="37,8,144,33"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,49,93,85,88,85,88,49"/>
 <area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="161,13,171,20,162,28,145,30,144,25,160,23,166,20,158,17"/>
 </map>

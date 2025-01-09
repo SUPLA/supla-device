@@ -127,8 +127,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  <span class="keyword">explicit</span> BlinkingLed(<a class="code hl_class" href="classSupla_1_1Io.html">Supla::Io</a> *io, uint8_t outPin, <span class="keywordtype">bool</span> invert = <span class="keyword">false</span>);</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  <span class="keyword">explicit</span> BlinkingLed(uint8_t outPin, <span class="keywordtype">bool</span> invert = <span class="keyword">false</span>);</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordtype">void</span> onInit() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> onTimer() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1BlinkingLed.html#a615b572ec8b42b715922e311ad935d49">onInit</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1BlinkingLed.html#a8943bc60aac3108dc7eaa586f3ad5c11">onTimer</a>() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  <span class="comment">// Use inverted logic for GPIO output, when:</span></div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  <span class="comment">// false -&gt; HIGH=ON,  LOW=OFF</span></div>
@@ -168,7 +168,9 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>}  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_BLINKING_LED_H_</span></div>
-<div class="ttc" id="aclassSupla_1_1Element_html"><div class="ttname"><a href="classSupla_1_1Element.html">Supla::Element</a></div><div class="ttdef"><b>Definition</b> element.h:28</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1BlinkingLed_html_a615b572ec8b42b715922e311ad935d49"><div class="ttname"><a href="classSupla_1_1Control_1_1BlinkingLed.html#a615b572ec8b42b715922e311ad935d49">Supla::Control::BlinkingLed::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> blinking_led.cpp:39</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1BlinkingLed_html_a8943bc60aac3108dc7eaa586f3ad5c11"><div class="ttname"><a href="classSupla_1_1Control_1_1BlinkingLed.html#a8943bc60aac3108dc7eaa586f3ad5c11">Supla::Control::BlinkingLed::onTimer</a></div><div class="ttdeci">void onTimer() override</div><div class="ttdoc">Method called on timer interupt.</div><div class="ttdef"><b>Definition</b> blinking_led.cpp:48</div></div>
+<div class="ttc" id="aclassSupla_1_1Element_html"><div class="ttname"><a href="classSupla_1_1Element.html">Supla::Element</a></div><div class="ttdoc">Base class for all elements of SuplaDevice.</div><div class="ttdef"><b>Definition</b> element.h:31</div></div>
 <div class="ttc" id="aclassSupla_1_1Io_html"><div class="ttname"><a href="classSupla_1_1Io.html">Supla::Io</a></div><div class="ttdef"><b>Definition</b> io.h:33</div></div>
 <div class="ttc" id="aclassSupla_1_1Mutex_html"><div class="ttname"><a href="classSupla_1_1Mutex.html">Supla::Mutex</a></div><div class="ttdef"><b>Definition</b> mutex.h:22</div></div>
 </div><!-- fragment --></div><!-- contents -->

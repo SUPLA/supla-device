@@ -6,7 +6,7 @@
 <area shape="poly" id="edge40_Node000001_Node000056" title=" " alt="" coords="378,1242,410,1242,410,1248,378,1248"/>
 <area shape="rect" id="Node000060" href="$classSupla_1_1Sensor_1_1ElectricityMeter.html" title=" " alt="" coords="416,1355,579,1396"/>
 <area shape="poly" id="edge44_Node000001_Node000060" title=" " alt="" coords="324,1271,462,1352,459,1357,321,1276"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title=" " alt="" coords="16,1207,124,1232"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="16,1207,124,1232"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="139,1225,182,1231,182,1236,139,1231"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="5,1256,135,1282"/>
 <area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="150,1257,182,1253,183,1258,151,1262"/>

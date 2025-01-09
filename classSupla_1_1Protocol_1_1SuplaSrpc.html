@@ -354,6 +354,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>initializeSrpc</b> ()
 <tr class="memitem:a0b29361fdf54a5700c33743a95bbad17" id="r_a0b29361fdf54a5700c33743a95bbad17"><td class="memItemLeft" align="right" valign="top"><a id="a0b29361fdf54a5700c33743a95bbad17" name="a0b29361fdf54a5700c33743a95bbad17"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>deinitializeSrpc</b> ()</td></tr>
 <tr class="separator:a0b29361fdf54a5700c33743a95bbad17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23f4f6b0ea94bbf73a312e9e28e9069e" id="r_a23f4f6b0ea94bbf73a312e9e28e9069e"><td class="memItemLeft" align="right" valign="top"><a id="a23f4f6b0ea94bbf73a312e9e28e9069e" name="a23f4f6b0ea94bbf73a312e9e28e9069e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>addLastStateAdError</b> (char *buf)</td></tr>
+<tr class="separator:a23f4f6b0ea94bbf73a312e9e28e9069e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -381,6 +384,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>setDeviceConfigReceiv
 <tr class="memitem:a37bcf24f1e2c8b6dc1db5f3e6cc7ce34" id="r_a37bcf24f1e2c8b6dc1db5f3e6cc7ce34"><td class="memItemLeft" align="right" valign="top"><a id="a37bcf24f1e2c8b6dc1db5f3e6cc7ce34" name="a37bcf24f1e2c8b6dc1db5f3e6cc7ce34"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>firstConnectionAttempt</b> = true</td></tr>
 <tr class="separator:a37bcf24f1e2c8b6dc1db5f3e6cc7ce34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a197b61a185e79b7899b27776f0963917" id="r_a197b61a185e79b7899b27776f0963917"><td class="memItemLeft" align="right" valign="top"><a id="a197b61a185e79b7899b27776f0963917" name="a197b61a185e79b7899b27776f0963917"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>adErrorLogged</b> = false</td></tr>
+<tr class="separator:a197b61a185e79b7899b27776f0963917"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a03bf15ecc6712f18817115279ef6d4f4" id="r_a03bf15ecc6712f18817115279ef6d4f4"><td class="memItemLeft" align="right" valign="top"><a id="a03bf15ecc6712f18817115279ef6d4f4" name="a03bf15ecc6712f18817115279ef6d4f4"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>autodiscoverRetryCounter</b> = 0</td></tr>
+<tr class="separator:a03bf15ecc6712f18817115279ef6d4f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a48de2eb23a39d50f1001ae122600afe5" id="r_a48de2eb23a39d50f1001ae122600afe5"><td class="memItemLeft" align="right" valign="top"><a id="a48de2eb23a39d50f1001ae122600afe5" name="a48de2eb23a39d50f1001ae122600afe5"></a>
 uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>connectionFailCounter</b> = 0</td></tr>
 <tr class="separator:a48de2eb23a39d50f1001ae122600afe5"><td class="memSeparator" colspan="2">&#160;</td></tr>

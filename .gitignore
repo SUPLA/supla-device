@@ -4,3 +4,4 @@ sdkconfig.old
 **/.cache/*
 compile_commands.json
 .clang_complete
+extras/docs

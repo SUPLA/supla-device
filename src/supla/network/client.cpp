@@ -73,6 +73,16 @@ size_t Supla::Client::write(const uint8_t *buf, size_t size) {
   return writeImp(buf, size);
 }
 
+size_t Supla::Client::write(const void *buf, size_t size) {
+  if (size == 0) {
+    size = strnlen((const char *)buf, 1000);
+  }
+  if (size == 0) {
+    return 0;
+  }
+  return write(reinterpret_cast<const uint8_t *>(buf), size);
+}
+
 size_t Supla::Client::println() {
   return println("");
 }

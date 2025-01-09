@@ -42,6 +42,7 @@ class Client {
   int connect(const char *host, uint16_t port);
   size_t write(uint8_t);
   size_t write(const uint8_t *buf, size_t size);
+  size_t write(const void *buf, size_t size = 0);
 
   size_t print(const char *);
   size_t println(const char *);

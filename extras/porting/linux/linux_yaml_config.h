@@ -109,7 +109,6 @@ class LinuxYamlConfig : public KeyValue {
 
   // Supla protocol config
   bool setSuplaCommProtocolEnabled(bool enabled) override;  // disabled
-  bool setSuplaServer(const char* server) override;         // disabled
   bool setSuplaServerPort(int32_t port) override;           // disabled
   bool setEmail(const char* email) override;                // disabled
 

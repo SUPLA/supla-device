@@ -145,6 +145,7 @@ class SuplaSrpc : public ProtocolLayer {
   bool ping();
   void initializeSrpc();
   void deinitializeSrpc();
+  void addLastStateAdError(char *buf);
 
   uint8_t version = 0;
   uint8_t activityTimeoutS = 30;
@@ -154,6 +155,8 @@ class SuplaSrpc : public ProtocolLayer {
   bool enabled = true;
   bool setDeviceConfigReceivedAfterRegistration = false;
   bool firstConnectionAttempt = true;
+  bool adErrorLogged = false;
+  uint8_t autodiscoverRetryCounter = 0;
   uint16_t connectionFailCounter = 0;
 
   uint32_t lastPingTimeMs = 0;

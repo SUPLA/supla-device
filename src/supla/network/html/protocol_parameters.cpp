@@ -110,7 +110,9 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
     sender->sendLabelFor(keySvr, "Server");
     sender->send("<input ");
     sender->sendNameAndId(keySvr);
-    sender->send(" maxlength=\"64\" value=\"");
+    sender->send(
+        " maxlength=\"64\" placeholder=\"Custom server (leave empty for "
+        "official servers)\" value=\"");
     char buf[512];
     if (cfg->getSuplaServer(buf)) {
       sender->sendSafe(buf);

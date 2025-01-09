@@ -110,7 +110,9 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       configEmpty = false;
     } else {
       SUPLA_LOG_INFO("Config incomplete: missing server");
+#ifdef ARDUINO_ARCH_AVR
       configComplete = false;
+#endif  // ARDUINO_ARCH_AVR
     }
     setServerPort(cfg->getSuplaServerPort());
 
@@ -763,10 +765,122 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     lastIterateTime = _millis;
   }
 
+#ifndef ARDUINO_ARCH_AVR
+  if (Supla::RegisterDevice::isServerNameEmpty() &&
+      !Supla::RegisterDevice::isEmailEmpty()) {
+    autodiscoverRetryCounter++;
+    if (autodiscoverRetryCounter > 4) {
+      if (autodiscoverRetryCounter == 5) {
+        SUPLA_LOG_WARNING("Autodiscover failed too many times. Giving up");
+      }
+      autodiscoverRetryCounter = 6;
+      return false;
+    }
+
+    // Try to get server from AD
+    SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
+    // fetch json from https://autodiscover.supla.org/users/email@host
+    const char server[] = "autodiscover.supla.org";
+    auto adClient = Supla::ClientBuilder();
+    adClient->setSSLEnabled(true);
+    if (1 == adClient->connect(server, 443)) {
+      adClient->write("GET /users/");
+      adClient->write(Supla::RegisterDevice::getEmail());
+      adClient->write(" HTTP/1.1\r\n");
+      adClient->write("Host: ");
+      adClient->write(server);
+      adClient->write("\r\n");
+      adClient->write("User-Agent: Supla-Device/1.0\r\n");
+      adClient->write("Accept: application/json\r\n");
+      char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
+      generateHexString(
+          Supla::RegisterDevice::getGUID(), guid, SUPLA_GUID_SIZE);
+      adClient->write("X-GUID: ");
+      adClient->write(guid);
+      adClient->write("\r\n");
+      adClient->write("Connection: close\r\n\r\n");
+
+      char buf[512] = {};
+      char *bufPos = buf;
+      int timeout = 3000;
+
+      bool dataReady = false;
+      do {
+        int len = adClient->read(bufPos, sizeof(buf) - 1 - (bufPos - buf));
+        if (len > 0) {
+          SUPLA_LOG_DEBUG("Data read: %d", len);
+          bufPos += len;
+          *bufPos = 0;
+        }
+        delay(1);
+        timeout--;
+        if (timeout == 0) {
+          break;
+        }
+      } while (adClient->connected() && (bufPos - buf) < 512);
+
+      adClient->stop();
+      delete adClient;
+
+      SUPLA_LOG_DEBUG("Data: %s", buf);
+
+      // get http return code from string
+      if (strncmp(buf, "HTTP/1.1 404", 12) == 0) {
+        SUPLA_LOG_DEBUG("HTTP/1.1 404 not found");
+        autodiscoverRetryCounter = 6;
+        addLastStateAdError(buf);
+        return false;
+      }
+
+      if (strncmp(buf, "HTTP/1.1 200", 12) != 0) {
+        SUPLA_LOG_DEBUG("HTTP/1.1 200 not found");
+        addLastStateAdError(buf);
+        return false;
+      }
+
+      const char serverKey[] = "\"server\":\"";
+
+      char *serverName = strstr(buf, serverKey);
+      if (serverName != nullptr) {
+        serverName += sizeof(serverKey) - 1;
+        char *serverEnd = strchr(serverName, '"');
+        if (serverEnd != nullptr) {
+          *serverEnd = 0;
+          Supla::RegisterDevice::setServerName(serverName);
+          dataReady = true;
+          char tmp[200] = {};
+          snprintf(
+              tmp, sizeof(tmp), "AD got server: %s", serverName);
+          sdc->addLastStateLog(tmp);
+          auto cfg = Supla::Storage::ConfigInstance();
+          if (cfg) {
+            cfg->setSuplaServer(serverName);
+            cfg->saveWithDelay(1000);
+            // reload config to initialize certificates etc.
+            onLoadConfig();
+          }
+        }
+      }
+
+      if (!dataReady) {
+        SUPLA_LOG_DEBUG("Supla server name not found from AD");
+        waitForIterate = 1000;
+        return false;
+      }
+
+    } else {
+      SUPLA_LOG_DEBUG("AD connection failed");
+      waitForIterate = 1000;
+      return false;
+    }
+
+    lastIterateTime = _millis;
+  }
+#endif  // !ARDUINO_ARCH_AVR
+
   if (client == nullptr) {
     initClient();
   }
-
   // Establish connection with Supla server
   if (!client->connected()) {
     deinitializeSrpc();
@@ -922,6 +1036,30 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   return false;
 }
 
+void Supla::Protocol::SuplaSrpc::addLastStateAdError(char *buf) {
+  if (adErrorLogged) {
+    return;
+  }
+
+  const char errorKey[] = "\"error\":\"";
+
+  auto error = strstr(buf, errorKey);
+  if (error != nullptr) {
+    error += sizeof(errorKey) - 1;
+    auto errorEnd = strchr(error, '"');
+    if (errorEnd != nullptr) {
+      *errorEnd = 0;
+      char tmp[200] = {};
+      snprintf(tmp, sizeof(tmp), "AD error: %s", error);
+      sdc->addLastStateLog(tmp);
+      adErrorLogged = true;
+    } else {
+      sdc->addLastStateLog("AD error: unknown");
+      adErrorLogged = true;
+    }
+  }
+}
+
 void Supla::Protocol::SuplaSrpc::disconnect() {
   if (!isEnabled()) {
     return;
@@ -994,9 +1132,9 @@ bool Supla::Protocol::SuplaSrpc::verifyConfig() {
 
   if (Supla::RegisterDevice::isServerNameEmpty()) {
     sdc->status(STATUS_UNKNOWN_SERVER_ADDRESS, F("Missing server address"));
-    if (sdc->getDeviceMode() != Supla::DEVICE_MODE_CONFIG) {
-      return false;
-    }
+#ifdef ARDUINO_ARCH_AVR
+    return false;
+#endif  // ARDUINO_ARCH_AVR
   }
 
   if (Supla::RegisterDevice::isEmailEmpty()) {

@@ -255,14 +255,12 @@ bool Supla::LinuxYamlConfig::setSuplaCommProtocolEnabled(bool enabled) {
       "setSuplaCommProtocolEnabled is not supported on this platform");
   return false;
 }
-bool Supla::LinuxYamlConfig::setSuplaServer(const char* server) {
-  SUPLA_LOG_WARNING("setSuplaServer is not supported on this platform");
-  return false;
-}
+
 bool Supla::LinuxYamlConfig::setSuplaServerPort(int32_t port) {
   SUPLA_LOG_WARNING("setSuplaServerPort is not supported on this platform");
   return false;
 }
+
 bool Supla::LinuxYamlConfig::setEmail(const char* email) {
   SUPLA_LOG_WARNING("setEmail is not supported on this platform");
   return false;
@@ -290,12 +288,18 @@ bool Supla::LinuxYamlConfig::getSuplaServer(char* result) {
     if (config["supla"] && config["supla"]["server"]) {
       auto server = config["supla"]["server"].as<std::string>();
       strncpy(result, server.c_str(), SUPLA_SERVER_NAME_MAXSIZE);
+      char tmp[SUPLA_SERVER_NAME_MAXSIZE] = {};
+      if (Supla::Config::getSuplaServer(tmp)) {
+        SUPLA_LOG_DEBUG("Cleaning Config Supla server name: %s", tmp);
+        setSuplaServer("");
+        saveWithDelay(1000);
+      }
       return true;
     }
   } catch (const YAML::Exception& ex) {
     SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
   }
-  return false;
+  return Supla::Config::getSuplaServer(result);
 }
 
 int32_t Supla::LinuxYamlConfig::getSuplaServerPort() {

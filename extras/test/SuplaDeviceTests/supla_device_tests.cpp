@@ -203,7 +203,8 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyAuthkey) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INVALID_AUTHKEY);
 }
 
-TEST_F(SuplaDeviceTests, BeginStopsAtEmptyServer) {
+TEST_F(SuplaDeviceTests, BeginAcceptsEmptyServer) {
+  // with AD support, empty server is not an issue
   ::testing::InSequence seq;
   NetworkMockWithMac net;
   TimerMock timer;
@@ -211,14 +212,15 @@ TEST_F(SuplaDeviceTests, BeginStopsAtEmptyServer) {
   SuplaDeviceClass sd;
 
   EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(Return(false));
 
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   sd.setGUID(GUID);
   sd.setAuthKey(AUTHKEY);
   sd.setEmail("john@supla");
-  EXPECT_FALSE(sd.begin());
-  EXPECT_EQ(sd.getCurrentStatus(), STATUS_UNKNOWN_SERVER_ADDRESS);
+  EXPECT_TRUE(sd.begin());
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 }
 
 TEST_F(SuplaDeviceTests, BeginStopsAtEmptyEmail) {

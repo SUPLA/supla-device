@@ -2,6 +2,11 @@
 
 [SUPLA](https://www.supla.org) is an open source project for home automation. 
 
+# Documentation
+
+Documentation is available [here](https://supla.github.io/supla-device/).
+Disclaimer: This is only a draft and work in progress.
+
 # SuplaDevice library
 This repository contain SuplaDevice libraray. It allows to implement software for devices which connect to Supla infrastructure.
 

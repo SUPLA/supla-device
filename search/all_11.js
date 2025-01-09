@@ -1,7 +1,7 @@
 var searchData=
 [
-  ['persistant_20memory_20storage_0',['Supported persistant memory storage',['../index.html#autotoc_md17',1,'']]],
-  ['photovoltaic_20inverter_1',['Photovoltaic inverter',['../index.html#autotoc_md16',1,'']]],
+  ['persistant_20memory_20storage_0',['Supported persistant memory storage',['../index.html#autotoc_md18',1,'']]],
+  ['photovoltaic_20inverter_1',['Photovoltaic inverter',['../index.html#autotoc_md17',1,'']]],
   ['pinstatusled_2',['PinStatusLed',['../classSupla_1_1Control_1_1PinStatusLed.html',1,'Supla::Control']]],
   ['poweractivewgetter_3',['PowerActiveWGetter',['../classSupla_1_1PowerActiveWGetter.html',1,'Supla']]],
   ['powerapparentvagetter_4',['PowerApparentVAGetter',['../classSupla_1_1PowerApparentVAGetter.html',1,'Supla']]],
@@ -9,7 +9,7 @@ var searchData=
   ['powerstatusledparameters_6',['PowerStatusLedParameters',['../classPowerStatusLedParameters.html',1,'PowerStatusLedParameters'],['../classSupla_1_1Html_1_1PowerStatusLedParameters.html',1,'Supla::Html::PowerStatusLedParameters']]],
   ['preamble_7',['Preamble',['../structSupla_1_1Preamble.html',1,'Supla']]],
   ['pressure_8',['Pressure',['../classSupla_1_1Sensor_1_1Pressure.html',1,'Supla::Sensor']]],
-  ['programs_20written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_9',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md12',1,'']]],
+  ['programs_20written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_9',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md13',1,'']]],
   ['project_10',['SUPLA project',['../index.html',1,'']]],
   ['protocollayer_11',['ProtocolLayer',['../classSupla_1_1Protocol_1_1ProtocolLayer.html',1,'Supla::Protocol']]],
   ['protocolparameters_12',['ProtocolParameters',['../classSupla_1_1Html_1_1ProtocolParameters.html',1,'Supla::Html']]],

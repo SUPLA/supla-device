@@ -117,7 +117,7 @@ var searchData=
   ['timeparameters_114',['TimeParameters',['../classSupla_1_1Html_1_1TimeParameters.html',1,'Supla::Html::TimeParameters'],['../classTimeParameters.html',1,'TimeParameters']]],
   ['timeval_5fcompat_115',['timeval_compat',['../structtimeval__compat.html',1,'']]],
   ['tlckdata_116',['TLckData',['../structTLckData.html',1,'']]],
-  ['to_20migrate_20programs_20written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_117',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md12',1,'']]],
+  ['to_20migrate_20programs_20written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_117',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md13',1,'']]],
   ['totalcurrentgetter_118',['TotalCurrentGetter',['../classSupla_1_1TotalCurrentGetter.html',1,'Supla']]],
   ['totalpoweractivewgetter_119',['TotalPowerActiveWGetter',['../classSupla_1_1TotalPowerActiveWGetter.html',1,'Supla']]],
   ['totalpowerapparentvagetter_120',['TotalPowerApparentVAGetter',['../classSupla_1_1TotalPowerApparentVAGetter.html',1,'Supla']]],

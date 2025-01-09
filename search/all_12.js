@@ -5,7 +5,7 @@ var searchData=
   ['relay_2',['Relay',['../classRelay.html',1,'Relay'],['../classSupla_1_1Control_1_1Relay.html',1,'Supla::Control::Relay']]],
   ['relayhvacaggregator_3',['RelayHvacAggregator',['../classRelayHvacAggregator.html',1,'RelayHvacAggregator'],['../classSupla_1_1Control_1_1RelayHvacAggregator.html',1,'Supla::Control::RelayHvacAggregator']]],
   ['remotedeviceconfig_4',['RemoteDeviceConfig',['../classRemoteDeviceConfig.html',1,'RemoteDeviceConfig'],['../classSupla_1_1Device_1_1RemoteDeviceConfig.html',1,'Supla::Device::RemoteDeviceConfig']]],
-  ['requirements_5',['Hardware requirements',['../index.html#autotoc_md2',1,'']]],
+  ['requirements_5',['Hardware requirements',['../index.html#autotoc_md3',1,'']]],
   ['rgbbase_6',['RGBBase',['../classSupla_1_1Control_1_1RGBBase.html',1,'Supla::Control']]],
   ['rgbleds_7',['RGBLeds',['../classSupla_1_1Control_1_1RGBLeds.html',1,'Supla::Control']]],
   ['rgbwbase_8',['RGBWBase',['../classSupla_1_1Control_1_1RGBWBase.html',1,'Supla::Control']]],
@@ -17,5 +17,5 @@ var searchData=
   ['rollershutterparameters_14',['RollerShutterParameters',['../classRollerShutterParameters.html',1,'RollerShutterParameters'],['../classSupla_1_1Html_1_1RollerShutterParameters.html',1,'Supla::Html::RollerShutterParameters']]],
   ['rollershutterstatedata_15',['RollerShutterStateData',['../structRollerShutterStateData.html',1,'']]],
   ['rsaverificator_16',['RsaVerificator',['../classSupla_1_1RsaVerificator.html',1,'Supla']]],
-  ['rtos_20sdk_20draft_17',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md21',1,'']]]
+  ['rtos_20sdk_20draft_17',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md22',1,'']]]
 ];

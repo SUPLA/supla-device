@@ -90,27 +90,30 @@ $(function(){ initResizable(false); });
 <div class="textblock"><p><a class="anchor" id="md_readme"></a></p>
 <p><a href="https://www.supla.org">SUPLA</a> is an open source project for home automation.</p>
 <h1><a class="anchor" id="autotoc_md1"></a>
+Documentation</h1>
+<p>Documentation is available <a href="https://supla.github.io/supla-device/">here</a>. Disclaimer: This is only a draft and work in progress.</p>
+<h1><a class="anchor" id="autotoc_md2"></a>
 SuplaDevice library</h1>
 <p>This repository contain SuplaDevice libraray. It allows to implement software for devices which connect to Supla infrastructure.</p>
 <p>SuplaDevice can be used as library for Arduino IDE, or can be used directly with <a href="https://github.com/espressif/ESP8266_RTOS_SDK">ESP8266 RTOS SDK</a> and with <a href="https://github.com/espressif/esp-idf">ESP IDF</a>. It is also possible to compile and run it on Linux and in FreeRTOS environment, however here many functions are still missing.</p>
 <p>Please check our changelog.</p>
 <p>Below you can find basic infomration about SuplaDevice and instrutions for Arudino IDE.</p>
-<h2><a class="anchor" id="autotoc_md2"></a>
+<h2><a class="anchor" id="autotoc_md3"></a>
 Hardware requirements</h2>
-<h3><a class="anchor" id="autotoc_md3"></a>
+<h3><a class="anchor" id="autotoc_md4"></a>
 Arduino Mega</h3>
 <p>SuplaDevice works with Arduino Mega boards. Arduino Uno is not supported because of RAM limitations. It should work on other Arduino boards with at least 8 kB of RAM. Following network interfaces are supported:</p><ul>
 <li>Ethernet Shield with W5100 chipset</li>
 <li>ENC28J60 (not recommended - see Supported hardware section)</li>
 </ul>
 <p>Warning: WiFi shields are currently not supported.</p>
-<h3><a class="anchor" id="autotoc_md4"></a>
+<h3><a class="anchor" id="autotoc_md5"></a>
 ESP8266 and ESP8285</h3>
 <p>ESP8266 and ESP8285 boards are supported. Network connection is done via WiFi.</p>
-<h3><a class="anchor" id="autotoc_md5"></a>
+<h3><a class="anchor" id="autotoc_md6"></a>
 ESP32</h3>
 <p>ESP32 boards are supported with connection via WiFi or via Ethernet.</p>
-<h2><a class="anchor" id="autotoc_md6"></a>
+<h2><a class="anchor" id="autotoc_md7"></a>
 SuplaDevice library installation for Arduino IDE</h2>
 <p>SuplaDevice is a library for <a href="https://www.arduino.cc/en/main/software">Arduino IDE</a> that allows to implement devices working with <a href="https://www.supla.org">Supla</a>.</p>
 <p>Please use library manager in Arduino IDE to install newest SuplaDevice library.</p>
@@ -123,9 +126,9 @@ SuplaDevice library installation for Arduino IDE</h2>
 </ol>
 <p>Above steps are standard Arudino IDE setup procedures not related to SuplaDevice library. You can find many tutorials on Internet with detailed instructions. Tutorials doesn't have to be related in any way with Supla.</p>
 <p>After step 5 you should see Supla example applications in Arduino IDE examples. Select one and have fun! Example file requires adjustments before you compile them and upload to your board. Please read all comments in example and make proper adjustments.</p>
-<h2><a class="anchor" id="autotoc_md7"></a>
+<h2><a class="anchor" id="autotoc_md8"></a>
 Usage</h2>
-<h3><a class="anchor" id="autotoc_md8"></a>
+<h3><a class="anchor" id="autotoc_md9"></a>
 Network interfaces</h3>
 <p>Supported network interfaces for Arduino Mega:</p><ul>
 <li>Ethernet Shield - with W5100 chipset. Include <code>&lt;<a class="el" href="ethernet__shield_8h_source.html">supla/network/ethernet_shield.h</a>&gt;</code> and add <code><a class="el" href="classSupla_1_1EthernetShield.html">Supla::EthernetShield</a> ethernet;</code> as a global variable.</li>
@@ -138,10 +141,10 @@ Network interfaces</h3>
 <p>Supported network interface for ESP32:</p><ul>
 <li>There is a native WiFi controller. Include <code>&lt;<a class="el" href="esp__wifi_8h_source.html">supla/network/esp_wifi.h</a>&gt;</code> and add <code><a class="el" href="classSupla_1_1ESPWifi.html">Supla::ESPWifi</a> wifi(ssid, password);</code> as a global variable and provide SSID and password in a constructor.</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md9"></a>
+<h3><a class="anchor" id="autotoc_md10"></a>
 Exmaples</h3>
 <p>Each example can run on Arduino Mega, ESP8266, or ESP32 board - unless mentioned otherwise in comments. Please read comments in example files and uncomment proper library for your network interface.</p>
-<h3><a class="anchor" id="autotoc_md10"></a>
+<h3><a class="anchor" id="autotoc_md11"></a>
 Folder structure</h3>
 <ul>
 <li><code>supla-common</code> - Supla protocol definitions and structures. There are also methods to handle low level communication with Supla server, like message coding, decoding, sending and receiving. Those files are common with <code>supla-core</code> and the same code is run on multiple Supla platforms and services</li>
@@ -157,7 +160,7 @@ Folder structure</h3>
 <li><code>supla</code> - all common classes are defined in main <code>supla</code> folder. You can find there classes that create framework on which all other components work.</li>
 </ul>
 <p>Some functions from above folders have dependencies to external libraries. Please check documentation included in header files.</p>
-<h3><a class="anchor" id="autotoc_md11"></a>
+<h3><a class="anchor" id="autotoc_md12"></a>
 How does it work?</h3>
 <p>Everything that is visible in Supla (in Cloud, on API, mobile application) is called "channel". Supla channels are used to control relays, read temperature, check if garage door is open.</p>
 <p>SuplaDevice implements support for channels in <code><a class="el" href="classChannel.html">Channel</a></code> and <code>ChannelExtended</code> classes. Instances of those classes are part of objects called <code>Element</code> which are building blocks for any SuplaDevice application.</p>
@@ -175,7 +178,7 @@ How does it work?</h3>
 <li><code>onTimer</code> - called every 10 ms after enabling in <code>SuplaDevice.begin()</code></li>
 <li><code>onFastTimer</code> - called every 1 ms (0.5 ms in case of Arudino Mega) after enabling in <code>SuplaDevice.begin()</code></li>
 </ol>
-<h2><a class="anchor" id="autotoc_md12"></a>
+<h2><a class="anchor" id="autotoc_md13"></a>
 How to migrate programs written in SuplaDevice libraray versions 1.6 and older</h2>
 <p>For Arduino Mega applications include proper network interface header: </p><div class="fragment"><div class="line">// Choose proper network interface for your card:</div>
 <div class="line">// Arduino Mega with EthernetShield W5100:</div>
@@ -226,9 +229,9 @@ How to migrate programs written in SuplaDevice libraray versions 1.6 and older</
 <div class="line"> </div>
 <div class="line">MyDigitalRead instanceMyDigitalRead;</div>
 </div><!-- fragment --><p>All channels from old version of library should be removed and created again in a new format. Please check instructions below how to add each type of channel.</p>
-<h2><a class="anchor" id="autotoc_md13"></a>
+<h2><a class="anchor" id="autotoc_md14"></a>
 Supported channels</h2>
-<h3><a class="anchor" id="autotoc_md14"></a>
+<h3><a class="anchor" id="autotoc_md15"></a>
 Sensors</h3>
 <p>Sensor category is for all elements/channels that reads something and provides data to Supla server. All sensors are in <code>Supla::Sensor</code> namespace:</p>
 <ul>
@@ -266,7 +269,7 @@ Sensors</h3>
 <li><code>HX711</code> - HX711 support (weight sensor)</li>
 <li><code>HygroMeter</code> - base class for sensors capable of measuring humidity</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md15"></a>
+<h3><a class="anchor" id="autotoc_md16"></a>
 Control</h3>
 <p>Control category is for all elements/channels that are used to control something, i.e. relays, buttons, RGBW. Classes in this category are in namespace <code>Supla::Control</code>:</p>
 <ul>
@@ -290,7 +293,7 @@ Control</h3>
 <li><code>TrippleButtonRollerShutter</code> - roller shutter implementation to control external roller shutter controllers with 3 buttons: up, down, stop</li>
 <li><code>VirtualRelay</code> - relay which keeps its state in memory and doesn't affect any GPIO</li>
 </ul>
-<h3><a class="anchor" id="autotoc_md16"></a>
+<h3><a class="anchor" id="autotoc_md17"></a>
 Photovoltaic inverter</h3>
 <p>SuplaDevice provides integrations for following inverters:</p>
 <ul>
@@ -298,33 +301,33 @@ Photovoltaic inverter</h3>
 <li><code>Fronius</code></li>
 <li><code>SolarEdge</code></li>
 </ul>
-<h2><a class="anchor" id="autotoc_md17"></a>
+<h2><a class="anchor" id="autotoc_md18"></a>
 Supported persistant memory storage</h2>
 <p>Storage class is used as an abstraction for different persistant memory devices. Some elements/channels will not work properly without storage and some will have limitted functionalities. I.e. <code><a class="el" href="classImpulseCounter.html">ImpulseCounter</a></code> requires storage to save counter value, so it could be restored after reset, or <code>RollerShutter</code> requires storage to keep openin/closing times and current shutter possition. Currently two variants of storage classes are supported. </p>
-<h3><a class="anchor" id="autotoc_md18"></a>
+<h3><a class="anchor" id="autotoc_md19"></a>
 EEPROM/Flash memory</h3>
 <p>EEPROM (in case of Arduino Mega) and Flash (in case of ESP) are build into most of boards. Usually writing should be safe for 100 000 write operations (on each bit). So in order to limit those operations, this kind of Storage will save data in longer time periods (every few minutes). Supla will not write data if there is no change. </p><div class="fragment"><div class="line">#include &lt;supla/storage/eeprom.h&gt;</div>
 <div class="line">Supla::Eeprom eeprom(SUPLA_STORAGE_OFFSET);</div>
 </div><!-- fragment --><p> Offset parameter is optional - use it if you already use saving to EEPROM in your application and you want SuplaDevice to use some other area of memory.</p>
-<h3><a class="anchor" id="autotoc_md19"></a>
+<h3><a class="anchor" id="autotoc_md20"></a>
 Adafruit FRAM SPI</h3>
 <p>FRAM is recommended for storage in Supla. It allows almost limitless writing cycles and it is very fast memory. Currently only Adafruit FRAM SPI is supported. </p><div class="fragment"><div class="line">#include &lt;supla/storage/fram_spi.h&gt;</div>
 <div class="line">// Hardware SPI</div>
 <div class="line">Supla::FramSpi fram(FRAM_CS, SUPLA_STORAGE_OFFSET);</div>
 </div><!-- fragment --><p> or with SW SPI: </p><div class="fragment"><div class="line">// Software SPI</div>
 <div class="line">Supla::FramSpi fram(SCK_PIN, MISO_PIN, MOSI_PIN, FRAM_CS, SUPLA_STORAGE_OFFSET);</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md20"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md21"></a>
 License</h2>
 <p>Please check it <a href="https://github.com/SUPLA/supla-cloud/blob/master/LICENSE">here</a>.</p>
-<h1><a class="anchor" id="autotoc_md21"></a>
+<h1><a class="anchor" id="autotoc_md22"></a>
 Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)</h1>
-<h2><a class="anchor" id="autotoc_md22"></a>
+<h2><a class="anchor" id="autotoc_md23"></a>
 ESP32:</h2>
 <p><a href="https://docs.espressif.com/projects/esp-idf/en/latest/esp32/get-started/linux-setup.html">Espressif ESP-IDF SDK installation steps for Linux (Ubuntu)</a> - run below commands: </p><div class="fragment"><div class="line">sudo apt-get install git wget flex bison gperf python3 python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util libusb-1.0-0</div>
 <div class="line">mkdir ~/esp</div>
 <div class="line">cd ~/esp</div>
 <div class="line">git clone --recursive https://github.com/espressif/esp-idf.git</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md23"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md24"></a>
 ESP8266:</h2>
 <p><a href="https://docs.espressif.com/projects/esp8266-rtos-sdk/en/latest/get-started/index.html">Espressif RTOS-SDK ESP-IDF style</a>: Assuming that ESP32 (ESP IDF) installation was already done, run those commands: </p><div class="fragment"><div class="line">sudo apt install gcc git wget make libncurses-dev flex bison gperf python</div>
 <div class="line">cd ~/esp</div>
@@ -332,7 +335,7 @@ ESP8266:</h2>
 <div class="line">tar -xzf xtensa-lx106-elf-gcc8_4_0-esp-2020r3-linux-amd64.tar.gz</div>
 <div class="line">git clone --recursive https://github.com/espressif/ESP8266_RTOS_SDK.git</div>
 <div class="line">/usr/bin/python -m pip install --user -r ~/esp/ESP8266_RTOS_SDK/requirements.txt</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md24"></a>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md25"></a>
 ESP8266 and ESP32 environement setup:</h2>
 <p>Add to <code>~/.profile</code>: </p><div class="fragment"><div class="line"># ESP tools setup options</div>
 <div class="line">export ESP_TOOLSET=&quot;none&quot;</div>
@@ -344,21 +347,21 @@ ESP8266 and ESP32 environement setup:</h2>
 <p>Last step is to setup <code>SUPLA_DEVICE_PATH</code> env variable. You can do it from command line: </p><div class="fragment"><div class="line">SUPLA_DEVICE_PATH=/home/your_user_home_folder/path_to/supla-device/</div>
 </div><!-- fragment --><p> or you can add this line to <code>.profile</code> file so it will setup it automatically.</p>
 <p>Now you can go to <code>extras/examples/</code> directory and select example for ESP8266 or for ESP32:</p>
-<h3><a class="anchor" id="autotoc_md25"></a>
+<h3><a class="anchor" id="autotoc_md26"></a>
 ESP8266 example</h3>
 <p>Use <code>esp8266_rtos</code> directory (you can copy it to any location and modify). In this folder call:</p>
 <p><code>make menuconfig</code> and setup your build (especially select proper USB device for flashing). Then call:</p>
 <p><code>make build</code> - for building</p>
 <p><code>make flash</code> - for flashing ESP</p>
 <p><code>make monitor</code> - to run serial monitor (use CTRL+] to exit)</p>
-<h3><a class="anchor" id="autotoc_md26"></a>
+<h3><a class="anchor" id="autotoc_md27"></a>
 ESP32 example</h3>
 <p>Use <code>esp_idf</code> directory (you can copy it to any location and modify). In this folder call:</p>
 <p><code>idf.py menuconfig</code> and setup your build (especially select proper USB device for flashing). Then call:</p>
 <p><code>idf.py build</code> - for building</p>
 <p><code>idf.py flash</code> - for flashing ESP</p>
 <p><code>idf.py monitor</code> - to run serial monitor (use CTRL+] to exit)</p>
-<h2><a class="anchor" id="autotoc_md27"></a>
+<h2><a class="anchor" id="autotoc_md28"></a>
 FreeRTOS installation:</h2>
 <p><code>sudo apt install libpcap-dev</code> <code>git clone <a href="https://github.com/FreeRTOS/FreeRTOS.git">https://github.com/FreeRTOS/FreeRTOS.git</a> --recurse-submodules</code> </p>
 </div></div><!-- PageDoc -->

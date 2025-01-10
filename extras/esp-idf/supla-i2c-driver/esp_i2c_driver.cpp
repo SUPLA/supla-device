@@ -63,11 +63,10 @@ i2c_master_dev_handle_t *I2CDriver::addDevice(uint8_t address,
     SUPLA_LOG_WARNING("Failed to probe i2c device 0x%2X", address);
     return nullptr;
   }
-  i2c_device_config_t devCfg = {
-      .dev_addr_length = I2C_ADDR_BIT_LEN_7,
-      .device_address = address,
-      .scl_speed_hz = frequency,
-  };
+  i2c_device_config_t devCfg = {};
+  devCfg.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+  devCfg.device_address = address;
+  devCfg.scl_speed_hz = frequency;
 
   auto *devHandle = new i2c_master_dev_handle_t;
   if (devHandle == nullptr) {

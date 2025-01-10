@@ -26,7 +26,7 @@ class Mutex;
 
 class I2CDriver {
  public:
-  I2CDriver(int sda, int scl);
+  I2CDriver(int sda, int scl, bool internalPullUp = false);
   ~I2CDriver();
 
   void initialize();
@@ -44,6 +44,7 @@ class I2CDriver {
   bool initialized = false;
   i2c_master_bus_handle_t busHandle;
   Supla::Mutex *mutex = nullptr;
+  bool internalPullUp = false;
 };
 
 }  // namespace Supla

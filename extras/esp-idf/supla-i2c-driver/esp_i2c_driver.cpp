@@ -24,7 +24,8 @@
 
 using Supla::I2CDriver;
 
-I2CDriver::I2CDriver(int sda, int scl) : sda(sda), scl(scl) {
+I2CDriver::I2CDriver(int sda, int scl, bool internalPullUp)
+    : sda(sda), scl(scl), internalPullUp(internalPullUp) {
   mutex = Supla::Mutex::Create();
   mutex->unlock();
 }
@@ -43,7 +44,7 @@ void I2CDriver::initialize() {
     conf.clk_source = I2C_CLK_SRC_DEFAULT;
     conf.sda_io_num = static_cast<gpio_num_t>(sda);
     conf.scl_io_num = static_cast<gpio_num_t>(scl);
-    conf.flags.enable_internal_pullup = 0;
+    conf.flags.enable_internal_pullup = internalPullUp ? 1 : 0;
     conf.glitch_ignore_cnt = 7;
 
     esp_err_t err = i2c_new_master_bus(&conf, &busHandle);

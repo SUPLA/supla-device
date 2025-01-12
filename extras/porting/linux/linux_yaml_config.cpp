@@ -67,6 +67,7 @@
 
 #include "supla/control/action_trigger.h"
 #include "supla/control/hvac_parsed.h"
+#include "supla/control/custom_hvac.h"
 #include "supla/sensor/sensor_parsed.h"
 #include "supla/sensor/therm_hygro_meter_parsed.h"
 #include "supla/storage/key_value.h"
@@ -575,6 +576,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addAfore(ch, channelNumber);
     } else if (type == "Hvac") {
       return addHvac(ch, channelNumber);
+    } else if (type == "CustomHvac") {
+      return addCustomHvac(ch, channelNumber, payload);
     } else if (type == "ThermometerParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -966,6 +969,85 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
             channelNumber);
         return false;
       }
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
+    } else if (function == "dhw") {
+      hvac->enableDomesticHotWaterFunctionSupport();
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER);
+    } else if (function == "diff") {
+      hvac->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+    }
+  }
+  return addCommonParameters(ch, hvac, &paramCount);
+}
+
+bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch, int channelNumber, Payload::Payload* payload){
+  SUPLA_LOG_INFO("Channel[%d] config: adding CustomHvac", channelNumber);
+  int mainThermometerChannelNo = -1;
+  int auxThermometerChannelNo = -1;
+  int binarySensorChannelNo = -1;
+  auto hvac = new Supla::Control::CustomHvac(payload);
+  if (ch["turn_on_payload"]) {
+    paramCount++;
+    auto turnOnPayload = ch["turn_on_payload"].as<std::string>();
+    hvac->setSetOnValue(turnOnPayload);
+  }
+  if (ch["turn_off_payload"]) {
+    paramCount++;
+    auto turnOffPayload = ch["turn_off_payload"].as<std::string>();
+    hvac->setSetOffValue(turnOffPayload);
+  }
+  if (ch["main_thermometer_channel_no"]) {
+    paramCount++;
+    mainThermometerChannelNo = ch["main_thermometer_channel_no"].as<int>();
+  } else {
+    SUPLA_LOG_ERROR(
+        "Channel[%d] config: missing mandatory \"main_thermometer_channel_no\" "
+        "parameter",
+        channelNumber);
+    return false;
+  }
+  if (ch["aux_thermometer_channel_no"]) {
+    paramCount++;
+    auxThermometerChannelNo = ch["aux_thermometer_channel_no"].as<int>();
+  }
+
+  if (ch["binary_sensor_channel_no"]) {
+    paramCount++;
+    binarySensorChannelNo = ch["binary_sensor_channel_no"].as<int>();
+  }
+
+  hvac->setMainThermometerChannelNo(mainThermometerChannelNo);
+  hvac->setAuxThermometerChannelNo(auxThermometerChannelNo);
+  if (binarySensorChannelNo >= 0) {
+    hvac->setBinarySensorChannelNo(binarySensorChannelNo);
+  }
+  hvac->setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
+  if (hvac->getChannelNumber() != auxThermometerChannelNo) {
+    hvac->setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR);
+  }
+  hvac->setTemperatureHisteresisMin(20);        // 0.2 degree
+  hvac->setTemperatureHisteresisMax(1000);      // 10 degree
+  hvac->setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
+  hvac->setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
+  hvac->setTemperatureAuxMin(500);              // 5 degrees
+  hvac->setTemperatureAuxMax(7500);             // 75 degrees
+  hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+
+  hvac->setTemperatureHisteresis(40);
+
+  if (ch["default_function"]) {
+    paramCount++;
+    std::string function = ch["default_function"].as<std::string>();
+    if (function == "heat") {
+      hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+      hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
+    } else if (function == "cool") {
+      hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
+      hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
+    } else if (function == "heat_cool") {
       hvac->getChannel()->setDefaultFunction(
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL);
     } else if (function == "dhw") {

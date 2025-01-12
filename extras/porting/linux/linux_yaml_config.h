@@ -153,6 +153,7 @@ class LinuxYamlConfig : public KeyValue {
   bool addFronius(const YAML::Node& ch, int channelNumber);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);
+  bool addCustomHvac(const YAML::Node& ch, int channelNumber, Payload::Payload* payload);
   bool addCommonParameters(const YAML::Node& ch,
                            Supla::Element* element,
                            int* paramCount);

@@ -672,17 +672,18 @@ to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 
 Required parameters:
 
-`main_thermometer_channel_no` - index of main thermometer channel for this HVAC device\
-`cmd_on` - command executed when temperature goes outside of (above for cooling, below for heating modes) 
-desired range\
-`cmd_off` - command executed when temperature goes inside desired range
+`main_thermometer_channel_no` - channel number of a main thermometer channel for this HVAC device,
+`cmd_on` - command executed when thermostat starts heating or cooling,
+`cmd_off` - command executed when thermostat stops heating or cooling.
 
-## Output channel `output` parameter
+## Output channels which publish payloads
+
+### `output` parameter
 `output` specifies where supla device will publish data for `payload` to change 
 channel state. It must be defined as a channel sub-element.
 
 `output` have one common mandatory parameter `type` which defines type
-of used output. There is also optional `name` parameter. If you name your
+of the used output. There is also an optional `name` parameter. If you name your
 source, then it can be reused for multiple parsers.
 
 There are three supported parser types:
@@ -692,16 +693,15 @@ There are three supported parser types:
 3. `MQTT` - use published topic to MQTT broker. A published topic name containing
 control information is provided by `control_topic`.
 
-### channel `payload` parameter
-`payload` converts channel state change values to values to be published to 
-a predefined `output`, based on the `set_state`, `turn_on_payload` and `turn_off_payload` 
-specified in the channel.
+### `payload` parameter
+`payload` converts channel state change values to the values to be published to 
+a predefined `output`. I.e. in CustomRelay turn on/off commands are published
+to the `output` in formar defined by `payload` based on the `set_state`. Then
+`turn_on_payload` and `turn_off_payload` are written to the `output`.
 
 There are two templates defined:
 1. `Simple`
 2. `Json`
-
-## Output channels
 
 ### CustomRelay
 

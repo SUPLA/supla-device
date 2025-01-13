@@ -657,7 +657,7 @@ Templates are functionally similar to parsers and outputs are functionally simil
 
 `CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
 three extra configuration options:\
-`set_state` - `state` equivalent for `payload`,\
+`set_state` - `state` equivalent for `payload` - it will use configured `payload` to publish turn on/off payloads,\
 `turn_on_payload` - value to be published on turn on,\
 `turn_off_payload` - value to be published on turn on.
 
@@ -677,9 +677,10 @@ There are three supported parser types:
 control information is provided by `control_topic`.
 
 #### channel `payload` parameter
-`payload` converts channel state change values to values to be published to 
-a predefined `output`, based on the `set_state`, `turn_on_payload` and `turn_off_payload` 
-specified in the channel.
+`payload` converts channel state change values to the values to be published to 
+a predefined `output`. I.e. in CustomRelay turn on/off commands are published
+to the `output` in formar defined by `payload` based on the `set_state`. Then
+`turn_on_payload` and `turn_off_payload` are written to the `output`.
 
 There are two templates defined:
 1. `Simple`

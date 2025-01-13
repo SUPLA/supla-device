@@ -351,7 +351,7 @@ void reconnect_client(struct mqtt_client* client, void** reconnect_state_vptr) {
 
   if (connect == MQTT_OK) {
     for (const auto& topic : reconnect_state->topics) {
-      SUPLA_LOG_DEBUG("subscribing %s", topic.first.c_str());
+      SUPLA_LOG_DEBUG("subscribing \"%s\"", topic.first.c_str());
       mqtt_subscribe(client, topic.first.c_str(), 0);
     }
   }

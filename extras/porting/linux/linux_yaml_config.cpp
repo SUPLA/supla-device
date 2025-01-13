@@ -91,6 +91,39 @@ Supla::LinuxYamlConfig::LinuxYamlConfig(const std::string& file) : file(file) {
 Supla::LinuxYamlConfig::~LinuxYamlConfig() {
 }
 
+void Supla::LinuxYamlConfig::logError(const std::string& filename,
+                                      const YAML::Exception& ex) const {
+  SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+  if (ex.mark.line < 0) {
+    return;
+  }
+  std::ifstream file(filename);
+  if (!file.is_open()) {
+    SUPLA_LOG_ERROR("Error: Could not open file '%s'", filename.c_str());
+    return;
+  }
+
+  std::string line;
+  int currentLine = 0;
+  int fromLine = ex.mark.line - 3;
+  int toLine = ex.mark.line + 3;
+  if (fromLine < 0) {
+    fromLine = 0;
+  }
+
+  SUPLA_LOG_ERROR("Problematic place:");
+  while (std::getline(file, line)) {
+    if (currentLine >= fromLine && currentLine <= toLine) {
+      if (currentLine == ex.mark.line) {
+        SUPLA_LOG_ERROR("%3d: %s", currentLine, line.c_str());
+      } else {
+        SUPLA_LOG_WARNING("%3d: %s", currentLine, line.c_str());
+      }
+    }
+    ++currentLine;
+  }
+}
+
 bool Supla::LinuxYamlConfig::init() {
   if (initDone) {
     return true;
@@ -102,7 +135,7 @@ bool Supla::LinuxYamlConfig::init() {
       config = YAML::LoadFile(file);
       loadGuidAuthFromPath(getStateFilesPath());
     } catch (const YAML::Exception& ex) {
-      SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+      logError(file, ex);
       return false;
     }
   }
@@ -159,7 +192,7 @@ bool Supla::LinuxYamlConfig::isDebug() {
       }
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -173,7 +206,7 @@ bool Supla::LinuxYamlConfig::isVerbose() {
       }
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -224,7 +257,7 @@ bool Supla::LinuxYamlConfig::getUInt8(const char* key, uint8_t* result) {
       return Supla::KeyValue::getUInt8(key, result);
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -274,7 +307,7 @@ bool Supla::LinuxYamlConfig::getDeviceName(char* result) {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -297,7 +330,7 @@ bool Supla::LinuxYamlConfig::getSuplaServer(char* result) {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return Supla::Config::getSuplaServer(result);
 }
@@ -309,7 +342,7 @@ int32_t Supla::LinuxYamlConfig::getSuplaServerPort() {
       return port;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return 2016;
 }
@@ -322,7 +355,7 @@ bool Supla::LinuxYamlConfig::getEmail(char* result) {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -334,7 +367,7 @@ int Supla::LinuxYamlConfig::getProtoVersion() {
       return version;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return 23;
 }
@@ -378,7 +411,7 @@ bool Supla::LinuxYamlConfig::getMqttHost(char* result) const {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -390,7 +423,7 @@ int32_t Supla::LinuxYamlConfig::getMqttPort() const {
       return mqtt_port;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return config["mqtt"] && config["mqtt"]["use_ssl"] ? 8883 : 1883;
 }
@@ -404,7 +437,7 @@ bool Supla::LinuxYamlConfig::getMqttUsername(char* result) const {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -418,7 +451,7 @@ bool Supla::LinuxYamlConfig::getMqttPassword(char* result) const {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -432,7 +465,7 @@ bool Supla::LinuxYamlConfig::getMqttClientName(char* result) const {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -444,7 +477,7 @@ bool Supla::LinuxYamlConfig::getMqttUseSSL() const {
       return mqtt_use_ssl;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -456,7 +489,7 @@ bool Supla::LinuxYamlConfig::getMqttVerifyCA() const {
       return mqtt_secure;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -470,7 +503,7 @@ bool Supla::LinuxYamlConfig::getMqttFileCA(char* result) const {
       return true;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -497,7 +530,7 @@ bool Supla::LinuxYamlConfig::loadChannels() {
       return false;
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   return false;
 }
@@ -1537,7 +1570,7 @@ std::string Supla::LinuxYamlConfig::getStateFilesPath() {
       path = config["state_files_path"].as<std::string>();
     }
   } catch (const YAML::Exception& ex) {
-    SUPLA_LOG_ERROR("Config file YAML error: %s", ex.what());
+    logError(file, ex);
   }
   if (path.empty()) {
     SUPLA_LOG_DEBUG("Config: missing state files path - using default");

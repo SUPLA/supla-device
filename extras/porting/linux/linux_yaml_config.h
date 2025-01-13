@@ -69,6 +69,7 @@ channels:
 #include <supla/storage/config.h>
 #include <supla/storage/key_value.h>
 #include <supla/payload/payload.h>
+#include <yaml-cpp/exceptions.h>
 #include <yaml-cpp/yaml.h>
 
 #include <map>
@@ -216,6 +217,8 @@ class LinuxYamlConfig : public KeyValue {
   bool addGeneralPurposeMeterParsed(const YAML::Node& ch,
                                     int channelNumber,
                                     Supla::Parser::Parser* parser);
+
+  void logError(const std::string& filename, const YAML::Exception& ex) const;
 
   std::string file;
   YAML::Node config;

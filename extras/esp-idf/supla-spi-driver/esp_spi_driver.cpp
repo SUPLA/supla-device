@@ -36,7 +36,7 @@ void SPIDriver::initialize() {
     buscfg.quadwp_io_num = -1;
     buscfg.quadhd_io_num = -1;
     buscfg.max_transfer_sz = 0;
-    ret = spi_bus_initialize(HSPI_HOST, &buscfg, SPI_DMA_CH_AUTO);
+    ret = spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO);
     if (ret != ESP_OK) {
       SUPLA_LOG_ERROR("Failed to initialize SPI bus (%d)", ret);
     } else {
@@ -53,7 +53,7 @@ bool SPIDriver::addDevice(spi_device_interface_config_t *devcfg,
   }
   initialize();
 
-  auto ret = spi_bus_add_device(HSPI_HOST, devcfg, deviceHandle);
+  auto ret = spi_bus_add_device(SPI2_HOST, devcfg, deviceHandle);
   if (ret != ESP_OK) {
     SUPLA_LOG_ERROR("Failed to add SPI device (%d)", ret);
     return false;

@@ -279,8 +279,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
             "HVAC[%d]: weekly schedule invalid in storage. Using SW "
             "defaults", getChannelNumber());
       } else {
-        SUPLA_LOG_INFO("HVAC[%d]: weekly schedule loaded successfully",
-                       getChannelNumber());
+//        SUPLA_LOG_INFO("HVAC[%d]: weekly schedule loaded successfully",
+//                       getChannelNumber());
         isWeeklyScheduleConfigured = true;
       }
     } else {
@@ -299,8 +299,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
               "HVAC[%d]: alt weekly schedule invalid in storage. Using SW "
               "defaults", getChannelNumber());
         } else {
-          SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule loaded successfully",
-                         getChannelNumber());
+//          SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule loaded successfully",
+//                         getChannelNumber());
           isWeeklyScheduleConfigured = true;
         }
       } else {
@@ -711,9 +711,9 @@ void HvacBase::iterateAlways() {
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
     if (startupDelay) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d]: invalid temperature readout - startup delay...",
-          getChannelNumber());
+//      SUPLA_LOG_DEBUG(
+//          "HVAC[%d]: invalid temperature readout - startup delay...",
+//          getChannelNumber());
       return;
     }
     setOutput(getOutputValueOnError(), true);
@@ -2247,7 +2247,9 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
 }
 
 bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
-  SUPLA_LOG_INFO(" ********** SET MAIN THERMOMETER CHANNEL %d", channelNo);
+  SUPLA_LOG_DEBUG("Hvac[%d]: setMainThermometerChannelNo %d",
+                  getChannelNumber(),
+                  channelNo);
   if (initialConfig && !initDone) {
     initialConfig->MainThermometerChannelNo = channelNo;
   }

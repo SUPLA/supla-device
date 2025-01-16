@@ -20,6 +20,8 @@
 
 #include <supla/log_wrapper.h>
 
+#include <assert.h>
+
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -66,6 +68,7 @@ int LinuxFileStorage::readStorage(unsigned int offset,
                         int size,
                         bool logs) {
   for (int i = 0; i < size; i++) {
+    assert(offset + i < reservedSize && "Too small state Storage");
     buf[i] = data[offset + i];
   }
   return size;
@@ -76,6 +79,7 @@ int LinuxFileStorage::writeStorage(unsigned int offset,
                          int size) {
   dataChanged = true;
   for (int i = 0; i < size; i++) {
+    assert(offset + i < reservedSize && "Too small state Storage");
     data[offset + i] = buf[i];
   }
 

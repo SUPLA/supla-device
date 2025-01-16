@@ -81,6 +81,10 @@ void Supla::Protocol::SuplaSrpc::initClient() {
       client = Supla::Network::Instance()->createClient();
     } else {
       client = Supla::ClientBuilder();
+      if (client == nullptr) {
+        SUPLA_LOG_ERROR("Failed to create client");
+        return;
+      }
     }
     client->setDebugLogs(verboseLog);
   }

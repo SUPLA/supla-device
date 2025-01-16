@@ -1464,6 +1464,32 @@ bool Channel::isFunctionValid(int32_t function) const {
         }
       }
     }
+    case ChannelType::RELAY: {
+      switch (function) {
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEGATE:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW:
+        case SUPLA_CHANNELFNC_POWERSWITCH:
+        case SUPLA_CHANNELFNC_LIGHTSWITCH:
+        case SUPLA_CHANNELFNC_STAIRCASETIMER:
+        case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND:
+        case SUPLA_CHANNELFNC_TERRACE_AWNING:
+        case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
+        case SUPLA_CHANNELFNC_CURTAIN:
+        case SUPLA_CHANNELFNC_VERTICAL_BLIND:
+        case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR:
+        case SUPLA_CHANNELFNC_PUMPSWITCH:
+        case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
+          return true;
+        }
+        default: {
+          return false;
+        }
+      }
+    }
     default: {
       return true;
     }

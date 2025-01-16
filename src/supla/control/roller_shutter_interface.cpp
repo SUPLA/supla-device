@@ -149,6 +149,7 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
 
   int8_t task = newValue->value[0];
   int8_t tilt = newValue->value[1];
+  (void)(tilt);  // silence warning when debug logs are disabled
   SUPLA_LOG_DEBUG("RS[%d] new value from server: position/task %d, tilt %d",
       channel.getChannelNumber(), task, tilt);
   // TODO(klew): add tilt support

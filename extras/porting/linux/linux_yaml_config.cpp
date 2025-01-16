@@ -538,6 +538,11 @@ bool Supla::LinuxYamlConfig::loadChannels() {
 
 bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
                                           int channelIndex) {
+  if (channelIndex >= SUPLA_CHANNELMAXCOUNT) {
+    SUPLA_LOG_ERROR("Config: too many channels (max %d)",
+                    SUPLA_CHANNELMAXCOUNT);
+    return false;
+  }
   paramCount = 0;
   if (ch["type"]) {
     paramCount++;

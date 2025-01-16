@@ -28,7 +28,7 @@ namespace Supla {
 class LinuxFileStorage : public Storage {
  public:
   explicit LinuxFileStorage(const std::string &path,
-      unsigned int storageStartingOffset = 0, int reservedSize = 2048);
+      unsigned int storageStartingOffset = 0, int reservedSize = 10000);
   virtual ~LinuxFileStorage();
   bool init() override;
   void commit() override;

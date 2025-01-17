@@ -1182,6 +1182,7 @@ TEST_F(HvacTestWithChannelSetupF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, _, _)).Times(1);
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
@@ -1563,6 +1564,7 @@ TEST_F(HvacTestWithChannelSetupF,
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, _, _)).Times(1);
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))

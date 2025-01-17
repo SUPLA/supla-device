@@ -207,6 +207,7 @@ bool Relay::iterateConnected() {
   if (timerUpdateTimestamp != durationTimestamp) {
     timerUpdateTimestamp = durationTimestamp;
     updateTimerValue();
+    return false;
   }
 
   return ChannelElement::iterateConnected();

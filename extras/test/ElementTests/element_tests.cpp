@@ -190,35 +190,38 @@ TEST_F(ElementTests, ChannelElementMethods) {
   EXPECT_TRUE(el1.channel.isUpdateReady());
 
   EXPECT_CALL(time, millis)
-    .WillOnce(Return(0))   // #1 first call after value changed to true
-    .WillOnce(Return(200)) // #2 two calls after value changed to true and 100 ms passed
-    .WillOnce(Return(250)) // #3 value changed, however not enough time passed
-    .WillOnce(Return(250)) // #4 value changed, however not enough time passed
-    .WillOnce(Return(400)) // #5 two calls after value changed and another >100 ms passed
+    .WillOnce(Return(0))
+    .WillOnce(Return(200))
+    .WillOnce(Return(250))
+    .WillOnce(Return(250))
+    .WillOnce(Return(400))
     .WillOnce(Return(600))
     .WillOnce(Return(800));
 
   char array0[SUPLA_CHANNELVALUE_SIZE] = {};
   char array1[SUPLA_CHANNELVALUE_SIZE] = {};
   array1[0] = 1;
-  EXPECT_CALL(srpc, valueChanged(nullptr, 0, ElementsAreArray(array1), 0, 0)); // value at #2
-  EXPECT_CALL(srpc, valueChanged(nullptr, 0, ElementsAreArray(array0), 0, 0)); // value at #5
+  EXPECT_CALL(
+      srpc,
+      valueChanged(nullptr, 0, ElementsAreArray(array1), 0, 0));  // value at #2
+  EXPECT_CALL(
+      srpc,
+      valueChanged(nullptr, 0, ElementsAreArray(array0), 0, 0));  // value at #5
   EXPECT_CALL(srpc, getChannelConfig(0, SUPLA_CONFIG_TYPE_DEFAULT));
 
-
-  EXPECT_EQ(el1.iterateConnected(), true);  // #1
-  EXPECT_EQ(el1.iterateConnected(), false); // #2
+  EXPECT_EQ(el1.iterateConnected(), false);  // #1
+  EXPECT_EQ(el1.iterateConnected(), true);   // #2
 
   el1.channel.setNewValue(false);
-  EXPECT_EQ(el1.iterateConnected(), true);  // #3
-  EXPECT_EQ(el1.iterateConnected(), true);  // #4
-  EXPECT_EQ(el1.iterateConnected(), false); // #5
+  EXPECT_EQ(el1.iterateConnected(), false);  // #3
+  EXPECT_EQ(el1.iterateConnected(), true);   // #4
+  EXPECT_EQ(el1.iterateConnected(), true);   // #5
 
   EXPECT_FALSE(el1.channel.isUpdateReady());
   el1.channel.requestChannelConfig();
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #6
-  EXPECT_EQ(el1.iterateConnected(), true);  // #7
+  EXPECT_EQ(el1.iterateConnected(), true);   // #7
 }
 
 TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {

@@ -441,6 +441,10 @@ void RollerShutterInterface::setCalibrationFinished() {
 }
 
 void RollerShutterInterface::iterateAlways() {
+  if (lastUpdateTime != 0 && millis() - lastUpdateTime < 300) {
+    return;
+  }
+  lastUpdateTime = millis();
   TDSC_RollerShutterValue value = {};
   value.position = currentPosition;
   if (isCalibrationInProgress()) {

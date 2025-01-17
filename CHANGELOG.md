@@ -2,7 +2,7 @@
 
 ## 24.11.04 (2024-11-26)
 
-Fix: RollerShutter: ensure that config is send to server when some config fields were previously disabled - fixes problem with missing new config fields after device firmware update
+   - Fix: RollerShutter: ensure that config is send to server when some config fields were previously disabled - fixes problem with missing new config fields after device firmware update
 
 ## 24.11.03 (2024-11-25)
    - Change: SuplaSrpc: remove sending ChannelState as ExtendedValue and revert to sending it only via dedicated message

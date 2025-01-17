@@ -178,6 +178,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   // but without information about calibration lenght. In general:
   // calibrationTime > 0 means that there is ongoing calibration
   uint32_t calibrationTime = 0;
+  uint32_t lastUpdateTime = 0;
 
   static int16_t rsStorageSaveDelay;
 };

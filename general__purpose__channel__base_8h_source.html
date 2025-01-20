@@ -184,8 +184,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>  int32_t getDefaultValueMultiplier() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>  int64_t getDefaultValueAdded() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>  uint8_t getDefaultValuePrecision() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>  <span class="keywordtype">void</span> getDefaultUnitBeforeValue(<span class="keywordtype">char</span> *unit);</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>  <span class="keywordtype">void</span> getDefaultUnitAfterValue(<span class="keywordtype">char</span> *unit);</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>  <span class="keywordtype">void</span> getDefaultUnitBeforeValue(<span class="keywordtype">char</span> unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]);</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>  <span class="keywordtype">void</span> getDefaultUnitAfterValue(<span class="keywordtype">char</span> unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]);</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>  <span class="comment">// Below setters modify channel config, which will be send to server as well.</span></div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>  <span class="comment">// Sets refresh interval in milliseconds.</span></div>
@@ -227,8 +227,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>  int32_t getValueMultiplier() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>  int64_t getValueAdded() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>  uint8_t getValuePrecision() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordtype">void</span> getUnitBeforeValue(<span class="keywordtype">char</span> *unit) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>  <span class="keywordtype">void</span> getUnitAfterValue(<span class="keywordtype">char</span> *unit) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>  <span class="keywordtype">void</span> getUnitBeforeValue(<span class="keywordtype">char</span> unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>  <span class="keywordtype">void</span> getUnitAfterValue(<span class="keywordtype">char</span> unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>  uint8_t getNoSpaceBeforeValue() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>  uint8_t getNoSpaceAfterValue() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>  uint8_t getKeepHistory() <span class="keyword">const</span>;</div>

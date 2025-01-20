@@ -135,7 +135,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="comment">// server</span></div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <span class="comment">// soundSetByDevice - true if sound is set by device, false if managed by</span></div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  <span class="comment">// server</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> RegisterNotification(<span class="keywordtype">int</span> context,</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> RegisterNotification(int16_t context,</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>                                   <span class="keywordtype">bool</span> titleSetByDevice = <span class="keyword">true</span>,</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>                                   <span class="keywordtype">bool</span> messageSetByDevice = <span class="keyword">true</span>,</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>                                   <span class="keywordtype">bool</span> soundSetByDevice = <span class="keyword">false</span>);</div>
@@ -151,12 +151,12 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>  <span class="comment">// Return true if notification was sent</span></div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>  <span class="comment">// Return false if notification was not sent (i.e. it wasn&#39;t registered,</span></div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>  <span class="comment">// or Supla server connection is not ready)</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> Send(<span class="keywordtype">int</span> context,</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> Send(int16_t context,</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                   <span class="keyword">const</span> <span class="keywordtype">char</span> *title = <span class="keyword">nullptr</span>,</div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                   <span class="keyword">const</span> <span class="keywordtype">char</span> *message = <span class="keyword">nullptr</span>,</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                   <span class="keywordtype">int</span> soundId = 0);</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> SendF(<span class="keywordtype">int</span> context, <span class="keyword">const</span> <span class="keywordtype">char</span>* title,  <span class="keyword">const</span> <span class="keywordtype">char</span> *fmt, ...);</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> SendF(int16_t context, <span class="keyword">const</span> <span class="keywordtype">char</span>* title,  <span class="keyword">const</span> <span class="keywordtype">char</span> *fmt, ...);</div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>  <span class="keyword">static</span> <span class="keywordtype">bool</span> IsNotificationUsed();</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
@@ -166,13 +166,13 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>  <span class="keyword">static</span> Notification* GetInstance();</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>  <span class="keyword">static</span> Notification* instance;</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>  <span class="keywordtype">bool</span> registerNotification(<span class="keywordtype">int</span> context,</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>  <span class="keywordtype">bool</span> registerNotification(int16_t context,</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>                            <span class="keywordtype">bool</span> titleSetByDevice,</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                            <span class="keywordtype">bool</span> messageSetByDevice,</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                            <span class="keywordtype">bool</span> soundSetByDevice);</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>  <span class="keywordtype">bool</span> send(<span class="keywordtype">int</span> context, <span class="keyword">const</span> <span class="keywordtype">char</span> *title, <span class="keyword">const</span> <span class="keywordtype">char</span> *message,</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>  <span class="keywordtype">bool</span> send(int16_t context, <span class="keyword">const</span> <span class="keywordtype">char</span> *title, <span class="keyword">const</span> <span class="keywordtype">char</span> *message,</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>           <span class="keywordtype">int</span> soundId);</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  <a class="code hl_struct" href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a>* getContextConfig(<span class="keywordtype">int</span> context);</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  <a class="code hl_struct" href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a>* getContextConfig(int16_t context);</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  <span class="keywordtype">void</span> setSrpc(<a class="code hl_class" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *srpc);</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>

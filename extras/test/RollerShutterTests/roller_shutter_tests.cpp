@@ -200,7 +200,7 @@ TEST_F(RollerShutterFixture, movementTests) {
 
     EXPECT_CALL(
         storage, readStorage(_, _, /* sizeof(RollerShutterStateData) */ 9, _))
-        .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+        .WillOnce([](uint32_t, unsigned char *data, int, bool) {
           RollerShutterStateDataTests rsData = {.closingTimeMs = 10000,
                                                 .openingTimeMs = 10000,
                                                 .currentPosition = 0};
@@ -323,7 +323,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
 
     EXPECT_CALL(
         storage, readStorage(_, _, /* sizeof(RollerShutterStateData) */ 9, _))
-        .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+        .WillOnce([](uint32_t, unsigned char *data, int, bool) {
           RollerShutterStateDataTests rsData = {.closingTimeMs = 10000,
                                                 .openingTimeMs = 10000,
                                                 .currentPosition = 0};

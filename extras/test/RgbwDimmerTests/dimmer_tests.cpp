@@ -26,32 +26,36 @@ using ::testing::_;
 using ::testing::AtLeast;
 
 class DimmerBaseForTest : public Supla::Control::DimmerBase {
-  public:
-    MOCK_METHOD(void, setRGBWValueOnDevice, (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t), (override));
+ public:
+  MOCK_METHOD(void,
+              setRGBWValueOnDevice,
+              (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t),
+              (override));
 };
 
 class TimeInterfaceStub : public TimeInterface {
-  public:
-    virtual uint32_t millis() override {
-      static uint32_t value = 0;
-      value += 1000;
-      return value;
-    }
+ public:
+  virtual uint32_t millis() override {
+    static uint32_t value = 0;
+    value += 1000;
+    return value;
+  }
 };
 
 class SimpleTime : public TimeInterface {
-  public:
-    SimpleTime() : value(0) {}
+ public:
+  SimpleTime() : value(0) {
+  }
 
-    virtual uint32_t millis() override {
-      return value;
-    }
+  virtual uint32_t millis() override {
+    return value;
+  }
 
-    void advance(int advanceMs) {
-      value += advanceMs;
-    }
+  void advance(int advanceMs) {
+    value += advanceMs;
+  }
 
-    uint32_t value;
+  uint32_t value;
 };
 
 TEST(DimmerTests, InitializationWithDefaultValues) {
@@ -273,11 +277,7 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, _))
       .WillRepeatedly(
           [&prevBrightness, &expectation](
-              uint32_t red,
-              uint32_t green,
-              uint32_t blue,
-              uint32_t colorBrightness,
-              uint32_t brightness) {
+              uint32_t, uint32_t, uint32_t, uint32_t, uint32_t brightness) {
             if (expectation == EXPECT_ZERO) {
               EXPECT_EQ(brightness, 0);
             } else if (expectation == EXPECT_GREATER) {

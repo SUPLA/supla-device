@@ -210,8 +210,8 @@ TEST(StorageStateWlByteTests, preambleAlreadyInitializedMultipleWriteAndRead) {
   uint32_t address = sizeof(Supla::Preamble) + sizeof(Supla::SectionPreamble) +
                      2 * sizeof(Supla::StateEntryAddress);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {address, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {address, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {address, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {address, 8, 0};
 
   uint16_t crc =
       calculateCrc16(reinterpret_cast<const uint8_t *>(&stateEntryAddressMain),
@@ -348,8 +348,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorage) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 3 * (sizeof(Supla::StateEntryAddress) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = thirdSlotAddress;
   stateEntryAddressBackup.address = thirdSlotAddress;
 
@@ -424,8 +424,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorageWithBothSlots) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 3 * (sizeof(Supla::StateEntryAddress) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = secondSlotAddress;
   stateEntryAddressBackup.address = secondSlotAddress;
 
@@ -511,8 +511,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorageWithBothSlotsInvert) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 2 * (sizeof(Supla::StateWlByteHeader) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = secondSlotAddress;
   stateEntryAddressBackup.address = secondSlotAddress;
 
@@ -598,8 +598,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorageWithBothSlotsOneInvalid) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 2 * (sizeof(Supla::StateWlByteHeader) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = secondSlotAddress;
   stateEntryAddressBackup.address = secondSlotAddress;
 
@@ -688,8 +688,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorageWithBothSlotsSecondInvalid) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 2 * (sizeof(Supla::StateWlByteHeader) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = secondSlotAddress;
   stateEntryAddressBackup.address = secondSlotAddress;
 
@@ -777,8 +777,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorageWithBothSlotsSecondInvalid2) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 2 * (sizeof(Supla::StateWlByteHeader) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = secondSlotAddress;
   stateEntryAddressBackup.address = secondSlotAddress;
 
@@ -866,8 +866,8 @@ TEST(StorageStateWlByteTests, loadDataFromStorageWithBothSlotsInvalid) {
   uint32_t thirdSlotAddress =
       firstSlotAddress + 2 * (sizeof(Supla::StateWlByteHeader) + 8);
 
-  Supla::StateEntryAddress stateEntryAddressMain = {0, 8};
-  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8};
+  Supla::StateEntryAddress stateEntryAddressMain = {0, 8, 0};
+  Supla::StateEntryAddress stateEntryAddressBackup = {0, 8, 0};
   stateEntryAddressMain.address = secondSlotAddress;
   stateEntryAddressBackup.address = secondSlotAddress;
 

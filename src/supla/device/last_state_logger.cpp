@@ -43,12 +43,12 @@ bool LastStateLogger::prepareLastStateLog() {
 }
 
 void LastStateLogger::log(const char *state, int uptimeSec) {
-  int newStateSize = strlen(state);
+  size_t newStateSize = strlen(state);
   char timestamp[32] = {};
   if (uptimeSec > 7) {
     snprintf(timestamp, sizeof(timestamp), " (%d)", uptimeSec);
   }
-  int timestampSize = strlen(timestamp);
+  size_t timestampSize = strlen(timestamp);
 
   if (newStateSize + timestampSize + 1 > LAST_STATE_LOGGER_BUFFER_SIZE) {
     return;
@@ -85,7 +85,7 @@ char *LastStateLogger::getLog() {
     }
     if (index < LAST_STATE_LOGGER_BUFFER_SIZE) {
       char *ptr = buffer + index;
-      int logSize = strlen(buffer + index);
+      size_t logSize = strlen(buffer + index);
       index += logSize + 1;
       return ptr;
     }

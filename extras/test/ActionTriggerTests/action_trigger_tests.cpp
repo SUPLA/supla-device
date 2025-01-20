@@ -1500,7 +1500,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
       .Times(2)
       .WillRepeatedly(
-          [](uint32_t address, unsigned char *data, int size, bool) {
+          [](uint32_t, unsigned char *data, int, bool) {
           uint32_t storageData = 0;
           memcpy(data, &storageData, sizeof(storageData));
           return sizeof(storageData);
@@ -1885,7 +1885,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
       .Times(2)
       .WillRepeatedly(
-          [](uint32_t address, unsigned char *data, int size, bool) {
+          [](uint32_t, unsigned char *data, int, bool) {
           uint32_t storageData = 0;
           memcpy(data, &storageData, sizeof(storageData));
           return sizeof(storageData);
@@ -2037,7 +2037,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
       .Times(2)
       .WillRepeatedly(
-          [](uint32_t address, unsigned char *data, int size, bool) {
+          [](uint32_t, unsigned char *data, int, bool) {
           uint32_t storageData = 0;
           memcpy(data, &storageData, sizeof(storageData));
           return sizeof(storageData);

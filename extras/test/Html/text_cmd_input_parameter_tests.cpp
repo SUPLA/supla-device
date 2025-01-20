@@ -48,7 +48,7 @@ TEST(TextCmdInputTests, EmptyElementTests) {
   EXPECT_EQ(sendHtml, "");
 
   EXPECT_CALL(senderMock, send(_, _)).WillRepeatedly([] (const char *data,
-        int size) {
+        int) {
     sendHtml.append(data);
   });
 

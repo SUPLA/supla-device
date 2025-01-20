@@ -413,7 +413,7 @@ TEST_F(GpMeasurementTestsFixture, defaultParametersShouldntOverwriteConfig) {
           _,
           sizeof(Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig)))
       .Times(1)
-      .WillOnce([](const char *key, char *value, size_t blobSize) {
+      .WillOnce([](const char *, char *value, size_t blobSize) {
         Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig config = {};
         EXPECT_EQ(blobSize, sizeof(config));
         config.added = 11;

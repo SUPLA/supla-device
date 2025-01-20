@@ -147,7 +147,8 @@ void Supla::EspIdfOta::iterate() {
       if (v == 0) break;
       curPos += v;
       Supla::Sha256 hash;
-      strncpy(buf, Supla::RegisterDevice::getEmail(), BUF_SIZE);
+      strncpy(buf, Supla::RegisterDevice::getEmail(), BUF_SIZE - 1);
+      buf[BUF_SIZE - 1] = '\0';
       auto bufPtr = buf;
       int size = 0;
       while (*bufPtr) {

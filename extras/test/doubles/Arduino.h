@@ -35,7 +35,7 @@ class SerialStub {
   virtual ~SerialStub() {
   }
 
-  int printf(const char *format, ...) {
+  int printf(const char *, ...) {
     return 0;
   }
   int print(const String &) {
@@ -75,7 +75,7 @@ class SerialStub {
   }
 
 
-  int println(const String &s) {
+  int println(const String &) {
     return 0;
   }
 

@@ -383,7 +383,8 @@ void Network::generateHostname(const char *prefix, int macSize, char *output) {
   if (macSize < 0) {
     macSize = 0;
   }
-  strncpy(result, prefix, hostnameSize);
+  strncpy(result, prefix, hostnameSize - 1);
+  result[hostnameSize - 1] = '\0';
   int destIdx = strnlen(result, hostnameSize);
 
   if (macSize > 0) {

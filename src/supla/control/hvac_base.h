@@ -444,6 +444,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setIgnoreDefaultPumpForAggregator(bool);
   void setIgnoreDefaultHeatOrColdSourceForAggregator(bool);
 
+  bool isAltWeeklySchedulePossible() const;
+
   HvacParameterFlags parameterFlags = {};
 
  protected:

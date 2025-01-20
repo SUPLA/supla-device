@@ -18,7 +18,6 @@
 #define SRC_SUPLA_UPTIME_H_
 
 #include <stdint.h>
-#include "../supla-common/proto.h"
 
 namespace Supla {
 
@@ -35,10 +34,10 @@ class Uptime {
   uint8_t getLastResetCause() const;
 
  protected:
-  uint32_t lastMillis = 0;;
+  uint32_t lastMillis = 0;
   uint32_t deviceUptime = 0;
   uint32_t connectionUptime = 0;
-  uint8_t lastConnectionResetCause = SUPLA_LASTCONNECTIONRESETCAUSE_UNKNOWN;
+  uint8_t lastConnectionResetCause = 0;
   bool acceptConnectionLostCause = false;
 };
 

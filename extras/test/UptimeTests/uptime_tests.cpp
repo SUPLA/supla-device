@@ -16,6 +16,7 @@
 
 #include <gtest/gtest.h>
 #include <supla/uptime.h>
+#include <supla-common/proto.h>
 
 TEST(UptimeTests, LastResetCauseSetAndGet) {
   Supla::Uptime uptime;

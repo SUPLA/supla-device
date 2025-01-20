@@ -363,9 +363,6 @@ TEST(KeyValueTests, variousKVChecks) {
   KeyValueTest kvStorage;
 
   int8_t result8 = {};
-  uint8_t resultU8 = {};
-  uint32_t resultU32 = {};
-  int32_t result32 = {};
 
   EXPECT_TRUE(kvStorage.setInt8("this is too long key", 13));
   EXPECT_TRUE(kvStorage.getInt8("this is too long key", &result8));
@@ -378,7 +375,7 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_TRUE(kvStorage.getEmail(buf));
   EXPECT_STREQ(buf, "this_is_mail@user.com");
 
-  //generateGuidAndAuthkey();
+  // generateGuidAndAuthkey();
   EXPECT_TRUE(kvStorage.setDeviceName("device name"));
   EXPECT_TRUE(kvStorage.setDeviceMode(Supla::DEVICE_MODE_NORMAL));
   EXPECT_TRUE(kvStorage.setGUID("1234567890"));

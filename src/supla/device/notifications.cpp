@@ -49,7 +49,7 @@ bool Notification::IsNotificationUsed() {
   return instance != nullptr;
 }
 
-bool Notification::RegisterNotification(int context,
+bool Notification::RegisterNotification(int16_t context,
                                         bool titleSetByDevice,
                                         bool messageSetByDevice,
                                         bool soundSetByDevice) {
@@ -57,7 +57,7 @@ bool Notification::RegisterNotification(int context,
       context, titleSetByDevice, messageSetByDevice, soundSetByDevice);
 }
 
-bool Notification::Send(int context,
+bool Notification::Send(int16_t context,
                    const char *title,
                    const char *message,
                    int soundId) {
@@ -69,7 +69,7 @@ bool Notification::Send(int context,
   return GetInstance()->send(context, title, message, soundId);
 }
 
-bool Notification::SendF(int context,
+bool Notification::SendF(int16_t context,
                         const char *title,
                         const char *format,
                         ...) {
@@ -86,7 +86,7 @@ bool Notification::SendF(int context,
   return result;
 }
 
-bool Notification::registerNotification(int context,
+bool Notification::registerNotification(int16_t context,
                                         bool titleSetByDevice,
                                         bool messageSetByDevice,
                                         bool soundSetByDevice) {
@@ -126,7 +126,7 @@ bool Notification::registerNotification(int context,
   return false;
 }
 
-bool Notification::send(int context,
+bool Notification::send(int16_t context,
                         const char *title,
                         const char *message,
                         int soundId) {
@@ -157,7 +157,7 @@ bool Notification::send(int context,
   return srpc->sendNotification(context, title, message, soundId);
 }
 
-TDS_RegisterPushNotification* Notification::getContextConfig(int context) {
+TDS_RegisterPushNotification* Notification::getContextConfig(int16_t context) {
   for (int i = 0; i < notificationCount; i++) {
     if (notifications[i].Context == context) {
       return &notifications[i];

@@ -19,6 +19,8 @@
 
 #define LAST_STATE_LOGGER_BUFFER_SIZE 500
 
+#include <stddef.h>
+
 namespace Supla {
 class Mutex;
 
@@ -37,7 +39,7 @@ class LastStateLogger {
 
  protected:
   char buffer[LAST_STATE_LOGGER_BUFFER_SIZE] = {};
-  int index = 0;
+  size_t index = 0;
   Supla::Mutex *mutex = nullptr;
 };
 };  // namespace Device

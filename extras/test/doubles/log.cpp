@@ -16,7 +16,7 @@
 
 #include <supla-common/log.h>
 
-void supla_log(int __pri, const char *__fmt, ...) {
+void supla_log(int, const char *, ...) {
   return;
 }
 

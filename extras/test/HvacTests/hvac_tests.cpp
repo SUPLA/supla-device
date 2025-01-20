@@ -916,21 +916,23 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
 
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillOnce(
-          [](const char *key, const char *buf, int size) {
-            TChannelConfig_HVAC expectedData = {
-                .MainThermometerChannelNo = 1,
-                .AuxThermometerChannelNo = 2,
-                .AuxThermometerType = SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-                .AntiFreezeAndOverheatProtectionEnabled = 1,
-                .AvailableAlgorithms =
-                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
-                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
-                .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-                .MinOnTimeS = 10,
-                .MinOffTimeS = 20,
-                .OutputValueOnError = 100,
-                .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
-                .Temperatures = {}};
+          [](const char *, const char *buf, int size) {
+            TChannelConfig_HVAC expectedData = {};
+            expectedData.MainThermometerChannelNo = 1;
+            expectedData.AuxThermometerChannelNo = 2;
+            expectedData.AuxThermometerType =
+                SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
+            expectedData.AntiFreezeAndOverheatProtectionEnabled = 1;
+            expectedData.AvailableAlgorithms =
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+            expectedData.UsedAlgorithm =
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+            expectedData.MinOnTimeS = 10;
+            expectedData.MinOffTimeS = 20;
+            expectedData.OutputValueOnError = 100;
+            expectedData.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+            expectedData.Temperatures = {};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
@@ -1053,20 +1055,22 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
 
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillOnce(
-          [](const char *key, const char *buf, int size) {
-            TChannelConfig_HVAC expectedData = {
-                .MainThermometerChannelNo = 1,
-                .AuxThermometerChannelNo = 2,
-                .AuxThermometerType = SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-                .AntiFreezeAndOverheatProtectionEnabled = 1,
-                .AvailableAlgorithms =
-                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
-                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
-                .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-                .MinOnTimeS = 10,
-                .MinOffTimeS = 20,
-                .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
-                .Temperatures = {}};
+          [](const char *, const char *buf, int size) {
+            TChannelConfig_HVAC expectedData = {};
+            expectedData.MainThermometerChannelNo = 1;
+            expectedData.AuxThermometerChannelNo = 2;
+            expectedData.AuxThermometerType =
+                SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
+            expectedData.AntiFreezeAndOverheatProtectionEnabled = 1;
+            expectedData.AvailableAlgorithms =
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+            expectedData.UsedAlgorithm =
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+            expectedData.MinOnTimeS = 10;
+            expectedData.MinOffTimeS = 20;
+            expectedData.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+            expectedData.Temperatures = {};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
@@ -1238,20 +1242,22 @@ TEST_F(HvacTestWithChannelSetupF,
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .InSequence(s1)
       .WillOnce(
-          [](const char *key, const char *buf, int size) {
-            TChannelConfig_HVAC expectedData = {
-                .MainThermometerChannelNo = 1,
-                .AuxThermometerChannelNo = 2,
-                .AuxThermometerType = SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR,
-                .AntiFreezeAndOverheatProtectionEnabled = 1,
-                .AvailableAlgorithms =
-                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
-                    SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
-                .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-                .MinOnTimeS = 10,
-                .MinOffTimeS = 20,
-                .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
-                .Temperatures = {}};
+          [](const char *, const char *buf, int size) {
+            TChannelConfig_HVAC expectedData = {};
+            expectedData.MainThermometerChannelNo = 1;
+            expectedData.AuxThermometerChannelNo = 2;
+            expectedData.AuxThermometerType =
+                SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
+            expectedData.AntiFreezeAndOverheatProtectionEnabled = 1;
+            expectedData.AvailableAlgorithms =
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+            expectedData.UsedAlgorithm =
+                SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+            expectedData.MinOnTimeS = 10;
+            expectedData.MinOffTimeS = 20;
+            expectedData.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+            expectedData.Temperatures = {};
 
             Supla::Control::HvacBase::setTemperatureInStruct(
                 &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
@@ -1382,8 +1388,8 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(false));
+        .Times(0);
+//        .WillRepeatedly(Return(false));
 
     EXPECT_CALL(proto,
                 setChannelConfig(0,
@@ -1399,8 +1405,8 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(false));
+        .Times(0);
+//        .WillRepeatedly(Return(false));
 
     EXPECT_CALL(proto,
                 setChannelConfig(0,
@@ -1416,8 +1422,8 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(false));
+        .Times(0);
+//        .WillRepeatedly(Return(false));
 
     EXPECT_CALL(proto,
                 setChannelConfig(0,
@@ -1425,25 +1431,27 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_HVAC),
                                  SUPLA_CONFIG_TYPE_DEFAULT))
-        .WillOnce([](uint8_t channelNumber,
-                     _supla_int_t channelFunction,
+        .WillOnce([](uint8_t,
+                     _supla_int_t,
                      void *buf,
                      int size,
-                     uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT) {
-          TChannelConfig_HVAC expectedData = {
-              .MainThermometerChannelNo = 0,
-              .AuxThermometerChannelNo = 0,
-              .AuxThermometerType = SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET,
-              .AntiFreezeAndOverheatProtectionEnabled = 0,
-              .AvailableAlgorithms =
-                  SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
-                  SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
-              .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-              .MinOnTimeS = 0,
-              .MinOffTimeS = 0,
-              .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
-              .TemperatureSetpointChangeSwitchesToManualMode = 1,
-              .Temperatures = {}};
+                     uint8_t) {
+          TChannelConfig_HVAC expectedData = {};
+          expectedData.MainThermometerChannelNo = 0;
+          expectedData.AuxThermometerChannelNo = 0;
+          expectedData.AuxThermometerType =
+              SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET;
+          expectedData.AntiFreezeAndOverheatProtectionEnabled = 0;
+          expectedData.AvailableAlgorithms =
+              SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
+              SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+          expectedData.UsedAlgorithm =
+              SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+          expectedData.MinOnTimeS = 0;
+          expectedData.MinOffTimeS = 0;
+          expectedData.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+          expectedData.TemperatureSetpointChangeSwitchesToManualMode = 1;
+          expectedData.Temperatures = {};
 
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_ECO, 1600);
@@ -1478,16 +1486,16 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(true));
+        .Times(0);
+//        .WillRepeatedly(Return(true));
     EXPECT_CALL(proto,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(true));
+        .Times(0);
+//        .WillRepeatedly(Return(true));
   }
 
   for (int i = 0; i < 10; ++i) {
@@ -1679,8 +1687,8 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(false));
+        .Times(0);
+//        .WillRepeatedly(Return(false));
 
     EXPECT_CALL(proto,
                 setChannelConfig(0,
@@ -1688,26 +1696,27 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_HVAC),
                                  SUPLA_CONFIG_TYPE_DEFAULT))
-        .WillOnce([](uint8_t channelNumber,
-                     _supla_int_t channelFunction,
+        .WillOnce([](uint8_t,
+                     _supla_int_t,
                      void *buf,
                      int size,
-                     uint8_t configType = SUPLA_CONFIG_TYPE_DEFAULT) {
-          TChannelConfig_HVAC expectedData = {
-              .MainThermometerChannelNo = 0,
-              .AuxThermometerChannelNo = 0,
-              .AuxThermometerType =
-                  SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET,
-              .AntiFreezeAndOverheatProtectionEnabled = 0,
-              .AvailableAlgorithms =
-                  SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
-                  SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST,
-              .UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE,
-              .MinOnTimeS = 0,
-              .MinOffTimeS = 0,
-              .Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT,
-              .TemperatureSetpointChangeSwitchesToManualMode = 1,
-              .Temperatures = {}};
+                     uint8_t) {
+          TChannelConfig_HVAC expectedData = {};
+          expectedData.MainThermometerChannelNo = 0;
+          expectedData.AuxThermometerChannelNo = 0;
+          expectedData.AuxThermometerType =
+              SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET;
+          expectedData.AntiFreezeAndOverheatProtectionEnabled = 0;
+          expectedData.AvailableAlgorithms =
+              SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE |
+              SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+          expectedData.UsedAlgorithm =
+              SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+          expectedData.MinOnTimeS = 0;
+          expectedData.MinOffTimeS = 0;
+          expectedData.Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+          expectedData.TemperatureSetpointChangeSwitchesToManualMode = 1;
+          expectedData.Temperatures = {};
 
           Supla::Control::HvacBase::setTemperatureInStruct(
               &expectedData.Temperatures, TEMPERATURE_ROOM_MIN, 500);
@@ -1739,16 +1748,16 @@ TEST_F(HvacTestWithChannelSetupF,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(true));
+        .Times(0);
+//        .WillRepeatedly(Return(true));
     EXPECT_CALL(proto,
                 setChannelConfig(0,
                                  SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
                                  _,
                                  sizeof(TChannelConfig_WeeklySchedule),
                                  SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE))
-        .Times(1)
-        .WillRepeatedly(Return(true));
+        .Times(0);
+//        .WillRepeatedly(Return(true));
     EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 0))
       .Times(2).WillRepeatedly(Return(true));
   }

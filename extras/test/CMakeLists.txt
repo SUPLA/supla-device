@@ -80,5 +80,55 @@ target_link_libraries(supladevicetests
 add_test(NAME supladevicetests
   COMMAND supladevicetests)
 
-target_compile_options(supladevicelib PRIVATE -Werror -Wall -Wextra -DSUPLA_TEST -DSUPLA_DEVICE)
-target_compile_options(supladevicetests PRIVATE -DSUPLA_TEST -DSUPLA_DEVICE)
+target_compile_options(supladevicelib PRIVATE
+  -Werror
+  -Wall
+  #  -Weffc++
+  #  -pedantic
+  # -pedantic-errors
+  -Wextra
+  #  -Waggregate-return
+  -Wcast-align
+  -Wcast-qual
+  #  -Wconversion
+  -Wdisabled-optimization
+  #  -Wfloat-equal
+  -Wformat=2
+  -Wformat-nonliteral
+  -Wformat-security
+  -Wformat-y2k
+  -Wimport
+  -Winit-self
+  -Winline
+  -Winvalid-pch
+  #  -Wlong-long
+  -Wmissing-field-initializers
+  #  -Wmissing-format-attribute
+  -Wmissing-include-dirs
+  -Wmissing-noreturn
+  -Wpacked
+  #  -Wpadded
+  -Wpointer-arith
+  -Wredundant-decls
+  #  -Wshadow
+  -Wstack-protector
+  -Wstrict-aliasing=2
+  #  -Wswitch-default
+  #  -Wswitch-enum
+  -Wunreachable-code
+  -Wunused
+  -Wunused-parameter
+  -Wvariadic-macros
+  -Wwrite-strings
+  -Wstringop-truncation
+  -Werror=stringop-truncation
+  -DSUPLA_TEST
+  -DSUPLA_DEVICE)
+target_compile_options(supladevicetests PRIVATE
+  -Werror
+  -Wall
+  -Wextra
+  -Wstringop-truncation
+  -Werror=stringop-truncation
+  -DSUPLA_TEST
+  -DSUPLA_DEVICE)

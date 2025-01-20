@@ -230,16 +230,18 @@ uint8_t GeneralPurposeChannelBase::getDefaultValuePrecision() const {
   return defaultValuePrecision;
 }
 
-void GeneralPurposeChannelBase::getDefaultUnitBeforeValue(char *unit) {
+void GeneralPurposeChannelBase::getDefaultUnitBeforeValue(
+    char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) {
   if (unit) {
-    strncpy(unit, defaultUnitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    memcpy(unit, defaultUnitBeforeValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
     unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
-void GeneralPurposeChannelBase::getDefaultUnitAfterValue(char *unit) {
+void GeneralPurposeChannelBase::getDefaultUnitAfterValue(
+    char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) {
   if (unit) {
-    strncpy(unit, defaultUnitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    memcpy(unit, defaultUnitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
     unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
@@ -260,19 +262,20 @@ uint8_t GeneralPurposeChannelBase::getValuePrecision() const {
   return commonConfig.precision;
 }
 
-void GeneralPurposeChannelBase::getUnitBeforeValue(char *unit) const {
+void GeneralPurposeChannelBase::getUnitBeforeValue(
+    char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const {
   if (unit) {
-    strncpy(unit,
+    memcpy(unit,
             commonConfig.unitBeforeValue,
             SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
     unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
 
-void GeneralPurposeChannelBase::getUnitAfterValue(char *unit) const {
+void GeneralPurposeChannelBase::getUnitAfterValue(
+    char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const {
   if (unit) {
-    strncpy(
-        unit, commonConfig.unitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+    memcpy(unit, commonConfig.unitAfterValue, SUPLA_GENERAL_PURPOSE_UNIT_SIZE);
     unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }

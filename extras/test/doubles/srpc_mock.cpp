@@ -19,49 +19,46 @@
 #include "srpc_mock.h"
 
 _supla_int_t srpc_ds_async_channel_extendedvalue_changed(
-    void *_srpc,
-    unsigned char channel_number,
-    TSuplaChannelExtendedValue *value) {
+    void *, unsigned char, TSuplaChannelExtendedValue *) {
   return 0;
 }
 
-_supla_int_t srpc_ds_async_action_trigger(void *_srpc, TDS_ActionTrigger *at) {
+_supla_int_t srpc_ds_async_action_trigger(void *, TDS_ActionTrigger *at) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->actionTrigger(at->ChannelNumber,
                                                 at->ActionTrigger);
 }
 
 _supla_int_t srpc_ds_async_get_channel_config_request(
-    void *_srpc, TDS_GetChannelConfigRequest *request) {
+    void *, TDS_GetChannelConfigRequest *request) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->getChannelConfig(request->ChannelNumber,
-      request->ConfigType);
+                                                   request->ConfigType);
 }
 
 _supla_int_t srpc_ds_async_set_device_config_result(
-    void *_srpc, TSDS_SetDeviceConfigResult *result) {
+    void *, TSDS_SetDeviceConfigResult *result) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setDeviceConfigResult(result);
 }
 
 _supla_int_t srpc_ds_async_set_device_config_request(
-    void *_srpc, TSDS_SetDeviceConfig *request) {
+    void *, TSDS_SetDeviceConfig *request) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setDeviceConfigRequest(request);
 }
 
 _supla_int_t srpc_ds_async_set_channel_config_result(
-    void *_srpc, TSDS_SetChannelConfigResult *result) {
+    void *, TSDS_SetChannelConfigResult *result) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setChannelConfigResult(result);
 }
 
 _supla_int_t srpc_ds_async_set_channel_config_request(
-    void *_srpc, TSDS_SetChannelConfig *request) {
+    void *, TSDS_SetChannelConfig *request) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->setChannelConfigRequest(request);
 }
-
 
 _supla_int_t srpc_ds_async_channel_value_changed_c(void *_srpc,
                                                    unsigned char channel_number,
@@ -137,7 +134,7 @@ void srpc_set_proto_version(void *_srpc, unsigned char version) {
 
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
     void *_srpc, TDS_SuplaRegisterDeviceHeader *registerdevice,
-    TDS_SuplaDeviceChannel_D *(*get_channel_data_callback)(int)) {
+    TDS_SuplaDeviceChannel_D *(*)(int)) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->srpc_ds_async_registerdevice_in_chunks(
       _srpc, registerdevice);
@@ -145,7 +142,7 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
 
 _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks_g(
     void *_srpc, TDS_SuplaRegisterDeviceHeader *registerdevice,
-    TDS_SuplaDeviceChannel_E *(*get_channel_data_callback)(int)) {
+    TDS_SuplaDeviceChannel_E *(*)(int)) {
   assert(SrpcInterface::instance);
   return SrpcInterface::instance->srpc_ds_async_registerdevice_in_chunks_g(
       _srpc, registerdevice);
@@ -169,7 +166,7 @@ _supla_int_t srpc_dcs_async_get_user_localtime(void *_srpc) {
 }
 
 _supla_int_t srpc_ds_async_register_push_notification(
-    void *_srpc, TDS_RegisterPushNotification *reg) {
+    void *, TDS_RegisterPushNotification *reg) {
   assert(SrpcInterface::instance);
   assert(reg);
   return SrpcInterface::instance->registerPushNotification(
@@ -177,7 +174,7 @@ _supla_int_t srpc_ds_async_register_push_notification(
 }
 
 _supla_int_t srpc_ds_async_set_subdevice_details(
-    void *_srpc, TDS_SubdeviceDetails *reg) {
+    void *, TDS_SubdeviceDetails *reg) {
   assert(SrpcInterface::instance);
   assert(reg);
   return SrpcInterface::instance->setSubdeviceDetails(
@@ -186,7 +183,7 @@ _supla_int_t srpc_ds_async_set_subdevice_details(
 }
 
 
-_supla_int_t srpc_ds_async_send_push_notification(void *_srpc,
+_supla_int_t srpc_ds_async_send_push_notification(void *,
                                                   TDS_PushNotification *push) {
   assert(SrpcInterface::instance);
   assert(push);
@@ -241,7 +238,7 @@ srpc_evtool_v3_extended2emextended(const TSuplaChannelExtendedValue *ev,
   memset(em_ev, 0, sizeof(TElectricityMeter_ExtendedValue_V3));
   memcpy(em_ev, ev->value, ev->size);
 
-  _supla_int_t expected_size = 0;
+  uint32_t expected_size = 0;
 
   if (em_ev->m_count <= EM_MEASUREMENT_COUNT) {
     expected_size =
@@ -258,7 +255,7 @@ srpc_evtool_v3_extended2emextended(const TSuplaChannelExtendedValue *ev,
   return 1;
 }
 
-_supla_int_t srpc_dcs_async_set_channel_caption(void *_srpc,
+_supla_int_t srpc_dcs_async_set_channel_caption(void *,
                                                 TDCS_SetCaption *caption) {
   assert(SrpcInterface::instance);
   assert(caption);

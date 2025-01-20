@@ -30,13 +30,15 @@ Wifi::Wifi(const char *wifiSsid, const char *wifiPassword, unsigned char *ip)
 
 void Wifi::setSsid(const char *wifiSsid) {
   if (wifiSsid) {
-    strncpy(ssid, wifiSsid, MAX_SSID_SIZE);
+    strncpy(ssid, wifiSsid, MAX_SSID_SIZE - 1);
+    ssid[MAX_SSID_SIZE - 1] = '\0';
   }
 }
 
 void Wifi::setPassword(const char *wifiPassword) {
   if (wifiPassword) {
-    strncpy(password, wifiPassword, MAX_WIFI_PASSWORD_SIZE);
+    strncpy(password, wifiPassword, MAX_WIFI_PASSWORD_SIZE - 1);
+    password[MAX_WIFI_PASSWORD_SIZE - 1] = '\0';
   }
 }
 

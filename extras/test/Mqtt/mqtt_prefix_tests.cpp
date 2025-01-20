@@ -30,27 +30,26 @@ using ::testing::DoAll;
 using ::testing::Return;
 
 class MqttUT : public Supla::Protocol::Mqtt {
-  public:
-    explicit MqttUT(SuplaDeviceClass *sdc) : Supla::Protocol::Mqtt(sdc) {}
-    void disconnect() override {}
-    bool iterate(uint32_t millis) override {
-      return false;
-    }
-    void publishImp(const char *topic,
-                          const char *payload,
-                          int qos,
-                          bool retain) override {}
-    void subscribeImp(const char *topic,
-                      int qos) override {}
+ public:
+  explicit MqttUT(SuplaDeviceClass *sdc) : Supla::Protocol::Mqtt(sdc) {
+  }
+  void disconnect() override {
+  }
+  bool iterate(uint32_t) override {
+    return false;
+  }
+  void publishImp(const char *, const char *, int, bool) override {
+  }
+  void subscribeImp(const char *, int) override {
+  }
 
+  void test_generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]) {
+    generateClientId(result);
+  }
 
-    void test_generateClientId(char result[MQTT_CLIENTID_MAX_SIZE]) {
-      generateClientId(result);
-    }
-
-    char *test_getPrefix() {
-      return prefix;
-    }
+  char *test_getPrefix() {
+    return prefix;
+  }
 };
 
 TEST(MqttPrefixTests, mqttgenerateClientId) {

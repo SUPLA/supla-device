@@ -88,8 +88,8 @@ class GeneralPurposeChannelBase : public ChannelElement {
   int32_t getDefaultValueMultiplier() const;
   int64_t getDefaultValueAdded() const;
   uint8_t getDefaultValuePrecision() const;
-  void getDefaultUnitBeforeValue(char *unit);
-  void getDefaultUnitAfterValue(char *unit);
+  void getDefaultUnitBeforeValue(char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]);
+  void getDefaultUnitAfterValue(char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]);
 
   // Below setters modify channel config, which will be send to server as well.
   // Sets refresh interval in milliseconds.
@@ -131,8 +131,8 @@ class GeneralPurposeChannelBase : public ChannelElement {
   int32_t getValueMultiplier() const;
   int64_t getValueAdded() const;
   uint8_t getValuePrecision() const;
-  void getUnitBeforeValue(char *unit) const;
-  void getUnitAfterValue(char *unit) const;
+  void getUnitBeforeValue(char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const;
+  void getUnitAfterValue(char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const;
   uint8_t getNoSpaceBeforeValue() const;
   uint8_t getNoSpaceAfterValue() const;
   uint8_t getKeepHistory() const;

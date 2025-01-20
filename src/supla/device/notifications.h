@@ -41,7 +41,7 @@ class Notification : public Element {
   // server
   // soundSetByDevice - true if sound is set by device, false if managed by
   // server
-  static bool RegisterNotification(int context,
+  static bool RegisterNotification(int16_t context,
                                    bool titleSetByDevice = true,
                                    bool messageSetByDevice = true,
                                    bool soundSetByDevice = false);
@@ -57,12 +57,12 @@ class Notification : public Element {
   // Return true if notification was sent
   // Return false if notification was not sent (i.e. it wasn't registered,
   // or Supla server connection is not ready)
-  static bool Send(int context,
+  static bool Send(int16_t context,
                    const char *title = nullptr,
                    const char *message = nullptr,
                    int soundId = 0);
 
-  static bool SendF(int context, const char* title,  const char *fmt, ...);
+  static bool SendF(int16_t context, const char* title,  const char *fmt, ...);
 
   static bool IsNotificationUsed();
 
@@ -72,13 +72,13 @@ class Notification : public Element {
   static Notification* GetInstance();
   static Notification* instance;
 
-  bool registerNotification(int context,
+  bool registerNotification(int16_t context,
                             bool titleSetByDevice,
                             bool messageSetByDevice,
                             bool soundSetByDevice);
-  bool send(int context, const char *title, const char *message,
+  bool send(int16_t context, const char *title, const char *message,
            int soundId);
-  TDS_RegisterPushNotification* getContextConfig(int context);
+  TDS_RegisterPushNotification* getContextConfig(int16_t context);
 
   void setSrpc(Supla::Protocol::SuplaSrpc *srpc);
 

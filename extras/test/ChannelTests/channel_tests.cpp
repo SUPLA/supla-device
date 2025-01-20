@@ -347,7 +347,6 @@ TEST_F(ChannelTestsFixture, SendUpdateTest) {
   ::testing::InSequence seq;
   SrpcMock srpc;
 
-  const char emptyArray[SUPLA_CHANNELVALUE_SIZE] = {};
   char array[SUPLA_CHANNELVALUE_SIZE] = {};
   array[0] = 1;
 
@@ -403,8 +402,6 @@ TEST_F(ChannelTestsFixture, Int32ChannelWithLocalActions) {
   SrpcMock srpc;
 
   int action1 = 11;
-  int action2 = 12;
-  int action3 = 13;
 
   EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));
   EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));
@@ -436,8 +433,6 @@ TEST_F(ChannelTestsFixture, Int64ChannelWithLocalActions) {
   SrpcMock srpc;
 
   int action1 = 11;
-  int action2 = 12;
-  int action3 = 13;
 
   EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));
   EXPECT_CALL(mock1, handleAction(Supla::ON_CHANGE, action1));

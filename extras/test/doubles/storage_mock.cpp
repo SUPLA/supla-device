@@ -29,7 +29,7 @@ StorageMockSimulator::StorageMockSimulator(
 int StorageMockSimulator::readStorage(unsigned int offset,
     unsigned char *data,
     int size,
-    bool log) {
+    bool) {
   if (offset + size >= STORAGE_SIMULATOR_SIZE) {
     assert(false && "StorageMockSimulator out of bounds");
     return 0;
@@ -127,7 +127,7 @@ void StorageMock::defaultInitialization(int elementStateSize) {
     EXPECT_CALL(*this, commit()).Times(1);
     EXPECT_CALL(*this, readStorage(0, ::testing::_, 8, ::testing::_))
       .WillOnce(
-          [](uint32_t address, unsigned char *data, int size, bool) {
+          [](uint32_t, unsigned char *data, int, bool) {
           Supla::Preamble preamble = {};
           memcpy(data, &preamble, sizeof(preamble));
           return sizeof(preamble);
@@ -137,7 +137,7 @@ void StorageMock::defaultInitialization(int elementStateSize) {
       .WillOnce(::testing::Return(8));
     EXPECT_CALL(*this, readStorage(8, ::testing::_, 7, ::testing::_))
       .WillOnce(
-          [](uint32_t address, unsigned char *data, int size, bool) {
+          [](uint32_t, unsigned char *data, int, bool) {
           Supla::SectionPreamble preamble = {};
           memcpy(data, &preamble, sizeof(preamble));
           return sizeof(preamble);
@@ -148,7 +148,7 @@ void StorageMock::defaultInitialization(int elementStateSize) {
   } else {
     EXPECT_CALL(*this, readStorage(0, _, 8, _))
       .WillRepeatedly(
-          [](uint32_t address, unsigned char *data, int size, bool) {
+          [](uint32_t, unsigned char *data, int, bool) {
           Supla::Preamble preamble = {{'S', 'U', 'P', 'L', 'A'}, 1, 1};
           memcpy(data, &preamble, sizeof(preamble));
           return sizeof(preamble);
@@ -156,7 +156,7 @@ void StorageMock::defaultInitialization(int elementStateSize) {
     EXPECT_CALL(*this, readStorage(8, _, 7, _))
         .WillRepeatedly(
             [elementStateSize](
-                uint32_t address, unsigned char *data, int size, bool) {
+                uint32_t, unsigned char *data, int, bool) {
               Supla::SectionPreamble secPreamble = {
                   STORAGE_SECTION_TYPE_ELEMENT_STATE, 0, 0, 0};
               secPreamble.size = elementStateSize;

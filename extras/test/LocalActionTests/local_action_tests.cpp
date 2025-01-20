@@ -93,7 +93,6 @@ TEST(LocalActionTests, FourItemsTestsNoCalls) {
   int action2 = 2;
   int action3 = 3;
   int action4 = 4;
-  int action5 = 5;
   int event1 = 11;
   int event2 = 12;
   int event3 = 13;
@@ -140,7 +139,6 @@ TEST(LocalActionTests, FourItemsTestsWithCalls) {
   int action2 = 2;
   int action3 = 3;
   int action4 = 4;
-  int action5 = 5;
   int event1 = 11;
   int event2 = 12;
   int event3 = 13;

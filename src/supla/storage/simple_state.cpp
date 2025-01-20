@@ -49,10 +49,16 @@ bool SimpleState::writeSectionPreamble() {
         "SimpleState: initSectionPreamble failed, sectionOffset = 0");
     return false;
   }
+  if (stateSectionNewSize > UINT16_MAX) {
+    SUPLA_LOG_WARNING(
+        "SimpleState: initSectionPreamble failed, stateSectionNewSize > "
+        "UINT16_MAX");
+    return false;
+  }
 
   SectionPreamble preamble = {};
   preamble.type = STORAGE_SECTION_TYPE_ELEMENT_STATE;
-  preamble.size = stateSectionNewSize;
+  preamble.size = static_cast<uint16_t>(stateSectionNewSize);
   preamble.crc1 = crc;
   preamble.crc2 = crc;
   elementStateSize = stateSectionNewSize;

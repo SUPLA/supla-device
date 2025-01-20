@@ -22,12 +22,16 @@
 namespace Supla {
 
   void AtChannel::sendUpdate() {
+    if (channelNumber < 0 || channelNumber > 255) {
+      return;
+    }
     if (valueChanged) {
       auto actionId = popAction();
       if (actionId) {
         for (auto proto = Supla::Protocol::ProtocolLayer::first();
             proto != nullptr; proto = proto->next()) {
-          proto->sendActionTrigger(channelNumber, actionId);
+          proto->sendActionTrigger(static_cast<uint8_t>(channelNumber),
+                                   actionId);
         }
       }
     } else {

@@ -175,7 +175,7 @@ TEST_F(RelayFixture, stateOnInitTests) {
 
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -264,7 +264,7 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // data is read from storage, but it is not used by Relay
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -854,7 +854,7 @@ TEST_F(RelayFixture, durationMsTests) {
   // duration should be ignored, becuase keepTurnOnDuration is not enabled
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1082,7 +1082,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
 
   unsigned char storedRelayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1171,7 +1171,7 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
 
   unsigned char storedRelayFlags = RELAY_FLAGS_STAIRCASE;  // ON flag is not set
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1247,7 +1247,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
   // data is read from storage
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1305,7 +1305,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1363,7 +1363,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
   // data is read from storage
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1411,7 +1411,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1458,19 +1458,19 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
     // initial read in onLoadState
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
     // read before first write
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
     // read before second write
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 900;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1500,7 +1500,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   // save
   uint8_t relayFlags = 1;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 900);
         return 4;
       });
@@ -1509,7 +1509,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   // save
   relayFlags = 0;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 0);
         return 4;
       });
@@ -1568,7 +1568,7 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
   // data is read from storage
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1613,17 +1613,17 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
 
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 900;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1650,7 +1650,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   // save
   uint8_t relayFlags = 1;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 900);
         return 4;
       });
@@ -1659,7 +1659,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   // save
   relayFlags = 0;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 0);
         return 4;
       });
@@ -1720,7 +1720,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1745,7 +1745,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   // save
   uint8_t relayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 4000);
         return 4;
       });
@@ -1754,7 +1754,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   // save
   relayFlags = RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 4000);
         return 4;
       });
@@ -1814,7 +1814,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1839,7 +1839,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   // save
   uint8_t relayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return 4;
       });
@@ -1848,7 +1848,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   // save
   relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return 4;
       });
@@ -1907,24 +1907,23 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   storage.defaultInitialization(5);
 
   // data is read from storage
-  unsigned char storedRelayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -1961,7 +1960,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   // save
   uint8_t relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION | RELAY_FLAGS_ON;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return 4;
       });
@@ -2036,25 +2035,25 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
     // Load state storage
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
     // First write, no change
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
     // Second write, change to 500, but we read previous value
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
     // Last write, no change
-    .WillOnce([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -2083,7 +2082,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
 
   // save
   EXPECT_CALL(storage, writeStorage(_, _, 4))
-      .WillOnce([](uint32_t address, const unsigned char *value, int32_t buf) {
+      .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
         EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
         return 4;
       });
@@ -2151,7 +2150,7 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // data is read from storage, but it is not used by Relay
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t address, unsigned char *data, int size, bool) {
+    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -2708,7 +2707,6 @@ TEST_F(RelayFixture, hvacRelatedTest) {
   int number1 = r1.getChannelNumber();
   int number2 = r2.getChannelNumber();
   int number3 = r3.getChannelNumber();
-  char value[SUPLA_CHANNELVALUE_SIZE] = {};
   ASSERT_EQ(number1, 0);
   ASSERT_EQ(number2, 1);
   ASSERT_EQ(number3, 2);

@@ -45,7 +45,8 @@ Supla::Device::SwUpdate::SwUpdate(SuplaDeviceClass *sdc, const char *newUrl)
 
 void Supla::Device::SwUpdate::setUrl(const char *newUrl) {
   if (newUrl) {
-    strncpy(url, newUrl, SUPLA_MAX_URL_LENGTH);
+    strncpy(url, newUrl, SUPLA_MAX_URL_LENGTH - 1);
+    url[SUPLA_MAX_URL_LENGTH - 1] = '\0';
   }
 }
 

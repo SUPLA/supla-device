@@ -169,6 +169,7 @@ bool HvacBase::iterateConnected() {
   if (timerUpdateTimestamp != countdownTimerEnds && Supla::Clock::IsReady()) {
     timerUpdateTimestamp = countdownTimerEnds;
     updateTimerValue();
+    return false;
   }
   auto result = Element::iterateConnected();
 
@@ -186,6 +187,7 @@ bool HvacBase::iterateConnected() {
 
   if (configFinishedReceived && serverChannelFunctionValid) {
     if (channelConfigChangedOffline == 1) {
+      result = false;
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
            proto = proto->next()) {
@@ -201,7 +203,7 @@ bool HvacBase::iterateConnected() {
         }
       }
     }
-    if (weeklyScheduleChangedOffline == 1) {
+    if (channelConfigChangedOffline == 0 && weeklyScheduleChangedOffline == 1) {
       for (auto proto = Supla::Protocol::ProtocolLayer::first();
            proto != nullptr;
            proto = proto->next()) {
@@ -212,9 +214,9 @@ bool HvacBase::iterateConnected() {
                                     SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
           SUPLA_LOG_INFO("HVAC[%d]: weekly schedule send",
                          getChannelNumber());
+          result = false;
           weeklyScheduleChangedOffline = 2;
-          if (channel.getDefaultFunction() ==
-              SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+          if (isAltWeeklySchedulePossible()) {
             if (proto->setChannelConfig(
                     getChannelNumber(),
                     channel.getDefaultFunction(),
@@ -233,6 +235,11 @@ bool HvacBase::iterateConnected() {
   return result;
 }
 
+bool HvacBase::isAltWeeklySchedulePossible() const {
+  return (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+      !(isHeatingSubfunction() && parameterFlags.SubfunctionReadonly));
+}
+
 void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
@@ -247,8 +254,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     generateKey(key, Supla::ConfigTag::HvacCfgTag);
     TChannelConfig_HVAC storedConfig = {};
     if (cfg->getBlob(key,
-                     reinterpret_cast<char *>(&storedConfig),
-                     sizeof(TChannelConfig_HVAC))) {
+          reinterpret_cast<char *>(&storedConfig),
+          sizeof(TChannelConfig_HVAC))) {
       SUPLA_LOG_DEBUG("HVAC[%d]: config in storage:", getChannelNumber());
       debugPrintConfigStruct(&storedConfig, getChannelNumber());
       if (isConfigValid(&storedConfig)) {
@@ -257,7 +264,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
         applyConfigWithoutValidation(&storedConfig);
         fixTemperatureSetpoints();
         SUPLA_LOG_INFO("HVAC[%d]: config loaded successfully",
-                       getChannelNumber());
+            getChannelNumber());
       } else {
         SUPLA_LOG_WARNING(
             "HVAC[%d]: config invalid in storage. Using SW defaults",
@@ -265,15 +272,15 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
       }
     } else {
       SUPLA_LOG_INFO("HVAC[%d]: config missing. Using SW defaults",
-                     getChannelNumber());
+          getChannelNumber());
     }
 
     // Weekly schedule configuration
     generateKey(key, Supla::ConfigTag::HvacWeeklyCfgTag);
     isWeeklyScheduleConfigured = false;
     if (cfg->getBlob(key,
-                     reinterpret_cast<char *>(&weeklySchedule),
-                     sizeof(TChannelConfig_WeeklySchedule))) {
+          reinterpret_cast<char *>(&weeklySchedule),
+          sizeof(TChannelConfig_WeeklySchedule))) {
       if (!isWeeklyScheduleValid(&weeklySchedule)) {
         SUPLA_LOG_WARNING(
             "HVAC[%d]: weekly schedule invalid in storage. Using SW "
@@ -285,7 +292,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
       }
     } else {
       SUPLA_LOG_INFO("HVAC[%d]: weekly schedule missing. Using SW defaults",
-                     getChannelNumber());
+          getChannelNumber());
     }
 
     // Alt weekly schedule (only for HVAC_THERMOSTAT function)
@@ -313,7 +320,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     // load config changed offline flags
     if (cfg->isChannelConfigChangeFlagSet(getChannelNumber())) {
       SUPLA_LOG_INFO("HVAC[%d]: config changed offline flag is set",
-                     getChannelNumber());
+          getChannelNumber());
       channelConfigChangedOffline = 1;
     } else {
       channelConfigChangedOffline = 0;
@@ -323,8 +330,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     generateKey(key, "weekly_chng");
     cfg->getUInt8(key, &flag);
     SUPLA_LOG_INFO("HVAC[%d]: weekly schedule config changed offline flag %d",
-                   getChannelNumber(),
-                   flag);
+        getChannelNumber(),
+        flag);
     if (flag) {
       weeklyScheduleChangedOffline = 1;
     } else {
@@ -333,7 +340,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
 
   } else {
     SUPLA_LOG_ERROR("HVAC[%d]: can't work without config storage",
-                    getChannelNumber());
+        getChannelNumber());
   }
 }
 
@@ -348,7 +355,7 @@ void HvacBase::onLoadState() {
     }
     if (!Supla::Channel::isHvacValueValid(hvacValue)) {
       SUPLA_LOG_WARNING("HVAC[%d]: invalid HVAC value in state",
-                        getChannelNumber());
+          getChannelNumber());
     }
 
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
@@ -555,8 +562,7 @@ void HvacBase::handleChannelConfigFinished() {
     // trigger sending weekly schedule to server
     weeklyScheduleChangedOffline = 1;
   }
-  if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-      !altWeeklyScheduleReceived) {
+  if (isAltWeeklySchedulePossible() && !altWeeklyScheduleReceived) {
     // trigger sending weekly schedule to server
     weeklyScheduleChangedOffline = 1;
   }

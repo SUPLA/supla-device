@@ -118,13 +118,17 @@ void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   auto ch = getChannel();
 
   while (ch) {
+    auto chNumber = ch->getChannelNumber();
+    if (chNumber < 0 || chNumber > 255) {
+      return;
+    }
     if (ch->isInitialCaptionSet()) {
-      suplaSrpc->setInitialCaption(ch->getChannelNumber(),
+      suplaSrpc->setInitialCaption(static_cast<uint8_t>(chNumber),
                                    ch->getInitialCaption());
     }
     if (ch->isSleepingEnabled()) {
       if (isChannelStateEnabled()) {
-        suplaSrpc->sendChannelStateResult(0, ch->getChannelNumber());
+        suplaSrpc->sendChannelStateResult(0, static_cast<uint8_t>(chNumber));
       }
       ch->setUpdateReady();
     }

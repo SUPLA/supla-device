@@ -248,7 +248,7 @@ int urlEncode(const char *input, char *output, int outputMaxSize) {
 int stringAppend(char *output, const char *input, int maxSize) {
   int inputSize = strlen(input);
   if (inputSize < maxSize) {
-    strncpy(output, input, inputSize);
+    memcpy(output, input, inputSize);
     return inputSize;
   }
   return 0;

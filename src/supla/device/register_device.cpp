@@ -319,15 +319,16 @@ void Supla::RegisterDevice::removeChannel(int channelNumber) {
 
 bool Supla::RegisterDevice::isSuplaPublicServerConfigured() {
   if (reg_dev.ServerName[0] != '\0') {
-    const int serverLength = strlen(reg_dev.ServerName);
+    const size_t serverLength = strlen(reg_dev.ServerName);
     const char suplaPublicServerSuffix[] = ".supla.org";
-    const int suplaPublicServerSuffixLength = strlen(suplaPublicServerSuffix);
+    const size_t suplaPublicServerSuffixLength =
+        strlen(suplaPublicServerSuffix);
 
     if (serverLength > suplaPublicServerSuffixLength) {
-      if (strncmpInsensitive(reg_dev.ServerName +
-            serverLength - suplaPublicServerSuffixLength,
-            suplaPublicServerSuffix,
-            suplaPublicServerSuffixLength) == 0) {
+      if (strncmpInsensitive(
+              reg_dev.ServerName + serverLength - suplaPublicServerSuffixLength,
+              suplaPublicServerSuffix,
+              suplaPublicServerSuffixLength) == 0) {
         return true;
       }
     }

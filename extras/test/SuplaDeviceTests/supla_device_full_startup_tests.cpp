@@ -692,7 +692,6 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
     SslEnabledOnlyOnceCASetNoConfig) {
   net.setSSLEnabled(true);
   const char myCA1[] = "test CA1";
-  const char myCA2[] = "test CA2";
   sd.setSuplaCACert(myCA1);
 //  sd.setSupla3rdPartyCACert(myCA2);
 
@@ -771,7 +770,6 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
 TEST_F(SuplaDeviceTestsFullStartupManual,
     SslEnabledOnlyOnceCASetv2NoConfig) {
   net.setSSLEnabled(true);
-  const char myCA1[] = "test CA1";
   const char myCA2[] = "test CA2";
 //  sd.setSuplaCACert(myCA1);
   sd.setSupla3rdPartyCACert(myCA2);

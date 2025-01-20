@@ -66,8 +66,7 @@ uint32_t millis() {
   return TimeInterface::instance->millis();
 }
 
-void delay(uint64_t ms) {
-}
+void delay(uint64_t) {}
 
 long map(long input, long inMin, long inMax, long outMin, long outMax) {
   long result = (input - inMin) * (outMax - outMin) / (inMax - inMin);

@@ -538,6 +538,7 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
       channel.getHvacSetpointTemperatureCool(),
       channel.getHvacFlags());
   Supla::Element::onRegistered(suplaSrpc);
+  configFixAttempt = 0;
   serverChannelFunctionValid = true;
   configFinishedReceived = false;
   if (channelConfigChangedOffline) {
@@ -693,6 +694,10 @@ void HvacBase::iterateAlways() {
       millis() - lastConfigChangeTimestampMs < 5000) {
     return;
   }
+  if (configFixAttempt > 0) {
+    configFixAttempt--;
+  }
+
   lastConfigChangeTimestampMs = 0;
 
   if (getChannel()->isHvacFlagCountdownTimer()) {
@@ -1016,7 +1021,12 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   // if not, then send update to server
   // Check is done only on first config after registration
   if (readonlyChanged || additionalValidationChanged) {
-    channelConfigChangedOffline = 1;
+    if (configFixAttempt < 2) {
+      configFixAttempt++;
+      channelConfigChangedOffline = 1;
+    } else {
+      SUPLA_LOG_WARNING("HVAC[%d]: failed to fix config", getChannelNumber());
+    }
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;

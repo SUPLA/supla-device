@@ -528,6 +528,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   int8_t lastProgramManualOverride = -1;
   int8_t lastValue = -111;  // set out of output value range
+  uint8_t configFixAttempt = 0;
 
   int16_t lastManualSetpointHeat = INT16_MIN;
   int16_t lastManualSetpointCool = INT16_MIN;

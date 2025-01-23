@@ -75,6 +75,10 @@ bool KeyValue::initFromMemory(uint8_t* input, size_t inputSize) {
     return false;
   }
 
+  if (inputSize < SUPLA_STORAGE_KEY_SIZE + 1 + 2) {
+    return false;
+  }
+
   auto endPtr = input + inputSize;
   while (input + SUPLA_STORAGE_KEY_SIZE + 1 + 2 < endPtr) {
     char key[SUPLA_STORAGE_KEY_SIZE + 1] = {};

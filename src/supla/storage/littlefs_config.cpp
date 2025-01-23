@@ -29,6 +29,7 @@
 
 namespace Supla {
   const char ConfigFileName[] = "/supla-dev.cfg";
+  const char BackupConfigFileName[] = "/supla-dev.cfg.bak";
   const char CustomCAFileName[] = "/custom_ca.pem";
 };
 
@@ -53,56 +54,61 @@ bool Supla::LittleFsConfig::init() {
     return false;
   }
 
-  if (LittleFS.exists(ConfigFileName)) {
-    File cfg = LittleFS.open(ConfigFileName, "r");
-    if (!cfg) {
-      SUPLA_LOG_ERROR("LittleFsConfig: failed to open config file");
-      LittleFS.end();
-      return false;
-    }
+  auto files = {ConfigFileName, BackupConfigFileName};
+  bool result = false;
 
-    int fileSize = cfg.size();
+  for (auto file : files) {
+    if (LittleFS.exists(file)) {
+      File cfg = LittleFS.open(file, "r");
+      if (!cfg) {
+        SUPLA_LOG_ERROR("LittleFsConfig: failed to open \"%s\"", file);
+        continue;
+      }
 
-    SUPLA_LOG_DEBUG("LittleFsConfig: config file size %d", fileSize);
-    if (fileSize > configMaxSize) {
-      SUPLA_LOG_ERROR("LittleFsConfig: config file is too big");
+      int fileSize = cfg.size();
+
+      SUPLA_LOG_DEBUG("LittleFsConfig: file \"%s\" size %d", file, fileSize);
+      if (fileSize > configMaxSize) {
+        SUPLA_LOG_ERROR("LittleFsConfig: config file is too big");
+        cfg.close();
+        continue;
+      }
+
+      uint8_t* buf = new uint8_t[configMaxSize];
+      if (buf == nullptr) {
+        SUPLA_LOG_ERROR("LittleFsConfig: failed to allocate memory");
+        cfg.close();
+        continue;
+      }
+
+      memset(buf, 0, configMaxSize);
+      int bytesRead = cfg.read(buf, fileSize);
       cfg.close();
-      LittleFS.end();
-      return false;
+      if (bytesRead != fileSize) {
+        SUPLA_LOG_DEBUG("LittleFsConfig: read bytes %d, while file is %d bytes",
+                        bytesRead,
+                        fileSize);
+        delete[] buf;
+        continue;
+      }
+
+      SUPLA_LOG_DEBUG("LittleFsConfig: initializing storage from file...");
+      result = initFromMemory(buf, fileSize);
+      delete[] buf;
+      SUPLA_LOG_DEBUG("LittleFsConfig: init result %s",
+                      result ? "success" : "failure");
+
+      if (!result) {
+        continue;
+      } else {
+        break;
+      }
+    } else {
+      SUPLA_LOG_DEBUG("LittleFsConfig:: config file \"%s\" missing", file);
     }
-
-    uint8_t *buf = new uint8_t[configMaxSize];
-    if (buf == nullptr) {
-      SUPLA_LOG_ERROR("LittleFsConfig: failed to allocate memory");
-      cfg.close();
-      LittleFS.end();
-      return false;
-    }
-
-    memset(buf, 0, configMaxSize);
-    int bytesRead = cfg.read(buf, fileSize);
-
-    cfg.close();
-    LittleFS.end();
-    if (bytesRead != fileSize) {
-      SUPLA_LOG_DEBUG(
-          "LittleFsConfig: read bytes %d, while file is %d bytes",
-          bytesRead,
-          fileSize);
-      delete []buf;
-      return false;
-    }
-
-    SUPLA_LOG_DEBUG("LittleFsConfig: initializing storage from file...");
-    auto result =  initFromMemory(buf, fileSize);
-    SUPLA_LOG_DEBUG("LittleFsConfig: init result %d", result);
-    delete []buf;
-    return result;
-  } else {
-    SUPLA_LOG_DEBUG("LittleFsConfig:: config file missing");
   }
   LittleFS.end();
-  return true;
+  return result;
 }
 
 void Supla::LittleFsConfig::commit() {
@@ -120,15 +126,22 @@ void Supla::LittleFsConfig::commit() {
     return;
   }
 
-  File cfg = LittleFS.open(ConfigFileName, "w");
-  if (!cfg) {
-    SUPLA_LOG_ERROR("LittleFsConfig: failed to open config file for write");
-    LittleFS.end();
-    return;
-  }
+  auto files = {ConfigFileName, BackupConfigFileName};
+  bool result = false;
 
-  cfg.write(buf, dataSize);
-  cfg.close();
+  for (auto file : files) {
+    SUPLA_LOG_DEBUG("LittleFsConfig: writing to file \"%s\"", file);
+    File cfg = LittleFS.open(file, "w");
+    if (!cfg) {
+      SUPLA_LOG_ERROR(
+          "LittleFsConfig: failed to open config file \"%s\"for write", file);
+      LittleFS.end();
+      return;
+    }
+
+    cfg.write(buf, dataSize);
+    cfg.close();
+  }
   delete []buf;
   LittleFS.end();
 }

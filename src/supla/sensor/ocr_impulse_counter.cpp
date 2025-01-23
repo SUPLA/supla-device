@@ -43,6 +43,7 @@ using Supla::Sensor::OcrImpulseCounter;
 OcrImpulseCounter::OcrImpulseCounter() {
   channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_OCR);
   addAvailableLightingMode(OCR_LIGHTING_MODE_OFF | OCR_LIGHTING_MODE_ALWAYS_ON |
                            OCR_LIGHTING_MODE_AUTO);
   clearOcrConfig();
@@ -227,32 +228,31 @@ bool OcrImpulseCounter::iterateConnected() {
   auto result = VirtualImpulseCounter::iterateConnected();
   bool photoTaken = false;
 
-  if (!Supla::Clock::IsReady()) {
-    return result;
-  }
   if (ocrConfigReceived &&
       ocrConfig.PhotoIntervalSec >= OCR_MIN_PHOTO_INTERVAL_SEC) {
     if (lastPhotoTakeTimestamp == 0 || millis() - lastPhotoTakeTimestamp >=
                                            ocrConfig.PhotoIntervalSec * 1000) {
       if (handleLedStateBeforePhoto()) {
         if (takePhoto()) {
+          handleLedStateAfterPhoto();
           lastPhotoTakeTimestamp = millis();
           lastOcrInteractionTimestamp = lastPhotoTakeTimestamp;
           char url[500] = {};
           generateUrl(url, 500);
           SUPLA_LOG_DEBUG("Ocr url: %s", url);
-          char reply[500] = {};
-          if (sendPhotoToOcrServer(url, ocrConfig.AuthKey, reply, 500)) {
+          char reply[2500] = {};
+          if (sendPhotoToOcrServer(
+                  url, ocrConfig.AuthKey, reply, sizeof(reply))) {
             lastUUIDToCheck[0] = '\0';
-            parseStatus(reply, 500);
+            parseStatus(reply, sizeof(reply));
           }
           releasePhotoResource();
           photoTaken = true;
         } else {
+          handleLedStateAfterPhoto();
           SUPLA_LOG_WARNING("OcrIC: takePhoto failed");
           lastPhotoTakeTimestamp += 15 * 1000;
         }
-        handleLedStateAfterPhoto();
       }
     }
   }
@@ -265,9 +265,9 @@ bool OcrImpulseCounter::iterateConnected() {
     char url[500] = {};
     generateUrl(url, 500, lastUUIDToCheck);
     SUPLA_LOG_DEBUG("Ocr url: %s", url);
-    char reply[500] = {};
-    if (getStatusFromOcrServer(url, ocrConfig.AuthKey, reply, 500)) {
-      parseStatus(reply, 500);
+    char reply[2500] = {};
+    if (getStatusFromOcrServer(url, ocrConfig.AuthKey, reply, sizeof(reply))) {
+      parseStatus(reply, sizeof(reply));
     } else {
       SUPLA_LOG_WARNING("OcrIC: getStatusFromOcrServer failed");
     }
@@ -338,6 +338,24 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
     return;
   }
 
+  // When processedAt is not null, we'll parse current result and stop
+  // checking processing result from server.
+  stopResultCheck();
+
+  // check if measurementValid is "true"
+  const char *measurementValidStart = strstr(status, "\"measurementValid\":");
+  if (!measurementValidStart) {
+    SUPLA_LOG_WARNING(
+        "OcrIC: parseStatus failed - missing measurementValid");
+    return;
+  }
+  measurementValidStart += 19;
+  if (strncmp(measurementValidStart, "true", 4) != 0) {
+    SUPLA_LOG_WARNING(
+        "OcrIC: parseStatus failed - measurementValid is not true");
+    return;
+  }
+
   // get resultMeasurement as int
   const char *resultMeasurementTagStart =
       strstr(status, "\"resultMeasurement\":");
@@ -378,9 +396,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
     return;
   }
 
-  lastUUIDToCheck[0] = '\0';
   bool setNewCounterValue = false;
-  uint64_t maxIncrementAllowedPerPhoto = ocrConfig.MaximumIncrement;
   time_t now = Supla::Clock::GetTimeStamp();
   // There is no previous counter value available, or user reset the counter,
   // so we just set current reading as a new counter value
@@ -389,7 +405,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
                     " == previous value %" PRIu64,
                     resultMeasurement,
                     lastCorrectOcrReading);
-  } else if (lastCorrectOcrReading == 0 || maxIncrementAllowedPerPhoto == 0) {
+  } else if (lastCorrectOcrReading == 0) {
     SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64 " (no previous value)",
                     resultMeasurement);
     setNewCounterValue = true;
@@ -398,27 +414,17 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
                     " < previous value %" PRIu64,
                     resultMeasurement,
                     lastCorrectOcrReading);
-  } else if (ocrConfig.PhotoIntervalSec >= OCR_MIN_PHOTO_INTERVAL_SEC) {
-    time_t diff = now - lastCorrectOcrReadingTimestamp;
-    int periods = (diff / ocrConfig.PhotoIntervalSec) + 1;
-    uint64_t maxIncrementAllowed = maxIncrementAllowedPerPhoto * periods;
-    if (maxIncrementAllowed >= maxIncrementAllowedPerPhoto &&
-        resultMeasurement - lastCorrectOcrReading <= maxIncrementAllowed) {
-      SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64 " within limits",
-                      resultMeasurement);
-      setNewCounterValue = true;
-    } else {
-      SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64
-                      " > max increment %" PRIu64,
-                      resultMeasurement,
-                      maxIncrementAllowed);
-    }
+  } else {
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64 " within limits",
+        resultMeasurement);
+    setNewCounterValue = true;
   }
-  // TODO(klew): should we send 0 to server to indicate invalid reading?
 
   if (setNewCounterValue) {
     lastCorrectOcrReading = resultMeasurement;
-    lastCorrectOcrReadingTimestamp = now;
+    if (lastCorrectOcrReadingTimestamp < now) {
+      lastCorrectOcrReadingTimestamp = now;
+    }
     setCounter(resultMeasurement);
   }
 }
@@ -453,7 +459,7 @@ bool OcrImpulseCounter::handleLedStateBeforePhoto() {
     return false;
   }
   if (ledTurnOnTimestamp != 0) {
-    if (millis() - ledTurnOnTimestamp > 3000) {
+    if (millis() - ledTurnOnTimestamp > 2000) {
       return true;
     } else {
       return false;
@@ -468,6 +474,10 @@ void OcrImpulseCounter::handleLedStateAfterPhoto() {
     setLedState(0);
     ledTurnOnTimestamp = 0;
   }
+}
+
+void OcrImpulseCounter::stopResultCheck() {
+  lastUUIDToCheck[0] = '\0';
 }
 
 #endif  // ARDUINO_ARCH_AVR

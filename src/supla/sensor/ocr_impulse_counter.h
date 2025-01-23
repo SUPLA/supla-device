@@ -67,6 +67,7 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
   void fillChannelConfig(void *channelConfig, int *size) override;
   void fillChannelOcrConfig(void *channelConfig, int *size) override;
   void fixOcrLightingMode();
+  void stopResultCheck();
 
   virtual bool getStatusFromOcrServer(const char *url,
                                       const char *authkey,

@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['disablechannelstate_0',['disableChannelState',['../classSupla_1_1Element.html#aa46f400a295476e7cab0c2214ea304d6',1,'Supla::Element']]]
+  ['clearinvalidptr_0',['ClearInvalidPtr',['../classSupla_1_1Element.html#a59b914551b75cc301fb47dfc2c9f4115',1,'Supla::Element']]]
 ];

@@ -124,7 +124,7 @@ Inheritance diagram for Supla::ElementWithChannelActions:</div>
 <area shape="poly" title=" " alt="" coords="519,504,567,458,598,435,631,416,662,404,664,409,633,421,601,440,571,462,523,508"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1Distance.html" title=" " alt="" coords="665,431,824,456"/>
 <area shape="poly" title=" " alt="" coords="536,508,581,486,631,466,673,454,675,460,633,471,583,491,539,512"/>
-<area shape="rect" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title=" " alt="" coords="644,480,845,521"/>
+<area shape="rect" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="644,480,845,521"/>
 <area shape="poly" title=" " alt="" coords="590,517,643,510,644,515,591,522"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1Pressure.html" title=" " alt="" coords="665,545,824,571"/>
 <area shape="poly" title=" " alt="" coords="591,538,665,547,664,552,590,543"/>
@@ -266,11 +266,9 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>loadConfigCha
 <tr class="memitem:a16fda8aba003fe72b033c73eac0231ad" id="r_a16fda8aba003fe72b033c73eac0231ad"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a16fda8aba003fe72b033c73eac0231ad">isAnyUpdatePending</a> () override</td></tr>
 <tr class="memdesc:a16fda8aba003fe72b033c73eac0231ad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any update is pending.  <br /></td></tr>
 <tr class="separator:a16fda8aba003fe72b033c73eac0231ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a689aa177abc473c49b8dc9ee645e7b22" id="r_a689aa177abc473c49b8dc9ee645e7b22"><td class="memItemLeft" align="right" valign="top"><a id="a689aa177abc473c49b8dc9ee645e7b22" name="a689aa177abc473c49b8dc9ee645e7b22"></a>
-virtual uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>applyChannelConfig</b> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local)</td></tr>
+<tr class="memitem:a689aa177abc473c49b8dc9ee645e7b22" id="r_a689aa177abc473c49b8dc9ee645e7b22"><td class="memItemLeft" align="right" valign="top">virtual uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a689aa177abc473c49b8dc9ee645e7b22">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local)</td></tr>
 <tr class="separator:a689aa177abc473c49b8dc9ee645e7b22"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd21b4947797a3dae9ecd45906e0c787" id="r_afd21b4947797a3dae9ecd45906e0c787"><td class="memItemLeft" align="right" valign="top"><a id="afd21b4947797a3dae9ecd45906e0c787" name="afd21b4947797a3dae9ecd45906e0c787"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>fillChannelConfig</b> (void *channelConfig, int *size)</td></tr>
+<tr class="memitem:afd21b4947797a3dae9ecd45906e0c787" id="r_afd21b4947797a3dae9ecd45906e0c787"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#afd21b4947797a3dae9ecd45906e0c787">fillChannelConfig</a> (void *channelConfig, int *size)</td></tr>
 <tr class="separator:afd21b4947797a3dae9ecd45906e0c787"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a34edd3b986b1e7b799fbf2103cd84715" id="r_a34edd3b986b1e7b799fbf2103cd84715"><td class="memItemLeft" align="right" valign="top"><a id="a34edd3b986b1e7b799fbf2103cd84715" name="a34edd3b986b1e7b799fbf2103cd84715"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>fillChannelOcrConfig</b> (void *channelConfig, int *size)</td></tr>
@@ -547,6 +545,68 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1LocalAction.html">Supla::LocalAction</a>.</p>
+
+</div>
+</div>
+<a id="a689aa177abc473c49b8dc9ee645e7b22" name="a689aa177abc473c49b8dc9ee645e7b22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a689aa177abc473c49b8dc9ee645e7b22">&#9670;&#160;</a></span>applyChannelConfig()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t Supla::ElementWithChannelActions::applyChannelConfig </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *</td>          <td class="paramname"><span class="paramname"><em>result</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classGeneralPurposeChannelBase.html#a9fab0dcd9b4291cbf8f2c2f1989a7684">GeneralPurposeChannelBase</a>, <a class="el" href="classGeneralPurposeMeter.html#a2a966a3812e84943fe73f0b7689e98aa">GeneralPurposeMeter</a>, <a class="el" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a9fab0dcd9b4291cbf8f2c2f1989a7684">Supla::Sensor::GeneralPurposeChannelBase</a>, and <a class="el" href="classSupla_1_1Sensor_1_1GeneralPurposeMeter.html#a2a966a3812e84943fe73f0b7689e98aa">Supla::Sensor::GeneralPurposeMeter</a>.</p>
+
+</div>
+</div>
+<a id="afd21b4947797a3dae9ecd45906e0c787" name="afd21b4947797a3dae9ecd45906e0c787"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afd21b4947797a3dae9ecd45906e0c787">&#9670;&#160;</a></span>fillChannelConfig()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::ElementWithChannelActions::fillChannelConfig </td>
+          <td>(</td>
+          <td class="paramtype">void *</td>          <td class="paramname"><span class="paramname"><em>channelConfig</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int *</td>          <td class="paramname"><span class="paramname"><em>size</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classGeneralPurposeChannelBase.html#a868b22d9270ff2a73883b2c7786b00da">GeneralPurposeChannelBase</a>, <a class="el" href="classGeneralPurposeMeter.html#a0bc87ada316ba1fe7d8abbb552672677">GeneralPurposeMeter</a>, <a class="el" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a868b22d9270ff2a73883b2c7786b00da">Supla::Sensor::GeneralPurposeChannelBase</a>, and <a class="el" href="classSupla_1_1Sensor_1_1GeneralPurposeMeter.html#a0bc87ada316ba1fe7d8abbb552672677">Supla::Sensor::GeneralPurposeMeter</a>.</p>
 
 </div>
 </div>

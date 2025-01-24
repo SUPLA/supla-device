@@ -93,12 +93,17 @@ $(function(){ initResizable(false); });
   <div class="headertitle"><div class="title">GeneralPurposeChannelBase Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)  
+ <a href="#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="general__purpose__channel__base_8h_source.html">general_purpose_channel_base.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for GeneralPurposeChannelBase:</div>
 <div class="dyncontent">
 <div class="center"><img src="classGeneralPurposeChannelBase__inherit__graph.png" border="0" usemap="#aGeneralPurposeChannelBase_inherit__map" alt="Inheritance graph"/></div>
 <map name="aGeneralPurposeChannelBase_inherit__map" id="aGeneralPurposeChannelBase_inherit__map">
-<area shape="rect" title=" " alt="" coords="304,241,495,267"/>
+<area shape="rect" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="304,241,495,267"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1GeneralPurposeMeasurement.html" title=" " alt="" coords="188,315,388,356"/>
 <area shape="poly" title=" " alt="" coords="372,278,317,317,314,312,369,274"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1GeneralPurposeMeter.html" title=" " alt="" coords="412,315,612,356"/>
@@ -124,7 +129,7 @@ Collaboration diagram for GeneralPurposeChannelBase:</div>
 <div class="dyncontent">
 <div class="center"><img src="classGeneralPurposeChannelBase__coll__graph.png" border="0" usemap="#aGeneralPurposeChannelBase_coll__map" alt="Collaboration graph"/></div>
 <map name="aGeneralPurposeChannelBase_coll__map" id="aGeneralPurposeChannelBase_coll__map">
-<area shape="rect" title=" " alt="" coords="991,163,1183,189"/>
+<area shape="rect" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="991,163,1183,189"/>
 <area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="666,106,820,132"/>
 <area shape="poly" title=" " alt="" coords="836,131,968,154,1007,160,1006,165,967,159,835,137"/>
 <area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="356,52,536,92"/>
@@ -156,135 +161,152 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4e79ec080ed4aee9ae4e2c41e0c7fd04" id="r_a4e79ec080ed4aee9ae4e2c41e0c7fd04"><td class="memItemLeft" align="right" valign="top"><a id="a4e79ec080ed4aee9ae4e2c41e0c7fd04" name="a4e79ec080ed4aee9ae4e2c41e0c7fd04"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>GeneralPurposeChannelBase</b> (MeasurementDriver *driver=nullptr, bool addMemoryVariableDriver=true)</td></tr>
+<tr class="memitem:a4e79ec080ed4aee9ae4e2c41e0c7fd04" id="r_a4e79ec080ed4aee9ae4e2c41e0c7fd04"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4e79ec080ed4aee9ae4e2c41e0c7fd04">GeneralPurposeChannelBase</a> (MeasurementDriver *driver=nullptr, bool addMemoryVariableDriver=true)</td></tr>
+<tr class="memdesc:a4e79ec080ed4aee9ae4e2c41e0c7fd04"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
 <tr class="separator:a4e79ec080ed4aee9ae4e2c41e0c7fd04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59026738f82c72caeaebfa0b95308f1a" id="r_a59026738f82c72caeaebfa0b95308f1a"><td class="memItemLeft" align="right" valign="top"><a id="a59026738f82c72caeaebfa0b95308f1a" name="a59026738f82c72caeaebfa0b95308f1a"></a>
-double&#160;</td><td class="memItemRight" valign="bottom"><b>getCalculatedValue</b> ()</td></tr>
+<tr class="memitem:accc33d164550ddf1b96854f5f23aa0f6" id="r_accc33d164550ddf1b96854f5f23aa0f6"><td class="memItemLeft" align="right" valign="top"><a id="accc33d164550ddf1b96854f5f23aa0f6" name="accc33d164550ddf1b96854f5f23aa0f6"></a>
+virtual&#160;</td><td class="memItemRight" valign="bottom"><b>~GeneralPurposeChannelBase</b> ()</td></tr>
+<tr class="memdesc:accc33d164550ddf1b96854f5f23aa0f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destructor. <br /></td></tr>
+<tr class="separator:accc33d164550ddf1b96854f5f23aa0f6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59026738f82c72caeaebfa0b95308f1a" id="r_a59026738f82c72caeaebfa0b95308f1a"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a59026738f82c72caeaebfa0b95308f1a">getCalculatedValue</a> ()</td></tr>
+<tr class="memdesc:a59026738f82c72caeaebfa0b95308f1a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns calculated value, which is result of the following operations:  <br /></td></tr>
 <tr class="separator:a59026738f82c72caeaebfa0b95308f1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b58def0e0ae639e5703e9bafa6718c3" id="r_a8b58def0e0ae639e5703e9bafa6718c3"><td class="memItemLeft" align="right" valign="top"><a id="a8b58def0e0ae639e5703e9bafa6718c3" name="a8b58def0e0ae639e5703e9bafa6718c3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getFormattedValue</b> (char *result, int maxSize)</td></tr>
+<tr class="memitem:a8b58def0e0ae639e5703e9bafa6718c3" id="r_a8b58def0e0ae639e5703e9bafa6718c3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a8b58def0e0ae639e5703e9bafa6718c3">getFormattedValue</a> (char *result, int maxSize)</td></tr>
+<tr class="memdesc:a8b58def0e0ae639e5703e9bafa6718c3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns formatted value as char array (including units, precision, etc.)  <br /></td></tr>
 <tr class="separator:a8b58def0e0ae639e5703e9bafa6718c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af042dd3fec00e226759e78e05a9be04a" id="r_af042dd3fec00e226759e78e05a9be04a"><td class="memItemLeft" align="right" valign="top"><a id="af042dd3fec00e226759e78e05a9be04a" name="af042dd3fec00e226759e78e05a9be04a"></a>
-virtual double&#160;</td><td class="memItemRight" valign="bottom"><b>getValue</b> ()</td></tr>
+<tr class="memitem:af042dd3fec00e226759e78e05a9be04a" id="r_af042dd3fec00e226759e78e05a9be04a"><td class="memItemLeft" align="right" valign="top">virtual double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af042dd3fec00e226759e78e05a9be04a">getValue</a> ()</td></tr>
+<tr class="memdesc:af042dd3fec00e226759e78e05a9be04a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method used to obtain new value for channel.  <br /></td></tr>
 <tr class="separator:af042dd3fec00e226759e78e05a9be04a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf28901e575d351cc2d66fc6fb536a3d" id="r_acf28901e575d351cc2d66fc6fb536a3d"><td class="memItemLeft" align="right" valign="top"><a id="acf28901e575d351cc2d66fc6fb536a3d" name="acf28901e575d351cc2d66fc6fb536a3d"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setValue</b> (const double &amp;value)</td></tr>
+<tr class="memitem:acf28901e575d351cc2d66fc6fb536a3d" id="r_acf28901e575d351cc2d66fc6fb536a3d"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acf28901e575d351cc2d66fc6fb536a3d">setValue</a> (const double &amp;value)</td></tr>
+<tr class="memdesc:acf28901e575d351cc2d66fc6fb536a3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method used to set new value for channel with driver which accepts MeasurementDriver::setValue() method.  <br /></td></tr>
 <tr class="separator:acf28901e575d351cc2d66fc6fb536a3d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a28d8261cfe6e823a3a1ae460b5360c0a" id="r_a28d8261cfe6e823a3a1ae460b5360c0a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a28d8261cfe6e823a3a1ae460b5360c0a">onInit</a> () override</td></tr>
-<tr class="memdesc:a28d8261cfe6e823a3a1ae460b5360c0a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
+<tr class="memdesc:a28d8261cfe6e823a3a1ae460b5360c0a"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classSupla_1_1Element.html#ac0f0e9e97bc326ec8e06d75f916e4573" title="Third method called on element in SuplaDevice.begin()">Supla::Element::onInit()</a> - called by SuplaDeviceClass::begin() during initialization.  <br /></td></tr>
 <tr class="separator:a28d8261cfe6e823a3a1ae460b5360c0a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63abb097880ad2e7bc2c6c3862a9307f" id="r_a63abb097880ad2e7bc2c6c3862a9307f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a63abb097880ad2e7bc2c6c3862a9307f">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc) override</td></tr>
-<tr class="memdesc:a63abb097880ad2e7bc2c6c3862a9307f"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
+<tr class="memdesc:a63abb097880ad2e7bc2c6c3862a9307f"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classSupla_1_1Element.html#a9d8deade88f280e66e263bd034ba0e4c" title="First method called on element in SuplaDevice.begin().">Supla::Element::onLoadConfig()</a> - called by SuplaDeviceClass::loadConfig() during initialization.  <br /></td></tr>
 <tr class="separator:a63abb097880ad2e7bc2c6c3862a9307f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a621b9f205ae69350c9b983880a207ea9" id="r_a621b9f205ae69350c9b983880a207ea9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a621b9f205ae69350c9b983880a207ea9">iterateAlways</a> () override</td></tr>
-<tr class="memdesc:a621b9f205ae69350c9b983880a207ea9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
+<tr class="memdesc:a621b9f205ae69350c9b983880a207ea9"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classSupla_1_1Element.html#af728b2c6d12993fae8513eb720dda8ee" title="Method called on each SuplaDevice iteration.">Supla::Element::iterateAlways()</a> - called by SuplaDeviceClass::iterate()  <br /></td></tr>
 <tr class="separator:a621b9f205ae69350c9b983880a207ea9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9fab0dcd9b4291cbf8f2c2f1989a7684" id="r_a9fab0dcd9b4291cbf8f2c2f1989a7684"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9fab0dcd9b4291cbf8f2c2f1989a7684">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local) override</td></tr>
+<tr class="memdesc:a9fab0dcd9b4291cbf8f2c2f1989a7684"><td class="mdescLeft">&#160;</td><td class="mdescRight">Applies new <a class="el" href="classChannel.html">Channel</a> Config (i.e.  <br /></td></tr>
 <tr class="separator:a9fab0dcd9b4291cbf8f2c2f1989a7684"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a868b22d9270ff2a73883b2c7786b00da" id="r_a868b22d9270ff2a73883b2c7786b00da"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a868b22d9270ff2a73883b2c7786b00da">fillChannelConfig</a> (void *channelConfig, int *size) override</td></tr>
+<tr class="memdesc:a868b22d9270ff2a73883b2c7786b00da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills <a class="el" href="classChannel.html">Channel</a> Config.  <br /></td></tr>
 <tr class="separator:a868b22d9270ff2a73883b2c7786b00da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b4aea8e5143c810730da560bdf31352" id="r_a6b4aea8e5143c810730da560bdf31352"><td class="memItemLeft" align="right" valign="top"><a id="a6b4aea8e5143c810730da560bdf31352" name="a6b4aea8e5143c810730da560bdf31352"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setDefaultValueDivider</b> (int32_t divider)</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Setters for default values.</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>Default parameters should be configured in software.</p>
+<p>GPM doesn't store it by itself. Defualt values are applied by server as first default configuration when channel is registered for the first time and configuration for those parameters is not set. If default value stored on server is different from current channel's configuration, it will be applied. However current configuration value will not be overwritten. Use "reset to defaults" button on Supla Cloud to reset configuration to default values. </p>
+</div></td></tr>
+<tr class="memitem:a6b4aea8e5143c810730da560bdf31352" id="r_a6b4aea8e5143c810730da560bdf31352"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6b4aea8e5143c810730da560bdf31352">setDefaultValueDivider</a> (int32_t divider)</td></tr>
+<tr class="memdesc:a6b4aea8e5143c810730da560bdf31352"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default value divider.  <br /></td></tr>
 <tr class="separator:a6b4aea8e5143c810730da560bdf31352"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae55787819230fbd4bffd1b1017481db1" id="r_ae55787819230fbd4bffd1b1017481db1"><td class="memItemLeft" align="right" valign="top"><a id="ae55787819230fbd4bffd1b1017481db1" name="ae55787819230fbd4bffd1b1017481db1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setDefaultValueMultiplier</b> (int32_t multiplier)</td></tr>
+<tr class="memitem:ae55787819230fbd4bffd1b1017481db1" id="r_ae55787819230fbd4bffd1b1017481db1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae55787819230fbd4bffd1b1017481db1">setDefaultValueMultiplier</a> (int32_t multiplier)</td></tr>
+<tr class="memdesc:ae55787819230fbd4bffd1b1017481db1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default value multiplier.  <br /></td></tr>
 <tr class="separator:ae55787819230fbd4bffd1b1017481db1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a24afb0222b8ba82387177e691d76e16a" id="r_a24afb0222b8ba82387177e691d76e16a"><td class="memItemLeft" align="right" valign="top"><a id="a24afb0222b8ba82387177e691d76e16a" name="a24afb0222b8ba82387177e691d76e16a"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setDefaultValueAdded</b> (int64_t added)</td></tr>
+<tr class="memitem:a24afb0222b8ba82387177e691d76e16a" id="r_a24afb0222b8ba82387177e691d76e16a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a24afb0222b8ba82387177e691d76e16a">setDefaultValueAdded</a> (int64_t added)</td></tr>
+<tr class="memdesc:a24afb0222b8ba82387177e691d76e16a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default value added.  <br /></td></tr>
 <tr class="separator:a24afb0222b8ba82387177e691d76e16a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad63af53cd06b819ae27f23d5d753c187" id="r_ad63af53cd06b819ae27f23d5d753c187"><td class="memItemLeft" align="right" valign="top"><a id="ad63af53cd06b819ae27f23d5d753c187" name="ad63af53cd06b819ae27f23d5d753c187"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setDefaultValuePrecision</b> (uint8_t precision)</td></tr>
+<tr class="memitem:ad63af53cd06b819ae27f23d5d753c187" id="r_ad63af53cd06b819ae27f23d5d753c187"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad63af53cd06b819ae27f23d5d753c187">setDefaultValuePrecision</a> (uint8_t precision)</td></tr>
+<tr class="memdesc:ad63af53cd06b819ae27f23d5d753c187"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default precision (number of decimal places)  <br /></td></tr>
 <tr class="separator:ad63af53cd06b819ae27f23d5d753c187"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a462e03aafe80dfefd0e7fbb9b7784b63" id="r_a462e03aafe80dfefd0e7fbb9b7784b63"><td class="memItemLeft" align="right" valign="top"><a id="a462e03aafe80dfefd0e7fbb9b7784b63" name="a462e03aafe80dfefd0e7fbb9b7784b63"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setDefaultUnitBeforeValue</b> (const char *unit)</td></tr>
+<tr class="memitem:a462e03aafe80dfefd0e7fbb9b7784b63" id="r_a462e03aafe80dfefd0e7fbb9b7784b63"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a462e03aafe80dfefd0e7fbb9b7784b63">setDefaultUnitBeforeValue</a> (const char *unit)</td></tr>
+<tr class="memdesc:a462e03aafe80dfefd0e7fbb9b7784b63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default unit which is displayed before value.  <br /></td></tr>
 <tr class="separator:a462e03aafe80dfefd0e7fbb9b7784b63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5db9c29aeaf6730ec8397eb69a68ff6b" id="r_a5db9c29aeaf6730ec8397eb69a68ff6b"><td class="memItemLeft" align="right" valign="top"><a id="a5db9c29aeaf6730ec8397eb69a68ff6b" name="a5db9c29aeaf6730ec8397eb69a68ff6b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setDefaultUnitAfterValue</b> (const char *unit)</td></tr>
+<tr class="memitem:a5db9c29aeaf6730ec8397eb69a68ff6b" id="r_a5db9c29aeaf6730ec8397eb69a68ff6b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5db9c29aeaf6730ec8397eb69a68ff6b">setDefaultUnitAfterValue</a> (const char *unit)</td></tr>
+<tr class="memdesc:a5db9c29aeaf6730ec8397eb69a68ff6b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default unit which is displayed after value.  <br /></td></tr>
 <tr class="separator:a5db9c29aeaf6730ec8397eb69a68ff6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa2ec1cda44ad0edaf2afdcbbf607737a" id="r_aa2ec1cda44ad0edaf2afdcbbf607737a"><td class="memItemLeft" align="right" valign="top"><a id="aa2ec1cda44ad0edaf2afdcbbf607737a" name="aa2ec1cda44ad0edaf2afdcbbf607737a"></a>
-int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getDefaultValueDivider</b> () const</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Getters for default values.</div></td></tr>
+<tr class="memitem:aa2ec1cda44ad0edaf2afdcbbf607737a" id="r_aa2ec1cda44ad0edaf2afdcbbf607737a"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa2ec1cda44ad0edaf2afdcbbf607737a">getDefaultValueDivider</a> () const</td></tr>
+<tr class="memdesc:aa2ec1cda44ad0edaf2afdcbbf607737a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default value divider.  <br /></td></tr>
 <tr class="separator:aa2ec1cda44ad0edaf2afdcbbf607737a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4105d4fe3e87aa5a4525beae80a9c090" id="r_a4105d4fe3e87aa5a4525beae80a9c090"><td class="memItemLeft" align="right" valign="top"><a id="a4105d4fe3e87aa5a4525beae80a9c090" name="a4105d4fe3e87aa5a4525beae80a9c090"></a>
-int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getDefaultValueMultiplier</b> () const</td></tr>
+<tr class="memitem:a4105d4fe3e87aa5a4525beae80a9c090" id="r_a4105d4fe3e87aa5a4525beae80a9c090"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4105d4fe3e87aa5a4525beae80a9c090">getDefaultValueMultiplier</a> () const</td></tr>
+<tr class="memdesc:a4105d4fe3e87aa5a4525beae80a9c090"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default value multiplier.  <br /></td></tr>
 <tr class="separator:a4105d4fe3e87aa5a4525beae80a9c090"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2cff8babb2c22b3426f4570dd78b03f5" id="r_a2cff8babb2c22b3426f4570dd78b03f5"><td class="memItemLeft" align="right" valign="top"><a id="a2cff8babb2c22b3426f4570dd78b03f5" name="a2cff8babb2c22b3426f4570dd78b03f5"></a>
-int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>getDefaultValueAdded</b> () const</td></tr>
+<tr class="memitem:a2cff8babb2c22b3426f4570dd78b03f5" id="r_a2cff8babb2c22b3426f4570dd78b03f5"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2cff8babb2c22b3426f4570dd78b03f5">getDefaultValueAdded</a> () const</td></tr>
+<tr class="memdesc:a2cff8babb2c22b3426f4570dd78b03f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default value added.  <br /></td></tr>
 <tr class="separator:a2cff8babb2c22b3426f4570dd78b03f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af554e20d300e507f537e3f22a26986d7" id="r_af554e20d300e507f537e3f22a26986d7"><td class="memItemLeft" align="right" valign="top"><a id="af554e20d300e507f537e3f22a26986d7" name="af554e20d300e507f537e3f22a26986d7"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getDefaultValuePrecision</b> () const</td></tr>
+<tr class="memitem:af554e20d300e507f537e3f22a26986d7" id="r_af554e20d300e507f537e3f22a26986d7"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af554e20d300e507f537e3f22a26986d7">getDefaultValuePrecision</a> () const</td></tr>
+<tr class="memdesc:af554e20d300e507f537e3f22a26986d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default precision (number of decimal places)  <br /></td></tr>
 <tr class="separator:af554e20d300e507f537e3f22a26986d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f9981edbe6312035b9da5c1066bcf68" id="r_a2f9981edbe6312035b9da5c1066bcf68"><td class="memItemLeft" align="right" valign="top"><a id="a2f9981edbe6312035b9da5c1066bcf68" name="a2f9981edbe6312035b9da5c1066bcf68"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getDefaultUnitBeforeValue</b> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE])</td></tr>
+<tr class="memitem:a2f9981edbe6312035b9da5c1066bcf68" id="r_a2f9981edbe6312035b9da5c1066bcf68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2f9981edbe6312035b9da5c1066bcf68">getDefaultUnitBeforeValue</a> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE])</td></tr>
+<tr class="memdesc:a2f9981edbe6312035b9da5c1066bcf68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default unit which is displayed before value.  <br /></td></tr>
 <tr class="separator:a2f9981edbe6312035b9da5c1066bcf68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a02ae477dde512a288f7e64e51ebac57b" id="r_a02ae477dde512a288f7e64e51ebac57b"><td class="memItemLeft" align="right" valign="top"><a id="a02ae477dde512a288f7e64e51ebac57b" name="a02ae477dde512a288f7e64e51ebac57b"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getDefaultUnitAfterValue</b> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE])</td></tr>
+<tr class="memitem:a02ae477dde512a288f7e64e51ebac57b" id="r_a02ae477dde512a288f7e64e51ebac57b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a02ae477dde512a288f7e64e51ebac57b">getDefaultUnitAfterValue</a> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE])</td></tr>
+<tr class="memdesc:a02ae477dde512a288f7e64e51ebac57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default unit which is displayed after value.  <br /></td></tr>
 <tr class="separator:a02ae477dde512a288f7e64e51ebac57b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a969bc32bc6f2c1f91d6c9d1032254fde" id="r_a969bc32bc6f2c1f91d6c9d1032254fde"><td class="memItemLeft" align="right" valign="top"><a id="a969bc32bc6f2c1f91d6c9d1032254fde" name="a969bc32bc6f2c1f91d6c9d1032254fde"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setRefreshIntervalMs</b> (int32_t intervalMs, bool local=true)</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Setters for modification of current channel configuration.</div></td></tr>
+<tr><td colspan="2"><div class="groupText"><p>Each call to setters will modify channel config and send it to Supla Server.</p>
+<p>This shouldn't be used as a channel config setup step, because on each device startup it will overwrite user's configuration.</p>
+<p>local parameter should be set to true if method is called locally by device. False is used when called as a result of processing SetChannelConfig from server. When local is true, channel configuration will be sent to Supla Server. </p>
+</div></td></tr>
+<tr class="memitem:a969bc32bc6f2c1f91d6c9d1032254fde" id="r_a969bc32bc6f2c1f91d6c9d1032254fde"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a969bc32bc6f2c1f91d6c9d1032254fde">setRefreshIntervalMs</a> (int32_t intervalMs, bool local=true)</td></tr>
+<tr class="memdesc:a969bc32bc6f2c1f91d6c9d1032254fde"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets refresh interval in milliseconds.  <br /></td></tr>
 <tr class="separator:a969bc32bc6f2c1f91d6c9d1032254fde"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa9f83a836bac87cd7e6129cc11874cd1" id="r_aa9f83a836bac87cd7e6129cc11874cd1"><td class="memItemLeft" align="right" valign="top"><a id="aa9f83a836bac87cd7e6129cc11874cd1" name="aa9f83a836bac87cd7e6129cc11874cd1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setValueDivider</b> (int32_t divider, bool local=true)</td></tr>
+<tr class="memitem:aa9f83a836bac87cd7e6129cc11874cd1" id="r_aa9f83a836bac87cd7e6129cc11874cd1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa9f83a836bac87cd7e6129cc11874cd1">setValueDivider</a> (int32_t divider, bool local=true)</td></tr>
+<tr class="memdesc:aa9f83a836bac87cd7e6129cc11874cd1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets value divider.  <br /></td></tr>
 <tr class="separator:aa9f83a836bac87cd7e6129cc11874cd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1e68a811f3f59107d59c00b590131ccf" id="r_a1e68a811f3f59107d59c00b590131ccf"><td class="memItemLeft" align="right" valign="top"><a id="a1e68a811f3f59107d59c00b590131ccf" name="a1e68a811f3f59107d59c00b590131ccf"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setValueMultiplier</b> (int32_t multiplier, bool local=true)</td></tr>
+<tr class="memitem:a1e68a811f3f59107d59c00b590131ccf" id="r_a1e68a811f3f59107d59c00b590131ccf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1e68a811f3f59107d59c00b590131ccf">setValueMultiplier</a> (int32_t multiplier, bool local=true)</td></tr>
+<tr class="memdesc:a1e68a811f3f59107d59c00b590131ccf"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets value multiplier.  <br /></td></tr>
 <tr class="separator:a1e68a811f3f59107d59c00b590131ccf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a28cfb98f1539cb5f7306dbda828f20dc" id="r_a28cfb98f1539cb5f7306dbda828f20dc"><td class="memItemLeft" align="right" valign="top"><a id="a28cfb98f1539cb5f7306dbda828f20dc" name="a28cfb98f1539cb5f7306dbda828f20dc"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setValueAdded</b> (int64_t added, bool local=true)</td></tr>
+<tr class="memitem:a28cfb98f1539cb5f7306dbda828f20dc" id="r_a28cfb98f1539cb5f7306dbda828f20dc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a28cfb98f1539cb5f7306dbda828f20dc">setValueAdded</a> (int64_t added, bool local=true)</td></tr>
+<tr class="memdesc:a28cfb98f1539cb5f7306dbda828f20dc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets value added.  <br /></td></tr>
 <tr class="separator:a28cfb98f1539cb5f7306dbda828f20dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae8722f5594272ee1421d59ac8374635e" id="r_ae8722f5594272ee1421d59ac8374635e"><td class="memItemLeft" align="right" valign="top"><a id="ae8722f5594272ee1421d59ac8374635e" name="ae8722f5594272ee1421d59ac8374635e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setValuePrecision</b> (uint8_t precision, bool local=true)</td></tr>
+<tr class="memitem:ae8722f5594272ee1421d59ac8374635e" id="r_ae8722f5594272ee1421d59ac8374635e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae8722f5594272ee1421d59ac8374635e">setValuePrecision</a> (uint8_t precision, bool local=true)</td></tr>
+<tr class="memdesc:ae8722f5594272ee1421d59ac8374635e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets precision.  <br /></td></tr>
 <tr class="separator:ae8722f5594272ee1421d59ac8374635e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abadb570e791c5c9f0219fd7ab2d64005" id="r_abadb570e791c5c9f0219fd7ab2d64005"><td class="memItemLeft" align="right" valign="top"><a id="abadb570e791c5c9f0219fd7ab2d64005" name="abadb570e791c5c9f0219fd7ab2d64005"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setUnitBeforeValue</b> (const char *unit, bool local=true)</td></tr>
+<tr class="memitem:abadb570e791c5c9f0219fd7ab2d64005" id="r_abadb570e791c5c9f0219fd7ab2d64005"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#abadb570e791c5c9f0219fd7ab2d64005">setUnitBeforeValue</a> (const char *unit, bool local=true)</td></tr>
+<tr class="memdesc:abadb570e791c5c9f0219fd7ab2d64005"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets unit which is displayed before value.  <br /></td></tr>
 <tr class="separator:abadb570e791c5c9f0219fd7ab2d64005"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa52412cd06e3170fa46afe6eec5a674f" id="r_aa52412cd06e3170fa46afe6eec5a674f"><td class="memItemLeft" align="right" valign="top"><a id="aa52412cd06e3170fa46afe6eec5a674f" name="aa52412cd06e3170fa46afe6eec5a674f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setUnitAfterValue</b> (const char *unit, bool local=true)</td></tr>
+<tr class="memitem:aa52412cd06e3170fa46afe6eec5a674f" id="r_aa52412cd06e3170fa46afe6eec5a674f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa52412cd06e3170fa46afe6eec5a674f">setUnitAfterValue</a> (const char *unit, bool local=true)</td></tr>
+<tr class="memdesc:aa52412cd06e3170fa46afe6eec5a674f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets unit which is displayed after value.  <br /></td></tr>
 <tr class="separator:aa52412cd06e3170fa46afe6eec5a674f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9967e89dbfdab2f076ea0c0c2d295d4" id="r_ad9967e89dbfdab2f076ea0c0c2d295d4"><td class="memItemLeft" align="right" valign="top"><a id="ad9967e89dbfdab2f076ea0c0c2d295d4" name="ad9967e89dbfdab2f076ea0c0c2d295d4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setNoSpaceBeforeValue</b> (uint8_t noSpaceBeforeValue, bool local=true)</td></tr>
+<tr class="memitem:ad9967e89dbfdab2f076ea0c0c2d295d4" id="r_ad9967e89dbfdab2f076ea0c0c2d295d4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad9967e89dbfdab2f076ea0c0c2d295d4">setNoSpaceBeforeValue</a> (uint8_t noSpaceBeforeValue, bool local=true)</td></tr>
+<tr class="memdesc:ad9967e89dbfdab2f076ea0c0c2d295d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets no space before value.  <br /></td></tr>
 <tr class="separator:ad9967e89dbfdab2f076ea0c0c2d295d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3b35ae5d17d858d1ef1af0f600dc910e" id="r_a3b35ae5d17d858d1ef1af0f600dc910e"><td class="memItemLeft" align="right" valign="top"><a id="a3b35ae5d17d858d1ef1af0f600dc910e" name="a3b35ae5d17d858d1ef1af0f600dc910e"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setNoSpaceAfterValue</b> (uint8_t noSpaceAfterValue, bool local=true)</td></tr>
+<tr class="memitem:a3b35ae5d17d858d1ef1af0f600dc910e" id="r_a3b35ae5d17d858d1ef1af0f600dc910e"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3b35ae5d17d858d1ef1af0f600dc910e">setNoSpaceAfterValue</a> (uint8_t noSpaceAfterValue, bool local=true)</td></tr>
+<tr class="memdesc:a3b35ae5d17d858d1ef1af0f600dc910e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets no space after value.  <br /></td></tr>
 <tr class="separator:a3b35ae5d17d858d1ef1af0f600dc910e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a540ea813daf24fc2d1dbac9dc181be68" id="r_a540ea813daf24fc2d1dbac9dc181be68"><td class="memItemLeft" align="right" valign="top"><a id="a540ea813daf24fc2d1dbac9dc181be68" name="a540ea813daf24fc2d1dbac9dc181be68"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setKeepHistory</b> (uint8_t keepHistory, bool local=true)</td></tr>
+<tr class="memitem:a540ea813daf24fc2d1dbac9dc181be68" id="r_a540ea813daf24fc2d1dbac9dc181be68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a540ea813daf24fc2d1dbac9dc181be68">setKeepHistory</a> (uint8_t keepHistory, bool local=true)</td></tr>
+<tr class="memdesc:a540ea813daf24fc2d1dbac9dc181be68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets keep history flag.  <br /></td></tr>
 <tr class="separator:a540ea813daf24fc2d1dbac9dc181be68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a25f7964fa1680be20f1cf26a05012a4f" id="r_a25f7964fa1680be20f1cf26a05012a4f"><td class="memItemLeft" align="right" valign="top"><a id="a25f7964fa1680be20f1cf26a05012a4f" name="a25f7964fa1680be20f1cf26a05012a4f"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setChartType</b> (uint8_t chartType, bool local=true)</td></tr>
+<tr class="memitem:a25f7964fa1680be20f1cf26a05012a4f" id="r_a25f7964fa1680be20f1cf26a05012a4f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a25f7964fa1680be20f1cf26a05012a4f">setChartType</a> (uint8_t chartType, bool local=true)</td></tr>
+<tr class="memdesc:a25f7964fa1680be20f1cf26a05012a4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets chart type.  <br /></td></tr>
 <tr class="separator:a25f7964fa1680be20f1cf26a05012a4f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aee4b2fbd38b1d42dba7a471d3d38efaa" id="r_aee4b2fbd38b1d42dba7a471d3d38efaa"><td class="memItemLeft" align="right" valign="top"><a id="aee4b2fbd38b1d42dba7a471d3d38efaa" name="aee4b2fbd38b1d42dba7a471d3d38efaa"></a>
-uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getRefreshIntervalMs</b> () const</td></tr>
+<tr><td colspan="2"><div class="groupHeader">Getters for current channel configuration parameters.</div></td></tr>
+<tr class="memitem:aee4b2fbd38b1d42dba7a471d3d38efaa" id="r_aee4b2fbd38b1d42dba7a471d3d38efaa"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aee4b2fbd38b1d42dba7a471d3d38efaa">getRefreshIntervalMs</a> () const</td></tr>
+<tr class="memdesc:aee4b2fbd38b1d42dba7a471d3d38efaa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns refresh interval in milliseconds.  <br /></td></tr>
 <tr class="separator:aee4b2fbd38b1d42dba7a471d3d38efaa"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9aa498f114328c23c06fcf9720abd478" id="r_a9aa498f114328c23c06fcf9720abd478"><td class="memItemLeft" align="right" valign="top"><a id="a9aa498f114328c23c06fcf9720abd478" name="a9aa498f114328c23c06fcf9720abd478"></a>
-int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getValueDivider</b> () const</td></tr>
+<tr class="memitem:a9aa498f114328c23c06fcf9720abd478" id="r_a9aa498f114328c23c06fcf9720abd478"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a9aa498f114328c23c06fcf9720abd478">getValueDivider</a> () const</td></tr>
+<tr class="memdesc:a9aa498f114328c23c06fcf9720abd478"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns value divider.  <br /></td></tr>
 <tr class="separator:a9aa498f114328c23c06fcf9720abd478"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad78e0c848aad2fc6b0e63e0ffbe03048" id="r_ad78e0c848aad2fc6b0e63e0ffbe03048"><td class="memItemLeft" align="right" valign="top"><a id="ad78e0c848aad2fc6b0e63e0ffbe03048" name="ad78e0c848aad2fc6b0e63e0ffbe03048"></a>
-int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getValueMultiplier</b> () const</td></tr>
+<tr class="memitem:ad78e0c848aad2fc6b0e63e0ffbe03048" id="r_ad78e0c848aad2fc6b0e63e0ffbe03048"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad78e0c848aad2fc6b0e63e0ffbe03048">getValueMultiplier</a> () const</td></tr>
+<tr class="memdesc:ad78e0c848aad2fc6b0e63e0ffbe03048"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns value multiplier.  <br /></td></tr>
 <tr class="separator:ad78e0c848aad2fc6b0e63e0ffbe03048"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c75d6d1224fd91228a65fa3e6d3b5cc" id="r_a5c75d6d1224fd91228a65fa3e6d3b5cc"><td class="memItemLeft" align="right" valign="top"><a id="a5c75d6d1224fd91228a65fa3e6d3b5cc" name="a5c75d6d1224fd91228a65fa3e6d3b5cc"></a>
-int64_t&#160;</td><td class="memItemRight" valign="bottom"><b>getValueAdded</b> () const</td></tr>
+<tr class="memitem:a5c75d6d1224fd91228a65fa3e6d3b5cc" id="r_a5c75d6d1224fd91228a65fa3e6d3b5cc"><td class="memItemLeft" align="right" valign="top">int64_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5c75d6d1224fd91228a65fa3e6d3b5cc">getValueAdded</a> () const</td></tr>
+<tr class="memdesc:a5c75d6d1224fd91228a65fa3e6d3b5cc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns value added.  <br /></td></tr>
 <tr class="separator:a5c75d6d1224fd91228a65fa3e6d3b5cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1b26b451901fc2ef1ff6af007d5c2365" id="r_a1b26b451901fc2ef1ff6af007d5c2365"><td class="memItemLeft" align="right" valign="top"><a id="a1b26b451901fc2ef1ff6af007d5c2365" name="a1b26b451901fc2ef1ff6af007d5c2365"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getValuePrecision</b> () const</td></tr>
+<tr class="memitem:a1b26b451901fc2ef1ff6af007d5c2365" id="r_a1b26b451901fc2ef1ff6af007d5c2365"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1b26b451901fc2ef1ff6af007d5c2365">getValuePrecision</a> () const</td></tr>
+<tr class="memdesc:a1b26b451901fc2ef1ff6af007d5c2365"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns precision (number of decimal places)  <br /></td></tr>
 <tr class="separator:a1b26b451901fc2ef1ff6af007d5c2365"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa4a7a4974bddd9d3df904c00fa7cea65" id="r_aa4a7a4974bddd9d3df904c00fa7cea65"><td class="memItemLeft" align="right" valign="top"><a id="aa4a7a4974bddd9d3df904c00fa7cea65" name="aa4a7a4974bddd9d3df904c00fa7cea65"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getUnitBeforeValue</b> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const</td></tr>
+<tr class="memitem:aa4a7a4974bddd9d3df904c00fa7cea65" id="r_aa4a7a4974bddd9d3df904c00fa7cea65"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa4a7a4974bddd9d3df904c00fa7cea65">getUnitBeforeValue</a> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const</td></tr>
+<tr class="memdesc:aa4a7a4974bddd9d3df904c00fa7cea65"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns unit which is displayed before value.  <br /></td></tr>
 <tr class="separator:aa4a7a4974bddd9d3df904c00fa7cea65"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a586ea24b81643bfdc2bd0bc1e677f494" id="r_a586ea24b81643bfdc2bd0bc1e677f494"><td class="memItemLeft" align="right" valign="top"><a id="a586ea24b81643bfdc2bd0bc1e677f494" name="a586ea24b81643bfdc2bd0bc1e677f494"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>getUnitAfterValue</b> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const</td></tr>
+<tr class="memitem:a586ea24b81643bfdc2bd0bc1e677f494" id="r_a586ea24b81643bfdc2bd0bc1e677f494"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a586ea24b81643bfdc2bd0bc1e677f494">getUnitAfterValue</a> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const</td></tr>
+<tr class="memdesc:a586ea24b81643bfdc2bd0bc1e677f494"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns unit which is displayed after value.  <br /></td></tr>
 <tr class="separator:a586ea24b81643bfdc2bd0bc1e677f494"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a85f6f47d3feae2c02d646647e0f0c02c" id="r_a85f6f47d3feae2c02d646647e0f0c02c"><td class="memItemLeft" align="right" valign="top"><a id="a85f6f47d3feae2c02d646647e0f0c02c" name="a85f6f47d3feae2c02d646647e0f0c02c"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getNoSpaceBeforeValue</b> () const</td></tr>
+<tr class="memitem:a85f6f47d3feae2c02d646647e0f0c02c" id="r_a85f6f47d3feae2c02d646647e0f0c02c"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a85f6f47d3feae2c02d646647e0f0c02c">getNoSpaceBeforeValue</a> () const</td></tr>
+<tr class="memdesc:a85f6f47d3feae2c02d646647e0f0c02c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns no space before value.  <br /></td></tr>
 <tr class="separator:a85f6f47d3feae2c02d646647e0f0c02c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f2f766490332a5726993f7e0299c9fb" id="r_a5f2f766490332a5726993f7e0299c9fb"><td class="memItemLeft" align="right" valign="top"><a id="a5f2f766490332a5726993f7e0299c9fb" name="a5f2f766490332a5726993f7e0299c9fb"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getNoSpaceAfterValue</b> () const</td></tr>
+<tr class="memitem:a5f2f766490332a5726993f7e0299c9fb" id="r_a5f2f766490332a5726993f7e0299c9fb"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5f2f766490332a5726993f7e0299c9fb">getNoSpaceAfterValue</a> () const</td></tr>
+<tr class="memdesc:a5f2f766490332a5726993f7e0299c9fb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns no space after value.  <br /></td></tr>
 <tr class="separator:a5f2f766490332a5726993f7e0299c9fb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a81400010c22a6b09dfd1e87d00b1a509" id="r_a81400010c22a6b09dfd1e87d00b1a509"><td class="memItemLeft" align="right" valign="top"><a id="a81400010c22a6b09dfd1e87d00b1a509" name="a81400010c22a6b09dfd1e87d00b1a509"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getKeepHistory</b> () const</td></tr>
+<tr class="memitem:a81400010c22a6b09dfd1e87d00b1a509" id="r_a81400010c22a6b09dfd1e87d00b1a509"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a81400010c22a6b09dfd1e87d00b1a509">getKeepHistory</a> () const</td></tr>
+<tr class="memdesc:a81400010c22a6b09dfd1e87d00b1a509"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns keep history flag.  <br /></td></tr>
 <tr class="separator:a81400010c22a6b09dfd1e87d00b1a509"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6bf8a7755d4e1bdfaea89ee20305cd9b" id="r_a6bf8a7755d4e1bdfaea89ee20305cd9b"><td class="memItemLeft" align="right" valign="top"><a id="a6bf8a7755d4e1bdfaea89ee20305cd9b" name="a6bf8a7755d4e1bdfaea89ee20305cd9b"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getChartType</b> () const</td></tr>
+<tr class="memitem:a6bf8a7755d4e1bdfaea89ee20305cd9b" id="r_a6bf8a7755d4e1bdfaea89ee20305cd9b"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6bf8a7755d4e1bdfaea89ee20305cd9b">getChartType</a> () const</td></tr>
+<tr class="memdesc:a6bf8a7755d4e1bdfaea89ee20305cd9b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns chart type.  <br /></td></tr>
 <tr class="separator:a6bf8a7755d4e1bdfaea89ee20305cd9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft" align="right" valign="top">
@@ -571,6 +593,48 @@ static <a class="el" href="classSupla_1_1Element.html">Element</a> *&#160;</td><
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr</b> = false</td></tr>
 <tr class="separator:a59f474678e69e1fca9e7301290b10240 inherit pro_static_attribs_classSupla_1_1Element"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP) </p>
+<p>GPM can have either MeasurementDriver provided which is used to obtain value for a channel, or derived class can be used, which implements getValue method. </p>
+</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a4e79ec080ed4aee9ae4e2c41e0c7fd04" name="a4e79ec080ed4aee9ae4e2c41e0c7fd04"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e79ec080ed4aee9ae4e2c41e0c7fd04">&#9670;&#160;</a></span>GeneralPurposeChannelBase()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">GeneralPurposeChannelBase::GeneralPurposeChannelBase </td>
+          <td>(</td>
+          <td class="paramtype">MeasurementDriver *</td>          <td class="paramname"><span class="paramname"><em>driver</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>addMemoryVariableDriver</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel explicit">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">driver</td><td>(optional) pointer to MeasurementDriver instance. </td></tr>
+    <tr><td class="paramname">addMemoryVariableDriver</td><td>(optional) if true, <a class="el" href="classMemoryVariableDriver.html">MemoryVariableDriver</a> will be added to channel, which works as virtual sensors. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a9fab0dcd9b4291cbf8f2c2f1989a7684" name="a9fab0dcd9b4291cbf8f2c2f1989a7684"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9fab0dcd9b4291cbf8f2c2f1989a7684">&#9670;&#160;</a></span>applyChannelConfig()</h2>
@@ -598,6 +662,17 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>Applies new <a class="el" href="classChannel.html">Channel</a> Config (i.e. </p>
+<p>received from Supla Server)</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">result</td><td>pointer to <a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> which should contain <a class="el" href="structTChannelConfig__GeneralPurposeMeasurement.html">TChannelConfig_GeneralPurposeMeasurement</a> or <a class="el" href="structTChannelConfig__GeneralPurposeMeter.html">TChannelConfig_GeneralPurposeMeter</a> class with configuration. </td></tr>
+    <tr><td class="paramname">local</td><td>set to true if method is called locally by device. Use false if method is called as a result of Supla Server message.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>result of operation (see <a class="el" href="proto_8h_source.html">proto.h</a> SUPLA_CONFIG_RESULT_*) </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
 
@@ -630,7 +705,461 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </table>
 </div><div class="memdoc">
 
+<p>Fills <a class="el" href="classChannel.html">Channel</a> Config. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">channelConfig</td><td>pointer to <a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> to be filled. </td></tr>
+    <tr><td class="paramname">size</td><td>written config size is stored here. </td></tr>
+  </table>
+  </dd>
+</dl>
+
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a59026738f82c72caeaebfa0b95308f1a" name="a59026738f82c72caeaebfa0b95308f1a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59026738f82c72caeaebfa0b95308f1a">&#9670;&#160;</a></span>getCalculatedValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">double GeneralPurposeChannelBase::getCalculatedValue </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns calculated value, which is result of the following operations: </p>
+<ul>
+<li>value divider</li>
+<li>value multiplier</li>
+<li>value added</li>
+</ul>
+<dl class="section return"><dt>Returns</dt><dd>calculated value </dd></dl>
+
+</div>
+</div>
+<a id="a6bf8a7755d4e1bdfaea89ee20305cd9b" name="a6bf8a7755d4e1bdfaea89ee20305cd9b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6bf8a7755d4e1bdfaea89ee20305cd9b">&#9670;&#160;</a></span>getChartType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t GeneralPurposeChannelBase::getChartType </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns chart type. </p>
+<dl class="section return"><dt>Returns</dt><dd>chart type (</dd></dl>
+<dl class="section see"><dt>See also</dt><dd><a class="el" href="#a25f7964fa1680be20f1cf26a05012a4f" title="Sets chart type.">setChartType()</a>) </dd></dl>
+
+</div>
+</div>
+<a id="a02ae477dde512a288f7e64e51ebac57b" name="a02ae477dde512a288f7e64e51ebac57b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02ae477dde512a288f7e64e51ebac57b">&#9670;&#160;</a></span>getDefaultUnitAfterValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::getDefaultUnitAfterValue </td>
+          <td>(</td>
+          <td class="paramtype">char</td>          <td class="paramname"><span class="paramname"><em>unit</em></span>[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns default unit which is displayed after value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]</td><td>result is stored into this </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2f9981edbe6312035b9da5c1066bcf68" name="a2f9981edbe6312035b9da5c1066bcf68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2f9981edbe6312035b9da5c1066bcf68">&#9670;&#160;</a></span>getDefaultUnitBeforeValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::getDefaultUnitBeforeValue </td>
+          <td>(</td>
+          <td class="paramtype">char</td>          <td class="paramname"><span class="paramname"><em>unit</em></span>[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]</td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns default unit which is displayed before value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]</td><td>result is stored into this </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a2cff8babb2c22b3426f4570dd78b03f5" name="a2cff8babb2c22b3426f4570dd78b03f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cff8babb2c22b3426f4570dd78b03f5">&#9670;&#160;</a></span>getDefaultValueAdded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t GeneralPurposeChannelBase::getDefaultValueAdded </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns default value added. </p>
+<dl class="section return"><dt>Returns</dt><dd>default value added in 0.001 units </dd></dl>
+
+</div>
+</div>
+<a id="aa2ec1cda44ad0edaf2afdcbbf607737a" name="aa2ec1cda44ad0edaf2afdcbbf607737a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa2ec1cda44ad0edaf2afdcbbf607737a">&#9670;&#160;</a></span>getDefaultValueDivider()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int32_t GeneralPurposeChannelBase::getDefaultValueDivider </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns default value divider. </p>
+<dl class="section return"><dt>Returns</dt><dd>default value divider in 0.001 units </dd></dl>
+
+</div>
+</div>
+<a id="a4105d4fe3e87aa5a4525beae80a9c090" name="a4105d4fe3e87aa5a4525beae80a9c090"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4105d4fe3e87aa5a4525beae80a9c090">&#9670;&#160;</a></span>getDefaultValueMultiplier()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int32_t GeneralPurposeChannelBase::getDefaultValueMultiplier </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns default value multiplier. </p>
+<dl class="section return"><dt>Returns</dt><dd>default value multiplier in 0.001 units </dd></dl>
+
+</div>
+</div>
+<a id="af554e20d300e507f537e3f22a26986d7" name="af554e20d300e507f537e3f22a26986d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af554e20d300e507f537e3f22a26986d7">&#9670;&#160;</a></span>getDefaultValuePrecision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t GeneralPurposeChannelBase::getDefaultValuePrecision </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns default precision (number of decimal places) </p>
+<dl class="section return"><dt>Returns</dt><dd>default precision in range 0-4 </dd></dl>
+
+</div>
+</div>
+<a id="a8b58def0e0ae639e5703e9bafa6718c3" name="a8b58def0e0ae639e5703e9bafa6718c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8b58def0e0ae639e5703e9bafa6718c3">&#9670;&#160;</a></span>getFormattedValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::getFormattedValue </td>
+          <td>(</td>
+          <td class="paramtype">char *</td>          <td class="paramname"><span class="paramname"><em>result</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>maxSize</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns formatted value as char array (including units, precision, etc.) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">result</td><td>pointer to char array </td></tr>
+    <tr><td class="paramname">maxSize</td><td>size of provided char array </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a81400010c22a6b09dfd1e87d00b1a509" name="a81400010c22a6b09dfd1e87d00b1a509"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81400010c22a6b09dfd1e87d00b1a509">&#9670;&#160;</a></span>getKeepHistory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t GeneralPurposeChannelBase::getKeepHistory </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns keep history flag. </p>
+<dl class="section return"><dt>Returns</dt><dd>keep history flag - 1 = keep history, 0 = don't keep history </dd></dl>
+
+</div>
+</div>
+<a id="a5f2f766490332a5726993f7e0299c9fb" name="a5f2f766490332a5726993f7e0299c9fb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f2f766490332a5726993f7e0299c9fb">&#9670;&#160;</a></span>getNoSpaceAfterValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t GeneralPurposeChannelBase::getNoSpaceAfterValue </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns no space after value. </p>
+<dl class="section return"><dt>Returns</dt><dd>no space after value - 1 = no space, 0 = space </dd></dl>
+
+</div>
+</div>
+<a id="a85f6f47d3feae2c02d646647e0f0c02c" name="a85f6f47d3feae2c02d646647e0f0c02c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a85f6f47d3feae2c02d646647e0f0c02c">&#9670;&#160;</a></span>getNoSpaceBeforeValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t GeneralPurposeChannelBase::getNoSpaceBeforeValue </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns no space before value. </p>
+<dl class="section return"><dt>Returns</dt><dd>no space before value - 1 = no space, 0 = space </dd></dl>
+
+</div>
+</div>
+<a id="aee4b2fbd38b1d42dba7a471d3d38efaa" name="aee4b2fbd38b1d42dba7a471d3d38efaa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee4b2fbd38b1d42dba7a471d3d38efaa">&#9670;&#160;</a></span>getRefreshIntervalMs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t GeneralPurposeChannelBase::getRefreshIntervalMs </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns refresh interval in milliseconds. </p>
+<dl class="section return"><dt>Returns</dt><dd>refresh interval in milliseconds </dd></dl>
+
+</div>
+</div>
+<a id="a586ea24b81643bfdc2bd0bc1e677f494" name="a586ea24b81643bfdc2bd0bc1e677f494"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a586ea24b81643bfdc2bd0bc1e677f494">&#9670;&#160;</a></span>getUnitAfterValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::getUnitAfterValue </td>
+          <td>(</td>
+          <td class="paramtype">char</td>          <td class="paramname"><span class="paramname"><em>unit</em></span>[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]</td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns unit which is displayed after value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit</td><td>after value - max 15 bytes including terminating null byte </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aa4a7a4974bddd9d3df904c00fa7cea65" name="aa4a7a4974bddd9d3df904c00fa7cea65"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4a7a4974bddd9d3df904c00fa7cea65">&#9670;&#160;</a></span>getUnitBeforeValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::getUnitBeforeValue </td>
+          <td>(</td>
+          <td class="paramtype">char</td>          <td class="paramname"><span class="paramname"><em>unit</em></span>[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]</td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns unit which is displayed before value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit</td><td>before value - max 15 bytes including terminating null byte </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="af042dd3fec00e226759e78e05a9be04a" name="af042dd3fec00e226759e78e05a9be04a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af042dd3fec00e226759e78e05a9be04a">&#9670;&#160;</a></span>getValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">double GeneralPurposeChannelBase::getValue </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Method used to obtain new value for channel. </p>
+<p>For custom sensor, please provide either class that inherits from <a class="el" href="classSupla_1_1Sensor_1_1MeasurementDriver.html">Supla::Sensor::MeasurementDriver</a> or override below <a class="el" href="#af042dd3fec00e226759e78e05a9be04a" title="Method used to obtain new value for channel.">getValue()</a> method</p>
+<dl class="section return"><dt>Returns</dt><dd>new raw measurment value </dd></dl>
+
+</div>
+</div>
+<a id="a5c75d6d1224fd91228a65fa3e6d3b5cc" name="a5c75d6d1224fd91228a65fa3e6d3b5cc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5c75d6d1224fd91228a65fa3e6d3b5cc">&#9670;&#160;</a></span>getValueAdded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int64_t GeneralPurposeChannelBase::getValueAdded </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns value added. </p>
+<dl class="section return"><dt>Returns</dt><dd>value added in 0.001 units </dd></dl>
+
+</div>
+</div>
+<a id="a9aa498f114328c23c06fcf9720abd478" name="a9aa498f114328c23c06fcf9720abd478"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9aa498f114328c23c06fcf9720abd478">&#9670;&#160;</a></span>getValueDivider()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int32_t GeneralPurposeChannelBase::getValueDivider </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns value divider. </p>
+<dl class="section return"><dt>Returns</dt><dd>value divider in 0.001 units </dd></dl>
+
+</div>
+</div>
+<a id="ad78e0c848aad2fc6b0e63e0ffbe03048" name="ad78e0c848aad2fc6b0e63e0ffbe03048"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad78e0c848aad2fc6b0e63e0ffbe03048">&#9670;&#160;</a></span>getValueMultiplier()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int32_t GeneralPurposeChannelBase::getValueMultiplier </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns value multiplier. </p>
+<dl class="section return"><dt>Returns</dt><dd>value multiplier in 0.001 units </dd></dl>
+
+</div>
+</div>
+<a id="a1b26b451901fc2ef1ff6af007d5c2365" name="a1b26b451901fc2ef1ff6af007d5c2365"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b26b451901fc2ef1ff6af007d5c2365">&#9670;&#160;</a></span>getValuePrecision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t GeneralPurposeChannelBase::getValuePrecision </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns precision (number of decimal places) </p>
+<dl class="section return"><dt>Returns</dt><dd>precision in range 0-4 </dd></dl>
 
 </div>
 </div>
@@ -657,8 +1186,7 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </table>
 </div><div class="memdoc">
 
-<p>Method called on each SuplaDevice iteration. </p>
-<p>It should provide all actions that have to be executed periodically regardless of network state. </p>
+<p><a class="el" href="classSupla_1_1Element.html#af728b2c6d12993fae8513eb720dda8ee" title="Method called on each SuplaDevice iteration.">Supla::Element::iterateAlways()</a> - called by SuplaDeviceClass::iterate() </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#af728b2c6d12993fae8513eb720dda8ee">Supla::Element</a>.</p>
 
@@ -687,8 +1215,7 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </table>
 </div><div class="memdoc">
 
-<p>Third method called on element in SuplaDevice.begin() </p>
-<p>Method called during SuplaDevice initialization. I.e. load initial state, initialize pins etc. </p>
+<p><a class="el" href="classSupla_1_1Element.html#ac0f0e9e97bc326ec8e06d75f916e4573" title="Third method called on element in SuplaDevice.begin()">Supla::Element::onInit()</a> - called by SuplaDeviceClass::begin() during initialization. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ac0f0e9e97bc326ec8e06d75f916e4573">Supla::Element</a>.</p>
 
@@ -717,16 +1244,532 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </table>
 </div><div class="memdoc">
 
-<p>First method called on element in SuplaDevice.begin(). </p>
-<p>Called only if Config Storage class is configured. Element should read its configration in this method.</p>
+<p><a class="el" href="classSupla_1_1Element.html#a9d8deade88f280e66e263bd034ba0e4c" title="First method called on element in SuplaDevice.begin().">Supla::Element::onLoadConfig()</a> - called by SuplaDeviceClass::loadConfig() during initialization. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">sdc</td><td></td></tr>
+    <tr><td class="paramname">sdc</td><td>pointer to <a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> </td></tr>
   </table>
   </dd>
 </dl>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a9d8deade88f280e66e263bd034ba0e4c">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a25f7964fa1680be20f1cf26a05012a4f" name="a25f7964fa1680be20f1cf26a05012a4f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a25f7964fa1680be20f1cf26a05012a4f">&#9670;&#160;</a></span>setChartType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setChartType </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>chartType</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets chart type. </p>
+<p>For Measurement channel: SUPLA_GENERAL_PURPOSE_MEASUREMENT_CHART_TYPE_LINEAR SUPLA_GENERAL_PURPOSE_MEASUREMENT_CHART_TYPE_BAR SUPLA_GENERAL_PURPOSE_MEASUREMENT_CHART_TYPE_CANDLE For Meter channel: SUPLA_GENERAL_PURPOSE_METER_CHART_TYPE_BAR SUPLA_GENERAL_PURPOSE_METER_CHART_TYPE_LINEAR</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">chartType</td><td></td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a5db9c29aeaf6730ec8397eb69a68ff6b" name="a5db9c29aeaf6730ec8397eb69a68ff6b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5db9c29aeaf6730ec8397eb69a68ff6b">&#9670;&#160;</a></span>setDefaultUnitAfterValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setDefaultUnitAfterValue </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>unit</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default unit which is displayed after value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit</td><td>after value - max 15 bytes including terminating null byte </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a462e03aafe80dfefd0e7fbb9b7784b63" name="a462e03aafe80dfefd0e7fbb9b7784b63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a462e03aafe80dfefd0e7fbb9b7784b63">&#9670;&#160;</a></span>setDefaultUnitBeforeValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setDefaultUnitBeforeValue </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>unit</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default unit which is displayed before value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit</td><td>before value - max 15 bytes including terminating null byte </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a24afb0222b8ba82387177e691d76e16a" name="a24afb0222b8ba82387177e691d76e16a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a24afb0222b8ba82387177e691d76e16a">&#9670;&#160;</a></span>setDefaultValueAdded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setDefaultValueAdded </td>
+          <td>(</td>
+          <td class="paramtype">int64_t</td>          <td class="paramname"><span class="paramname"><em>added</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default value added. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">added</td><td>value in 0.001 units. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a6b4aea8e5143c810730da560bdf31352" name="a6b4aea8e5143c810730da560bdf31352"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b4aea8e5143c810730da560bdf31352">&#9670;&#160;</a></span>setDefaultValueDivider()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setDefaultValueDivider </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>divider</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default value divider. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">divider</td><td>value in 0.001 units. 0 is ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ae55787819230fbd4bffd1b1017481db1" name="ae55787819230fbd4bffd1b1017481db1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae55787819230fbd4bffd1b1017481db1">&#9670;&#160;</a></span>setDefaultValueMultiplier()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setDefaultValueMultiplier </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>multiplier</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default value multiplier. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">multiplier</td><td>value in 0.001 units. 0 is ignored </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ad63af53cd06b819ae27f23d5d753c187" name="ad63af53cd06b819ae27f23d5d753c187"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad63af53cd06b819ae27f23d5d753c187">&#9670;&#160;</a></span>setDefaultValuePrecision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setDefaultValuePrecision </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>precision</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default precision (number of decimal places) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">precision</td><td>value in range 0-4 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a540ea813daf24fc2d1dbac9dc181be68" name="a540ea813daf24fc2d1dbac9dc181be68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a540ea813daf24fc2d1dbac9dc181be68">&#9670;&#160;</a></span>setKeepHistory()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setKeepHistory </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>keepHistory</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets keep history flag. </p>
+<p>If set to 1, history of values will be stored on server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">keepHistory</td><td></td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a3b35ae5d17d858d1ef1af0f600dc910e" name="a3b35ae5d17d858d1ef1af0f600dc910e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b35ae5d17d858d1ef1af0f600dc910e">&#9670;&#160;</a></span>setNoSpaceAfterValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setNoSpaceAfterValue </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>noSpaceAfterValue</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets no space after value. </p>
+<p>If set to 1, there will be no space added between value and unit after value</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">noSpaceAfterValue</td><td></td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ad9967e89dbfdab2f076ea0c0c2d295d4" name="ad9967e89dbfdab2f076ea0c0c2d295d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad9967e89dbfdab2f076ea0c0c2d295d4">&#9670;&#160;</a></span>setNoSpaceBeforeValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setNoSpaceBeforeValue </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>noSpaceBeforeValue</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets no space before value. </p>
+<p>If set to 1, there will be no space added between value and unit before value</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">noSpaceBeforeValue</td><td></td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a969bc32bc6f2c1f91d6c9d1032254fde" name="a969bc32bc6f2c1f91d6c9d1032254fde"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a969bc32bc6f2c1f91d6c9d1032254fde">&#9670;&#160;</a></span>setRefreshIntervalMs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setRefreshIntervalMs </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>intervalMs</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets refresh interval in milliseconds. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">intervalMs</td><td>in milliseconds in 0-65535 range </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aa52412cd06e3170fa46afe6eec5a674f" name="aa52412cd06e3170fa46afe6eec5a674f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa52412cd06e3170fa46afe6eec5a674f">&#9670;&#160;</a></span>setUnitAfterValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setUnitAfterValue </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>unit</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets unit which is displayed after value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit</td><td>after value - max 15 bytes including terminating null byte </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="abadb570e791c5c9f0219fd7ab2d64005" name="abadb570e791c5c9f0219fd7ab2d64005"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abadb570e791c5c9f0219fd7ab2d64005">&#9670;&#160;</a></span>setUnitBeforeValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setUnitBeforeValue </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>unit</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets unit which is displayed before value. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">unit</td><td>before value - max 15 bytes including terminating null byte </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="acf28901e575d351cc2d66fc6fb536a3d" name="acf28901e575d351cc2d66fc6fb536a3d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acf28901e575d351cc2d66fc6fb536a3d">&#9670;&#160;</a></span>setValue()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setValue </td>
+          <td>(</td>
+          <td class="paramtype">const double &amp;</td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Method used to set new value for channel with driver which accepts MeasurementDriver::setValue() method. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a28cfb98f1539cb5f7306dbda828f20dc" name="a28cfb98f1539cb5f7306dbda828f20dc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a28cfb98f1539cb5f7306dbda828f20dc">&#9670;&#160;</a></span>setValueAdded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setValueAdded </td>
+          <td>(</td>
+          <td class="paramtype">int64_t</td>          <td class="paramname"><span class="paramname"><em>added</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets value added. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">added</td><td>in 0.001 units </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="aa9f83a836bac87cd7e6129cc11874cd1" name="aa9f83a836bac87cd7e6129cc11874cd1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa9f83a836bac87cd7e6129cc11874cd1">&#9670;&#160;</a></span>setValueDivider()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setValueDivider </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>divider</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets value divider. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">divider</td><td>in 0.001. 0 is ignored </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a1e68a811f3f59107d59c00b590131ccf" name="a1e68a811f3f59107d59c00b590131ccf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e68a811f3f59107d59c00b590131ccf">&#9670;&#160;</a></span>setValueMultiplier()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setValueMultiplier </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>multiplier</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets value multiplier. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">multiplier</td><td>in 0.001. 0 is ignored </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ae8722f5594272ee1421d59ac8374635e" name="ae8722f5594272ee1421d59ac8374635e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae8722f5594272ee1421d59ac8374635e">&#9670;&#160;</a></span>setValuePrecision()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void GeneralPurposeChannelBase::setValuePrecision </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>precision</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets precision. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">precision</td><td>in range 0-4 (number of decimal places) </td></tr>
+    <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

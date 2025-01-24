@@ -128,7 +128,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> <span class="keyword">public</span>:</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="keyword">explicit</span> Bh1750(<span class="keywordtype">int</span> i2cAddress = 0x23)</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>      : GeneralPurposeMeasurement(<span class="keyword">nullptr</span>, <span class="keyword">false</span>), sensor(i2cAddress) {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    setDefaultUnitAfterValue(<span class="stringliteral">&quot;lx&quot;</span>);</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <a class="code hl_function" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a5db9c29aeaf6730ec8397eb69a68ff6b">setDefaultUnitAfterValue</a>(<span class="stringliteral">&quot;lx&quot;</span>);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    getChannel()-&gt;setDefaultIcon(14);</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  }</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
@@ -145,12 +145,13 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1Bh1750.html#a977e7509d7d81ee0e46bcd73a40477db">   50</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Bh1750.html#a977e7509d7d81ee0e46bcd73a40477db">onInit</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    initializeSensor();</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    channel.setNewValue(getValue());</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    channel.setNewValue(<a class="code hl_function" href="classSupla_1_1Sensor_1_1Bh1750.html#a19aee354fcfb0f45073d99b8ece330b7">getValue</a>());</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  }</div>
 </div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>  <span class="keywordtype">double</span> getValue()<span class="keyword"> override </span>{</div>
+<div class="foldopen" id="foldopen00057" data-start="{" data-end="}">
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1Bh1750.html#a19aee354fcfb0f45073d99b8ece330b7">   57</a></span>  <span class="keywordtype">double</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Bh1750.html#a19aee354fcfb0f45073d99b8ece330b7">getValue</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keywordtype">double</span> value = sensor.readLightLevel();</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keywordflow">if</span> (isnan(value) || value &lt;= 0) {</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>      invalidCounter++;</div>
@@ -168,6 +169,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    lastValue = value;</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">return</span> value;</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>  }</div>
+</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>  BH1750 sensor;</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
@@ -181,7 +183,9 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_BH1750_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1Element_html_a65a46e33354f59343c78ac33af27eef9"><div class="ttname"><a href="classSupla_1_1Element.html#a65a46e33354f59343c78ac33af27eef9">Supla::Element::getChannelNumber</a></div><div class="ttdeci">int getChannelNumber() const</div><div class="ttdoc">Returns channel number.</div><div class="ttdef"><b>Definition</b> element.cpp:190</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1Bh1750_html_a19aee354fcfb0f45073d99b8ece330b7"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Bh1750.html#a19aee354fcfb0f45073d99b8ece330b7">Supla::Sensor::Bh1750::getValue</a></div><div class="ttdeci">double getValue() override</div><div class="ttdoc">Method used to obtain new value for channel.</div><div class="ttdef"><b>Definition</b> bh1750.h:57</div></div>
 <div class="ttc" id="aclassSupla_1_1Sensor_1_1Bh1750_html_a977e7509d7d81ee0e46bcd73a40477db"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Bh1750.html#a977e7509d7d81ee0e46bcd73a40477db">Supla::Sensor::Bh1750::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> bh1750.h:50</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1GeneralPurposeChannelBase_html_a5db9c29aeaf6730ec8397eb69a68ff6b"><div class="ttname"><a href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a5db9c29aeaf6730ec8397eb69a68ff6b">Supla::Sensor::GeneralPurposeChannelBase::setDefaultUnitAfterValue</a></div><div class="ttdeci">void setDefaultUnitAfterValue(const char *unit)</div><div class="ttdoc">Sets default unit which is displayed after value.</div><div class="ttdef"><b>Definition</b> general_purpose_channel_base.cpp:208</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

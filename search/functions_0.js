@@ -1,4 +1,4 @@
 var searchData=
 [
-  ['begin_0',['begin',['../classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028',1,'Supla::Element']]]
+  ['applychannelconfig_0',['applyChannelConfig',['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a9fab0dcd9b4291cbf8f2c2f1989a7684',1,'Supla::Sensor::GeneralPurposeChannelBase::applyChannelConfig()'],['../classSupla_1_1Sensor_1_1GeneralPurposeMeter.html#a2a966a3812e84943fe73f0b7689e98aa',1,'Supla::Sensor::GeneralPurposeMeter::applyChannelConfig()'],['../classGeneralPurposeChannelBase.html#a9fab0dcd9b4291cbf8f2c2f1989a7684',1,'GeneralPurposeChannelBase::applyChannelConfig()'],['../classGeneralPurposeMeter.html#a2a966a3812e84943fe73f0b7689e98aa',1,'GeneralPurposeMeter::applyChannelConfig()']]]
 ];

@@ -1,5 +1,5 @@
 <map id="Supla::Sensor::GeneralPurposeChannelBase" name="Supla::Sensor::GeneralPurposeChannelBase">
-<area shape="rect" id="Node000001" title=" " alt="" coords="300,241,500,282"/>
+<area shape="rect" id="Node000001" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="300,241,500,282"/>
 <area shape="rect" id="Node000006" href="$classSupla_1_1Sensor_1_1GeneralPurposeMeasurement.html" title=" " alt="" coords="188,330,388,371"/>
 <area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="364,294,315,332,311,327,361,289"/>
 <area shape="rect" id="Node000010" href="$classSupla_1_1Sensor_1_1GeneralPurposeMeter.html" title=" " alt="" coords="412,330,612,371"/>

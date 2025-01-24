@@ -1,5 +1,5 @@
 <map id="GeneralPurposeChannelBase" name="GeneralPurposeChannelBase">
-<area shape="rect" id="Node000001" title=" " alt="" coords="991,163,1183,189"/>
+<area shape="rect" id="Node000001" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="991,163,1183,189"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="666,106,820,132"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="836,131,968,154,1007,160,1006,165,967,159,835,137"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="356,52,536,92"/>

@@ -143,7 +143,7 @@
 <area shape="poly" id="edge75_Node000028_Node000044" title=" " alt="" coords="682,1326,706,1310,725,1284,733,1259,733,1233,730,1206,727,1179,727,1151,735,1124,754,1098,769,1086,786,1079,788,1083,772,1091,758,1101,740,1127,732,1152,732,1179,735,1205,738,1232,738,1260,730,1287,710,1313,685,1330"/>
 <area shape="rect" id="Node000045" href="$classSupla_1_1Sensor_1_1Distance.html" title=" " alt="" coords="789,1176,948,1202"/>
 <area shape="poly" id="edge76_Node000028_Node000045" title=" " alt="" coords="682,1323,707,1309,718,1298,724,1287,730,1262,736,1236,743,1223,755,1211,788,1194,790,1199,758,1215,747,1226,741,1238,735,1263,729,1289,722,1301,710,1314,685,1328"/>
-<area shape="rect" id="Node000047" href="$classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title=" " alt="" coords="768,1111,969,1152"/>
+<area shape="rect" id="Node000047" href="$classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="768,1111,969,1152"/>
 <area shape="poly" id="edge78_Node000028_Node000047" title=" " alt="" coords="683,1324,707,1309,721,1292,728,1275,730,1238,732,1200,740,1180,754,1162,770,1150,773,1154,758,1165,744,1183,738,1201,736,1238,733,1276,725,1295,710,1314,686,1329"/>
 <area shape="rect" id="Node000053" href="$classSupla_1_1Sensor_1_1Pressure.html" title=" " alt="" coords="789,1275,948,1300"/>
 <area shape="poly" id="edge84_Node000028_Node000053" title=" " alt="" coords="683,1318,792,1298,793,1304,684,1323"/>

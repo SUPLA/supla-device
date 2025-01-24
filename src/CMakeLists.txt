@@ -27,6 +27,7 @@ set(SRCS
   supla/device/notifications.cpp
   supla/device/register_device.cpp
   supla/device/enter_cfg_mode_after_power_cycle.cpp
+  supla/device/factory_test.cpp
 
   supla/storage/storage.cpp
   supla/storage/config.cpp

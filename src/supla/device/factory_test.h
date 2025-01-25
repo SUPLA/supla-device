@@ -56,6 +56,8 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   virtual bool checkTestStep();
 
   void setTestFailed(int reason);
+  void setTestFinished();
+  Supla::TestStage getTestStage() const;
 
  protected:
   bool testFailed = false;

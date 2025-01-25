@@ -195,7 +195,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
          proto = proto->next()) {
       if (!proto->onLoadConfig()) {
-        configComplete = false;
+        if (deviceMode != Supla::DEVICE_MODE_TEST) {
+          configComplete = false;
+        }
       }
       if (!proto->isConfigEmpty()) {
         configEmpty = false;
@@ -209,7 +211,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     if (!atLeastOneProtoIsEnabled) {
       status(STATUS_ALL_PROTOCOLS_DISABLED,
              F("All communication protocols are disabled"));
-      configComplete = false;
+      if (deviceMode != Supla::DEVICE_MODE_TEST) {
+        configComplete = false;
+      }
     }
 
     SUPLA_LOG_INFO(" *** Supla - Config load for elements");
@@ -632,6 +636,7 @@ bool SuplaDeviceClass::loadDeviceConfig() {
 
 
   deviceMode = cfg->getDeviceMode();
+  SUPLA_LOG_INFO("Device mode: %d", deviceMode);
   if (deviceMode == Supla::DEVICE_MODE_NOT_SET) {
     deviceMode = Supla::DEVICE_MODE_NORMAL;
   } else if (deviceMode == Supla::DEVICE_MODE_TEST) {

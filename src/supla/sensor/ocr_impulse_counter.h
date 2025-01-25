@@ -20,6 +20,7 @@
 #define SRC_SUPLA_SENSOR_OCR_IMPULSE_COUNTER_H_
 
 #include <supla/clock/clock.h>
+#include <supla/device/factory_test.h>
 
 #include "virtual_impulse_counter.h"
 
@@ -30,14 +31,18 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
  public:
   OcrImpulseCounter();
   virtual ~OcrImpulseCounter();
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
   void onLoadState() override;
   void onSaveState() override;
   void onInit() override;
+  void iterateAlways() override;
   bool iterateConnected() override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
 
   void addAvailableLightingMode(uint64_t mode);
   void resetCounter() override;
+
+  void setFactoryTester(Supla::Device::FactoryTest *tester);
 
  protected:
   // takes photo and initialize photoDataBuffer and photoDataSize
@@ -57,7 +62,8 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
   virtual bool sendPhotoToOcrServer(const char *url,
                                     const char *authkey,
                                     char *resultBuffer,
-                                    int resultBufferSize) = 0;
+                                    int resultBufferSize,
+                                    const char *cropSettings) = 0;
   void parseServerResponse(const char *response, int responseSize);
 
   bool hasOcrConfig() const override;
@@ -92,6 +98,12 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
   // values stored in Storage
   uint64_t lastCorrectOcrReading = 0;
   time_t lastCorrectOcrReadingTimestamp = 0;
+  SuplaDeviceClass *sdc = nullptr;
+  bool testMode = false;
+  uint32_t testModeDelay = 0;
+  Supla::Device::FactoryTest *factoryTester = nullptr;
+  uint32_t photosCount = 0;
+  int32_t ocrTestExpectedResult = -1;
 };
 
 }  // namespace Sensor

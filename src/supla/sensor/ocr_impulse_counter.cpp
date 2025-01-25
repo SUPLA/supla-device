@@ -234,6 +234,7 @@ bool OcrImpulseCounter::iterateConnected() {
                                            ocrConfig.PhotoIntervalSec * 1000) {
       if (handleLedStateBeforePhoto()) {
         if (takePhoto()) {
+          photosCount++;
           handleLedStateAfterPhoto();
           lastPhotoTakeTimestamp = millis();
           lastOcrInteractionTimestamp = lastPhotoTakeTimestamp;
@@ -241,10 +242,22 @@ bool OcrImpulseCounter::iterateConnected() {
           generateUrl(url, 500);
           SUPLA_LOG_DEBUG("Ocr url: %s", url);
           char reply[2500] = {};
+          char cropSettings[100] = {};
+          if (testMode) {
+            auto cfg = Supla::Storage::ConfigInstance();
+            if (cfg) {
+              cfg->getString("ocr_crop", cropSettings, sizeof(cropSettings));
+            }
+          }
           if (sendPhotoToOcrServer(
-                  url, ocrConfig.AuthKey, reply, sizeof(reply))) {
+                  url, ocrConfig.AuthKey, reply, sizeof(reply), cropSettings)) {
             lastUUIDToCheck[0] = '\0';
             parseStatus(reply, sizeof(reply));
+          } else if (testMode) {
+            if (factoryTester) {
+              testMode = false;
+              factoryTester->setTestFailed(102);
+            }
           }
           releasePhotoResource();
           photoTaken = true;
@@ -252,6 +265,10 @@ bool OcrImpulseCounter::iterateConnected() {
           handleLedStateAfterPhoto();
           SUPLA_LOG_WARNING("OcrIC: takePhoto failed");
           lastPhotoTakeTimestamp += 15 * 1000;
+          if (factoryTester) {
+            testMode = false;
+            factoryTester->setTestFailed(101);
+          }
         }
       }
     }
@@ -343,17 +360,19 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
   stopResultCheck();
 
   // check if measurementValid is "true"
-  const char *measurementValidStart = strstr(status, "\"measurementValid\":");
-  if (!measurementValidStart) {
-    SUPLA_LOG_WARNING(
-        "OcrIC: parseStatus failed - missing measurementValid");
-    return;
-  }
-  measurementValidStart += 19;
-  if (strncmp(measurementValidStart, "true", 4) != 0) {
-    SUPLA_LOG_WARNING(
-        "OcrIC: parseStatus failed - measurementValid is not true");
-    return;
+  if (!testMode) {
+    const char *measurementValidStart = strstr(status, "\"measurementValid\":");
+    if (!measurementValidStart) {
+      SUPLA_LOG_WARNING(
+          "OcrIC: parseStatus failed - missing measurementValid");
+      return;
+    }
+    measurementValidStart += 19;
+    if (strncmp(measurementValidStart, "true", 4) != 0) {
+      SUPLA_LOG_WARNING(
+          "OcrIC: parseStatus failed - measurementValid is not true");
+      return;
+    }
   }
 
   // get resultMeasurement as int
@@ -415,8 +434,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
                     resultMeasurement,
                     lastCorrectOcrReading);
   } else {
-    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64 " within limits",
-        resultMeasurement);
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64, resultMeasurement);
     setNewCounterValue = true;
   }
 
@@ -434,14 +452,24 @@ void OcrImpulseCounter::generateUrl(char *url,
     const char *photoUuid) const {
   char guidText[37] = {};
   Supla::RegisterDevice::fillGUIDText(guidText);
-  snprintf(url,
-           urlSize,
-           "https://%s/devices/%s/%d/images%s%s",
-           ocrConfig.Host,
-           guidText,
-           getChannelNumber(),
-           photoUuid ? "/" : "",
-           photoUuid ? photoUuid : "");
+  if (testMode) {
+    snprintf(url,
+             urlSize,
+             "https://%s/testing/%s/images%s%s",
+             ocrConfig.Host,
+             guidText,
+             photoUuid ? "/" : "",
+             photoUuid ? photoUuid : "");
+  } else {
+    snprintf(url,
+             urlSize,
+             "https://%s/devices/%s/%d/images%s%s",
+             ocrConfig.Host,
+             guidText,
+             getChannelNumber(),
+             photoUuid ? "/" : "",
+             photoUuid ? photoUuid : "");
+  }
 }
 
 void OcrImpulseCounter::resetCounter() {
@@ -478,6 +506,102 @@ void OcrImpulseCounter::handleLedStateAfterPhoto() {
 
 void OcrImpulseCounter::stopResultCheck() {
   lastUUIDToCheck[0] = '\0';
+}
+
+
+void OcrImpulseCounter::onLoadConfig(SuplaDeviceClass *sdc) {
+  this->sdc = sdc;
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    int32_t tmp = 0;
+    if (cfg->getInt32("ocr_test", &tmp)) {
+      SUPLA_LOG_INFO("OcrIc test mode enabled");
+      if (!cfg->getString(
+              "ocr_host", ocrConfig.Host, sizeof(ocrConfig.Host))) {
+        SUPLA_LOG_ERROR("OcrIC: missing ocr_host");
+        return;
+      }
+      SUPLA_LOG_INFO("OcrIC: ocr_host = %s", ocrConfig.Host);
+      if (!cfg->getString(
+              "ocr_auth", ocrConfig.AuthKey, sizeof(ocrConfig.AuthKey))) {
+        SUPLA_LOG_ERROR("OcrIC: missing ocr_auth");
+        return;
+      }
+      SUPLA_LOG_INFO("OcrIC: ocr_auth = %s", ocrConfig.AuthKey);
+      char buf[100];
+      if (!cfg->getString("ocr_crop", buf, sizeof(buf))) {
+        SUPLA_LOG_ERROR("OcrIC: missing ocr_crop");
+        return;
+      }
+      SUPLA_LOG_INFO("OcrIC: ocr_crop = %s", buf);
+
+      if (!cfg->getInt32("ocr_expected", &ocrTestExpectedResult)) {
+        SUPLA_LOG_ERROR("OcrIC: missing ocr_expected");
+        return;
+      }
+      SUPLA_LOG_INFO("OcrIC: ocr_expected = %d", ocrTestExpectedResult);
+
+      testMode = true;
+    }
+  }
+}
+
+void OcrImpulseCounter::iterateAlways() {
+  Supla::Sensor::VirtualImpulseCounter::iterateAlways();
+  if (testMode) {
+    if (Supla::Network::IsReady()) {
+      if (testModeDelay == 0) {
+        testModeDelay = millis();
+        ocrConfig.LightingMode = OCR_LIGHTING_MODE_OFF;
+        ocrConfig.LightingLevel = 1;
+        return;
+      }
+
+      if (millis() - testModeDelay > 2000) {
+        ocrConfigReceived = true;
+        if (photosCount == 0) {
+          resetCounter();
+        }
+        iterateConnected();
+        // Step 1 - do photo in dark
+        if (photosCount == 1 && ocrConfig.LightingLevel == 1) {
+          if (channel.getValueInt64() != 0) {
+            // If value changed after photo, fail test.  It should be 0, becuase
+            // photo in dark doesn't contain any numbers.
+            if (factoryTester) {
+              testMode = false;
+              factoryTester->setTestFailed(100);
+            }
+          } else {
+            // Step 1 successful. Enable LED auto mode.
+            ocrConfig.LightingMode = OCR_LIGHTING_MODE_AUTO;
+            ocrConfig.LightingLevel = 100;
+            lastPhotoTakeTimestamp = 0;
+          }
+        } else if (photosCount == 2) {
+          // Step 2 - do photo in light
+          if (channel.getValueInt64() !=
+              static_cast<uint64_t>(ocrTestExpectedResult)) {
+            // Step 2 failed. Fail test.
+            SUPLA_LOG_ERROR("OcrIC: OCR test failed: expected %d, got %" PRIu64,
+                            ocrTestExpectedResult, channel.getValueInt64());
+            ocrConfig.LightingLevel = OCR_DEFAULT_LIGHTING_LEVEL;
+            if (factoryTester) {
+              testMode = false;
+              factoryTester->setTestFailed(101);
+            }
+          } else {
+            factoryTester->waitForConfigButtonPress();
+          }
+          testMode = false;
+        }
+      }
+    }
+  }
+}
+
+void OcrImpulseCounter::setFactoryTester(Supla::Device::FactoryTest *tester) {
+  factoryTester = tester;
 }
 
 #endif  // ARDUINO_ARCH_AVR

@@ -35,7 +35,8 @@ class OcrIc : public Supla::Sensor::OcrImpulseCounter {
   bool sendPhotoToOcrServer(const char *url,
                             const char *authkey,
                             char *resultBuffer,
-                            int resultBufferSize) override;
+                            int resultBufferSize,
+                            const char *cropSettings) override;
   bool getStatusFromOcrServer(const char *url,
                               const char *authkey,
                               char *buf,

@@ -40,7 +40,7 @@ NvsConfig::~NvsConfig() {
 
 bool NvsConfig::init() {
   // check nvs_supla partition
-  const char* nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
+  nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
   esp_err_t err = 0;
   bool firstStep = true;
   while (true) {
@@ -118,11 +118,14 @@ bool NvsConfig::init() {
 }
 
 void NvsConfig::removeAll() {
-  esp_err_t err = nvs_erase_all(nvsHandle);
-  if (err != ESP_OK) {
-    SUPLA_LOG_ERROR("Failed to erase NVS storage (%d)", err);
-  }
-  nvs_commit(nvsHandle);
+  nvs_flash_erase_partition(nvsPartitionName);
+  init();
+
+  // esp_err_t err = nvs_erase_all(nvsHandle);
+  // if (err != ESP_OK) {
+  //   SUPLA_LOG_ERROR("Failed to erase NVS storage (%d)", err);
+  // }
+  // nvs_commit(nvsHandle);
 }
 
 bool NvsConfig::eraseKey(const char* key) {

@@ -57,6 +57,7 @@ class NvsConfig : public Config {
  protected:
   int getBlobSize(const char* key) override;
   nvs_handle_t nvsHandle = 0;
+  const char* nvsPartitionName = nullptr;
 };
 };  // namespace Supla
 

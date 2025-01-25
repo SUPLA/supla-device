@@ -268,5 +268,13 @@ void FactoryTest::setTestFailed(int reason) {
   failReason = reason;
 }
 
+void FactoryTest::setTestFinished() {
+  testFinished = true;
+}
+
+Supla::TestStage FactoryTest::getTestStage() const {
+  return testStage;
+}
+
 }  // namespace Device
 }  // namespace Supla

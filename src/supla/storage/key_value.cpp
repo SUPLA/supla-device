@@ -542,7 +542,9 @@ size_t KeyValueElement::serialize(uint8_t* destination, size_t maxSize) {
   }
 
   if (blockSize > maxSize) {
-    SUPLA_LOG_ERROR("Key value too big");
+    SUPLA_LOG_ERROR(
+        "KeyValue: serialized configuration size is too big. Config will not "
+        "work and may be lost");
     return 0;
   }
 

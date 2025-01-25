@@ -166,7 +166,8 @@ void OcrIc::releasePhoto() {
 bool OcrIc::sendPhotoToOcrServer(const char *url,
     const char *authkey,
     char *resultBuffer,
-    int resultBufferSize) {
+    int resultBufferSize,
+    const char *cropConfig) {
   // TODO(klew): move it to common implementation based on
   // Supla::Network::Client
   bool success = false;
@@ -177,6 +178,11 @@ bool OcrIc::sendPhotoToOcrServer(const char *url,
     "filename=\"image.jpg\"\r\n"
     "Content-Type: image/jpeg\r\n\r\n";
   const char *closure = "\r\n\r\n------WebKitFormBoundary7MA4YWxkTrZu0gW--\r\n";
+
+  const char *headerCropContent =
+    "------WebKitFormBoundary7MA4YWxkTrZu0gW\r\n"
+    "Content-Disposition: form-data; name=\"cropConfig\";\r\n"
+    "Content-Type: application/json\r\n\r\n";
 
   size_t body_size = strlen(headerContent);
 
@@ -195,6 +201,11 @@ bool OcrIc::sendPhotoToOcrServer(const char *url,
       "multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW");
 
   int dataToWrite = body_size + photoDataSize + strlen(closure);
+  if (testMode) {
+    dataToWrite +=
+        strlen(headerCropContent) + strlen(cropConfig) + strlen(closure);
+  }
+
   esp_err_t err =
     esp_http_client_open(client, dataToWrite);
 
@@ -202,6 +213,13 @@ bool OcrIc::sendPhotoToOcrServer(const char *url,
     esp_http_client_write(client, headerContent, strlen(headerContent));
     esp_http_client_write(client, (const char *)photoDataBuffer, photoDataSize);
     esp_http_client_write(client, closure, strlen(closure));
+
+    if (testMode) {
+      esp_http_client_write(
+          client, headerCropContent, strlen(headerCropContent));
+      esp_http_client_write(client, cropConfig, strlen(cropConfig));
+      esp_http_client_write(client, closure, strlen(closure));
+    }
 
     esp_http_client_fetch_headers(client);
     int status = esp_http_client_get_status_code(client);

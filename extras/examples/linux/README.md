@@ -316,6 +316,7 @@ Supported channel types:
 * `GeneralPurposeMeterParsed` - related class `Supla::Sensor::GeneralPurposeMeter`
 * `WeightParsed` - related class `Supla::Sensor::Weight`
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
+* `Hvac`, `CustomHvac` - relatedclass `Supla::Control::HvacBase`
 
 Example channels configuration (details are exaplained later):
 
@@ -572,6 +573,24 @@ Example channels configuration (details are exaplained later):
       payload:
         type: Json
 
+    - type: Hvac
+      name: thermostat_1
+      cmd_on: "echo 'true' > /run/shm/hvac.floor.Hallway && /home/pi/check_heating"
+      cmd_off: "echo 'false' > /run/shm/hvac.floor.Hallway && /home/pi/check_heating"
+      main_thermometer_channel_no: 10
+
+    - type: CustomHvac
+      name: thermostat_2
+      turn_on_payload: 1
+      turn_off_payload: 0
+      set_state: state
+      output:
+        type: MQTT
+        control_topic: "thermostat/2"
+      payload:
+        type: Simple
+      main_thermometer_channel_no: 1
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -647,21 +666,18 @@ Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
 to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 
-### CustomRelay
+### Hvac
 
-`CustomRelay` is pretending to be a relay channel in Supla. It is very similar to `VirtualRelay`,
-but additionally allows you to configure publishing state according to a sub elements `payload` 
-to a specific `output` with each turn on/off action. Currently, there are 2 templates available: 
-`Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
-Templates are functionally similar to parsers and outputs are functionally similar to sources.
+`Hvac` is a thermostat channel.
 
-`CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
-three extra configuration options:\
-`set_state` - `state` equivalent for `payload`,\
-`turn_on_payload` - value to be published on turn on,\
-`turn_off_payload` - value to be published on turn on.
+Required parameters:
 
-#### channel `output` parameter
+`main_thermometer_channel_no` - index of main thermometer channel for this HVAC device\
+`cmd_on` - command executed when temperature goes outside of (above for cooling, below for heating modes) 
+desired range\
+`cmd_off` - command executed when temperature goes inside desired range
+
+## Output channel `output` parameter
 `output` specifies where supla device will publish data for `payload` to change 
 channel state. It must be defined as a channel sub-element.
 
@@ -676,7 +692,7 @@ There are three supported parser types:
 3. `MQTT` - use published topic to MQTT broker. A published topic name containing
 control information is provided by `control_topic`.
 
-#### channel `payload` parameter
+### channel `payload` parameter
 `payload` converts channel state change values to values to be published to 
 a predefined `output`, based on the `set_state`, `turn_on_payload` and `turn_off_payload` 
 specified in the channel.
@@ -684,6 +700,30 @@ specified in the channel.
 There are two templates defined:
 1. `Simple`
 2. `Json`
+
+## Output channels
+
+### CustomRelay
+
+`CustomRelay` is pretending to be a relay channel in Supla. It is very similar to `VirtualRelay`,
+but additionally allows you to configure publishing state according to a sub elements `payload` 
+to a specific `output` with each turn on/off action. Currently, there are 2 templates available: 
+`Simple` and `Json`, for which there are 3 outputs: `File`, `Cmd` and `MQTT`.\
+Templates are functionally similar to parsers and outputs are functionally similar to sources.
+
+`CustomRelay` accepts the same parameters as `VirtualRelay`. Additionally, it supports
+three extra configuration options:\
+`set_state` - `state` equivalent for `payload`,\
+`turn_on_payload` - value to be published on turn on,\
+`turn_off_payload` - value to be published on turn on.
+
+### CustomHvac
+
+`CustomHvac` is `Hvac` channel with `output` support.
+
+`CustomHvac` accepts configuration options:\
+`turn_on_payload` - value to be published on turn on,\
+`turn_off_payload` - value to be published on turn on.
 
 ## Parsed channel `source` parameter
 

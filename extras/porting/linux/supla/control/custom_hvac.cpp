@@ -29,7 +29,8 @@ using Supla::Control::CustomHvac;
 
 namespace Supla {
 namespace Control {
-class CustomOutput : public OutputInterface, public Payload::ControlPayloadBase {
+class CustomOutput
+: public OutputInterface, public Payload::ControlPayloadBase {
  public:
   CustomOutput(Payload::Payload *payload);
 

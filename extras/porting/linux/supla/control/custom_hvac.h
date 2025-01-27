@@ -38,9 +38,9 @@ class CustomOutput;
 
 class CustomHvac : public HvacBase {
  public:
-  CustomHvac(Supla::Payload::Payload *payload);
+  explicit CustomHvac(Supla::Payload::Payload *payload);
   virtual ~CustomHvac();
-  
+
   void setMapping(const std::string &parameter, const std::string &key);
   void setMapping(const std::string &parameter, const int index);
 

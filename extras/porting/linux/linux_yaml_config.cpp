@@ -983,7 +983,9 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
   return addCommonParameters(ch, hvac, &paramCount);
 }
 
-bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch, int channelNumber, Payload::Payload* payload){
+bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
+                                           int channelNumber,
+                                           Payload::Payload* payload) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomHvac", channelNumber);
   int mainThermometerChannelNo = -1;
   int auxThermometerChannelNo = -1;

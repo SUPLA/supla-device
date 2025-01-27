@@ -222,6 +222,7 @@ void OcrImpulseCounter::onLoadState() {
       "OcrIC: lastCorrectOcrReading: %d, lastCorrectOcrReadingTimestamp: %d",
       lastCorrectOcrReading,
       lastCorrectOcrReadingTimestamp);
+  resetCounter();
 }
 
 bool OcrImpulseCounter::iterateConnected() {
@@ -371,7 +372,6 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
     if (strncmp(measurementValidStart, "true", 4) != 0) {
       SUPLA_LOG_WARNING(
           "OcrIC: parseStatus failed - measurementValid is not true");
-      return;
     }
   }
 
@@ -412,7 +412,6 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
   if (resultMeasurement == 0) {
     SUPLA_LOG_WARNING(
         "OcrIC: parseStatus failed - resultMeasurement = 0");
-    return;
   }
 
   bool setNewCounterValue = false;
@@ -428,6 +427,10 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
     SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64 " (no previous value)",
                     resultMeasurement);
     setNewCounterValue = true;
+  } else if (resultMeasurement == 0) {
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64, resultMeasurement);
+    setNewCounterValue = true;
+
   } else if (resultMeasurement < lastCorrectOcrReading) {
     SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64
                     " < previous value %" PRIu64,
@@ -548,7 +551,7 @@ void OcrImpulseCounter::onLoadConfig(SuplaDeviceClass *sdc) {
 
 void OcrImpulseCounter::iterateAlways() {
   Supla::Sensor::VirtualImpulseCounter::iterateAlways();
-  if (testMode) {
+  if (testMode && factoryTester) {
     if (Supla::Network::IsReady()) {
       if (testModeDelay == 0) {
         testModeDelay = millis();
@@ -568,10 +571,8 @@ void OcrImpulseCounter::iterateAlways() {
           if (channel.getValueInt64() != 0) {
             // If value changed after photo, fail test.  It should be 0, becuase
             // photo in dark doesn't contain any numbers.
-            if (factoryTester) {
-              testMode = false;
-              factoryTester->setTestFailed(100);
-            }
+            testMode = false;
+            factoryTester->setTestFailed(100);
           } else {
             // Step 1 successful. Enable LED auto mode.
             ocrConfig.LightingMode = OCR_LIGHTING_MODE_AUTO;
@@ -586,10 +587,8 @@ void OcrImpulseCounter::iterateAlways() {
             SUPLA_LOG_ERROR("OcrIC: OCR test failed: expected %d, got %" PRIu64,
                             ocrTestExpectedResult, channel.getValueInt64());
             ocrConfig.LightingLevel = OCR_DEFAULT_LIGHTING_LEVEL;
-            if (factoryTester) {
-              testMode = false;
-              factoryTester->setTestFailed(101);
-            }
+            testMode = false;
+            factoryTester->setTestFailed(101);
           } else {
             factoryTester->waitForConfigButtonPress();
           }

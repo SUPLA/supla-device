@@ -1,7 +1,7 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
 <area shape="rect" id="Node000000" href="$classSupla_1_1Sensor_1_1MeasurementDriver.html" title=" " alt="" coords="5,39,192,79"/>
 <area shape="rect" id="Node000001" href="$classSupla_1_1Sensor_1_1MemoryVariableDriver.html" title=" " alt="" coords="240,5,440,46"/>
-<area shape="poly" id="edge190_Node000000_Node000001" title=" " alt="" coords="207,41,239,37,240,42,208,47"/>
+<area shape="poly" id="edge191_Node000000_Node000001" title=" " alt="" coords="207,41,239,37,240,42,208,47"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1ThermometerDriver.html" title=" " alt="" coords="248,71,432,111"/>
-<area shape="poly" id="edge191_Node000000_Node000002" title=" " alt="" coords="207,71,248,76,247,81,207,76"/>
+<area shape="poly" id="edge192_Node000000_Node000002" title=" " alt="" coords="207,71,248,76,247,81,207,76"/>
 </map>

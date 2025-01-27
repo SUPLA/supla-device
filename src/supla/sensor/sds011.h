@@ -31,9 +31,11 @@ namespace Sensor {
 class sds011 : public Supla::Element {
  public:
   // rx_pin, tx_pin: pins to which the sensor is connected
-  // refresh: time between readings (in minutes)
+  // refresh: time between readings (in minutes: 1-1440)
   explicit sds011(int rx_pin, int tx_pin, int refresh = 10) {
     if (refresh < 1) {
+      refresh = 10;
+    } else if (refresh > 1440) {
       refresh = 10;
     }
     refreshIntervalMs = refresh * 60 * 1000;
@@ -54,7 +56,6 @@ class sds011 : public Supla::Element {
 
   void iterateAlways() override {
     if (millis() - lastReadTime > refreshIntervalMs) {
-
       float pm25 = NAN;
       float pm10 = NAN;
       sensor.read(&pm25, &pm10);
@@ -65,9 +66,9 @@ class sds011 : public Supla::Element {
     }
   }
 
-protected:
+ protected:
   ::SDS011 sensor;
-  uint16_t refreshIntervalMs = 10000;
+  uint32_t refreshIntervalMs = 600000;
   uint32_t lastReadTime = 0;
 
   GeneralPurposeMeasurement *pm25channel = nullptr;

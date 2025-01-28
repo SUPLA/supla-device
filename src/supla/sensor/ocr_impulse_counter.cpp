@@ -46,6 +46,7 @@ OcrImpulseCounter::OcrImpulseCounter() {
   channel.setFlag(SUPLA_CHANNEL_FLAG_OCR);
   addAvailableLightingMode(OCR_LIGHTING_MODE_OFF | OCR_LIGHTING_MODE_ALWAYS_ON |
                            OCR_LIGHTING_MODE_AUTO);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_IC_WATER_METER);
   clearOcrConfig();
 }
 
@@ -180,9 +181,15 @@ void OcrImpulseCounter::fixOcrLightingMode() {
   }
 }
 
-void OcrImpulseCounter::fillChannelConfig(void *, int *) {
-  // TODO(klew): implement
-  return;
+void OcrImpulseCounter::fillChannelConfig(void *channelConfig, int *size) {
+  if (size && channelConfig) {
+    // init default impulse counter config with 1000 impulses per unit
+    *size = sizeof(TChannelConfig_ImpulseCounter);
+    TChannelConfig_ImpulseCounter *config =
+        reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
+    memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
+    config->ImpulsesPerUnit = 1000;
+  }
 }
 
 void OcrImpulseCounter::fillChannelOcrConfig(void *channelConfig, int *size) {
@@ -361,6 +368,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
   stopResultCheck();
 
   // check if measurementValid is "true"
+  bool measurementValid = false;
   if (!testMode) {
     const char *measurementValidStart = strstr(status, "\"measurementValid\":");
     if (!measurementValidStart) {
@@ -372,6 +380,8 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
     if (strncmp(measurementValidStart, "true", 4) != 0) {
       SUPLA_LOG_WARNING(
           "OcrIC: parseStatus failed - measurementValid is not true");
+    } else {
+      measurementValid = true;
     }
   }
 
@@ -412,6 +422,10 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
   if (resultMeasurement == 0) {
     SUPLA_LOG_WARNING(
         "OcrIC: parseStatus failed - resultMeasurement = 0");
+  }
+
+  if (!measurementValid) {
+    resultMeasurement = 0;
   }
 
   bool setNewCounterValue = false;

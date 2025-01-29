@@ -20,7 +20,8 @@
 #define SRC_SUPLA_SENSOR_SHT3X_H_
 
 // Dependency: ClosedCube SHT3x library - use library manager to install it
-// https://github.com/closedcube/ClosedCube_SHT31D_Arduino
+// https://github.com/closedcube/ClosedCube_SHT31D_Arduino (original library, currently unavailable)
+// https://github.com/malarz-supla/ClosedCube_SHT31D_Arduino (fork with fixes)
 
 #include <ClosedCube_SHT31D.h>
 

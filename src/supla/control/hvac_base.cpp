@@ -5449,6 +5449,19 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     readonlyViolation = true;
   }
 
+  if (memcmp(&(hvacConfig->ParameterFlags),
+             &parameterFlags,
+             sizeof(parameterFlags)) != 0) {
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] ParameterFlags change from 0x%X to 0x%X not allowed "
+        "(readonly)",
+        getChannelNumber(),
+        config.ParameterFlags,
+        parameterFlags);
+    config.ParameterFlags = parameterFlags;
+    readonlyViolation = true;
+  }
+
   return readonlyViolation;
 }
 

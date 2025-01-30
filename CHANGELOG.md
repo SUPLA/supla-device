@@ -1,10 +1,75 @@
 # CHANGELOG.md
 
-## 24.11.04 (2024-11-26)
+# 25.01.03 (2025-01-30)
+
+## Added
+- **Nova Fitness Laser Sensor Support**: Added support for Nova Fitness PM2.5/PM10 laser sensor (#82, thanks @malarz-supla).
+- **Supla Autodiscovery Service**: Devices can now automatically discover the server address based on the account email address, allowing the server address field in the configuration to be left empty. Works only for official servers.
+- **MCP23008 Expander Support (esp-idf)**: Initial support for the MCP23008 I2C expander added.
+- **I2C Driver Enhancement (esp-idf)**: Option to use internal pull-up resistors in the ESP-IDF I2C driver.
+- **Container Enhancements**: Added HTML configuration and initial support for container configuration handling, event support, and debugging.
+- **Doxygen Documentation**: Added documentation for `GeneralPurposeChannelBase`, `element.h`, and additional Doxygen improvements.
+- **New Configuration Options for HVAC**: Added readonly checks for `ParameterFlags` and new configuration parameters related to "local UI lock".
+- **New Methods for Factory Testing**: Added `setTestFinished` and `getTestStage` methods to `FactoryTest`.
+- **Improved Logging for KeyValue Storage**: Enhanced log messages when the configuration storage size is too big.
+- **VirtualBinary**: add option to keep state in storage.
+- **ThermHygroMeter (and all thermometers)**: add setApplyCorrections method which disables applying corrections on SD side.
+
+## Changed
+- **OCR Impulse Counter Improvements**:
+  - Default function set to water meter with 1000 impulses/unit.
+  - Test mode added.
+  - Increased HTTP buffer size to 2500 B for handling longer responses.
+  - Improved LED timing (turn on for 2s before taking a photo, then turn off immediately after).
+  - Removed max increment checking.
+  - Improved handling of measurement validity from the OCR server.
+- **ESP-IDF Updates**:
+  - Replaced `HSPI` with `SPI2` in the SPI driver.
+  - Changed factory reset to remove the whole NVS partition instead of clearing only current data.
+  - Updated the Docker ESP-IDF version to `5.4-beta1`.
+- **Improved Supla Device Initialization**:
+  - Devices can now start in test mode without requiring Supla server configuration.
+  - Improved `begin()` method logs with explicit info for each initialization stage.
+  - `iterateConnected` handling improved to prevent one element from starving others in communication.
+- **RollerShutter Enhancements**:
+  - `setNotCalibrated` and `setCalibrationOngoing` methods added.
+  - Add set/get for calibration failed, motor problem, calibration lost.
+  - Ensure channel state updates at most every 300 ms.
+  - Ensure config is sent to the server when some fields were previously disabled.
+  - Extracted `RollerShutterInterface` as a base class.
+- **NVS Configuration Cleanup**: Default `NVS` entries are now cleaned when `suplanvs` is used.
+- **ElectricityMeter**:
+  - Switch extended value to V3 variant.
+  - Add voltage phase angle 12 & 13, and voltage/current phase sequence.
+
+## Fixed
+- **OCR Impulse Counter Stability**:
+  - Ensured that `0` is sent when a photo reading is invalid or during device registration.
+- **HVAC Configuration Fixes**:
+  - Config fix is now sent only twice to avoid endless loops of read-only field modifications.
+  - Fixed IsOn reporting for % values from `2..101 (1-100%)` to `2..102 (0-100%)`.
+  - Prevented sending alternate weekly schedules for thermostats with a read-only subfunction set to "heat".
+- **Container Fixes**:
+  - Changed value range in alarm setters.
+  - Added tests for sensor-based level evaluation.
+- **LightRelay**: Fixed missing battery level and powered fields in the channel state.
+- **ElectricityMeter**:
+  - Fixed missing configuration reload when config is changed from Cloud.
+  - Improved logs and ensured extended value updates always occur after registration.
+- **SuplaDevice**:
+  - Fixed detection issues for removed channels at the end of the conflict channel list.
+  - Improved `sd4linux` storage handling, ensuring writes and reads remain within allocated limits.
+- **General Fixes**:
+  - Fixed an issue where channel state updates were not sent autonomously when only battery level was used.
+  - Improved log messages and error handling in multiple areas.
+  - Ensured GPIO operations in `RollerShutter` are ignored when the GPIO number is not initialized (`-1`).
+- **LittleFsConfig**: add writing backup config file in case of reset during write which could cause configuration loss.
+
+# 24.11.04 (2024-11-26)
 
    - Fix: RollerShutter: ensure that config is send to server when some config fields were previously disabled - fixes problem with missing new config fields after device firmware update
 
-## 24.11.03 (2024-11-25)
+# 24.11.03 (2024-11-25)
    - Change: SuplaSrpc: remove sending ChannelState as ExtendedValue and revert to sending it only via dedicated message
    - Change: Channel: seperated "battery powered" and "battery level" channel state fields
    - Fix: PZEM: fix for invalid metering/measuement data when device starts and there is problem with PZEM communication. PZEM lib return read error only on first parameter read (every 200 ms). If subsequent read is performed before <200 ms, then unintialized values are returned.
@@ -26,7 +91,7 @@
    - Add: SuplaDevice & StatusLed: add "identify device" calcfg handling. Device will repeat 3 quick blinks 5 times as identification sequence.
 
 
-## 24.10.04 (2024-10-18 SOP edition)
+# 24.10.04 (2024-10-18 SOP edition)
    - Change: configuration tags (names used in internal config storage) are extracted from HTML related classes and moved to ./storage/config_tags.h file in order to cleanup some mess and dependency to HTML classes in other parts of code
    - Change: BlinkingLed: extracted base functionality from StatusLed class, so BlinkingLed can be used for purposes not related with device's status.
    - Change: OcrImpulseCounter: change default and minimum PhotoInterval to 60 min
@@ -53,7 +118,7 @@
    - Add: Channel: add setBatteryPowered() method to indicate battery powered device without knowing exact battery level.
    - Add: Element: add isOwnerOfSubDeviceId method to get element reponsible for specific subdevice handling.
 
-## 24.09 (2024-09-05)
+# 24.09 (2024-09-05)
    - Fix: Relay: change int to int32_t (potentially problem on Arduino Mega)
    - Fix: HVAC: small mem usage reduction
    - Fix: HVAC: add validation of stored THVACValues (currently only with warning log)
@@ -72,10 +137,10 @@
    - Add: SuplaDevice: add handling of SUPLA_CALCFG_CMD_RESTART_DEVICE. Add bool isDeviceSoftwareResetSupported() method.
 
 
-## 24.08.01 (2024-08-07)
+# 24.08.01 (2024-08-07)
   - Version increased to 24.08.01 for internal use
 
-## 24.08 (2024-08-07)
+# 24.08 (2024-08-07)
 
   - Fix: Arduino ESP32: fix for generating device hostname and softAP name which is based on device's mac address. On ESP32 3.0.0 boards onwards, WiFi.macAddress() returns 0 when it's called before initialization of WiFi.
   - Fix: HTML: rename current transformer "133.2mA" to "133.3mA"
@@ -127,18 +192,18 @@
   - Add: Supla::Sensor::OcrImpulseCounter - base class for impulse counter which sends photos to OCR server
   - Add: Supla::OrcIc - esp-idf implementation for Supla::Sensor::OcrImpulseCounter
 
-## 24.06 (2024-06-03)
+# 24.06 (2024-06-03)
 
   - Fix: compilation fix for ESP32 boards for Arduino with version 3.x
 
-## 24.05.02 (2024-05-31)
+# 24.05.02 (2024-05-31)
 
   - Change: default Supla proto version increased to 23
   - Change: registration message is using TDS_SuplaDeviceRegister_F and is send to server in chunks. This should reduce RAM memory usage on all boards.
   - Change: BH1750, MAX44009: set default GPM icon to 14 ("sun with light")
   - Add: Supla::Channel::setDefaultIcon(int) option that allow to configure initial default icon during registration of device.
 
-## 24.05.01 (2024-05-22)
+# 24.05.01 (2024-05-22)
 
   - Fix: GPM: fix missing handling of "refresh interval ms" parameter
   - Fix: esp-idf ADC driver: deprecation warning fix for v5.2
@@ -159,7 +224,7 @@
   - Add: DeviceConfig: add handling of ScreenDelayType
   - Add: HTML: add ScreenDelayTypeParameters form
 
-## 24.03 (2024-03-14 Pi day)
+# 24.03 (2024-03-14 Pi day)
 
   - Fix: MQTT: publish WiFi RSSI and signal strength only when those fields are available
   - Fix: Arduino esp32eth: code adjustment to changes in Network classes
@@ -192,7 +257,7 @@
   - Add: Element: add setter for default channel function (setDefaultFunction)
   - Add: esp-idf: new version of supla-i2c-driver
 
-## 24.02 (2024-02-14)
+# 24.02 (2024-02-14)
 
   - Fix: StatusLed: disable blinking for sleeping devices when other protocols are connected
   - Fix: WebServer: fix for invalid checkbox handling on beta web page
@@ -217,7 +282,7 @@
   - Add: new sensors based on GPM added: BH1750, MAX44099, GpmEspFreeHeap
   - Add: HVAC: add events: ON_HVAC_WEEKLY_SCHEDULE_ENABLED, ON_HVAC_WEEKLY_SCHEDULE_ENABLED, ON_HVAC_WEEKLY_SCHEDULE_DISABLED, ON_HVAC_MODE_OFF, ON_HVAC_MODE_HEAT, ON_HVAC_MODE_COOL, ON_HVAC_MODE_HEAT_COOL
 
-## 23.12 (2023-12-05)
+# 23.12 (2023-12-05)
 
   - Change: HVAC: allow invalid config with invalid main thermometer channel number.  Thermostat will be in "off" with theremometer error.
   - Change: RGBW, RGB, Dimmer: adjusted fading algorithm for smaller distances (target vs actuall PWM setting)
@@ -258,7 +323,7 @@
   - Add: ESP-IDF DS18B20: add sensor readout instant refresh after config change
   - Add: ESP-IDF: add bool guard for calling "disable" method, so it will be executed only when "start" was called before
 
-## 23.11 (2023-11-07)
+# 23.11 (2023-11-07)
 
   - Change: LocalAction: changed variable that holds actions and events to uint16_t
   - Change: Button: Html fields now allow 200 ms as minimum time to be set (was 300 ms)
@@ -288,7 +353,7 @@
   - CSS: add class for input form range
 
 
-## 23.10.01 (2023-10-17)
+# 23.10.01 (2023-10-17)
 
   - Change: HVAC: rename "screensaver" -> "home screen"
   - Fix: ESP-IDF MQTT: replace delay(0) with dedicated mutex in order to make sure that MQTT task will get CPU time ASAP
@@ -307,7 +372,7 @@
   - Add: RGBW, RGB, Dimmer: add actions for starting and stopping brightness iteration (by server). Add option to disable button local action from local config.
   - Add: GroupButtonControlRGBW: add class to handle group of RGBWs, RGBs, Dimmers by a single button
 
-## 23.10 (2023-10-02)
+# 23.10 (2023-10-02)
 
   - Change: Correction: method "add" on temperature/humidity correction will modify existing correction if it was added earlier
   - Change: Arduino Config: moved blob structures to be stored in separate files in "/supla" directory
@@ -334,7 +399,7 @@
   - Add: SuplaDevice: add allowWorkInOfflineMode variant which requires all communication protocols to be disalbed in order to enable offline mode
 
 
-## 23.08.01 (2023-08-17)
+# 23.08.01 (2023-08-17)
 
   - Change: ESP-IDF example: change partition scheme (factory removed, ota_0 and ota_1 size change to 1.5 M)
   - Change: Supla common update to proto v21
@@ -358,7 +423,7 @@
   - Add ThermometerDriver interface class for reading thermometer value from HW.
   - ESP-IDF: add ADC driver interface
 
-## 23.07.01 (2023-07-20)
+# 23.07.01 (2023-07-20)
 
   - Change: default proto version for SuplaDevice changed from 16 to 20 (if you want to use other proto version, please specify it in SuplaDevice.begin(proto_version) call)
   - Change: supla-common update
@@ -368,7 +433,7 @@
   - Add: Arduino IDE: add example with basic notifications usage (DSwithNotification)
   - Add: SuplaDevice: always print device's GUID in debug logs
 
-## 23.07 (2023-07-07)
+# 23.07 (2023-07-07)
 
   - Change: Relay with Staircase function: duration of staircase timer is now fetched from server after registration. It is no longer required to turn on timer from Supla app in order to store a new timer value on device.
   - Change: Relay: keepTurnOnDuration() function is DEPRECATED. It can be removed from all application. Currently it is left empty in order to not break compilation of user applications.
@@ -383,7 +448,7 @@
   - Add: ImpulseCounter: add support for counter reset from Cloud button
 
 
-## 23.05 (2023-05-25)
+# 23.05 (2023-05-25)
 
   - Change: ESP-IDF version update to 5.0.2
   - Change: Config: rename of MQTT AT config parameter tag
@@ -402,7 +467,7 @@
   - Add: HTML: add "use button as IN Config" HTML element
   - Add: Button: add option to automatically configure input as config based on Config Storage
 
-## 23.04 (2023-04-19)
+# 23.04 (2023-04-19)
 
   - Change: (Arduino ESP32) Dimmer, RGB, RGBW: ESP32 LEDC channel frequency changed from 12 kHz to 1 kHz.
   - Change: ESP-IDF example: change partition scheme (factory removed, ota_0 and ota_1 size change to 1.5 M)
@@ -412,12 +477,12 @@
   - Add: sd4linux: add documentation for Humidity, Pressure, Rain, Wind parsed sensors.
   - Add: RollerShutter: add getters for closing/opening time
 
-## 23.02.01 (2023-02-22)
+# 23.02.01 (2023-02-22)
 
   - Add: Roller shutter: add handling of server commands: up or stop, down or stop, step-by-step.
   - Change: Roller shutter: change local handling of "step by step" (i.e. by button) to use moveUp/Down instead of open/close.
 
-## 23.02 (2023-02-20)
+# 23.02 (2023-02-20)
 
   - Add: Linux: add support for ActionTrigger for CmdRelay and BinaryParsed
   - Add: Distance sensor: add setReadIntervalMs method to set delay between sensor readouts (default 100 ms).
@@ -426,13 +491,13 @@
   - Fix: Linux: terminate SSL connection on critical SSL error
   - Fix: change logging from Serial to SUPLA_LOG_ macro for esp_wifi.h file (thanks @arturtadel)
 
-## 22.12.01 (2023-01-09)
+# 22.12.01 (2023-01-09)
 
   - Fix: RGBW/Dimmer fix starting at lowest brighness when previously set brightness level was < 5%
   - Add: RGBW/Dimmer add option to set delay between dim direction change during dimming by button (setMinMaxIterationDelay)
   - Add: (ESP-IDF, ESP8266 RTOS) add HTTP status code to LAST STATE when it is different than 200
 
-## 22.12 (2022-12-19)
+# 22.12 (2022-12-19)
 
   - Fix: Afore: fix crash on initialization
   - Fix: allow 32 bytes of Wi-Fi SSID
@@ -457,7 +522,7 @@
   - Add: Linux: add CmdRelay - allows to execute Linux command on relay state change
 
 
-## 22.11.03 (2022-11-28)
+# 22.11.03 (2022-11-28)
 
   - Fix: THW-01: enabled more detailed logging of connection problem in "LAST STATE" field
   - Fix: allow going back to "server disconnected" device state, when device is in error state
@@ -472,16 +537,16 @@ when form is saved.
   - Add: SelectCmdInputParameter HTML element - works in the same way as TextCmdInputParameter, but generates select HTML input type with all available options
 
 
-## 22.11.02 (2022-11-03)
+# 22.11.02 (2022-11-03)
 
   - Fix: "beta" config HTML page stuck at "Loading..."
 
 
-## 22.11.01 (2022-11-02)
+# 22.11.01 (2022-11-02)
 
   - Change: THW-01 will try to connect for 15 s and then go to sleep in order to prevent internal heating.
 
-## 22.10.05 (N/A)
+# 22.10.05 (N/A)
 
   - Change: New CSS and HTML layout for web interface
   - Add: (Arduino ESPx, Arduino Mega) DS1307 external RTC support (thanks @lukfud)
@@ -489,20 +554,20 @@ when form is saved.
   - Add: ability for device to work in offline mode - allow normal functions without Wi-Fi, when Wi-Fi/server configuration is empty.
 
 
-## 22.10.04 (2022-10-18)
+# 22.10.04 (2022-10-18)
 
   - Add: ActionTrigger support for publishing Home Assistant MQTT auto discovery
   - Add: Linux: support for new parsed sensors: HumidityParsed, PressureParsed, RainParsed, WindParsed
   - Fix: THW-01: Fixed random hang during encrypted connection establishment on private Supla servers.
   - Fix: Linux reading of uint8_t from yaml config should use int conversion instead of char (ASCII value)
 
-## 22.10.03 (2022-10-12)
+# 22.10.03 (2022-10-12)
 
   - Change: Linux example extended with security_level setting
   - Add: support for factory test mode
   - Fix: watchdog timeout when using BME280 sensor or any other element with secondary channel
 
-## 22.10.01 (2022-10-03)
+# 22.10.01 (2022-10-03)
 
   - Change: versioning format changed to year.month.number
   - Change: startup procedure and iterate methods adjusted to support concurrent multiprotocol scenarios (i.e. concurrent Supla and MQTT mode, MQTT only)
@@ -532,7 +597,7 @@ when form is saved.
   - Add: (ESP-IDF) support for MQTT for thermometers, thermometers with humidity, relays with Home Assistant MQTT autodiscovery.
   - Fix: selecting between raw and encrypted connection and between encyrpted with/without certficate verification.
 
-## 2.4.2 (2022-06-20)
+# 2.4.2 (2022-06-20)
 
   - Change: (Arduino ESPx) Wi-Fi class handling change to support config mode
   - Change: StatusLed - change led sequence on error (300/100 ms)
@@ -566,7 +631,7 @@ when form is saved.
   - Add: (Linux) file storage for last state log
   - Add: (Arduino ESPx) WebInterface Arduino example
 
-## 2.4.1 (2022-03-23)
+# 2.4.1 (2022-03-23)
 
   - Change: (Arduino) move WiFi events for ESP8266 Arduino WiFi class to protected section
   - Change: (Arduino) Arduino ESP32 boards switch to version 2.x. Older boards will not compile ([see instructions](https://github.com/SUPLA/supla-device/commit/c533e73a4c811c026187374635dd812d4e294c8b))
@@ -584,7 +649,7 @@ when form is saved.
   - Add: getters for electricity meter measured values
   - Add: PZEMv3 with custom PZEM address setting (allow to use single TX/RX pair for multiple PZEM units)
 
-## 2.4.0 (2021-12-07)
+# 2.4.0 (2021-12-07)
 
 All changes for this and older releases are for Arduino IDE target.
 

@@ -424,7 +424,7 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
         "OcrIC: parseStatus failed - resultMeasurement = 0");
   }
 
-  if (!measurementValid) {
+  if (!measurementValid && !testMode) {
     resultMeasurement = 0;
   }
 

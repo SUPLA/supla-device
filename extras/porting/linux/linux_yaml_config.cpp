@@ -403,7 +403,7 @@ bool Supla::LinuxYamlConfig::getAuthKey(char* result) {
   return false;
 }
 
-bool Supla::LinuxYamlConfig::getMqttHost(char* result) const {
+bool Supla::LinuxYamlConfig::getMqttClientHost(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["host"]) {
       auto mqtt_host = config["mqtt"]["host"].as<std::string>();
@@ -417,7 +417,7 @@ bool Supla::LinuxYamlConfig::getMqttHost(char* result) const {
   return false;
 }
 
-int32_t Supla::LinuxYamlConfig::getMqttPort() const {
+int32_t Supla::LinuxYamlConfig::getMqttClientPort() const {
   try {
     if (config["mqtt"] && config["mqtt"]["port"]) {
       auto mqtt_port = config["mqtt"]["port"].as<int>();
@@ -429,7 +429,7 @@ int32_t Supla::LinuxYamlConfig::getMqttPort() const {
   return config["mqtt"] && config["mqtt"]["use_ssl"] ? 8883 : 1883;
 }
 
-bool Supla::LinuxYamlConfig::getMqttUsername(char* result) const {
+bool Supla::LinuxYamlConfig::getMqttClientUsername(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["username"]) {
       auto mqtt_username = config["mqtt"]["username"].as<std::string>("");
@@ -443,7 +443,7 @@ bool Supla::LinuxYamlConfig::getMqttUsername(char* result) const {
   return false;
 }
 
-bool Supla::LinuxYamlConfig::getMqttPassword(char* result) const {
+bool Supla::LinuxYamlConfig::getMqttClientPassword(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["password"]) {
       auto mqtt_password = config["mqtt"]["password"].as<std::string>("");
@@ -471,7 +471,7 @@ bool Supla::LinuxYamlConfig::getMqttClientName(char* result) const {
   return false;
 }
 
-bool Supla::LinuxYamlConfig::getMqttUseSSL() const {
+bool Supla::LinuxYamlConfig::getMqttClientUseSSL() const {
   try {
     if (config["mqtt"] && config["mqtt"]["use_ssl"]) {
       auto mqtt_use_ssl = config["mqtt"]["use_ssl"].as<bool>();
@@ -483,7 +483,7 @@ bool Supla::LinuxYamlConfig::getMqttUseSSL() const {
   return false;
 }
 
-bool Supla::LinuxYamlConfig::getMqttVerifyCA() const {
+bool Supla::LinuxYamlConfig::getMqttClientVerifyCA() const {
   try {
     if (config["mqtt"] && config["mqtt"]["verify_ca"]) {
       auto mqtt_secure = config["mqtt"]["verify_ca"].as<bool>();
@@ -495,7 +495,7 @@ bool Supla::LinuxYamlConfig::getMqttVerifyCA() const {
   return false;
 }
 
-bool Supla::LinuxYamlConfig::getMqttFileCA(char* result) const {
+bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
   try {
     if (config["mqtt"] && config["mqtt"]["ca_file"]) {
       auto mqtt_ca_file = config["mqtt"]["ca_file"].as<std::string>("");

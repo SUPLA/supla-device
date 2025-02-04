@@ -33,11 +33,11 @@ std::unordered_map<std::string, std::string> Supla::LinuxMqttClient::topics;
 
 Supla::LinuxMqttClient::LinuxMqttClient(
     const Supla::LinuxYamlConfig& yamlConfig)
-    : port(yamlConfig.getMqttPort()),
-      verifyCA(yamlConfig.getMqttVerifyCA()),
-      useSSL(yamlConfig.getMqttUseSSL()) {
+    : port(yamlConfig.getMqttClientPort()),
+      verifyCA(yamlConfig.getMqttClientVerifyCA()),
+      useSSL(yamlConfig.getMqttClientUseSSL()) {
   char buffer[256];
-  host = yamlConfig.getMqttHost(buffer) ? buffer : "";
+  host = yamlConfig.getMqttClientHost(buffer) ? buffer : "";
   if (!yamlConfig.getMqttClientName(buffer)) {
     if (gethostname(buffer, sizeof(buffer)) == 0) {
       clientName = buffer;
@@ -47,9 +47,9 @@ Supla::LinuxMqttClient::LinuxMqttClient(
   } else {
     clientName = buffer;
   }
-  username = yamlConfig.getMqttUsername(buffer) ? buffer : "";
-  password = yamlConfig.getMqttPassword(buffer) ? buffer : "";
-  fileCA = yamlConfig.getMqttFileCA(buffer) ? buffer : "";
+  username = yamlConfig.getMqttClientUsername(buffer) ? buffer : "";
+  password = yamlConfig.getMqttClientPassword(buffer) ? buffer : "";
+  fileCA = yamlConfig.getMqttClientFileCA(buffer) ? buffer : "";
   SUPLA_LOG_DEBUG("Linux MQTT Client create.");
 }
 

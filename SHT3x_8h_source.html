@@ -113,71 +113,72 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#define SRC_SUPLA_SENSOR_SHT3X_H_</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="comment">// Dependency: ClosedCube SHT3x library - use library manager to install it</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">// https://github.com/closedcube/ClosedCube_SHT31D_Arduino</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;ClosedCube_SHT31D.h&gt;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &quot;therm_hygro_meter.h&quot;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span>Supla {</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span>Sensor {</div>
-<div class="foldopen" id="foldopen00031" data-start="{" data-end="};">
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1SHT3x.html">   31</a></span><span class="keyword">class </span>SHT3x : <span class="keyword">public</span> ThermHygroMeter {</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> <span class="keyword">public</span>:</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>  <span class="keyword">explicit</span> SHT3x(int8_t address = 0x44) : address(address) {</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  }</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordtype">double</span> getTemp()<span class="keyword"> override </span>{</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    readValuesFromDevice();</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordflow">return</span> temperature;</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  }</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordtype">double</span> getHumi()<span class="keyword"> override </span>{</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">return</span> humidity;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  }</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
-<div class="foldopen" id="foldopen00045" data-start="{" data-end="}">
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1SHT3x.html#a52196ee3f18c4d9db5b56c04c1675be6">   45</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1SHT3x.html#a52196ee3f18c4d9db5b56c04c1675be6">onInit</a>()<span class="keyword"> override </span>{</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    sht.begin(address);</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    channel.setNewValue(getTemp(), getHumi());</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  }</div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="comment">// https://github.com/closedcube/ClosedCube_SHT31D_Arduino (currently unavailable)</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="comment">// https://github.com/malarz-supla/ClosedCube_SHT31D_Arduino (fork with fixes)</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;ClosedCube_SHT31D.h&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &quot;therm_hygro_meter.h&quot;</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span>Supla {</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">namespace </span>Sensor {</div>
+<div class="foldopen" id="foldopen00032" data-start="{" data-end="};">
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1SHT3x.html">   32</a></span><span class="keyword">class </span>SHT3x : <span class="keyword">public</span> ThermHygroMeter {</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>  <span class="keyword">explicit</span> SHT3x(int8_t address = 0x44) : address(address) {</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  }</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">double</span> getTemp()<span class="keyword"> override </span>{</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    readValuesFromDevice();</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">return</span> temperature;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  }</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>  <span class="keywordtype">double</span> getHumi()<span class="keyword"> override </span>{</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="keywordflow">return</span> humidity;</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  }</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="foldopen" id="foldopen00046" data-start="{" data-end="}">
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1SHT3x.html#a52196ee3f18c4d9db5b56c04c1675be6">   46</a></span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1SHT3x.html#a52196ee3f18c4d9db5b56c04c1675be6">onInit</a>()<span class="keyword"> override </span>{</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    sht.begin(address);</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    channel.setNewValue(getTemp(), getHumi());</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  }</div>
 </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> <span class="keyword">private</span>:</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  <span class="keywordtype">void</span> readValuesFromDevice() {</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    SHT31D result = sht.readTempAndHumidity(</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        SHT3XD_REPEATABILITY_LOW, SHT3XD_MODE_CLOCK_STRETCH, 50);</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="keywordflow">if</span> (result.error != SHT3XD_NO_ERROR) {</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>      Serial.print(F(<span class="stringliteral">&quot;SHT [ERROR] Code #&quot;</span>));</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>      Serial.println(result.error);</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>      retryCount++;</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>      <span class="keywordflow">if</span> (retryCount &gt; 3) {</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        retryCount = 0;</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        temperature = TEMPERATURE_NOT_AVAILABLE;</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        humidity = HUMIDITY_NOT_AVAILABLE;</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>      }</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>      retryCount = 0;</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>      temperature = result.t;</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>      humidity = result.rh;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    }</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>  }</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>  int8_t address;</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>  <span class="keywordtype">double</span> temperature = TEMPERATURE_NOT_AVAILABLE;</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>  <span class="keywordtype">double</span> humidity = HUMIDITY_NOT_AVAILABLE;</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>  int8_t retryCount = 0;</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>  ::ClosedCube_SHT31D sht;  <span class="comment">// I2C</span></div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>};</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> <span class="keyword">private</span>:</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>  <span class="keywordtype">void</span> readValuesFromDevice() {</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    SHT31D result = sht.readTempAndHumidity(</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        SHT3XD_REPEATABILITY_LOW, SHT3XD_MODE_CLOCK_STRETCH, 50);</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordflow">if</span> (result.error != SHT3XD_NO_ERROR) {</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>      Serial.print(F(<span class="stringliteral">&quot;SHT [ERROR] Code #&quot;</span>));</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>      Serial.println(result.error);</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>      retryCount++;</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>      <span class="keywordflow">if</span> (retryCount &gt; 3) {</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        retryCount = 0;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        temperature = TEMPERATURE_NOT_AVAILABLE;</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        humidity = HUMIDITY_NOT_AVAILABLE;</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>      }</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    } <span class="keywordflow">else</span> {</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>      retryCount = 0;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>      temperature = result.t;</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>      humidity = result.rh;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    }</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>  }</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>  int8_t address;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>  <span class="keywordtype">double</span> temperature = TEMPERATURE_NOT_AVAILABLE;</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>  <span class="keywordtype">double</span> humidity = HUMIDITY_NOT_AVAILABLE;</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>  int8_t retryCount = 0;</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>  ::ClosedCube_SHT31D sht;  <span class="comment">// I2C</span></div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>};</div>
 </div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>};  <span class="comment">// namespace Sensor</span></div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_SHT3X_H_</span></div>
-<div class="ttc" id="aclassSupla_1_1Sensor_1_1SHT3x_html_a52196ee3f18c4d9db5b56c04c1675be6"><div class="ttname"><a href="classSupla_1_1Sensor_1_1SHT3x.html#a52196ee3f18c4d9db5b56c04c1675be6">Supla::Sensor::SHT3x::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> SHT3x.h:45</div></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>};  <span class="comment">// namespace Sensor</span></div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_SHT3X_H_</span></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1SHT3x_html_a52196ee3f18c4d9db5b56c04c1675be6"><div class="ttname"><a href="classSupla_1_1Sensor_1_1SHT3x.html#a52196ee3f18c4d9db5b56c04c1675be6">Supla::Sensor::SHT3x::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> SHT3x.h:46</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

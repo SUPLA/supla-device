@@ -5,3 +5,4 @@ sdkconfig.old
 compile_commands.json
 .clang_complete
 extras/docs
+.vscode/settings.json

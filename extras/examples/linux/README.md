@@ -316,6 +316,7 @@ Supported channel types:
 * `GeneralPurposeMeterParsed` - related class `Supla::Sensor::GeneralPurposeMeter`
 * `WeightParsed` - related class `Supla::Sensor::Weight`
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
+* `Hvac`, `CustomHvac` - relatedclass `Supla::Control::HvacBase`
 
 Example channels configuration (details are exaplained later):
 
@@ -572,6 +573,24 @@ Example channels configuration (details are exaplained later):
       payload:
         type: Json
 
+    - type: Hvac
+      name: thermostat_1
+      cmd_on: "echo 'true' > /run/shm/hvac.floor.Hallway && /home/pi/check_heating"
+      cmd_off: "echo 'false' > /run/shm/hvac.floor.Hallway && /home/pi/check_heating"
+      main_thermometer_channel_no: 10
+
+    - type: CustomHvac
+      name: thermostat_2
+      turn_on_payload: 1
+      turn_off_payload: 0
+      set_state: state
+      output:
+        type: MQTT
+        control_topic: "thermostat/2"
+      payload:
+        type: Simple
+      main_thermometer_channel_no: 1
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -647,6 +666,43 @@ Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
 to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 
+### Hvac
+
+`Hvac` is a thermostat channel.
+
+Required parameters:
+
+`main_thermometer_channel_no` - channel number of a main thermometer channel for this HVAC device,
+`cmd_on` - command executed when thermostat starts heating or cooling,
+`cmd_off` - command executed when thermostat stops heating or cooling.
+
+## Output channels which publish payloads
+
+### `output` parameter
+`output` specifies where supla device will publish data for `payload` to change 
+channel state. It must be defined as a channel sub-element.
+
+`output` have one common mandatory parameter `type` which defines type
+of the used output. There is also an optional `name` parameter. If you name your
+source, then it can be reused for multiple parsers.
+
+There are three supported parser types:
+1. `File` - use file as an output. File name is provided by `file` parameter
+2. `Cmd` - use Linux command line as an output. Command is provided by `command`
+   field.
+3. `MQTT` - use published topic to MQTT broker. A published topic name containing
+control information is provided by `control_topic`.
+
+### `payload` parameter
+`payload` converts channel state change values to the values to be published to 
+a predefined `output`. I.e. in CustomRelay turn on/off commands are published
+to the `output` in formar defined by `payload` based on the `set_state`. Then
+`turn_on_payload` and `turn_off_payload` are written to the `output`.
+
+There are two templates defined:
+1. `Simple`
+2. `Json`
+
 ### CustomRelay
 
 `CustomRelay` is pretending to be a relay channel in Supla. It is very similar to `VirtualRelay`,
@@ -661,30 +717,13 @@ three extra configuration options:\
 `turn_on_payload` - value to be published on turn on,\
 `turn_off_payload` - value to be published on turn on.
 
-#### channel `output` parameter
-`output` specifies where supla device will publish data for `payload` to change 
-channel state. It must be defined as a channel sub-element.
+### CustomHvac
 
-`output` have one common mandatory parameter `type` which defines type
-of used output. There is also optional `name` parameter. If you name your
-source, then it can be reused for multiple parsers.
+`CustomHvac` is `Hvac` channel with `output` support.
 
-There are three supported parser types:
-1. `File` - use file as an output. File name is provided by `file` parameter
-2. `Cmd` - use Linux command line as an output. Command is provided by `command`
-   field.
-3. `MQTT` - use published topic to MQTT broker. A published topic name containing
-control information is provided by `control_topic`.
-
-#### channel `payload` parameter
-`payload` converts channel state change values to the values to be published to 
-a predefined `output`. I.e. in CustomRelay turn on/off commands are published
-to the `output` in formar defined by `payload` based on the `set_state`. Then
-`turn_on_payload` and `turn_off_payload` are written to the `output`.
-
-There are two templates defined:
-1. `Simple`
-2. `Json`
+`CustomHvac` accepts configuration options:\
+`turn_on_payload` - value to be published on turn on,\
+`turn_off_payload` - value to be published on turn on.
 
 ## Parsed channel `source` parameter
 

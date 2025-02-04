@@ -81,6 +81,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   supla/control/cmd_relay.cpp
   supla/control/action_trigger_parsed.cpp
   supla/control/hvac_parsed.cpp
+  supla/control/custom_hvac.cpp
   supla/control/custom_relay.cpp
   supla/control/control_payload.cpp
 

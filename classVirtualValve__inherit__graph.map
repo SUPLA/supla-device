@@ -1,0 +1,15 @@
+<map id="VirtualValve" name="VirtualValve">
+<area shape="rect" id="Node000001" title="VirtualValve implements Valve as a &quot;device&quot; which simulates a valve in memory." alt="" coords="169,315,261,341"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1ValveBase.html" title="ValveBase class is used to handle SUPLA_CHANNEL_TYPE_VALVE_OPENCLOSE and SUPLA_CHANNEL_TYPE_VALVE_PER..." alt="" coords="130,241,300,267"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="218,282,218,315,212,315,212,282"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="52,168,207,193"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="157,201,202,239,199,243,154,205"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="40,79,220,120"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="132,135,132,167,127,167,127,135"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,5,113,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="82,41,114,77,110,80,78,45"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="137,5,266,31"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="182,45,149,80,145,77,178,41"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="230,168,373,193"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="277,206,231,243,228,239,274,201"/>
+</map>

@@ -478,12 +478,6 @@ _supla_int_t&#160;</td><td class="memItemRight" valign="bottom"><b>getActionTrig
 <tr class="memitem:ad4000de9820f7580952601741b01c822 inherit pub_methods_classSupla_1_1Channel" id="r_ad4000de9820f7580952601741b01c822"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setValidityTimeSec</b> (uint32_t timeSec)</td></tr>
 <tr class="separator:ad4000de9820f7580952601741b01c822 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a31b15e4a1bfcb522f6f68309f3c426cc inherit pub_methods_classSupla_1_1Channel" id="r_a31b15e4a1bfcb522f6f68309f3c426cc"><td class="memItemLeft" align="right" valign="top">
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setUpdateReady</b> ()</td></tr>
-<tr class="separator:a31b15e4a1bfcb522f6f68309f3c426cc inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0b7782db0f999b8cd3901a108a161580 inherit pub_methods_classSupla_1_1Channel" id="r_a0b7782db0f999b8cd3901a108a161580"><td class="memItemLeft" align="right" valign="top">
-void&#160;</td><td class="memItemRight" valign="bottom"><b>clearUpdateReady</b> ()</td></tr>
-<tr class="separator:a0b7782db0f999b8cd3901a108a161580 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a42a5260c24838ae7d5e0fb53b07490a3 inherit pub_methods_classSupla_1_1Channel" id="r_a42a5260c24838ae7d5e0fb53b07490a3"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendUpdate</b> ()</td></tr>
 <tr class="separator:a42a5260c24838ae7d5e0fb53b07490a3 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -526,9 +520,6 @@ uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getBridgeSignalStr
 <tr class="memitem:a1c04287beba67bbee93b3061528a8ce9 inherit pub_methods_classSupla_1_1Channel" id="r_a1c04287beba67bbee93b3061528a8ce9"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isBridgeSignalStrengthAvailable</b> () const</td></tr>
 <tr class="separator:a1c04287beba67bbee93b3061528a8ce9 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7bb403bc95a752f9628e5500a419aa30 inherit pub_methods_classSupla_1_1Channel" id="r_a7bb403bc95a752f9628e5500a419aa30"><td class="memItemLeft" align="right" valign="top">
-void&#160;</td><td class="memItemRight" valign="bottom"><b>requestChannelConfig</b> ()</td></tr>
-<tr class="separator:a7bb403bc95a752f9628e5500a419aa30 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba5820316e81b0e786c4fc510aff73d4 inherit pub_methods_classSupla_1_1Channel" id="r_aba5820316e81b0e786c4fc510aff73d4"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setInitialCaption</b> (const char *caption)</td></tr>
 <tr class="separator:aba5820316e81b0e786c4fc510aff73d4 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -559,6 +550,18 @@ uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getSubDeviceId</b>
 <tr class="memitem:a52c5d2da8ab0ca0248ef3ebb33ac2d41 inherit pub_methods_classSupla_1_1Channel" id="r_a52c5d2da8ab0ca0248ef3ebb33ac2d41"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isRollerShutterRelayType</b> () const</td></tr>
 <tr class="separator:a52c5d2da8ab0ca0248ef3ebb33ac2d41 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a299d8dd23b4f46d43aa7d1241d2daaab inherit pub_methods_classSupla_1_1Channel" id="r_a299d8dd23b4f46d43aa7d1241d2daaab"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>onRegistered</b> ()</td></tr>
+<tr class="separator:a299d8dd23b4f46d43aa7d1241d2daaab inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa475034d216ce909a55b640881a5c411 inherit pub_methods_classSupla_1_1Channel" id="r_aa475034d216ce909a55b640881a5c411"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setSendGetConfig</b> ()</td></tr>
+<tr class="separator:aa475034d216ce909a55b640881a5c411 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aed80e0c5f901c05c7967e4f91d1cef16 inherit pub_methods_classSupla_1_1Channel" id="r_aed80e0c5f901c05c7967e4f91d1cef16"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isChannelStateEnabled</b> () const</td></tr>
+<tr class="separator:aed80e0c5f901c05c7967e4f91d1cef16 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af20c9e5b04db99fdffbe597316a67d08 inherit pub_methods_classSupla_1_1Channel" id="r_af20c9e5b04db99fdffbe597316a67d08"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSendValue</b> ()</td></tr>
+<tr class="separator:af20c9e5b04db99fdffbe597316a67d08 inherit pub_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1LocalAction"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1LocalAction')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1LocalAction.html">Supla::LocalAction</a></td></tr>
 <tr class="memitem:a9a6bb996a59fa5458dcd4f958dc761ca inherit pub_methods_classSupla_1_1LocalAction" id="r_a9a6bb996a59fa5458dcd4f958dc761ca"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>addAction</b> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, uint16_t event, bool alwaysEnabled=false)</td></tr>
@@ -626,12 +629,9 @@ int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>channelNumber</b> 
 <tr class="separator:a52357b1a852f38086c1e453b9ac67b17 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38ea7381915064a4ff48c72c4d7fa1a3 inherit pro_attribs_classSupla_1_1Channel" id="r_a38ea7381915064a4ff48c72c4d7fa1a3"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Channel.html#a38ea7381915064a4ff48c72c4d7fa1a3">defaultFunction</a></td></tr>
 <tr class="separator:a38ea7381915064a4ff48c72c4d7fa1a3 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acec6dc20b7d067ba9fe0281469996bf0 inherit pro_attribs_classSupla_1_1Channel" id="r_acec6dc20b7d067ba9fe0281469996bf0"><td class="memItemLeft" align="right" valign="top">
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>valueChanged</b> = false</td></tr>
-<tr class="separator:acec6dc20b7d067ba9fe0281469996bf0 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a42d36e8330bcccca739e5436ae66973f inherit pro_attribs_classSupla_1_1Channel" id="r_a42d36e8330bcccca739e5436ae66973f"><td class="memItemLeft" align="right" valign="top">
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>channelConfig</b> = false</td></tr>
-<tr class="separator:a42d36e8330bcccca739e5436ae66973f inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a262744d2ac6e1b563b82285d9be4bcf8 inherit pro_attribs_classSupla_1_1Channel" id="r_a262744d2ac6e1b563b82285d9be4bcf8"><td class="memItemLeft" align="right" valign="top">
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>changedFields</b> = 0</td></tr>
+<tr class="separator:a262744d2ac6e1b563b82285d9be4bcf8 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4d7c691b28fd2bec146cab1922f87025 inherit pro_attribs_classSupla_1_1Channel" id="r_a4d7c691b28fd2bec146cab1922f87025"><td class="memItemLeft" align="right" valign="top">
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>batteryLevel</b> = 255</td></tr>
 <tr class="separator:a4d7c691b28fd2bec146cab1922f87025 inherit pro_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -745,6 +745,37 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 <tr class="memitem:a730d8bc220cf5d93f0cc495e8402796d inherit pub_static_attribs_classSupla_1_1Channel" id="r_a730d8bc220cf5d93f0cc495e8402796d"><td class="memItemLeft" align="right" valign="top">
 static uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastCommunicationTimeMs</b> = 0</td></tr>
 <tr class="separator:a730d8bc220cf5d93f0cc495e8402796d inherit pub_static_attribs_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_methods_classSupla_1_1Channel"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1Channel')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a></td></tr>
+<tr class="memitem:a51730fe7ed7aa8bb294ba426d3cbb4d7 inherit pro_methods_classSupla_1_1Channel" id="r_a51730fe7ed7aa8bb294ba426d3cbb4d7"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setSendValue</b> ()</td></tr>
+<tr class="separator:a51730fe7ed7aa8bb294ba426d3cbb4d7 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a54102e9ec50a0fb101a3d3f7dbf8b5b1 inherit pro_methods_classSupla_1_1Channel" id="r_a54102e9ec50a0fb101a3d3f7dbf8b5b1"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isValueUpdateReady</b> () const</td></tr>
+<tr class="separator:a54102e9ec50a0fb101a3d3f7dbf8b5b1 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa78a9ebee4fb7d9fe08b74b972496879 inherit pro_methods_classSupla_1_1Channel" id="r_aa78a9ebee4fb7d9fe08b74b972496879"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSendGetConfig</b> ()</td></tr>
+<tr class="separator:aa78a9ebee4fb7d9fe08b74b972496879 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3a525409d00afcfa2c5ebed24be7360 inherit pro_methods_classSupla_1_1Channel" id="r_af3a525409d00afcfa2c5ebed24be7360"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isGetConfigRequested</b> () const</td></tr>
+<tr class="separator:af3a525409d00afcfa2c5ebed24be7360 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade76ef8ee38c68b3c464b4deefe035b2 inherit pro_methods_classSupla_1_1Channel" id="r_ade76ef8ee38c68b3c464b4deefe035b2"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setSendInitialCaption</b> ()</td></tr>
+<tr class="separator:ade76ef8ee38c68b3c464b4deefe035b2 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6fd81291abca9179ed8cac1e8b03b00a inherit pro_methods_classSupla_1_1Channel" id="r_a6fd81291abca9179ed8cac1e8b03b00a"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSendInitialCaption</b> ()</td></tr>
+<tr class="separator:a6fd81291abca9179ed8cac1e8b03b00a inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e176161bb5fee372fb1a05f52031eb9 inherit pro_methods_classSupla_1_1Channel" id="r_a4e176161bb5fee372fb1a05f52031eb9"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isInitialCaptionUpdateReady</b> () const</td></tr>
+<tr class="separator:a4e176161bb5fee372fb1a05f52031eb9 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0ad0e80ce71289532925444d0816a9e inherit pro_methods_classSupla_1_1Channel" id="r_ae0ad0e80ce71289532925444d0816a9e"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setSendStateInfo</b> ()</td></tr>
+<tr class="separator:ae0ad0e80ce71289532925444d0816a9e inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a160c046f283bf22a0e1eefcfb8826e34 inherit pro_methods_classSupla_1_1Channel" id="r_a160c046f283bf22a0e1eefcfb8826e34"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>clearSendStateInfo</b> ()</td></tr>
+<tr class="separator:a160c046f283bf22a0e1eefcfb8826e34 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8278946e392bfedbce2a512ccd9254f0 inherit pro_methods_classSupla_1_1Channel" id="r_a8278946e392bfedbce2a512ccd9254f0"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isStateInfoUpdateReady</b> () const</td></tr>
+<tr class="separator:a8278946e392bfedbce2a512ccd9254f0 inherit pro_methods_classSupla_1_1Channel"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Channel"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Channel')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Channel.html">Supla::Channel</a></td></tr>
 <tr class="memitem:a538f5b1cb4f5590bf91cab542900abf9 inherit pro_static_attribs_classSupla_1_1Channel" id="r_a538f5b1cb4f5590bf91cab542900abf9"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="classSupla_1_1Channel.html">Channel</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>firstPtr</b> = nullptr</td></tr>

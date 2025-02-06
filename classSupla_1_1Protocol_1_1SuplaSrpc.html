@@ -245,9 +245,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>updateLastSentTime</b
 <tr class="memitem:a30f8d9a797c9843356df9c156f12aecf" id="r_a30f8d9a797c9843356df9c156f12aecf"><td class="memItemLeft" align="right" valign="top"><a id="a30f8d9a797c9843356df9c156f12aecf" name="a30f8d9a797c9843356df9c156f12aecf"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>onGetUserLocaltimeResult</b> (<a class="el" href="structTSDC__UserLocalTimeResult.html">TSDC_UserLocalTimeResult</a> *result)</td></tr>
 <tr class="separator:a30f8d9a797c9843356df9c156f12aecf"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab09e3798ca28a7cd2e0b99cefe0877d2" id="r_ab09e3798ca28a7cd2e0b99cefe0877d2"><td class="memItemLeft" align="right" valign="top"><a id="ab09e3798ca28a7cd2e0b99cefe0877d2" name="ab09e3798ca28a7cd2e0b99cefe0877d2"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>sendChannelStateResult</b> (int32_t receiverId, uint8_t channelNo)</td></tr>
-<tr class="separator:ab09e3798ca28a7cd2e0b99cefe0877d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a745c9ddedd66680e8d32672a45ce67d6" id="r_a745c9ddedd66680e8d32672a45ce67d6"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a745c9ddedd66680e8d32672a45ce67d6">sendChannelStateResult</a> (int32_t receiverId, uint8_t channelNo) override</td></tr>
+<tr class="separator:a745c9ddedd66680e8d32672a45ce67d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4554ddefec01dc409747260ed58759cc" id="r_a4554ddefec01dc409747260ed58759cc"><td class="memItemLeft" align="right" valign="top"><a id="a4554ddefec01dc409747260ed58759cc" name="a4554ddefec01dc409747260ed58759cc"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setServerPort</b> (int value)</td></tr>
 <tr class="separator:a4554ddefec01dc409747260ed58759cc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -408,9 +407,6 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastResponseMs</b
 <tr class="memitem:a88e5cef647a397b806881a20e084e4c5" id="r_a88e5cef647a397b806881a20e084e4c5"><td class="memItemLeft" align="right" valign="top"><a id="a88e5cef647a397b806881a20e084e4c5" name="a88e5cef647a397b806881a20e084e4c5"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastSentMs</b> = 0</td></tr>
 <tr class="separator:a88e5cef647a397b806881a20e084e4c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abb04119ea822532d05e892ec8345d92f" id="r_abb04119ea822532d05e892ec8345d92f"><td class="memItemLeft" align="right" valign="top"><a id="abb04119ea822532d05e892ec8345d92f" name="abb04119ea822532d05e892ec8345d92f"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastChannelStateSendMs</b> = 0</td></tr>
-<tr class="separator:abb04119ea822532d05e892ec8345d92f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aca8a922f60deea9674877fcafacfe672" id="r_aca8a922f60deea9674877fcafacfe672"><td class="memItemLeft" align="right" valign="top"><a id="aca8a922f60deea9674877fcafacfe672" name="aca8a922f60deea9674877fcafacfe672"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>port</b> = -1</td></tr>
 <tr class="separator:aca8a922f60deea9674877fcafacfe672"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -780,6 +776,37 @@ static <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Protoco
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a>.</p>
+
+</div>
+</div>
+<a id="a745c9ddedd66680e8d32672a45ce67d6" name="a745c9ddedd66680e8d32672a45ce67d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a745c9ddedd66680e8d32672a45ce67d6">&#9670;&#160;</a></span>sendChannelStateResult()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Protocol::SuplaSrpc::sendChannelStateResult </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>receiverId</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>channelNo</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Protocol_1_1ProtocolLayer.html">Supla::Protocol::ProtocolLayer</a>.</p>
 
 </div>
 </div>

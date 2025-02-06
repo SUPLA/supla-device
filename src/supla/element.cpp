@@ -115,29 +115,13 @@ void Element::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   if (suplaSrpc == nullptr) {
     return;
   }
-  auto ch = getChannel();
 
-  while (ch) {
-    auto chNumber = ch->getChannelNumber();
-    if (chNumber < 0 || chNumber > 255) {
-      return;
-    }
-    if (ch->isInitialCaptionSet()) {
-      suplaSrpc->setInitialCaption(static_cast<uint8_t>(chNumber),
-                                   ch->getInitialCaption());
-    }
-    if (ch->isSleepingEnabled()) {
-      if (isChannelStateEnabled()) {
-        suplaSrpc->sendChannelStateResult(0, static_cast<uint8_t>(chNumber));
-      }
-      ch->setUpdateReady();
-    }
+  if (getChannel()) {
+    getChannel()->onRegistered();
+  }
 
-    if (ch == getSecondaryChannel()) {
-      ch = nullptr;
-    } else {
-      ch = getSecondaryChannel();
-    }
+  if (getSecondaryChannel()) {
+    getSecondaryChannel()->onRegistered();
   }
 }
 
@@ -145,7 +129,7 @@ bool Element::isChannelStateEnabled() const {
   if (getChannel() == nullptr) {
     return false;
   }
-  return getChannel()->getFlags() & SUPLA_CHANNEL_FLAG_CHANNELSTATE;
+  return getChannel()->isChannelStateEnabled();
 }
 
 void Element::iterateAlways() {}

@@ -30,8 +30,6 @@
 
 #include "supla_srpc.h"
 
-#define SUPLA_CHANNEL_STATE_INTERVAL_MS (20 * 60 * 1000)  // 20 min
-
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {
   int16_t channelNo = 0;
@@ -645,10 +643,6 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
         delay(0);
       }
 
-      // schedule next channel state update in 5s
-      lastChannelStateSendMs =
-          millis() - SUPLA_CHANNEL_STATE_INTERVAL_MS + 5000;
-
       return;
 
       // NOK scenarios
@@ -1017,22 +1011,6 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       disconnect();
     }
 
-    if (millis() - lastChannelStateSendMs > SUPLA_CHANNEL_STATE_INTERVAL_MS) {
-      for (auto el = Supla::Element::begin(); el != nullptr; el = el->next()) {
-        if (el->getChannel() != nullptr && el->isChannelStateEnabled() &&
-            el->getChannel()->isOnline() &&
-            (el->getChannel()->isBatteryPoweredFieldEnabled() ||
-             el->getChannel()->getBatteryLevel() <= 100)) {
-          SUPLA_LOG_DEBUG("SRPC: Sending channel state for %d",
-                          el->getChannelNumber());
-          sendChannelStateResult(0, el->getChannelNumber());
-        }
-        delay(0);
-      }
-
-      lastChannelStateSendMs = millis();
-    }
-
     return true;
   } else if (registered == 2) {
     // Server rejected registration
@@ -1342,12 +1320,16 @@ bool Supla::Protocol::SuplaSrpc::setInitialCaption(uint8_t channelNumber,
   if (!isRegisteredAndReady()) {
     return false;
   }
-  TDCS_SetCaption request = {};
-  request.ChannelNumber = channelNumber;
-  strncpy(request.Caption, caption, SUPLA_CAPTION_MAXSIZE);
-  request.Caption[SUPLA_CAPTION_MAXSIZE - 1] = '\0';
-  request.CaptionSize = strnlen(request.Caption, SUPLA_CAPTION_MAXSIZE) + 1;
-  srpc_dcs_async_set_channel_caption(srpc, &request);
+  TDCS_SetCaption *request = new TDCS_SetCaption;
+  if (request == nullptr) {
+    return false;
+  }
+  request->ChannelNumber = channelNumber;
+  strncpy(request->Caption, caption, SUPLA_CAPTION_MAXSIZE);
+  request->Caption[SUPLA_CAPTION_MAXSIZE - 1] = '\0';
+  request->CaptionSize = strnlen(request->Caption, SUPLA_CAPTION_MAXSIZE) + 1;
+  srpc_dcs_async_set_channel_caption(srpc, request);
+  delete request;
   return true;
 }
 

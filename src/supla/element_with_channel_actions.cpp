@@ -252,7 +252,7 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
           }
         } else {
           SUPLA_LOG_WARNING(
-              "Channel[%d]: set channel config implementation missing",
+              "Channel[%d]: fillChannelConfig implementation missing",
               getChannelNumber());
           channelConfigState = Supla::ChannelConfigState::None;
         }
@@ -303,7 +303,7 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
 uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     TSD_ChannelConfig *result, bool local) {
   SUPLA_LOG_DEBUG(
-      "Channel[%d]: handleChannelConfig, func %d, configtype %d, configsize %d",
+      "Channel[%d] handleChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
       result->Func,
       result->ConfigType,
@@ -317,7 +317,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
 
   auto newFunction = result->Func;
   if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
-    SUPLA_LOG_INFO("Channel[%d]: function changed to %d",
+    SUPLA_LOG_INFO("Channel[%d] function changed to %d",
                    getChannelNumber(),
                    newFunction);
     setAndSaveFunction(newFunction);

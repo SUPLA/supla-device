@@ -72,7 +72,7 @@ TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
-  extChannel.clearUpdateReady();
+  extChannel.clearSendValue();
 
   emVal.measured_values |= EM_VAR_VOLTAGE;
   emVal.m[0].voltage[0] = 10;
@@ -87,7 +87,7 @@ TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
-  extChannel.clearUpdateReady();
+  extChannel.clearSendValue();
 
   emVal.m[0].voltage[0] = 0;
   emVal.m[0].voltage[1] = 20;
@@ -101,7 +101,7 @@ TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
-  extChannel.clearUpdateReady();
+  extChannel.clearSendValue();
 
 
   emVal.m[0].voltage[0] = 0;
@@ -116,7 +116,7 @@ TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
-  extChannel.clearUpdateReady();
+  extChannel.clearSendValue();
 
 
   emVal.m[0].voltage[0] = 10;
@@ -131,7 +131,7 @@ TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
-  extChannel.clearUpdateReady();
+  extChannel.clearSendValue();
 
   emVal.m[0].voltage[0] = 10;
   emVal.m[0].voltage[1] = 230;
@@ -146,5 +146,5 @@ TEST_F(ChannelExtendedFixture, SetNewValueOnExtChannel) {
                           &expectedValue,
                           sizeof(expectedValue)));
   EXPECT_TRUE(extChannel.isUpdateReady());
-  extChannel.clearUpdateReady();
+  extChannel.clearSendValue();
 }

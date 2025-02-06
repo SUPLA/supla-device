@@ -83,7 +83,7 @@ void Relay::onRegistered(
 
 uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "Relay[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
+      "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
       result->Func,
       result->ConfigType,
@@ -101,7 +101,7 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
     case SUPLA_CHANNELFNC_LIGHTSWITCH:
     case SUPLA_CHANNELFNC_POWERSWITCH: {
       SUPLA_LOG_DEBUG(
-          "Relay[%d]: Ignoring config for power/light switch",
+          "Relay[%d] Ignoring config for power/light switch",
           getChannelNumber());
       // TODO(klew): add handlign of overcurrent threshold settings
       break;
@@ -126,7 +126,7 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGATEWAYLOCK: {
       SUPLA_LOG_DEBUG(
-          "Relay[%d]: Ignoring config for controlling the gate/door",
+          "Relay[%d] Ignoring config for controlling the gate/door",
           getChannelNumber());
       // TODO(klew): add here reading of duration from config when it will be
       // added
@@ -340,7 +340,7 @@ void Relay::handleAction(int event, int action) {
     case TURN_ON_WITHOUT_TIMER: {
       uint32_t copyDurationMs = storedTurnOnDurationMs;
       storedTurnOnDurationMs = 0;
-      SUPLA_LOG_DEBUG("Relay[%d]: override stored durationMs",
+      SUPLA_LOG_DEBUG("Relay[%d] override stored durationMs",
                       channel.getChannelNumber());
       turnOn();
       storedTurnOnDurationMs = copyDurationMs;
@@ -402,7 +402,7 @@ void Relay::onLoadState() {
                             sizeof(relayFlags));
   if (stateOnInit < 0) {
     SUPLA_LOG_INFO(
-              "Relay[%d]: restored relay state: %s",
+              "Relay[%d] restored relay state: %s",
               channel.getChannelNumber(),
               (relayFlags & RELAY_FLAGS_ON) ? "ON" : "OFF");
     if (relayFlags & RELAY_FLAGS_ON) {
@@ -413,12 +413,12 @@ void Relay::onLoadState() {
   }
   if (relayFlags & RELAY_FLAGS_STAIRCASE) {
     SUPLA_LOG_INFO(
-              "Relay[%d]: restored staircase function",
+              "Relay[%d] restored staircase function",
               channel.getChannelNumber());
     setChannelFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
   } else if (relayFlags & RELAY_FLAGS_IMPULSE_FUNCTION) {
     SUPLA_LOG_INFO(
-              "Relay[%d]: restored impulse function",
+              "Relay[%d] restored impulse function",
               channel.getChannelNumber());
     // actual funciton may be different, but we only have 8 bit bitfiled to
     // keep the state and currently it doesn't matter which "impulse function"
@@ -427,7 +427,7 @@ void Relay::onLoadState() {
   }
   if (isStaircaseFunction() || isImpulseFunction()) {
     SUPLA_LOG_INFO(
-              "Relay[%d]: restored durationMs: %d",
+              "Relay[%d] restored durationMs: %d",
               channel.getChannelNumber(),
               storedTurnOnDurationMs);
   } else {
@@ -471,7 +471,7 @@ void Relay::attach(Supla::Control::Button *button) {
     return;
   }
 
-  SUPLA_LOG_DEBUG("Relay[%d]: attaching button %d", channel.getChannelNumber(),
+  SUPLA_LOG_DEBUG("Relay[%d] attaching button %d", channel.getChannelNumber(),
                   button->getButtonNumber());
   auto lastButtonListElement = buttonList;
   while (lastButtonListElement && lastButtonListElement->next) {
@@ -536,7 +536,7 @@ void Relay::updateTimerValue() {
     }
   }
 
-  SUPLA_LOG_DEBUG("Relay[%d]: updating timer value: remainingTime=%d state=%d",
+  SUPLA_LOG_DEBUG("Relay[%d] updating timer value: remainingTime=%d state=%d",
                   channel.getChannelNumber(),
                   remainingTime,
                   state);
@@ -583,7 +583,7 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEGARAGEDOOR:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEDOORLOCK: {
       SUPLA_LOG_DEBUG(
-          "Relay[%d]: fill channel config for impulse functions - missing "
+          "Relay[%d] fill channel config for impulse functions - missing "
           "implementation",
           channel.getChannelNumber());
       // TODO(klew): add
@@ -591,7 +591,7 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
     }
     case SUPLA_CHANNELFNC_STAIRCASETIMER: {
       SUPLA_LOG_DEBUG(
-          "Relay[%d]: fill channel config for staircase function",
+          "Relay[%d] fill channel config for staircase function",
           channel.getChannelNumber());
       auto config = reinterpret_cast<TChannelConfig_StaircaseTimer *>(
           channelConfig);
@@ -602,7 +602,7 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
     case SUPLA_CHANNELFNC_POWERSWITCH:
     case SUPLA_CHANNELFNC_LIGHTSWITCH: {
       SUPLA_LOG_DEBUG(
-          "Relay[%d]: fill channel config for power switch functions",
+          "Relay[%d] fill channel config for power switch functions",
           channel.getChannelNumber());
 
       auto config = reinterpret_cast<TChannelConfig_PowerSwitch *>(
@@ -622,7 +622,7 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
     case SUPLA_CHANNELFNC_PUMPSWITCH:
     case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
       SUPLA_LOG_DEBUG(
-          "Relay[%d]: fill channel config for hvac related functions - missing "
+          "Relay[%d] fill channel config for hvac related functions - missing "
           "implementation",
           channel.getChannelNumber());
       // TODO(klew): add
@@ -630,7 +630,7 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
     }
     default:
       SUPLA_LOG_WARNING(
-          "Relay[%d]: fill channel config for unknown function %d",
+          "Relay[%d] fill channel config for unknown function %d",
           channel.getChannelNumber(),
           channel.getDefaultFunction());
       return;
@@ -639,7 +639,7 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
 
 void Relay::setDefaultRelatedMeterChannelNo(int channelNo) {
   if (channelNo >= 0 && channelNo <= 255) {
-    SUPLA_LOG_DEBUG("Relay[%d]: DefaultRelatedMeterChannelNo set to %d",
+    SUPLA_LOG_DEBUG("Relay[%d] DefaultRelatedMeterChannelNo set to %d",
                     channel.getChannelNumber(), channelNo);
     defaultRelatedMeterChannelNo = channelNo;
   }

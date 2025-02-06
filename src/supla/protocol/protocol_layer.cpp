@@ -172,5 +172,8 @@ void ProtocolLayer::setVerboseLog(bool value) {
   verboseLog = value;
 }
 
+void ProtocolLayer::sendChannelStateResult(int32_t, uint8_t) {
+}
+
 }  // namespace Protocol
 }  // namespace Supla

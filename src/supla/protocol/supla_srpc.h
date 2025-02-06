@@ -113,8 +113,7 @@ class SuplaSrpc : public ProtocolLayer {
   void updateLastResponseTime();
   void updateLastSentTime();
   void onGetUserLocaltimeResult(TSDC_UserLocalTimeResult *result);
-  void sendChannelStateResult(int32_t receiverId,
-                              uint8_t channelNo);
+  void sendChannelStateResult(int32_t receiverId, uint8_t channelNo) override;
 
   void setServerPort(int value);
   void setVersion(int value);
@@ -164,7 +163,6 @@ class SuplaSrpc : public ProtocolLayer {
   uint32_t lastIterateTime = 0;
   uint32_t lastResponseMs = 0;
   uint32_t lastSentMs = 0;
-  uint32_t lastChannelStateSendMs = 0;
 
   int port = -1;
 

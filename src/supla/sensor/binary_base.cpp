@@ -68,14 +68,11 @@ void BinaryBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   Supla::Element::onRegistered(suplaSrpc);
 }
 
-uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
-                                      bool local) {
-  SUPLA_LOG_DEBUG("Binary[%d]: processing%s channel config", getChannelNumber(),
-                   local ? " local" : "");
-
-  if (newConfig == nullptr) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
+uint8_t BinaryBase::applyChannelConfig(TSD_ChannelConfig *newConfig,
+                                       bool local) {
+  SUPLA_LOG_DEBUG("Binary[%d]: processing%s channel config",
+                  getChannelNumber(),
+                  local ? " local" : "");
 
   if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
@@ -121,7 +118,6 @@ uint8_t BinaryBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   return SUPLA_CONFIG_RESULT_TRUE;
 }
 
-
 void BinaryBase::iterateAlways() {
   if (millis() - lastReadTime > readIntervalMs) {
     lastReadTime = millis();
@@ -149,16 +145,30 @@ void BinaryBase::setReadIntervalMs(uint32_t intervalMs) {
 }
 
 void BinaryBase::handleChannelConfigFinished() {
-  configFinishedReceived = true;
+  ElementWithChannelActions::handleChannelConfigFinished();
   if (!defaultConfigReceived) {
     // set default config on device
     SUPLA_LOG_DEBUG("Binary[%d]: setting default channel config",
                     getChannelNumber());
     TSD_ChannelConfig defaultConfig = {};
     defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
-    handleChannelConfig(&defaultConfig, true);
-
-    channel.requestChannelConfig();
+    applyChannelConfig(&defaultConfig, true);
   }
 }
 
+void BinaryBase::fillChannelConfig(void *channelConfig, int *size) {
+  if (size) {
+    *size = 0;
+  } else {
+    return;
+  }
+  if (channelConfig == nullptr) {
+    return;
+  }
+
+  auto config = reinterpret_cast<TChannelConfig_BinarySensor *>(
+          channelConfig);
+  *size = sizeof(TChannelConfig_BinarySensor);
+  config->InvertedLogic = channel.isServerInvertLogic() ? 1 : 0;
+  config->FilteringTimeMs = 0;
+}

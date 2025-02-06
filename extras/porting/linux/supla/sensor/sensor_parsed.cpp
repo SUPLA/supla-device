@@ -74,6 +74,7 @@ std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
 
 bool SensorParsedBase::refreshParserSource() {
   if (parser && parser->refreshParserSource()) {
+    updateBatteryInfoFlags();
     return true;
   }
   return false;
@@ -103,7 +104,6 @@ int SensorParsedBase::getStateValue() {
 
       std::visit(
           [&value](auto &&arg) {
-            using T = std::decay_t<decltype(arg)>;
             value = arg;
           },
           result);
@@ -265,20 +265,16 @@ void SensorParsedBase::updateBatteryInfoFlags() {
     } else {
       if (isParameterConfigured(BatteryPowered)) {
         batteryPoweredConfigured = true;
-        if (refreshParserSource()) {
-          batteryPowered = (getParameterValue(BatteryPowered) == 1);
-          if (!parser->isValid()) {
-            batteryPowered = true;
-          }
+        batteryPowered = (getParameterValue(BatteryPowered) == 1);
+        if (!parser->isValid()) {
+          batteryPowered = true;
         }
       }
     }
     if (isParameterConfigured(BatteryLevel)) {
-      if (refreshParserSource()) {
-        batteryLevel = getParameterValue(BatteryLevel);
-        if (!parser->isValid()) {
-          batteryLevel = 255;
-        }
+      batteryLevel = getParameterValue(BatteryLevel);
+      if (!parser->isValid()) {
+        batteryLevel = 255;
       }
       if (batteryLevel <= 100) {
         channel->setBatteryLevel(batteryLevel);

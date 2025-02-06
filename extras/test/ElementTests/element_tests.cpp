@@ -218,7 +218,7 @@ TEST_F(ElementTests, ChannelElementMethods) {
   EXPECT_EQ(el1.iterateConnected(), true);   // #5
 
   EXPECT_FALSE(el1.channel.isUpdateReady());
-  el1.channel.requestChannelConfig();
+  el1.channel.setSendGetConfig();
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #6
   EXPECT_EQ(el1.iterateConnected(), true);   // #7
@@ -244,7 +244,7 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   EXPECT_EQ(el1.iterateConnected(), true);  // #1
 
   EXPECT_FALSE(el1.channel.isUpdateReady());
-  el1.channel.requestChannelConfig();
+  el1.channel.setSendGetConfig();
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #2
   EXPECT_EQ(el1.iterateConnected(), true);  // #3
@@ -253,13 +253,14 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   EXPECT_EQ(el1.iterateConnected(), true);  // #4
 
   EXPECT_FALSE(el1.channel.isUpdateReady());
-  el1.channel.requestChannelConfig();
+  el1.channel.setSendGetConfig();
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #2
   EXPECT_EQ(el1.iterateConnected(), true);  // #3
 }
 
-TEST_F(ElementTests, InitialCaptionTest) {
+TEST(ElementCaptionTests, InitialCaptionTest) {
+  Supla::Channel::resetToDefaults();
   ElementWithChannel el1;
   SimpleTime time;
   SuplaSrpcLayerMock srpc;
@@ -270,9 +271,7 @@ TEST_F(ElementTests, InitialCaptionTest) {
   el1.setInitialCaption("Test Captiona");
 
   el1.onRegistered(&srpc);
+  el1.iterateConnected();
+  Supla::Channel::resetToDefaults();
 }
-
-
-
-
 

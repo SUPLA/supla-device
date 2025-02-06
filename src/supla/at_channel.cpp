@@ -25,7 +25,7 @@ namespace Supla {
     if (channelNumber < 0 || channelNumber > 255) {
       return;
     }
-    if (valueChanged) {
+    if (isValueUpdateReady()) {
       auto actionId = popAction();
       if (actionId) {
         for (auto proto = Supla::Protocol::ProtocolLayer::first();
@@ -44,7 +44,7 @@ namespace Supla {
       if (actionToSend & (1 << i)) {
         actionToSend ^= (1 << i);
         if (actionToSend == 0) {
-          clearUpdateReady();
+          clearSendValue();
         }
         return (1 << i);
       }
@@ -54,7 +54,7 @@ namespace Supla {
 
   void AtChannel::pushAction(uint32_t action) {
     actionToSend |= action;
-    setUpdateReady();
+    setSendValue();
   }
 
   void AtChannel::activateAction(uint32_t action) {

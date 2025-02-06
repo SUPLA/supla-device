@@ -198,7 +198,7 @@ void Supla::Control::ActionTrigger::onRegistered(
   while (channel.popAction()) {
   }
 
-  channel.requestChannelConfig();
+  channel.setSendGetConfig();
 }
 
 void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {

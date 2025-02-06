@@ -88,6 +88,7 @@ class ProtocolLayer {
                               const char *message,
                               int soundId);
   virtual void sendSubdeviceDetails(TDS_SubdeviceDetails *subdeviceDetails);
+  virtual void sendChannelStateResult(int32_t receiverId, uint8_t channelNo);
 
  protected:
   static ProtocolLayer *firstPtr;

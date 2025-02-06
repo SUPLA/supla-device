@@ -246,8 +246,6 @@ class Channel : public LocalAction {
   _supla_int_t getActionTriggerCaps();
 
   void setValidityTimeSec(uint32_t timeSec);
-  void setUpdateReady();
-  void clearUpdateReady();
   virtual void sendUpdate();
   virtual TSuplaChannelExtendedValue *getExtValue();
   // Returns true when value was properly converted to EM value.
@@ -274,8 +272,6 @@ class Channel : public LocalAction {
   uint8_t getBridgeSignalStrength() const;
   bool isBridgeSignalStrengthAvailable() const;
 
-  void requestChannelConfig();
-
   void setInitialCaption(const char *caption);
   bool isInitialCaptionSet() const;
   const char* getInitialCaption() const;
@@ -292,7 +288,27 @@ class Channel : public LocalAction {
 
   bool isRollerShutterRelayType() const;
 
+  void onRegistered();
+  void setSendGetConfig();
+
+  bool isChannelStateEnabled() const;
+  void clearSendValue();
+
  protected:
+  void setSendValue();
+  bool isValueUpdateReady() const;
+
+  void clearSendGetConfig();
+  bool isGetConfigRequested() const;
+
+  void setSendInitialCaption();
+  void clearSendInitialCaption();
+  bool isInitialCaptionUpdateReady() const;
+
+  void setSendStateInfo();
+  void clearSendStateInfo();
+  bool isStateInfoUpdateReady() const;
+
   static Channel *firstPtr;
   Channel *nextPtr = nullptr;
 
@@ -308,8 +324,7 @@ class Channel : public LocalAction {
       0;  // function in proto use 32 bit, but there are no functions defined so
           // far that use more than 16 bits
 
-  bool valueChanged = false;
-  bool channelConfig = false;
+  uint8_t changedFields = 0;  // keeps track of pending updates
 
   uint8_t batteryLevel = 255;          // 0 - 100%; 255 - not used
   uint8_t batteryPowered = 0;  // 0 - not used, 1 - true, 2 - false

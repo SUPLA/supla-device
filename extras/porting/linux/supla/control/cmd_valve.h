@@ -16,47 +16,34 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_CONTROL_VIRTUAL_VALVE_H_
-#define SRC_SUPLA_CONTROL_VIRTUAL_VALVE_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_
 
-#include "valve_base.h"
+#include <supla/control/valve_base.h>
+#include <supla/sensor/sensor_parsed.h>
+
+#include <string>
 
 namespace Supla {
 namespace Control {
-
-/**
- * VirtualValve implements Valve as a "device" which simulates a valve
- * in memory.
- * It will report state based on the value set by setValueOnDevice.
- */
-class VirtualValve : public ValveBase {
+class CmdValve : public Sensor::SensorParsed<ValveBase> {
  public:
-   /**
-    * Constructor
-    *
-    * @param openClose true = open/close, false = 0-100 percentage
-    */
-  explicit VirtualValve(bool openClose = true);
+  explicit CmdValve(Supla::Parser::Parser *parser);
 
-  /**
-   * Sets the value of the valve virtual device
-   *
-   * @param openLevel 0-100, 0 = closed, >= 1 = open
-   */
+  void onInit() override;
+
   void setValueOnDevice(uint8_t openLevel) override;
-
-  /**
-   * Returns the value of the valve virtual device
-   *
-   * @return 0-100, 0 = closed, >= 1 = open
-   */
   uint8_t getValueOpenStateFromDevice() override;
 
+  void setCmdOpen(const std::string &);
+  void setCmdClose(const std::string &);
+
  protected:
-  uint8_t valveOpenState = 0;
+  std::string cmdOpen;
+  std::string cmdClose;
+  uint32_t lastReadTime = 0;
 };
 
-}  // namespace Control
-}  // namespace Supla
-
-#endif  // SRC_SUPLA_CONTROL_VIRTUAL_VALVE_H_
+};  // namespace Control
+};  // namespace Supla
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_

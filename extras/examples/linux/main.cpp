@@ -17,9 +17,6 @@
 #include <supla-common/tools.h>
 #include <linux_network.h>
 #include <unistd.h>
-#include <fstream>
-#include <iostream>
-#include <cxxopts.hpp>
 
 #include <SuplaDevice.h>
 #include <supla/control/dimmer_leds.h>
@@ -86,9 +83,12 @@
 #include <supla/tools.h>
 #include <supla/uptime.h>
 
-#include <cstdlib>
-
 #include <linux_mqtt_client.h>
+
+#include <cstdlib>
+#include <iostream>
+#include <cxxopts.hpp>
+
 
 // reguired by linux_log.c
 int logLevel = LOG_INFO;

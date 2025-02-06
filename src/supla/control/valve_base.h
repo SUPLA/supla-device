@@ -125,7 +125,7 @@ class ValveBase : public ChannelElement, public ActionHandler {
    *
    * @return 0-100 (0 = closed, 100 = fully open)
    */
-  virtual uint8_t getValueOpenStateFromDevice() const;
+  virtual uint8_t getValueOpenStateFromDevice();
 
   /**
    * Add sensor to the channel's configuration. It will trigger setChannelConfig

@@ -26,7 +26,7 @@ void VirtualValve::setValueOnDevice(uint8_t openLevel) {
   valveOpenState = openLevel;
 }
 
-uint8_t VirtualValve::getValueOpenStateFromDevice() const {
+uint8_t VirtualValve::getValueOpenStateFromDevice() {
   return valveOpenState;
 }
 

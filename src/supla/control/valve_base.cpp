@@ -410,7 +410,7 @@ bool ValveBase::removeSensor(uint8_t channelNumber) {
   return false;
 }
 
-uint8_t ValveBase::getValueOpenStateFromDevice() const {
+uint8_t ValveBase::getValueOpenStateFromDevice() {
   SUPLA_LOG_ERROR(
       "Valve[%d]: getValueOpenStateFromDevice not implemented",
       getChannelNumber());

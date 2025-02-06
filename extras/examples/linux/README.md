@@ -300,6 +300,7 @@ if you need something more.
 Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `CmdRelay` - related class `Supla::Control::CmdRelay`
+* `CmdValve` - related class `Supla::Control::CmdValve`
 * `Fronius` - related class `Supla::PV::Fronius`
 * `Afore` - related class `Supla::PV::Afore`
 * `ThermometerParsed` - related class `Supla::Sensor::ThermometerParsed`
@@ -591,6 +592,21 @@ Example channels configuration (details are exaplained later):
         type: Simple
       main_thermometer_channel_no: 1
 
+      # CmdValve example. It will write 'open' or 'close' to command_valve.out
+      # file on each open/close request (i.e. from server).
+      # State is read from valve_state.txt file from the first line (state: 0)
+      - type: CmdValve
+        name: command_valve
+        cmd_open: "echo 'open' > command_valve.out"
+        cmd_off: "echo 'close' > command_valve.out"
+        state: 0
+        source:
+          type: Cmd
+          command: "cat valve_state.txt"
+        parser:
+          type: Simple
+          refresh_time_ms: 200
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -665,6 +681,15 @@ to Supla server depending on channel state (or value). Example:
 Exact values and configuration is explained in `ActionTriggerParsed` section.
 Parameter `use: at1` indicates which `ActionTriggerParsed` instance should be used
 to send actions. "at1" is a name of `ActionTriggerParsed` instance.
+
+### CmdValve
+
+`CmdValve` is a channel which allows to control a valve using a Linux command.
+
+`CmdValve` requires the following parameters:
+`cmd_open` - command executed when valve should open,
+`cmd_close` - command executed when valve should close,
+`state` - state of the valve based on `source` and `parser` configuration.
 
 ### Hvac
 

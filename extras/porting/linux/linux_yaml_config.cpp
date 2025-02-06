@@ -21,6 +21,7 @@
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
+#include <supla/control/cmd_valve.h>
 #include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
 #include <supla/control/virtual_relay.h>
@@ -515,8 +516,16 @@ bool Supla::LinuxYamlConfig::loadChannels() {
       auto channels = config["channels"];
       int channelCount = 0;
       for (auto it : channels) {
+        paramCount = 0;
+        // parseChannel is incrementing paramCount
         if (!parseChannel(it, channelCount)) {
           SUPLA_LOG_ERROR("Config: parsing channel %d failed", channelCount);
+          return false;
+        }
+        if (it.size() > paramCount) {
+          SUPLA_LOG_ERROR(
+              "Channel[%d] config contains unrecogniezed parameters",
+              channelCount);
           return false;
         }
         channelCount++;
@@ -543,7 +552,6 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
                     SUPLA_CHANNELMAXCOUNT);
     return false;
   }
-  paramCount = 0;
   if (ch["type"]) {
     paramCount++;
     std::string type = ch["type"].as<std::string>();
@@ -608,6 +616,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addCmdRelay(ch, channelNumber, parser);
     } else if (type == "CustomRelay") {
       return addCustomRelay(ch, channelNumber, parser, payload);
+    } else if (type == "CmdValve") {
+      return addCmdValve(ch, channelNumber, parser);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -783,6 +793,36 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
   }
 
   return addCommonParametersParsed(ch, cr, &paramCount, parser);
+}
+
+bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
+                                         int channelNumber,
+                                         Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding CmdValve", channelNumber);
+  auto cv = new Supla::Control::CmdValve(parser);
+
+  if (ch["cmd_open"]) {
+    paramCount++;
+    auto cmdOpen = ch["cmd_open"].as<std::string>();
+    cv->setCmdOpen(cmdOpen);
+  } else {
+    SUPLA_LOG_WARNING("CmdValve[%d]: missing \"cmd_open\" parameter",
+                      channelNumber);
+  }
+  if (ch["cmd_close"]) {
+    paramCount++;
+    auto cmdClose = ch["cmd_close"].as<std::string>();
+    cv->setCmdClose(cmdClose);
+  } else {
+    SUPLA_LOG_WARNING("CmdValve[%d]: missing \"cmd_close\" parameter",
+                      channelNumber);
+  }
+
+  if (!addStateParser(ch, cv, parser, true)) {
+    return false;
+  }
+
+  return addCommonParametersParsed(ch, cv, &paramCount, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,

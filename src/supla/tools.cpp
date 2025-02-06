@@ -504,6 +504,12 @@ const char *Supla::getRelayChannelName(int channelFunction) {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
       return "Facade blind";
     }
+    case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
+      return "Heater/cooling switch";
+    }
+    case SUPLA_CHANNELFNC_PUMPSWITCH: {
+      return "Pump switch";
+    }
 
     default: {
       return "Relay";
@@ -527,6 +533,14 @@ const char *Supla::getBinarySensorChannelName(int channelFunction) {
     }
     case SUPLA_CHANNELFNC_NOLIQUIDSENSOR: {
       return "Liquid sensor";
+      break;
+    }
+    case SUPLA_CHANNELFNC_FLOOD_SENSOR: {
+      return "Flood sensor";
+      break;
+    }
+    case SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR: {
+      return "Container level sensor";
       break;
     }
     case SUPLA_CHANNELFNC_OPENINGSENSOR_ROLLERSHUTTER: {

@@ -634,6 +634,7 @@ bool Mqtt::isOpenClosedBinarySensorFunction(int channelFunction) const {
     case SUPLA_CHANNELFNC_HOTELCARDSENSOR:
     case SUPLA_CHANNELFNC_ALARMARMAMENTSENSOR:
     case SUPLA_CHANNELFNC_MAILSENSOR:
+    case SUPLA_CHANNELFNC_FLOOD_SENSOR:
     default: {
       return false;
     }
@@ -1097,6 +1098,7 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
       deviceClass = HADeviceClass_Garage;
       break;
     }
+    case SUPLA_CHANNELFNC_FLOOD_SENSOR:
     case SUPLA_CHANNELFNC_NOLIQUIDSENSOR: {
       deviceClass = HADeviceClass_Moisture;
       break;
@@ -1110,6 +1112,7 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
     case SUPLA_CHANNELFNC_HOTELCARDSENSOR:
     case SUPLA_CHANNELFNC_ALARMARMAMENTSENSOR:
     case SUPLA_CHANNELFNC_MAILSENSOR:
+    case SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR:
     default: {
       deviceClass = HADeviceClass_None;
       break;
@@ -1306,6 +1309,8 @@ void Supla::Protocol::Mqtt::publishHADiscoveryRelay(Supla::Element *element) {
       publishHADiscoveryRelayImpulse(element);
       return;
     }
+    case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH:
+    case SUPLA_CHANNELFNC_PUMPSWITCH:
     case SUPLA_CHANNELFNC_POWERSWITCH: {
       topic = getHADiscoveryTopic("switch", objectId);
       break;

@@ -123,6 +123,8 @@ set(SUPLA_DEVICE_SRCS
   src/supla/control/hvac_base.cpp
   src/supla/control/group_button_control_rgbw.cpp
   src/supla/control/blinking_led.cpp
+  src/supla/control/valve_base.cpp
+  src/supla/control/virtual_valve.cpp
 
   # FreeRTOS target can't compile those files currently. So they are removed
   # here and added in linux porting cmake only;

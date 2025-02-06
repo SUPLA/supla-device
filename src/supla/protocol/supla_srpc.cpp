@@ -345,15 +345,19 @@ void Supla::messageReceived(void *srpc,
             } else if (result.Result == SUPLA_CALCFG_RESULT_NOT_SUPPORTED) {
               // if request wasn't processed by channel, try to check if there
               // is element related to it's subdevice (if any)
-              SUPLA_LOG_DEBUG("Trying to find subdevice for channel %d",
-                              rd.data.sd_device_calcfg_request->ChannelNumber);
               auto subdevice = element->getChannel()->getSubDeviceId();
+              SUPLA_LOG_DEBUG("Trying to find subdevice (%d) for channel %d",
+                              element->getChannel()->getSubDeviceId(),
+                              rd.data.sd_device_calcfg_request->ChannelNumber);
               if (subdevice > 0) {
                 auto subdeviceElement =
                     Supla::Element::getOwnerOfSubDeviceId(subdevice);
                 if (subdeviceElement) {
                   result.Result = subdeviceElement->handleCalcfgFromServer(
                       rd.data.sd_device_calcfg_request);
+                } else {
+                  SUPLA_LOG_WARNING("Error: couldn't find subdevice %d element",
+                                    subdevice);
                 }
               }
             }

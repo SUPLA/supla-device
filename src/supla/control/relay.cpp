@@ -76,7 +76,7 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
 
 void Relay::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  Supla::Element::onRegistered(suplaSrpc);
+  Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
 
   timerUpdateTimestamp = 1;
 }

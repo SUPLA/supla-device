@@ -1456,7 +1456,9 @@ bool Channel::isFunctionValid(int32_t function) const {
         case SUPLA_CHANNELFNC_OPENINGSENSOR_ROOFWINDOW:
         case SUPLA_CHANNELFNC_OPENINGSENSOR_GARAGEDOOR:
         case SUPLA_CHANNELFNC_OPENINGSENSOR_GATE:
-        case SUPLA_CHANNELFNC_OPENINGSENSOR_GATEWAY: {
+        case SUPLA_CHANNELFNC_OPENINGSENSOR_GATEWAY:
+        case SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR:
+        case SUPLA_CHANNELFNC_FLOOD_SENSOR: {
           return true;
         }
         default: {
@@ -1483,6 +1485,26 @@ bool Channel::isFunctionValid(int32_t function) const {
         case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR:
         case SUPLA_CHANNELFNC_PUMPSWITCH:
         case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
+          return true;
+        }
+        default: {
+          return false;
+        }
+      }
+    }
+    case ChannelType::VALVE_OPENCLOSE: {
+      switch (function) {
+        case SUPLA_CHANNELFNC_VALVE_OPENCLOSE: {
+          return true;
+        }
+        default: {
+          return false;
+        }
+      }
+    }
+    case ChannelType::VALVE_PERCENTAGE: {
+      switch (function) {
+        case SUPLA_CHANNELFNC_VALVE_PERCENTAGE: {
           return true;
         }
         default: {
@@ -1642,5 +1664,99 @@ bool Channel::isContainerInvalidSensorStateActive() const {
 bool Channel::isContainerSoundAlarmOn() const {
   auto container = reinterpret_cast<const TContainerChannel_Value *>(value);
   return container->flags & CONTAINER_FLAG_SOUND_ALARM_ON;
+}
+
+void Channel::setValveOpenState(uint8_t openState) {
+  if (openState > 100) {
+    openState = 100;
+  }
+  uint8_t newClosed = 0;
+  if (getChannelType() == SUPLA_CHANNELTYPE_VALVE_OPENCLOSE) {
+    if (openState > 0) {
+      newClosed = 0;
+    } else {
+      newClosed = 1;
+    }
+  } else if (getChannelType() == SUPLA_CHANNELTYPE_VALVE_PERCENTAGE) {
+    newClosed = 100 - openState;
+  }
+
+  auto valve = reinterpret_cast<TValve_Value *>(value);
+  if (valve->closed == newClosed) {
+    return;
+  }
+
+  bool runOnOpen = false;
+  bool runOnClose = false;
+  if (valve->closed == 0) {
+    runOnOpen = true;
+  } else if (newClosed == 0) {
+    runOnClose = true;
+  }
+
+  valve->closed = newClosed;
+  setUpdateReady();
+  runAction(ON_CHANGE);
+  if (runOnOpen) {
+    runAction(ON_OPEN);
+  }
+  if (runOnClose) {
+    runAction(ON_CLOSE);
+  }
+}
+
+void Channel::setValveFloodingFlag(bool active) {
+  auto valve = reinterpret_cast<TValve_Value *>(value);
+  if (isValveFloodingFlagActive() == active) {
+    return;
+  }
+  if (active) {
+    valve->flags |= SUPLA_VALVE_FLAG_FLOODING;
+  } else {
+    valve->flags &= ~SUPLA_VALVE_FLAG_FLOODING;
+  }
+  setUpdateReady();
+  runAction(active ? ON_FLOODING_ACTIVE : ON_FLOODING_INACTIVE);
+}
+
+void Channel::setValveManuallyClosedFlag(bool active) {
+  auto valve = reinterpret_cast<TValve_Value *>(value);
+  if (isValveManuallyClosedFlagActive() == active) {
+    return;
+  }
+  if (active) {
+    valve->flags |= SUPLA_VALVE_FLAG_MANUALLY_CLOSED;
+  } else {
+    valve->flags &= ~SUPLA_VALVE_FLAG_MANUALLY_CLOSED;
+  }
+  setUpdateReady();
+  runAction(active ? ON_VALVE_MANUALLY_CLOSED_ACTIVE
+                   : ON_VALVE_MANUALLY_CLOSED_INACTIVE);
+}
+
+uint8_t Channel::getValveOpenState() const {
+  auto valve = reinterpret_cast<const TValve_Value *>(value);
+  if (getChannelType() == SUPLA_CHANNELTYPE_VALVE_OPENCLOSE) {
+    return valve->closed == 0 ? 100 : 0;
+  } else if (getChannelType() == SUPLA_CHANNELTYPE_VALVE_PERCENTAGE) {
+    if (valve->closed <= 100) {
+      return 100 - valve->closed;
+    }
+  }
+  return 0;
+}
+
+bool Channel::isValveOpen() const {
+  return getValveOpenState() > 0;
+}
+
+bool Channel::isValveFloodingFlagActive() const {
+  auto valve = reinterpret_cast<const TValve_Value *>(value);
+  return valve->flags & SUPLA_VALVE_FLAG_FLOODING;
+}
+
+bool Channel::isValveManuallyClosedFlagActive() const {
+  auto valve = reinterpret_cast<const TValve_Value *>(value);
+  return valve->flags & SUPLA_VALVE_FLAG_MANUALLY_CLOSED;
 }
 

@@ -82,6 +82,59 @@ class Channel : public LocalAction {
   bool isContainerInvalidSensorStateActive() const;
   bool isContainerSoundAlarmOn() const;
 
+  /**
+   * Sets the open state (open/close) of the Valve channel.
+   *
+   * @param openState 0-100 range, 0 = closed, 100 = open. For OpenClose variant
+   * of the channel, 0 = closed, >= 1 = open (converted to 100)
+   */
+  void setValveOpenState(uint8_t openState);
+
+  /**
+   * Sets the flooding flag of the Valve channel. Flooding flag is set when
+   * the valve was closed because of flood/leak detection.
+   *
+   * @param active
+   */
+  void setValveFloodingFlag(bool active);
+
+  /**
+   * Sets the manually closed flag of the Valve channel. Manually closed flag is
+   * set when the valve was closed manually or in other way by valve (i.e.
+   * radio).
+   *
+   * @param active
+   */
+  void setValveManuallyClosedFlag(bool active);
+
+  /**
+   * Returns the open state (open/close) of the Valve channel.
+   *
+   * @return 0-100 range, 0 = closed, 100 = open
+   */
+  uint8_t getValveOpenState() const;
+
+  /**
+   * Returns the open state (open/close) of the Valve channel.
+   *
+   * @return true if open
+   */
+  bool isValveOpen() const;
+
+  /**
+   * Returns the flooding flag of the Valve channel.
+   *
+   * @return true if flooding flag is active
+   */
+  bool isValveFloodingFlagActive() const;
+
+  /**
+   * Returns the manually closed flag of the Valve channel.
+   *
+   * @return true if manually closed flag is active
+   */
+  bool isValveManuallyClosedFlagActive() const;
+
   double getValueDouble();
   double getValueDoubleFirst();
   double getValueDoubleSecond();

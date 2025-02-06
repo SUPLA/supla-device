@@ -72,6 +72,8 @@ const char BinarySensorServerInvertedLogicTag[] = "srv_invrt";
 
 const char ContainerTag[] = "container";
 
+const char ValveCfgTag[] = "valve_cfg";
+
 }  // namespace ConfigTag
 }  // namespace Supla
 

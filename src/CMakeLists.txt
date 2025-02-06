@@ -59,6 +59,8 @@ set(SRCS
   supla/control/hvac_base.cpp
   supla/control/group_button_control_rgbw.cpp
   supla/control/blinking_led.cpp
+  supla/control/valve_base.cpp
+  supla/control/virtual_valve.cpp
 
   supla/condition.cpp
   supla/condition_getter.cpp

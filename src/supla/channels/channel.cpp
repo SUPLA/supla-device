@@ -1383,7 +1383,7 @@ void Channel::setOfflineRemoteWakeupNotSupported() {
 }
 
 bool Channel::isOnline() const {
-  return offline != 1;
+  return offline == 0 || offline == 2;
 }
 
 bool Channel::isOnlineAndNotAvailable() const {

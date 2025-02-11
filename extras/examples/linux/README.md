@@ -598,7 +598,7 @@ Example channels configuration (details are exaplained later):
       - type: CmdValve
         name: command_valve
         cmd_open: "echo 'open' > command_valve.out"
-        cmd_off: "echo 'close' > command_valve.out"
+        cmd_close: "echo 'close' > command_valve.out"
         state: 0
         source:
           type: Cmd

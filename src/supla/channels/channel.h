@@ -64,8 +64,10 @@ class Channel : public LocalAction {
   void setOffline();
   void setOnline();
   void setOnlineAndNotAvailable();
+  void setOfflineRemoteWakeupNotSupported();
   bool isOnline() const;
   bool isOnlineAndNotAvailable() const;
+  bool isOfflineRemoteWakeupNotSupported() const;
 
   // Sets container channel value. fillLevel should contain 0-100 value, any
   // other value will be set to "unknown" value.

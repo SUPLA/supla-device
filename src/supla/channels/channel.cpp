@@ -1373,6 +1373,14 @@ void Channel::setOnlineAndNotAvailable() {
   }
 }
 
+void Channel::setOfflineRemoteWakeupNotSupported() {
+  if (offline != 3) {
+    SUPLA_LOG_DEBUG("Channel[%d] is offline (remote wakeup not supported)",
+                    channelNumber);
+    offline = 3;
+    setSendValue();
+  }
+}
 
 bool Channel::isOnline() const {
   return offline != 1;
@@ -1380,6 +1388,10 @@ bool Channel::isOnline() const {
 
 bool Channel::isOnlineAndNotAvailable() const {
   return offline == 2;
+}
+
+bool Channel::isOfflineRemoteWakeupNotSupported() const {
+  return offline == 3;
 }
 
 void Channel::setInitialCaption(const char *caption) {
@@ -1491,7 +1503,9 @@ void Channel::fillDeviceChannelStruct(
       getFlags(),
       offline == 0   ? "online"
       : offline == 1 ? "offline"
-                     : "online (not available)",
+      : offline == 2 ? "online (not available)"
+      : offline == 3 ? "offline (remote wakeup not supported)"
+      : "UNKNOWN",
       validityTimeSec,
       getDefaultIcon(),
       static_cast<uint8_t>(value[0]),

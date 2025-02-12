@@ -126,6 +126,18 @@ class ElectricityMeter : public ElementWithChannelActions,
   // sets current phase sequence to clockwise or counterclockwise
   void setCurrentPhaseSequence(bool clockwise);
 
+  /**
+   * Clears voltage phase sequence flag and value, so it won't be presented
+   * at all.
+   */
+  void clearVoltagePhaseSequenceFlag();
+
+  /**
+   * Clears current phase sequence flag and value, so it won't be presented
+   * at all.
+   */
+  void clearCurrentPhaseSequenceFlag();
+
   // energy 1 == 0.00001 kWh
   unsigned _supla_int64_t getFwdActEnergy(int phase);
 

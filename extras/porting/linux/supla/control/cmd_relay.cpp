@@ -89,6 +89,7 @@ void Supla::Control::CmdRelay::iterateAlways() {
   Supla::Control::Relay::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
+    refreshParserSource();
     lastReadTime = millis();
     channel.setNewValue(isOn());
     if (isOffline()) {

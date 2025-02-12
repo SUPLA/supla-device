@@ -117,7 +117,8 @@ void Supla::LinuxYamlConfig::logError(const std::string& filename,
   while (std::getline(file, line)) {
     if (currentLine >= fromLine && currentLine <= toLine) {
       if (currentLine == ex.mark.line) {
-        SUPLA_LOG_ERROR("%3d: %s", currentLine, line.c_str());
+        SUPLA_LOG_ERROR(
+            "%3d: %s\t\t<--- PROBLEM IS HERE", currentLine, line.c_str());
       } else {
         SUPLA_LOG_WARNING("%3d: %s", currentLine, line.c_str());
       }
@@ -1605,6 +1606,10 @@ Supla::Source::Source* Supla::LinuxYamlConfig::addSource(
       }
       src = new Supla::Source::File(fileName.c_str(), expirationTimeSec);
     } else if (type == "Cmd") {
+      if (!source["command"]) {
+        SUPLA_LOG_ERROR("Config: 'command' not defined for 'Cmd' source");
+        return nullptr;
+      }
       std::string cmd = source["command"].as<std::string>();
       src = new Supla::Source::Cmd(cmd.c_str());
     } else if (type == "MQTT") {
@@ -1667,6 +1672,10 @@ Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
   if (output["type"]) {
     auto type = output["type"].as<std::string>();
     if (type == "Cmd") {
+      if (!output["command"]) {
+        SUPLA_LOG_ERROR("Config: 'command' not defined for output");
+        return nullptr;
+      }
       std::string cmd = output["command"].as<std::string>();
       out = new Supla::Output::Cmd(cmd.c_str());
     } else if (type == "File") {
@@ -2205,6 +2214,11 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     Supla::Parser::Parser* parser) {
   bool batteryAdded = false;
   if (ch[Supla::Sensor::BatteryLevel]) {
+    if (parser == nullptr) {
+      SUPLA_LOG_ERROR(
+          "Channel config: missing \"parser\" parameter for battery_level");
+      return false;
+    }
     batteryAdded = true;
     (*paramCount)++;
     if (parser->isBasedOnIndex()) {
@@ -2221,6 +2235,11 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
   }
   if (ch[Supla::Sensor::BatteryPowered]) {
+    if (parser == nullptr) {
+      SUPLA_LOG_ERROR(
+          "Channel config: missing \"parser\" parameter for battery_powered");
+      return false;
+    }
     batteryAdded = true;
     (*paramCount)++;
     if (parser->isBasedOnIndex()) {

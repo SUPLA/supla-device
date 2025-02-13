@@ -101,6 +101,10 @@ set(SRCS
   supla/network/html/power_status_led_parameters.cpp
   supla/network/html/roller_shutter_parameters.cpp
   supla/network/html/button_refresh.cpp
+  supla/network/html/custom_sw_update.cpp
+  supla/network/html/custom_text_parameter.cpp
+  supla/network/html/custom_parameter.cpp
+  supla/network/html/custom_checkbox_parameter.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

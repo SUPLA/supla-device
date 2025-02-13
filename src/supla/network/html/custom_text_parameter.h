@@ -20,6 +20,7 @@
 #define SRC_SUPLA_NETWORK_HTML_CUSTOM_TEXT_PARAMETER_H_
 
 #include <supla/network/html_element.h>
+#include <supla/storage/config.h>
 #include <stdint.h>
 
 namespace Supla {
@@ -85,7 +86,7 @@ class CustomTextParameter : public HtmlElement {
   void setParameterValue(const char *value);
 
  protected:
-  char *tag = nullptr;
+  char tag[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   char *label = nullptr;
   int maxSize = 0;
 };

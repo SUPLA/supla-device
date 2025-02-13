@@ -34,13 +34,9 @@ CustomTextParameter::CustomTextParameter(const char *paramTag,
                                          const char *paramLabel,
                                          int maxSize)
     : HtmlElement(HTML_SECTION_FORM), maxSize(maxSize) {
-  int size = strlen(paramTag);
-  if (size < 500) {
-    tag = new char[size + 1];
-    strncpy(tag, paramTag, size + 1);
-  }
+  strncpy(tag, paramTag, sizeof(tag) - 1);
 
-  size = strlen(paramLabel);
+  int size = strlen(paramLabel);
   if (size < 500) {
     label = new char[size + 1];
     strncpy(label, paramLabel, size + 1);
@@ -48,10 +44,6 @@ CustomTextParameter::CustomTextParameter(const char *paramTag,
 }
 
 CustomTextParameter::~CustomTextParameter() {
-  if (tag != nullptr) {
-    delete []tag;
-    tag = nullptr;
-  }
   if (label != nullptr) {
     delete []label;
     label = nullptr;
@@ -88,7 +80,7 @@ void CustomTextParameter::send(Supla::WebSender* sender) {
   }
 }
 bool CustomTextParameter::handleResponse(const char* key, const char* value) {
-  if (tag != nullptr && strcmp(key, tag) == 0) {
+  if (strcmp(key, tag) == 0) {
     setParameterValue(value);
     return true;
   }

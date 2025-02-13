@@ -39,6 +39,7 @@ class HtmlGenerator {
   virtual void sendDeviceInfo(Supla::WebSender*);
   virtual void sendForm(Supla::WebSender*);  // form send in standard request
   virtual void sendBetaForm(Supla::WebSender*);  // form send in /beta request
+  virtual void sendButtons(Supla::WebSender*);
   virtual void sendSubmitButton(Supla::WebSender*);
   virtual void sendBodyEnd(Supla::WebSender*);
 

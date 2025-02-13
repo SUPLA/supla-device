@@ -305,7 +305,7 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
   }
   sender->send("</div>");
 
-  sendSubmitButton(sender);
+  sendButtons(sender);
   sender->send("</form>");
 }
 
@@ -322,8 +322,24 @@ void Supla::HtmlGenerator::sendBetaForm(Supla::WebSender *sender) {
   }
   sender->send("</div>");
 
-  sendSubmitButton(sender);
+  sendButtons(sender);
   sender->send("</form>");
+}
+
+void Supla::HtmlGenerator::sendButtons(Supla::WebSender *sender) {
+  for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
+      htmlElement = htmlElement->next()) {
+    if (htmlElement->section == HTML_SECTION_BUTTON_BEFORE) {
+      htmlElement->send(sender);
+    }
+  }
+  sendSubmitButton(sender);
+  for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
+      htmlElement = htmlElement->next()) {
+    if (htmlElement->section == HTML_SECTION_BUTTON_AFTER) {
+      htmlElement->send(sender);
+    }
+  }
 }
 
 void Supla::HtmlGenerator::sendSubmitButton(Supla::WebSender* sender) {

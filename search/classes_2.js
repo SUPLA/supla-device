@@ -15,6 +15,7 @@ var searchData=
   ['buttonholdtimeparameters_12',['ButtonHoldTimeParameters',['../classButtonHoldTimeParameters.html',1,'ButtonHoldTimeParameters'],['../classSupla_1_1Html_1_1ButtonHoldTimeParameters.html',1,'Supla::Html::ButtonHoldTimeParameters']]],
   ['buttonlistelement_13',['ButtonListElement',['../structRelay_1_1ButtonListElement.html',1,'Relay::ButtonListElement'],['../structSupla_1_1Control_1_1Relay_1_1ButtonListElement.html',1,'Supla::Control::Relay::ButtonListElement']]],
   ['buttonmulticlickparameters_14',['ButtonMulticlickParameters',['../classSupla_1_1Html_1_1ButtonMulticlickParameters.html',1,'Supla::Html']]],
-  ['buttonstate_15',['ButtonState',['../classButtonState.html',1,'ButtonState'],['../classSupla_1_1Control_1_1ButtonState.html',1,'Supla::Control::ButtonState']]],
-  ['buttontypeparameters_16',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]]
+  ['buttonrefresh_15',['ButtonRefresh',['../classButtonRefresh.html',1,'ButtonRefresh'],['../classSupla_1_1Html_1_1ButtonRefresh.html',1,'Supla::Html::ButtonRefresh']]],
+  ['buttonstate_16',['ButtonState',['../classButtonState.html',1,'ButtonState'],['../classSupla_1_1Control_1_1ButtonState.html',1,'Supla::Control::ButtonState']]],
+  ['buttontypeparameters_17',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]]
 ];

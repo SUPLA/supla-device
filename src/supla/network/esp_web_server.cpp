@@ -77,7 +77,11 @@ void postHandler() {
       // with very long timeout. In order to prevent app from hanging, we
       // skip getHandler in such case.
       if (reboot != 1) {
-        getHandler();
+       //zamiana
+        //getHandler();
+       //na zapobiegająca ponownemu przesyłaniu formularza przy odświerzaniu
+       serverInstance->getServerPtr()->sendHeader("Location", "/", true);
+       serverInstance->getServerPtr()->send( 303, "text/plain", "Redirecting..."); 
       }
     }
   }
@@ -87,7 +91,10 @@ void postBetaHandler() {
   SUPLA_LOG_DEBUG("SERVER: beta post request");
   if (serverInstance) {
     if (serverInstance->handlePost(true)) {
-      getBetaHandler();
+           
+     //getBetaHandler();
+      serverInstance->getServerPtr()->sendHeader("Location", "/beta", true);
+      serverInstance->getServerPtr()->send(303, "text/plain", "Redirecting...");  
     }
   }
 }

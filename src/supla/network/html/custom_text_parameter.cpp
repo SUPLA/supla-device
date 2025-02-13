@@ -95,7 +95,7 @@ bool CustomTextParameter::handleResponse(const char* key, const char* value) {
   return false;
 }
 
-bool CustomTextParameter::getParameterValue(char *buf, int size) {
+bool CustomTextParameter::getParameterValue(char *buf, const int size) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     if (cfg->getString(tag, buf, size)) {

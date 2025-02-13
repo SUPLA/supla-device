@@ -27,5 +27,5 @@ var searchData=
   ['customcheckboxparameter_24',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
   ['customparameter_25',['CustomParameter',['../classCustomParameter.html',1,'CustomParameter'],['../classSupla_1_1Html_1_1CustomParameter.html',1,'Supla::Html::CustomParameter']]],
   ['customswupdate_26',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_27',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
+  ['customtextparameter_27',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
 ];

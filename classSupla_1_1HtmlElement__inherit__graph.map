@@ -18,7 +18,7 @@
 <area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="75,883,88,786,111,656,126,590,143,531,164,482,187,449,207,435,210,440,191,453,168,485,148,532,131,591,116,657,93,787,80,884"/>
 <area shape="rect" id="Node000010" href="$classSupla_1_1Html_1_1CustomSwUpdate.html" title=" " alt="" coords="208,464,408,489"/>
 <area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="76,884,90,796,114,680,146,570,166,527,187,498,206,485,209,490,191,502,170,530,151,572,119,681,95,797,81,885"/>
-<area shape="rect" id="Node000011" href="$classSupla_1_1Html_1_1CustomTextParameter.html" title=" " alt="" coords="196,513,420,538"/>
+<area shape="rect" id="Node000011" href="$classSupla_1_1Html_1_1CustomTextParameter.html" title="This HTML Element provides input in config mode for text value." alt="" coords="196,513,420,538"/>
 <area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="72,884,76,815,92,724,106,676,127,629,153,585,187,548,203,537,206,541,190,552,157,589,131,631,111,678,97,725,81,816,77,884"/>
 <area shape="rect" id="Node000012" href="$classSupla_1_1Html_1_1DeviceInfo.html" title=" " alt="" coords="230,562,386,588"/>
 <area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="73,884,81,824,99,746,114,706,133,666,157,630,187,598,207,585,229,577,231,582,209,590,190,602,161,633,138,669,119,708,104,748,86,825,79,884"/>

@@ -122,7 +122,7 @@ Inheritance diagram for Supla::HtmlElement:</div>
 <area shape="poly" title=" " alt="" coords="75,883,88,786,111,656,126,590,143,531,164,482,187,449,207,435,210,440,191,453,168,485,148,532,131,591,116,657,93,787,80,884"/>
 <area shape="rect" href="classSupla_1_1Html_1_1CustomSwUpdate.html" title=" " alt="" coords="208,464,408,489"/>
 <area shape="poly" title=" " alt="" coords="76,884,90,796,114,680,146,570,166,527,187,498,206,485,209,490,191,502,170,530,151,572,119,681,95,797,81,885"/>
-<area shape="rect" href="classSupla_1_1Html_1_1CustomTextParameter.html" title=" " alt="" coords="196,513,420,538"/>
+<area shape="rect" href="classSupla_1_1Html_1_1CustomTextParameter.html" title="This HTML Element provides input in config mode for text value." alt="" coords="196,513,420,538"/>
 <area shape="poly" title=" " alt="" coords="72,884,76,815,92,724,106,676,127,629,153,585,187,548,203,537,206,541,190,552,157,589,131,631,111,678,97,725,81,816,77,884"/>
 <area shape="rect" href="classSupla_1_1Html_1_1DeviceInfo.html" title=" " alt="" coords="230,562,386,588"/>
 <area shape="poly" title=" " alt="" coords="73,884,81,824,99,746,114,706,133,666,157,630,187,598,207,585,229,577,231,582,209,590,190,602,161,633,138,669,119,708,104,748,86,825,79,884"/>
@@ -206,11 +206,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac63eca44afdd7d35ba6f71a96d9dae68" id="r_ac63eca44afdd7d35ba6f71a96d9dae68"><td class="memItemLeft" align="right" valign="top"><a id="ac63eca44afdd7d35ba6f71a96d9dae68" name="ac63eca44afdd7d35ba6f71a96d9dae68"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>HtmlElement</b> (HtmlSection section=HTML_SECTION_FORM)</td></tr>
 <tr class="separator:ac63eca44afdd7d35ba6f71a96d9dae68"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac115b7a732b14f06d6633a46ae55bd87" id="r_ac115b7a732b14f06d6633a46ae55bd87"><td class="memItemLeft" align="right" valign="top"><a id="ac115b7a732b14f06d6633a46ae55bd87" name="ac115b7a732b14f06d6633a46ae55bd87"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>send</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *sender)=0</td></tr>
+<tr class="memitem:ac115b7a732b14f06d6633a46ae55bd87" id="r_ac115b7a732b14f06d6633a46ae55bd87"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac115b7a732b14f06d6633a46ae55bd87">send</a> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *sender)=0</td></tr>
 <tr class="separator:ac115b7a732b14f06d6633a46ae55bd87"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b128381cbb61259bd933ad9ad062f85" id="r_a7b128381cbb61259bd933ad9ad062f85"><td class="memItemLeft" align="right" valign="top"><a id="a7b128381cbb61259bd933ad9ad062f85" name="a7b128381cbb61259bd933ad9ad062f85"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>handleResponse</b> (const char *key, const char *value)</td></tr>
+<tr class="memitem:a7b128381cbb61259bd933ad9ad062f85" id="r_a7b128381cbb61259bd933ad9ad062f85"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7b128381cbb61259bd933ad9ad062f85">handleResponse</a> (const char *key, const char *value)</td></tr>
 <tr class="separator:a7b128381cbb61259bd933ad9ad062f85"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a51c7c2b2c574d458376c5d78f9726d3b" id="r_a51c7c2b2c574d458376c5d78f9726d3b"><td class="memItemLeft" align="right" valign="top"><a id="a51c7c2b2c574d458376c5d78f9726d3b" name="a51c7c2b2c574d458376c5d78f9726d3b"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>onProcessingEnd</b> ()</td></tr>
@@ -249,6 +247,65 @@ Static Protected Attributes</h2></td></tr>
 static <a class="el" href="classSupla_1_1HtmlElement.html">HtmlElement</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>firstPtr</b> = nullptr</td></tr>
 <tr class="separator:a486966582b92320cf6197747fffa9326"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a7b128381cbb61259bd933ad9ad062f85" name="a7b128381cbb61259bd933ad9ad062f85"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7b128381cbb61259bd933ad9ad062f85">&#9670;&#160;</a></span>handleResponse()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::HtmlElement::handleResponse </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>key</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>value</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented in <a class="el" href="classSupla_1_1Html_1_1CustomTextParameter.html#a7036f192beee2ac21e611a9cd570976c">Supla::Html::CustomTextParameter</a>.</p>
+
+</div>
+</div>
+<a id="ac115b7a732b14f06d6633a46ae55bd87" name="ac115b7a732b14f06d6633a46ae55bd87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac115b7a732b14f06d6633a46ae55bd87">&#9670;&#160;</a></span>send()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">virtual void Supla::HtmlElement::send </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *</td>          <td class="paramname"><span class="paramname"><em>sender</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel pure-virtual">pure virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Implemented in <a class="el" href="classSupla_1_1Html_1_1CustomTextParameter.html#a484860498b86f1f9de2ad6223ad3b684">Supla::Html::CustomTextParameter</a>.</p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/supla/network/<a class="el" href="html__element_8h_source.html">html_element.h</a></li>
 <li>src/supla/network/<b>html_element.cpp</b></li>

@@ -89,8 +89,6 @@ void postBetaHandler() {
   SUPLA_LOG_DEBUG("SERVER: beta post request");
   if (serverInstance) {
     if (serverInstance->handlePost(true)) {
-           
-     //getBetaHandler();
       serverInstance->getServerPtr()->sendHeader("Location", "/beta", true);
       serverInstance->getServerPtr()->send(303, "text/plain", "Redirecting...");  
     }

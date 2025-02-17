@@ -77,9 +77,7 @@ void postHandler() {
       // with very long timeout. In order to prevent app from hanging, we
       // skip getHandler in such case.
       if (reboot != 1) {
-       //zamiana
-        //getHandler();
-       //na zapobiegająca ponownemu przesyłaniu formularza przy odświerzaniu
+    // Sending redirect after POST, in order to get rid of sending another POST on page refresh in browse
        serverInstance->getServerPtr()->sendHeader("Location", "/", true);
        serverInstance->getServerPtr()->send( 303, "text/plain", "Redirecting..."); 
       }

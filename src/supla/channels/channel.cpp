@@ -1103,6 +1103,23 @@ void Channel::setHvacFlagBatteryCoverOpen(bool value) {
   }
 }
 
+void Channel::setHvacFlagCalibrationError(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr && value != isHvacFlagCalibrationError()) {
+    SUPLA_LOG_ERROR("HVAC[%d]: Setting calibration error flag %d",
+                    getChannelNumber(),
+                    value);
+    setSendValue();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_CALIBRATION_ERROR;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_CALIBRATION_ERROR;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 void Channel::clearHvacState() {
   SUPLA_LOG_INFO("HVAC[%d]: Clearing HVAC state for channel",
                  getChannelNumber());
@@ -1169,6 +1186,10 @@ bool Channel::isHvacFlagWeeklyScheduleTemporalOverride() {
 
 bool Channel::isHvacFlagBatteryCoverOpen() {
   return isHvacFlagBatteryCoverOpen(getValueHvac());
+}
+
+bool Channel::isHvacFlagCalibrationError() {
+  return isHvacFlagCalibrationError(getValueHvac());
 }
 
 bool Channel::isHvacFlagSetpointTemperatureHeatSet(THVACValue *value) {
@@ -1262,6 +1283,13 @@ bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *value) {
 bool Channel::isHvacFlagBatteryCoverOpen(THVACValue *hvacValue) {
   if (hvacValue != nullptr) {
     return hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_BATTERY_COVER_OPEN;
+  }
+  return false;
+}
+
+bool Channel::isHvacFlagCalibrationError(THVACValue *hvacValue) {
+  if (hvacValue != nullptr) {
+    return hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_CALIBRATION_ERROR;
   }
   return false;
 }

@@ -139,6 +139,15 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customAnalogW
 <tr class="memitem:a6669281c8f6dae0dffa860382b9390a6" id="r_a6669281c8f6dae0dffa860382b9390a6"><td class="memItemLeft" align="right" valign="top"><a id="a6669281c8f6dae0dffa860382b9390a6" name="a6669281c8f6dae0dffa860382b9390a6"></a>
 virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>customAnalogRead</b> (int channelNumber, uint8_t pin)</td></tr>
 <tr class="separator:a6669281c8f6dae0dffa860382b9390a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a173c2450a16166696e191940722fbdae" id="r_a173c2450a16166696e191940722fbdae"><td class="memItemLeft" align="right" valign="top"><a id="a173c2450a16166696e191940722fbdae" name="a173c2450a16166696e191940722fbdae"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customAttachInterrupt</b> (uint8_t pin, void(*func)(void), int mode)</td></tr>
+<tr class="separator:a173c2450a16166696e191940722fbdae"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61d882619e1c38a8520b20e3a2315446" id="r_a61d882619e1c38a8520b20e3a2315446"><td class="memItemLeft" align="right" valign="top"><a id="a61d882619e1c38a8520b20e3a2315446" name="a61d882619e1c38a8520b20e3a2315446"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customDetachInterrupt</b> (uint8_t pin)</td></tr>
+<tr class="separator:a61d882619e1c38a8520b20e3a2315446"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2053e8be262da793338d2acf0bb6b136" id="r_a2053e8be262da793338d2acf0bb6b136"><td class="memItemLeft" align="right" valign="top"><a id="a2053e8be262da793338d2acf0bb6b136" name="a2053e8be262da793338d2acf0bb6b136"></a>
+virtual uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>customDigitalPinToInterrupt</b> (uint8_t pin)</td></tr>
+<tr class="separator:a2053e8be262da793338d2acf0bb6b136"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -178,6 +187,15 @@ static int&#160;</td><td class="memItemRight" valign="bottom"><b>analogRead</b> 
 <tr class="memitem:aeb4fc0c397ca0dfac06fa50ed90ea9cb" id="r_aeb4fc0c397ca0dfac06fa50ed90ea9cb"><td class="memItemLeft" align="right" valign="top"><a id="aeb4fc0c397ca0dfac06fa50ed90ea9cb" name="aeb4fc0c397ca0dfac06fa50ed90ea9cb"></a>
 static unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>pulseIn</b> (int channelNumber, uint8_t pin, uint8_t value, uint64_t timeoutMicro, <a class="el" href="classSupla_1_1Io.html">Supla::Io</a> *io=ioInstance)</td></tr>
 <tr class="separator:aeb4fc0c397ca0dfac06fa50ed90ea9cb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32fedac03e75a71a4263e26b0df607dd" id="r_a32fedac03e75a71a4263e26b0df607dd"><td class="memItemLeft" align="right" valign="top"><a id="a32fedac03e75a71a4263e26b0df607dd" name="a32fedac03e75a71a4263e26b0df607dd"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>attachInterrupt</b> (uint8_t pin, void(*func)(void), int mode, <a class="el" href="classSupla_1_1Io.html">Io</a> *io=ioInstance)</td></tr>
+<tr class="separator:a32fedac03e75a71a4263e26b0df607dd"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa01310b6677d666d728f4122d63ef829" id="r_aa01310b6677d666d728f4122d63ef829"><td class="memItemLeft" align="right" valign="top"><a id="aa01310b6677d666d728f4122d63ef829" name="aa01310b6677d666d728f4122d63ef829"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>detachInterrupt</b> (uint8_t pin, <a class="el" href="classSupla_1_1Io.html">Io</a> *io=ioInstance)</td></tr>
+<tr class="separator:aa01310b6677d666d728f4122d63ef829"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2645258a871ed6a905cd961c9cc557a2" id="r_a2645258a871ed6a905cd961c9cc557a2"><td class="memItemLeft" align="right" valign="top"><a id="a2645258a871ed6a905cd961c9cc557a2" name="a2645258a871ed6a905cd961c9cc557a2"></a>
+static uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>digitalPinToInterrupt</b> (uint8_t pin, <a class="el" href="classSupla_1_1Io.html">Io</a> *io=ioInstance)</td></tr>
+<tr class="separator:a2645258a871ed6a905cd961c9cc557a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
 Static Public Attributes</h2></td></tr>

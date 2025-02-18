@@ -99,3 +99,18 @@ unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {
   SUPLA_LOG_ERROR(" *** NOT IMPLEMENTED *** GPIO %d pulse in %d", pin, val);
   return 0;
 }
+
+void attachInterrupt(uint8_t pin, void (*func)(void), int mode) {
+  (void)(func);
+  SUPLA_LOG_ERROR(
+      " *** NOT IMPLEMENTED *** GPIO %d attach interrupt %d", pin, mode);
+}
+
+void detachInterrupt(uint8_t pin) {
+  SUPLA_LOG_ERROR(" *** NOT IMPLEMENTED *** GPIO %d detach interrupt", pin);
+}
+
+uint8_t digitalPinToInterrupt(uint8_t pin) {
+  return pin;
+}
+

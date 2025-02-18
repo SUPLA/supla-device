@@ -2267,7 +2267,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
         ch[Supla::InitialCaption].as<std::string>().c_str());
   }
   if (ch["channel_number"]) {  // optional
-    paramCount++;
+    (*paramCount)++;
     int channelNumber = ch["channel_number"].as<int>();
     auto ch = sensor->getChannel();
     if (ch) {
@@ -2278,7 +2278,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     }
   }
   if (ch["icon_id"]) {  // optional
-    paramCount++;
+    (*paramCount)++;
     int iconId = ch["icon_id"].as<int>();
     auto ch = sensor->getChannel();
     if (ch) {

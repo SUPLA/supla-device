@@ -27,5 +27,8 @@ void digitalWrite(uint8_t pin, uint8_t val);
 void analogWrite(uint8_t pin, int val);
 int analogRead(uint8_t pin);
 unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro);
+void attachInterrupt(uint8_t pin, void (*func)(void), int mode);
+void detachInterrupt(uint8_t pin);
+uint8_t digitalPinToInterrupt(uint8_t pin);
 
 #endif  // EXTRAS_PORTING_ESP_IDF_ESP_IDF_GPIO_H_

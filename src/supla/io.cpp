@@ -24,7 +24,7 @@
 #include <Arduino.h>
 #elif defined(ESP_PLATFORM)
 #include <esp_idf_gpio.h>
-// methods implemented in extras/porting/esp-idf/gpio.cpp
+// methods implemented in extras/porting/esp-idf/esp_idf_gpio.cpp
 #else
 // TODO(klew): implement those methods or extract them to separate interface
 void pinMode(uint8_t pin, uint8_t mode) {
@@ -56,6 +56,20 @@ unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {
   (void)(val);
   (void)(timeoutMicro);
   return 0;
+}
+
+void attachInterrupt(uint8_t pin, void (*func)(void), int mode) {
+  (void)(func);
+  SUPLA_LOG_ERROR(
+      " *** NOT IMPLEMENTED *** GPIO %d attach interrupt %d", pin, mode);
+}
+
+void detachInterrupt(uint8_t pin) {
+  SUPLA_LOG_ERROR(" *** NOT IMPLEMENTED *** GPIO %d detach interrupt", pin);
+}
+
+uint8_t digitalPinToInterrupt(uint8_t pin) {
+  return pin;
 }
 #endif
 
@@ -147,6 +161,33 @@ unsigned int Io::pulseIn(int channelNumber,
   return ::pulseIn(pin, value, timeoutMicro);
 }
 
+void Io::attachInterrupt(uint8_t pin,
+                         void (*func)(void),
+                         int mode,
+                         Supla::Io *io) {
+  if (io) {
+    io->customAttachInterrupt(pin, func, mode);
+    return;
+  }
+  ::attachInterrupt(pin, func, mode);
+}
+
+void Io::detachInterrupt(uint8_t pin, Io *io) {
+  if (io) {
+    io->customDetachInterrupt(pin);
+    return;
+  }
+  ::detachInterrupt(pin);
+}
+
+
+uint8_t Io::digitalPinToInterrupt(uint8_t pin, Io *io) {
+  if (io) {
+    return io->customDigitalPinToInterrupt(pin);
+  }
+  return ::digitalPinToInterrupt(pin);
+}
+
 Io::Io(bool useAsSingleton) : useAsSingleton(useAsSingleton) {
   if (useAsSingleton) {
     if (ioInstance != nullptr) {
@@ -193,6 +234,18 @@ unsigned int Io::customPulseIn(int channelNumber,
                                uint64_t timeoutMicro) {
   (void)(channelNumber);
   return ::pulseIn(pin, value, timeoutMicro);
+}
+
+void Io::customAttachInterrupt(uint8_t pin, void (*func)(void), int mode) {
+  ::attachInterrupt(pin, func, mode);
+}
+
+void Io::customDetachInterrupt(uint8_t pin) {
+  ::detachInterrupt(pin);
+}
+
+uint8_t Io::customDigitalPinToInterrupt(uint8_t pin) {
+  return ::digitalPinToInterrupt(pin);
 }
 
 Io *Io::ioInstance = nullptr;

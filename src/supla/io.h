@@ -68,6 +68,13 @@ class Io {
                               uint64_t timeoutMicro,
                               Supla::Io *io = ioInstance);
 
+  static void attachInterrupt(uint8_t pin,
+                              void (*func)(void),
+                              int mode,
+                              Io *io = ioInstance);
+  static void detachInterrupt(uint8_t pin, Io *io = ioInstance);
+  static uint8_t digitalPinToInterrupt(uint8_t pin, Io *io = ioInstance);
+
   static Io *ioInstance;
 
   explicit Io(bool useAsSingleton = true);
@@ -81,6 +88,9 @@ class Io {
   virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
   virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
   virtual int customAnalogRead(int channelNumber, uint8_t pin);
+  virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
+  virtual void customDetachInterrupt(uint8_t pin);
+  virtual uint8_t customDigitalPinToInterrupt(uint8_t pin);
 
  private:
   bool useAsSingleton = true;

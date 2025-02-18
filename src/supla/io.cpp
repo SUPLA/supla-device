@@ -181,11 +181,11 @@ void Io::detachInterrupt(uint8_t pin, Io *io) {
 }
 
 
-uint8_t Io::digitalPinToInterrupt(uint8_t pin, Io *io) {
+uint8_t Io::pinToInterrupt(uint8_t pin, Io *io) {
   if (io) {
-    return io->customDigitalPinToInterrupt(pin);
+    return io->customPinToInterrupt(pin);
   }
-  return ::digitalPinToInterrupt(pin);
+  return digitalPinToInterrupt(pin);
 }
 
 Io::Io(bool useAsSingleton) : useAsSingleton(useAsSingleton) {
@@ -244,8 +244,8 @@ void Io::customDetachInterrupt(uint8_t pin) {
   ::detachInterrupt(pin);
 }
 
-uint8_t Io::customDigitalPinToInterrupt(uint8_t pin) {
-  return ::digitalPinToInterrupt(pin);
+uint8_t Io::customPinToInterrupt(uint8_t pin) {
+  return digitalPinToInterrupt(pin);
 }
 
 Io *Io::ioInstance = nullptr;

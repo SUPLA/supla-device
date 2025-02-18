@@ -73,7 +73,7 @@ class Io {
                               int mode,
                               Io *io = ioInstance);
   static void detachInterrupt(uint8_t pin, Io *io = ioInstance);
-  static uint8_t digitalPinToInterrupt(uint8_t pin, Io *io = ioInstance);
+  static uint8_t pinToInterrupt(uint8_t pin, Io *io = ioInstance);
 
   static Io *ioInstance;
 
@@ -90,7 +90,7 @@ class Io {
   virtual int customAnalogRead(int channelNumber, uint8_t pin);
   virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
   virtual void customDetachInterrupt(uint8_t pin);
-  virtual uint8_t customDigitalPinToInterrupt(uint8_t pin);
+  virtual uint8_t customPinToInterrupt(uint8_t pin);
 
  private:
   bool useAsSingleton = true;

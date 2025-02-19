@@ -1826,6 +1826,7 @@ void Channel::setValveFloodingFlag(bool active) {
   if (isValveFloodingFlagActive() == active) {
     return;
   }
+  SUPLA_LOG_DEBUG("Valve[%d] Flood: %d", channelNumber, active);
   if (active) {
     valve->flags |= SUPLA_VALVE_FLAG_FLOODING;
   } else {
@@ -1840,6 +1841,7 @@ void Channel::setValveManuallyClosedFlag(bool active) {
   if (isValveManuallyClosedFlagActive() == active) {
     return;
   }
+  SUPLA_LOG_DEBUG("Valve[%d] ManuallyClosedFlag: %d", channelNumber, active);
   if (active) {
     valve->flags |= SUPLA_VALVE_FLAG_MANUALLY_CLOSED;
   } else {
@@ -1855,6 +1857,7 @@ void Channel::setValveMotorProblemFlag(bool active) {
   if (isValveMotorProblemFlagActive() == active) {
     return;
   }
+  SUPLA_LOG_DEBUG("Valve[%d] MotorProblemFlag: %d", channelNumber, active);
   if (active) {
     valve->flags |= SUPLA_VALVE_FLAG_MOTOR_PROBLEM;
   } else {

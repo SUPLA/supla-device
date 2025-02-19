@@ -4039,185 +4039,186 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l03564" name="l03564"></a><span class="lineno"> 3564</span> </div>
 <div class="line"><a id="l03565" name="l03565"></a><span class="lineno"> 3565</span><span class="preprocessor">#define SUPLA_VALVE_FLAG_FLOODING 0x1</span></div>
 <div class="line"><a id="l03566" name="l03566"></a><span class="lineno"> 3566</span><span class="preprocessor">#define SUPLA_VALVE_FLAG_MANUALLY_CLOSED 0x2</span></div>
-<div class="line"><a id="l03567" name="l03567"></a><span class="lineno"> 3567</span> </div>
-<div class="line"><a id="l03568" name="l03568"></a><span class="lineno"> 3568</span><span class="comment">// Valve channel value</span></div>
-<div class="line"><a id="l03569" name="l03569"></a><span class="lineno"> 3569</span><span class="comment">// Device -&gt; Server -&gt; Client</span></div>
-<div class="foldopen" id="foldopen03570" data-start="{" data-end="};">
-<div class="line"><a id="l03570" name="l03570"></a><span class="lineno"><a class="line" href="structTValve__Value.html"> 3570</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03571" name="l03571"></a><span class="lineno"> 3571</span>  <span class="keyword">union </span>{</div>
-<div class="line"><a id="l03572" name="l03572"></a><span class="lineno"> 3572</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> closed;  <span class="comment">// 0 - open, 1 - closed</span></div>
-<div class="line"><a id="l03573" name="l03573"></a><span class="lineno"> 3573</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> closed_percent;</div>
-<div class="line"><a id="l03574" name="l03574"></a><span class="lineno"> 3574</span>  };</div>
-<div class="line"><a id="l03575" name="l03575"></a><span class="lineno"> 3575</span> </div>
-<div class="line"><a id="l03576" name="l03576"></a><span class="lineno"> 3576</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> flags;  <span class="comment">// see SUPLA_VALVE_FLAG_</span></div>
-<div class="line"><a id="l03577" name="l03577"></a><span class="lineno"> 3577</span>} <a class="code hl_struct" href="structTValve__Value.html">TValve_Value</a>;</div>
+<div class="line"><a id="l03567" name="l03567"></a><span class="lineno"> 3567</span><span class="preprocessor">#define SUPLA_VALVE_FLAG_MOTOR_PROBLEM 0x4</span></div>
+<div class="line"><a id="l03568" name="l03568"></a><span class="lineno"> 3568</span> </div>
+<div class="line"><a id="l03569" name="l03569"></a><span class="lineno"> 3569</span><span class="comment">// Valve channel value</span></div>
+<div class="line"><a id="l03570" name="l03570"></a><span class="lineno"> 3570</span><span class="comment">// Device -&gt; Server -&gt; Client</span></div>
+<div class="foldopen" id="foldopen03571" data-start="{" data-end="};">
+<div class="line"><a id="l03571" name="l03571"></a><span class="lineno"><a class="line" href="structTValve__Value.html"> 3571</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03572" name="l03572"></a><span class="lineno"> 3572</span>  <span class="keyword">union </span>{</div>
+<div class="line"><a id="l03573" name="l03573"></a><span class="lineno"> 3573</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> closed;  <span class="comment">// 0 - open, 1 - closed</span></div>
+<div class="line"><a id="l03574" name="l03574"></a><span class="lineno"> 3574</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> closed_percent;</div>
+<div class="line"><a id="l03575" name="l03575"></a><span class="lineno"> 3575</span>  };</div>
+<div class="line"><a id="l03576" name="l03576"></a><span class="lineno"> 3576</span> </div>
+<div class="line"><a id="l03577" name="l03577"></a><span class="lineno"> 3577</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> flags;  <span class="comment">// see SUPLA_VALVE_FLAG_</span></div>
+<div class="line"><a id="l03578" name="l03578"></a><span class="lineno"> 3578</span>} <a class="code hl_struct" href="structTValve__Value.html">TValve_Value</a>;</div>
 </div>
-<div class="line"><a id="l03578" name="l03578"></a><span class="lineno"> 3578</span> </div>
-<div class="line"><a id="l03579" name="l03579"></a><span class="lineno"> 3579</span><span class="comment">// Valve channel value payload</span></div>
-<div class="line"><a id="l03580" name="l03580"></a><span class="lineno"> 3580</span><span class="comment">// Client -&gt; Server -&gt; Device</span></div>
-<div class="foldopen" id="foldopen03581" data-start="{" data-end="};">
-<div class="line"><a id="l03581" name="l03581"></a><span class="lineno"><a class="line" href="structTCSD__Valve.html"> 3581</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03582" name="l03582"></a><span class="lineno"> 3582</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> command;  <span class="comment">// 0 - close</span></div>
-<div class="line"><a id="l03583" name="l03583"></a><span class="lineno"> 3583</span>                          <span class="comment">// 1 - open</span></div>
-<div class="line"><a id="l03584" name="l03584"></a><span class="lineno"> 3584</span>  <span class="keywordtype">char</span> reserved[7];</div>
-<div class="line"><a id="l03585" name="l03585"></a><span class="lineno"> 3585</span>} <a class="code hl_struct" href="structTCSD__Valve.html">TCSD_Valve</a>;</div>
+<div class="line"><a id="l03579" name="l03579"></a><span class="lineno"> 3579</span> </div>
+<div class="line"><a id="l03580" name="l03580"></a><span class="lineno"> 3580</span><span class="comment">// Valve channel value payload</span></div>
+<div class="line"><a id="l03581" name="l03581"></a><span class="lineno"> 3581</span><span class="comment">// Client -&gt; Server -&gt; Device</span></div>
+<div class="foldopen" id="foldopen03582" data-start="{" data-end="};">
+<div class="line"><a id="l03582" name="l03582"></a><span class="lineno"><a class="line" href="structTCSD__Valve.html"> 3582</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03583" name="l03583"></a><span class="lineno"> 3583</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> command;  <span class="comment">// 0 - close</span></div>
+<div class="line"><a id="l03584" name="l03584"></a><span class="lineno"> 3584</span>                          <span class="comment">// 1 - open</span></div>
+<div class="line"><a id="l03585" name="l03585"></a><span class="lineno"> 3585</span>  <span class="keywordtype">char</span> reserved[7];</div>
+<div class="line"><a id="l03586" name="l03586"></a><span class="lineno"> 3586</span>} <a class="code hl_struct" href="structTCSD__Valve.html">TCSD_Valve</a>;</div>
 </div>
-<div class="line"><a id="l03586" name="l03586"></a><span class="lineno"> 3586</span> </div>
-<div class="foldopen" id="foldopen03587" data-start="{" data-end="};">
-<div class="line"><a id="l03587" name="l03587"></a><span class="lineno"><a class="line" href="structTDS__ActionTrigger.html"> 3587</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03588" name="l03588"></a><span class="lineno"> 3588</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> ChannelNumber;</div>
-<div class="line"><a id="l03589" name="l03589"></a><span class="lineno"> 3589</span>  _supla_int_t ActionTrigger;</div>
-<div class="line"><a id="l03590" name="l03590"></a><span class="lineno"> 3590</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> zero[10];  <span class="comment">// Place for future variables</span></div>
-<div class="line"><a id="l03591" name="l03591"></a><span class="lineno"> 3591</span>} <a class="code hl_struct" href="structTDS__ActionTrigger.html">TDS_ActionTrigger</a>;</div>
+<div class="line"><a id="l03587" name="l03587"></a><span class="lineno"> 3587</span> </div>
+<div class="foldopen" id="foldopen03588" data-start="{" data-end="};">
+<div class="line"><a id="l03588" name="l03588"></a><span class="lineno"><a class="line" href="structTDS__ActionTrigger.html"> 3588</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03589" name="l03589"></a><span class="lineno"> 3589</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> ChannelNumber;</div>
+<div class="line"><a id="l03590" name="l03590"></a><span class="lineno"> 3590</span>  _supla_int_t ActionTrigger;</div>
+<div class="line"><a id="l03591" name="l03591"></a><span class="lineno"> 3591</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> zero[10];  <span class="comment">// Place for future variables</span></div>
+<div class="line"><a id="l03592" name="l03592"></a><span class="lineno"> 3592</span>} <a class="code hl_struct" href="structTDS__ActionTrigger.html">TDS_ActionTrigger</a>;</div>
 </div>
-<div class="line"><a id="l03592" name="l03592"></a><span class="lineno"> 3592</span> </div>
-<div class="line"><a id="l03593" name="l03593"></a><span class="lineno"> 3593</span><span class="preprocessor">#define SUPLA_PN_TITLE_MAXSIZE 101</span></div>
-<div class="line"><a id="l03594" name="l03594"></a><span class="lineno"> 3594</span><span class="preprocessor">#define SUPLA_PN_BODY_MAXSIZE 256</span></div>
-<div class="line"><a id="l03595" name="l03595"></a><span class="lineno"> 3595</span><span class="preprocessor">#define SUPLA_PN_PROFILE_NAME_MAXSIZE 51</span></div>
-<div class="line"><a id="l03596" name="l03596"></a><span class="lineno"> 3596</span> </div>
-<div class="line"><a id="l03597" name="l03597"></a><span class="lineno"> 3597</span><span class="preprocessor">#define PN_SERVER_MANAGED_TITLE (1 &lt;&lt; 0)</span></div>
-<div class="line"><a id="l03598" name="l03598"></a><span class="lineno"> 3598</span><span class="preprocessor">#define PN_SERVER_MANAGED_BODY (1 &lt;&lt; 1)</span></div>
-<div class="line"><a id="l03599" name="l03599"></a><span class="lineno"> 3599</span><span class="preprocessor">#define PN_SERVER_MANAGED_SOUND (1 &lt;&lt; 2)</span></div>
-<div class="line"><a id="l03600" name="l03600"></a><span class="lineno"> 3600</span> </div>
-<div class="foldopen" id="foldopen03601" data-start="{" data-end="};">
-<div class="line"><a id="l03601" name="l03601"></a><span class="lineno"><a class="line" href="structTDS__RegisterPushNotification.html"> 3601</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03602" name="l03602"></a><span class="lineno"> 3602</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span></div>
-<div class="line"><a id="l03603" name="l03603"></a><span class="lineno"> 3603</span>      ServerManagedFields;  <span class="comment">// Specifies the fields that will be managed by the</span></div>
-<div class="line"><a id="l03604" name="l03604"></a><span class="lineno"> 3604</span>                            <span class="comment">// server. This value is only considered for the</span></div>
-<div class="line"><a id="l03605" name="l03605"></a><span class="lineno"> 3605</span>                            <span class="comment">// first notification within a given context and</span></div>
-<div class="line"><a id="l03606" name="l03606"></a><span class="lineno"> 3606</span>                            <span class="comment">// applies to all subsequent notifications.</span></div>
-<div class="line"><a id="l03607" name="l03607"></a><span class="lineno"> 3607</span> </div>
-<div class="line"><a id="l03608" name="l03608"></a><span class="lineno"> 3608</span>  _supla_int16_t Context;  <span class="comment">// &gt;= 0 Channel, -1 Device</span></div>
-<div class="line"><a id="l03609" name="l03609"></a><span class="lineno"> 3609</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> Reserved[8];</div>
-<div class="line"><a id="l03610" name="l03610"></a><span class="lineno"> 3610</span>} <a class="code hl_struct" href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a>;</div>
+<div class="line"><a id="l03593" name="l03593"></a><span class="lineno"> 3593</span> </div>
+<div class="line"><a id="l03594" name="l03594"></a><span class="lineno"> 3594</span><span class="preprocessor">#define SUPLA_PN_TITLE_MAXSIZE 101</span></div>
+<div class="line"><a id="l03595" name="l03595"></a><span class="lineno"> 3595</span><span class="preprocessor">#define SUPLA_PN_BODY_MAXSIZE 256</span></div>
+<div class="line"><a id="l03596" name="l03596"></a><span class="lineno"> 3596</span><span class="preprocessor">#define SUPLA_PN_PROFILE_NAME_MAXSIZE 51</span></div>
+<div class="line"><a id="l03597" name="l03597"></a><span class="lineno"> 3597</span> </div>
+<div class="line"><a id="l03598" name="l03598"></a><span class="lineno"> 3598</span><span class="preprocessor">#define PN_SERVER_MANAGED_TITLE (1 &lt;&lt; 0)</span></div>
+<div class="line"><a id="l03599" name="l03599"></a><span class="lineno"> 3599</span><span class="preprocessor">#define PN_SERVER_MANAGED_BODY (1 &lt;&lt; 1)</span></div>
+<div class="line"><a id="l03600" name="l03600"></a><span class="lineno"> 3600</span><span class="preprocessor">#define PN_SERVER_MANAGED_SOUND (1 &lt;&lt; 2)</span></div>
+<div class="line"><a id="l03601" name="l03601"></a><span class="lineno"> 3601</span> </div>
+<div class="foldopen" id="foldopen03602" data-start="{" data-end="};">
+<div class="line"><a id="l03602" name="l03602"></a><span class="lineno"><a class="line" href="structTDS__RegisterPushNotification.html"> 3602</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03603" name="l03603"></a><span class="lineno"> 3603</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span></div>
+<div class="line"><a id="l03604" name="l03604"></a><span class="lineno"> 3604</span>      ServerManagedFields;  <span class="comment">// Specifies the fields that will be managed by the</span></div>
+<div class="line"><a id="l03605" name="l03605"></a><span class="lineno"> 3605</span>                            <span class="comment">// server. This value is only considered for the</span></div>
+<div class="line"><a id="l03606" name="l03606"></a><span class="lineno"> 3606</span>                            <span class="comment">// first notification within a given context and</span></div>
+<div class="line"><a id="l03607" name="l03607"></a><span class="lineno"> 3607</span>                            <span class="comment">// applies to all subsequent notifications.</span></div>
+<div class="line"><a id="l03608" name="l03608"></a><span class="lineno"> 3608</span> </div>
+<div class="line"><a id="l03609" name="l03609"></a><span class="lineno"> 3609</span>  _supla_int16_t Context;  <span class="comment">// &gt;= 0 Channel, -1 Device</span></div>
+<div class="line"><a id="l03610" name="l03610"></a><span class="lineno"> 3610</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> Reserved[8];</div>
+<div class="line"><a id="l03611" name="l03611"></a><span class="lineno"> 3611</span>} <a class="code hl_struct" href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a>;</div>
 </div>
-<div class="line"><a id="l03611" name="l03611"></a><span class="lineno"> 3611</span> </div>
-<div class="foldopen" id="foldopen03612" data-start="{" data-end="};">
-<div class="line"><a id="l03612" name="l03612"></a><span class="lineno"><a class="line" href="structTDS__PushNotification.html"> 3612</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03613" name="l03613"></a><span class="lineno"> 3613</span>  _supla_int16_t Context;  <span class="comment">// &gt;= 0 Channel, -1 Device</span></div>
-<div class="line"><a id="l03614" name="l03614"></a><span class="lineno"> 3614</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> Reserved[32];</div>
-<div class="line"><a id="l03615" name="l03615"></a><span class="lineno"> 3615</span>  _supla_int_t SoundId;</div>
-<div class="line"><a id="l03616" name="l03616"></a><span class="lineno"> 3616</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
-<div class="line"><a id="l03617" name="l03617"></a><span class="lineno"> 3617</span>      TitleSize;  <span class="comment">// Including the terminating null byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03618" name="l03618"></a><span class="lineno"> 3618</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
-<div class="line"><a id="l03619" name="l03619"></a><span class="lineno"> 3619</span>      BodySize;  <span class="comment">// Including the terminating null byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03620" name="l03620"></a><span class="lineno"> 3620</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> TitleAndBody[SUPLA_PN_TITLE_MAXSIZE +</div>
-<div class="line"><a id="l03621" name="l03621"></a><span class="lineno"> 3621</span>                           SUPLA_PN_BODY_MAXSIZE];  <span class="comment">// Last variable in struct!</span></div>
-<div class="line"><a id="l03622" name="l03622"></a><span class="lineno"> 3622</span>} <a class="code hl_struct" href="structTDS__PushNotification.html">TDS_PushNotification</a>;</div>
+<div class="line"><a id="l03612" name="l03612"></a><span class="lineno"> 3612</span> </div>
+<div class="foldopen" id="foldopen03613" data-start="{" data-end="};">
+<div class="line"><a id="l03613" name="l03613"></a><span class="lineno"><a class="line" href="structTDS__PushNotification.html"> 3613</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03614" name="l03614"></a><span class="lineno"> 3614</span>  _supla_int16_t Context;  <span class="comment">// &gt;= 0 Channel, -1 Device</span></div>
+<div class="line"><a id="l03615" name="l03615"></a><span class="lineno"> 3615</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> Reserved[32];</div>
+<div class="line"><a id="l03616" name="l03616"></a><span class="lineno"> 3616</span>  _supla_int_t SoundId;</div>
+<div class="line"><a id="l03617" name="l03617"></a><span class="lineno"> 3617</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
+<div class="line"><a id="l03618" name="l03618"></a><span class="lineno"> 3618</span>      TitleSize;  <span class="comment">// Including the terminating null byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03619" name="l03619"></a><span class="lineno"> 3619</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
+<div class="line"><a id="l03620" name="l03620"></a><span class="lineno"> 3620</span>      BodySize;  <span class="comment">// Including the terminating null byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03621" name="l03621"></a><span class="lineno"> 3621</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> TitleAndBody[SUPLA_PN_TITLE_MAXSIZE +</div>
+<div class="line"><a id="l03622" name="l03622"></a><span class="lineno"> 3622</span>                           SUPLA_PN_BODY_MAXSIZE];  <span class="comment">// Last variable in struct!</span></div>
+<div class="line"><a id="l03623" name="l03623"></a><span class="lineno"> 3623</span>} <a class="code hl_struct" href="structTDS__PushNotification.html">TDS_PushNotification</a>;</div>
 </div>
-<div class="line"><a id="l03623" name="l03623"></a><span class="lineno"> 3623</span> </div>
-<div class="line"><a id="l03624" name="l03624"></a><span class="lineno"> 3624</span><span class="preprocessor">#define SUPLA_SUBDEVICE_PRODUCT_CODE_MAXSIZE 51</span></div>
-<div class="line"><a id="l03625" name="l03625"></a><span class="lineno"> 3625</span><span class="preprocessor">#define SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE 51</span></div>
-<div class="line"><a id="l03626" name="l03626"></a><span class="lineno"> 3626</span> </div>
-<div class="foldopen" id="foldopen03627" data-start="{" data-end="};">
-<div class="line"><a id="l03627" name="l03627"></a><span class="lineno"><a class="line" href="structTDS__SubdeviceDetails.html"> 3627</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03628" name="l03628"></a><span class="lineno"> 3628</span>  <span class="comment">// device -&gt; server</span></div>
-<div class="line"><a id="l03629" name="l03629"></a><span class="lineno"> 3629</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> SubDeviceId;</div>
-<div class="line"><a id="l03630" name="l03630"></a><span class="lineno"> 3630</span> </div>
-<div class="line"><a id="l03631" name="l03631"></a><span class="lineno"> 3631</span>  <span class="keywordtype">char</span> Name[SUPLA_DEVICE_NAME_MAXSIZE];  <span class="comment">// UTF8 - 201 B including the</span></div>
-<div class="line"><a id="l03632" name="l03632"></a><span class="lineno"> 3632</span>                                         <span class="comment">// terminating null byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03633" name="l03633"></a><span class="lineno"> 3633</span>  <span class="keywordtype">char</span> SoftVer[SUPLA_SOFTVER_MAXSIZE];   <span class="comment">//  21 B including the terminating null</span></div>
-<div class="line"><a id="l03634" name="l03634"></a><span class="lineno"> 3634</span>                                         <span class="comment">//  byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03635" name="l03635"></a><span class="lineno"> 3635</span>  <span class="keywordtype">char</span> ProductCode[SUPLA_SUBDEVICE_PRODUCT_CODE_MAXSIZE];  <span class="comment">// 51 B including the</span></div>
-<div class="line"><a id="l03636" name="l03636"></a><span class="lineno"> 3636</span>                                                           <span class="comment">// terminating null</span></div>
-<div class="line"><a id="l03637" name="l03637"></a><span class="lineno"> 3637</span>                                                           <span class="comment">// byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03638" name="l03638"></a><span class="lineno"> 3638</span>  <span class="keywordtype">char</span></div>
-<div class="line"><a id="l03639" name="l03639"></a><span class="lineno"> 3639</span>      SerialNumber[SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE];  <span class="comment">// 51 B including</span></div>
-<div class="line"><a id="l03640" name="l03640"></a><span class="lineno"> 3640</span>                                                            <span class="comment">// the terminating</span></div>
-<div class="line"><a id="l03641" name="l03641"></a><span class="lineno"> 3641</span>                                                            <span class="comment">// null byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03642" name="l03642"></a><span class="lineno"> 3642</span>} <a class="code hl_struct" href="structTDS__SubdeviceDetails.html">TDS_SubdeviceDetails</a>;</div>
+<div class="line"><a id="l03624" name="l03624"></a><span class="lineno"> 3624</span> </div>
+<div class="line"><a id="l03625" name="l03625"></a><span class="lineno"> 3625</span><span class="preprocessor">#define SUPLA_SUBDEVICE_PRODUCT_CODE_MAXSIZE 51</span></div>
+<div class="line"><a id="l03626" name="l03626"></a><span class="lineno"> 3626</span><span class="preprocessor">#define SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE 51</span></div>
+<div class="line"><a id="l03627" name="l03627"></a><span class="lineno"> 3627</span> </div>
+<div class="foldopen" id="foldopen03628" data-start="{" data-end="};">
+<div class="line"><a id="l03628" name="l03628"></a><span class="lineno"><a class="line" href="structTDS__SubdeviceDetails.html"> 3628</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03629" name="l03629"></a><span class="lineno"> 3629</span>  <span class="comment">// device -&gt; server</span></div>
+<div class="line"><a id="l03630" name="l03630"></a><span class="lineno"> 3630</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> SubDeviceId;</div>
+<div class="line"><a id="l03631" name="l03631"></a><span class="lineno"> 3631</span> </div>
+<div class="line"><a id="l03632" name="l03632"></a><span class="lineno"> 3632</span>  <span class="keywordtype">char</span> Name[SUPLA_DEVICE_NAME_MAXSIZE];  <span class="comment">// UTF8 - 201 B including the</span></div>
+<div class="line"><a id="l03633" name="l03633"></a><span class="lineno"> 3633</span>                                         <span class="comment">// terminating null byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03634" name="l03634"></a><span class="lineno"> 3634</span>  <span class="keywordtype">char</span> SoftVer[SUPLA_SOFTVER_MAXSIZE];   <span class="comment">//  21 B including the terminating null</span></div>
+<div class="line"><a id="l03635" name="l03635"></a><span class="lineno"> 3635</span>                                         <span class="comment">//  byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03636" name="l03636"></a><span class="lineno"> 3636</span>  <span class="keywordtype">char</span> ProductCode[SUPLA_SUBDEVICE_PRODUCT_CODE_MAXSIZE];  <span class="comment">// 51 B including the</span></div>
+<div class="line"><a id="l03637" name="l03637"></a><span class="lineno"> 3637</span>                                                           <span class="comment">// terminating null</span></div>
+<div class="line"><a id="l03638" name="l03638"></a><span class="lineno"> 3638</span>                                                           <span class="comment">// byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03639" name="l03639"></a><span class="lineno"> 3639</span>  <span class="keywordtype">char</span></div>
+<div class="line"><a id="l03640" name="l03640"></a><span class="lineno"> 3640</span>      SerialNumber[SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE];  <span class="comment">// 51 B including</span></div>
+<div class="line"><a id="l03641" name="l03641"></a><span class="lineno"> 3641</span>                                                            <span class="comment">// the terminating</span></div>
+<div class="line"><a id="l03642" name="l03642"></a><span class="lineno"> 3642</span>                                                            <span class="comment">// null byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03643" name="l03643"></a><span class="lineno"> 3643</span>} <a class="code hl_struct" href="structTDS__SubdeviceDetails.html">TDS_SubdeviceDetails</a>;</div>
 </div>
-<div class="line"><a id="l03643" name="l03643"></a><span class="lineno"> 3643</span> </div>
-<div class="line"><a id="l03644" name="l03644"></a><span class="lineno"> 3644</span><span class="preprocessor">#define SUPLA_PN_CLIENT_TOKEN_MAXSIZE 256</span></div>
-<div class="line"><a id="l03645" name="l03645"></a><span class="lineno"> 3645</span><span class="preprocessor">#define PLATFORM_UNKNOWN 0</span></div>
-<div class="line"><a id="l03646" name="l03646"></a><span class="lineno"> 3646</span><span class="preprocessor">#define PLATFORM_IOS 1</span></div>
-<div class="line"><a id="l03647" name="l03647"></a><span class="lineno"> 3647</span><span class="preprocessor">#define PLATFORM_ANDROID 2</span></div>
-<div class="line"><a id="l03648" name="l03648"></a><span class="lineno"> 3648</span><span class="preprocessor">#define PLATFORM_HOMEGRAPH 3  </span><span class="comment">// v. &gt;= 23</span></div>
-<div class="line"><a id="l03649" name="l03649"></a><span class="lineno"> 3649</span> </div>
-<div class="foldopen" id="foldopen03650" data-start="{" data-end="};">
-<div class="line"><a id="l03650" name="l03650"></a><span class="lineno"><a class="line" href="structTCS__PnClientToken.html"> 3650</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03651" name="l03651"></a><span class="lineno"> 3651</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> DevelopmentEnv;</div>
-<div class="line"><a id="l03652" name="l03652"></a><span class="lineno"> 3652</span>  _supla_int_t Platform;</div>
-<div class="line"><a id="l03653" name="l03653"></a><span class="lineno"> 3653</span>  _supla_int_t AppId;</div>
-<div class="line"><a id="l03654" name="l03654"></a><span class="lineno"> 3654</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span></div>
-<div class="line"><a id="l03655" name="l03655"></a><span class="lineno"> 3655</span>      ProfileName[SUPLA_PN_PROFILE_NAME_MAXSIZE];  <span class="comment">// Including the terminating</span></div>
-<div class="line"><a id="l03656" name="l03656"></a><span class="lineno"> 3656</span>                                                   <span class="comment">// null byte (&#39;\0&#39;).</span></div>
-<div class="line"><a id="l03657" name="l03657"></a><span class="lineno"> 3657</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
-<div class="line"><a id="l03658" name="l03658"></a><span class="lineno"> 3658</span>      RealTokenSize;  <span class="comment">// It allows you to determine if the maximum size of the</span></div>
-<div class="line"><a id="l03659" name="l03659"></a><span class="lineno"> 3659</span>                      <span class="comment">// Token variable is sufficient.</span></div>
-<div class="line"><a id="l03660" name="l03660"></a><span class="lineno"> 3660</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
-<div class="line"><a id="l03661" name="l03661"></a><span class="lineno"> 3661</span>      TokenSize;  <span class="comment">// Including the terminating null byte (&#39;\0&#39;). Size</span></div>
-<div class="line"><a id="l03662" name="l03662"></a><span class="lineno"> 3662</span>                  <span class="comment">// &lt;= 1 removes the token</span></div>
-<div class="line"><a id="l03663" name="l03663"></a><span class="lineno"> 3663</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> Token[SUPLA_PN_CLIENT_TOKEN_MAXSIZE];  <span class="comment">// Last variable in struct!</span></div>
-<div class="line"><a id="l03664" name="l03664"></a><span class="lineno"> 3664</span>} <a class="code hl_struct" href="structTCS__PnClientToken.html">TCS_PnClientToken</a>;</div>
+<div class="line"><a id="l03644" name="l03644"></a><span class="lineno"> 3644</span> </div>
+<div class="line"><a id="l03645" name="l03645"></a><span class="lineno"> 3645</span><span class="preprocessor">#define SUPLA_PN_CLIENT_TOKEN_MAXSIZE 256</span></div>
+<div class="line"><a id="l03646" name="l03646"></a><span class="lineno"> 3646</span><span class="preprocessor">#define PLATFORM_UNKNOWN 0</span></div>
+<div class="line"><a id="l03647" name="l03647"></a><span class="lineno"> 3647</span><span class="preprocessor">#define PLATFORM_IOS 1</span></div>
+<div class="line"><a id="l03648" name="l03648"></a><span class="lineno"> 3648</span><span class="preprocessor">#define PLATFORM_ANDROID 2</span></div>
+<div class="line"><a id="l03649" name="l03649"></a><span class="lineno"> 3649</span><span class="preprocessor">#define PLATFORM_HOMEGRAPH 3  </span><span class="comment">// v. &gt;= 23</span></div>
+<div class="line"><a id="l03650" name="l03650"></a><span class="lineno"> 3650</span> </div>
+<div class="foldopen" id="foldopen03651" data-start="{" data-end="};">
+<div class="line"><a id="l03651" name="l03651"></a><span class="lineno"><a class="line" href="structTCS__PnClientToken.html"> 3651</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03652" name="l03652"></a><span class="lineno"> 3652</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> DevelopmentEnv;</div>
+<div class="line"><a id="l03653" name="l03653"></a><span class="lineno"> 3653</span>  _supla_int_t Platform;</div>
+<div class="line"><a id="l03654" name="l03654"></a><span class="lineno"> 3654</span>  _supla_int_t AppId;</div>
+<div class="line"><a id="l03655" name="l03655"></a><span class="lineno"> 3655</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span></div>
+<div class="line"><a id="l03656" name="l03656"></a><span class="lineno"> 3656</span>      ProfileName[SUPLA_PN_PROFILE_NAME_MAXSIZE];  <span class="comment">// Including the terminating</span></div>
+<div class="line"><a id="l03657" name="l03657"></a><span class="lineno"> 3657</span>                                                   <span class="comment">// null byte (&#39;\0&#39;).</span></div>
+<div class="line"><a id="l03658" name="l03658"></a><span class="lineno"> 3658</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
+<div class="line"><a id="l03659" name="l03659"></a><span class="lineno"> 3659</span>      RealTokenSize;  <span class="comment">// It allows you to determine if the maximum size of the</span></div>
+<div class="line"><a id="l03660" name="l03660"></a><span class="lineno"> 3660</span>                      <span class="comment">// Token variable is sufficient.</span></div>
+<div class="line"><a id="l03661" name="l03661"></a><span class="lineno"> 3661</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
+<div class="line"><a id="l03662" name="l03662"></a><span class="lineno"> 3662</span>      TokenSize;  <span class="comment">// Including the terminating null byte (&#39;\0&#39;). Size</span></div>
+<div class="line"><a id="l03663" name="l03663"></a><span class="lineno"> 3663</span>                  <span class="comment">// &lt;= 1 removes the token</span></div>
+<div class="line"><a id="l03664" name="l03664"></a><span class="lineno"> 3664</span>  <span class="keywordtype">signed</span> <span class="keywordtype">char</span> Token[SUPLA_PN_CLIENT_TOKEN_MAXSIZE];  <span class="comment">// Last variable in struct!</span></div>
+<div class="line"><a id="l03665" name="l03665"></a><span class="lineno"> 3665</span>} <a class="code hl_struct" href="structTCS__PnClientToken.html">TCS_PnClientToken</a>;</div>
 </div>
-<div class="line"><a id="l03665" name="l03665"></a><span class="lineno"> 3665</span> </div>
-<div class="foldopen" id="foldopen03666" data-start="{" data-end="};">
-<div class="line"><a id="l03666" name="l03666"></a><span class="lineno"><a class="line" href="structTCS__RegisterPnClientToken.html"> 3666</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03667" name="l03667"></a><span class="lineno"> 3667</span>  <a class="code hl_struct" href="structTCS__ClientAuthorizationDetails.html">TCS_ClientAuthorizationDetails</a> Auth;</div>
-<div class="line"><a id="l03668" name="l03668"></a><span class="lineno"> 3668</span>  <a class="code hl_struct" href="structTCS__PnClientToken.html">TCS_PnClientToken</a> Token;  <span class="comment">// Last variable in struct!</span></div>
-<div class="line"><a id="l03669" name="l03669"></a><span class="lineno"> 3669</span>} <a class="code hl_struct" href="structTCS__RegisterPnClientToken.html">TCS_RegisterPnClientToken</a>;</div>
+<div class="line"><a id="l03666" name="l03666"></a><span class="lineno"> 3666</span> </div>
+<div class="foldopen" id="foldopen03667" data-start="{" data-end="};">
+<div class="line"><a id="l03667" name="l03667"></a><span class="lineno"><a class="line" href="structTCS__RegisterPnClientToken.html"> 3667</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03668" name="l03668"></a><span class="lineno"> 3668</span>  <a class="code hl_struct" href="structTCS__ClientAuthorizationDetails.html">TCS_ClientAuthorizationDetails</a> Auth;</div>
+<div class="line"><a id="l03669" name="l03669"></a><span class="lineno"> 3669</span>  <a class="code hl_struct" href="structTCS__PnClientToken.html">TCS_PnClientToken</a> Token;  <span class="comment">// Last variable in struct!</span></div>
+<div class="line"><a id="l03670" name="l03670"></a><span class="lineno"> 3670</span>} <a class="code hl_struct" href="structTCS__RegisterPnClientToken.html">TCS_RegisterPnClientToken</a>;</div>
 </div>
-<div class="line"><a id="l03670" name="l03670"></a><span class="lineno"> 3670</span> </div>
-<div class="foldopen" id="foldopen03671" data-start="{" data-end="};">
-<div class="line"><a id="l03671" name="l03671"></a><span class="lineno"><a class="line" href="structTSC__RegisterPnClientTokenResult.html"> 3671</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03672" name="l03672"></a><span class="lineno"> 3672</span>  _supla_int_t ResultCode;</div>
-<div class="line"><a id="l03673" name="l03673"></a><span class="lineno"> 3673</span>} <a class="code hl_struct" href="structTSC__RegisterPnClientTokenResult.html">TSC_RegisterPnClientTokenResult</a>;</div>
+<div class="line"><a id="l03671" name="l03671"></a><span class="lineno"> 3671</span> </div>
+<div class="foldopen" id="foldopen03672" data-start="{" data-end="};">
+<div class="line"><a id="l03672" name="l03672"></a><span class="lineno"><a class="line" href="structTSC__RegisterPnClientTokenResult.html"> 3672</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03673" name="l03673"></a><span class="lineno"> 3673</span>  _supla_int_t ResultCode;</div>
+<div class="line"><a id="l03674" name="l03674"></a><span class="lineno"> 3674</span>} <a class="code hl_struct" href="structTSC__RegisterPnClientTokenResult.html">TSC_RegisterPnClientTokenResult</a>;</div>
 </div>
-<div class="line"><a id="l03674" name="l03674"></a><span class="lineno"> 3674</span> </div>
-<div class="foldopen" id="foldopen03675" data-start="{" data-end="};">
-<div class="line"><a id="l03675" name="l03675"></a><span class="lineno"><a class="line" href="structTSC__SuplaChannelStatePack.html"> 3675</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l03676" name="l03676"></a><span class="lineno"> 3676</span>  _supla_int_t count;</div>
-<div class="line"><a id="l03677" name="l03677"></a><span class="lineno"> 3677</span>  _supla_int_t total_left;</div>
-<div class="line"><a id="l03678" name="l03678"></a><span class="lineno"> 3678</span>  <a class="code hl_struct" href="structTDSC__ChannelState.html">TDSC_ChannelState</a></div>
-<div class="line"><a id="l03679" name="l03679"></a><span class="lineno"> 3679</span>      items[SUPLA_CHANNEL_STATE_PACK_MAXCOUNT];  <span class="comment">// Last variable in struct!</span></div>
-<div class="line"><a id="l03680" name="l03680"></a><span class="lineno"> 3680</span>} <a class="code hl_struct" href="structTSC__SuplaChannelStatePack.html">TSC_SuplaChannelStatePack</a>;</div>
+<div class="line"><a id="l03675" name="l03675"></a><span class="lineno"> 3675</span> </div>
+<div class="foldopen" id="foldopen03676" data-start="{" data-end="};">
+<div class="line"><a id="l03676" name="l03676"></a><span class="lineno"><a class="line" href="structTSC__SuplaChannelStatePack.html"> 3676</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
+<div class="line"><a id="l03677" name="l03677"></a><span class="lineno"> 3677</span>  _supla_int_t count;</div>
+<div class="line"><a id="l03678" name="l03678"></a><span class="lineno"> 3678</span>  _supla_int_t total_left;</div>
+<div class="line"><a id="l03679" name="l03679"></a><span class="lineno"> 3679</span>  <a class="code hl_struct" href="structTDSC__ChannelState.html">TDSC_ChannelState</a></div>
+<div class="line"><a id="l03680" name="l03680"></a><span class="lineno"> 3680</span>      items[SUPLA_CHANNEL_STATE_PACK_MAXCOUNT];  <span class="comment">// Last variable in struct!</span></div>
+<div class="line"><a id="l03681" name="l03681"></a><span class="lineno"> 3681</span>} <a class="code hl_struct" href="structTSC__SuplaChannelStatePack.html">TSC_SuplaChannelStatePack</a>;</div>
 </div>
-<div class="line"><a id="l03681" name="l03681"></a><span class="lineno"> 3681</span> </div>
-<div class="line"><a id="l03682" name="l03682"></a><span class="lineno"> 3682</span><span class="preprocessor">#pragma pack(pop)</span></div>
-<div class="line"><a id="l03683" name="l03683"></a><span class="lineno"> 3683</span> </div>
-<div class="line"><a id="l03684" name="l03684"></a><span class="lineno"> 3684</span><span class="keywordtype">void</span> *PROTO_ICACHE_FLASH sproto_init(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l03685" name="l03685"></a><span class="lineno"> 3685</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_free(<span class="keywordtype">void</span> *spd_ptr);</div>
-<div class="line"><a id="l03686" name="l03686"></a><span class="lineno"> 3686</span> </div>
-<div class="line"><a id="l03687" name="l03687"></a><span class="lineno"> 3687</span><span class="preprocessor">#ifndef SPROTO_WITHOUT_OUT_BUFFER</span></div>
-<div class="line"><a id="l03688" name="l03688"></a><span class="lineno"> 3688</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_out_buffer_append(<span class="keywordtype">void</span> *spd_ptr,</div>
-<div class="line"><a id="l03689" name="l03689"></a><span class="lineno"> 3689</span>                                                 <a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
-<div class="line"><a id="l03690" name="l03690"></a><span class="lineno"> 3690</span><span class="keywordtype">unsigned</span> _supla_int_t sproto_pop_out_data(<span class="keywordtype">void</span> *spd_ptr, <span class="keywordtype">char</span> *buffer,</div>
-<div class="line"><a id="l03691" name="l03691"></a><span class="lineno"> 3691</span>                                          <span class="keywordtype">unsigned</span> _supla_int_t buffer_size);</div>
-<div class="line"><a id="l03692" name="l03692"></a><span class="lineno"> 3692</span><span class="preprocessor">#endif </span><span class="comment">/*SPROTO_WITHOUT_OUT_BUFFER*/</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l03693" name="l03693"></a><span class="lineno"> 3693</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_out_dataexists(<span class="keywordtype">void</span> *spd_ptr);</div>
-<div class="line"><a id="l03694" name="l03694"></a><span class="lineno"> 3694</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_in_buffer_append(</div>
-<div class="line"><a id="l03695" name="l03695"></a><span class="lineno"> 3695</span>    <span class="keywordtype">void</span> *spd_ptr, <span class="keywordtype">char</span> *data, <span class="keywordtype">unsigned</span> _supla_int_t data_size);</div>
-<div class="line"><a id="l03696" name="l03696"></a><span class="lineno"> 3696</span> </div>
-<div class="line"><a id="l03697" name="l03697"></a><span class="lineno"> 3697</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_pop_in_sdp(<span class="keywordtype">void</span> *spd_ptr, <a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
-<div class="line"><a id="l03698" name="l03698"></a><span class="lineno"> 3698</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_in_dataexists(<span class="keywordtype">void</span> *spd_ptr);</div>
-<div class="line"><a id="l03699" name="l03699"></a><span class="lineno"> 3699</span> </div>
-<div class="line"><a id="l03700" name="l03700"></a><span class="lineno"> 3700</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_get_version(<span class="keywordtype">void</span> *spd_ptr);</div>
-<div class="line"><a id="l03701" name="l03701"></a><span class="lineno"> 3701</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_set_version(<span class="keywordtype">void</span> *spd_ptr,</div>
-<div class="line"><a id="l03702" name="l03702"></a><span class="lineno"> 3702</span>                                           <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> version);</div>
-<div class="line"><a id="l03703" name="l03703"></a><span class="lineno"> 3703</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_sdp_init(<span class="keywordtype">void</span> *spd_ptr, <a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
-<div class="line"><a id="l03704" name="l03704"></a><span class="lineno"> 3704</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_set_data(<a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp, <span class="keywordtype">char</span> *data,</div>
-<div class="line"><a id="l03705" name="l03705"></a><span class="lineno"> 3705</span>                                        <span class="keywordtype">unsigned</span> _supla_int_t data_size,</div>
-<div class="line"><a id="l03706" name="l03706"></a><span class="lineno"> 3706</span>                                        <span class="keywordtype">unsigned</span> _supla_int_t call_id);</div>
-<div class="line"><a id="l03707" name="l03707"></a><span class="lineno"> 3707</span><a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *PROTO_ICACHE_FLASH sproto_sdp_malloc(<span class="keywordtype">void</span> *spd_ptr);</div>
-<div class="line"><a id="l03708" name="l03708"></a><span class="lineno"> 3708</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_sdp_free(<a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
-<div class="line"><a id="l03709" name="l03709"></a><span class="lineno"> 3709</span> </div>
-<div class="line"><a id="l03710" name="l03710"></a><span class="lineno"> 3710</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_log_summary(<span class="keywordtype">void</span> *spd_ptr);</div>
-<div class="line"><a id="l03711" name="l03711"></a><span class="lineno"> 3711</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_buffer_dump(<span class="keywordtype">void</span> *spd_ptr, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> in);</div>
-<div class="line"><a id="l03712" name="l03712"></a><span class="lineno"> 3712</span> </div>
-<div class="line"><a id="l03713" name="l03713"></a><span class="lineno"> 3713</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_set_null_terminated_string(</div>
-<div class="line"><a id="l03714" name="l03714"></a><span class="lineno"> 3714</span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">char</span> *dest, <span class="keywordtype">unsigned</span> _supla_int_t *dest_size,</div>
-<div class="line"><a id="l03715" name="l03715"></a><span class="lineno"> 3715</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> max_size);</div>
-<div class="line"><a id="l03716" name="l03716"></a><span class="lineno"> 3716</span> </div>
-<div class="line"><a id="l03717" name="l03717"></a><span class="lineno"> 3717</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto__set_null_terminated_string(</div>
-<div class="line"><a id="l03718" name="l03718"></a><span class="lineno"> 3718</span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">char</span> *dest, <span class="keywordtype">unsigned</span> _supla_int16_t *dest_size,</div>
-<div class="line"><a id="l03719" name="l03719"></a><span class="lineno"> 3719</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> max_size);</div>
-<div class="line"><a id="l03720" name="l03720"></a><span class="lineno"> 3720</span> </div>
-<div class="line"><a id="l03721" name="l03721"></a><span class="lineno"> 3721</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l03722" name="l03722"></a><span class="lineno"> 3722</span>}</div>
-<div class="line"><a id="l03723" name="l03723"></a><span class="lineno"> 3723</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l03724" name="l03724"></a><span class="lineno"> 3724</span> </div>
-<div class="line"><a id="l03725" name="l03725"></a><span class="lineno"> 3725</span><span class="preprocessor">#endif </span><span class="comment">/* supla_proto_H_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l03682" name="l03682"></a><span class="lineno"> 3682</span> </div>
+<div class="line"><a id="l03683" name="l03683"></a><span class="lineno"> 3683</span><span class="preprocessor">#pragma pack(pop)</span></div>
+<div class="line"><a id="l03684" name="l03684"></a><span class="lineno"> 3684</span> </div>
+<div class="line"><a id="l03685" name="l03685"></a><span class="lineno"> 3685</span><span class="keywordtype">void</span> *PROTO_ICACHE_FLASH sproto_init(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l03686" name="l03686"></a><span class="lineno"> 3686</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_free(<span class="keywordtype">void</span> *spd_ptr);</div>
+<div class="line"><a id="l03687" name="l03687"></a><span class="lineno"> 3687</span> </div>
+<div class="line"><a id="l03688" name="l03688"></a><span class="lineno"> 3688</span><span class="preprocessor">#ifndef SPROTO_WITHOUT_OUT_BUFFER</span></div>
+<div class="line"><a id="l03689" name="l03689"></a><span class="lineno"> 3689</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_out_buffer_append(<span class="keywordtype">void</span> *spd_ptr,</div>
+<div class="line"><a id="l03690" name="l03690"></a><span class="lineno"> 3690</span>                                                 <a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
+<div class="line"><a id="l03691" name="l03691"></a><span class="lineno"> 3691</span><span class="keywordtype">unsigned</span> _supla_int_t sproto_pop_out_data(<span class="keywordtype">void</span> *spd_ptr, <span class="keywordtype">char</span> *buffer,</div>
+<div class="line"><a id="l03692" name="l03692"></a><span class="lineno"> 3692</span>                                          <span class="keywordtype">unsigned</span> _supla_int_t buffer_size);</div>
+<div class="line"><a id="l03693" name="l03693"></a><span class="lineno"> 3693</span><span class="preprocessor">#endif </span><span class="comment">/*SPROTO_WITHOUT_OUT_BUFFER*/</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l03694" name="l03694"></a><span class="lineno"> 3694</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_out_dataexists(<span class="keywordtype">void</span> *spd_ptr);</div>
+<div class="line"><a id="l03695" name="l03695"></a><span class="lineno"> 3695</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_in_buffer_append(</div>
+<div class="line"><a id="l03696" name="l03696"></a><span class="lineno"> 3696</span>    <span class="keywordtype">void</span> *spd_ptr, <span class="keywordtype">char</span> *data, <span class="keywordtype">unsigned</span> _supla_int_t data_size);</div>
+<div class="line"><a id="l03697" name="l03697"></a><span class="lineno"> 3697</span> </div>
+<div class="line"><a id="l03698" name="l03698"></a><span class="lineno"> 3698</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_pop_in_sdp(<span class="keywordtype">void</span> *spd_ptr, <a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
+<div class="line"><a id="l03699" name="l03699"></a><span class="lineno"> 3699</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_in_dataexists(<span class="keywordtype">void</span> *spd_ptr);</div>
+<div class="line"><a id="l03700" name="l03700"></a><span class="lineno"> 3700</span> </div>
+<div class="line"><a id="l03701" name="l03701"></a><span class="lineno"> 3701</span><span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_get_version(<span class="keywordtype">void</span> *spd_ptr);</div>
+<div class="line"><a id="l03702" name="l03702"></a><span class="lineno"> 3702</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_set_version(<span class="keywordtype">void</span> *spd_ptr,</div>
+<div class="line"><a id="l03703" name="l03703"></a><span class="lineno"> 3703</span>                                           <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> version);</div>
+<div class="line"><a id="l03704" name="l03704"></a><span class="lineno"> 3704</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_sdp_init(<span class="keywordtype">void</span> *spd_ptr, <a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
+<div class="line"><a id="l03705" name="l03705"></a><span class="lineno"> 3705</span><span class="keywordtype">char</span> PROTO_ICACHE_FLASH sproto_set_data(<a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp, <span class="keywordtype">char</span> *data,</div>
+<div class="line"><a id="l03706" name="l03706"></a><span class="lineno"> 3706</span>                                        <span class="keywordtype">unsigned</span> _supla_int_t data_size,</div>
+<div class="line"><a id="l03707" name="l03707"></a><span class="lineno"> 3707</span>                                        <span class="keywordtype">unsigned</span> _supla_int_t call_id);</div>
+<div class="line"><a id="l03708" name="l03708"></a><span class="lineno"> 3708</span><a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *PROTO_ICACHE_FLASH sproto_sdp_malloc(<span class="keywordtype">void</span> *spd_ptr);</div>
+<div class="line"><a id="l03709" name="l03709"></a><span class="lineno"> 3709</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_sdp_free(<a class="code hl_struct" href="structTSuplaDataPacket.html">TSuplaDataPacket</a> *sdp);</div>
+<div class="line"><a id="l03710" name="l03710"></a><span class="lineno"> 3710</span> </div>
+<div class="line"><a id="l03711" name="l03711"></a><span class="lineno"> 3711</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_log_summary(<span class="keywordtype">void</span> *spd_ptr);</div>
+<div class="line"><a id="l03712" name="l03712"></a><span class="lineno"> 3712</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_buffer_dump(<span class="keywordtype">void</span> *spd_ptr, <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> in);</div>
+<div class="line"><a id="l03713" name="l03713"></a><span class="lineno"> 3713</span> </div>
+<div class="line"><a id="l03714" name="l03714"></a><span class="lineno"> 3714</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto_set_null_terminated_string(</div>
+<div class="line"><a id="l03715" name="l03715"></a><span class="lineno"> 3715</span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">char</span> *dest, <span class="keywordtype">unsigned</span> _supla_int_t *dest_size,</div>
+<div class="line"><a id="l03716" name="l03716"></a><span class="lineno"> 3716</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> max_size);</div>
+<div class="line"><a id="l03717" name="l03717"></a><span class="lineno"> 3717</span> </div>
+<div class="line"><a id="l03718" name="l03718"></a><span class="lineno"> 3718</span><span class="keywordtype">void</span> PROTO_ICACHE_FLASH sproto__set_null_terminated_string(</div>
+<div class="line"><a id="l03719" name="l03719"></a><span class="lineno"> 3719</span>    <span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">char</span> *dest, <span class="keywordtype">unsigned</span> _supla_int16_t *dest_size,</div>
+<div class="line"><a id="l03720" name="l03720"></a><span class="lineno"> 3720</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> max_size);</div>
+<div class="line"><a id="l03721" name="l03721"></a><span class="lineno"> 3721</span> </div>
+<div class="line"><a id="l03722" name="l03722"></a><span class="lineno"> 3722</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l03723" name="l03723"></a><span class="lineno"> 3723</span>}</div>
+<div class="line"><a id="l03724" name="l03724"></a><span class="lineno"> 3724</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l03725" name="l03725"></a><span class="lineno"> 3725</span> </div>
+<div class="line"><a id="l03726" name="l03726"></a><span class="lineno"> 3726</span><span class="preprocessor">#endif </span><span class="comment">/* supla_proto_H_ */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="astructHvacParameterFlags_html"><div class="ttname"><a href="structHvacParameterFlags.html">HvacParameterFlags</a></div><div class="ttdef"><b>Definition</b> proto.h:3141</div></div>
 <div class="ttc" id="astructTActionTriggerProperties_html"><div class="ttname"><a href="structTActionTriggerProperties.html">TActionTriggerProperties</a></div><div class="ttdef"><b>Definition</b> proto.h:801</div></div>
 <div class="ttc" id="astructTAction__HVAC__Parameters_html"><div class="ttname"><a href="structTAction__HVAC__Parameters.html">TAction_HVAC_Parameters</a></div><div class="ttdef"><b>Definition</b> proto.h:1598</div></div>
@@ -4227,7 +4228,7 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="astructTCSD__Digiglass__NewValue_html"><div class="ttname"><a href="structTCSD__Digiglass__NewValue.html">TCSD_Digiglass_NewValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2330</div></div>
 <div class="ttc" id="astructTCSD__FacadeBlindValue_html"><div class="ttname"><a href="structTCSD__FacadeBlindValue.html">TCSD_FacadeBlindValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2059</div></div>
 <div class="ttc" id="astructTCSD__RollerShutterValue_html"><div class="ttname"><a href="structTCSD__RollerShutterValue.html">TCSD_RollerShutterValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2029</div></div>
-<div class="ttc" id="astructTCSD__Valve_html"><div class="ttname"><a href="structTCSD__Valve.html">TCSD_Valve</a></div><div class="ttdef"><b>Definition</b> proto.h:3581</div></div>
+<div class="ttc" id="astructTCSD__Valve_html"><div class="ttname"><a href="structTCSD__Valve.html">TCSD_Valve</a></div><div class="ttdef"><b>Definition</b> proto.h:3582</div></div>
 <div class="ttc" id="astructTCS__ActionWithAuth_html"><div class="ttname"><a href="structTCS__ActionWithAuth.html">TCS_ActionWithAuth</a></div><div class="ttdef"><b>Definition</b> proto.h:1625</div></div>
 <div class="ttc" id="astructTCS__Action_html"><div class="ttname"><a href="structTCS__Action.html">TCS_Action</a></div><div class="ttdef"><b>Definition</b> proto.h:1608</div></div>
 <div class="ttc" id="astructTCS__ChannelBasicCfgRequest_html"><div class="ttname"><a href="structTCS__ChannelBasicCfgRequest.html">TCS_ChannelBasicCfgRequest</a></div><div class="ttdef"><b>Definition</b> proto.h:2597</div></div>
@@ -4238,8 +4239,8 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="astructTCS__GetChannelConfigRequest_html"><div class="ttname"><a href="structTCS__GetChannelConfigRequest.html">TCS_GetChannelConfigRequest</a></div><div class="ttdef"><b>Definition</b> proto.h:2862</div></div>
 <div class="ttc" id="astructTCS__GetChannelValueWithAuth_html"><div class="ttname"><a href="structTCS__GetChannelValueWithAuth.html">TCS_GetChannelValueWithAuth</a></div><div class="ttdef"><b>Definition</b> proto.h:1647</div></div>
 <div class="ttc" id="astructTCS__GetDeviceConfigRequest_html"><div class="ttname"><a href="structTCS__GetDeviceConfigRequest.html">TCS_GetDeviceConfigRequest</a></div><div class="ttdef"><b>Definition</b> proto.h:2776</div></div>
-<div class="ttc" id="astructTCS__PnClientToken_html"><div class="ttname"><a href="structTCS__PnClientToken.html">TCS_PnClientToken</a></div><div class="ttdef"><b>Definition</b> proto.h:3650</div></div>
-<div class="ttc" id="astructTCS__RegisterPnClientToken_html"><div class="ttname"><a href="structTCS__RegisterPnClientToken.html">TCS_RegisterPnClientToken</a></div><div class="ttdef"><b>Definition</b> proto.h:3666</div></div>
+<div class="ttc" id="astructTCS__PnClientToken_html"><div class="ttname"><a href="structTCS__PnClientToken.html">TCS_PnClientToken</a></div><div class="ttdef"><b>Definition</b> proto.h:3651</div></div>
+<div class="ttc" id="astructTCS__RegisterPnClientToken_html"><div class="ttname"><a href="structTCS__RegisterPnClientToken.html">TCS_RegisterPnClientToken</a></div><div class="ttdef"><b>Definition</b> proto.h:3667</div></div>
 <div class="ttc" id="astructTCS__SetChannelFunction_html"><div class="ttname"><a href="structTCS__SetChannelFunction.html">TCS_SetChannelFunction</a></div><div class="ttdef"><b>Definition</b> proto.h:2643</div></div>
 <div class="ttc" id="astructTCS__SetRegistrationEnabled_html"><div class="ttname"><a href="structTCS__SetRegistrationEnabled.html">TCS_SetRegistrationEnabled</a></div><div class="ttdef"><b>Definition</b> proto.h:2681</div></div>
 <div class="ttc" id="astructTCS__SuperUserAuthorizationRequest_html"><div class="ttname"><a href="structTCS__SuperUserAuthorizationRequest.html">TCS_SuperUserAuthorizationRequest</a></div><div class="ttdef"><b>Definition</b> proto.h:2079</div></div>
@@ -4284,15 +4285,15 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="astructTDSC__ChannelState_html"><div class="ttname"><a href="structTDSC__ChannelState.html">TDSC_ChannelState</a></div><div class="ttdef"><b>Definition</b> proto.h:2560</div></div>
 <div class="ttc" id="astructTDSC__FacadeBlindValue_html"><div class="ttname"><a href="structTDSC__FacadeBlindValue.html">TDSC_FacadeBlindValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2047</div></div>
 <div class="ttc" id="astructTDSC__RollerShutterValue_html"><div class="ttname"><a href="structTDSC__RollerShutterValue.html">TDSC_RollerShutterValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2012</div></div>
-<div class="ttc" id="astructTDS__ActionTrigger_html"><div class="ttname"><a href="structTDS__ActionTrigger.html">TDS_ActionTrigger</a></div><div class="ttdef"><b>Definition</b> proto.h:3587</div></div>
+<div class="ttc" id="astructTDS__ActionTrigger_html"><div class="ttname"><a href="structTDS__ActionTrigger.html">TDS_ActionTrigger</a></div><div class="ttdef"><b>Definition</b> proto.h:3588</div></div>
 <div class="ttc" id="astructTDS__DeviceCalCfgResult_html"><div class="ttname"><a href="structTDS__DeviceCalCfgResult.html">TDS_DeviceCalCfgResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2241</div></div>
 <div class="ttc" id="astructTDS__FirmwareUpdateParams_html"><div class="ttname"><a href="structTDS__FirmwareUpdateParams.html">TDS_FirmwareUpdateParams</a></div><div class="ttdef"><b>Definition</b> proto.h:1792</div></div>
 <div class="ttc" id="astructTDS__GetChannelConfigRequest_html"><div class="ttname"><a href="structTDS__GetChannelConfigRequest.html">TDS_GetChannelConfigRequest</a></div><div class="ttdef"><b>Definition</b> proto.h:2888</div></div>
 <div class="ttc" id="astructTDS__GetChannelIntParamsRequest_html"><div class="ttname"><a href="structTDS__GetChannelIntParamsRequest.html">TDS_GetChannelIntParamsRequest</a></div><div class="ttdef"><b>Definition</b> proto.h:2709</div></div>
 <div class="ttc" id="astructTDS__ImpulseCounter__Value_html"><div class="ttname"><a href="structTDS__ImpulseCounter__Value.html">TDS_ImpulseCounter_Value</a></div><div class="ttdef"><b>Definition</b> proto.h:1995</div></div>
-<div class="ttc" id="astructTDS__PushNotification_html"><div class="ttname"><a href="structTDS__PushNotification.html">TDS_PushNotification</a></div><div class="ttdef"><b>Definition</b> proto.h:3612</div></div>
-<div class="ttc" id="astructTDS__RegisterPushNotification_html"><div class="ttname"><a href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a></div><div class="ttdef"><b>Definition</b> proto.h:3601</div></div>
-<div class="ttc" id="astructTDS__SubdeviceDetails_html"><div class="ttname"><a href="structTDS__SubdeviceDetails.html">TDS_SubdeviceDetails</a></div><div class="ttdef"><b>Definition</b> proto.h:3627</div></div>
+<div class="ttc" id="astructTDS__PushNotification_html"><div class="ttname"><a href="structTDS__PushNotification.html">TDS_PushNotification</a></div><div class="ttdef"><b>Definition</b> proto.h:3613</div></div>
+<div class="ttc" id="astructTDS__RegisterPushNotification_html"><div class="ttname"><a href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a></div><div class="ttdef"><b>Definition</b> proto.h:3602</div></div>
+<div class="ttc" id="astructTDS__SubdeviceDetails_html"><div class="ttname"><a href="structTDS__SubdeviceDetails.html">TDS_SubdeviceDetails</a></div><div class="ttdef"><b>Definition</b> proto.h:3628</div></div>
 <div class="ttc" id="astructTDS__SuplaChannelNewValueResult_html"><div class="ttname"><a href="structTDS__SuplaChannelNewValueResult.html">TDS_SuplaChannelNewValueResult</a></div><div class="ttdef"><b>Definition</b> proto.h:1177</div></div>
 <div class="ttc" id="astructTDS__SuplaDeviceChannelExtendedValue_html"><div class="ttname"><a href="structTDS__SuplaDeviceChannelExtendedValue.html">TDS_SuplaDeviceChannelExtendedValue</a></div><div class="ttdef"><b>Definition</b> proto.h:1145</div></div>
 <div class="ttc" id="astructTDS__SuplaDeviceChannelValue__B_html"><div class="ttname"><a href="structTDS__SuplaDeviceChannelValue__B.html">TDS_SuplaDeviceChannelValue_B</a></div><div class="ttdef"><b>Definition</b> proto.h:1128</div></div>
@@ -4343,7 +4344,7 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="astructTSC__ImpulseCounter__Value_html"><div class="ttname"><a href="structTSC__ImpulseCounter__Value.html">TSC_ImpulseCounter_Value</a></div><div class="ttdef"><b>Definition</b> proto.h:2075</div></div>
 <div class="ttc" id="astructTSC__OAuthTokenRequestResult_html"><div class="ttname"><a href="structTSC__OAuthTokenRequestResult.html">TSC_OAuthTokenRequestResult</a></div><div class="ttdef"><b>Definition</b> proto.h:1825</div></div>
 <div class="ttc" id="astructTSC__OAuthToken_html"><div class="ttname"><a href="structTSC__OAuthToken.html">TSC_OAuthToken</a></div><div class="ttdef"><b>Definition</b> proto.h:1818</div></div>
-<div class="ttc" id="astructTSC__RegisterPnClientTokenResult_html"><div class="ttname"><a href="structTSC__RegisterPnClientTokenResult.html">TSC_RegisterPnClientTokenResult</a></div><div class="ttdef"><b>Definition</b> proto.h:3671</div></div>
+<div class="ttc" id="astructTSC__RegisterPnClientTokenResult_html"><div class="ttname"><a href="structTSC__RegisterPnClientTokenResult.html">TSC_RegisterPnClientTokenResult</a></div><div class="ttdef"><b>Definition</b> proto.h:3672</div></div>
 <div class="ttc" id="astructTSC__SetChannelFunctionResult_html"><div class="ttname"><a href="structTSC__SetChannelFunctionResult.html">TSC_SetChannelFunctionResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2648</div></div>
 <div class="ttc" id="astructTSC__SetRegistrationEnabledResult_html"><div class="ttname"><a href="structTSC__SetRegistrationEnabledResult.html">TSC_SetRegistrationEnabledResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2688</div></div>
 <div class="ttc" id="astructTSC__SuperUserAuthorizationResult_html"><div class="ttname"><a href="structTSC__SuperUserAuthorizationResult.html">TSC_SuperUserAuthorizationResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2084</div></div>
@@ -4362,7 +4363,7 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="astructTSC__SuplaChannelPack_html"><div class="ttname"><a href="structTSC__SuplaChannelPack.html">TSC_SuplaChannelPack</a></div><div class="ttdef"><b>Definition</b> proto.h:1258</div></div>
 <div class="ttc" id="astructTSC__SuplaChannelRelationPack_html"><div class="ttname"><a href="structTSC__SuplaChannelRelationPack.html">TSC_SuplaChannelRelationPack</a></div><div class="ttdef"><b>Definition</b> proto.h:1486</div></div>
 <div class="ttc" id="astructTSC__SuplaChannelRelation_html"><div class="ttname"><a href="structTSC__SuplaChannelRelation.html">TSC_SuplaChannelRelation</a></div><div class="ttdef"><b>Definition</b> proto.h:1479</div></div>
-<div class="ttc" id="astructTSC__SuplaChannelStatePack_html"><div class="ttname"><a href="structTSC__SuplaChannelStatePack.html">TSC_SuplaChannelStatePack</a></div><div class="ttdef"><b>Definition</b> proto.h:3675</div></div>
+<div class="ttc" id="astructTSC__SuplaChannelStatePack_html"><div class="ttname"><a href="structTSC__SuplaChannelStatePack.html">TSC_SuplaChannelStatePack</a></div><div class="ttdef"><b>Definition</b> proto.h:3676</div></div>
 <div class="ttc" id="astructTSC__SuplaChannelValuePack__B_html"><div class="ttname"><a href="structTSC__SuplaChannelValuePack__B.html">TSC_SuplaChannelValuePack_B</a></div><div class="ttdef"><b>Definition</b> proto.h:1221</div></div>
 <div class="ttc" id="astructTSC__SuplaChannelValuePack_html"><div class="ttname"><a href="structTSC__SuplaChannelValuePack.html">TSC_SuplaChannelValuePack</a></div><div class="ttdef"><b>Definition</b> proto.h:1211</div></div>
 <div class="ttc" id="astructTSC__SuplaChannelValue__B_html"><div class="ttname"><a href="structTSC__SuplaChannelValue__B.html">TSC_SuplaChannelValue_B</a></div><div class="ttdef"><b>Definition</b> proto.h:1194</div></div>
@@ -4416,7 +4417,7 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="astructTThermostat__Value_html"><div class="ttname"><a href="structTThermostat__Value.html">TThermostat_Value</a></div><div class="ttdef"><b>Definition</b> proto.h:2506</div></div>
 <div class="ttc" id="astructTTimerState__ExtendedValue_html"><div class="ttname"><a href="structTTimerState__ExtendedValue.html">TTimerState_ExtendedValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2601</div></div>
 <div class="ttc" id="astructTValve__SensorInfo_html"><div class="ttname"><a href="structTValve__SensorInfo.html">TValve_SensorInfo</a></div><div class="ttdef"><b>Definition</b> proto.h:3481</div></div>
-<div class="ttc" id="astructTValve__Value_html"><div class="ttname"><a href="structTValve__Value.html">TValve_Value</a></div><div class="ttdef"><b>Definition</b> proto.h:3570</div></div>
+<div class="ttc" id="astructTValve__Value_html"><div class="ttname"><a href="structTValve__Value.html">TValve_Value</a></div><div class="ttdef"><b>Definition</b> proto.h:3571</div></div>
 <div class="ttc" id="astructTWeeklyScheduleProgram_html"><div class="ttname"><a href="structTWeeklyScheduleProgram.html">TWeeklyScheduleProgram</a></div><div class="ttdef"><b>Definition</b> proto.h:2974</div></div>
 <div class="ttc" id="astructtimeval__compat_html"><div class="ttname"><a href="structtimeval__compat.html">timeval_compat</a></div><div class="ttdef"><b>Definition</b> proto.h:683</div></div>
 </div><!-- fragment --></div><!-- contents -->

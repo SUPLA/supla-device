@@ -1850,6 +1850,20 @@ void Channel::setValveManuallyClosedFlag(bool active) {
                    : ON_VALVE_MANUALLY_CLOSED_INACTIVE);
 }
 
+void Channel::setValveMotorProblemFlag(bool active) {
+  auto valve = reinterpret_cast<TValve_Value *>(value);
+  if (isValveMotorProblemFlagActive() == active) {
+    return;
+  }
+  if (active) {
+    valve->flags |= SUPLA_VALVE_FLAG_MOTOR_PROBLEM;
+  } else {
+    valve->flags &= ~SUPLA_VALVE_FLAG_MOTOR_PROBLEM;
+  }
+  setSendValue();
+  runAction(active ? ON_MOTOR_PROBLEM_ACTIVE : ON_MOTOR_PROBLEM_INACTIVE);
+}
+
 uint8_t Channel::getValveOpenState() const {
   auto valve = reinterpret_cast<const TValve_Value *>(value);
   if (getChannelType() == SUPLA_CHANNELTYPE_VALVE_OPENCLOSE) {
@@ -1874,6 +1888,11 @@ bool Channel::isValveFloodingFlagActive() const {
 bool Channel::isValveManuallyClosedFlagActive() const {
   auto valve = reinterpret_cast<const TValve_Value *>(value);
   return valve->flags & SUPLA_VALVE_FLAG_MANUALLY_CLOSED;
+}
+
+bool Channel::isValveMotorProblemFlagActive() const {
+  auto valve = reinterpret_cast<const TValve_Value *>(value);
+  return valve->flags & SUPLA_VALVE_FLAG_MOTOR_PROBLEM;
 }
 
 void Channel::onRegistered() {

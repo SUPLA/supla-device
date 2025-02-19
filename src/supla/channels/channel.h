@@ -110,6 +110,13 @@ class Channel : public LocalAction {
   void setValveManuallyClosedFlag(bool active);
 
   /**
+   * Sets the motor problem flag of the Valve channel.
+   *
+   * @param active
+   */
+  void setValveMotorProblemFlag(bool active);
+
+  /**
    * Returns the open state (open/close) of the Valve channel.
    *
    * @return 0-100 range, 0 = closed, 100 = open
@@ -136,6 +143,13 @@ class Channel : public LocalAction {
    * @return true if manually closed flag is active
    */
   bool isValveManuallyClosedFlagActive() const;
+
+  /**
+   * Returns the motor problem flag of the Valve channel.
+   *
+   * @return true if motor problem flag is active
+   */
+  bool isValveMotorProblemFlagActive() const;
 
   double getValueDouble();
   double getValueDoubleFirst();

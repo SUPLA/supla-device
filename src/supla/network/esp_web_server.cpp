@@ -71,13 +71,16 @@ void postHandler() {
   SUPLA_LOG_DEBUG("SERVER: post request");
   if (serverInstance) {
     if (serverInstance->handlePost()) {
-      // rtb/reboot == 1 is send by mobile applications. After such message
-      // they disconnect from device's Wi-Fi, however ESP32 WebServer
-      // implementation will try to send each chunk of HTML from getHanlder
-      // with very long timeout. In order to prevent app from hanging, we
-      // skip getHandler in such case.
+      // rbt/reboot == 1 is sent by mobile applications. After such a message
+      // they disconnect from device's Wi-Fi, however, ESP32 WebServer
+      // implementation will try to send each chunk of HTML from getHandler
+      // with a very long timeout. In order to prevent the app from hanging,
+      // we skip getHandler in such a case.
       if (reboot != 1) {
-        getHandler();
+        // Sending redirect after POST to prevent another POST on page refresh
+        serverInstance->getServerPtr()->sendHeader("Location", "/", true);
+        serverInstance->getServerPtr()->send(
+            303, "text/plain", "Redirecting...");
       }
     }
   }
@@ -87,7 +90,9 @@ void postBetaHandler() {
   SUPLA_LOG_DEBUG("SERVER: beta post request");
   if (serverInstance) {
     if (serverInstance->handlePost(true)) {
-      getBetaHandler();
+      serverInstance->getServerPtr()->sendHeader("Location", "/beta", true);
+      serverInstance->getServerPtr()->send(
+          303, "text/plain", "Redirecting...");
     }
   }
 }

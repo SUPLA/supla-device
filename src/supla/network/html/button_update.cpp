@@ -1,6 +1,3 @@
-#include "button_update.h"
-#include <supla/network/web_sender.h>
-
 /*
  Copyright (C) Petione for AC SOFTWARE SP. Z O.O.
 
@@ -16,7 +13,9 @@
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-
+#ifndef ARDUINO_ARCH_AVR  // Wykluczenie dla platformy AVR (Arduino Mega)
+#include "button_update.h"
+#include <supla/network/web_sender.h>
 // Include the full header for EspWebServer
 #include <supla/network/esp_web_server.h>
 
@@ -45,3 +44,4 @@ void ButtonUpdate::send(Supla::WebSender* sender) {
        "UPDATE"
        "</button>"));
 }
+#endif

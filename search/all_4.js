@@ -18,5 +18,6 @@ var searchData=
   ['buttonmulticlickparameters_15',['ButtonMulticlickParameters',['../classSupla_1_1Html_1_1ButtonMulticlickParameters.html',1,'Supla::Html']]],
   ['buttonrefresh_16',['ButtonRefresh',['../classButtonRefresh.html',1,'ButtonRefresh'],['../classSupla_1_1Html_1_1ButtonRefresh.html',1,'Supla::Html::ButtonRefresh']]],
   ['buttonstate_17',['ButtonState',['../classButtonState.html',1,'ButtonState'],['../classSupla_1_1Control_1_1ButtonState.html',1,'Supla::Control::ButtonState']]],
-  ['buttontypeparameters_18',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]]
+  ['buttontypeparameters_18',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]],
+  ['buttonupdate_19',['ButtonUpdate',['../classButtonUpdate.html',1,'ButtonUpdate'],['../classSupla_1_1Html_1_1ButtonUpdate.html',1,'Supla::Html::ButtonUpdate']]]
 ];

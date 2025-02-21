@@ -1,6 +1,3 @@
-#ifndef SRC_SUPLA_NETWORK_HTML_BUTTON_UPDATE_H_
-#define SRC_SUPLA_NETWORK_HTML_BUTTON_UPDATE_H_
-
 /*
  Copyright (C) Petione for AC SOFTWARE SP. Z O.O.
 
@@ -17,6 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef SRC_SUPLA_NETWORK_HTML_BUTTON_UPDATE_H_
+#define SRC_SUPLA_NETWORK_HTML_BUTTON_UPDATE_H_
 #include <supla/network/html_element.h>
 
 // Forward declaration of EspWebServer class
@@ -35,13 +34,12 @@ namespace Html {
 
 class ButtonUpdate : public HtmlElement {
  private:
-  Supla::EspWebServer* server =
-      nullptr;  // Pointer to the server, initialized to nullptr
+  Supla::EspWebServer* server = nullptr;  // Pointer to the server, initialized to nullptr
 
 #ifdef ARDUINO_ARCH_ESP32
-  HTTPUpdateServer* httpUpdater;
+  HTTPUpdateServer* httpUpdater = nullptr;
 #else
-  ESP8266HTTPUpdateServer* httpUpdater;
+  ESP8266HTTPUpdateServer* httpUpdater = nullptr;
 #endif
 
  public:

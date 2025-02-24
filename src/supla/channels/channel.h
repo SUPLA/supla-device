@@ -352,7 +352,7 @@ class Channel : public LocalAction {
   // registration parameter
   ChannelType channelType = ChannelType::NOT_SET;
 
-  uint8_t offline = 0;
+  uint8_t state = 0;
   uint8_t defaultIcon = 0;
   uint8_t subDeviceId = 0;
 

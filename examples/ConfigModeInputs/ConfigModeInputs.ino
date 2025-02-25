@@ -71,7 +71,6 @@ Supla::LittleFsConfig configSupla;
 
 Supla::Device::StatusLed statusLed(STATUS_LED_GPIO, true); // inverted state
 
-
 // Those tags are used for HTML element names and for keys to access parameter
 // values in Config storage class. Max length of those values is 15 chars.
 const char PARAM1[] = "param1";

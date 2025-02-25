@@ -37,17 +37,16 @@ Supla::LittleFsConfig configSupla;
 Supla::Device::StatusLed statusLed(STATUS_LED_GPIO, true); // inverted state
 Supla::EspWebServer suplaServer;
 
-// HTML www component (they appear in sections according to creation
-// sequence)
-Supla::Html::DeviceInfo htmlDeviceInfo(&SuplaDevice);
-Supla::Html::WifiParameters htmlWifi;
-Supla::Html::ProtocolParameters htmlProto;
-Supla::Html::StatusLedParameters htmlStatusLed;
-
 Supla::Sensor::GeneralPurposeMeasurement *gpm = nullptr;
 
 void setup() {
   Serial.begin(115200);
+
+  // HTML www component
+  new Supla::Html::DeviceInfo htmlDeviceInfo(&SuplaDevice);
+  new Supla::Html::WifiParameters htmlWifi;
+  new Supla::Html::ProtocolParameters htmlProto;
+  new Supla::Html::StatusLedParameters htmlStatusLed;
 
   // Channels configuration
   // Channel #0 General Purpose Measurement

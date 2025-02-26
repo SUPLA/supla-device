@@ -425,7 +425,7 @@ void Supla::messageReceived(void *srpc,
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
           auto element = Supla::Element::getElementByChannelNumber(
               request->ChannelNumber);
-          SUPLA_LOG_INFO("Received SetChannelConfig for channel %d, function %d"
+          SUPLA_LOG_INFO("Channel[%d] Received SetChannelConfig: fnc %d"
               ", config type %d, config size %d", request->ChannelNumber,
               request->Func, request->ConfigType, request->ConfigSize);
 
@@ -453,7 +453,8 @@ void Supla::messageReceived(void *srpc,
                 "Error: couldn't find element for a requested channel [%d]",
                 request->ChannelNumber);
           }
-          SUPLA_LOG_INFO("Sending channel config result %s (%d)",
+          SUPLA_LOG_INFO("Channel[%d] Sending SetChannelConfigResult %s (%d)",
+              request->ChannelNumber,
               Supla::Protocol::SuplaSrpc::configResultToCStr(result.Result),
               result.Result);
           srpc_ds_async_set_channel_config_result(srpc, &result);
@@ -501,7 +502,7 @@ void Supla::messageReceived(void *srpc,
         if (request) {
           auto element = Supla::Element::getElementByChannelNumber(
               request->ChannelNumber);
-          SUPLA_LOG_INFO("Received ChannelConfigFinished for channel [%d]",
+          SUPLA_LOG_INFO("Channel[%d] Received ChannelConfigFinished",
               request->ChannelNumber);
 
           if (element) {
@@ -515,7 +516,7 @@ void Supla::messageReceived(void *srpc,
         break;
       }
       case SUPLA_SCD_CALL_SET_CHANNEL_CAPTION_RESULT:
-        SUPLA_LOG_DEBUG("Receieved setChannelCaptionResult for channel [%d]",
+        SUPLA_LOG_DEBUG("Channel[%d] Receieved setChannelCaptionResult",
                         rd.data.scd_set_caption_result->ChannelNumber);
         break;
       default:

@@ -1421,7 +1421,8 @@ void Channel::setStateFirmwareUpdateOngoing() {
 
 bool Channel::isStateOnline() const {
   return state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE ||
-         state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
+         state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE ||
+         state == SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING;
 }
 
 bool Channel::isStateOnlineAndNotAvailable() const {

@@ -61,13 +61,15 @@ class Channel : public LocalAction {
   void setNewValue(const TDSC_RollerShutterValue &value);
   bool setNewValue(const char *newValue);
 
-  void setOffline();
-  void setOnline();
-  void setOnlineAndNotAvailable();
-  void setOfflineRemoteWakeupNotSupported();
-  bool isOnline() const;
-  bool isOnlineAndNotAvailable() const;
-  bool isOfflineRemoteWakeupNotSupported() const;
+  void setStateOffline();
+  void setStateOnline();
+  void setStateOnlineAndNotAvailable();
+  void setStateFirmwareUpdateOngoing();
+  void setStateOfflineRemoteWakeupNotSupported();
+  bool isStateOnline() const;
+  bool isStateOnlineAndNotAvailable() const;
+  bool isStateOfflineRemoteWakeupNotSupported() const;
+  bool isStateFirmwareUpdateOngoing() const;
 
   // Sets container channel value. fillLevel should contain 0-100 value, any
   // other value will be set to "unknown" value.

@@ -214,9 +214,15 @@ int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getConfiguredHumid
 <tr class="memitem:a37fe739927b270a3adfc6e17792e0aec" id="r_a37fe739927b270a3adfc6e17792e0aec"><td class="memItemLeft" align="right" valign="top"><a id="a37fe739927b270a3adfc6e17792e0aec" name="a37fe739927b270a3adfc6e17792e0aec"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>applyCorrectionsAndStoreIt</b> (int32_t temperatureCorrection, int32_t humidityCorrection, bool local=false)</td></tr>
 <tr class="separator:a37fe739927b270a3adfc6e17792e0aec"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a71a51c164460d360c9356e0da82dafc3" id="r_a71a51c164460d360c9356e0da82dafc3"><td class="memItemLeft" align="right" valign="top"><a id="a71a51c164460d360c9356e0da82dafc3" name="a71a51c164460d360c9356e0da82dafc3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setApplyCorrections</b> (bool applyCorrections)</td></tr>
+<tr class="memitem:a71a51c164460d360c9356e0da82dafc3" id="r_a71a51c164460d360c9356e0da82dafc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a71a51c164460d360c9356e0da82dafc3">setApplyCorrections</a> (bool <a class="el" href="#a1c2119eb738ac047405a2337f3339e3c">applyCorrections</a>)</td></tr>
+<tr class="memdesc:a71a51c164460d360c9356e0da82dafc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether correction should be applied or not.  <br /></td></tr>
 <tr class="separator:a71a51c164460d360c9356e0da82dafc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4d9b661a8d334fa5ba1003f9985c207" id="r_ac4d9b661a8d334fa5ba1003f9985c207"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac4d9b661a8d334fa5ba1003f9985c207">setMinMaxAllowedTemperatureAdjustment</a> (int32_t minMax)</td></tr>
+<tr class="memdesc:ac4d9b661a8d334fa5ba1003f9985c207"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set minimum and maximum allowed temperature adjustment.  <br /></td></tr>
+<tr class="separator:ac4d9b661a8d334fa5ba1003f9985c207"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a99f22200e62d4e05a871e38cce032bff" id="r_a99f22200e62d4e05a871e38cce032bff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a99f22200e62d4e05a871e38cce032bff">setMinMaxAllowedHumidityAdjustment</a> (int32_t minMax)</td></tr>
+<tr class="memdesc:a99f22200e62d4e05a871e38cce032bff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set minimum and maximum allowed humidity adjustment.  <br /></td></tr>
+<tr class="separator:a99f22200e62d4e05a871e38cce032bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>ChannelElement</b> (int channelNumber=-1)</td></tr>
@@ -414,8 +420,15 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastReadTime</b> 
 <tr class="memitem:a20b54c15921b972b17f5f19f36cf2ea8" id="r_a20b54c15921b972b17f5f19f36cf2ea8"><td class="memItemLeft" align="right" valign="top"><a id="a20b54c15921b972b17f5f19f36cf2ea8" name="a20b54c15921b972b17f5f19f36cf2ea8"></a>
 uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>refreshIntervalMs</b> = 10000</td></tr>
 <tr class="separator:a20b54c15921b972b17f5f19f36cf2ea8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78163b3d2507ef38d60dbda3ddf89cf7" id="r_a78163b3d2507ef38d60dbda3ddf89cf7"><td class="memItemLeft" align="right" valign="top">int16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a78163b3d2507ef38d60dbda3ddf89cf7">minMaxAllowedTemperatureAdjustment</a> = 0</td></tr>
+<tr class="memdesc:a78163b3d2507ef38d60dbda3ddf89cf7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum and maximum allowed temperature adjustment in 0.1 degree C.  <br /></td></tr>
+<tr class="separator:a78163b3d2507ef38d60dbda3ddf89cf7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac6847a7deacd24116de3b3fe76866fff" id="r_ac6847a7deacd24116de3b3fe76866fff"><td class="memItemLeft" align="right" valign="top">int16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac6847a7deacd24116de3b3fe76866fff">minMaxAllowedHumidityAdjustment</a> = 0</td></tr>
+<tr class="memdesc:ac6847a7deacd24116de3b3fe76866fff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum and maximum allowed humidity adjustment in 0.1 RH.  <br /></td></tr>
+<tr class="separator:ac6847a7deacd24116de3b3fe76866fff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c2119eb738ac047405a2337f3339e3c" id="r_a1c2119eb738ac047405a2337f3339e3c"><td class="memItemLeft" align="right" valign="top"><a id="a1c2119eb738ac047405a2337f3339e3c" name="a1c2119eb738ac047405a2337f3339e3c"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>applyCorrections</b> = true</td></tr>
+<tr class="memdesc:a1c2119eb738ac047405a2337f3339e3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether correction should be applied by SD. <br /></td></tr>
 <tr class="separator:a1c2119eb738ac047405a2337f3339e3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aae2e78ba9cd3c3c4d5017223076af9b6 inherit pro_attribs_classSupla_1_1ChannelElement" id="r_aae2e78ba9cd3c3c4d5017223076af9b6"><td class="memItemLeft" align="right" valign="top">
@@ -427,6 +440,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>applyCorrections</b> 
 <tr class="memitem:a84632dd518b5ca2288ff80eb0463ab59 inherit pro_attribs_classSupla_1_1ElementWithChannelActions" id="r_a84632dd518b5ca2288ff80eb0463ab59"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>configFinishedReceived</b> = false</td></tr>
 <tr class="separator:a84632dd518b5ca2288ff80eb0463ab59 inherit pro_attribs_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a246335827d697dd0d537a3a5decd292a inherit pro_attribs_classSupla_1_1ElementWithChannelActions" id="r_a246335827d697dd0d537a3a5decd292a"><td class="memItemLeft" align="right" valign="top">
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>setChannelConfigAttempts</b> = 0</td></tr>
+<tr class="separator:a246335827d697dd0d537a3a5decd292a inherit pro_attribs_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1Element')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:a2123c86524145b71a5fad034147dbf6f inherit pro_attribs_classSupla_1_1Element" id="r_a2123c86524145b71a5fad034147dbf6f"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classSupla_1_1Element.html">Element</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>nextPtr</b> = nullptr</td></tr>
@@ -670,6 +686,135 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <p>Removes all configration data related to the element from Storage::Config. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a0230d0fb743c8cfff02ce21c6cfae360">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a71a51c164460d360c9356e0da82dafc3" name="a71a51c164460d360c9356e0da82dafc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a71a51c164460d360c9356e0da82dafc3">&#9670;&#160;</a></span>setApplyCorrections()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::ThermHygroMeter::setApplyCorrections </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>applyCorrections</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set whether correction should be applied or not. </p>
+<p>By default temperature and humidity corrections are applied on <a class="el" href="classSupla_1_1Channel.html">Channel</a> level, so raw value is read from sensor, then it is corrected and send to server. However correction may be applied by a sensor device itself. In this case, correciton is send to that device and value read from sensor is already corrected.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">applyCorrections</td><td>true if correction should be applied by SD </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a99f22200e62d4e05a871e38cce032bff" name="a99f22200e62d4e05a871e38cce032bff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a99f22200e62d4e05a871e38cce032bff">&#9670;&#160;</a></span>setMinMaxAllowedHumidityAdjustment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::ThermHygroMeter::setMinMaxAllowedHumidityAdjustment </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>minMax</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set minimum and maximum allowed humidity adjustment. </p>
+<p>Value 0 means Cloud default +- 10.0.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">minMax</td><td>minimum and maximum allowed humidity adjustment in 0.1 RH. Allowed range: 0 (default), 1..500 (0.1 .. 50.0). I.e. value 50 means +- 5.0 RH </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ac4d9b661a8d334fa5ba1003f9985c207" name="ac4d9b661a8d334fa5ba1003f9985c207"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac4d9b661a8d334fa5ba1003f9985c207">&#9670;&#160;</a></span>setMinMaxAllowedTemperatureAdjustment()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::ThermHygroMeter::setMinMaxAllowedTemperatureAdjustment </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>minMax</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set minimum and maximum allowed temperature adjustment. </p>
+<p>Value 0 means Cloud default +- 10.0.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">minMax</td><td>minimum and maximum allowed temperature adjustment in 0.1 degree C. Allowed range: 0 (default), 1..200 (0.1 .. 20.0). I.e. value 50 means +- 5.0 degree C </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="ac6847a7deacd24116de3b3fe76866fff" name="ac6847a7deacd24116de3b3fe76866fff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac6847a7deacd24116de3b3fe76866fff">&#9670;&#160;</a></span>minMaxAllowedHumidityAdjustment</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int16_t Supla::Sensor::ThermHygroMeter::minMaxAllowedHumidityAdjustment = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Minimum and maximum allowed humidity adjustment in 0.1 RH. </p>
+<p>Value 0 means Cloud default +- 10.0. </p>
+
+</div>
+</div>
+<a id="a78163b3d2507ef38d60dbda3ddf89cf7" name="a78163b3d2507ef38d60dbda3ddf89cf7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a78163b3d2507ef38d60dbda3ddf89cf7">&#9670;&#160;</a></span>minMaxAllowedTemperatureAdjustment</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int16_t Supla::Sensor::ThermHygroMeter::minMaxAllowedTemperatureAdjustment = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Minimum and maximum allowed temperature adjustment in 0.1 degree C. </p>
+<p>Value 0 means Cloud default +- 10.0. </p>
 
 </div>
 </div>

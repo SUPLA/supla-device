@@ -12,8 +12,9 @@ var searchData=
   ['and_20esp8285_9',['ESP8266 and ESP8285',['../index.html#autotoc_md5',1,'']]],
   ['and_20older_10',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md13',1,'']]],
   ['applychannelconfig_11',['applyChannelConfig',['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a9fab0dcd9b4291cbf8f2c2f1989a7684',1,'Supla::Sensor::GeneralPurposeChannelBase::applyChannelConfig()'],['../classSupla_1_1Sensor_1_1GeneralPurposeMeter.html#a2a966a3812e84943fe73f0b7689e98aa',1,'Supla::Sensor::GeneralPurposeMeter::applyChannelConfig()'],['../classGeneralPurposeChannelBase.html#a9fab0dcd9b4291cbf8f2c2f1989a7684',1,'GeneralPurposeChannelBase::applyChannelConfig()'],['../classGeneralPurposeMeter.html#a2a966a3812e84943fe73f0b7689e98aa',1,'GeneralPurposeMeter::applyChannelConfig()']]],
-  ['arduino_20ide_12',['SuplaDevice library installation for Arduino IDE',['../index.html#autotoc_md7',1,'']]],
-  ['arduino_20mega_13',['Arduino Mega',['../index.html#autotoc_md4',1,'']]],
-  ['atchannel_14',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
-  ['autolock_15',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
+  ['applycorrections_12',['applyCorrections',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a1c2119eb738ac047405a2337f3339e3c',1,'Supla::Sensor::ThermHygroMeter']]],
+  ['arduino_20ide_13',['SuplaDevice library installation for Arduino IDE',['../index.html#autotoc_md7',1,'']]],
+  ['arduino_20mega_14',['Arduino Mega',['../index.html#autotoc_md4',1,'']]],
+  ['atchannel_15',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
+  ['autolock_16',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
 ];

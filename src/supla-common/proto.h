@@ -623,7 +623,9 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNEL_FLAG_RF_BRIDGE 0x0004     // ver. >= 12 DEPRECATED
 #define SUPLA_CHANNEL_FLAG_OCR 0x0008           // ver. >= 26
 #define SUPLA_CHANNEL_FLAG_FLOOD_SENSORS_SUPPORTED 0x0010  // ver. >= 27
-// Free bits for future use: 0x0020, 0x0040
+#define SUPLA_CHANNEL_FLAG_FILL_LEVEL_REPORTING_IN_FULL_RANGE \
+  0x0020  // ver. >= 27
+// Free bits for future use: 0x0040
 #define SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS 0x0080  // ver. >= 17
 #define SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED 0x0100  // ver. >= 21
 // Free bits for future use:  0x0200, 0x0400, 0x0800
@@ -883,15 +885,15 @@ typedef struct {
 } TDS_SuplaDeviceChannel_C;  // ver. >= 10
 
 // Channel state flag values:
-#define SUPLA_CHANNEL_STATE_FLAG_ONLINE 0
-#define SUPLA_CHANNEL_STATE_FLAG_OFFLINE 1
-#define SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE 2
-#define SUPLA_CHANNEL_STATE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED 3
-#define SUPLA_CHANNEL_STATE_FLAG_FIRMWARE_UPDATE_ONGOING 4
+#define SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE 0
+#define SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE 1
+#define SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE 2
+#define SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED 3
+#define SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING 4
 
 // Update below MAX value when new state is added to the list
-#define SUPLA_CHANNEL_STATE_FLAG_MAX                                           \
-  SUPLA_CHANNEL_STATE_FLAG_FIRMWARE_UPDATE_ONGOING
+#define SUPLA_CHANNEL_OFFLINE_FLAG_MAX \
+  SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING
 
 // Only in ONLINE state, ValidityTimeSec and value variables are used.
 // OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED - device doesn't support remote wakeup,
@@ -901,12 +903,12 @@ typedef struct {
 // compared to state flag values):
 #define SUPLA_CHANNEL_ONLINE_FLAG_ONLINE 1
 #define SUPLA_CHANNEL_ONLINE_FLAG_OFFLINE 0
-#define SUPLA_CHANNEL_ONLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE                     \
-  SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE
-#define SUPLA_CHANNEL_ONLINE_FLAG_STATE_REMOTE_WAKEUP_NOT_SUPPORTED          \
-  SUPLA_CHANNEL_STATE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED
-#define SUPLA_CHANNEL_ONLINE_FLAG_FIRMWARE_UPDATE_ONGOING                      \
-  SUPLA_CHANNEL_STATE_FLAG_FIRMWARE_UPDATE_ONGOING
+#define SUPLA_CHANNEL_ONLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE \
+  SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE
+#define SUPLA_CHANNEL_ONLINE_FLAG_STATE_REMOTE_WAKEUP_NOT_SUPPORTED \
+  SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED
+#define SUPLA_CHANNEL_ONLINE_FLAG_FIRMWARE_UPDATE_ONGOING \
+  SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING
 
 typedef struct {
   // device -> server
@@ -948,7 +950,8 @@ typedef struct {
   _supla_int_t Default;
   _supla_int64_t Flags;
 
-  unsigned char State;  // see SUPLA_CHANNEL_STATE_FLAG_
+  unsigned char Offline;  // see SUPLA_CHANNEL_OFFLINE_FLAG_
+
   unsigned _supla_int_t ValueValidityTimeSec;
 
   union {
@@ -1144,7 +1147,8 @@ typedef struct {
   // device -> server
 
   unsigned char ChannelNumber;
-  unsigned char State;  // see SUPLA_CHANNEL_STATE_FLAG_
+  unsigned char Offline;  // see SUPLA_CHANNEL_OFFLINE_FLAG_
+
   unsigned _supla_int_t ValidityTimeSec;
   char value[SUPLA_CHANNELVALUE_SIZE];
 } TDS_SuplaDeviceChannelValue_C;  // v. >= 12
@@ -3027,7 +3031,7 @@ typedef struct {
   _supla_int16_t MinTemperatureAdjustment;  // * 0.01
   _supla_int16_t MaxTemperatureAdjustment;  // * 0.01
   _supla_int16_t MinHumidityAdjustment;     // * 0.01
-  _supla_int16_t MaxHumidityAdjustment;      // * 0.01
+  _supla_int16_t MaxHumidityAdjustment;     // * 0.01
   unsigned char Reserved[27 - 4 * sizeof(_supla_int16_t)];
 } TChannelConfig_TemperatureAndHumidity;  // v. >= 21
 

@@ -93,9 +93,9 @@ void Supla::Control::CmdRelay::iterateAlways() {
     lastReadTime = millis();
     channel.setNewValue(isOn());
     if (isOffline()) {
-      channel.setOffline();
+      channel.setStateOffline();
     } else {
-      channel.setOnline();
+      channel.setStateOnline();
     }
   }
 }

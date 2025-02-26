@@ -80,9 +80,9 @@ void Supla::Control::CustomRelay::iterateAlways() {
     lastReadTime = millis();
     channel.setNewValue(isOn());
     if (isOffline()) {
-      channel.setOffline();
+      channel.setStateOffline();
     } else {
-      channel.setOnline();
+      channel.setStateOnline();
     }
   }
 }

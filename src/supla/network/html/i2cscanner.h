@@ -49,7 +49,6 @@ class I2Cscanner : public Supla::HtmlElement {
     }
     sender->send("</span>");
   }
-
 };  // I2Cscanner
 
 };  // namespace Html

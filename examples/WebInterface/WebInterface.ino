@@ -71,10 +71,10 @@ void setup() {
   Serial.begin(115200);
 
   // HTML www component
-  new Supla::Html::DeviceInfo htmlDeviceInfo(&SuplaDevice);
-  new Supla::Html::WifiParameters htmlWifi;
-  new Supla::Html::ProtocolParameters htmlProto;
-  new Supla::Html::StatusLedParameters htmlStatusLed;
+  new Supla::Html::DeviceInfo(&SuplaDevice);
+  new Supla::Html::WifiParameters;
+  new Supla::Html::ProtocolParameters;
+  new Supla::Html::StatusLedParameters;
 
   // Channels configuration
   // CH 0 - Roller shutter

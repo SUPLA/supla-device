@@ -91,20 +91,21 @@ void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
     return;
   }
 
-  if (applyCorrections) {
-    // set temperature correction
-    auto cfgTempCorrection = getConfiguredTemperatureCorrection();
-    double correction = 1.0 * cfgTempCorrection / 10.0;
-    getChannel()->setCorrection(correction);
-    SUPLA_LOG_DEBUG("Channel[%d] temperature correction %.2f",
-        getChannelNumber(), correction);
+  // temperature correction
+  auto cfgTempCorrection = getConfiguredTemperatureCorrection();
+  double correction = 1.0 * cfgTempCorrection / 10.0;
+  SUPLA_LOG_DEBUG("Channel[%d] temperature correction %.2f",
+                  getChannelNumber(),
+                  correction);
+  // humidity correction
+  auto cfgHumCorrection = getConfiguredHumidityCorrection();
+  correction = 1.0 * cfgHumCorrection / 10.0;
+  SUPLA_LOG_DEBUG(
+      "Channel[%d] humidity correction %.2f", getChannelNumber(), correction);
 
-    // set humidity correction
-    auto cfgHumCorrection = getConfiguredHumidityCorrection();
-    correction = 1.0 * cfgHumCorrection / 10.0;
+  if (applyCorrections) {
+    getChannel()->setCorrection(correction);
     getChannel()->setCorrection(correction, true);
-    SUPLA_LOG_DEBUG("Channel[%d] humidity correction %.2f",
-        getChannelNumber(), correction);
   }
 
   // load config changed offline flags

@@ -265,7 +265,7 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
         SUPLA_LOG_WARNING(
             "Channel[%d] SetChannelConfig failed 2 times, giving up",
             getChannelNumber());
-        channelConfigState = Supla::ChannelConfigState::SetChannelConfigFailed;
+        channelConfigState = Supla::ChannelConfigState::None;
       }
     } else if (channelConfigState ==
                Supla::ChannelConfigState::OcrConfigPending) {

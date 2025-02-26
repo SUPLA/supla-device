@@ -1378,49 +1378,50 @@ uint16_t Channel::getHvacFlags() {
 }
 
 void Channel::setOffline() {
-  if (state != SUPLA_CHANNEL_STATE_FLAG_OFFLINE) {
+  if (state != SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE) {
     SUPLA_LOG_DEBUG("Channel[%d] go offline", channelNumber);
-    state = SUPLA_CHANNEL_STATE_FLAG_OFFLINE;
+    state = SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE;
     setSendValue();
   }
 }
 
 void Channel::setOnline() {
-  if (state != SUPLA_CHANNEL_STATE_FLAG_ONLINE) {
+  if (state != SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE) {
     SUPLA_LOG_DEBUG("Channel[%d] go online", channelNumber);
-    state = SUPLA_CHANNEL_STATE_FLAG_ONLINE;
+    state = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE;
     setSendValue();
   }
 }
 
 void Channel::setOnlineAndNotAvailable() {
-  if (state != SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE) {
+  if (state != SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE) {
     SUPLA_LOG_DEBUG("Channel[%d] is online and NOT available", channelNumber);
-    state = SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
+    state = SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
     setSendValue();
   }
 }
 
 void Channel::setOfflineRemoteWakeupNotSupported() {
-  if (state != SUPLA_CHANNEL_STATE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED) {
+  if (state != SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED) {
     SUPLA_LOG_DEBUG("Channel[%d] is offline (remote wakeup not supported)",
                     channelNumber);
-    state = SUPLA_CHANNEL_STATE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED;
+    state = SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED;
     setSendValue();
   }
 }
 
 bool Channel::isOnline() const {
-  return state == SUPLA_CHANNEL_STATE_FLAG_ONLINE ||
-         state == SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
+  return state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE ||
+         state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
 }
 
 bool Channel::isOnlineAndNotAvailable() const {
-  return state == SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
+  return state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE;
 }
 
 bool Channel::isOfflineRemoteWakeupNotSupported() const {
-  return state == SUPLA_CHANNEL_STATE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED;
+  return state ==
+         SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED;
 }
 
 void Channel::setInitialCaption(const char *caption) {
@@ -1515,7 +1516,7 @@ void Channel::fillDeviceChannelStruct(
   deviceChannelStruct->FuncList = getFuncList();  // also sets ActionTriggerCaps
   deviceChannelStruct->Default = getDefaultFunction();
   deviceChannelStruct->Flags = getFlags();
-  deviceChannelStruct->State = state;
+  deviceChannelStruct->Offline = state;
   deviceChannelStruct->ValueValidityTimeSec = validityTimeSec;
   deviceChannelStruct->DefaultIcon = getDefaultIcon();
   deviceChannelStruct->SubDeviceId = getSubDeviceId();
@@ -1530,13 +1531,13 @@ void Channel::fillDeviceChannelStruct(
       getFuncList(),
       getDefaultFunction(),
       getFlags(),
-      state == SUPLA_CHANNEL_STATE_FLAG_ONLINE    ? "online"
-      : state == SUPLA_CHANNEL_STATE_FLAG_OFFLINE ? "offline"
-      : state == SUPLA_CHANNEL_STATE_FLAG_ONLINE_BUT_NOT_AVAILABLE
+      state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE    ? "online"
+      : state == SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE ? "offline"
+      : state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE
           ? "online (not available)"
-      : state == SUPLA_CHANNEL_STATE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED
+      : state == SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE_REMOTE_WAKEUP_NOT_SUPPORTED
           ? "offline (remote wakeup not supported)"
-      : state == SUPLA_CHANNEL_STATE_FLAG_FIRMWARE_UPDATE_ONGOING
+      : state == SUPLA_CHANNEL_OFFLINE_FLAG_FIRMWARE_UPDATE_ONGOING
           ? "firmware update ongoing"
           : "UNKNOWN",
       validityTimeSec,

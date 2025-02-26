@@ -52,15 +52,38 @@ class ThermHygroMeter : public ChannelElement {
                                   int32_t humidityCorrection,
                                   bool local = false);
 
-  // By default temperature and humidity corrections are applied on Channel
-  // level, so raw value is read from sensor, then it is corrected and
-  // send to server.
-  // However correction may be applied by a sensor device itself. In this
-  // case, correciton is send to that device and value read from sensor is
-  // already corrected.
-  //
-  // This function sets whether correction should be applied or not.
+  /**
+   * Set whether correction should be applied or not.
+   * By default temperature and humidity corrections are applied on Channel
+   * level, so raw value is read from sensor, then it is corrected and
+   * send to server.
+   * However correction may be applied by a sensor device itself. In this
+   * case, correciton is send to that device and value read from sensor is
+   * already corrected.
+   *
+   * @param applyCorrections true if correction should be applied by SD
+   */
   void setApplyCorrections(bool applyCorrections);
+
+  /**
+   * Set minimum and maximum allowed temperature adjustment.
+   * Value 0 means Cloud default +- 10.0.
+   *
+   * @param minMax minimum and maximum allowed temperature adjustment in 0.1
+   * degree C. Allowed range: 0 (default), 1..200 (0.1 .. 20.0). I.e. value 50
+   * means +- 5.0 degree C
+   */
+  void setMinMaxAllowedTemperatureAdjustment(int32_t minMax);
+
+  /**
+   * Set minimum and maximum allowed humidity adjustment.
+   * Value 0 means Cloud default +- 10.0.
+   *
+   * @param minMax minimum and maximum allowed humidity adjustment in 0.1 %RH.
+   * Allowed range: 0 (default), 1..500 (0.1 .. 50.0). I.e. value 50 means
+   * +- 5.0 %RH
+   */
+  void setMinMaxAllowedHumidityAdjustment(int32_t minMax);
 
  protected:
   int16_t readCorrectionFromIndex(int index);
@@ -70,6 +93,22 @@ class ThermHygroMeter : public ChannelElement {
 
   uint32_t lastReadTime = 0;
   uint16_t refreshIntervalMs = 10000;
+
+  /**
+   * Minimum and maximum allowed temperature adjustment in 0.1 degree C.
+   * Value 0 means Cloud default +- 10.0.
+   */
+  int16_t minMaxAllowedTemperatureAdjustment = 0;
+
+  /**
+   * Minimum and maximum allowed humidity adjustment in 0.1 %RH.
+   * Value 0 means Cloud default +- 10.0.
+   */
+  int16_t minMaxAllowedHumidityAdjustment = 0;
+
+  /**
+   * Whether correction should be applied by SD
+   */
   bool applyCorrections = true;
 };
 

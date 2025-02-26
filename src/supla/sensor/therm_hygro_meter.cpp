@@ -204,6 +204,24 @@ uint8_t Supla::Sensor::ThermHygroMeter::applyChannelConfig(
         reinterpret_cast<TChannelConfig_TemperatureAndHumidity *>(
             result->Config);
 
+    bool applyAsLocalChange = false;
+    if (channelConfigState != Supla::ChannelConfigState::LocalChangePending) {
+      if (configFromServer->MinTemperatureAdjustment !=
+              -minMaxAllowedTemperatureAdjustment ||
+          configFromServer->MaxTemperatureAdjustment !=
+              minMaxAllowedTemperatureAdjustment ||
+          configFromServer->MinHumidityAdjustment !=
+              -minMaxAllowedHumidityAdjustment ||
+          configFromServer->MaxHumidityAdjustment !=
+              minMaxAllowedHumidityAdjustment) {
+        applyAsLocalChange = true;
+        SUPLA_LOG_INFO(
+            "Channel[%d] min/max temperature/humidity adjustment not set on "
+            "server",
+            getChannelNumber());
+      }
+    }
+
     if (configFromServer->AdjustmentAppliedByDevice == 0) {
       auto cfgTempCorrection = getConfiguredTemperatureCorrection();
       auto cfgHumiCorrection = getConfiguredHumidityCorrection();
@@ -216,7 +234,7 @@ uint8_t Supla::Sensor::ThermHygroMeter::applyChannelConfig(
       applyCorrectionsAndStoreIt(
           configFromServer->TemperatureAdjustment / 10,
           configFromServer->HumidityAdjustment / 10,
-          false);
+          applyAsLocalChange);
     }
   }
 
@@ -269,9 +287,35 @@ void Supla::Sensor::ThermHygroMeter::fillChannelConfig(void *channelConfig,
   config->TemperatureAdjustment = cfgTempCorr * 10;
   config->HumidityAdjustment = cfgHumCorr * 10;
   config->AdjustmentAppliedByDevice = 1;
+  config->MinTemperatureAdjustment = -minMaxAllowedTemperatureAdjustment;
+  config->MaxTemperatureAdjustment = minMaxAllowedTemperatureAdjustment;
+  config->MinHumidityAdjustment = -minMaxAllowedHumidityAdjustment;
+  config->MaxHumidityAdjustment = minMaxAllowedHumidityAdjustment;
 }
 
 void Supla::Sensor::ThermHygroMeter::setApplyCorrections(
     bool applyCorrections) {
   this->applyCorrections = applyCorrections;
+}
+
+void Supla::Sensor::ThermHygroMeter::setMinMaxAllowedTemperatureAdjustment(
+    int32_t minMax) {
+  if (minMax < 0) {
+    minMax = 0;
+  }
+  if (minMax > 200) {
+    minMax = 200;
+  }
+  minMaxAllowedTemperatureAdjustment = minMax;
+}
+
+void Supla::Sensor::ThermHygroMeter::setMinMaxAllowedHumidityAdjustment(
+    int32_t minMax) {
+  if (minMax < 0) {
+    minMax = 0;
+  }
+  if (minMax > 500) {
+    minMax = 500;
+  }
+  minMaxAllowedHumidityAdjustment = minMax;
 }

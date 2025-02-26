@@ -90,6 +90,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
   bool configFinishedReceived = false;
+  uint8_t setChannelConfigAttempts = 0;
 };
 
 };  // namespace Supla

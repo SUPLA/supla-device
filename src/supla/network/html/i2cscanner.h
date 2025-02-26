@@ -11,7 +11,7 @@
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
 
-   You should have received a copy of the GNU General Public License898
+   You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
@@ -24,30 +24,35 @@
 namespace Supla {
 namespace Html {
 
+/**
+ * class displaying all detected in device I2C addresses
+ * on Webinterface in DeviceInfo
+ *
+ * shuld be used after Wire.begin(...) 
+ */
 class I2Cscanner : public Supla::HtmlElement {
  public:
   I2Cscanner() : HtmlElement(HTML_SECTION_DEVICE_INFO) {}
 
   void send(Supla::WebSender* sender) {
     sender->send("<span>");
-    sender->send("<br>I2C: ");
-    for(byte address = 1; address < 127; address++ ) {
+    sender->send("<br>I2C:");
+    for (uint8_t address = 1; address < 127; address++) {
       Wire.beginTransmission(address);
       byte error = Wire.endTransmission();
       char buffer[2];
       if (error == 0) {
-        sender->send("0x");
-        sprintf(buffer, "%2x", address);
+        sender->send(" 0x");
+        snprintf(buffer, 2, "%2x", address);
         sender->send(buffer, 2);
-        sender->send(" ");
       }
     }
     sender->send("</span>");
   }
 
-}; // I2Cscanner
+};  // I2Cscanner
 
-}; // namespace Html
-}; // namespace Supla
+};  // namespace Html
+};  // namespace Supla
 
-#endif
+#endif // SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_

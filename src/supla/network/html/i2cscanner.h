@@ -43,7 +43,7 @@ class I2Cscanner : public Supla::HtmlElement {
       char buffer[2];
       if (error == 0) {
         sender->send(" 0x");
-        snprintf(buffer, 2, "%2x", address);
+        snprintf(buffer, sizeof(buffer), "%2x", address);
         sender->send(buffer, 2);
       }
     }
@@ -55,4 +55,4 @@ class I2Cscanner : public Supla::HtmlElement {
 };  // namespace Html
 };  // namespace Supla
 
-#endif // SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_
+#endif  // SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_

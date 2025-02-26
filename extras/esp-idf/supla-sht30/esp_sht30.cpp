@@ -65,7 +65,7 @@ void Supla::Sensor::SHT30::readSensor() {
   uint8_t buff[6] = {};
 
   driver->aquire();
-  auto ret = i2c_master_transmit(*devHandle, payload, 2, 200);
+  auto ret = i2c_master_transmit(devHandle, payload, 2, 200);
   driver->release();
   if (ret != ESP_OK) {
     SUPLA_LOG_DEBUG("SHT30: failed to start measurement");
@@ -74,7 +74,7 @@ void Supla::Sensor::SHT30::readSensor() {
 
   delay(30);
   driver->aquire();
-  ret = i2c_master_receive(*devHandle, buff, 6, 400);
+  ret = i2c_master_receive(devHandle, buff, 6, 400);
   driver->release();
   if (ret != ESP_OK) {
     SUPLA_LOG_DEBUG("SHT30: failed to read measurement");

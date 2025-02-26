@@ -120,14 +120,18 @@ int MCP23008::customAnalogRead(int channelNumber, uint8_t pin) {
   return 0;
 }
 
-void MCP23008::init() {
+bool MCP23008::init() {
   SUPLA_LOG_DEBUG("MCP23008 init");
   if (driver) {
     if (!driver->isInitialized()) {
       driver->initialize();
     }
 
-    handle = *driver->addDevice(address, 100000);
+    handle = driver->addDevice(address, 100000);
+
+    if (handle == nullptr) {
+      return false;
+    }
 
     SUPLA_LOG_DEBUG("MCP23008: initial state:");
     readAllAndPrint();
@@ -161,6 +165,7 @@ void MCP23008::init() {
     SUPLA_LOG_DEBUG("MCP23008: state after init:");
     readAllAndPrint();
   }
+  return true;
 }
 
 void MCP23008::readAllAndPrint() {

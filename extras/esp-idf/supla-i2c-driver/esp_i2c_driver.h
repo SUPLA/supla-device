@@ -30,19 +30,20 @@ class I2CDriver {
   ~I2CDriver();
 
   void initialize();
+  void deinitialize();
   bool isInitialized() const;
 
   void aquire();
   void release();
 
-  i2c_master_dev_handle_t *addDevice(uint8_t address, uint32_t frequency);
+  i2c_master_dev_handle_t addDevice(uint8_t address, uint32_t frequency);
   void releaseDevice(i2c_master_dev_handle_t *handle);
 
  protected:
   int sda = 0;
   int scl = 0;
   bool initialized = false;
-  i2c_master_bus_handle_t busHandle;
+  i2c_master_bus_handle_t busHandle = nullptr;
   Supla::Mutex *mutex = nullptr;
   bool internalPullUp = false;
 };

@@ -69,7 +69,13 @@ class MCP23008 : public Supla::Io {
                              uint64_t timeoutMicro) override;
   void customAnalogWrite(int channelNumber, uint8_t pin, int val) override;
   int customAnalogRead(int channelNumber, uint8_t pin) override;
-  void init();
+
+  /**
+   * Initialize the MCP23008
+   *
+   * @return true on success, false otherwise
+   */
+  bool init();
 
  private:
   void readAllAndPrint();

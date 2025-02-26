@@ -45,7 +45,7 @@ class SHT30 : public ThermHygroMeter {
   int scl = 0;
   uint8_t addr = 0x44;
   Supla::I2CDriver *driver = nullptr;
-  i2c_master_dev_handle_t *devHandle = nullptr;
+  i2c_master_dev_handle_t devHandle = nullptr;
 };
 
 };  // namespace Sensor

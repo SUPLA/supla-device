@@ -30,7 +30,7 @@ class Wind : public ChannelElement {
  public:
   Wind() {
     channel.setType(SUPLA_CHANNELTYPE_WINDSENSOR);
-    channel.setDefault(SUPLA_CHANNELFNC_WINDSENSOR);
+    channel.setDefaultFunction(SUPLA_CHANNELFNC_WINDSENSOR);
     channel.setNewValue(WIND_NOT_AVAILABLE);
   }
 

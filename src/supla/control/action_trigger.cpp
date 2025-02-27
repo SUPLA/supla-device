@@ -28,7 +28,7 @@
 
 Supla::Control::ActionTrigger::ActionTrigger() {
   channel.setType(SUPLA_CHANNELTYPE_ACTIONTRIGGER);
-  channel.setDefault(SUPLA_CHANNELFNC_ACTIONTRIGGER);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_ACTIONTRIGGER);
 }
 
 Supla::Control::ActionTrigger::~ActionTrigger() {

@@ -31,7 +31,7 @@ GeneralPurposeMeter::GeneralPurposeMeter(
     Supla::Sensor::MeasurementDriver *driver, bool addMemoryVariableDriver)
     : GeneralPurposeChannelBase(driver, addMemoryVariableDriver) {
   channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER);
-  channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_GENERAL_PURPOSE_METER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 }
 

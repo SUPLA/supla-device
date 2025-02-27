@@ -30,7 +30,7 @@ class Pressure : public ChannelElement {
  public:
   Pressure() : lastReadTime(0) {
     channel.setType(SUPLA_CHANNELTYPE_PRESSURESENSOR);
-    channel.setDefault(SUPLA_CHANNELFNC_PRESSURESENSOR);
+    channel.setDefaultFunction(SUPLA_CHANNELFNC_PRESSURESENSOR);
     channel.setNewValue(PRESSURE_NOT_AVAILABLE);
   }
 

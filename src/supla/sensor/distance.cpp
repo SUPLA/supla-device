@@ -19,7 +19,7 @@
 
 Supla::Sensor::Distance::Distance() {
   channel.setType(SUPLA_CHANNELTYPE_DISTANCESENSOR);
-  channel.setDefault(SUPLA_CHANNELFNC_DISTANCESENSOR);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_DISTANCESENSOR);
   channel.setNewValue(DISTANCE_NOT_AVAILABLE);
 }
 

@@ -37,7 +37,7 @@ void Supla::Sensor::DS18B20::onLoadConfig(SuplaDeviceClass *sdc) {
       SUPLA_LOG_DEBUG("Failed to read DS address");
     }
     if (address[0] == 0) {
-      getChannel()->setDefault(0);
+      getChannel()->setDefaultFunction(0);
     }
   }
   myBus->lastReadTime = 0;
@@ -79,7 +79,7 @@ void Supla::Sensor::DS18B20::assignAddressIfNeeded() {
           SUPLA_LOG_WARNING("Failed to write DS address to config");
         }
         cfg->saveWithDelay(2000);
-        getChannel()->setDefault(SUPLA_CHANNELFNC_THERMOMETER);
+        getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
       }
     }
   }

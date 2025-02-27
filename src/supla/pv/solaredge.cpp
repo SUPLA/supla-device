@@ -65,7 +65,7 @@ SolarEdge::SolarEdge(const char *apiKeyValue,
   strncpy(inverterSerialNumber, inverterSerialNumberValue, len);
 
   temperatureChannel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
-  temperatureChannel.setDefault(SUPLA_CHANNELFNC_THERMOMETER);
+  temperatureChannel.setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
   temperatureChannel.setNewValue(TEMPERATURE_NOT_AVAILABLE);
 }
 

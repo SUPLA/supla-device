@@ -41,17 +41,8 @@ RollerShutter::RollerShutter(Supla::Io *io,
 
 RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
     : pinUp(pinUp), pinDown(pinDown), highIsOn(highIsOn) {
-  channel.setType(SUPLA_CHANNELTYPE_RELAY);
-  channel.setDefault(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
-  channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
-                      SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
-                      SUPLA_BIT_FUNC_TERRACE_AWNING |
-                      SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR |
-                      SUPLA_BIT_FUNC_CURTAIN |
-                      SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
 void RollerShutter::onInit() {

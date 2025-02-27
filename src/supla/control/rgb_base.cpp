@@ -19,7 +19,7 @@
 
 Supla::Control::RGBBase::RGBBase() {
   channel.setType(SUPLA_CHANNELTYPE_RGBLEDCONTROLLER);
-  channel.setDefault(SUPLA_CHANNELFNC_RGBLIGHTING);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_RGBLIGHTING);
 }
 
 void Supla::Control::RGBBase::setRGBW(int red,

@@ -30,7 +30,7 @@ class Rain : public ChannelElement {
  public:
   Rain() : lastReadTime(0) {
     channel.setType(SUPLA_CHANNELTYPE_RAINSENSOR);
-    channel.setDefault(SUPLA_CHANNELFNC_RAINSENSOR);
+    channel.setDefaultFunction(SUPLA_CHANNELFNC_RAINSENSOR);
     channel.setNewValue(RAIN_NOT_AVAILABLE);
   }
 

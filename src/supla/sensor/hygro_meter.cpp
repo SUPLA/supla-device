@@ -18,7 +18,7 @@
 
 Supla::Sensor::HygroMeter::HygroMeter() {
   channel.setType(SUPLA_CHANNELTYPE_HUMIDITYSENSOR);
-  channel.setDefault(SUPLA_CHANNELFNC_HUMIDITY);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_HUMIDITY);
 }
 
 void Supla::Sensor::HygroMeter::setTemperatureCorrection(int32_t correction) {

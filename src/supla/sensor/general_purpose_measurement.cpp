@@ -28,6 +28,6 @@ GeneralPurposeMeasurement::GeneralPurposeMeasurement(
     bool addMemoryVariableDriver)
     : GeneralPurposeChannelBase(driver, addMemoryVariableDriver) {
   channel.setType(SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT);
-  channel.setDefault(SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_GENERAL_PURPOSE_MEASUREMENT);
 }
 

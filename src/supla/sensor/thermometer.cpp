@@ -25,7 +25,7 @@ using Supla::Sensor::Thermometer;
 
 Supla::Sensor::Thermometer::Thermometer() {
   channel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
-  channel.setDefault(SUPLA_CHANNELFNC_THERMOMETER);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);
 }
 
 Thermometer::Thermometer(ThermometerDriver *driver) : Thermometer() {

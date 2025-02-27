@@ -24,7 +24,7 @@ using Supla::Sensor::Weight;
 
 Weight::Weight() {
   channel.setType(SUPLA_CHANNELTYPE_WEIGHTSENSOR);
-  channel.setDefault(SUPLA_CHANNELFNC_WEIGHTSENSOR);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_WEIGHTSENSOR);
   channel.setNewValue(WEIGHT_NOT_AVAILABLE);
 }
 

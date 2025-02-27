@@ -30,7 +30,7 @@
 
 Supla::Sensor::ElectricityMeter::ElectricityMeter() {
   extChannel.setType(SUPLA_CHANNELTYPE_ELECTRICITY_METER);
-  extChannel.setDefault(SUPLA_CHANNELFNC_ELECTRICITY_METER);
+  extChannel.setDefaultFunction(SUPLA_CHANNELFNC_ELECTRICITY_METER);
   extChannel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 
   emValue.period = 5;

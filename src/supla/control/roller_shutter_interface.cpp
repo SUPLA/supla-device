@@ -47,7 +47,7 @@ struct RollerShutterStateData {
 
 RollerShutterInterface::RollerShutterInterface() {
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
-  channel.setDefault(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
                       SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
                       SUPLA_BIT_FUNC_TERRACE_AWNING |

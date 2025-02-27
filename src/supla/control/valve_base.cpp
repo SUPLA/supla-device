@@ -37,10 +37,10 @@ ValveBase::ValveBase(bool openClose) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_FLOOD_SENSORS_SUPPORTED);
   if (openClose) {
     channel.setType(SUPLA_CHANNELTYPE_VALVE_OPENCLOSE);
-    channel.setDefault(SUPLA_CHANNELFNC_VALVE_OPENCLOSE);
+    channel.setDefaultFunction(SUPLA_CHANNELFNC_VALVE_OPENCLOSE);
   } else {
     channel.setType(SUPLA_CHANNELTYPE_VALVE_PERCENTAGE);
-    channel.setDefault(SUPLA_CHANNELFNC_VALVE_PERCENTAGE);
+    channel.setDefaultFunction(SUPLA_CHANNELFNC_VALVE_PERCENTAGE);
   }
 }
 

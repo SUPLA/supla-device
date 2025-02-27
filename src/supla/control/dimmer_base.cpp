@@ -21,7 +21,7 @@
 
 Supla::Control::DimmerBase::DimmerBase() {
   channel.setType(SUPLA_CHANNELTYPE_DIMMER);
-  channel.setDefault(SUPLA_CHANNELFNC_DIMMER);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
 }
 
 void Supla::Control::DimmerBase::setRGBW(int red,

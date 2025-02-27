@@ -16,8 +16,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_HTML_I2CSCANNER_H_
-#define SRC_SUPLA_HTML_I2CSCANNER_H_
+#ifndef SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_
+#define SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_
 
 #include <Wire.h>
 

@@ -1,5 +1,46 @@
 # CHANGELOG.md
 
+# 25.02 (2025-02-28)
+### Core Changes
+  - Consider "firmware update ongoing" as "online"
+  - Renamed `set/isOnline/Offline` methods by adding prefix `setState` / `isState`
+  - Renamed "offline" flag to "state"
+  - Added "offline/state=3" support (remote wakeup not supported)
+  - Added support for HVAC value flag "calibration error"
+  - Replaced `setDefault()` with `setDefaultFunction()`
+  - Thermometer & Hygrometer: Added support for adjustable min/max allowed temperature/humidity
+  - ElectricityMeter: Added methods to remove voltage/current phase sequence values and flags from reports
+  - Add HTML I2C scanner class (thanks @malarz-supla)
+  - Added `deinitialize` method for `EspI2cDriver`
+  - Changed `Mcp23008::init()` to return `bool` based on initialization result
+  - Adjusted `EspSht30` code to accommodate device handler changes
+  - Added a new link to `ClosedCube_SHT31D_Arduino` library (thanks @malarz-supla)
+  - `Io`: Added `attachInterrupt` and `detachInterrupt` interfaces (not yet implemented)
+
+### Valve
+  - Added methods for Valve: `setValveMotorProblemFlag` and `isValveMotorProblemFlagActive`
+  - Added support for `Valve OpenClose` channel type and function
+  - Extended `Channel` class with Valve-related getters and setters
+  - Added valve-related events: `ON_OPEN`, `ON_CLOSE`, `ON_FLOODING_ACTIVE`, `ON_FLOODING_INACTIVE`, `ON_VALVE_MANUALLY_CLOSED_ACTIVE`, `ON_VALVE_MANUALLY_CLOSED_INACTIVE`, `ON_MOTOR_PROBLEM_ACTIVE`, `ON_MOTOR_PROBLEM_INACTIVE`
+
+### Web & HTML Enhancements
+  - Fixed Arduino examples usage of HTML elements
+  - Added options to place buttons before/after standard "submit" buttons in `HtmlGenerator`
+  - Added `ButtonRefresh` example
+  - Updated Arduino based web server, so it will redirect after form POST in order to prevent "form resubmission" on page refresh (thanks @petione)
+  - `CustomTextParameter`: Restricted to 16-byte tags
+  - `CustomTextParameter`: Added Doxygen documentation
+  - Add HTML update button (thanks @petione)
+
+### sd4linux
+  - `sd4linux`: Fixed missing battery level in `CmdParsed`
+  - Improved YAML error logging
+  - Added error on channel configuration load when it contains unrecognized parameters
+  - Fixed invalid command in YAML config example
+  - Reorganized battery level info updates to improve efficiency
+  - Disabled ASAN
+  - Fixed method names in `Config MQTT`
+
 # 25.01.03 (2025-01-30)
 
 ## Added

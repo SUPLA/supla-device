@@ -69,7 +69,7 @@ void pm1006k::iterateAlways() {
 
   if (millis() - lastReadTime > refreshIntervalMs) {
     int32_t value = NAN;
-    if(!sensor->takeMeasurement()) {
+    if (!sensor->takeMeasurement()) {
       SUPLA_LOG_DEBUG("PM1006K: failed to take measurement");
     } else {
       value = sensor->getPM2_5();

@@ -44,7 +44,7 @@
 <area shape="poly" id="edge21_Node000001_Node000022" title=" " alt="" coords="95,985,135,1031,161,1054,190,1073,218,1084,216,1089,187,1077,158,1058,131,1035,91,989"/>
 <area shape="rect" id="Node000023" href="$classSupla_1_1Html_1_1HvacParameters.html" title=" " alt="" coords="212,1137,404,1162"/>
 <area shape="poly" id="edge22_Node000001_Node000023" title=" " alt="" coords="88,988,104,1020,126,1057,155,1093,190,1123,213,1135,211,1140,187,1128,151,1097,122,1060,99,1022,83,990"/>
-<area shape="rect" id="Node000024" href="$classSupla_1_1Html_1_1I2Cscanner.html" title="class displaying all detected in device I2C addresses on Webinterface in DeviceInfo" alt="" coords="228,1186,388,1212"/>
+<area shape="rect" id="Node000024" href="$classSupla_1_1Html_1_1I2Cscanner.html" title="HTML element that will scan I2C bus on each web page load and display all detected addresses on a web..." alt="" coords="228,1186,388,1212"/>
 <area shape="poly" id="edge23_Node000001_Node000024" title=" " alt="" coords="84,989,97,1031,118,1081,149,1131,168,1154,190,1173,208,1183,229,1190,227,1195,206,1188,187,1177,165,1157,145,1134,114,1083,92,1032,78,990"/>
 <area shape="rect" id="Node000025" href="$classSupla_1_1Html_1_1PowerStatusLedParameters.html" title=" " alt="" coords="224,1236,393,1277"/>
 <area shape="poly" id="edge24_Node000001_Node000025" title=" " alt="" coords="81,990,92,1040,112,1103,144,1167,165,1197,190,1222,225,1242,222,1246,187,1226,161,1200,140,1170,107,1105,87,1041,76,991"/>

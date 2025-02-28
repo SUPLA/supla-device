@@ -630,7 +630,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNEL_FLAG_VALVE_MOTOR_ALARM_SUPPORTED 0x0040  // ver. >= 27
 #define SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS 0x0080  // ver. >= 17
 #define SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED 0x0100  // ver. >= 21
-// Free bits for future use:  0x0200, 0x0400, 0x0800
+#define SUPLA_CHANNEL_FLAG_ALWAYS_ALLOW_CHANNEL_DELETION  0x0200   // ver. >= 27
+// Free bits for future use: 0x0400, 0x0800
 #define SUPLA_CHANNEL_FLAG_RS_AUTO_CALIBRATION 0x1000              // ver. >= 15
 #define SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS 0x2000            // ver. >= 15
 #define SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE 0x4000               // ver. >= 15

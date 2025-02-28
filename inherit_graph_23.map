@@ -1,21 +1,21 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
 <area shape="rect" id="Node000000" href="$classSupla_1_1ConditionGetter.html" title=" " alt="" coords="5,203,156,228"/>
 <area shape="rect" id="Node000001" href="$classSupla_1_1CurrentGetter.html" title=" " alt="" coords="240,5,378,31"/>
-<area shape="poly" id="edge173_Node000000_Node000001" title=" " alt="" coords="91,187,108,153,132,113,164,73,202,40,239,24,241,29,205,44,168,77,137,116,112,156,96,190"/>
+<area shape="poly" id="edge174_Node000000_Node000001" title=" " alt="" coords="91,187,108,153,132,113,164,73,202,40,239,24,241,29,205,44,168,77,137,116,112,156,96,190"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1PowerActiveWGetter.html" title=" " alt="" coords="218,55,400,80"/>
-<area shape="poly" id="edge174_Node000000_Node000002" title=" " alt="" coords="98,188,141,138,170,111,202,89,227,78,229,83,205,94,173,115,145,141,102,192"/>
+<area shape="poly" id="edge175_Node000000_Node000002" title=" " alt="" coords="98,188,141,138,170,111,202,89,227,78,229,83,205,94,173,115,145,141,102,192"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1PowerApparentVAGetter.html" title=" " alt="" coords="208,104,411,130"/>
-<area shape="poly" id="edge175_Node000000_Node000003" title=" " alt="" coords="110,191,153,164,203,138,235,128,237,133,205,143,155,168,113,196"/>
+<area shape="poly" id="edge176_Node000000_Node000003" title=" " alt="" coords="110,191,153,164,203,138,235,128,237,133,205,143,155,168,113,196"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1PowerReactiveVarGetter.html" title=" " alt="" coords="207,153,412,179"/>
-<area shape="poly" id="edge176_Node000000_Node000004" title=" " alt="" coords="158,196,246,177,247,182,159,201"/>
+<area shape="poly" id="edge177_Node000000_Node000004" title=" " alt="" coords="158,196,246,177,247,182,159,201"/>
 <area shape="rect" id="Node000005" href="$classSupla_1_1TotalCurrentGetter.html" title=" " alt="" coords="226,203,393,228"/>
-<area shape="poly" id="edge177_Node000000_Node000005" title=" " alt="" coords="171,213,225,213,225,218,171,218"/>
+<area shape="poly" id="edge178_Node000000_Node000005" title=" " alt="" coords="171,213,225,213,225,218,171,218"/>
 <area shape="rect" id="Node000006" href="$classSupla_1_1TotalPowerActiveWGetter.html" title=" " alt="" coords="204,252,415,278"/>
-<area shape="poly" id="edge178_Node000000_Node000006" title=" " alt="" coords="159,230,247,249,246,254,158,235"/>
+<area shape="poly" id="edge179_Node000000_Node000006" title=" " alt="" coords="159,230,247,249,246,254,158,235"/>
 <area shape="rect" id="Node000007" href="$classSupla_1_1TotalPowerApparentVAGetter.html" title=" " alt="" coords="220,302,398,342"/>
-<area shape="poly" id="edge179_Node000000_Node000007" title=" " alt="" coords="114,235,156,262,205,288,233,299,231,304,203,293,154,267,111,240"/>
+<area shape="poly" id="edge180_Node000000_Node000007" title=" " alt="" coords="114,235,156,262,205,288,233,299,231,304,203,293,154,267,111,240"/>
 <area shape="rect" id="Node000008" href="$classSupla_1_1TotalPowerReactiveVarGetter.html" title=" " alt="" coords="221,367,398,408"/>
-<area shape="poly" id="edge180_Node000000_Node000008" title=" " alt="" coords="100,240,144,296,173,326,205,352,229,364,226,369,202,356,169,330,140,300,96,243"/>
+<area shape="poly" id="edge181_Node000000_Node000008" title=" " alt="" coords="100,240,144,296,173,326,205,352,229,364,226,369,202,356,169,330,140,300,96,243"/>
 <area shape="rect" id="Node000009" href="$classSupla_1_1VoltageGetter.html" title=" " alt="" coords="239,432,380,458"/>
-<area shape="poly" id="edge181_Node000000_Node000009" title=" " alt="" coords="93,242,108,282,132,330,164,377,205,417,240,434,238,439,202,422,160,381,127,332,104,284,88,244"/>
+<area shape="poly" id="edge182_Node000000_Node000009" title=" " alt="" coords="93,242,108,282,132,330,164,377,205,417,240,434,238,439,202,422,160,381,127,332,104,284,88,244"/>
 </map>

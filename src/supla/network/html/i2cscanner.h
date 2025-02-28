@@ -14,7 +14,7 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
-   */
+*/
 
 #ifndef SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_
 #define SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_
@@ -25,10 +25,10 @@ namespace Supla {
 namespace Html {
 
 /**
- * class displaying all detected in device I2C addresses
- * on Webinterface in DeviceInfo
+ * HTML element that will scan I2C bus on each web page load and
+ * display all detected addresses on a web page.
  *
- * shuld be used after Wire.begin(...) 
+ * Prerequisites: use it after Wire.begin
  */
 class I2Cscanner : public Supla::HtmlElement {
  public:
@@ -39,19 +39,18 @@ class I2Cscanner : public Supla::HtmlElement {
     sender->send("<br>I2C:");
     for (uint8_t address = 1; address < 127; address++) {
       Wire.beginTransmission(address);
-      byte error = Wire.endTransmission();
-      char buffer[2];
+      uint8_t error = Wire.endTransmission();
+      char buffer[6];
       if (error == 0) {
-        sender->send(" 0x");
-        snprintf(buffer, sizeof(buffer), "%2x", address);
-        sender->send(buffer, 2);
+        snprintf(buffer, sizeof(buffer), " 0x%2x", address);
+        sender->send(buffer, 5);
       }
     }
     sender->send("</span>");
   }
 };  // I2Cscanner
 
-};  // namespace Html
-};  // namespace Supla
+}  // namespace Html
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_

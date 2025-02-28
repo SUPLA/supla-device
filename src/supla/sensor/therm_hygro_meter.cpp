@@ -208,13 +208,13 @@ uint8_t Supla::Sensor::ThermHygroMeter::applyChannelConfig(
     bool applyAsLocalChange = false;
     if (channelConfigState != Supla::ChannelConfigState::LocalChangePending) {
       if (configFromServer->MinTemperatureAdjustment !=
-              -minMaxAllowedTemperatureAdjustment ||
+              -minMaxAllowedTemperatureAdjustment * 10 ||
           configFromServer->MaxTemperatureAdjustment !=
-              minMaxAllowedTemperatureAdjustment ||
+              minMaxAllowedTemperatureAdjustment * 10 ||
           configFromServer->MinHumidityAdjustment !=
-              -minMaxAllowedHumidityAdjustment ||
+              -minMaxAllowedHumidityAdjustment * 10 ||
           configFromServer->MaxHumidityAdjustment !=
-              minMaxAllowedHumidityAdjustment) {
+              minMaxAllowedHumidityAdjustment * 10) {
         applyAsLocalChange = true;
         SUPLA_LOG_INFO(
             "Channel[%d] min/max temperature/humidity adjustment not set on "
@@ -288,10 +288,10 @@ void Supla::Sensor::ThermHygroMeter::fillChannelConfig(void *channelConfig,
   config->TemperatureAdjustment = cfgTempCorr * 10;
   config->HumidityAdjustment = cfgHumCorr * 10;
   config->AdjustmentAppliedByDevice = 1;
-  config->MinTemperatureAdjustment = -minMaxAllowedTemperatureAdjustment;
-  config->MaxTemperatureAdjustment = minMaxAllowedTemperatureAdjustment;
-  config->MinHumidityAdjustment = -minMaxAllowedHumidityAdjustment;
-  config->MaxHumidityAdjustment = minMaxAllowedHumidityAdjustment;
+  config->MinTemperatureAdjustment = -minMaxAllowedTemperatureAdjustment * 10;
+  config->MaxTemperatureAdjustment = minMaxAllowedTemperatureAdjustment * 10;
+  config->MinHumidityAdjustment = -minMaxAllowedHumidityAdjustment * 10;
+  config->MaxHumidityAdjustment = minMaxAllowedHumidityAdjustment * 10;
 }
 
 void Supla::Sensor::ThermHygroMeter::setApplyCorrections(

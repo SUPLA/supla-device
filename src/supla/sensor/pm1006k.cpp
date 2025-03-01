@@ -97,7 +97,7 @@ void pm1006k::iterateAlways() {
   }
 }
 
-virtual double pm1006k::getValue() {
+double pm1006k::getValue() {
   return lastValue;
 }
 

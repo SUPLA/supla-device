@@ -36,7 +36,7 @@ class pm1006k : public GeneralPurposeMeasurement {
 
   void onInit() override;
   void iterateAlways() override;
-  virtual double getValue() override;
+  double getValue() override;
 
  protected:
   ::PM1006K* sensor;

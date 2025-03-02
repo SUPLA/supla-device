@@ -92,7 +92,7 @@ void pm1006k::iterateAlways() {
       invalidCounter = 0;
       lastValue = value;
     }
-    channel.setNewValue(<double>(lastValue));
+    channel.setNewValue(getValue());
     lastReadTime = millis();
   }
 }

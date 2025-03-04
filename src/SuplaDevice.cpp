@@ -800,7 +800,13 @@ void SuplaDeviceClass::leaveConfigModeWithoutRestart() {
 void SuplaDeviceClass::softRestart() {
   status(STATUS_SOFTWARE_RESET, F("Software reset"));
 
-  if (!triggerResetToFacotrySettings) {
+  for (auto element = Supla::Element::begin(); element != nullptr;
+       element = element->next()) {
+    element->onSoftReset();
+    delay(0);
+  }
+
+  if (!triggerResetToFactorySettings) {
     // skip writing to storage if reset is because of factory reset
     saveStateToStorage();
     auto cfg = Supla::Storage::ConfigInstance();
@@ -811,12 +817,6 @@ void SuplaDeviceClass::softRestart() {
   deviceMode = Supla::DEVICE_MODE_NORMAL;
 
   // TODO(klew): stop supla timers
-
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    element->onSoftReset();
-    delay(0);
-  }
 
   if (Supla::WebServer::Instance()) {
     Supla::WebServer::Instance()->stop();
@@ -921,7 +921,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
 }
 
 void SuplaDeviceClass::saveStateToStorage() {
-  if (triggerResetToFacotrySettings) {
+  if (triggerResetToFactorySettings) {
     return;
   }
   Supla::Storage::WriteStateStorage();
@@ -1065,7 +1065,7 @@ void SuplaDeviceClass::handleAction(int event, int action) {
       break;
     }
     case Supla::RESET_TO_FACTORY_SETTINGS: {
-      triggerResetToFacotrySettings = true;
+      triggerResetToFactorySettings = true;
       break;
     }
     case Supla::START_LOCAL_WEB_SERVER: {
@@ -1086,7 +1086,7 @@ void SuplaDeviceClass::handleAction(int event, int action) {
       if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
         requestCfgMode(Supla::Device::WithoutTimeout);
       } else if (millis() - enterConfigModeTimestamp > 2000) {
-        triggerResetToFacotrySettings = true;
+        triggerResetToFactorySettings = true;
       }
       break;
     }
@@ -1133,7 +1133,7 @@ void SuplaDeviceClass::handleLocalActionTriggers() {
     goToConfigModeAsap = Supla::Device::None;
   }
 
-  if (triggerResetToFacotrySettings) {
+  if (triggerResetToFactorySettings) {
     resetToFactorySettings();
     softRestart();
   }

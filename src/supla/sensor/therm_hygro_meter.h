@@ -48,6 +48,15 @@ class ThermHygroMeter : public ChannelElement {
 
   int16_t getConfiguredTemperatureCorrection();
   int16_t getConfiguredHumidityCorrection();
+
+  /**
+   * Apply temperature and humidity corrections and store them to Config
+   *
+   * @param temperatureCorrection temperature correction in 0.1 degree
+   * @param humidityCorrection humidity correction in 0.1 %
+   * @param local true if correction should be applied locally and then config
+   *        will be send to server
+   */
   void applyCorrectionsAndStoreIt(int32_t temperatureCorrection,
                                   int32_t humidityCorrection,
                                   bool local = false);

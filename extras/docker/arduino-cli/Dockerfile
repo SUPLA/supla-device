@@ -21,12 +21,14 @@ RUN arduino-cli core install arduino:avr && \
     arduino-cli core install esp32:esp32 && \
     arduino-cli core install esp8266:esp8266 && \
     arduino-cli lib install DallasTemperature && \
+    arduino-cli lib install OneWire && \
     arduino-cli lib install "DHT Sensor Library"  && \
     arduino-cli lib install "Adafruit AHTX0"  && \
     arduino-cli lib install HX711_ADC  && \
     arduino-cli lib install PZEM004Tv30 && \
     cd ~/Arduino/libraries && \
-    git clone https://github.com/olehs/PZEM004T
+    git clone https://github.com/olehs/PZEM004T && \
+    git clone https://github.com/kevinlutzer/Arduino-PM1006K
 
 # Download supla-device
 RUN git clone https://github.com/SUPLA/supla-device.git && \

@@ -239,7 +239,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
   Supla::Device::RequestConfigModeType goToConfigModeAsap = Supla::Device::None;
-  bool triggerResetToFacotrySettings = false;
+  bool triggerResetToFactorySettings = false;
   bool triggerStartLocalWebServer = false;
   bool triggerStopLocalWebServer = false;
   bool triggerCheckSwUpdate = false;

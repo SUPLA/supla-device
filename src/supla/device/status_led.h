@@ -67,6 +67,8 @@ class StatusLed : public Supla::Control::BlinkingLed {
                          uint8_t onLimit = 0,
                          uint8_t repeatLimit = 0) override;
 
+  enum LedSequence getCurrentSequence() const;
+
   // Restores automatic LED sequence change based on device state.
   // It is enabled by default, so if it wasn't disabled by calling
   // setCustomSequence, then there is no need to call it.

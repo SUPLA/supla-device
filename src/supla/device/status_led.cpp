@@ -279,6 +279,10 @@ void Supla::Device::StatusLed::setCustomSequence(uint32_t onDurationMs,
       onDurationMs, offDurationMs, pauseDurrationMs, onLimit, repeatLimit);
 }
 
+enum Supla::LedSequence Supla::Device::StatusLed::getCurrentSequence() const {
+  return currentSequence;
+}
+
 void Supla::Device::StatusLed::setAutoSequence() {
   Supla::AutoLock autoLock(mutex);
   // resetting to defaults will trigger automatic sequence update on

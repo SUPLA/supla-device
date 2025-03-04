@@ -52,6 +52,23 @@ class Container : public ChannelElement {
   friend class Supla::Html::ContainerParameters;
   Container();
 
+  /**
+   * Sets the internal level reporting flag. When enabled, the container will
+   * report fill level by internal measument mechanism. Additional Fill Level
+   * Binary Sensors are used only as a backup.
+   * Default: false
+   *
+   * @param internalLevelReporting true to enable internal level reporting
+   */
+  void setInternalLevelReporting(bool internalLevelReporting);
+
+  /**
+   * Checks if the internal level reporting flag is enabled
+   *
+   * @return true if internal level reporting is enabled
+   */
+  bool isInternalLevelReporting() const;
+
   void iterateAlways() override;
   void onLoadConfig(SuplaDeviceClass *) override;
   uint8_t applyChannelConfig(TSD_ChannelConfig *result,
@@ -117,6 +134,13 @@ class Container : public ChannelElement {
   void setSoundAlarmSupported(bool soundAlarmSupported);
   bool isSoundAlarmSupported() const;
 
+  /**
+   * Mutes the sound alarmm by clearing channel value flag, but does not
+   * clear soundAlarmActivated flag, so it requires to call setSoundAlarmOn with
+   * false, before new alarm sound will be started.
+   */
+  void muteSoundAlarm();
+
  protected:
   void updateConfigField(uint8_t *configField, int8_t value);
   int8_t getHighestSensorValue() const;
@@ -125,9 +149,19 @@ class Container : public ChannelElement {
   void setInvalidSensorStateActive(bool invalidSensorStateActive);
   void setSoundAlarmOn(bool soundAlarmOn);
 
-  // Sensor invalid state is reported when sensor with higher fill value
-  // is active, while sensor with lower fill value is NOT active
-  bool checkSensorInvalidState(const int8_t currentFillLevel) const;
+  /**
+   * Checks if sensor is in invalid state. Sensor is in invalid state when
+   * sensor with lower fill then  the reported fill level, is NOT active
+   *
+   * @param currentFillLevel current fill level 0..100
+   * @param tolerance add tolerance to current fill level so i.e. if fill level
+   *        is 92 and tolerance is 2, then sensor is in invalid state when
+   *        it is NOT active and it's fill level is 90 or less.
+   *
+   * @return true if any connected sensor is in invalid state
+   */
+  bool checkSensorInvalidState(const int8_t currentFillLevel,
+                               const int8_t tolerance = 0) const;
 
   // returns -1 when sensor is not configured or on error
   // returns 0 when sensor is not active
@@ -137,6 +171,7 @@ class Container : public ChannelElement {
   uint32_t readIntervalMs = 1000;
   int8_t fillLevel = -1;
   bool soundAlarmSupported = false;
+  bool soundAlarmActivated = false;
 
   ContainerConfig config = {};
 };

@@ -33,16 +33,43 @@ Container::Container() {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
+void Container::setInternalLevelReporting(bool internalLevelReporting) {
+  if (internalLevelReporting) {
+    getChannel()->setFlag(
+        SUPLA_CHANNEL_FLAG_FILL_LEVEL_REPORTING_IN_FULL_RANGE);
+  } else {
+    getChannel()->unsetFlag(
+        SUPLA_CHANNEL_FLAG_FILL_LEVEL_REPORTING_IN_FULL_RANGE);
+  }
+}
+
+bool Container::isInternalLevelReporting() const {
+  return getChannel()->getFlags() &
+         SUPLA_CHANNEL_FLAG_FILL_LEVEL_REPORTING_IN_FULL_RANGE;
+}
+
 void Container::iterateAlways() {
   if (lastReadTime == 0 || millis() - lastReadTime >= readIntervalMs) {
     lastReadTime = millis();
-    int value = 0;
+    int sensorValue = -1;
+    bool invalidSensorState = false;
     if (isSensorDataUsed()) {
-      value = getHighestSensorValue();
-      channel.setContainerInvalidSensorState(checkSensorInvalidState(value));
-    } else {
-      value = readNewValue();
+      sensorValue = getHighestSensorValue();
+      invalidSensorState = checkSensorInvalidState(sensorValue);
     }
+    int value = 0;
+    if (isInternalLevelReporting()) {
+      value = readNewValue();
+      if (sensorValue > value) {
+        value = sensorValue;
+      } else if (sensorValue >= 0 && !invalidSensorState) {
+        invalidSensorState = checkSensorInvalidState(value, 2);
+      }
+    } else {
+      value = sensorValue;
+    }
+
+    channel.setContainerInvalidSensorState(invalidSensorState);
     if (isAlarmingUsed()) {
       bool warningActive = false;
       bool alarmActive = false;
@@ -124,7 +151,13 @@ bool Container::isInvalidSensorStateActive() const {
 }
 
 void Container::setSoundAlarmOn(bool soundAlarmOn) {
-  channel.setContainerSoundAlarmOn(soundAlarmOn);
+  if (!soundAlarmActivated && soundAlarmOn) {
+    soundAlarmActivated = true;
+    channel.setContainerSoundAlarmOn(soundAlarmOn);
+  } else if (soundAlarmActivated && !soundAlarmOn) {
+    soundAlarmActivated = false;
+    channel.setContainerSoundAlarmOn(soundAlarmOn);
+  }
 }
 
 bool Container::isSoundAlarmOn() const {
@@ -148,6 +181,10 @@ void Container::updateConfigField(uint8_t *configField, int8_t value) {
       setSoundAlarmOn(false);
     }
   }
+}
+
+void Container::muteSoundAlarm() {
+  channel.setContainerSoundAlarmOn(false);
 }
 
 void Container::setWarningAboveLevel(int8_t warningAboveLevel) {
@@ -256,10 +293,11 @@ int8_t Container::getHighestSensorValue() const {
   return highestValue;
 }
 
-bool Container::checkSensorInvalidState(const int8_t currentfillLevel) const {
+bool Container::checkSensorInvalidState(const int8_t currentfillLevel,
+                                        const int8_t tolerance) const {
   for (auto const &sensor : config.sensorData) {
     if (getSensorState(sensor.channelNumber) == 0) {
-      if (sensor.fillLevel <= currentfillLevel) {
+      if (sensor.fillLevel <= currentfillLevel - tolerance) {
         return true;
       }
     }

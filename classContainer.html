@@ -141,6 +141,12 @@ Collaboration diagram for Container:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a489d2acf9690cee67d6e9bff8076f4fc" id="r_a489d2acf9690cee67d6e9bff8076f4fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a489d2acf9690cee67d6e9bff8076f4fc">setInternalLevelReporting</a> (bool internalLevelReporting)</td></tr>
+<tr class="memdesc:a489d2acf9690cee67d6e9bff8076f4fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the internal level reporting flag.  <br /></td></tr>
+<tr class="separator:a489d2acf9690cee67d6e9bff8076f4fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c48b171d583abb19d684f222032f029" id="r_a6c48b171d583abb19d684f222032f029"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6c48b171d583abb19d684f222032f029">isInternalLevelReporting</a> () const</td></tr>
+<tr class="memdesc:a6c48b171d583abb19d684f222032f029"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if the internal level reporting flag is enabled.  <br /></td></tr>
+<tr class="separator:a6c48b171d583abb19d684f222032f029"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab2504016b50c9532aeb3f7bbfabafe81" id="r_ab2504016b50c9532aeb3f7bbfabafe81"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab2504016b50c9532aeb3f7bbfabafe81">iterateAlways</a> () override</td></tr>
 <tr class="memdesc:ab2504016b50c9532aeb3f7bbfabafe81"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
 <tr class="separator:ab2504016b50c9532aeb3f7bbfabafe81"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -238,6 +244,10 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setSoundAlarmSupporte
 <tr class="memitem:a209bb5caac6cf7155da65e8358ba8087" id="r_a209bb5caac6cf7155da65e8358ba8087"><td class="memItemLeft" align="right" valign="top"><a id="a209bb5caac6cf7155da65e8358ba8087" name="a209bb5caac6cf7155da65e8358ba8087"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isSoundAlarmSupported</b> () const</td></tr>
 <tr class="separator:a209bb5caac6cf7155da65e8358ba8087"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af517e3d07f9510982baff2f37e99acf1" id="r_af517e3d07f9510982baff2f37e99acf1"><td class="memItemLeft" align="right" valign="top"><a id="af517e3d07f9510982baff2f37e99acf1" name="af517e3d07f9510982baff2f37e99acf1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>muteSoundAlarm</b> ()</td></tr>
+<tr class="memdesc:af517e3d07f9510982baff2f37e99acf1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Mutes the sound alarmm by clearing channel value flag, but does not clear soundAlarmActivated flag, so it requires to call setSoundAlarmOn with false, before new alarm sound will be started. <br /></td></tr>
+<tr class="separator:af517e3d07f9510982baff2f37e99acf1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>ChannelElement</b> (int channelNumber=-1)</td></tr>
@@ -425,12 +435,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setWarningActive</b> 
 <tr class="memitem:ab1b8b6a1e21c0cbb871bbbe2e308161f" id="r_ab1b8b6a1e21c0cbb871bbbe2e308161f"><td class="memItemLeft" align="right" valign="top"><a id="ab1b8b6a1e21c0cbb871bbbe2e308161f" name="ab1b8b6a1e21c0cbb871bbbe2e308161f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setInvalidSensorStateActive</b> (bool invalidSensorStateActive)</td></tr>
 <tr class="separator:ab1b8b6a1e21c0cbb871bbbe2e308161f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7867228eb0baada7b2fc027bd7d2b064" id="r_a7867228eb0baada7b2fc027bd7d2b064"><td class="memItemLeft" align="right" valign="top"><a id="a7867228eb0baada7b2fc027bd7d2b064" name="a7867228eb0baada7b2fc027bd7d2b064"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setSoundAlarmOn</b> (bool soundAlarmOn)</td></tr>
-<tr class="separator:a7867228eb0baada7b2fc027bd7d2b064"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a522bd8bd63d61f1de96ee99da5ff4667" id="r_a522bd8bd63d61f1de96ee99da5ff4667"><td class="memItemLeft" align="right" valign="top"><a id="a522bd8bd63d61f1de96ee99da5ff4667" name="a522bd8bd63d61f1de96ee99da5ff4667"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>checkSensorInvalidState</b> (const int8_t currentFillLevel) const</td></tr>
-<tr class="separator:a522bd8bd63d61f1de96ee99da5ff4667"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a98eeb2dbfc1752d4f49210457eca0e46" id="r_a98eeb2dbfc1752d4f49210457eca0e46"><td class="memItemLeft" align="right" valign="top"><a id="a98eeb2dbfc1752d4f49210457eca0e46" name="a98eeb2dbfc1752d4f49210457eca0e46"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setSoundAlarmOn</b> (uint8_t level)</td></tr>
+<tr class="separator:a98eeb2dbfc1752d4f49210457eca0e46"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad993ee738a1524a8b6d248038c4af678" id="r_ad993ee738a1524a8b6d248038c4af678"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ad993ee738a1524a8b6d248038c4af678">checkSensorInvalidState</a> (const int8_t currentFillLevel, const int8_t tolerance=0) const</td></tr>
+<tr class="memdesc:ad993ee738a1524a8b6d248038c4af678"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if sensor is in invalid state.  <br /></td></tr>
+<tr class="separator:ad993ee738a1524a8b6d248038c4af678"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeed03eac8b0655a6a36cf389e9d9001e" id="r_aeed03eac8b0655a6a36cf389e9d9001e"><td class="memItemLeft" align="right" valign="top"><a id="aeed03eac8b0655a6a36cf389e9d9001e" name="aeed03eac8b0655a6a36cf389e9d9001e"></a>
 int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getSensorState</b> (const uint8_t channelNumber) const</td></tr>
 <tr class="separator:aeed03eac8b0655a6a36cf389e9d9001e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -459,6 +469,9 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>fillLevel</b> = -1<
 <tr class="memitem:a6c3e2e0bd0f604ce29eaab5fa687621b" id="r_a6c3e2e0bd0f604ce29eaab5fa687621b"><td class="memItemLeft" align="right" valign="top"><a id="a6c3e2e0bd0f604ce29eaab5fa687621b" name="a6c3e2e0bd0f604ce29eaab5fa687621b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>soundAlarmSupported</b> = false</td></tr>
 <tr class="separator:a6c3e2e0bd0f604ce29eaab5fa687621b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aafa887d47cf76b87b78ba60bf4dc9447" id="r_aafa887d47cf76b87b78ba60bf4dc9447"><td class="memItemLeft" align="right" valign="top"><a id="aafa887d47cf76b87b78ba60bf4dc9447" name="aafa887d47cf76b87b78ba60bf4dc9447"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>soundAlarmActivatedLevel</b> = 0</td></tr>
+<tr class="separator:aafa887d47cf76b87b78ba60bf4dc9447"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aae4c2ac12f8cc176ebab684674cfd04a" id="r_aae4c2ac12f8cc176ebab684674cfd04a"><td class="memItemLeft" align="right" valign="top"><a id="aae4c2ac12f8cc176ebab684674cfd04a" name="aae4c2ac12f8cc176ebab684674cfd04a"></a>
 ContainerConfig&#160;</td><td class="memItemRight" valign="bottom"><b>config</b> = {}</td></tr>
 <tr class="separator:aae4c2ac12f8cc176ebab684674cfd04a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -567,6 +580,46 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
+<a id="ad993ee738a1524a8b6d248038c4af678" name="ad993ee738a1524a8b6d248038c4af678"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad993ee738a1524a8b6d248038c4af678">&#9670;&#160;</a></span>checkSensorInvalidState()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Container::checkSensorInvalidState </td>
+          <td>(</td>
+          <td class="paramtype">const int8_t</td>          <td class="paramname"><span class="paramname"><em>currentFillLevel</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const int8_t</td>          <td class="paramname"><span class="paramname"><em>tolerance</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0</span>&#160;) const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Checks if sensor is in invalid state. </p>
+<p>Sensor is in invalid state when sensor with lower fill then the reported fill level, is NOT active</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">currentFillLevel</td><td>current fill level 0..100 </td></tr>
+    <tr><td class="paramname">tolerance</td><td>add tolerance to current fill level so i.e. if fill level is 92 and tolerance is 2, then sensor is in invalid state when it is NOT active and it's fill level is 90 or less.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if any connected sensor is in invalid state </dd></dl>
+
+</div>
+</div>
 <a id="a79c8de3a87978909d95bc23e207e3f0c" name="a79c8de3a87978909d95bc23e207e3f0c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a79c8de3a87978909d95bc23e207e3f0c">&#9670;&#160;</a></span>fillChannelConfig()</h2>
 
@@ -595,6 +648,26 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a6c48b171d583abb19d684f222032f029" name="a6c48b171d583abb19d684f222032f029"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c48b171d583abb19d684f222032f029">&#9670;&#160;</a></span>isInternalLevelReporting()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Container::isInternalLevelReporting </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks if the internal level reporting flag is enabled. </p>
+<dl class="section return"><dt>Returns</dt><dd>true if internal level reporting is enabled </dd></dl>
 
 </div>
 </div>
@@ -661,6 +734,32 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </dl>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a9d8deade88f280e66e263bd034ba0e4c">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a489d2acf9690cee67d6e9bff8076f4fc" name="a489d2acf9690cee67d6e9bff8076f4fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a489d2acf9690cee67d6e9bff8076f4fc">&#9670;&#160;</a></span>setInternalLevelReporting()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Container::setInternalLevelReporting </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>internalLevelReporting</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets the internal level reporting flag. </p>
+<p>When enabled, the container will report fill level by internal measument mechanism. Additional Fill Level Binary Sensors are used only as a backup. Default: false</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">internalLevelReporting</td><td>true to enable internal level reporting </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

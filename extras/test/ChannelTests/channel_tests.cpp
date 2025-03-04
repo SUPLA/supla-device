@@ -628,6 +628,7 @@ TEST_F(ChannelTestsFixture, SetNewValueWithCorrection) {
 
   channel2.setCorrection(2, true);
 
+  channel2.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
   channel2.setNewValue(pi, e);
   EXPECT_NEAR(channel2.getValueDoubleFirst(), pi, 0.001);
   EXPECT_NEAR(
@@ -687,6 +688,7 @@ TEST_F(ChannelTestsFixture, SetNewTemperatureHumidityWithCorrection) {
   // channel 3 - humidity
   channel3.setCorrection(-40, true);
 
+  channel3.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
   channel3.setNewValue(-275.0, 80.0);
   EXPECT_NEAR(channel3.getValueDoubleFirst(), -275, 0.001);
   EXPECT_NEAR(

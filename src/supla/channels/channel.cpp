@@ -139,14 +139,17 @@ bool Channel::setChannelNumber(int newChannelNumber) {
 }
 
 void Channel::setNewValue(double dbl) {
-  bool skipCorrection = false;
   if (channelType == ChannelType::THERMOMETER) {
-    if (dbl <= -273) {
-      skipCorrection = true;
+    // for thermometer value must be greater than -273
+    if (dbl > -273) {
+      // Apply channel value correction
+      dbl += Correction::get(getChannelNumber());
+      if (dbl < -273) {
+        dbl = -273;
+      }
     }
-  }
-
-  if (!skipCorrection) {
+  } else {
+    // For all other channels
     // Apply channel value correction
     dbl += Correction::get(getChannelNumber());
   }
@@ -170,32 +173,26 @@ void Channel::setNewValue(double dbl) {
 }
 
 void Channel::setNewValue(double temp, double humi) {
-  bool skipTempCorrection = false;
-  bool skipHumiCorrection = false;
+  // 2x Float is used only on humidity and humidity&temperature
   if (channelType == ChannelType::HUMIDITYSENSOR ||
       channelType == ChannelType::HUMIDITYANDTEMPSENSOR) {
-    if (temp <= -273) {
-      skipTempCorrection = true;
-    }
-    if (humi < 0) {
-      skipHumiCorrection = true;
-    }
-  }
-
-  if (!skipTempCorrection) {
-    // Apply channel value corrections
-    temp += Correction::get(getChannelNumber());
-  }
-
-  if (!skipHumiCorrection) {
-    double humiCorr = Correction::get(getChannelNumber(), true);
-    humi += humiCorr;
-    if (humiCorr > 0.01 || humiCorr < -0.01) {
-      if (humi < 0) {
-        humi = 0;
+    if (temp > -273) {
+      // Apply channel value corrections
+      temp += Correction::get(getChannelNumber());
+      if (temp < -273) {
+        temp = -273;
       }
-      if (humi > 100) {
-        humi = 100;
+    }
+    if (humi >= 0) {
+      double humiCorr = Correction::get(getChannelNumber(), true);
+      humi += humiCorr;
+      if (humiCorr > 0.01 || humiCorr < -0.01) {
+        if (humi < 0) {
+          humi = 0;
+        }
+        if (humi > 100) {
+          humi = 100;
+        }
       }
     }
   }

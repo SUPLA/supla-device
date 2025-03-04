@@ -97,6 +97,10 @@ void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
   SUPLA_LOG_DEBUG("Channel[%d] temperature correction %.2f",
                   getChannelNumber(),
                   correction);
+  if (applyCorrections) {
+    getChannel()->setCorrection(correction);
+  }
+
   // humidity correction
   auto cfgHumCorrection = getConfiguredHumidityCorrection();
   correction = 1.0 * cfgHumCorrection / 10.0;
@@ -104,7 +108,6 @@ void Supla::Sensor::ThermHygroMeter::onLoadConfig(SuplaDeviceClass *sdc) {
       "Channel[%d] humidity correction %.2f", getChannelNumber(), correction);
 
   if (applyCorrections) {
-    getChannel()->setCorrection(correction);
     getChannel()->setCorrection(correction, true);
   }
 

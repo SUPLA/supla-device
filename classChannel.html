@@ -527,15 +527,15 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isBatteryPoweredField
 <tr class="memitem:a1d48e694b58f673f07f604005440c749" id="r_a1d48e694b58f673f07f604005440c749"><td class="memItemLeft" align="right" valign="top"><a id="a1d48e694b58f673f07f604005440c749" name="a1d48e694b58f673f07f604005440c749"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isBatteryPowered</b> () const</td></tr>
 <tr class="separator:a1d48e694b58f673f07f604005440c749"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab47d2f6426ce8d42b4ea49763100c53c" id="r_ab47d2f6426ce8d42b4ea49763100c53c"><td class="memItemLeft" align="right" valign="top"><a id="ab47d2f6426ce8d42b4ea49763100c53c" name="ab47d2f6426ce8d42b4ea49763100c53c"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getBatteryLevel</b> () const</td></tr>
-<tr class="separator:ab47d2f6426ce8d42b4ea49763100c53c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae0f4296ac361be614b41bfd01f51d09" id="r_aae0f4296ac361be614b41bfd01f51d09"><td class="memItemLeft" align="right" valign="top"><a id="aae0f4296ac361be614b41bfd01f51d09" name="aae0f4296ac361be614b41bfd01f51d09"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setBatteryLevel</b> (int level)</td></tr>
-<tr class="separator:aae0f4296ac361be614b41bfd01f51d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acb3008bb1a9a6f484fb23d1a6b56bc26" id="r_acb3008bb1a9a6f484fb23d1a6b56bc26"><td class="memItemLeft" align="right" valign="top"><a id="acb3008bb1a9a6f484fb23d1a6b56bc26" name="acb3008bb1a9a6f484fb23d1a6b56bc26"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setBatteryPowered</b> (bool)</td></tr>
 <tr class="separator:acb3008bb1a9a6f484fb23d1a6b56bc26"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab47d2f6426ce8d42b4ea49763100c53c" id="r_ab47d2f6426ce8d42b4ea49763100c53c"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab47d2f6426ce8d42b4ea49763100c53c">getBatteryLevel</a> () const</td></tr>
+<tr class="memdesc:ab47d2f6426ce8d42b4ea49763100c53c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns battery level.  <br /></td></tr>
+<tr class="separator:ab47d2f6426ce8d42b4ea49763100c53c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aae0f4296ac361be614b41bfd01f51d09" id="r_aae0f4296ac361be614b41bfd01f51d09"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aae0f4296ac361be614b41bfd01f51d09">setBatteryLevel</a> (int level)</td></tr>
+<tr class="memdesc:aae0f4296ac361be614b41bfd01f51d09"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets battery level.  <br /></td></tr>
+<tr class="separator:aae0f4296ac361be614b41bfd01f51d09"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1194c99e8af1d73c9e2e707a95e95c2e" id="r_a1194c99e8af1d73c9e2e707a95e95c2e"><td class="memItemLeft" align="right" valign="top"><a id="a1194c99e8af1d73c9e2e707a95e95c2e" name="a1194c99e8af1d73c9e2e707a95e95c2e"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setBridgeSignalStrength</b> (unsigned char level)</td></tr>
 <tr class="separator:a1194c99e8af1d73c9e2e707a95e95c2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -811,6 +811,26 @@ static <a class="el" href="classSupla_1_1Channel.html">Channel</a> *&#160;</td><
 <tr class="separator:a538f5b1cb4f5590bf91cab542900abf9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="ab47d2f6426ce8d42b4ea49763100c53c" name="ab47d2f6426ce8d42b4ea49763100c53c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab47d2f6426ce8d42b4ea49763100c53c">&#9670;&#160;</a></span>getBatteryLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t Channel::getBatteryLevel </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns battery level. </p>
+<dl class="section return"><dt>Returns</dt><dd>0..100 (0 = empty, 100 = full), or 255 if not available </dd></dl>
+
+</div>
+</div>
 <a id="a25d250f007dca36fa0b1c654f30a983e" name="a25d250f007dca36fa0b1c654f30a983e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a25d250f007dca36fa0b1c654f30a983e">&#9670;&#160;</a></span>getValveOpenState()</h2>
 
@@ -908,6 +928,31 @@ static <a class="el" href="classSupla_1_1Channel.html">Channel</a> *&#160;</td><
 
 <p>Returns the open state (open/close) of the Valve channel. </p>
 <dl class="section return"><dt>Returns</dt><dd>true if open </dd></dl>
+
+</div>
+</div>
+<a id="aae0f4296ac361be614b41bfd01f51d09" name="aae0f4296ac361be614b41bfd01f51d09"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aae0f4296ac361be614b41bfd01f51d09">&#9670;&#160;</a></span>setBatteryLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Channel::setBatteryLevel </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>level</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets battery level. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">level</td><td>0..100 </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

@@ -211,8 +211,8 @@ int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getConfiguredTempe
 <tr class="memitem:a9d99a58748ae739c35348e6e7d362172" id="r_a9d99a58748ae739c35348e6e7d362172"><td class="memItemLeft" align="right" valign="top"><a id="a9d99a58748ae739c35348e6e7d362172" name="a9d99a58748ae739c35348e6e7d362172"></a>
 int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getConfiguredHumidityCorrection</b> ()</td></tr>
 <tr class="separator:a9d99a58748ae739c35348e6e7d362172"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a37fe739927b270a3adfc6e17792e0aec" id="r_a37fe739927b270a3adfc6e17792e0aec"><td class="memItemLeft" align="right" valign="top"><a id="a37fe739927b270a3adfc6e17792e0aec" name="a37fe739927b270a3adfc6e17792e0aec"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>applyCorrectionsAndStoreIt</b> (int32_t temperatureCorrection, int32_t humidityCorrection, bool local=false)</td></tr>
+<tr class="memitem:a37fe739927b270a3adfc6e17792e0aec" id="r_a37fe739927b270a3adfc6e17792e0aec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a37fe739927b270a3adfc6e17792e0aec">applyCorrectionsAndStoreIt</a> (int32_t temperatureCorrection, int32_t humidityCorrection, bool local=false)</td></tr>
+<tr class="memdesc:a37fe739927b270a3adfc6e17792e0aec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply temperature and humidity corrections and store them to <a class="el" href="classSupla_1_1Config.html">Config</a>.  <br /></td></tr>
 <tr class="separator:a37fe739927b270a3adfc6e17792e0aec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71a51c164460d360c9356e0da82dafc3" id="r_a71a51c164460d360c9356e0da82dafc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a71a51c164460d360c9356e0da82dafc3">setApplyCorrections</a> (bool <a class="el" href="#a1c2119eb738ac047405a2337f3339e3c">applyCorrections</a>)</td></tr>
 <tr class="memdesc:a71a51c164460d360c9356e0da82dafc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set whether correction should be applied or not.  <br /></td></tr>
@@ -526,6 +526,42 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a37fe739927b270a3adfc6e17792e0aec" name="a37fe739927b270a3adfc6e17792e0aec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a37fe739927b270a3adfc6e17792e0aec">&#9670;&#160;</a></span>applyCorrectionsAndStoreIt()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>temperatureCorrection</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>humidityCorrection</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Apply temperature and humidity corrections and store them to <a class="el" href="classSupla_1_1Config.html">Config</a>. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">temperatureCorrection</td><td>temperature correction in 0.1 degree </td></tr>
+    <tr><td class="paramname">humidityCorrection</td><td>humidity correction in 0.1 % </td></tr>
+    <tr><td class="paramname">local</td><td>true if correction should be applied locally and then config will be send to server </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

@@ -517,6 +517,67 @@ TEST(ContainerTests, SoundAlarmingTests) {
   EXPECT_FALSE(container.isInvalidSensorStateActive());
   EXPECT_TRUE(container.isSoundAlarmOn());
 
+  container.muteSoundAlarm();
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearSendValue();
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
+
+  // mute sound was for alarm, so on lower level we don't start sound alarm
+  // again
+  container.setValue(88);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearSendValue();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
+
+  container.setValue(50);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearSendValue();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_FALSE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
+
+  container.setValue(88);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearSendValue();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
+  container.muteSoundAlarm();
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearSendValue();
+  EXPECT_FALSE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_FALSE(container.isSoundAlarmOn());
+
+  container.setValue(97);
+  time.advance(2000);
+  container.iterateAlways();
+  EXPECT_TRUE(ch->isUpdateReady());
+  ch->clearSendValue();
+  EXPECT_TRUE(container.isAlarmActive());
+  EXPECT_TRUE(container.isWarningActive());
+  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isSoundAlarmOn());
+
   container.setValue(50);
   time.advance(2000);
   container.iterateAlways();

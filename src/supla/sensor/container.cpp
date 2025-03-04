@@ -93,13 +93,15 @@ void Container::iterateAlways() {
 
     channel.setContainerFillValue(value);
     if (isSoundAlarmSupported()) {
-      if (isAlarmActive() || isWarningActive()) {
-        setSoundAlarmOn(true);
+      if (isAlarmActive()) {
+        setSoundAlarmOn(2);
+      } else if (isWarningActive()) {
+        setSoundAlarmOn(1);
       } else {
-        setSoundAlarmOn(false);
+        setSoundAlarmOn(0);
       }
     } else {
-      setSoundAlarmOn(false);
+      setSoundAlarmOn(0);
     }
   }
 }
@@ -150,13 +152,12 @@ bool Container::isInvalidSensorStateActive() const {
     return channel.isContainerInvalidSensorStateActive();
 }
 
-void Container::setSoundAlarmOn(bool soundAlarmOn) {
-  if (!soundAlarmActivated && soundAlarmOn) {
-    soundAlarmActivated = true;
-    channel.setContainerSoundAlarmOn(soundAlarmOn);
-  } else if (soundAlarmActivated && !soundAlarmOn) {
-    soundAlarmActivated = false;
-    channel.setContainerSoundAlarmOn(soundAlarmOn);
+void Container::setSoundAlarmOn(uint8_t level) {
+  if (soundAlarmActivatedLevel != level) {
+    if (soundAlarmActivatedLevel < level || level == 0) {
+      channel.setContainerSoundAlarmOn(level > 0);
+    }
+    soundAlarmActivatedLevel = level;
   }
 }
 
@@ -178,7 +179,7 @@ void Container::updateConfigField(uint8_t *configField, int8_t value) {
     if (alarmingWasUsed && !isAlarmingUsed()) {
       setAlarmActive(false);
       setWarningActive(false);
-      setSoundAlarmOn(false);
+      setSoundAlarmOn(0);
     }
   }
 }

@@ -147,7 +147,7 @@ class Container : public ChannelElement {
   void setAlarmActive(bool alarmActive);
   void setWarningActive(bool warningActive);
   void setInvalidSensorStateActive(bool invalidSensorStateActive);
-  void setSoundAlarmOn(bool soundAlarmOn);
+  void setSoundAlarmOn(uint8_t level);
 
   /**
    * Checks if sensor is in invalid state. Sensor is in invalid state when
@@ -171,7 +171,7 @@ class Container : public ChannelElement {
   uint32_t readIntervalMs = 1000;
   int8_t fillLevel = -1;
   bool soundAlarmSupported = false;
-  bool soundAlarmActivated = false;
+  uint8_t soundAlarmActivatedLevel = 0;
 
   ContainerConfig config = {};
 };

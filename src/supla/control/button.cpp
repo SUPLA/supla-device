@@ -97,6 +97,10 @@ void Button::onTimer() {
         runAction(ON_HOLD);
         ++holdSend;
       }
+      if (clickCounter >= 1 && stateResult == PRESSED &&
+          timeDelta > multiclickTimeMs) {
+        clickCounter = 0;
+      }
     } else if (stateResult == RELEASED || isBistable() || isMotionSensor()) {
       // for all button types (monostable, bistable, and motion sensor)
       if (multiclickTimeMs == 0) {
@@ -143,38 +147,38 @@ void Button::onTimer() {
           }
         } else {
           switch (clickCounter) {
-            // for LONG_CLICK counter was incremented once by ON_HOLD
-            case 1:
+            // LONG click is send for clicking after HOLD
+            case 0:
               runAction(ON_LONG_CLICK_0);
               break;
-            case 2:
+            case 1:
               runAction(ON_LONG_CLICK_1);
               break;
-            case 3:
+            case 2:
               runAction(ON_LONG_CLICK_2);
               break;
-            case 4:
+            case 3:
               runAction(ON_LONG_CLICK_3);
               break;
-            case 5:
+            case 4:
               runAction(ON_LONG_CLICK_4);
               break;
-            case 6:
+            case 5:
               runAction(ON_LONG_CLICK_5);
               break;
-            case 7:
+            case 6:
               runAction(ON_LONG_CLICK_6);
               break;
-            case 8:
+            case 7:
               runAction(ON_LONG_CLICK_7);
               break;
-            case 9:
+            case 8:
               runAction(ON_LONG_CLICK_8);
               break;
-            case 10:
+            case 9:
               runAction(ON_LONG_CLICK_9);
               break;
-            case 11:
+            case 10:
               runAction(ON_LONG_CLICK_10);
               break;
           }

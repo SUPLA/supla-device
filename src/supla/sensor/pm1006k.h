@@ -43,10 +43,10 @@ class pm1006k : public GeneralPurposeMeasurement {
     }
     if (fan < 15) {
       fan = 15;
-    } else if (fan > 60*refresh) {
-      fan=59;
     } else if (fan > 120) {
       fan = 120;
+    } else if (fan > 60*refresh) {
+      fan = 59;
     }
 
     // FAN setup

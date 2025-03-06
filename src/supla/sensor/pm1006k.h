@@ -33,7 +33,8 @@ class pm1006k : public GeneralPurposeMeasurement {
   // rx_pin, tx_pin: pins to which the sensor is connected
   // refresh: time between readings (in minutes: 1-1440)
   // fan: fan working time (in sec: 15-120)
-  explicit pm1006k(int rx_pin, int tx_pin, int fan_pin = 0, int refresh = 10, int fan = 15)
+  explicit pm1006k(int rx_pin, int tx_pin, int fan_pin = 0,
+      int refresh = 10, int fan = 15)
       : GeneralPurposeMeasurement(nullptr, false) {
     if (refresh < 1) {
       refresh = 10;

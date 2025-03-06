@@ -32,12 +32,20 @@ class pm1006k : public GeneralPurposeMeasurement {
  public:
   // rx_pin, tx_pin: pins to which the sensor is connected
   // refresh: time between readings (in minutes: 1-1440)
-  explicit pm1006k(int rx_pin, int tx_pin, int fan_pin = 0, int refresh = 10)
+  // fan: fan working time (in sec: 15-120)
+  explicit pm1006k(int rx_pin, int tx_pin, int fan_pin = 0, int refresh = 10, int fan = 15)
       : GeneralPurposeMeasurement(nullptr, false) {
     if (refresh < 1) {
       refresh = 10;
     } else if (refresh > 1440) {
       refresh = 10;
+    }
+    if (fan < 15) {
+      fan = 15;
+    } else if (fan > 60*refresh) {
+      fan=59;
+    } else if (fan > 120) {
+      fan = 120;
     }
 
     // FAN setup
@@ -55,18 +63,15 @@ class pm1006k : public GeneralPurposeMeasurement {
     sensor = new PM1006K(&Serial1);
 
     refreshIntervalMs = refresh * 60 * 1000;
+    fanTime = fan * 1000;
     setDefaultUnitAfterValue("μg/m³");
     setInitialCaption("PM 2.5");
     getChannel()->setDefaultIcon(8);
   }
 
-  void onInit() override {
-    iterateAlways();
-  }
-
   void iterateAlways() override {
     // 15 sec befor reading sensor
-    if (millis() - lastReadTime > refreshIntervalMs-15000) {
+    if (millis() - lastReadTime > refreshIntervalMs-fanTime) {
       if (fanPin && fanOff) {
         fanOff = false;
         digitalWrite(fanPin, HIGH);
@@ -75,12 +80,12 @@ class pm1006k : public GeneralPurposeMeasurement {
     }
 
     if (millis() - lastReadTime > refreshIntervalMs) {
-      int32_t value = NAN;
+      double value = NAN;
       if (!sensor->takeMeasurement()) {
         SUPLA_LOG_DEBUG("PM1006K: failed to take measurement");
       } else {
         value = sensor->getPM2_5();
-        SUPLA_LOG_DEBUG("PM1006K: read: %d", value);
+        SUPLA_LOG_DEBUG("PM1006K: read: %.0f", value);
       }
 
       if (fanPin) {
@@ -112,9 +117,10 @@ class pm1006k : public GeneralPurposeMeasurement {
   ::PM1006K* sensor;
   uint32_t refreshIntervalMs = 600000;
   uint32_t lastReadTime = 0;
-  uint32_t lastValue = NAN;
+  double lastValue = NAN;
   int fanPin = 0;
   bool fanOff = true;
+  uint32_t fanTime = 15;
   int invalidCounter = 0;
 };
 

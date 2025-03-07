@@ -47,7 +47,11 @@ class BlinkingLed : public Supla::Element {
                                  uint32_t offDurationMs,
                                  uint32_t pauseDurrationMs = 0,
                                  uint8_t onLimit = 0,
-                                 uint8_t repeatLimit = 0);
+                                 uint8_t repeatLimit = 0,
+                                 bool startWithOff = true);
+
+  void setAlwaysOffSequence();
+  void setAlwaysOnSequence();
 
  protected:
   void updatePin();

@@ -2163,18 +2163,13 @@ bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
       std::string key = ch[Supla::Parser::Level].as<std::string>();
       container->setMapping(Supla::Parser::Level, key);
     }
-  } else {
-    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
-                    channelNumber,
-                    Supla::Parser::Level);
-    return false;
+    container->setInternalLevelReporting(true);
+    if (ch[Supla::Multiplier]) {
+      paramCount++;
+      double multiplier = ch[Supla::Multiplier].as<double>();
+      container->setMultiplier(Supla::Parser::Level, multiplier);
+    }
   }
-  if (ch[Supla::Multiplier]) {
-    paramCount++;
-    double multiplier = ch[Supla::Multiplier].as<double>();
-    container->setMultiplier(Supla::Parser::Level, multiplier);
-  }
-
   return addCommonParametersParsed(ch, container, &paramCount, parser);
 }
 

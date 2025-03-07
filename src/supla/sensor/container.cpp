@@ -23,6 +23,8 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
+#include <supla/actions.h>
+#include <supla/events.h>
 
 using Supla::Sensor::Container;
 
@@ -54,7 +56,7 @@ void Container::iterateAlways() {
     int sensorValue = -1;
     bool invalidSensorState = false;
     if (isSensorDataUsed()) {
-      sensorValue = getHighestSensorValue();
+      sensorValue = getHighestSensorValueAndUpdateState();
       invalidSensorState = checkSensorInvalidState(sensorValue);
     }
     int value = 0;
@@ -155,9 +157,12 @@ bool Container::isInvalidSensorStateActive() const {
 void Container::setSoundAlarmOn(uint8_t level) {
   if (soundAlarmActivatedLevel != level) {
     if (soundAlarmActivatedLevel < level || level == 0) {
-      channel.setContainerSoundAlarmOn(level > 0);
+      channel.setContainerSoundAlarmOn(level > 0 || isExternalSoundAlarmOn());
     }
     soundAlarmActivatedLevel = level;
+  }
+  if (isExternalSoundAlarmOn()) {
+    channel.setContainerSoundAlarmOn(true);
   }
 }
 
@@ -185,7 +190,11 @@ void Container::updateConfigField(uint8_t *configField, int8_t value) {
 }
 
 void Container::muteSoundAlarm() {
-  channel.setContainerSoundAlarmOn(false);
+  if (channel.isContainerSoundAlarmOn()) {
+    channel.setContainerSoundAlarmOn(false);
+    runAction(Supla::ON_CONTAINER_SOUND_ALARM_MUTED);
+    setExternalSoundAlarmOff();
+  }
 }
 
 void Container::setWarningAboveLevel(int8_t warningAboveLevel) {
@@ -280,24 +289,46 @@ bool Container::isSensorDataUsed() const {
   return false;
 }
 
-int8_t Container::getHighestSensorValue() const {
+int8_t Container::getHighestSensorValueAndUpdateState() {
   // browse all sensor data and get highest value of sensor which is in
   // active state
-  int8_t highestValue = 0;
+  int8_t highestValue = -1;
+  bool offline = false;
   for (auto const &sensor : config.sensorData) {
-    if (getSensorState(sensor.channelNumber) == 1) {
+    auto sensorState = getSensorState(sensor.channelNumber);
+    if (sensorState == SensorState::Unknown) {
+      continue;
+    }
+    if (sensorState == SensorState::Offline) {
+      offline = true;
+      continue;
+    }
+    if (highestValue == -1) {
+      highestValue = 0;
+    }
+    if (sensorState == SensorState::Active) {
       if (sensor.fillLevel > highestValue) {
         highestValue = sensor.fillLevel;
       }
     }
   }
+
+  if (offline && !sensorOfflineReported) {
+    runAction(Supla::ON_CONTAINER_SENSOR_OFFLINE_ACTIVE);
+    sensorOfflineReported = true;
+  } else if (!offline && sensorOfflineReported) {
+    runAction(Supla::ON_CONTAINER_SENSOR_OFFLINE_INACTIVE);
+    sensorOfflineReported = false;
+  }
+
+
   return highestValue;
 }
 
 bool Container::checkSensorInvalidState(const int8_t currentfillLevel,
                                         const int8_t tolerance) const {
   for (auto const &sensor : config.sensorData) {
-    if (getSensorState(sensor.channelNumber) == 0) {
+    if (getSensorState(sensor.channelNumber) == SensorState::Inactive) {
       if (sensor.fillLevel <= currentfillLevel - tolerance) {
         return true;
       }
@@ -306,9 +337,10 @@ bool Container::checkSensorInvalidState(const int8_t currentfillLevel,
   return false;
 }
 
-int8_t Container::getSensorState(const uint8_t channelNumber) const {
+enum Supla::Sensor::SensorState Container::getSensorState(
+    const uint8_t channelNumber) const {
   if (channelNumber == 255) {
-    return -1;
+    return SensorState::Unknown;
   }
 
   auto ch = Supla::Channel::GetByChannelNumber(channelNumber);
@@ -318,7 +350,7 @@ int8_t Container::getSensorState(const uint8_t channelNumber) const {
         "channel %d not found",
         getChannelNumber(),
         channelNumber);
-    return -1;
+    return SensorState::Unknown;
   }
 
   if (ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
@@ -327,14 +359,18 @@ int8_t Container::getSensorState(const uint8_t channelNumber) const {
         "channel %d is not a binary sensor",
         getChannelNumber(),
         channelNumber);
-    return -1;
+    return SensorState::Unknown;
+  }
+
+  if (!ch->isStateOnline()) {
+    return SensorState::Offline;
   }
 
   if (ch->getValueBool() == true) {
-    return 1;
+    return SensorState::Active;
   }
 
-  return 0;
+  return SensorState::Inactive;
 }
 
 bool Container::isAlarmingUsed() const {
@@ -410,16 +446,16 @@ uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
           result->ConfigSize == sizeof(TChannelConfig_Container)) {
         auto cfg = reinterpret_cast<TChannelConfig_Container *>(result->Config);
         if (cfg->WarningAboveLevel <= 101) {
-          config.warningAboveLevel = cfg->WarningAboveLevel;
+          setWarningAboveLevel(cfg->WarningAboveLevel - 1);
         }
         if (cfg->AlarmAboveLevel <= 101) {
-          config.alarmAboveLevel = cfg->AlarmAboveLevel;
+          setAlarmAboveLevel(cfg->AlarmAboveLevel - 1);
         }
         if (cfg->WarningBelowLevel <= 101) {
-          config.warningBelowLevel = cfg->WarningBelowLevel;
+          setWarningBelowLevel(cfg->WarningBelowLevel - 1);
         }
         if (cfg->AlarmBelowLevel <= 101) {
-          config.alarmBelowLevel = cfg->AlarmBelowLevel;
+          setAlarmBelowLevel(cfg->AlarmBelowLevel - 1);
         }
 
         for (unsigned int i = 0;
@@ -504,7 +540,8 @@ void Container::fillChannelConfig(void *channelConfig, int *size) {
         cfg->SensorInfo[i].FillLevel = 0;
         // set sensor only if it is set and there is a binary sensor channel
         if (config.sensorData[i].channelNumber < 255 &&
-            getSensorState(config.sensorData[i].channelNumber) != -1) {
+            getSensorState(config.sensorData[i].channelNumber) !=
+                SensorState::Unknown) {
           cfg->SensorInfo[i].IsSet = 1;
           cfg->SensorInfo[i].ChannelNo = config.sensorData[i].channelNumber;
           cfg->SensorInfo[i].FillLevel = config.sensorData[i].fillLevel;
@@ -554,3 +591,46 @@ bool Container::isSoundAlarmSupported() const {
   return soundAlarmSupported;
 }
 
+
+int Container::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) {
+  if (request) {
+    if (request->Command == SUPLA_CALCFG_CMD_MUTE_ALARM_SOUND) {
+      if (config.muteAlarmSoundWithoutAdditionalAuth &&
+          !request->SuperUserAuthorized) {
+        return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
+      }
+      muteSoundAlarm();
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+  }
+  return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+}
+
+void Container::handleAction(int, int action) {
+  switch (action) {
+    case Supla::MUTE_SOUND_ALARM: {
+      muteSoundAlarm();
+      break;
+    }
+    case Supla::ENABLE_EXTERNAL_SOUND_ALARM: {
+      setExternalSoundAlarmOn();
+      break;
+    }
+    case Supla::DISABLE_EXTERNAL_SOUND_ALARM: {
+      setExternalSoundAlarmOff();
+      break;
+    }
+  }
+}
+
+bool Container::isExternalSoundAlarmOn() const {
+  return externalSoundAlarm;
+}
+
+void Container::setExternalSoundAlarmOn() {
+  externalSoundAlarm = true;
+}
+
+void Container::setExternalSoundAlarmOff() {
+  externalSoundAlarm = false;
+}

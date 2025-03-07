@@ -56,6 +56,14 @@ void BlinkingLed::setInvertedLogic(bool invertedLogic) {
   updatePin();
 }
 
+void BlinkingLed::setAlwaysOffSequence() {
+  setCustomSequence(0, 1000);
+}
+
+void BlinkingLed::setAlwaysOnSequence() {
+  setCustomSequence(1000, 0);
+}
+
 void BlinkingLed::turnOn() {
   lastUpdate = millis();
   state = ON;
@@ -111,7 +119,8 @@ void BlinkingLed::setCustomSequence(uint32_t onDurationMs,
                                     uint32_t offDurationMs,
                                     uint32_t pauseDurrationMs,
                                     uint8_t onLimit,
-                                    uint8_t repeatLimit) {
+                                    uint8_t repeatLimit,
+                                    bool startWithOff) {
   Supla::AutoLock autoLock(mutex);
   onDuration = onDurationMs;
   offDuration = offDurationMs;
@@ -119,8 +128,15 @@ void BlinkingLed::setCustomSequence(uint32_t onDurationMs,
   this->onLimit = onLimit;
   onLimitCounter = onLimit;
   this->repeatLimit = repeatLimit;
-  state = OFF;
   lastUpdate = 0;
   autoLock.unlock();
+  if (startWithOff && offDuration > 0) {
+    turnOff();
+  } else if (onDuration > 0) {
+    turnOn();
+  } else {
+    turnOff();
+  }
   updatePin();
 }
+

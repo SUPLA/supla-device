@@ -273,10 +273,12 @@ void Supla::Device::StatusLed::setCustomSequence(uint32_t onDurationMs,
                                                  uint32_t offDurationMs,
                                                  uint32_t pauseDurrationMs,
                                                  uint8_t onLimit,
-                                                 uint8_t repeatLimit) {
+                                                 uint8_t repeatLimit,
+                                                 bool startWithOff) {
   currentSequence = CUSTOM_SEQUENCE;
   Supla::Control::BlinkingLed::setCustomSequence(
-      onDurationMs, offDurationMs, pauseDurrationMs, onLimit, repeatLimit);
+      onDurationMs, offDurationMs, pauseDurrationMs, onLimit, repeatLimit,
+      startWithOff);
 }
 
 enum Supla::LedSequence Supla::Device::StatusLed::getCurrentSequence() const {

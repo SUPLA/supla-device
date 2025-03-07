@@ -1708,7 +1708,7 @@ void Channel::setContainerFillValue(int8_t fillLevel) {
   runAction(ON_CHANGE);
   setSendValue();
   SUPLA_LOG_DEBUG(
-      "Container(%d) value changed to %d", channelNumber, fillLevel);
+      "Container[%d] value changed to %d", channelNumber, fillLevel);
 }
 
 void Channel::setContainerAlarm(bool active) {

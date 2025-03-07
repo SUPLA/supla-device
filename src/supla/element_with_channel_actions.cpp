@@ -39,7 +39,7 @@ void Supla::ElementWithChannelActions::addAction(uint16_t action,
   ElementWithChannelActions::addAction(action, *client, event, alwaysEnabled);
 }
 
-void Supla::ElementWithChannelActions::runAction(uint16_t event) {
+void Supla::ElementWithChannelActions::runAction(uint16_t event) const {
   auto channel = getChannel();
   if (channel) {
     channel->runAction(event);

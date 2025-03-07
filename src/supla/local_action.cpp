@@ -100,7 +100,7 @@ void LocalAction::addAction(uint16_t action,
   LocalAction::addAction(action, *client, event, alwaysEnabled);
 }
 
-void LocalAction::runAction(uint16_t event) {
+void LocalAction::runAction(uint16_t event) const {
   auto ptr = ActionHandlerClient::begin;
   while (ptr) {
     if (ptr->client && ptr->trigger == this && ptr->onEvent == event &&

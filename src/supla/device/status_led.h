@@ -65,7 +65,8 @@ class StatusLed : public Supla::Control::BlinkingLed {
                          uint32_t offDurationMs,
                          uint32_t pauseDurrationMs = 0,
                          uint8_t onLimit = 0,
-                         uint8_t repeatLimit = 0) override;
+                         uint8_t repeatLimit = 0,
+                         bool startWithOff = true) override;
 
   enum LedSequence getCurrentSequence() const;
 

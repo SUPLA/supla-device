@@ -20,6 +20,7 @@
 #define SRC_SUPLA_SENSOR_CONTAINER_H_
 
 #include <supla/channel_element.h>
+#include <supla/action_handler.h>
 
 namespace Supla {
 namespace Html {
@@ -47,7 +48,14 @@ struct ContainerConfig {
 };
 #pragma pack(pop)
 
-class Container : public ChannelElement {
+enum class SensorState {
+  Unknown = 0,
+  Active = 1,
+  Inactive = 2,
+  Offline = 3
+};
+
+class Container : public ChannelElement, public ActionHandler {
  public:
   friend class Supla::Html::ContainerParameters;
   Container();
@@ -74,6 +82,9 @@ class Container : public ChannelElement {
   uint8_t applyChannelConfig(TSD_ChannelConfig *result,
                               bool local = false) override;
   void fillChannelConfig(void *channelConfig, int *size) override;
+  int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
+
+  void handleAction(int event, int action) override;
 
   void printConfig() const;
   void saveConfig();
@@ -88,6 +99,14 @@ class Container : public ChannelElement {
   bool isWarningActive() const;
   bool isInvalidSensorStateActive() const;
   bool isSoundAlarmOn() const;
+
+  /**
+   * Checks if the sound alarm was enabled for external source (other than
+   * container itself)
+   *
+   * @return true if sound alarm is externally enabled
+   */
+  bool isExternalSoundAlarmOn() const;
 
   virtual void setReadIntervalMs(uint32_t timeMs);
 
@@ -141,9 +160,12 @@ class Container : public ChannelElement {
    */
   void muteSoundAlarm();
 
+  void setExternalSoundAlarmOn();
+  void setExternalSoundAlarmOff();
+
  protected:
   void updateConfigField(uint8_t *configField, int8_t value);
-  int8_t getHighestSensorValue() const;
+  int8_t getHighestSensorValueAndUpdateState();
   void setAlarmActive(bool alarmActive);
   void setWarningActive(bool warningActive);
   void setInvalidSensorStateActive(bool invalidSensorStateActive);
@@ -166,12 +188,14 @@ class Container : public ChannelElement {
   // returns -1 when sensor is not configured or on error
   // returns 0 when sensor is not active
   // returns 1 when sensor is active
-  int8_t getSensorState(const uint8_t channelNumber) const;
+  enum SensorState getSensorState(const uint8_t channelNumber) const;
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 1000;
   int8_t fillLevel = -1;
   bool soundAlarmSupported = false;
   uint8_t soundAlarmActivatedLevel = 0;
+  bool externalSoundAlarm = false;
+  bool sensorOfflineReported = false;
 
   ContainerConfig config = {};
 };

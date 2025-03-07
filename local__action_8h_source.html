@@ -156,7 +156,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> addAction(uint16_t action, <a class="code hl_class" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client, uint16_t event,</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>      <span class="keywordtype">bool</span> alwaysEnabled = <span class="keyword">false</span>);</div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> runAction(uint16_t event);</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> runAction(uint16_t event) <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> isEventAlreadyUsed(uint16_t event, <span class="keywordtype">bool</span> ignoreAlwaysEnabled);</div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>  <span class="keyword">virtual</span> <a class="code hl_class" href="classSupla_1_1ActionHandlerClient.html">ActionHandlerClient</a> *getHandlerForFirstClient(uint16_t event);</div>

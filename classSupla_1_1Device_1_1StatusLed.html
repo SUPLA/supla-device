@@ -143,8 +143,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ab3ce5aafb12677bc0255083a8b53acda" id="r_ab3ce5aafb12677bc0255083a8b53acda"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab3ce5aafb12677bc0255083a8b53acda">onDeviceConfigChange</a> (uint64_t fieldBit) override</td></tr>
 <tr class="memdesc:ab3ce5aafb12677bc0255083a8b53acda"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called when device config is changed.  <br /></td></tr>
 <tr class="separator:ab3ce5aafb12677bc0255083a8b53acda"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77d7ae6eb3f20155dd2d7102c862d8e5" id="r_a77d7ae6eb3f20155dd2d7102c862d8e5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a77d7ae6eb3f20155dd2d7102c862d8e5">setCustomSequence</a> (uint32_t onDurationMs, uint32_t offDurationMs, uint32_t pauseDurrationMs=0, uint8_t onLimit=0, uint8_t repeatLimit=0) override</td></tr>
-<tr class="separator:a77d7ae6eb3f20155dd2d7102c862d8e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aba4c278fa342a98d595c20049bb67ad9" id="r_aba4c278fa342a98d595c20049bb67ad9"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aba4c278fa342a98d595c20049bb67ad9">setCustomSequence</a> (uint32_t onDurationMs, uint32_t offDurationMs, uint32_t pauseDurrationMs=0, uint8_t onLimit=0, uint8_t repeatLimit=0, bool startWithOff=true) override</td></tr>
+<tr class="separator:aba4c278fa342a98d595c20049bb67ad9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa6895997d83d8827bfcc05b94e315476" id="r_aa6895997d83d8827bfcc05b94e315476"><td class="memItemLeft" align="right" valign="top"><a id="aa6895997d83d8827bfcc05b94e315476" name="aa6895997d83d8827bfcc05b94e315476"></a>
 enum LedSequence&#160;</td><td class="memItemRight" valign="bottom"><b>getCurrentSequence</b> () const</td></tr>
 <tr class="separator:aa6895997d83d8827bfcc05b94e315476"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -185,6 +185,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>identify</b> ()</td><
 <tr class="memitem:ad67c8f28e9696d58f2154f4733a684a6 inherit pub_methods_classSupla_1_1Control_1_1BlinkingLed" id="r_ad67c8f28e9696d58f2154f4733a684a6"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setInvertedLogic</b> (bool invertedLogic)</td></tr>
 <tr class="separator:ad67c8f28e9696d58f2154f4733a684a6 inherit pub_methods_classSupla_1_1Control_1_1BlinkingLed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:add72c3691ba45e7fba6fb09a69fae3f2 inherit pub_methods_classSupla_1_1Control_1_1BlinkingLed" id="r_add72c3691ba45e7fba6fb09a69fae3f2"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlwaysOffSequence</b> ()</td></tr>
+<tr class="separator:add72c3691ba45e7fba6fb09a69fae3f2 inherit pub_methods_classSupla_1_1Control_1_1BlinkingLed"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ade305d6c2e30ecfee532f52addebe4f6 inherit pub_methods_classSupla_1_1Control_1_1BlinkingLed" id="r_ade305d6c2e30ecfee532f52addebe4f6"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setAlwaysOnSequence</b> ()</td></tr>
+<tr class="separator:ade305d6c2e30ecfee532f52addebe4f6 inherit pub_methods_classSupla_1_1Control_1_1BlinkingLed"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1Element')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:ab9d7ce67058db644bbdf3e6e8dac91c4 inherit pub_methods_classSupla_1_1Element" id="r_ab9d7ce67058db644bbdf3e6e8dac91c4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classSupla_1_1Element.html">Element</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Element.html#ab9d7ce67058db644bbdf3e6e8dac91c4">next</a> ()</td></tr>
 <tr class="memdesc:ab9d7ce67058db644bbdf3e6e8dac91c4 inherit pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns next <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> from the list.  <br /></td></tr>
@@ -483,8 +489,8 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
-<a id="a77d7ae6eb3f20155dd2d7102c862d8e5" name="a77d7ae6eb3f20155dd2d7102c862d8e5"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a77d7ae6eb3f20155dd2d7102c862d8e5">&#9670;&#160;</a></span>setCustomSequence()</h2>
+<a id="aba4c278fa342a98d595c20049bb67ad9" name="aba4c278fa342a98d595c20049bb67ad9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aba4c278fa342a98d595c20049bb67ad9">&#9670;&#160;</a></span>setCustomSequence()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -515,7 +521,12 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>repeatLimit</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0</span>&#160;)</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>repeatLimit</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>startWithOff</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
         </tr>
       </table>
   </td>

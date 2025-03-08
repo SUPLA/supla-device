@@ -89,12 +89,6 @@ class pm1006k : public GeneralPurposeMeasurement {
         SUPLA_LOG_DEBUG("PM1006K: read: %.0f", value);
       }
 
-      if (fanPin) {
-        fanOff = true;
-        digitalWrite(fanPin, LOW);
-        SUPLA_LOG_DEBUG("PM1006K FAN: off");
-      }
-
       if (isnan(value) || value <= 0) {
         if (invalidCounter < 3) {
           invalidCounter++;
@@ -104,6 +98,11 @@ class pm1006k : public GeneralPurposeMeasurement {
       } else {
         invalidCounter = 0;
         lastValue = value;
+        if (fanPin) {
+          fanOff = true;
+          digitalWrite(fanPin, LOW);
+          SUPLA_LOG_DEBUG("PM1006K FAN: off");
+        }
       }
       channel.setNewValue(getValue());
       lastReadTime = millis();

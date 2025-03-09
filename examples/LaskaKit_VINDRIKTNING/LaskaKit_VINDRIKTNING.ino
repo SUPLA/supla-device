@@ -60,7 +60,7 @@
 #include <supla/device/supla_ca_cert.h>
 #include <supla/network/html/i2cscanner.h>
 #include <supla/network/html/button_update.h>
-#include <supla/sensor/pm1006k.h>
+#include <supla/sensor/air_quality_pm1006k.h>
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;

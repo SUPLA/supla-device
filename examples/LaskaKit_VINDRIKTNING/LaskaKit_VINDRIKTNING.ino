@@ -60,7 +60,7 @@
 #include <supla/device/supla_ca_cert.h>
 #include <supla/network/html/i2cscanner.h>
 #include <supla/network/html/button_update.h>
-#include <supla/sensor/air_quality_pm1006k.h>
+#include <supla/sensor/particle_meter_pm1006k.h>
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;
@@ -84,7 +84,7 @@ void setup() {
   new Supla::Html::I2Cscanner();
 
   // Cubic PM1006K
-  new Supla::Sensor::AirQualityPm1006k(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 180, 30);
+  new Supla::Sensor::ParticleMeterPM1006K(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 180, 30);
 
   // Bosh BME280
   new Supla::Sensor::BME280(0x77, 100);

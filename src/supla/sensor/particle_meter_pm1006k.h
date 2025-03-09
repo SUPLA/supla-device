@@ -64,7 +64,7 @@ class PrticleMeterPM1006K : public GeneralPurposeMeasurement {
     Serial1.begin(PM1006K::BAUD_RATE, SERIAL_8N1, rx_pin, tx_pin);
     sensor = new PM1006K(&Serial1);
 
-    refreshIntervalMs = refresh * 60 * 1000;
+    refreshIntervalMs = refresh * 1000;
     fanTime = fan * 1000;
     setDefaultUnitAfterValue("μg/m³");
     setInitialCaption("PM 2.5");

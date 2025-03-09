@@ -84,7 +84,7 @@ void setup() {
   new Supla::Html::I2Cscanner();
 
   // Cubic PM1006K
-  new Supla::Sensor::pm1006k(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 3, 30);
+  new Supla::Sensor::AirQualityPm1006k(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 3, 30);
 
   // Bosh BME280
   new Supla::Sensor::BME280(0x77, 100);

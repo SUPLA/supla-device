@@ -19,8 +19,8 @@
 // Dependencies:
 // https://github.com/kevinlutzer/Arduino-PM1006K
 
-#ifndef SRC_SUPLA_SENSOR_PM1006K_H_
-#define SRC_SUPLA_SENSOR_PM1006K_H_
+#ifndef SRC_SUPLA_SENSOR_AIR_QUALITY_PM1006K_H_
+#define SRC_SUPLA_SENSOR_AIR_QUALITY_PM1006K_H_
 
 #include <supla/sensor/general_purpose_measurement.h>
 
@@ -28,30 +28,31 @@
 
 namespace Supla {
 namespace Sensor {
-class pm1006k : public GeneralPurposeMeasurement {
+class AirQualityPm1006k : public GeneralPurposeMeasurement {
  public:
   // rx_pin, tx_pin: pins to which the sensor is connected
-  // refresh: time between readings (in minutes: 1-1440)
+  // fan_pin: pin to powering fan (HIGH is enabled)
+  // refresh: time between readings (in sec: 60-86400)
   // fan: fan working time (in sec: 15-120)
-  explicit pm1006k(int rx_pin, int tx_pin, int fan_pin = 0,
-      int refresh = 10, int fan = 15)
+  explicit AirQualityPm1006k(int rx_pin, int tx_pin, int fan_pin = -1,
+      int refresh = 600, int fan = 15)
       : GeneralPurposeMeasurement(nullptr, false) {
-    if (refresh < 1) {
-      refresh = 10;
-    } else if (refresh > 1440) {
-      refresh = 10;
+    if (refresh < 60) {
+      refresh = 600;
+    } else if (refresh > 86400) {
+      refresh = 600;
     }
     if (fan < 15) {
       fan = 15;
     } else if (fan > 120) {
       fan = 120;
-    } else if (fan > 60*refresh) {
-      fan = 59;
+    } else if (fan > refresh) {
+      fan = refresh;
     }
 
     // FAN setup
     fanPin = fan_pin;
-    if (fanPin) {
+    if (fanPin >= 0) {
       pinMode(fanPin, OUTPUT);
       fanOff = false;
       digitalWrite(fanPin, HIGH);
@@ -71,9 +72,9 @@ class pm1006k : public GeneralPurposeMeasurement {
   }
 
   void iterateAlways() override {
-    // 15 sec befor reading sensor
+    // enable fan fanTime before reading sensor
     if (millis() - lastReadTime > refreshIntervalMs-fanTime) {
-      if (fanPin && fanOff) {
+      if ((fanPin >= 0)  && fanOff) {
         fanOff = false;
         digitalWrite(fanPin, HIGH);
         SUPLA_LOG_DEBUG("PM1006K FAN: on");
@@ -86,7 +87,7 @@ class pm1006k : public GeneralPurposeMeasurement {
         SUPLA_LOG_DEBUG("PM1006K: failed to take measurement");
       } else {
         value = sensor->getPM2_5();
-        SUPLA_LOG_DEBUG("PM1006K: read: %.0f", value);
+        SUPLA_LOG_DEBUG("PM1006K: PM2.5 read: %.0f", value);
       }
 
       if (isnan(value) || value <= 0) {
@@ -98,7 +99,7 @@ class pm1006k : public GeneralPurposeMeasurement {
       } else {
         invalidCounter = 0;
         lastValue = value;
-        if (fanPin) {
+        if (fanPin >= 0) {
           fanOff = true;
           digitalWrite(fanPin, LOW);
           SUPLA_LOG_DEBUG("PM1006K FAN: off");
@@ -114,7 +115,7 @@ class pm1006k : public GeneralPurposeMeasurement {
   }
 
  protected:
-  ::PM1006K* sensor;
+  ::PM1006K* sensor = nullptr;
   uint32_t refreshIntervalMs = 600000;
   uint32_t lastReadTime = 0;
   double lastValue = NAN;
@@ -127,4 +128,4 @@ class pm1006k : public GeneralPurposeMeasurement {
 }  // namespace Sensor
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_SENSOR_PM1006K_H_
+#endif  // SRC_SUPLA_SENSOR_AIR_QUALITY_PM1006K_H_

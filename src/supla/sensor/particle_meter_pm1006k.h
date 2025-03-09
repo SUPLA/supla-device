@@ -19,8 +19,8 @@
 // Dependencies:
 // https://github.com/kevinlutzer/Arduino-PM1006K
 
-#ifndef SRC_SUPLA_SENSOR_AIR_QUALITY_PM1006K_H_
-#define SRC_SUPLA_SENSOR_AIR_QUALITY_PM1006K_H_
+#ifndef SRC_SUPLA_SENSOR_PARTICLE_METER_PM1006K_H_
+#define SRC_SUPLA_SENSOR_PARTICLE_METER_PM1006K_H_
 
 #include <supla/sensor/general_purpose_measurement.h>
 
@@ -28,13 +28,13 @@
 
 namespace Supla {
 namespace Sensor {
-class AirQualityPm1006k : public GeneralPurposeMeasurement {
+class PrticleMeterPM1006K : public GeneralPurposeMeasurement {
  public:
   // rx_pin, tx_pin: pins to which the sensor is connected
   // fan_pin: pin to powering fan (HIGH is enabled)
   // refresh: time between readings (in sec: 60-86400)
   // fan: fan working time (in sec: 15-120)
-  explicit AirQualityPm1006k(int rx_pin, int tx_pin, int fan_pin = -1,
+  explicit PrticleMeterPM1006K(int rx_pin, int tx_pin, int fan_pin = -1,
       int refresh = 600, int fan = 15)
       : GeneralPurposeMeasurement(nullptr, false) {
     if (refresh < 60) {
@@ -128,4 +128,4 @@ class AirQualityPm1006k : public GeneralPurposeMeasurement {
 }  // namespace Sensor
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_SENSOR_AIR_QUALITY_PM1006K_H_
+#endif  // SRC_SUPLA_SENSOR_PARTICLE_METER_PM1006K_H_

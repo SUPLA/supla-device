@@ -16,7 +16,7 @@
 <area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="712,406,841,431"/>
 <area shape="poly" id="edge5_Node000003_Node000005" title=" " alt="" coords="857,416,1058,416,1058,421,857,421"/>
 <area shape="rect" id="Node000006" href="$classSupla_1_1Uptime.html" title=" " alt="" coords="329,183,431,209"/>
-<area shape="poly" id="edge29_Node000001_Node000006" title=" " alt="" coords="447,210,479,219,503,226,574,237,644,245,752,252,752,258,644,250,573,242,501,231,477,224,446,215"/>
+<area shape="poly" id="edge30_Node000001_Node000006" title=" " alt="" coords="447,210,479,219,503,226,574,237,644,245,752,252,752,258,644,250,573,242,501,231,477,224,446,215"/>
 <area shape="poly" id="edge6_Node000003_Node000006" title=" " alt="" coords="446,188,531,186,637,188,752,201,809,213,865,228,906,245,945,266,1017,316,1074,366,1111,404,1107,407,1070,370,1013,320,942,270,903,249,863,233,808,218,751,206,637,194,531,191,446,193"/>
 <area shape="poly" id="edge7_Node000003_Node000007" title=" " alt="" coords="879,628,970,621,1008,613,1033,602,1053,584,1070,563,1095,514,1110,467,1117,431,1122,432,1115,468,1100,516,1075,566,1057,588,1036,607,1009,618,971,626,879,634"/>
 <area shape="poly" id="edge9_Node000007_Node000008" title=" " alt="" coords="1326,562,1195,601,1116,619,1035,633,947,640,864,639,864,634,947,634,1034,628,1115,614,1194,595,1325,557"/>
@@ -44,6 +44,7 @@
 <area shape="rect" id="Node000017" href="$classSupla_1_1Device_1_1StatusLed.html" title=" " alt="" coords="693,455,860,481"/>
 <area shape="poly" id="edge23_Node000003_Node000017" title=" " alt="" coords="875,457,1034,436,1068,429,1069,435,1035,442,876,462"/>
 <area shape="poly" id="edge24_Node000017_Node000018" title=" " alt="" coords="484,444,693,459,693,464,483,449"/>
+<area shape="poly" id="edge29_Node000018_Node000018" title=" " alt="" coords="353,408,362,402,380,399,396,401,406,408,409,417,404,427,400,424,404,417,402,411,394,406,380,404,364,407,356,413"/>
 <area shape="rect" id="Node000019" href="$classSupla_1_1Io.html" title=" " alt="" coords="65,416,136,442"/>
 <area shape="poly" id="edge26_Node000018_Node000019" title=" " alt="" coords="152,428,292,433,292,438,151,434"/>
 <area shape="poly" id="edge27_Node000019_Node000019" title=" " alt="" coords="74,399,83,392,100,390,116,392,126,398,129,408,125,417,120,415,124,407,122,402,115,397,101,395,85,397,78,403"/>

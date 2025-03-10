@@ -2,6 +2,7 @@
 <area shape="rect" id="Node000001" title=" " alt="" coords="154,173,321,199"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1BlinkingLed.html" title=" " alt="" coords="150,98,325,124"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="240,139,240,173,235,173,235,139"/>
+<area shape="poly" id="edge7_Node000002_Node000002" title=" " alt="" coords="342,104,352,111,344,118,326,120,325,115,342,113,347,111,339,109"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,8,113,33"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="98,38,215,96,212,100,96,43"/>
 <area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="130,12,139,20,131,29,113,32,113,26,129,24,134,20,127,16"/>

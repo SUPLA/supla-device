@@ -25,7 +25,7 @@ namespace Supla {
 namespace Sensor {
 class ParticleMeter : public Supla::Element {
  public:
-  explicit ParticleMeter() {
+  ParticleMeter() {
     lastReadTime = millis();
   }
 
@@ -73,4 +73,4 @@ class ParticleMeter : public Supla::Element {
 }  // namespace Sensor
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_SENSOR_SDS011_H_
+#endif  // SRC_SUPLA_SENSOR_PARTICLE_METER_H_

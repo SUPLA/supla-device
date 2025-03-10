@@ -84,7 +84,7 @@ void setup() {
   new Supla::Html::I2Cscanner();
 
   // Cubic PM1006K
-  new Supla::Sensor::ParticleMeterPM1006K(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 180, 30);
+  auto pm1006k = new Supla::Sensor::ParticleMeterPM1006K(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 180, 30);
 
   // Bosh BME280
   new Supla::Sensor::BME280(0x77, 100);

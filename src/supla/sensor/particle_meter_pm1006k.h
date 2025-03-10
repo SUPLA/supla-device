@@ -22,21 +22,21 @@
 #ifndef SRC_SUPLA_SENSOR_PARTICLE_METER_PM1006K_H_
 #define SRC_SUPLA_SENSOR_PARTICLE_METER_PM1006K_H_
 
-#include <supla/sensor/general_purpose_measurement.h>
+#include <supla/sensor/particle_meter.h>
 
 #include <PM1006K.h>
 
 namespace Supla {
 namespace Sensor {
-class PrticleMeterPM1006K : public GeneralPurposeMeasurement {
+class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
  public:
   // rx_pin, tx_pin: pins to which the sensor is connected
   // fan_pin: pin to powering fan (HIGH is enabled)
   // refresh: time between readings (in sec: 60-86400)
   // fan: fan working time (in sec: 15-120)
-  explicit PrticleMeterPM1006K(int rx_pin, int tx_pin, int fan_pin = -1,
+  explicit ParticleMeterPM1006K(int rx_pin, int tx_pin, int fan_pin = -1,
       int refresh = 600, int fan = 15)
-      : GeneralPurposeMeasurement(nullptr, false) {
+      : ParticleMeter() {
     if (refresh < 60) {
       refresh = 600;
     } else if (refresh > 86400) {
@@ -49,6 +49,8 @@ class PrticleMeterPM1006K : public GeneralPurposeMeasurement {
     } else if (fan > refresh) {
       fan = refresh;
     }
+    refreshIntervalMs = refresh * 1000;
+    fanTime = fan * 1000;
 
     // FAN setup
     fanPin = fan_pin;
@@ -64,11 +66,11 @@ class PrticleMeterPM1006K : public GeneralPurposeMeasurement {
     Serial1.begin(PM1006K::BAUD_RATE, SERIAL_8N1, rx_pin, tx_pin);
     sensor = new PM1006K(&Serial1);
 
-    refreshIntervalMs = refresh * 1000;
-    fanTime = fan * 1000;
-    setDefaultUnitAfterValue("μg/m³");
-    setInitialCaption("PM 2.5");
-    getChannel()->setDefaultIcon(8);
+    // create GPM channel for PM2.5
+    pm2_5channel = new GeneralPurposeMeasurement();
+    pm2_5channel->setDefaultUnitAfterValue("μg/m³");
+    pm2_5channel->setInitialCaption("PM 2.5");
+    pm2_5channel->getChannel()->setDefaultIcon(8);
   }
 
   void iterateAlways() override {
@@ -82,43 +84,48 @@ class PrticleMeterPM1006K : public GeneralPurposeMeasurement {
     }
 
     if (millis() - lastReadTime > refreshIntervalMs) {
-      double value = NAN;
+      double valuePM1 = NAN;
+      double valuePM2_5 = NAN;
+      double valuePM10 = NAN;
       if (!sensor->takeMeasurement()) {
         SUPLA_LOG_DEBUG("PM1006K: failed to take measurement");
       } else {
-        value = sensor->getPM2_5();
-        SUPLA_LOG_DEBUG("PM1006K: PM2.5 read: %.0f", value);
+        valuePM1 = sensor->getPM1_0();
+        SUPLA_LOG_DEBUG("PM1006K: PM1 read: %.0f", valuePM1);
+        valuePM2_5 = sensor->getPM2_5();
+        SUPLA_LOG_DEBUG("PM1006K: PM2.5 read: %.0f", valuePM2_5);
+        valuePM10 = sensor->getPM10();
+        SUPLA_LOG_DEBUG("PM1006K: PM10 read: %.0f", valuePM10);
       }
 
-      if (isnan(value) || value <= 0) {
+      if (isnan(valuePM2_5) || valuePM2_5 <= 0) {
         if (invalidCounter < 3) {
           invalidCounter++;
         } else {
-          lastValue = NAN;
+          pm1value = NAN;
+          pm2_5value = NAN;
+          pm10value = NAN;
         }
       } else {
         invalidCounter = 0;
-        lastValue = value;
-        if (fanPin >= 0) {
+        pm1value = valuePM1;
+        pm2_5value = valuePM2_5;
+        pm10value = valuePM10;
+
+        // switch faan off after successfull reading
+        if ((fanPin >= 0) && (refreshIntervalMs !=fanTime)) {
           fanOff = true;
           digitalWrite(fanPin, LOW);
           SUPLA_LOG_DEBUG("PM1006K FAN: off");
         }
       }
-      channel.setNewValue(getValue());
+      pm2_5channel->setValue(pm2_5value);
       lastReadTime = millis();
     }
   }
 
-  double getValue() override {
-    return lastValue;
-  }
-
  protected:
   ::PM1006K* sensor = nullptr;
-  uint32_t refreshIntervalMs = 600000;
-  uint32_t lastReadTime = 0;
-  double lastValue = NAN;
   int fanPin = 0;
   bool fanOff = true;
   uint32_t fanTime = 15;

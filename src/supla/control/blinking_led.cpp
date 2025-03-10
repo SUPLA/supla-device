@@ -68,15 +68,26 @@ void BlinkingLed::turnOn() {
   lastUpdate = millis();
   state = ON;
   Supla::Io::digitalWrite(outPin, invert ? 0 : 1, io);
+  auto copy = copyStateTo;
+  if (copy) {
+    copy->turnOn();
+  }
 }
 
 void BlinkingLed::turnOff() {
   lastUpdate = millis();
   state = OFF;
   Supla::Io::digitalWrite(outPin, invert ? 1 : 0, io);
+  auto copy = copyStateTo;
+  if (copy) {
+    copy->turnOff();
+  }
 }
 
 void BlinkingLed::updatePin() {
+  if (!enabled) {
+    return;
+  }
   if (onDuration == 0 || offDuration == 0) {
     if ((state == ON || state == NOT_INITIALIZED) && onDuration == 0) {
       turnOff();
@@ -122,6 +133,7 @@ void BlinkingLed::setCustomSequence(uint32_t onDurationMs,
                                     uint8_t repeatLimit,
                                     bool startWithOff) {
   Supla::AutoLock autoLock(mutex);
+  enable();
   onDuration = onDurationMs;
   offDuration = offDurationMs;
   pauseDuration = pauseDurrationMs;
@@ -140,3 +152,19 @@ void BlinkingLed::setCustomSequence(uint32_t onDurationMs,
   updatePin();
 }
 
+void BlinkingLed::setCopyStateTo(BlinkingLed *led) {
+  copyStateTo = led;
+
+  if (copyStateTo != nullptr) {
+    copyStateTo->disable();
+    updatePin();
+  }
+}
+
+void BlinkingLed::disable() {
+  enabled = false;
+}
+
+void BlinkingLed::enable() {
+  enabled = true;
+}

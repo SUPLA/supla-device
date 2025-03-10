@@ -90,7 +90,7 @@ const char *getManufacturer(int16_t id);
 namespace Supla {
 int getPlatformId();
 int getBitNumber(uint64_t value);
-int rssiToSignalStrength(int rssi);
+int rssiToSignalStrength(int rssi, int rssiZero = -100);
 bool isLastResetPower();
 
 const char *getRelayChannelName(int channelFunction);

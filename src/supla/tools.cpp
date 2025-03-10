@@ -450,14 +450,16 @@ int Supla::getBitNumber(uint64_t value) {
   return position;
 }
 
-int Supla::rssiToSignalStrength(int rssi) {
-  if (rssi > -50) {
+int Supla::rssiToSignalStrength(int rssi, int rssiZero) {
+  const int rssi100Percent = -50;
+  if (rssi > rssi100Percent) {
     return 100;
-  } else if (rssi <= -100) {
+  } else if (rssi <= rssiZero) {
     return 0;
   }
 
-  return 2 * (rssi + 100);
+  // map rssi to 0..100% (rssiZero..-50)
+  return (rssiZero - rssi) * 100 / (rssiZero - rssi100Percent);
 }
 
 const char *Supla::getRelayChannelName(int channelFunction) {

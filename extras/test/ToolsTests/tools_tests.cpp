@@ -375,4 +375,13 @@ TEST(ToolsTest, rssiToSignalStrengthTests) {
   EXPECT_EQ(Supla::rssiToSignalStrength(-75), 50);
   EXPECT_EQ(Supla::rssiToSignalStrength(-95), 10);
   EXPECT_EQ(Supla::rssiToSignalStrength(-99), 2);
+
+  EXPECT_EQ(Supla::rssiToSignalStrength(-110, -110), 0);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-50, -110), 100);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-51, -110), 98);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-52, -110), 96);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-53, -110), 95);
+  EXPECT_EQ(Supla::rssiToSignalStrength(-109, -110), 1);
+
+  EXPECT_EQ(Supla::rssiToSignalStrength(-100, -150), 50);
 }

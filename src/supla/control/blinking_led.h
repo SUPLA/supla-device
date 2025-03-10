@@ -53,6 +53,10 @@ class BlinkingLed : public Supla::Element {
   void setAlwaysOffSequence();
   void setAlwaysOnSequence();
 
+  void setCopyStateTo(BlinkingLed *led);
+  void disable();
+  void enable();
+
  protected:
   void updatePin();
   void turnOn();
@@ -70,6 +74,8 @@ class BlinkingLed : public Supla::Element {
   LedState state = NOT_INITIALIZED;
   Supla::Io *io = nullptr;
   Supla::Mutex *mutex = nullptr;
+  BlinkingLed *copyStateTo = nullptr;
+  bool enabled = true;
 };
 
 }  // namespace Control

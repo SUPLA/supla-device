@@ -161,8 +161,8 @@ void Container::setSoundAlarmOn(uint8_t level) {
     }
     soundAlarmActivatedLevel = level;
   }
-  if (isExternalSoundAlarmOn()) {
-    channel.setContainerSoundAlarmOn(true);
+  if (isExternalSoundAlarmOn() || level == 0) {
+    channel.setContainerSoundAlarmOn(isExternalSoundAlarmOn());
   }
 }
 

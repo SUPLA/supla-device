@@ -31,11 +31,11 @@ namespace Sensor {
 class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
  public:
   /*!
-    *  @brief class constructor for PM1006K sensor
-    *  @param rx_pin, tx_pin : pins to which the sensor is connected
-    *  @param refresh : time between readings (in sec: 60-86400)
-    *  @param fan : fan working time (in sec: 15-120)
-  */
+   *  @brief class constructor for PM1006K sensor
+   *  @param rx_pin, tx_pin : pins to which the sensor is connected
+   *  @param refresh : time between readings (in sec: 60-86400)
+   *  @param fan : fan working time (in sec: 15-120)
+   */
   explicit ParticleMeterPM1006K(int rx_pin, int tx_pin, int fan_pin = -1,
       int refresh = 600, int fan = 15)
       : ParticleMeter() {
@@ -75,7 +75,7 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
     pm2_5channel->getChannel()->setDefaultIcon(8);
   }
 
-  void createPM1Channel() {}
+  void createPM1Channel() {
     // create GPM channel for PM1.0
     pm1channel = new GeneralPurposeMeasurement();
     pm1channel->setDefaultUnitAfterValue("μg/m³");
@@ -83,7 +83,7 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
     pm1channel->getChannel()->setDefaultIcon(8);
   }
 
-  void createPM10Channel() {}
+  void createPM10Channel() {
     // create GPM channel for PM10
     pm10channel = new GeneralPurposeMeasurement();
     pm10channel->setDefaultUnitAfterValue("μg/m³");

@@ -138,11 +138,11 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
         }
       }
       if (pm1channel != nullptr) {
-        pm1channel->setValue(pm1value);  
+        pm1channel->setValue(pm1value);
       }
       pm2_5channel->setValue(pm2_5value);
       if (pm10channel != nullptr) {
-        pm10channel->setValue(pm10value);  
+        pm10channel->setValue(pm10value);
       }
       lastReadTime = millis();
     }

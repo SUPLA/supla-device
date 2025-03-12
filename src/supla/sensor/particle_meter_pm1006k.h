@@ -30,10 +30,12 @@ namespace Supla {
 namespace Sensor {
 class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
  public:
-  // rx_pin, tx_pin: pins to which the sensor is connected
-  // fan_pin: pin to powering fan (HIGH is enabled)
-  // refresh: time between readings (in sec: 60-86400)
-  // fan: fan working time (in sec: 15-120)
+  /*!
+    *  @brief class constructor for PM1006K sensor
+    *  @param rx_pin, tx_pin : pins to which the sensor is connected
+    *  @param refresh : time between readings (in sec: 60-86400)
+    *  @param fan : fan working time (in sec: 15-120)
+  */
   explicit ParticleMeterPM1006K(int rx_pin, int tx_pin, int fan_pin = -1,
       int refresh = 600, int fan = 15)
       : ParticleMeter() {
@@ -71,6 +73,22 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
     pm2_5channel->setDefaultUnitAfterValue("μg/m³");
     pm2_5channel->setInitialCaption("PM 2.5");
     pm2_5channel->getChannel()->setDefaultIcon(8);
+  }
+
+  void createPM1Channel() {}
+    // create GPM channel for PM1.0
+    pm1channel = new GeneralPurposeMeasurement();
+    pm1channel->setDefaultUnitAfterValue("μg/m³");
+    pm1channel->setInitialCaption("PM 1.0");
+    pm1channel->getChannel()->setDefaultIcon(8);
+  }
+
+  void createPM10Channel() {}
+    // create GPM channel for PM10
+    pm10channel = new GeneralPurposeMeasurement();
+    pm10channel->setDefaultUnitAfterValue("μg/m³");
+    pm10channel->setInitialCaption("PM 10");
+    pm10channel->getChannel()->setDefaultIcon(8);
   }
 
   void iterateAlways() override {
@@ -119,7 +137,13 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
           SUPLA_LOG_DEBUG("PM1006K FAN: off");
         }
       }
+      if (pm1channel != nullptr) {
+        pm1channel->setValue(pm1value);  
+      }
       pm2_5channel->setValue(pm2_5value);
+      if (pm10channel != nullptr) {
+        pm10channel->setValue(pm10value);  
+      }
       lastReadTime = millis();
     }
   }

@@ -121,7 +121,7 @@ int MCP23008::customAnalogRead(int channelNumber, uint8_t pin) {
 }
 
 bool MCP23008::init() {
-  SUPLA_LOG_DEBUG("MCP23008 init");
+  SUPLA_LOG_DEBUG("MCP23008 init, address %02X", address);
   if (driver) {
     if (!driver->isInitialized()) {
       driver->initialize();

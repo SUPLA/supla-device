@@ -161,8 +161,8 @@ void Container::setSoundAlarmOn(uint8_t level) {
     }
     soundAlarmActivatedLevel = level;
   }
-  if (isExternalSoundAlarmOn()) {
-    channel.setContainerSoundAlarmOn(true);
+  if (isExternalSoundAlarmOn() || level == 0) {
+    channel.setContainerSoundAlarmOn(isExternalSoundAlarmOn());
   }
 }
 
@@ -241,8 +241,12 @@ bool Container::isMuteAlarmSoundWithoutAdditionalAuth() const {
 
 bool Container::setSensorData(uint8_t channelNumber, uint8_t fillLevel) {
   if (fillLevel > 100) {
-    fillLevel = 0;
+    fillLevel = 100;
   }
+  if (fillLevel == 0) {
+    fillLevel = 1;
+  }
+
   if (channelNumber == 255) {
     SUPLA_LOG_WARNING(
         "Container[%d]::setSensorData: invalid channelNumber == 255",
@@ -469,6 +473,9 @@ uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
             config.sensorData[i].fillLevel = cfg->SensorInfo[i].FillLevel;
             if (config.sensorData[i].fillLevel > 100) {
               config.sensorData[i].fillLevel = 100;
+            }
+            if (config.sensorData[i].fillLevel == 0) {
+              config.sensorData[i].fillLevel = 1;
             }
           }
         }

@@ -108,6 +108,7 @@ enum Event {
   ON_HVAC_MODE_HEAT_COOL,
 
   ON_ERROR,
+  ON_ERROR_CLEAR,
 
   // Container events
   ON_CONTAINER_ALARM_ACTIVE,

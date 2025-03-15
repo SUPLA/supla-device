@@ -63,32 +63,15 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
       SUPLA_LOG_DEBUG("PM1006K FAN: started & on");
     }
 
+    // create GPM channel for PM2.5
+    createPM2_5Channel();
+  }
+
+  void onInit() override {
     // Setup and create instance of the PM1006K driver
     // The baud rate for the serial connection must be PM1006K::BAUD_RATE.
     Serial1.begin(PM1006K::BAUD_RATE, SERIAL_8N1, rx_pin, tx_pin);
     sensor = new PM1006K(&Serial1);
-
-    // create GPM channel for PM2.5
-    pm2_5channel = new GeneralPurposeMeasurement();
-    pm2_5channel->setDefaultUnitAfterValue("μg/m³");
-    pm2_5channel->setInitialCaption("PM 2.5");
-    pm2_5channel->getChannel()->setDefaultIcon(8);
-  }
-
-  void createPM1Channel() {
-    // create GPM channel for PM1.0
-    pm1channel = new GeneralPurposeMeasurement();
-    pm1channel->setDefaultUnitAfterValue("μg/m³");
-    pm1channel->setInitialCaption("PM 1.0");
-    pm1channel->getChannel()->setDefaultIcon(8);
-  }
-
-  void createPM10Channel() {
-    // create GPM channel for PM10
-    pm10channel = new GeneralPurposeMeasurement();
-    pm10channel->setDefaultUnitAfterValue("μg/m³");
-    pm10channel->setInitialCaption("PM 10");
-    pm10channel->getChannel()->setDefaultIcon(8);
   }
 
   void iterateAlways() override {

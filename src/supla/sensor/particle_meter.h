@@ -55,6 +55,46 @@ class ParticleMeter : public Supla::Element {
     return pm10channel;
   }
 
+  void createPM1Channel() {
+    if (pm1channel == nullptr) {
+      // create GPM channel for PM1.0
+      pm1channel = new GeneralPurposeMeasurement();
+      pm1channel->setDefaultUnitAfterValue("μg/m³");
+      pm1channel->setInitialCaption("PM 1.0");
+      pm1channel->getChannel()->setDefaultIcon(8);
+    }
+  }
+
+  void createPM2_5Channel() {
+    if (pm2_5channel == nullptr) {
+      // create GPM channel for PM2.5
+      pm2_5channel = new GeneralPurposeMeasurement();
+      pm2_5channel->setDefaultUnitAfterValue("μg/m³");
+      pm2_5channel->setInitialCaption("PM 2.5");
+      pm2_5channel->getChannel()->setDefaultIcon(8);
+    }
+  }
+
+  void createPM4Channel() {
+    if (pm4channel == nullptr) {
+      // create GPM channel for PM4
+      pm4channel = new GeneralPurposeMeasurement();
+      pm4channel->setDefaultUnitAfterValue("μg/m³");
+      pm4channel->setInitialCaption("PM 4");
+      pm4channel->getChannel()->setDefaultIcon(8);
+    }
+  }
+
+  void createPM10Channel() {
+    if (pm10channel == nullptr) {
+      // create GPM channel for PM10
+      pm10channel = new GeneralPurposeMeasurement();
+      pm10channel->setDefaultUnitAfterValue("μg/m³");
+      pm10channel->setInitialCaption("PM 10");
+      pm10channel->getChannel()->setDefaultIcon(8);
+    }
+  }
+
  protected:
   uint32_t refreshIntervalMs = 600000;
   uint32_t lastReadTime = 0;

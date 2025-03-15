@@ -39,6 +39,8 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
   explicit ParticleMeterPM1006K(int rx_pin, int tx_pin, int fan_pin = -1,
       int refresh = 600, int fan = 15)
       : ParticleMeter() {
+    rxPin = rx_pin;
+    txPin = tx_pin;
     if (refresh < 60) {
       refresh = 600;
     } else if (refresh > 86400) {
@@ -70,7 +72,7 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
   void onInit() override {
     // Setup and create instance of the PM1006K driver
     // The baud rate for the serial connection must be PM1006K::BAUD_RATE.
-    Serial1.begin(PM1006K::BAUD_RATE, SERIAL_8N1, rx_pin, tx_pin);
+    Serial1.begin(PM1006K::BAUD_RATE, SERIAL_8N1, rxPin, txPin);
     sensor = new PM1006K(&Serial1);
   }
 
@@ -133,7 +135,9 @@ class ParticleMeterPM1006K : public Supla::Sensor::ParticleMeter {
 
  protected:
   ::PM1006K* sensor = nullptr;
-  int fanPin = 0;
+  int fanPin = -1;
+  int rxPin = 0;
+  int txPin = 0;
   bool fanOff = true;
   uint32_t fanTime = 15;
   int invalidCounter = 0;

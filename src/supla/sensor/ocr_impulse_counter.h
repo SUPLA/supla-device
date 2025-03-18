@@ -43,6 +43,7 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
   void resetCounter() override;
 
   void setFactoryTester(Supla::Device::FactoryTest *tester);
+  bool cleanupOcrTestModeConfig();
 
  protected:
   // takes photo and initialize photoDataBuffer and photoDataSize

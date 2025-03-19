@@ -371,6 +371,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setHvacFlagBatteryCov
 <tr class="memitem:aed83f0de530c4c569d44fe9093375816" id="r_aed83f0de530c4c569d44fe9093375816"><td class="memItemLeft" align="right" valign="top"><a id="aed83f0de530c4c569d44fe9093375816" name="aed83f0de530c4c569d44fe9093375816"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setHvacFlagCalibrationError</b> (bool value)</td></tr>
 <tr class="separator:aed83f0de530c4c569d44fe9093375816"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59a622868416a4896feb5d32900cddea" id="r_a59a622868416a4896feb5d32900cddea"><td class="memItemLeft" align="right" valign="top"><a id="a59a622868416a4896feb5d32900cddea" name="a59a622868416a4896feb5d32900cddea"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setHvacFlagAntifreezeOverheatActive</b> (bool value)</td></tr>
+<tr class="separator:a59a622868416a4896feb5d32900cddea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27342a9f109890652bf0925449349a8f" id="r_a27342a9f109890652bf0925449349a8f"><td class="memItemLeft" align="right" valign="top"><a id="a27342a9f109890652bf0925449349a8f" name="a27342a9f109890652bf0925449349a8f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clearHvacState</b> ()</td></tr>
 <tr class="separator:a27342a9f109890652bf0925449349a8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -389,57 +392,60 @@ uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacMode</b> ()
 <tr class="memitem:a594e9a59dddf00f3d8211d1619e4e82e" id="r_a594e9a59dddf00f3d8211d1619e4e82e"><td class="memItemLeft" align="right" valign="top"><a id="a594e9a59dddf00f3d8211d1619e4e82e" name="a594e9a59dddf00f3d8211d1619e4e82e"></a>
 const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacModeCstr</b> (int mode=-1) const</td></tr>
 <tr class="separator:a594e9a59dddf00f3d8211d1619e4e82e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acf1cb69b8b4359753101db7fd56312e9" id="r_acf1cb69b8b4359753101db7fd56312e9"><td class="memItemLeft" align="right" valign="top"><a id="acf1cb69b8b4359753101db7fd56312e9" name="acf1cb69b8b4359753101db7fd56312e9"></a>
-int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacSetpointTemperatureHeat</b> ()</td></tr>
-<tr class="separator:acf1cb69b8b4359753101db7fd56312e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b81df509dfc4dae0b7fae1e2bf716da" id="r_a8b81df509dfc4dae0b7fae1e2bf716da"><td class="memItemLeft" align="right" valign="top"><a id="a8b81df509dfc4dae0b7fae1e2bf716da" name="a8b81df509dfc4dae0b7fae1e2bf716da"></a>
-int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacSetpointTemperatureCool</b> ()</td></tr>
-<tr class="separator:a8b81df509dfc4dae0b7fae1e2bf716da"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada3c30908696c9761b71340a5025a4a3" id="r_ada3c30908696c9761b71340a5025a4a3"><td class="memItemLeft" align="right" valign="top"><a id="ada3c30908696c9761b71340a5025a4a3" name="ada3c30908696c9761b71340a5025a4a3"></a>
-uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacFlags</b> ()</td></tr>
-<tr class="separator:ada3c30908696c9761b71340a5025a4a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9ca5b6e3ab8bd43aedfcb70c111d8313" id="r_a9ca5b6e3ab8bd43aedfcb70c111d8313"><td class="memItemLeft" align="right" valign="top"><a id="a9ca5b6e3ab8bd43aedfcb70c111d8313" name="a9ca5b6e3ab8bd43aedfcb70c111d8313"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureHeatSet</b> ()</td></tr>
-<tr class="separator:a9ca5b6e3ab8bd43aedfcb70c111d8313"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac440caf981a05e7e0e3af297e42d4d2d" id="r_ac440caf981a05e7e0e3af297e42d4d2d"><td class="memItemLeft" align="right" valign="top"><a id="ac440caf981a05e7e0e3af297e42d4d2d" name="ac440caf981a05e7e0e3af297e42d4d2d"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureCoolSet</b> ()</td></tr>
-<tr class="separator:ac440caf981a05e7e0e3af297e42d4d2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af5d173f45ce750e8ccaaccd4176d1210" id="r_af5d173f45ce750e8ccaaccd4176d1210"><td class="memItemLeft" align="right" valign="top"><a id="af5d173f45ce750e8ccaaccd4176d1210" name="af5d173f45ce750e8ccaaccd4176d1210"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagHeating</b> ()</td></tr>
-<tr class="separator:af5d173f45ce750e8ccaaccd4176d1210"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a458a6f8588c260877953220dfbffea82" id="r_a458a6f8588c260877953220dfbffea82"><td class="memItemLeft" align="right" valign="top"><a id="a458a6f8588c260877953220dfbffea82" name="a458a6f8588c260877953220dfbffea82"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCooling</b> ()</td></tr>
-<tr class="separator:a458a6f8588c260877953220dfbffea82"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad6e822fc69000ec8898227e6f787f736" id="r_ad6e822fc69000ec8898227e6f787f736"><td class="memItemLeft" align="right" valign="top"><a id="ad6e822fc69000ec8898227e6f787f736" name="ad6e822fc69000ec8898227e6f787f736"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklySchedule</b> ()</td></tr>
-<tr class="separator:ad6e822fc69000ec8898227e6f787f736"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a98d0430d54385c5e17b69d5caefdee9d" id="r_a98d0430d54385c5e17b69d5caefdee9d"><td class="memItemLeft" align="right" valign="top"><a id="a98d0430d54385c5e17b69d5caefdee9d" name="a98d0430d54385c5e17b69d5caefdee9d"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagFanEnabled</b> ()</td></tr>
-<tr class="separator:a98d0430d54385c5e17b69d5caefdee9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a065588680ed02390a965d1891300361c" id="r_a065588680ed02390a965d1891300361c"><td class="memItemLeft" align="right" valign="top"><a id="a065588680ed02390a965d1891300361c" name="a065588680ed02390a965d1891300361c"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagThermometerError</b> ()</td></tr>
-<tr class="separator:a065588680ed02390a965d1891300361c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a870b9aecd455014e073ee364aaf8eb63" id="r_a870b9aecd455014e073ee364aaf8eb63"><td class="memItemLeft" align="right" valign="top"><a id="a870b9aecd455014e073ee364aaf8eb63" name="a870b9aecd455014e073ee364aaf8eb63"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagClockError</b> ()</td></tr>
-<tr class="separator:a870b9aecd455014e073ee364aaf8eb63"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a529d86f587ed655b1617ef84d046077b" id="r_a529d86f587ed655b1617ef84d046077b"><td class="memItemLeft" align="right" valign="top"><a id="a529d86f587ed655b1617ef84d046077b" name="a529d86f587ed655b1617ef84d046077b"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCountdownTimer</b> ()</td></tr>
-<tr class="separator:a529d86f587ed655b1617ef84d046077b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab0821343846259a1a7f92a1e3e93a2d1" id="r_ab0821343846259a1a7f92a1e3e93a2d1"><td class="memItemLeft" align="right" valign="top"><a id="ab0821343846259a1a7f92a1e3e93a2d1" name="ab0821343846259a1a7f92a1e3e93a2d1"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagForcedOffBySensor</b> ()</td></tr>
-<tr class="separator:ab0821343846259a1a7f92a1e3e93a2d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7e9b8d31c26d8de5a4eca9e1371de6af" id="r_a7e9b8d31c26d8de5a4eca9e1371de6af"><td class="memItemLeft" align="right" valign="top"><a id="a7e9b8d31c26d8de5a4eca9e1371de6af" name="a7e9b8d31c26d8de5a4eca9e1371de6af"></a>
-enum HvacCoolSubfunctionFlag&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacFlagCoolSubfunction</b> ()</td></tr>
-<tr class="separator:a7e9b8d31c26d8de5a4eca9e1371de6af"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae78e2b0ce62695bc98d5410ae8a7e954" id="r_ae78e2b0ce62695bc98d5410ae8a7e954"><td class="memItemLeft" align="right" valign="top"><a id="ae78e2b0ce62695bc98d5410ae8a7e954" name="ae78e2b0ce62695bc98d5410ae8a7e954"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklyScheduleTemporalOverride</b> ()</td></tr>
-<tr class="separator:ae78e2b0ce62695bc98d5410ae8a7e954"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3962985385bc455f1c70878b2cf410f7" id="r_a3962985385bc455f1c70878b2cf410f7"><td class="memItemLeft" align="right" valign="top"><a id="a3962985385bc455f1c70878b2cf410f7" name="a3962985385bc455f1c70878b2cf410f7"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagBatteryCoverOpen</b> ()</td></tr>
-<tr class="separator:a3962985385bc455f1c70878b2cf410f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a45bb9fedc534a4a5a66ed3a499086874" id="r_a45bb9fedc534a4a5a66ed3a499086874"><td class="memItemLeft" align="right" valign="top"><a id="a45bb9fedc534a4a5a66ed3a499086874" name="a45bb9fedc534a4a5a66ed3a499086874"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCalibrationError</b> ()</td></tr>
-<tr class="separator:a45bb9fedc534a4a5a66ed3a499086874"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac4b1c31a5077dbf0d45bb9f2f50473e8" id="r_ac4b1c31a5077dbf0d45bb9f2f50473e8"><td class="memItemLeft" align="right" valign="top"><a id="ac4b1c31a5077dbf0d45bb9f2f50473e8" name="ac4b1c31a5077dbf0d45bb9f2f50473e8"></a>
+int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacSetpointTemperatureHeat</b> () const</td></tr>
+<tr class="separator:ac4b1c31a5077dbf0d45bb9f2f50473e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaa1d14140dafb1273d5197468f71aa07" id="r_aaa1d14140dafb1273d5197468f71aa07"><td class="memItemLeft" align="right" valign="top"><a id="aaa1d14140dafb1273d5197468f71aa07" name="aaa1d14140dafb1273d5197468f71aa07"></a>
+int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacSetpointTemperatureCool</b> () const</td></tr>
+<tr class="separator:aaa1d14140dafb1273d5197468f71aa07"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abe9f5785e9413d51645c3feb3e3597ab" id="r_abe9f5785e9413d51645c3feb3e3597ab"><td class="memItemLeft" align="right" valign="top"><a id="abe9f5785e9413d51645c3feb3e3597ab" name="abe9f5785e9413d51645c3feb3e3597ab"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacFlags</b> () const</td></tr>
+<tr class="separator:abe9f5785e9413d51645c3feb3e3597ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adcb26201ce00957d632b153619c68dd6" id="r_adcb26201ce00957d632b153619c68dd6"><td class="memItemLeft" align="right" valign="top"><a id="adcb26201ce00957d632b153619c68dd6" name="adcb26201ce00957d632b153619c68dd6"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureHeatSet</b> () const</td></tr>
+<tr class="separator:adcb26201ce00957d632b153619c68dd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8a6dcc61fe6d02a6707a93ad5e472a2b" id="r_a8a6dcc61fe6d02a6707a93ad5e472a2b"><td class="memItemLeft" align="right" valign="top"><a id="a8a6dcc61fe6d02a6707a93ad5e472a2b" name="a8a6dcc61fe6d02a6707a93ad5e472a2b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureCoolSet</b> () const</td></tr>
+<tr class="separator:a8a6dcc61fe6d02a6707a93ad5e472a2b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a16f29309ef4b722196441c9f2b798bde" id="r_a16f29309ef4b722196441c9f2b798bde"><td class="memItemLeft" align="right" valign="top"><a id="a16f29309ef4b722196441c9f2b798bde" name="a16f29309ef4b722196441c9f2b798bde"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagHeating</b> () const</td></tr>
+<tr class="separator:a16f29309ef4b722196441c9f2b798bde"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a41990ac32c40e2b158a8555a909acd83" id="r_a41990ac32c40e2b158a8555a909acd83"><td class="memItemLeft" align="right" valign="top"><a id="a41990ac32c40e2b158a8555a909acd83" name="a41990ac32c40e2b158a8555a909acd83"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCooling</b> () const</td></tr>
+<tr class="separator:a41990ac32c40e2b158a8555a909acd83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3b756f08b3f31a5b51a285751e359cd5" id="r_a3b756f08b3f31a5b51a285751e359cd5"><td class="memItemLeft" align="right" valign="top"><a id="a3b756f08b3f31a5b51a285751e359cd5" name="a3b756f08b3f31a5b51a285751e359cd5"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklySchedule</b> () const</td></tr>
+<tr class="separator:a3b756f08b3f31a5b51a285751e359cd5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3eec69b8195c0ebe2ac462b3c2dc9a47" id="r_a3eec69b8195c0ebe2ac462b3c2dc9a47"><td class="memItemLeft" align="right" valign="top"><a id="a3eec69b8195c0ebe2ac462b3c2dc9a47" name="a3eec69b8195c0ebe2ac462b3c2dc9a47"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagFanEnabled</b> () const</td></tr>
+<tr class="separator:a3eec69b8195c0ebe2ac462b3c2dc9a47"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5a2e249d3fe0a4441770a2daec94e3e5" id="r_a5a2e249d3fe0a4441770a2daec94e3e5"><td class="memItemLeft" align="right" valign="top"><a id="a5a2e249d3fe0a4441770a2daec94e3e5" name="a5a2e249d3fe0a4441770a2daec94e3e5"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagThermometerError</b> () const</td></tr>
+<tr class="separator:a5a2e249d3fe0a4441770a2daec94e3e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adf863a5b9d05b43fa219d295db5636b1" id="r_adf863a5b9d05b43fa219d295db5636b1"><td class="memItemLeft" align="right" valign="top"><a id="adf863a5b9d05b43fa219d295db5636b1" name="adf863a5b9d05b43fa219d295db5636b1"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagClockError</b> () const</td></tr>
+<tr class="separator:adf863a5b9d05b43fa219d295db5636b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a063574966888a7b0e602703cc9c6cb17" id="r_a063574966888a7b0e602703cc9c6cb17"><td class="memItemLeft" align="right" valign="top"><a id="a063574966888a7b0e602703cc9c6cb17" name="a063574966888a7b0e602703cc9c6cb17"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCountdownTimer</b> () const</td></tr>
+<tr class="separator:a063574966888a7b0e602703cc9c6cb17"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2df7d552e4a138dc0814066a8294be58" id="r_a2df7d552e4a138dc0814066a8294be58"><td class="memItemLeft" align="right" valign="top"><a id="a2df7d552e4a138dc0814066a8294be58" name="a2df7d552e4a138dc0814066a8294be58"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagForcedOffBySensor</b> () const</td></tr>
+<tr class="separator:a2df7d552e4a138dc0814066a8294be58"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9be4e79311bc1ef5a379dd69f17e6f78" id="r_a9be4e79311bc1ef5a379dd69f17e6f78"><td class="memItemLeft" align="right" valign="top"><a id="a9be4e79311bc1ef5a379dd69f17e6f78" name="a9be4e79311bc1ef5a379dd69f17e6f78"></a>
+enum HvacCoolSubfunctionFlag&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacFlagCoolSubfunction</b> () const</td></tr>
+<tr class="separator:a9be4e79311bc1ef5a379dd69f17e6f78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a552952f423509f470585a4ebe4fd991e" id="r_a552952f423509f470585a4ebe4fd991e"><td class="memItemLeft" align="right" valign="top"><a id="a552952f423509f470585a4ebe4fd991e" name="a552952f423509f470585a4ebe4fd991e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklyScheduleTemporalOverride</b> () const</td></tr>
+<tr class="separator:a552952f423509f470585a4ebe4fd991e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aea40783f5bfe4b06cca06422c554cafe" id="r_aea40783f5bfe4b06cca06422c554cafe"><td class="memItemLeft" align="right" valign="top"><a id="aea40783f5bfe4b06cca06422c554cafe" name="aea40783f5bfe4b06cca06422c554cafe"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagBatteryCoverOpen</b> () const</td></tr>
+<tr class="separator:aea40783f5bfe4b06cca06422c554cafe"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a34fb7ecbf92db7b3c7065301366d1371" id="r_a34fb7ecbf92db7b3c7065301366d1371"><td class="memItemLeft" align="right" valign="top"><a id="a34fb7ecbf92db7b3c7065301366d1371" name="a34fb7ecbf92db7b3c7065301366d1371"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCalibrationError</b> () const</td></tr>
+<tr class="separator:a34fb7ecbf92db7b3c7065301366d1371"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad9c97e7e5c3de2e2644ff55665c273cd" id="r_ad9c97e7e5c3de2e2644ff55665c273cd"><td class="memItemLeft" align="right" valign="top"><a id="ad9c97e7e5c3de2e2644ff55665c273cd" name="ad9c97e7e5c3de2e2644ff55665c273cd"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagAntifreezeOverheatActive</b> () const</td></tr>
+<tr class="separator:ad9c97e7e5c3de2e2644ff55665c273cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a52dbb64cecdf647260632e9b1d66d38a" id="r_a52dbb64cecdf647260632e9b1d66d38a"><td class="memItemLeft" align="right" valign="top"><a id="a52dbb64cecdf647260632e9b1d66d38a" name="a52dbb64cecdf647260632e9b1d66d38a"></a>
 <a class="el" href="structTHVACValue.html">THVACValue</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getValueHvac</b> ()</td></tr>
 <tr class="separator:a52dbb64cecdf647260632e9b1d66d38a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -645,51 +651,54 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>setHvacSetpoin
 <tr class="memitem:a3fcf27613a83cbc30d10bf10bee82b28" id="r_a3fcf27613a83cbc30d10bf10bee82b28"><td class="memItemLeft" align="right" valign="top"><a id="a3fcf27613a83cbc30d10bf10bee82b28" name="a3fcf27613a83cbc30d10bf10bee82b28"></a>
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>setHvacSetpointTemperatureCool</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue, int16_t setpointTemperatureCool)</td></tr>
 <tr class="separator:a3fcf27613a83cbc30d10bf10bee82b28"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a364a5ec0091d01685c86b02308da08a0" id="r_a364a5ec0091d01685c86b02308da08a0"><td class="memItemLeft" align="right" valign="top"><a id="a364a5ec0091d01685c86b02308da08a0" name="a364a5ec0091d01685c86b02308da08a0"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureHeatSet</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a364a5ec0091d01685c86b02308da08a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2bab3f5842531773a77f272ca752851" id="r_af2bab3f5842531773a77f272ca752851"><td class="memItemLeft" align="right" valign="top"><a id="af2bab3f5842531773a77f272ca752851" name="af2bab3f5842531773a77f272ca752851"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureCoolSet</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:af2bab3f5842531773a77f272ca752851"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a35b95665df943e26209c163a5a77095f" id="r_a35b95665df943e26209c163a5a77095f"><td class="memItemLeft" align="right" valign="top"><a id="a35b95665df943e26209c163a5a77095f" name="a35b95665df943e26209c163a5a77095f"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagHeating</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a35b95665df943e26209c163a5a77095f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87635bdcdaf784e7143ab169ea5c5426" id="r_a87635bdcdaf784e7143ab169ea5c5426"><td class="memItemLeft" align="right" valign="top"><a id="a87635bdcdaf784e7143ab169ea5c5426" name="a87635bdcdaf784e7143ab169ea5c5426"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCooling</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a87635bdcdaf784e7143ab169ea5c5426"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a03c987d9acd40328267cafcd98af7c6b" id="r_a03c987d9acd40328267cafcd98af7c6b"><td class="memItemLeft" align="right" valign="top"><a id="a03c987d9acd40328267cafcd98af7c6b" name="a03c987d9acd40328267cafcd98af7c6b"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklySchedule</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a03c987d9acd40328267cafcd98af7c6b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a069edcf080cbbdbc1a7667348315fb04" id="r_a069edcf080cbbdbc1a7667348315fb04"><td class="memItemLeft" align="right" valign="top"><a id="a069edcf080cbbdbc1a7667348315fb04" name="a069edcf080cbbdbc1a7667348315fb04"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagFanEnabled</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a069edcf080cbbdbc1a7667348315fb04"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7cf929b7e539c2873d5d46d5a49d1e10" id="r_a7cf929b7e539c2873d5d46d5a49d1e10"><td class="memItemLeft" align="right" valign="top"><a id="a7cf929b7e539c2873d5d46d5a49d1e10" name="a7cf929b7e539c2873d5d46d5a49d1e10"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagThermometerError</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a7cf929b7e539c2873d5d46d5a49d1e10"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a56369446f3210aae2491b6f07deca91e" id="r_a56369446f3210aae2491b6f07deca91e"><td class="memItemLeft" align="right" valign="top"><a id="a56369446f3210aae2491b6f07deca91e" name="a56369446f3210aae2491b6f07deca91e"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagClockError</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a56369446f3210aae2491b6f07deca91e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa10bb1cd8724707d5df9dc1573638e8f" id="r_aa10bb1cd8724707d5df9dc1573638e8f"><td class="memItemLeft" align="right" valign="top"><a id="aa10bb1cd8724707d5df9dc1573638e8f" name="aa10bb1cd8724707d5df9dc1573638e8f"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCountdownTimer</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:aa10bb1cd8724707d5df9dc1573638e8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a003bba510ca7070c59478d130ed17aeb" id="r_a003bba510ca7070c59478d130ed17aeb"><td class="memItemLeft" align="right" valign="top"><a id="a003bba510ca7070c59478d130ed17aeb" name="a003bba510ca7070c59478d130ed17aeb"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagForcedOffBySensor</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a003bba510ca7070c59478d130ed17aeb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6ddee9370457ee4801e46545f796c19b" id="r_a6ddee9370457ee4801e46545f796c19b"><td class="memItemLeft" align="right" valign="top"><a id="a6ddee9370457ee4801e46545f796c19b" name="a6ddee9370457ee4801e46545f796c19b"></a>
-static enum HvacCoolSubfunctionFlag&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacFlagCoolSubfunction</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a6ddee9370457ee4801e46545f796c19b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3305db7c14f86bcb4bd0812efcb4846c" id="r_a3305db7c14f86bcb4bd0812efcb4846c"><td class="memItemLeft" align="right" valign="top"><a id="a3305db7c14f86bcb4bd0812efcb4846c" name="a3305db7c14f86bcb4bd0812efcb4846c"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklyScheduleTemporalOverride</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a3305db7c14f86bcb4bd0812efcb4846c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad9ee9450ce7d9ee9bb6657d54c00abb5" id="r_ad9ee9450ce7d9ee9bb6657d54c00abb5"><td class="memItemLeft" align="right" valign="top"><a id="ad9ee9450ce7d9ee9bb6657d54c00abb5" name="ad9ee9450ce7d9ee9bb6657d54c00abb5"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagBatteryCoverOpen</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:ad9ee9450ce7d9ee9bb6657d54c00abb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5b5568a2c314463b9742ff9719ad8581" id="r_a5b5568a2c314463b9742ff9719ad8581"><td class="memItemLeft" align="right" valign="top"><a id="a5b5568a2c314463b9742ff9719ad8581" name="a5b5568a2c314463b9742ff9719ad8581"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCalibrationError</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:a5b5568a2c314463b9742ff9719ad8581"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa8fa3c4bfcdd8911bce5bd4315bbd749" id="r_aa8fa3c4bfcdd8911bce5bd4315bbd749"><td class="memItemLeft" align="right" valign="top"><a id="aa8fa3c4bfcdd8911bce5bd4315bbd749" name="aa8fa3c4bfcdd8911bce5bd4315bbd749"></a>
-static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacValueValid</b> (<a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
-<tr class="separator:aa8fa3c4bfcdd8911bce5bd4315bbd749"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a963d65c91d57ec39168e67906343159e" id="r_a963d65c91d57ec39168e67906343159e"><td class="memItemLeft" align="right" valign="top"><a id="a963d65c91d57ec39168e67906343159e" name="a963d65c91d57ec39168e67906343159e"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureHeatSet</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a963d65c91d57ec39168e67906343159e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1edda4e15b5b9c455a95cf0acde593bc" id="r_a1edda4e15b5b9c455a95cf0acde593bc"><td class="memItemLeft" align="right" valign="top"><a id="a1edda4e15b5b9c455a95cf0acde593bc" name="a1edda4e15b5b9c455a95cf0acde593bc"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagSetpointTemperatureCoolSet</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a1edda4e15b5b9c455a95cf0acde593bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56d404f79bfa2a1864aac09c6b754622" id="r_a56d404f79bfa2a1864aac09c6b754622"><td class="memItemLeft" align="right" valign="top"><a id="a56d404f79bfa2a1864aac09c6b754622" name="a56d404f79bfa2a1864aac09c6b754622"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagHeating</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a56d404f79bfa2a1864aac09c6b754622"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a23b04d3ddeccb8b69b78212ae0cb5a" id="r_a6a23b04d3ddeccb8b69b78212ae0cb5a"><td class="memItemLeft" align="right" valign="top"><a id="a6a23b04d3ddeccb8b69b78212ae0cb5a" name="a6a23b04d3ddeccb8b69b78212ae0cb5a"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCooling</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a6a23b04d3ddeccb8b69b78212ae0cb5a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af9e14c5953146b1f8c923cdbd2e0378c" id="r_af9e14c5953146b1f8c923cdbd2e0378c"><td class="memItemLeft" align="right" valign="top"><a id="af9e14c5953146b1f8c923cdbd2e0378c" name="af9e14c5953146b1f8c923cdbd2e0378c"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklySchedule</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:af9e14c5953146b1f8c923cdbd2e0378c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95ef96d450f0ce577312cdc13a119214" id="r_a95ef96d450f0ce577312cdc13a119214"><td class="memItemLeft" align="right" valign="top"><a id="a95ef96d450f0ce577312cdc13a119214" name="a95ef96d450f0ce577312cdc13a119214"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagFanEnabled</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a95ef96d450f0ce577312cdc13a119214"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4017a130902608cd0813f480e80949c" id="r_ad4017a130902608cd0813f480e80949c"><td class="memItemLeft" align="right" valign="top"><a id="ad4017a130902608cd0813f480e80949c" name="ad4017a130902608cd0813f480e80949c"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagThermometerError</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:ad4017a130902608cd0813f480e80949c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d9edddb5ede3c0a04ce687dc69afffc" id="r_a7d9edddb5ede3c0a04ce687dc69afffc"><td class="memItemLeft" align="right" valign="top"><a id="a7d9edddb5ede3c0a04ce687dc69afffc" name="a7d9edddb5ede3c0a04ce687dc69afffc"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagClockError</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a7d9edddb5ede3c0a04ce687dc69afffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a30d4a377a70e2f31d7c3e7c5a0e85b15" id="r_a30d4a377a70e2f31d7c3e7c5a0e85b15"><td class="memItemLeft" align="right" valign="top"><a id="a30d4a377a70e2f31d7c3e7c5a0e85b15" name="a30d4a377a70e2f31d7c3e7c5a0e85b15"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCountdownTimer</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a30d4a377a70e2f31d7c3e7c5a0e85b15"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93314ca6ba521038f67a3e1413b10f83" id="r_a93314ca6ba521038f67a3e1413b10f83"><td class="memItemLeft" align="right" valign="top"><a id="a93314ca6ba521038f67a3e1413b10f83" name="a93314ca6ba521038f67a3e1413b10f83"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagForcedOffBySensor</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a93314ca6ba521038f67a3e1413b10f83"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a26d48804045ad48c928301951f6af19a" id="r_a26d48804045ad48c928301951f6af19a"><td class="memItemLeft" align="right" valign="top"><a id="a26d48804045ad48c928301951f6af19a" name="a26d48804045ad48c928301951f6af19a"></a>
+static enum HvacCoolSubfunctionFlag&#160;</td><td class="memItemRight" valign="bottom"><b>getHvacFlagCoolSubfunction</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a26d48804045ad48c928301951f6af19a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8ec5293d8b3d0d92f9247f3efcc888f9" id="r_a8ec5293d8b3d0d92f9247f3efcc888f9"><td class="memItemLeft" align="right" valign="top"><a id="a8ec5293d8b3d0d92f9247f3efcc888f9" name="a8ec5293d8b3d0d92f9247f3efcc888f9"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagWeeklyScheduleTemporalOverride</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a8ec5293d8b3d0d92f9247f3efcc888f9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af3835352a4177f4584ec3d051256e125" id="r_af3835352a4177f4584ec3d051256e125"><td class="memItemLeft" align="right" valign="top"><a id="af3835352a4177f4584ec3d051256e125" name="af3835352a4177f4584ec3d051256e125"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagBatteryCoverOpen</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:af3835352a4177f4584ec3d051256e125"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3d94467101b36875731f13c5ad244c0" id="r_ac3d94467101b36875731f13c5ad244c0"><td class="memItemLeft" align="right" valign="top"><a id="ac3d94467101b36875731f13c5ad244c0" name="ac3d94467101b36875731f13c5ad244c0"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagCalibrationError</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:ac3d94467101b36875731f13c5ad244c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68d06f0682f6cbe709543f2f60ce97e9" id="r_a68d06f0682f6cbe709543f2f60ce97e9"><td class="memItemLeft" align="right" valign="top"><a id="a68d06f0682f6cbe709543f2f60ce97e9" name="a68d06f0682f6cbe709543f2f60ce97e9"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacFlagAntifreezeOverheatActive</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:a68d06f0682f6cbe709543f2f60ce97e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad000855e70e2c1df8d4f89a09e5852f4" id="r_ad000855e70e2c1df8d4f89a09e5852f4"><td class="memItemLeft" align="right" valign="top"><a id="ad000855e70e2c1df8d4f89a09e5852f4" name="ad000855e70e2c1df8d4f89a09e5852f4"></a>
+static bool&#160;</td><td class="memItemRight" valign="bottom"><b>isHvacValueValid</b> (const <a class="el" href="structTHVACValue.html">THVACValue</a> *hvacValue)</td></tr>
+<tr class="separator:ad000855e70e2c1df8d4f89a09e5852f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_methods_classSupla_1_1LocalAction"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_static_methods_classSupla_1_1LocalAction')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classSupla_1_1LocalAction.html">Supla::LocalAction</a></td></tr>
 <tr class="memitem:ad1978e886b468585f85eeef07f8c2d2c inherit pub_static_methods_classSupla_1_1LocalAction" id="r_ad1978e886b468585f85eeef07f8c2d2c"><td class="memItemLeft" align="right" valign="top">
 static void&#160;</td><td class="memItemRight" valign="bottom"><b>DeleteActionsHandledBy</b> (const <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client)</td></tr>

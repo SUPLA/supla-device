@@ -749,6 +749,12 @@ void HvacBase::iterateAlways() {
   }
   lastTemperature = t1;
 
+  if (checkAuxProtection(t2)) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
+                    getChannelNumber());
+    return;
+  }
+
   if (checkOverheatProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
     return;
@@ -787,12 +793,6 @@ void HvacBase::iterateAlways() {
         return;
       }
     }
-  }
-
-  if (checkAuxProtection(t2)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
-                    getChannelNumber());
-    return;
   }
 
   switch (channel.getHvacMode()) {
@@ -3298,17 +3298,15 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
     return false;
   }
 
-  if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF ||
-      channel.getHvacMode() == SUPLA_HVAC_MODE_NOT_SET) {
-    return false;
-  }
-
   auto tAuxMin = getTemperatureAuxMinSetpoint();
   auto tAuxMax = getTemperatureAuxMaxSetpoint();
   if (isSensorTempValid(tAuxMin)) {
     auto outputValue = evaluateHeatOutputValue(t, tAuxMin);
     if (outputValue > 0) {
-      setOutput(outputValue, false);
+      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
+          channel.isHvacFlagCooling()) {
+        setOutput(outputValue, false);
+      }
       return true;
     }
   }
@@ -3316,7 +3314,10 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (isSensorTempValid(tAuxMax)) {
     auto outputValue = evaluateCoolOutputValue(t, tAuxMax);
     if (outputValue < 0) {
-      setOutput(outputValue, false);
+      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
+          channel.isHvacFlagHeating()) {
+        setOutput(outputValue, false);
+      }
       return true;
     }
   }

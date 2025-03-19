@@ -292,7 +292,8 @@ TEST_F(HvacRuntimeF, antifreezeCheck) {
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEATING);
+                  SUPLA_HVAC_VALUE_FLAG_HEATING |
+                  SUPLA_HVAC_VALUE_FLAG_ANTIFREEZE_OVERHEAT_ACTIVE);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 2100);
@@ -595,5 +596,30 @@ TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
   iterateAndMoveTime(100);
   EXPECT_EQ(primaryOutput.getOutputValue(), 0);
   EXPECT_FALSE(hvac->getChannel()->isHvacFlagCooling());
+
+  // set mode to off, check if overheat protection works
+  EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
+    .InSequence(seq1)
+    .WillOnce([](uint8_t, int8_t *value, unsigned char,
+                 uint32_t) {
+        auto hvacValue = reinterpret_cast<THVACValue *>(value);
+
+        EXPECT_EQ(hvacValue->Flags,
+                  SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET |
+                  SUPLA_HVAC_VALUE_FLAG_COOL |
+                  SUPLA_HVAC_VALUE_FLAG_COOLING |
+                  SUPLA_HVAC_VALUE_FLAG_ANTIFREEZE_OVERHEAT_ACTIVE);
+        EXPECT_EQ(hvacValue->IsOn, 1);
+        EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_OFF);
+        EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 0);
+        EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
+    });
+  hvac->setTargetMode(SUPLA_HVAC_MODE_OFF);
+  t1->setValue(38.0);
+//  t2->setValue(30.01);
+  hvac->setTemperatureHeatProtection(3200);
+  iterateAndMoveTime(100);
+  EXPECT_EQ(primaryOutput.getOutputValue(), -1);
+  EXPECT_TRUE(hvac->getChannel()->isHvacFlagCooling());
 }
 

@@ -1117,6 +1117,21 @@ void Channel::setHvacFlagCalibrationError(bool value) {
   }
 }
 
+void Channel::setHvacFlagAntifreezeOverheatActive(bool value) {
+  auto hvacValue = getValueHvac();
+  if (hvacValue != nullptr &&
+      value != isHvacFlagAntifreezeOverheatActive()) {
+    setSendValue();
+    uint16_t flags = hvacValue->Flags;
+    if (value) {
+      flags |= SUPLA_HVAC_VALUE_FLAG_ANTIFREEZE_OVERHEAT_ACTIVE;
+    } else {
+      flags &= ~SUPLA_HVAC_VALUE_FLAG_ANTIFREEZE_OVERHEAT_ACTIVE;
+    }
+    setHvacFlags(flags);
+  }
+}
+
 void Channel::clearHvacState() {
   SUPLA_LOG_INFO("HVAC[%d]: Clearing HVAC state for channel",
                  getChannelNumber());
@@ -1133,126 +1148,131 @@ void Channel::clearHvacState() {
   setHvacFlagCountdownTimer(false);
 }
 
-bool Channel::isHvacFlagSetpointTemperatureCoolSet() {
+bool Channel::isHvacFlagSetpointTemperatureCoolSet() const {
   return isHvacFlagSetpointTemperatureCoolSet(getValueHvac());
 }
 
-bool Channel::isHvacFlagSetpointTemperatureHeatSet() {
+bool Channel::isHvacFlagSetpointTemperatureHeatSet() const {
   return isHvacFlagSetpointTemperatureHeatSet(getValueHvac());
 }
 
-bool Channel::isHvacFlagHeating() {
+bool Channel::isHvacFlagHeating() const {
   return isHvacFlagHeating(getValueHvac());
 }
 
-bool Channel::isHvacFlagCooling() {
+bool Channel::isHvacFlagCooling() const {
   return isHvacFlagCooling(getValueHvac());
 }
 
-bool Channel::isHvacFlagWeeklySchedule() {
+bool Channel::isHvacFlagWeeklySchedule() const {
   return isHvacFlagWeeklySchedule(getValueHvac());
 }
 
-bool Channel::isHvacFlagFanEnabled() {
+bool Channel::isHvacFlagFanEnabled() const {
   return isHvacFlagFanEnabled(getValueHvac());
 }
 
-bool Channel::isHvacFlagThermometerError() {
+bool Channel::isHvacFlagThermometerError() const {
   return isHvacFlagThermometerError(getValueHvac());
 }
 
-bool Channel::isHvacFlagClockError() {
+bool Channel::isHvacFlagClockError() const {
   return isHvacFlagClockError(getValueHvac());
 }
 
-bool Channel::isHvacFlagCountdownTimer() {
+bool Channel::isHvacFlagCountdownTimer() const {
   return isHvacFlagCountdownTimer(getValueHvac());
 }
 
-bool Channel::isHvacFlagForcedOffBySensor() {
+bool Channel::isHvacFlagForcedOffBySensor() const {
   return isHvacFlagForcedOffBySensor(getValueHvac());
 }
 
-enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction() {
+enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction()
+    const {
   return getHvacFlagCoolSubfunction(getValueHvac());
 }
 
-bool Channel::isHvacFlagWeeklyScheduleTemporalOverride() {
+bool Channel::isHvacFlagWeeklyScheduleTemporalOverride() const {
   return isHvacFlagWeeklyScheduleTemporalOverride(getValueHvac());
 }
 
-bool Channel::isHvacFlagBatteryCoverOpen() {
+bool Channel::isHvacFlagBatteryCoverOpen() const {
   return isHvacFlagBatteryCoverOpen(getValueHvac());
 }
 
-bool Channel::isHvacFlagCalibrationError() {
+bool Channel::isHvacFlagCalibrationError() const {
   return isHvacFlagCalibrationError(getValueHvac());
 }
 
-bool Channel::isHvacFlagSetpointTemperatureHeatSet(THVACValue *value) {
+bool Channel::isHvacFlagAntifreezeOverheatActive() const {
+  return isHvacFlagAntifreezeOverheatActive(getValueHvac());
+}
+
+bool Channel::isHvacFlagSetpointTemperatureHeatSet(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET;
   }
   return false;
 }
 
-bool Channel::isHvacFlagSetpointTemperatureCoolSet(THVACValue *value) {
+bool Channel::isHvacFlagSetpointTemperatureCoolSet(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_COOL_SET;
   }
   return false;
 }
 
-bool Channel::isHvacFlagHeating(THVACValue *value) {
+bool Channel::isHvacFlagHeating(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_HEATING;
   }
   return false;
 }
 
-bool Channel::isHvacFlagCooling(THVACValue *value) {
+bool Channel::isHvacFlagCooling(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_COOLING;
   }
   return false;
 }
 
-bool Channel::isHvacFlagWeeklySchedule(THVACValue *value) {
+bool Channel::isHvacFlagWeeklySchedule(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE;
   }
   return false;
 }
 
-bool Channel::isHvacFlagFanEnabled(THVACValue *value) {
+bool Channel::isHvacFlagFanEnabled(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_FAN_ENABLED;
   }
   return false;
 }
 
-bool Channel::isHvacFlagThermometerError(THVACValue *value) {
+bool Channel::isHvacFlagThermometerError(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_THERMOMETER_ERROR;
   }
   return false;
 }
 
-bool Channel::isHvacFlagClockError(THVACValue *value) {
+bool Channel::isHvacFlagClockError(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_CLOCK_ERROR;
   }
   return false;
 }
 
-bool Channel::isHvacFlagCountdownTimer(THVACValue *value) {
+bool Channel::isHvacFlagCountdownTimer(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_COUNTDOWN_TIMER;
   }
   return false;
 }
 
-bool Channel::isHvacFlagForcedOffBySensor(THVACValue *value) {
+bool Channel::isHvacFlagForcedOffBySensor(const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags & SUPLA_HVAC_VALUE_FLAG_FORCED_OFF_BY_SENSOR;
   }
@@ -1260,7 +1280,7 @@ bool Channel::isHvacFlagForcedOffBySensor(THVACValue *value) {
 }
 
 enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction(
-    THVACValue *hvacValue) {
+    const THVACValue *hvacValue) {
   if (hvacValue != nullptr) {
     return (hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_COOL
                 ? HvacCoolSubfunctionFlag::CoolSubfunction
@@ -1269,7 +1289,8 @@ enum Supla::HvacCoolSubfunctionFlag Channel::getHvacFlagCoolSubfunction(
   return HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed;
 }
 
-bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *value) {
+bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(
+    const THVACValue *value) {
   if (value != nullptr) {
     return value->Flags &
            SUPLA_HVAC_VALUE_FLAG_WEEKLY_SCHEDULE_TEMPORAL_OVERRIDE;
@@ -1277,16 +1298,23 @@ bool Channel::isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *value) {
   return false;
 }
 
-bool Channel::isHvacFlagBatteryCoverOpen(THVACValue *hvacValue) {
+bool Channel::isHvacFlagBatteryCoverOpen(const THVACValue *hvacValue) {
   if (hvacValue != nullptr) {
     return hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_BATTERY_COVER_OPEN;
   }
   return false;
 }
 
-bool Channel::isHvacFlagCalibrationError(THVACValue *hvacValue) {
+bool Channel::isHvacFlagCalibrationError(const THVACValue *hvacValue) {
   if (hvacValue != nullptr) {
     return hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_CALIBRATION_ERROR;
+  }
+  return false;
+}
+
+bool Channel::isHvacFlagAntifreezeOverheatActive(const THVACValue *hvacValue) {
+  if (hvacValue != nullptr) {
+    return hvacValue->Flags & SUPLA_HVAC_VALUE_FLAG_ANTIFREEZE_OVERHEAT_ACTIVE;
   }
   return false;
 }
@@ -1350,7 +1378,7 @@ const char *Channel::getHvacModeCstr(int mode) const {
   }
 }
 
-int16_t Channel::getHvacSetpointTemperatureCool() {
+int16_t Channel::getHvacSetpointTemperatureCool() const {
   auto value = getValueHvac();
   if (value != nullptr) {
     return value->SetpointTemperatureCool;
@@ -1358,7 +1386,7 @@ int16_t Channel::getHvacSetpointTemperatureCool() {
   return INT16_MIN;
 }
 
-int16_t Channel::getHvacSetpointTemperatureHeat() {
+int16_t Channel::getHvacSetpointTemperatureHeat() const {
   auto value = getValueHvac();
   if (value != nullptr) {
     return value->SetpointTemperatureHeat;
@@ -1366,7 +1394,7 @@ int16_t Channel::getHvacSetpointTemperatureHeat() {
   return INT16_MIN;
 }
 
-uint16_t Channel::getHvacFlags() {
+uint16_t Channel::getHvacFlags() const {
   auto value = getValueHvac();
   if (value != nullptr) {
     return value->Flags;
@@ -1659,7 +1687,7 @@ uint8_t Channel::getSubDeviceId() const {
   return subDeviceId;
 }
 
-bool Channel::isHvacValueValid(THVACValue *hvacValue) {
+bool Channel::isHvacValueValid(const THVACValue *hvacValue) {
   if (hvacValue == nullptr) {
     return false;
   }

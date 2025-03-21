@@ -41,7 +41,7 @@ void TemperatureDropSensor::iterateAlways() {
     lastTemperatureUpdate = millis();
     auto temperature = thermometer->getTempInt16();
     // add temperature to table
-    if (temperature > INT16_MIN) {
+    if (filteringTimestamp == 0 && temperature > INT16_MIN) {
       measurements[measurementIndex] = temperature;
       measurementIndex++;
       if (measurementIndex >= MAX_TEMPERATURE_MEASUREMENTS) {
@@ -54,6 +54,7 @@ void TemperatureDropSensor::iterateAlways() {
         if (!detectTemperatureDrop(temperature, &averageAtDropDetection)) {
           virtualBinary.set();
           dropDetectionTimestamp = 0;
+          filteringTimestamp = 0;
         }
       }
 
@@ -61,11 +62,21 @@ void TemperatureDropSensor::iterateAlways() {
       if (millis() - dropDetectionTimestamp > 30 * 60 * 1000) {
         virtualBinary.set();
         dropDetectionTimestamp = 0;
+        filteringTimestamp = 0;
       }
     } else {
       if (detectTemperatureDrop(temperature, &averageAtDropDetection)) {
-        virtualBinary.clear();
-        dropDetectionTimestamp = millis();
+        if (dropDetectionDelayMs) {
+          if (filteringTimestamp == 0) {
+            filteringTimestamp = millis();
+          }
+        }
+        if (dropDetectionDelayMs == 0 ||
+            millis() - filteringTimestamp > dropDetectionDelayMs) {
+          virtualBinary.clear();
+          dropDetectionTimestamp = millis();
+          filteringTimestamp = 0;
+        }
       }
     }
   }
@@ -75,12 +86,12 @@ bool TemperatureDropSensor::detectTemperatureDrop(int16_t temperature,
                                            int16_t *average) const {
   // calculate 10 min average starting 3 min ago (measurements are stored
   // every probeIntervalMs)
-  int oneMinutIndexCount = (60000 / probeIntervalMs);
-  int fromIndex = measurementIndex - (10 + 3) * oneMinutIndexCount;
+  double oneMinuteIndexCount = (60000.0 / probeIntervalMs);
+  int fromIndex = measurementIndex - (10 + 3) * oneMinuteIndexCount;
   while (fromIndex < 0) {
     fromIndex += MAX_TEMPERATURE_MEASUREMENTS;
   }
-  int averageInPast = getAverage(fromIndex, 10 * oneMinutIndexCount);
+  int averageInPast = getAverage(fromIndex, 10 * oneMinuteIndexCount);
   *average = averageInPast;
   if (averageInPast > INT16_MIN) {
     if (temperature - averageInPast < temperatureDropThreshold) {
@@ -117,4 +128,16 @@ int16_t TemperatureDropSensor::getAverage(int fromIndex,
 
 bool TemperatureDropSensor::isDropDetected() const {
   return dropDetectionTimestamp != 0;
+}
+
+int TemperatureDropSensor::getBinarySensorChannelNo() const {
+  return virtualBinary.getChannelNumber();
+}
+
+void TemperatureDropSensor::setTemperatureDropThreshold(int16_t threshold) {
+  temperatureDropThreshold = threshold;
+}
+
+void TemperatureDropSensor::setDropDetectionDelayMs(uint32_t delayMs) {
+  dropDetectionDelayMs = delayMs;
 }

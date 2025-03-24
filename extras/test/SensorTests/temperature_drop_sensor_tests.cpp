@@ -377,6 +377,82 @@ TEST(TemperatureDropSensorTests, TemperatureChanges) {
   EXPECT_FALSE(sensor.isDropDetected());
 }
 
+TEST(TemperatureDropSensorTests, DropFrom23To15WithDelay) {
+  SimpleTime time;
+  Supla::Sensor::VirtualThermometer thermometer;
+  Supla::Sensor::TemperatureDropSensor sensor(&thermometer);
+
+  auto elBinary = Supla::Element::getElementByChannelNumber(1);
+  ASSERT_NE(elBinary, nullptr);
+  auto ch = elBinary->getChannel();
+  ASSERT_NE(ch, nullptr);
+
+  sensor.setDropDetectionDelayMs(60000);
+  sensor.setTemperatureDropThreshold(-500);
+
+  thermometer.setValue(23);
+  thermometer.onInit();
+  elBinary->onInit();
+  sensor.onInit();
+  elBinary->iterateAlways();
+
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // forward time by 30 min with 10 seconds per step
+  for (int i = 0; i < 6*30; i++) {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(10000);
+  }
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  thermometer.setValue(15);
+  // Delay active
+  // forward time by 1 min with 10 seconds per step
+  for (int i = 0; i < 6; i++) {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(10000);
+  }
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+
+  // time after delay
+  // forward time by 1 min with 10 seconds per step
+  for (int i = 0; i < 6; i++) {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(10000);
+  }
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
+
+  // forward time by 25 min with 10 seconds per step
+  for (int i = 0; i < 6*25; i++) {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(10000);
+  }
+  EXPECT_EQ(ch->getValueBool(), false);
+  EXPECT_TRUE(sensor.isDropDetected());
+
+  // forward time by 20 min with 10 seconds per step
+  // after 25+5 min it should change to "drop not detected" and stay this way
+  for (int i = 0; i < 20*6; i++) {
+    thermometer.iterateAlways();
+    sensor.iterateAlways();
+    elBinary->iterateAlways();
+    time.advance(10000);
+  }
+  EXPECT_EQ(ch->getValueBool(), true);
+  EXPECT_FALSE(sensor.isDropDetected());
+}
 
 
 

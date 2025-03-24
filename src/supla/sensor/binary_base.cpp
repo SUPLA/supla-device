@@ -27,7 +27,7 @@ using Supla::Sensor::BinaryBase;
 
 
 BinaryBase::BinaryBase() {
-  channel.setType(SUPLA_CHANNELTYPE_SENSORNO);
+  channel.setType(SUPLA_CHANNELTYPE_BINARYSENSOR);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 

@@ -37,6 +37,22 @@ class TemperatureDropSensor : public Supla::Element {
   void iterateAlways() override;
 
   bool isDropDetected() const;
+  int getBinarySensorChannelNo() const;
+
+  /**
+   * Set temperature drop threshold detection
+   *
+   * @param threshold in 0.01 units, so -200 is -2 degrees
+   */
+  void setTemperatureDropThreshold(int16_t threshold);
+
+  /**
+   * Set drop detection delay. When temperature drops below threshold, drop
+   * detection is delayed for this amount of time.
+   *
+   * @param delayMs in milliseconds, use 0 to disable
+   */
+  void setDropDetectionDelayMs(uint32_t delayMs);
 
  private:
   Supla::Sensor::VirtualBinary virtualBinary;
@@ -46,14 +62,15 @@ class TemperatureDropSensor : public Supla::Element {
   bool detectTemperatureDrop(int16_t temperature, int16_t *average) const;
 
   uint32_t lastTemperatureUpdate = 0;
+  uint32_t filteringTimestamp = 0;
+  uint32_t dropDetectionTimestamp = 0;
+  uint32_t probeIntervalMs = 30000;
+  uint32_t dropDetectionDelayMs = 0;
 
   int16_t measurements[MAX_TEMPERATURE_MEASUREMENTS] = {};
   int measurementIndex = 0;
-  uint32_t probeIntervalMs = 30000;
   int16_t temperatureDropThreshold = -200;  // -2 degree
-
   int16_t averageAtDropDetection = INT16_MIN;
-  uint32_t dropDetectionTimestamp = 0;
 };
 
 }  // namespace Sensor

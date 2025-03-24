@@ -722,9 +722,6 @@ void HvacBase::iterateAlways() {
 
   if (!checkThermometersStatusForCurrentMode(t1, t2)) {
     if (startupDelay) {
-//      SUPLA_LOG_DEBUG(
-//          "HVAC[%d]: invalid temperature readout - startup delay...",
-//          getChannelNumber());
       return;
     }
     setOutput(getOutputValueOnError(), true);
@@ -738,6 +735,7 @@ void HvacBase::iterateAlways() {
     lastTemperature = INT16_MIN;
     channel.setHvacFlagThermometerError(true);
     channel.setHvacFlagForcedOffBySensor(false);
+    updateChannelState();
     return;
   }
   channel.setHvacFlagThermometerError(false);
@@ -749,15 +747,27 @@ void HvacBase::iterateAlways() {
   }
   lastTemperature = t1;
 
+  if (checkAuxProtection(t2)) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
+                    getChannelNumber());
+    channel.setHvacFlagAntifreezeOverheatActive(false);
+    updateChannelState();
+    return;
+  }
+
   if (checkOverheatProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
+    updateChannelState();
     return;
   }
 
   if (checkAntifreezeProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: antifreeze protection exit", getChannelNumber());
+    updateChannelState();
     return;
   }
+
+  channel.setHvacFlagAntifreezeOverheatActive(false);
 
   if (isOutputControlledInternally()) {
     if (getForcedOffSensorState()) {
@@ -765,6 +775,7 @@ void HvacBase::iterateAlways() {
                       getChannelNumber());
       channel.setHvacFlagForcedOffBySensor(true);
       setOutput(0, false);
+      updateChannelState();
       return;
     } else {
       channel.setHvacFlagForcedOffBySensor(false);
@@ -776,6 +787,7 @@ void HvacBase::iterateAlways() {
         setTargetMode(SUPLA_HVAC_MODE_OFF);
         SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit (with turn off)",
                         getChannelNumber());
+        updateChannelState();
         return;
       }
     } else {
@@ -784,15 +796,10 @@ void HvacBase::iterateAlways() {
         setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
         SUPLA_LOG_DEBUG("HVAC[%d]: turn on by sensor state",
                         getChannelNumber());
+        updateChannelState();
         return;
       }
     }
-  }
-
-  if (checkAuxProtection(t2)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
-                    getChannelNumber());
-    return;
   }
 
   switch (channel.getHvacMode()) {
@@ -846,6 +853,7 @@ void HvacBase::iterateAlways() {
     default: {
       break;
     }
+    updateChannelState();
   }
 }
 
@@ -3076,8 +3084,9 @@ void HvacBase::setOutput(int value, bool force) {
   bool stateChanged = false;
   // make sure that min on/off time configuration is respected
   if (lastValue > 0 && value <= 0) {
-    if (!force && millis() - lastOutputStateChangeTimestampMs <
-        config.MinOnTimeS * 1000) {
+    if (!force && lastOutputStateChangeTimestampMs != 0 &&
+        millis() - lastOutputStateChangeTimestampMs <
+            config.MinOnTimeS * 1000) {
       return;
     }
     // when output should change from heating to cooling, we add off step
@@ -3087,16 +3096,18 @@ void HvacBase::setOutput(int value, bool force) {
   }
 
   if (lastValue == 0 && value != 0) {
-    if (!force && millis() - lastOutputStateChangeTimestampMs <
-        config.MinOffTimeS * 1000) {
+    if (!force && lastOutputStateChangeTimestampMs != 0 &&
+        millis() - lastOutputStateChangeTimestampMs <
+            config.MinOffTimeS * 1000) {
       return;
     }
     stateChanged = true;
   }
 
   if (lastValue < 0 && value >= 0) {
-    if (!force && millis() - lastOutputStateChangeTimestampMs <
-        config.MinOnTimeS * 1000) {
+    if (!force && lastOutputStateChangeTimestampMs != 0 &&
+        millis() - lastOutputStateChangeTimestampMs <
+            config.MinOnTimeS * 1000) {
       return;
     }
     // when output should change from cooling to heating, we add off step
@@ -3121,6 +3132,7 @@ void HvacBase::setOutput(int value, bool force) {
 
     if (value <= 0) {
       primaryOutput->setOutputValue(0);
+      lastValue = 0;
     } else {
       if (primaryOutput->isOnOffOnly()) {
         value = 1;
@@ -3136,6 +3148,7 @@ void HvacBase::setOutput(int value, bool force) {
 
     if (value >= 0) {
       output->setOutputValue(0);
+      lastValue = 0;
     } else {
       if (primaryOutput->isOnOffOnly()) {
         value = -1;
@@ -3250,6 +3263,7 @@ bool HvacBase::checkAntifreezeProtection(_supla_int16_t t) {
     auto outputValue = evaluateHeatOutputValue(t, tFreeze);
     if (outputValue > 0) {
       setOutput(outputValue, false);
+      channel.setHvacFlagAntifreezeOverheatActive(true);
       return true;
     }
   }
@@ -3269,6 +3283,7 @@ bool HvacBase::checkOverheatProtection(_supla_int16_t t) {
     auto outputValue = evaluateCoolOutputValue(t, tOverheat);
     if (outputValue < 0) {
       setOutput(outputValue, false);
+      channel.setHvacFlagAntifreezeOverheatActive(true);
       return true;
     }
   }
@@ -3298,17 +3313,17 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
     return false;
   }
 
-  if (channel.getHvacMode() == SUPLA_HVAC_MODE_OFF ||
-      channel.getHvacMode() == SUPLA_HVAC_MODE_NOT_SET) {
-    return false;
-  }
-
   auto tAuxMin = getTemperatureAuxMinSetpoint();
   auto tAuxMax = getTemperatureAuxMaxSetpoint();
   if (isSensorTempValid(tAuxMin)) {
     auto outputValue = evaluateHeatOutputValue(t, tAuxMin);
     if (outputValue > 0) {
-      setOutput(outputValue, false);
+      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
+          channel.isHvacFlagCooling()) {
+        setOutput(outputValue, false);
+      } else if (isModeSupported(SUPLA_HVAC_MODE_HEAT)) {
+        return false;
+      }
       return true;
     }
   }
@@ -3316,7 +3331,12 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   if (isSensorTempValid(tAuxMax)) {
     auto outputValue = evaluateCoolOutputValue(t, tAuxMax);
     if (outputValue < 0) {
-      setOutput(outputValue, false);
+      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
+          channel.isHvacFlagHeating()) {
+        setOutput(outputValue, false);
+      } else if (isModeSupported(SUPLA_HVAC_MODE_COOL)) {
+        return false;
+      }
       return true;
     }
   }

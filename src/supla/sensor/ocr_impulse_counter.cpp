@@ -563,6 +563,32 @@ void OcrImpulseCounter::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
+bool OcrImpulseCounter::cleanupOcrTestModeConfig() {
+  auto cfg = Supla::Storage::ConfigInstance();
+  bool result = false;
+  if (cfg) {
+    if (cfg->eraseKey("ocr_test")) {
+      result = true;
+    }
+    if (cfg->eraseKey("ocr_host")) {
+      result = true;
+    }
+    if (cfg->eraseKey("ocr_auth")) {
+      result = true;
+    }
+    if (cfg->eraseKey("ocr_crop")) {
+      result = true;
+    }
+    if (cfg->eraseKey("ocr_expected")) {
+      result = true;
+    }
+    if (result) {
+      cfg->saveWithDelay(500);
+    }
+  }
+  return result;
+}
+
 void OcrImpulseCounter::iterateAlways() {
   Supla::Sensor::VirtualImpulseCounter::iterateAlways();
   if (testMode && factoryTester) {

@@ -191,6 +191,7 @@ class Channel : public LocalAction {
   void setHvacFlagWeeklyScheduleTemporalOverride(bool value);
   void setHvacFlagBatteryCoverOpen(bool value);
   void setHvacFlagCalibrationError(bool value);
+  void setHvacFlagAntifreezeOverheatActive(bool value);
   void clearHvacState();
 
   uint8_t getHvacIsOnRaw() const;
@@ -201,39 +202,42 @@ class Channel : public LocalAction {
   // returns mode as a string. If mode parameters is -1 then it returns current
   // channel mode, otherwise mode parameter is used.
   const char *getHvacModeCstr(int mode = -1) const;
-  int16_t getHvacSetpointTemperatureHeat();
-  int16_t getHvacSetpointTemperatureCool();
-  uint16_t getHvacFlags();
-  bool isHvacFlagSetpointTemperatureHeatSet();
-  bool isHvacFlagSetpointTemperatureCoolSet();
-  bool isHvacFlagHeating();
-  bool isHvacFlagCooling();
-  bool isHvacFlagWeeklySchedule();
-  bool isHvacFlagFanEnabled();
-  bool isHvacFlagThermometerError();
-  bool isHvacFlagClockError();
-  bool isHvacFlagCountdownTimer();
-  bool isHvacFlagForcedOffBySensor();
-  enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction();
-  bool isHvacFlagWeeklyScheduleTemporalOverride();
-  bool isHvacFlagBatteryCoverOpen();
-  bool isHvacFlagCalibrationError();
+  int16_t getHvacSetpointTemperatureHeat() const;
+  int16_t getHvacSetpointTemperatureCool() const;
+  uint16_t getHvacFlags() const;
+  bool isHvacFlagSetpointTemperatureHeatSet() const;
+  bool isHvacFlagSetpointTemperatureCoolSet() const;
+  bool isHvacFlagHeating() const;
+  bool isHvacFlagCooling() const;
+  bool isHvacFlagWeeklySchedule() const;
+  bool isHvacFlagFanEnabled() const;
+  bool isHvacFlagThermometerError() const;
+  bool isHvacFlagClockError() const;
+  bool isHvacFlagCountdownTimer() const;
+  bool isHvacFlagForcedOffBySensor() const;
+  enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction() const;
+  bool isHvacFlagWeeklyScheduleTemporalOverride() const;
+  bool isHvacFlagBatteryCoverOpen() const;
+  bool isHvacFlagCalibrationError() const;
+  bool isHvacFlagAntifreezeOverheatActive() const;
 
-  static bool isHvacFlagSetpointTemperatureHeatSet(THVACValue *hvacValue);
-  static bool isHvacFlagSetpointTemperatureCoolSet(THVACValue *hvacValue);
-  static bool isHvacFlagHeating(THVACValue *hvacValue);
-  static bool isHvacFlagCooling(THVACValue *hvacValue);
-  static bool isHvacFlagWeeklySchedule(THVACValue *hvacValue);
-  static bool isHvacFlagFanEnabled(THVACValue *hvacValue);
-  static bool isHvacFlagThermometerError(THVACValue *hvacValue);
-  static bool isHvacFlagClockError(THVACValue *hvacValue);
-  static bool isHvacFlagCountdownTimer(THVACValue *hvacValue);
-  static bool isHvacFlagForcedOffBySensor(THVACValue *hvacValue);
+  static bool isHvacFlagSetpointTemperatureHeatSet(const THVACValue *hvacValue);
+  static bool isHvacFlagSetpointTemperatureCoolSet(const THVACValue *hvacValue);
+  static bool isHvacFlagHeating(const THVACValue *hvacValue);
+  static bool isHvacFlagCooling(const THVACValue *hvacValue);
+  static bool isHvacFlagWeeklySchedule(const THVACValue *hvacValue);
+  static bool isHvacFlagFanEnabled(const THVACValue *hvacValue);
+  static bool isHvacFlagThermometerError(const THVACValue *hvacValue);
+  static bool isHvacFlagClockError(const THVACValue *hvacValue);
+  static bool isHvacFlagCountdownTimer(const THVACValue *hvacValue);
+  static bool isHvacFlagForcedOffBySensor(const THVACValue *hvacValue);
   static enum HvacCoolSubfunctionFlag getHvacFlagCoolSubfunction(
-      THVACValue *hvacValue);
-  static bool isHvacFlagWeeklyScheduleTemporalOverride(THVACValue *hvacValue);
-  static bool isHvacFlagBatteryCoverOpen(THVACValue *hvacValue);
-  static bool isHvacFlagCalibrationError(THVACValue *hvacValue);
+      const THVACValue *hvacValue);
+  static bool isHvacFlagWeeklyScheduleTemporalOverride(
+      const THVACValue *hvacValue);
+  static bool isHvacFlagBatteryCoverOpen(const THVACValue *hvacValue);
+  static bool isHvacFlagCalibrationError(const THVACValue *hvacValue);
+  static bool isHvacFlagAntifreezeOverheatActive(const THVACValue *hvacValue);
 
   static void setHvacSetpointTemperatureHeat(THVACValue *hvacValue,
                                              int16_t setpointTemperatureHeat);
@@ -242,7 +246,7 @@ class Channel : public LocalAction {
 
   THVACValue *getValueHvac();
   const THVACValue *getValueHvac() const;
-  static bool isHvacValueValid(THVACValue *hvacValue);
+  static bool isHvacValueValid(const THVACValue *hvacValue);
 
   virtual bool isExtended() const;
   bool isUpdateReady() const;

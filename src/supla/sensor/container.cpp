@@ -284,6 +284,15 @@ void Container::removeSensorData(uint8_t channelNumber) {
   }
 }
 
+int Container::getFillLevelForSensor(uint8_t channelNumber) const {
+  for (auto const &sensor : config.sensorData) {
+    if (sensor.channelNumber == channelNumber) {
+      return sensor.fillLevel;
+    }
+  }
+  return -1;
+}
+
 bool Container::isSensorDataUsed() const {
   for (auto const &sensor : config.sensorData) {
     if (sensor.channelNumber != 255) {

@@ -146,6 +146,7 @@ class Container : public ChannelElement, public ActionHandler {
   // returns false if channel number is not set (i.e. all 10 slots are used)
   bool setSensorData(uint8_t channelNumber, uint8_t fillLevel);
   void removeSensorData(uint8_t channelNumber);
+  int getFillLevelForSensor(uint8_t channelNumber) const;
 
   bool isSensorDataUsed() const;
   bool isAlarmingUsed() const;

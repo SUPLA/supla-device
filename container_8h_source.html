@@ -225,63 +225,64 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>  <span class="comment">// returns false if channel number is not set (i.e. all 10 slots are used)</span></div>
 <div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>  <span class="keywordtype">bool</span> setSensorData(uint8_t channelNumber, uint8_t fillLevel);</div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>  <span class="keywordtype">void</span> removeSensorData(uint8_t channelNumber);</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>  <span class="keywordtype">bool</span> isSensorDataUsed() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>  <span class="keywordtype">bool</span> isAlarmingUsed() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span> </div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>  <span class="keywordtype">void</span> setSoundAlarmSupported(<span class="keywordtype">bool</span> soundAlarmSupported);</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>  <span class="keywordtype">bool</span> isSoundAlarmSupported() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span></div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1">muteSoundAlarm</a>();</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span> </div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="keywordtype">void</span> setExternalSoundAlarmOn();</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="keywordtype">void</span> setExternalSoundAlarmOff();</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="keywordtype">void</span> updateConfigField(uint8_t *configField, int8_t value);</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  int8_t getHighestSensorValueAndUpdateState();</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>  <span class="keywordtype">void</span> setAlarmActive(<span class="keywordtype">bool</span> alarmActive);</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <span class="keywordtype">void</span> setWarningActive(<span class="keywordtype">bool</span> warningActive);</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="keywordtype">void</span> setInvalidSensorStateActive(<span class="keywordtype">bool</span> invalidSensorStateActive);</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  <span class="keywordtype">void</span> setSoundAlarmOn(uint8_t level);</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span></div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Container.html#ad993ee738a1524a8b6d248038c4af678">checkSensorInvalidState</a>(<span class="keyword">const</span> int8_t currentFillLevel,</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                               <span class="keyword">const</span> int8_t tolerance = 0) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span> </div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>  <span class="comment">// returns -1 when sensor is not configured or on error</span></div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  <span class="comment">// returns 0 when sensor is not active</span></div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  <span class="comment">// returns 1 when sensor is active</span></div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  <span class="keyword">enum</span> SensorState getSensorState(<span class="keyword">const</span> uint8_t channelNumber) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  uint32_t lastReadTime = 0;</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>  uint32_t readIntervalMs = 1000;</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>  int8_t fillLevel = -1;</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>  <span class="keywordtype">bool</span> soundAlarmSupported = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>  uint8_t soundAlarmActivatedLevel = 0;</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  <span class="keywordtype">bool</span> externalSoundAlarm = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>  <span class="keywordtype">bool</span> sensorOfflineReported = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span> </div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  ContainerConfig config = {};</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>};</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>  <span class="keywordtype">int</span> getFillLevelForSensor(uint8_t channelNumber) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>  <span class="keywordtype">bool</span> isSensorDataUsed() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>  <span class="keywordtype">bool</span> isAlarmingUsed() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span> </div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>  <span class="keywordtype">void</span> setSoundAlarmSupported(<span class="keywordtype">bool</span> soundAlarmSupported);</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>  <span class="keywordtype">bool</span> isSoundAlarmSupported() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span></div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1">muteSoundAlarm</a>();</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="keywordtype">void</span> setExternalSoundAlarmOn();</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <span class="keywordtype">void</span> setExternalSoundAlarmOff();</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span> </div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="keywordtype">void</span> updateConfigField(uint8_t *configField, int8_t value);</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>  int8_t getHighestSensorValueAndUpdateState();</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <span class="keywordtype">void</span> setAlarmActive(<span class="keywordtype">bool</span> alarmActive);</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="keywordtype">void</span> setWarningActive(<span class="keywordtype">bool</span> warningActive);</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  <span class="keywordtype">void</span> setInvalidSensorStateActive(<span class="keywordtype">bool</span> invalidSensorStateActive);</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>  <span class="keywordtype">void</span> setSoundAlarmOn(uint8_t level);</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span></div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Container.html#ad993ee738a1524a8b6d248038c4af678">checkSensorInvalidState</a>(<span class="keyword">const</span> int8_t currentFillLevel,</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                               <span class="keyword">const</span> int8_t tolerance = 0) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  <span class="comment">// returns -1 when sensor is not configured or on error</span></div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  <span class="comment">// returns 0 when sensor is not active</span></div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  <span class="comment">// returns 1 when sensor is active</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  <span class="keyword">enum</span> SensorState getSensorState(<span class="keyword">const</span> uint8_t channelNumber) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>  uint32_t lastReadTime = 0;</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>  uint32_t readIntervalMs = 1000;</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>  int8_t fillLevel = -1;</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>  <span class="keywordtype">bool</span> soundAlarmSupported = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  uint8_t soundAlarmActivatedLevel = 0;</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>  <span class="keywordtype">bool</span> externalSoundAlarm = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  <span class="keywordtype">bool</span> sensorOfflineReported = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  ContainerConfig config = {};</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>};</div>
 </div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span><span class="keyword">static_assert</span>(<span class="keyword">sizeof</span>(ContainerConfig().sensorData) / <span class="keyword">sizeof</span>(SensorData) ==</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>              <span class="keyword">sizeof</span>(<a class="code hl_struct" href="structTChannelConfig__Container.html">TChannelConfig_Container</a>().SensorInfo) /</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>                  <span class="keyword">sizeof</span>(<a class="code hl_struct" href="structTContainer__SensorInfo.html">TContainer_SensorInfo</a>));</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span> </div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>};  <span class="comment">// namespace Sensor</span></div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span><span class="keyword">static_assert</span>(<span class="keyword">sizeof</span>(ContainerConfig().sensorData) / <span class="keyword">sizeof</span>(SensorData) ==</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>              <span class="keyword">sizeof</span>(<a class="code hl_struct" href="structTChannelConfig__Container.html">TChannelConfig_Container</a>().SensorInfo) /</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>                  <span class="keyword">sizeof</span>(<a class="code hl_struct" href="structTContainer__SensorInfo.html">TContainer_SensorInfo</a>));</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>};  <span class="comment">// namespace Sensor</span></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_CONTAINER_H_</span></div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_SENSOR_CONTAINER_H_</span></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:93</div></div>
 <div class="ttc" id="aclassSupla_1_1Html_1_1ContainerParameters_html"><div class="ttname"><a href="classSupla_1_1Html_1_1ContainerParameters.html">Supla::Html::ContainerParameters</a></div><div class="ttdef"><b>Definition</b> container_parameters.h:29</div></div>
-<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_a2ca265045ce3a553d504dbf3ec43b584"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#a2ca265045ce3a553d504dbf3ec43b584">Supla::Sensor::Container::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> container.cpp:401</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_a2ca265045ce3a553d504dbf3ec43b584"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#a2ca265045ce3a553d504dbf3ec43b584">Supla::Sensor::Container::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> container.cpp:410</div></div>
 <div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_a489d2acf9690cee67d6e9bff8076f4fc"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#a489d2acf9690cee67d6e9bff8076f4fc">Supla::Sensor::Container::setInternalLevelReporting</a></div><div class="ttdeci">void setInternalLevelReporting(bool internalLevelReporting)</div><div class="ttdoc">Sets the internal level reporting flag.</div><div class="ttdef"><b>Definition</b> container.cpp:38</div></div>
-<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_a65b6a0a9c8fcaf470b98be1f63001bfc"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#a65b6a0a9c8fcaf470b98be1f63001bfc">Supla::Sensor::Container::isExternalSoundAlarmOn</a></div><div class="ttdeci">bool isExternalSoundAlarmOn() const</div><div class="ttdoc">Checks if the sound alarm was enabled for external source (other than container itself)</div><div class="ttdef"><b>Definition</b> container.cpp:633</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_a65b6a0a9c8fcaf470b98be1f63001bfc"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#a65b6a0a9c8fcaf470b98be1f63001bfc">Supla::Sensor::Container::isExternalSoundAlarmOn</a></div><div class="ttdeci">bool isExternalSoundAlarmOn() const</div><div class="ttdoc">Checks if the sound alarm was enabled for external source (other than container itself)</div><div class="ttdef"><b>Definition</b> container.cpp:642</div></div>
 <div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_a6c48b171d583abb19d684f222032f029"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#a6c48b171d583abb19d684f222032f029">Supla::Sensor::Container::isInternalLevelReporting</a></div><div class="ttdeci">bool isInternalLevelReporting() const</div><div class="ttdoc">Checks if the internal level reporting flag is enabled.</div><div class="ttdef"><b>Definition</b> container.cpp:48</div></div>
-<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_aa11c0c58a951f9fa01ad97377503d511"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#aa11c0c58a951f9fa01ad97377503d511">Supla::Sensor::Container::handleCalcfgFromServer</a></div><div class="ttdeci">int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override</div><div class="ttdoc">Handles CALCFG requests from server.</div><div class="ttdef"><b>Definition</b> container.cpp:602</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_aa11c0c58a951f9fa01ad97377503d511"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#aa11c0c58a951f9fa01ad97377503d511">Supla::Sensor::Container::handleCalcfgFromServer</a></div><div class="ttdeci">int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override</div><div class="ttdoc">Handles CALCFG requests from server.</div><div class="ttdef"><b>Definition</b> container.cpp:611</div></div>
 <div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_ab2504016b50c9532aeb3f7bbfabafe81"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#ab2504016b50c9532aeb3f7bbfabafe81">Supla::Sensor::Container::iterateAlways</a></div><div class="ttdeci">void iterateAlways() override</div><div class="ttdoc">Method called on each SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> container.cpp:53</div></div>
-<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_ad993ee738a1524a8b6d248038c4af678"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#ad993ee738a1524a8b6d248038c4af678">Supla::Sensor::Container::checkSensorInvalidState</a></div><div class="ttdeci">bool checkSensorInvalidState(const int8_t currentFillLevel, const int8_t tolerance=0) const</div><div class="ttdoc">Checks if sensor is in invalid state.</div><div class="ttdef"><b>Definition</b> container.cpp:332</div></div>
+<div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_ad993ee738a1524a8b6d248038c4af678"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#ad993ee738a1524a8b6d248038c4af678">Supla::Sensor::Container::checkSensorInvalidState</a></div><div class="ttdeci">bool checkSensorInvalidState(const int8_t currentFillLevel, const int8_t tolerance=0) const</div><div class="ttdoc">Checks if sensor is in invalid state.</div><div class="ttdef"><b>Definition</b> container.cpp:341</div></div>
 <div class="ttc" id="aclassSupla_1_1Sensor_1_1Container_html_af517e3d07f9510982baff2f37e99acf1"><div class="ttname"><a href="classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1">Supla::Sensor::Container::muteSoundAlarm</a></div><div class="ttdeci">void muteSoundAlarm()</div><div class="ttdoc">Mutes the sound alarmm by clearing channel value flag, but does not clear soundAlarmActivated flag,...</div><div class="ttdef"><b>Definition</b> container.cpp:192</div></div>
 <div class="ttc" id="astructSupla_1_1Sensor_1_1ContainerConfig_html"><div class="ttname"><a href="structSupla_1_1Sensor_1_1ContainerConfig.html">Supla::Sensor::ContainerConfig</a></div><div class="ttdef"><b>Definition</b> container.h:38</div></div>
 <div class="ttc" id="astructSupla_1_1Sensor_1_1SensorData_html"><div class="ttname"><a href="structSupla_1_1Sensor_1_1SensorData.html">Supla::Sensor::SensorData</a></div><div class="ttdef"><b>Definition</b> container.h:33</div></div>

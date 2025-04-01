@@ -59,35 +59,44 @@ void Supla::Condition::handleAction(int event, int action) {
         case SUPLA_CHANNELTYPE_WINDSENSOR:
         case SUPLA_CHANNELTYPE_PRESSURESENSOR:
         case SUPLA_CHANNELTYPE_RAINSENSOR:
-        case SUPLA_CHANNELTYPE_WEIGHTSENSOR:
+        case SUPLA_CHANNELTYPE_WEIGHTSENSOR: {
           value = source->getChannel()->getValueDouble();
           break;
-        case SUPLA_CHANNELTYPE_IMPULSE_COUNTER:
+        }
+        case SUPLA_CHANNELTYPE_IMPULSE_COUNTER: {
           value = source->getChannel()->getValueInt64();
           break;
+        }
         case SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR:
-        case SUPLA_CHANNELTYPE_HUMIDITYSENSOR:
+        case SUPLA_CHANNELTYPE_HUMIDITYSENSOR: {
           value = useAlternativeValue
             ? source->getChannel()->getValueDoubleSecond()
             : source->getChannel()->getValueDoubleFirst();
           break;
-        case SUPLA_CHANNELTYPE_DIMMER:
+        }
+        case SUPLA_CHANNELTYPE_DIMMER: {
           value = source->getChannel()->getValueBrightness();
           break;
-        case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER:
+        }
+        case SUPLA_CHANNELTYPE_RGBLEDCONTROLLER: {
           value = source->getChannel()->getValueColorBrightness();
           break;
-        case SUPLA_CHANNELTYPE_DIMMERANDRGBLED:
+        }
+        case SUPLA_CHANNELTYPE_DIMMERANDRGBLED: {
           value = useAlternativeValue
             ? source->getChannel()->getValueColorBrightness()
             : source->getChannel()->getValueBrightness();
           break;
+        }
         case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_METER:
-        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT:
+        case SUPLA_CHANNELTYPE_GENERAL_PURPOSE_MEASUREMENT: {
           value = source->getChannel()->getValueDouble();
           break;
-        case SUPLA_CHANNELTYPE_CONTAINER:
+        }
+        case SUPLA_CHANNELTYPE_CONTAINER: {
           value = source->getChannel()->getContainerFillValue();
+          break;
+        }
         /* case SUPLA_CHANNELTYPE_ELECTRICITY_METER: */
         default:
           return;

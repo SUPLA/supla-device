@@ -619,3 +619,45 @@ TEST_F(ConditionTestsFixture, setThresholdCheck) {
 
   cond->setThreshold(120);
 }
+
+TEST_F(ConditionTestsFixture, conditionForContainer) {
+  ActionHandlerMock2 ahMock;
+  const int action1 = 15;
+  const int action2 = 16;
+  const int action3 = 17;
+
+//  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action1));
+  EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, action3));
+
+  Supla::ChannelElement channelElement;
+  auto channel = channelElement.getChannel();
+
+  auto cond = OnLess(51);
+  cond->setSource(channelElement);
+  cond->setClient(ahMock);
+
+  channel->setType(SUPLA_CHANNELTYPE_CONTAINER);
+
+  // channel should be initialized to -1, so nothing happens
+  cond->handleAction(Supla::ON_CHANGE, action1);
+
+  channel->setContainerFillValue(52);
+
+  // nothing should happen
+  cond->handleAction(Supla::ON_CHANGE, action2);
+
+  channel->setContainerFillValue(-1);
+  cond->handleAction(Supla::ON_CHANGE, action2);
+
+  channel->setContainerFillValue(52);
+
+  // nothing should happen
+  cond->handleAction(Supla::ON_CHANGE, action2);
+
+
+  // ahMock should be called
+  channel->setContainerFillValue(50);
+  cond->handleAction(Supla::ON_CHANGE, action3);
+
+  delete cond;
+}

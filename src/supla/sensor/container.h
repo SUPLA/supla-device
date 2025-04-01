@@ -142,13 +142,45 @@ class Container : public ChannelElement, public ActionHandler {
       bool muteAlarmSoundWithoutAdditionalAuth);
   bool isMuteAlarmSoundWithoutAdditionalAuth() const;
 
-  // returns true when sensor data is set successfully
-  // returns false if channel number is not set (i.e. all 10 slots are used)
+  /**
+   * Sets sensor data for given channel number
+   *
+   * @param channelNumber sensor channel number
+   * @param fillLevel sensor fill level in range 1-100
+   *
+   * @return true if sensor data is set successfully, false if channel number is
+   *         not set (i.e. all 10 slots are used)
+   */
   bool setSensorData(uint8_t channelNumber, uint8_t fillLevel);
+  /**
+   * Removes sensor data for given channel number
+   *
+   * @param channelNumber
+   */
   void removeSensorData(uint8_t channelNumber);
+
+  /**
+   * Returns fill level for sensor with given channel number
+   *
+   * @param channelNumber sensor channel number
+   *
+   * @return fill level for sensor in range 0-100. Value -1 means that given
+   *         sensor is not set
+   */
   int getFillLevelForSensor(uint8_t channelNumber) const;
 
+  /**
+   * Checks if any sensor data is set
+   *
+   * @return true if any sensor data is set
+   */
   bool isSensorDataUsed() const;
+
+  /**
+   * Checks if any alarm or warning level is set (both above and below)
+   *
+   * @return true if any alarm or warning level is set
+   */
   bool isAlarmingUsed() const;
 
   void setSoundAlarmSupported(bool soundAlarmSupported);

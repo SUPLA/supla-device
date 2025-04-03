@@ -1,0 +1,31 @@
+<map id="Supla::Sensor::ParticleMeterPM1006K" name="Supla::Sensor::ParticleMeterPM1006K">
+<area shape="rect" id="Node000001" title=" " alt="" coords="1807,68,1991,108"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1ParticleMeter.html" title=" " alt="" coords="1573,75,1758,101"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1773,86,1806,86,1806,91,1773,91"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="34,59,142,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="157,61,290,48,444,42,1343,42,1447,46,1550,60,1611,72,1610,77,1549,65,1446,51,1342,47,445,47,290,53,157,66"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="56,42,67,35,88,33,108,35,120,41,123,51,118,60,113,58,118,50,116,45,106,40,88,38,68,40,58,46"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="356,81,536,122"/>
+<area shape="poly" id="edge8_Node000007_Node000003" title=" " alt="" coords="158,75,355,91,355,97,157,80"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Sensor_1_1GeneralPurposeMeasurement.html" title=" " alt="" coords="1241,116,1441,156"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="1457,131,1549,120,1627,99,1628,104,1550,125,1457,136"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html" title="Base class for General Purpose Measurement (GPM/KPOP) and General Purpose Meter (GPM/KLOP)" alt="" coords="991,136,1192,176"/>
+<area shape="poly" id="edge5_Node000004_Node000005" title=" " alt="" coords="1207,144,1240,142,1241,147,1208,150"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="666,89,820,114"/>
+<area shape="poly" id="edge6_Node000005_Node000006" title=" " alt="" coords="836,113,991,138,991,143,835,119"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="552,99,665,99,665,104,552,104"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="23,110,153,136"/>
+<area shape="poly" id="edge9_Node000007_Node000008" title=" " alt="" coords="168,115,355,104,355,110,168,121"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Channel.html" title=" " alt="" coords="392,199,500,225"/>
+<area shape="poly" id="edge11_Node000009_Node000008" title=" " alt="" coords="158,137,392,196,391,201,157,143"/>
+<area shape="poly" id="edge10_Node000006_Node000009" title=" " alt="" coords="484,189,552,157,631,124,673,112,675,117,633,129,554,161,486,194"/>
+<area shape="poly" id="edge12_Node000009_Node000009" title=" " alt="" coords="420,182,429,175,446,173,462,175,472,181,474,191,470,200,465,198,469,190,467,184,460,180,446,178,431,180,423,186"/>
+<area shape="rect" id="Node000010" href="$structTActionTriggerProperties.html" title=" " alt="" coords="5,197,171,222"/>
+<area shape="poly" id="edge13_Node000009_Node000010" title=" " alt="" coords="186,208,392,209,392,214,186,213"/>
+<area shape="rect" id="Node000011" href="$structTHVACValue.html" title=" " alt="" coords="38,246,138,272"/>
+<area shape="poly" id="edge14_Node000009_Node000011" title=" " alt="" coords="153,250,331,229,391,219,392,224,332,234,154,255"/>
+<area shape="rect" id="Node000012" href="$classSupla_1_1Sensor_1_1MeasurementDriver.html" title=" " alt="" coords="650,138,836,179"/>
+<area shape="poly" id="edge15_Node000005_Node000012" title=" " alt="" coords="851,155,991,154,991,160,852,161"/>
+<area shape="rect" id="Node000013" href="$structSupla_1_1Sensor_1_1GeneralPurposeChannelBase_1_1GPMCommonConfig.html" title=" " alt="" coords="632,204,854,244"/>
+<area shape="poly" id="edge16_Node000005_Node000013" title=" " alt="" coords="865,198,991,173,992,178,866,203"/>
+</map>

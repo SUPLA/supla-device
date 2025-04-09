@@ -356,78 +356,80 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  uint8_t getSubDeviceId() <span class="keyword">const</span>;</div>
 <div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span> </div>
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>  <span class="keywordtype">bool</span> isRollerShutterRelayType() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span> </div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>  <span class="keywordtype">void</span> onRegistered();</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>  <span class="keywordtype">void</span> setSendGetConfig();</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span> </div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>  <span class="keywordtype">bool</span> isChannelStateEnabled() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>  <span class="keywordtype">void</span> clearSendValue();</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span> </div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>  <span class="keywordtype">void</span> setSendValue();</div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>  <span class="keywordtype">bool</span> isValueUpdateReady() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span> </div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>  <span class="keywordtype">void</span> clearSendGetConfig();</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>  <span class="keywordtype">bool</span> isGetConfigRequested() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span> </div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>  <span class="keywordtype">void</span> setSendInitialCaption();</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>  <span class="keywordtype">void</span> clearSendInitialCaption();</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  <span class="keywordtype">bool</span> isInitialCaptionUpdateReady() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span> </div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>  <span class="keywordtype">void</span> setSendStateInfo();</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>  <span class="keywordtype">void</span> clearSendStateInfo();</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>  <span class="keywordtype">bool</span> isStateInfoUpdateReady() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span> </div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>  <span class="keyword">static</span> Channel *firstPtr;</div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>  Channel *nextPtr = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>  <span class="keywordtype">char</span> *initialCaption = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>  <span class="keywordtype">void</span> setRelayOvercurrentCutOff(<span class="keywordtype">bool</span> value);</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>  <span class="keywordtype">bool</span> isRelayOvercurrentCutOff() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span> </div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>  <span class="keywordtype">void</span> onRegistered();</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>  <span class="keywordtype">void</span> setSendGetConfig();</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span> </div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>  <span class="keywordtype">bool</span> isChannelStateEnabled() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>  <span class="keywordtype">void</span> clearSendValue();</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span> </div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>  <span class="keywordtype">void</span> setSendValue();</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>  <span class="keywordtype">bool</span> isValueUpdateReady() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span> </div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>  <span class="keywordtype">void</span> clearSendGetConfig();</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>  <span class="keywordtype">bool</span> isGetConfigRequested() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span> </div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>  <span class="keywordtype">void</span> setSendInitialCaption();</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>  <span class="keywordtype">void</span> clearSendInitialCaption();</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>  <span class="keywordtype">bool</span> isInitialCaptionUpdateReady() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span> </div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>  <span class="keywordtype">void</span> setSendStateInfo();</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>  <span class="keywordtype">void</span> clearSendStateInfo();</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>  <span class="keywordtype">bool</span> isStateInfoUpdateReady() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span> </div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>  <span class="keyword">static</span> Channel *firstPtr;</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>  Channel *nextPtr = <span class="keyword">nullptr</span>;</div>
 <div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>  uint64_t channelFlags = 0;</div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>  uint32_t functionsBitmap = 0;</div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>  uint32_t validityTimeSec = 0;</div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span> </div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>  int16_t channelNumber = -1;</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>  <span class="keywordtype">char</span> *initialCaption = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span> </div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>  uint64_t channelFlags = 0;</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>  uint32_t functionsBitmap = 0;</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>  uint32_t validityTimeSec = 0;</div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span> </div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  uint16_t defaultFunction =</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>      0;  <span class="comment">// function in proto use 32 bit, but there are no functions defined so</span></div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>          <span class="comment">// far that use more than 16 bits</span></div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span> </div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>  uint8_t changedFields = 0;  <span class="comment">// keeps track of pending updates</span></div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>  int16_t channelNumber = -1;</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span> </div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>  uint16_t defaultFunction =</div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>      0;  <span class="comment">// function in proto use 32 bit, but there are no functions defined so</span></div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>          <span class="comment">// far that use more than 16 bits</span></div>
 <div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span> </div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  uint8_t batteryLevel = 255;          <span class="comment">// 0 - 100%; 255 - not used</span></div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>  uint8_t batteryPowered = 0;  <span class="comment">// 0 - not used, 1 - true, 2 - false</span></div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> bridgeSignalStrength = 255;  <span class="comment">// 0 - 100%; 255 - not used</span></div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span> </div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>  <span class="comment">// registration parameter</span></div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>  ChannelType channelType = ChannelType::NOT_SET;</div>
-<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span> </div>
-<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>  uint8_t state = 0;</div>
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>  uint8_t defaultIcon = 0;</div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>  uint8_t subDeviceId = 0;</div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span> </div>
-<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>  <span class="keyword">union </span>{</div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>    int8_t value[SUPLA_CHANNELVALUE_SIZE] = {};</div>
-<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>    <a class="code hl_struct" href="structTActionTriggerProperties.html">TActionTriggerProperties</a> actionTriggerProperties;</div>
-<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>    <a class="code hl_struct" href="structTHVACValue.html">THVACValue</a> hvacValue;</div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>  };</div>
-<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>};</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>  uint8_t changedFields = 0;  <span class="comment">// keeps track of pending updates</span></div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span> </div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>  uint8_t batteryLevel = 255;          <span class="comment">// 0 - 100%; 255 - not used</span></div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>  uint8_t batteryPowered = 0;  <span class="comment">// 0 - not used, 1 - true, 2 - false</span></div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> bridgeSignalStrength = 255;  <span class="comment">// 0 - 100%; 255 - not used</span></div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span> </div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>  <span class="comment">// registration parameter</span></div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>  ChannelType channelType = ChannelType::NOT_SET;</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span> </div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>  uint8_t state = 0;</div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>  uint8_t defaultIcon = 0;</div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>  uint8_t subDeviceId = 0;</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span> </div>
+<div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>  <span class="keyword">union </span>{</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>    int8_t value[SUPLA_CHANNELVALUE_SIZE] = {};</div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>    <a class="code hl_struct" href="structTActionTriggerProperties.html">TActionTriggerProperties</a> actionTriggerProperties;</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>    <a class="code hl_struct" href="structTHVACValue.html">THVACValue</a> hvacValue;</div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>  };</div>
+<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>};</div>
 </div>
-<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span> </div>
-<div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span> </div>
-<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CHANNELS_CHANNEL_H_</span></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_a165d2a0df9503b8bc7a519c2441d6502"><div class="ttname"><a href="classSupla_1_1Channel.html#a165d2a0df9503b8bc7a519c2441d6502">Supla::Channel::isValveMotorProblemFlagActive</a></div><div class="ttdeci">bool isValveMotorProblemFlagActive() const</div><div class="ttdoc">Returns the motor problem flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1941</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_a25d250f007dca36fa0b1c654f30a983e"><div class="ttname"><a href="classSupla_1_1Channel.html#a25d250f007dca36fa0b1c654f30a983e">Supla::Channel::getValveOpenState</a></div><div class="ttdeci">uint8_t getValveOpenState() const</div><div class="ttdoc">Returns the open state (open/close) of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1915</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_a2a21c612c8434328d9a4bef25b972b85"><div class="ttname"><a href="classSupla_1_1Channel.html#a2a21c612c8434328d9a4bef25b972b85">Supla::Channel::setValveMotorProblemFlag</a></div><div class="ttdeci">void setValveMotorProblemFlag(bool active)</div><div class="ttdoc">Sets the motor problem flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1900</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_a576b830ae0df6b8b0138dc1b7fc82f4d"><div class="ttname"><a href="classSupla_1_1Channel.html#a576b830ae0df6b8b0138dc1b7fc82f4d">Supla::Channel::setValveManuallyClosedFlag</a></div><div class="ttdeci">void setValveManuallyClosedFlag(bool active)</div><div class="ttdoc">Sets the manually closed flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1884</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_a83a8ef788c3b1987e8998eaa5d66f834"><div class="ttname"><a href="classSupla_1_1Channel.html#a83a8ef788c3b1987e8998eaa5d66f834">Supla::Channel::isValveFloodingFlagActive</a></div><div class="ttdeci">bool isValveFloodingFlagActive() const</div><div class="ttdoc">Returns the flooding flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1931</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_aae0f4296ac361be614b41bfd01f51d09"><div class="ttname"><a href="classSupla_1_1Channel.html#aae0f4296ac361be614b41bfd01f51d09">Supla::Channel::setBatteryLevel</a></div><div class="ttdeci">void setBatteryLevel(int level)</div><div class="ttdoc">Sets battery level.</div><div class="ttdef"><b>Definition</b> channel.cpp:752</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_aaf5e2bc108a5c8468fbb66c9e0cc5e13"><div class="ttname"><a href="classSupla_1_1Channel.html#aaf5e2bc108a5c8468fbb66c9e0cc5e13">Supla::Channel::setValveFloodingFlag</a></div><div class="ttdeci">void setValveFloodingFlag(bool active)</div><div class="ttdoc">Sets the flooding flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1869</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_ab47d2f6426ce8d42b4ea49763100c53c"><div class="ttname"><a href="classSupla_1_1Channel.html#ab47d2f6426ce8d42b4ea49763100c53c">Supla::Channel::getBatteryLevel</a></div><div class="ttdeci">uint8_t getBatteryLevel() const</div><div class="ttdoc">Returns battery level.</div><div class="ttdef"><b>Definition</b> channel.cpp:735</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_abb9480d9905a5663dd68096700941378"><div class="ttname"><a href="classSupla_1_1Channel.html#abb9480d9905a5663dd68096700941378">Supla::Channel::isValveManuallyClosedFlagActive</a></div><div class="ttdeci">bool isValveManuallyClosedFlagActive() const</div><div class="ttdoc">Returns the manually closed flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1936</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_ad2a2749299ae658d9fadcfa599898b0e"><div class="ttname"><a href="classSupla_1_1Channel.html#ad2a2749299ae658d9fadcfa599898b0e">Supla::Channel::isValveOpen</a></div><div class="ttdeci">bool isValveOpen() const</div><div class="ttdoc">Returns the open state (open/close) of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1927</div></div>
-<div class="ttc" id="aclassSupla_1_1Channel_html_afd84d756b127af2c88b7fa7b39e4a55f"><div class="ttname"><a href="classSupla_1_1Channel.html#afd84d756b127af2c88b7fa7b39e4a55f">Supla::Channel::setValveOpenState</a></div><div class="ttdeci">void setValveOpenState(uint8_t openState)</div><div class="ttdoc">Sets the open state (open/close) of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1830</div></div>
+<div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span> </div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CHANNELS_CHANNEL_H_</span></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_a165d2a0df9503b8bc7a519c2441d6502"><div class="ttname"><a href="classSupla_1_1Channel.html#a165d2a0df9503b8bc7a519c2441d6502">Supla::Channel::isValveMotorProblemFlagActive</a></div><div class="ttdeci">bool isValveMotorProblemFlagActive() const</div><div class="ttdoc">Returns the motor problem flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1942</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_a25d250f007dca36fa0b1c654f30a983e"><div class="ttname"><a href="classSupla_1_1Channel.html#a25d250f007dca36fa0b1c654f30a983e">Supla::Channel::getValveOpenState</a></div><div class="ttdeci">uint8_t getValveOpenState() const</div><div class="ttdoc">Returns the open state (open/close) of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1916</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_a2a21c612c8434328d9a4bef25b972b85"><div class="ttname"><a href="classSupla_1_1Channel.html#a2a21c612c8434328d9a4bef25b972b85">Supla::Channel::setValveMotorProblemFlag</a></div><div class="ttdeci">void setValveMotorProblemFlag(bool active)</div><div class="ttdoc">Sets the motor problem flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1901</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_a576b830ae0df6b8b0138dc1b7fc82f4d"><div class="ttname"><a href="classSupla_1_1Channel.html#a576b830ae0df6b8b0138dc1b7fc82f4d">Supla::Channel::setValveManuallyClosedFlag</a></div><div class="ttdeci">void setValveManuallyClosedFlag(bool active)</div><div class="ttdoc">Sets the manually closed flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1885</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_a83a8ef788c3b1987e8998eaa5d66f834"><div class="ttname"><a href="classSupla_1_1Channel.html#a83a8ef788c3b1987e8998eaa5d66f834">Supla::Channel::isValveFloodingFlagActive</a></div><div class="ttdeci">bool isValveFloodingFlagActive() const</div><div class="ttdoc">Returns the flooding flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1932</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_aae0f4296ac361be614b41bfd01f51d09"><div class="ttname"><a href="classSupla_1_1Channel.html#aae0f4296ac361be614b41bfd01f51d09">Supla::Channel::setBatteryLevel</a></div><div class="ttdeci">void setBatteryLevel(int level)</div><div class="ttdoc">Sets battery level.</div><div class="ttdef"><b>Definition</b> channel.cpp:753</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_aaf5e2bc108a5c8468fbb66c9e0cc5e13"><div class="ttname"><a href="classSupla_1_1Channel.html#aaf5e2bc108a5c8468fbb66c9e0cc5e13">Supla::Channel::setValveFloodingFlag</a></div><div class="ttdeci">void setValveFloodingFlag(bool active)</div><div class="ttdoc">Sets the flooding flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1870</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_ab47d2f6426ce8d42b4ea49763100c53c"><div class="ttname"><a href="classSupla_1_1Channel.html#ab47d2f6426ce8d42b4ea49763100c53c">Supla::Channel::getBatteryLevel</a></div><div class="ttdeci">uint8_t getBatteryLevel() const</div><div class="ttdoc">Returns battery level.</div><div class="ttdef"><b>Definition</b> channel.cpp:736</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_abb9480d9905a5663dd68096700941378"><div class="ttname"><a href="classSupla_1_1Channel.html#abb9480d9905a5663dd68096700941378">Supla::Channel::isValveManuallyClosedFlagActive</a></div><div class="ttdeci">bool isValveManuallyClosedFlagActive() const</div><div class="ttdoc">Returns the manually closed flag of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1937</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_ad2a2749299ae658d9fadcfa599898b0e"><div class="ttname"><a href="classSupla_1_1Channel.html#ad2a2749299ae658d9fadcfa599898b0e">Supla::Channel::isValveOpen</a></div><div class="ttdeci">bool isValveOpen() const</div><div class="ttdoc">Returns the open state (open/close) of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1928</div></div>
+<div class="ttc" id="aclassSupla_1_1Channel_html_afd84d756b127af2c88b7fa7b39e4a55f"><div class="ttname"><a href="classSupla_1_1Channel.html#afd84d756b127af2c88b7fa7b39e4a55f">Supla::Channel::setValveOpenState</a></div><div class="ttdeci">void setValveOpenState(uint8_t openState)</div><div class="ttdoc">Sets the open state (open/close) of the Valve channel.</div><div class="ttdef"><b>Definition</b> channel.cpp:1831</div></div>
 <div class="ttc" id="astructTActionTriggerProperties_html"><div class="ttname"><a href="structTActionTriggerProperties.html">TActionTriggerProperties</a></div><div class="ttdef"><b>Definition</b> proto.h:806</div></div>
 <div class="ttc" id="astructTDSC__RollerShutterValue_html"><div class="ttname"><a href="structTDSC__RollerShutterValue.html">TDSC_RollerShutterValue</a></div><div class="ttdef"><b>Definition</b> proto.h:2027</div></div>
 <div class="ttc" id="astructTDS__SuplaDeviceChannel__D_html"><div class="ttname"><a href="structTDS__SuplaDeviceChannel__D.html">TDS_SuplaDeviceChannel_D</a></div><div class="ttdef"><b>Definition</b> proto.h:917</div></div>

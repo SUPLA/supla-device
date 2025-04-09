@@ -17,6 +17,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <supla/local_action.h>
+#include <supla/action_handler.h>
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:

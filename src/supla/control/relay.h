@@ -25,11 +25,7 @@
 #include <stdint.h>
 
 #include "../action_handler.h"
-#include "../actions.h"
 #include "../channel_element.h"
-#include "../io.h"
-#include "../local_action.h"
-#include "../storage/storage.h"
 
 #define STATE_ON_INIT_RESTORED_OFF -3
 #define STATE_ON_INIT_RESTORED_ON  -2
@@ -40,9 +36,12 @@
 #define RELAY_FLAGS_ON (1 << 0)
 #define RELAY_FLAGS_STAIRCASE (1 << 1)
 #define RELAY_FLAGS_IMPULSE_FUNCTION (1 << 2)  // i.e. gate, door, gateway
+#define RELAY_FLAGS_OVERCURRENT (1 << 3)
 
 
 namespace Supla {
+class Io;
+
 namespace Control {
 class Button;
 
@@ -103,8 +102,38 @@ class Relay : public ChannelElement, public ActionHandler {
 
   static void setRelayStorageSaveDelay(int delayMs);
 
+  bool isDefaultRelatedMeterChannelSet() const;
+  uint32_t getCurrentValueFromMeter() const;
   void setDefaultRelatedMeterChannelNo(int channelNo);
   void setTurnOffWhenEmptyAggregator(bool turnOff);
+
+  /**
+   * Set overcurrent threshold
+   *
+   * @param value Value in 0.01 A. Value of 0 means disabled
+   */
+  void setOvercurrentThreshold(uint32_t value);
+
+  /**
+   * Get overcurrent threshold
+   *
+   * @return Value in 0.01 A
+   */
+  uint32_t getOvercurrentThreshold() const { return overcurrentThreshold; }
+
+  /**
+   * Set overcurrent max level allowed
+   *
+   * @param value Value in 0.01 A. Value of 0 means disabled
+   */
+  void setOvercurrentMaxAllowed(uint32_t value);
+
+  /**
+   * Get overcurrent max level allowed
+   *
+   * @return Value in 0.01 A
+   */
+  uint32_t getOvercurrentMaxAllowed() const { return overcurrentMaxAllowed; }
 
  protected:
   struct ButtonListElement {
@@ -112,6 +141,7 @@ class Relay : public ChannelElement, public ActionHandler {
     ButtonListElement *next = nullptr;
   };
 
+  void saveConfig() const;
   void setChannelFunction(_supla_int_t newFunction);
   void updateTimerValue();
   void updateRelayHvacAggregator();
@@ -119,7 +149,11 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
-  uint32_t overcurrentThreshold = 0;
+
+  uint32_t overcurrentThreshold = 0;   // 0.01 A
+  uint32_t overcurrentMaxAllowed = 0;  // 0.01 A
+  uint32_t overcurrentActiveTimestamp = 0;
+  uint32_t overcurrentCheckTimestamp = 0;
 
   uint32_t timerUpdateTimestamp = 0;
 

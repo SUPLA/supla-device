@@ -15,7 +15,9 @@
 */
 
 #include "condition_getter.h"
-#include "element.h"
+
+#include <supla/element.h>
+#include <supla/channels/channel.h>
 
 namespace Supla {
 

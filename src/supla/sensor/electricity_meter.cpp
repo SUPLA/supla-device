@@ -149,10 +149,10 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   }
 
   // Prepare extended channel value
+  srpc_evtool_v3_emextended2extended(&emValue, extChannel.getExtValue());
   if (lastChannelUpdateTime == 0 ||
       millis() - lastChannelUpdateTime >= refreshRateSec * 1000) {
     lastChannelUpdateTime = millis();
-    srpc_evtool_v3_emextended2extended(&emValue, extChannel.getExtValue());
     extChannel.setNewValue(emValue);
   }
   runAction(Supla::ON_CHANGE);
@@ -725,7 +725,7 @@ void Supla::Sensor::ElectricityMeter::onInit() {
 }
 
 void Supla::Sensor::ElectricityMeter::iterateAlways() {
-  if (millis() - lastReadTime > refreshRateSec * 1000) {
+  if (lastReadTime == 0 || millis() - lastReadTime > refreshRateSec * 1000) {
     lastReadTime = millis();
     readValuesFromDevice();
     updateChannelValues();
@@ -1255,8 +1255,13 @@ bool Supla::Sensor::ElectricityMeter::isPhaseLedTypeSupported(
 
 void Supla::Sensor::ElectricityMeter::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  lastChannelUpdateTime = 0;
+  sendDataWithDelay(0);  // asap
   Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
+}
+
+void Supla::Sensor::ElectricityMeter::sendDataWithDelay(int delayMs) {
+  lastChannelUpdateTime = 0;
+  lastReadTime = millis() - (refreshRateSec * 1000 - delayMs);
 }
 
 void Supla::Sensor::ElectricityMeter::purgeConfig() {

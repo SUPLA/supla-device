@@ -14,14 +14,20 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla/log_wrapper.h>
-#include <supla/storage/config.h>
-
-#include "supla/network/network.h"
-#include "time.h"
 #include "element.h"
 
+#include <supla-common/proto.h>
+#include <supla/channels/channel.h>
+#include <supla/log_wrapper.h>
+#include <supla/storage/config.h>
+#include <supla/time.h>
+
 namespace Supla {
+
+namespace Protocol {
+class SuplaSrpc;
+}  // namespace Protocol
+
 Element *Element::firstPtr = nullptr;
 bool Element::invalidatePtr = false;
 

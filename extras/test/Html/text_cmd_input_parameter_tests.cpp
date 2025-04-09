@@ -23,6 +23,7 @@
 #include <string>
 #include <supla/actions.h>
 #include <supla/events.h>
+#include <supla/action_handler.h>
 
 using ::testing::_;
 

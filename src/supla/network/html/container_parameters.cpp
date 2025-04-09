@@ -18,7 +18,7 @@
 
 #include "container_parameters.h"
 
-#include <supla/storage/storage.h>
+#include <supla/storage/config.h>
 #include <supla/network/web_sender.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
@@ -155,9 +155,9 @@ void ContainerParameters::send(Supla::WebSender* sender) {
   sender->send("<label>");
   sender->send("<span class=\"switch\">");
   sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(
-        checked(container->isMuteAlarmSoundWithoutAdditionalAuth()));
-    sender->sendNameAndId(key);
+  sender->send(
+      checked(container->isMuteAlarmSoundWithoutAdditionalAuth()));
+  sender->sendNameAndId(key);
   sender->send(">");
   sender->send("<span class=\"slider\"></span>");
   sender->send("</span>");

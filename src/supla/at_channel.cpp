@@ -16,8 +16,8 @@
 
 #include "at_channel.h"
 
+#include <supla/channels/channel.h>
 #include <supla/protocol/protocol_layer.h>
-#include <supla/device/register_device.h>
 
 namespace Supla {
 

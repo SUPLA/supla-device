@@ -141,6 +141,9 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   channel.clearSendValue();
 
   char arrayBool[SUPLA_CHANNELVALUE_SIZE] = {};
+  channel.setNewValue(arrayBool);
+  channel.clearSendValue();
+
   arrayBool[0] = true;
   channel.setNewValue(true);
   EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),

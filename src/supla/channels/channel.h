@@ -321,6 +321,8 @@ class Channel : public LocalAction {
   uint8_t getSubDeviceId() const;
 
   bool isRollerShutterRelayType() const;
+  void setRelayOvercurrentCutOff(bool value);
+  bool isRelayOvercurrentCutOff() const;
 
   void onRegistered();
   void setSendGetConfig();

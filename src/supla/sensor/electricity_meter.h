@@ -374,6 +374,8 @@ class ElectricityMeter : public ElementWithChannelActions,
 
   void setRefreshRate(unsigned int sec);
 
+  void sendDataWithDelay(int delayMs = 0);
+
   Channel *getChannel() override;
   const Channel *getChannel() const override;
   void purgeConfig() override;

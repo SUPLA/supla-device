@@ -18,6 +18,7 @@
 #include <gtest/gtest.h>
 #include <arduino_mock.h>
 #include <supla/control/simple_button.h>
+#include <supla/action_handler.h>
 
 using ::testing::Return;
 

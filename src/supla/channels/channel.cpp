@@ -14,7 +14,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <string.h>
+#include "channel.h"
 
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
@@ -25,7 +25,7 @@
 #include <math.h>
 #include <supla/device/register_device.h>
 
-#include "channel.h"
+#include <string.h>
 
 #define CHANNEL_SEND_VALUE           (1 << 0)
 #define CHANNEL_SEND_GET_CONFIG      (1 << 1)
@@ -242,12 +242,13 @@ void Channel::setNewValue(int32_t value) {
   }
 }
 
-void Channel::setNewValue(bool value) {
+void Channel::setNewValue(bool state) {
   char newValue[SUPLA_CHANNELVALUE_SIZE];
+  static_assert(sizeof(newValue) == sizeof(value));
 
-  memset(newValue, 0, SUPLA_CHANNELVALUE_SIZE);
+  memcpy(newValue, &value, sizeof(value));
 
-  newValue[0] = value;
+  newValue[0] = state;
   if (setNewValue(newValue)) {
     if (getValueBool()) {
       runAction(Supla::ON_TURN_ON);
@@ -1966,3 +1967,24 @@ void Channel::onRegistered() {
 bool Channel::isChannelStateEnabled() const {
   return getFlags() & SUPLA_CHANNEL_FLAG_CHANNELSTATE;
 }
+
+void Channel::setRelayOvercurrentCutOff(bool overcurrent) {
+  if (channelType == ChannelType::RELAY) {
+    auto relay = reinterpret_cast<TRelayChannel_Value *>(value);
+    if ((relay->flags & SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF) !=
+        overcurrent) {
+      relay->flags = (relay->flags & ~SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF) |
+                     (overcurrent ? SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF : 0);
+      setSendValue();
+    }
+  }
+}
+
+bool Channel::isRelayOvercurrentCutOff() const {
+  if (channelType == ChannelType::RELAY) {
+    auto relay = reinterpret_cast<const TRelayChannel_Value *>(value);
+    return relay->flags & SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF;
+  }
+  return false;
+}
+

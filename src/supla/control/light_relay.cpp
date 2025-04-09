@@ -16,10 +16,13 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "light_relay.h"
+
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
-
-#include "light_relay.h"
+#include <supla/storage/storage.h>
+#include <supla/control/relay.h>
+#include <supla/channels/channel.h>
 
 namespace Supla {
 namespace Control {

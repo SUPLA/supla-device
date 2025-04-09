@@ -22,6 +22,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
+#include <supla/protocol/protocol_layer.h>
 
 using Supla::Sensor::BinaryBase;
 

@@ -16,6 +16,8 @@
 
 #include "local_action.h"
 
+#include <supla/action_handler.h>
+
 namespace Supla {
 
 ActionHandlerClient::ActionHandlerClient() {

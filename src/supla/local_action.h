@@ -18,12 +18,11 @@
 #define SRC_SUPLA_LOCAL_ACTION_H_
 
 #include <stdint.h>
-#include "action_handler.h"
 
 namespace Supla {
 
+class ActionHandler;
 class LocalAction;
-class Condition;
 
 class ActionHandlerClient {
  public:

@@ -26,6 +26,8 @@
 #include <cstdlib>
 #endif
 
+#include "supla/IEEE754tools.h"
+
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder) {
   (void)(byteOrder);
   _FLOATCONV fl = {};
@@ -569,3 +571,9 @@ const char *Supla::getBinarySensorChannelName(int channelFunction) {
     }
   }
 }
+
+bool Supla::isLittleEndian() {
+    uint32_t num = 0x01020304;
+    return *(reinterpret_cast<uint8_t*>(&num)) == 0x04;
+}
+

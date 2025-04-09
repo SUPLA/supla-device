@@ -19,17 +19,23 @@
  * by setting LOW or HIGH output on selected GPIO.
  */
 
+#include "relay.h"
+
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/control/button.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla/control/relay_hvac_aggregator.h>
+#include <supla/storage/config_tags.h>
+#include <supla/storage/config.h>
+#include <supla/storage/storage.h>
+#include <supla/condition.h>
+#include <supla/condition_getter.h>
+#include <supla/events.h>
+#include <supla/actions.h>
+#include <supla/io.h>
 
-#include "../actions.h"
-#include "../io.h"
-#include "../storage/storage.h"
-#include "relay.h"
 
 using Supla::Control::Relay;
 
@@ -70,7 +76,23 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     loadFunctionFromConfig();
+    loadConfigChangeFlag();
     updateRelayHvacAggregator();
+
+    if (overcurrentMaxAllowed > 0) {
+      uint32_t overcurrentValue = 0;
+      char key[16] = {};
+      generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
+      cfg->getUInt32(key, &overcurrentValue);
+      if (overcurrentValue > overcurrentMaxAllowed) {
+        overcurrentValue = overcurrentMaxAllowed;
+      }
+      overcurrentThreshold = overcurrentValue;
+      SUPLA_LOG_DEBUG("Relay[%d] overcurrent threshold: %d (max: %d)",
+                      getChannelNumber(),
+                      overcurrentThreshold,
+                      overcurrentMaxAllowed);
+    }
   }
 }
 
@@ -100,10 +122,36 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
     default:
     case SUPLA_CHANNELFNC_LIGHTSWITCH:
     case SUPLA_CHANNELFNC_POWERSWITCH: {
-      SUPLA_LOG_DEBUG(
-          "Relay[%d] Ignoring config for power/light switch",
-          getChannelNumber());
-      // TODO(klew): add handlign of overcurrent threshold settings
+      if (result->ConfigType == 0 &&
+          result->ConfigSize == sizeof(TChannelConfig_PowerSwitch)) {
+        auto config =
+            reinterpret_cast<TChannelConfig_PowerSwitch *>(result->Config);
+        SUPLA_LOG_DEBUG(
+            "Relay[%d] OvercurrentMaxAllowed: %d, OvercurrentThreshold: %d",
+            getChannelNumber(),
+            config->OvercurrentMaxAllowed,
+            config->OvercurrentThreshold);
+
+        if (config->OvercurrentMaxAllowed != overcurrentMaxAllowed) {
+          SUPLA_LOG_INFO(
+              "Relay[%d] OvercurrentMaxAllowed on server is not valid (%d), "
+              "setting to %d",
+              getChannelNumber(),
+              config->OvercurrentMaxAllowed,
+              overcurrentMaxAllowed);
+          triggerSetChannelConfig();
+        }
+        if (config->OvercurrentThreshold != overcurrentThreshold) {
+          SUPLA_LOG_DEBUG(
+              "Relay[%d] OvercurrentThreshold changed from %d to %d",
+              getChannelNumber(),
+              overcurrentThreshold,
+              config->OvercurrentThreshold);
+          setOvercurrentThreshold(config->OvercurrentThreshold);
+          overcurrentActiveTimestamp = 0;
+        }
+      }
+
       break;
     }
 
@@ -201,6 +249,52 @@ void Relay::iterateAlways() {
   if (durationMs && millis() - durationTimestamp > durationMs) {
     toggle();
   }
+
+  if (overcurrentThreshold > 0 && isOn()) {
+    if (millis() - overcurrentCheckTimestamp > 500) {
+      overcurrentCheckTimestamp = millis();
+      auto current = getCurrentValueFromMeter();
+      if (current > overcurrentThreshold * 1.2) {
+        SUPLA_LOG_WARNING(
+            "Relay[%d] Overcurrent detected (%d) - instant turn off",
+            getChannelNumber(), current);
+        channel.setRelayOvercurrentCutOff(true);
+        turnOff();
+        return;
+      }
+      if (current >= overcurrentThreshold) {
+        if (overcurrentActiveTimestamp != 0 &&
+            millis() - overcurrentActiveTimestamp > 30 * 1000) {  // 30 s
+          SUPLA_LOG_WARNING(
+              "Relay[%d] Overcurrent detected (%d) - turn off",
+              getChannelNumber(),
+              current);
+          channel.setRelayOvercurrentCutOff(true);
+          turnOff();
+          return;
+        }
+        if (overcurrentActiveTimestamp == 0) {
+          SUPLA_LOG_WARNING(
+              "Relay[%d] Overcurrent detected (%d) - filtering 30s",
+              getChannelNumber(),
+              current);
+          overcurrentActiveTimestamp = millis();
+        }
+      } else {
+        if (overcurrentActiveTimestamp != 0) {
+          SUPLA_LOG_DEBUG(
+              "Relay[%d] Overcurrent filtering cancelled (%d)",
+              getChannelNumber(),
+              current);
+          return;
+        }
+        overcurrentActiveTimestamp = 0;
+      }
+    }
+  } else {
+    overcurrentCheckTimestamp = 0;
+    overcurrentActiveTimestamp = 0;
+  }
 }
 
 bool Relay::iterateConnected() {
@@ -292,6 +386,7 @@ void Relay::turnOn(_supla_int_t duration) {
 
   Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
 
+  channel.setRelayOvercurrentCutOff(false);
   channel.setNewValue(true);
 
   // Schedule save in 5 s after state change
@@ -364,6 +459,9 @@ void Relay::handleAction(int event, int action) {
 void Relay::onSaveState() {
   uint32_t durationForState = storedTurnOnDurationMs;
   uint8_t relayFlags = 0;
+  if (channel.isRelayOvercurrentCutOff()) {
+    relayFlags |= RELAY_FLAGS_OVERCURRENT;
+  }
   if (isStaircaseFunction()) {
     relayFlags |= RELAY_FLAGS_STAIRCASE;
   } else if (isImpulseFunction()) {
@@ -425,6 +523,10 @@ void Relay::onLoadState() {
     // is actually used, so we set it to "controlling the gate"
     setChannelFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
   }
+  if (relayFlags & RELAY_FLAGS_OVERCURRENT) {
+    channel.setRelayOvercurrentCutOff(true);
+  }
+
   if (isStaircaseFunction() || isImpulseFunction()) {
     SUPLA_LOG_INFO(
               "Relay[%d] restored durationMs: %d",
@@ -608,8 +710,8 @@ void Relay::fillChannelConfig(void *channelConfig, int *size) {
       auto config = reinterpret_cast<TChannelConfig_PowerSwitch *>(
           channelConfig);
       *size = sizeof(TChannelConfig_PowerSwitch);
-      config->OvercurrentMaxAllowed = 0;
-      config->OvercurrentThreshold = 0;
+      config->OvercurrentMaxAllowed = overcurrentMaxAllowed;
+      config->OvercurrentThreshold = overcurrentThreshold;
       config->DefaultRelatedMeterChannelNo = 0;
       config->DefaultRelatedMeterIsSet = 0;
       if (defaultRelatedMeterChannelNo >= 0 &&
@@ -666,3 +768,75 @@ void Relay::setTurnOffWhenEmptyAggregator(bool turnOff) {
   turnOffWhenEmptyAggregator = turnOff;
 }
 
+bool Relay::isDefaultRelatedMeterChannelSet() const {
+  if (defaultRelatedMeterChannelNo >= 0 &&
+         defaultRelatedMeterChannelNo <= 255) {
+    auto ch = Supla::Channel::GetByChannelNumber(defaultRelatedMeterChannelNo);
+    if (ch && ch->getChannelType() == SUPLA_CHANNELTYPE_ELECTRICITY_METER) {
+      return true;
+    }
+  }
+  return false;
+}
+
+
+uint32_t Relay::getCurrentValueFromMeter() const {
+  if (isDefaultRelatedMeterChannelSet()) {
+    auto el =
+        Supla::Element::getElementByChannelNumber(defaultRelatedMeterChannelNo);
+    if (el) {
+      auto getter = EmCurrent(0);
+      if (getter == nullptr) {
+        return 0;
+      }
+      bool isValid = true;
+      auto value = getter->getValue(el, &isValid);
+      delete getter;
+      getter = nullptr;
+      if (!isValid) {
+        return 0;
+      }
+
+      return value * 100;
+    }
+  }
+  return 0;
+}
+
+void Relay::setOvercurrentMaxAllowed(uint32_t value) {
+  overcurrentMaxAllowed = value;
+}
+
+void Relay::setOvercurrentThreshold(uint32_t value) {
+  if (value > overcurrentMaxAllowed) {
+    value = overcurrentMaxAllowed;
+  }
+
+  if (overcurrentThreshold != value) {
+    overcurrentThreshold = value;
+    triggerSetChannelConfig();
+    saveConfig();
+  }
+}
+
+void Relay::saveConfig() const {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::ContainerTag);
+    generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
+    if (cfg->setUInt32(key, overcurrentThreshold)) {
+      SUPLA_LOG_INFO("Relay[%d]: config saved successfully",
+                     getChannelNumber());
+    } else {
+      SUPLA_LOG_WARNING("Relay[%d]: failed to save config", getChannelNumber());
+    }
+
+    saveConfigChangeFlag();
+    cfg->saveWithDelay(5000);
+  }
+  for (auto proto = Supla::Protocol::ProtocolLayer::first();
+      proto != nullptr; proto = proto->next()) {
+    proto->notifyConfigChange(getChannelNumber());
+  }
+}

@@ -16,22 +16,31 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#include "binary_sensor_channel.h"
-#include <supla/log_wrapper.h>
-#include <supla/channels/channel.h>
+#ifndef SRC_SUPLA_NETWORK_HTML_RELAY_PARAMETERS_H_
+#define SRC_SUPLA_NETWORK_HTML_RELAY_PARAMETERS_H_
 
-using Supla::BinarySensorChannel;
+#include <supla/network/html_element.h>
 
-bool BinarySensorChannel::getValueBool() {
-  return serverInvertLogic ? !Channel::getValueBool() : Channel::getValueBool();
-}
+namespace Supla {
+class WebSender;
 
-void BinarySensorChannel::setServerInvertLogic(bool invert) {
-  SUPLA_LOG_DEBUG(
-      "Binary[%d] setServerInvertLogic %d", getChannelNumber(), invert);
-  serverInvertLogic = invert;
-}
+namespace Control {
+class Relay;
+}  // namespace Control
 
-bool BinarySensorChannel::isServerInvertLogic() const {
-  return serverInvertLogic;
-}
+namespace Html {
+
+class RelayParameters : public HtmlElement {
+ public:
+  explicit RelayParameters(Supla::Control::Relay *relay);
+  virtual ~RelayParameters();
+  void send(Supla::WebSender* sender) override;
+  bool handleResponse(const char* key, const char* value) override;
+ private:
+  Supla::Control::Relay *relay = nullptr;
+};
+
+};  // namespace Html
+};  // namespace Supla
+
+#endif  // SRC_SUPLA_NETWORK_HTML_RELAY_PARAMETERS_H_

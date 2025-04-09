@@ -16,6 +16,8 @@
 
 #include "channel_element.h"
 
+#include <supla/channels/channel.h>
+
 Supla::ChannelElement::ChannelElement(int channelNumber)
     : channel(channelNumber) {
 }

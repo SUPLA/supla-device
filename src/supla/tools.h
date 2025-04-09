@@ -22,7 +22,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "definitions.h"
-#include "supla/IEEE754tools.h"
 
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder = LSBFIRST);
 float doublePacked2float(uint8_t *bar);
@@ -95,7 +94,14 @@ bool isLastResetPower();
 
 const char *getRelayChannelName(int channelFunction);
 const char *getBinarySensorChannelName(int channelFunction);
-}  // namespace Supla
 
+/**
+ * Checks if current platform is little endian byte order
+ *
+ * @return true if current platform is little endian
+ */
+bool isLittleEndian();
+
+}  // namespace Supla
 
 #endif  // SRC_SUPLA_TOOLS_H_

@@ -19,11 +19,10 @@
 #ifndef SRC_SUPLA_ELEMENT_WITH_CHANNEL_ACTIONS_H_
 #define SRC_SUPLA_ELEMENT_WITH_CHANNEL_ACTIONS_H_
 
+#include <stdint.h>
+#include <supla-common/proto.h>
 #include <supla/element.h>
-#include <supla/channels/channel.h>
 #include <supla/local_action.h>
-#include <supla/action_handler.h>
-#include <supla/condition.h>
 
 namespace Supla {
 
@@ -38,6 +37,10 @@ enum class ChannelConfigState : uint8_t {
 };
 
 class Condition;
+class ActionHandler;
+namespace Protocol {
+class SuplaSrpc;
+}  // namespace Protocol
 
 class ElementWithChannelActions : public Element, public LocalAction {
  public:
@@ -72,7 +75,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   // returns true if function was changed (previous one was different)
   virtual bool setAndSaveFunction(_supla_int_t channelFunction);
   virtual bool loadFunctionFromConfig();
-  virtual bool saveConfigChangeFlag();
+  virtual bool saveConfigChangeFlag() const;
   virtual bool loadConfigChangeFlag();
   bool isAnyUpdatePending() override;
 

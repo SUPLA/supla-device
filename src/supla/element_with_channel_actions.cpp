@@ -21,6 +21,18 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
+#include <supla/protocol/protocol_layer.h>
+#include <supla/channels/channel.h>
+#include <supla/condition.h>
+#include <supla/element.h>
+#include <supla/storage/storage.h>
+
+namespace Supla {
+class ActionHandler;
+namespace Protocol {
+class SuplaSrpc;
+}  // namespace Protocol
+}  // namespace Supla
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler &client,
@@ -120,7 +132,7 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
   return false;
 }
 
-bool Supla::ElementWithChannelActions::saveConfigChangeFlag() {
+bool Supla::ElementWithChannelActions::saveConfigChangeFlag() const {
   if (getChannelNumber() < 0) {
     return false;
   }

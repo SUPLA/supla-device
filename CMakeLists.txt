@@ -79,6 +79,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/button_config_parameters.cpp
   src/supla/network/html/button_action_trigger_config.cpp
   src/supla/network/html/rgbw_button_parameters.cpp
+  src/supla/network/html/relay_parameters.cpp
   src/supla/network/html/time_parameters.cpp
   src/supla/network/html/volume_parameters.cpp
   src/supla/network/html/screen_delay_parameters.cpp

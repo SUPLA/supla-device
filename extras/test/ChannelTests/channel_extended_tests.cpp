@@ -23,6 +23,7 @@
 #include <supla/events.h>
 #include <supla/actions.h>
 #include <supla/device/register_device.h>
+#include <supla/action_handler.h>
 
 class ActionHandlerMock : public Supla::ActionHandler {
  public:

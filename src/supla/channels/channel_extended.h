@@ -19,6 +19,8 @@
 
 #include "channel.h"
 
+#include <supla-common/proto.h>
+
 namespace Supla {
 class ChannelExtended : public Channel {
  public:

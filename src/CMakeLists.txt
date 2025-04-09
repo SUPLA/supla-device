@@ -50,6 +50,8 @@ set(SRCS
   supla/control/sequence_button.cpp
   supla/control/action_trigger.cpp
   supla/control/relay.cpp
+  supla/control/light_relay.cpp
+  supla/control/bistable_relay.cpp
   supla/control/relay_hvac_aggregator.cpp
   supla/control/virtual_relay.cpp
   supla/control/roller_shutter.cpp
@@ -105,6 +107,7 @@ set(SRCS
   supla/network/html/custom_text_parameter.cpp
   supla/network/html/custom_parameter.cpp
   supla/network/html/custom_checkbox_parameter.cpp
+  supla/network/html/relay_parameters.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

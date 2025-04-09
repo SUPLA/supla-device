@@ -9,6 +9,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_BUILD_TYPE Debug)
 set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
 find_program(CCACHE_FOUND ccache)
+set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE include-what-you-use)
 if(CCACHE_FOUND)
   set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 endif(CCACHE_FOUND)
@@ -120,8 +121,8 @@ target_compile_options(supladevicelib PRIVATE
   -Wunused-parameter
   -Wvariadic-macros
   -Wwrite-strings
-  -Wstringop-truncation
-  -Werror=stringop-truncation
+  #  -Wstringop-truncation
+  #  -Werror=stringop-truncation
   -DSUPLA_TEST
   -DSUPLA_DEVICE)
 target_compile_options(supladevicetests PRIVATE

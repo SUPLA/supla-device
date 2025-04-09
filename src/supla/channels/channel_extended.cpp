@@ -15,6 +15,7 @@
 */
 
 #include "channel_extended.h"
+#include <supla-common/proto.h>
 
 namespace Supla {
 bool ChannelExtended::isExtended() const {

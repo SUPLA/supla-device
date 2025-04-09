@@ -30,6 +30,7 @@
 #include <supla/events.h>
 #include <supla/channels/channel.h>
 #include <supla/storage/config_tags.h>
+#include <supla/protocol/protocol_layer.h>
 
 #include "output_interface.h"
 #include "relay_hvac_aggregator.h"

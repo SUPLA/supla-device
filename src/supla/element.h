@@ -19,13 +19,17 @@
 #ifndef SRC_SUPLA_ELEMENT_H_
 #define SRC_SUPLA_ELEMENT_H_
 
-#include <supla/protocol/supla_srpc.h>
-
-#include "channel.h"
+#include <stdint.h>
+#include <supla-common/proto.h>
 
 class SuplaDeviceClass;
 
 namespace Supla {
+
+class Channel;
+namespace Protocol {
+class SuplaSrpc;
+}  // namespace Protocol
 
 /**
  * Base class for all elements of SuplaDevice

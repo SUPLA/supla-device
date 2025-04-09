@@ -22,6 +22,7 @@
 #include <supla/storage/config.h>
 #include <supla/log_wrapper.h>
 #include <supla/actions.h>
+#include <supla/protocol/protocol_layer.h>
 #include <string.h>
 #include <math.h>
 

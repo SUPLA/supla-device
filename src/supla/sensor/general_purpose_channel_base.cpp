@@ -24,6 +24,7 @@
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
+#include <supla/protocol/protocol_layer.h>
 
 #include "measurement_driver.h"
 #include "memory_variable_driver.h"

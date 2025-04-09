@@ -54,6 +54,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/network/html/sw_update_beta.o \
   ../../../src/supla/network/html/sw_update.o \
   ../../../src/supla/network/html/button_multiclick_parameters.o \
+  ../../../src/supla/network/html/relay_parameters.o \
   ../../../src/supla/network/html/custom_parameter.o \
   ../../../src/supla/network/html/channel_correction.o \
   ../../../src/supla/network/html/hide_show_container.o \

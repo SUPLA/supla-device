@@ -18,6 +18,7 @@
 
 #include <math.h>
 #include <supla/element_with_channel_actions.h>
+#include <supla/channels/channel.h>
 
 #include "events.h"
 

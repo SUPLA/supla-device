@@ -25,6 +25,7 @@
 #include <supla/storage/config_tags.h>
 #include <supla/actions.h>
 #include <supla/events.h>
+#include <supla/protocol/protocol_layer.h>
 
 using Supla::Sensor::Container;
 

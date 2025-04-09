@@ -23,6 +23,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/actions.h>
+#include <supla/protocol/protocol_layer.h>
 
 #include <string.h>
 

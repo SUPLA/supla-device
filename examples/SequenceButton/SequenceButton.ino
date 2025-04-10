@@ -17,6 +17,7 @@
 #include <SuplaDevice.h>
 #include <supla/control/relay.h>
 #include <supla/control/sequence_button.h>
+#include <supla/actions.h>
 
 // Choose proper network interface for your card:
 #ifdef ARDUINO_ARCH_AVR

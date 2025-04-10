@@ -20,6 +20,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <supla/sensor/HC_SR04.h>
 #include <supla/control/relay.h>
 #include <supla/condition.h>
+#include <supla/actions.h>
 
 // Choose proper network interface for your card:
 #ifdef ARDUINO_ARCH_AVR
@@ -65,7 +66,7 @@ void setup() {
   distance->addAction(Supla::TURN_ON, redLight, OnLess(0.40));
   distance->addAction(Supla::TURN_ON, orangeLight, OnBetween(0.40, 0.80));
   distance->addAction(Supla::TURN_ON, greenLight, OnBetween(0.80, 1.50));
-  
+
   distance->addAction(Supla::TURN_OFF, orangeLight, OnLess(0.35));
   distance->addAction(Supla::TURN_OFF, greenLight, OnLess(0.75));
 
@@ -75,17 +76,15 @@ void setup() {
 
   /*
    * SuplaDevice Initialization.
-   * Server address is available at https://cloud.supla.org 
+   * Server address is available at https://cloud.supla.org
    * If you do not have an account, you can create it at https://cloud.supla.org/account/create
    * SUPLA and SUPLA CLOUD are free of charge
-   * 
    */
 
-  SuplaDevice.begin(GUID,              // Global Unique Identifier 
+  SuplaDevice.begin(GUID,              // Global Unique Identifier
                     "svr1.supla.org",  // SUPLA server address
                     "email@address",   // Email address used to login to Supla Cloud
                     AUTHKEY);          // Authorization key
-    
 }
 
 void loop() {

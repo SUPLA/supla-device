@@ -169,9 +169,9 @@ class Element {
    * Method called on each SuplaDevice iteration when device is connected and
    * registered to Supla server or other protocol.
    *
-   * @return false when element didn't communicate with server and next element
+   * @return true when element didn't communicate with server and next element
    *         should be iterated instead.
-   *         true otherwise.
+   *         false otherwise.
    */
   virtual bool iterateConnected();
   /// deprecated

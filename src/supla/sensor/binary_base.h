@@ -38,21 +38,21 @@ class BinaryBase : public ElementWithChannelActions {
   Channel *getChannel() override;
   const Channel *getChannel() const override;
   void onLoadConfig(SuplaDeviceClass *) override;
-  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *config,
-                              bool local = false) override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *config,
+                                              bool local = false) override;
   void handleChannelConfigFinished() override;
 
   void setServerInvertLogic(bool invertLogic);
   void setReadIntervalMs(uint32_t intervalMs);
   void purgeConfig() override;
-  void fillChannelConfig(void *channelConfig, int *size) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
  protected:
   uint32_t lastReadTime = 0;
   uint32_t readIntervalMs = 100;
   BinarySensorChannel channel;
-  bool defaultConfigReceived = false;
 };
 
 }  // namespace Sensor

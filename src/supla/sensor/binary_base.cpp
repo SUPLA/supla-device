@@ -23,6 +23,7 @@
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
 #include <supla/protocol/protocol_layer.h>
+#include <supla/element_with_channel_actions.h>
 
 using Supla::Sensor::BinaryBase;
 
@@ -30,6 +31,7 @@ using Supla::Sensor::BinaryBase;
 BinaryBase::BinaryBase() {
   channel.setType(SUPLA_CHANNELTYPE_BINARYSENSOR);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  usedConfigTypes.defaultConfig = 1;
 }
 
 BinaryBase::~BinaryBase() {
@@ -63,44 +65,21 @@ void BinaryBase::purgeConfig() {
   cfg->eraseKey(key);
 }
 
-void BinaryBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  configFinishedReceived = false;
-  defaultConfigReceived = false;
-  Supla::Element::onRegistered(suplaSrpc);
-}
-
-uint8_t BinaryBase::applyChannelConfig(TSD_ChannelConfig *newConfig,
-                                       bool local) {
+Supla::ApplyConfigResult BinaryBase::applyChannelConfig(
+    TSD_ChannelConfig *newConfig, bool local) {
   SUPLA_LOG_DEBUG("Binary[%d]: processing%s channel config",
                   getChannelNumber(),
                   local ? " local" : "");
 
-  if (newConfig->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
-    return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
-  }
-
-  auto newFunction = newConfig->Func;
-  if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
-    SUPLA_LOG_INFO("Binary[%d]: function changed to %d",
-                   getChannelNumber(),
-                   newFunction);
-    setAndSaveFunction(newFunction);
-    for (auto proto = Supla::Protocol::ProtocolLayer::first();
-        proto != nullptr; proto = proto->next()) {
-      proto->notifyConfigChange(getChannelNumber());
-    }
+  if (newConfig->ConfigSize == 0) {
+    SUPLA_LOG_DEBUG("Binary[%d]: config missing on server",
+        getChannelNumber());
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
   if (newConfig->ConfigSize < sizeof(TChannelConfig_BinarySensor)) {
-    if (newConfig->ConfigSize == 0) {
-      SUPLA_LOG_DEBUG("Binary[%d]: config missing on server",
-                      getChannelNumber());
-      return SUPLA_CONFIG_RESULT_TRUE;
-    }
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    return Supla::ApplyConfigResult::DataError;
   }
-
-  defaultConfigReceived = true;
 
   TChannelConfig_BinarySensor *config =
       reinterpret_cast<TChannelConfig_BinarySensor *>(newConfig->Config);
@@ -116,7 +95,7 @@ uint8_t BinaryBase::applyChannelConfig(TSD_ChannelConfig *newConfig,
     cfg->saveWithDelay(2000);
   }
 
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return Supla::ApplyConfigResult::Success;
 }
 
 void BinaryBase::iterateAlways() {
@@ -147,23 +126,30 @@ void BinaryBase::setReadIntervalMs(uint32_t intervalMs) {
 
 void BinaryBase::handleChannelConfigFinished() {
   ElementWithChannelActions::handleChannelConfigFinished();
-  if (!defaultConfigReceived) {
+  if (!receivedConfigTypes.isSet(SUPLA_CONFIG_TYPE_DEFAULT)) {
     // set default config on device
     SUPLA_LOG_DEBUG("Binary[%d]: setting default channel config",
                     getChannelNumber());
     TSD_ChannelConfig defaultConfig = {};
     defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
-    applyChannelConfig(&defaultConfig, true);
+    handleChannelConfig(&defaultConfig, true);
   }
 }
 
-void BinaryBase::fillChannelConfig(void *channelConfig, int *size) {
+void BinaryBase::fillChannelConfig(void *channelConfig,
+                                   int *size,
+                                   uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
+
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

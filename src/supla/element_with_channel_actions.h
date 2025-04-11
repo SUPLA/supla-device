@@ -32,9 +32,35 @@ enum class ChannelConfigState : uint8_t {
   SetChannelConfigSend = 2,
   SetChannelConfigFailed = 3,
   WaitForConfigFinished = 4,
-  OcrConfigPending = 5,
-  SetChannelOcrConfigSend = 6,
 };
+
+enum class ApplyConfigResult : uint8_t {
+  NotSupported,
+  Success,
+  DataError,
+  SetChannelConfigNeeded,
+};
+
+#pragma pack(push, 1)
+struct ConfigTypesBitmap {
+  union {
+    struct {
+      uint8_t configFinishedReceived: 1;
+      uint8_t defaultConfig: 1;
+      uint8_t weeklySchedule: 1;
+      uint8_t altWeeklySchedule: 1;
+      uint8_t ocrConfig: 1;
+      uint8_t extendedDefaultConfig: 1;
+    };
+    uint8_t all = 0;
+  };
+
+  bool isSet(int configType) const;
+  void clear(int configType);
+  void set(int configType, bool value = true);
+  bool operator!=(const ConfigTypesBitmap &other) const;
+};
+#pragma pack(pop)
 
 class Condition;
 class ActionHandler;
@@ -80,20 +106,26 @@ class ElementWithChannelActions : public Element, public LocalAction {
   bool isAnyUpdatePending() override;
 
   // methods to override for channels with runtime config support
-  virtual uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local);
-  virtual void fillChannelConfig(void *channelConfig, int *size);
-  virtual void fillChannelOcrConfig(void *channelConfig, int *size);
+  virtual ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                               bool local);
+  virtual void fillChannelConfig(void *channelConfig, int *size, uint8_t index);
 
-  void triggerSetChannelConfig();
+  void triggerSetChannelConfig(int configType = SUPLA_CONFIG_TYPE_DEFAULT);
 
  protected:
-  virtual bool hasOcrConfig() const;
-  virtual bool isOcrConfigMissing() const;
-  virtual void clearOcrConfig();
+  bool iterateConfigExchange();
+  /**
+   * @brief Returns the next config type to be sent
+   *
+   * @return -1 if no more config types to be sent, otherwise the config type
+   */
+  int getNextConfigType() const;
   Supla::ChannelConfigState channelConfigState =
       Supla::ChannelConfigState::None;
-  bool configFinishedReceived = false;
+
   uint8_t setChannelConfigAttempts = 0;
+  ConfigTypesBitmap usedConfigTypes;
+  ConfigTypesBitmap receivedConfigTypes;
 };
 
 };  // namespace Supla

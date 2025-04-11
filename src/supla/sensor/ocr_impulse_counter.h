@@ -59,6 +59,7 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
   // turns on led if needed and handles delay between led turning on and photo
   bool handleLedStateBeforePhoto();
   void handleLedStateAfterPhoto();
+  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
 
   virtual bool sendPhotoToOcrServer(const char *url,
                                     const char *authkey,
@@ -67,12 +68,12 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
                                     const char *cropSettings) = 0;
   void parseServerResponse(const char *response, int responseSize);
 
-  bool hasOcrConfig() const override;
-  void clearOcrConfig() override;
-  bool isOcrConfigMissing() const override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local) override;
-  void fillChannelConfig(void *channelConfig, int *size) override;
-  void fillChannelOcrConfig(void *channelConfig, int *size) override;
+  void clearOcrConfig();
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                              bool local) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
   void fixOcrLightingMode();
   void stopResultCheck();
 
@@ -87,7 +88,6 @@ class OcrImpulseCounter : public VirtualImpulseCounter {
                    const char *photoUuid = nullptr) const;
 
   TChannelConfig_OCR ocrConfig = {};
-  bool ocrConfigReceived = false;
   uint64_t availableLightingModes = 0;
   uint32_t lastPhotoTakeTimestamp = 0;
   uint32_t lastOcrInteractionTimestamp = 0;

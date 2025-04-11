@@ -131,9 +131,10 @@ class GeneralPurposeChannelBase : public ChannelElement {
    * @param local set to true if method is called locally by device. Use false
    *              if method is called as a result of Supla Server message.
    *
-   * @return result of operation (see proto.h SUPLA_CONFIG_RESULT_*)
+   * @return result of operation
    */
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result, bool local) override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                              bool local) override;
 
   /**
    * Fills Channel Config
@@ -141,7 +142,9 @@ class GeneralPurposeChannelBase : public ChannelElement {
    * @param channelConfig pointer to TSD_ChannelConfig to be filled.
    * @param size written config size is stored here.
    */
-  void fillChannelConfig(void *channelConfig, int *size) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
   /** @name Setters for default values.
    *  Default parameters should be configured in software. GPM doesn't store

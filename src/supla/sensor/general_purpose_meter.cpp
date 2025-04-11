@@ -55,20 +55,13 @@ void GeneralPurposeMeter::onLoadConfig(SuplaDeviceClass *sdc) {
   }
 }
 
-uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result,
-    bool local) {
-  (void)(local);
-  if (result == nullptr) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
-  if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
+Supla::ApplyConfigResult GeneralPurposeMeter::applyChannelConfig(
+    TSD_ChannelConfig *result, bool local) {
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
   if (result->ConfigSize != sizeof(TChannelConfig_GeneralPurposeMeter)) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    return Supla::ApplyConfigResult::DataError;
   }
 
   auto config = reinterpret_cast<TChannelConfig_GeneralPurposeMeter *>(
@@ -112,21 +105,30 @@ uint8_t GeneralPurposeMeter::applyChannelConfig(TSD_ChannelConfig *result,
               defaultUnitAfterValue,
               SUPLA_GENERAL_PURPOSE_UNIT_SIZE)) {
     SUPLA_LOG_INFO("GPM[%d]: meter config changed", getChannelNumber());
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
-    saveConfigChangeFlag();
+    if (local) {
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      saveConfigChangeFlag();
+    }
+
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return Supla::ApplyConfigResult::Success;
 }
 
-void GeneralPurposeMeter::fillChannelConfig(void *channelConfig, int *size) {
-  SUPLA_LOG_DEBUG("GPM[%d]: fillChannelConfig", getChannelNumber());
+void GeneralPurposeMeter::fillChannelConfig(void *channelConfig,
+                                            int *size,
+                                            uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

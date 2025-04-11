@@ -35,6 +35,7 @@ GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver,
     bool addMemoryVariableDriver)
     : driver(driver) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  usedConfigTypes.defaultConfig = 1;
 
   if (this->driver == nullptr && addMemoryVariableDriver) {
     this->driver = new MemoryVariableDriver;
@@ -452,21 +453,14 @@ void GeneralPurposeChannelBase::setChartType(uint8_t chartType, bool local) {
   }
 }
 
-uint8_t GeneralPurposeChannelBase::applyChannelConfig(
+Supla::ApplyConfigResult GeneralPurposeChannelBase::applyChannelConfig(
     TSD_ChannelConfig *result, bool local) {
-  (void)(local);
-  if (result == nullptr) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
-  if (result->ConfigType != SUPLA_CONFIG_TYPE_DEFAULT) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
   if (result->ConfigSize != sizeof(TChannelConfig_GeneralPurposeMeasurement)) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
+    return Supla::ApplyConfigResult::DataError;
   }
 
   auto config = reinterpret_cast<TChannelConfig_GeneralPurposeMeasurement *>(
@@ -501,21 +495,29 @@ uint8_t GeneralPurposeChannelBase::applyChannelConfig(
       strncmp(config->DefaultUnitAfterValue,
               defaultUnitAfterValue,
               SUPLA_GENERAL_PURPOSE_UNIT_SIZE)) {
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
-    saveConfigChangeFlag();
+    if (local) {
+      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      saveConfigChangeFlag();
+    }
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return Supla::ApplyConfigResult::Success;
 }
 
 void GeneralPurposeChannelBase::fillChannelConfig(void *channelConfig,
-                                                  int *size) {
+                                                  int *size,
+                                                  uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

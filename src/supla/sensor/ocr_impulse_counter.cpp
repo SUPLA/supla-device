@@ -47,6 +47,8 @@ OcrImpulseCounter::OcrImpulseCounter() {
   addAvailableLightingMode(OCR_LIGHTING_MODE_OFF | OCR_LIGHTING_MODE_ALWAYS_ON |
                            OCR_LIGHTING_MODE_AUTO);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_IC_WATER_METER);
+  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.ocrConfig = 1;
   clearOcrConfig();
 }
 
@@ -56,17 +58,17 @@ OcrImpulseCounter::~OcrImpulseCounter() {
 void OcrImpulseCounter::onInit() {
 }
 
-bool OcrImpulseCounter::hasOcrConfig() const {
-  return true;
-}
-
 void OcrImpulseCounter::clearOcrConfig() {
   memset(&ocrConfig, 0, sizeof(ocrConfig));
-  ocrConfigReceived = false;
   ocrConfig.AvailableLightingModes = availableLightingModes;
   fixOcrLightingMode();
   ocrConfig.PhotoIntervalSec = OCR_DEFAULT_PHOTO_INTERVAL_SEC;
   ocrConfig.LightingLevel = OCR_DEFAULT_LIGHTING_LEVEL;
+}
+
+void OcrImpulseCounter::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
+  clearOcrConfig();
 }
 
 int OcrImpulseCounter::handleCalcfgFromServer(
@@ -91,78 +93,70 @@ int OcrImpulseCounter::handleCalcfgFromServer(
   return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
 }
 
-uint8_t OcrImpulseCounter::applyChannelConfig(TSD_ChannelConfig *result,
-                                              bool) {
-  if (!result) {
-    return SUPLA_CONFIG_RESULT_FALSE;
-  }
+Supla::ApplyConfigResult OcrImpulseCounter::applyChannelConfig(
+    TSD_ChannelConfig *result, bool) {
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
   switch (result->ConfigType) {
     case SUPLA_CONFIG_TYPE_OCR: {
       lastPhotoTakeTimestamp = 0;
-      if (result->ConfigSize >= sizeof(ocrConfig)) {
-        memcpy(&ocrConfig, result->Config, sizeof(ocrConfig));
-        ocrConfig.AuthKey[sizeof(ocrConfig.AuthKey) - 1] = '\0';
-        ocrConfig.Host[sizeof(ocrConfig.Host) - 1] = '\0';
-        ocrConfigReceived = true;
-        SUPLA_LOG_DEBUG("OcrIC: OCR config:");
-        SUPLA_LOG_DEBUG("    AuthKey: %s", ocrConfig.AuthKey);
-        SUPLA_LOG_DEBUG("    Host: %s", ocrConfig.Host);
-        SUPLA_LOG_DEBUG("    PhotoIntervalSec: %d", ocrConfig.PhotoIntervalSec);
-        SUPLA_LOG_DEBUG("    LightingMode: %" PRIu64, ocrConfig.LightingMode);
-        SUPLA_LOG_DEBUG("    LightingLevel: %d", ocrConfig.LightingLevel);
-        SUPLA_LOG_DEBUG("    MaximumIncrement: %" PRIu64,
-                        ocrConfig.MaximumIncrement);
-        SUPLA_LOG_DEBUG("    AvailableLightingModes: %" PRIu64,
-                        ocrConfig.AvailableLightingModes);
-        if (ocrConfig.AvailableLightingModes != availableLightingModes) {
-          SUPLA_LOG_DEBUG("OcrIC: invalid AvailableLightingModes");
-          ocrConfig.AvailableLightingModes = availableLightingModes;
-          fixOcrLightingMode();
-          // change flag to false, so config will be send to server with
-          // correct AvailableLightingModes
-          ocrConfigReceived = false;
-        }
-        if (ocrConfig.PhotoIntervalSec > 0 &&
-            ocrConfig.PhotoIntervalSec < OCR_MIN_PHOTO_INTERVAL_SEC) {
-          SUPLA_LOG_DEBUG("OcrIC: invalid PhotoIntervalSec");
-          ocrConfig.PhotoIntervalSec = OCR_DEFAULT_PHOTO_INTERVAL_SEC;
-          ocrConfigReceived = false;
-        }
-        if (ocrConfig.LightingLevel < 1 || ocrConfig.LightingLevel > 100) {
-          SUPLA_LOG_DEBUG("OcrIC: invalid LightingLevel");
-          ocrConfig.LightingLevel = OCR_DEFAULT_LIGHTING_LEVEL;
-          ocrConfigReceived = false;
-        }
-
-        ledTurnOnTimestamp = 0;
-        if (ocrConfig.LightingMode == OCR_LIGHTING_MODE_OFF ||
-            ocrConfig.LightingMode == OCR_LIGHTING_MODE_AUTO) {
-          // turn off LED
-          setLedState(0);
-        } else if (ocrConfig.LightingMode == OCR_LIGHTING_MODE_ALWAYS_ON) {
-          // turn on LED
-          setLedState(ocrConfig.LightingLevel);
-        }
-
-        return SUPLA_CONFIG_RESULT_TRUE;
-      } else {
-        SUPLA_LOG_WARNING(
-            "OcrIC: applyChannelConfig - invalid config size %d",
-            result->ConfigSize);
-        return SUPLA_CONFIG_RESULT_DATA_ERROR;
+      if (result->ConfigSize < sizeof(ocrConfig)) {
+        return Supla::ApplyConfigResult::DataError;
       }
-    }
-    default: {
-      return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
+
+      memcpy(&ocrConfig, result->Config, sizeof(ocrConfig));
+      ocrConfig.AuthKey[sizeof(ocrConfig.AuthKey) - 1] = '\0';
+      ocrConfig.Host[sizeof(ocrConfig.Host) - 1] = '\0';
+      bool ocrConfigReceived = true;
+      SUPLA_LOG_DEBUG("OcrIC: OCR config:");
+      SUPLA_LOG_DEBUG("    AuthKey: %s", ocrConfig.AuthKey);
+      SUPLA_LOG_DEBUG("    Host: %s", ocrConfig.Host);
+      SUPLA_LOG_DEBUG("    PhotoIntervalSec: %d", ocrConfig.PhotoIntervalSec);
+      SUPLA_LOG_DEBUG("    LightingMode: %" PRIu64, ocrConfig.LightingMode);
+      SUPLA_LOG_DEBUG("    LightingLevel: %d", ocrConfig.LightingLevel);
+      SUPLA_LOG_DEBUG("    MaximumIncrement: %" PRIu64,
+                      ocrConfig.MaximumIncrement);
+      SUPLA_LOG_DEBUG("    AvailableLightingModes: %" PRIu64,
+                      ocrConfig.AvailableLightingModes);
+      if (ocrConfig.AvailableLightingModes != availableLightingModes) {
+        SUPLA_LOG_DEBUG("OcrIC: invalid AvailableLightingModes");
+        ocrConfig.AvailableLightingModes = availableLightingModes;
+        fixOcrLightingMode();
+        // change flag to false, so config will be send to server with
+        // correct AvailableLightingModes
+        ocrConfigReceived = false;
+      }
+      if (ocrConfig.PhotoIntervalSec > 0 &&
+          ocrConfig.PhotoIntervalSec < OCR_MIN_PHOTO_INTERVAL_SEC) {
+        SUPLA_LOG_DEBUG("OcrIC: invalid PhotoIntervalSec");
+        ocrConfig.PhotoIntervalSec = OCR_DEFAULT_PHOTO_INTERVAL_SEC;
+        ocrConfigReceived = false;
+      }
+      if (ocrConfig.LightingLevel < 1 || ocrConfig.LightingLevel > 100) {
+        SUPLA_LOG_DEBUG("OcrIC: invalid LightingLevel");
+        ocrConfig.LightingLevel = OCR_DEFAULT_LIGHTING_LEVEL;
+        ocrConfigReceived = false;
+      }
+
+      ledTurnOnTimestamp = 0;
+      if (ocrConfig.LightingMode == OCR_LIGHTING_MODE_OFF ||
+          ocrConfig.LightingMode == OCR_LIGHTING_MODE_AUTO) {
+        // turn off LED
+        setLedState(0);
+      } else if (ocrConfig.LightingMode == OCR_LIGHTING_MODE_ALWAYS_ON) {
+        // turn on LED
+        setLedState(ocrConfig.LightingLevel);
+      }
+
+      return (ocrConfigReceived
+                  ? Supla::ApplyConfigResult::Success
+                  : Supla::ApplyConfigResult::SetChannelConfigNeeded);
     }
   }
-  if (result->ConfigType != SUPLA_CONFIG_TYPE_OCR) {
-    return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
-  }
+
+  return Supla::ApplyConfigResult::NotSupported;
 }
 
 void OcrImpulseCounter::fixOcrLightingMode() {
@@ -181,26 +175,22 @@ void OcrImpulseCounter::fixOcrLightingMode() {
   }
 }
 
-void OcrImpulseCounter::fillChannelConfig(void *channelConfig, int *size) {
+void OcrImpulseCounter::fillChannelConfig(void *channelConfig,
+                                          int *size,
+                                          uint8_t configType) {
   if (size && channelConfig) {
-    // init default impulse counter config with 1000 impulses per unit
-    *size = sizeof(TChannelConfig_ImpulseCounter);
-    TChannelConfig_ImpulseCounter *config =
+    if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
+      // init default impulse counter config with 1000 impulses per unit
+      *size = sizeof(TChannelConfig_ImpulseCounter);
+      TChannelConfig_ImpulseCounter *config =
         reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
-    memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
-    config->ImpulsesPerUnit = 1000;
+      memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
+      config->ImpulsesPerUnit = 1000;
+    } else if (configType == SUPLA_CONFIG_TYPE_OCR) {
+      *size = sizeof(ocrConfig);
+      memcpy(channelConfig, &ocrConfig, *size);
+    }
   }
-}
-
-void OcrImpulseCounter::fillChannelOcrConfig(void *channelConfig, int *size) {
-  if (channelConfig && size) {
-    *size = sizeof(ocrConfig);
-    memcpy(channelConfig, &ocrConfig, *size);
-  }
-}
-
-bool OcrImpulseCounter::isOcrConfigMissing() const {
-  return !ocrConfigReceived;
 }
 
 void OcrImpulseCounter::addAvailableLightingMode(uint64_t mode) {
@@ -236,7 +226,7 @@ bool OcrImpulseCounter::iterateConnected() {
   auto result = VirtualImpulseCounter::iterateConnected();
   bool photoTaken = false;
 
-  if (ocrConfigReceived &&
+  if (receivedConfigTypes.isSet(SUPLA_CONFIG_TYPE_OCR) &&
       ocrConfig.PhotoIntervalSec >= OCR_MIN_PHOTO_INTERVAL_SEC) {
     if (lastPhotoTakeTimestamp == 0 || millis() - lastPhotoTakeTimestamp >=
                                            ocrConfig.PhotoIntervalSec * 1000) {
@@ -601,7 +591,7 @@ void OcrImpulseCounter::iterateAlways() {
       }
 
       if (millis() - testModeDelay > 2000) {
-        ocrConfigReceived = true;
+        receivedConfigTypes.set(SUPLA_CONFIG_TYPE_OCR);
         if (photosCount == 0) {
           resetCounter();
         }

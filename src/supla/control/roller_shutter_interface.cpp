@@ -55,6 +55,7 @@ RollerShutterInterface::RollerShutterInterface() {
                       SUPLA_BIT_FUNC_CURTAIN |
                       SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  usedConfigTypes.defaultConfig = 1;
 }
 
 bool RollerShutterInterface::isFunctionSupported(
@@ -546,8 +547,8 @@ int RollerShutterInterface::handleCalcfgFromServer(
   return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
 }
 
-uint8_t RollerShutterInterface::applyChannelConfig(TSD_ChannelConfig *result,
-                                                   bool) {
+Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
+    TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
       "RS[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
@@ -556,9 +557,10 @@ uint8_t RollerShutterInterface::applyChannelConfig(TSD_ChannelConfig *result,
       result->ConfigSize);
 
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
+  bool setChannelConfigNeeded = false;
   switch (result->Func) {
     case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER:
     case SUPLA_CHANNELFNC_TERRACE_AWNING:
@@ -580,21 +582,21 @@ uint8_t RollerShutterInterface::applyChannelConfig(TSD_ChannelConfig *result,
           if (newConfig->ButtonsUpsideDown > 0) {
             rsConfig.buttonsUpsideDown = newConfig->ButtonsUpsideDown;
           } else {
-            triggerSetChannelConfig();
+            setChannelConfigNeeded = true;
           }
         }
         if (rsConfig.motorUpsideDown != 0) {
           if (newConfig->MotorUpsideDown > 0) {
             rsConfig.motorUpsideDown = newConfig->MotorUpsideDown;
           } else {
-            triggerSetChannelConfig();
+            setChannelConfigNeeded = true;
           }
         }
         if (rsConfig.timeMargin != 0) {
           if (newConfig->TimeMargin != 0) {
             rsConfig.timeMargin = newConfig->TimeMargin;
           } else {
-            triggerSetChannelConfig();
+            setChannelConfigNeeded = true;
           }
         }
         rsConfig.visualizationType = newConfig->VisualizationType;
@@ -612,7 +614,6 @@ uint8_t RollerShutterInterface::applyChannelConfig(TSD_ChannelConfig *result,
         }
         saveConfig();
         printConfig();
-        return SUPLA_CONFIG_RESULT_TRUE;
       }
       break;
     }
@@ -623,7 +624,9 @@ uint8_t RollerShutterInterface::applyChannelConfig(TSD_ChannelConfig *result,
       break;
     }
   }
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return (setChannelConfigNeeded
+              ? Supla::ApplyConfigResult::SetChannelConfigNeeded
+              : Supla::ApplyConfigResult::Success);
 }
 
 void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
@@ -685,13 +688,20 @@ void RollerShutterInterface::setRsStorageSaveDelay(int delayMs) {
   rsStorageSaveDelay = delayMs;
 }
 
-void RollerShutterInterface::fillChannelConfig(void *channelConfig, int *size) {
+void RollerShutterInterface::fillChannelConfig(void *channelConfig,
+                                               int *size,
+                                               uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
+
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

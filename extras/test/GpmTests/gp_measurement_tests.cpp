@@ -540,7 +540,7 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
   Supla::Sensor::GeneralPurposeMeasurement gp;
   ConfigMock cfg;
 
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(1);
   EXPECT_CALL(
       cfg,
       setBlob(
@@ -551,8 +551,7 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
       .WillOnce(Return(
           sizeof(Supla::Sensor::GeneralPurposeChannelBase::GPMCommonConfig)));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), 1))
-      .Times(1)
-      .WillOnce(Return(1));
+      .Times(0);
 
   gp.onInit();
 

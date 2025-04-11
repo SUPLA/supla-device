@@ -1,0 +1,5 @@
+<map id="Supla::Control::RemoteOutputInterface" name="Supla::Control::RemoteOutputInterface">
+<area shape="rect" id="Node000001" title="RemoteOutputInterface class is used as an interface for remote HVAC devices over which we don&#39;t have ..." alt="" coords="8,79,200,120"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1OutputInterface.html" title=" " alt="" coords="5,5,203,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,46,107,79,101,79,101,46"/>
+</map>

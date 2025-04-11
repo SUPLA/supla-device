@@ -157,6 +157,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>enableChannelNumbers<
 <tr class="memitem:a5a35e052a1388337dad91fac99196a86" id="r_a5a35e052a1388337dad91fac99196a86"><td class="memItemLeft" align="right" valign="top"><a id="a5a35e052a1388337dad91fac99196a86" name="a5a35e052a1388337dad91fac99196a86"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isAddChannelNumbersEnabled</b> () const</td></tr>
 <tr class="separator:a5a35e052a1388337dad91fac99196a86"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a171c36bb21b87cb0a8a6b900cfaadad4" id="r_a171c36bb21b87cb0a8a6b900cfaadad4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a171c36bb21b87cb0a8a6b900cfaadad4">setDeleteAllMethodEnabled</a> (bool value)</td></tr>
+<tr class="memdesc:a171c36bb21b87cb0a8a6b900cfaadad4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables or disables delete all method which is called during factory reset.  <br /></td></tr>
+<tr class="separator:a171c36bb21b87cb0a8a6b900cfaadad4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -286,6 +289,9 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastWriteTimestam
 <tr class="memitem:ae16bd406fec85a2f7bb81641c36c4bb9" id="r_ae16bd406fec85a2f7bb81641c36c4bb9"><td class="memItemLeft" align="right" valign="top"><a id="ae16bd406fec85a2f7bb81641c36c4bb9" name="ae16bd406fec85a2f7bb81641c36c4bb9"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>addChannelNumbers</b> = false</td></tr>
 <tr class="separator:ae16bd406fec85a2f7bb81641c36c4bb9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aad5d571aa0f6c5e629a0598afdd98e82" id="r_aad5d571aa0f6c5e629a0598afdd98e82"><td class="memItemLeft" align="right" valign="top"><a id="aad5d571aa0f6c5e629a0598afdd98e82" name="aad5d571aa0f6c5e629a0598afdd98e82"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>deleteAllMethodEnabled</b> = true</td></tr>
+<tr class="separator:aad5d571aa0f6c5e629a0598afdd98e82"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
 Static Protected Attributes</h2></td></tr>
@@ -302,6 +308,33 @@ Friends</h2></td></tr>
 class&#160;</td><td class="memItemRight" valign="bottom"><b>StateStorageInterface</b></td></tr>
 <tr class="separator:ac90aefdbb4b2117e99b8ac163222dece"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a171c36bb21b87cb0a8a6b900cfaadad4" name="a171c36bb21b87cb0a8a6b900cfaadad4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a171c36bb21b87cb0a8a6b900cfaadad4">&#9670;&#160;</a></span>setDeleteAllMethodEnabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Storage::setDeleteAllMethodEnabled </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enables or disables delete all method which is called during factory reset. </p>
+<p>By default it's enabled. Disable it if you want to keep state storage intact after factory reset.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/supla/storage/<a class="el" href="storage_8h_source.html">storage.h</a></li>
 <li>src/supla/storage/<b>storage.cpp</b></li>

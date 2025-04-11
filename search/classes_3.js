@@ -13,13 +13,14 @@ var searchData=
   ['condition_10',['Condition',['../classSupla_1_1Condition.html',1,'Supla']]],
   ['conditiongetter_11',['ConditionGetter',['../classSupla_1_1ConditionGetter.html',1,'Supla']]],
   ['config_12',['Config',['../classSupla_1_1Config.html',1,'Supla']]],
-  ['container_13',['Container',['../classContainer.html',1,'Container'],['../classSupla_1_1Sensor_1_1Container.html',1,'Supla::Sensor::Container']]],
-  ['containerconfig_14',['ContainerConfig',['../structSupla_1_1Sensor_1_1ContainerConfig.html',1,'Supla::Sensor']]],
-  ['containerparameters_15',['ContainerParameters',['../classContainerParameters.html',1,'ContainerParameters'],['../classSupla_1_1Html_1_1ContainerParameters.html',1,'Supla::Html::ContainerParameters']]],
-  ['correction_16',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
-  ['currentgetter_17',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
-  ['customcheckboxparameter_18',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
-  ['customparameter_19',['CustomParameter',['../classCustomParameter.html',1,'CustomParameter'],['../classSupla_1_1Html_1_1CustomParameter.html',1,'Supla::Html::CustomParameter']]],
-  ['customswupdate_20',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_21',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
+  ['configtypesbitmap_13',['ConfigTypesBitmap',['../structConfigTypesBitmap.html',1,'ConfigTypesBitmap'],['../structSupla_1_1ConfigTypesBitmap.html',1,'Supla::ConfigTypesBitmap']]],
+  ['container_14',['Container',['../classContainer.html',1,'Container'],['../classSupla_1_1Sensor_1_1Container.html',1,'Supla::Sensor::Container']]],
+  ['containerconfig_15',['ContainerConfig',['../structSupla_1_1Sensor_1_1ContainerConfig.html',1,'Supla::Sensor']]],
+  ['containerparameters_16',['ContainerParameters',['../classContainerParameters.html',1,'ContainerParameters'],['../classSupla_1_1Html_1_1ContainerParameters.html',1,'Supla::Html::ContainerParameters']]],
+  ['correction_17',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
+  ['currentgetter_18',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
+  ['customcheckboxparameter_19',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
+  ['customparameter_20',['CustomParameter',['../classCustomParameter.html',1,'CustomParameter'],['../classSupla_1_1Html_1_1CustomParameter.html',1,'Supla::Html::CustomParameter']]],
+  ['customswupdate_21',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
+  ['customtextparameter_22',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
 ];

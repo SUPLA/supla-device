@@ -109,7 +109,6 @@ set(SUPLA_DEVICE_SRCS
   src/supla/control/dimmer_base.cpp
   src/supla/control/dimmer_leds.cpp
   src/supla/control/internal_pin_output.cpp
-  src/supla/control/output_interface.cpp
   src/supla/control/remote_output_interface.cpp
   src/supla/control/light_relay.cpp
   src/supla/control/pin_status_led.cpp

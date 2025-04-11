@@ -38,6 +38,7 @@ set(SRCS
   supla/storage/state_wear_leveling_sector.cpp
 
   supla/control/internal_pin_output.cpp
+  supla/control/remote_output_interface.cpp
   supla/control/pin_status_led.cpp
   supla/control/rgbw_base.cpp
   supla/control/rgb_base.cpp

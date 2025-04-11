@@ -92,6 +92,15 @@ class Storage {
   void enableChannelNumbers();
   bool isAddChannelNumbersEnabled() const;
 
+  /**
+   * Enables or disables delete all method which is called during factory reset.
+   * By default it's enabled. Disable it if you want to keep state storage
+   * intact after factory reset.
+   *
+   * @param value
+   */
+  void setDeleteAllMethodEnabled(bool value);
+
  protected:
   virtual bool init();
   virtual int readStorage(unsigned int address,
@@ -130,6 +139,7 @@ class Storage {
   static Storage *instance;
   static Config *configInstance;
   bool addChannelNumbers = false;
+  bool deleteAllMethodEnabled = true;
 };
 
 #pragma pack(push, 1)

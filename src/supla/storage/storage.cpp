@@ -206,13 +206,15 @@ bool Storage::init() {
 }
 
 void Storage::deleteAll() {
-  char emptyTag[5] = {};
-  writeStorage(
-      storageStartingOffset, (unsigned char *)&emptyTag, sizeof(emptyTag));
-  if (stateStorage != nullptr) {
-    stateStorage->deleteAll();
+  if (deleteAllMethodEnabled) {
+    char emptyTag[5] = {};
+    writeStorage(
+        storageStartingOffset, (unsigned char *)&emptyTag, sizeof(emptyTag));
+    if (stateStorage != nullptr) {
+      stateStorage->deleteAll();
+    }
+    commit();
   }
-  commit();
 }
 
 int Storage::updateStorage(unsigned int offset,
@@ -567,6 +569,10 @@ void Storage::enableChannelNumbers() {
 
 bool Storage::isAddChannelNumbersEnabled() const {
   return addChannelNumbers;
+}
+
+void Storage::setDeleteAllMethodEnabled(bool value) {
+  deleteAllMethodEnabled = value;
 }
 
 }  // namespace Supla

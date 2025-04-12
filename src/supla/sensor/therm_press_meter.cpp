@@ -17,6 +17,8 @@
 
 #include "therm_press_meter.h"
 
+#include <supla/time.h>
+
 Supla::Sensor::ThermPressMeter::ThermPressMeter() {
   channel.setType(SUPLA_CHANNELTYPE_THERMOMETER);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_THERMOMETER);

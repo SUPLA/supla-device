@@ -22,11 +22,11 @@
 // Dependency: Adafruid BMP280 library - use library manager to install it
 #include <Adafruit_BMP280.h>
 
-#include "therm_hygro_press_meter.h"
+#include "therm_press_meter.h"
 
 namespace Supla {
 namespace Sensor {
-class BMP280 : public ThermHygroPressMeter {
+class BMP280 : public ThermPressMeter {
  public:
   explicit BMP280(int8_t address = 0x76, float altitude = NAN)
       : address(address), sensorStatus(false), altitude(altitude) {
@@ -70,8 +70,8 @@ double getPressure() {
   void onInit() {
     sensorStatus = bmp.begin(address);
 
+    channel.setNewValue(getTemp());
     pressureChannel.setNewValue(getPressure());
-    channel.setNewValue(getTemp(), 0.0);
   }
 
   void setAltitude(float newAltitude) {

@@ -1,5 +1,5 @@
 /*
- Copyright (C) AC SOFTWARE SP. Z O.O., malarz
+ Copyright (C) malarz
 
  This program is free software; you can redistribute it and/or
  modify it under the terms of the GNU General Public License

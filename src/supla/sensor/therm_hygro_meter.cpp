@@ -27,6 +27,7 @@ Supla::Sensor::ThermHygroMeter::ThermHygroMeter() {
   channel.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_HUMIDITYANDTEMPERATURE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  usedConfigTypes.defaultConfig = 1;
 }
 
 void Supla::Sensor::ThermHygroMeter::onInit() {
@@ -188,27 +189,23 @@ void Supla::Sensor::ThermHygroMeter::setRefreshIntervalMs(int intervalMs) {
   refreshIntervalMs = intervalMs;
 }
 
-uint8_t Supla::Sensor::ThermHygroMeter::applyChannelConfig(
-    TSD_ChannelConfig *result, bool local) {
-  (void)(local);
-  if (result == nullptr) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
+Supla::ApplyConfigResult Supla::Sensor::ThermHygroMeter::applyChannelConfig(
+    TSD_ChannelConfig *result, bool) {
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
+  bool applyAsLocalChange = false;
   if (result->Func == SUPLA_CHANNELFNC_THERMOMETER ||
       result->Func == SUPLA_CHANNELFNC_HUMIDITYANDTEMPERATURE ||
       result->Func == SUPLA_CHANNELFNC_HUMIDITY) {
     if (result->ConfigSize < sizeof(TChannelConfig_TemperatureAndHumidity)) {
-      return SUPLA_CONFIG_RESULT_DATA_ERROR;
+      return Supla::ApplyConfigResult::DataError;
     }
     auto configFromServer =
         reinterpret_cast<TChannelConfig_TemperatureAndHumidity *>(
             result->Config);
 
-    bool applyAsLocalChange = false;
     if (channelConfigState != Supla::ChannelConfigState::LocalChangePending) {
       if (configFromServer->MinTemperatureAdjustment !=
               -minMaxAllowedTemperatureAdjustment * 10 ||
@@ -242,7 +239,8 @@ uint8_t Supla::Sensor::ThermHygroMeter::applyChannelConfig(
     }
   }
 
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return (applyAsLocalChange ? Supla::ApplyConfigResult::SetChannelConfigNeeded
+                             : Supla::ApplyConfigResult::Success);
 }
 
 void Supla::Sensor::ThermHygroMeter::setHumidityCorrection(int32_t correction) {
@@ -272,13 +270,18 @@ void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt(
 }
 
 void Supla::Sensor::ThermHygroMeter::fillChannelConfig(void *channelConfig,
-                                                       int *size) {
+                                                       int *size,
+                                                       uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

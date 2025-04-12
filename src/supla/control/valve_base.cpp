@@ -43,6 +43,7 @@ ValveBase::ValveBase(bool openClose) {
     channel.setType(SUPLA_CHANNELTYPE_VALVE_PERCENTAGE);
     channel.setDefaultFunction(SUPLA_CHANNELFNC_VALVE_PERCENTAGE);
   }
+  usedConfigTypes.defaultConfig = 1;
 }
 
 void ValveBase::onInit() {
@@ -209,8 +210,8 @@ void ValveBase::onSaveState() {
       sizeof(flags));
 }
 
-uint8_t ValveBase::applyChannelConfig(TSD_ChannelConfig *result, bool local) {
-  (void)(local);
+Supla::ApplyConfigResult ValveBase::applyChannelConfig(
+    TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
       "Valve[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
@@ -219,10 +220,8 @@ uint8_t ValveBase::applyChannelConfig(TSD_ChannelConfig *result, bool local) {
       result->ConfigSize);
 
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
-
-  setAndSaveFunction(result->Func);
 
   switch (result->Func) {
     case SUPLA_CHANNELFNC_VALVE_OPENCLOSE:
@@ -251,16 +250,23 @@ uint8_t ValveBase::applyChannelConfig(TSD_ChannelConfig *result, bool local) {
       break;
     }
   }
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return Supla::ApplyConfigResult::Success;
 }
 
-void ValveBase::fillChannelConfig(void *channelConfig, int *size) {
+void ValveBase::fillChannelConfig(void *channelConfig,
+                                  int *size,
+                                  uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
+
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

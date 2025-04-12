@@ -34,6 +34,7 @@ Container::Container() {
   setDefaultFunction(SUPLA_CHANNELFNC_CONTAINER);
   channel.setContainerFillValue(-1);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  usedConfigTypes.defaultConfig = 1;
 }
 
 void Container::setInternalLevelReporting(bool internalLevelReporting) {
@@ -438,7 +439,8 @@ void Container::onLoadConfig(SuplaDeviceClass *) {
   loadConfigChangeFlag();
 }
 
-uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
+Supla::ApplyConfigResult Container::applyChannelConfig(
+    TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
       "Contaier[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
@@ -447,10 +449,8 @@ uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
       result->ConfigSize);
 
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
-
-  setAndSaveFunction(result->Func);
 
   switch (result->Func) {
     case SUPLA_CHANNELFNC_CONTAINER:
@@ -501,9 +501,8 @@ uint8_t Container::applyChannelConfig(TSD_ChannelConfig *result, bool) {
       break;
     }
   }
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return Supla::ApplyConfigResult::Success;
 }
-
 
 void Container::printConfig() const {
   SUPLA_LOG_DEBUG(
@@ -527,13 +526,20 @@ void Container::printConfig() const {
   }
 }
 
-void Container::fillChannelConfig(void *channelConfig, int *size) {
+void Container::fillChannelConfig(void *channelConfig,
+                                  int *size,
+                                  uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
+
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

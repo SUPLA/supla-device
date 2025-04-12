@@ -53,9 +53,11 @@ class ValveBase : public ChannelElement, public ActionHandler {
   void onLoadConfig(SuplaDeviceClass *) override;
   void onLoadState() override;
   void onSaveState() override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result,
-                              bool local = false) override;
-  void fillChannelConfig(void *channelConfig, int *size) override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                              bool local = false) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void purgeConfig() override;
 

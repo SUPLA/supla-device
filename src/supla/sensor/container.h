@@ -79,9 +79,11 @@ class Container : public ChannelElement, public ActionHandler {
 
   void iterateAlways() override;
   void onLoadConfig(SuplaDeviceClass *) override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result,
-                              bool local = false) override;
-  void fillChannelConfig(void *channelConfig, int *size) override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                              bool local = false) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
 
   void handleAction(int event, int action) override;

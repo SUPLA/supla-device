@@ -348,8 +348,11 @@ class ElectricityMeter : public ElementWithChannelActions,
 
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *config, bool local) override;
-  void fillChannelConfig(void *channelConfig, int *size) override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *config,
+                                              bool local) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
   // Put here initialization code for electricity meter device.
   // It will be called within SuplaDevce.begin method.

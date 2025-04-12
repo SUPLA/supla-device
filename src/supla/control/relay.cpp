@@ -60,6 +60,7 @@ Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   channel.setFuncList(functions);
+  usedConfigTypes.defaultConfig = 1;
 }
 
 Relay::~Relay() {
@@ -103,7 +104,8 @@ void Relay::onRegistered(
   timerUpdateTimestamp = 1;
 }
 
-uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
+Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
+                                                   bool) {
   SUPLA_LOG_DEBUG(
       "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
@@ -115,9 +117,10 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
   updateRelayHvacAggregator();
 
   if (result->ConfigSize == 0) {
-    return SUPLA_CONFIG_RESULT_TRUE;
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
+  bool readonlyViolation = false;
   switch (result->Func) {
     default:
     case SUPLA_CHANNELFNC_LIGHTSWITCH:
@@ -139,7 +142,7 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
               getChannelNumber(),
               config->OvercurrentMaxAllowed,
               overcurrentMaxAllowed);
-          triggerSetChannelConfig();
+          readonlyViolation = true;
         }
         if (config->OvercurrentThreshold != overcurrentThreshold) {
           SUPLA_LOG_DEBUG(
@@ -151,7 +154,6 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
           overcurrentActiveTimestamp = 0;
         }
       }
-
       break;
     }
 
@@ -181,7 +183,8 @@ uint8_t Relay::applyChannelConfig(TSD_ChannelConfig *result, bool) {
       break;
     }
   }
-  return SUPLA_CONFIG_RESULT_TRUE;
+  return (readonlyViolation ? Supla::ApplyConfigResult::SetChannelConfigNeeded
+                            : Supla::ApplyConfigResult::Success);
 }
 
 uint8_t Relay::pinOnValue() {
@@ -286,7 +289,6 @@ void Relay::iterateAlways() {
               "Relay[%d] Overcurrent filtering cancelled (%d)",
               getChannelNumber(),
               current);
-          return;
         }
         overcurrentActiveTimestamp = 0;
       }
@@ -669,13 +671,20 @@ void Relay::setMinimumAllowedDurationMs(uint32_t durationMs) {
   minimumAllowedDurationMs = durationMs;
 }
 
-void Relay::fillChannelConfig(void *channelConfig, int *size) {
+void Relay::fillChannelConfig(void *channelConfig,
+                              int *size,
+                              uint8_t configType) {
   if (size) {
     *size = 0;
   } else {
     return;
   }
+
   if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType != SUPLA_CONFIG_TYPE_DEFAULT) {
     return;
   }
 

@@ -59,9 +59,11 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void handleAction(int event, int action) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;
-  uint8_t applyChannelConfig(TSD_ChannelConfig *result,
-                             bool local = false) override;
-  void fillChannelConfig(void *channelConfig, int *size) override;
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                              bool local = false) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
   // value for specific channel type (i.e. to prefill durationMS field when

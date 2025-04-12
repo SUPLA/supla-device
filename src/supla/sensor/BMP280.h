@@ -48,23 +48,7 @@ class BMP280 : public ThermHygroPressMeter {
     return value;
   }
 
-  double getHumi() {
-    float value = HUMIDITY_NOT_AVAILABLE;
-    bool retryDone = false;
-    do {
-      if (!sensorStatus || isnan(value)) {
-        sensorStatus = bmp.begin(address);
-        retryDone = true;
-      }
-      value = HUMIDITY_NOT_AVAILABLE;
-      if (sensorStatus) {
-        value = bmp.readHumidity();
-      }
-    } while (isnan(value) && !retryDone);
-    return value;
-  }
-
-  double getPressure() {
+double getPressure() {
     float value = PRESSURE_NOT_AVAILABLE;
     bool retryDone = false;
     do {
@@ -87,7 +71,7 @@ class BMP280 : public ThermHygroPressMeter {
     sensorStatus = bmp.begin(address);
 
     pressureChannel.setNewValue(getPressure());
-    channel.setNewValue(getTemp(), getHumi());
+    channel.setNewValue(getTemp(), 0.0);
   }
 
   void setAltitude(float newAltitude) {

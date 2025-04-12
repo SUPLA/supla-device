@@ -258,7 +258,7 @@ void Channel::setNewValue(bool state) {
     runAction(Supla::ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
 
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber, value);
+    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber, state);
   }
 }
 

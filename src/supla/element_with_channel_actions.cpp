@@ -60,10 +60,10 @@ void ConfigTypesBitmap::set(int configType, bool value) {
       ocrConfig = v;
       break;
     }
-//    case SUPLA_CONFIG_TYPE_DEFAULT_EXT: {
-//      extendedDefaultConfig = v;
-//      break;
-//    }
+    case SUPLA_CONFIG_TYPE_DEFAULT_EXT: {
+      extendedDefaultConfig = v;
+      break;
+    }
     default: {
       SUPLA_LOG_ERROR("ConfigTypesBitmap: Unknown config type: %d", configType);
       break;
@@ -85,9 +85,9 @@ bool ConfigTypesBitmap::isSet(int configType) const {
     case SUPLA_CONFIG_TYPE_OCR: {
       return ocrConfig == 1;
     }
-//    case SUPLA_CONFIG_TYPE_DEFAULT_EXT: {
-//      return extendedDefaultConfig == 1;
-//    }
+    case SUPLA_CONFIG_TYPE_DEFAULT_EXT: {
+      return extendedDefaultConfig == 1;
+    }
     default: {
       SUPLA_LOG_ERROR("ConfigTypesBitmap: Unknown config type: %d", configType);
       return false;

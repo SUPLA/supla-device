@@ -63,6 +63,10 @@ class SuplaSrpcLayerMock : public Supla::Protocol::SuplaSrpc {
       (override));
   MOCK_METHOD(bool, setInitialCaption,
       (uint8_t channelNumber, const char *caption), (override));
+  MOCK_METHOD(bool, setChannelConfig, (uint8_t channelNumber,
+                                       _supla_int_t channelFunction,
+                                       void *channelConfig, int size,
+                                       uint8_t configType), (override));
 };
 
 #endif  // EXTRAS_TEST_DOUBLES_SUPLA_SRPC_LAYER_MOCK_H_

@@ -102,6 +102,17 @@ const char *getBinarySensorChannelName(int channelFunction);
  */
 bool isLittleEndian();
 
+/**
+ * Compares two semantic versions
+ *
+ * @param sw1 Software version 1 to compare
+ * @param sw2 Software version 2 to compare
+ *
+ * @return 1 if sw1 > sw2, 0 if sw1 == sw2, -1 if sw1 < sw2
+ */
+int compareSemVer(const char *sw1, const char *sw2);
+
 }  // namespace Supla
+
 
 #endif  // SRC_SUPLA_TOOLS_H_

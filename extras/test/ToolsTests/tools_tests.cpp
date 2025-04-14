@@ -385,3 +385,29 @@ TEST(ToolsTest, rssiToSignalStrengthTests) {
 
   EXPECT_EQ(Supla::rssiToSignalStrength(-100, -150), 50);
 }
+
+TEST(ToolsTest, compareSemVerTests) {
+  EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.0.0"), 0);
+  EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.0.1"), -1);
+  EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.1.0"), -1);
+  EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.1.1"), -1);
+  EXPECT_EQ(Supla::compareSemVer("1.0.0", "2.0.0"), -1);
+  EXPECT_EQ(Supla::compareSemVer("1.0.0", "2.1.0"), -1);
+
+  EXPECT_EQ(Supla::compareSemVer("3", "2.1.0"), 1);
+  EXPECT_EQ(Supla::compareSemVer("3", "2.9999"), 1);
+
+  EXPECT_EQ(Supla::compareSemVer("3.0.1", "3.0"), 1);
+  EXPECT_EQ(Supla::compareSemVer("3.0", "3.0.1"), -1);
+  EXPECT_EQ(Supla::compareSemVer("3ax0", "3ff.0.1"), -1);
+
+  EXPECT_EQ(Supla::compareSemVer("3.02", "3.1"), 1);
+  EXPECT_EQ(Supla::compareSemVer("3.01", "3.2"), -1);
+  EXPECT_EQ(Supla::compareSemVer("3.0001", "3.1"), 0);
+
+  EXPECT_EQ(Supla::compareSemVer("42", "00042"), 0);
+  EXPECT_EQ(Supla::compareSemVer("42", "00042.00.0001"), -1);
+
+  EXPECT_EQ(Supla::compareSemVer("foo", "bar"), 0);
+  EXPECT_EQ(Supla::compareSemVer("foo5", "bar"), 1);
+}

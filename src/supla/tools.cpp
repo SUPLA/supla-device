@@ -19,6 +19,7 @@
 #include "tools.h"
 #include <string.h>
 #include <supla-common/proto.h>
+#include <ctype.h>
 
 #if defined(ARDUINO_ARCH_AVR)
 #include <stdlib.h>
@@ -575,5 +576,35 @@ const char *Supla::getBinarySensorChannelName(int channelFunction) {
 bool Supla::isLittleEndian() {
     uint32_t num = 0x01020304;
     return *(reinterpret_cast<uint8_t*>(&num)) == 0x04;
+}
+
+int Supla::compareSemVer(const char *sw1, const char *sw2) {
+  const char* p1 = sw1;
+  const char* p2 = sw2;
+
+  while (*p1 != '\0' || *p2 != '\0') {
+    int v1 = 0;
+    while (*p1 && isdigit(*p1)) {
+      v1 = v1 * 10 + (*p1 - '0');
+      p1++;
+    }
+    while (*p1 != '\0' && !isdigit(*p1)) {
+      p1++;
+    }
+
+    int v2 = 0;
+    while (*p2 && isdigit(*p2)) {
+      v2 = v2 * 10 + (*p2 - '0');
+      p2++;
+    }
+    while (*p2 != '\0' && !isdigit(*p2)) {
+      p2++;
+    }
+
+    if (v1 > v2) return 1;
+    if (v1 < v2) return -1;
+  }
+
+  return 0;
 }
 

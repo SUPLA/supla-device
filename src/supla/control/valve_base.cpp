@@ -75,7 +75,7 @@ void ValveBase::iterateAlways() {
 
     bool floodDetected = isFloodDetected();
 
-    if (channel.isValveOpen()) {
+    if (channel.isValveOpen() || !channel.isValveFloodingFlagActive()) {
       if (floodDetected) {
         closeValve();
         channel.setValveFloodingFlag(true);

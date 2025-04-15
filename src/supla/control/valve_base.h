@@ -26,11 +26,14 @@
 namespace Supla {
 namespace Control {
 
+#define SUPLA_VALVE_SENSOR_MAX 20
+
 #pragma pack(push, 1)
 struct ValveConfig {
   ValveConfig();
-  uint8_t sensorData[20];
-  uint8_t reserved[32] = {};
+  uint8_t sensorData[SUPLA_VALVE_SENSOR_MAX];
+  uint8_t closeValveOnFloodType = 0;  // SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_*
+  uint8_t reserved[31] = {};
 };
 #pragma pack(pop)
 
@@ -97,7 +100,7 @@ class ValveBase : public ChannelElement, public ActionHandler {
    *
    * @return true if flood is detected
    */
-  bool isFloodDetected() const;
+  bool isFloodDetected();
 
   /**
    * Print current configuration in logs (for debug purpose)
@@ -162,6 +165,14 @@ class ValveBase : public ChannelElement, public ActionHandler {
    */
   void setIgnoreManuallyOpenedTimeMs(uint32_t timeMs);
 
+  /**
+   * Set default close valve on flood type.
+   * Default value is SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_NONE
+   *
+   * @param type SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_*
+   */
+  void setDefaultCloseValveOnFloodType(uint8_t type);
+
  protected:
   ValveConfig config = {};
   uint32_t lastSensorsCheckTimestamp = 0;
@@ -169,6 +180,8 @@ class ValveBase : public ChannelElement, public ActionHandler {
   uint32_t lastCmdTimestamp = 0;
   uint32_t ignoreManuallyOpenedTimeMs = 30000;
   uint8_t lastOpenLevelState = 0;
+  uint8_t defaultCloseValveOnFloodType = SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_NONE;
+  bool previousSensorState[SUPLA_VALVE_SENSOR_MAX] = {};
 };
 
 };  // namespace Control

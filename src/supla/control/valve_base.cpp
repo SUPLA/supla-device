@@ -84,31 +84,49 @@ void ValveBase::iterateAlways() {
   }
 }
 
-bool ValveBase::isFloodDetected() const {
-  for (auto const &sensor : config.sensorData) {
-    if (sensor == 255) {
+bool ValveBase::isFloodDetected() {
+  bool floodDedected = false;
+  for (int i = 0; i < SUPLA_VALVE_SENSOR_MAX; i++) {
+    if (config.sensorData[i] == 255) {
+      previousSensorState[i] = false;
       continue;
     }
 
-    auto ch = Supla::Channel::GetByChannelNumber(sensor);
+    auto ch = Supla::Channel::GetByChannelNumber(config.sensorData[i]);
     if (ch == nullptr) {
-      SUPLA_LOG_WARNING(
-          "Valve[%d] channel %d not found", getChannelNumber(), sensor);
+      SUPLA_LOG_WARNING("Valve[%d] channel %d not found",
+                        getChannelNumber(),
+                        config.sensorData[i]);
+      previousSensorState[i] = false;
       continue;
     }
 
     if (ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
       SUPLA_LOG_WARNING("Valve[%d] channel %d is not a binary sensor",
                         getChannelNumber(),
-                        sensor);
+                        config.sensorData[i]);
+      previousSensorState[i] = false;
       continue;
     }
 
-    if (ch->getValueBool() == true) {
-      return true;
+    if (config.closeValveOnFloodType <= 1) {
+      if (ch->getValueBool() == true) {
+        previousSensorState[i] = true;
+        floodDedected = true;
+      } else {
+        previousSensorState[i] = false;
+      }
+    } else if (config.closeValveOnFloodType == 2) {
+      bool value = ch->getValueBool();
+      if (value && previousSensorState[i] == false) {
+        previousSensorState[i] = true;
+        floodDedected = true;
+      } else {
+        previousSensorState[i] = value;
+      }
     }
   }
-  return false;
+  return floodDedected;
 }
 
 int32_t ValveBase::handleNewValueFromServer(
@@ -144,8 +162,14 @@ void ValveBase::onLoadConfig(SuplaDeviceClass *) {
     cfg->getBlob(
         key, reinterpret_cast<char *>(&config), sizeof(TChannelConfig_Valve));
 
-    printConfig();
     loadConfigChangeFlag();
+
+    if (defaultCloseValveOnFloodType != 0 &&
+        config.closeValveOnFloodType == 0) {
+      config.closeValveOnFloodType = defaultCloseValveOnFloodType;
+      triggerSetChannelConfig();
+    }
+    printConfig();
   }
 }
 
@@ -160,6 +184,9 @@ void ValveBase::purgeConfig() {
 
 
 void ValveBase::printConfig() const {
+  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s", getChannelNumber(),
+            config.closeValveOnFloodType == 0 ? "N/A" :
+            config.closeValveOnFloodType == 1 ? "always" : "on change");
   for (auto const &sensor : config.sensorData) {
     if (sensor == 255) {
       continue;
@@ -237,6 +264,12 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
           } else {
             config.sensorData[i] = cfg->SensorInfo[i].ChannelNo;
           }
+        }
+
+        if (defaultCloseValveOnFloodType != 0 &&
+            config.closeValveOnFloodType == 0) {
+          config.closeValveOnFloodType = defaultCloseValveOnFloodType;
+          triggerSetChannelConfig();
         }
       }
       printConfig();
@@ -456,3 +489,11 @@ void ValveBase::handleAction(int event, int action) {
   }
 }
 
+void ValveBase::setDefaultCloseValveOnFloodType(uint8_t type) {
+  if (type <= SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_ON_CHANGE) {
+    defaultCloseValveOnFloodType = type;
+    if (config.closeValveOnFloodType == 0) {
+      config.closeValveOnFloodType = type;
+    }
+  }
+}

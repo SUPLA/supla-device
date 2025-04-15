@@ -192,9 +192,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>closeValve</b> ()</td
 <tr class="memitem:a917ad1e4b4c4a46641f09177655f6b08" id="r_a917ad1e4b4c4a46641f09177655f6b08"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a917ad1e4b4c4a46641f09177655f6b08">setValve</a> (uint8_t openLevel)</td></tr>
 <tr class="memdesc:a917ad1e4b4c4a46641f09177655f6b08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set valve.  <br /></td></tr>
 <tr class="separator:a917ad1e4b4c4a46641f09177655f6b08"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0f621e706009c7d6a1c1f0160b8c9258" id="r_a0f621e706009c7d6a1c1f0160b8c9258"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0f621e706009c7d6a1c1f0160b8c9258">isFloodDetected</a> () const</td></tr>
-<tr class="memdesc:a0f621e706009c7d6a1c1f0160b8c9258"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check all sensors and return true if flood is detected.  <br /></td></tr>
-<tr class="separator:a0f621e706009c7d6a1c1f0160b8c9258"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0865f749d50ac48a32958aafe248913" id="r_ac0865f749d50ac48a32958aafe248913"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac0865f749d50ac48a32958aafe248913">isFloodDetected</a> ()</td></tr>
+<tr class="memdesc:ac0865f749d50ac48a32958aafe248913"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check all sensors and return true if flood is detected.  <br /></td></tr>
+<tr class="separator:ac0865f749d50ac48a32958aafe248913"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1549e782028b17652f3e48285172253d" id="r_a1549e782028b17652f3e48285172253d"><td class="memItemLeft" align="right" valign="top"><a id="a1549e782028b17652f3e48285172253d" name="a1549e782028b17652f3e48285172253d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>printConfig</b> () const</td></tr>
 <tr class="memdesc:a1549e782028b17652f3e48285172253d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Print current configuration in logs (for debug purpose) <br /></td></tr>
@@ -217,6 +217,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>printConfig</b> () co
 <tr class="memitem:a759d563096536cdf21b5179799492bc0" id="r_a759d563096536cdf21b5179799492bc0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a759d563096536cdf21b5179799492bc0">setIgnoreManuallyOpenedTimeMs</a> (uint32_t timeMs)</td></tr>
 <tr class="memdesc:a759d563096536cdf21b5179799492bc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set ignore manually opened time in milliseconds.  <br /></td></tr>
 <tr class="separator:a759d563096536cdf21b5179799492bc0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77e2318af6d9b4c23c61b8aa90f9b407" id="r_a77e2318af6d9b4c23c61b8aa90f9b407"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a77e2318af6d9b4c23c61b8aa90f9b407">setDefaultCloseValveOnFloodType</a> (uint8_t type)</td></tr>
+<tr class="memdesc:a77e2318af6d9b4c23c61b8aa90f9b407"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set default close valve on flood type.  <br /></td></tr>
+<tr class="separator:a77e2318af6d9b4c23c61b8aa90f9b407"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>ChannelElement</b> (int channelNumber=-1)</td></tr>
@@ -399,6 +402,12 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>ignoreManuallyOpe
 <tr class="memitem:abeefa9c81b57efd11158872f208a5063" id="r_abeefa9c81b57efd11158872f208a5063"><td class="memItemLeft" align="right" valign="top"><a id="abeefa9c81b57efd11158872f208a5063" name="abeefa9c81b57efd11158872f208a5063"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastOpenLevelState</b> = 0</td></tr>
 <tr class="separator:abeefa9c81b57efd11158872f208a5063"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afea65a649969296d2ce4a43f148d217e" id="r_afea65a649969296d2ce4a43f148d217e"><td class="memItemLeft" align="right" valign="top"><a id="afea65a649969296d2ce4a43f148d217e" name="afea65a649969296d2ce4a43f148d217e"></a>
+uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>defaultCloseValveOnFloodType</b> = SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_NONE</td></tr>
+<tr class="separator:afea65a649969296d2ce4a43f148d217e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8467513f7a623761fef8c8681f2df581" id="r_a8467513f7a623761fef8c8681f2df581"><td class="memItemLeft" align="right" valign="top"><a id="a8467513f7a623761fef8c8681f2df581" name="a8467513f7a623761fef8c8681f2df581"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>previousSensorState</b> [SUPLA_VALVE_SENSOR_MAX] = {}</td></tr>
+<tr class="separator:a8467513f7a623761fef8c8681f2df581"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aae2e78ba9cd3c3c4d5017223076af9b6 inherit pro_attribs_classSupla_1_1ChannelElement" id="r_aae2e78ba9cd3c3c4d5017223076af9b6"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classSupla_1_1Channel.html">Channel</a>&#160;</td><td class="memItemRight" valign="bottom"><b>channel</b></td></tr>
@@ -717,8 +726,8 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
-<a id="a0f621e706009c7d6a1c1f0160b8c9258" name="a0f621e706009c7d6a1c1f0160b8c9258"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0f621e706009c7d6a1c1f0160b8c9258">&#9670;&#160;</a></span>isFloodDetected()</h2>
+<a id="ac0865f749d50ac48a32958aafe248913" name="ac0865f749d50ac48a32958aafe248913"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac0865f749d50ac48a32958aafe248913">&#9670;&#160;</a></span>isFloodDetected()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -727,7 +736,7 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
           <td class="memname">bool ValveBase::isFloodDetected </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td> const</td>
+          <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -968,6 +977,32 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">local</td><td>true = will call setChannelConfig to server </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a77e2318af6d9b4c23c61b8aa90f9b407" name="a77e2318af6d9b4c23c61b8aa90f9b407"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a77e2318af6d9b4c23c61b8aa90f9b407">&#9670;&#160;</a></span>setDefaultCloseValveOnFloodType()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ValveBase::setDefaultCloseValveOnFloodType </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>type</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set default close valve on flood type. </p>
+<p>Default value is SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_NONE</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">type</td><td>SUPLA_VALVE_CLOSE_ON_FLOOD_TYPE_* </td></tr>
   </table>
   </dd>
 </dl>

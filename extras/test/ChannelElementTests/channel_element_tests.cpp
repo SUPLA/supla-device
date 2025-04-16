@@ -204,7 +204,7 @@ TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
 
   Supla::ConfigTypesBitmap ct;
   ct.set(SUPLA_CONFIG_TYPE_DEFAULT);
-  ct.set(SUPLA_CONFIG_TYPE_DEFAULT_EXT);
+  ct.set(SUPLA_CONFIG_TYPE_EXTENDED);
 
   EXPECT_CALL(
       srpc,
@@ -259,7 +259,7 @@ TEST(ChannelElementTests, ConfigExchange2xNoConfigOnServer) {
   EXPECT_CALL(
       srpc,
       setChannelConfig(
-          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_DEFAULT_EXT))
+          0, SUPLA_CHANNELFNC_POWERSWITCH, _, 4, SUPLA_CONFIG_TYPE_EXTENDED))
           .WillOnce(Return(true));
 
   for (int i = 0; i < 10; i++) {

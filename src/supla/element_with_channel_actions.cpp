@@ -60,7 +60,7 @@ void ConfigTypesBitmap::set(int configType, bool value) {
       ocrConfig = v;
       break;
     }
-    case SUPLA_CONFIG_TYPE_DEFAULT_EXT: {
+    case SUPLA_CONFIG_TYPE_EXTENDED: {
       extendedDefaultConfig = v;
       break;
     }
@@ -85,7 +85,7 @@ bool ConfigTypesBitmap::isSet(int configType) const {
     case SUPLA_CONFIG_TYPE_OCR: {
       return ocrConfig == 1;
     }
-    case SUPLA_CONFIG_TYPE_DEFAULT_EXT: {
+    case SUPLA_CONFIG_TYPE_EXTENDED: {
       return extendedDefaultConfig == 1;
     }
     default: {

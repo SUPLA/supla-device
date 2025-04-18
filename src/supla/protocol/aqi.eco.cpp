@@ -17,7 +17,7 @@
  */
 
 #include <supla/version.h>
-#include "supla_protocol_aqi.eco.h"
+#include <supla/protocol/aqi.eco.h>
 
 Supla::Protocol::AQIECO::AQIECO(Supla::Network* _network, char token[], int refresh, char server[], int id) : Supla::Protocol::WebSender(_network) {
   // serverAddress

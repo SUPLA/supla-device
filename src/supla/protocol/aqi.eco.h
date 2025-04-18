@@ -28,8 +28,8 @@
 #include <supla/sensor/wind.h>
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
-#include "supla_sensor_particle_meter.h"
-#include "supla_protocol_websender.h"
+#include <supla/sensor/particle_meter.h>
+#include <supla/protocol/websender.h>
 
 namespace Supla {
 namespace Protocol {

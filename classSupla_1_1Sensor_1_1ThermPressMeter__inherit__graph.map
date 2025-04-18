@@ -1,0 +1,19 @@
+<map id="Supla::Sensor::ThermPressMeter" name="Supla::Sensor::ThermPressMeter">
+<area shape="rect" id="Node000001" title=" " alt="" coords="86,419,264,459"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Sensor_1_1BMP180.html" title=" " alt="" coords="5,507,163,533"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="143,472,100,509,96,505,139,468"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Sensor_1_1BMP280.html" title=" " alt="" coords="187,507,344,533"/>
+<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="210,468,253,505,250,509,207,472"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1ThermHygroPressMeter.html" title=" " alt="" coords="86,330,264,371"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="177,386,177,418,172,418,172,386"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1ThermHygroMeter.html" title=" " alt="" coords="86,241,264,282"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="177,298,177,330,172,330,172,298"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="98,168,252,193"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="177,209,177,241,172,241,172,209"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="84,79,265,120"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="177,135,177,167,172,167,172,135"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="50,5,158,31"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="127,41,159,77,155,80,123,45"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="182,5,311,31"/>
+<area shape="poly" id="edge6_Node000005_Node000007" title=" " alt="" coords="227,45,194,80,190,77,223,41"/>
+</map>

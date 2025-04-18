@@ -58,9 +58,12 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/device/supla_ca_cert.h>
+#include <supla/events.h>
 #include <supla/network/html/i2cscanner.h>
 #include <supla/network/html/button_update.h>
 #include <supla/sensor/particle_meter_pm1006k.h>
+#include <supla/protocol/aqi.eco.h>
+#include <supla/network/html/custom_text_parameter.h>
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;
@@ -87,7 +90,22 @@ void setup() {
   auto pm1006k = new Supla::Sensor::ParticleMeterPM1006K(PM_RX_PIN, PM_TX_PIN, FAN_PIN, 180, 30);
 
   // Bosh BME280
-  new Supla::Sensor::BME280(0x77, 100);
+  auto bme280 = new Supla::Sensor::BME280(0x77, 100);
+
+  // start parameters from memory
+  Supla::Storage::Init();
+
+  // aqi.eco sender
+  const char AQIPARAM[] = "aqitk";
+  new Supla::Html::CustomTextParameter(AQIPARAM, "aqi.eco Token", 32);
+  char token[33] = {};
+  Supla::Storage::ConfigInstance()->getString(AQIPARAM, token, 33);
+  auto aqieco = new Supla::Protocol::AQIECO(&wifi, token, 120);
+  aqieco->addSensor(Supla::SenorType::PM2_5, pm1006k);
+  aqieco->addSensor(Supla::SenorType::PM10, pm1006k);
+  aqieco->addSensor(Supla::SenorType::TEMP, bme280);
+  aqieco->addSensor(Supla::SenorType::HUMI, bme280);
+  aqieco->addSensor(Supla::SenorType::PRESS, bme280);
 
   SuplaDevice.setName(DEV_NAME);
   SuplaDevice.begin();

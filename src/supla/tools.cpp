@@ -582,6 +582,10 @@ int Supla::compareSemVer(const char *sw1, const char *sw2) {
   const char* p1 = sw1;
   const char* p2 = sw2;
 
+  if (p1 == nullptr || p2 == nullptr) {
+    return 0;
+  }
+
   while (*p1 != '\0' || *p2 != '\0') {
     int v1 = 0;
     while (*p1 && isdigit(*p1)) {

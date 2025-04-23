@@ -417,3 +417,8 @@ bool Supla::EspIdfWifi::isIpSetupTimeout() {
 void Supla::EspIdfWifi::setMaxTxPower(int power) {
   maxTxPower = power;
 }
+
+esp_netif_t *Supla::EspIdfWifi::getStaNetIf() const {
+  return staNetIf;
+}
+

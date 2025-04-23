@@ -410,4 +410,16 @@ TEST(ToolsTest, compareSemVerTests) {
 
   EXPECT_EQ(Supla::compareSemVer("foo", "bar"), 0);
   EXPECT_EQ(Supla::compareSemVer("foo5", "bar"), 1);
+
+  EXPECT_EQ(Supla::compareSemVer("", "bar"), 0);
+  EXPECT_EQ(Supla::compareSemVer("", ""), 0);
+  EXPECT_EQ(Supla::compareSemVer("foo5", ""), 1);
+  EXPECT_EQ(Supla::compareSemVer("2.12", ""), 1);
+  EXPECT_EQ(Supla::compareSemVer("2.12", "\0"), 1);
+  EXPECT_EQ(Supla::compareSemVer("", "2.12"), -1);
+  EXPECT_EQ(Supla::compareSemVer("\0", "2.12"), -1);
+  EXPECT_EQ(Supla::compareSemVer(nullptr, "2.12"), 0);
+  EXPECT_EQ(Supla::compareSemVer("2.12", nullptr), 0);
+  EXPECT_EQ(Supla::compareSemVer(nullptr, nullptr), 0);
+  EXPECT_EQ(Supla::compareSemVer("2.1", "2.0"), 1);
 }

@@ -54,6 +54,8 @@ class EspIdfWifi : public Supla::Wifi {
   uint32_t getIP() override;
   void setMaxTxPower(int power);
 
+  esp_netif_t *getStaNetIf() const;
+
  protected:
   bool initDone = false;
   bool isWifiConnected = false;

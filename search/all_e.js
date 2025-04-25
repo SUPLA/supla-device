@@ -11,8 +11,15 @@ var searchData=
   ['migrate_20programs_20written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_8',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md13',1,'']]],
   ['minmaxallowedhumidityadjustment_9',['minMaxAllowedHumidityAdjustment',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#ac6847a7deacd24116de3b3fe76866fff',1,'Supla::Sensor::ThermHygroMeter']]],
   ['minmaxallowedtemperatureadjustment_10',['minMaxAllowedTemperatureAdjustment',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a78163b3d2507ef38d60dbda3ddf89cf7',1,'Supla::Sensor::ThermHygroMeter']]],
-  ['mqtt_11',['Mqtt',['../classMqtt.html',1,'Mqtt'],['../classSupla_1_1Protocol_1_1Mqtt.html',1,'Supla::Protocol::Mqtt']]],
-  ['mqtttopic_12',['MqttTopic',['../classSupla_1_1Protocol_1_1MqttTopic.html',1,'Supla::Protocol']]],
-  ['mutesoundalarm_13',['muteSoundAlarm',['../classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1',1,'Supla::Sensor::Container::muteSoundAlarm()'],['../classContainer.html#af517e3d07f9510982baff2f37e99acf1',1,'Container::muteSoundAlarm()']]],
-  ['mutex_14',['Mutex',['../classSupla_1_1Mutex.html',1,'Supla']]]
+  ['modbusclienthandler_11',['ModbusClientHandler',['../classModbusClientHandler.html',1,'ModbusClientHandler'],['../classSupla_1_1ModbusClientHandler.html',1,'Supla::ModbusClientHandler']]],
+  ['modbusconfigproperties_12',['ModbusConfigProperties',['../structModbusConfigProperties.html',1,'']]],
+  ['modbusdevicehandler_13',['ModbusDeviceHandler',['../classModbusDeviceHandler.html',1,'ModbusDeviceHandler'],['../classSupla_1_1ModbusDeviceHandler.html',1,'Supla::ModbusDeviceHandler']]],
+  ['modbusemhandler_14',['ModbusEMHandler',['../classModbusEMHandler.html',1,'ModbusEMHandler'],['../classSupla_1_1ModbusEMHandler.html',1,'Supla::ModbusEMHandler']]],
+  ['modbusnetworkconfig_15',['ModbusNetworkConfig',['../structModbusNetworkConfig.html',1,'']]],
+  ['modbusparameters_16',['ModbusParameters',['../classModbusParameters.html',1,'ModbusParameters'],['../classSupla_1_1Html_1_1ModbusParameters.html',1,'Supla::Html::ModbusParameters']]],
+  ['modbusserialconfig_17',['ModbusSerialConfig',['../structModbusSerialConfig.html',1,'']]],
+  ['mqtt_18',['Mqtt',['../classMqtt.html',1,'Mqtt'],['../classSupla_1_1Protocol_1_1Mqtt.html',1,'Supla::Protocol::Mqtt']]],
+  ['mqtttopic_19',['MqttTopic',['../classSupla_1_1Protocol_1_1MqttTopic.html',1,'Supla::Protocol']]],
+  ['mutesoundalarm_20',['muteSoundAlarm',['../classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1',1,'Supla::Sensor::Container::muteSoundAlarm()'],['../classContainer.html#af517e3d07f9510982baff2f37e99acf1',1,'Container::muteSoundAlarm()']]],
+  ['mutex_21',['Mutex',['../classSupla_1_1Mutex.html',1,'Supla']]]
 ];

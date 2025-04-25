@@ -1,0 +1,5 @@
+<map id="Supla::Modbus::Configurator" name="Supla::Modbus::Configurator">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,187,105"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="42,5,150,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,46,99,79,93,79,93,46"/>
+</map>

@@ -1,3 +1,13 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classSupla_1_1Client.html" title=" " alt="" coords="5,5,99,31"/>
+<area shape="rect" id="Node000000" href="$classStateStorageInterface.html" title=" " alt="" coords="25,31,173,56"/>
+<area shape="rect" id="Node000001" href="$classSupla_1_1SimpleState.html" title=" " alt="" coords="273,5,404,31"/>
+<area shape="poly" id="edge5_Node000000_Node000001" title=" " alt="" coords="188,31,272,22,273,28,189,37"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1StateWearLevelingByte.html" title=" " alt="" coords="241,55,437,80"/>
+<area shape="poly" id="edge6_Node000000_Node000003" title=" " alt="" coords="189,50,240,55,240,60,188,55"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1StateWearLevelingSector.html" title=" " alt="" coords="254,104,424,145"/>
+<area shape="poly" id="edge7_Node000000_Node000004" title=" " alt="" coords="175,59,194,65,218,78,242,90,270,101,268,106,240,95,216,82,192,70,174,64"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1StateStorageInterface.html" title=" " alt="" coords="5,80,193,106"/>
+<area shape="poly" id="edge8_Node000002_Node000001" title=" " alt="" coords="175,72,192,66,215,53,240,40,272,29,274,34,242,45,218,58,194,71,177,77"/>
+<area shape="poly" id="edge9_Node000002_Node000003" title=" " alt="" coords="208,79,240,75,240,81,208,84"/>
+<area shape="poly" id="edge10_Node000002_Node000004" title=" " alt="" coords="208,105,254,111,253,116,208,110"/>
 </map>

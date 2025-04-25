@@ -1,7 +1,3 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classSupla_1_1Protocol_1_1ProtocolLayer.html" title=" " alt="" coords="5,23,168,64"/>
-<area shape="rect" id="Node000001" href="$classSupla_1_1Protocol_1_1Mqtt.html" title=" " alt="" coords="233,5,373,31"/>
-<area shape="poly" id="edge203_Node000000_Node000001" title=" " alt="" coords="183,30,232,24,232,29,183,35"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Protocol_1_1SuplaSrpc.html" title=" " alt="" coords="216,55,390,80"/>
-<area shape="poly" id="edge204_Node000000_Node000002" title=" " alt="" coords="183,52,215,55,215,60,183,57"/>
+<area shape="rect" id="Node000000" href="$structSupla_1_1Modbus_1_1NetworkConfig.html" title=" " alt="" coords="5,5,203,31"/>
 </map>

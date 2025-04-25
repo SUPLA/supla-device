@@ -3355,8 +3355,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02929" name="l02929"></a><span class="lineno"> 2929</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> Role;  <span class="comment">// MODBUS_ROLE_*</span></div>
 <div class="line"><a id="l02930" name="l02930"></a><span class="lineno"> 2930</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> ModbusAddress;  <span class="comment">// only for slave</span></div>
 <div class="line"><a id="l02931" name="l02931"></a><span class="lineno"> 2931</span>  <span class="keywordtype">unsigned</span> _supla_int_t SlaveTimeoutMs;  <span class="comment">// only for master</span></div>
-<div class="line"><a id="l02932" name="l02932"></a><span class="lineno"> 2932</span>  <a class="code hl_struct" href="structModbusSerialConfig.html">ModbusSerialConfig</a> Serial;</div>
-<div class="line"><a id="l02933" name="l02933"></a><span class="lineno"> 2933</span>  <a class="code hl_struct" href="structModbusNetworkConfig.html">ModbusNetworkConfig</a> Network;</div>
+<div class="line"><a id="l02932" name="l02932"></a><span class="lineno"> 2932</span>  <a class="code hl_struct" href="structModbusSerialConfig.html">ModbusSerialConfig</a> SerialConfig;</div>
+<div class="line"><a id="l02933" name="l02933"></a><span class="lineno"> 2933</span>  <a class="code hl_struct" href="structModbusNetworkConfig.html">ModbusNetworkConfig</a> NetworkConfig;</div>
 <div class="line"><a id="l02934" name="l02934"></a><span class="lineno"> 2934</span>  <a class="code hl_struct" href="structModbusConfigProperties.html">ModbusConfigProperties</a> Properties;</div>
 <div class="line"><a id="l02935" name="l02935"></a><span class="lineno"> 2935</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> Reserved[20];</div>
 <div class="line"><a id="l02936" name="l02936"></a><span class="lineno"> 2936</span>} <a class="code hl_struct" href="structTDeviceConfig__Modbus.html">TDeviceConfig_Modbus</a>;</div>

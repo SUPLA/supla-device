@@ -418,7 +418,9 @@ void Supla::EspIdfWifi::setMaxTxPower(int power) {
   maxTxPower = power;
 }
 
+#ifdef SUPLA_DEVICE_ESP32
 esp_netif_t *Supla::EspIdfWifi::getStaNetIf() const {
   return staNetIf;
 }
+#endif
 

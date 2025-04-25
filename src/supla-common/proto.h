@@ -2929,8 +2929,8 @@ typedef struct {
   unsigned char Role;  // MODBUS_ROLE_*
   unsigned char ModbusAddress;  // only for slave
   unsigned _supla_int_t SlaveTimeoutMs;  // only for master
-  ModbusSerialConfig Serial;
-  ModbusNetworkConfig Network;
+  ModbusSerialConfig SerialConfig;
+  ModbusNetworkConfig NetworkConfig;
   ModbusConfigProperties Properties;
   unsigned char Reserved[20];
 } TDeviceConfig_Modbus;

@@ -1061,13 +1061,14 @@ void RemoteDeviceConfig::fillModbusConfig(TDeviceConfig_Modbus *config) const {
     config->ModbusAddress = modbusConfig.modbusAddress;
     config->Role = static_cast<unsigned char>(modbusConfig.role);
     config->SlaveTimeoutMs = modbusConfig.slaveTimeoutMs;
-    config->Serial.Mode = static_cast<unsigned char>(modbusConfig.serial.mode);
-    config->Serial.Baudrate = modbusConfig.serial.baudrate;
-    config->Serial.StopBits =
+    config->SerialConfig.Mode =
+        static_cast<unsigned char>(modbusConfig.serial.mode);
+    config->SerialConfig.Baudrate = modbusConfig.serial.baudrate;
+    config->SerialConfig.StopBits =
         static_cast<unsigned char>(modbusConfig.serial.stopBits);
-    config->Network.Mode =
+    config->NetworkConfig.Mode =
         static_cast<unsigned char>(modbusConfig.network.mode);
-    config->Network.Port = modbusConfig.network.port;
+    config->NetworkConfig.Port = modbusConfig.network.port;
   }
 }
 
@@ -1102,31 +1103,31 @@ void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
       changed = true;
     }
 
-    if (config->Serial.Mode > MODBUS_SERIAL_MODE_ASCII) {
+    if (config->SerialConfig.Mode > MODBUS_SERIAL_MODE_ASCII) {
       SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus serial mode %d",
-                        config->Serial.Mode);
+                        config->SerialConfig.Mode);
       valid = false;
     } else if (static_cast<unsigned char>(modbusConfig.serial.mode) !=
-               config->Serial.Mode) {
+               config->SerialConfig.Mode) {
       modbusConfig.serial.mode =
-          static_cast<Supla::Modbus::ModeSerial>(config->Serial.Mode);
+          static_cast<Supla::Modbus::ModeSerial>(config->SerialConfig.Mode);
       changed = true;
     }
 
-    if (modbusConfig.serial.baudrate != config->Serial.Baudrate) {
-      modbusConfig.serial.baudrate = config->Serial.Baudrate;
+    if (modbusConfig.serial.baudrate != config->SerialConfig.Baudrate) {
+      modbusConfig.serial.baudrate = config->SerialConfig.Baudrate;
       changed = true;
     }
 
-    if (config->Serial.StopBits > MODBUS_SERIAL_STOP_BITS_TWO) {
+    if (config->SerialConfig.StopBits > MODBUS_SERIAL_STOP_BITS_TWO) {
       SUPLA_LOG_WARNING(
           "RemoteDeviceConfig: invalid modbus serial stop bits %d",
-          config->Serial.StopBits);
+          config->SerialConfig.StopBits);
       valid = false;
     } else if (static_cast<unsigned char>(modbusConfig.serial.stopBits) !=
-               config->Serial.StopBits) {
-      modbusConfig.serial.stopBits =
-          static_cast<Supla::Modbus::SerialStopBits>(config->Serial.StopBits);
+               config->SerialConfig.StopBits) {
+      modbusConfig.serial.stopBits = static_cast<Supla::Modbus::SerialStopBits>(
+          config->SerialConfig.StopBits);
       changed = true;
     }
 

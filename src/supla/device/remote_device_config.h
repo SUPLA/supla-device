@@ -21,6 +21,7 @@
 
 #include <supla-common/proto.h>
 #include <supla/protocol/supla_srpc.h>
+#include <supla/modbus/modbus_configurator.h>
 
 namespace Supla {
 
@@ -49,6 +50,8 @@ class RemoteDeviceConfig {
   static enum HomeScreenContent HomeScreenContentBitToEnum(uint64_t fieldBit);
   static uint64_t HomeScreenEnumToBit(enum HomeScreenContent type);
   static uint64_t HomeScreenIntToBit(int mode);
+  static void SetModbusProperties(
+      const Supla::Modbus::ConfigProperties &modbusProperties);
 
   explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
@@ -81,6 +84,7 @@ class RemoteDeviceConfig {
       uint64_t fieldBit, TDeviceConfig_DisableUserInterface *config);
   void processHomeScreenDelayTypeConfig(
       uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
+  void processModbusConfig(uint64_t fieldBit, TDeviceConfig_Modbus *config);
 
   void fillStatusLedConfig(TDeviceConfig_StatusLed *config) const;
   void fillPowerStatusLedConfig(TDeviceConfig_PowerStatusLed *config) const;
@@ -96,6 +100,7 @@ class RemoteDeviceConfig {
       TDeviceConfig_DisableUserInterface *config) const;
   void fillHomeScreenDelayTypeConfig(
       TDeviceConfig_HomeScreenOffDelayType *config) const;
+  void fillModbusConfig(TDeviceConfig_Modbus *config) const;
 
   bool endFlagReceived = false;
   uint8_t resultCode = 255;
@@ -105,6 +110,7 @@ class RemoteDeviceConfig {
 
   static uint64_t fieldBitsUsedByDevice;
   static uint64_t homeScreenContentAvailable;
+  static Supla::Modbus::ConfigProperties modbusProperties;
 };
 
 }  // namespace Device

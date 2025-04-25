@@ -37,6 +37,11 @@ set(SRCS
   supla/storage/state_wear_leveling_byte.cpp
   supla/storage/state_wear_leveling_sector.cpp
 
+  supla/modbus/modbus_configurator.cpp
+  supla/modbus/modbus_client_handler.cpp
+  supla/modbus/modbus_em_handler.cpp
+  supla/modbus/modbus_device_handler.cpp
+
   supla/control/internal_pin_output.cpp
   supla/control/remote_output_interface.cpp
   supla/control/pin_status_led.cpp
@@ -109,6 +114,7 @@ set(SRCS
   supla/network/html/custom_parameter.cpp
   supla/network/html/custom_checkbox_parameter.cpp
   supla/network/html/relay_parameters.cpp
+  supla/network/html/modbus_parameters.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

@@ -24,11 +24,13 @@
 #include <supla/log_wrapper.h>
 #include <supla/clock/clock.h>
 #include <supla/storage/config_tags.h>
+#include <supla/modbus/modbus_configurator.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
 uint64_t RemoteDeviceConfig::fieldBitsUsedByDevice = 0;
 uint64_t RemoteDeviceConfig::homeScreenContentAvailable = 0;
+Supla::Modbus::ConfigProperties RemoteDeviceConfig::modbusProperties;
 
 RemoteDeviceConfig::RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration)
     : firstDeviceConfigAfterRegistration(firstDeviceConfigAfterRegistration) {
@@ -113,6 +115,12 @@ uint64_t RemoteDeviceConfig::HomeScreenIntToBit(int mode) {
   return (1ULL << mode);
 }
 
+void RemoteDeviceConfig::SetModbusProperties(
+    const Supla::Modbus::ConfigProperties &properties) {
+  modbusProperties = properties;
+  RegisterConfigField(SUPLA_DEVICE_CONFIG_FIELD_MODBUS);
+}
+
 void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
   endFlagReceived = (config->EndOfDataFlag != 0);
   messageCounter++;
@@ -186,6 +194,10 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
         }
         case SUPLA_DEVICE_CONFIG_FIELD_HOME_SCREEN_OFF_DELAY_TYPE: {
           dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_MODBUS: {
+          dataIndex += sizeof(TDeviceConfig_Modbus);
           break;
         }
         default: {
@@ -343,6 +355,20 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
               reinterpret_cast<TDeviceConfig_HomeScreenOffDelayType *>(
                   config->Config + dataIndex));
           dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelay);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_MODBUS: {
+          SUPLA_LOG_DEBUG("Processing Modbus config");
+          if (dataIndex + sizeof(TDeviceConfig_Modbus) > config->ConfigSize) {
+            SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
+            resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
+            return;
+          }
+          processModbusConfig(
+              fieldBit,
+              reinterpret_cast<TDeviceConfig_Modbus *>(config->Config +
+                                                       dataIndex));
+          dataIndex += sizeof(TDeviceConfig_Modbus);
           break;
         }
         default: {
@@ -918,6 +944,18 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
           break;
         }
+        case SUPLA_DEVICE_CONFIG_FIELD_MODBUS: {
+          SUPLA_LOG_DEBUG("Adding Modbus config field");
+          if (dataIndex + sizeof(TDeviceConfig_Modbus) >
+              SUPLA_DEVICE_CONFIG_MAXSIZE) {
+            SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
+            return false;
+          }
+          fillModbusConfig(reinterpret_cast<TDeviceConfig_Modbus *>(
+              config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_Modbus);
+          break;
+        }
         default: {
           SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
                             fieldBit);
@@ -988,5 +1026,127 @@ void RemoteDeviceConfig::fillHomeScreenDelayTypeConfig(
     SUPLA_LOG_DEBUG(
         "Setting HomeScreenOffDelayType to %d", value);
     config->HomeScreenOffDelayType = value;
+  }
+}
+void RemoteDeviceConfig::fillModbusConfig(TDeviceConfig_Modbus *config) const {
+  if (config == nullptr) {
+    return;
+  }
+
+  // copy properties
+  config->Properties.Baudrate.B4800 = modbusProperties.baudrate.b4800;
+  config->Properties.Baudrate.B9600 = modbusProperties.baudrate.b9600;
+  config->Properties.Baudrate.B19200 = modbusProperties.baudrate.b19200;
+  config->Properties.Baudrate.B38400 = modbusProperties.baudrate.b38400;
+  config->Properties.Baudrate.B57600 = modbusProperties.baudrate.b57600;
+  config->Properties.Baudrate.B115200 = modbusProperties.baudrate.b115200;
+  config->Properties.StopBits.One = modbusProperties.stopBits.one;
+  config->Properties.StopBits.OneAndHalf = modbusProperties.stopBits.oneAndHalf;
+  config->Properties.StopBits.Two = modbusProperties.stopBits.two;
+  config->Properties.Protocol.Master = modbusProperties.protocol.master;
+  config->Properties.Protocol.Slave = modbusProperties.protocol.slave;
+  config->Properties.Protocol.Rtu = modbusProperties.protocol.rtu;
+  config->Properties.Protocol.Ascii = modbusProperties.protocol.ascii;
+  config->Properties.Protocol.Tcp = modbusProperties.protocol.tcp;
+  config->Properties.Protocol.Udp = modbusProperties.protocol.udp;
+
+  // copy config
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    Supla::Modbus::Config modbusConfig = {};
+    cfg->getBlob(
+        Supla::ConfigTag::ModbusCfgTag, reinterpret_cast<char *>(&modbusConfig),
+        sizeof(modbusConfig));
+
+    config->ModbusAddress = modbusConfig.modbusAddress;
+    config->Role = static_cast<unsigned char>(modbusConfig.role);
+    config->SlaveTimeoutMs = modbusConfig.slaveTimeoutMs;
+    config->Serial.Mode = static_cast<unsigned char>(modbusConfig.serial.mode);
+    config->Serial.Baudrate = modbusConfig.serial.baudrate;
+    config->Serial.StopBits =
+        static_cast<unsigned char>(modbusConfig.serial.stopBits);
+    config->Network.Mode =
+        static_cast<unsigned char>(modbusConfig.network.mode);
+    config->Network.Port = modbusConfig.network.port;
+  }
+}
+
+void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
+                                             TDeviceConfig_Modbus *config) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    bool changed = false;
+    bool valid = true;
+    Supla::Modbus::Config modbusConfig = {};
+    cfg->getBlob(
+        Supla::ConfigTag::ModbusCfgTag, reinterpret_cast<char *>(&modbusConfig),
+        sizeof(modbusConfig));
+
+    if (modbusConfig.modbusAddress != config->ModbusAddress) {
+      modbusConfig.modbusAddress = config->ModbusAddress;
+      changed = true;
+    }
+
+    if (config->Role > MODBUS_ROLE_SLAVE) {
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus role %d",
+                        config->Role);
+      valid = false;
+    } else if (static_cast<unsigned char>(modbusConfig.role) != config->Role) {
+      modbusConfig.role =
+          static_cast<Supla::Modbus::Role>(config->Role);
+      changed = true;
+    }
+
+    if (modbusConfig.slaveTimeoutMs != config->SlaveTimeoutMs) {
+      modbusConfig.slaveTimeoutMs = config->SlaveTimeoutMs;
+      changed = true;
+    }
+
+    if (config->Serial.Mode > MODBUS_SERIAL_MODE_ASCII) {
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus serial mode %d",
+                        config->Serial.Mode);
+      valid = false;
+    } else if (static_cast<unsigned char>(modbusConfig.serial.mode) !=
+               config->Serial.Mode) {
+      modbusConfig.serial.mode =
+          static_cast<Supla::Modbus::ModeSerial>(config->Serial.Mode);
+      changed = true;
+    }
+
+    if (modbusConfig.serial.baudrate != config->Serial.Baudrate) {
+      modbusConfig.serial.baudrate = config->Serial.Baudrate;
+      changed = true;
+    }
+
+    if (config->Serial.StopBits > MODBUS_SERIAL_STOP_BITS_TWO) {
+      SUPLA_LOG_WARNING(
+          "RemoteDeviceConfig: invalid modbus serial stop bits %d",
+          config->Serial.StopBits);
+      valid = false;
+    } else if (static_cast<unsigned char>(modbusConfig.serial.stopBits) !=
+               config->Serial.StopBits) {
+      modbusConfig.serial.stopBits =
+          static_cast<Supla::Modbus::SerialStopBits>(config->Serial.StopBits);
+      changed = true;
+    }
+
+    if (modbusConfig.validateAndFix(modbusProperties)) {
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: modbus validation problem");
+      valid = false;
+      changed = true;
+    }
+
+    if (changed) {
+      cfg->setBlob(
+          Supla::ConfigTag::ModbusCfgTag,
+          reinterpret_cast<const char *>(&modbusConfig),
+          sizeof(modbusConfig));
+      cfg->saveWithDelay(1000);
+      Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+    }
+
+    if (!valid) {
+      requireSetDeviceConfigFields |= fieldBit;
+    }
   }
 }

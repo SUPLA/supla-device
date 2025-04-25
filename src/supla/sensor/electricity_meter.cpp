@@ -53,17 +53,12 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
   for (int i = 0; i < MAX_PHASES; i++) {
     if (rawCurrent[i] > UINT16_MAX - 1) {
       over65A = true;
-      if (rawCurrent[i] / 10 > UINT16_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: current is too high %d", getChannelNumber(),
-                          rawCurrent[i]);
-        rawCurrent[i] = UINT16_MAX * 10;
-      }
     }
     if (rawActivePower[i] > INT32_MAX ||
         rawActivePower[i] < INT32_MIN) {
       activePowerInKW = true;
       if (rawActivePower[i] / 1000 > INT32_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: active power is too high %d",
+        SUPLA_LOG_WARNING("EM[%d]: active power overflow %d",
                           getChannelNumber(), rawActivePower[i]);
         int64_t sign = rawActivePower[i] < 0 ? -1 : 1;
         rawActivePower[i] = sign * INT32_MAX * 1000;
@@ -73,7 +68,7 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
         rawReactivePower[i] < INT32_MIN) {
       reactivePowerInKvar = true;
       if (rawReactivePower[i] / 1000 > INT32_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: reactive power is too high %d",
+        SUPLA_LOG_WARNING("EM[%d]: reactive power overflow %d",
                           getChannelNumber(), rawReactivePower[i]);
         int64_t sign = rawReactivePower[i] < 0 ? -1 : 1;
         rawReactivePower[i] = sign * INT32_MAX * 1000;
@@ -83,7 +78,7 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
         rawApparentPower[i] < INT32_MIN) {
       apparentPowerInKVA = true;
       if (rawApparentPower[i] / 1000 > INT32_MAX) {
-        SUPLA_LOG_WARNING("EM[%d]: apparent power is too high %d",
+        SUPLA_LOG_WARNING("EM[%d]: apparent power overflow %d",
                           getChannelNumber(), rawApparentPower[i]);
         int64_t sign = rawApparentPower[i] < 0 ? -1 : 1;
         rawApparentPower[i] = sign * INT32_MAX * 1000;
@@ -93,7 +88,14 @@ void Supla::Sensor::ElectricityMeter::updateChannelValues() {
 
   for (int i = 0; i < MAX_PHASES; i++) {
     if (over65A) {
-      emValue.m[0].current[i] = rawCurrent[i] / 10;
+      uint32_t current = rawCurrent[i] / 10;
+      if (current > UINT16_MAX) {
+        SUPLA_LOG_WARNING("EM[%d]: current overflow %d", getChannelNumber(),
+                          rawCurrent[i]);
+        emValue.m[0].current[i] = UINT16_MAX;
+      } else {
+        emValue.m[0].current[i] = current;
+      }
     } else {
       emValue.m[0].current[i] = rawCurrent[i];
     }

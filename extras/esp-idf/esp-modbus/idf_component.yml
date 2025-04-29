@@ -1,0 +1,23 @@
+dependencies:
+  idf: '>=5.0'
+description: ESP-MODBUS is the official Modbus library for Espressif SoCs.
+files:
+  exclude:
+  - docs
+  - docs/**/*
+  - test
+  - test/**/*
+  - '**/arch/'
+  - '**/arch/**/*'
+  - '**/pytest_embedded_log/**/*'
+  - '**/build*/**/*'
+  - '**/*.zip'
+  - '**/*.xml'
+  - '**/*.html'
+  - '**/*.pcap'
+  - '**/*.log'
+  - '**/*.code-workspace'
+  - '**/__pycache__/**/*'
+  - '**/.pytest_cache/**/*'
+url: https://github.com/espressif/esp-modbus
+version: 2.0.2

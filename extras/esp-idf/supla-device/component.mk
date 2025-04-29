@@ -79,6 +79,11 @@ COMPONENT_OBJS := \
   ../../../src/supla/protocol/mqtt.o \
   ../../../src/supla/protocol/mqtt_topic.o \
   ../../../src/supla/protocol/supla_srpc.o \
+	\
+  ../../../src/supla/modbus/modbus_configurator.o \
+  ../../../src/supla/modbus/modbus_client_handler.o \
+  ../../../src/supla/modbus/modbus_em_handler.o \
+  ../../../src/supla/modbus/modbus_device_handler.o \
   \
   ../../../src/supla/clock/clock.o \
 	\

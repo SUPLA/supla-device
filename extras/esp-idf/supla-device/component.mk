@@ -183,6 +183,7 @@ COMPONENT_SRCDIRS := ../../../src/supla-common \
 										 ../../../src/supla/sensor \
 										 ../../../src/supla/storage \
 										 ../../../src \
+										 ../../../src/supla/modbus \
 										 ../../../src/supla/network \
 										 ../../../src/supla/network/html \
 										 ../../../src/supla/protocol \

@@ -70,13 +70,13 @@ void ModbusParameters::send(Supla::WebSender* sender) {
   sender->send(">");
   sender->sendSelectItem(
       0, "Disabled", config.role == Supla::Modbus::Role::NotSet);
-  if (properties.protocol.slave) {
-    sender->sendSelectItem(
-        1, "Slave (server)", config.role == Supla::Modbus::Role::Slave);
-  }
   if (properties.protocol.master) {
     sender->sendSelectItem(
-        2, "Master (client)", config.role == Supla::Modbus::Role::Master);
+        1, "Master (client)", config.role == Supla::Modbus::Role::Master);
+  }
+  if (properties.protocol.slave) {
+    sender->sendSelectItem(
+        2, "Slave (server)", config.role == Supla::Modbus::Role::Slave);
   }
   sender->send("</select>");
   sender->send("</div>");
@@ -175,13 +175,13 @@ void ModbusParameters::send(Supla::WebSender* sender) {
     }
     if (properties.stopBits.oneAndHalf) {
       sender->sendSelectItem(
-          0,
+          1,
           "1.5",
           config.serial.stopBits == Supla::Modbus::SerialStopBits::OneAndHalf);
     }
     if (properties.stopBits.two) {
       sender->sendSelectItem(
-          1, "2", config.serial.stopBits == Supla::Modbus::SerialStopBits::Two);
+          2, "2", config.serial.stopBits == Supla::Modbus::SerialStopBits::Two);
     }
     sender->send("</select>");
     sender->send("</div>");

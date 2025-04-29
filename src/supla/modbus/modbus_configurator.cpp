@@ -102,6 +102,23 @@ bool Supla::Modbus::Config::validateAndFix(const ConfigProperties &properties) {
     role = Role::NotSet;
     changed = true;
   }
+  if (serial.mode == ModeSerial::Rtu && !properties.protocol.rtu) {
+    serial.mode = ModeSerial::Disabled;
+    changed = true;
+  }
+  if (serial.mode == ModeSerial::Ascii && !properties.protocol.ascii) {
+    serial.mode = ModeSerial::Disabled;
+    changed = true;
+  }
+  if (network.mode == ModeNetwork::Tcp && !properties.protocol.tcp) {
+    network.mode = ModeNetwork::Disabled;
+    changed = true;
+  }
+  if (network.mode == ModeNetwork::Udp && !properties.protocol.udp) {
+    network.mode = ModeNetwork::Disabled;
+    changed = true;
+  }
+
   if (modbusAddress < 1 || modbusAddress > 247) {
     modbusAddress = 1;
     changed = true;
@@ -258,7 +275,7 @@ void Configurator::setProperties(
 void Configurator::printConfig() const {
   SUPLA_LOG_INFO(
       "Modbus config: %s, address: %d, serial mode: %s, baudrate: %d, "
-      "stop bits: %d, network mode: %s, port: %d",
+      "stop bits: %s, network mode: %s, port: %d",
       config.role == Supla::Modbus::Role::NotSet   ? "disabled"
       : config.role == Supla::Modbus::Role::Master ? "master"
                                                    : "slave",
@@ -269,7 +286,10 @@ void Configurator::printConfig() const {
                 ? "RTU"
                 : "ASCII",
       config.serial.baudrate,
-      config.serial.stopBits,
+      config.serial.stopBits == Supla::Modbus::SerialStopBits::One ? "1"
+      : config.serial.stopBits == Supla::Modbus::SerialStopBits::OneAndHalf
+            ? "1.5"
+            : "2",
       config.network.mode == Supla::Modbus::ModeNetwork::Disabled
           ? "disabled"
           : config.network.mode == Supla::Modbus::ModeNetwork::Tcp

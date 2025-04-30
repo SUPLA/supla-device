@@ -18,8 +18,8 @@
 
 // It use ca. 20kB RAM, so ESP32 is highly recomended
 
-#ifndef SRC_SUPLA_PROTOCOL_AQUECO_H_
-#define SRC_SUPLA_PROTOCOL_AQUECO_H_
+#ifndef SRC_SUPLA_PROTOCOL_AQI_ECO_H_
+#define SRC_SUPLA_PROTOCOL_AQI_ECO_H_
 
 #include <supla/version.h>
 #include <supla/sensor/general_purpose_measurement.h>
@@ -36,7 +36,8 @@ namespace Supla {
 namespace Protocol {
 class AQIECO : public Supla::Protocol::WeatherSender {
  public:
-  explicit AQIECO(Supla::Network* _network, char token[], int refresh=180, char server[]="api.aqi.eco", int id=0) 
+  explicit AQIECO(Supla::Network* _network, char token[], int refresh=180,
+    char server[]="api.aqi.eco", int id=0)
   : Supla::Protocol::WeatherSender(_network) {
     // serverAddress
     strncpy(serverAddress, server, 32);
@@ -181,4 +182,4 @@ class AQIECO : public Supla::Protocol::WeatherSender {
 }  // namespace Protocol
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_PROTOCOL_AQUECO_H_
+#endif  // SRC_SUPLA_PROTOCOL_AQI_ECO_H_

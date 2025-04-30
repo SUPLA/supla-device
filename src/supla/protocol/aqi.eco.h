@@ -53,7 +53,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
     SUPLA_LOG_DEBUG("aqi.eco: token: %s", apiToken);
 
     // refreshTime
-    if (refresh<120) {
+    if (refresh < 120) {
       refreshTime = 120;
     } else {
       refreshTime = refresh;
@@ -75,7 +75,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
       SUPLA_LOG_DEBUG("aqi.eco: token złej długości albo pusty: %s", apiToken);
       return false;
     }
-
+  
     StaticJsonDocument<768> jsonBuffer;
     JsonObject json = jsonBuffer.to<JsonObject>();
 
@@ -122,7 +122,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
             type = "conc_co2_ppm";
             break;
         }
-
+  
         if (!isnan(value)) {
           JsonObject jo = sensordatavalues.createNestedObject();
           jo["value_type"] = type;
@@ -160,8 +160,9 @@ class AQIECO : public Supla::Protocol::WeatherSender {
         SUPLA_LOG_DEBUG("aqi.eco: no bytes to read from %s", serverAddress);
         return false;
       }
-      SUPLA_LOG_DEBUG("aqi.eco: reading from %s: %d bytes", serverAddress, client.available());
-      
+      SUPLA_LOG_DEBUG("aqi.eco: reading from %s: %d bytes",
+        serverAddress, client.available());
+
       output[client.available()] = 0;
       for (int i=0; client.available(); i++) {
         output[i] = client.read();
@@ -174,7 +175,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
     }
     return false;
   }
-  
+
  private:
   char apiToken[33];
   char serverAddress[33];

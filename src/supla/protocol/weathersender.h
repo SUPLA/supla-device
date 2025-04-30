@@ -54,7 +54,7 @@ class WeatherSender : public Supla::Element {
     lastSendTime = millis() - 100 * 1000;
   }
 
-  void addSensor(Supla::SenorType type, Supla::Element* sensor, 
+  void addSensor(Supla::SenorType type, Supla::Element* sensor,
       double shift = 0.0, double multiplier = 1.0, int option = 0) {
     SUPLA_LOG_DEBUG("aqi.eco: added sensor [%d]", type);
     sensors[type] = sensor;
@@ -105,7 +105,8 @@ class WeatherSender : public Supla::Element {
         value = ((Supla::Sensor::Rain*)(sensors[type]))->getValue();
         break;
       case Supla::SenorType::CO2:
-        value = ((Supla::Sensor::GeneralPurposeMeasurement*)(sensors[type]))->getValue();
+        value = ((Supla::Sensor::GeneralPurposeMeasurement*)
+          (sensors[type]))->getValue();
         break;
     }
 

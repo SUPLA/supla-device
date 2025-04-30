@@ -21,6 +21,7 @@
 #ifndef SRC_SUPLA_PROTOCOL_AQUECO_H_
 #define SRC_SUPLA_PROTOCOL_AQUECO_H_
 
+#include <supla/version.h>
 #include <supla/sensor/general_purpose_measurement.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/therm_hygro_press_meter.h>
@@ -29,15 +30,148 @@
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
 #include <supla/sensor/particle_meter.h>
-#include <supla/protocol/websender.h>
+#include <supla/protocol/weathersender.h>
 
 namespace Supla {
 namespace Protocol {
-class AQIECO : public Supla::Protocol::WebSender {
+class AQIECO : public Supla::Protocol::WeatherSender {
  public:
-  explicit AQIECO(Supla::Network* _network, char token[], int refresh=180, char server[]="api.aqi.eco", int id=0);
+  explicit AQIECO(Supla::Network* _network, char token[], int refresh=180, char server[]="api.aqi.eco", int id=0) 
+  : Supla::Protocol::WeatherSender(_network) {
+    // serverAddress
+    strncpy(serverAddress, server, 32);
+    serverAddress[32] = 0;
 
-  bool sendData() override;
+    // apiToken
+    if (strlen(token) == 32) {
+      strncpy(apiToken, token, 32);
+      apiToken[32] = 0;
+    } else {
+      apiToken[0] = 0;
+    }
+    SUPLA_LOG_DEBUG("aqi.eco: token: %s", apiToken);
+
+    // refreshTime
+    if (refresh<120) {
+      refreshTime = 120;  
+    } else {
+      refreshTime = refresh;
+    }
+    SUPLA_LOG_DEBUG("aqi.eco: refresh time: %d", refreshTime);
+
+    // sensorId
+    if (id == 0) {
+      uint8_t mac[6] = {};
+      _network->getMacAddr(mac);
+      sensorId = ((mac[2]*256+mac[3])*256+mac[4])*256+mac[5];
+    } else {
+      sensorId = id;
+    }
+  }
+
+  bool sendData() override {
+    if (strlen(apiToken) != 32) {
+      SUPLA_LOG_DEBUG("aqi.eco: token złej długości albo pusty: %s", apiToken);
+      return false;
+    }
+    
+    StaticJsonDocument<768> jsonBuffer;
+    JsonObject json = jsonBuffer.to<JsonObject>();
+
+    json["esp8266id"] = sensorId;
+    json["software_version"] = "Supla_" SUPLA_SHORT_VERSION;
+    JsonArray sensordatavalues = json.createNestedArray("sensordatavalues");
+
+    for (int i=0; i<MAXSENSORS; i++) {
+      if (sensors[i]) {
+        double value = getSensorValue(i);
+        String type = "unknown";
+        switch(i) {
+          case Supla::SenorType::PM1:
+            type = "SPS30_P0";
+            break;
+          case Supla::SenorType::PM2_5:
+            type = "SPS30_P2";
+            break;
+          case Supla::SenorType::PM4:
+            type = "SPS30_P4";
+            break;
+          case Supla::SenorType::PM10:
+            type = "SPS30_P1";
+            break;
+          case Supla::SenorType::TEMP:
+            type = "BME280_temperature";
+            break;
+          case Supla::SenorType::HUMI:
+            type = "BME280_humidity";
+            break;
+          case Supla::SenorType::PRESS:
+            type = "BME280_pressure";
+            break;
+          case Supla::SenorType::LIGHT:
+            type = "ambient_light";
+            break;
+          case Supla::SenorType::WIND:
+            type = "wind_speed";
+            break;
+          case Supla::SenorType::RAIN:
+            type = "rainfall";
+            break;
+          case Supla::SenorType::CO2:
+            type = "conc_co2_ppm";
+            break;
+        }
+        
+        if (!isnan(value)) {
+          JsonObject jo = sensordatavalues.createNestedObject();
+          jo["value_type"] = type;
+          jo["value"] = value;
+        } else {
+          return false;
+        }
+      }
+    }
+    char output[768];
+    serializeJson(json, output, 768);
+    Serial.print("aqi.eco: JSON: ");
+    Serial.println(output);
+
+    WiFiClientSecure client;
+    client.setInsecure();
+    if (client.connect(serverAddress, 443)) {
+      client.print("POST /update/");
+      client.print(apiToken);
+      client.println(" HTTP/1.1");
+      client.print("Host: ");
+      client.println(serverAddress);
+      client.println("Content-Type: application/json");
+      client.print("Content-Length: ");
+      client.println(strlen(output));
+      client.println();
+      client.println(output);
+
+      SUPLA_LOG_DEBUG("aqi.eco: sended %d bytes to %s/update/%s", strlen(output), serverAddress, apiToken);
+
+      // waiting for response
+      delay(100);
+      if (!client.available()) {
+        SUPLA_LOG_DEBUG("aqi.eco: no bytes to read from %s", serverAddress);
+        return false;
+      }
+      SUPLA_LOG_DEBUG("aqi.eco: reading from %s: %d bytes", serverAddress, client.available());
+      
+      output[client.available()] = 0;
+      for (int i=0; client.available(); i++) {
+        output[i] = client.read();
+        if (output[i] == '\n') {
+          output[i] = 0;
+        }
+      }
+      SUPLA_LOG_DEBUG("aqi.eco: response from %s: %s", serverAddress, output);
+      return true;
+    }
+    return false;
+  }
   
  private:
   char apiToken[33];

@@ -48,13 +48,14 @@ class WeatherSender : public Supla::Element {
  public:
   explicit WeatherSender(Supla::Network* _network) {
     network = _network;
-    for (int i=0; i<MAXSENSORS; i++) {
+    for (int i=0; i < MAXSENSORS; i++) {
       sensors[i] = nullptr;
     }
     lastSendTime = millis() - 100 * 1000;
   }
 
-  void addSensor(Supla::SenorType type, Supla::Element* sensor, double shift = 0.0, double multiplier = 1.0, int option = 0) {
+  void addSensor(Supla::SenorType type, Supla::Element* sensor, double shift = 0.0,
+      double multiplier = 1.0, int option = 0) {
     SUPLA_LOG_DEBUG("aqi.eco: added sensor [%d]", type);
     sensors[type] = sensor;
     shifts[type] = shift;
@@ -69,7 +70,7 @@ class WeatherSender : public Supla::Element {
       return value;
     }
 
-    switch(type) {
+    switch (type) {
       case Supla::SenorType::PM1:
         value = ((Supla::Sensor::ParticleMeter*)(sensors[type]))->getPM1();
         break;
@@ -89,7 +90,7 @@ class WeatherSender : public Supla::Element {
         value = ((Supla::Sensor::ThermHygroMeter*)(sensors[type]))->getHumi();
         break;
       case Supla::SenorType::PRESS:
-        // TODO: Supla::Sensor:Pressure
+        // do zrobienia: Supla::Sensor:Pressure
         value = ((Supla::Sensor::ThermHygroPressMeter*)(sensors[type]))->getPressure()*100;
         break;
       case Supla::SenorType::LIGHT:

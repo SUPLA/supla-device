@@ -75,7 +75,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
       SUPLA_LOG_DEBUG("aqi.eco: token złej długości albo pusty: %s", apiToken);
       return false;
     }
-  
+
     StaticJsonDocument<768> jsonBuffer;
     JsonObject json = jsonBuffer.to<JsonObject>();
 
@@ -122,7 +122,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
             type = "conc_co2_ppm";
             break;
         }
-  
+
         if (!isnan(value)) {
           JsonObject jo = sensordatavalues.createNestedObject();
           jo["value_type"] = type;

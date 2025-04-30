@@ -54,8 +54,8 @@ class WeatherSender : public Supla::Element {
     lastSendTime = millis() - 100 * 1000;
   }
 
-  void addSensor(Supla::SenorType type, Supla::Element* sensor, double shift = 0.0,
-      double multiplier = 1.0, int option = 0) {
+  void addSensor(Supla::SenorType type, Supla::Element* sensor, 
+      double shift = 0.0, double multiplier = 1.0, int option = 0) {
     SUPLA_LOG_DEBUG("aqi.eco: added sensor [%d]", type);
     sensors[type] = sensor;
     shifts[type] = shift;
@@ -91,10 +91,12 @@ class WeatherSender : public Supla::Element {
         break;
       case Supla::SenorType::PRESS:
         // do zrobienia: Supla::Sensor:Pressure
-        value = ((Supla::Sensor::ThermHygroPressMeter*)(sensors[type]))->getPressure()*100;
+        value = ((Supla::Sensor::ThermHygroPressMeter*)
+          (sensors[type]))->getPressure()*100;
         break;
       case Supla::SenorType::LIGHT:
-        value = ((Supla::Sensor::GeneralPurposeMeasurement*)(sensors[type]))->getValue();
+        value = ((Supla::Sensor::GeneralPurposeMeasurement*)
+          (sensors[type]))->getValue();
         break;
       case Supla::SenorType::WIND:
         value = ((Supla::Sensor::Wind*)(sensors[type]))->getValue();
@@ -114,7 +116,7 @@ class WeatherSender : public Supla::Element {
   }
 
   virtual bool sendData() = 0;
-  
+
   void iterateAlways() override {
     if (millis() - lastSendTime > refreshTime * 1000) {
       if (!Supla::Network::IsReady()) {
@@ -129,7 +131,7 @@ class WeatherSender : public Supla::Element {
   }
 
  protected:
-   int refreshTime = 180;
+  int refreshTime = 180;
   uint32_t lastSendTime = 0;
   Supla::Element* sensors[MAXSENSORS];
   double shifts[MAXSENSORS];

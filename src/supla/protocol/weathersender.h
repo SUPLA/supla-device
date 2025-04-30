@@ -16,8 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#ifndef SRC_SUPLA_PROTOCOL_WEBSENDER_H_
-#define SRC_SUPLA_PROTOCOL_WEBSENDER_H_
+#ifndef SRC_SUPLA_PROTOCOL_WEATHERSENDER_H_
+#define SRC_SUPLA_PROTOCOL_WEATHERSENDER_H_
 
 #include <SuplaDevice.h>
 #include <supla/tools.h>
@@ -44,9 +44,9 @@ enum SenorType : uint8_t {
 
 namespace Protocol {
 
-class WebSender : public Supla::Element {
+class WeatherSender : public Supla::Element {
  public:
-  explicit WebSender(Supla::Network* _network) {
+  explicit WeatherSender(Supla::Network* _network) {
     network = _network;
     for (int i=0; i<MAXSENSORS; i++) {
       sensors[i] = nullptr;
@@ -140,4 +140,4 @@ class WebSender : public Supla::Element {
 }  // namespace Protocol
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_PROTOCOL_WEBSENDER_H_
+#endif  // SRC_SUPLA_PROTOCOL_WEATHERSENDER_H_

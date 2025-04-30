@@ -36,8 +36,8 @@ namespace Supla {
 namespace Protocol {
 class AQIECO : public Supla::Protocol::WeatherSender {
  public:
-  explicit AQIECO(Supla::Network* _network, char token[], int refresh=180,
-    char server[]="api.aqi.eco", int id=0)
+  explicit AQIECO(Supla::Network* _network, char token[], int refresh = 180,
+    char server[] = "api.aqi.eco", int id = 0)
   : Supla::Protocol::WeatherSender(_network) {
     // serverAddress
     strncpy(serverAddress, server, 32);
@@ -54,7 +54,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
 
     // refreshTime
     if (refresh<120) {
-      refreshTime = 120;  
+      refreshTime = 120;
     } else {
       refreshTime = refresh;
     }
@@ -75,7 +75,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
       SUPLA_LOG_DEBUG("aqi.eco: token złej długości albo pusty: %s", apiToken);
       return false;
     }
-    
+
     StaticJsonDocument<768> jsonBuffer;
     JsonObject json = jsonBuffer.to<JsonObject>();
 
@@ -83,11 +83,11 @@ class AQIECO : public Supla::Protocol::WeatherSender {
     json["software_version"] = "Supla_" SUPLA_SHORT_VERSION;
     JsonArray sensordatavalues = json.createNestedArray("sensordatavalues");
 
-    for (int i=0; i<MAXSENSORS; i++) {
+    for (int i=0; i < MAXSENSORS; i++) {
       if (sensors[i]) {
         double value = getSensorValue(i);
         String type = "unknown";
-        switch(i) {
+        switch (i) {
           case Supla::SenorType::PM1:
             type = "SPS30_P0";
             break;
@@ -122,7 +122,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
             type = "conc_co2_ppm";
             break;
         }
-        
+
         if (!isnan(value)) {
           JsonObject jo = sensordatavalues.createNestedObject();
           jo["value_type"] = type;
@@ -151,7 +151,8 @@ class AQIECO : public Supla::Protocol::WeatherSender {
       client.println();
       client.println(output);
 
-      SUPLA_LOG_DEBUG("aqi.eco: sended %d bytes to %s/update/%s", strlen(output), serverAddress, apiToken);
+      SUPLA_LOG_DEBUG("aqi.eco: sended %d bytes to %s/update/%s",
+        strlen(output), serverAddress, apiToken);
 
       // waiting for response
       delay(100);

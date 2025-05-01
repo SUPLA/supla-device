@@ -108,6 +108,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
             break;
           case Supla::SenorType::PRESS:
             type = "BME280_pressure";
+            value *= 100;
             break;
           case Supla::SenorType::LIGHT:
             type = "ambient_light";

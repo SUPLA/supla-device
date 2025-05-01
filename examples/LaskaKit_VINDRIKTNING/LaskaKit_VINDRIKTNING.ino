@@ -95,17 +95,20 @@ void setup() {
   // start parameters from memory
   Supla::Storage::Init();
 
+  // create optional PM10 Channel on pm1006K sensor to read PM10 calculated value (need to send to aqi.eco)
+  pm1006k->createPM10Channel();
+
   // aqi.eco sender
   const char AQIPARAM[] = "aqitk";
   new Supla::Html::CustomTextParameter(AQIPARAM, "aqi.eco Token", 32);
   char token[33] = {};
   Supla::Storage::ConfigInstance()->getString(AQIPARAM, token, 33);
   auto aqieco = new Supla::Protocol::AQIECO(&wifi, token, 120);
-  aqieco->addSensor(Supla::SenorType::PM2_5, pm1006k);
-  aqieco->addSensor(Supla::SenorType::PM10, pm1006k);
-  aqieco->addSensor(Supla::SenorType::TEMP, bme280);
-  aqieco->addSensor(Supla::SenorType::HUMI, bme280);
-  aqieco->addSensor(Supla::SenorType::PRESS, bme280);
+  aqieco->addSensor(Supla::SenorType::PM2_5, pm1006k->getPM2_5channel());
+  aqieco->addSensor(Supla::SenorType::PM10, pm1006k->getPM10channel());
+  aqieco->addSensor(Supla::SenorType::TEMP, bme280->getChannel());
+  aqieco->addSensor(Supla::SenorType::HUMI, bme280->getChannel());
+  aqieco->addSensor(Supla::SenorType::PRESS, bme280->getSecondaryChannel());
 
   SuplaDevice.setName(DEV_NAME);
   SuplaDevice.begin();

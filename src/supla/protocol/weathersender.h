@@ -54,12 +54,9 @@ class WeatherSender : public Supla::Element {
     lastSendTime = millis() - 100 * 1000;
   }
 
-  void addSensor(Supla::SenorType type, Supla::Element* sensor,
-      double shift = 0.0, double multiplier = 1.0, int option = 0) {
+  void addSensor(Supla::SenorType type, Supla::LocalAction* sensor, int option = 0) {
     SUPLA_LOG_DEBUG("weathersender: added sensor [%d]", type);
     sensors[type] = sensor;
-    shifts[type] = shift;
-    multipliers[type] = multiplier;
     options[type] = option;
   }
 
@@ -72,65 +69,61 @@ class WeatherSender : public Supla::Element {
 
     switch (type) {
       case Supla::SenorType::PM1:
-        value = ((Supla::Sensor::ParticleMeter*)(sensors[type]))
-          ->getPM1channel()->getCalculatedValue();
+        value = ((Supla::Sensor::GeneralPurposeChannelBase*)(sensors[type]))
+          ->getCalculatedValue();
         SUPLA_LOG_DEBUG("weathersender: pm1.0 = %.2f", value);
         break;
       case Supla::SenorType::PM2_5:
-        value = ((Supla::Sensor::ParticleMeter*)(sensors[type]))
-          ->getPM2_5channel()->getCalculatedValue();
+        value = ((Supla::Sensor::GeneralPurposeChannelBase*)(sensors[type]))
+          ->getCalculatedValue();
         SUPLA_LOG_DEBUG("weathersender: pm2.5 = %.2f", value);
         break;
       case Supla::SenorType::PM4:
-        value = ((Supla::Sensor::ParticleMeter*)(sensors[type]))
-          ->getPM4channel()->getCalculatedValue();
+        value = ((Supla::Sensor::GeneralPurposeChannelBase*)(sensors[type]))
+          ->getCalculatedValue();
         SUPLA_LOG_DEBUG("weathersender: pm4 = %.2f", value);
         break;
       case Supla::SenorType::PM10:
-        value = ((Supla::Sensor::ParticleMeter*)(sensors[type]))
-          ->getPM10channel()->getCalculatedValue();
+        value = ((Supla::Sensor::GeneralPurposeChannelBase*)(sensors[type]))
+          ->getCalculatedValue();
         SUPLA_LOG_DEBUG("weathersender: pm10 = %.2f", value);
         break;
       case Supla::SenorType::TEMP:
-        value = ((Supla::Sensor::ThermHygroMeter*)(sensors[type]))
-          ->getChannel()->getLastTemperature();
+        value = ((Supla::Channel*)(sensors[type]))
+          ->getLastTemperature();
         SUPLA_LOG_DEBUG("weathersender: temperature = %.2f", value);
         break;
       case Supla::SenorType::HUMI:
-        value = ((Supla::Sensor::ThermHygroMeter*)(sensors[type]))
-          ->getChannel()->getValueDoubleSecond();
+        value = ((Supla::Channel*)(sensors[type]))
+          ->getValueDoubleSecond();
         SUPLA_LOG_DEBUG("weathersender: humidity = %.2f", value);
         break;
       case Supla::SenorType::PRESS:
-        // do zrobienia: Supla::Sensor:Pressure
-        value = ((Supla::Sensor::ThermHygroMeter*)(sensors[type]))
-          ->getSecondaryChannel()->getValueDouble();
+        value = ((Supla::Channel*)(sensors[type]))
+          ->getValueDouble();
         SUPLA_LOG_DEBUG("weathersender: press = %.2f", value);
         break;
       case Supla::SenorType::LIGHT:
-        value = ((Supla::Sensor::GeneralPurposeMeasurement*)(sensors[type]))
+        value = ((Supla::Sensor::GeneralPurposeChannelBase*)(sensors[type]))
           ->getCalculatedValue();
         SUPLA_LOG_DEBUG("weathersender: light = %.2f", value);
         break;
       case Supla::SenorType::WIND:
-        value = ((Supla::Sensor::Wind*)(sensors[type]))
-          ->getChannel()->getValueDouble();
+        value = ((Supla::Channel*)(sensors[type]))
+          ->getValueDouble();
         SUPLA_LOG_DEBUG("weathersender: wind = %.2f", value);
         break;
       case Supla::SenorType::RAIN:
-        value = ((Supla::Sensor::Rain*)(sensors[type]))
-          ->getChannel()->getValueDouble();
+        value = ((Supla::Channel*)(sensors[type]))
+          ->getValueDouble();
         SUPLA_LOG_DEBUG("weathersender: rain = %.2f", value);
         break;
       case Supla::SenorType::CO2:
-        value = ((Supla::Sensor::GeneralPurposeMeasurement*)(sensors[type]))
+        value = ((Supla::Sensor::GeneralPurposeChannelBase*)(sensors[type]))
           ->getCalculatedValue();
         SUPLA_LOG_DEBUG("weathersender: co2 = %.2f", value);
         break;
     }
-
-    value *= multipliers[type];
-    value += shifts[type];
 
     return value;
   }
@@ -153,9 +146,7 @@ class WeatherSender : public Supla::Element {
  protected:
   int refreshTime = 180;
   uint32_t lastSendTime = 0;
-  Supla::Element* sensors[MAXSENSORS];
-  double shifts[MAXSENSORS];
-  double multipliers[MAXSENSORS];
+  Supla::LocalAction* sensors[MAXSENSORS];
   int options[MAXSENSORS];
   Supla::Network* network = nullptr;
 };

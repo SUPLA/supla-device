@@ -86,6 +86,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/network/html/em_ct_type.cpp
   ../../../src/supla/network/html/roller_shutter_parameters.cpp
   ../../../src/supla/network/html/button_refresh.cpp
+  ../../../src/supla/network/html/modbus_parameters.cpp
   ../../../src/supla/network/client.cpp
   ../../../src/supla/network/ip_address.cpp
 
@@ -95,6 +96,11 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/protocol/mqtt_topic.cpp
 
   ../../../src/supla/clock/clock.cpp
+
+  ../../../src/supla/modbus/modbus_configurator.cpp
+  ../../../src/supla/modbus/modbus_client_handler.cpp
+  ../../../src/supla/modbus/modbus_em_handler.cpp
+  ../../../src/supla/modbus/modbus_device_handler.cpp
 
   ../../../src/supla/control/action_trigger.cpp
   ../../../src/supla/control/bistable_relay.cpp

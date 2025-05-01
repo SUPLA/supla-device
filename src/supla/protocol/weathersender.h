@@ -54,7 +54,8 @@ class WeatherSender : public Supla::Element {
     lastSendTime = millis() - 100 * 1000;
   }
 
-  void addSensor(Supla::SenorType type, Supla::LocalAction* sensor, int option = 0) {
+  void addSensor(Supla::SenorType type, Supla::LocalAction* sensor,
+      int option = 0) {
     SUPLA_LOG_DEBUG("weathersender: added sensor [%d]", type);
     sensors[type] = sensor;
     options[type] = option;

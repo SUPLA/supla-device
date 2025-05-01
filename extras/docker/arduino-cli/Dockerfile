@@ -28,7 +28,8 @@ RUN arduino-cli core install arduino:avr && \
     arduino-cli lib install PZEM004Tv30 && \
     cd ~/Arduino/libraries && \
     git clone https://github.com/olehs/PZEM004T && \
-    git clone https://github.com/kevinlutzer/Arduino-PM1006K
+    git clone https://github.com/kevinlutzer/Arduino-PM1006K && \
+    git clone https://github.com/arduino-libraries/Arduino_JSON
 
 # Download supla-device
 RUN git clone https://github.com/SUPLA/supla-device.git && \

@@ -135,8 +135,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
     }
     char output[768];
     serializeJson(json, output, 768);
-    Serial.print("aqi.eco: JSON: ");
-    Serial.println(output);
+    SUPLA_LOG_DEBUG("aqi.eco: JSON: %s", output);
 
     WiFiClientSecure client;
     client.setInsecure();

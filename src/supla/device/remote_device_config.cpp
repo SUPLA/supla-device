@@ -31,12 +31,17 @@ using Supla::Device::RemoteDeviceConfig;
 uint64_t RemoteDeviceConfig::fieldBitsUsedByDevice = 0;
 uint64_t RemoteDeviceConfig::homeScreenContentAvailable = 0;
 Supla::Modbus::ConfigProperties RemoteDeviceConfig::modbusProperties;
+uint8_t RemoteDeviceConfig::resendAttempts = 0;
 
 RemoteDeviceConfig::RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration)
     : firstDeviceConfigAfterRegistration(firstDeviceConfigAfterRegistration) {
 }
 
 RemoteDeviceConfig::~RemoteDeviceConfig() {
+}
+
+void RemoteDeviceConfig::ClearResendAttemptsCounter() {
+  resendAttempts = 0;
 }
 
 void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
@@ -1137,6 +1142,10 @@ void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
       changed = true;
     }
 
+    if (modbusProperties != config->Properties) {
+      valid = false;
+    }
+
     if (changed) {
       cfg->setBlob(
           Supla::ConfigTag::ModbusCfgTag,
@@ -1147,7 +1156,14 @@ void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
     }
 
     if (!valid) {
-      requireSetDeviceConfigFields |= fieldBit;
+      resendAttempts++;
+      if (resendAttempts > 3) {
+        SUPLA_LOG_WARNING(
+            "RemoteDeviceConfig: resending modbus config failed too many "
+            "times");
+      } else {
+        requireSetDeviceConfigFields |= fieldBit;
+      }
     }
   }
 }

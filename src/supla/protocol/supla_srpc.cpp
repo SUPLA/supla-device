@@ -616,6 +616,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
     delete remoteDeviceConfig;
     remoteDeviceConfig = nullptr;
   }
+  Supla::Device::RemoteDeviceConfig::ClearResendAttemptsCounter();
 
   switch (registerDeviceResult->result_code) {
     // OK scenario

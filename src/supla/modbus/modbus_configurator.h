@@ -87,6 +87,8 @@ struct ConfigProperties {
   ConfigProperties();
   bool operator==(const ConfigProperties &other) const;
   bool operator!=(const ConfigProperties &other) const;
+  bool operator==(const ModbusConfigProperties &other) const;
+  bool operator!=(const ModbusConfigProperties &other) const;
 };
 
 struct Config {

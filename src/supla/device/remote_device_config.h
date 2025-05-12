@@ -52,6 +52,7 @@ class RemoteDeviceConfig {
   static uint64_t HomeScreenIntToBit(int mode);
   static void SetModbusProperties(
       const Supla::Modbus::ConfigProperties &modbusProperties);
+  static void ClearResendAttemptsCounter();
 
   explicit RemoteDeviceConfig(bool firstDeviceConfigAfterRegistration = false);
   virtual ~RemoteDeviceConfig();
@@ -111,6 +112,7 @@ class RemoteDeviceConfig {
   static uint64_t fieldBitsUsedByDevice;
   static uint64_t homeScreenContentAvailable;
   static Supla::Modbus::ConfigProperties modbusProperties;
+  static uint8_t resendAttempts;
 };
 
 }  // namespace Device

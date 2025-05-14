@@ -664,7 +664,7 @@ void HvacBase::iterateAlways() {
                        mySetpointCool, masterSetpointCool);
         if (!applyNewRuntimeSettings(
                 masterMode, masterSetpointHeat, masterSetpointCool)) {
-          setTargetMode(SUPLA_HVAC_MODE_OFF);
+          setTargetMode(SUPLA_HVAC_MODE_OFF, false);
         }
       }
     }
@@ -710,7 +710,7 @@ void HvacBase::iterateAlways() {
   }
 
   if (!isModeSupported(channel.getHvacMode())) {
-    setTargetMode(SUPLA_HVAC_MODE_OFF);
+    setTargetMode(SUPLA_HVAC_MODE_OFF, false);
   }
 
   if (channel.isHvacFlagWeeklySchedule()) {
@@ -785,7 +785,7 @@ void HvacBase::iterateAlways() {
     if (getForcedOffSensorState()) {
       if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF) {
         channel.setHvacFlagForcedOffBySensor(true);
-        setTargetMode(SUPLA_HVAC_MODE_OFF);
+        setTargetMode(SUPLA_HVAC_MODE_OFF, false);
         SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit (with turn off)",
                         getChannelNumber());
         updateChannelState();
@@ -3217,6 +3217,7 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
   if (isModeSupported(mode)) {
     if (mode == SUPLA_HVAC_MODE_OFF) {
       storeLastWorkingMode();
+      channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
       if (!keepScheduleOn && channel.isHvacFlagWeeklySchedule()) {
         channel.setHvacFlagWeeklySchedule(false);
         lastWorkingMode.Mode = SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE;

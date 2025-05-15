@@ -3639,7 +3639,7 @@ typedef struct {
 
 typedef TChannelConfig_PowerSwitch TChannelConfig_LightSwitch;
 
-// Staircase timer ext use SUPLA_CONFIG_TYPE_DEFAULT_EXT
+// Staircase timer ext use SUPLA_CONFIG_TYPE_EXTENDED
 typedef TChannelConfig_PowerSwitch TChannelConfig_StaircaseTimer_Ext;
 
 typedef struct {

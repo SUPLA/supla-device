@@ -54,6 +54,7 @@ class Network {
   static bool Iterate();
   static void SetConfigMode();
   static void SetNormalMode();
+  static void SetTestMode();
   static void SetSetupNeeded();
   static bool PopSetupNeeded();
   // returns MAC addres of the main network interface
@@ -75,6 +76,7 @@ class Network {
   virtual void uninit();
   virtual void setConfigMode();
   virtual void setNormalMode();
+  void setTestMode();
   virtual bool getMacAddr(uint8_t *);
   virtual void setHostname(const char *, int macSize);
   void generateHostname(const char *prefix, int macSize, char *output);
@@ -124,6 +126,7 @@ class Network {
   bool setupNeeded = false;
   bool useLocalIp = false;
   bool intfDisabledInConfig = false;
+  bool testMode = false;
 };
 
 };  // namespace Supla

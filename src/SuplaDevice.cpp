@@ -640,6 +640,7 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   if (deviceMode == Supla::DEVICE_MODE_NOT_SET) {
     deviceMode = Supla::DEVICE_MODE_NORMAL;
   } else if (deviceMode == Supla::DEVICE_MODE_TEST) {
+    Supla::Network::SetTestMode();
     char wifiApName[100] = {};
     const char test[] = "TEST-";
     snprintf(wifiApName, sizeof(wifiApName), "%s", test);

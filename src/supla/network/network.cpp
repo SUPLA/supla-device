@@ -153,6 +153,14 @@ void Network::SetNormalMode() {
   }
 }
 
+void Network::SetTestMode() {
+  auto ptr = firstNetIntf;
+  while (ptr) {
+    ptr->setTestMode();
+    ptr = ptr->nextNetIntf;
+  }
+}
+
 void Network::SetSetupNeeded() {
   auto ptr = firstNetIntf;
   while (ptr) {
@@ -364,6 +372,10 @@ void Network::setConfigMode() {
 void Network::setNormalMode() {
   mode = Supla::DEVICE_MODE_NORMAL;
   setupNeeded = true;
+}
+
+void Network::setTestMode() {
+  testMode = true;
 }
 
 void Network::uninit() {

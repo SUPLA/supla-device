@@ -69,6 +69,25 @@ Supla::Modbus::ConfigProperties::ConfigProperties() {
 }
 
 bool Supla::Modbus::ConfigProperties::operator==(
+    const ModbusConfigProperties &other) const {
+  return (protocol.master == other.Protocol.Master &&
+          protocol.slave == other.Protocol.Slave &&
+          protocol.rtu == other.Protocol.Rtu &&
+          protocol.ascii == other.Protocol.Ascii &&
+          protocol.tcp == other.Protocol.Tcp &&
+          protocol.udp == other.Protocol.Udp &&
+          baudrate.b4800 == other.Baudrate.B4800 &&
+          baudrate.b9600 == other.Baudrate.B9600 &&
+          baudrate.b19200 == other.Baudrate.B19200 &&
+          baudrate.b38400 == other.Baudrate.B38400 &&
+          baudrate.b57600 == other.Baudrate.B57600 &&
+          baudrate.b115200 == other.Baudrate.B115200 &&
+          stopBits.one == other.StopBits.One &&
+          stopBits.oneAndHalf == other.StopBits.OneAndHalf &&
+          stopBits.two == other.StopBits.Two);
+}
+
+bool Supla::Modbus::ConfigProperties::operator==(
     const ConfigProperties &other) const {
   return (protocol.master == other.protocol.master &&
           protocol.slave == other.protocol.slave &&
@@ -88,38 +107,55 @@ bool Supla::Modbus::ConfigProperties::operator==(
 }
 
 bool Supla::Modbus::ConfigProperties::operator!=(
-    const ConfigProperties &other) const {
+    const ModbusConfigProperties &other) const {
   return !(*this == other);
+}
+
+bool Supla::Modbus::ConfigProperties::operator!=(
+    const ConfigProperties &other) const {
+    return !(*this == other);
 }
 
 bool Supla::Modbus::Config::validateAndFix(const ConfigProperties &properties) {
   bool changed = false;
   if (role == Role::Slave && !properties.protocol.slave) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus role %d", role);
     role = Role::NotSet;
     changed = true;
   }
   if (role == Role::Master && !properties.protocol.master) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus role %d", role);
     role = Role::NotSet;
     changed = true;
   }
   if (serial.mode == ModeSerial::Rtu && !properties.protocol.rtu) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial mode %d",
+                      serial.mode);
     serial.mode = ModeSerial::Disabled;
     changed = true;
   }
   if (serial.mode == ModeSerial::Ascii && !properties.protocol.ascii) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial mode %d",
+                      serial.mode);
     serial.mode = ModeSerial::Disabled;
     changed = true;
   }
   if (network.mode == ModeNetwork::Tcp && !properties.protocol.tcp) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid network mode %d",
+                      network.mode);
     network.mode = ModeNetwork::Disabled;
     changed = true;
   }
   if (network.mode == ModeNetwork::Udp && !properties.protocol.udp) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid network mode %d",
+                      network.mode);
     network.mode = ModeNetwork::Disabled;
     changed = true;
   }
 
   if (modbusAddress < 1 || modbusAddress > 247) {
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid modbus address %d",
+                      modbusAddress);
     modbusAddress = 1;
     changed = true;
   }
@@ -158,11 +194,12 @@ bool Supla::Modbus::Config::validateAndFix(const ConfigProperties &properties) {
       break;
     }
     default: {
+      SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid serial baudrate %d",
+                        serial.baudrate);
       serial.baudrate = 19200;
       changed = true;
     }
   }
-
   return changed;
 }
 

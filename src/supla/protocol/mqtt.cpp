@@ -90,6 +90,20 @@ bool Supla::Protocol::Mqtt::onLoadConfig() {
     enabled = false;
   }
 
+  SUPLA_LOG_INFO(
+      "MQTT: Protocol %s, broker \"%s\", port %d, TLS %s, retain %s, QoS %d, "
+      "auth %s,"
+      "user \"%s\", password %s",
+      enabled ? "enabled" : "disabled",
+      server,
+      port,
+      useTls ? "enabled" : "disabled",
+      retainCfg ? "enabled" : "disabled",
+      qosCfg,
+      useAuth ? "enabled" : "disabled",
+      user,
+      strlen(password) > 0 ? "****" : "NOT SET");
+
   return configComplete;
 }
 

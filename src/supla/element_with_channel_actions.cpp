@@ -88,6 +88,10 @@ bool ConfigTypesBitmap::isSet(int configType) const {
     case SUPLA_CONFIG_TYPE_EXTENDED: {
       return extendedDefaultConfig == 1;
     }
+    case 1: {
+      // 1 is used in some older devices, so we just ignore it here
+      return false;
+    }
     default: {
       SUPLA_LOG_ERROR("ConfigTypesBitmap: Unknown config type: %d", configType);
       return false;
@@ -288,6 +292,11 @@ void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
   if (channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished) {
     channelConfigState = Supla::ChannelConfigState::None;
   }
+  if (receivedConfigTypes != usedConfigTypes) {
+    SUPLA_LOG_INFO("Channel[%d] some config is missing on server...",
+                   getChannelNumber());
+    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+  }
 }
 
 bool Supla::ElementWithChannelActions::iterateConnected() {
@@ -315,6 +324,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   if (result->Func == 0) {
     SUPLA_LOG_DEBUG("Channel[%d] disabled on server", getChannelNumber());
     channelConfigState = Supla::ChannelConfigState::None;
+    receivedConfigTypes = usedConfigTypes;
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
@@ -399,7 +409,7 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
     channelConfigState = Supla::ChannelConfigState::SetChannelConfigFailed;
   }
 
-  SUPLA_LOG_INFO("Channel[%d] Set channel config %s (%d) for %d",
+  SUPLA_LOG_INFO("Channel[%d] Set channel config %s (%d) for config type %d",
                  getChannelNumber(),
                  success ? "succeeded" : "failed",
                  result->Result,
@@ -441,6 +451,9 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
   if (!receivedConfigTypes.configFinishedReceived) {
     return true;
   }
+  if (getChannel()->getDefaultFunction() == 0) {
+    return true;
+  }
 
   if (channelConfigState == Supla::ChannelConfigState::LocalChangePending) {
     int nextConfigType = getNextConfigType();
@@ -476,8 +489,11 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                                       reinterpret_cast<void *>(channelConfig),
                                       channelConfigSize,
                                       nextConfigType)) {
-            SUPLA_LOG_INFO("Channel[%d] SetChannelConfig send",
-                           getChannelNumber());
+            SUPLA_LOG_INFO(
+                "Channel[%d] SetChannelConfig send, func %d, type %d",
+                getChannelNumber(),
+                defaultFunction,
+                nextConfigType);
             channelConfigState =
                 Supla::ChannelConfigState::SetChannelConfigSend;
             sendResult = true;

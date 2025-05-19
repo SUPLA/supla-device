@@ -29,6 +29,15 @@ class CustomIoMock : public Supla::Io {
       void, customDigitalWrite, (int channelNumber, uint8_t pin, uint8_t val));
   MOCK_METHOD(unsigned int, customPulseIn, (int channelNumber, uint8_t pin,
       uint8_t value, unsigned long timeoutMicro));
+  MOCK_METHOD(void,
+              customAnalogWrite,
+              (int channelNumber, uint8_t pin, int val));
+  MOCK_METHOD(int, customAnalogRead, (int channelNumber, uint8_t pin));
+  MOCK_METHOD(void,
+              customAttachInterrupt,
+              (uint8_t pin, void (*func)(void), int mode));
+  MOCK_METHOD(void, customDetachInterrupt, (uint8_t pin));
+  MOCK_METHOD(uint8_t, customPinToInterrupt, (uint8_t pin));
 };
 
 TEST(IoTests, PinMode) {

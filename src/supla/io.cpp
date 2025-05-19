@@ -203,49 +203,35 @@ Io::~Io() {
   }
 }
 
-void Io::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
-  (void)(channelNumber);
-  ::pinMode(pin, mode);
+void Io::customPinMode(int , uint8_t, uint8_t) {
 }
 
-int Io::customDigitalRead(int channelNumber, uint8_t pin) {
-  (void)(channelNumber);
-  return ::digitalRead(pin);
+int Io::customDigitalRead(int, uint8_t) {
+  return 0;
 }
 
-void Io::customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val) {
-  (void)(channelNumber);
-  ::digitalWrite(pin, val);
+void Io::customDigitalWrite(int, uint8_t, uint8_t) {
 }
 
-void Io::customAnalogWrite(int channelNumber, uint8_t pin, int val) {
-  (void)(channelNumber);
-  ::analogWrite(pin, val);
+void Io::customAnalogWrite(int, uint8_t, int) {
 }
 
-int Io::customAnalogRead(int channelNumber, uint8_t pin) {
-  (void)(channelNumber);
-  return ::analogRead(pin);
+int Io::customAnalogRead(int, uint8_t) {
+  return 0;
 }
 
-unsigned int Io::customPulseIn(int channelNumber,
-                               uint8_t pin,
-                               uint8_t value,
-                               uint64_t timeoutMicro) {
-  (void)(channelNumber);
-  return ::pulseIn(pin, value, timeoutMicro);
+unsigned int Io::customPulseIn(int, uint8_t, uint8_t, uint64_t) {
+  return 0;
 }
 
-void Io::customAttachInterrupt(uint8_t pin, void (*func)(void), int mode) {
-  ::attachInterrupt(pin, func, mode);
+void Io::customAttachInterrupt(uint8_t, void (*)(void), int) {
 }
 
-void Io::customDetachInterrupt(uint8_t pin) {
-  ::detachInterrupt(pin);
+void Io::customDetachInterrupt(uint8_t) {
 }
 
-uint8_t Io::customPinToInterrupt(uint8_t pin) {
-  return digitalPinToInterrupt(pin);
+uint8_t Io::customPinToInterrupt(uint8_t) {
+  return 0;
 }
 
 Io *Io::ioInstance = nullptr;

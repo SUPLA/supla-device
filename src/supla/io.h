@@ -79,18 +79,22 @@ class Io {
 
   explicit Io(bool useAsSingleton = true);
   virtual ~Io();
-  virtual void customPinMode(int channelNumber, uint8_t pin, uint8_t mode);
-  virtual int customDigitalRead(int channelNumber, uint8_t pin);
+  virtual void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) = 0;
+  virtual int customDigitalRead(int channelNumber, uint8_t pin) = 0;
   virtual unsigned int customPulseIn(int channelNumber,
       uint8_t pin,
       uint8_t value,
-      uint64_t timeoutMicro);
-  virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
-  virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
-  virtual int customAnalogRead(int channelNumber, uint8_t pin);
-  virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
-  virtual void customDetachInterrupt(uint8_t pin);
-  virtual uint8_t customPinToInterrupt(uint8_t pin);
+      uint64_t timeoutMicro) = 0;
+  virtual void customDigitalWrite(int channelNumber,
+                                  uint8_t pin,
+                                  uint8_t val) = 0;
+  virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val) = 0;
+  virtual int customAnalogRead(int channelNumber, uint8_t pin) = 0;
+  virtual void customAttachInterrupt(uint8_t pin,
+                                     void (*func)(void),
+                                     int mode) = 0;
+  virtual void customDetachInterrupt(uint8_t pin) = 0;
+  virtual uint8_t customPinToInterrupt(uint8_t pin) = 0;
 
  private:
   bool useAsSingleton = true;

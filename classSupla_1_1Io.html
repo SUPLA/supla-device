@@ -93,7 +93,7 @@ $(function(){ initResizable(false); });
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="classSupla_1_1Io-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Supla::Io Class Reference</div></div>
+  <div class="headertitle"><div class="title">Supla::Io Class Reference<span class="mlabels"><span class="mlabel abstract">abstract</span></span></div></div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
@@ -121,33 +121,33 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a92fecf4ff1afc12c2d49f283897dbcfd" id="r_a92fecf4ff1afc12c2d49f283897dbcfd"><td class="memItemLeft" align="right" valign="top"><a id="a92fecf4ff1afc12c2d49f283897dbcfd" name="a92fecf4ff1afc12c2d49f283897dbcfd"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>Io</b> (bool useAsSingleton=true)</td></tr>
 <tr class="separator:a92fecf4ff1afc12c2d49f283897dbcfd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f4dfdccefafbf1c096950dea6e824f8" id="r_a2f4dfdccefafbf1c096950dea6e824f8"><td class="memItemLeft" align="right" valign="top"><a id="a2f4dfdccefafbf1c096950dea6e824f8" name="a2f4dfdccefafbf1c096950dea6e824f8"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customPinMode</b> (int channelNumber, uint8_t pin, uint8_t mode)</td></tr>
-<tr class="separator:a2f4dfdccefafbf1c096950dea6e824f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab787f4a2008ac6da896d969dc6f3e3a2" id="r_ab787f4a2008ac6da896d969dc6f3e3a2"><td class="memItemLeft" align="right" valign="top"><a id="ab787f4a2008ac6da896d969dc6f3e3a2" name="ab787f4a2008ac6da896d969dc6f3e3a2"></a>
-virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>customDigitalRead</b> (int channelNumber, uint8_t pin)</td></tr>
-<tr class="separator:ab787f4a2008ac6da896d969dc6f3e3a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ebb0f8ff46978e852cf38af31363bff" id="r_a2ebb0f8ff46978e852cf38af31363bff"><td class="memItemLeft" align="right" valign="top"><a id="a2ebb0f8ff46978e852cf38af31363bff" name="a2ebb0f8ff46978e852cf38af31363bff"></a>
-virtual unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>customPulseIn</b> (int channelNumber, uint8_t pin, uint8_t value, uint64_t timeoutMicro)</td></tr>
-<tr class="separator:a2ebb0f8ff46978e852cf38af31363bff"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a77e44e7478e73bea8f40f641947182f7" id="r_a77e44e7478e73bea8f40f641947182f7"><td class="memItemLeft" align="right" valign="top"><a id="a77e44e7478e73bea8f40f641947182f7" name="a77e44e7478e73bea8f40f641947182f7"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customDigitalWrite</b> (int channelNumber, uint8_t pin, uint8_t val)</td></tr>
-<tr class="separator:a77e44e7478e73bea8f40f641947182f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a92fedb7f9438db32abb684ee8a812021" id="r_a92fedb7f9438db32abb684ee8a812021"><td class="memItemLeft" align="right" valign="top"><a id="a92fedb7f9438db32abb684ee8a812021" name="a92fedb7f9438db32abb684ee8a812021"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customAnalogWrite</b> (int channelNumber, uint8_t pin, int val)</td></tr>
-<tr class="separator:a92fedb7f9438db32abb684ee8a812021"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6669281c8f6dae0dffa860382b9390a6" id="r_a6669281c8f6dae0dffa860382b9390a6"><td class="memItemLeft" align="right" valign="top"><a id="a6669281c8f6dae0dffa860382b9390a6" name="a6669281c8f6dae0dffa860382b9390a6"></a>
-virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>customAnalogRead</b> (int channelNumber, uint8_t pin)</td></tr>
-<tr class="separator:a6669281c8f6dae0dffa860382b9390a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a173c2450a16166696e191940722fbdae" id="r_a173c2450a16166696e191940722fbdae"><td class="memItemLeft" align="right" valign="top"><a id="a173c2450a16166696e191940722fbdae" name="a173c2450a16166696e191940722fbdae"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customAttachInterrupt</b> (uint8_t pin, void(*func)(void), int mode)</td></tr>
-<tr class="separator:a173c2450a16166696e191940722fbdae"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a61d882619e1c38a8520b20e3a2315446" id="r_a61d882619e1c38a8520b20e3a2315446"><td class="memItemLeft" align="right" valign="top"><a id="a61d882619e1c38a8520b20e3a2315446" name="a61d882619e1c38a8520b20e3a2315446"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customDetachInterrupt</b> (uint8_t pin)</td></tr>
-<tr class="separator:a61d882619e1c38a8520b20e3a2315446"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afbf78f6ec2995e2bb6a473adc2d3c376" id="r_afbf78f6ec2995e2bb6a473adc2d3c376"><td class="memItemLeft" align="right" valign="top"><a id="afbf78f6ec2995e2bb6a473adc2d3c376" name="afbf78f6ec2995e2bb6a473adc2d3c376"></a>
-virtual uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>customPinToInterrupt</b> (uint8_t pin)</td></tr>
-<tr class="separator:afbf78f6ec2995e2bb6a473adc2d3c376"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a872203684f9ca110ac4de12bda4047ee" id="r_a872203684f9ca110ac4de12bda4047ee"><td class="memItemLeft" align="right" valign="top"><a id="a872203684f9ca110ac4de12bda4047ee" name="a872203684f9ca110ac4de12bda4047ee"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customPinMode</b> (int channelNumber, uint8_t pin, uint8_t mode)=0</td></tr>
+<tr class="separator:a872203684f9ca110ac4de12bda4047ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68b3350877c03f3ea0b6a3a1c4967c34" id="r_a68b3350877c03f3ea0b6a3a1c4967c34"><td class="memItemLeft" align="right" valign="top"><a id="a68b3350877c03f3ea0b6a3a1c4967c34" name="a68b3350877c03f3ea0b6a3a1c4967c34"></a>
+virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>customDigitalRead</b> (int channelNumber, uint8_t pin)=0</td></tr>
+<tr class="separator:a68b3350877c03f3ea0b6a3a1c4967c34"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a38e3e96a0cdf3ed745e77adaef552d4d" id="r_a38e3e96a0cdf3ed745e77adaef552d4d"><td class="memItemLeft" align="right" valign="top"><a id="a38e3e96a0cdf3ed745e77adaef552d4d" name="a38e3e96a0cdf3ed745e77adaef552d4d"></a>
+virtual unsigned int&#160;</td><td class="memItemRight" valign="bottom"><b>customPulseIn</b> (int channelNumber, uint8_t pin, uint8_t value, uint64_t timeoutMicro)=0</td></tr>
+<tr class="separator:a38e3e96a0cdf3ed745e77adaef552d4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cfef99812a2a13d063c7ac976b16fd4" id="r_a7cfef99812a2a13d063c7ac976b16fd4"><td class="memItemLeft" align="right" valign="top"><a id="a7cfef99812a2a13d063c7ac976b16fd4" name="a7cfef99812a2a13d063c7ac976b16fd4"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customDigitalWrite</b> (int channelNumber, uint8_t pin, uint8_t val)=0</td></tr>
+<tr class="separator:a7cfef99812a2a13d063c7ac976b16fd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af99ef99667f430877ed942acd77c2380" id="r_af99ef99667f430877ed942acd77c2380"><td class="memItemLeft" align="right" valign="top"><a id="af99ef99667f430877ed942acd77c2380" name="af99ef99667f430877ed942acd77c2380"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customAnalogWrite</b> (int channelNumber, uint8_t pin, int val)=0</td></tr>
+<tr class="separator:af99ef99667f430877ed942acd77c2380"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a078d6d887fd62bbe010f6d7a79fda32d" id="r_a078d6d887fd62bbe010f6d7a79fda32d"><td class="memItemLeft" align="right" valign="top"><a id="a078d6d887fd62bbe010f6d7a79fda32d" name="a078d6d887fd62bbe010f6d7a79fda32d"></a>
+virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>customAnalogRead</b> (int channelNumber, uint8_t pin)=0</td></tr>
+<tr class="separator:a078d6d887fd62bbe010f6d7a79fda32d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3137c0309aff3d6f07930d305f1a9cb5" id="r_a3137c0309aff3d6f07930d305f1a9cb5"><td class="memItemLeft" align="right" valign="top"><a id="a3137c0309aff3d6f07930d305f1a9cb5" name="a3137c0309aff3d6f07930d305f1a9cb5"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customAttachInterrupt</b> (uint8_t pin, void(*func)(void), int mode)=0</td></tr>
+<tr class="separator:a3137c0309aff3d6f07930d305f1a9cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8452fceaa7dd7b3abd3d5e170aae621b" id="r_a8452fceaa7dd7b3abd3d5e170aae621b"><td class="memItemLeft" align="right" valign="top"><a id="a8452fceaa7dd7b3abd3d5e170aae621b" name="a8452fceaa7dd7b3abd3d5e170aae621b"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>customDetachInterrupt</b> (uint8_t pin)=0</td></tr>
+<tr class="separator:a8452fceaa7dd7b3abd3d5e170aae621b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac81094d6425a8e4ef411198ba4a51cc6" id="r_ac81094d6425a8e4ef411198ba4a51cc6"><td class="memItemLeft" align="right" valign="top"><a id="ac81094d6425a8e4ef411198ba4a51cc6" name="ac81094d6425a8e4ef411198ba4a51cc6"></a>
+virtual uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>customPinToInterrupt</b> (uint8_t pin)=0</td></tr>
+<tr class="separator:ac81094d6425a8e4ef411198ba4a51cc6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>

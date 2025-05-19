@@ -173,22 +173,22 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>  <span class="keyword">explicit</span> Io(<span class="keywordtype">bool</span> useAsSingleton = <span class="keyword">true</span>);</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>  <span class="keyword">virtual</span> ~Io();</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customPinMode(<span class="keywordtype">int</span> channelNumber, uint8_t pin, uint8_t mode) = 0;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> customDigitalRead(<span class="keywordtype">int</span> channelNumber, uint8_t pin) = 0;</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customPinMode(<span class="keywordtype">int</span> channelNumber, uint8_t pin, uint8_t mode);</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> customDigitalRead(<span class="keywordtype">int</span> channelNumber, uint8_t pin);</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>  <span class="keyword">virtual</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> customPulseIn(<span class="keywordtype">int</span> channelNumber,</div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>      uint8_t pin,</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>      uint8_t value,</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>      uint64_t timeoutMicro) = 0;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>      uint64_t timeoutMicro);</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customDigitalWrite(<span class="keywordtype">int</span> channelNumber,</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                                  uint8_t pin,</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                                  uint8_t val) = 0;</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customAnalogWrite(<span class="keywordtype">int</span> channelNumber, uint8_t pin, <span class="keywordtype">int</span> val) = 0;</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> customAnalogRead(<span class="keywordtype">int</span> channelNumber, uint8_t pin) = 0;</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                                  uint8_t val);</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customAnalogWrite(<span class="keywordtype">int</span> channelNumber, uint8_t pin, <span class="keywordtype">int</span> val);</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> customAnalogRead(<span class="keywordtype">int</span> channelNumber, uint8_t pin);</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customAttachInterrupt(uint8_t pin,</div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>                                     <span class="keywordtype">void</span> (*func)(<span class="keywordtype">void</span>),</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>                                     <span class="keywordtype">int</span> mode) = 0;</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customDetachInterrupt(uint8_t pin) = 0;</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  <span class="keyword">virtual</span> uint8_t customPinToInterrupt(uint8_t pin) = 0;</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>                                     <span class="keywordtype">int</span> mode);</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> customDetachInterrupt(uint8_t pin);</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>  <span class="keyword">virtual</span> uint8_t customPinToInterrupt(uint8_t pin);</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> <span class="keyword">private</span>:</div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>  <span class="keywordtype">bool</span> useAsSingleton = <span class="keyword">true</span>;</div>

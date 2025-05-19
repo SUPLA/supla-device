@@ -36,7 +36,7 @@ Supla::Sensor::ElectricityMeter::ElectricityMeter() {
   extChannel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
 
   emValue.period = 5;
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 void Supla::Sensor::ElectricityMeter::updateChannelValues() {

@@ -43,7 +43,7 @@ ValveBase::ValveBase(bool openClose) {
     channel.setType(SUPLA_CHANNELTYPE_VALVE_PERCENTAGE);
     channel.setDefaultFunction(SUPLA_CHANNELFNC_VALVE_PERCENTAGE);
   }
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 void ValveBase::onInit() {

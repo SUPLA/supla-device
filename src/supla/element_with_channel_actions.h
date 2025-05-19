@@ -32,6 +32,8 @@ enum class ChannelConfigState : uint8_t {
   SetChannelConfigSend = 2,
   SetChannelConfigFailed = 3,
   WaitForConfigFinished = 4,
+  ResendConfig = 5,
+  LocalChangeSent = 6
 };
 
 enum class ApplyConfigResult : uint8_t {
@@ -43,6 +45,7 @@ enum class ApplyConfigResult : uint8_t {
 
 #pragma pack(push, 1)
 struct ConfigTypesBitmap {
+ private:
   union {
     struct {
       uint8_t configFinishedReceived: 1;
@@ -55,8 +58,15 @@ struct ConfigTypesBitmap {
     uint8_t all = 0;
   };
 
+ public:
   bool isSet(int configType) const;
   void clear(int configType);
+  void clearAll();
+  void setAll(uint8_t values);
+  uint8_t getAll() const;
+  void setConfigFinishedReceived();
+  void clearConfigFinishedReceived();
+  bool isConfigFinishedReceived() const;
   void set(int configType, bool value = true);
   bool operator!=(const ConfigTypesBitmap &other) const;
 };

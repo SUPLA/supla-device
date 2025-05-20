@@ -184,9 +184,10 @@ void ValveBase::purgeConfig() {
 
 
 void ValveBase::printConfig() const {
-  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s", getChannelNumber(),
+  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s (%d)", getChannelNumber(),
             config.closeValveOnFloodType == 0 ? "N/A" :
-            config.closeValveOnFloodType == 1 ? "always" : "on change");
+            config.closeValveOnFloodType == 1 ? "always" : "on change",
+            config.closeValveOnFloodType);
   for (auto const &sensor : config.sensorData) {
     if (sensor == 255) {
       continue;
@@ -250,6 +251,8 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
+  bool readonlyViolation = false;
+
   switch (result->Func) {
     case SUPLA_CHANNELFNC_VALVE_OPENCLOSE:
     case SUPLA_CHANNELFNC_VALVE_PERCENTAGE: {
@@ -267,9 +270,21 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
         }
 
         if (defaultCloseValveOnFloodType != 0 &&
-            config.closeValveOnFloodType == 0) {
-          config.closeValveOnFloodType = defaultCloseValveOnFloodType;
+            cfg->CloseValveOnFloodType == 0) {
+          SUPLA_LOG_DEBUG(
+              "Valve[%d]: close on flood type missing on server: %d",
+              getChannelNumber(),
+              defaultCloseValveOnFloodType);
+          if (config.closeValveOnFloodType == 0) {
+            config.closeValveOnFloodType = defaultCloseValveOnFloodType;
+          }
+          readonlyViolation = true;
           triggerSetChannelConfig();
+        } else {
+          if (cfg->CloseValveOnFloodType >= 1 &&
+              cfg->CloseValveOnFloodType <= 2) {
+            config.closeValveOnFloodType = cfg->CloseValveOnFloodType;
+          }
         }
       }
       printConfig();
@@ -283,7 +298,8 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
       break;
     }
   }
-  return Supla::ApplyConfigResult::Success;
+  return (readonlyViolation) ? Supla::ApplyConfigResult::SetChannelConfigNeeded
+                             : Supla::ApplyConfigResult::Success;
 }
 
 void ValveBase::fillChannelConfig(void *channelConfig,
@@ -318,6 +334,7 @@ void ValveBase::fillChannelConfig(void *channelConfig,
         cfg->SensorInfo[i].ChannelNo = sensor;
         i++;
       }
+      cfg->CloseValveOnFloodType = config.closeValveOnFloodType;
 
       break;
     }

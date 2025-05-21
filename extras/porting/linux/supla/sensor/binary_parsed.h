@@ -39,6 +39,14 @@ class BinaryParsed : public SensorParsed<VirtualBinary> {
 
   void onInit() override;
   bool getValue() override;
+  void iterateAlways() override;
+  bool isOffline();  // add override
+
+  void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
+
+ protected:
+  uint32_t lastOfflineReadTime = 0;
+  bool useOfflineOnInvalidState = false;
 };
 };  // namespace Sensor
 };  // namespace Supla

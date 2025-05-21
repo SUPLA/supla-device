@@ -1461,6 +1461,12 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
     return false;
   }
 
+  if (ch["offline_on_invalid_state"]) {
+    paramCount++;
+    auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
+    binary->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
+  }
+
   return addCommonParametersParsed(ch, binary, &paramCount, parser);
 }
 

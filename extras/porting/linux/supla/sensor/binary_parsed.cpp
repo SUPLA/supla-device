@@ -16,7 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla-common/log.h>
+#include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 #include "binary_parsed.h"
 
@@ -44,3 +45,33 @@ bool Supla::Sensor::BinaryParsed::getValue() {
 
   return value;
 }
+
+void Supla::Sensor::BinaryParsed::iterateAlways() {
+  Supla::Sensor::VirtualBinary::iterateAlways();
+
+  if (parser && (millis() - lastOfflineReadTime > 100)) {
+    refreshParserSource();
+    lastOfflineReadTime = millis();
+    if (isOffline()) {
+      channel.setStateOffline();
+    } else {
+      channel.setStateOnline();
+    }
+  }
+}
+
+bool Supla::Sensor::BinaryParsed::isOffline() {
+  if (useOfflineOnInvalidState && parser) {
+    if (getStateValue() == -1) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void Supla::Sensor::BinaryParsed::setUseOfflineOnInvalidState(
+    bool useOfflineOnInvalidState) {
+  this->useOfflineOnInvalidState = useOfflineOnInvalidState;
+  SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
+}
+

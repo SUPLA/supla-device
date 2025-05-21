@@ -130,9 +130,6 @@ void BinaryBase::handleChannelConfigFinished() {
     // set default config on device
     SUPLA_LOG_DEBUG("Binary[%d]: setting default channel config",
                     getChannelNumber());
-    TSD_ChannelConfig defaultConfig = {};
-    defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
-    handleChannelConfig(&defaultConfig, true);
   }
 }
 

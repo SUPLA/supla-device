@@ -1125,11 +1125,18 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_HISTERESIS)) {
+                               TEMPERATURE_HISTERESIS)) {
+    setTemperatureInStruct(&config.Temperatures,
+                           TEMPERATURE_HISTERESIS,
+                           getTemperatureHisteresis(&hvacConfig->Temperatures));
+  }
+
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
+        TEMPERATURE_AUX_HISTERESIS)) {
     setTemperatureInStruct(
         &config.Temperatures,
-        TEMPERATURE_HISTERESIS,
-        getTemperatureHisteresis(&hvacConfig->Temperatures));
+        TEMPERATURE_AUX_HISTERESIS,
+        getTemperatureAuxHisteresis(&hvacConfig->Temperatures));
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -1334,6 +1341,14 @@ bool HvacBase::areTemperaturesValid(
     }
   }
 
+  if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUX_HISTERESIS)) {
+    if (!isTemperatureAuxHisteresisValid(temperatures)) {
+      SUPLA_LOG_WARNING("HVAC[%d]: invalid histeresis value",
+                        channel.getChannelNumber());
+      return false;
+    }
+  }
+
   if (isTemperatureSetInStruct(temperatures, TEMPERATURE_BELOW_ALARM)) {
     if (!isTemperatureBelowAlarmValid(temperatures)) {
       SUPLA_LOG_WARNING("HVAC[%d]: invalid below alarm temperature",
@@ -1514,6 +1529,14 @@ bool HvacBase::isTemperatureHisteresisValid(
   auto hist = getTemperatureFromStruct(temperatures, TEMPERATURE_HISTERESIS);
   return isTemperatureHisteresisValid(hist);
 }
+
+bool HvacBase::isTemperatureAuxHisteresisValid(
+    const THVACTemperatureCfg *temperatures) const {
+  auto hist =
+      getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_HISTERESIS);
+  return isTemperatureHisteresisValid(hist);
+}
+
 
 bool HvacBase::isTemperatureAuxMinSetpointValid(
     _supla_int16_t temperature) const {
@@ -1989,6 +2012,26 @@ bool HvacBase::setTemperatureHisteresis(_supla_int16_t temperature) {
   return true;
 }
 
+bool HvacBase::setTemperatureAuxHisteresis(_supla_int16_t temperature) {
+  if (initialConfig && !initDone) {
+    setTemperatureInStruct(&(initialConfig->Temperatures),
+                           TEMPERATURE_AUX_HISTERESIS,
+                           temperature);
+  }
+  if (!isTemperatureHisteresisValid(temperature)) {
+    return false;
+  }
+  if (temperature != getTemperatureAuxHisteresis()) {
+    setTemperatureInStruct(
+        &config.Temperatures, TEMPERATURE_AUX_HISTERESIS, temperature);
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+  return true;
+}
+
 bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(&(initialConfig->Temperatures),
@@ -2175,6 +2218,13 @@ _supla_int16_t HvacBase::getTemperatureHisteresis(
   return histeresis;
 }
 
+_supla_int16_t HvacBase::getTemperatureAuxHisteresis(
+    const THVACTemperatureCfg *temperatures) const {
+  auto histeresis =
+      getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_HISTERESIS);
+  return histeresis;
+}
+
 _supla_int16_t HvacBase::getTemperatureBelowAlarm(
     const THVACTemperatureCfg *temperatures) const {
   return getTemperatureFromStruct(temperatures, TEMPERATURE_BELOW_ALARM);
@@ -2219,6 +2269,10 @@ _supla_int16_t HvacBase::getTemperatureBoost() const {
 
 _supla_int16_t HvacBase::getTemperatureHisteresis() const {
   return getTemperatureHisteresis(&config.Temperatures);
+}
+
+_supla_int16_t HvacBase::getTemperatureAuxHisteresis() const {
+  return getTemperatureAuxHisteresis(&config.Temperatures);
 }
 
 _supla_int16_t HvacBase::getTemperatureBelowAlarm() const {
@@ -4373,7 +4427,10 @@ const char* HvacBase::temperatureName(int32_t index) {
       return "Heat protection setpoint";
     }
     case TEMPERATURE_HISTERESIS: {
-      return "Histeresis setpoint";
+      return "Hysteresis setpoint";
+    }
+    case TEMPERATURE_AUX_HISTERESIS: {
+      return "AUX hysteresis setpoint";
     }
     case TEMPERATURE_BELOW_ALARM: {
       return "Below alarm setpoint";
@@ -4400,10 +4457,10 @@ const char* HvacBase::temperatureName(int32_t index) {
       return "Aux max limit";
     }
     case TEMPERATURE_HISTERESIS_MIN: {
-      return "Histeresis min limit";
+      return "Hysteresis min limit";
     }
     case TEMPERATURE_HISTERESIS_MAX: {
-      return "Histeresis max limit";
+      return "Hysteresis max limit";
     }
     case TEMPERATURE_HEAT_COOL_OFFSET_MIN: {
       return "Heat cool offset min limit";
@@ -5405,6 +5462,12 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   if (parameterFlags.TemperaturesHisteresisReadonly) {
     readonlyViolation = (readonlyViolation ||
                          fixReadonlyTemperature(TEMPERATURE_HISTERESIS,
+                                                &hvacConfig->Temperatures));
+  }
+
+  if (parameterFlags.TemperaturesAuxHisteresisReadonly) {
+    readonlyViolation = (readonlyViolation ||
+                         fixReadonlyTemperature(TEMPERATURE_AUX_HISTERESIS,
                                                 &hvacConfig->Temperatures));
   }
 

@@ -244,6 +244,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool setTemperatureComfort(_supla_int16_t temperature);
   bool setTemperatureBoost(_supla_int16_t temperature);
   bool setTemperatureHisteresis(_supla_int16_t temperature);
+  bool setTemperatureAuxHisteresis(_supla_int16_t temperature);
   bool setTemperatureBelowAlarm(_supla_int16_t temperature);
   bool setTemperatureAboveAlarm(_supla_int16_t temperature);
   bool setTemperatureAuxMinSetpoint(_supla_int16_t temperature);
@@ -260,6 +261,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureHisteresis(
       const THVACTemperatureCfg *temperatures) const;
+  _supla_int16_t getTemperatureAuxHisteresis(
+      const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureBelowAlarm(
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureAboveAlarm(
@@ -274,6 +277,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   _supla_int16_t getTemperatureComfort() const;
   _supla_int16_t getTemperatureBoost() const;
   _supla_int16_t getTemperatureHisteresis() const;
+  _supla_int16_t getTemperatureAuxHisteresis() const;
   _supla_int16_t getTemperatureBelowAlarm() const;
   _supla_int16_t getTemperatureAboveAlarm() const;
   _supla_int16_t getTemperatureAuxMinSetpoint() const;
@@ -343,6 +347,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isTemperatureComfortValid(const THVACTemperatureCfg *temperatures) const;
   bool isTemperatureBoostValid(const THVACTemperatureCfg *temperatures) const;
   bool isTemperatureHisteresisValid(
+      const THVACTemperatureCfg *temperatures) const;
+  bool isTemperatureAuxHisteresisValid(
       const THVACTemperatureCfg *temperatures) const;
   bool isTemperatureBelowAlarmValid(
       const THVACTemperatureCfg *temperatures) const;

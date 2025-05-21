@@ -492,6 +492,19 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             SUPLA_CONFIG_RESULT_TRUE);
   hvac.clearChannelConfigChangedFlag();
 
+  // TEMPERATURE_AUX_HISTERESIS
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUX_HISTERESIS, 0);
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_DATA_ERROR);
+  hvac.clearChannelConfigChangedFlag();
+
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUX_HISTERESIS, 150);
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  hvac.clearChannelConfigChangedFlag();
+
   // TEMPERATURE_BELOW_ALARM
   Supla::Control::HvacBase::setTemperatureInStruct(
       &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM, 0);
@@ -576,6 +589,10 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
             Supla::Control::HvacBase::getTemperatureFromStruct(
                 &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS));
 
+  EXPECT_EQ(hvac.getTemperatureAuxHisteresis(),
+            Supla::Control::HvacBase::getTemperatureFromStruct(
+                &hvacConfig->Temperatures, TEMPERATURE_AUX_HISTERESIS));
+
   EXPECT_EQ(hvac.getTemperatureBelowAlarm(),
             Supla::Control::HvacBase::getTemperatureFromStruct(
                 &hvacConfig->Temperatures, TEMPERATURE_BELOW_ALARM));
@@ -640,6 +657,10 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_TRUE(hvac.setTemperatureHisteresis(100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(-100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(0));
+
+  EXPECT_TRUE(hvac.setTemperatureAuxHisteresis(140));
+  EXPECT_FALSE(hvac.setTemperatureAuxHisteresis(-100));
+  EXPECT_FALSE(hvac.setTemperatureAuxHisteresis(0));
 
   EXPECT_FALSE(hvac.setTemperatureAuxMinSetpoint(100));
   EXPECT_FALSE(hvac.setTemperatureAuxMinSetpoint(-100));
@@ -715,6 +736,11 @@ TEST_F(HvacTestsF, temperatureSettersAndGetters) {
   EXPECT_TRUE(hvac.setTemperatureHisteresis(100));
   EXPECT_FALSE(hvac.setTemperatureHisteresis(10));
   EXPECT_EQ(hvac.getTemperatureHisteresis(), 100);
+
+  EXPECT_FALSE(hvac.setTemperatureAuxHisteresis(10));
+  EXPECT_EQ(hvac.getTemperatureAuxHisteresis(), 140);
+  EXPECT_TRUE(hvac.setTemperatureAuxHisteresis(200));
+  EXPECT_EQ(hvac.getTemperatureAuxHisteresis(), 200);
 
   EXPECT_TRUE(hvac.setTemperatureAuxMinSetpoint(2000));
   EXPECT_FALSE(hvac.setTemperatureAuxMinSetpoint(-1000));

@@ -104,8 +104,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isOutputControlledInternally() const;
   // use this function to set value based on local config change
   bool setUsedAlgorithm(unsigned _supla_int16_t newAlgorithm);
-  unsigned _supla_int16_t getUsedAlgorithm() const;
+  unsigned _supla_int16_t getUsedAlgorithm(bool forAux = false) const;
   void setButtonTemperatureStep(int16_t step);
+  int16_t getCurrentHysteresis(bool forAux) const;
 
   // Local UI blocking configuration.
   // Those options doesn't have any functional effect on HvacBase behavior.
@@ -477,9 +478,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool checkThermometersStatusForCurrentMode(_supla_int16_t t1,
                                              _supla_int16_t t2) const;
   int evaluateHeatOutputValue(_supla_int16_t tMeasured,
-                          _supla_int16_t tTarget);
+                          _supla_int16_t tTarget, bool forAux = false);
   int evaluateCoolOutputValue(_supla_int16_t tMeasured,
-                          _supla_int16_t tTarget);
+                          _supla_int16_t tTarget, bool forAux = false);
   void fixTemperatureSetpoints();
   void clearLastOutputValue();
   void storeLastWorkingMode();
@@ -518,6 +519,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool wrapAroundTemperatureSetpoints = false;
   bool registeredInRelayHvacAggregator = false;
   bool startupDelay = true;
+  bool forcedByAux = false;
 
   uint8_t channelConfigChangedOffline = 0;
   uint8_t weeklyScheduleChangedOffline = 0;

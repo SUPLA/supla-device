@@ -4679,9 +4679,9 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
     time.advance(100);
   }
 
-  // check values around target 21.0 (histeresis 0.4 C with "SETPOINT AT MOST")
+  // check values around target 25.0 (histeresis 0.4 C with "SETPOINT AT MOST")
   hvac->setTargetMode(SUPLA_HVAC_MODE_COOL);
-  t1->setValue(26.0);
+  t1->setValue(25.01);
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
@@ -4691,7 +4691,7 @@ TEST_F(HvacIntegrationF, histeresisCoolingCheck) {
   }
 
   // it should stop heating
-  t1->setValue(24.99);
+  t1->setValue(24.59);
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
@@ -4913,7 +4913,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   }
 
   // nothing
-  t1->setValue(25.39);
+  t1->setValue(24.99);
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
@@ -4923,7 +4923,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   }
 
   // start cooling
-  t1->setValue(25.41);
+  t1->setValue(25.01);
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
@@ -4933,7 +4933,7 @@ TEST_F(HvacIntegrationF, histeresisHeatCoolCheck) {
   }
 
   // stop cooling
-  t1->setValue(24.99);
+  t1->setValue(24.59);
   for (int i = 0; i < 50; ++i) {
     hvac->iterateAlways();
     t1->iterateAlways();
@@ -5593,3 +5593,4 @@ TEST_F(HvacIntegrationF, buttonIntegrationCheck) {
     time.advance(100);
   }
 }
+

@@ -755,6 +755,7 @@ void HvacBase::iterateAlways() {
     updateChannelState();
     return;
   }
+  forcedByAux = false;
 
   if (checkOverheatProtection(t1)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
@@ -2321,7 +2322,12 @@ void HvacBase::setSubfunction(uint8_t subfunction) {
   }
 }
 
-unsigned _supla_int16_t HvacBase::getUsedAlgorithm() const {
+unsigned _supla_int16_t HvacBase::getUsedAlgorithm(bool forAux) const {
+  if (forAux &&
+      config.UsedAlgorithm == SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE) {
+    // for AUX evaluation, we use "at most" algorithm instead
+    return SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST;
+  }
   return config.UsedAlgorithm;
 }
 
@@ -3372,7 +3378,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
   auto tAuxMin = getTemperatureAuxMinSetpoint();
   auto tAuxMax = getTemperatureAuxMaxSetpoint();
   if (isSensorTempValid(tAuxMin)) {
-    auto outputValue = evaluateHeatOutputValue(t, tAuxMin);
+    auto outputValue = evaluateHeatOutputValue(t, tAuxMin, true);
     if (outputValue > 0) {
       if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
           channel.isHvacFlagCooling()) {
@@ -3380,12 +3386,13 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
       } else if (isModeSupported(SUPLA_HVAC_MODE_HEAT)) {
         return false;
       }
+      forcedByAux = true;
       return true;
     }
   }
 
   if (isSensorTempValid(tAuxMax)) {
-    auto outputValue = evaluateCoolOutputValue(t, tAuxMax);
+    auto outputValue = evaluateCoolOutputValue(t, tAuxMax, true);
     if (outputValue < 0) {
       if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF ||
           channel.isHvacFlagHeating()) {
@@ -3393,6 +3400,7 @@ bool HvacBase::checkAuxProtection(_supla_int16_t t) {
       } else if (isModeSupported(SUPLA_HVAC_MODE_COOL)) {
         return false;
       }
+      forcedByAux = true;
       return true;
     }
   }
@@ -3854,8 +3862,26 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
   return true;
 }
 
+int16_t HvacBase::getCurrentHysteresis(bool forAux) const {
+  auto hysteresis = getTemperatureHisteresis();
+
+  if (forAux) {
+    // for AUX evaluation, check if aux hysteresis is set, if not, use standard
+    // hysteresis
+    auto auxHysteresis = getTemperatureAuxHisteresis();
+    if (isSensorTempValid(auxHysteresis)) {
+      hysteresis = auxHysteresis;
+    }
+  }
+
+  if (!isSensorTempValid(hysteresis)) {
+    hysteresis = getTemperatureHisteresisMin();
+  }
+  return hysteresis;
+}
+
 int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
-                                  _supla_int16_t tTarget) {
+                                  _supla_int16_t tTarget, bool forAux) {
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: tMeasured not valid", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
@@ -3872,47 +3898,54 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
   }
 
   initDefaultAlgorithm();
-  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
+  const auto algorithm = getUsedAlgorithm(forAux);
+  if (algorithm == SUPLA_HVAC_ALGORITHM_NOT_SET) {
     SUPLA_LOG_DEBUG("HVAC[%d]: algorithm not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
   int output = lastValue;
 
-  auto histeresis = getTemperatureHisteresis();
-  if (!isSensorTempValid(histeresis)) {
-    histeresis = getTemperatureHisteresisMin();
-  }
-  if (!isSensorTempValid(histeresis)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: histeresis not valid", getChannelNumber());
+  auto hysteresis = getCurrentHysteresis(forAux);
+  if (!isSensorTempValid(hysteresis)) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: hysteresis not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
-  auto histeresisHeat = histeresis;
-  auto histeresisOff = histeresis;
+  auto hysteresisHeat = hysteresis;
+  auto hysteresisOff = hysteresis;
 
-  switch (getUsedAlgorithm()) {
+  switch (algorithm) {
     case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE: {
-      histeresis >>= 1;
-      histeresisHeat = histeresis;
-      histeresisOff = histeresis;
+      hysteresis >>= 1;
+      hysteresisHeat = hysteresis;
+      hysteresisOff = hysteresis;
       break;
     }
     case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST: {
-      histeresisOff = 0;
+      if (forAux) {
+        hysteresisHeat = 0;
+      } else {
+        hysteresisOff = 0;
+      }
       break;
     }
   }
   // check if we should turn on heating
   if (lastValue <= 0) {
-    if (tMeasured < tTarget - histeresisHeat) {
+    if (tMeasured < tTarget - hysteresisHeat) {
       output = 100;
+    }
+    if (forcedByAux) {
+      if (tMeasured < tTarget + hysteresisOff) {
+        output = 100;
+      }
     }
   }
 
   // check if we should turn off heating
   if (lastValue > 0) {
-    if (tMeasured > tTarget + histeresisOff) {
+    if (tMeasured > tTarget + hysteresisOff) {
       output = 0;
     }
   }
@@ -3921,7 +3954,7 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
 }
 
 int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
-                                  _supla_int16_t tTarget) {
+                                  _supla_int16_t tTarget, bool forAux) {
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: tMeasured not valid", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
@@ -3939,54 +3972,58 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
   }
 
   initDefaultAlgorithm();
-  if (getUsedAlgorithm() == SUPLA_HVAC_ALGORITHM_NOT_SET) {
+  const auto algorithm = getUsedAlgorithm(forAux);
+  if (algorithm == SUPLA_HVAC_ALGORITHM_NOT_SET) {
     SUPLA_LOG_DEBUG("HVAC[%d]: algorithm not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
   int output = lastValue;
 
-  auto histeresis = getTemperatureHisteresis();
-  if (!isSensorTempValid(histeresis)) {
-    histeresis = getTemperatureHisteresisMin();
-  }
-  if (!isSensorTempValid(histeresis)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: histeresis not valid", getChannelNumber());
+  auto hysteresis = getCurrentHysteresis(forAux);
+  if (!isSensorTempValid(hysteresis)) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: hysteresis not valid", getChannelNumber());
     return getOutputValueOnError();
   }
 
-  auto histeresisCool = histeresis;
-  auto histeresisOff = histeresis;
+  auto hysteresisCool = hysteresis;
+  auto hysteresisOff = hysteresis;
 
-  switch (getUsedAlgorithm()) {
+  switch (algorithm) {
     case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE: {
-      histeresis >>= 1;
-      histeresisCool = histeresis;
-      histeresisOff = histeresis;
+      hysteresis >>= 1;
+      hysteresisCool = hysteresis;
+      hysteresisOff = hysteresis;
       break;
     }
     case SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST: {
-      histeresisOff = 0;
+      hysteresisCool = 0;
       break;
     }
   }
   // check if we should turn on cooling
   // -111 is a magic "not used" value... I'm sorry for that
   if (lastValue >= 0 || lastValue == -111) {
-    if (tMeasured > tTarget + histeresisCool) {
+    if (tMeasured > tTarget + hysteresisCool) {
       output = -100;
+    }
+    if (forcedByAux) {
+      if (tMeasured > tTarget - hysteresisOff) {
+        output = -100;
+      }
     }
   }
 
   // check if we should turn off cooling
   if (lastValue < 0) {
-    if (tMeasured < tTarget - histeresisOff) {
+    if (tMeasured < tTarget - hysteresisOff) {
       output = 0;
     }
   }
 
   return output;
 }
+
 void HvacBase::changeFunction(int32_t newFunction, bool changedLocally) {
   auto currentFunction = channel.getDefaultFunction();
   if (currentFunction == newFunction) {

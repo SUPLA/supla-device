@@ -197,9 +197,9 @@ void Channel::setNewValue(double temp, double humi) {
     }
   }
 
-  char newValue[SUPLA_CHANNELVALUE_SIZE];
-  _supla_int_t t = temp * 1000.00;
-  _supla_int_t h = humi * 1000.00;
+  char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
+  int32_t t = temp * 1000.00;
+  int32_t h = humi * 1000.00;
 
   memcpy(newValue, &t, 4);
   memcpy(&(newValue[4]), &h, 4);
@@ -216,9 +216,7 @@ void Channel::setNewValue(double temp, double humi) {
 }
 
 void Channel::setNewValue(uint64_t value) {
-  char newValue[SUPLA_CHANNELVALUE_SIZE];
-
-  memset(newValue, 0, SUPLA_CHANNELVALUE_SIZE);
+  char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
 
   memcpy(newValue, &value, sizeof(value));
   if (setNewValue(newValue)) {
@@ -230,9 +228,7 @@ void Channel::setNewValue(uint64_t value) {
 }
 
 void Channel::setNewValue(int32_t value) {
-  char newValue[SUPLA_CHANNELVALUE_SIZE];
-
-  memset(newValue, 0, SUPLA_CHANNELVALUE_SIZE);
+  char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
 
   memcpy(newValue, &value, sizeof(value));
   if (setNewValue(newValue)) {
@@ -243,7 +239,7 @@ void Channel::setNewValue(int32_t value) {
 }
 
 void Channel::setNewValue(bool state) {
-  char newValue[SUPLA_CHANNELVALUE_SIZE];
+  char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
   static_assert(sizeof(newValue) == sizeof(value));
 
   memcpy(newValue, &value, sizeof(value));
@@ -272,7 +268,7 @@ void Channel::setNewValue(
       TElectricityMeter_Value emValue;
     };
 
-    unsigned _supla_int64_t fae_sum =
+    uint64_t fae_sum =
         emExtValue.total_forward_active_energy[0] +
         emExtValue.total_forward_active_energy[1] +
         emExtValue.total_forward_active_energy[2];
@@ -309,11 +305,11 @@ bool Channel::setNewValue(const char *newValue) {
   return false;
 }
 
-void Channel::setType(_supla_int_t type) {
+void Channel::setType(int32_t type) {
   channelType = protoTypeToChannelType(type);
 }
 
-void Channel::setDefault(_supla_int_t value) {
+void Channel::setDefault(int32_t value) {
   if (value > UINT16_MAX) {
     SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
                     channelNumber, value);
@@ -323,7 +319,7 @@ void Channel::setDefault(_supla_int_t value) {
   defaultFunction = value;
 }
 
-void Channel::setDefaultFunction(_supla_int_t function) {
+void Channel::setDefaultFunction(int32_t function) {
   setDefault(function);
 }
 
@@ -339,19 +335,19 @@ void Channel::unsetFlag(uint64_t flag) {
   channelFlags &= ~flag;
 }
 
-void Channel::setFuncList(_supla_int_t functions) {
+void Channel::setFuncList(int32_t functions) {
   functionsBitmap = functions;
 }
 
-_supla_int_t Channel::getFuncList() const {
+int32_t Channel::getFuncList() const {
   return functionsBitmap;
 }
 
-void Channel::addToFuncList(_supla_int_t function) {
+void Channel::addToFuncList(int32_t function) {
   functionsBitmap |= function;
 }
 
-void Channel::removeFromFuncList(_supla_int_t function) {
+void Channel::removeFromFuncList(int32_t function) {
   functionsBitmap &= ~function;
 }
 
@@ -359,11 +355,11 @@ uint64_t Channel::getFlags() const {
   return channelFlags;
 }
 
-void Channel::setActionTriggerCaps(_supla_int_t caps) {
+void Channel::setActionTriggerCaps(int32_t caps) {
   setFuncList(caps);
 }
 
-_supla_int_t Channel::getActionTriggerCaps() {
+int32_t Channel::getActionTriggerCaps() {
   return getFuncList();
 }
 
@@ -506,8 +502,7 @@ void Channel::setNewValue(uint8_t red,
                    uint8_t blue,
                    uint8_t colorBrightness,
                    uint8_t brightness) {
-  char newValue[SUPLA_CHANNELVALUE_SIZE];
-  memset(newValue, 0, SUPLA_CHANNELVALUE_SIZE);
+  char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
   newValue[0] = brightness;
   newValue[1] = colorBrightness;
   newValue[2] = blue;
@@ -616,7 +611,7 @@ void Channel::setNewValue(uint8_t red,
   }
 }
 
-_supla_int_t Channel::getChannelType() const {
+int32_t Channel::getChannelType() const {
   return channelTypeToProtoType(channelType);
 }
 

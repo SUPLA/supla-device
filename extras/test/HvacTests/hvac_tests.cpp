@@ -2448,3 +2448,78 @@ TEST_F(HvacTestsF, LocalUILockCheck) {
   EXPECT_EQ(hvac.getLocalUILockTemperatureMax(), 2150);
   EXPECT_EQ(hvac.getLocalUILockTemperatureMin(), 1000);
 }
+
+TEST_F(HvacTestsF, handleChannelConfigWithTemperatureControlTypes) {
+  OutputSimulatorWithCheck output;
+  Supla::Control::HvacBase hvac(&output);
+
+  Supla::Sensor::Thermometer t1;
+  Supla::Sensor::ThermHygroMeter t2;
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
+
+  ASSERT_EQ(hvac.getChannelNumber(), 0);
+  ASSERT_EQ(t1.getChannelNumber(), 1);
+  ASSERT_EQ(t2.getChannelNumber(), 2);
+
+  // init min max ranges for tempreatures setting and check again setters
+  // for temperatures
+  hvac.setTemperatureRoomMin(500);           // 5 degrees
+  hvac.setTemperatureRoomMax(5000);          // 50 degrees
+  hvac.setTemperatureHisteresisMin(20);      // 0.2 degree
+  hvac.setTemperatureHisteresisMax(1000);    // 10 degree
+  hvac.setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
+  hvac.setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
+  hvac.setTemperatureAuxMin(500);   // 5 degrees
+  hvac.setTemperatureAuxMax(7500);  // 75 degrees
+
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
+
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+  hvacConfig->MainThermometerChannelNo = 1;
+  hvacConfig->AuxThermometerType =
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET;
+  hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HISTERESIS, 100);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUX_MAX_SETPOINT, 2000);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, 1000);
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  EXPECT_TRUE(hvac.isTemperatureControlTypeMain());
+  EXPECT_FALSE(hvac.isTemperatureControlTypeAux());
+
+  hvacConfig->TemperatureControlType =
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE;
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  EXPECT_TRUE(hvac.isTemperatureControlTypeMain());
+  EXPECT_FALSE(hvac.isTemperatureControlTypeAux());
+
+  hvac.setTemperatureControlType(
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_ROOM_TEMPERATURE);
+  hvac.clearChannelConfigChangedFlag();
+
+  EXPECT_TRUE(hvac.isTemperatureControlTypeMain());
+  EXPECT_FALSE(hvac.isTemperatureControlTypeAux());
+
+  hvacConfig->TemperatureControlType =
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE;
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  EXPECT_FALSE(hvac.isTemperatureControlTypeMain());
+  EXPECT_TRUE(hvac.isTemperatureControlTypeAux());
+}

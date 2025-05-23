@@ -686,10 +686,6 @@ void HvacBase::iterateAlways() {
         HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed);
   }
 
-  // update tempreatures information
-  auto t1 = getPrimaryTemp();
-  auto t2 = getSecondaryTemp();
-
   // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
@@ -721,7 +717,15 @@ void HvacBase::iterateAlways() {
     channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
   }
 
-  if (!checkThermometersStatusForCurrentMode(t1, t2)) {
+  // update tempreatures information
+  auto tMain = getPrimaryTemp();
+  auto tAux = getSecondaryTemp();
+
+  if (isTemperatureControlTypeAux()) {
+    tMain = tAux;
+  }
+
+  if (!checkThermometersStatusForCurrentMode(tMain, tAux)) {
     if (startupDelay) {
       return;
     }
@@ -743,12 +747,12 @@ void HvacBase::iterateAlways() {
 
   if (channel.getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    t1 -= t2;
-    t2 = INT16_MIN;
+    tMain -= tAux;
+    tAux = INT16_MIN;
   }
-  lastTemperature = t1;
+  lastTemperature = tMain;
 
-  if (checkAuxProtection(t2)) {
+  if (checkAuxProtection(tAux)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: heater/cooler protection exit",
                     getChannelNumber());
     channel.setHvacFlagAntifreezeOverheatActive(false);
@@ -757,13 +761,13 @@ void HvacBase::iterateAlways() {
   }
   forcedByAux = false;
 
-  if (checkOverheatProtection(t1)) {
+  if (checkOverheatProtection(tMain)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: overheat protection exit", getChannelNumber());
     updateChannelState();
     return;
   }
 
-  if (checkAntifreezeProtection(t1)) {
+  if (checkAntifreezeProtection(tMain)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: antifreeze protection exit", getChannelNumber());
     updateChannelState();
     return;
@@ -807,9 +811,9 @@ void HvacBase::iterateAlways() {
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT_COOL: {
       int heatNewOutputValue =
-          evaluateHeatOutputValue(t1, getTemperatureSetpointHeat());
+          evaluateHeatOutputValue(tMain, getTemperatureSetpointHeat());
       int coolNewOutputValue =
-          evaluateCoolOutputValue(t1, getTemperatureSetpointCool());
+          evaluateCoolOutputValue(tMain, getTemperatureSetpointCool());
       if (heatNewOutputValue > 0) {
         setOutput(heatNewOutputValue, false);
       } else if (coolNewOutputValue < 0) {
@@ -822,7 +826,7 @@ void HvacBase::iterateAlways() {
     }
     case SUPLA_HVAC_MODE_HEAT: {
       int newOutputValue =
-          evaluateHeatOutputValue(t1, getTemperatureSetpointHeat());
+          evaluateHeatOutputValue(tMain, getTemperatureSetpointHeat());
       if (newOutputValue < 0) {
         newOutputValue = 0;
       }
@@ -831,7 +835,7 @@ void HvacBase::iterateAlways() {
     }
     case SUPLA_HVAC_MODE_COOL: {
       int newOutputValue =
-          evaluateCoolOutputValue(t1, getTemperatureSetpointCool());
+          evaluateCoolOutputValue(tMain, getTemperatureSetpointCool());
       if (newOutputValue > 0) {
         newOutputValue = 0;
       }
@@ -1076,6 +1080,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
       hvacConfig->MinAllowedTemperatureSetpointFromLocalUI;
   config.MaxAllowedTemperatureSetpointFromLocalUI =
       hvacConfig->MaxAllowedTemperatureSetpointFromLocalUI;
+  config.TemperatureControlType = hvacConfig->TemperatureControlType;
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
@@ -1423,15 +1428,13 @@ _supla_int16_t HvacBase::getTemperatureFromStruct(
   return temperatures->Temperature[arrayIndex];
 }
 
-bool HvacBase::isTemperatureInRoomConstrain(_supla_int16_t temperature) const {
+bool HvacBase::isTemperatureInMainConstrain(_supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
 
-  auto tMin =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
-  auto tMax =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
+  auto tMin = getTemperatureMainMin();
+  auto tMax = getTemperatureMainMax();
 
   return temperature >= tMin && temperature <= tMax;
 }
@@ -1441,8 +1444,8 @@ bool HvacBase::isTemperatureInHeatCoolConstrain(_supla_int16_t tHeat,
   auto offsetMin = getTemperatureHeatCoolOffsetMin();
   auto offsetMax = getTemperatureHeatCoolOffsetMax();
   return (tCool - tHeat >= offsetMin) && (tCool - tHeat <= offsetMax) &&
-         isTemperatureInRoomConstrain(tHeat) &&
-         isTemperatureInRoomConstrain(tCool);
+         isTemperatureInMainConstrain(tHeat) &&
+         isTemperatureInMainConstrain(tCool);
 }
 
 bool HvacBase::isTemperatureInAuxConstrain(
@@ -1461,7 +1464,7 @@ bool HvacBase::isTemperatureInAuxConstrain(
 
 bool HvacBase::isTemperatureFreezeProtectionValid(
     _supla_int16_t temperature) const {
-  return isTemperatureInRoomConstrain(temperature);
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureFreezeProtectionValid(
@@ -1473,43 +1476,43 @@ bool HvacBase::isTemperatureFreezeProtectionValid(
 
 bool HvacBase::isTemperatureHeatProtectionValid(
     _supla_int16_t temperature) const {
-  return isTemperatureInRoomConstrain(temperature);
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureHeatProtectionValid(
     const THVACTemperatureCfg *temperatures) const {
   auto  t = getTemperatureFromStruct(temperatures, TEMPERATURE_HEAT_PROTECTION);
-  return isTemperatureInRoomConstrain(t);
+  return isTemperatureInMainConstrain(t);
 }
 
 bool HvacBase::isTemperatureEcoValid(_supla_int16_t temperature) const {
-  return isTemperatureInRoomConstrain(temperature);
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureEcoValid(
     const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_ECO);
-  return isTemperatureInRoomConstrain(t);
+  return isTemperatureInMainConstrain(t);
 }
 
 bool HvacBase::isTemperatureComfortValid(_supla_int16_t temperature) const {
-  return isTemperatureInRoomConstrain(temperature);
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureComfortValid(
     const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_COMFORT);
-  return isTemperatureInRoomConstrain(t);
+  return isTemperatureInMainConstrain(t);
 }
 
 bool HvacBase::isTemperatureBoostValid(_supla_int16_t temperature) const {
-  return isTemperatureInRoomConstrain(temperature);
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureBoostValid(
     const THVACTemperatureCfg *temperatures) const {
   auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_BOOST);
-  return isTemperatureInRoomConstrain(t);
+  return isTemperatureInMainConstrain(t);
 }
 
 bool HvacBase::isTemperatureHisteresisValid(_supla_int16_t hist) const {
@@ -1597,16 +1600,7 @@ bool HvacBase::isTemperatureAuxMaxSetpointValid(
 }
 
 bool HvacBase::isTemperatureBelowAlarmValid(_supla_int16_t temperature) const {
-  if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
-    return false;
-  }
-
-  auto tMin =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
-  auto tMax =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
-
-  return temperature >= tMin && temperature <= tMax;
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureBelowAlarmValid(
@@ -1616,15 +1610,7 @@ bool HvacBase::isTemperatureBelowAlarmValid(
 }
 
 bool HvacBase::isTemperatureAboveAlarmValid(_supla_int16_t temperature) const {
-  if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
-    return false;
-  }
-  auto tMin =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
-  auto tMax =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
-
-  return temperature >= tMin && temperature <= tMax;
+  return isTemperatureInMainConstrain(temperature);
 }
 
 bool HvacBase::isTemperatureAboveAlarmValid(
@@ -2845,10 +2831,10 @@ bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
   // check tempreatures
   switch (program.Mode) {
     case SUPLA_HVAC_MODE_HEAT: {
-      return isTemperatureInRoomConstrain(program.SetpointTemperatureHeat);
+      return isTemperatureInMainConstrain(program.SetpointTemperatureHeat);
     }
     case SUPLA_HVAC_MODE_COOL: {
-      return isTemperatureInRoomConstrain(program.SetpointTemperatureCool);
+      return isTemperatureInMainConstrain(program.SetpointTemperatureCool);
     }
     case SUPLA_HVAC_MODE_HEAT_COOL: {
       return isTemperatureInHeatCoolConstrain(program.SetpointTemperatureHeat,
@@ -3558,28 +3544,20 @@ int32_t HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       hvacValue->SetpointTemperatureCool,
       newValue->DurationSec);
 
-  int tHeat = INT16_MIN;  // hvacValue->SetpointTemperatureHeat;
-  int tCool = INT16_MIN;  // hvacValue->SetpointTemperatureCool;
+  int tHeat = INT16_MIN;
+  int tCool = INT16_MIN;
 
   if (hvacValue->Mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     if (Supla::Channel::isHvacFlagSetpointTemperatureCoolSet(hvacValue)) {
-      if (isTemperatureInRoomConstrain(hvacValue->SetpointTemperatureCool)) {
-        tCool = hvacValue->SetpointTemperatureCool;
-      } else {
-        tCool = lastManualSetpointCool;
-      }
+      tCool = getClosestValidTemperature(hvacValue->SetpointTemperatureCool);
     } else {
-      tCool = lastManualSetpointCool;  // getTemperatureSetpointCool();
+      tCool = lastManualSetpointCool;
     }
 
     if (Supla::Channel::isHvacFlagSetpointTemperatureHeatSet(hvacValue)) {
-      if (isTemperatureInRoomConstrain(hvacValue->SetpointTemperatureHeat)) {
-        tHeat = hvacValue->SetpointTemperatureHeat;
-      } else {
-        tHeat = lastManualSetpointHeat;
-      }
+      tHeat = getClosestValidTemperature(hvacValue->SetpointTemperatureHeat);
     } else {
-      tHeat = lastManualSetpointHeat;  // getTemperatureSetpointHeat();
+      tHeat = lastManualSetpointHeat;
     }
   }
 
@@ -3598,17 +3576,7 @@ void HvacBase::setTemperatureSetpointHeat(int tHeat) {
   if (tHeat == INT16_MIN) {
     return;
   }
-  auto tMin =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
-  auto tMax =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
-
-  if (tHeat < tMin) {
-    tHeat = tMin;
-  }
-  if (tHeat > tMax) {
-    tHeat = tMax;
-  }
+  tHeat = getClosestValidTemperature(tHeat);
 
   channel.setHvacSetpointTemperatureHeat(tHeat);
   lastConfigChangeTimestampMs = millis();
@@ -3618,17 +3586,8 @@ void HvacBase::setTemperatureSetpointCool(int tCool) {
   if (tCool == INT16_MIN) {
     return;
   }
-  auto tMin =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MIN);
-  auto tMax =
-      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_ROOM_MAX);
 
-  if (tCool < tMin) {
-    tCool = tMin;
-  }
-  if (tCool > tMax) {
-    tCool = tMax;
-  }
+  tCool = getClosestValidTemperature(tCool);
 
   channel.setHvacSetpointTemperatureCool(tCool);
   lastConfigChangeTimestampMs = millis();
@@ -3837,12 +3796,12 @@ bool HvacBase::isSensorTempValid(_supla_int16_t temperature) const {
 }
 
 bool HvacBase::checkThermometersStatusForCurrentMode(
-    _supla_int16_t t1, _supla_int16_t t2) const {
+    _supla_int16_t tMain, _supla_int16_t tAux) const {
   switch (channel.getHvacMode()) {
     case SUPLA_HVAC_MODE_HEAT:
     case SUPLA_HVAC_MODE_COOL:
     case SUPLA_HVAC_MODE_HEAT_COOL: {
-      if (!isSensorTempValid(t1)) {
+      if (!isSensorTempValid(tMain)) {
         return false;
       }
     }
@@ -3850,12 +3809,12 @@ bool HvacBase::checkThermometersStatusForCurrentMode(
 
   if (channel.getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    if (!isSensorTempValid(t1) || !isSensorTempValid(t2)) {
+    if (!isSensorTempValid(tMain) || !isSensorTempValid(tAux)) {
       return false;
     }
   }
 
-  if (isAuxProtectionEnabled() && !isSensorTempValid(t2)) {
+  if (isAuxProtectionEnabled() && !isSensorTempValid(tAux)) {
     return false;
   }
 
@@ -4084,14 +4043,16 @@ bool HvacBase::isDomesticHotWaterFunctionSupported() const {
 void HvacBase::fixTemperatureSetpoints() {
   auto curTHeat = getTemperatureSetpointHeat();
   auto curTCool = getTemperatureSetpointCool();
+  setTemperatureSetpointHeat(curTHeat);
+  setTemperatureSetpointCool(curTCool);
 
   if (isModeSupported(SUPLA_HVAC_MODE_HEAT) &&
       !channel.isHvacFlagSetpointTemperatureHeatSet()) {
-    channel.setHvacSetpointTemperatureHeat(SUPLA_HVAC_DEFAULT_TEMP_HEAT);
+    setTemperatureSetpointHeat(SUPLA_HVAC_DEFAULT_TEMP_HEAT);
   }
   if (isModeSupported(SUPLA_HVAC_MODE_COOL) &&
       !channel.isHvacFlagSetpointTemperatureCoolSet()) {
-    channel.setHvacSetpointTemperatureCool(SUPLA_HVAC_DEFAULT_TEMP_COOL);
+    setTemperatureSetpointCool(SUPLA_HVAC_DEFAULT_TEMP_COOL);
   }
 
   switch (channel.getHvacMode()) {
@@ -4116,14 +4077,14 @@ void HvacBase::fixTemperatureSetpoints() {
           auto offsetMin = getTemperatureHeatCoolOffsetMin();
           auto offsetMax = getTemperatureHeatCoolOffsetMax();
           if (curTCool - curTHeat < offsetMin) {
-            if (isTemperatureInRoomConstrain(curTHeat + offsetMin)) {
+            if (isTemperatureInMainConstrain(curTHeat + offsetMin)) {
               setTemperatureSetpointCool(curTHeat + offsetMin);
             } else {
               setTemperatureSetpointHeat(curTCool - offsetMin);
             }
           }
           if (curTCool - curTHeat > offsetMax) {
-            if (isTemperatureInRoomConstrain(curTHeat + offsetMax)) {
+            if (isTemperatureInMainConstrain(curTHeat + offsetMax)) {
               setTemperatureSetpointCool(curTHeat + offsetMax);
             } else {
               setTemperatureSetpointHeat(curTCool - offsetMax);
@@ -4132,7 +4093,7 @@ void HvacBase::fixTemperatureSetpoints() {
         } else if (tHeatValid) {
           channel.setHvacSetpointTemperatureHeat(curTHeat);
         } else if (tCoolValid) {
-          channel.setHvacSetpointTemperatureCool(curTHeat);
+          channel.setHvacSetpointTemperatureCool(curTCool);
         }
       }
       break;
@@ -4234,6 +4195,14 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
         config->LocalUILockingCapabilities,
         config->MinAllowedTemperatureSetpointFromLocalUI,
         config->MaxAllowedTemperatureSetpointFromLocalUI);
+  }
+  if (config->TemperatureControlType) {
+    SUPLA_LOG_DEBUG("  Temperature control type: %s (%d)",
+                    config->TemperatureControlType <=
+                            SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_ROOM_TEMPERATURE
+                        ? "Room temperature"
+                        : "Aux heater/cooler temperature",
+                    config->TemperatureControlType);
   }
   SUPLA_LOG_DEBUG("  Temperatures:");
   for (int i = 0; i < 24; i++) {
@@ -4880,19 +4849,19 @@ void HvacBase::changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool) {
   auto function = getChannelFunction();
   int16_t newHeat = getTemperatureSetpointHeat() + tHeat;
   if (wrapAroundTemperatureSetpoints) {
-    if (newHeat > getTemperatureRoomMax()) {
-      newHeat = getTemperatureRoomMin();
-    } else if (newHeat < getTemperatureRoomMin()) {
-      newHeat = getTemperatureRoomMax();
+    if (newHeat > getTemperatureMainMax()) {
+      newHeat = getTemperatureMainMin();
+    } else if (newHeat < getTemperatureMainMin()) {
+      newHeat = getTemperatureMainMax();
     }
   }
 
   int16_t newCool = getTemperatureSetpointCool() + tCool;
   if (wrapAroundTemperatureSetpoints) {
-    if (newCool > getTemperatureRoomMax()) {
-      newCool = getTemperatureRoomMin();
-    } else if (newCool < getTemperatureRoomMin()) {
-      newCool = getTemperatureRoomMax();
+    if (newCool > getTemperatureMainMax()) {
+      newCool = getTemperatureMainMin();
+    } else if (newCool < getTemperatureMainMin()) {
+      newCool = getTemperatureMainMax();
     }
   }
 
@@ -4972,8 +4941,8 @@ void HvacBase::fixTempearturesConfig() {
               TEMPERATURE_FREEZE_PROTECTION);
           clearTemperatureInStruct(&config.Temperatures,
               TEMPERATURE_HEAT_PROTECTION);
-          setTemperatureFreezeProtection(getTemperatureRoomMin());
-          setTemperatureHeatProtection(getTemperatureRoomMax());
+          setTemperatureFreezeProtection(getTemperatureMainMin());
+          setTemperatureHeatProtection(getTemperatureMainMax());
         }
       }
     }
@@ -5556,6 +5525,20 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     readonlyViolation = true;
   }
 
+  if ((hvacConfig->TemperatureControlType == 0 &&
+       config.TemperatureControlType > 0) ||
+      (config.TemperatureControlType == 0 &&
+       hvacConfig->TemperatureControlType > 0)) {
+    SUPLA_LOG_DEBUG(
+        "HVAC[%d] TemperatureControlType change from %d to %d not allowed "
+        "(readonly)",
+        getChannelNumber(),
+        config.TemperatureControlType,
+        hvacConfig->TemperatureControlType);
+    hvacConfig->TemperatureControlType = config.TemperatureControlType;
+    readonlyViolation = true;
+  }
+
   if (fixReadonlyTemperature(TEMPERATURE_ROOM_MIN, &hvacConfig->Temperatures) ||
       fixReadonlyTemperature(TEMPERATURE_ROOM_MAX, &hvacConfig->Temperatures) ||
       fixReadonlyTemperature(TEMPERATURE_AUX_MIN, &hvacConfig->Temperatures) ||
@@ -5896,13 +5879,13 @@ void HvacBase::setLocalUILockTemperatureMin(int16_t min) {
     return;
   }
 
-  auto roomMin = getTemperatureRoomMin();
-  auto roomMax = getTemperatureRoomMax();
-  if (roomMin > INT16_MIN && min < roomMin) {
-    min = getTemperatureRoomMin();
+  auto mainMin = getTemperatureMainMin();
+  auto mainMax = getTemperatureMainMax();
+  if (mainMin > INT16_MIN && min < mainMin) {
+    min = getTemperatureMainMin();
   }
-  if (roomMax > INT16_MIN && min > roomMax) {
-    min = getTemperatureRoomMax();
+  if (mainMax > INT16_MIN && min > mainMax) {
+    min = getTemperatureMainMax();
   }
   config.MinAllowedTemperatureSetpointFromLocalUI = min;
   if (initDone) {
@@ -5913,10 +5896,10 @@ void HvacBase::setLocalUILockTemperatureMin(int16_t min) {
 
 int16_t HvacBase::getLocalUILockTemperatureMin() const {
   auto min = config.MinAllowedTemperatureSetpointFromLocalUI;
-  auto roomMin = getTemperatureRoomMin();
-  auto roomMax = getTemperatureRoomMax();
-  if ((roomMin > INT16_MIN && min < roomMin) ||
-      (roomMax > INT16_MIN && min > roomMax)) {
+  auto mainMin = getTemperatureMainMin();
+  auto mainMax = getTemperatureMainMax();
+  if ((mainMin > INT16_MIN && min < mainMin) ||
+      (mainMax > INT16_MIN && min > mainMax)) {
     min = INT16_MIN;
   }
   if (config.MinAllowedTemperatureSetpointFromLocalUI == 0 &&
@@ -5930,13 +5913,13 @@ void HvacBase::setLocalUILockTemperatureMax(int16_t max) {
   if (max == config.MaxAllowedTemperatureSetpointFromLocalUI) {
     return;
   }
-  auto roomMin = getTemperatureRoomMin();
-  auto roomMax = getTemperatureRoomMax();
-  if (roomMin > INT16_MIN && max < roomMin) {
-    max = getTemperatureRoomMin();
+  auto mainMin = getTemperatureMainMin();
+  auto mainMax = getTemperatureMainMax();
+  if (mainMin > INT16_MIN && max < mainMin) {
+    max = getTemperatureMainMin();
   }
-  if (roomMax > INT16_MIN && max > roomMax) {
-    max = getTemperatureRoomMax();
+  if (mainMax > INT16_MIN && max > mainMax) {
+    max = getTemperatureMainMax();
   }
 
   config.MaxAllowedTemperatureSetpointFromLocalUI = max;
@@ -5948,10 +5931,10 @@ void HvacBase::setLocalUILockTemperatureMax(int16_t max) {
 
 int16_t HvacBase::getLocalUILockTemperatureMax() const {
   auto max = config.MaxAllowedTemperatureSetpointFromLocalUI;
-  auto roomMin = getTemperatureRoomMin();
-  auto roomMax = getTemperatureRoomMax();
-  if ((roomMin > INT16_MIN && max < roomMin) ||
-      (roomMax > INT16_MIN && max > roomMax)) {
+  auto mainMin = getTemperatureMainMin();
+  auto mainMax = getTemperatureMainMax();
+  if ((mainMin > INT16_MIN && max < mainMin) ||
+      (mainMax > INT16_MIN && max > mainMax)) {
     max = INT16_MIN;
   }
   if (config.MinAllowedTemperatureSetpointFromLocalUI == 0 &&
@@ -5993,3 +5976,69 @@ uint8_t HvacBase::getLocalUILockCapabilities() const {
   return config.LocalUILockingCapabilities;
 }
 
+void HvacBase::setTemperatureControlType(uint8_t type) {
+  if (type >
+      SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE) {
+    SUPLA_LOG_WARNING("HVAC[%d]: Invalid TemperatureControlType value %d",
+                      getChannelNumber(),
+                      type);
+    return;
+  }
+  if (initialConfig && !initDone) {
+    initialConfig->TemperatureControlType = type;
+  }
+  if (config.TemperatureControlType != type) {
+    config.TemperatureControlType = type;
+    fixTemperatureSetpoints();
+    if (initDone) {
+      channelConfigChangedOffline = 1;
+      saveConfig();
+    }
+  }
+}
+
+bool HvacBase::isTemperatureControlTypeMain() const {
+  return config.TemperatureControlType <=
+         SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_ROOM_TEMPERATURE;
+}
+
+bool HvacBase::isTemperatureControlTypeAux() const {
+  return config.TemperatureControlType ==
+         SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE;
+}
+
+_supla_int16_t HvacBase::getTemperatureMainMin() const {
+  if (isTemperatureControlTypeMain()) {
+    return getTemperatureRoomMin();
+  } else {
+    auto tAuxMin = getTemperatureAuxMin();
+    if (!isSensorTempValid(tAuxMin)) {
+      return getTemperatureRoomMin();
+    }
+    return tAuxMin;
+  }
+  return INT16_MIN;
+}
+
+_supla_int16_t HvacBase::getTemperatureMainMax() const {
+    if (isTemperatureControlTypeMain()) {
+    return getTemperatureRoomMax();
+  } else {
+    auto tAuxMax = getTemperatureAuxMax();
+    if (!isSensorTempValid(tAuxMax)) {
+      return getTemperatureRoomMax();
+    }
+    return tAuxMax;
+  }
+  return INT16_MIN;
+}
+
+int16_t HvacBase::getClosestValidTemperature(int16_t temperature) const {
+  if (temperature < getTemperatureMainMin()) {
+    return getTemperatureMainMin();
+  }
+  if (temperature > getTemperatureMainMax()) {
+    return getTemperatureMainMax();
+  }
+  return temperature;
+}

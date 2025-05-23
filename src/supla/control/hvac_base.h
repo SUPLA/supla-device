@@ -176,6 +176,12 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setUseSeparateHeatCoolOutputs(bool enabled);
   bool isUseSeparateHeatCoolOutputs() const;
 
+  void setTemperatureControlType(uint8_t);
+
+  uint8_t getTemperatureControlType() const;
+  bool isTemperatureControlTypeMain() const;
+  bool isTemperatureControlTypeAux() const;
+
   // use this function to set value based on local config change
   bool setMinOnTimeS(uint16_t seconds);
   uint16_t getMinOnTimeS() const;
@@ -228,6 +234,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
       const THVACTemperatureCfg *temperatures) const;
   _supla_int16_t getTemperatureRoomMin() const;
   _supla_int16_t getTemperatureRoomMax() const;
+  _supla_int16_t getTemperatureMainMin() const;
+  _supla_int16_t getTemperatureMainMax() const;
   _supla_int16_t getTemperatureAuxMin() const;
   _supla_int16_t getTemperatureAuxMax() const;
   _supla_int16_t getTemperatureHisteresisMin() const;
@@ -321,7 +329,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   static int32_t getArrayIndex(int32_t bitIndex);
 
-  bool isTemperatureInRoomConstrain(_supla_int16_t temperature) const;
+  bool isTemperatureInMainConstrain(_supla_int16_t temperature) const;
   bool isTemperatureInAuxConstrain(_supla_int16_t temperature) const;
   bool isTemperatureFreezeProtectionValid(_supla_int16_t temperature) const;
   bool isTemperatureHeatProtectionValid(_supla_int16_t temperature) const;
@@ -494,6 +502,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   bool registerInAggregator(int16_t channelNo);
   void unregisterInAggregator(int16_t channelNo);
+
+  int16_t getClosestValidTemperature(int16_t temperature) const;
 
   TChannelConfig_HVAC config = {};
   TChannelConfig_HVAC *initialConfig = nullptr;

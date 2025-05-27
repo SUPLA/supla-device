@@ -312,7 +312,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isChannelBinarySensor(uint8_t channelNo) const;
   bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
   bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
-  void fixTempearturesConfig();
+  bool fixTempearturesConfig();
 
   // Check if mode is supported by currently configured Function
   bool isModeSupported(int mode) const;

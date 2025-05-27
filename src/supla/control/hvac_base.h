@@ -205,6 +205,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void initDefaultConfig();
   void initDefaultWeeklySchedule();
   void initDefaultAlgorithm();
+  void suspendIterateAlways();
 
   // Below temperatures defines device capabilities.
   // Configure those values before calling other setTemperature* functions.

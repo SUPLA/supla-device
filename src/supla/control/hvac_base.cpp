@@ -5014,6 +5014,10 @@ void HvacBase::clearWaitingFlags() {
   lastIterateTimestampMs = 0;
 }
 
+void HvacBase::suspendIterateAlways() {
+  lastIterateTimestampMs = millis();
+}
+
 void HvacBase::allowWrapAroundTemperatureSetpoints() {
   wrapAroundTemperatureSetpoints = true;
 }

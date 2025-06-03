@@ -186,9 +186,12 @@ bool HvacBase::iterateConnected() {
     return result;
   }
 
-  if (lastConfigChangeTimestampMs) {
+  // wait with reaction to new settings
+  if (lastConfigChangeTimestampMs &&
+      millis() - lastConfigChangeTimestampMs < 5000) {
     return result;
   }
+  lastConfigChangeTimestampMs = 0;
 
   if (configFinishedReceived && serverChannelFunctionValid) {
     if (channelConfigChangedOffline == 1) {

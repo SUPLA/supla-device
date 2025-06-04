@@ -4824,6 +4824,9 @@ bool HvacBase::getForcedOffSensorState() {
 }
 
 bool HvacBase::setBinarySensorChannelNo(uint8_t channelNo) {
+  if (initialConfig && !initDone) {
+    initialConfig->BinarySensorChannelNo = channelNo;
+  }
   if (!initDone) {
     config.BinarySensorChannelNo = channelNo;
     defaultBinarySensor = channelNo;

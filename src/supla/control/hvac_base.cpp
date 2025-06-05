@@ -5084,6 +5084,7 @@ void HvacBase::updateChannelState() {
     channel.setHvacFlagCooling(false);
 
     int outputRawValue = primaryOutput->getOutputValue();
+    lastValue = outputRawValue;
 
     if (outputRawValue <= 0) {
       bool hvacWasHeating = channel.isHvacFlagHeating();

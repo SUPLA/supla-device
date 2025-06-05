@@ -472,6 +472,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   // to HVAC configuration. Return true when correction was done and it will
   // be shared with server.
   virtual bool applyAdditionalValidation(TChannelConfig_HVAC *hvacConfig);
+  void clearLastOutputValue();
 
  private:
   _supla_int16_t getTemperature(int channelNo);
@@ -491,7 +492,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int evaluateCoolOutputValue(_supla_int16_t tMeasured,
                           _supla_int16_t tTarget, bool forAux = false);
   void fixTemperatureSetpoints();
-  void clearLastOutputValue();
   void storeLastWorkingMode();
   void applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig);
   int32_t channelFunctionToIndex(int32_t channelFunction) const;

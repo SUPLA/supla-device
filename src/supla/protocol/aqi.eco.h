@@ -16,6 +16,9 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+// Dependencies:
+// https://github.com/arduino-libraries/Arduino_JSON
+
 // It use ca. 20kB RAM, so ESP32 is highly recomended
 
 #ifndef SRC_SUPLA_PROTOCOL_AQI_ECO_H_

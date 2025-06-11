@@ -48,9 +48,6 @@ class WeatherSender : public Supla::Element {
  public:
   explicit WeatherSender(Supla::Network* _network) {
     network = _network;
-    for (int i=0; i < MAXSENSORS; i++) {
-      sensors[i] = nullptr;
-    }
     lastSendTime = millis() - 100 * 1000;
   }
 
@@ -147,8 +144,8 @@ class WeatherSender : public Supla::Element {
  protected:
   int refreshTime = 180;
   uint32_t lastSendTime = 0;
-  Supla::LocalAction* sensors[MAXSENSORS];
-  int options[MAXSENSORS];
+  Supla::LocalAction* sensors[MAXSENSORS] = {};
+  int options[MAXSENSORS] = {};
   Supla::Network* network = nullptr;
 };
 

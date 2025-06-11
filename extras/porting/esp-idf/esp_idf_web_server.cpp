@@ -124,7 +124,7 @@ Supla::EspIdfWebServer::~EspIdfWebServer() {
 }
 
 bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req, bool beta) {
-  notifyClientConnected();
+  notifyClientConnected(true);
   resetParser();
   if (beta) {
     setBetaProcessing();

@@ -76,11 +76,6 @@ class __FlashStringHelper;
 
 namespace Supla {
 namespace Device {
-  enum RequestConfigModeType {
-    None,
-    WithTimeout,
-    WithoutTimeout
-  };
 class SwUpdate;
 class Mutex;
 class ChannelConflictResolver;
@@ -154,10 +149,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void scheduleProtocolsRestart(int timeout = 0);
   void softRestart();
   void saveStateToStorage();
-  void disableCfgModeTimeout();
+  void restartCfgModeTimeout(bool requireRestart);
   void resetToFactorySettings();
   void disableLocalActionsIfNeeded();
-  void requestCfgMode(Supla::Device::RequestConfigModeType);
+  void requestCfgMode();
 
   int getCurrentStatus();
   bool loadDeviceConfig();
@@ -223,6 +218,15 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setStatusLed(Supla::Device::StatusLed *led);
 
+  /**
+   * Sets the leave configuration mode after inactivity timeout in minutes.
+   * Device will automatically leave configuration mode after specified
+   * inactivity timeout (no HTTP GET/POST requests).
+   *
+   * @param valueMin inactivity timeout in minutes. Use 0 to disable
+   */
+  void setLeaveCfgModeAfterInactivityMin(int valueMin);
+
  protected:
   int networkIsNotReadyCounter = 0;
 
@@ -234,11 +238,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t forceRestartTimeMs = 0;
   uint32_t protocolRestartTimeMs = 0;
   uint32_t resetOnConnectionFailTimeoutSec = 0;
-  int allowOfflineMode = 0;
+  int allowOfflineMode = 1;
   int currentStatus = STATUS_UNKNOWN;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
-  Supla::Device::RequestConfigModeType goToConfigModeAsap = Supla::Device::None;
   bool triggerResetToFactorySettings = false;
   bool triggerStartLocalWebServer = false;
   bool triggerStopLocalWebServer = false;
@@ -254,8 +257,10 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // used to indicate if begin() method was called - it will be set to
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
+  bool goToConfigModeAsap = false;
 
   uint8_t goToOfflineModeTimeout = 0;
+  uint8_t leaveCfgModeAfterInactivityMin = 5;
   uint8_t macLengthInHostname = 6;
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;

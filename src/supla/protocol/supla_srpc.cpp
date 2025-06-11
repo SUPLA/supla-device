@@ -705,7 +705,7 @@ void Supla::Protocol::SuplaSrpc::onRegisterResult(
 
     case SUPLA_RESULTCODE_CFG_MODE_REQUESTED:
       SUPLA_LOG_INFO("Registration result: CFG mode requested");
-      sdc->requestCfgMode(Supla::Device::WithTimeout);
+      sdc->requestCfgMode();
       return;
 
     default:

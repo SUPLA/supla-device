@@ -153,6 +153,14 @@ void Network::SetNormalMode() {
   }
 }
 
+void Network::SetOfflineMode() {
+  auto ptr = firstNetIntf;
+  while (ptr) {
+    ptr->setOfflineMode();
+    ptr = ptr->nextNetIntf;
+  }
+}
+
 void Network::SetTestMode() {
   auto ptr = firstNetIntf;
   while (ptr) {
@@ -365,12 +373,20 @@ void Network::setPassword(const char *wifiPassword) {
 }
 
 void Network::setConfigMode() {
+  SUPLA_LOG_DEBUG("[%s] setConfigMode", getIntfName());
   mode = Supla::DEVICE_MODE_CONFIG;
   setupNeeded = true;
 }
 
 void Network::setNormalMode() {
+  SUPLA_LOG_DEBUG("[%s] setNormalMode", getIntfName());
   mode = Supla::DEVICE_MODE_NORMAL;
+  setupNeeded = true;
+}
+
+void Network::setOfflineMode() {
+  SUPLA_LOG_DEBUG("[%s] setOfflineMode", getIntfName());
+  mode = Supla::DEVICE_MODE_OFFLINE;
   setupNeeded = true;
 }
 

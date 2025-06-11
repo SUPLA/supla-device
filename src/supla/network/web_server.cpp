@@ -152,9 +152,9 @@ void Supla::WebServer::setSuplaDeviceClass(SuplaDeviceClass *ptr) {
   sdc = ptr;
 }
 
-void Supla::WebServer::notifyClientConnected() {
+void Supla::WebServer::notifyClientConnected(bool isPost) {
   if (sdc) {
-    sdc->disableCfgModeTimeout();
+    sdc->restartCfgModeTimeout(isPost);
   }
 }
 

@@ -72,7 +72,7 @@ class AQIECO : public Supla::Protocol::WeatherSender {
 
   bool sendData() override {
     if (strlen(apiToken) != 32) {
-      SUPLA_LOG_DEBUG("aqi.eco: token złej długości albo pusty: %s", apiToken);
+      SUPLA_LOG_DEBUG("aqi.eco: wrong token length: %s", apiToken);
       return false;
     }
 

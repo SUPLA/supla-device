@@ -31,7 +31,7 @@ using Supla::Sensor::BinaryBase;
 BinaryBase::BinaryBase() {
   channel.setType(SUPLA_CHANNELTYPE_BINARYSENSOR);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 BinaryBase::~BinaryBase() {
@@ -130,9 +130,6 @@ void BinaryBase::handleChannelConfigFinished() {
     // set default config on device
     SUPLA_LOG_DEBUG("Binary[%d]: setting default channel config",
                     getChannelNumber());
-    TSD_ChannelConfig defaultConfig = {};
-    defaultConfig.ConfigSize = sizeof(TChannelConfig_BinarySensor);
-    handleChannelConfig(&defaultConfig, true);
   }
 }
 

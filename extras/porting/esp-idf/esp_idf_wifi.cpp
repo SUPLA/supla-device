@@ -66,6 +66,7 @@ static void eventHandler(void *arg,
                          int32_t eventId,
                          void *eventData) {
   static bool firstWiFiScanDone = false;
+  SUPLA_LOG_DEBUG("[%s] Got Event: %d", thisNetIntfPtr->getIntfName(), eventId);
   if (thisNetIntfPtr == nullptr) {
     return;
   }
@@ -169,10 +170,16 @@ void Supla::EspIdfWifi::setup() {
     esp_wifi_set_ps(WIFI_PS_NONE);
 
   } else {
+    SUPLA_LOG_DEBUG("[%s] reinitializing WiFi connection", getIntfName());
     disable();
   }
 
-  if (mode == Supla::DEVICE_MODE_CONFIG) {
+  if (mode == Supla::DEVICE_MODE_OFFLINE) {
+    SUPLA_LOG_DEBUG("[%s] offline mode, skipping WiFi connection",
+                    getIntfName());
+    return;
+  } else if (mode == Supla::DEVICE_MODE_CONFIG) {
+    SUPLA_LOG_DEBUG("[%s] starting AP config mode", getIntfName());
     wifi_config_t wifi_config = {};
 
     memcpy(wifi_config.ap.ssid, hostname, strlen(hostname));

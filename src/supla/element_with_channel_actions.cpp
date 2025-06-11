@@ -41,7 +41,34 @@ void ConfigTypesBitmap::clear(int configType) {
   set(configType, false);
 }
 
+void ConfigTypesBitmap::clearAll() {
+  all = 0;
+}
+
+void ConfigTypesBitmap::setAll(uint8_t values) {
+  SUPLA_LOG_DEBUG("ConfigTypesBitmap: Set all to 0x%X", values);
+  all = values;
+}
+
+uint8_t ConfigTypesBitmap::getAll() const {
+  return all;
+}
+
+void ConfigTypesBitmap::setConfigFinishedReceived() {
+  configFinishedReceived = 1;
+}
+
+void ConfigTypesBitmap::clearConfigFinishedReceived() {
+  configFinishedReceived = 0;
+}
+
+bool ConfigTypesBitmap::isConfigFinishedReceived() const {
+  return configFinishedReceived == 1;
+}
+
 void ConfigTypesBitmap::set(int configType, bool value) {
+  SUPLA_LOG_DEBUG(
+      "ConfigTypesBitmap: Set config type %d to %d", configType, value);
   uint8_t v = value ? 1 : 0;
   switch (configType) {
     case SUPLA_CONFIG_TYPE_DEFAULT: {
@@ -249,7 +276,9 @@ bool Supla::ElementWithChannelActions::isAnyUpdatePending() {
 
   if (channelConfigState == Supla::ChannelConfigState::LocalChangePending ||
       channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
-      channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished) {
+      channelConfigState == Supla::ChannelConfigState::LocalChangeSent ||
+      channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished ||
+      channelConfigState == Supla::ChannelConfigState::ResendConfig) {
     return true;
   }
 
@@ -270,7 +299,7 @@ void Supla::ElementWithChannelActions::clearChannelConfigChangedFlag() {
 
 void Supla::ElementWithChannelActions::onRegistered(
     Supla::Protocol::SuplaSrpc *suplaSrpc) {
-  receivedConfigTypes.all = 0;
+  receivedConfigTypes.clearAll();
   setChannelConfigAttempts = 0;
   Supla::Element::onRegistered(suplaSrpc);
   switch (channelConfigState) {
@@ -279,23 +308,30 @@ void Supla::ElementWithChannelActions::onRegistered(
       channelConfigState = Supla::ChannelConfigState::WaitForConfigFinished;
       break;
     }
+    case Supla::ChannelConfigState::LocalChangePending: {
+      break;
+    }
     default: {
-      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      channelConfigState = Supla::ChannelConfigState::ResendConfig;
       break;
     }
   }
 }
 
 void Supla::ElementWithChannelActions::handleChannelConfigFinished() {
-  receivedConfigTypes.configFinishedReceived = 1;
+  receivedConfigTypes.setConfigFinishedReceived();
   setChannelConfigAttempts = 0;
   if (channelConfigState == Supla::ChannelConfigState::WaitForConfigFinished) {
     channelConfigState = Supla::ChannelConfigState::None;
   }
   if (receivedConfigTypes != usedConfigTypes) {
-    SUPLA_LOG_INFO("Channel[%d] some config is missing on server...",
-                   getChannelNumber());
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    SUPLA_LOG_INFO(
+        "Channel[%d] some config is missing on server... (rcv: 0x%X != used: "
+        "0x%X)",
+        getChannelNumber(),
+        receivedConfigTypes.getAll(),
+        usedConfigTypes.getAll());
+    channelConfigState = Supla::ChannelConfigState::ResendConfig;
   }
 }
 
@@ -364,18 +400,30 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   auto applyResult = applyChannelConfig(result, local);
   switch (applyResult) {
     case ApplyConfigResult::Success: {
+      SUPLA_LOG_INFO("Channel[%d] ConfigType %d applied",
+                     getChannelNumber(),
+                     result->ConfigType);
       receivedConfigTypes.set(result->ConfigType);
       return SUPLA_CONFIG_RESULT_TRUE;
     }
     case ApplyConfigResult::NotSupported: {
+      SUPLA_LOG_WARNING("Channel[%d] ConfigType %d not supported",
+                        getChannelNumber(),
+                        result->ConfigType);
       receivedConfigTypes.set(result->ConfigType);
       return SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
     }
     case ApplyConfigResult::SetChannelConfigNeeded: {
+      SUPLA_LOG_INFO("Channel[%d] ConfigType %d SetChannelConfigNeeded",
+                     getChannelNumber(),
+                     result->ConfigType);
       triggerSetChannelConfig(result->ConfigType);
       return SUPLA_CONFIG_RESULT_TRUE;
     }
     case ApplyConfigResult::DataError: {
+      SUPLA_LOG_WARNING("Channel[%d] ConfigType %d data error",
+                        getChannelNumber(),
+                        result->ConfigType);
       return SUPLA_CONFIG_RESULT_DATA_ERROR;
     }
   }
@@ -405,10 +453,6 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
 
-  if (!success) {
-    channelConfigState = Supla::ChannelConfigState::SetChannelConfigFailed;
-  }
-
   SUPLA_LOG_INFO("Channel[%d] Set channel config %s (%d) for config type %d",
                  getChannelNumber(),
                  success ? "succeeded" : "failed",
@@ -417,13 +461,24 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   receivedConfigTypes.set(result->ConfigType);
 
-  if (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend) {
+  if (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
+      channelConfigState == Supla::ChannelConfigState::LocalChangeSent) {
     setChannelConfigAttempts = 0;
     if (receivedConfigTypes != usedConfigTypes) {
-      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      if (channelConfigState ==
+          Supla::ChannelConfigState::SetChannelConfigSend) {
+        channelConfigState = Supla::ChannelConfigState::ResendConfig;
+      } else {
+        channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+      }
     } else {
       clearChannelConfigChangedFlag();
     }
+  }
+
+  if (!success) {
+    clearChannelConfigChangedFlag();
+    channelConfigState = Supla::ChannelConfigState::SetChannelConfigFailed;
   }
 }
 
@@ -442,20 +497,21 @@ void Supla::ElementWithChannelActions::purgeConfig() {
 void Supla::ElementWithChannelActions::triggerSetChannelConfig(int configType) {
   // don't trigger setChannelConfig if it failed in previous attempt
   if (channelConfigState != Supla::ChannelConfigState::SetChannelConfigFailed) {
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    channelConfigState = Supla::ChannelConfigState::ResendConfig;
     receivedConfigTypes.clear(configType);
   }
 }
 
 bool Supla::ElementWithChannelActions::iterateConfigExchange() {
-  if (!receivedConfigTypes.configFinishedReceived) {
+  if (!receivedConfigTypes.isConfigFinishedReceived()) {
     return true;
   }
   if (getChannel()->getDefaultFunction() == 0) {
     return true;
   }
 
-  if (channelConfigState == Supla::ChannelConfigState::LocalChangePending) {
+  if (channelConfigState == Supla::ChannelConfigState::LocalChangePending ||
+      channelConfigState == Supla::ChannelConfigState::ResendConfig) {
     int nextConfigType = getNextConfigType();
     if (nextConfigType == -1) {
       clearChannelConfigChangedFlag();
@@ -494,8 +550,13 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                 getChannelNumber(),
                 defaultFunction,
                 nextConfigType);
-            channelConfigState =
-                Supla::ChannelConfigState::SetChannelConfigSend;
+            if (channelConfigState ==
+                Supla::ChannelConfigState::LocalChangePending) {
+              channelConfigState = Supla::ChannelConfigState::LocalChangeSent;
+            } else {
+              channelConfigState =
+                  Supla::ChannelConfigState::SetChannelConfigSend;
+            }
             sendResult = true;
           }
         }
@@ -527,7 +588,8 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
 int Supla::ElementWithChannelActions::getNextConfigType() const {
   if (receivedConfigTypes != usedConfigTypes) {
     ConfigTypesBitmap notRecieved;
-    notRecieved.all = (~receivedConfigTypes.all) & usedConfigTypes.all;
+    notRecieved.setAll((~receivedConfigTypes.getAll()) &
+                       usedConfigTypes.getAll());
     for (uint8_t i = 0; i < 8; i++) {
       if (notRecieved.isSet(i)) {
         return i;

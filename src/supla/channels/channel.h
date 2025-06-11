@@ -251,24 +251,24 @@ class Channel : public LocalAction {
   virtual bool isExtended() const;
   bool isUpdateReady() const;
   int getChannelNumber() const;
-  _supla_int_t getChannelType() const;
+  int32_t getChannelType() const;
 
-  void setType(_supla_int_t type);
+  void setType(int32_t type);
   // setDefault and setDefaultFunction are the same methods.
   // Second was added for better readability
-  void setDefault(_supla_int_t value);
-  void setDefaultFunction(_supla_int_t function);
+  void setDefault(int32_t value);
+  void setDefaultFunction(int32_t function);
   int32_t getDefaultFunction() const;
   bool isFunctionValid(int32_t function) const;
   void setFlag(uint64_t flag);
   void unsetFlag(uint64_t flag);
   uint64_t getFlags() const;
-  void setFuncList(_supla_int_t functions);
-  _supla_int_t getFuncList() const;
-  void addToFuncList(_supla_int_t function);
-  void removeFromFuncList(_supla_int_t function);
-  void setActionTriggerCaps(_supla_int_t caps);
-  _supla_int_t getActionTriggerCaps();
+  void setFuncList(int32_t functions);
+  int32_t getFuncList() const;
+  void addToFuncList(int32_t function);
+  void removeFromFuncList(int32_t function);
+  void setActionTriggerCaps(int32_t caps);
+  int32_t getActionTriggerCaps();
 
   void setValidityTimeSec(uint32_t timeSec);
   virtual void sendUpdate();

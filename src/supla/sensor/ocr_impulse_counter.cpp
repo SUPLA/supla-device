@@ -47,8 +47,8 @@ OcrImpulseCounter::OcrImpulseCounter() {
   addAvailableLightingMode(OCR_LIGHTING_MODE_OFF | OCR_LIGHTING_MODE_ALWAYS_ON |
                            OCR_LIGHTING_MODE_AUTO);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_IC_WATER_METER);
-  usedConfigTypes.defaultConfig = 1;
-  usedConfigTypes.ocrConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_OCR);
   clearOcrConfig();
 }
 

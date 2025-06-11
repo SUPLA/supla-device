@@ -39,7 +39,7 @@ class WebServer {
   virtual void start() = 0;
   virtual void stop() = 0;
   void setSuplaDeviceClass(SuplaDeviceClass *);
-  void notifyClientConnected();
+  void notifyClientConnected(bool isPost = false);
   virtual void parsePost(const char *postContent,
                          int size,
                          bool lastChunk = true);

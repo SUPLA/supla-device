@@ -27,7 +27,7 @@ Supla::Sensor::ThermHygroMeter::ThermHygroMeter() {
   channel.setType(SUPLA_CHANNELTYPE_HUMIDITYANDTEMPSENSOR);
   channel.setDefaultFunction(SUPLA_CHANNELFNC_HUMIDITYANDTEMPERATURE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 void Supla::Sensor::ThermHygroMeter::onInit() {

@@ -90,6 +90,8 @@ class Button : public SimpleButton, public ActionHandler {
 
   uint32_t getLastStateChange() const;
 
+  void setAllowHoldOnPowerOn(bool allow) { allowHoldOnPowerOn = allow; }
+
  protected:
   void evaluateMaxMulticlickValue();
   // disbles repeating "on hold" if repeat time is lower than threshold
@@ -110,6 +112,7 @@ class Button : public SimpleButton, public ActionHandler {
   bool configButton = false;
   int8_t buttonNumber = -1;
   bool disabled = false;
+  bool allowHoldOnPowerOn = false;
 
   static int buttonCounter;
 };

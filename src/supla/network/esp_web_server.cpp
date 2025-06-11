@@ -111,7 +111,7 @@ Supla::EspWebServer::~EspWebServer() {
 }
 
 bool Supla::EspWebServer::handlePost(bool beta) {
-  notifyClientConnected();
+  notifyClientConnected(true);
   resetParser();
   if (beta) {
     setBetaProcessing();

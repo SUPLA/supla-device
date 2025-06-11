@@ -35,7 +35,7 @@ GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver,
     bool addMemoryVariableDriver)
     : driver(driver) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 
   if (this->driver == nullptr && addMemoryVariableDriver) {
     this->driver = new MemoryVariableDriver;

@@ -54,6 +54,7 @@ class Network {
   static bool Iterate();
   static void SetConfigMode();
   static void SetNormalMode();
+  static void SetOfflineMode();
   static void SetTestMode();
   static void SetSetupNeeded();
   static bool PopSetupNeeded();
@@ -76,6 +77,7 @@ class Network {
   virtual void uninit();
   virtual void setConfigMode();
   virtual void setNormalMode();
+  virtual void setOfflineMode();
   void setTestMode();
   virtual bool getMacAddr(uint8_t *);
   virtual void setHostname(const char *, int macSize);

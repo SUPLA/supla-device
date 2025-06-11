@@ -95,6 +95,15 @@ int SensorParsedBase::getStateValue() {
   std::variant<int, bool, std::string> valueYes = std::string("Yes");
   std::variant<int, bool, std::string> valueYES = std::string("YES");
   std::variant<int, bool, std::string> valueY = std::string("Y");
+
+  std::variant<int, bool, std::string> value0 = 0;
+  std::variant<int, bool, std::string> valueFalse = false;
+  std::variant<int, bool, std::string> value_no = std::string("no");
+  std::variant<int, bool, std::string> valueNo = std::string("No");
+  std::variant<int, bool, std::string> valueNO = std::string("NO");
+  std::variant<int, bool, std::string> valueN = std::string("N");
+
+
   int state = -1;
 
   if (isParameterConfigured(Supla::Parser::State)) {
@@ -123,7 +132,9 @@ int SensorParsedBase::getStateValue() {
               value == valueON || value == value_on || value == value_yes ||
               value == valueY || value == valueYes || value == valueYES) {
             state = 1;
-          } else {
+          } else if (value == value0 || value == valueFalse ||
+                     value == value_no || value == valueNo || value == valueN ||
+                     value == valueNO) {
             state = 0;
           }
         }

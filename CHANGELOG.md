@@ -1,5 +1,70 @@
 # CHANGELOG.md
 
+# 25.06 (2025-06-10)
+### HVAC
+- Fixed issue with antifreeze protection not working when thermostat was off after being in "manual override" mode.
+- Fixed default binary sensor assignment when `initialConfig` is used.
+- Fixed ignoring of "aux setpoint min/max" when thermostat is off.
+- Fixed overheat/antifreeze protection edge cases.
+- Added temperature control type support (it allows to switch between temperature control based on main vs auxiliary thermometer)
+- Added support for AuxHysteresis and its getters/setters.
+- Added method to suspend `iterateAlways` execution in HvacBase
+- Added external thermostat support via `RemoteOutputInterface`.
+- Added support for reporting and setting antifreeze/overheat active flag.
+- HVAC now ignores "min off time" on device startup.
+
+### Modbus
+- Added Modbus configurator class and EM handler.
+- Added validation for network and serial mode.
+- Added HTML web config for Modbus.
+
+### sd4linux
+- Added support for `offline_on_invalid_state` for BinarySensor.
+
+### Sensors & Devices
+- Added support for BMP180/BMP280 sensors (#92).
+- Added support for PM1006K Particle Sensor (from Ikea Vindriktning) (#89).
+- Added **TemperatureDropSensor** with configurable threshold and detection delay.
+- Added Arduino IDE example for VirtualBinary.
+- fix for not applying temperature corrections to thermometers. Add extra check if temperature is reported in valid range.
+
+### LED & UI
+- Added blinking LED synchronization features.
+- Added getCurrentSequence for `StatusLed`.
+
+### Button
+- Added sequence detection cancelation for long-press.
+- Added support for "on hold" during boot if button already held.
+
+### Relay
+- Fixed overcurrent filtering (thanks @elmaya).
+- Add support for overcurrent protection.
+- Add channel config exchange for Staircase function.
+
+### Valve
+- Introduced new configuration logic for closing valve on flood (always/on-change).
+
+### Container
+- Fixed Condition handling in local actions
+- Added getFillLevelForSensor(channelNumber) method
+- Don't allow sensor fill level == 0
+- Added option to mute sound alarms with internal logic for Containers.
+
+### Storage & Flash
+- Fixed `readSection` to prevent data corruption on read failure.
+- Added `setDeleteAllMethodEnabled` to Storage class.
+
+## Code Cleanup
+- Removed default GPIO methods from custom IO.
+- Removed deprecated Arduino CLI options.
+
+## Tools & Build System
+- Updated esp-idf Dockerfile to version 5.4.1.
+- Added Arduino-PM1006K and OneWire libraries to arduino-cli Dockerfile.
+- Added `compareSemVer` utility to Tools.
+- allow rssiToSignalStrength function to convert any rssi level range to 0-100% value.
+
+
 # 25.02 (2025-02-28)
 ### Core Changes
   - Consider "firmware update ongoing" as "online"

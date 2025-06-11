@@ -60,7 +60,7 @@ Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   channel.setFuncList(functions);
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 Relay::~Relay() {
@@ -835,7 +835,11 @@ void Relay::setOvercurrentThreshold(uint32_t value) {
 
   if (overcurrentThreshold != value) {
     overcurrentThreshold = value;
-    triggerSetChannelConfig();
+    if (isStaircaseFunction()) {
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_EXTENDED);
+    } else {
+      triggerSetChannelConfig(SUPLA_CONFIG_TYPE_DEFAULT);
+    }
     saveConfig();
   }
 }

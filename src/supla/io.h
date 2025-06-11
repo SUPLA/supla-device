@@ -85,10 +85,14 @@ class Io {
       uint8_t pin,
       uint8_t value,
       uint64_t timeoutMicro);
-  virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
+  virtual void customDigitalWrite(int channelNumber,
+                                  uint8_t pin,
+                                  uint8_t val);
   virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
   virtual int customAnalogRead(int channelNumber, uint8_t pin);
-  virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
+  virtual void customAttachInterrupt(uint8_t pin,
+                                     void (*func)(void),
+                                     int mode);
   virtual void customDetachInterrupt(uint8_t pin);
   virtual uint8_t customPinToInterrupt(uint8_t pin);
 

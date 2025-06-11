@@ -34,7 +34,7 @@ Container::Container() {
   setDefaultFunction(SUPLA_CHANNELFNC_CONTAINER);
   channel.setContainerFillValue(-1);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  usedConfigTypes.defaultConfig = 1;
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 void Container::setInternalLevelReporting(bool internalLevelReporting) {

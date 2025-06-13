@@ -24,6 +24,14 @@
 #include <SuplaDevice.h>
 
 namespace Supla {
+
+enum class AutoUpdateMode: uint8_t {
+  FrocedOff = 0,
+  Disabled = 1,
+  SecurityOnly = 2,  // default
+  AllUpdates = 3
+};
+
 namespace Device {
 class SwUpdate {
  public:
@@ -39,12 +47,25 @@ class SwUpdate {
   virtual bool isAborted() = 0;
   void useBeta();
 
+  bool isCheckUpdateAndAbort() const { return checkUpdateAndAbort; }
+  void setCheckUpdateAndAbort() { checkUpdateAndAbort = true; }
+
+  const char *getUrl() const { return updateUrl; }
+  const char *getNewVersion() const { return newVersion; }
+
+  bool isSecurityOnly() const { return securityOnly; }
+  void setSecurityOnly() { securityOnly = true; }
+
  protected:
   explicit SwUpdate(SuplaDeviceClass *sdc, const char *newUrl = nullptr);
 
   bool beta = false;
+  bool securityOnly = false;
   bool started = false;
+  bool checkUpdateAndAbort = false;
   SuplaDeviceClass *sdc = nullptr;
+  char *updateUrl = nullptr;
+  char *newVersion = nullptr;
 
   char url[SUPLA_MAX_URL_LENGTH] = {};
 };

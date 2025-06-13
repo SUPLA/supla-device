@@ -52,6 +52,17 @@ Supla::EspIdfOta::EspIdfOta(SuplaDeviceClass *sdc, const char *newUrl)
     : Supla::Device::SwUpdate(sdc, newUrl) {
 }
 
+Supla::EspIdfOta::~EspIdfOta() {
+  if (client) {
+    esp_http_client_cleanup(client);
+    client = 0;
+  }
+  if (otaBuffer) {
+    delete[] otaBuffer;
+    otaBuffer = nullptr;
+  }
+}
+
 void Supla::EspIdfOta::start() {
   Supla::Device::SwUpdate::start();
 }
@@ -192,9 +203,10 @@ void Supla::EspIdfOta::iterate() {
 
   if (client) {
     esp_http_client_cleanup(client);
+    client = nullptr;
   }
   client = esp_http_client_init(&configCheckUpdate);
-  if (client == NULL) {
+  if (client == nullptr) {
     fail("SW update: failed initialize connection with update server");
     return;
   }
@@ -212,9 +224,6 @@ void Supla::EspIdfOta::iterate() {
 
   esp_http_client_write(client, queryParams, querySize);
   esp_http_client_fetch_headers(client);
-
-  // Start fetching bin file and perform update
-  const esp_partition_t *updatePartition = NULL;
 
   SUPLA_LOG_DEBUG("Starting OTA");
 
@@ -263,7 +272,7 @@ void Supla::EspIdfOta::iterate() {
   }
 
   esp_http_client_cleanup(client);
-  client = 0;
+  client = nullptr;
 
   if (cJSON_IsObject(latestUpdate)) {
     cJSON *version = cJSON_GetObjectItemCaseSensitive(latestUpdate, "version");
@@ -278,15 +287,30 @@ void Supla::EspIdfOta::iterate() {
       SUPLA_LOG_INFO("%s", buf);
       log(buf);
 
-      esp_http_client_config_t configGet = {};
-      configGet.url = url->valuestring;
-      configGet.timeout_ms = 10000;
-      client = esp_http_client_init(&configGet);
-      if (client == NULL) {
-        fail("SW update: failed initialize GET connection with update server");
+      // copy to newVersion
+      if (newVersion) {
+        delete[] newVersion;
+      }
+      int versionLen = strlen(version->valuestring) + 1;
+      newVersion = new char[versionLen];
+      if (newVersion) {
+        snprintf(newVersion, versionLen, "%s", version->valuestring);
+      }
+
+      // copy to updateUrl
+      if (updateUrl) {
+        delete[] updateUrl;
+      }
+      int urlLen = strlen(url->valuestring) + 1;
+      updateUrl = new char[urlLen];
+      if (updateUrl == nullptr) {
+        fail("SW update: failed to allocate memory");
+        cJSON_Delete(json);
         return;
       }
-      esp_http_client_set_method(client, HTTP_METHOD_GET);
+      snprintf(updateUrl, urlLen, "%s", url->valuestring);
+      cJSON_Delete(json);
+
     } else {
       fail("SW update: no url and version received - finishing");
       return;
@@ -296,8 +320,24 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
+  if (checkUpdateAndAbort) {
+    abort = true;
+    return;
+  }
+
+  //////////////////
+  // download update
+  //////////////////
+  esp_http_client_config_t configGet = {};
+  configGet.url = updateUrl;
+  configGet.timeout_ms = 10000;
+  client = esp_http_client_init(&configGet);
+  if (client == NULL) {
+    fail("SW update: failed initialize GET connection with update server");
+    return;
+  }
+  esp_http_client_set_method(client, HTTP_METHOD_GET);
   err = esp_http_client_open(client, 0);
-  cJSON_Delete(json);
   if (err != ESP_OK) {
     fail("SW update: failed to open HTTP connection");
     return;
@@ -317,6 +357,9 @@ void Supla::EspIdfOta::iterate() {
     fail(buf);
     return;
   }
+
+  // Start fetching bin file and perform update
+  const esp_partition_t *updatePartition = NULL;
 
   updatePartition = esp_ota_get_next_update_partition(NULL);
   if (updatePartition == NULL) {
@@ -378,7 +421,7 @@ void Supla::EspIdfOta::iterate() {
   }
 
   esp_http_client_cleanup(client);
-  client = 0;
+  client = nullptr;
 
   err = esp_ota_end(updateHandle);
   updateHandle = 0;
@@ -527,7 +570,7 @@ void Supla::EspIdfOta::fail(const char *reason) {
 }
 
 void Supla::EspIdfOta::log(const char *value) {
-  if (sdc) {
+  if (sdc && !checkUpdateAndAbort) {
     sdc->addLastStateLog(value);
   }
 }

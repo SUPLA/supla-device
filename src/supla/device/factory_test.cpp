@@ -138,6 +138,13 @@ void FactoryTest::onInit() {
     failReason = 12;
     return;
   }
+
+  if (!sdc->isAutomaticFirmwareUpdateEnabled()) {
+    SUPLA_LOG_ERROR("TEST failed: automatic firmware update is disabled");
+    testFailed = true;
+    failReason = 15;
+    return;
+  }
 }
 
 void FactoryTest::iterateAlways() {

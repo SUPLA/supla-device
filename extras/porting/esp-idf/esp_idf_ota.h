@@ -30,6 +30,7 @@ class EspIdfOta : public Supla::Device::SwUpdate {
  public:
   friend Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
       SuplaDeviceClass *sdc, const char *url);
+  ~EspIdfOta();
   void start() override;
   void iterate() override;
   bool isFinished() override;

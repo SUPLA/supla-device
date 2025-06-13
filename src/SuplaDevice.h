@@ -227,7 +227,37 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   void setLeaveCfgModeAfterInactivityMin(int valueMin);
 
+  /**
+   * Checks if automatic firmware update is supported
+   *
+   * @return true if automatic update is supported
+   */
+  bool isAutomaticFirmwareUpdateEnabled() const;
+
+  /**
+   * Sets automatic firmware update support
+   *
+   * @param value true to enable, false to disable
+   */
+  void setAutomaticFirmwareUpdateSupported(bool value);
+
  protected:
+  /**
+   * Performs software update if needed
+   *
+   */
+  void iterateSwUpdate();
+
+  /**
+   * Initializes SW update instance
+   *
+   * @param performUpdate true to perform SW update, false to check for update
+   * @param securityOnly 0 to check for all updates, 1 to check for security
+   *                       updates, -1 will use value from device config
+   *
+   * @return true if SW update instance was initialized
+   */
+  bool initSwUpdateInstance(bool performUpdate, int securityOnly = -1);
   int networkIsNotReadyCounter = 0;
 
   uint32_t deviceRestartTimeoutTimestamp = 0;
@@ -238,6 +268,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t forceRestartTimeMs = 0;
   uint32_t protocolRestartTimeMs = 0;
   uint32_t resetOnConnectionFailTimeoutSec = 0;
+  uint32_t lastSwUpdateCheckTimestamp = 0;
   int allowOfflineMode = 1;
   int currentStatus = STATUS_UNKNOWN;
 
@@ -258,6 +289,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
+  bool triggerSwUpdateIfAvailable = false;
 
   uint8_t goToOfflineModeTimeout = 0;
   uint8_t leaveCfgModeAfterInactivityMin = 5;

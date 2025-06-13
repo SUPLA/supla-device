@@ -16,9 +16,10 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <string.h>
-
 #include "sw_update.h"
+
+#include <supla/storage/config.h>
+#include <string.h>
 
 #if defined(ARDUINO) || defined(SUPLA_TEST) || defined(SUPLA_LINUX) || \
     defined(SUPLA_FREERTOS)
@@ -32,6 +33,14 @@ Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(SuplaDeviceClass *sdc,
 #endif
 
 Supla::Device::SwUpdate::~SwUpdate() {
+  if (newVersion) {
+    delete[] newVersion;
+    newVersion = nullptr;
+  }
+  if (updateUrl) {
+    delete[] updateUrl;
+    updateUrl = nullptr;
+  }
 }
 
 void Supla::Device::SwUpdate::start() {
@@ -57,3 +66,4 @@ bool Supla::Device::SwUpdate::isStarted() {
 void Supla::Device::SwUpdate::useBeta() {
   beta = true;
 }
+

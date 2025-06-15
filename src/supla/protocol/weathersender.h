@@ -19,8 +19,9 @@
 #ifndef SRC_SUPLA_PROTOCOL_WEATHERSENDER_H_
 #define SRC_SUPLA_PROTOCOL_WEATHERSENDER_H_
 
-#include <supla/element.h>
 #include <supla/log_wrapper.h>
+#include <supla/network/network.h>
+#include <supla/sensor/general_purpose_channel_base.h>
 
 #define MAXSENSORS 12
 namespace Supla {

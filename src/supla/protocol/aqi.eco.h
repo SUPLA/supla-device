@@ -25,14 +25,8 @@
 #define SRC_SUPLA_PROTOCOL_AQI_ECO_H_
 
 #include <supla/version.h>
-#include <supla/sensor/general_purpose_measurement.h>
-#include <supla/sensor/therm_hygro_meter.h>
-#include <supla/sensor/therm_hygro_press_meter.h>
-#include <supla/sensor/rain.h>
-#include <supla/sensor/wind.h>
 #include <ArduinoJson.h>
 #include <WiFiClientSecure.h>
-#include <supla/sensor/particle_meter.h>
 #include <supla/protocol/weathersender.h>
 
 namespace Supla {

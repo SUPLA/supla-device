@@ -14,8 +14,9 @@ var searchData=
   ['applychannelconfig_11',['applyChannelConfig',['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a12b55f4730c38117a48aec35bca28920',1,'Supla::Sensor::GeneralPurposeChannelBase::applyChannelConfig()'],['../classSupla_1_1Sensor_1_1GeneralPurposeMeter.html#aa5bc825b671bf2a3750228b46811b5a1',1,'Supla::Sensor::GeneralPurposeMeter::applyChannelConfig()'],['../classGeneralPurposeChannelBase.html#a12b55f4730c38117a48aec35bca28920',1,'GeneralPurposeChannelBase::applyChannelConfig()'],['../classGeneralPurposeMeter.html#aa5bc825b671bf2a3750228b46811b5a1',1,'GeneralPurposeMeter::applyChannelConfig()']]],
   ['applycorrections_12',['applyCorrections',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a1c2119eb738ac047405a2337f3339e3c',1,'Supla::Sensor::ThermHygroMeter']]],
   ['applycorrectionsandstoreit_13',['applyCorrectionsAndStoreIt',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a37fe739927b270a3adfc6e17792e0aec',1,'Supla::Sensor::ThermHygroMeter']]],
-  ['arduino_20ide_14',['SuplaDevice library installation for Arduino IDE',['../index.html#autotoc_md7',1,'']]],
-  ['arduino_20mega_15',['Arduino Mega',['../index.html#autotoc_md4',1,'']]],
-  ['atchannel_16',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
-  ['autolock_17',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
+  ['aqieco_14',['AQIECO',['../classSupla_1_1Protocol_1_1AQIECO.html',1,'Supla::Protocol']]],
+  ['arduino_20ide_15',['SuplaDevice library installation for Arduino IDE',['../index.html#autotoc_md7',1,'']]],
+  ['arduino_20mega_16',['Arduino Mega',['../index.html#autotoc_md4',1,'']]],
+  ['atchannel_17',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
+  ['autolock_18',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
 ];

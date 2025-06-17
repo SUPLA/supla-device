@@ -18,15 +18,11 @@
 #define SRC_SUPLADEVICE_H_
 
 #include <supla-common/proto.h>
-#include <supla/network/network.h>
-#include <supla/storage/config.h>
 #include <supla/uptime.h>
-#include <supla/clock/clock.h>
-#include <supla/device/last_state_logger.h>
 #include <supla/action_handler.h>
-#include <supla/protocol/supla_srpc.h>
-#include <supla/log_wrapper.h>
 #include <supla/local_action.h>
+#include <supla/device/auto_update_mode.h>
+#include <supla/device/device_mode.h>
 
 #define STATUS_UNKNOWN                   -1
 #define STATUS_ALREADY_INITIALIZED       1
@@ -66,6 +62,9 @@
 #define STATUS_TEST_WAIT_FOR_CFG_BUTTON  70
 #define STATUS_OFFLINE_MODE              80
 
+// 10 days
+#define SUPLA_AUTOMATIC_OTA_CHECK_INTERVAL (10ULL * 24 * 60 * 60 * 1000)
+
 typedef void (*_impl_arduino_status)(int status, const char *msg);
 
 #ifdef ARDUINO
@@ -75,13 +74,22 @@ class __FlashStringHelper;
 #endif
 
 namespace Supla {
+class Clock;
+class Mutex;
+class Element;
+
 namespace Device {
 class SwUpdate;
-class Mutex;
 class ChannelConflictResolver;
 class SubdevicePairingHandler;
 class StatusLed;
+class LastStateLogger;
 }  // namespace Device
+
+namespace Protocol {
+class SuplaSrpc;
+}  // namespace Protocol
+
 }  // namespace Supla
 
 class SuplaDeviceClass : public Supla::ActionHandler,
@@ -241,6 +249,13 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   void setAutomaticFirmwareUpdateSupported(bool value);
 
+  /**
+   * Returns current automatic firmware update mode
+   *
+   * @return current automatic firmware update mode
+   */
+  Supla::AutoUpdateMode getAutoUpdateMode() const;
+
  protected:
   /**
    * Performs software update if needed
@@ -258,6 +273,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    * @return true if SW update instance was initialized
    */
   bool initSwUpdateInstance(bool performUpdate, int securityOnly = -1);
+
   int networkIsNotReadyCounter = 0;
 
   uint32_t deviceRestartTimeoutTimestamp = 0;

@@ -87,6 +87,8 @@ set(SRCS
   supla/network/html_element.cpp
   supla/network/html_generator.cpp
   supla/network/client.cpp
+  supla/network/netif_wifi.cpp
+  supla/network/netif_lan.cpp
   supla/network/ip_address.cpp
   supla/network/html/text_cmd_input_parameter.cpp
   supla/network/html/select_input_parameter.cpp

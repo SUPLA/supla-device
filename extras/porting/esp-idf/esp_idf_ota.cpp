@@ -63,10 +63,6 @@ Supla::EspIdfOta::~EspIdfOta() {
   }
 }
 
-void Supla::EspIdfOta::start() {
-  Supla::Device::SwUpdate::start();
-}
-
 void Supla::EspIdfOta::iterate() {
   if (!isStarted()) {
     return;
@@ -454,10 +450,6 @@ void Supla::EspIdfOta::iterate() {
   return;
 }
 
-bool Supla::EspIdfOta::isFinished() {
-  return finished;
-}
-
 #define RSA_FOOTER_SIZE 16
 bool Supla::EspIdfOta::verifyRsaSignature(
     const esp_partition_t *updatePartition, int binSize) {
@@ -544,10 +536,6 @@ bool Supla::EspIdfOta::verifyRsaSignature(
     return false;
   }
   return false;
-}
-
-bool Supla::EspIdfOta::isAborted() {
-  return abort;
 }
 
 void Supla::EspIdfOta::fail(const char *reason) {

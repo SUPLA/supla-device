@@ -31,18 +31,13 @@ class EspIdfOta : public Supla::Device::SwUpdate {
   friend Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
       SuplaDeviceClass *sdc, const char *url);
   ~EspIdfOta();
-  void start() override;
   void iterate() override;
-  bool isFinished() override;
-  bool isAborted() override;
 
  protected:
   bool verifyRsaSignature(const esp_partition_t *update_partition, int binSize);
   void fail(const char *);
   void log(const char *);
   EspIdfOta(SuplaDeviceClass *sdc, const char *newUrl);
-  bool finished = false;
-  bool abort = false;
   esp_http_client_handle_t client = {};
   esp_ota_handle_t updateHandle = 0;
   uint8_t *otaBuffer = nullptr;

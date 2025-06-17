@@ -42,6 +42,7 @@
 #include <supla/auto_lock.h>
 #include <supla/device/subdevice_pairing_handler.h>
 #include <supla/device/status_led.h>
+#include <supla/clock/clock.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -482,10 +483,13 @@ void SuplaDeviceClass::iterate(void) {
         }
         // check SW update availability
         if (swUpdate == nullptr && isAutomaticFirmwareUpdateEnabled()) {
-          if (millis() - lastSwUpdateCheckTimestamp > 60 * 1000) {
+          if (millis() - lastSwUpdateCheckTimestamp >
+              SUPLA_AUTOMATIC_OTA_CHECK_INTERVAL) {
             initSwUpdateInstance(false, -1);
             lastSwUpdateCheckTimestamp = millis();
-            triggerSwUpdateIfAvailable = true;
+            if (swUpdate) {
+              triggerSwUpdateIfAvailable = true;
+            }
           }
         }
         iterateSwUpdate();
@@ -531,38 +535,37 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
     return false;
   }
 
-  auto cfg = Supla::Storage::ConfigInstance();
   lastSwUpdateCheckTimestamp = millis();
 
   char url[SUPLA_MAX_URL_LENGTH] = {};
+  auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    cfg->getSwUpdateServer(url);
     if (securityOnly == -1) {
-      uint8_t otaMode = SUPLA_FIRMWARE_UPDATE_MODE_SECURITY_ONLY;
-      cfg->getUInt8(Supla::ConfigTag::OtaModeTag, &otaMode);
-      switch (otaMode) {
+      switch (getAutoUpdateMode()) {
         default:
-        case SUPLA_FIRMWARE_UPDATE_MODE_FORCED_OFF: {
+        case Supla::AutoUpdateMode::ForcedOff: {
           SUPLA_LOG_INFO("Firmware update is forced off");
           return false;
         }
-        case SUPLA_FIRMWARE_UPDATE_MODE_DISABLED: {
+        case Supla::AutoUpdateMode::Disabled: {
           SUPLA_LOG_INFO("Firmware update is disabled");
           return false;
         }
-        case SUPLA_FIRMWARE_UPDATE_MODE_SECURITY_ONLY: {
+        case Supla::AutoUpdateMode::SecurityOnly: {
           SUPLA_LOG_INFO("Firmware update is security only");
           securityOnly = 1;
           break;
         }
-        case SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED: {
+        case Supla::AutoUpdateMode::AllUpdates: {
           SUPLA_LOG_INFO("Firmware update is enabled for all updates");
           securityOnly = 0;
           break;
         }
       }
     }
+    cfg->getSwUpdateServer(url);
   }
+
   if (strlen(url) == 0) {
     swUpdate = Supla::Device::SwUpdate::Create(
         this, "https://updates.supla.org/check-updates");
@@ -595,8 +598,8 @@ void SuplaDeviceClass::iterateSwUpdate() {
   }
 
   if (!swUpdate->isStarted()) {
-    SUPLA_LOG_INFO("Starting SW update");
     if (!swUpdate->isCheckUpdateAndAbort()) {
+      SUPLA_LOG_INFO("Starting SW update");
       status(STATUS_SW_DOWNLOAD, F("SW update in progress..."));
       Supla::Network::DisconnectProtocols();
     }
@@ -606,11 +609,21 @@ void SuplaDeviceClass::iterateSwUpdate() {
     if (swUpdate->isAborted()) {
       SUPLA_LOG_INFO("SW update aborted");
       int securityOnly = swUpdate->isSecurityOnly() ? 1 : 0;
+      TCalCfg_FirmwareCheckResult result = {};
+      result.Result = SUPLA_FIRMWARE_CHECK_RESULT_ERROR;
       if (swUpdate->getNewVersion()) {
         SUPLA_LOG_INFO("New version available: %s", swUpdate->getNewVersion());
+        strncpy(
+            result.SoftVer, swUpdate->getNewVersion(), SUPLA_SOFTVER_MAXSIZE);
+        result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_AVAILABLE;
       } else {
+        result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE;
         triggerSwUpdateIfAvailable = false;
       }
+      srpcLayer->sendPendingCalCfgResult(-1, SUPLA_CALCFG_RESULT_TRUE, -1,
+          sizeof(result), &result);
+      srpcLayer->clearPendingCalCfgResult(
+          -1, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
       delete swUpdate;
       swUpdate = nullptr;
       if (triggerSwUpdateIfAvailable) {
@@ -1012,6 +1025,17 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
+        switch (getAutoUpdateMode()) {
+          case Supla::AutoUpdateMode::ForcedOff: {
+            SUPLA_LOG_INFO("Firmware update is forced off");
+            return SUPLA_CALCFG_RESULT_FALSE;
+          }
+          case Supla::AutoUpdateMode::Disabled:
+          case Supla::AutoUpdateMode::SecurityOnly:
+          case Supla::AutoUpdateMode::AllUpdates: {
+            break;
+          }
+        }
         // only check firmware for all updates
         initSwUpdateInstance(false, 0);
         if (swUpdate) {
@@ -1031,6 +1055,17 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           // update ongoing
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        switch (getAutoUpdateMode()) {
+          case Supla::AutoUpdateMode::ForcedOff: {
+            SUPLA_LOG_INFO("Firmware update is forced off");
+            return SUPLA_CALCFG_RESULT_FALSE;
+          }
+          case Supla::AutoUpdateMode::Disabled:
+          case Supla::AutoUpdateMode::SecurityOnly:
+          case Supla::AutoUpdateMode::AllUpdates: {
+            break;
+          }
         }
         // only check firmware for all updates
         initSwUpdateInstance(false, 0);
@@ -1052,6 +1087,17 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           // update ongoing
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        switch (getAutoUpdateMode()) {
+          case Supla::AutoUpdateMode::ForcedOff: {
+            SUPLA_LOG_INFO("Firmware update is forced off");
+            return SUPLA_CALCFG_RESULT_FALSE;
+          }
+          case Supla::AutoUpdateMode::Disabled:
+          case Supla::AutoUpdateMode::SecurityOnly:
+          case Supla::AutoUpdateMode::AllUpdates: {
+            break;
+          }
         }
         // only check firmware for all updates
         initSwUpdateInstance(false, 1);
@@ -1545,6 +1591,20 @@ void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
   } else {
     removeFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);
   }
+}
+
+Supla::AutoUpdateMode SuplaDeviceClass::getAutoUpdateMode() const {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    uint8_t otaMode = 0;
+    if (cfg->getUInt8(Supla::ConfigTag::OtaModeTag, &otaMode)) {
+      if (otaMode <= SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED) {
+        return static_cast<Supla::AutoUpdateMode>(otaMode);
+      }
+    }
+    return Supla::AutoUpdateMode::SecurityOnly;
+  }
+  return Supla::AutoUpdateMode::ForcedOff;
 }
 
 SuplaDeviceClass SuplaDevice;

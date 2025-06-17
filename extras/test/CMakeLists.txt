@@ -64,6 +64,7 @@ file(GLOB TEST_SRC
   NotifTests/*.cpp
   RelayTests/*.cpp
   GpmTests/*.cpp
+  SwUpdateTests/*.cpp
   ../../src/supla-common/proto_check.cpp
   )
 

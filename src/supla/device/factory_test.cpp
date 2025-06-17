@@ -23,6 +23,8 @@
 #include <string.h>
 #include <supla/actions.h>
 #include <supla/device/register_device.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/storage/storage.h>
 
 #include "factory_test.h"
 

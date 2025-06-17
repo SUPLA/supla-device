@@ -21,7 +21,8 @@
 #include <supla/storage/config.h>
 #include <string.h>
 
-#if defined(ARDUINO) || defined(SUPLA_TEST) || defined(SUPLA_LINUX) || \
+#if !defined(SUPLA_TEST)
+#if defined(ARDUINO) || defined(SUPLA_LINUX) || \
     defined(SUPLA_FREERTOS)
 // TODO(klew): implement sw update for remaining targets
 Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(SuplaDeviceClass *sdc,
@@ -31,6 +32,7 @@ Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(SuplaDeviceClass *sdc,
   return nullptr;
 }
 #endif
+#endif  // !SUPLA_TEST
 
 Supla::Device::SwUpdate::~SwUpdate() {
   if (newVersion) {
@@ -41,10 +43,6 @@ Supla::Device::SwUpdate::~SwUpdate() {
     delete[] updateUrl;
     updateUrl = nullptr;
   }
-}
-
-void Supla::Device::SwUpdate::start() {
-  started = true;
 }
 
 Supla::Device::SwUpdate::SwUpdate(SuplaDeviceClass *sdc, const char *newUrl)
@@ -59,11 +57,4 @@ void Supla::Device::SwUpdate::setUrl(const char *newUrl) {
   }
 }
 
-bool Supla::Device::SwUpdate::isStarted() {
-  return started;
-}
-
-void Supla::Device::SwUpdate::useBeta() {
-  beta = true;
-}
 

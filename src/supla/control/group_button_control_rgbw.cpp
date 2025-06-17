@@ -19,6 +19,7 @@
 #include "group_button_control_rgbw.h"
 #include <supla/control/button.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/log_wrapper.h>
 #include <supla/actions.h>
 #include <supla/control/rgbw_base.h>

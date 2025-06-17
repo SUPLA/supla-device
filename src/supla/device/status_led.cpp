@@ -21,6 +21,7 @@
 #include <SuplaDevice.h>
 #include <supla/io.h>
 #include <supla/protocol/protocol_layer.h>
+#include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 #include <supla/log_wrapper.h>

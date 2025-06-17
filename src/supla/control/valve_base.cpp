@@ -20,6 +20,7 @@
 
 #include <supla/network/network.h>
 #include <supla/storage/config_tags.h>
+#include <supla/storage/storage.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/actions.h>

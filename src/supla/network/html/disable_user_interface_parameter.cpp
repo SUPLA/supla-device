@@ -26,6 +26,7 @@
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config_tags.h>
+#include <supla/element.h>
 #include <stdio.h>
 
 using Supla::Html::DisableUserInterfaceParameter;

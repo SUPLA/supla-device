@@ -17,6 +17,7 @@
 
 #include <SuplaDevice.h>
 #include <supla-common/srpc.h>
+#include <supla/storage/storage.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/network.h>
 #include <supla/time.h>
@@ -25,6 +26,8 @@
 #include <supla/device/remote_device_config.h>
 #include <supla/device/register_device.h>
 #include <supla/device/channel_conflict_resolver.h>
+#include <supla/channels/channel.h>
+#include <supla/clock/clock.h>
 
 #include <string.h>
 
@@ -325,7 +328,8 @@ void Supla::messageReceived(void *srpc,
           // it to SuplaDeviceClass instance
           result.Result = suplaSrpc->getSdc()->handleCalcfgFromServer(
               rd.data.sd_device_calcfg_request, &result);
-          if (result.Command == SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING &&
+          if ((result.Command == SUPLA_CALCFG_CMD_START_SUBDEVICE_PAIRING ||
+               result.Command == SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE) &&
               result.Result == SUPLA_CALCFG_RESULT_TRUE) {
             suplaSrpc->calCfgResultPending.set(
                 result.ChannelNumber, result.ReceiverID, result.Command);
@@ -1506,7 +1510,8 @@ void Supla::Protocol::CalCfgResultPending::set(int16_t channelNo,
   auto ptr = first;
   CalCfgResultPendingItem *prev = nullptr;
   while (ptr) {
-    if (ptr->channelNo == channelNo) {
+    if (ptr->channelNo == channelNo &&
+        (command == -1 || ptr->command == command)) {
       ptr->receiverId = receiverId;
       ptr->command = command;
       return;
@@ -1527,11 +1532,13 @@ void Supla::Protocol::CalCfgResultPending::set(int16_t channelNo,
   }
 }
 
-void Supla::Protocol::CalCfgResultPending::clear(int16_t channelNo) {
+void Supla::Protocol::CalCfgResultPending::clear(int16_t channelNo,
+                                                 int32_t command) {
   auto ptr = first;
   CalCfgResultPendingItem *prev = nullptr;
   while (ptr) {
-    if (ptr->channelNo == channelNo) {
+    if (ptr->channelNo == channelNo &&
+        (command == -1 || ptr->command == command)) {
       if (prev) {
         prev->next = ptr->next;
       } else {
@@ -1557,10 +1564,11 @@ Supla::Protocol::CalCfgResultPending::~CalCfgResultPending() {
 }
 
 Supla::Protocol::CalCfgResultPendingItem *
-Supla::Protocol::CalCfgResultPending::get(int16_t channelNo) {
+Supla::Protocol::CalCfgResultPending::get(int16_t channelNo, int32_t command) {
   auto ptr = first;
   while (ptr) {
-    if (ptr->channelNo == channelNo) {
+    if (ptr->channelNo == channelNo &&
+        (command == -1 || ptr->command == command)) {
       return ptr;
     }
     ptr = ptr->next;
@@ -1573,7 +1581,7 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(int16_t channelNo,
                                                          int32_t command,
                                                          int dataSize,
                                                          void *data) {
-  auto pendingResponse = calCfgResultPending.get(channelNo);
+  auto pendingResponse = calCfgResultPending.get(channelNo, command);
   if (pendingResponse == nullptr) {
     SUPLA_LOG_WARNING("No pending response for channel %d", channelNo);
     return;
@@ -1599,8 +1607,9 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(int16_t channelNo,
   srpc_ds_async_device_calcfg_result(srpc, &result);
 }
 
-void Supla::Protocol::SuplaSrpc::clearPendingCalCfgResult(int16_t channelNo) {
-  calCfgResultPending.clear(channelNo);
+void Supla::Protocol::SuplaSrpc::clearPendingCalCfgResult(int16_t channelNo,
+                                                          int32_t command) {
+  calCfgResultPending.clear(channelNo, command);
 }
 
 void Supla::Protocol::SuplaSrpc::initializeSrpc() {

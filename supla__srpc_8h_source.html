@@ -137,8 +137,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> <span class="keyword">public</span>:</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>  <span class="keyword">friend</span> <span class="keyword">class </span>SuplaSrpc;</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>  <span class="keywordtype">void</span> set(int16_t channelNo, int32_t receiverId, int32_t command);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keywordtype">void</span> clear(int16_t channelNo);</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <a class="code hl_struct" href="structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html">CalCfgResultPendingItem</a> *get(int16_t channelNo);</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keywordtype">void</span> clear(int16_t channelNo, int32_t command = -1);</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <a class="code hl_struct" href="structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html">CalCfgResultPendingItem</a> *get(int16_t channelNo, int32_t command = -1);</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> <span class="keyword">protected</span>:</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  CalCfgResultPending();</div>
@@ -229,7 +229,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>                               <span class="keywordtype">int</span> dataSize = 0,</div>
 <div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                               <span class="keywordtype">void</span> *data = <span class="keyword">nullptr</span>);</div>
 <div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span> </div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>  <span class="keywordtype">void</span> clearPendingCalCfgResult(int16_t channelNo);</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>  <span class="keywordtype">void</span> clearPendingCalCfgResult(int16_t channelNo, int32_t command = -1);</div>
 <div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
 <div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keywordtype">char</span> *configResultToCStr(<span class="keywordtype">int</span> result);</div>
 <div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span> </div>
@@ -288,22 +288,22 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>}  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span> </div>
 <div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_PROTOCOL_SUPLA_SRPC_H_</span></div>
-<div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:88</div></div>
+<div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:96</div></div>
 <div class="ttc" id="aclassSupla_1_1Client_html"><div class="ttname"><a href="classSupla_1_1Client.html">Supla::Client</a></div><div class="ttdef"><b>Definition</b> client.h:31</div></div>
 <div class="ttc" id="aclassSupla_1_1Device_1_1ChannelConflictResolver_html"><div class="ttname"><a href="classSupla_1_1Device_1_1ChannelConflictResolver.html">Supla::Device::ChannelConflictResolver</a></div><div class="ttdef"><b>Definition</b> channel_conflict_resolver.h:27</div></div>
 <div class="ttc" id="aclassSupla_1_1Device_1_1RemoteDeviceConfig_html"><div class="ttname"><a href="classSupla_1_1Device_1_1RemoteDeviceConfig.html">Supla::Device::RemoteDeviceConfig</a></div><div class="ttdef"><b>Definition</b> remote_device_config.h:41</div></div>
 <div class="ttc" id="aclassSupla_1_1Protocol_1_1CalCfgResultPending_html"><div class="ttname"><a href="classSupla_1_1Protocol_1_1CalCfgResultPending.html">Supla::Protocol::CalCfgResultPending</a></div><div class="ttdef"><b>Definition</b> supla_srpc.h:42</div></div>
-<div class="ttc" id="astructSupla_1_1Protocol_1_1CalCfgResultPendingItem_html"><div class="ttname"><a href="structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html">Supla::Protocol::CalCfgResultPendingItem</a></div><div class="ttdef"><b>Definition</b> supla_srpc.cpp:34</div></div>
-<div class="ttc" id="astructTDS__RegisterPushNotification_html"><div class="ttname"><a href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a></div><div class="ttdef"><b>Definition</b> proto.h:3708</div></div>
-<div class="ttc" id="astructTDS__SubdeviceDetails_html"><div class="ttname"><a href="structTDS__SubdeviceDetails.html">TDS_SubdeviceDetails</a></div><div class="ttdef"><b>Definition</b> proto.h:3734</div></div>
-<div class="ttc" id="astructTSDC__SuplaSetActivityTimeoutResult_html"><div class="ttname"><a href="structTSDC__SuplaSetActivityTimeoutResult.html">TSDC_SuplaSetActivityTimeoutResult</a></div><div class="ttdef"><b>Definition</b> proto.h:710</div></div>
-<div class="ttc" id="astructTSDC__SuplaVersionError_html"><div class="ttname"><a href="structTSDC__SuplaVersionError.html">TSDC_SuplaVersionError</a></div><div class="ttdef"><b>Definition</b> proto.h:678</div></div>
-<div class="ttc" id="astructTSDC__UserLocalTimeResult_html"><div class="ttname"><a href="structTSDC__UserLocalTimeResult.html">TSDC_UserLocalTimeResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2530</div></div>
-<div class="ttc" id="astructTSDS__SetDeviceConfigResult_html"><div class="ttname"><a href="structTSDS__SetDeviceConfigResult.html">TSDS_SetDeviceConfigResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2770</div></div>
-<div class="ttc" id="astructTSDS__SetDeviceConfig_html"><div class="ttname"><a href="structTSDS__SetDeviceConfig.html">TSDS_SetDeviceConfig</a></div><div class="ttdef"><b>Definition</b> proto.h:2758</div></div>
-<div class="ttc" id="astructTSD__SuplaRegisterDeviceResult__B_html"><div class="ttname"><a href="structTSD__SuplaRegisterDeviceResult__B.html">TSD_SuplaRegisterDeviceResult_B</a></div><div class="ttdef"><b>Definition</b> proto.h:1123</div></div>
-<div class="ttc" id="astructTSD__SuplaRegisterDeviceResult_html"><div class="ttname"><a href="structTSD__SuplaRegisterDeviceResult.html">TSD_SuplaRegisterDeviceResult</a></div><div class="ttdef"><b>Definition</b> proto.h:1110</div></div>
-<div class="ttc" id="astructTSuplaChannelExtendedValue_html"><div class="ttname"><a href="structTSuplaChannelExtendedValue.html">TSuplaChannelExtendedValue</a></div><div class="ttdef"><b>Definition</b> proto.h:751</div></div>
+<div class="ttc" id="astructSupla_1_1Protocol_1_1CalCfgResultPendingItem_html"><div class="ttname"><a href="structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html">Supla::Protocol::CalCfgResultPendingItem</a></div><div class="ttdef"><b>Definition</b> supla_srpc.cpp:37</div></div>
+<div class="ttc" id="astructTDS__RegisterPushNotification_html"><div class="ttname"><a href="structTDS__RegisterPushNotification.html">TDS_RegisterPushNotification</a></div><div class="ttdef"><b>Definition</b> proto.h:3745</div></div>
+<div class="ttc" id="astructTDS__SubdeviceDetails_html"><div class="ttname"><a href="structTDS__SubdeviceDetails.html">TDS_SubdeviceDetails</a></div><div class="ttdef"><b>Definition</b> proto.h:3771</div></div>
+<div class="ttc" id="astructTSDC__SuplaSetActivityTimeoutResult_html"><div class="ttname"><a href="structTSDC__SuplaSetActivityTimeoutResult.html">TSDC_SuplaSetActivityTimeoutResult</a></div><div class="ttdef"><b>Definition</b> proto.h:718</div></div>
+<div class="ttc" id="astructTSDC__SuplaVersionError_html"><div class="ttname"><a href="structTSDC__SuplaVersionError.html">TSDC_SuplaVersionError</a></div><div class="ttdef"><b>Definition</b> proto.h:686</div></div>
+<div class="ttc" id="astructTSDC__UserLocalTimeResult_html"><div class="ttname"><a href="structTSDC__UserLocalTimeResult.html">TSDC_UserLocalTimeResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2552</div></div>
+<div class="ttc" id="astructTSDS__SetDeviceConfigResult_html"><div class="ttname"><a href="structTSDS__SetDeviceConfigResult.html">TSDS_SetDeviceConfigResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2792</div></div>
+<div class="ttc" id="astructTSDS__SetDeviceConfig_html"><div class="ttname"><a href="structTSDS__SetDeviceConfig.html">TSDS_SetDeviceConfig</a></div><div class="ttdef"><b>Definition</b> proto.h:2780</div></div>
+<div class="ttc" id="astructTSD__SuplaRegisterDeviceResult__B_html"><div class="ttname"><a href="structTSD__SuplaRegisterDeviceResult__B.html">TSD_SuplaRegisterDeviceResult_B</a></div><div class="ttdef"><b>Definition</b> proto.h:1131</div></div>
+<div class="ttc" id="astructTSD__SuplaRegisterDeviceResult_html"><div class="ttname"><a href="structTSD__SuplaRegisterDeviceResult.html">TSD_SuplaRegisterDeviceResult</a></div><div class="ttdef"><b>Definition</b> proto.h:1118</div></div>
+<div class="ttc" id="astructTSuplaChannelExtendedValue_html"><div class="ttname"><a href="structTSuplaChannelExtendedValue.html">TSuplaChannelExtendedValue</a></div><div class="ttdef"><b>Definition</b> proto.h:759</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

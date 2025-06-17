@@ -367,6 +367,15 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setStatusLed</b> (<a 
 <tr class="memitem:ab2e24861802e9a5cc4d4a39d7bccc2a1" id="r_ab2e24861802e9a5cc4d4a39d7bccc2a1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab2e24861802e9a5cc4d4a39d7bccc2a1">setLeaveCfgModeAfterInactivityMin</a> (int valueMin)</td></tr>
 <tr class="memdesc:ab2e24861802e9a5cc4d4a39d7bccc2a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the leave configuration mode after inactivity timeout in minutes.  <br /></td></tr>
 <tr class="separator:ab2e24861802e9a5cc4d4a39d7bccc2a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae726597cbdc9efd1570166009160ef75" id="r_ae726597cbdc9efd1570166009160ef75"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae726597cbdc9efd1570166009160ef75">isAutomaticFirmwareUpdateEnabled</a> () const</td></tr>
+<tr class="memdesc:ae726597cbdc9efd1570166009160ef75"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if automatic firmware update is supported.  <br /></td></tr>
+<tr class="separator:ae726597cbdc9efd1570166009160ef75"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aca4cdeebae298bd67d782ff395a338c0" id="r_aca4cdeebae298bd67d782ff395a338c0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aca4cdeebae298bd67d782ff395a338c0">setAutomaticFirmwareUpdateSupported</a> (bool value)</td></tr>
+<tr class="memdesc:aca4cdeebae298bd67d782ff395a338c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets automatic firmware update support.  <br /></td></tr>
+<tr class="separator:aca4cdeebae298bd67d782ff395a338c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2fdf23a4345523f2c609df3ca9fab89d" id="r_a2fdf23a4345523f2c609df3ca9fab89d"><td class="memItemLeft" align="right" valign="top">Supla::AutoUpdateMode&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2fdf23a4345523f2c609df3ca9fab89d">getAutoUpdateMode</a> () const</td></tr>
+<tr class="memdesc:a2fdf23a4345523f2c609df3ca9fab89d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current automatic firmware update mode.  <br /></td></tr>
+<tr class="separator:a2fdf23a4345523f2c609df3ca9fab89d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ActionHandler"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ActionHandler')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a></td></tr>
 <tr class="memitem:a8b4297c057ec40d23a822937d0557da1 inherit pub_methods_classSupla_1_1ActionHandler" id="r_a8b4297c057ec40d23a822937d0557da1"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>activateAction</b> (int action)</td></tr>
@@ -426,6 +435,13 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:ab6e2a71094d29b9fdce5115e93438e23" id="r_ab6e2a71094d29b9fdce5115e93438e23"><td class="memItemLeft" align="right" valign="top"><a id="ab6e2a71094d29b9fdce5115e93438e23" name="ab6e2a71094d29b9fdce5115e93438e23"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>iterateSwUpdate</b> ()</td></tr>
+<tr class="memdesc:ab6e2a71094d29b9fdce5115e93438e23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs software update if needed. <br /></td></tr>
+<tr class="separator:ab6e2a71094d29b9fdce5115e93438e23"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59f47acec41835b1db2520d3e41a350e" id="r_a59f47acec41835b1db2520d3e41a350e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a59f47acec41835b1db2520d3e41a350e">initSwUpdateInstance</a> (bool performUpdate, int securityOnly=-1)</td></tr>
+<tr class="memdesc:a59f47acec41835b1db2520d3e41a350e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes SW update instance.  <br /></td></tr>
+<tr class="separator:a59f47acec41835b1db2520d3e41a350e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a19e05d762df2f9fe2cfab37851a17988" id="r_a19e05d762df2f9fe2cfab37851a17988"><td class="memItemLeft" align="right" valign="top"><a id="a19e05d762df2f9fe2cfab37851a17988" name="a19e05d762df2f9fe2cfab37851a17988"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>iterateAlwaysElements</b> (uint32_t _millis)</td></tr>
 <tr class="separator:a19e05d762df2f9fe2cfab37851a17988"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -477,6 +493,9 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>protocolRestartTi
 <tr class="memitem:a157fccabe6fc318dd54778c4c4633567" id="r_a157fccabe6fc318dd54778c4c4633567"><td class="memItemLeft" align="right" valign="top"><a id="a157fccabe6fc318dd54778c4c4633567" name="a157fccabe6fc318dd54778c4c4633567"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>resetOnConnectionFailTimeoutSec</b> = 0</td></tr>
 <tr class="separator:a157fccabe6fc318dd54778c4c4633567"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a562155fc48ecf6b5ee1b734b363ef396" id="r_a562155fc48ecf6b5ee1b734b363ef396"><td class="memItemLeft" align="right" valign="top"><a id="a562155fc48ecf6b5ee1b734b363ef396" name="a562155fc48ecf6b5ee1b734b363ef396"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastSwUpdateCheckTimestamp</b> = 0</td></tr>
+<tr class="separator:a562155fc48ecf6b5ee1b734b363ef396"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff29645544f5c7e909ba3caa54a74544" id="r_aff29645544f5c7e909ba3caa54a74544"><td class="memItemLeft" align="right" valign="top"><a id="aff29645544f5c7e909ba3caa54a74544" name="aff29645544f5c7e909ba3caa54a74544"></a>
 int&#160;</td><td class="memItemRight" valign="bottom"><b>allowOfflineMode</b> = 1</td></tr>
 <tr class="separator:aff29645544f5c7e909ba3caa54a74544"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -528,6 +547,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>initializationDone</b
 <tr class="memitem:afc85589fa8e040409755e71d21fcea6d" id="r_afc85589fa8e040409755e71d21fcea6d"><td class="memItemLeft" align="right" valign="top"><a id="afc85589fa8e040409755e71d21fcea6d" name="afc85589fa8e040409755e71d21fcea6d"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>goToConfigModeAsap</b> = false</td></tr>
 <tr class="separator:afc85589fa8e040409755e71d21fcea6d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d7eca676b2a4df23ec65aef44f9ccd7" id="r_a6d7eca676b2a4df23ec65aef44f9ccd7"><td class="memItemLeft" align="right" valign="top"><a id="a6d7eca676b2a4df23ec65aef44f9ccd7" name="a6d7eca676b2a4df23ec65aef44f9ccd7"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>triggerSwUpdateIfAvailable</b> = false</td></tr>
+<tr class="separator:a6d7eca676b2a4df23ec65aef44f9ccd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad8c2ffadb5b384fa3d2e6cb0818727c2" id="r_ad8c2ffadb5b384fa3d2e6cb0818727c2"><td class="memItemLeft" align="right" valign="top"><a id="ad8c2ffadb5b384fa3d2e6cb0818727c2" name="ad8c2ffadb5b384fa3d2e6cb0818727c2"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>goToOfflineModeTimeout</b> = 0</td></tr>
 <tr class="separator:ad8c2ffadb5b384fa3d2e6cb0818727c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -585,6 +607,26 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 <tr class="separator:a73c46eec44d1aae91a9de59aea0415be inherit pub_static_methods_classSupla_1_1LocalAction"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a2fdf23a4345523f2c609df3ca9fab89d" name="a2fdf23a4345523f2c609df3ca9fab89d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2fdf23a4345523f2c609df3ca9fab89d">&#9670;&#160;</a></span>getAutoUpdateMode()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">Supla::AutoUpdateMode SuplaDeviceClass::getAutoUpdateMode </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns current automatic firmware update mode. </p>
+<dl class="section return"><dt>Returns</dt><dd>current automatic firmware update mode </dd></dl>
+
+</div>
+</div>
 <a id="abd7be7f117d9370103f372301b073dfc" name="abd7be7f117d9370103f372301b073dfc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abd7be7f117d9370103f372301b073dfc">&#9670;&#160;</a></span>handleAction()</h2>
 
@@ -613,6 +655,90 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a>.</p>
+
+</div>
+</div>
+<a id="a59f47acec41835b1db2520d3e41a350e" name="a59f47acec41835b1db2520d3e41a350e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a59f47acec41835b1db2520d3e41a350e">&#9670;&#160;</a></span>initSwUpdateInstance()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool SuplaDeviceClass::initSwUpdateInstance </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>performUpdate</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>securityOnly</em></span><span class="paramdefsep"> = </span><span class="paramdefval">-1</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Initializes SW update instance. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">performUpdate</td><td>true to perform SW update, false to check for update </td></tr>
+    <tr><td class="paramname">securityOnly</td><td>0 to check for all updates, 1 to check for security updates, -1 will use value from device config</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if SW update instance was initialized </dd></dl>
+
+</div>
+</div>
+<a id="ae726597cbdc9efd1570166009160ef75" name="ae726597cbdc9efd1570166009160ef75"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae726597cbdc9efd1570166009160ef75">&#9670;&#160;</a></span>isAutomaticFirmwareUpdateEnabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks if automatic firmware update is supported. </p>
+<dl class="section return"><dt>Returns</dt><dd>true if automatic update is supported </dd></dl>
+
+</div>
+</div>
+<a id="aca4cdeebae298bd67d782ff395a338c0" name="aca4cdeebae298bd67d782ff395a338c0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aca4cdeebae298bd67d782ff395a338c0">&#9670;&#160;</a></span>setAutomaticFirmwareUpdateSupported()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets automatic firmware update support. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td>true to enable, false to disable </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

@@ -154,7 +154,7 @@ Collaboration diagram for Supla::Device::SwUpdate:</div>
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a6862d7ec4c54d2ac869d9dbc304b0268" id="r_a6862d7ec4c54d2ac869d9dbc304b0268"><td class="memItemLeft" align="right" valign="top"><a id="a6862d7ec4c54d2ac869d9dbc304b0268" name="a6862d7ec4c54d2ac869d9dbc304b0268"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>start</b> ()</td></tr>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>start</b> ()</td></tr>
 <tr class="separator:a6862d7ec4c54d2ac869d9dbc304b0268"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa83aedcbc2b42631e34c70ca1c0a00e5" id="r_aa83aedcbc2b42631e34c70ca1c0a00e5"><td class="memItemLeft" align="right" valign="top"><a id="aa83aedcbc2b42631e34c70ca1c0a00e5" name="aa83aedcbc2b42631e34c70ca1c0a00e5"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>iterate</b> ()=0</td></tr>
@@ -163,17 +163,35 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>iterate</b> (
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setUrl</b> (const char *newUrl)</td></tr>
 <tr class="separator:aef5c13793e5cf703a754f6e5fb842e14"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3aaf3e93a8821f6f8e847753e69f42d5" id="r_a3aaf3e93a8821f6f8e847753e69f42d5"><td class="memItemLeft" align="right" valign="top"><a id="a3aaf3e93a8821f6f8e847753e69f42d5" name="a3aaf3e93a8821f6f8e847753e69f42d5"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isStarted</b> ()</td></tr>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isStarted</b> ()</td></tr>
 <tr class="separator:a3aaf3e93a8821f6f8e847753e69f42d5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a08119d3bead0b325b7763729c947fd09" id="r_a08119d3bead0b325b7763729c947fd09"><td class="memItemLeft" align="right" valign="top"><a id="a08119d3bead0b325b7763729c947fd09" name="a08119d3bead0b325b7763729c947fd09"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isFinished</b> ()=0</td></tr>
-<tr class="separator:a08119d3bead0b325b7763729c947fd09"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c62e58cdd4827034c84101723425ff4" id="r_a4c62e58cdd4827034c84101723425ff4"><td class="memItemLeft" align="right" valign="top"><a id="a4c62e58cdd4827034c84101723425ff4" name="a4c62e58cdd4827034c84101723425ff4"></a>
-virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isAborted</b> ()=0</td></tr>
-<tr class="separator:a4c62e58cdd4827034c84101723425ff4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a92ef64c9fd52f5b252fb1fe69d160c14" id="r_a92ef64c9fd52f5b252fb1fe69d160c14"><td class="memItemLeft" align="right" valign="top"><a id="a92ef64c9fd52f5b252fb1fe69d160c14" name="a92ef64c9fd52f5b252fb1fe69d160c14"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isFinished</b> ()</td></tr>
+<tr class="separator:a92ef64c9fd52f5b252fb1fe69d160c14"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2adbb2b6957d35ba83405e2ce4275137" id="r_a2adbb2b6957d35ba83405e2ce4275137"><td class="memItemLeft" align="right" valign="top"><a id="a2adbb2b6957d35ba83405e2ce4275137" name="a2adbb2b6957d35ba83405e2ce4275137"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isAborted</b> ()</td></tr>
+<tr class="separator:a2adbb2b6957d35ba83405e2ce4275137"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af9b6f1eaeb304a327c4f342fbe93a0bb" id="r_af9b6f1eaeb304a327c4f342fbe93a0bb"><td class="memItemLeft" align="right" valign="top"><a id="af9b6f1eaeb304a327c4f342fbe93a0bb" name="af9b6f1eaeb304a327c4f342fbe93a0bb"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>useBeta</b> ()</td></tr>
 <tr class="separator:af9b6f1eaeb304a327c4f342fbe93a0bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad3da6e6039c5ce4be12ee1249581174a" id="r_ad3da6e6039c5ce4be12ee1249581174a"><td class="memItemLeft" align="right" valign="top"><a id="ad3da6e6039c5ce4be12ee1249581174a" name="ad3da6e6039c5ce4be12ee1249581174a"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isCheckUpdateAndAbort</b> () const</td></tr>
+<tr class="separator:ad3da6e6039c5ce4be12ee1249581174a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac625acc2f0d7cc282cbc8ed6765c6733" id="r_ac625acc2f0d7cc282cbc8ed6765c6733"><td class="memItemLeft" align="right" valign="top"><a id="ac625acc2f0d7cc282cbc8ed6765c6733" name="ac625acc2f0d7cc282cbc8ed6765c6733"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setCheckUpdateAndAbort</b> ()</td></tr>
+<tr class="separator:ac625acc2f0d7cc282cbc8ed6765c6733"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3701b8e8ec550436e9534f7611a01ed5" id="r_a3701b8e8ec550436e9534f7611a01ed5"><td class="memItemLeft" align="right" valign="top"><a id="a3701b8e8ec550436e9534f7611a01ed5" name="a3701b8e8ec550436e9534f7611a01ed5"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getUrl</b> () const</td></tr>
+<tr class="separator:a3701b8e8ec550436e9534f7611a01ed5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abc9409d567dd824f8954729040e7ccd9" id="r_abc9409d567dd824f8954729040e7ccd9"><td class="memItemLeft" align="right" valign="top"><a id="abc9409d567dd824f8954729040e7ccd9" name="abc9409d567dd824f8954729040e7ccd9"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getNewVersion</b> () const</td></tr>
+<tr class="separator:abc9409d567dd824f8954729040e7ccd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd3989dd852b884bfeccda1103c39045" id="r_acd3989dd852b884bfeccda1103c39045"><td class="memItemLeft" align="right" valign="top"><a id="acd3989dd852b884bfeccda1103c39045" name="acd3989dd852b884bfeccda1103c39045"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isSecurityOnly</b> () const</td></tr>
+<tr class="separator:acd3989dd852b884bfeccda1103c39045"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac78001532ddff2a6f808768267895934" id="r_ac78001532ddff2a6f808768267895934"><td class="memItemLeft" align="right" valign="top"><a id="ac78001532ddff2a6f808768267895934" name="ac78001532ddff2a6f808768267895934"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setSecurityOnly</b> ()</td></tr>
+<tr class="separator:ac78001532ddff2a6f808768267895934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -192,12 +210,30 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:a7aa2dfb4832caf8d7b3da34fdda4aee1" id="r_a7aa2dfb4832caf8d7b3da34fdda4aee1"><td class="memItemLeft" align="right" valign="top"><a id="a7aa2dfb4832caf8d7b3da34fdda4aee1" name="a7aa2dfb4832caf8d7b3da34fdda4aee1"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>beta</b> = false</td></tr>
 <tr class="separator:a7aa2dfb4832caf8d7b3da34fdda4aee1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4ed217c6b2b5e9a9a7efed67bd8aecba" id="r_a4ed217c6b2b5e9a9a7efed67bd8aecba"><td class="memItemLeft" align="right" valign="top"><a id="a4ed217c6b2b5e9a9a7efed67bd8aecba" name="a4ed217c6b2b5e9a9a7efed67bd8aecba"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>securityOnly</b> = false</td></tr>
+<tr class="separator:a4ed217c6b2b5e9a9a7efed67bd8aecba"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade1df870c33570dddf25bf3e07e87935" id="r_ade1df870c33570dddf25bf3e07e87935"><td class="memItemLeft" align="right" valign="top"><a id="ade1df870c33570dddf25bf3e07e87935" name="ade1df870c33570dddf25bf3e07e87935"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>started</b> = false</td></tr>
 <tr class="separator:ade1df870c33570dddf25bf3e07e87935"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab5e1c95127a4a6ad9526125bf2acdb2e" id="r_ab5e1c95127a4a6ad9526125bf2acdb2e"><td class="memItemLeft" align="right" valign="top"><a id="ab5e1c95127a4a6ad9526125bf2acdb2e" name="ab5e1c95127a4a6ad9526125bf2acdb2e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>checkUpdateAndAbort</b> = false</td></tr>
+<tr class="separator:ab5e1c95127a4a6ad9526125bf2acdb2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3357267750b3fa2b12304f2da4c9c874" id="r_a3357267750b3fa2b12304f2da4c9c874"><td class="memItemLeft" align="right" valign="top"><a id="a3357267750b3fa2b12304f2da4c9c874" name="a3357267750b3fa2b12304f2da4c9c874"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>finished</b> = false</td></tr>
+<tr class="separator:a3357267750b3fa2b12304f2da4c9c874"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8aef0e234bd1f00e914d0ed149c3f99f" id="r_a8aef0e234bd1f00e914d0ed149c3f99f"><td class="memItemLeft" align="right" valign="top"><a id="a8aef0e234bd1f00e914d0ed149c3f99f" name="a8aef0e234bd1f00e914d0ed149c3f99f"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>abort</b> = false</td></tr>
+<tr class="separator:a8aef0e234bd1f00e914d0ed149c3f99f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a397236c4213fb09acc2f51dec0c8ad63" id="r_a397236c4213fb09acc2f51dec0c8ad63"><td class="memItemLeft" align="right" valign="top"><a id="a397236c4213fb09acc2f51dec0c8ad63" name="a397236c4213fb09acc2f51dec0c8ad63"></a>
 <a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>sdc</b> = nullptr</td></tr>
 <tr class="separator:a397236c4213fb09acc2f51dec0c8ad63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad2e7d7ca98e16f421e20a27c47c87cea" id="r_ad2e7d7ca98e16f421e20a27c47c87cea"><td class="memItemLeft" align="right" valign="top"><a id="ad2e7d7ca98e16f421e20a27c47c87cea" name="ad2e7d7ca98e16f421e20a27c47c87cea"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><b>updateUrl</b> = nullptr</td></tr>
+<tr class="separator:ad2e7d7ca98e16f421e20a27c47c87cea"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac388ec5d446a67bec3dd06107fba28b8" id="r_ac388ec5d446a67bec3dd06107fba28b8"><td class="memItemLeft" align="right" valign="top"><a id="ac388ec5d446a67bec3dd06107fba28b8" name="ac388ec5d446a67bec3dd06107fba28b8"></a>
+char *&#160;</td><td class="memItemRight" valign="bottom"><b>newVersion</b> = nullptr</td></tr>
+<tr class="separator:ac388ec5d446a67bec3dd06107fba28b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6cc2b6280bc5cb7feb98103a5d5d3a10" id="r_a6cc2b6280bc5cb7feb98103a5d5d3a10"><td class="memItemLeft" align="right" valign="top"><a id="a6cc2b6280bc5cb7feb98103a5d5d3a10" name="a6cc2b6280bc5cb7feb98103a5d5d3a10"></a>
 char&#160;</td><td class="memItemRight" valign="bottom"><b>url</b> [SUPLA_MAX_URL_LENGTH] = {}</td></tr>
 <tr class="separator:a6cc2b6280bc5cb7feb98103a5d5d3a10"><td class="memSeparator" colspan="2">&#160;</td></tr>

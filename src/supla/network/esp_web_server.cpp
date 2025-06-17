@@ -26,6 +26,8 @@
 #include <supla/network/html_generator.h>
 #include <supla/time.h>
 #include <supla/tools.h>
+#include <supla/storage/storage.h>
+#include <supla/storage/config.h>
 
 #include "esp_web_server.h"
 

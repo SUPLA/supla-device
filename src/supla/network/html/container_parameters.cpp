@@ -19,6 +19,7 @@
 #include "container_parameters.h"
 
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/network/web_sender.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>

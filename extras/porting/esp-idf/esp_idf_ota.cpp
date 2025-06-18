@@ -180,6 +180,14 @@ void Supla::EspIdfOta::iterate() {
       if (v == 0) break;
       curPos += v;
     }
+
+    if (isSecurityOnly()) {
+      v = stringAppend(
+          queryParams + curPos, "&securityOnly=true", URL_SIZE - curPos - 1);
+      if (v == 0) break;
+      curPos += v;
+    }
+
     break;
   }
 
@@ -223,6 +231,10 @@ void Supla::EspIdfOta::iterate() {
 
   SUPLA_LOG_DEBUG("Starting OTA");
 
+  if (otaBuffer) {
+    delete[] otaBuffer;
+    otaBuffer = nullptr;
+  }
   otaBuffer = new uint8_t[BUFFER_SIZE + 1];
   if (otaBuffer == nullptr) {
     fail("SW udpate: failed to allocate memory");
@@ -309,12 +321,15 @@ void Supla::EspIdfOta::iterate() {
 
     } else {
       fail("SW update: no url and version received - finishing");
+      cJSON_Delete(json);
       return;
     }
   } else {
     fail("SW update: no new update available");
+    cJSON_Delete(json);
     return;
   }
+    cJSON_Delete(json);
 
   if (checkUpdateAndAbort) {
     abort = true;

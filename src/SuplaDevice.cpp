@@ -738,6 +738,17 @@ bool SuplaDeviceClass::loadDeviceConfig() {
     }
   }
 
+  if (!isAutomaticFirmwareUpdateEnabled()) {
+    SUPLA_LOG_WARNING("Automatic firmware update is disabled");
+  } else {
+    auto otaMode = getAutoUpdateMode();
+    SUPLA_LOG_INFO("Automatic firmware update is supported. OTA mode: %s",
+                   otaMode == Supla::AutoUpdateMode::ForcedOff  ? "forced off"
+                   : otaMode == Supla::AutoUpdateMode::Disabled ? "disabled"
+                   : otaMode == Supla::AutoUpdateMode::SecurityOnly
+                       ? "security only"
+                       : "all enabled");
+  }
 
   deviceMode = cfg->getDeviceMode();
   SUPLA_LOG_INFO("Device mode: %d", deviceMode);

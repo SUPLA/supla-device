@@ -19,7 +19,8 @@
 #ifndef SRC_SUPLA_SENSOR_SCD4X_H_
 #define SRC_SUPLA_SENSOR_SCD4X_H_
 
-// Dependency: SparkFun_SCD4x_Arduino_Library - use library manager to install it
+// Dependency: SparkFun_SCD4x_Arduino_Library
+//             use library manager to install it
 // https://github.com/sparkfun/SparkFun_SCD4x_Arduino_Library
 
 #include "SparkFun_SCD4x_Arduino_Library.h"
@@ -31,7 +32,7 @@ namespace Supla {
 namespace Sensor {
 class SCD4x : public ThermHygroMeter {
  public:
-  explicit SCD4x() {
+  SCD4x() {
     co2channel = new GeneralPurposeMeasurement();
     co2channel->setDefaultUnitAfterValue("ppm");
     co2channel->setInitialCaption("CO₂");
@@ -64,7 +65,7 @@ class SCD4x : public ThermHygroMeter {
     return co2channel;
   }
 
-private:
+ private:
   void readValuesFromDevice() {
     if (scd.readMeasurement()) {
       retryCount = 0;

@@ -22,6 +22,7 @@
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/storage/config_tags.h>
 #include <supla/actions.h>
 #include <supla/events.h>

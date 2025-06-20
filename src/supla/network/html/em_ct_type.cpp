@@ -20,6 +20,7 @@
 
 #include <supla/sensor/electricity_meter.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/storage/config_tags.h>
 
 using Supla::Html::EmCtTypeParameters;

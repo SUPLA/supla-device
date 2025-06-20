@@ -30,21 +30,36 @@ class SwUpdate {
   static SwUpdate *Create(SuplaDeviceClass *sdc, const char *newUrl);
   virtual ~SwUpdate();
 
-  virtual void start();
+  void start() { started = true; }
   virtual void iterate() = 0;
 
   void setUrl(const char *newUrl);
-  virtual bool isStarted();
-  virtual bool isFinished() = 0;
-  virtual bool isAborted() = 0;
-  void useBeta();
+  bool isStarted() { return started; }
+  bool isFinished() { return finished; }
+  bool isAborted() { return abort; }
+  void useBeta() { beta = true; }
+
+  bool isCheckUpdateAndAbort() const { return checkUpdateAndAbort; }
+  void setCheckUpdateAndAbort() { checkUpdateAndAbort = true; }
+
+  const char *getUrl() const { return updateUrl; }
+  const char *getNewVersion() const { return newVersion; }
+
+  bool isSecurityOnly() const { return securityOnly; }
+  void setSecurityOnly() { securityOnly = true; }
 
  protected:
   explicit SwUpdate(SuplaDeviceClass *sdc, const char *newUrl = nullptr);
 
   bool beta = false;
+  bool securityOnly = false;
   bool started = false;
+  bool checkUpdateAndAbort = false;
+  bool finished = false;
+  bool abort = false;
   SuplaDeviceClass *sdc = nullptr;
+  char *updateUrl = nullptr;
+  char *newVersion = nullptr;
 
   char url[SUPLA_MAX_URL_LENGTH] = {};
 };

@@ -21,16 +21,21 @@
 
 #include <supla/network/html_element.h>
 
+class SuplaDeviceClass;
+
 namespace Supla {
 
 namespace Html {
 
 class SwUpdate : public HtmlElement {
  public:
-  SwUpdate();
+  explicit SwUpdate(SuplaDeviceClass* sdc);
   virtual ~SwUpdate();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
+
+ protected:
+  SuplaDeviceClass* sdc = nullptr;
 };
 
 };  // namespace Html

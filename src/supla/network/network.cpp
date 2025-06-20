@@ -25,6 +25,7 @@
 #include <supla/element.h>
 #include <supla/network/network.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <supla/protocol/supla_srpc.h>
 

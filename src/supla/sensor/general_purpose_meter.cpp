@@ -20,6 +20,7 @@
 
 #include <supla/sensor/measurement_driver.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/log_wrapper.h>
 #include <supla/actions.h>
 #include <supla/protocol/protocol_layer.h>

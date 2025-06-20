@@ -19,10 +19,9 @@
 #ifndef SRC_SUPLA_STORAGE_CONFIG_H_
 #define SRC_SUPLA_STORAGE_CONFIG_H_
 
+#include <supla/device/device_mode.h>
 #include <stddef.h>
 #include <stdint.h>
-
-#include "storage.h"
 
 #define SUPLA_CONFIG_MAX_KEY_SIZE 16
 
@@ -35,15 +34,6 @@
 #define MQTT_PASSWORD_MAX_SIZE 256
 
 namespace Supla {
-
-enum DeviceMode : uint8_t {
-  DEVICE_MODE_NOT_SET = 0,
-  DEVICE_MODE_TEST = 1,
-  DEVICE_MODE_NORMAL = 2,
-  DEVICE_MODE_CONFIG = 3,
-  DEVICE_MODE_SW_UPDATE = 4,
-  DEVICE_MODE_OFFLINE = 5
-};
 
 class Config {
  public:

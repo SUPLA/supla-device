@@ -20,6 +20,7 @@
 
 #include <SuplaDevice.h>
 #include <supla/events.h>
+#include <supla/log_wrapper.h>
 #include <esp_task_wdt.h>
 
 using Supla::Watchdog;

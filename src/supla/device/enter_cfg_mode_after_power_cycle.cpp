@@ -19,6 +19,7 @@
 #include "enter_cfg_mode_after_power_cycle.h"
 #include <SuplaDevice.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include <supla/storage/config_tags.h>

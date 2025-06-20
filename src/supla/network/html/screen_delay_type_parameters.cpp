@@ -19,6 +19,7 @@
 #include "screen_delay_type_parameters.h"
 
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/element.h>
 #include <supla/storage/config_tags.h>
 

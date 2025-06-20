@@ -43,8 +43,8 @@ class CalCfgResultPending {
  public:
   friend class SuplaSrpc;
   void set(int16_t channelNo, int32_t receiverId, int32_t command);
-  void clear(int16_t channelNo);
-  CalCfgResultPendingItem *get(int16_t channelNo);
+  void clear(int16_t channelNo, int32_t command = -1);
+  CalCfgResultPendingItem *get(int16_t channelNo, int32_t command = -1);
 
  protected:
   CalCfgResultPending();
@@ -133,7 +133,7 @@ class SuplaSrpc : public ProtocolLayer {
                                int dataSize = 0,
                                void *data = nullptr);
 
-  void clearPendingCalCfgResult(int16_t channelNo);
+  void clearPendingCalCfgResult(int16_t channelNo, int32_t command = -1);
 
   static const char *configResultToCStr(int result);
 

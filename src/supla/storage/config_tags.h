@@ -78,6 +78,7 @@ const char ValveCfgTag[] = "valve_cfg";
 
 const char ModbusCfgTag[] = "modbus_cfg";
 
+const char OtaModeTag[] = "ota_mode";
 }  // namespace ConfigTag
 }  // namespace Supla
 

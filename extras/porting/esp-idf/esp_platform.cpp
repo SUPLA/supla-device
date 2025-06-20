@@ -55,6 +55,14 @@ int Supla::getPlatformId() {
       return 6;
     case CHIP_ESP32C2:
       return 7;
+    case CHIP_ESP32C6:
+      return 8;
+    case CHIP_ESP32P4:
+      return 9;
+    case CHIP_ESP32C61:
+      return 10;
+    case CHIP_ESP32C5:
+      return 11;
     default:
       return 0;
   }

@@ -31,7 +31,9 @@
 #include <supla/log_wrapper.h>
 #include <supla/element.h>
 #include <supla/device/remote_device_config.h>
-#include "supla/storage/config_tags.h"
+#include <supla/storage/config_tags.h>
+#include <supla/storage/storage.h>
+#include <supla/network/network.h>
 
 #include "config.h"
 

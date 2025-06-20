@@ -23,6 +23,8 @@
 #include <string.h>
 #include <supla/actions.h>
 #include <supla/device/register_device.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/storage/storage.h>
 
 #include "factory_test.h"
 
@@ -136,6 +138,13 @@ void FactoryTest::onInit() {
     SUPLA_LOG_ERROR("TEST failed: Supla 3rd party CA cert is empty");
     testFailed = true;
     failReason = 12;
+    return;
+  }
+
+  if (!sdc->isAutomaticFirmwareUpdateEnabled()) {
+    SUPLA_LOG_ERROR("TEST failed: automatic firmware update is disabled");
+    testFailed = true;
+    failReason = 15;
     return;
   }
 }

@@ -21,6 +21,7 @@
 #include <string.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/time.h>
 
 #include "supla/sensor/one_phase_electricity_meter.h"

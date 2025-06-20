@@ -22,6 +22,7 @@
 #include <supla/actions.h>
 #include <supla/tools.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla/storage/config_tags.h>
 
 #include "../condition.h"

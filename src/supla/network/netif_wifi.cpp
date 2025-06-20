@@ -18,6 +18,7 @@
 
 #include <string.h>
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 
 using Supla::Wifi;
 

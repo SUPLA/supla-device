@@ -20,6 +20,7 @@
 #define SRC_SUPLA_PROTOCOL_MQTT_H_
 
 #include <supla/storage/config.h>
+#include <supla/storage/storage.h>
 #include <supla-common/proto.h>
 #include <supla/uptime.h>
 #include <supla/protocol/mqtt_topic.h>

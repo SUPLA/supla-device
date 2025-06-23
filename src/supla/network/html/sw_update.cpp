@@ -63,19 +63,20 @@ void SwUpdate::send(Supla::WebSender* sender) {
       sender->send("><option value=\"0\"");
       sender->send(selected(otaMode == Supla::AutoUpdateMode::ForcedOff));
       sender->send(
-          ">Forced off - allow only updates started manually from local "
-          "web</option>"
+          ">Disabled on a device (can't be changed remotely, updates possible "
+          "only via local web interface)</option>"
           "<option value=\"1\"");
       sender->send(selected(otaMode == Supla::AutoUpdateMode::Disabled));
       sender->send(
-          ">Disabled - no automatic updates</option>"
+          ">Allow only manual updates (triggered by user via Cloud or via "
+          "local web interface)</option>"
           "<option value=\"2\"");
       sender->send(selected(otaMode == Supla::AutoUpdateMode::SecurityOnly));
       sender->send(
-          ">Security updates only</option>"
+          ">Install only security updates automatically</option>"
           "<option value=\"3\"");
       sender->send(selected(otaMode == Supla::AutoUpdateMode::AllUpdates));
-      sender->send(">All updates</option></select>");
+      sender->send(">Install all updates automatically</option></select>");
       sender->send("</div>");
       sender->send("</div>");
       // form-field END

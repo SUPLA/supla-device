@@ -1217,6 +1217,10 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
 }
 
 void SuplaDeviceClass::restartCfgModeTimeout(bool requireRestart) {
+  if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
+    return;
+  }
+
   if (!forceRestartTimeMs) {
     if (requireRestart || deviceRestartTimeoutTimestamp) {
       deviceRestartTimeoutTimestamp = millis();

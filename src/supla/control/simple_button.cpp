@@ -35,6 +35,9 @@ ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
 }
 
 enum Supla::Control::StateResults ButtonState::update() {
+  if (pin == -1) {
+    return RELEASED;
+  }
   uint32_t curMillis = millis();
   if (debounceDelayMs == 0 ||
       curMillis - debounceTimestampMs > debounceDelayMs) {
@@ -108,8 +111,10 @@ void SimpleButton::onInit() {
 
 void ButtonState::init(int buttonNumber) {
   if (prevState == -1) {
-    Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
-    prevState = Supla::Io::digitalRead(pin, io);
+    if (pin >= 0) {
+      Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
+      prevState = Supla::Io::digitalRead(pin, io);
+    }
     newStatusCandidate = prevState;
     SUPLA_LOG_DEBUG(
         "Button[%d]: Initialized: pin %d, pullUp %d, invertLogic %d, state %d",

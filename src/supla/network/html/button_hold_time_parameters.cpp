@@ -23,7 +23,6 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
-#include <supla/log_wrapper.h>
 #include <supla/storage/config_tags.h>
 
 using Supla::Html::ButtonHoldTimeParameters;
@@ -37,6 +36,11 @@ void ButtonHoldTimeParameters::send(Supla::WebSender* sender) {
   if (cfg) {
     uint32_t value = 700;  // default value
     cfg->getUInt32(Supla::ConfigTag::BtnHoldTag, &value);
+    if (value < 200) {
+      value = 200;
+    } else if (value > 10000) {
+      value = 10000;
+    }
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");

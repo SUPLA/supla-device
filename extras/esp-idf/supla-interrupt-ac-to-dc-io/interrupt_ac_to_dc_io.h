@@ -40,6 +40,7 @@ class InterruptAcToDcIo : public Io, public Element {
   void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override;
 
   void onFastTimer() override;
+  void setOffStateLevel(uint8_t level);
 
  protected:
 //  bool gpioHiIsOn[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
@@ -47,6 +48,7 @@ class InterruptAcToDcIo : public Io, public Element {
   int32_t gpioLastTimestampMs[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
   uint8_t gpioState[INTERRUPT_AC_TO_DC_IO_MAX_GPIOS] = {};
   bool initialized = false;
+  uint8_t offStateLevel = 0;
 };
 
 }  // namespace Supla

@@ -106,6 +106,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/control/bistable_relay.cpp
   ../../../src/supla/control/bistable_roller_shutter.cpp
   ../../../src/supla/control/button.cpp
+  ../../../src/supla/control/button_aggregator.cpp
   ../../../src/supla/control/dimmer_base.cpp
   ../../../src/supla/control/dimmer_leds.cpp
   ../../../src/supla/control/internal_pin_output.cpp

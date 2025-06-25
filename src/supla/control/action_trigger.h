@@ -82,6 +82,8 @@ class ActionTrigger : public Element, public ActionHandler {
 
   bool isAnyActionEnabledOnServer() const;
 
+  void setAlwaysUseOnClick1();
+
  protected:
   void addActionToButtonAndDisableIt(int event, int action);
   void parseActiveActionsFromServer();
@@ -97,6 +99,7 @@ class ActionTrigger : public Element, public ActionHandler {
 
   ActionHandlingType actionHandlingType = ActionHandlingType_RelayOnSuplaServer;
   bool storageEnabled = false;
+  bool alwaysUseOnClick1 = false;
 };
 
 }  // namespace Control

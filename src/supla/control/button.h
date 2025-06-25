@@ -87,6 +87,7 @@ class Button : public SimpleButton, public ActionHandler {
 
   void disableButton();
   void enableButton();
+  void waitForRelease();
 
   uint32_t getLastStateChange() const;
 
@@ -98,11 +99,11 @@ class Button : public SimpleButton, public ActionHandler {
   // threshold 0 disables always
   void disableRepeatOnHold(uint32_t threshold = 0);
   void enableRepeatOnHold();
-  uint32_t multiclickTimeMs = 0;
   uint32_t lastStateChangeMs = 0;
   uint16_t repeatOnHoldMs = 0;
   uint16_t holdSend = 0;
   uint16_t holdTimeMs = 0;
+  uint16_t multiclickTimeMs = 0;
   ButtonType buttonType = ButtonType::MONOSTABLE;
   enum OnLoadConfigType onLoadConfigType = OnLoadConfigType::LOAD_FULL_CONFIG;
 
@@ -113,6 +114,7 @@ class Button : public SimpleButton, public ActionHandler {
   int8_t buttonNumber = -1;
   bool disabled = false;
   bool allowHoldOnPowerOn = false;
+  bool waitingForRelease = false;
 
   static int buttonCounter;
 };

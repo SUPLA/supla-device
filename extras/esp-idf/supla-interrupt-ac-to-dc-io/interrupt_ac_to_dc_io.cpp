@@ -144,7 +144,7 @@ void InterruptAcToDcIo::onFastTimer() {
     if (gpioLastTimestampMs[i] != 0 &&
         now - gpioLastTimestampMs[i] > gpioMinOffTimeout[i]) {
       gpioLastTimestampMs[i] = 0;
-      if (gpio_get_level(static_cast<gpio_num_t>(i)) == 0) {
+      if (gpio_get_level(static_cast<gpio_num_t>(i)) == offStateLevel) {
         gpioState[i] = 0;
         SUPLA_LOG_DEBUG(" *** GPIO %d is OFF ***", i);
       } else {
@@ -154,6 +154,10 @@ void InterruptAcToDcIo::onFastTimer() {
       }
     }
   }
+}
+
+void InterruptAcToDcIo::setOffStateLevel(uint8_t level) {
+  offStateLevel = level;
 }
 
 void InterruptAcToDcIo::customPinMode(int channelNumber,

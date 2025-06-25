@@ -32,13 +32,24 @@ namespace Supla {
 namespace Html {
 
 ButtonActionTriggerConfig::ButtonActionTriggerConfig(int channelNumber,
-    int buttonNumber) :
+    int buttonNumber, const char* labelPrefix) :
   HtmlElement(HTML_SECTION_FORM),
   channelNumber(channelNumber),
   buttonNumber(buttonNumber) {
+  if (labelPrefix) {
+    int size = strlen(labelPrefix);
+    this->labelPrefix = new char[size + 1];
+    if (this->labelPrefix) {
+      snprintf(this->labelPrefix, size + 1, "%s", labelPrefix);
+    }
+  }
 }
 
 ButtonActionTriggerConfig::~ButtonActionTriggerConfig() {
+  if (labelPrefix) {
+    delete[] labelPrefix;
+    labelPrefix = nullptr;
+  }
 }
 
 void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
@@ -51,8 +62,13 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
     cfg->getInt32(key, &value);
 
     char label[100] = {};
-    snprintf(label, sizeof(label), "IN%d MQTT action trigger type",
-        buttonNumber);
+    if (labelPrefix) {
+      snprintf(
+          label, sizeof(label), "%s MQTT action trigger type", labelPrefix);
+    } else {
+      snprintf(label, sizeof(label), "IN%d MQTT action trigger type",
+          buttonNumber);
+    }
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");

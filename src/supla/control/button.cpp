@@ -77,6 +77,17 @@ void Button::onTimer() {
     }
   }
 
+  if (waitingForRelease) {
+    if (stateResult != TO_RELEASED) {
+      return;
+    } else {
+      clickCounter = 0;
+      holdSend = 0;
+      lastStateChangeMs = millis();
+    }
+  }
+  waitingForRelease = false;
+
   if (stateChanged) {
     lastStateChangeMs = millis();
     if (multiclickTimeMs > 0 && (stateResult == TO_PRESSED || isBistable() ||
@@ -311,6 +322,9 @@ void Button::setHoldTime(unsigned int timeMs) {
 }
 
 void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
+  if (timeMs > UINT16_MAX) {
+    timeMs = UINT16_MAX;
+  }
   multiclickTimeMs = timeMs;
   if (bistableButton) {
     buttonType = ButtonType::BISTABLE;
@@ -394,7 +408,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
         multiclickTimeMsValue = 10000;
       }
       setMulticlickTime(multiclickTimeMsValue, isBistable());
-    } else {
+    } else if (multiclickTimeMsValue > 0) {
       cfg->setUInt32(Supla::ConfigTag::BtnMulticlickTag, multiclickTimeMs);
       saveConfig = true;
     }
@@ -408,7 +422,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
         holdTimeMsValue = 10000;
       }
       setHoldTime(holdTimeMsValue);
-    } else {
+    } else if (holdTimeMs > 0) {
       cfg->setUInt32(Supla::ConfigTag::BtnHoldTag, holdTimeMs);
       saveConfig = true;
     }
@@ -437,7 +451,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     }
 
     if (saveConfig) {
-      cfg->commit();
+      cfg->saveWithDelay(500);
     }
   }
 }
@@ -503,6 +517,9 @@ void Button::disableButton() {
 void Button::enableButton() {
   SUPLA_LOG_DEBUG("Button[%d]: enabling button", getButtonNumber());
   disabled = false;
+  clickCounter = 0;
+  holdSend = 0;
+  lastStateChangeMs = millis();
 }
 
 void Button::handleAction(int event, int action) {
@@ -532,3 +549,8 @@ void Button::handleAction(int event, int action) {
 uint32_t Button::getLastStateChange() const {
   return lastStateChangeMs;
 }
+
+void Button::waitForRelease() {
+  waitingForRelease = true;
+}
+

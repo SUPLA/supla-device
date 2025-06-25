@@ -213,7 +213,8 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
     bool makeSureThatOnChangePressReleaseIsDisabled = false;
 
     if (activeActionsFromServer ||
-        actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
+        actionHandlingType == ActionHandlingType_PublishAllDisableNone ||
+        alwaysUseOnClick1) {
       // disable on_press, on_release, on_change local actions and enable
       // on_click_1
       if (localHandlerForDisabledAt && localHandlerForEnabledAt) {
@@ -248,7 +249,9 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
           actionHandlingType == ActionHandlingType_PublishAllDisableNone) {
         attachedButton->enableAction(actionId, this, eventId);
       } else {
-        attachedButton->disableAction(actionId, this, eventId);
+        if (eventId != Supla::ON_CLICK_1 || !alwaysUseOnClick1) {
+          attachedButton->disableAction(actionId, this, eventId);
+        }
       }
 
       // enable/disable other actions when AT from server is disabled/enabled
@@ -604,5 +607,9 @@ void Supla::Control::ActionTrigger::addActionToButtonAndDisableIt(int action,
 
 bool Supla::Control::ActionTrigger::isAnyActionEnabledOnServer() const {
   return activeActionsFromServer != 0;
+}
+
+void Supla::Control::ActionTrigger::setAlwaysUseOnClick1() {
+  alwaysUseOnClick1 = true;
 }
 

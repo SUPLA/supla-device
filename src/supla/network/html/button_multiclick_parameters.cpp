@@ -21,7 +21,6 @@
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
-#include <supla/log_wrapper.h>
 #include <supla/storage/config_tags.h>
 
 #include "button_multiclick_parameters.h"
@@ -42,6 +41,11 @@ void ButtonMulticlickParameters::send(Supla::WebSender* sender) {
   if (cfg) {
     uint32_t value = 300;  // default value
     cfg->getUInt32(Supla::ConfigTag::BtnMulticlickTag, &value);
+    if (value < 200) {
+      value = 200;
+    } else if (value > 10000) {
+      value = 10000;
+    }
 
     // form-field BEGIN
     sender->send("<div class=\"form-field\">");

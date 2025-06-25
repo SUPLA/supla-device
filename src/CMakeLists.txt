@@ -53,6 +53,7 @@ set(SRCS
   supla/control/dimmer_leds.cpp
   supla/control/simple_button.cpp
   supla/control/button.cpp
+  supla/control/button_aggregator.cpp
   supla/control/sequence_button.cpp
   supla/control/action_trigger.cpp
   supla/control/relay.cpp

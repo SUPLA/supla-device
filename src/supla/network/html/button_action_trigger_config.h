@@ -26,7 +26,9 @@ namespace Html {
 
 class ButtonActionTriggerConfig : public HtmlElement {
  public:
-  explicit ButtonActionTriggerConfig(int channelNumber, int buttonNumber);
+  explicit ButtonActionTriggerConfig(int channelNumber,
+                                     int buttonNumber,
+                                     const char* labelPrefix = nullptr);
   virtual ~ButtonActionTriggerConfig();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
@@ -34,6 +36,7 @@ class ButtonActionTriggerConfig : public HtmlElement {
  protected:
   int channelNumber = 0;
   int buttonNumber = 0;
+  char *labelPrefix = nullptr;
 };
 
 }  // namespace Html

@@ -59,6 +59,8 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   void setTestFinished();
   Supla::TestStage getTestStage() const;
 
+  void dontCheckAutomaticFirmwareUpdate();
+
  protected:
   bool testFailed = false;
   bool testFinished = false;
@@ -72,6 +74,7 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   // fill fail reason for devices that can show it during the test
   // Use values >= 100 for device specific failures
   int failReason = 0;
+  bool checkAutomaticFirmwareUpdate = true;
 };
 
 }  // namespace Device

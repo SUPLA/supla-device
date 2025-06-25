@@ -141,7 +141,8 @@ void FactoryTest::onInit() {
     return;
   }
 
-  if (!sdc->isAutomaticFirmwareUpdateEnabled()) {
+  if (checkAutomaticFirmwareUpdate &&
+      !sdc->isAutomaticFirmwareUpdateEnabled()) {
     SUPLA_LOG_ERROR("TEST failed: automatic firmware update is disabled");
     testFailed = true;
     failReason = 15;
@@ -283,6 +284,10 @@ void FactoryTest::setTestFinished() {
 
 Supla::TestStage FactoryTest::getTestStage() const {
   return testStage;
+}
+
+void FactoryTest::dontCheckAutomaticFirmwareUpdate() {
+  checkAutomaticFirmwareUpdate = false;
 }
 
 }  // namespace Device

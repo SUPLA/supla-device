@@ -1,19 +1,19 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
 <area shape="rect" id="Node000000" href="$classSupla_1_1Network.html" title=" " alt="" coords="5,80,115,106"/>
 <area shape="rect" id="Node000001" href="$classSupla_1_1ENC28J60.html" title=" " alt="" coords="174,5,296,31"/>
-<area shape="poly" id="edge203_Node000000_Node000001" title=" " alt="" coords="98,70,162,40,190,29,192,34,164,45,100,75"/>
+<area shape="poly" id="edge204_Node000000_Node000001" title=" " alt="" coords="98,70,162,40,190,29,192,34,164,45,100,75"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1EthernetShield.html" title=" " alt="" coords="163,55,307,80"/>
-<area shape="poly" id="edge204_Node000000_Node000002" title=" " alt="" coords="129,80,162,75,163,81,130,85"/>
+<area shape="poly" id="edge205_Node000000_Node000002" title=" " alt="" coords="129,80,162,75,163,81,130,85"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1LAN.html" title=" " alt="" coords="191,104,278,130"/>
-<area shape="poly" id="edge205_Node000000_Node000003" title=" " alt="" coords="130,100,191,108,191,114,129,105"/>
+<area shape="poly" id="edge206_Node000000_Node000003" title=" " alt="" coords="130,100,191,108,191,114,129,105"/>
 <area shape="rect" id="Node000007" href="$classSupla_1_1Wifi.html" title=" " alt="" coords="194,165,276,191"/>
-<area shape="poly" id="edge209_Node000000_Node000007" title=" " alt="" coords="103,110,208,163,206,167,101,115"/>
+<area shape="poly" id="edge210_Node000000_Node000007" title=" " alt="" coords="103,110,208,163,206,167,101,115"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1ESPETH.html" title=" " alt="" coords="370,41,482,67"/>
-<area shape="poly" id="edge206_Node000003_Node000004" title=" " alt="" coords="290,96,383,65,385,70,292,101"/>
+<area shape="poly" id="edge207_Node000003_Node000004" title=" " alt="" coords="290,96,383,65,385,70,292,101"/>
 <area shape="rect" id="Node000005" href="$classSupla_1_1ESPETHSPI.html" title=" " alt="" coords="358,91,493,116"/>
-<area shape="poly" id="edge207_Node000003_Node000005" title=" " alt="" coords="294,110,358,106,358,111,294,115"/>
+<area shape="poly" id="edge208_Node000003_Node000005" title=" " alt="" coords="294,110,358,106,358,111,294,115"/>
 <area shape="rect" id="Node000006" href="$classSupla_1_1WT32__ETH01.html" title=" " alt="" coords="355,140,496,166"/>
-<area shape="poly" id="edge208_Node000003_Node000006" title=" " alt="" coords="294,125,355,137,354,142,293,130"/>
+<area shape="poly" id="edge209_Node000003_Node000006" title=" " alt="" coords="294,125,355,137,354,142,293,130"/>
 <area shape="rect" id="Node000008" href="$classSupla_1_1ESPWifi.html" title=" " alt="" coords="372,189,479,215"/>
-<area shape="poly" id="edge210_Node000007_Node000008" title=" " alt="" coords="292,183,372,193,371,198,291,188"/>
+<area shape="poly" id="edge211_Node000007_Node000008" title=" " alt="" coords="292,183,372,193,371,198,291,188"/>
 </map>

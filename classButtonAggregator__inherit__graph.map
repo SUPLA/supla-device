@@ -1,0 +1,13 @@
+<map id="ButtonAggregator" name="ButtonAggregator">
+<area shape="rect" id="Node000001" title=" " alt="" coords="162,226,284,252"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="150,153,296,178"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="226,194,226,226,220,226,220,194"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="37,79,222,105"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="159,112,209,150,206,154,156,117"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,5,113,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="83,40,120,77,116,80,79,44"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="137,5,266,31"/>
+<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="181,44,144,80,140,77,177,40"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="246,79,389,105"/>
+<area shape="poly" id="edge5_Node000002_Node000006" title=" " alt="" coords="291,117,240,154,237,150,288,112"/>
+</map>

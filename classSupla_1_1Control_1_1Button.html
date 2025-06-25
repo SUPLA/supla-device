@@ -105,6 +105,8 @@ Inheritance diagram for Supla::Control::Button:</div>
 <div class="center"><img src="classSupla_1_1Control_1_1Button__inherit__graph.png" border="0" usemap="#aSupla_1_1Control_1_1Button_inherit__map" alt="Inheritance graph"/></div>
 <map name="aSupla_1_1Control_1_1Button_inherit__map" id="aSupla_1_1Control_1_1Button_inherit__map">
 <area shape="rect" title=" " alt="" coords="150,153,296,178"/>
+<area shape="rect" href="classSupla_1_1Control_1_1ButtonAggregator.html" title=" " alt="" coords="119,226,327,252"/>
+<area shape="poly" title=" " alt="" coords="226,194,226,226,220,226,220,194"/>
 <area shape="rect" href="classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="37,79,222,105"/>
 <area shape="poly" title=" " alt="" coords="159,112,209,150,206,154,156,117"/>
 <area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,5,113,31"/>
@@ -224,6 +226,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>disableButton</b> ()<
 <tr class="memitem:af9eecf8bb3993bd607d7247a516c466f" id="r_af9eecf8bb3993bd607d7247a516c466f"><td class="memItemLeft" align="right" valign="top"><a id="af9eecf8bb3993bd607d7247a516c466f" name="af9eecf8bb3993bd607d7247a516c466f"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableButton</b> ()</td></tr>
 <tr class="separator:af9eecf8bb3993bd607d7247a516c466f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f153b431fe851376e174fe2ea98ddde" id="r_a8f153b431fe851376e174fe2ea98ddde"><td class="memItemLeft" align="right" valign="top"><a id="a8f153b431fe851376e174fe2ea98ddde" name="a8f153b431fe851376e174fe2ea98ddde"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>waitForRelease</b> ()</td></tr>
+<tr class="separator:a8f153b431fe851376e174fe2ea98ddde"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8cff18366fa32f5a355a7eac50b2cbdd" id="r_a8cff18366fa32f5a355a7eac50b2cbdd"><td class="memItemLeft" align="right" valign="top"><a id="a8cff18366fa32f5a355a7eac50b2cbdd" name="a8cff18366fa32f5a355a7eac50b2cbdd"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getLastStateChange</b> () const</td></tr>
 <tr class="separator:a8cff18366fa32f5a355a7eac50b2cbdd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -401,9 +406,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>enableRepeatOnHold</b
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a047c2301a4872f7662c8a4733043fe67" id="r_a047c2301a4872f7662c8a4733043fe67"><td class="memItemLeft" align="right" valign="top"><a id="a047c2301a4872f7662c8a4733043fe67" name="a047c2301a4872f7662c8a4733043fe67"></a>
-uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>multiclickTimeMs</b> = 0</td></tr>
-<tr class="separator:a047c2301a4872f7662c8a4733043fe67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad45c2f91df81967a6ecc76576720befc" id="r_ad45c2f91df81967a6ecc76576720befc"><td class="memItemLeft" align="right" valign="top"><a id="ad45c2f91df81967a6ecc76576720befc" name="ad45c2f91df81967a6ecc76576720befc"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastStateChangeMs</b> = 0</td></tr>
 <tr class="separator:ad45c2f91df81967a6ecc76576720befc"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -416,6 +418,9 @@ uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>holdSend</b> = 0<
 <tr class="memitem:ae046e7f333883abac409f568cd27f57f" id="r_ae046e7f333883abac409f568cd27f57f"><td class="memItemLeft" align="right" valign="top"><a id="ae046e7f333883abac409f568cd27f57f" name="ae046e7f333883abac409f568cd27f57f"></a>
 uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>holdTimeMs</b> = 0</td></tr>
 <tr class="separator:ae046e7f333883abac409f568cd27f57f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c1bdcb5aa8d657c67aaa6f2fb311eab" id="r_a0c1bdcb5aa8d657c67aaa6f2fb311eab"><td class="memItemLeft" align="right" valign="top"><a id="a0c1bdcb5aa8d657c67aaa6f2fb311eab" name="a0c1bdcb5aa8d657c67aaa6f2fb311eab"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>multiclickTimeMs</b> = 0</td></tr>
+<tr class="separator:a0c1bdcb5aa8d657c67aaa6f2fb311eab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad2ed3986c0f477bb7cce17d1cf5cd1d1" id="r_ad2ed3986c0f477bb7cce17d1cf5cd1d1"><td class="memItemLeft" align="right" valign="top"><a id="ad2ed3986c0f477bb7cce17d1cf5cd1d1" name="ad2ed3986c0f477bb7cce17d1cf5cd1d1"></a>
 ButtonType&#160;</td><td class="memItemRight" valign="bottom"><b>buttonType</b> = ButtonType::MONOSTABLE</td></tr>
 <tr class="separator:ad2ed3986c0f477bb7cce17d1cf5cd1d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -443,6 +448,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>disabled</b> = false<
 <tr class="memitem:a04fef633f482972d19d569ba12ab9971" id="r_a04fef633f482972d19d569ba12ab9971"><td class="memItemLeft" align="right" valign="top"><a id="a04fef633f482972d19d569ba12ab9971" name="a04fef633f482972d19d569ba12ab9971"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>allowHoldOnPowerOn</b> = false</td></tr>
 <tr class="separator:a04fef633f482972d19d569ba12ab9971"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bab85103a3a74fdc53ecfb4e87a205e" id="r_a9bab85103a3a74fdc53ecfb4e87a205e"><td class="memItemLeft" align="right" valign="top"><a id="a9bab85103a3a74fdc53ecfb4e87a205e" name="a9bab85103a3a74fdc53ecfb4e87a205e"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>waitingForRelease</b> = false</td></tr>
+<tr class="separator:a9bab85103a3a74fdc53ecfb4e87a205e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Control_1_1SimpleButton"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1Control_1_1SimpleButton')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1Control_1_1SimpleButton.html">Supla::Control::SimpleButton</a></td></tr>
 <tr class="memitem:a6869d8b2e412619275dfe41bd001e9c7 inherit pro_attribs_classSupla_1_1Control_1_1SimpleButton" id="r_a6869d8b2e412619275dfe41bd001e9c7"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classSupla_1_1Control_1_1ButtonState.html">ButtonState</a>&#160;</td><td class="memItemRight" valign="bottom"><b>state</b></td></tr>
@@ -846,6 +854,8 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 <p>It should provide all actions that have to be executed periodically regardless of other SuplaDevice activities. It is usually called every 10 ms. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a12f97f359fa63d88e60002649657dd43">Supla::Element</a>.</p>
+
+<p>Reimplemented in <a class="el" href="classButtonAggregator.html#a6e1e65402d91ebbf55ee3093d014691e">ButtonAggregator</a>, and <a class="el" href="classSupla_1_1Control_1_1ButtonAggregator.html#a6e1e65402d91ebbf55ee3093d014691e">Supla::Control::ButtonAggregator</a>.</p>
 
 </div>
 </div>

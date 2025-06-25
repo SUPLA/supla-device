@@ -1,11 +1,13 @@
 <map id="SimpleButton" name="SimpleButton">
-<area shape="rect" id="Node000001" title=" " alt="" coords="118,79,217,105"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="5,160,151,186"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="144,117,93,162,90,158,141,113"/>
-<area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1SequenceButton.html" title=" " alt="" coords="175,153,341,193"/>
-<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="194,113,237,150,234,154,191,117"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="43,5,150,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="121,40,157,77,154,80,117,44"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="175,5,304,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="218,44,181,80,178,77,215,40"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="149,79,248,105"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="37,160,182,186"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="176,117,125,162,121,158,172,113"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Control_1_1SequenceButton.html" title=" " alt="" coords="207,153,372,193"/>
+<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="226,113,269,150,265,154,222,117"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="74,5,182,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="152,40,189,77,185,80,149,44"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="206,5,336,31"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="250,44,213,80,209,77,246,40"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Control_1_1ButtonAggregator.html" title=" " alt="" coords="5,241,214,267"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="112,202,112,241,107,241,107,202"/>
 </map>

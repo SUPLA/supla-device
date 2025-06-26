@@ -743,6 +743,7 @@ bool SuplaDeviceClass::loadDeviceConfig() {
     SUPLA_LOG_WARNING("Automatic firmware update is disabled");
   } else {
     auto otaMode = getAutoUpdateMode();
+    (void)(otaMode);
     SUPLA_LOG_INFO("Automatic firmware update is supported. OTA mode: %s",
                    otaMode == Supla::AutoUpdateMode::ForcedOff  ? "forced off"
                    : otaMode == Supla::AutoUpdateMode::Disabled ? "disabled"

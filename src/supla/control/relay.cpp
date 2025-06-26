@@ -227,9 +227,9 @@ void Relay::onInit() {
       } else if (attachedButton->isBistable()) {
         attachedButton->addAction(
             Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
-      } else if (attachedButton->isMotionSensor()) {
-        attachedButton->addAction(
-            Supla::TURN_ON, this, Supla::ON_PRESS);
+      } else if (attachedButton->isMotionSensor() ||
+                 attachedButton->isCentral()) {
+        attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
         attachedButton->addAction(
             Supla::TURN_OFF, this, Supla::ON_RELEASE);
         if (attachedButton->getLastState() == Supla::Control::PRESSED) {

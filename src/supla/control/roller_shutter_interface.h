@@ -52,6 +52,7 @@ struct RollerShutterConfig {
 class RollerShutterInterface : public ChannelElement, public ActionHandler {
  public:
   RollerShutterInterface();
+  virtual ~RollerShutterInterface();
 
   RollerShutterInterface(const RollerShutterInterface &) = delete;
   RollerShutterInterface &operator=(const RollerShutterInterface &) = delete;
@@ -108,6 +109,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   uint32_t getOpeningTimeMs() const;
 
   void attach(Supla::Control::Button *up, Supla::Control::Button *down);
+  void attach(Supla::Control::Button *button, bool upButton, bool asInternal);
 
   virtual void triggerCalibration();
   void setCalibrationNeeded();
@@ -144,6 +146,25 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void setMotorProblem(bool value);
 
  protected:
+  struct ButtonListElement {
+    Supla::Control::Button *button = nullptr;
+    bool asInternal = true;
+    bool upButton = true;
+    ButtonListElement *next = nullptr;
+  };
+
+  /**
+   * Configure additional buttons for roller shutter
+   *
+   * @param button Button
+   * @param upButton true if button is up button, false if down
+   * @param asInternal true if buttons are internal (they will be inverted by
+   *                   upsideDown config)
+   */
+  void setupButtonActions(Supla::Control::Button *button,
+                               bool upButton, bool asInternal);
+
+
   bool lastDirectionWasOpen() const;
   bool lastDirectionWasClose() const;
 
@@ -153,7 +174,6 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   void setCalibrate(bool value);
 
   void printConfig() const;
-  void setupButtonActions();
   uint32_t getTimeMarginValue(uint32_t fullTime) const;
 
   uint8_t flags = 0;
@@ -171,8 +191,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   RollerShutterConfig rsConfig;
 
-  Supla::Control::Button *upButton = nullptr;
-  Supla::Control::Button *downButton = nullptr;
+  ButtonListElement *buttonList = nullptr;
 
   uint32_t closingTimeMs = 0;
   uint32_t openingTimeMs = 0;

@@ -91,7 +91,7 @@ void Button::onTimer() {
   if (stateChanged) {
     lastStateChangeMs = millis();
     if (multiclickTimeMs > 0 && (stateResult == TO_PRESSED || isBistable() ||
-        isMotionSensor())) {
+        isMotionSensor() || isCentral())) {
       if (clickCounter <= maxMulticlickValueConfigured) {
         // don't increase counter if already at max value
         clickCounter++;
@@ -113,8 +113,10 @@ void Button::onTimer() {
             timeDelta > multiclickTimeMs) {
           clickCounter = 0;
         }
-      } else if (stateResult == RELEASED || isBistable() || isMotionSensor()) {
-        // for all button types (monostable, bistable, and motion sensor)
+      } else if (stateResult == RELEASED || isBistable() || isMotionSensor() ||
+                 isCentral()) {
+        // for all button types (monostable, bistable, motion sensor, and
+        // central)
         if (multiclickTimeMs == 0) {
           holdSend = 0;
           clickCounter = 0;
@@ -318,7 +320,7 @@ void Button::setHoldTime(unsigned int timeMs) {
     timeMs = UINT16_MAX;
   }
   holdTimeMs = timeMs;
-  SUPLA_LOG_DEBUG("Button[%d]::setHoldTime: %u", getButtonNumber(), holdTimeMs);
+  SUPLA_LOG_DEBUG("Button[%d] setHoldTime: %u", getButtonNumber(), holdTimeMs);
 }
 
 void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
@@ -330,7 +332,7 @@ void Button::setMulticlickTime(unsigned int timeMs, bool bistableButton) {
     buttonType = ButtonType::BISTABLE;
   }
   SUPLA_LOG_DEBUG(
-      "Button[%d]::setMulticlickTime: %u", getButtonNumber(), timeMs);
+      "Button[%d] setMulticlickTime: %u", getButtonNumber(), timeMs);
 }
 
 void Button::repeatOnHoldEvery(unsigned int timeMs) {
@@ -352,6 +354,10 @@ bool Button::isMotionSensor() const {
   return buttonType == ButtonType::MOTION_SENSOR;
 }
 
+bool Button::isCentral() const {
+  return buttonType == ButtonType::CENTRAL_CONTROL;
+}
+
 void Button::onLoadConfig(SuplaDeviceClass *sdc) {
   if (sdc->getDeviceMode() == Supla::DEVICE_MODE_TEST) {
     SUPLA_LOG_DEBUG("Button[%d] test mode", getButtonNumber());
@@ -359,7 +365,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     return;
   }
   if (onLoadConfigType == OnLoadConfigType::DONT_LOAD_CONFIG) {
-    SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: skip", getButtonNumber());
+    SUPLA_LOG_DEBUG("Button[%d] don't load config", getButtonNumber());
     return;
   }
 
@@ -372,20 +378,29 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
     bool saveConfig = false;
 
     if (cfg->getInt32(key, &btnTypeValue)) {
-      SUPLA_LOG_DEBUG("Button[%d]::onLoadConfig: btnType: %d",
-                      getButtonNumber(),
-                      btnTypeValue);
       switch (btnTypeValue) {
-        default:
-        case 0:
+        case 0: {
           setButtonType(ButtonType::MONOSTABLE);
           break;
-        case 1:
+        }
+        case 1: {
           setButtonType(ButtonType::BISTABLE);
           break;
-        case 2:
+        }
+        case 2: {
           setButtonType(ButtonType::MOTION_SENSOR);
           break;
+        }
+        case 3: {
+          setButtonType(ButtonType::CENTRAL_CONTROL);
+          break;
+        }
+        default: {
+          SUPLA_LOG_WARNING("Button[%d] unknown button type in cfg: %d",
+                            getButtonNumber(),
+                            btnTypeValue);
+          break;
+        }
       }
     } else {
       saveConfig = true;
@@ -393,6 +408,8 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
         cfg->setInt32(key, 2);
       } else if (isBistable()) {
         cfg->setInt32(key, 1);
+      } else if (isCentral()) {
+        cfg->setInt32(key, 3);
       } else {
         cfg->setInt32(key, 0);
       }
@@ -436,7 +453,7 @@ void Button::onLoadConfig(SuplaDeviceClass *sdc) {
                       &useInputAsConfigButtonValue);
       }
 
-      if (useInputAsConfigButtonValue == 0) {
+      if (!isCentral() && useInputAsConfigButtonValue == 0) {
         // ON is "0", which is default value
         SUPLA_LOG_DEBUG("Button[%d] enabling IN as config button",
             getButtonNumber());
@@ -475,8 +492,11 @@ bool Button::disableActionsInConfigMode() {
 }
 
 void Button::setButtonType(const ButtonType type) {
-  SUPLA_LOG_DEBUG("Button[%d]::setButtonType: %d", getButtonNumber(), type);
   buttonType = type;
+  SUPLA_LOG_DEBUG("Button[%d] setButtonType: %s (%d)",
+                  getButtonNumber(),
+                  getButtonTypeName(type),
+                  type);
 }
 
 uint8_t Button::getMaxMulticlickValue() {
@@ -554,3 +574,17 @@ void Button::waitForRelease() {
   waitingForRelease = true;
 }
 
+
+const char *Button::getButtonTypeName(ButtonType type) const {
+  switch (type) {
+    case ButtonType::MONOSTABLE:
+      return "monostable";
+    case ButtonType::BISTABLE:
+      return "bistable";
+    case ButtonType::CENTRAL_CONTROL:
+      return "central";
+    case ButtonType::MOTION_SENSOR:
+      return "motion sensor";
+  }
+  return "unknown";
+}

@@ -382,10 +382,11 @@ void Supla::Control::ActionTrigger::onInit() {
         localHandlerForDisabledAt = attachedButton->getHandlerForFirstClient(
             Supla::CONDITIONAL_ON_RELEASE);
       }
-    } else if (attachedButton->isMotionSensor()) {
-      // Nothing to do here. For motion sensor we always use reaction to
-      // on press and on release events. Even if AT is enabled and used.
-      // So no localHandlerFor* is configured here.
+    } else if (attachedButton->isMotionSensor() ||
+               attachedButton->isCentral()) {
+      // Nothing to do here. For motion sensor and central we always use
+      // reaction to on press and on release events. Even if AT is enabled and
+      // used. So no localHandlerFor* is configured here.
     }
 
     if (localHandlerForDisabledAt) {
@@ -510,8 +511,9 @@ void Supla::Control::ActionTrigger::onInit() {
                                       Supla::ON_CLICK_5);
       }
 
-    } else if (attachedButton->isMotionSensor()) {
-      // Configure default actions for motion sensor button
+    } else if (attachedButton->isMotionSensor() ||
+               attachedButton->isCentral()) {
+      // Configure default actions for motion sensor and central buttons
       if (attachedButton->isEventAlreadyUsed(Supla::ON_PRESS, true)) {
         disablesLocalOperation |= SUPLA_ACTION_CAP_TURN_ON;
       }

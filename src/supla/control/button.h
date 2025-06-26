@@ -33,7 +33,8 @@ class Button : public SimpleButton, public ActionHandler {
   enum class ButtonType : uint8_t {
     MONOSTABLE,
     BISTABLE,
-    MOTION_SENSOR
+    MOTION_SENSOR,
+    CENTRAL_CONTROL
   };
 
   enum class OnLoadConfigType : uint8_t {
@@ -73,6 +74,7 @@ class Button : public SimpleButton, public ActionHandler {
   bool isBistable() const;
   bool isMonostable() const;
   bool isMotionSensor() const;
+  bool isCentral() const;
 
   virtual void configureAsConfigButton(SuplaDeviceClass *sdc);
   bool disableActionsInConfigMode() override;
@@ -99,6 +101,7 @@ class Button : public SimpleButton, public ActionHandler {
   // threshold 0 disables always
   void disableRepeatOnHold(uint32_t threshold = 0);
   void enableRepeatOnHold();
+  const char *getButtonTypeName(ButtonType type) const;
   uint32_t lastStateChangeMs = 0;
   uint16_t repeatOnHoldMs = 0;
   uint16_t holdSend = 0;

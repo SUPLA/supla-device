@@ -263,8 +263,9 @@ void GroupButtonControlRgbw::onInit() {
       SUPLA_LOG_DEBUG("GroupButtonControl configuring bistable button");
       attachedButton->addAction(
           Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
-    } else if (attachedButton->isMotionSensor()) {
-      SUPLA_LOG_DEBUG("GroupButtonControl configuring motion sensor");
+    } else if (attachedButton->isMotionSensor() ||
+               attachedButton->isCentral()) {
+      SUPLA_LOG_DEBUG("GroupButtonControl configuring motion sensor/central");
       attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
       attachedButton->addAction(Supla::TURN_OFF, this, Supla::ON_RELEASE);
 

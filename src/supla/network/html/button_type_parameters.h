@@ -27,14 +27,17 @@ namespace Html {
 
 class ButtonTypeParameters : public SelectInputParameter {
  public:
-  explicit ButtonTypeParameters(int id);
+  explicit ButtonTypeParameters(int id, const char *labelPrefix = nullptr);
 
   void addMonostableOption();
   void addBistableOption();
   void addMotionSensorOption();
+  void addCentralControlOption();
 
   // adds: monostable, bistable, and motion sensor
   void addDefualtOptions();
+ private:
+  char *labelPrefix = nullptr;
 };
 
 };  // namespace Html

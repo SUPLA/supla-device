@@ -28,13 +28,17 @@
 
 using Supla::Html::ButtonTypeParameters;
 
-ButtonTypeParameters::ButtonTypeParameters(int id) {
+ButtonTypeParameters::ButtonTypeParameters(int id, const char *labelPrefix) {
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   Supla::Config::generateKey(key, id, Supla::ConfigTag::BtnTypeTag);
   setTag(key);
 
   char label[100] = {};
-  snprintf(label, sizeof(label), "IN%d type", id);
+  if (labelPrefix) {
+    snprintf(label, sizeof(label), "%s type", labelPrefix);
+  } else {
+    snprintf(label, sizeof(label), "IN%d type", id);
+  }
   setLabel(label);
 }
 
@@ -48,6 +52,10 @@ void ButtonTypeParameters::addBistableOption() {
 
 void ButtonTypeParameters::addMotionSensorOption() {
   registerValue("MOTION SENSOR", 2);
+}
+
+void ButtonTypeParameters::addCentralControlOption() {
+  registerValue("CENTRAL CONTROL", 3);
 }
 
 void ButtonTypeParameters::addDefualtOptions() {

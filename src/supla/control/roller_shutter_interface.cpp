@@ -58,6 +58,15 @@ RollerShutterInterface::RollerShutterInterface() {
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
+RollerShutterInterface::~RollerShutterInterface() {
+  ButtonListElement* currentElement = buttonList;
+  while (currentElement) {
+    ButtonListElement* nextElement = currentElement->next;
+    delete currentElement;
+    currentElement = nextElement;
+  }
+}
+
 bool RollerShutterInterface::isFunctionSupported(
     int32_t channelFunction) const {
   switch (channelFunction) {
@@ -96,36 +105,10 @@ bool RollerShutterInterface::isFunctionSupported(
 }
 
 void RollerShutterInterface::onInit() {
-  setupButtonActions();
+  for (auto button = buttonList; button; button = button->next) {
+    setupButtonActions(button->button, button->upButton, button->asInternal);
+  }
   iterateAlways();
-}
-
-void RollerShutterInterface::setupButtonActions() {
-  if (upButton) {
-    upButton->onInit();  // make sure button was initialized
-    if (upButton->isMonostable()) {
-      upButton->addAction(Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP,
-                          this,
-                          Supla::CONDITIONAL_ON_PRESS);
-    } else if (upButton->isBistable()) {
-      upButton->addAction(Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP,
-                          this,
-                          Supla::CONDITIONAL_ON_CHANGE);
-    }
-  }
-
-  if (downButton) {
-    downButton->onInit();  // make sure button was initialized
-    if (downButton->isMonostable()) {
-      downButton->addAction(Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP,
-                            this,
-                            Supla::CONDITIONAL_ON_PRESS);
-    } else if (downButton->isBistable()) {
-      downButton->addAction(Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP,
-                            this,
-                            Supla::CONDITIONAL_ON_CHANGE);
-    }
-  }
 }
 
 /*
@@ -527,8 +510,41 @@ uint32_t RollerShutterInterface::getOpeningTimeMs() const {
 
 void RollerShutterInterface::attach(Supla::Control::Button *up,
     Supla::Control::Button *down) {
-  upButton = up;
-  downButton = down;
+  attach(up, true, true);
+  attach(down, false, true);
+}
+
+void RollerShutterInterface::attach(Supla::Control::Button *button,
+                                    bool upButton,
+                                    bool asInternal) {
+  if (button == nullptr) {
+    return;
+  }
+
+  SUPLA_LOG_DEBUG("RS[%d] attaching button %d, %s, %s",
+                  channel.getChannelNumber(),
+                  button->getButtonNumber(),
+                  upButton ? "up" : "down",
+                  asInternal ? "internal" : "external");
+  auto lastButtonListElement = buttonList;
+  while (lastButtonListElement && lastButtonListElement->next) {
+    lastButtonListElement = lastButtonListElement->next;
+  }
+
+  if (lastButtonListElement) {
+    lastButtonListElement->next = new ButtonListElement;
+    lastButtonListElement = lastButtonListElement->next;
+  } else {
+    lastButtonListElement = new ButtonListElement;
+  }
+
+  lastButtonListElement->button = button;
+  lastButtonListElement->upButton = upButton;
+  lastButtonListElement->asInternal = asInternal;
+
+  if (buttonList == nullptr) {
+    buttonList = lastButtonListElement;
+  }
 }
 
 int RollerShutterInterface::handleCalcfgFromServer(
@@ -880,4 +896,47 @@ void RollerShutterInterface::setCalibrationLost(bool value) {
 void RollerShutterInterface::setMotorProblem(bool value) {
   flags = value ? flags | RS_FLAG_MOTOR_PROBLEM :
                  flags & ~RS_FLAG_MOTOR_PROBLEM;
+}
+
+void RollerShutterInterface::setupButtonActions(
+    Supla::Control::Button *button, bool upDirection, bool asInternal) {
+  if (!button) {
+    return;
+  }
+
+  if (upDirection) {
+    button->onInit();  // make sure button was initialized
+    if (button->isMonostable()) {
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
+                               : Supla::MOVE_UP_OR_STOP,
+                    this,
+                    Supla::CONDITIONAL_ON_PRESS);
+    } else if (button->isBistable()) {
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
+                               : Supla::MOVE_UP_OR_STOP,
+                    this,
+                    Supla::CONDITIONAL_ON_CHANGE);
+    } else if (button->isCentral()) {
+      button->addAction(Supla::OPEN,
+                    this,
+                    Supla::ON_PRESS);
+    }
+  } else {  // down direction
+    button->onInit();  // make sure button was initialized
+    if (button->isMonostable()) {
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
+                                 : Supla::MOVE_DOWN_OR_STOP,
+                      this,
+                      Supla::CONDITIONAL_ON_PRESS);
+    } else if (button->isBistable()) {
+      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
+                                 : Supla::MOVE_DOWN_OR_STOP,
+                      this,
+                      Supla::CONDITIONAL_ON_CHANGE);
+    } else if (button->isCentral()) {
+      button->addAction(Supla::CLOSE,
+                      this,
+                      Supla::ON_PRESS);
+    }
+  }
 }

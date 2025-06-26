@@ -797,8 +797,9 @@ void RGBWBase::onInit() {
           break;
         }
       }
-    } else if (attachedButton->isMotionSensor()) {
-      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring motion sensor button",
+    } else if (attachedButton->isMotionSensor() ||
+               attachedButton->isCentral()) {
+      SUPLA_LOG_DEBUG("RGBWBase[%d] configuring motion sensor/central button",
                       getChannel()->getChannelNumber());
       switch (buttonControlType) {
         case BUTTON_FOR_RGBW: {

@@ -397,7 +397,8 @@ void SuplaDeviceClass::iterate(void) {
 
   // in allowOfflineMode(2) device starts in "offline" mode with cfg mode
   // enabled for 1h. After that time, it will switch to full offline mode.
-  if (goToOfflineModeTimeout == 0 && _millis > 60ULL*60*1000) {
+  if (allowOfflineMode == 2 && goToOfflineModeTimeout == 0 &&
+      _millis > 60ULL * 60 * 1000) {
     SUPLA_LOG_INFO("Offline mode timeout triggered");
     goToOfflineModeTimeout = 1;
     leaveConfigModeWithoutRestart();
@@ -1224,10 +1225,8 @@ void SuplaDeviceClass::restartCfgModeTimeout(bool requireRestart) {
   if (!forceRestartTimeMs) {
     if (requireRestart || deviceRestartTimeoutTimestamp) {
       deviceRestartTimeoutTimestamp = millis();
-      goToOfflineModeTimeout = 2;
-    } else {
-      goToOfflineModeTimeout = 0;
     }
+    goToOfflineModeTimeout = 2;
     enterConfigModeTimestamp = millis();
     runAction(Supla::ON_DEVICE_STATUS_CHANGE);
   }

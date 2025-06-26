@@ -43,18 +43,28 @@ RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
 }
 
 void RollerShutter::onInit() {
-  if (pinUp >= 0) {
-    Supla::Io::digitalWrite(
-        channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
-    Supla::Io::pinMode(channel.getChannelNumber(), pinUp, OUTPUT, io);
-  }
-  if (pinDown >= 0) {
-    Supla::Io::digitalWrite(
-        channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH, io);
-    Supla::Io::pinMode(channel.getChannelNumber(), pinDown, OUTPUT, io);
-  }
+  initGpio(pinUp);
+  initGpio(pinDown);
 
   RollerShutterInterface::onInit();
+}
+
+void RollerShutter::setPinUp(int pin) {
+  pinUp = pin;
+  initGpio(pinUp);
+}
+
+void RollerShutter::setPinDown(int pin) {
+  pinDown = pin;
+  initGpio(pinDown);
+}
+
+void RollerShutter::initGpio(int gpio) {
+  if (gpio >= 0) {
+    Supla::Io::digitalWrite(
+        channel.getChannelNumber(), gpio, highIsOn ? LOW : HIGH, io);
+    Supla::Io::pinMode(channel.getChannelNumber(), gpio, OUTPUT, io);
+  }
 }
 
 void RollerShutter::stopMovement() {

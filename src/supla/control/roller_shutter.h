@@ -33,6 +33,9 @@ class RollerShutter : public RollerShutterInterface {
   void onInit() override;
   void onTimer() override;
 
+  void setPinUp(int pin);
+  void setPinDown(int pin);
+
  protected:
   virtual void stopMovement();
   virtual void relayDownOn();
@@ -42,6 +45,8 @@ class RollerShutter : public RollerShutterInterface {
   virtual void startClosing();
   virtual void startOpening();
   virtual void switchOffRelays();
+
+  void initGpio(int gpio);
 
   int16_t pinUp = -1;
   int16_t pinDown = -1;

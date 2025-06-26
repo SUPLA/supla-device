@@ -1997,7 +1997,7 @@ void Supla::Protocol::Mqtt::publishHADiscoveryEMParameter(
     }
   }
 
-  publish(topic.c_str(), payload, -1, -1, true);
+  publish(topic.c_str(), payload, -1, 1, true);
 
   delete[] payload;
 }

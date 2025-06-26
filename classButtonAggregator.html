@@ -187,6 +187,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isMonostable</b> () c
 <tr class="memitem:ab771da431cb6029eb62d939ccf06ac78 inherit pub_methods_classSupla_1_1Control_1_1Button" id="r_ab771da431cb6029eb62d939ccf06ac78"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isMotionSensor</b> () const</td></tr>
 <tr class="separator:ab771da431cb6029eb62d939ccf06ac78 inherit pub_methods_classSupla_1_1Control_1_1Button"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dbfe0ab13f2734d8c00e63f1a65e9d1 inherit pub_methods_classSupla_1_1Control_1_1Button" id="r_a5dbfe0ab13f2734d8c00e63f1a65e9d1"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isCentral</b> () const</td></tr>
+<tr class="separator:a5dbfe0ab13f2734d8c00e63f1a65e9d1 inherit pub_methods_classSupla_1_1Control_1_1Button"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc33017473f21a7d44f406e660af792 inherit pub_methods_classSupla_1_1Control_1_1Button" id="r_a2dc33017473f21a7d44f406e660af792"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>configureAsConfigButton</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc)</td></tr>
 <tr class="separator:a2dc33017473f21a7d44f406e660af792 inherit pub_methods_classSupla_1_1Control_1_1Button"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -456,6 +459,7 @@ Additional Inherited Members</h2></td></tr>
 <tr class="memitem:aa7a8c7891b199c1eec9c3e18657b75fe inherit pub_types_classSupla_1_1Control_1_1Button" id="r_aa7a8c7891b199c1eec9c3e18657b75fe"><td class="memItemLeft" align="right" valign="top"><a id="aa7a8c7891b199c1eec9c3e18657b75fe" name="aa7a8c7891b199c1eec9c3e18657b75fe"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>ButtonType</b> : uint8_t { <b>MONOSTABLE</b>
 , <b>BISTABLE</b>
 , <b>MOTION_SENSOR</b>
+, <b>CENTRAL_CONTROL</b>
  }</td></tr>
 <tr class="separator:aa7a8c7891b199c1eec9c3e18657b75fe inherit pub_types_classSupla_1_1Control_1_1Button"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a341ad093921396136724fc56ca066796 inherit pub_types_classSupla_1_1Control_1_1Button" id="r_a341ad093921396136724fc56ca066796"><td class="memItemLeft" align="right" valign="top"><a id="a341ad093921396136724fc56ca066796" name="a341ad093921396136724fc56ca066796"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>OnLoadConfigType</b> : uint8_t { <b>LOAD_FULL_CONFIG</b>
@@ -512,6 +516,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>disableRepeatOnHold</
 <tr class="memitem:af25c4fcde45b2fe7eea35f78c79c47b9 inherit pro_methods_classSupla_1_1Control_1_1Button" id="r_af25c4fcde45b2fe7eea35f78c79c47b9"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableRepeatOnHold</b> ()</td></tr>
 <tr class="separator:af25c4fcde45b2fe7eea35f78c79c47b9 inherit pro_methods_classSupla_1_1Control_1_1Button"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77914353c0920c8b57cc82713c8dd4e8 inherit pro_methods_classSupla_1_1Control_1_1Button" id="r_a77914353c0920c8b57cc82713c8dd4e8"><td class="memItemLeft" align="right" valign="top">
+const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getButtonTypeName</b> (ButtonType type) const</td></tr>
+<tr class="separator:a77914353c0920c8b57cc82713c8dd4e8 inherit pro_methods_classSupla_1_1Control_1_1Button"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Control_1_1Button"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Control_1_1Button')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a></td></tr>
 <tr class="memitem:adc2248cff1715762568d385049a259d9 inherit pro_static_attribs_classSupla_1_1Control_1_1Button" id="r_adc2248cff1715762568d385049a259d9"><td class="memItemLeft" align="right" valign="top">
 static int&#160;</td><td class="memItemRight" valign="bottom"><b>buttonCounter</b> = 0</td></tr>

@@ -145,6 +145,7 @@ Public Types</h2></td></tr>
 <tr class="memitem:aa7a8c7891b199c1eec9c3e18657b75fe" id="r_aa7a8c7891b199c1eec9c3e18657b75fe"><td class="memItemLeft" align="right" valign="top"><a id="aa7a8c7891b199c1eec9c3e18657b75fe" name="aa7a8c7891b199c1eec9c3e18657b75fe"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>ButtonType</b> : uint8_t { <b>MONOSTABLE</b>
 , <b>BISTABLE</b>
 , <b>MOTION_SENSOR</b>
+, <b>CENTRAL_CONTROL</b>
  }</td></tr>
 <tr class="separator:aa7a8c7891b199c1eec9c3e18657b75fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a341ad093921396136724fc56ca066796" id="r_a341ad093921396136724fc56ca066796"><td class="memItemLeft" align="right" valign="top"><a id="a341ad093921396136724fc56ca066796" name="a341ad093921396136724fc56ca066796"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>OnLoadConfigType</b> : uint8_t { <b>LOAD_FULL_CONFIG</b>
@@ -199,6 +200,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isMonostable</b> () c
 <tr class="memitem:ab771da431cb6029eb62d939ccf06ac78" id="r_ab771da431cb6029eb62d939ccf06ac78"><td class="memItemLeft" align="right" valign="top"><a id="ab771da431cb6029eb62d939ccf06ac78" name="ab771da431cb6029eb62d939ccf06ac78"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isMotionSensor</b> () const</td></tr>
 <tr class="separator:ab771da431cb6029eb62d939ccf06ac78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5dbfe0ab13f2734d8c00e63f1a65e9d1" id="r_a5dbfe0ab13f2734d8c00e63f1a65e9d1"><td class="memItemLeft" align="right" valign="top"><a id="a5dbfe0ab13f2734d8c00e63f1a65e9d1" name="a5dbfe0ab13f2734d8c00e63f1a65e9d1"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>isCentral</b> () const</td></tr>
+<tr class="separator:a5dbfe0ab13f2734d8c00e63f1a65e9d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dc33017473f21a7d44f406e660af792" id="r_a2dc33017473f21a7d44f406e660af792"><td class="memItemLeft" align="right" valign="top"><a id="a2dc33017473f21a7d44f406e660af792" name="a2dc33017473f21a7d44f406e660af792"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>configureAsConfigButton</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc)</td></tr>
 <tr class="separator:a2dc33017473f21a7d44f406e660af792"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -403,6 +407,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>disableRepeatOnHold</
 <tr class="memitem:af25c4fcde45b2fe7eea35f78c79c47b9" id="r_af25c4fcde45b2fe7eea35f78c79c47b9"><td class="memItemLeft" align="right" valign="top"><a id="af25c4fcde45b2fe7eea35f78c79c47b9" name="af25c4fcde45b2fe7eea35f78c79c47b9"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableRepeatOnHold</b> ()</td></tr>
 <tr class="separator:af25c4fcde45b2fe7eea35f78c79c47b9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a77914353c0920c8b57cc82713c8dd4e8" id="r_a77914353c0920c8b57cc82713c8dd4e8"><td class="memItemLeft" align="right" valign="top"><a id="a77914353c0920c8b57cc82713c8dd4e8" name="a77914353c0920c8b57cc82713c8dd4e8"></a>
+const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getButtonTypeName</b> (ButtonType type) const</td></tr>
+<tr class="separator:a77914353c0920c8b57cc82713c8dd4e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>

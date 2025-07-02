@@ -1556,6 +1556,8 @@ void Channel::fillDeviceChannelStruct(
   deviceChannelStruct->DefaultIcon = getDefaultIcon();
   deviceChannelStruct->SubDeviceId = getSubDeviceId();
   memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
+  // TODO(klew): %llX with uint64_t is crashing on ESP32-C2 in method vnsnprintf
+  // in log.c. Need to fix this (i.e. change to use ESP_LOGx directly?)
   SUPLA_LOG_VERBOSE(
       "CH[%i], subDevId: %d, type: %d, FuncList: 0x%X, function: %d, flags: "
       "0x%llX, %s, validityTimeSec: %d, icon: %d, value: "

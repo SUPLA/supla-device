@@ -6,7 +6,10 @@ if(NOT DEFINED ENV{SUPLA_DEVICE_PATH})
   message(FATAL_ERROR "SUPLA_DEVICE_PATH env variable is not set")
 endif()
 
-set(EXTRA_COMPONENT_DIRS "$ENV{SUPLA_DEVICE_PATH}/extras/esp-idf/")
+set(EXTRA_COMPONENT_DIRS
+  "$ENV{SUPLA_DEVICE_PATH}/extras/esp-idf/supla-device"
+  # add here paths to other components you want to use
+)
 
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 project(supla_esp32)

@@ -346,6 +346,10 @@ void Supla::EspIdfOta::iterate() {
   esp_http_client_config_t configGet = {};
   configGet.url = updateUrl;
   configGet.timeout_ms = 10000;
+  if (!skipCert && sdc && sdc->getSuplaCACert()) {
+    SUPLA_LOG_INFO("SW update: using Supla CA cert");
+    configCheckUpdate.cert_pem = sdc->getSuplaCACert();
+  }
   client = esp_http_client_init(&configGet);
   if (client == NULL) {
     fail("SW update: failed initialize GET connection with update server");

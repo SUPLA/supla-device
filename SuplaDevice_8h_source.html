@@ -282,124 +282,125 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  <span class="keywordtype">void</span> setSuplaCACert(<span class="keyword">const</span> <span class="keywordtype">char</span> *);</div>
 <div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  <span class="keywordtype">void</span> setSupla3rdPartyCACert(<span class="keyword">const</span> <span class="keywordtype">char</span> *);</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span> </div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  <a class="code hl_class" href="classSupla_1_1Uptime.html">Supla::Uptime</a> uptime;</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span> </div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>  <a class="code hl_class" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *getSrpcLayer();</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>  <span class="keywordtype">void</span> setCustomHostnamePrefix(<span class="keyword">const</span> <span class="keywordtype">char</span> *prefix);</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>  <span class="keywordtype">void</span> enableNetwork();</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  <span class="keywordtype">void</span> disableNetwork();</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  <span class="keywordtype">bool</span> getStorageInitResult();</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  <span class="keywordtype">bool</span> isSleepingAllowed();</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>  <span class="comment">// Call this method if you want to allow device to work in offline mode</span></div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  <span class="comment">// without Wi-Fi network configuration</span></div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="comment">// 1 - offline mode with empty config, but communication protocols may be</span></div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="comment">//     enabled</span></div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  <span class="comment">// 2 - offline mode only with empty config and communication protocols</span></div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <span class="comment">//     disabled</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="comment">// 0 - no offline mode</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  <span class="keywordtype">void</span> allowWorkInOfflineMode(<span class="keywordtype">int</span> mode = 1);</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  <span class="keywordtype">bool</span> isRemoteDeviceConfigEnabled() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  <span class="keywordtype">void</span> setShowUptimeInChannelState(<span class="keywordtype">bool</span> value);</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="keywordtype">void</span> setProtoVerboseLog(<span class="keywordtype">bool</span> value);</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>  <span class="keywordtype">bool</span> isOfflineModeDuringConfig() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>  <a class="code hl_class" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *getTimerAccessMutex();</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span> </div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="keywordtype">void</span> setChannelConflictResolver(</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>      <a class="code hl_class" href="classSupla_1_1Device_1_1ChannelConflictResolver.html">Supla::Device::ChannelConflictResolver</a> *resolver);</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  <span class="keywordtype">void</span> setSubdevicePairingHandler(</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>      <a class="code hl_class" href="classSupla_1_1Device_1_1SubdevicePairingHandler.html">Supla::Device::SubdevicePairingHandler</a> *handler);</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span> </div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  <span class="keywordtype">void</span> setMacLengthInHostname(<span class="keywordtype">int</span> value);</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  <span class="keywordtype">void</span> setStatusLed(<a class="code hl_class" href="classSupla_1_1Device_1_1StatusLed.html">Supla::Device::StatusLed</a> *led);</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span></div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSuplaDeviceClass.html#ab2e24861802e9a5cc4d4a39d7bccc2a1">setLeaveCfgModeAfterInactivityMin</a>(<span class="keywordtype">int</span> valueMin);</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span></div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSuplaDeviceClass.html#ae726597cbdc9efd1570166009160ef75">isAutomaticFirmwareUpdateEnabled</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span></div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSuplaDeviceClass.html#aca4cdeebae298bd67d782ff395a338c0">setAutomaticFirmwareUpdateSupported</a>(<span class="keywordtype">bool</span> value);</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span></div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  Supla::AutoUpdateMode <a class="code hl_function" href="classSuplaDeviceClass.html#a2fdf23a4345523f2c609df3ca9fab89d">getAutoUpdateMode</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span> </div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSuplaDeviceClass.html#ab6e2a71094d29b9fdce5115e93438e23">iterateSwUpdate</a>();</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span></div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSuplaDeviceClass.html#a59f47acec41835b1db2520d3e41a350e">initSwUpdateInstance</a>(<span class="keywordtype">bool</span> performUpdate, <span class="keywordtype">int</span> securityOnly = -1);</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span> </div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>  <span class="keywordtype">int</span> networkIsNotReadyCounter = 0;</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  uint32_t deviceRestartTimeoutTimestamp = 0;</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  uint32_t protocolRestartTimeoutTimestamp = 0;</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  uint32_t waitForIterate = 0;</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  uint32_t lastIterateTime = 0;</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  uint32_t enterConfigModeTimestamp = 0;</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  uint32_t forceRestartTimeMs = 0;</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  uint32_t protocolRestartTimeMs = 0;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  uint32_t resetOnConnectionFailTimeoutSec = 0;</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  uint32_t lastSwUpdateCheckTimestamp = 0;</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <span class="keywordtype">int</span> allowOfflineMode = 1;</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  <span class="keywordtype">int</span> currentStatus = STATUS_UNKNOWN;</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>  <span class="keyword">enum</span> Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>  <span class="keywordtype">bool</span> triggerResetToFactorySettings = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  <span class="keywordtype">bool</span> triggerStartLocalWebServer = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>  <span class="keywordtype">bool</span> triggerStopLocalWebServer = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>  <span class="keywordtype">bool</span> triggerCheckSwUpdate = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>  <span class="keywordtype">bool</span> requestNetworkLayerRestart = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  <span class="keywordtype">bool</span> isNetworkSetupOk = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  <span class="keywordtype">bool</span> skipNetwork = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  <span class="keywordtype">bool</span> storageInitResult = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  <span class="keywordtype">bool</span> configEmpty = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>  <span class="keywordtype">bool</span> atLeastOneProtoIsEnabled = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>  <span class="keywordtype">bool</span> showUptimeInChannelState = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  <span class="keywordtype">bool</span> lastStateLogEnabled = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  <span class="comment">// used to indicate if begin() method was called - it will be set to</span></div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  <span class="comment">// true even if initialization procedure failed for some reason</span></div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>  <span class="keywordtype">bool</span> initializationDone = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>  <span class="keywordtype">bool</span> goToConfigModeAsap = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>  <span class="keywordtype">bool</span> triggerSwUpdateIfAvailable = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span> </div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>  uint8_t goToOfflineModeTimeout = 0;</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>  uint8_t leaveCfgModeAfterInactivityMin = 5;</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>  uint8_t macLengthInHostname = 6;</div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>  <a class="code hl_class" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *srpcLayer = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1SwUpdate.html">Supla::Device::SwUpdate</a> *swUpdate = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>  <span class="keyword">const</span> uint8_t *rsaPublicKey = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>  <a class="code hl_class" href="classSupla_1_1Element.html">Supla::Element</a> *iterateConnectedPtr = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>  _impl_arduino_status impl_arduino_status = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1LastStateLogger.html">Supla::Device::LastStateLogger</a> *lastStateLogger = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>  <span class="keywordtype">char</span> *customHostnamePrefix = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  <a class="code hl_class" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *timerAccessMutex = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1SubdevicePairingHandler.html">Supla::Device::SubdevicePairingHandler</a> *subdevicePairingHandler = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1StatusLed.html">Supla::Device::StatusLed</a> *statusLed = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span> </div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>  <span class="keywordtype">void</span> iterateAlwaysElements(uint32_t _millis);</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>  <span class="keywordtype">bool</span> iterateNetworkSetup();</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>  <span class="keywordtype">bool</span> iterateSuplaProtocol(uint32_t _millis);</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>  <span class="keywordtype">void</span> handleLocalActionTriggers();</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>  <span class="keywordtype">void</span> checkIfRestartIsNeeded(uint32_t _millis);</div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>  <span class="keywordtype">void</span> createSrpcLayerIfNeeded();</div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>  <span class="keywordtype">void</span> setupDeviceMode();</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>};</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  <span class="keyword">const</span> <span class="keywordtype">char</span>* getSuplaCACert() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span> </div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>  <a class="code hl_class" href="classSupla_1_1Uptime.html">Supla::Uptime</a> uptime;</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span> </div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>  <a class="code hl_class" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *getSrpcLayer();</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>  <span class="keywordtype">void</span> setCustomHostnamePrefix(<span class="keyword">const</span> <span class="keywordtype">char</span> *prefix);</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  <span class="keywordtype">void</span> enableNetwork();</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>  <span class="keywordtype">void</span> disableNetwork();</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  <span class="keywordtype">bool</span> getStorageInitResult();</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordtype">bool</span> isSleepingAllowed();</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  <span class="comment">// Call this method if you want to allow device to work in offline mode</span></div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="comment">// without Wi-Fi network configuration</span></div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="comment">// 1 - offline mode with empty config, but communication protocols may be</span></div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  <span class="comment">//     enabled</span></div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <span class="comment">// 2 - offline mode only with empty config and communication protocols</span></div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="comment">//     disabled</span></div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  <span class="comment">// 0 - no offline mode</span></div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  <span class="keywordtype">void</span> allowWorkInOfflineMode(<span class="keywordtype">int</span> mode = 1);</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  <span class="keywordtype">bool</span> isRemoteDeviceConfigEnabled() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  <span class="keywordtype">void</span> setShowUptimeInChannelState(<span class="keywordtype">bool</span> value);</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span> </div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>  <span class="keywordtype">void</span> setProtoVerboseLog(<span class="keywordtype">bool</span> value);</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>  <span class="keywordtype">bool</span> isOfflineModeDuringConfig() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span> </div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  <a class="code hl_class" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *getTimerAccessMutex();</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  <span class="keywordtype">void</span> setChannelConflictResolver(</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>      <a class="code hl_class" href="classSupla_1_1Device_1_1ChannelConflictResolver.html">Supla::Device::ChannelConflictResolver</a> *resolver);</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  <span class="keywordtype">void</span> setSubdevicePairingHandler(</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>      <a class="code hl_class" href="classSupla_1_1Device_1_1SubdevicePairingHandler.html">Supla::Device::SubdevicePairingHandler</a> *handler);</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span> </div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  <span class="keywordtype">void</span> setMacLengthInHostname(<span class="keywordtype">int</span> value);</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  <span class="keywordtype">void</span> setStatusLed(<a class="code hl_class" href="classSupla_1_1Device_1_1StatusLed.html">Supla::Device::StatusLed</a> *led);</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span></div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSuplaDeviceClass.html#ab2e24861802e9a5cc4d4a39d7bccc2a1">setLeaveCfgModeAfterInactivityMin</a>(<span class="keywordtype">int</span> valueMin);</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span></div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSuplaDeviceClass.html#ae726597cbdc9efd1570166009160ef75">isAutomaticFirmwareUpdateEnabled</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSuplaDeviceClass.html#aca4cdeebae298bd67d782ff395a338c0">setAutomaticFirmwareUpdateSupported</a>(<span class="keywordtype">bool</span> value);</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span></div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  Supla::AutoUpdateMode <a class="code hl_function" href="classSuplaDeviceClass.html#a2fdf23a4345523f2c609df3ca9fab89d">getAutoUpdateMode</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span> </div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSuplaDeviceClass.html#ab6e2a71094d29b9fdce5115e93438e23">iterateSwUpdate</a>();</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span></div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSuplaDeviceClass.html#a59f47acec41835b1db2520d3e41a350e">initSwUpdateInstance</a>(<span class="keywordtype">bool</span> performUpdate, <span class="keywordtype">int</span> securityOnly = -1);</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span> </div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>  <span class="keywordtype">int</span> networkIsNotReadyCounter = 0;</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span> </div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  uint32_t deviceRestartTimeoutTimestamp = 0;</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  uint32_t protocolRestartTimeoutTimestamp = 0;</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  uint32_t waitForIterate = 0;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>  uint32_t lastIterateTime = 0;</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  uint32_t enterConfigModeTimestamp = 0;</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  uint32_t forceRestartTimeMs = 0;</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>  uint32_t protocolRestartTimeMs = 0;</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  uint32_t resetOnConnectionFailTimeoutSec = 0;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  uint32_t lastSwUpdateCheckTimestamp = 0;</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  <span class="keywordtype">int</span> allowOfflineMode = 1;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>  <span class="keywordtype">int</span> currentStatus = STATUS_UNKNOWN;</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span> </div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>  <span class="keyword">enum</span> Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>  <span class="keywordtype">bool</span> triggerResetToFactorySettings = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>  <span class="keywordtype">bool</span> triggerStartLocalWebServer = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>  <span class="keywordtype">bool</span> triggerStopLocalWebServer = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>  <span class="keywordtype">bool</span> triggerCheckSwUpdate = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>  <span class="keywordtype">bool</span> requestNetworkLayerRestart = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>  <span class="keywordtype">bool</span> isNetworkSetupOk = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>  <span class="keywordtype">bool</span> skipNetwork = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>  <span class="keywordtype">bool</span> storageInitResult = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>  <span class="keywordtype">bool</span> configEmpty = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>  <span class="keywordtype">bool</span> atLeastOneProtoIsEnabled = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>  <span class="keywordtype">bool</span> showUptimeInChannelState = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>  <span class="keywordtype">bool</span> lastStateLogEnabled = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>  <span class="comment">// used to indicate if begin() method was called - it will be set to</span></div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>  <span class="comment">// true even if initialization procedure failed for some reason</span></div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>  <span class="keywordtype">bool</span> initializationDone = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>  <span class="keywordtype">bool</span> goToConfigModeAsap = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>  <span class="keywordtype">bool</span> triggerSwUpdateIfAvailable = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span> </div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>  uint8_t goToOfflineModeTimeout = 0;</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>  uint8_t leaveCfgModeAfterInactivityMin = 5;</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>  uint8_t macLengthInHostname = 6;</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span> </div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>  <a class="code hl_class" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *srpcLayer = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1SwUpdate.html">Supla::Device::SwUpdate</a> *swUpdate = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>  <span class="keyword">const</span> uint8_t *rsaPublicKey = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>  <a class="code hl_class" href="classSupla_1_1Element.html">Supla::Element</a> *iterateConnectedPtr = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>  _impl_arduino_status impl_arduino_status = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1LastStateLogger.html">Supla::Device::LastStateLogger</a> *lastStateLogger = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>  <span class="keywordtype">char</span> *customHostnamePrefix = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>  <a class="code hl_class" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *timerAccessMutex = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1SubdevicePairingHandler.html">Supla::Device::SubdevicePairingHandler</a> *subdevicePairingHandler = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>  <a class="code hl_class" href="classSupla_1_1Device_1_1StatusLed.html">Supla::Device::StatusLed</a> *statusLed = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span> </div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>  <span class="keywordtype">void</span> iterateAlwaysElements(uint32_t _millis);</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>  <span class="keywordtype">bool</span> iterateNetworkSetup();</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>  <span class="keywordtype">bool</span> iterateSuplaProtocol(uint32_t _millis);</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>  <span class="keywordtype">void</span> handleLocalActionTriggers();</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>  <span class="keywordtype">void</span> checkIfRestartIsNeeded(uint32_t _millis);</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>  <span class="keywordtype">void</span> createSrpcLayerIfNeeded();</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>  <span class="keywordtype">void</span> setupDeviceMode();</div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>};</div>
 </div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span> </div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span><span class="keyword">extern</span> <a class="code hl_class" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> SuplaDevice;</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLADEVICE_H_</span></div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span> </div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span><span class="keyword">extern</span> <a class="code hl_class" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> SuplaDevice;</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLADEVICE_H_</span></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:96</div></div>
-<div class="ttc" id="aclassSuplaDeviceClass_html_a2fdf23a4345523f2c609df3ca9fab89d"><div class="ttname"><a href="classSuplaDeviceClass.html#a2fdf23a4345523f2c609df3ca9fab89d">SuplaDeviceClass::getAutoUpdateMode</a></div><div class="ttdeci">Supla::AutoUpdateMode getAutoUpdateMode() const</div><div class="ttdoc">Returns current automatic firmware update mode.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1611</div></div>
+<div class="ttc" id="aclassSuplaDeviceClass_html_a2fdf23a4345523f2c609df3ca9fab89d"><div class="ttname"><a href="classSuplaDeviceClass.html#a2fdf23a4345523f2c609df3ca9fab89d">SuplaDeviceClass::getAutoUpdateMode</a></div><div class="ttdeci">Supla::AutoUpdateMode getAutoUpdateMode() const</div><div class="ttdoc">Returns current automatic firmware update mode.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1623</div></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html_a59f47acec41835b1db2520d3e41a350e"><div class="ttname"><a href="classSuplaDeviceClass.html#a59f47acec41835b1db2520d3e41a350e">SuplaDeviceClass::initSwUpdateInstance</a></div><div class="ttdeci">bool initSwUpdateInstance(bool performUpdate, int securityOnly=-1)</div><div class="ttdoc">Initializes SW update instance.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:529</div></div>
-<div class="ttc" id="aclassSuplaDeviceClass_html_ab2e24861802e9a5cc4d4a39d7bccc2a1"><div class="ttname"><a href="classSuplaDeviceClass.html#ab2e24861802e9a5cc4d4a39d7bccc2a1">SuplaDeviceClass::setLeaveCfgModeAfterInactivityMin</a></div><div class="ttdeci">void setLeaveCfgModeAfterInactivityMin(int valueMin)</div><div class="ttdoc">Sets the leave configuration mode after inactivity timeout in minutes.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1593</div></div>
-<div class="ttc" id="aclassSuplaDeviceClass_html_ab6e2a71094d29b9fdce5115e93438e23"><div class="ttname"><a href="classSuplaDeviceClass.html#ab6e2a71094d29b9fdce5115e93438e23">SuplaDeviceClass::iterateSwUpdate</a></div><div class="ttdeci">void iterateSwUpdate()</div><div class="ttdoc">Performs software update if needed.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:596</div></div>
-<div class="ttc" id="aclassSuplaDeviceClass_html_aca4cdeebae298bd67d782ff395a338c0"><div class="ttname"><a href="classSuplaDeviceClass.html#aca4cdeebae298bd67d782ff395a338c0">SuplaDeviceClass::setAutomaticFirmwareUpdateSupported</a></div><div class="ttdeci">void setAutomaticFirmwareUpdateSupported(bool value)</div><div class="ttdoc">Sets automatic firmware update support.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1603</div></div>
-<div class="ttc" id="aclassSuplaDeviceClass_html_ae726597cbdc9efd1570166009160ef75"><div class="ttname"><a href="classSuplaDeviceClass.html#ae726597cbdc9efd1570166009160ef75">SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled</a></div><div class="ttdeci">bool isAutomaticFirmwareUpdateEnabled() const</div><div class="ttdoc">Checks if automatic firmware update is supported.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1599</div></div>
+<div class="ttc" id="aclassSuplaDeviceClass_html_ab2e24861802e9a5cc4d4a39d7bccc2a1"><div class="ttname"><a href="classSuplaDeviceClass.html#ab2e24861802e9a5cc4d4a39d7bccc2a1">SuplaDeviceClass::setLeaveCfgModeAfterInactivityMin</a></div><div class="ttdeci">void setLeaveCfgModeAfterInactivityMin(int valueMin)</div><div class="ttdoc">Sets the leave configuration mode after inactivity timeout in minutes.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1605</div></div>
+<div class="ttc" id="aclassSuplaDeviceClass_html_ab6e2a71094d29b9fdce5115e93438e23"><div class="ttname"><a href="classSuplaDeviceClass.html#ab6e2a71094d29b9fdce5115e93438e23">SuplaDeviceClass::iterateSwUpdate</a></div><div class="ttdeci">void iterateSwUpdate()</div><div class="ttdoc">Performs software update if needed.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:601</div></div>
+<div class="ttc" id="aclassSuplaDeviceClass_html_aca4cdeebae298bd67d782ff395a338c0"><div class="ttname"><a href="classSuplaDeviceClass.html#aca4cdeebae298bd67d782ff395a338c0">SuplaDeviceClass::setAutomaticFirmwareUpdateSupported</a></div><div class="ttdeci">void setAutomaticFirmwareUpdateSupported(bool value)</div><div class="ttdoc">Sets automatic firmware update support.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1615</div></div>
+<div class="ttc" id="aclassSuplaDeviceClass_html_ae726597cbdc9efd1570166009160ef75"><div class="ttname"><a href="classSuplaDeviceClass.html#ae726597cbdc9efd1570166009160ef75">SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled</a></div><div class="ttdeci">bool isAutomaticFirmwareUpdateEnabled() const</div><div class="ttdoc">Checks if automatic firmware update is supported.</div><div class="ttdef"><b>Definition</b> SuplaDevice.cpp:1611</div></div>
 <div class="ttc" id="aclassSupla_1_1ActionHandler_html"><div class="ttname"><a href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a></div><div class="ttdef"><b>Definition</b> action_handler.h:21</div></div>
 <div class="ttc" id="aclassSupla_1_1Clock_html"><div class="ttname"><a href="classSupla_1_1Clock.html">Supla::Clock</a></div><div class="ttdef"><b>Definition</b> clock.h:29</div></div>
 <div class="ttc" id="aclassSupla_1_1Device_1_1ChannelConflictResolver_html"><div class="ttname"><a href="classSupla_1_1Device_1_1ChannelConflictResolver.html">Supla::Device::ChannelConflictResolver</a></div><div class="ttdef"><b>Definition</b> channel_conflict_resolver.h:27</div></div>

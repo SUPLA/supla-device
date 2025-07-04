@@ -569,7 +569,7 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
 
   if (strlen(url) == 0) {
     swUpdate = Supla::Device::SwUpdate::Create(
-        this, "https://updates.supla.org/check-updates");
+        this, "https://iot.updates.supla.org/check-updates");
   } else {
     swUpdate = Supla::Device::SwUpdate::Create(this, url);
   }
@@ -1439,6 +1439,13 @@ void SuplaDeviceClass::setActivityTimeout(_supla_int_t newActivityTimeout) {
 void SuplaDeviceClass::setSuplaCACert(const char *cert) {
   createSrpcLayerIfNeeded();
   srpcLayer->setSuplaCACert(cert);
+}
+
+const char* SuplaDeviceClass::getSuplaCACert() const {
+  if (srpcLayer) {
+    return srpcLayer->getSuplaCACert();
+  }
+  return nullptr;
 }
 
 void SuplaDeviceClass::setSupla3rdPartyCACert(const char *cert) {

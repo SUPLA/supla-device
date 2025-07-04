@@ -1089,11 +1089,11 @@ void Supla::Protocol::SuplaSrpc::setSupla3rdPartyCACert(const char *cert) {
   supla3rdPartyCACert = cert;
 }
 
-const char* Supla::Protocol::SuplaSrpc::getSuplaCACert() {
+const char* Supla::Protocol::SuplaSrpc::getSuplaCACert() const {
   return suplaCACert;
 }
 
-const char* Supla::Protocol::SuplaSrpc::getSupla3rdPartyCACert() {
+const char* Supla::Protocol::SuplaSrpc::getSupla3rdPartyCACert() const {
   return supla3rdPartyCACert;
 }
 

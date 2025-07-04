@@ -188,6 +188,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
+  const char* getSuplaCACert() const;
 
   Supla::Uptime uptime;
 

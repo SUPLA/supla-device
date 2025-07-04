@@ -119,8 +119,8 @@ class SuplaSrpc : public ProtocolLayer {
   void setVersion(int value);
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
-  const char* getSuplaCACert();
-  const char* getSupla3rdPartyCACert();
+  const char* getSuplaCACert() const;
+  const char* getSupla3rdPartyCACert() const;
   bool isUpdatePending() override;
   void handleDeviceConfig(TSDS_SetDeviceConfig *deviceConfig);
   void handleSetDeviceConfigResult(TSDS_SetDeviceConfigResult *result);

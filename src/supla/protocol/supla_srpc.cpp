@@ -788,9 +788,14 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
     // Try to get server from AD
     SUPLA_LOG_INFO("Supla server name not set. Trying to get it from AD");
     // fetch json from https://autodiscover.supla.org/users/email@host
-    const char server[] = "autodiscover.supla.org";
+    const char server[] = "iot.autodiscover.supla.org";
     auto adClient = Supla::ClientBuilder();
     adClient->setSSLEnabled(true);
+    if (sdc && sdc->getSuplaCACert()) {
+      SUPLA_LOG_INFO("Autodiscover: using Supla CA cert");
+      adClient->setCACert(sdc->getSuplaCACert());
+    }
+
     if (1 == adClient->connect(server, 443)) {
       adClient->write("GET /users/");
       adClient->write(Supla::RegisterDevice::getEmail());

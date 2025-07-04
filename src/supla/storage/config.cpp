@@ -166,6 +166,10 @@ bool Config::getMqttServer(char* result) {
   return getString("mqttserver", result, SUPLA_SERVER_NAME_MAXSIZE);
 }
 
+bool Config::getAESKey(char*) {
+  return false;
+}
+
 int32_t Config::getMqttServerPort() {
   int32_t result = -1;
   getInt32("mqttport", &result);
@@ -351,6 +355,12 @@ bool Config::getSwUpdateServer(char* url) {
   return getString("swupdateurl", url, SUPLA_MAX_URL_LENGTH);
 }
 
+bool Config::isSwUpdateSkipCert() {
+  int8_t result = 0;
+  getInt8("swUpdNoCert", &result);
+  return result == 1;
+}
+
 bool Config::isSwUpdateBeta() {
   // by default beta sw update is disabled
   int8_t result = 0;
@@ -363,6 +373,11 @@ bool Config::setSwUpdateServer(const char* url) {
     return false;
   }
   return setString("swupdateurl", url);
+}
+
+bool Config::setSwUpdateSkipCert(bool enabled) {
+  int8_t value = (enabled ? 1 : 0);
+  return setInt8("swUpdNoCert", value);
 }
 
 bool Config::setSwUpdateBeta(bool enabled) {

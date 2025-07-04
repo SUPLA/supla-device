@@ -204,7 +204,7 @@ void Supla::EspIdfOta::iterate() {
   esp_http_client_config_t configCheckUpdate = {};
   configCheckUpdate.url = url;
   configCheckUpdate.timeout_ms = 5000;
-  if (sdc && sdc->getSuplaCACert()) {
+  if (!skipCert && sdc && sdc->getSuplaCACert()) {
     SUPLA_LOG_INFO("SW update: using Supla CA cert");
     configCheckUpdate.cert_pem = sdc->getSuplaCACert();
   }

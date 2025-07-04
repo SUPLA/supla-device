@@ -38,6 +38,7 @@ class SwUpdate {
   bool isFinished() { return finished; }
   bool isAborted() { return abort; }
   void useBeta() { beta = true; }
+  void setSkipCert() { skipCert = true; }
 
   bool isCheckUpdateAndAbort() const { return checkUpdateAndAbort; }
   void setCheckUpdateAndAbort() { checkUpdateAndAbort = true; }
@@ -52,6 +53,7 @@ class SwUpdate {
   explicit SwUpdate(SuplaDeviceClass *sdc, const char *newUrl = nullptr);
 
   bool beta = false;
+  bool skipCert = false;
   bool securityOnly = false;
   bool started = false;
   bool checkUpdateAndAbort = false;

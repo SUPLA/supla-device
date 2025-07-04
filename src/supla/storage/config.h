@@ -32,6 +32,7 @@
 #define MQTT_CLIENTID_MAX_SIZE 23
 #define MQTT_USERNAME_MAX_SIZE 256
 #define MQTT_PASSWORD_MAX_SIZE 256
+#define SUPLA_AES_KEY_SIZE     32
 
 namespace Supla {
 
@@ -81,12 +82,15 @@ class Config {
   virtual enum Supla::DeviceMode getDeviceMode();
   virtual bool getGUID(char* result);
   virtual bool getSwUpdateServer(char* url);
+  virtual bool isSwUpdateSkipCert();
   virtual bool isSwUpdateBeta();
+  virtual bool setSwUpdateSkipCert(bool skipCert);
   virtual bool setSwUpdateServer(const char* url);
   virtual bool setSwUpdateBeta(bool enabled);
   virtual bool getCustomCA(char* result, int maxSize);
   virtual int getCustomCASize();
   virtual bool setCustomCA(const char* customCA);
+  virtual bool getAESKey(char* result);
 
   // Supla protocol config
   virtual bool setSuplaCommProtocolEnabled(bool enabled);

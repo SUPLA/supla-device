@@ -578,8 +578,13 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
     return false;
   }
 
-  if (cfg && cfg->isSwUpdateBeta()) {
-    swUpdate->useBeta();
+  if (cfg) {
+    if (cfg->isSwUpdateBeta()) {
+      swUpdate->useBeta();
+    }
+    if (cfg->isSwUpdateSkipCert()) {
+      swUpdate->setSkipCert();
+    }
   }
   if (securityOnly == 1) {
     swUpdate->setSecurityOnly();

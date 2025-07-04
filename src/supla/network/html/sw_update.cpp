@@ -43,6 +43,7 @@ void SwUpdate::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
+    bool skipCert = cfg->isSwUpdateSkipCert();
     bool useRemoteOta = false;
     Supla::AutoUpdateMode otaMode = Supla::AutoUpdateMode::SecurityOnly;
     if (sdc) {
@@ -87,6 +88,7 @@ void SwUpdate::send(Supla::WebSender* sender) {
     const char key[] = "upd";
     sender->sendLabelFor(key, "Firmware update");
     sender->send("<div>");
+
     sender->send(
         "<select ");
     sender->sendNameAndId(key);
@@ -94,10 +96,16 @@ void SwUpdate::send(Supla::WebSender* sender) {
     sender->send(selected(!update));
     sender->send(
         ">NO</option>"
+
         "<option value=\"1\"");
-    sender->send(selected(update));
+    sender->send(selected(update && !skipCert));
     sender->send(
-        ">YES</option></select>");
+        ">YES</option>"
+
+        "<option value=\"2\"");
+    sender->send(selected(update && skipCert));
+    sender->send(
+        ">YES - SKIP CERTIFICATE (dangerous)</option></select>");
     sender->send("</div>");
     sender->send("</div>");
     // form-field END
@@ -112,11 +120,19 @@ bool SwUpdate::handleResponse(const char* key, const char* value) {
       default:
       case 0: {
         cfg->setDeviceMode(DEVICE_MODE_NORMAL);
+        cfg->setSwUpdateSkipCert(false);
         cfg->setSwUpdateBeta(false);
         break;
       }
       case 1: {
         cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
+        cfg->setSwUpdateSkipCert(false);
+        cfg->setSwUpdateBeta(false);
+        break;
+      }
+      case 2: {
+        cfg->setDeviceMode(DEVICE_MODE_SW_UPDATE);
+        cfg->setSwUpdateSkipCert(true);
         cfg->setSwUpdateBeta(false);
         break;
       }

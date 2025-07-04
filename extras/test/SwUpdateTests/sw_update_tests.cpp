@@ -105,6 +105,17 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -383,6 +394,17 @@ TEST_F(SwUpdateTests, SecurityOnlyUpdate) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -532,6 +554,17 @@ TEST_F(SwUpdateTests, AutomaticUpdateForcedOff) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -696,6 +729,17 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallySecurityOnly) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -824,6 +868,17 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallyAllUpdates) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -952,6 +1007,17 @@ TEST_F(SwUpdateTests, AutomaticUpdateDisabledLongTime) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -1073,6 +1139,17 @@ TEST_F(SwUpdateTests,
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -1196,6 +1273,17 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallyMissingCfgValue) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -1325,6 +1413,17 @@ TEST_F(SwUpdateTests, SwUpdateFromCfgDeviceMode) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
@@ -1420,6 +1519,17 @@ TEST_F(SwUpdateTests, AutomaticUpdateForcedOffTriggerLocally) {
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+
+  EXPECT_CALL(cfg, getInt8(_, _)).WillRepeatedly([] (const char *key,
+        int8_t *buf) {
+      if (strcmp(key, "swUpdNoCert") == 0) {
+        *buf = 0;
+        return true;
+      }
+      EXPECT_TRUE(false);
+      return false;
+    });
+
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {

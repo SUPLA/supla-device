@@ -45,10 +45,21 @@ class EspIdfWebServer : public Supla::WebServer {
 
   bool handlePost(httpd_req_t *req, bool beta = false);
 
+  void setServerCertificate(const unsigned char *serverCert,
+                            int serverCertLen,
+                            const unsigned char *prvtKey,
+                            int prvtKeyLen);
+
   bool dataSaved = false;
 
  protected:
-  httpd_handle_t server = {};
+  void cleanupCerts();
+  httpd_handle_t serverHttps = {};
+  httpd_handle_t serverHttp = {};
+  unsigned char *serverCert = nullptr;
+  unsigned char *prvtKey = nullptr;
+  int serverCertLen = 0;
+  int prvtKeyLen = 0;
 };
 
 };  // namespace Supla

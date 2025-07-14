@@ -216,6 +216,7 @@ idf_component_register(SRCS
     nvs_flash
     spiffs
     esp_http_server
+    esp_https_server
     app_update
     esp_http_client
     json

@@ -22,10 +22,13 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
+#include <supla/network/html_generator.h>
 
 #include "esp_idf_web_server.h"
-#include "supla/network/html_generator.h"
+
+#ifdef SUPLA_DEVICE_ESP32
 #include "esp_https_server.h"
+#endif  // SUPLA_DEVICE_ESP32
 
 static Supla::EspIdfWebServer *serverInstance = nullptr;
 
@@ -212,18 +215,21 @@ void Supla::EspIdfWebServer::start() {
     return;
   }
 
+  SUPLA_LOG_INFO("Starting local web server");
+  bool fallbackToHttp = true;
+
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.lru_purge_enable = true;
 
+#ifdef SUPLA_DEVICE_ESP32
   httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
   configHttps.servercert = serverCert;
   configHttps.servercert_len = serverCertLen;
 
   configHttps.prvtkey_pem = prvtKey;
   configHttps.prvtkey_len = prvtKeyLen;
-  SUPLA_LOG_INFO("Starting local web server");
-
   if (httpd_ssl_start(&serverHttps, &configHttps) == ESP_OK) {
+    fallbackToHttp = false;
     httpd_register_uri_handler(serverHttps, &uriGet);
     httpd_register_uri_handler(serverHttps, &uriGetBeta);
     httpd_register_uri_handler(serverHttps, &uriFavicon);
@@ -243,7 +249,10 @@ void Supla::EspIdfWebServer::start() {
     }
   } else {
     SUPLA_LOG_ERROR("Failed to start local https web server");
+  }
+#endif  // SUPLA_DEVICE_ESP32
 
+  if (fallbackToHttp) {
     // fallback with standard http server
     if (httpd_start(&serverHttp, &config) == ESP_OK) {
       httpd_register_uri_handler(serverHttp, &uriGet);

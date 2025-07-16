@@ -393,6 +393,7 @@ void SuplaDeviceClass::iterate(void) {
     return;
   }
 
+  uint32_t enterConfigModeTimestampCopy = enterConfigModeTimestamp;
   uint32_t _millis = millis();
 
   // in allowOfflineMode(2) device starts in "offline" mode with cfg mode
@@ -404,9 +405,15 @@ void SuplaDeviceClass::iterate(void) {
     leaveConfigModeWithoutRestart();
   }
   if (leaveCfgModeAfterInactivityMin != 0 &&
-      deviceRestartTimeoutTimestamp == 0 && enterConfigModeTimestamp &&
-      _millis - enterConfigModeTimestamp >
+      deviceRestartTimeoutTimestamp == 0 && enterConfigModeTimestampCopy &&
+      _millis - enterConfigModeTimestampCopy >
           leaveCfgModeAfterInactivityMin * 60ULL * 1000) {
+    SUPLA_LOG_DEBUG("leaveCfg %d, millis %d, enter %d, deviceRestart %d",
+                    leaveCfgModeAfterInactivityMin,
+                    _millis,
+                    enterConfigModeTimestamp,
+                    deviceRestartTimeoutTimestamp);
+
     SUPLA_LOG_INFO("Config mode timeout triggered");
     leaveConfigModeWithoutRestart();
   }

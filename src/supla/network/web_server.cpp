@@ -256,3 +256,7 @@ void Supla::WebServer::resetParser() {
 void Supla::WebServer::setBetaProcessing() {
   excludeSection = Supla::HtmlSection::HTML_SECTION_FORM;
 }
+
+bool Supla::WebServer::verfiyCertificatesFormat() {
+  return false;
+}

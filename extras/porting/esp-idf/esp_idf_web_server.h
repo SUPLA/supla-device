@@ -45,21 +45,29 @@ class EspIdfWebServer : public Supla::WebServer {
 
   bool handlePost(httpd_req_t *req, bool beta = false);
 
-  void setServerCertificate(const unsigned char *serverCert,
+  void setServerCertificate(const char *serverCert,
                             int serverCertLen,
-                            const unsigned char *prvtKey,
+                            const char *prvtKey,
                             int prvtKeyLen);
 
   bool dataSaved = false;
+
+  /**
+   * @brief Verifies https server certificates format
+   *
+   * @return true if certificates are in PEM format
+   */
+  bool verfiyCertificatesFormat() override;
 
  protected:
   void cleanupCerts();
   httpd_handle_t serverHttps = {};
   httpd_handle_t serverHttp = {};
-  unsigned char *serverCert = nullptr;
-  unsigned char *prvtKey = nullptr;
+  uint8_t *serverCert = nullptr;
+  uint8_t *prvtKey = nullptr;
   int serverCertLen = 0;
   int prvtKeyLen = 0;
+  bool prvtKeyDecrypted = false;
 };
 
 };  // namespace Supla

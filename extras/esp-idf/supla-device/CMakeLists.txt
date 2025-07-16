@@ -225,6 +225,7 @@ idf_component_register(SRCS
     mqtt
     esp_timer
     esp_partition
+    mbedtls
   EMBED_TXTFILES supla_org_cert.pem supla_3rd_cert.pem
 )
 

@@ -46,6 +46,8 @@ class WebServer {
   virtual void resetParser();
   void setBetaProcessing();
 
+  virtual bool verfiyCertificatesFormat();
+
   Supla::HtmlGenerator *htmlGenerator = nullptr;
 
  protected:

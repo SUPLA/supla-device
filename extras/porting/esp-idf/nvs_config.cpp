@@ -20,23 +20,53 @@
 #include <esp_random.h>
 #endif
 
+#include <supla/crc16.h>
 #include <esp_system.h>
 #include <nvs.h>
 #include <nvs_flash.h>
 #include <supla/log_wrapper.h>
 #include <supla-common/proto.h>
-#include <cstring>
+#include <string.h>
 
 namespace Supla {
 
 NvsConfig::NvsConfig() {
 }
 
-NvsConfig::~NvsConfig() {
-}
+NvsConfig::~NvsConfig() {}
 
 #define NVS_SUPLA_PARTITION_NAME "suplanvs"
 #define NVS_DEFAULT_PARTITION_NAME "nvs"
+#define SUPLA_DEVICE_DATA_PARTITION_NAME "supla_dev_data"
+#define SUPLA_DEVICE_DATA_PARTITION_TYPE 0x56
+#define SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC "AES_KEY_SET"
+#define SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC "AES_NOT_SET"
+#define SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC "GUID_MAGIC"
+#define SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC "AUTHKEY_MAGIC"
+
+#define SUPLA_SECTOR_SIZE 4096
+
+#define SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET 0
+#define SUPLA_DEVICE_DATA_AES_KEY_OFFSET \
+  (SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET + 16)
+#define SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET \
+  (SUPLA_DEVICE_DATA_AES_KEY_OFFSET + 32)
+#define SUPLA_DEVICE_DATA_GUID_OFFSET \
+  (SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET + 16)
+#define SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET \
+  (SUPLA_DEVICE_DATA_GUID_OFFSET + 16)
+#define SUPLA_DEVICE_DATA_AUTHKEY_OFFSET \
+  (SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET + 16)
+#define SUPLA_DEVICE_DATA_CHECKSUM_OFFSET \
+  (SUPLA_DEVICE_DATA_AUTHKEY_OFFSET + 16)
+
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) <= 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) <= 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC) <= 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC) <= 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_NAME) <= 16);
+static_assert(sizeof(NVS_SUPLA_PARTITION_NAME) <= 16);
+static_assert(sizeof(NVS_DEFAULT_PARTITION_NAME) <= 16);
 
 bool NvsConfig::init() {
   // check nvs_supla partition
@@ -226,5 +256,400 @@ bool NvsConfig::generateGuidAndAuthkey() {
   commit();
   return true;
 }
+
+bool NvsConfig::getAESKey(uint8_t* result) {
+  char buf[16] = {};
+  if (!readDataPartition(SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET, buf, 16)) {
+    return false;
+  }
+  if (strncmp(buf, SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC, 15) != 0) {
+    return false;
+  }
+
+  return readDataPartition(SUPLA_DEVICE_DATA_AES_KEY_OFFSET,
+                           reinterpret_cast<char*>(result),
+                           SUPLA_AES_KEY_SIZE);
+}
+
+bool NvsConfig::readDataPartition(int offset, char* buffer, int size) {
+  if (buffer == nullptr) {
+    return false;
+  }
+
+  if (!isDeviceDataPartitionAvailable()) {
+    return false;
+  }
+
+  if (!readDataPartitionImp(offset, buffer, size)) {
+    return false;
+  }
+
+  return true;
+}
+
+bool NvsConfig::readDataPartitionImp(int address, char* buf, int size) {
+  if (dataPartition == nullptr || buf == nullptr || size == 0) {
+    return false;
+  }
+
+  auto result = esp_partition_read(
+      dataPartition, dataPartitionOffset + address, buf, size);
+  if (result != ESP_OK) {
+    SUPLA_LOG_ERROR("Failed to read data partition: addr %d, size %d (%d)",
+        address,
+        size,
+        result);
+    return false;
+  }
+
+  return true;
+}
+
+bool NvsConfig::isDeviceDataPartitionAvailable() {
+  if (!dataPartitionInitiazlied) {
+    dataPartitionInitiazlied = true;
+    dataPartition = esp_partition_find_first(
+        static_cast<esp_partition_type_t>(SUPLA_DEVICE_DATA_PARTITION_TYPE),
+        static_cast<esp_partition_subtype_t>(0),
+        SUPLA_DEVICE_DATA_PARTITION_NAME);
+
+    if (dataPartition == nullptr) {
+      SUPLA_LOG_ERROR("Data partition partition not found");
+      return false;
+    }
+
+    if (dataPartition->size < 8192) {
+      SUPLA_LOG_ERROR("Data partition too small");
+      dataPartition = nullptr;
+      return false;
+    }
+
+    char buf[16] = {};
+    if (!readDataPartitionImp(0, buf, 16)) {
+      dataPartition = nullptr;
+      return false;
+    }
+    if (!initDeviceDataPartitionCopyAndChecksum()) {
+      dataPartition = nullptr;
+      return false;
+    }
+  }
+
+  return dataPartition != nullptr;
+}
+
+bool NvsConfig::isDeviceDataValid(const DeviceDataBuf &buf) const {
+  if (!isDeviceDataFilled(buf)) {
+    return false;
+  }
+
+  // check checksum
+  uint16_t crc16 = calculateCrc16(reinterpret_cast<const uint8_t*>(buf),
+                                  sizeof(DeviceDataBuf) - 16);
+
+  if (crc16 !=
+      *(reinterpret_cast<const uint16_t*>(buf + sizeof(DeviceDataBuf) - 16))) {
+    SUPLA_LOG_INFO(
+        "CRC16 mismatch %d != %d",
+        crc16,
+        *(reinterpret_cast<const uint16_t*>(buf + sizeof(DeviceDataBuf) - 16)));
+    return false;
+  }
+
+  return true;
+}
+
+bool NvsConfig::isDeviceDataFilled(const DeviceDataBuf &deviceDataBuf) const {
+  const char* deviceDataBufPtr = deviceDataBuf;
+
+  if (strncmp(deviceDataBufPtr,
+              SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC,
+              15) != 0 &&
+      strncmp(deviceDataBufPtr,
+              SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC,
+              15) != 0) {
+    SUPLA_LOG_INFO("AES magic key in data partition not found");
+    return false;
+  }
+  deviceDataBufPtr += 16;
+  deviceDataBufPtr += SUPLA_AES_KEY_SIZE;
+
+  if (strncmp(deviceDataBufPtr, SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC, 15) !=
+      0) {
+    SUPLA_LOG_INFO("GUID magic key in data partition not found");
+    return false;
+  }
+  deviceDataBufPtr += 16;  // guid magic
+  deviceDataBufPtr += 16;  // guid
+
+  if (strncmp(deviceDataBufPtr,
+              SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC,
+              15) != 0) {
+    SUPLA_LOG_INFO("Authkey magic key in data partition not found");
+    return false;
+  }
+  deviceDataBufPtr += 16;  // authkey magic
+  deviceDataBufPtr += 16;  // authkey
+
+  return true;
+}
+
+bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
+  // check for AES key signature on main and copy partition. If it is not found
+  // then erase all sectors and start initialization.
+  char bufMain[16] = {};
+  char bufCopy[16] = {};
+
+  char aesMain[32] = {};
+
+  // 3x magic keys, 2x for AES, 1x for GUID, 1x for authkey, 1x for checksum
+  DeviceDataBuf deviceDataBuf = {};
+
+  bool initChecksumAndCopy = false;
+
+  if (!readDataPartitionImp(0, bufMain, 16)) {
+    return false;
+  }
+  if (!readDataPartitionImp(SUPLA_SECTOR_SIZE, bufCopy, 16)) {
+    return false;
+  }
+  if (!readDataPartitionImp(SUPLA_DEVICE_DATA_AES_KEY_OFFSET, aesMain, 32)) {
+    return false;
+  }
+
+  bool isAesKeyMagicSet =
+      !(strncmp(bufMain, SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC, 15) &&
+        strncmp(bufMain, SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC, 15) &&
+        strncmp(bufCopy, SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC, 15) &&
+        strncmp(bufCopy, SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC, 15));
+  bool isAesSet =
+      strncmp(bufMain, SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC, 15) == 0;
+
+  if (!readDataPartitionImp(SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET, bufMain, 16)) {
+    return false;
+  }
+  if (!readDataPartitionImp(
+          SUPLA_SECTOR_SIZE + SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET,
+          bufCopy,
+          16)) {
+    return false;
+  }
+
+  bool isGuidMagicSet =
+      !(strncmp(bufMain, SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC, 15) &&
+        strncmp(bufCopy, SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC, 15));
+
+  if (!isAesKeyMagicSet || !isGuidMagicSet) {
+    SUPLA_LOG_INFO(
+        "Data partition: initializing...");
+    auto result = esp_partition_erase_range(dataPartition, 0, 8192);
+    if (result != ESP_OK) {
+      SUPLA_LOG_ERROR("Failed to erase storage sector (%d), addr: %d, size: %d",
+          result, 0, 8192);
+      return false;
+    }
+    if (isAesSet) {
+      result = esp_partition_write(
+          dataPartition,
+          SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
+          SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC,
+          strlen(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) + 1);
+      if (result != ESP_OK) {
+        SUPLA_LOG_ERROR("Failed to write storage: addr %d, size %d (%d)",
+            SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
+            strlen(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) + 1,
+            result);
+        return false;
+      }
+      result = esp_partition_write(
+          dataPartition,
+          SUPLA_DEVICE_DATA_AES_KEY_OFFSET,
+          aesMain,
+          sizeof(aesMain));
+      if (result != ESP_OK) {
+        SUPLA_LOG_ERROR("Failed to write storage: addr %d, size %d (%d)",
+            SUPLA_DEVICE_DATA_AES_KEY_OFFSET,
+            sizeof(aesMain),
+            result);
+        return false;
+      }
+    } else {
+      result = esp_partition_write(
+          dataPartition,
+          SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
+          SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC,
+          strlen(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) + 1);
+      if (result != ESP_OK) {
+        SUPLA_LOG_ERROR(
+            "Failed to write storage: addr %d, size %d (%d)",
+            SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
+            strlen(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) + 1,
+            result);
+        return false;
+      }
+    }
+
+    // generate guid + authey and write
+    char guid[SUPLA_GUID_SIZE];
+    char authkey[SUPLA_AUTHKEY_SIZE];
+
+    esp_fill_random(guid, SUPLA_GUID_SIZE);
+    esp_fill_random(authkey, SUPLA_AUTHKEY_SIZE);
+
+    result =
+        esp_partition_write(dataPartition,
+                            SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET,
+                            SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC,
+                            strlen(SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC) + 1);
+    if (result != ESP_OK) {
+      SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
+                      SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET,
+                      result);
+      return false;
+    }
+
+    result =
+        esp_partition_write(dataPartition,
+                            SUPLA_DEVICE_DATA_GUID_OFFSET,
+                            guid,
+                            SUPLA_GUID_SIZE);
+    if (result != ESP_OK) {
+      SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
+                      SUPLA_DEVICE_DATA_GUID_OFFSET,
+                      result);
+      return false;
+    }
+
+    result = esp_partition_write(
+        dataPartition,
+        SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET,
+        SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC,
+        strlen(SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC) + 1);
+    if (result != ESP_OK) {
+      SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
+                      SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET,
+                      result);
+      return false;
+    }
+
+    result =
+        esp_partition_write(dataPartition,
+                            SUPLA_DEVICE_DATA_AUTHKEY_OFFSET,
+                            authkey,
+                            SUPLA_AUTHKEY_SIZE);
+    if (result != ESP_OK) {
+      SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
+                      SUPLA_DEVICE_DATA_AUTHKEY_OFFSET,
+                      result);
+      return false;
+    }
+
+    initChecksumAndCopy = true;
+  }
+
+
+  if (!readDataPartitionImp(SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
+                            deviceDataBuf,
+                            sizeof(deviceDataBuf))) {
+    return false;
+  }
+
+  if (initChecksumAndCopy) {
+    if (!isDeviceDataFilled(deviceDataBuf)) {
+      SUPLA_LOG_ERROR("Data partition data not ready yet");
+      return false;
+    }
+
+    uint16_t crc16 =
+        calculateCrc16(reinterpret_cast<const uint8_t*>(deviceDataBuf),
+                       sizeof(DeviceDataBuf) - 16);
+
+    // write checksum
+    esp_partition_write(dataPartition,
+                        SUPLA_DEVICE_DATA_CHECKSUM_OFFSET,
+                        &crc16,
+                        sizeof(crc16));
+    memcpy(deviceDataBuf + sizeof(DeviceDataBuf) - 16, &crc16, sizeof(crc16));
+
+    // write backup
+    esp_partition_write(
+        dataPartition, SUPLA_SECTOR_SIZE, deviceDataBuf, sizeof(DeviceDataBuf));
+  }
+
+  if (isDeviceDataValid(deviceDataBuf)) {
+    SUPLA_LOG_INFO("Data partition valid");
+    return true;
+  } else {
+    SUPLA_LOG_INFO("Checkiong data partition backup...");
+    dataPartitionOffset = SUPLA_SECTOR_SIZE;
+    if (!readDataPartitionImp(SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
+                              deviceDataBuf,
+                              sizeof(deviceDataBuf))) {
+      dataPartitionOffset = 0;
+      return false;
+    }
+    if (isDeviceDataValid(deviceDataBuf)) {
+      SUPLA_LOG_INFO("Data partition backup valid");
+      return true;
+    }
+    dataPartitionOffset = 0;
+  }
+
+  SUPLA_LOG_INFO("Data partition backup initialized");
+  return true;
+}
+
+bool NvsConfig::getGUID(char* result) {
+  if (isDeviceDataPartitionAvailable()) {
+    char buf[16] = {};
+    if (!readDataPartition(SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET, buf, 16)) {
+     return false;
+    }
+
+    if (strncmp(buf, SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC, 15) != 0) {
+      return false;
+    }
+
+    return readDataPartition(
+        SUPLA_DEVICE_DATA_GUID_OFFSET, result, SUPLA_GUID_SIZE);
+  }
+
+  return Supla::Config::getGUID(result);
+}
+
+bool NvsConfig::getAuthKey(char* result) {
+  if (isDeviceDataPartitionAvailable()) {
+    char buf[16] = {};
+    if (!readDataPartition(SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET, buf, 16)) {
+     return false;
+    }
+
+    if (strncmp(buf, SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC, 15) != 0) {
+      return false;
+    }
+
+    return readDataPartition(
+        SUPLA_DEVICE_DATA_AUTHKEY_OFFSET, result, SUPLA_AUTHKEY_SIZE);
+  }
+
+  return Supla::Config::getAuthKey(result);
+}
+
+bool NvsConfig::setGUID(const char* guid) {
+  if (isDeviceDataPartitionAvailable()) {
+    return false;
+  }
+
+  return Supla::Config::setGUID(guid);
+}
+
+bool NvsConfig::setAuthKey(const char* key) {
+  if (isDeviceDataPartitionAvailable()) {
+    return false;
+  }
+
+  return Supla::Config::setAuthKey(key);
+}
+
 
 }  // namespace Supla

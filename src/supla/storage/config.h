@@ -90,7 +90,7 @@ class Config {
   virtual bool getCustomCA(char* result, int maxSize);
   virtual int getCustomCASize();
   virtual bool setCustomCA(const char* customCA);
-  virtual bool getAESKey(char* result);
+  virtual bool getAESKey(uint8_t* result);
 
   // Supla protocol config
   virtual bool setSuplaCommProtocolEnabled(bool enabled);

@@ -23,12 +23,19 @@
 #include <supla/tools.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html_generator.h>
+#include <supla/storage/storage.h>
+#include <supla/storage/config.h>
+#include <esp_tls.h>
+#include <mbedtls/aes.h>
+#include <string.h>
 
 #include "esp_idf_web_server.h"
 
 #ifdef SUPLA_DEVICE_ESP32
 #include "esp_https_server.h"
 #endif  // SUPLA_DEVICE_ESP32
+
+#define IV_SIZE 16       // AES block size
 
 static Supla::EspIdfWebServer *serverInstance = nullptr;
 
@@ -210,6 +217,70 @@ bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req, bool beta) {
   return true;
 }
 
+bool Supla::EspIdfWebServer::verfiyCertificatesFormat() {
+#ifdef SUPLA_DEVICE_ESP32
+  if (!prvtKeyDecrypted) {
+    prvtKeyDecrypted = true;
+    auto cfg = Supla::Storage::ConfigInstance();
+    uint8_t aesKey[32] = {};
+    if (cfg && cfg->getAESKey(aesKey)) {
+      SUPLA_LOG_INFO("AES key found");
+      uint8_t iv[IV_SIZE] = {};
+      memcpy(iv, prvtKey, IV_SIZE);
+
+      mbedtls_aes_context aes = {};
+      mbedtls_aes_init(&aes);
+      auto result = mbedtls_aes_setkey_dec(&aes, aesKey, 256);
+      SUPLA_LOG_DEBUG("mbedtls_aes_setkey_dec result: %d", result);
+
+      prvtKeyLen = prvtKeyLen - IV_SIZE;
+
+      SUPLA_LOG_INFO("prvtKeyLen: %d, IV_SIZE: %d", prvtKeyLen, IV_SIZE);
+      uint8_t *encryptedData = new uint8_t[prvtKeyLen];
+      memcpy(encryptedData, prvtKey + IV_SIZE, prvtKeyLen);
+      memset(prvtKey, 0, prvtKeyLen);
+      encryptedData[prvtKeyLen - 1] = '\0';
+      result = mbedtls_aes_crypt_cbc(&aes,
+                            MBEDTLS_AES_DECRYPT,
+                            prvtKeyLen - 1,
+                            iv,
+                            encryptedData,
+                            prvtKey);
+      SUPLA_LOG_DEBUG("mbedtls_aes_crypt_cbc result: %d", result);
+      delete[] encryptedData;
+      mbedtls_aes_free(&aes);
+    } else {
+      SUPLA_LOG_INFO("AES key not found");
+    }
+  }
+
+  if (strncmp(reinterpret_cast<const char *>(serverCert),
+              "-----BEGIN CERTIFICATE-----",
+              27) != 0) {
+    SUPLA_LOG_WARNING("serverCert not valid, missing header");
+    return false;
+  }
+  if (strncmp(reinterpret_cast<const char *>(prvtKey),
+              "-----BEGIN PRIVATE KEY-----",
+              27) != 0) {
+    SUPLA_LOG_WARNING("prvtKey not valid, missing header");
+    return false;
+  }
+  if (strstr(reinterpret_cast<const char *>(serverCert),
+             "-----END CERTIFICATE-----") == nullptr) {
+    SUPLA_LOG_WARNING("serverCert not valid, missing footer");
+    return false;
+  }
+  if (strstr(reinterpret_cast<const char *>(prvtKey),
+             "-----END PRIVATE KEY-----") == nullptr) {
+    SUPLA_LOG_WARNING("prvtKey not valid, missing footer");
+    return false;
+  }
+#endif  /* SUPLA_DEVICE_ESP32 */
+
+  return true;
+}
+
 void Supla::EspIdfWebServer::start() {
   if (serverHttps || serverHttp) {
     return;
@@ -223,6 +294,11 @@ void Supla::EspIdfWebServer::start() {
 
 #ifdef SUPLA_DEVICE_ESP32
   httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
+
+  if (!verfiyCertificatesFormat()) {
+    SUPLA_LOG_ERROR("Failed to verify certificates format");
+  }
+
   configHttps.servercert = serverCert;
   configHttps.servercert_len = serverCertLen;
 
@@ -314,14 +390,14 @@ void Supla::EspIdfWebServer::cleanupCerts() {
 }
 
 void Supla::EspIdfWebServer::setServerCertificate(
-    const unsigned char *serverCert,
+    const char *serverCert,
     int serverCertLen,
-    const unsigned char *prvtKey,
+    const char *prvtKey,
     int prvtKeyLen) {
   cleanupCerts();
 
-  this->serverCert = new unsigned char[serverCertLen];
-  this->prvtKey = new unsigned char[prvtKeyLen];
+  this->serverCert = new uint8_t[serverCertLen];
+  this->prvtKey = new uint8_t[prvtKeyLen];
 
   if (this->serverCert == nullptr || this->prvtKey == nullptr) {
     SUPLA_LOG_ERROR("Failed to allocate memory for https certificates");
@@ -335,3 +411,4 @@ void Supla::EspIdfWebServer::setServerCertificate(
   this->prvtKeyLen = prvtKeyLen;
   memcpy(this->prvtKey, prvtKey, prvtKeyLen);
 }
+

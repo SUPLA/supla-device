@@ -166,7 +166,7 @@ bool Config::getMqttServer(char* result) {
   return getString("mqttserver", result, SUPLA_SERVER_NAME_MAXSIZE);
 }
 
-bool Config::getAESKey(char*) {
+bool Config::getAESKey(uint8_t*) {
   return false;
 }
 

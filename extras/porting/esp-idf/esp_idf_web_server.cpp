@@ -27,7 +27,6 @@
 #include <supla/storage/config.h>
 #include <esp_tls.h>
 #include <mbedtls/aes.h>
-#include <string.h>
 
 #include "esp_idf_web_server.h"
 

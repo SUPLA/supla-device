@@ -174,6 +174,10 @@ class ESPWifi : public Supla::Wifi {
     return WiFi.localIP();
   }
 
+  const char *getIntfName() const override {
+    return "Wi-Fi";
+  }
+
  protected:
   bool wifiConfigured = false;
 

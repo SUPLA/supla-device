@@ -171,6 +171,10 @@ class ESPETH : public Supla::LAN {
     return ETH.localIP();
   }
 
+  const char *getIntfName() const override {
+    return "ETH";
+  }
+
  protected:
   uint8_t ETH_ADDRESS = {};
   bool allowDisable = false;

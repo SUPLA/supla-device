@@ -189,6 +189,8 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>enableSSL</b> (bool v
 <tr class="separator:a233ca10def77cadfe5724bf64a3b2cd1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aecf92ba940b6d67934d5ae8651a4b958" id="r_aecf92ba940b6d67934d5ae8651a4b958"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aecf92ba940b6d67934d5ae8651a4b958">uninit</a> () override</td></tr>
 <tr class="separator:aecf92ba940b6d67934d5ae8651a4b958"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0942dc65108fabd26c997793f5b02f43" id="r_a0942dc65108fabd26c997793f5b02f43"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0942dc65108fabd26c997793f5b02f43">getIP</a> () override</td></tr>
+<tr class="separator:a0942dc65108fabd26c997793f5b02f43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Wifi"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1Wifi')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1Wifi.html">Supla::Wifi</a></td></tr>
 <tr class="memitem:a72c3f2dc5bea139aeecf5c3dc2188e0e inherit pub_methods_classSupla_1_1Wifi" id="r_a72c3f2dc5bea139aeecf5c3dc2188e0e"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>Wifi</b> (const char *wifiSsid=nullptr, const char *wifiPassword=nullptr, unsigned char *ip=nullptr)</td></tr>
@@ -228,9 +230,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>generateHostname</b> 
 <tr class="memitem:ad5752204c3f833925f97238f9cd787e6 inherit pub_methods_classSupla_1_1Network" id="r_ad5752204c3f833925f97238f9cd787e6"><td class="memItemLeft" align="right" valign="top">
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isIpSetupTimeout</b> ()</td></tr>
 <tr class="separator:ad5752204c3f833925f97238f9cd787e6 inherit pub_methods_classSupla_1_1Network"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae1aaafaaeb42f3a801410e5ebd8be9f5 inherit pub_methods_classSupla_1_1Network" id="r_ae1aaafaaeb42f3a801410e5ebd8be9f5"><td class="memItemLeft" align="right" valign="top">
-virtual uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getIP</b> ()</td></tr>
-<tr class="separator:ae1aaafaaeb42f3a801410e5ebd8be9f5 inherit pub_methods_classSupla_1_1Network"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0a4636a1008b1540fa926bb31a732988 inherit pub_methods_classSupla_1_1Network" id="r_a0a4636a1008b1540fa926bb31a732988"><td class="memItemLeft" align="right" valign="top">
 virtual <a class="el" href="classSupla_1_1Client.html">Supla::Client</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>createClient</b> ()</td></tr>
 <tr class="separator:a0a4636a1008b1540fa926bb31a732988 inherit pub_methods_classSupla_1_1Network"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -439,6 +438,33 @@ static enum DeviceMode&#160;</td><td class="memItemRight" valign="bottom"><b>mod
           <td class="memname">void Supla::ESPWifi::fillStateData </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structTDSC__ChannelState.html">TDSC_ChannelState</a> *</td>          <td class="paramname"><span class="paramname"><em>channelState</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a>.</p>
+
+</div>
+</div>
+<a id="a0942dc65108fabd26c997793f5b02f43" name="a0942dc65108fabd26c997793f5b02f43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0942dc65108fabd26c997793f5b02f43">&#9670;&#160;</a></span>getIP()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t Supla::ESPWifi::getIP </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>

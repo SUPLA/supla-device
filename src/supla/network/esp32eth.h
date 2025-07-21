@@ -167,6 +167,10 @@ class ESPETH : public Supla::LAN {
     SUPLA_LOG_DEBUG("[%s] Network AP/hostname: %s", getIntfName(), hostname);
   }
 
+  uint32_t getIP() override {
+    return ETH.localIP();
+  }
+
  protected:
   uint8_t ETH_ADDRESS = {};
   bool allowDisable = false;

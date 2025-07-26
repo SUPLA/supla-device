@@ -100,7 +100,7 @@ class SGP41 : public Element {
       error = sgp.executeConditioning(compensationRh, compensationT, srawVoc);
       skipFirst10Sec--;
     } else {
-      error = sgp.measureRawSignals(compensationRh, compensationT, srawVoc, 
+      error = sgp.measureRawSignals(compensationRh, compensationT, srawVoc,
         srawNox);
     }
 

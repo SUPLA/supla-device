@@ -76,7 +76,7 @@ class SGP41 : public Element {
     }
   }
 
-private:
+ private:
   void readValuesFromDevice() {
     uint16_t error;
     float temperature = th->getChannel()->getLastTemperature();
@@ -96,11 +96,12 @@ private:
       compensationRh = defaultCompenstaionRh;
     }
 
-    if (skipFirst10Sec>0) {
+    if (skipFirst10Sec > 0) {
       error = sgp.executeConditioning(compensationRh, compensationT, srawVoc);
       skipFirst10Sec--;
     } else {
-      error = sgp.measureRawSignals(compensationRh, compensationT, srawVoc, srawNox);
+      error = sgp.measureRawSignals(compensationRh, compensationT, srawVoc, 
+        srawNox);
     }
 
     if (error) {

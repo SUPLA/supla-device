@@ -24,8 +24,8 @@ Use library manager to install it
 */
 
 #include <SparkFunTMP102.h>
-#include "thermometer.h"
 #include <supla/log_wrapper.h>
+#include "thermometer.h"
 
 namespace Supla {
 namespace Sensor {
@@ -84,5 +84,5 @@ class ExtTMP102 : public Thermometer {
   bool isConnected_ = false;
 };
 
-}; // namespace Sensor
-}; // namespace Supla
+};  // namespace Sensor
+};  // namespace Supla

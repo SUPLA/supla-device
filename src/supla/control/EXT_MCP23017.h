@@ -66,7 +66,7 @@ class ExtMCP23017 : public Supla::Io, Supla::Element {
   }
 
   int customDigitalRead(int channelNumber, uint8_t pin) override {
-    if (pin >= 16 ) {
+    if (pin >= 16) {
       return 0;
     }
     return (gpioState_ >> pin) & 0x01;

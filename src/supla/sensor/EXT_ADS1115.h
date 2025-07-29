@@ -73,7 +73,7 @@ class ExtADS1115 : public Supla::Io {
       return -1;
     }
   }
-  
+
   void setGain(uint8_t value) {
     gain_ = value;
   }
@@ -83,5 +83,5 @@ class ExtADS1115 : public Supla::Io {
   uint8_t gain_ = 0;
 };
 
-}; // namespace Sensor
-}; // namespace Supla
+};  // namespace Sensor
+};  // namespace Supla

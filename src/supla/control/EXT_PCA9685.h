@@ -78,5 +78,5 @@ class ExtPCA9685 : public Supla::Io {
   ::PCA9685 pca_;
 };
 
-}; // namespace Control
-}; // namespace Supla
+};  // namespace Control
+};  // namespace Supla

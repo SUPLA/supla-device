@@ -97,12 +97,12 @@ $(function(){ initResizable(false); });
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab378a4d504b3bc8df1827957ebeee536" id="r_ab378a4d504b3bc8df1827957ebeee536"><td class="memItemLeft" align="right" valign="top"><a id="ab378a4d504b3bc8df1827957ebeee536" name="ab378a4d504b3bc8df1827957ebeee536"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendPage</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *, bool dataSaved=false)</td></tr>
-<tr class="separator:ab378a4d504b3bc8df1827957ebeee536"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a382daec6e6d0692545cd18a65af78bb4" id="r_a382daec6e6d0692545cd18a65af78bb4"><td class="memItemLeft" align="right" valign="top"><a id="a382daec6e6d0692545cd18a65af78bb4" name="a382daec6e6d0692545cd18a65af78bb4"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendBetaPage</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *, bool dataSaved=false)</td></tr>
-<tr class="separator:a382daec6e6d0692545cd18a65af78bb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e92fb9e7de7abc7e2c5cfbe857294b3" id="r_a4e92fb9e7de7abc7e2c5cfbe857294b3"><td class="memItemLeft" align="right" valign="top"><a id="a4e92fb9e7de7abc7e2c5cfbe857294b3" name="a4e92fb9e7de7abc7e2c5cfbe857294b3"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendPage</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *, bool dataSaved=false, bool includeSessionLinks=false)</td></tr>
+<tr class="separator:a4e92fb9e7de7abc7e2c5cfbe857294b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a10f9fe994c27ca69f0d177864a1201af" id="r_a10f9fe994c27ca69f0d177864a1201af"><td class="memItemLeft" align="right" valign="top"><a id="a10f9fe994c27ca69f0d177864a1201af" name="a10f9fe994c27ca69f0d177864a1201af"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendBetaPage</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *, bool dataSaved=false, bool includeSessionLinks=false)</td></tr>
+<tr class="separator:a10f9fe994c27ca69f0d177864a1201af"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a558945d8ef79372f5773b37d29aee110" id="r_a558945d8ef79372f5773b37d29aee110"><td class="memItemLeft" align="right" valign="top"><a id="a558945d8ef79372f5773b37d29aee110" name="a558945d8ef79372f5773b37d29aee110"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendHeaderBegin</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *)</td></tr>
 <tr class="separator:a558945d8ef79372f5773b37d29aee110"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -145,6 +145,15 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendStyle</b>
 <tr class="memitem:a641723c3c8c2e19b22f8cc56a4abafce" id="r_a641723c3c8c2e19b22f8cc56a4abafce"><td class="memItemLeft" align="right" valign="top"><a id="a641723c3c8c2e19b22f8cc56a4abafce" name="a641723c3c8c2e19b22f8cc56a4abafce"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendJavascript</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *)</td></tr>
 <tr class="separator:a641723c3c8c2e19b22f8cc56a4abafce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae12cf009b85d5134f35e2ef9408f0f24" id="r_ae12cf009b85d5134f35e2ef9408f0f24"><td class="memItemLeft" align="right" valign="top"><a id="ae12cf009b85d5134f35e2ef9408f0f24" name="ae12cf009b85d5134f35e2ef9408f0f24"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendLoginPage</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *, bool loginError=false)</td></tr>
+<tr class="separator:ae12cf009b85d5134f35e2ef9408f0f24"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a62c4e60e92ff686bed2b7fe124268ca3" id="r_a62c4e60e92ff686bed2b7fe124268ca3"><td class="memItemLeft" align="right" valign="top"><a id="a62c4e60e92ff686bed2b7fe124268ca3" name="a62c4e60e92ff686bed2b7fe124268ca3"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendSetupPage</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *, bool changePassword, Supla::SetupRequestResult=Supla::SetupRequestResult::NONE)</td></tr>
+<tr class="separator:a62c4e60e92ff686bed2b7fe124268ca3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a154c49b927fcf718b92eff5710dfc0bd" id="r_a154c49b927fcf718b92eff5710dfc0bd"><td class="memItemLeft" align="right" valign="top"><a id="a154c49b927fcf718b92eff5710dfc0bd" name="a154c49b927fcf718b92eff5710dfc0bd"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>sendSessionLinks</b> (<a class="el" href="classSupla_1_1WebSender.html">Supla::WebSender</a> *)</td></tr>
+<tr class="separator:a154c49b927fcf718b92eff5710dfc0bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/supla/network/<a class="el" href="html__generator_8h_source.html">html_generator.h</a></li>

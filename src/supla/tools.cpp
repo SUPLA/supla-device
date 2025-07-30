@@ -27,6 +27,12 @@
 #include <cstdlib>
 #endif
 
+#if defined(ESP8266)
+#include <Esp.h>
+#elif defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
+#include <esp_random.h>
+#endif
+
 #include "supla/IEEE754tools.h"
 
 void float2DoublePacked(float number, uint8_t *bar, int byteOrder) {
@@ -610,5 +616,17 @@ int Supla::compareSemVer(const char *sw1, const char *sw2) {
   }
 
   return 0;
+}
+
+void Supla::fillRandom(uint8_t *buffer, int size) {
+#if defined(ESP8266)
+  ESP.random(buffer, size);
+#elif defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
+  esp_fill_random(buffer, size);
+#else
+  (void)(buffer);
+  (void)(size);
+  // TODO(klew): Arduino MEGA, sd4linux
+#endif
 }
 

@@ -22,6 +22,8 @@
 #include <esp_http_server.h>
 #include <supla/network/web_sender.h>
 #include <supla/network/web_server.h>
+#include <supla/network/html_generator.h>
+#include <supla/storage/config.h>
 
 namespace Supla {
 
@@ -57,10 +59,38 @@ class EspIdfWebServer : public Supla::WebServer {
    *
    * @return true if certificates are in PEM format
    */
-  bool verfiyCertificatesFormat() override;
+  bool verifyCertificatesFormat() override;
+  bool ensureAuthorized(httpd_req_t *req,
+                        char *sessionCookie,
+                        int sessionCookieLen,
+                        bool loginFailed = false);
+  void renderLoginPage(httpd_req_t *req);
+  esp_err_t redirect(httpd_req_t *req,
+                int code,
+                const char *destination,
+                const char *cookieRedirect = nullptr);
+  const char *loginOrSetupUrl() const;
+
+  bool login(httpd_req_t *req,
+             const char *password,
+             char *sessionCookie,
+             int sessionCookieLen);
+  void handleLogout(httpd_req_t *req);
+  SetupRequestResult handleSetup(httpd_req_t *req,
+                                 char *sessionCookie,
+                                 int sessionCookieLen);
+
+  bool isPasswordConfigured() const;
+  bool isPasswordCorrect(const char *password) const;
+  bool isHttpsEnalbled() const;
+  bool isAuthorizationBlocked();
+  void reloadSaltPassword();
 
  protected:
   void cleanupCerts();
+  bool isPasswordStrong(const char *password) const;
+  bool isSessionCookieValid(const char *sessionCookie);
+  void setSessionCookie(httpd_req_t *req, char *buf, int bufLen);
   httpd_handle_t serverHttps = {};
   httpd_handle_t serverHttp = {};
   uint8_t *serverCert = nullptr;
@@ -68,6 +98,11 @@ class EspIdfWebServer : public Supla::WebServer {
   int serverCertLen = 0;
   int prvtKeyLen = 0;
   bool prvtKeyDecrypted = false;
+
+  uint32_t lastLoginAttemptTimestamp = 0;
+  SaltPassword saltPassword = {};
+  uint8_t sessionSecret[32] = {};
+  int failedLoginAttempts = 0;
 };
 
 };  // namespace Supla

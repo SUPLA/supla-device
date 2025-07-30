@@ -22,6 +22,7 @@
 
 #include <supla/network/html_element.h>
 #include <SuplaDevice.h>
+#include <supla/device/register_device.h>
 
 #include "web_sender.h"
 
@@ -39,29 +40,28 @@ const char headerBegin[] =
 // Input data is in extras/resources/css_for_cfg_page.css
 const char styles[] =
     "<style>"
-    ".wrapper,body{min-height:100vh}#logo,body{background:#00d151}.box,button{"
-    "box-shadow:0 5px 6px "
-    "rgba(0,0,0,.3)}#msg,.box{color:#000}#msg,.slider{top:0;left:0}*,::after,::"
-    "before{box-sizing:border-box}html:focus-within{scroll-behavior:smooth}"
-    "body,h1,h2,h3,h4,html,p{font-family:HelveticaNeue,\"Helvetica "
-    "Neue\",HelveticaNeueRoman,HelveticaNeue-Roman,\"Helvetica Neue "
+    "*,*::before,*::after{box-sizing:border-box}html:focus-within{scroll-"
+    "behavior:smooth}html,body,h1,h2,h3,h4,p{font-family:HelveticaNeue,"
+    "\"Helvetica Neue\",HelveticaNeueRoman,HelveticaNeue-Roman,\"Helvetica "
+    "Neue "
     "Roman\",TeXGyreHerosRegular,Helvetica,Tahoma,Geneva,Arial,sans-serif;"
-    "margin:0;padding:0}.box,h1,h3{margin:10px "
-    "0}body{text-rendering:optimizeSpeed;line-height:1.5;font-size:14px;font-"
-    "weight:400;color:#fff;font-stretch:normal}h1,h3{font-weight:300;font-size:"
-    "23px}button,input,select,textarea{font:inherit}.wrapper{display:flex;flex-"
-    "direction:column;justify-content:center}.box.collapsible.collapsed "
-    ".form-field,.form{display:none}.content{text-align:center;padding:20px "
-    "10px}#logo{display:inline-block;height:155px}.box{background:#fff;border-"
-    "radius:10px;padding:5px 10px}.box "
+    "margin:0;padding:0}body{min-height:100vh;text-rendering:optimizeSpeed;"
+    "line-height:1.5;font-size:14px;font-weight:400;background:#00d151;color:#"
+    "fff;font-stretch:normal}h1,h3{margin:10px "
+    "0;font-weight:300;font-size:23px}input,button,textarea,select{font:"
+    "inherit}.wrapper{display:flex;flex-direction:column;justify-content:"
+    "center;min-height:100vh}.content{text-align:center;padding:20px "
+    "10px}#logo{display:inline-block;height:155px;background:#00d151}.box{"
+    "background:#fff;color:#000;border-radius:10px;padding:5px "
+    "10px;margin:10px 0;box-shadow:0 5px 6px rgb(0 0 0 / .3)}.box "
     "h3{margin-top:0;margin-bottom:5px}.form{text-align:left;max-width:500px;"
-    "margin:-80px auto 0;padding:70px 10px "
-    "10px}.form-field{display:flex;align-items:center;padding:8px "
-    "10px;border-top:1px solid #00d150;margin:0 "
+    "margin:0 "
+    "auto;margin-top:-80px;padding:10px;padding-top:70px;display:none}.form-"
+    "field{display:flex;align-items:center;padding:8px 10px;border-top:1px "
+    "solid #00d150;margin:0 "
     "-10px}.box>.form-field:first-of-type{border-top:0}.form-field "
-    "label{width:250px;margin-right:5px;color:#00d150}a.wide-link,button{"
-    "display:block;color:#fff;font-size:1.3em;text-align:center}@media screen "
-    "and (max-width:530px){.form-field{flex-direction:column}.form-field "
+    "label{width:250px;margin-right:5px;color:#00d150}@media screen and "
+    "(max-width:530px){.form-field{flex-direction:column}.form-field "
     "label{width:100%;margin:3px 0}}.form-field>div{width:100%}.form-field "
     "input:not([type=range]),.form-field select,.form-field "
     "textarea{width:100%;border:1px solid #ccc;border-radius:6px;padding:3px "
@@ -70,28 +70,31 @@ const char styles[] =
     "label{width:100%;color:#000;display:flex;align-items:center;gap:5px}.form-"
     "field.right-checkbox "
     "label:last-child{width:100%;text-align:center}.help-link{cursor:help;"
-    "color:#00d150}.box.collapsible "
-    "h3,.slider,a.wide-link{cursor:pointer}.hint{font-size:.8em;opacity:.8;"
-    "margin-top:2px}button{background:#000;width:100%;border:0;border-radius:"
-    "10px;padding:10px;text-transform:uppercase;margin-top:15px}#msg{"
-    "background:#ffe836;position:fixed;width:100%;padding:40px;box-shadow:0 "
-    "1px 3px "
-    "rgba(0,0,0,.3);text-align:center;font-size:26px}a.wide-link{padding:5px;"
-    "text-decoration:underline}.box.collapsible "
-    "h3:after{content:'↑';float:right}.box.collapsible.collapsed "
-    "h3:after{content:'↓'}.switch{position:relative;display:inline-block;width:"
-    "51px;height:25px}.switch "
-    "input{opacity:0;width:0;height:0}.slider{position:absolute;right:0;bottom:"
-    "0;background-color:#ccc;-webkit-transition:.4s;transition:.4s;border-"
-    "radius:34px}.slider:before{position:absolute;content:\"\";height:17px;"
-    "width:17px;left:4px;bottom:4px;background-color:#fff;-webkit-transition:."
-    "4s;transition:.4s;border-radius:50%}input:checked+.slider{background-"
-    "color:#00d151}input:focus+.slider{box-shadow:0 0 1px "
+    "color:#00d150}.hint{font-size:.8em;opacity:.8;margin-top:2px}a.wide-link,"
+    "button{display:block;color:#fff;background:#000;text-align:center;width:"
+    "100%;border:0;border-radius:10px;padding:10px;text-transform:uppercase;"
+    "text-decoration:none;cursor:pointer;font-size:1.3em;margin-top:15px;box-"
+    "shadow:0 5px 6px rgb(0 0 0 / "
+    ".3)}#msg{background:#ffe836;position:fixed;width:100%;padding:40px;color:#"
+    "000;top:0;left:0;box-shadow:0 1px 3px rgb(0 0 0 / "
+    ".3);text-align:center;font-size:26px}a.wide-link{display:block;color:#fff;"
+    "font-size:1.3em;text-align:center;padding:10px;cursor:pointer}.box."
+    "collapsible h3{cursor:pointer}.box.collapsible "
+    "h3:after{content:\'↑\';float:right}.box.collapsible.collapsed "
+    "h3:after{content:\'↓\'}.box.collapsible.collapsed "
+    ".form-field{display:none}.switch{position:relative;display:inline-block;"
+    "width:51px;height:25px}.switch "
+    "input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;"
+    "top:0;left:0;right:0;bottom:0;background-color:#ccc;-webkit-transition:."
+    "4s;transition:.4s;border-radius:34px}.slider:before{position:absolute;"
+    "content:\"\";height:17px;width:17px;left:4px;bottom:4px;background-color:#"
+    "fff;-webkit-transition:.4s;transition:.4s;border-radius:50%}input:checked+"
+    ".slider{background-color:#00d151}input:focus+.slider{box-shadow:0 0 1px "
     "#00d151}input:checked+.slider:before{-webkit-transform:translateX(26px);-"
     "ms-transform:translateX(26px);transform:translateX(26px)}.range-slider{-"
     "webkit-appearance:none;padding-top:10px;width:100%;height:15px;border-"
-    "radius:5px;background:#d3d3d3;outline:0;-webkit-transition:.2s;transition:"
-    "opacity "
+    "radius:5px;background:#d3d3d3;outline:none;-webkit-transition:.2s;"
+    "transition:opacity "
     ".2s}.range-slider::-webkit-slider-thumb{-webkit-appearance:none;"
     "appearance:none;margin-top:-5px;width:25px;height:25px;border-radius:50%;"
     "background:#00d151;cursor:pointer}.range-slider::-moz-range-thumb{width:"
@@ -203,7 +206,9 @@ const char dataSavedBox[] = "<div id=\"msg\">Data saved</div>";
 
 Supla::HtmlGenerator::~HtmlGenerator() {}
 
-void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender, bool dataSaved) {
+void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
+                                    bool dataSaved,
+                                    bool includeSessionLinks) {
   sendHeaderBegin(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
@@ -217,6 +222,9 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender, bool dataSaved) {
   sender->send("<div class=\"form\" id=\"form_content\">");
   sendDeviceInfo(sender);
   sendForm(sender);
+  if (includeSessionLinks) {
+    sendSessionLinks(sender);
+  }
   sender->send("</div>");  // .form end
   sender->send("</div>");  // .content end
   sender->send("</div>");  // .wrapper end
@@ -224,7 +232,7 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender, bool dataSaved) {
 }
 
 void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
-    bool dataSaved) {
+    bool dataSaved, bool includeSessionLinks) {
   sendHeaderBegin(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
@@ -238,6 +246,130 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
   sender->send("<div class=\"form\" id=\"form_content\">");
   sendDeviceInfo(sender);
   sendBetaForm(sender);
+  if (includeSessionLinks) {
+    sendSessionLinks(sender);
+  }
+  sender->send("</div>");  // .form end
+  sender->send("</div>");  // .content end
+  sender->send("</div>");  // .wrapper end
+  sendBodyEnd(sender);
+}
+
+void Supla::HtmlGenerator::sendLoginPage(Supla::WebSender *sender,
+                                         bool loginError) {
+  sendHeaderBegin(sender);
+  sendHeader(sender);
+  sendHeaderEnd(sender);
+  sendBodyBegin(sender);
+  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sendLogo(sender);
+  sender->send("<div id=\"loader\">Loading...</div>");
+  sender->send("<div class=\"form\" id=\"form_content\">");
+  sender->send("<h1>");
+  sender->send(Supla::RegisterDevice::getName());
+  sender->send("</h1>");
+  if (loginError) {
+    sender->send(
+        "<div class=\"box\">"
+        "<h3>Login failed</h3>"
+        "<p>Entered password is incorrect. Please try again.</p>"
+        "</div>");
+  }
+  sender->send("<form method=\"post\">");
+  sender->send("<div class=\"box\">");
+  sender->send("<div class=\"form-field\">");
+  sender->send("<label for=\"cfg_pwd\">Password:</label>");
+  sender->send(
+      "<input type=\"password\" name=\"cfg_pwd\" placeholder=\"Password\" "
+      "required>");
+  sender->send("</div>");  // .form-field end
+  sender->send(
+      "<p>Forgot your password? You can change it on Supla Cloud or reset "
+      "the device to factory settings.</p>");
+  sender->send("<button type=\"submit\">Login</button>");
+  sender->send("</div>");  // .box end
+  sender->send("</div>");  // .form end
+  sender->send("</div>");  // .content end
+  sender->send("</div>");  // .wrapper end
+  sendBodyEnd(sender);
+}
+
+void Supla::HtmlGenerator::sendSetupPage(
+    Supla::WebSender *sender,
+    bool changePassword,
+    Supla::SetupRequestResult setupResult) {
+  sendHeaderBegin(sender);
+  sendHeader(sender);
+  sendHeaderEnd(sender);
+  sendBodyBegin(sender);
+  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sendLogo(sender);
+  sender->send("<div id=\"loader\">Loading...</div>");
+  sender->send("<div class=\"form\" id=\"form_content\">");
+  sender->send("<h1>");
+  sender->send(Supla::RegisterDevice::getName());
+  sender->send("</h1>");
+  if (setupResult != Supla::SetupRequestResult::OK &&
+      setupResult != Supla::SetupRequestResult::NONE) {
+    sender->send(
+        "<div class=\"box\">"
+        "<h3>Setting new password failed!</h3>");
+    switch (setupResult) {
+      case Supla::SetupRequestResult::INVALID_OLD_PASSWORD: {
+        sender->send(
+            "<p>The old password is invalid. Please try again.</p>");
+        break;
+      }
+      case Supla::SetupRequestResult::PASSWORD_MISMATCH: {
+        sender->send(
+            "<p>The new passwords do not match. Please try again.</p>");
+        break;
+      }
+      case Supla::SetupRequestResult::WEAK_PASSWORD: {
+        sender->send(
+            "<p>The new password is too weak. Please try again.</p>");
+        break;
+      }
+      default: {
+        sender->send("<p>Unknown error. Please try again.</p>");
+        break;
+      }
+    }
+    sender->send("</div>");
+  }
+  sender->send("<form action=\"/setup\" method=\"POST\">");
+  sender->send("<div class=\"box\">");
+  if (changePassword) {
+    sender->send("<h3>Change password</h3>");
+    sender->send("<div class=\"form-field\">");
+    sender->send("<label for=\"cfg_pwd\">Current password:</label>");
+    sender->send("<input type=\"password\" name=\"old_cfg_pwd\" required>");
+    sender->send("</div>");  // .form-field end
+  } else {
+        sender->send("<h3>Set password</h3>");
+  }
+
+  sender->send("<div class=\"form-field\">");
+  sender->send("<label for=\"cfg_pwd\">New password:</label>");
+  sender->send("<input type=\"password\" name=\"cfg_pwd\" required>");
+  sender->send("</div>");  // .form-field end
+
+  sender->send("<div class=\"form-field\">");
+  sender->send("<label for=\"confirm_cfg_pwd\">Confirm password:</label>");
+  sender->send("<input type=\"password\" name=\"confirm_cfg_pwd\" required>");
+  sender->send("</div>");  // .form-field end
+  sender->send(
+      "<p>Password should be at least 8 characters "
+      "long and contain at least one uppercase [A-Z], one lowercase "
+      "letter [a-z], and one digit [0-9].</p>");
+  if (changePassword) {
+    sender->send("<button type=\"submit\">Change password</button>");
+    sender->send("<a href=\"/\" class=\"wide-link\">Cancel</a>");
+  } else {
+    sender->send("<button type=\"submit\">Create new password</button>");
+  }
+  sender->send("</div>");  // .box end
+  sender->send("</form>");
   sender->send("</div>");  // .form end
   sender->send("</div>");  // .content end
   sender->send("</div>");  // .wrapper end
@@ -348,6 +480,18 @@ void Supla::HtmlGenerator::sendSubmitButton(Supla::WebSender* sender) {
         "SAVE &amp; RESTART"
       "</button>"
       "<input type=\"hidden\" name=\"rbt\" value=\"0\">");
+}
+
+void Supla::HtmlGenerator::sendSessionLinks(Supla::WebSender* sender) {
+  // logout button
+  sender->send(
+      "<form method=\"post\" action=\"/logout\" style=\"display: inline;\">"
+      "<button type=\"submit\">"
+        "Logout"
+      "</button>"
+      "</form>");
+  // change password link
+  sender->send("<a href=\"/setup\" class=\"wide-link\">Change password</a>");
 }
 
 void Supla::HtmlGenerator::sendBodyEnd(Supla::WebSender *sender) {

@@ -21,12 +21,7 @@
 #include <string.h>
 #include <supla-common/proto.h>
 #include <supla/log_wrapper.h>
-
-#if defined(ESP8266)
-#include <Esp.h>
-#elif defined(ESP32)
-#include <esp_random.h>
-#endif
+#include <supla/tools.h>
 
 namespace Supla {
 KeyValue::~KeyValue() {
@@ -51,17 +46,8 @@ bool KeyValue::generateGuidAndAuthkey() {
   uint8_t guid[SUPLA_GUID_SIZE] = {};
   uint8_t authkey[SUPLA_AUTHKEY_SIZE] = {};
 
-  // Both ESP varaints use HW RNG after enabling Wi-Fi, so there is no need
-  // to initialize seed
-#if defined(ESP8266)
-  ESP.random(guid, SUPLA_GUID_SIZE);
-  ESP.random(authkey, SUPLA_AUTHKEY_SIZE);
-#elif defined(ESP32)
-  esp_fill_random(guid, SUPLA_GUID_SIZE);
-  esp_fill_random(authkey, SUPLA_AUTHKEY_SIZE);
-#else
-  // TODO(klew): Arduino MEGA
-#endif
+  Supla::fillRandom(guid, SUPLA_GUID_SIZE);
+  Supla::fillRandom(authkey, SUPLA_AUTHKEY_SIZE);
 
   setGUID(reinterpret_cast<char*>(guid));
   setAuthKey(reinterpret_cast<char*>(authkey));

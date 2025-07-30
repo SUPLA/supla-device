@@ -394,6 +394,7 @@ void SuplaDeviceClass::iterate(void) {
   }
 
   uint32_t enterConfigModeTimestampCopy = enterConfigModeTimestamp;
+  uint32_t deviceRestartTimeoutTimestampCopy = deviceRestartTimeoutTimestamp;
   uint32_t _millis = millis();
 
   // in allowOfflineMode(2) device starts in "offline" mode with cfg mode
@@ -405,15 +406,9 @@ void SuplaDeviceClass::iterate(void) {
     leaveConfigModeWithoutRestart();
   }
   if (leaveCfgModeAfterInactivityMin != 0 &&
-      deviceRestartTimeoutTimestamp == 0 && enterConfigModeTimestampCopy &&
+      deviceRestartTimeoutTimestampCopy == 0 && enterConfigModeTimestamp &&
       _millis - enterConfigModeTimestampCopy >
           leaveCfgModeAfterInactivityMin * 60ULL * 1000) {
-    SUPLA_LOG_DEBUG("leaveCfg %d, millis %d, enter %d, deviceRestart %d",
-                    leaveCfgModeAfterInactivityMin,
-                    _millis,
-                    enterConfigModeTimestamp,
-                    deviceRestartTimeoutTimestamp);
-
     SUPLA_LOG_INFO("Config mode timeout triggered");
     leaveConfigModeWithoutRestart();
   }
@@ -423,7 +418,7 @@ void SuplaDeviceClass::iterate(void) {
     cfg->saveIfNeeded();
   }
 
-  checkIfRestartIsNeeded(_millis);
+  checkIfRestartIsNeeded();
   handleLocalActionTriggers();
   iterateAlwaysElements(_millis);
 
@@ -987,6 +982,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       case SUPLA_CALCFG_CMD_ENTER_CFG_MODE: {
         SUPLA_LOG_INFO("CALCFG ENTER CFGMODE received");
         requestCfgMode();
+        cfgModeStartedRemotelyAndNotRefreshed = true;
         return SUPLA_CALCFG_RESULT_DONE;
       }
       case SUPLA_CALCFG_CMD_RESTART_DEVICE: {
@@ -1235,6 +1231,8 @@ void SuplaDeviceClass::restartCfgModeTimeout(bool requireRestart) {
     return;
   }
 
+  cfgModeStartedRemotelyAndNotRefreshed = false;
+
   if (!forceRestartTimeMs) {
     if (requireRestart || deviceRestartTimeoutTimestamp) {
       deviceRestartTimeoutTimestamp = millis();
@@ -1386,18 +1384,24 @@ void SuplaDeviceClass::handleLocalActionTriggers() {
   }
 }
 
-void SuplaDeviceClass::checkIfRestartIsNeeded(uint32_t _millis) {
+void SuplaDeviceClass::checkIfRestartIsNeeded() {
+  uint32_t enterConfigModeTimestampCopy = enterConfigModeTimestamp;
+  uint32_t deviceRestartTimeoutTimestampCopy = deviceRestartTimeoutTimestamp;
+  uint32_t _millis = millis();
   uint32_t restartTimeoutValue = 5ul * 60 * 1000;
   if (leaveCfgModeAfterInactivityMin != 0) {
     restartTimeoutValue = leaveCfgModeAfterInactivityMin * 60 * 1000;
   }
-  if (deviceRestartTimeoutTimestamp != 0 &&
-      _millis - deviceRestartTimeoutTimestamp > restartTimeoutValue) {
-    SUPLA_LOG_INFO("Config mode 5 min timeout. Reset device");
+  if ((cfgModeStartedRemotelyAndNotRefreshed &&
+       _millis - enterConfigModeTimestampCopy > restartTimeoutValue) ||
+      (leaveCfgModeAfterInactivityMin != 0 &&
+       deviceRestartTimeoutTimestampCopy != 0 &&
+       _millis - deviceRestartTimeoutTimestampCopy > restartTimeoutValue)) {
+    SUPLA_LOG_INFO("Config mode timeout. Reset device");
     softRestart();
   }
   if (forceRestartTimeMs &&
-      _millis - deviceRestartTimeoutTimestamp > forceRestartTimeMs) {
+      _millis - deviceRestartTimeoutTimestampCopy > forceRestartTimeMs) {
     SUPLA_LOG_DEBUG("Reset requested. Reset device");
     softRestart();
   }

@@ -29,6 +29,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/mutex.cpp
   ../../../src/supla/auto_lock.cpp
   ../../../src/supla/sha256.cpp
+  ../../../src/supla/crypto.cpp
   ../../../src/supla/rsa_verificator.cpp
   ../../../src/supla/crc8.cpp
   ../../../src/supla/crc16.cpp

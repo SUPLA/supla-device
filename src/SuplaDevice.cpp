@@ -182,6 +182,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg->isConfigModeSupported()) {
       addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
+      addFlags(SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED);
     }
 
     // Load device and network related configuration
@@ -1130,6 +1131,11 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
         SUPLA_LOG_WARNING("Failed to create firmware update instance");
         return SUPLA_CALCFG_RESULT_FALSE;
       }
+      case SUPLA_CALCFG_CMD_RESET_TO_FACTORY_SETTINGS: {
+        SUPLA_LOG_INFO("CALCFG RESET TO FACTORY SETTINGS received");
+        triggerResetToFactorySettings = true;
+        return SUPLA_CALCFG_RESULT_DONE;
+      }
 
       default:
         break;
@@ -1394,8 +1400,11 @@ void SuplaDeviceClass::checkIfRestartIsNeeded() {
   }
   if ((cfgModeStartedRemotelyAndNotRefreshed &&
         enterConfigModeTimestampCopy != 0 &&
-       _millis - enterConfigModeTimestampCopy > restartTimeoutValue) ||
-      (leaveCfgModeAfterInactivityMin != 0 &&
+       _millis - enterConfigModeTimestampCopy > restartTimeoutValue)) {
+    SUPLA_LOG_INFO("Config mode timeout. Leave without restart");
+    leaveConfigModeWithoutRestart();
+  }
+  if ((leaveCfgModeAfterInactivityMin != 0 &&
        deviceRestartTimeoutTimestampCopy != 0 &&
        _millis - deviceRestartTimeoutTimestampCopy > restartTimeoutValue)) {
     SUPLA_LOG_INFO("Config mode timeout. Reset device");
@@ -1403,7 +1412,7 @@ void SuplaDeviceClass::checkIfRestartIsNeeded() {
   }
   if (forceRestartTimeMs &&
       _millis - deviceRestartTimeoutTimestampCopy > forceRestartTimeMs) {
-    SUPLA_LOG_DEBUG("Reset requested. Reset device");
+    SUPLA_LOG_INFO("Reset requested. Reset device");
     softRestart();
   }
   if (resetOnConnectionFailTimeoutSec) {

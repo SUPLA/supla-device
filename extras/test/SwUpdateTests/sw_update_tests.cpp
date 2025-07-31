@@ -262,13 +262,14 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
       EXPECT_EQ(result->ChannelNumber, -1);
       EXPECT_EQ(result->Command, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
       EXPECT_EQ(result->Result, SUPLA_CALCFG_RESULT_TRUE);
-      EXPECT_EQ(result->DataSize, 22);
+      EXPECT_EQ(result->DataSize, 123);
       EXPECT_EQ(
           reinterpret_cast<TCalCfg_FirmwareCheckResult *>(result->Data)->Result,
           SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE);
       EXPECT_STREQ(reinterpret_cast<TCalCfg_FirmwareCheckResult *>(result->Data)
                        ->SoftVer,
                    "");
+      // TODO add url check
       return 0;
       }
   );
@@ -303,13 +304,14 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
       EXPECT_EQ(result->ChannelNumber, -1);
       EXPECT_EQ(result->Command, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
       EXPECT_EQ(result->Result, SUPLA_CALCFG_RESULT_TRUE);
-      EXPECT_EQ(result->DataSize, 22);
+      EXPECT_EQ(result->DataSize, 123);
       EXPECT_EQ(
           reinterpret_cast<TCalCfg_FirmwareCheckResult *>(result->Data)->Result,
           SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_AVAILABLE);
       EXPECT_STREQ(reinterpret_cast<TCalCfg_FirmwareCheckResult *>(result->Data)
                        ->SoftVer,
                    "1.2.3");
+      // TODO add url check
       return 0;
       }
   );

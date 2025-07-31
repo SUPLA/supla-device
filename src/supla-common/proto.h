@@ -429,8 +429,6 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELTYPE_ACTIONTRIGGER 11000               // ver. >= 16
 #define SUPLA_CHANNELTYPE_DIGIGLASS 12000                   // ver. >= 12
 
-#define SUPLA_CHANNELTYPE_VIRTUAL 13000  // ver. >= 21
-
 #define SUPLA_CHANNELDRIVER_MCP23008 2
 
 #define SUPLA_CHANNELFNC_NONE 0
@@ -600,6 +598,8 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED 0x4000   // ver. >= 28
 #define SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED \
   0x8000  // ver. >= 28
+#define SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED \
+  0x10000  // ver. >= 28
 
 // BIT map definition for TDS_SuplaRegisterDevice_F::ConfigFields (64 bit)
 // type: TDeviceConfig_StatusLed
@@ -2289,8 +2289,21 @@ typedef struct {
 typedef struct {
   unsigned char Result;   // SUPLA_FIRMWARE_CHECK_RESULT_
   char SoftVer[SUPLA_SOFTVER_MAXSIZE];
+  char ChangelogUrl[SUPLA_URL_PATH_MAXSIZE];
 } TCalCfg_FirmwareCheckResult;            // v. >= 28
 
+// SetCfgModePassword result is send in TDS_DeviceCalCfgResult. Possible values:
+// SUPLA_CALCFG_RESULT_TRUE - password successfully changed
+// SUPLA_CALCFG_RESULT_UNAUTHORIZED - unauthorized
+// SUPLA_CALCFG_RESULT_NOT_SUPPORTED - not supported
+// SUPLA_CALCFG_RESULT_FALSE - password change failed (i.e. don't meet security
+// requirements)
+
+typedef struct {
+  // New password should be at least 8 characters long, at least one uppercase
+  // letter, one lowercase letter and one number
+  char NewPassword[SUPLA_PASSWORD_MAXSIZE];
+} TCalCfg_SetCfgModePassword;             // v. >= 28
 
 #define RGBW_BRIGHTNESS_ONOFF 0x1
 #define RGBW_COLOR_ONOFF 0x2

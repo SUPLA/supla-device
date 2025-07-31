@@ -1393,6 +1393,7 @@ void SuplaDeviceClass::checkIfRestartIsNeeded() {
     restartTimeoutValue = leaveCfgModeAfterInactivityMin * 60 * 1000;
   }
   if ((cfgModeStartedRemotelyAndNotRefreshed &&
+        enterConfigModeTimestampCopy != 0 &&
        _millis - enterConfigModeTimestampCopy > restartTimeoutValue) ||
       (leaveCfgModeAfterInactivityMin != 0 &&
        deviceRestartTimeoutTimestampCopy != 0 &&

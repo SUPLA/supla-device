@@ -307,7 +307,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
   bool triggerSwUpdateIfAvailable = false;
-  bool cfgModeStartedRemotelyAndNotRefreshed = true;
+  bool cfgModeStartedRemotelyAndNotRefreshed = false;
 
   uint8_t goToOfflineModeTimeout = 0;
   uint8_t leaveCfgModeAfterInactivityMin = 5;

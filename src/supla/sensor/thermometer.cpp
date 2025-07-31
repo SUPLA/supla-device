@@ -36,7 +36,7 @@ void Supla::Sensor::Thermometer::onInit() {
   if (driver) {
     driver->initialize();
   }
-  channel.setNewValue(getValue());
+  channel.setNewValue(getTemp());
 }
 
 double Supla::Sensor::Thermometer::getValue() {
@@ -50,7 +50,7 @@ double Supla::Sensor::Thermometer::getValue() {
 void Supla::Sensor::Thermometer::iterateAlways() {
   if (millis() - lastReadTime > refreshIntervalMs) {
     lastReadTime = millis();
-    channel.setNewValue(getValue());
+    channel.setNewValue(getTemp());
   }
 }
 

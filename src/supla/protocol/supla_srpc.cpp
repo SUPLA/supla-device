@@ -1,37 +1,37 @@
 /*
- * Copyright (C) AC SOFTWARE SP. Z O.O
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU General Public License
- * as published by the Free Software Foundation; either version 2
- * of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * * You should have received a copy of the GNU General Public License
- * along with this program; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
- */
+  Copyright (C) AC SOFTWARE SP. Z O.O
 
-#include <SuplaDevice.h>
-#include <supla-common/srpc.h>
-#include <supla/storage/storage.h>
-#include <supla/log_wrapper.h>
-#include <supla/network/network.h>
-#include <supla/time.h>
-#include <supla/tools.h>
-#include <supla/network/client.h>
-#include <supla/device/remote_device_config.h>
-#include <supla/device/register_device.h>
-#include <supla/device/channel_conflict_resolver.h>
-#include <supla/channels/channel.h>
-#include <supla/clock/clock.h>
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 2
+  of the License, or (at your option) any later version.
 
-#include <string.h>
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
 
 #include "supla_srpc.h"
+
+#include <SuplaDevice.h>
+#include <string.h>
+#include <supla-common/srpc.h>
+#include <supla/channels/channel.h>
+#include <supla/clock/clock.h>
+#include <supla/device/channel_conflict_resolver.h>
+#include <supla/device/register_device.h>
+#include <supla/device/remote_device_config.h>
+#include <supla/log_wrapper.h>
+#include <supla/network/client.h>
+#include <supla/network/network.h>
+#include <supla/storage/storage.h>
+#include <supla/time.h>
+#include <supla/tools.h>
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {
@@ -60,7 +60,7 @@ Supla::Protocol::SuplaSrpc::~SuplaSrpc() {
     if (selectedCertificate != suplaCACert &&
         selectedCertificate != supla3rdPartyCACert &&
         selectedCertificate != wrongCert) {
-      delete [] selectedCertificate;
+      delete[] selectedCertificate;
     }
   }
 }
@@ -147,9 +147,9 @@ bool Supla::Protocol::SuplaSrpc::onLoadConfig() {
       }
 
       SUPLA_LOG_DEBUG("Security level: %s",
-          securityLevel == 2 ? "Skip CA check" :
-          securityLevel == 1 ? "Custom CA" :
-          "Supla CA");
+                      securityLevel == 2   ? "Skip CA check"
+                      : securityLevel == 1 ? "Custom CA"
+                                           : "Supla CA");
       switch (securityLevel) {
         default:
         case 0: {
@@ -228,14 +228,14 @@ void Supla::Protocol::SuplaSrpc::onInit() {
 }
 
 _supla_int_t Supla::dataRead(void *buf, _supla_int_t count, void *userParams) {
-  auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc*>(userParams);
-  return srpcLayer->client->read(reinterpret_cast<uint8_t*>(buf), count);
+  auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
+  return srpcLayer->client->read(reinterpret_cast<uint8_t *>(buf), count);
 }
 
 _supla_int_t Supla::dataWrite(void *buf, _supla_int_t count, void *userParams) {
   auto srpcLayer = reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParams);
   _supla_int_t r =
-    srpcLayer->client->write(reinterpret_cast<uint8_t *>(buf), count);
+      srpcLayer->client->write(reinterpret_cast<uint8_t *>(buf), count);
   if (r > 0) {
     srpcLayer->updateLastSentTime();
   }
@@ -254,7 +254,7 @@ void Supla::messageReceived(void *srpc,
   int8_t getDataResult;
 
   Supla::Protocol::SuplaSrpc *suplaSrpc =
-    reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParam);
+      reinterpret_cast<Supla::Protocol::SuplaSrpc *>(userParam);
 
   suplaSrpc->updateLastResponseTime();
 
@@ -274,7 +274,7 @@ void Supla::messageReceived(void *srpc,
             rd.data.sd_channel_new_value->ChannelNumber);
         if (element) {
           int actionResult =
-            element->handleNewValueFromServer(rd.data.sd_channel_new_value);
+              element->handleNewValueFromServer(rd.data.sd_channel_new_value);
           if (actionResult != -1) {
             srpc_ds_async_set_channel_result(
                 srpc,
@@ -427,28 +427,29 @@ void Supla::messageReceived(void *srpc,
           TSDS_SetChannelConfigResult result = {};
           result.ChannelNumber = request->ChannelNumber;
           result.Result = SUPLA_RESULTCODE_CHANNELNOTFOUND;
-          auto element = Supla::Element::getElementByChannelNumber(
-              request->ChannelNumber);
-          SUPLA_LOG_INFO("Channel[%d] Received SetChannelConfig: fnc %d"
-              ", config type %d, config size %d", request->ChannelNumber,
-              request->Func, request->ConfigType, request->ConfigSize);
+          auto element =
+              Supla::Element::getElementByChannelNumber(request->ChannelNumber);
+          SUPLA_LOG_INFO(
+              "Channel[%d] Received SetChannelConfig: fnc %d"
+              ", config type %d, config size %d",
+              request->ChannelNumber,
+              request->Func,
+              request->ConfigType,
+              request->ConfigSize);
 
           if (element) {
             switch (request->ConfigType) {
               default:
               case SUPLA_CONFIG_TYPE_DEFAULT: {
-                result.Result =
-                    element->handleChannelConfig(request);
+                result.Result = element->handleChannelConfig(request);
                 break;
               }
               case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
-                result.Result =
-                    element->handleWeeklySchedule(request);
+                result.Result = element->handleWeeklySchedule(request);
                 break;
               }
               case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE: {
-                result.Result =
-                    element->handleWeeklySchedule(request, true);
+                result.Result = element->handleWeeklySchedule(request, true);
                 break;
               }
             }
@@ -457,7 +458,8 @@ void Supla::messageReceived(void *srpc,
                 "Error: couldn't find element for a requested channel [%d]",
                 request->ChannelNumber);
           }
-          SUPLA_LOG_INFO("Channel[%d] Sending SetChannelConfigResult %s (%d)",
+          SUPLA_LOG_INFO(
+              "Channel[%d] Sending SetChannelConfigResult %s (%d)",
               request->ChannelNumber,
               Supla::Protocol::SuplaSrpc::configResultToCStr(result.Result),
               result.Result);
@@ -504,10 +506,10 @@ void Supla::messageReceived(void *srpc,
       case SUPLA_SD_CALL_CHANNEL_CONFIG_FINISHED: {
         auto *request = rd.data.sd_channel_config_finished;
         if (request) {
-          auto element = Supla::Element::getElementByChannelNumber(
-              request->ChannelNumber);
+          auto element =
+              Supla::Element::getElementByChannelNumber(request->ChannelNumber);
           SUPLA_LOG_INFO("Channel[%d] Received ChannelConfigFinished",
-              request->ChannelNumber);
+                         request->ChannelNumber);
 
           if (element) {
             element->handleChannelConfigFinished();
@@ -551,10 +553,10 @@ void Supla::Protocol::SuplaSrpc::onVersionError(
 }
 
 void Supla::Protocol::SuplaSrpc::onRegisterResultB(
-      TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB) {
+    TSD_SuplaRegisterDeviceResult_B *registerDeviceResultB) {
   // Handle generic result code
-  auto regDevResult = reinterpret_cast<TSD_SuplaRegisterDeviceResult*>(
-      registerDeviceResultB);
+  auto regDevResult =
+      reinterpret_cast<TSD_SuplaRegisterDeviceResult *>(registerDeviceResultB);
   onRegisterResult(regDevResult);
 
   // Handle channel conflict report
@@ -605,7 +607,8 @@ void Supla::Protocol::SuplaSrpc::onRegisterResultB(
     channelConflictResolver->onChannelConflictReport(
         registerDeviceResultB->channel_report,
         registerDeviceResultB->channel_report_size,
-        hasConflictInvalidType, hasConflictChannelMissingOnServer,
+        hasConflictInvalidType,
+        hasConflictChannelMissingOnServer,
         hasConflictChannelMissingOnDevice);
   }
 }
@@ -803,7 +806,13 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
       adClient->write("Host: ");
       adClient->write(server);
       adClient->write("\r\n");
-      adClient->write("User-Agent: Supla-Device/1.0\r\n");
+#define HTTP_AGENT_SIZE 100
+      char httpAgent[HTTP_AGENT_SIZE] = {};
+      Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
+
+      adClient->write("User-Agent: ");
+      adClient->write(httpAgent);
+      adClient->write("\r\n");
       adClient->write("Accept: application/json\r\n");
       char guid[SUPLA_GUID_SIZE * 2 + 1] = {};
       generateHexString(
@@ -862,8 +871,7 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
           Supla::RegisterDevice::setServerName(serverName);
           dataReady = true;
           char tmp[200] = {};
-          snprintf(
-              tmp, sizeof(tmp), "AD got server: %s", serverName);
+          snprintf(tmp, sizeof(tmp), "AD got server: %s", serverName);
           sdc->addLastStateLog(tmp);
           auto cfg = Supla::Storage::ConfigInstance();
           if (cfg) {
@@ -1094,11 +1102,11 @@ void Supla::Protocol::SuplaSrpc::setSupla3rdPartyCACert(const char *cert) {
   supla3rdPartyCACert = cert;
 }
 
-const char* Supla::Protocol::SuplaSrpc::getSuplaCACert() const {
+const char *Supla::Protocol::SuplaSrpc::getSuplaCACert() const {
   return suplaCACert;
 }
 
-const char* Supla::Protocol::SuplaSrpc::getSupla3rdPartyCACert() const {
+const char *Supla::Protocol::SuplaSrpc::getSupla3rdPartyCACert() const {
   return supla3rdPartyCACert;
 }
 
@@ -1151,7 +1159,6 @@ bool Supla::Protocol::SuplaSrpc::isEnabled() {
   return enabled;
 }
 
-
 void Supla::Protocol::SuplaSrpc::sendChannelStateResult(int32_t receiverId,
                                                         uint8_t channelNo) {
   TDSC_ChannelState state = {};
@@ -1195,8 +1202,8 @@ bool Supla::Protocol::SuplaSrpc::isRegisteredAndReady() {
   return registered == 1;
 }
 
-void Supla::Protocol::SuplaSrpc::sendActionTrigger(
-    uint8_t channelNumber, uint32_t actionId) {
+void Supla::Protocol::SuplaSrpc::sendActionTrigger(uint8_t channelNumber,
+                                                   uint32_t actionId) {
   if (!isRegisteredAndReady()) {
     return;
   }
@@ -1209,9 +1216,9 @@ void Supla::Protocol::SuplaSrpc::sendActionTrigger(
 }
 
 bool Supla::Protocol::SuplaSrpc::sendNotification(int context,
-                                                const char *title,
-                                                const char *message,
-                                                int soundId) {
+                                                  const char *title,
+                                                  const char *message,
+                                                  int soundId) {
   if (!isRegisteredAndReady()) {
     return false;
   }
@@ -1275,12 +1282,11 @@ void Supla::Protocol::SuplaSrpc::sendExtendedChannelValueChanged(
   if (!isRegisteredAndReady()) {
     return;
   }
-  srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber,
-      value);
+  srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
 }
 
 void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
-    uint8_t configType) {
+                                                  uint8_t configType) {
   if (!isRegisteredAndReady()) {
     return;
   }
@@ -1291,8 +1297,10 @@ void Supla::Protocol::SuplaSrpc::getChannelConfig(uint8_t channelNumber,
 }
 
 bool Supla::Protocol::SuplaSrpc::setChannelConfig(uint8_t channelNumber,
-    _supla_int_t channelFunction, void *channelConfig, int size,
-    uint8_t configType) {
+                                                  _supla_int_t channelFunction,
+                                                  void *channelConfig,
+                                                  int size,
+                                                  uint8_t configType) {
   if (!isRegisteredAndReady()) {
     return false;
   }
@@ -1359,7 +1367,8 @@ void Supla::Protocol::SuplaSrpc::handleDeviceConfig(
       TSDS_SetDeviceConfigResult result = {};
       result.Result = remoteDeviceConfig->getResultCode();
       SUPLA_LOG_INFO("Sending device config result %s (%d)",
-                     configResultToCStr(result.Result), result.Result);
+                     configResultToCStr(result.Result),
+                     result.Result);
       srpc_ds_async_set_device_config_result(srpc, &result);
     }
 
@@ -1446,9 +1455,9 @@ void Supla::Protocol::SuplaSrpc::sendSubdeviceDetails(
 }
 
 void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
-                                           uint32_t timeMs,
-                                           uint8_t state,
-                                           int32_t senderId) {
+                                                        uint32_t timeMs,
+                                                        uint8_t state,
+                                                        int32_t senderId) {
   if (!isRegisteredAndReady()) {
     SUPLA_LOG_DEBUG("SuplaSrpc:: timer update not registered");
     return;
@@ -1466,7 +1475,9 @@ void Supla::Protocol::SuplaSrpc::sendRemainingTimeValue(uint8_t channelNumber,
   timerState->RemainingTimeMs = timeMs;
 
   SUPLA_LOG_DEBUG("SRPC sending: remaining time %d, channel %d, state %d",
-                  timeMs, channelNumber, state);
+                  timeMs,
+                  channelNumber,
+                  state);
   srpc_ds_async_channel_extendedvalue_changed(srpc, channelNumber, value);
   delete value;
 }
@@ -1607,7 +1618,8 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(int16_t channelNo,
     dataSize = SUPLA_CALCFG_DATA_MAXSIZE;
   }
   memcpy(result.Data, data, dataSize);
-  SUPLA_LOG_DEBUG("Sending CALCFG result: CMD %d result: %d", result.Command,
+  SUPLA_LOG_DEBUG("Sending CALCFG result: CMD %d result: %d",
+                  result.Command,
                   result.Result);
   srpc_ds_async_device_calcfg_result(srpc, &result);
 }

@@ -380,3 +380,16 @@ int16_t Supla::RegisterDevice::getProductId() {
 int Supla::RegisterDevice::getChannelCount() {
   return reg_dev.channel_count;
 }
+
+void Supla::RegisterDevice::generateHttpAgent(char *buffer, int size) {
+  if (buffer == nullptr || size < 50) {
+    return;
+  }
+  snprintf(buffer,
+           size,
+           "SuplaDevice (%.64s)/%s",
+           Supla::RegisterDevice::getName(),
+           Supla::RegisterDevice::getSoftVer());
+  buffer[size - 1] = '\0';
+}
+

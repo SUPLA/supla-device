@@ -41,6 +41,7 @@ class EspIdfOta : public Supla::Device::SwUpdate {
   esp_http_client_handle_t client = {};
   esp_ota_handle_t updateHandle = 0;
   uint8_t *otaBuffer = nullptr;
+  char *httpAgent = nullptr;
 };
 };  // namespace Supla
 

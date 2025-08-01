@@ -81,6 +81,8 @@ void removeChannel(int channelNumber);
 int getChannelCount();
 int getMaxChannelNumberUsed();
 
+void generateHttpAgent(char *buffer, int size);
+
 #ifdef SUPLA_TEST
 void resetToDefaults();
 int32_t getChannelFunctionList(int channelNumber);

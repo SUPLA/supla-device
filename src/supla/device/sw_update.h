@@ -45,6 +45,7 @@ class SwUpdate {
 
   const char *getUrl() const { return updateUrl; }
   const char *getNewVersion() const { return newVersion; }
+  const char *getChangelogUrl() const { return changelogUrl; }
 
   bool isSecurityOnly() const { return securityOnly; }
   void setSecurityOnly() { securityOnly = true; }
@@ -62,6 +63,7 @@ class SwUpdate {
   SuplaDeviceClass *sdc = nullptr;
   char *updateUrl = nullptr;
   char *newVersion = nullptr;
+  char *changelogUrl = nullptr;
 
   char url[SUPLA_MAX_URL_LENGTH] = {};
 };

@@ -333,6 +333,29 @@ void Supla::EspIdfOta::iterate() {
         return;
       }
       snprintf(updateUrl, urlLen, "%s", url->valuestring);
+
+      // copy changelogUrl parameter (if available)
+      cJSON *changelogUrlJson =
+          cJSON_GetObjectItemCaseSensitive(latestUpdate, "changelogUrl");
+      if (cJSON_IsString(changelogUrlJson) &&
+          (changelogUrlJson->valuestring != NULL)) {
+        if (changelogUrl) {
+          delete[] changelogUrl;
+        }
+
+        int urlLen = strlen(changelogUrlJson->valuestring) + 1;
+        if (urlLen < SUPLA_URL_PATH_MAXSIZE) {
+          changelogUrl = new char[urlLen];
+          if (changelogUrl) {
+            snprintf(changelogUrl, urlLen, "%s", changelogUrlJson->valuestring);
+          }
+        } else {
+          SUPLA_LOG_WARNING("SW update: changelogUrl too long, skipping");
+        }
+      } else {
+        SUPLA_LOG_WARNING("SW update: no changelogUrl received");
+      }
+
       cJSON_Delete(json);
 
     } else {

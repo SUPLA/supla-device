@@ -47,6 +47,7 @@ struct SaltPassword {
   bool isSaltEmpty() const { return salt[0] == 0; }
   bool operator==(const SaltPassword& other) const;
   bool isPasswordStrong(const char *password) const;
+  void clear();
 };
 #pragma pack(pop)
 

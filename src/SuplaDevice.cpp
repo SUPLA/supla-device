@@ -631,6 +631,11 @@ void SuplaDeviceClass::iterateSwUpdate() {
         strncpy(
             result.SoftVer, swUpdate->getNewVersion(), SUPLA_SOFTVER_MAXSIZE);
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_AVAILABLE;
+        if (swUpdate->getChangelogUrl()) {
+          strncpy(
+              result.ChangelogUrl, swUpdate->getChangelogUrl(),
+              SUPLA_URL_PATH_MAXSIZE);
+        }
       } else {
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE;
         triggerSwUpdateIfAvailable = false;

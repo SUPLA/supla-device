@@ -644,4 +644,9 @@ bool Supla::SaltPassword::isPasswordStrong(const char* password) const {
   return hasUpper && hasLower && hasNumber;
 }
 
+void Supla::SaltPassword::clear() {
+  memset(salt, 0, sizeof(salt));
+  memset(passwordSha, 0, sizeof(passwordSha));
+}
+
 }  // namespace Supla

@@ -879,7 +879,7 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(httpd_req_t *req,
     return SetupRequestResult::WEAK_PASSWORD;
   }
 
-  memset(&saltPassword, 0, sizeof(saltPassword));
+  saltPassword.clear();
   Supla::Config::generateSaltPassword(password, &saltPassword);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {

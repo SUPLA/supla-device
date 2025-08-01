@@ -154,6 +154,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
                   Supla::getPlatformId());
 
   if (protoVersion >= 21) {
+    SUPLA_LOG_DEBUG("SD: add flag DEVICE_CONFIG_SUPPORTED");
     addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
   }
   if (protoVersion < 23) {
@@ -162,6 +163,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     protoVersion = 23;
   }
   if (isDeviceSoftwareResetSupported()) {
+    SUPLA_LOG_DEBUG("SD: add flag CALCFG_RESTART_DEVICE");
     addFlags(SUPLA_DEVICE_FLAG_CALCFG_RESTART_DEVICE);
   }
 
@@ -181,7 +183,9 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     }
 
     if (Supla::Storage::ConfigInstance()->isConfigModeSupported()) {
+      SUPLA_LOG_DEBUG("SD: add flag CALCFG_ENTER_CFG_MODE");
       addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
+      SUPLA_LOG_DEBUG("SD: add flag CALCFG_FACTORY_RESET_SUPPORTED");
       addFlags(SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED);
     }
 
@@ -260,6 +264,12 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   if (auto webServer = Supla::WebServer::Instance()) {
     webServer->setSuplaDeviceClass(this);
+    if (webServer->verifyCertificatesFormat()) {
+      // web password is used only when https is used
+      SUPLA_LOG_DEBUG(
+          "SD: add flag CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED");
+      addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED);
+    }
   }
 
   if (Supla::RegisterDevice::isGUIDEmpty()) {
@@ -1127,9 +1137,40 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
         SUPLA_LOG_WARNING("Failed to create firmware update instance");
         return SUPLA_CALCFG_RESULT_FALSE;
       }
+
       case SUPLA_CALCFG_CMD_RESET_TO_FACTORY_SETTINGS: {
         SUPLA_LOG_INFO("CALCFG RESET TO FACTORY SETTINGS received");
         triggerResetToFactorySettings = true;
+        return SUPLA_CALCFG_RESULT_DONE;
+      }
+
+      case SUPLA_CALCFG_CMD_SET_CFG_MODE_PASSWORD: {
+        SUPLA_LOG_INFO("CALCFG SET CFGMODE PASSWORD received");
+        if (request->DataType != 0 &&
+            request->DataSize != sizeof(TCalCfg_SetCfgModePassword)) {
+          SUPLA_LOG_WARNING("CALCFG SET CFGMODE PASSWORD invalid size %d",
+                            request->DataSize);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (!cfg || !Supla::RegisterDevice::isSetCfgModePasswordEnabled()) {
+          return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+        }
+
+        TCalCfg_SetCfgModePassword *password =
+            reinterpret_cast<TCalCfg_SetCfgModePassword *>(request->Data);
+
+        Supla::SaltPassword saltPassword;
+        if (!saltPassword.isPasswordStrong(password->NewPassword)) {
+          SUPLA_LOG_WARNING("CALCFG SET CFGMODE PASSWORD: password too weak");
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        Supla::Config::generateSaltPassword(password->NewPassword,
+                                            &saltPassword);
+        cfg->setCfgModeSaltPassword(saltPassword);
+        cfg->saveWithDelay(2000);
+        SUPLA_LOG_INFO("CALCFG SET CFGMODE PASSWORD: new password set");
         return SUPLA_CALCFG_RESULT_DONE;
       }
 
@@ -1616,6 +1657,7 @@ void SuplaDeviceClass::setMacLengthInHostname(int value) {
 
 void SuplaDeviceClass::setStatusLed(Supla::Device::StatusLed *led) {
   statusLed = led;
+  SUPLA_LOG_DEBUG("SD: add flag CALCFG_IDENTIFY_DEVICE");
   addFlags(SUPLA_DEVICE_FLAG_CALCFG_IDENTIFY_DEVICE);
 }
 
@@ -1631,6 +1673,7 @@ bool SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled() const {
 
 void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
   if (value) {
+    SUPLA_LOG_DEBUG("SD: add flag AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED");
     addFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);
   } else {
     removeFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);

@@ -624,4 +624,24 @@ bool Supla::SaltPassword::operator==(const SaltPassword& other) const {
          memcmp(passwordSha, other.passwordSha, sizeof(passwordSha)) == 0;
 }
 
+bool Supla::SaltPassword::isPasswordStrong(const char* password) const {
+  int len = strlen(password);
+  if (len < 8) return false;
+
+  bool hasUpper = false;
+  bool hasLower = false;
+  bool hasNumber = false;
+
+  for (int i = 0; i < len; i++) {
+    if (password[i] >= 'a' && password[i] <= 'z')
+      hasLower = true;
+    else if (password[i] >= 'A' && password[i] <= 'Z')
+      hasUpper = true;
+    else if (password[i] >= '0' && password[i] <= '9')
+      hasNumber = true;
+  }
+
+  return hasUpper && hasLower && hasNumber;
+}
+
 }  // namespace Supla

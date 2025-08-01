@@ -40,12 +40,13 @@ namespace Supla {
 
 #pragma pack(push, 1)
 struct SaltPassword {
-  uint8_t salt[SUPLA_CFG_MODE_SALT_SIZE];
-  uint8_t passwordSha[SUPLA_CFG_MODE_PASSWORD_SIZE];
+  uint8_t salt[SUPLA_CFG_MODE_SALT_SIZE] = {};
+  uint8_t passwordSha[SUPLA_CFG_MODE_PASSWORD_SIZE] = {};
 
   void copySalt(const SaltPassword& other);
   bool isSaltEmpty() const { return salt[0] == 0; }
   bool operator==(const SaltPassword& other) const;
+  bool isPasswordStrong(const char *password) const;
 };
 #pragma pack(pop)
 

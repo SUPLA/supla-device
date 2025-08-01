@@ -88,7 +88,6 @@ class EspIdfWebServer : public Supla::WebServer {
 
  protected:
   void cleanupCerts();
-  bool isPasswordStrong(const char *password) const;
   bool isSessionCookieValid(const char *sessionCookie);
   void setSessionCookie(httpd_req_t *req, char *buf, int bufLen);
   httpd_handle_t serverHttps = {};

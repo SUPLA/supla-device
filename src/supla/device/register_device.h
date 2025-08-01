@@ -63,6 +63,7 @@ bool isSleepingDeviceEnabled();
 bool isRemoteDeviceConfigEnabled();
 bool isPairingSubdeviceEnabled();
 bool isAutomaticFirmwareUpdateEnabled();
+bool isSetCfgModePasswordEnabled();
 
 void setManufacturerId(int16_t mfrId);
 void setProductId(int16_t productId);

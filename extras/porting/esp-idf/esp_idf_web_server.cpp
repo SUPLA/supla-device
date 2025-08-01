@@ -33,9 +33,7 @@
 
 #include "esp_idf_web_server.h"
 
-#ifdef SUPLA_DEVICE_ESP32
 #include "esp_https_server.h"
-#endif  // SUPLA_DEVICE_ESP32
 
 #define IV_SIZE                      16  // AES block size
 #define MAX_FAILED_LOGIN_ATTEMPTS    4
@@ -526,7 +524,6 @@ bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req, bool beta) {
 }
 
 bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
-#ifdef SUPLA_DEVICE_ESP32
   if (serverCert == nullptr || prvtKey == nullptr) {
     SUPLA_LOG_ERROR("SERVER: server certificate or private key not set");
     return false;
@@ -588,7 +585,6 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
     SUPLA_LOG_WARNING("prvtKey not valid, missing footer");
     return false;
   }
-#endif  /* SUPLA_DEVICE_ESP32 */
 
   return true;
 }
@@ -604,7 +600,6 @@ void Supla::EspIdfWebServer::start() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.lru_purge_enable = true;
 
-#ifdef SUPLA_DEVICE_ESP32
   httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
 
   if (!verifyCertificatesFormat()) {
@@ -642,7 +637,6 @@ void Supla::EspIdfWebServer::start() {
       }
     }
   }
-#endif  // SUPLA_DEVICE_ESP32
 
   if (fallbackToHttp) {
     // fallback with standard http server
@@ -880,7 +874,7 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(httpd_req_t *req,
     return SetupRequestResult::PASSWORD_MISMATCH;
   }
 
-  if (!isPasswordStrong(password)) {
+  if (!saltPassword.isPasswordStrong(password)) {
     SUPLA_LOG_INFO("Password is not strong enough");
     return SetupRequestResult::WEAK_PASSWORD;
   }
@@ -895,23 +889,6 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(httpd_req_t *req,
   return login(req, password, sessionCookie, sessionCookieLen)
              ? SetupRequestResult::OK
              : SetupRequestResult::INVALID_REQUEST;
-}
-
-bool Supla::EspIdfWebServer::isPasswordStrong(const char *password) const {
-    int len = strlen(password);
-    if (len < 8) return false;
-
-    bool hasUpper = false;
-    bool hasLower = false;
-    bool hasNumber = false;
-
-    for (int i = 0; i < len; i++) {
-        if (password[i] >= 'a' && password[i] <= 'z') hasLower = true;
-        else if (password[i] >= 'A' && password[i] <= 'Z') hasUpper = true;
-        else if (password[i] >= '0' && password[i] <= '9') hasNumber = true;
-    }
-
-    return hasUpper && hasLower && hasNumber;
 }
 
 void Supla::EspIdfWebServer::reloadSaltPassword() {

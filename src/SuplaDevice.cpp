@@ -179,8 +179,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     if (!lastStateLogger) {
       lastStateLogger = new Supla::Device::LastStateLogger();
     }
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (cfg->isConfigModeSupported()) {
+
+    if (Supla::Storage::ConfigInstance()->isConfigModeSupported()) {
       addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
       addFlags(SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED);
     }
@@ -227,15 +227,11 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   if (Supla::Storage::Instance()) {
     SUPLA_LOG_INFO(" *** Supla - Load state storage");
-  }
-
-  // Pefrorm dry run of write state to validate stored state section with
-  // current device configuration
-  if (Supla::Storage::IsStateStorageValid()) {
-    Supla::Storage::LoadStateStorage();
-  }
-
-  if (Supla::Storage::Instance()) {
+    // Pefrorm dry run of write state to validate stored state section with
+    // current device configuration
+    if (Supla::Storage::IsStateStorageValid()) {
+      Supla::Storage::LoadStateStorage();
+    }
     SUPLA_LOG_INFO(" *** Supla - Load state storage done");
   }
 
@@ -262,8 +258,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     net->setSuplaDeviceClass(this);
   }
 
-  if (Supla::WebServer::Instance()) {
-    Supla::WebServer::Instance()->setSuplaDeviceClass(this);
+  if (auto webServer = Supla::WebServer::Instance()) {
+    webServer->setSuplaDeviceClass(this);
   }
 
   if (Supla::RegisterDevice::isGUIDEmpty()) {

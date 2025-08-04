@@ -29,16 +29,16 @@
 #include <supla/log_wrapper.h>
 
 namespace Supla {
-namespace Control {
+namespace Io {
 
-class ExtMCP23017 : public Supla::Io, Supla::Element {
+class MCP23017 : public Supla::Io, Supla::Element {
  public:
-  explicit ExtMCP23017(uint8_t address = 0x20,
-                       TwoWire *wire = &Wire,
-                       bool pullUp = false)
+  explicit MCP23017(uint8_t address = 0x20,
+                    TwoWire *wire = &Wire,
+                    bool pullUp = false)
       : Supla::Io(false), mcp_(address, wire) {
     if (!mcp_.begin(pullUp)) {
-      SUPLA_LOG_DEBUG("Unable to find MCP23017 at address: 0x%x", address);
+      SUPLA_LOG_ERROR("Unable to find MCP23017 at address: 0x%x", address);
     } else {
       SUPLA_LOG_DEBUG("MCP23017 is connected at address: 0x%x", address);
     }
@@ -61,7 +61,8 @@ class ExtMCP23017 : public Supla::Io, Supla::Element {
     if (mcp_.isConnected()) {
       mcp_.write1(pin, val);
     } else {
-      SUPLA_LOG_DEBUG("[MCP23017] not connected, cannot write to pin %d", pin);
+      SUPLA_LOG_WARNING(
+                      "[MCP23017] not connected, cannot write to pin %d", pin);
     }
   }
 
@@ -99,5 +100,5 @@ class ExtMCP23017 : public Supla::Io, Supla::Element {
   uint16_t gpioState_ = 0;
 };
 
-};  // namespace Control
+};  // namespace Io
 };  // namespace Supla

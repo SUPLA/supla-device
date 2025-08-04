@@ -71,7 +71,7 @@ class SGP41 : public Element {
   void readValuesFromDevice() {
     uint16_t error;
     float temperature = TEMPERATURE_NOT_AVAILABLE;
-    float humidity = 
+    float humidity = HUMIDITY_NOT_AVAILABLE;
     if (th != nullptr) {
       temperature = th->getChannel()->getLastTemperature();
       humidity = th->getChannel()->getValueDoubleSecond();

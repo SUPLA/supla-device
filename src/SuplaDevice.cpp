@@ -43,6 +43,8 @@
 #include <supla/device/subdevice_pairing_handler.h>
 #include <supla/device/status_led.h>
 #include <supla/clock/clock.h>
+#include <supla/device/remote_device_config.h>
+#include <supla/device/auto_update_policy.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -551,22 +553,22 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     if (securityOnly == -1) {
-      switch (getAutoUpdateMode()) {
+      switch (cfg->getAutoUpdatePolicy()) {
         default:
-        case Supla::AutoUpdateMode::ForcedOff: {
+        case Supla::AutoUpdatePolicy::ForcedOff: {
           SUPLA_LOG_INFO("Firmware update is forced off");
           return false;
         }
-        case Supla::AutoUpdateMode::Disabled: {
+        case Supla::AutoUpdatePolicy::Disabled: {
           SUPLA_LOG_INFO("Firmware update is disabled");
           return false;
         }
-        case Supla::AutoUpdateMode::SecurityOnly: {
+        case Supla::AutoUpdatePolicy::SecurityOnly: {
           SUPLA_LOG_INFO("Firmware update is security only");
           securityOnly = 1;
           break;
         }
-        case Supla::AutoUpdateMode::AllUpdates: {
+        case Supla::AutoUpdatePolicy::AllUpdates: {
           SUPLA_LOG_INFO("Firmware update is enabled for all updates");
           securityOnly = 0;
           break;
@@ -761,14 +763,14 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   if (!isAutomaticFirmwareUpdateEnabled()) {
     SUPLA_LOG_WARNING("Automatic firmware update is disabled");
   } else {
-    auto otaMode = getAutoUpdateMode();
-    (void)(otaMode);
-    SUPLA_LOG_INFO("Automatic firmware update is supported. OTA mode: %s",
-                   otaMode == Supla::AutoUpdateMode::ForcedOff  ? "forced off"
-                   : otaMode == Supla::AutoUpdateMode::Disabled ? "disabled"
-                   : otaMode == Supla::AutoUpdateMode::SecurityOnly
-                       ? "security only"
-                       : "all enabled");
+    auto otaPolicy = cfg->getAutoUpdatePolicy();
+    (void)(otaPolicy);
+    SUPLA_LOG_INFO(
+        "Automatic firmware update is supported. OTA policy: %s",
+        otaPolicy == Supla::AutoUpdatePolicy::ForcedOff      ? "forced off"
+        : otaPolicy == Supla::AutoUpdatePolicy::Disabled     ? "disabled"
+        : otaPolicy == Supla::AutoUpdatePolicy::SecurityOnly ? "security only"
+                                                             : "all enabled");
   }
 
   deviceMode = cfg->getDeviceMode();
@@ -1058,14 +1060,19 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
-        switch (getAutoUpdateMode()) {
-          case Supla::AutoUpdateMode::ForcedOff: {
+        auto cfg = Supla::Storage::ConfigInstance();
+        auto otaMode = Supla::AutoUpdatePolicy::ForcedOff;
+        if (cfg) {
+          otaMode = cfg->getAutoUpdatePolicy();
+        }
+        switch (otaMode) {
+          case Supla::AutoUpdatePolicy::ForcedOff: {
             SUPLA_LOG_INFO("Firmware update is forced off");
             return SUPLA_CALCFG_RESULT_FALSE;
           }
-          case Supla::AutoUpdateMode::Disabled:
-          case Supla::AutoUpdateMode::SecurityOnly:
-          case Supla::AutoUpdateMode::AllUpdates: {
+          case Supla::AutoUpdatePolicy::Disabled:
+          case Supla::AutoUpdatePolicy::SecurityOnly:
+          case Supla::AutoUpdatePolicy::AllUpdates: {
             break;
           }
         }
@@ -1089,14 +1096,19 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
-        switch (getAutoUpdateMode()) {
-          case Supla::AutoUpdateMode::ForcedOff: {
+        auto cfg = Supla::Storage::ConfigInstance();
+        auto otaPolicy = Supla::AutoUpdatePolicy::ForcedOff;
+        if (cfg) {
+          otaPolicy = cfg->getAutoUpdatePolicy();
+        }
+        switch (otaPolicy) {
+          case Supla::AutoUpdatePolicy::ForcedOff: {
             SUPLA_LOG_INFO("Firmware update is forced off");
             return SUPLA_CALCFG_RESULT_FALSE;
           }
-          case Supla::AutoUpdateMode::Disabled:
-          case Supla::AutoUpdateMode::SecurityOnly:
-          case Supla::AutoUpdateMode::AllUpdates: {
+          case Supla::AutoUpdatePolicy::Disabled:
+          case Supla::AutoUpdatePolicy::SecurityOnly:
+          case Supla::AutoUpdatePolicy::AllUpdates: {
             break;
           }
         }
@@ -1121,14 +1133,19 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
-        switch (getAutoUpdateMode()) {
-          case Supla::AutoUpdateMode::ForcedOff: {
+        auto cfg = Supla::Storage::ConfigInstance();
+        auto otaMode = Supla::AutoUpdatePolicy::ForcedOff;
+        if (cfg) {
+          otaMode = cfg->getAutoUpdatePolicy();
+        }
+        switch (otaMode) {
+          case Supla::AutoUpdatePolicy::ForcedOff: {
             SUPLA_LOG_INFO("Firmware update is forced off");
             return SUPLA_CALCFG_RESULT_FALSE;
           }
-          case Supla::AutoUpdateMode::Disabled:
-          case Supla::AutoUpdateMode::SecurityOnly:
-          case Supla::AutoUpdateMode::AllUpdates: {
+          case Supla::AutoUpdatePolicy::Disabled:
+          case Supla::AutoUpdatePolicy::SecurityOnly:
+          case Supla::AutoUpdatePolicy::AllUpdates: {
             break;
           }
         }
@@ -1680,23 +1697,12 @@ void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
   if (value) {
     SUPLA_LOG_DEBUG("SD: add flag AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED");
     addFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);
+    // register DeviceConfig field bit:
+    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+        SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE);
   } else {
     removeFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);
   }
-}
-
-Supla::AutoUpdateMode SuplaDeviceClass::getAutoUpdateMode() const {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    uint8_t otaMode = 0;
-    if (cfg->getUInt8(Supla::ConfigTag::OtaModeTag, &otaMode)) {
-      if (otaMode <= SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED) {
-        return static_cast<Supla::AutoUpdateMode>(otaMode);
-      }
-    }
-    return Supla::AutoUpdateMode::SecurityOnly;
-  }
-  return Supla::AutoUpdateMode::ForcedOff;
 }
 
 SuplaDeviceClass SuplaDevice;

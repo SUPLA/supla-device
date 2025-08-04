@@ -355,9 +355,6 @@ void Supla::EspIdfOta::iterate() {
       } else {
         SUPLA_LOG_WARNING("SW update: no changelogUrl received");
       }
-
-      cJSON_Delete(json);
-
     } else {
       fail("SW update: no url and version received - finishing");
       cJSON_Delete(json);
@@ -368,7 +365,8 @@ void Supla::EspIdfOta::iterate() {
     cJSON_Delete(json);
     return;
   }
-    cJSON_Delete(json);
+
+  cJSON_Delete(json);
 
   if (checkUpdateAndAbort) {
     abort = true;

@@ -649,4 +649,39 @@ void Supla::SaltPassword::clear() {
   memset(passwordSha, 0, sizeof(passwordSha));
 }
 
+Supla::AutoUpdatePolicy Config::getAutoUpdatePolicy() {
+  uint8_t otaPolicy = 0;
+  if (getUInt8(Supla::ConfigTag::OtaModeTag, &otaPolicy)) {
+    if (otaPolicy <= SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED) {
+      return static_cast<Supla::AutoUpdatePolicy>(otaPolicy);
+    }
+  }
+  return Supla::AutoUpdatePolicy::SecurityOnly;
+}
+
+void Supla::Config::setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy) {
+  switch (policy) {
+    case Supla::AutoUpdatePolicy::SecurityOnly: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_SECURITY_ONLY);
+      break;
+    }
+    case Supla::AutoUpdatePolicy::AllUpdates: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED);
+      break;
+    }
+    case Supla::AutoUpdatePolicy::Disabled: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_DISABLED);
+      break;
+    }
+    case Supla::AutoUpdatePolicy::ForcedOff: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_FORCED_OFF);
+      break;
+    }
+  }
+}
+
 }  // namespace Supla

@@ -86,6 +86,8 @@ class RemoteDeviceConfig {
   void processHomeScreenDelayTypeConfig(
       uint64_t fieldBit, TDeviceConfig_HomeScreenOffDelayType *config);
   void processModbusConfig(uint64_t fieldBit, TDeviceConfig_Modbus *config);
+  void processFirmwareUpdateConfig(
+      uint64_t fieldBit, TDeviceConfig_FirmwareUpdate *config);
 
   void fillStatusLedConfig(TDeviceConfig_StatusLed *config) const;
   void fillPowerStatusLedConfig(TDeviceConfig_PowerStatusLed *config) const;
@@ -102,6 +104,7 @@ class RemoteDeviceConfig {
   void fillHomeScreenDelayTypeConfig(
       TDeviceConfig_HomeScreenOffDelayType *config) const;
   void fillModbusConfig(TDeviceConfig_Modbus *config) const;
+  void fillFirmwareUpdateConfig(TDeviceConfig_FirmwareUpdate *config) const;
 
   bool endFlagReceived = false;
   uint8_t resultCode = 255;

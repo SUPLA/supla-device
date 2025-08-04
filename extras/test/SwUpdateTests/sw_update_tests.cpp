@@ -123,7 +123,7 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED;
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED;
         return true;
       }
       return false;
@@ -749,7 +749,7 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallySecurityOnly) {
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_SECURITY_ONLY;  // SECURITY ONLY
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_SECURITY_ONLY;  // SECURITY ONLY
         return true;
       }
       return false;
@@ -888,7 +888,7 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallyAllUpdates) {
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED;  // ALL UPDATES
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED;  // ALL UPDATES
         return true;
       }
       return false;
@@ -1027,7 +1027,7 @@ TEST_F(SwUpdateTests, AutomaticUpdateDisabledLongTime) {
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_DISABLED;
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_DISABLED;
         return true;
       }
       return false;
@@ -1159,7 +1159,7 @@ TEST_F(SwUpdateTests,
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED;  // ALL UPDATES
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED;  // ALL UPDATES
         return true;
       }
       return false;
@@ -1294,7 +1294,7 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallyMissingCfgValue) {
       }
       // no "ota_mode" in cfg -> security only should be used as default
 //      if (strcmp(key, "ota_mode") == 0) {
-//        *buf = SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED;  // SECURITY ONLY
+//        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED;  // SECURITY ONLY
 //        return true;
 //      }
       return false;
@@ -1433,7 +1433,7 @@ TEST_F(SwUpdateTests, SwUpdateFromCfgDeviceMode) {
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_FORCED_OFF;
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_FORCED_OFF;
         return true;
       }
       return false;
@@ -1539,7 +1539,7 @@ TEST_F(SwUpdateTests, AutomaticUpdateForcedOffTriggerLocally) {
         return true;
       }
       if (strcmp(key, "ota_mode") == 0) {
-        *buf = SUPLA_FIRMWARE_UPDATE_MODE_FORCED_OFF;
+        *buf = SUPLA_FIRMWARE_UPDATE_POLICY_FORCED_OFF;
         return true;
       }
       return false;

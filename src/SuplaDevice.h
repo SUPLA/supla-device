@@ -21,7 +21,6 @@
 #include <supla/uptime.h>
 #include <supla/action_handler.h>
 #include <supla/local_action.h>
-#include <supla/device/auto_update_mode.h>
 #include <supla/device/device_mode.h>
 
 #define STATUS_UNKNOWN                   -1
@@ -249,13 +248,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    * @param value true to enable, false to disable
    */
   void setAutomaticFirmwareUpdateSupported(bool value);
-
-  /**
-   * Returns current automatic firmware update mode
-   *
-   * @return current automatic firmware update mode
-   */
-  Supla::AutoUpdateMode getAutoUpdateMode() const;
 
  protected:
   /**

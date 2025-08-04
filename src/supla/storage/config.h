@@ -20,6 +20,7 @@
 #define SRC_SUPLA_STORAGE_CONFIG_H_
 
 #include <supla/device/device_mode.h>
+#include <supla/device/auto_update_policy.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -112,6 +113,20 @@ class Config {
                                    Supla::SaltPassword* result);
   virtual bool setCfgModeSaltPassword(const Supla::SaltPassword& saltPassword);
   virtual bool getCfgModeSaltPassword(Supla::SaltPassword* result);
+
+  /**
+   * Returns current automatic firmware update policy
+   *
+   * @return current automatic firmware update policy
+   */
+  Supla::AutoUpdatePolicy getAutoUpdatePolicy();
+
+  /**
+   * Sets automatic firmware update policy
+   *
+   * @param policy
+   */
+  void setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy);
 
   // Supla protocol config
   virtual bool setSuplaCommProtocolEnabled(bool enabled);

@@ -26,6 +26,7 @@
 #include <supla/clock/clock.h>
 #include <supla/storage/config_tags.h>
 #include <supla/modbus/modbus_configurator.h>
+#include <supla/device/auto_update_policy.h>
 
 using Supla::Device::RemoteDeviceConfig;
 
@@ -375,6 +376,21 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
               reinterpret_cast<TDeviceConfig_Modbus *>(config->Config +
                                                        dataIndex));
           dataIndex += sizeof(TDeviceConfig_Modbus);
+          break;
+        }
+        case SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE: {
+          SUPLA_LOG_DEBUG("Processing FirmwareUpdate config");
+          if (dataIndex + sizeof(TDeviceConfig_FirmwareUpdate) >
+              config->ConfigSize) {
+            SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid ConfigSize");
+            resultCode = SUPLA_CONFIG_RESULT_DATA_ERROR;
+            return;
+          }
+          processFirmwareUpdateConfig(
+              fieldBit,
+              reinterpret_cast<TDeviceConfig_FirmwareUpdate *>(
+                  config->Config + dataIndex));
+          dataIndex += sizeof(TDeviceConfig_FirmwareUpdate);
           break;
         }
         default: {
@@ -962,6 +978,20 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
           dataIndex += sizeof(TDeviceConfig_Modbus);
           break;
         }
+        case SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE: {
+          SUPLA_LOG_DEBUG("Adding FirmwareUpdate config field");
+          if (dataIndex + sizeof(TDeviceConfig_FirmwareUpdate) >
+              SUPLA_DEVICE_CONFIG_MAXSIZE) {
+            SUPLA_LOG_ERROR("RemoteDeviceConfig: ConfigSize too big");
+            return false;
+          }
+          fillFirmwareUpdateConfig(
+              reinterpret_cast<TDeviceConfig_FirmwareUpdate *>(config->Config +
+                                                               dataIndex));
+          dataIndex += sizeof(TDeviceConfig_FirmwareUpdate);
+          break;
+        }
+
         default: {
           SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
                             fieldBit);
@@ -1168,3 +1198,68 @@ void RemoteDeviceConfig::processModbusConfig(uint64_t fieldBit,
     }
   }
 }
+
+void RemoteDeviceConfig::fillFirmwareUpdateConfig(
+    TDeviceConfig_FirmwareUpdate *config) const {
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    auto otaPolicy = cfg->getAutoUpdatePolicy();
+    switch (otaPolicy) {
+      case Supla::AutoUpdatePolicy::Disabled: {
+        config->Policy = SUPLA_FIRMWARE_UPDATE_POLICY_DISABLED;
+        break;
+      }
+      case Supla::AutoUpdatePolicy::SecurityOnly: {
+        config->Policy = SUPLA_FIRMWARE_UPDATE_POLICY_SECURITY_ONLY;
+        break;
+      }
+      case Supla::AutoUpdatePolicy::AllUpdates: {
+        config->Policy = SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED;
+        break;
+      }
+      case Supla::AutoUpdatePolicy::ForcedOff: {
+        config->Policy = SUPLA_FIRMWARE_UPDATE_POLICY_FORCED_OFF;
+        break;
+      }
+    }
+    config->Policy = static_cast<unsigned char>(otaPolicy);
+  }
+}
+
+void RemoteDeviceConfig::processFirmwareUpdateConfig(
+    uint64_t fieldBit, TDeviceConfig_FirmwareUpdate *config) {
+  auto cfg = Supla::Storage::ConfigInstance();
+  bool valid = true;
+  if (config->Policy > SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED) {
+    SUPLA_LOG_WARNING(
+        "RemoteDeviceConfig: invalid firmware update policy %d",
+        config->Policy);
+    valid = false;
+  } else if (cfg) {
+    auto otaPolicy = static_cast<Supla::AutoUpdatePolicy>(config->Policy);
+    auto currentPolicy = cfg->getAutoUpdatePolicy();
+    if (otaPolicy != currentPolicy) {
+      if (currentPolicy == Supla::AutoUpdatePolicy::ForcedOff) {
+        SUPLA_LOG_INFO(
+            "Firmware update is forced off. Changing policy is not allowed");
+        valid = false;
+      } else {
+        cfg->setAutoUpdatePolicy(otaPolicy);
+        cfg->saveWithDelay(1000);
+      }
+    }
+    Supla::Element::NotifyElementsAboutConfigChange(fieldBit);
+  }
+
+  if (!valid) {
+    resendAttempts++;
+    if (resendAttempts > 3) {
+      SUPLA_LOG_WARNING(
+          "RemoteDeviceConfig: resending firmware update config failed too "
+          "many times");
+    } else {
+      requireSetDeviceConfigFields |= fieldBit;
+    }
+  }
+}
+

@@ -16,13 +16,13 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_DEVICE_AUTO_UPDATE_MODE_H_
-#define SRC_SUPLA_DEVICE_AUTO_UPDATE_MODE_H_
+#ifndef SRC_SUPLA_DEVICE_AUTO_UPDATE_POLICY_H_
+#define SRC_SUPLA_DEVICE_AUTO_UPDATE_POLICY_H_
 
 #include <stdint.h>
 
 namespace Supla {
-enum class AutoUpdateMode: uint8_t {
+enum class AutoUpdatePolicy: uint8_t {
   ForcedOff = 0,
   Disabled = 1,
   SecurityOnly = 2,  // default
@@ -31,4 +31,4 @@ enum class AutoUpdateMode: uint8_t {
 
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_DEVICE_AUTO_UPDATE_MODE_H_
+#endif  // SRC_SUPLA_DEVICE_AUTO_UPDATE_POLICY_H_

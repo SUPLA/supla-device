@@ -25,7 +25,10 @@
 using Supla::Control::SimpleButton;
 using Supla::Control::ButtonState;
 
-ButtonState::ButtonState(Supla::Io *io, int pin, bool pullUp, bool invertLogic)
+ButtonState::ButtonState(Supla::Io::Base *io,
+                         int pin,
+                         bool pullUp,
+                         bool invertLogic)
     : ButtonState(pin, pullUp, invertLogic) {
   this->io = io;
 }
@@ -81,7 +84,7 @@ enum Supla::Control::StateResults ButtonState::getLastState()
   }
 }
 
-SimpleButton::SimpleButton(Supla::Io *io,
+SimpleButton::SimpleButton(Supla::Io::Base  *io,
                                            int pin,
                                            bool pullUp,
                                            bool invertLogic)

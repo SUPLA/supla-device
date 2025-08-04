@@ -31,10 +31,10 @@ use library manager to install it
 namespace Supla {
 namespace Control {
 
-class ExtPCA9685 : public Supla::Io {
+class ExtPCA9685 : public Supla::Io::Base {
  public:
   explicit ExtPCA9685(uint8_t address = 0x40)
-      : pca(address), Supla::Io(false) {
+      : pca(address), Supla::Io::Base(false) {
     if (!pca.begin()) {
       SUPLA_LOG_DEBUG("Unable to find PCA9685");
     } else {

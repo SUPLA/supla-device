@@ -28,7 +28,7 @@
 namespace Supla {
 namespace Control {
 
-RollerShutter::RollerShutter(Supla::Io *io,
+RollerShutter::RollerShutter(Supla::Io::Base *io,
                              int pinUp,
                              int pinDown,
                              bool highIsOn)

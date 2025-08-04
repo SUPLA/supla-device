@@ -32,7 +32,7 @@ namespace Control {
 
 #define STATE_ON_INIT_KEEP 2
 
-BistableRelay::BistableRelay(Supla::Io *io,
+BistableRelay::BistableRelay(Supla::Io::Base *io,
                              int pin,
                              int statusPin,
                              bool statusPullUp,

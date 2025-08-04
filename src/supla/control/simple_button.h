@@ -27,7 +27,9 @@
 
 namespace Supla {
 
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Control {
 
@@ -35,7 +37,7 @@ enum StateResults { PRESSED, RELEASED, TO_PRESSED, TO_RELEASED };
 
 class ButtonState {
  public:
-  ButtonState(Supla::Io *io, int pin, bool pullUp, bool invertLogic);
+  ButtonState(Supla::Io::Base *io, int pin, bool pullUp, bool invertLogic);
   ButtonState(int pin, bool pullUp, bool invertLogic);
   enum StateResults update();
   enum StateResults getLastState() const;
@@ -48,7 +50,7 @@ class ButtonState {
  protected:
   int valueOnPress() const;
 
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
 
   uint16_t debounceDelayMs = 50;
   uint16_t swNoiseFilterDelayMs = 20;
@@ -63,7 +65,7 @@ class ButtonState {
 
 class SimpleButton : public Element, public LocalAction {
  public:
-  explicit SimpleButton(Supla::Io *io,
+  explicit SimpleButton(Supla::Io::Base *io,
                         int pin,
                         bool pullUp = false,
                         bool invertLogic = false);

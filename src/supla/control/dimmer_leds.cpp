@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern int esp32PwmChannelCounter;
 #endif
 
-Supla::Control::DimmerLeds::DimmerLeds(Supla::Io *io, int brightnessPin)
+Supla::Control::DimmerLeds::DimmerLeds(Supla::Io::Base *io, int brightnessPin)
     : DimmerLeds(brightnessPin) {
   this->io = io;
 }

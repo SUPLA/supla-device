@@ -24,6 +24,10 @@
 #include "simple_button.h"
 
 namespace Supla {
+namespace Io {
+class Base;
+}  // namespace Io
+
 namespace Control {
 
 #define SEQUENCE_MAX_SIZE 30
@@ -34,7 +38,7 @@ struct ClickSequence {
 
 class SequenceButton : public SimpleButton {
  public:
-  explicit SequenceButton(Supla::Io *io,
+  explicit SequenceButton(Supla::Io::Base *io,
                           int pin,
                           bool pullUp = false,
                           bool invertLogic = false);

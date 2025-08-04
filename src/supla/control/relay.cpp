@@ -45,7 +45,7 @@ void Relay::setRelayStorageSaveDelay(int delayMs) {
   relayStorageSaveDelay = delayMs;
 }
 
-Relay::Relay(Supla::Io *io,
+Relay::Relay(Supla::Io::Base *io,
              int pin,
              bool highIsOn,
              _supla_int_t functions)

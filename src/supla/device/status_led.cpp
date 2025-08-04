@@ -31,7 +31,9 @@
 #include <supla/auto_lock.h>
 #include <supla/storage/config_tags.h>
 
-Supla::Device::StatusLed::StatusLed(Supla::Io *io, uint8_t outPin, bool invert)
+Supla::Device::StatusLed::StatusLed(Supla::Io::Base *io,
+                                    uint8_t outPin,
+                                    bool invert)
     : Supla::Control::BlinkingLed(io, outPin, invert) {
 }
 

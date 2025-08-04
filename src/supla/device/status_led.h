@@ -23,6 +23,10 @@
 
 namespace Supla {
 
+namespace Io {
+class Base;
+}  // namespace Io
+
 enum LedMode : uint8_t {
   LED_ON_WHEN_CONNECTED /* default */,
   LED_OFF_WHEN_CONNECTED,
@@ -52,7 +56,7 @@ namespace Device {
 
 class StatusLed : public Supla::Control::BlinkingLed {
  public:
-  explicit StatusLed(Supla::Io *io, uint8_t outPin, bool invert = false);
+  explicit StatusLed(Supla::Io::Base *io, uint8_t outPin, bool invert = false);
   explicit StatusLed(uint8_t outPin, bool invert = false);
 
   void onLoadConfig(SuplaDeviceClass *) override;

@@ -23,12 +23,14 @@
 
 namespace Supla {
 
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Sensor {
 class Binary : public BinaryBase {
  public:
-  explicit Binary(Supla::Io *io,
+  explicit Binary(Supla::Io::Base *io,
                   int pin,
                   bool pullUp = false,
                   bool invertLogic = false);
@@ -37,7 +39,7 @@ class Binary : public BinaryBase {
   void onInit() override;
 
  protected:
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
   int16_t pin = -1;
   bool pullUp = false;
   bool invertLogic = false;

@@ -47,17 +47,8 @@ class SGP41 : public Element {
     noxchannel->setDefaultValuePrecision(1);
   }
 
-  double getVOC() {
-    return voc;
-  }
-
-  double getNOx() {
-    return nox;
-  }
-
   void onInit() override {
     sgp.begin(Wire);
-    skipFirst10Sec = 10;
   }
 
   GeneralPurposeMeasurement* getVOCchannel() {
@@ -79,8 +70,12 @@ class SGP41 : public Element {
  private:
   void readValuesFromDevice() {
     uint16_t error;
-    float temperature = th->getChannel()->getLastTemperature();
-    float humidity = th->getChannel()->getValueDoubleSecond();
+    float temperature = TEMPERATURE_NOT_AVAILABLE;
+    float humidity = 
+    if (th != nullptr) {
+      temperature = th->getChannel()->getLastTemperature();
+      humidity = th->getChannel()->getValueDoubleSecond();
+    }
     uint16_t srawVoc = 0;
     uint16_t srawNox = 0;
 
@@ -96,9 +91,9 @@ class SGP41 : public Element {
       compensationRh = defaultCompenstaionRh;
     }
 
-    if (skipFirst10Sec > 0) {
+    if (skipFirstReadingsCounter > 0) {
       error = sgp.executeConditioning(compensationRh, compensationT, srawVoc);
-      skipFirst10Sec--;
+      skipFirstReadingsCounter--;
     } else {
       error = sgp.measureRawSignals(compensationRh, compensationT, srawVoc,
         srawNox);
@@ -107,16 +102,13 @@ class SGP41 : public Element {
     if (error) {
       retryCount++;
       if (retryCount > 10) {
-        retryCount = 0;
-        voc = NAN;
-        nox = NAN;
+        vocchannel->setValue(NAN);
+        noxchannel->setValue(NAN);
       }
     } else {
       retryCount = 0;
-      voc = srawVoc;
-      nox = srawNox;
-      vocchannel->setValue(voc);
-      noxchannel->setValue(nox);
+      vocchannel->setValue(srawVoc);
+      noxchannel->setValue(srawNox);
     }
   }
 
@@ -125,15 +117,13 @@ class SGP41 : public Element {
   uint16_t defaultCompenstaionT = 0x6666;   // in ticks as defined by SGP41
   uint16_t compensationRh = 0;              // in ticks as defined by SGP41
   uint16_t compensationT = 0;               // in ticks as defined by SGP41
-  double voc = NAN;
-  double nox = NAN;
   int8_t retryCount = 0;
   ::SensirionI2CSgp41 sgp;
   GeneralPurposeMeasurement *vocchannel = nullptr;
   GeneralPurposeMeasurement *noxchannel = nullptr;
   ThermHygroMeter *th = nullptr;
   uint32_t lastReadTime = 0;
-  int skipFirst10Sec = 10;
+  int skipFirstReadingsCounter = 10;
 };
 
 };  // namespace Sensor

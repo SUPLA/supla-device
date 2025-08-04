@@ -3408,14 +3408,14 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02977" name="l02977"></a><span class="lineno"> 2977</span><span class="comment">// Disabled - firmware update is disabled by user and can be changed remotely</span></div>
 <div class="line"><a id="l02978" name="l02978"></a><span class="lineno"> 2978</span><span class="comment">// Security only - firmware update is enabled only for security updates</span></div>
 <div class="line"><a id="l02979" name="l02979"></a><span class="lineno"> 2979</span><span class="comment">// All enabled - firmware update is enabled for all updates</span></div>
-<div class="line"><a id="l02980" name="l02980"></a><span class="lineno"> 2980</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_MODE_FORCED_OFF 0</span></div>
-<div class="line"><a id="l02981" name="l02981"></a><span class="lineno"> 2981</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_MODE_DISABLED 1</span></div>
-<div class="line"><a id="l02982" name="l02982"></a><span class="lineno"> 2982</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_MODE_SECURITY_ONLY 2  </span><span class="comment">// default</span></div>
-<div class="line"><a id="l02983" name="l02983"></a><span class="lineno"> 2983</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED 3</span></div>
+<div class="line"><a id="l02980" name="l02980"></a><span class="lineno"> 2980</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_POLICY_FORCED_OFF 0</span></div>
+<div class="line"><a id="l02981" name="l02981"></a><span class="lineno"> 2981</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_POLICY_DISABLED 1</span></div>
+<div class="line"><a id="l02982" name="l02982"></a><span class="lineno"> 2982</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_POLICY_SECURITY_ONLY 2  </span><span class="comment">// default</span></div>
+<div class="line"><a id="l02983" name="l02983"></a><span class="lineno"> 2983</span><span class="preprocessor">#define SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED 3</span></div>
 <div class="line"><a id="l02984" name="l02984"></a><span class="lineno"> 2984</span> </div>
 <div class="foldopen" id="foldopen02985" data-start="{" data-end="};">
 <div class="line"><a id="l02985" name="l02985"></a><span class="lineno"><a class="line" href="structTDeviceConfig__FirmwareUpdate.html"> 2985</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
-<div class="line"><a id="l02986" name="l02986"></a><span class="lineno"> 2986</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> Mode;  <span class="comment">// SUPLA_FIRMWARE_UPDATE_MODE_</span></div>
+<div class="line"><a id="l02986" name="l02986"></a><span class="lineno"> 2986</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> Policy;  <span class="comment">// SUPLA_FIRMWARE_UPDATE_POLICY_</span></div>
 <div class="line"><a id="l02987" name="l02987"></a><span class="lineno"> 2987</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> Reserved[20];</div>
 <div class="line"><a id="l02988" name="l02988"></a><span class="lineno"> 2988</span>} <a class="code hl_struct" href="structTDeviceConfig__FirmwareUpdate.html">TDeviceConfig_FirmwareUpdate</a>;</div>
 </div>

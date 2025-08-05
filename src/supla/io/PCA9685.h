@@ -16,12 +16,11 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_CONTROL_EXT_PCA9685_H_
-#define SRC_SUPLA_CONTROL_EXT_PCA9685_H_
+#pragma once
 
 /*
 Dependency: https://github.com/RobTillaart/PCA9685_RT
-use library manager to install it
+Use library manager to install it
 */
 
 #include <PCA9685.h>
@@ -29,18 +28,17 @@ use library manager to install it
 #include <supla/log_wrapper.h>
 
 namespace Supla {
-namespace Control {
+namespace Io {
 
-class ExtPCA9685 : public Supla::Io::Base {
+class PCA9685 : public Supla::Io::Base {
  public:
-  explicit ExtPCA9685(uint8_t address = 0x40)
-      : pca(address), Supla::Io::Base(false) {
-    if (!pca.begin()) {
-      SUPLA_LOG_DEBUG("Unable to find PCA9685");
+  explicit PCA9685(uint8_t address = 0x40, TwoWire *wire = &Wire)
+      : Supla::Io::Base(false), pca_(address, wire) {
+    if (!pca_.begin()) {
+      SUPLA_LOG_ERROR("Unable to find PCA9685 at address 0x%x", address);
     } else {
       SUPLA_LOG_DEBUG("PCA9685 is connected at address: 0x%x, "
-                        "with PWM freq: %d Hz", address, pca.getFrequency());
-      isConnected = true;
+                         "with PWM freq: %d Hz", address, pca_.getFrequency());
     }
   }
 
@@ -57,9 +55,9 @@ class ExtPCA9685 : public Supla::Io::Base {
     return 0;
   }
   void customAnalogWrite(int channelNumber, uint8_t pin, int val) override {
-    if (isConnected) {
+    if (pca_.isConnected()) {
       val = map(val, 0, 1023, 0, 4095);
-      pca.setPWM(pin, val);
+      pca_.setPWM(pin, val);
     }
   }
 
@@ -68,20 +66,17 @@ class ExtPCA9685 : public Supla::Io::Base {
   }
 
   // Default frequency: 200 Hz
-  void setPWMFrequency(uint16_t frequency_) {
-    if (isConnected) {
-      pca.setFrequency(frequency_);
-      SUPLA_LOG_DEBUG("PCA9685 - setting PWM frequency to: %d Hz",
-                                                   pca.getFrequency());
+  void setPWMFrequency(uint16_t frequency) {
+    if (pca_.isConnected()) {
+      pca_.setFrequency(frequency);
+      SUPLA_LOG_DEBUG("[PCA9685] set PWM frequency: %d Hz",
+                                                          pca_.getFrequency());
     }
   }
 
  protected:
-  ::PCA9685 pca;
-  bool isConnected = false;
+  ::PCA9685 pca_;
 };
 
-};  // namespace Control
+};  // namespace Io
 };  // namespace Supla
-
-#endif  // SRC_SUPLA_CONTROL_EXT_PCA9685_H_

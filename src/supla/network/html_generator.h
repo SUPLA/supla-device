@@ -21,14 +21,27 @@
 
 namespace Supla {
 
+enum class SetupRequestResult {
+  NONE,
+  OK,
+  PASSWORD_MISMATCH,
+  WEAK_PASSWORD,
+  INVALID_REQUEST,
+  INVALID_OLD_PASSWORD,
+};
+
 class WebSender;
 
 class HtmlGenerator {
  public:
   virtual ~HtmlGenerator();
 
-  virtual void sendPage(Supla::WebSender*, bool dataSaved = false);
-  virtual void sendBetaPage(Supla::WebSender*, bool dataSaved = false);
+  virtual void sendPage(Supla::WebSender*,
+                        bool dataSaved = false,
+                        bool includeSessionLinks = false);
+  virtual void sendBetaPage(Supla::WebSender*,
+                            bool dataSaved = false,
+                            bool includeSessionLinks = false);
 
   virtual void sendHeaderBegin(Supla::WebSender*);
   virtual void sendHeader(Supla::WebSender*);
@@ -46,6 +59,14 @@ class HtmlGenerator {
   // methods called in sendHeader default implementation
   virtual void sendStyle(Supla::WebSender*);
   virtual void sendJavascript(Supla::WebSender*);
+
+  virtual void sendLoginPage(Supla::WebSender*, bool loginError = false);
+  virtual void sendSetupPage(
+      Supla::WebSender*,
+      bool changePassword,
+      Supla::SetupRequestResult = Supla::SetupRequestResult::NONE);
+
+  virtual void sendSessionLinks(Supla::WebSender*);
 };
 
 };  // namespace Supla

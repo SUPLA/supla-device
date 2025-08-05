@@ -25,6 +25,10 @@
 class SuplaDeviceClass;
 
 namespace Supla {
+namespace Io {
+class Base;
+}  // namespace Io
+
 namespace Control {
 
 class Button : public SimpleButton, public ActionHandler {
@@ -43,7 +47,7 @@ class Button : public SimpleButton, public ActionHandler {
     DONT_LOAD_CONFIG
   };
 
-  explicit Button(Supla::Io *io,
+  explicit Button(Supla::Io::Base *io,
                   int pin,
                   bool pullUp = false,
                   bool invertLogic = false);

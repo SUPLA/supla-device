@@ -40,14 +40,16 @@
 
 
 namespace Supla {
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Control {
 class Button;
 
 class Relay : public ChannelElement, public ActionHandler {
  public:
-  explicit Relay(Supla::Io *io, int pin,
+  explicit Relay(Supla::Io::Base *io, int pin,
         bool highIsOn = true,
         _supla_int_t functions = (0xFF ^
                                   SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
@@ -159,7 +161,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   uint32_t timerUpdateTimestamp = 0;
 
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
   ButtonListElement *buttonList = nullptr;
 
   uint16_t minimumAllowedDurationMs = 0;

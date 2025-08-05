@@ -34,6 +34,8 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/network/network.h>
+#include <supla/tools.h>
+#include <supla/crypto.h>
 
 #include "config.h"
 
@@ -582,6 +584,104 @@ bool Config::isChannelConfigChangeFlagSet(int channelNo, int configType) {
   }
   SUPLA_LOG_ERROR("Unknown config type");
   return false;
+}
+
+void Config::generateSaltPassword(const char* password,
+                                  Supla::SaltPassword *result) {
+  if (password == nullptr || result == nullptr) {
+    return;
+  }
+
+  // "while" is used, becuase first byte of salt can't be empty
+  while (result->isSaltEmpty()) {
+    Supla::fillRandom(result->salt, sizeof(result->salt));
+  }
+
+  Supla::Crypto::pbkdf2Sha256(password,
+                              result->salt,
+                              sizeof(result->salt),
+                              5000,
+                              result->passwordSha,
+                              sizeof(result->passwordSha));
+}
+
+bool Config::setCfgModeSaltPassword(const Supla::SaltPassword &saltPassword) {
+  return setBlob("cfgpass", reinterpret_cast<const char*>(&saltPassword),
+                 sizeof(Supla::SaltPassword));
+}
+
+bool Config::getCfgModeSaltPassword(Supla::SaltPassword *result) {
+  return getBlob("cfgpass", reinterpret_cast<char*>(result),
+                 sizeof(Supla::SaltPassword));
+}
+
+void Supla::SaltPassword::copySalt(const SaltPassword& other) {
+  memcpy(salt, other.salt, sizeof(salt));
+}
+
+bool Supla::SaltPassword::operator==(const SaltPassword& other) const {
+  return memcmp(salt, other.salt, sizeof(salt)) == 0 &&
+         memcmp(passwordSha, other.passwordSha, sizeof(passwordSha)) == 0;
+}
+
+bool Supla::SaltPassword::isPasswordStrong(const char* password) const {
+  int len = strlen(password);
+  if (len < 8) return false;
+
+  bool hasUpper = false;
+  bool hasLower = false;
+  bool hasNumber = false;
+
+  for (int i = 0; i < len; i++) {
+    if (password[i] >= 'a' && password[i] <= 'z')
+      hasLower = true;
+    else if (password[i] >= 'A' && password[i] <= 'Z')
+      hasUpper = true;
+    else if (password[i] >= '0' && password[i] <= '9')
+      hasNumber = true;
+  }
+
+  return hasUpper && hasLower && hasNumber;
+}
+
+void Supla::SaltPassword::clear() {
+  memset(salt, 0, sizeof(salt));
+  memset(passwordSha, 0, sizeof(passwordSha));
+}
+
+Supla::AutoUpdatePolicy Config::getAutoUpdatePolicy() {
+  uint8_t otaPolicy = 0;
+  if (getUInt8(Supla::ConfigTag::OtaModeTag, &otaPolicy)) {
+    if (otaPolicy <= SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED) {
+      return static_cast<Supla::AutoUpdatePolicy>(otaPolicy);
+    }
+  }
+  return Supla::AutoUpdatePolicy::SecurityOnly;
+}
+
+void Supla::Config::setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy) {
+  switch (policy) {
+    case Supla::AutoUpdatePolicy::SecurityOnly: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_SECURITY_ONLY);
+      break;
+    }
+    case Supla::AutoUpdatePolicy::AllUpdates: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED);
+      break;
+    }
+    case Supla::AutoUpdatePolicy::Disabled: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_DISABLED);
+      break;
+    }
+    case Supla::AutoUpdatePolicy::ForcedOff: {
+      setUInt8(Supla::ConfigTag::OtaModeTag,
+               SUPLA_FIRMWARE_UPDATE_POLICY_FORCED_OFF);
+      break;
+    }
+  }
 }
 
 }  // namespace Supla

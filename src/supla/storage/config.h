@@ -20,6 +20,7 @@
 #define SRC_SUPLA_STORAGE_CONFIG_H_
 
 #include <supla/device/device_mode.h>
+#include <supla/device/auto_update_policy.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -33,8 +34,24 @@
 #define MQTT_USERNAME_MAX_SIZE 256
 #define MQTT_PASSWORD_MAX_SIZE 256
 #define SUPLA_AES_KEY_SIZE     32
+#define SUPLA_CFG_MODE_SALT_SIZE 16
+#define SUPLA_CFG_MODE_PASSWORD_SIZE 32
 
 namespace Supla {
+
+#pragma pack(push, 1)
+struct SaltPassword {
+  uint8_t salt[SUPLA_CFG_MODE_SALT_SIZE] = {};
+  uint8_t passwordSha[SUPLA_CFG_MODE_PASSWORD_SIZE] = {};
+
+  void copySalt(const SaltPassword& other);
+  bool isSaltEmpty() const { return salt[0] == 0; }
+  bool operator==(const SaltPassword& other) const;
+  bool isPasswordStrong(const char *password) const;
+  void clear();
+};
+#pragma pack(pop)
+
 
 class Config {
  public:
@@ -91,6 +108,25 @@ class Config {
   virtual int getCustomCASize();
   virtual bool setCustomCA(const char* customCA);
   virtual bool getAESKey(uint8_t* result);
+
+  static void generateSaltPassword(const char* password,
+                                   Supla::SaltPassword* result);
+  virtual bool setCfgModeSaltPassword(const Supla::SaltPassword& saltPassword);
+  virtual bool getCfgModeSaltPassword(Supla::SaltPassword* result);
+
+  /**
+   * Returns current automatic firmware update policy
+   *
+   * @return current automatic firmware update policy
+   */
+  Supla::AutoUpdatePolicy getAutoUpdatePolicy();
+
+  /**
+   * Sets automatic firmware update policy
+   *
+   * @param policy
+   */
+  void setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy);
 
   // Supla protocol config
   virtual bool setSuplaCommProtocolEnabled(bool enabled);

@@ -26,7 +26,7 @@
 
 using Supla::Sensor::ImpulseCounter;
 
-ImpulseCounter::ImpulseCounter(Supla::Io *io,
+ImpulseCounter::ImpulseCounter(Supla::Io::Base *io,
                                int _impulsePin,
                                bool _detectLowToHigh,
                                bool _inputPullup,

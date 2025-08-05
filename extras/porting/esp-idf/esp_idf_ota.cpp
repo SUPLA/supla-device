@@ -61,6 +61,10 @@ Supla::EspIdfOta::~EspIdfOta() {
     delete[] otaBuffer;
     otaBuffer = nullptr;
   }
+  if (httpAgent) {
+    free(httpAgent);
+    httpAgent = nullptr;
+  }
 }
 
 void Supla::EspIdfOta::iterate() {
@@ -68,6 +72,13 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
+  if (httpAgent == nullptr) {
+#define HTTP_AGENT_SIZE 100
+    httpAgent = new char[HTTP_AGENT_SIZE];
+    if (httpAgent) {
+      Supla::RegisterDevice::generateHttpAgent(httpAgent, HTTP_AGENT_SIZE);
+    }
+  }
   finished = true;
 
 #define URL_SIZE 512
@@ -204,6 +215,7 @@ void Supla::EspIdfOta::iterate() {
   esp_http_client_config_t configCheckUpdate = {};
   configCheckUpdate.url = url;
   configCheckUpdate.timeout_ms = 5000;
+  configCheckUpdate.user_agent = httpAgent;
   if (!skipCert && sdc && sdc->getSuplaCACert()) {
     SUPLA_LOG_INFO("SW update: using Supla CA cert");
     configCheckUpdate.cert_pem = sdc->getSuplaCACert();
@@ -321,8 +333,28 @@ void Supla::EspIdfOta::iterate() {
         return;
       }
       snprintf(updateUrl, urlLen, "%s", url->valuestring);
-      cJSON_Delete(json);
 
+      // copy changelogUrl parameter (if available)
+      cJSON *changelogUrlJson =
+          cJSON_GetObjectItemCaseSensitive(latestUpdate, "changelogUrl");
+      if (cJSON_IsString(changelogUrlJson) &&
+          (changelogUrlJson->valuestring != NULL)) {
+        if (changelogUrl) {
+          delete[] changelogUrl;
+        }
+
+        int urlLen = strlen(changelogUrlJson->valuestring) + 1;
+        if (urlLen < SUPLA_URL_PATH_MAXSIZE) {
+          changelogUrl = new char[urlLen];
+          if (changelogUrl) {
+            snprintf(changelogUrl, urlLen, "%s", changelogUrlJson->valuestring);
+          }
+        } else {
+          SUPLA_LOG_WARNING("SW update: changelogUrl too long, skipping");
+        }
+      } else {
+        SUPLA_LOG_WARNING("SW update: no changelogUrl received");
+      }
     } else {
       fail("SW update: no url and version received - finishing");
       cJSON_Delete(json);
@@ -333,7 +365,8 @@ void Supla::EspIdfOta::iterate() {
     cJSON_Delete(json);
     return;
   }
-    cJSON_Delete(json);
+
+  cJSON_Delete(json);
 
   if (checkUpdateAndAbort) {
     abort = true;
@@ -346,6 +379,7 @@ void Supla::EspIdfOta::iterate() {
   esp_http_client_config_t configGet = {};
   configGet.url = updateUrl;
   configGet.timeout_ms = 10000;
+  configGet.user_agent = httpAgent;
   if (!skipCert && sdc && sdc->getSuplaCACert()) {
     SUPLA_LOG_INFO("SW update: using Supla CA cert");
     configCheckUpdate.cert_pem = sdc->getSuplaCACert();

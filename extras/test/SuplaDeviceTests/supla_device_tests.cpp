@@ -29,6 +29,7 @@
 #include <storage_mock.h>
 #include <string.h>
 #include <supla/device/register_device.h>
+#include <simple_time.h>
 
 using ::testing::_;
 using ::testing::Return;
@@ -303,7 +304,7 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   StorageMockSimulator storage;
   EXPECT_CALL(storage, commit()).Times(2);
   TimerMock timer;
-  TimeInterfaceStub time;
+  SimpleTime time;
   SuplaDeviceClass sd;
   ElementMock el1;
   ElementMock el2;
@@ -330,6 +331,7 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
 
   EXPECT_CALL(el1, onSaveState());
   EXPECT_CALL(el2, onSaveState());
+  time.advance(2000);
 
   for (int i = 0; i < 2; i++) sd.iterate();
   EXPECT_TRUE(storage.isPreampleInitialized());

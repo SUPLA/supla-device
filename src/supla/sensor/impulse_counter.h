@@ -24,12 +24,14 @@
 
 namespace Supla {
 
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Sensor {
 class ImpulseCounter : public VirtualImpulseCounter {
  public:
-  ImpulseCounter(Supla::Io *io,
+  ImpulseCounter(Supla::Io::Base *io,
                  int _impulsePin,
                  bool _detectLowToHigh = false,
                  bool inputPullup = true,
@@ -43,7 +45,7 @@ class ImpulseCounter : public VirtualImpulseCounter {
   void onFastTimer() override;
 
  protected:
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
   uint32_t lastImpulseMillis =
       0;  // Stores timestamp of last impulse (used to ignore
           // changes of state during 10 ms timeframe)

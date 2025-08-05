@@ -26,7 +26,7 @@
 
 using Supla::Control::BlinkingLed;
 
-BlinkingLed::BlinkingLed(Supla::Io *io, uint8_t outPin, bool invert)
+BlinkingLed::BlinkingLed(Supla::Io::Base *io, uint8_t outPin, bool invert)
     : BlinkingLed(outPin, invert) {
   this->io = io;
 }

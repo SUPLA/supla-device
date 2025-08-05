@@ -20,7 +20,7 @@
 
 using ::testing::Return;
 
-class CustomIoMock : public Supla::Io {
+class CustomIoMock : public Supla::Io::Base {
  public:
   MOCK_METHOD(
       void, customPinMode, (int channelNumber, uint8_t pin, uint8_t mode));

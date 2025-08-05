@@ -25,7 +25,7 @@
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 #include <SuplaDevice.h>
-#include <supla/device/auto_update_mode.h>
+#include <supla/device/auto_update_policy.h>
 #include <supla/storage/config_tags.h>
 
 namespace Supla {
@@ -45,11 +45,11 @@ void SwUpdate::send(Supla::WebSender* sender) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
     bool skipCert = cfg->isSwUpdateSkipCert();
     bool useRemoteOta = false;
-    Supla::AutoUpdateMode otaMode = Supla::AutoUpdateMode::SecurityOnly;
+    Supla::AutoUpdatePolicy otaPolicy = Supla::AutoUpdatePolicy::SecurityOnly;
     if (sdc) {
       if (sdc->isAutomaticFirmwareUpdateEnabled()) {
         useRemoteOta = true;
-        otaMode = sdc->getAutoUpdateMode();
+        otaPolicy = cfg->getAutoUpdatePolicy();
       }
     }
 
@@ -62,21 +62,22 @@ void SwUpdate::send(Supla::WebSender* sender) {
       sender->send("<select ");
       sender->sendNameAndId(keyOta);
       sender->send("><option value=\"0\"");
-      sender->send(selected(otaMode == Supla::AutoUpdateMode::ForcedOff));
+      sender->send(selected(otaPolicy == Supla::AutoUpdatePolicy::ForcedOff));
       sender->send(
           ">Disabled on a device (can't be changed remotely, updates possible "
           "only via local web interface)</option>"
           "<option value=\"1\"");
-      sender->send(selected(otaMode == Supla::AutoUpdateMode::Disabled));
+      sender->send(selected(otaPolicy == Supla::AutoUpdatePolicy::Disabled));
       sender->send(
           ">Allow only manual updates (triggered by user via Cloud or via "
           "local web interface)</option>"
           "<option value=\"2\"");
-      sender->send(selected(otaMode == Supla::AutoUpdateMode::SecurityOnly));
+      sender->send(
+          selected(otaPolicy == Supla::AutoUpdatePolicy::SecurityOnly));
       sender->send(
           ">Install only security updates automatically</option>"
           "<option value=\"3\"");
-      sender->send(selected(otaMode == Supla::AutoUpdateMode::AllUpdates));
+      sender->send(selected(otaPolicy == Supla::AutoUpdatePolicy::AllUpdates));
       sender->send(">Install all updates automatically</option></select>");
       sender->send("</div>");
       sender->send("</div>");
@@ -141,29 +142,12 @@ bool SwUpdate::handleResponse(const char* key, const char* value) {
   }
   if (strcmp(key, "otamode") == 0) {
     int otaMode = stringToUInt(value);
-    switch (otaMode) {
-      default:
-      case SUPLA_FIRMWARE_UPDATE_MODE_SECURITY_ONLY: {
-        cfg->setUInt8(Supla::ConfigTag::OtaModeTag,
-                      SUPLA_FIRMWARE_UPDATE_MODE_SECURITY_ONLY);
-        break;
-      }
-      case SUPLA_FIRMWARE_UPDATE_MODE_FORCED_OFF: {
-        cfg->setUInt8(Supla::ConfigTag::OtaModeTag,
-                      SUPLA_FIRMWARE_UPDATE_MODE_FORCED_OFF);
-        break;
-      }
-        case SUPLA_FIRMWARE_UPDATE_MODE_DISABLED: {
-        cfg->setUInt8(Supla::ConfigTag::OtaModeTag,
-                      SUPLA_FIRMWARE_UPDATE_MODE_DISABLED);
-        break;
-      }
-      case SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED: {
-        cfg->setUInt8(Supla::ConfigTag::OtaModeTag,
-                      SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED);
-        break;
-      }
+    if (otaMode < 0 || otaMode > SUPLA_FIRMWARE_UPDATE_POLICY_ALL_ENABLED) {
+      return true;
     }
+    Supla::AutoUpdatePolicy policy =
+        static_cast<Supla::AutoUpdatePolicy>(otaMode);
+    cfg->setAutoUpdatePolicy(policy);
     return true;
   }
   return false;

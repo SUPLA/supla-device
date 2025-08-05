@@ -28,7 +28,7 @@ namespace Supla {
 /**
  * MCP23008 I/O expander for esp-idf.
  */
-class MCP23008 : public Supla::Io {
+class MCP23008 : public Supla::Io::Base {
  public:
   enum class Register : uint8_t {
     IODIR = 0x00,    /// I/O direction: bitmap of 1=input, 0=output

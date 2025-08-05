@@ -22,11 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "rgb_base.h"
 
 namespace Supla {
-class Io;
+namespace Io {
+class Base;
+}
 namespace Control {
 class RGBLeds : public RGBBase {
  public:
-  RGBLeds(Supla::Io *io, int redPin, int greenPin, int bluePin);
+  RGBLeds(Supla::Io::Base *io, int redPin, int greenPin, int bluePin);
   RGBLeds(int redPin, int greenPin, int bluePin);
 
   void setRGBWValueOnDevice(uint32_t red,
@@ -38,7 +40,7 @@ class RGBLeds : public RGBBase {
   void onInit() override;
 
  protected:
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
   int redPin = -1;
   int greenPin = -1;
   int bluePin = -1;

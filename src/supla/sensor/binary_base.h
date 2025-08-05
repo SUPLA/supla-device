@@ -26,8 +26,6 @@ class SuplaDeviceClass;
 
 namespace Supla {
 
-class Io;
-
 namespace Sensor {
 class BinaryBase : public ElementWithChannelActions {
  public:

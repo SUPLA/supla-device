@@ -369,6 +369,11 @@ bool Supla::RegisterDevice::isAutomaticFirmwareUpdateEnabled() {
   return reg_dev.Flags & SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED;
 }
 
+bool Supla::RegisterDevice::isSetCfgModePasswordEnabled() {
+  return reg_dev.Flags &
+         SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED;
+}
+
 int16_t Supla::RegisterDevice::getManufacturerId() {
   return reg_dev.ManufacturerID;
 }
@@ -380,3 +385,16 @@ int16_t Supla::RegisterDevice::getProductId() {
 int Supla::RegisterDevice::getChannelCount() {
   return reg_dev.channel_count;
 }
+
+void Supla::RegisterDevice::generateHttpAgent(char *buffer, int size) {
+  if (buffer == nullptr || size < 50) {
+    return;
+  }
+  snprintf(buffer,
+           size,
+           "SuplaDevice (%.64s)/%s",
+           Supla::RegisterDevice::getName(),
+           Supla::RegisterDevice::getSoftVer());
+  buffer[size - 1] = '\0';
+}
+

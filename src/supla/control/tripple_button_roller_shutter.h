@@ -26,11 +26,18 @@
 #include "bistable_roller_shutter.h"
 
 namespace Supla {
+namespace Io {
+class Base;
+}  // namespace Io
+
 namespace Control {
 class TrippleButtonRollerShutter : public BistableRollerShutter {
  public:
-  TrippleButtonRollerShutter(
-      Supla::Io *io, int pinUp, int pinDown, int pinStop, bool highIsOn = true);
+  TrippleButtonRollerShutter(Supla::Io::Base *io,
+                             int pinUp,
+                             int pinDown,
+                             int pinStop,
+                             bool highIsOn = true);
   TrippleButtonRollerShutter(int pinUp,
                              int pinDown,
                              int pinStop,

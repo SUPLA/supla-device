@@ -18,8 +18,8 @@
 
 #include <supla/io.h>
 
-Supla::Control::PinStatusLed::PinStatusLed(Supla::Io *ioSrc,
-                                           Supla::Io *ioOut,
+Supla::Control::PinStatusLed::PinStatusLed(Supla::Io::Base *ioSrc,
+                                           Supla::Io::Base *ioOut,
                                            uint8_t srcPin,
                                            uint8_t outPin,
                                            bool invert)

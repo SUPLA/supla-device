@@ -20,7 +20,7 @@
 
 #include "../io.h"
 
-Supla::Sensor::Binary::Binary(Supla::Io *io,
+Supla::Sensor::Binary::Binary(Supla::Io::Base *io,
                               int pin,
                               bool pullUp,
                               bool invertLogic)

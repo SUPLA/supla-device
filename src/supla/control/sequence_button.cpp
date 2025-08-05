@@ -22,7 +22,7 @@
 
 #include "sequence_button.h"
 
-Supla::Control::SequenceButton::SequenceButton(Supla::Io *io,
+Supla::Control::SequenceButton::SequenceButton(Supla::Io::Base *io,
                                                int pin,
                                                bool pullUp,
                                                bool invertLogic)

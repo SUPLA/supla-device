@@ -257,6 +257,6 @@ void Supla::WebServer::setBetaProcessing() {
   excludeSection = Supla::HtmlSection::HTML_SECTION_FORM;
 }
 
-bool Supla::WebServer::verfiyCertificatesFormat() {
+bool Supla::WebServer::verifyCertificatesFormat() {
   return false;
 }

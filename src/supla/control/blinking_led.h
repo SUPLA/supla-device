@@ -22,7 +22,10 @@
 #include <supla/element.h>
 
 namespace Supla {
-class Io;
+namespace Io {
+class Base;
+}
+
 class Mutex;
 
 namespace Control {
@@ -30,7 +33,9 @@ namespace Control {
 enum LedState { NOT_INITIALIZED, ON, OFF };
 class BlinkingLed : public Supla::Element {
  public:
-  explicit BlinkingLed(Supla::Io *io, uint8_t outPin, bool invert = false);
+  explicit BlinkingLed(Supla::Io::Base *io,
+                       uint8_t outPin,
+                       bool invert = false);
   explicit BlinkingLed(uint8_t outPin, bool invert = false);
 
   void onInit() override;
@@ -72,7 +77,7 @@ class BlinkingLed : public Supla::Element {
   uint32_t pauseDuration = 0;
   uint32_t lastUpdate = 0;
   LedState state = NOT_INITIALIZED;
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
   Supla::Mutex *mutex = nullptr;
   BlinkingLed *copyStateTo = nullptr;
   bool enabled = true;

@@ -21,7 +21,7 @@
 #include <supla/actions.h>
 #include "../events.h"
 
-Supla::Control::InternalPinOutput::InternalPinOutput(Supla::Io *io,
+Supla::Control::InternalPinOutput::InternalPinOutput(Supla::Io::Base *io,
                                                      int pin,
                                                      bool highIsOn)
     : InternalPinOutput(pin, highIsOn) {

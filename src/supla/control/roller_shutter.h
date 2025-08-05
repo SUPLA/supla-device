@@ -21,13 +21,18 @@
 
 namespace Supla {
 
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Control {
 
 class RollerShutter : public RollerShutterInterface {
  public:
-  RollerShutter(Supla::Io *io, int pinUp, int pinDown, bool highIsOn = true);
+  RollerShutter(Supla::Io::Base *io,
+                int pinUp,
+                int pinDown,
+                bool highIsOn = true);
   RollerShutter(int pinUp, int pinDown, bool highIsOn = true);
 
   void onInit() override;
@@ -53,7 +58,7 @@ class RollerShutter : public RollerShutterInterface {
 
   uint32_t lastMovementStartTime = 0;
   uint32_t doNothingTime = 0;
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
 
   uint32_t operationTimeoutMs = 0;
 

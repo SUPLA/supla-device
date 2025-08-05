@@ -43,6 +43,10 @@ Supla::Device::SwUpdate::~SwUpdate() {
     delete[] updateUrl;
     updateUrl = nullptr;
   }
+  if (changelogUrl) {
+    delete[] changelogUrl;
+    changelogUrl = nullptr;
+  }
 }
 
 Supla::Device::SwUpdate::SwUpdate(SuplaDeviceClass *sdc, const char *newUrl)

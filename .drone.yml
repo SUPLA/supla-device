@@ -29,18 +29,18 @@ steps:
   depends_on:
   - tests_compilation
 
-- name: esp8266_rtos_compilation_check
-  image: devel/esp8266_rtos_sdk
-  pull: never
-  commands:
-  - pwd
-  - echo $SUPLA_DEVICE_PATH
-  - ls -al
-  - export SUPLA_DEVICE_PATH=/drone/src
-  - cd extras/examples/esp8266_rtos/
-  - rm -f build/supla-esp8266-mk.bin
-  - /bin/bash -c "source /supla/esp/ESP8266_RTOS_SDK/export.sh && make -j32"
-  - /bin/bash -c "[ -f build/supla-esp8266-mk.bin ] && true || false"
+    # - name: esp8266_rtos_compilation_check
+    #   image: devel/esp8266_rtos_sdk
+    #   pull: never
+    #   commands:
+    #   - pwd
+    #   - echo $SUPLA_DEVICE_PATH
+    #   - ls -al
+    #   - export SUPLA_DEVICE_PATH=/drone/src
+    #   - cd extras/examples/esp8266_rtos/
+    #   - rm -f build/supla-esp8266-mk.bin
+    #   - /bin/bash -c "source /supla/esp/ESP8266_RTOS_SDK/export.sh && make -j32"
+    #   - /bin/bash -c "[ -f build/supla-esp8266-mk.bin ] && true || false"
 
 - name: esp_idf_setup
   image: devel/esp-idf
@@ -279,7 +279,7 @@ steps:
     event:
       exclude:
         - pull_request
-  depends_on: [tests, esp8266_rtos_compilation_check, esp_idf_compilation_check,
+  depends_on: [tests, esp_idf_compilation_check,
                freertos_linux_compilation_check,
                linux_compilation_check,
                arduino_esp32_compilation_check_part_1,

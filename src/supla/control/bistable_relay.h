@@ -32,12 +32,14 @@
 #include "relay.h"
 
 namespace Supla {
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Control {
 class BistableRelay : public Relay {
  public:
-  BistableRelay(Supla::Io *io,
+  BistableRelay(Supla::Io::Base *io,
                 int pin,
                 int statusPin = -1,
                 bool statusPullUp = true,

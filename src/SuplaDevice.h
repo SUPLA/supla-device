@@ -21,7 +21,6 @@
 #include <supla/uptime.h>
 #include <supla/action_handler.h>
 #include <supla/local_action.h>
-#include <supla/device/auto_update_mode.h>
 #include <supla/device/device_mode.h>
 
 #define STATUS_UNKNOWN                   -1
@@ -250,13 +249,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   void setAutomaticFirmwareUpdateSupported(bool value);
 
-  /**
-   * Returns current automatic firmware update mode
-   *
-   * @return current automatic firmware update mode
-   */
-  Supla::AutoUpdateMode getAutoUpdateMode() const;
-
  protected:
   /**
    * Performs software update if needed
@@ -307,6 +299,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
   bool triggerSwUpdateIfAvailable = false;
+  bool cfgModeStartedRemotelyAndNotRefreshed = false;
 
   uint8_t goToOfflineModeTimeout = 0;
   uint8_t leaveCfgModeAfterInactivityMin = 5;
@@ -327,7 +320,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool iterateNetworkSetup();
   bool iterateSuplaProtocol(uint32_t _millis);
   void handleLocalActionTriggers();
-  void checkIfRestartIsNeeded(uint32_t _millis);
+  void checkIfRestartIsNeeded();
   void createSrpcLayerIfNeeded();
   void setupDeviceMode();
 };

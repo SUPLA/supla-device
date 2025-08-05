@@ -33,7 +33,7 @@ using Supla::Control::Button;
 
 int Button::buttonCounter = 0;
 
-Button::Button(Supla::Io *io, int pin, bool pullUp, bool invertLogic)
+Button::Button(Supla::Io::Base *io, int pin, bool pullUp, bool invertLogic)
     : SimpleButton(io, pin, pullUp, invertLogic) {
   buttonNumber = buttonCounter;
   buttonCounter++;

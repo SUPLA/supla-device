@@ -112,6 +112,14 @@ bool isLittleEndian();
  */
 int compareSemVer(const char *sw1, const char *sw2);
 
+/**
+ * Fills buffer with random bytes
+ *
+ * @param buffer
+ * @param size
+ */
+void fillRandom(uint8_t *buffer, int size);
+
 }  // namespace Supla
 
 

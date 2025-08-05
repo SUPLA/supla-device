@@ -20,10 +20,14 @@
 #include "roller_shutter.h"
 
 namespace Supla {
+namespace Io {
+class Base;
+}
+
 namespace Control {
 class BistableRollerShutter : public RollerShutter {
  public:
-  BistableRollerShutter(Supla::Io *io,
+  BistableRollerShutter(Supla::Io::Base *io,
                         int pinUp,
                         int pinDown,
                         bool highIsOn = true);

@@ -29,7 +29,9 @@
 
 namespace Supla {
 
-class Io;
+namespace Io {
+class Base;
+}
 
 namespace Control {
 class InternalPinOutput : public Element,
@@ -37,7 +39,9 @@ class InternalPinOutput : public Element,
                           public LocalAction,
                           public OutputInterface {
  public:
-  explicit InternalPinOutput(Supla::Io *io, int pin, bool highIsOn = true);
+  explicit InternalPinOutput(Supla::Io::Base *io,
+                             int pin,
+                             bool highIsOn = true);
   explicit InternalPinOutput(int pin, bool highIsOn = true);
 
   virtual InternalPinOutput &setDefaultStateOn();
@@ -68,7 +72,7 @@ class InternalPinOutput : public Element,
   unsigned _supla_int_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
   int lastOutputValue = 0;
-  Supla::Io *io = nullptr;
+  Supla::Io::Base *io = nullptr;
 };
 
 };  // namespace Control

@@ -43,6 +43,8 @@
 #include <supla/device/subdevice_pairing_handler.h>
 #include <supla/device/status_led.h>
 #include <supla/clock/clock.h>
+#include <supla/device/remote_device_config.h>
+#include <supla/device/auto_update_policy.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -154,6 +156,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
                   Supla::getPlatformId());
 
   if (protoVersion >= 21) {
+    SUPLA_LOG_DEBUG("SD: add flag DEVICE_CONFIG_SUPPORTED");
     addFlags(SUPLA_DEVICE_FLAG_DEVICE_CONFIG_SUPPORTED);
   }
   if (protoVersion < 23) {
@@ -162,6 +165,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     protoVersion = 23;
   }
   if (isDeviceSoftwareResetSupported()) {
+    SUPLA_LOG_DEBUG("SD: add flag CALCFG_RESTART_DEVICE");
     addFlags(SUPLA_DEVICE_FLAG_CALCFG_RESTART_DEVICE);
   }
 
@@ -179,9 +183,12 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     if (!lastStateLogger) {
       lastStateLogger = new Supla::Device::LastStateLogger();
     }
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (cfg->isConfigModeSupported()) {
+
+    if (Supla::Storage::ConfigInstance()->isConfigModeSupported()) {
+      SUPLA_LOG_DEBUG("SD: add flag CALCFG_ENTER_CFG_MODE");
       addFlags(SUPLA_DEVICE_FLAG_CALCFG_ENTER_CFG_MODE);
+      SUPLA_LOG_DEBUG("SD: add flag CALCFG_FACTORY_RESET_SUPPORTED");
+      addFlags(SUPLA_DEVICE_FLAG_CALCFG_FACTORY_RESET_SUPPORTED);
     }
 
     // Load device and network related configuration
@@ -226,15 +233,11 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
 
   if (Supla::Storage::Instance()) {
     SUPLA_LOG_INFO(" *** Supla - Load state storage");
-  }
-
-  // Pefrorm dry run of write state to validate stored state section with
-  // current device configuration
-  if (Supla::Storage::IsStateStorageValid()) {
-    Supla::Storage::LoadStateStorage();
-  }
-
-  if (Supla::Storage::Instance()) {
+    // Pefrorm dry run of write state to validate stored state section with
+    // current device configuration
+    if (Supla::Storage::IsStateStorageValid()) {
+      Supla::Storage::LoadStateStorage();
+    }
     SUPLA_LOG_INFO(" *** Supla - Load state storage done");
   }
 
@@ -261,8 +264,14 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     net->setSuplaDeviceClass(this);
   }
 
-  if (Supla::WebServer::Instance()) {
-    Supla::WebServer::Instance()->setSuplaDeviceClass(this);
+  if (auto webServer = Supla::WebServer::Instance()) {
+    webServer->setSuplaDeviceClass(this);
+    if (webServer->verifyCertificatesFormat()) {
+      // web password is used only when https is used
+      SUPLA_LOG_DEBUG(
+          "SD: add flag CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED");
+      addFlags(SUPLA_DEVICE_FLAG_CALCFG_SET_CFG_MODE_PASSWORD_SUPPORTED);
+    }
   }
 
   if (Supla::RegisterDevice::isGUIDEmpty()) {
@@ -394,6 +403,7 @@ void SuplaDeviceClass::iterate(void) {
   }
 
   uint32_t enterConfigModeTimestampCopy = enterConfigModeTimestamp;
+  uint32_t deviceRestartTimeoutTimestampCopy = deviceRestartTimeoutTimestamp;
   uint32_t _millis = millis();
 
   // in allowOfflineMode(2) device starts in "offline" mode with cfg mode
@@ -405,15 +415,9 @@ void SuplaDeviceClass::iterate(void) {
     leaveConfigModeWithoutRestart();
   }
   if (leaveCfgModeAfterInactivityMin != 0 &&
-      deviceRestartTimeoutTimestamp == 0 && enterConfigModeTimestampCopy &&
+      deviceRestartTimeoutTimestampCopy == 0 && enterConfigModeTimestamp &&
       _millis - enterConfigModeTimestampCopy >
           leaveCfgModeAfterInactivityMin * 60ULL * 1000) {
-    SUPLA_LOG_DEBUG("leaveCfg %d, millis %d, enter %d, deviceRestart %d",
-                    leaveCfgModeAfterInactivityMin,
-                    _millis,
-                    enterConfigModeTimestamp,
-                    deviceRestartTimeoutTimestamp);
-
     SUPLA_LOG_INFO("Config mode timeout triggered");
     leaveConfigModeWithoutRestart();
   }
@@ -423,7 +427,7 @@ void SuplaDeviceClass::iterate(void) {
     cfg->saveIfNeeded();
   }
 
-  checkIfRestartIsNeeded(_millis);
+  checkIfRestartIsNeeded();
   handleLocalActionTriggers();
   iterateAlwaysElements(_millis);
 
@@ -549,22 +553,22 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     if (securityOnly == -1) {
-      switch (getAutoUpdateMode()) {
+      switch (cfg->getAutoUpdatePolicy()) {
         default:
-        case Supla::AutoUpdateMode::ForcedOff: {
+        case Supla::AutoUpdatePolicy::ForcedOff: {
           SUPLA_LOG_INFO("Firmware update is forced off");
           return false;
         }
-        case Supla::AutoUpdateMode::Disabled: {
+        case Supla::AutoUpdatePolicy::Disabled: {
           SUPLA_LOG_INFO("Firmware update is disabled");
           return false;
         }
-        case Supla::AutoUpdateMode::SecurityOnly: {
+        case Supla::AutoUpdatePolicy::SecurityOnly: {
           SUPLA_LOG_INFO("Firmware update is security only");
           securityOnly = 1;
           break;
         }
-        case Supla::AutoUpdateMode::AllUpdates: {
+        case Supla::AutoUpdatePolicy::AllUpdates: {
           SUPLA_LOG_INFO("Firmware update is enabled for all updates");
           securityOnly = 0;
           break;
@@ -629,6 +633,11 @@ void SuplaDeviceClass::iterateSwUpdate() {
         strncpy(
             result.SoftVer, swUpdate->getNewVersion(), SUPLA_SOFTVER_MAXSIZE);
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_AVAILABLE;
+        if (swUpdate->getChangelogUrl()) {
+          strncpy(
+              result.ChangelogUrl, swUpdate->getChangelogUrl(),
+              SUPLA_URL_PATH_MAXSIZE);
+        }
       } else {
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE;
         triggerSwUpdateIfAvailable = false;
@@ -754,14 +763,14 @@ bool SuplaDeviceClass::loadDeviceConfig() {
   if (!isAutomaticFirmwareUpdateEnabled()) {
     SUPLA_LOG_WARNING("Automatic firmware update is disabled");
   } else {
-    auto otaMode = getAutoUpdateMode();
-    (void)(otaMode);
-    SUPLA_LOG_INFO("Automatic firmware update is supported. OTA mode: %s",
-                   otaMode == Supla::AutoUpdateMode::ForcedOff  ? "forced off"
-                   : otaMode == Supla::AutoUpdateMode::Disabled ? "disabled"
-                   : otaMode == Supla::AutoUpdateMode::SecurityOnly
-                       ? "security only"
-                       : "all enabled");
+    auto otaPolicy = cfg->getAutoUpdatePolicy();
+    (void)(otaPolicy);
+    SUPLA_LOG_INFO(
+        "Automatic firmware update is supported. OTA policy: %s",
+        otaPolicy == Supla::AutoUpdatePolicy::ForcedOff      ? "forced off"
+        : otaPolicy == Supla::AutoUpdatePolicy::Disabled     ? "disabled"
+        : otaPolicy == Supla::AutoUpdatePolicy::SecurityOnly ? "security only"
+                                                             : "all enabled");
   }
 
   deviceMode = cfg->getDeviceMode();
@@ -987,6 +996,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       case SUPLA_CALCFG_CMD_ENTER_CFG_MODE: {
         SUPLA_LOG_INFO("CALCFG ENTER CFGMODE received");
         requestCfgMode();
+        cfgModeStartedRemotelyAndNotRefreshed = true;
         return SUPLA_CALCFG_RESULT_DONE;
       }
       case SUPLA_CALCFG_CMD_RESTART_DEVICE: {
@@ -1050,14 +1060,19 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
-        switch (getAutoUpdateMode()) {
-          case Supla::AutoUpdateMode::ForcedOff: {
+        auto cfg = Supla::Storage::ConfigInstance();
+        auto otaMode = Supla::AutoUpdatePolicy::ForcedOff;
+        if (cfg) {
+          otaMode = cfg->getAutoUpdatePolicy();
+        }
+        switch (otaMode) {
+          case Supla::AutoUpdatePolicy::ForcedOff: {
             SUPLA_LOG_INFO("Firmware update is forced off");
             return SUPLA_CALCFG_RESULT_FALSE;
           }
-          case Supla::AutoUpdateMode::Disabled:
-          case Supla::AutoUpdateMode::SecurityOnly:
-          case Supla::AutoUpdateMode::AllUpdates: {
+          case Supla::AutoUpdatePolicy::Disabled:
+          case Supla::AutoUpdatePolicy::SecurityOnly:
+          case Supla::AutoUpdatePolicy::AllUpdates: {
             break;
           }
         }
@@ -1081,14 +1096,19 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
-        switch (getAutoUpdateMode()) {
-          case Supla::AutoUpdateMode::ForcedOff: {
+        auto cfg = Supla::Storage::ConfigInstance();
+        auto otaPolicy = Supla::AutoUpdatePolicy::ForcedOff;
+        if (cfg) {
+          otaPolicy = cfg->getAutoUpdatePolicy();
+        }
+        switch (otaPolicy) {
+          case Supla::AutoUpdatePolicy::ForcedOff: {
             SUPLA_LOG_INFO("Firmware update is forced off");
             return SUPLA_CALCFG_RESULT_FALSE;
           }
-          case Supla::AutoUpdateMode::Disabled:
-          case Supla::AutoUpdateMode::SecurityOnly:
-          case Supla::AutoUpdateMode::AllUpdates: {
+          case Supla::AutoUpdatePolicy::Disabled:
+          case Supla::AutoUpdatePolicy::SecurityOnly:
+          case Supla::AutoUpdatePolicy::AllUpdates: {
             break;
           }
         }
@@ -1113,14 +1133,19 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           SUPLA_LOG_INFO("Firmware update in progress");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
-        switch (getAutoUpdateMode()) {
-          case Supla::AutoUpdateMode::ForcedOff: {
+        auto cfg = Supla::Storage::ConfigInstance();
+        auto otaMode = Supla::AutoUpdatePolicy::ForcedOff;
+        if (cfg) {
+          otaMode = cfg->getAutoUpdatePolicy();
+        }
+        switch (otaMode) {
+          case Supla::AutoUpdatePolicy::ForcedOff: {
             SUPLA_LOG_INFO("Firmware update is forced off");
             return SUPLA_CALCFG_RESULT_FALSE;
           }
-          case Supla::AutoUpdateMode::Disabled:
-          case Supla::AutoUpdateMode::SecurityOnly:
-          case Supla::AutoUpdateMode::AllUpdates: {
+          case Supla::AutoUpdatePolicy::Disabled:
+          case Supla::AutoUpdatePolicy::SecurityOnly:
+          case Supla::AutoUpdatePolicy::AllUpdates: {
             break;
           }
         }
@@ -1133,6 +1158,42 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
         }
         SUPLA_LOG_WARNING("Failed to create firmware update instance");
         return SUPLA_CALCFG_RESULT_FALSE;
+      }
+
+      case SUPLA_CALCFG_CMD_RESET_TO_FACTORY_SETTINGS: {
+        SUPLA_LOG_INFO("CALCFG RESET TO FACTORY SETTINGS received");
+        triggerResetToFactorySettings = true;
+        return SUPLA_CALCFG_RESULT_DONE;
+      }
+
+      case SUPLA_CALCFG_CMD_SET_CFG_MODE_PASSWORD: {
+        SUPLA_LOG_INFO("CALCFG SET CFGMODE PASSWORD received");
+        if (request->DataType != 0 &&
+            request->DataSize != sizeof(TCalCfg_SetCfgModePassword)) {
+          SUPLA_LOG_WARNING("CALCFG SET CFGMODE PASSWORD invalid size %d",
+                            request->DataSize);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+
+        auto cfg = Supla::Storage::ConfigInstance();
+        if (!cfg || !Supla::RegisterDevice::isSetCfgModePasswordEnabled()) {
+          return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+        }
+
+        TCalCfg_SetCfgModePassword *password =
+            reinterpret_cast<TCalCfg_SetCfgModePassword *>(request->Data);
+
+        Supla::SaltPassword saltPassword;
+        if (!saltPassword.isPasswordStrong(password->NewPassword)) {
+          SUPLA_LOG_WARNING("CALCFG SET CFGMODE PASSWORD: password too weak");
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        Supla::Config::generateSaltPassword(password->NewPassword,
+                                            &saltPassword);
+        cfg->setCfgModeSaltPassword(saltPassword);
+        cfg->saveWithDelay(2000);
+        SUPLA_LOG_INFO("CALCFG SET CFGMODE PASSWORD: new password set");
+        return SUPLA_CALCFG_RESULT_DONE;
       }
 
       default:
@@ -1234,6 +1295,8 @@ void SuplaDeviceClass::restartCfgModeTimeout(bool requireRestart) {
   if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
     return;
   }
+
+  cfgModeStartedRemotelyAndNotRefreshed = false;
 
   if (!forceRestartTimeMs) {
     if (requireRestart || deviceRestartTimeoutTimestamp) {
@@ -1386,19 +1449,29 @@ void SuplaDeviceClass::handleLocalActionTriggers() {
   }
 }
 
-void SuplaDeviceClass::checkIfRestartIsNeeded(uint32_t _millis) {
+void SuplaDeviceClass::checkIfRestartIsNeeded() {
+  uint32_t enterConfigModeTimestampCopy = enterConfigModeTimestamp;
+  uint32_t deviceRestartTimeoutTimestampCopy = deviceRestartTimeoutTimestamp;
+  uint32_t _millis = millis();
   uint32_t restartTimeoutValue = 5ul * 60 * 1000;
   if (leaveCfgModeAfterInactivityMin != 0) {
     restartTimeoutValue = leaveCfgModeAfterInactivityMin * 60 * 1000;
   }
-  if (deviceRestartTimeoutTimestamp != 0 &&
-      _millis - deviceRestartTimeoutTimestamp > restartTimeoutValue) {
-    SUPLA_LOG_INFO("Config mode 5 min timeout. Reset device");
+  if ((cfgModeStartedRemotelyAndNotRefreshed &&
+        enterConfigModeTimestampCopy != 0 &&
+       _millis - enterConfigModeTimestampCopy > restartTimeoutValue)) {
+    SUPLA_LOG_INFO("Config mode timeout. Leave without restart");
+    leaveConfigModeWithoutRestart();
+  }
+  if ((leaveCfgModeAfterInactivityMin != 0 &&
+       deviceRestartTimeoutTimestampCopy != 0 &&
+       _millis - deviceRestartTimeoutTimestampCopy > restartTimeoutValue)) {
+    SUPLA_LOG_INFO("Config mode timeout. Reset device");
     softRestart();
   }
   if (forceRestartTimeMs &&
-      _millis - deviceRestartTimeoutTimestamp > forceRestartTimeMs) {
-    SUPLA_LOG_DEBUG("Reset requested. Reset device");
+      _millis - deviceRestartTimeoutTimestampCopy > forceRestartTimeMs) {
+    SUPLA_LOG_INFO("Reset requested. Reset device");
     softRestart();
   }
   if (resetOnConnectionFailTimeoutSec) {
@@ -1606,6 +1679,7 @@ void SuplaDeviceClass::setMacLengthInHostname(int value) {
 
 void SuplaDeviceClass::setStatusLed(Supla::Device::StatusLed *led) {
   statusLed = led;
+  SUPLA_LOG_DEBUG("SD: add flag CALCFG_IDENTIFY_DEVICE");
   addFlags(SUPLA_DEVICE_FLAG_CALCFG_IDENTIFY_DEVICE);
 }
 
@@ -1621,24 +1695,14 @@ bool SuplaDeviceClass::isAutomaticFirmwareUpdateEnabled() const {
 
 void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
   if (value) {
+    SUPLA_LOG_DEBUG("SD: add flag AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED");
     addFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);
+    // register DeviceConfig field bit:
+    Supla::Device::RemoteDeviceConfig::RegisterConfigField(
+        SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE);
   } else {
     removeFlags(SUPLA_DEVICE_FLAG_AUTOMATIC_FIRMWARE_UPDATE_SUPPORTED);
   }
-}
-
-Supla::AutoUpdateMode SuplaDeviceClass::getAutoUpdateMode() const {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    uint8_t otaMode = 0;
-    if (cfg->getUInt8(Supla::ConfigTag::OtaModeTag, &otaMode)) {
-      if (otaMode <= SUPLA_FIRMWARE_UPDATE_MODE_ALL_ENABLED) {
-        return static_cast<Supla::AutoUpdateMode>(otaMode);
-      }
-    }
-    return Supla::AutoUpdateMode::SecurityOnly;
-  }
-  return Supla::AutoUpdateMode::ForcedOff;
 }
 
 SuplaDeviceClass SuplaDevice;

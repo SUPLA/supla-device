@@ -22,7 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 extern int esp32PwmChannelCounter;
 #endif
 
-Supla::Control::RGBLeds::RGBLeds(Supla::Io *io,
+Supla::Control::RGBLeds::RGBLeds(Supla::Io::Base *io,
                                  int redPin,
                                  int greenPin,
                                  int bluePin)

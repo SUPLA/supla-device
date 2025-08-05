@@ -28,16 +28,16 @@ Use library manager to install it
 #include <supla/log_wrapper.h>
 
 namespace Supla {
-namespace Sensor {
+namespace Io {
 
-class ExtADS1115 : public Supla::Io {
+class ADS1115 : public Supla::Io::Base {
  public:
-  explicit ExtADS1115(uint8_t address = 0x48,
-                      TwoWire *wire = &Wire,
-                      uint8_t dataRrate = 7)
-      : Supla::Io(false), ads_(address, wire) {
+  explicit ADS1115(uint8_t address = 0x48,
+                   TwoWire *wire = &Wire,
+                   uint8_t dataRrate = 7)
+      : Supla::Io::Base(false), ads_(address, wire) {
     if (!ads_.begin()) {
-      SUPLA_LOG_DEBUG("Unable to find ADS1115 at address 0x%x", address);
+      SUPLA_LOG_ERROR("Unable to find ADS1115 at address 0x%x", address);
     } else {
       ads_.setDataRate(dataRrate);
       SUPLA_LOG_DEBUG("ADS1115 is connected at address: 0x%x, Gain: %d, "
@@ -64,7 +64,7 @@ class ExtADS1115 : public Supla::Io {
   int customAnalogRead(int channelNumber, uint8_t pin) override {
     if (ads_.isConnected()) {
       if (pin > 3) {
-        SUPLA_LOG_DEBUG("[ADS1115] invalid pin %d", pin);
+        SUPLA_LOG_WARNING("[ADS1115] invalid pin %d", pin);
         return -1;
       }
       ads_.setGain(gain_);
@@ -83,5 +83,5 @@ class ExtADS1115 : public Supla::Io {
   uint8_t gain_ = 0;
 };
 
-};  // namespace Sensor
+};  // namespace Io
 };  // namespace Supla

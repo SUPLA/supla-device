@@ -31,12 +31,12 @@
 namespace Supla {
 namespace Io {
 
-class MCP23017 : public Supla::Io, Supla::Element {
+class MCP23017 : public Supla::Io::Base, Supla::Element {
  public:
   explicit MCP23017(uint8_t address = 0x20,
                     TwoWire *wire = &Wire,
                     bool pullUp = false)
-      : Supla::Io(false), mcp_(address, wire) {
+      : Supla::Io::Base(false), mcp_(address, wire) {
     if (!mcp_.begin(pullUp)) {
       SUPLA_LOG_ERROR("Unable to find MCP23017 at address: 0x%x", address);
     } else {

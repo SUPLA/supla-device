@@ -16,6 +16,5 @@ var searchData=
   ['espwebserver_13',['EspWebServer',['../classSupla_1_1EspWebServer.html',1,'Supla']]],
   ['espwifi_14',['ESPWifi',['../classSupla_1_1ESPWifi.html',1,'Supla']]],
   ['ethernetparameters_15',['EthernetParameters',['../classEthernetParameters.html',1,'EthernetParameters'],['../classSupla_1_1Html_1_1EthernetParameters.html',1,'Supla::Html::EthernetParameters']]],
-  ['ethernetshield_16',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]],
-  ['extpca9685_17',['ExtPCA9685',['../classSupla_1_1Control_1_1ExtPCA9685.html',1,'Supla::Control']]]
+  ['ethernetshield_16',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]]
 ];

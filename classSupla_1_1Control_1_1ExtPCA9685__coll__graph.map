@@ -1,6 +1,0 @@
-<map id="Supla::Control::ExtPCA9685" name="Supla::Control::ExtPCA9685">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,80,186,106"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="42,5,149,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,46,98,80,93,80,93,46"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="166,11,176,18,167,25,150,28,149,22,165,21,171,18,163,15"/>
-</map>

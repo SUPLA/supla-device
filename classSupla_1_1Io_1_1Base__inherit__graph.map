@@ -1,5 +1,9 @@
 <map id="Supla::Io::Base" name="Supla::Io::Base">
-<area shape="rect" id="Node000001" title=" " alt="" coords="42,5,149,31"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1ExtPCA9685.html" title=" " alt="" coords="5,79,186,105"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,46,98,79,93,79,93,46"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="179,5,286,31"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Io_1_1ADS1115.html" title=" " alt="" coords="5,79,138,105"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="193,40,100,81,98,76,191,35"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Io_1_1MCP23017.html" title=" " alt="" coords="162,79,304,105"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="236,46,236,79,230,79,230,46"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Io_1_1PCA9685.html" title=" " alt="" coords="328,79,460,105"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="275,35,368,76,366,81,273,40"/>
 </map>

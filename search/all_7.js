@@ -31,6 +31,5 @@ var searchData=
   ['ethernetparameters_28',['EthernetParameters',['../classEthernetParameters.html',1,'EthernetParameters'],['../classSupla_1_1Html_1_1EthernetParameters.html',1,'Supla::Html::EthernetParameters']]],
   ['ethernetshield_29',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]],
   ['example_30',['example',['../index.html#autotoc_md27',1,'ESP32 example'],['../index.html#autotoc_md26',1,'ESP8266 example']]],
-  ['exmaples_31',['Exmaples',['../index.html#autotoc_md10',1,'']]],
-  ['extpca9685_32',['ExtPCA9685',['../classSupla_1_1Control_1_1ExtPCA9685.html',1,'Supla::Control']]]
+  ['exmaples_31',['Exmaples',['../index.html#autotoc_md10',1,'']]]
 ];

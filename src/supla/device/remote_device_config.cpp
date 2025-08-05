@@ -50,11 +50,13 @@ void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
   if (fieldBit == 0 || (fieldBit & (fieldBit - 1)) != 0) {
     // (fieldBit & (fieldBit) - 1) will evaluate to 0 only when fieldBit had
     // only one bit set to 1 (that number was power of 2)
-    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid field 0x%08llx", fieldBit);
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid field 0x%X%08X",
+                      PRINTF_UINT64_HEX(fieldBit));
     return;
   }
   if (!(fieldBitsUsedByDevice & fieldBit)) {
-    SUPLA_LOG_INFO("RemoteDeviceConfig: Registering field 0x%08llx", fieldBit);
+    SUPLA_LOG_INFO("RemoteDeviceConfig: Registering field 0x%X%08X",
+                   PRINTF_UINT64_HEX(fieldBit));
   }
   fieldBitsUsedByDevice |= fieldBit;
 }
@@ -62,8 +64,8 @@ void RemoteDeviceConfig::RegisterConfigField(uint64_t fieldBit) {
 void RemoteDeviceConfig::SetHomeScreenContentAvailable(uint64_t allValues) {
   if (allValues != homeScreenContentAvailable) {
     homeScreenContentAvailable = allValues;
-    SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%08llx",
-                 homeScreenContentAvailable);
+    SUPLA_LOG_INFO("RemoteDeviceConfig: SetHomeScreenContentAvailable 0x%X%08X",
+                   PRINTF_UINT64_HEX(homeScreenContentAvailable));
   }
 }
 
@@ -76,7 +78,8 @@ enum Supla::HomeScreenContent RemoteDeviceConfig::HomeScreenContentBitToEnum(
   if (fieldBit == 0 || (fieldBit & (fieldBit - 1)) != 0) {
     // (fieldBit & (fieldBit) - 1) will evaluate to 0 only when fieldBit had
     // only one bit set to 1 (that number was power of 2)
-    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid field 0x%08llx", fieldBit);
+    SUPLA_LOG_WARNING("RemoteDeviceConfig: invalid field 0x%X%08X",
+                      PRINTF_UINT64_HEX(fieldBit));
     return Supla::HomeScreenContent::HOME_SCREEN_OFF;
   }
 
@@ -142,11 +145,11 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
       requireSetDeviceConfigFields =
           config->AvailableFields ^ fieldBitsUsedByDevice;
       SUPLA_LOG_INFO(
-          "RemoteDeviceConfig: Config fields mismatch (0x%08llx != 0x%08llx) - "
-          "sending device config for fields 0x%08llx",
-          config->AvailableFields,
-          fieldBitsUsedByDevice,
-          requireSetDeviceConfigFields);
+          "RemoteDeviceConfig: Config fields mismatch (0x%X%08X != 0x%X%08X) - "
+          "sending device config for fields 0x%X%08X",
+          PRINTF_UINT64_HEX(config->AvailableFields),
+          PRINTF_UINT64_HEX(fieldBitsUsedByDevice),
+          PRINTF_UINT64_HEX(requireSetDeviceConfigFields));
     }
   }
 
@@ -207,9 +210,13 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           dataIndex += sizeof(TDeviceConfig_Modbus);
           break;
         }
+        case SUPLA_DEVICE_CONFIG_FIELD_FIRMWARE_UPDATE: {
+          dataIndex += sizeof(TDeviceConfig_FirmwareUpdate);
+          break;
+        }
         default: {
-          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
-                            fieldBit);
+          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%X%08X",
+                            PRINTF_UINT64_HEX(fieldBit));
           resultCode = SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
           return;
         }
@@ -394,8 +401,8 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
           break;
         }
         default: {
-          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
-                            fieldBit);
+          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%X%08X",
+                            PRINTF_UINT64_HEX(fieldBit));
           resultCode = SUPLA_CONFIG_RESULT_TYPE_NOT_SUPPORTED;
           return;
         }
@@ -537,13 +544,13 @@ void RemoteDeviceConfig::processHomeScreenContentConfig(uint64_t fieldBit,
     return;
   }
   SUPLA_LOG_DEBUG(
-      "config->HomeScreenContent %04x, homeScreenContentAvailable %08llx",
-      config->HomeScreenContent,
-      homeScreenContentAvailable);
+      "config->HomeScreenContent %X%08X, homeScreenContentAvailable %X%08X",
+      PRINTF_UINT64_HEX(config->HomeScreenContent),
+      PRINTF_UINT64_HEX(homeScreenContentAvailable));
   if ((config->HomeScreenContent & homeScreenContentAvailable) == 0) {
     SUPLA_LOG_WARNING(
-        "Selected HomeScreenContent %d is not supported by this device",
-        config->HomeScreenContent);
+        "Selected HomeScreenContent %X%08X is not supported by this device",
+        PRINTF_UINT64_HEX(config->HomeScreenContent));
     return;
   }
   int8_t currentValue = 0;
@@ -993,8 +1000,8 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
         }
 
         default: {
-          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%08llx",
-                            fieldBit);
+          SUPLA_LOG_WARNING("RemoteDeviceConfig: unknown field 0x%X%08X",
+                            PRINTF_UINT64_HEX(fieldBit));
           break;
         }
       }
@@ -1009,6 +1016,9 @@ bool RemoteDeviceConfig::fillSetDeviceConfig(
 void RemoteDeviceConfig::handleSetDeviceConfigResult(
     TSDS_SetDeviceConfigResult *result) {
   (void)(result);
+  if (result->Result == SUPLA_CONFIG_RESULT_TRUE) {
+    ClearResendAttemptsCounter();
+  }
   // received set device config result means that we updated all local
   // config changes to the server. We can clear localConfigChange flag
   auto cfg = Supla::Storage::ConfigInstance();
@@ -1244,6 +1254,7 @@ void RemoteDeviceConfig::processFirmwareUpdateConfig(
             "Firmware update is forced off. Changing policy is not allowed");
         valid = false;
       } else {
+        SUPLA_LOG_INFO("Firmware update policy changed to %d", otaPolicy);
         cfg->setAutoUpdatePolicy(otaPolicy);
         cfg->saveWithDelay(1000);
       }

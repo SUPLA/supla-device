@@ -425,11 +425,10 @@ void HvacBase::onLoadState() {
         lastWorkingMode.SetpointTemperatureHeat,
         lastWorkingMode.Flags);
     SUPLA_LOG_DEBUG(
-        "HVAC[%d] onLoadState. countdownTimerEnds: %lld, "
+        "HVAC[%d] onLoadState. "
         "lastManualSetpointCool: %d, lastManualSetpointHeat: %d, "
         "lastManualMode: %d",
         getChannelNumber(),
-        countdownTimerEnds,
         lastManualSetpointCool,
         lastManualSetpointHeat,
         lastManualMode);

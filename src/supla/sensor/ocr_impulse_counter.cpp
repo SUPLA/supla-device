@@ -114,12 +114,13 @@ Supla::ApplyConfigResult OcrImpulseCounter::applyChannelConfig(
       SUPLA_LOG_DEBUG("    AuthKey: %s", ocrConfig.AuthKey);
       SUPLA_LOG_DEBUG("    Host: %s", ocrConfig.Host);
       SUPLA_LOG_DEBUG("    PhotoIntervalSec: %d", ocrConfig.PhotoIntervalSec);
-      SUPLA_LOG_DEBUG("    LightingMode: %" PRIu64, ocrConfig.LightingMode);
+      SUPLA_LOG_DEBUG("    LightingMode: %X%08X",
+                      PRINTF_UINT64_HEX(ocrConfig.LightingMode));
       SUPLA_LOG_DEBUG("    LightingLevel: %d", ocrConfig.LightingLevel);
-      SUPLA_LOG_DEBUG("    MaximumIncrement: %" PRIu64,
-                      ocrConfig.MaximumIncrement);
-      SUPLA_LOG_DEBUG("    AvailableLightingModes: %" PRIu64,
-                      ocrConfig.AvailableLightingModes);
+      SUPLA_LOG_DEBUG("    MaximumIncrement: %X%08X",
+                      PRINTF_UINT64_HEX(ocrConfig.MaximumIncrement));
+      SUPLA_LOG_DEBUG("    AvailableLightingModes: %X%08X",
+                      PRINTF_UINT64_HEX(ocrConfig.AvailableLightingModes));
       if (ocrConfig.AvailableLightingModes != availableLightingModes) {
         SUPLA_LOG_DEBUG("OcrIC: invalid AvailableLightingModes");
         ocrConfig.AvailableLightingModes = availableLightingModes;
@@ -423,25 +424,25 @@ void OcrImpulseCounter::parseStatus(const char *status, int size) {
   // There is no previous counter value available, or user reset the counter,
   // so we just set current reading as a new counter value
   if (lastCorrectOcrReading == resultMeasurement) {
-    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64
-                    " == previous value %" PRIu64,
-                    resultMeasurement,
-                    lastCorrectOcrReading);
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %u == previous value %u",
+                    static_cast<uint32_t>(resultMeasurement),
+                    static_cast<uint32_t>(lastCorrectOcrReading));
   } else if (lastCorrectOcrReading == 0) {
-    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64 " (no previous value)",
-                    resultMeasurement);
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %u (no previous value)",
+                    static_cast<uint32_t>(resultMeasurement));
     setNewCounterValue = true;
   } else if (resultMeasurement == 0) {
-    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64, resultMeasurement);
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %u",
+                    static_cast<uint32_t>(resultMeasurement));
     setNewCounterValue = true;
 
   } else if (resultMeasurement < lastCorrectOcrReading) {
-    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64
-                    " < previous value %" PRIu64,
-                    resultMeasurement,
-                    lastCorrectOcrReading);
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %u < previous value %u",
+                    static_cast<uint32_t>(resultMeasurement),
+                    static_cast<uint32_t>(lastCorrectOcrReading));
   } else {
-    SUPLA_LOG_DEBUG("OcrIC: new counter value %" PRIu64, resultMeasurement);
+    SUPLA_LOG_DEBUG("OcrIC: new counter value %u",
+        static_cast<uint32_t>(resultMeasurement));
     setNewCounterValue = true;
   }
 
@@ -614,8 +615,9 @@ void OcrImpulseCounter::iterateAlways() {
           if (channel.getValueInt64() !=
               static_cast<uint64_t>(ocrTestExpectedResult)) {
             // Step 2 failed. Fail test.
-            SUPLA_LOG_ERROR("OcrIC: OCR test failed: expected %d, got %" PRIu64,
-                            ocrTestExpectedResult, channel.getValueInt64());
+            SUPLA_LOG_ERROR("OcrIC: OCR test failed: expected %d, got %d",
+                            ocrTestExpectedResult,
+                            static_cast<int32_t>(channel.getValueInt64()));
             ocrConfig.LightingLevel = OCR_DEFAULT_LIGHTING_LEVEL;
             testMode = false;
             factoryTester->setTestFailed(101);

@@ -188,7 +188,9 @@ void GeneralPurposeChannelBase::setDefaultValueMultiplier(int32_t multiplier) {
 }
 
 void GeneralPurposeChannelBase::setDefaultValueAdded(int64_t added) {
-  SUPLA_LOG_DEBUG("GPM[%d]: DefaultValueAdded %lld", getChannelNumber(), added);
+  SUPLA_LOG_DEBUG("GPM[%d]: DefaultValueAdded %d",
+                  getChannelNumber(),
+                  static_cast<int>(added));
   defaultValueAdded = added;
 }
 

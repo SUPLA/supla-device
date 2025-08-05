@@ -659,13 +659,14 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
   if (configFromServer->AvailablePhaseLedTypes != availablePhaseLedTypes ||
       configFromServer->AvailableCTTypes != availableCtTypes || !configValid) {
     SUPLA_LOG_WARNING(
-        "EM[%d]: Invalid config received from server %llu %llu %llu %llu, "
+        "EM[%d]: Invalid config received from server %X%08X %X%08X %X%08X "
+        "%X%08X, "
         "configValid %d",
         getChannelNumber(),
-        configFromServer->AvailablePhaseLedTypes,
-        configFromServer->AvailableCTTypes,
-        availablePhaseLedTypes,
-        availableCtTypes,
+        PRINTF_UINT64_HEX(configFromServer->AvailablePhaseLedTypes),
+        PRINTF_UINT64_HEX(configFromServer->AvailableCTTypes),
+        PRINTF_UINT64_HEX(availablePhaseLedTypes),
+        PRINTF_UINT64_HEX(availableCtTypes),
         configValid);
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }

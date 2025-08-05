@@ -1510,8 +1510,10 @@ void Channel::fillDeviceChannelStruct(
   deviceChannelStruct->ValueValidityTimeSec = validityTimeSec;
   deviceChannelStruct->DefaultIcon = getDefaultIcon();
   memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
+  // on some ESP platforms, printf functions for 64 bits is not available
+  // so we have to print it as two separate 32 bit values 0x%X%08X
   SUPLA_LOG_VERBOSE(
-      "CH[%i], type: %d, FuncList: 0x%X, function: %d, flags: 0x%llX, "
+      "CH[%i], type: %d, FuncList: 0x%X, function: %d, flags: 0x%X%08X, "
       "%s, validityTimeSec: %d, icon: %d, "
       "value: "
       "[%02x %02x %02x %02x %02x %02x %02x %02x]",
@@ -1519,10 +1521,10 @@ void Channel::fillDeviceChannelStruct(
       getChannelType(),
       getFuncList(),
       getDefaultFunction(),
-      getFlags(),
+      PRINTF_UINT64_HEX(getFlags()),
       state == 0   ? "online"
       : state == 1 ? "offline"
-                     : "online (not available)",
+                   : "online (not available)",
       validityTimeSec,
       getDefaultIcon(),
       static_cast<uint8_t>(value[0]),
@@ -1556,18 +1558,17 @@ void Channel::fillDeviceChannelStruct(
   deviceChannelStruct->DefaultIcon = getDefaultIcon();
   deviceChannelStruct->SubDeviceId = getSubDeviceId();
   memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
-  // TODO(klew): %llX with uint64_t is crashing on ESP32-C2 in method vnsnprintf
-  // in log.c. Need to fix this (i.e. change to use ESP_LOGx directly?)
+  // uint64_t printf is crashing on ESP32-C2 in method vnsnprintf
   SUPLA_LOG_VERBOSE(
       "CH[%i], subDevId: %d, type: %d, FuncList: 0x%X, function: %d, flags: "
-      "0x%llX, %s, validityTimeSec: %d, icon: %d, value: "
+      "0x%X%08X, %s, validityTimeSec: %d, icon: %d, value: "
       "[%02x %02x %02x %02x %02x %02x %02x %02x]",
       getChannelNumber(),
       getSubDeviceId(),
       getChannelType(),
       getFuncList(),
       getDefaultFunction(),
-      getFlags(),
+      PRINTF_UINT64_HEX(getFlags()),
       state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE    ? "online"
       : state == SUPLA_CHANNEL_OFFLINE_FLAG_OFFLINE ? "offline"
       : state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE_BUT_NOT_AVAILABLE

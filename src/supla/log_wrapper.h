@@ -28,6 +28,8 @@ extern "C" char supla_log_string(char **buffer, int *size, va_list va,
                                        const char *__fmt);
 extern "C" void supla_vlog(int __pri, const char *message);
 
+#define PRINTF_UINT64_HEX(x) \
+  static_cast<uint32_t>((x) >> 32), static_cast<uint32_t>(x)
 
 #ifdef ARDUINO
 #include <Arduino.h>
@@ -56,6 +58,35 @@ void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...);
 #define SUPLA_LOG_ERROR(arg_format, ...) {};
 #endif
 
+#ifdef SUPLA_DEVICE_ESP32
+#include <esp_log.h>
+extern const char *SUPLA_TAG;
+#ifndef SUPLA_LOG_VERBOSE
+#define SUPLA_LOG_VERBOSE(arg_format, ...) \
+            ESP_LOGV(SUPLA_TAG, arg_format, ## __VA_ARGS__)
+#endif
+
+#ifndef SUPLA_LOG_DEBUG
+#define SUPLA_LOG_DEBUG(arg_format, ...) \
+            ESP_LOGD(SUPLA_TAG, arg_format, ## __VA_ARGS__)
+#endif
+
+#ifndef SUPLA_LOG_INFO
+#define SUPLA_LOG_INFO(arg_format, ...) \
+            ESP_LOGI(SUPLA_TAG, arg_format, ## __VA_ARGS__)
+#endif
+
+#ifndef SUPLA_LOG_WARNING
+#define SUPLA_LOG_WARNING(arg_format, ...) \
+            ESP_LOGW(SUPLA_TAG, arg_format, ## __VA_ARGS__)
+#endif
+
+#ifndef SUPLA_LOG_ERROR
+#define SUPLA_LOG_ERROR(arg_format, ...) \
+            ESP_LOGE(SUPLA_TAG, arg_format, ## __VA_ARGS__)
+#endif
+
+#endif
 
 #ifndef SUPLA_LOG_VERBOSE
 #define SUPLA_LOG_VERBOSE(arg_format, ...) \

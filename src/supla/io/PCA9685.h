@@ -28,14 +28,14 @@ Use library manager to install it
 #include <supla/log_wrapper.h>
 
 namespace Supla {
-namespace Control {
+namespace Io {
 
-class ExtPCA9685 : public Supla::Io::Base {
+class PCA9685 : public Supla::Io::Base {
  public:
-  explicit ExtPCA9685(uint8_t address = 0x40, TwoWire *wire = &Wire)
+  explicit PCA9685(uint8_t address = 0x40, TwoWire *wire = &Wire)
       : Supla::Io::Base(false), pca_(address, wire) {
     if (!pca_.begin()) {
-      SUPLA_LOG_DEBUG("Unable to find PCA9685 at address 0x%x", address);
+      SUPLA_LOG_ERROR("Unable to find PCA9685 at address 0x%x", address);
     } else {
       SUPLA_LOG_DEBUG("PCA9685 is connected at address: 0x%x, "
                          "with PWM freq: %d Hz", address, pca_.getFrequency());
@@ -78,5 +78,5 @@ class ExtPCA9685 : public Supla::Io::Base {
   ::PCA9685 pca_;
 };
 
-};  // namespace Control
+};  // namespace Io
 };  // namespace Supla

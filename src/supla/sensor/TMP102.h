@@ -30,18 +30,18 @@ Use library manager to install it
 namespace Supla {
 namespace Sensor {
 
-class ExtTMP102 : public Thermometer {
+class TMP102 : public Thermometer {
  public:
-  explicit ExtTMP102(uint8_t address = 0x48,
-                     TwoWire *wire = &Wire,
-                     float hTemp = 70.0,
-                     float lTemp = 65.0,
-                     bool extMode = false,
-                     bool alertPolarity = false,
-                     uint8_t fault = 0,
-                     bool alertMode = false) : alertMode_(alertMode) {
+  explicit TMP102(uint8_t address = 0x48,
+                  TwoWire *wire = &Wire,
+                  float hTemp = 70.0,
+                  float lTemp = 65.0,
+                  bool extMode = false,
+                  bool alertPolarity = false,
+                  uint8_t fault = 0,
+                  bool alertMode = false) : alertMode_(alertMode) {
     if (!tmp102_.begin(address, *wire)) {
-      SUPLA_LOG_DEBUG("Unable to find TMP102 at address: 0x%x", address);
+      SUPLA_LOG_ERROR("Unable to find TMP102 at address: 0x%x", address);
     } else {
       SUPLA_LOG_DEBUG("TMP102 is connected at address: 0x%x", address);
       tmp102_.wakeup();
@@ -65,7 +65,7 @@ class ExtTMP102 : public Thermometer {
       if (temp >= -55.0 && temp <= 128.0) {
         return round(temp * 100) / 100.0;
       } else {
-        SUPLA_LOG_DEBUG("[TMP102] invalid temperature reading: %f", temp);
+        SUPLA_LOG_WARNING("[TMP102] invalid temperature reading: %f", temp);
         return TEMPERATURE_NOT_AVAILABLE;
       }
     } else {
@@ -80,7 +80,7 @@ class ExtTMP102 : public Thermometer {
 
  protected:
   ::TMP102 tmp102_;
-  bool alertMode_;
+  bool alertMode_ - false;
   bool isConnected_ = false;
 };
 

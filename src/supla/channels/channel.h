@@ -251,24 +251,24 @@ class Channel : public LocalAction {
   virtual bool isExtended() const;
   bool isUpdateReady() const;
   int getChannelNumber() const;
-  int32_t getChannelType() const;
+  uint32_t getChannelType() const;
 
-  void setType(int32_t type);
+  void setType(uint32_t type);
   // setDefault and setDefaultFunction are the same methods.
   // Second was added for better readability
-  void setDefault(int32_t value);
-  void setDefaultFunction(int32_t function);
-  int32_t getDefaultFunction() const;
-  bool isFunctionValid(int32_t function) const;
+  void setDefault(uint32_t value);
+  void setDefaultFunction(uint32_t function);
+  uint32_t getDefaultFunction() const;
+  bool isFunctionValid(uint32_t function) const;
   void setFlag(uint64_t flag);
   void unsetFlag(uint64_t flag);
   uint64_t getFlags() const;
-  void setFuncList(int32_t functions);
-  int32_t getFuncList() const;
-  void addToFuncList(int32_t function);
-  void removeFromFuncList(int32_t function);
-  void setActionTriggerCaps(int32_t caps);
-  int32_t getActionTriggerCaps();
+  void setFuncList(uint32_t functions);
+  uint32_t getFuncList() const;
+  void addToFuncList(uint32_t function);
+  void removeFromFuncList(uint32_t function);
+  void setActionTriggerCaps(uint32_t caps);
+  uint32_t getActionTriggerCaps();
 
   void setValidityTimeSec(uint32_t timeSec);
   virtual void sendUpdate();

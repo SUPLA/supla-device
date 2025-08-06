@@ -920,7 +920,7 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  auto channelFunction = newConfig->Func;
+  auto channelFunction = static_cast<uint32_t>(newConfig->Func);
   if (!isFunctionSupported(channelFunction)) {
     serverChannelFunctionValid = false;
     if (channelFunction == 0) {
@@ -3991,7 +3991,7 @@ int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
   return output;
 }
 
-void HvacBase::changeFunction(int32_t newFunction, bool changedLocally) {
+void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
   auto currentFunction = channel.getDefaultFunction();
   if (currentFunction == newFunction) {
     return;

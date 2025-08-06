@@ -408,7 +408,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void copyFullChannelConfigTo(TChannelConfig_HVAC *hvac) const;
   void turnOn();
   bool turnOnWeeklySchedlue();
-  void changeFunction(int32_t newFunction, bool changedLocally);
+  void changeFunction(uint32_t newFunction, bool changedLocally);
   _supla_int_t getChannelFunction();
 
   void addPrimaryOutput(Supla::Control::OutputInterface *output);

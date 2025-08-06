@@ -49,8 +49,8 @@ enum class ChannelType : uint8_t {
   CONTAINER,
 };
 
-int32_t channelTypeToProtoType(ChannelType type);
-ChannelType protoTypeToChannelType(int32_t type);
+uint32_t channelTypeToProtoType(ChannelType type);
+ChannelType protoTypeToChannelType(uint32_t type);
 
 }  // namespace Supla
 

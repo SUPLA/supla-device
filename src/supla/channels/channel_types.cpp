@@ -22,7 +22,7 @@
 
 using Supla::ChannelType;
 
-int32_t Supla::channelTypeToProtoType(ChannelType type) {
+uint32_t Supla::channelTypeToProtoType(ChannelType type) {
   switch (type) {
     case ChannelType::BINARYSENSOR:
       return SUPLA_CHANNELTYPE_BINARYSENSOR;
@@ -74,7 +74,7 @@ int32_t Supla::channelTypeToProtoType(ChannelType type) {
   }
 }
 
-ChannelType Supla::protoTypeToChannelType(int32_t type) {
+ChannelType Supla::protoTypeToChannelType(uint32_t type) {
   switch (type) {
     case SUPLA_CHANNELTYPE_BINARYSENSOR:
       return ChannelType::BINARYSENSOR;

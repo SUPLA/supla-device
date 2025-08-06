@@ -305,11 +305,11 @@ bool Channel::setNewValue(const char *newValue) {
   return false;
 }
 
-void Channel::setType(int32_t type) {
+void Channel::setType(uint32_t type) {
   channelType = protoTypeToChannelType(type);
 }
 
-void Channel::setDefault(int32_t value) {
+void Channel::setDefault(uint32_t value) {
   if (value > UINT16_MAX) {
     SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
                     channelNumber, value);
@@ -319,11 +319,11 @@ void Channel::setDefault(int32_t value) {
   defaultFunction = value;
 }
 
-void Channel::setDefaultFunction(int32_t function) {
+void Channel::setDefaultFunction(uint32_t function) {
   setDefault(function);
 }
 
-int32_t Channel::getDefaultFunction() const {
+uint32_t Channel::getDefaultFunction() const {
   return defaultFunction;
 }
 
@@ -335,19 +335,19 @@ void Channel::unsetFlag(uint64_t flag) {
   channelFlags &= ~flag;
 }
 
-void Channel::setFuncList(int32_t functions) {
+void Channel::setFuncList(uint32_t functions) {
   functionsBitmap = functions;
 }
 
-int32_t Channel::getFuncList() const {
+uint32_t Channel::getFuncList() const {
   return functionsBitmap;
 }
 
-void Channel::addToFuncList(int32_t function) {
+void Channel::addToFuncList(uint32_t function) {
   functionsBitmap |= function;
 }
 
-void Channel::removeFromFuncList(int32_t function) {
+void Channel::removeFromFuncList(uint32_t function) {
   functionsBitmap &= ~function;
 }
 
@@ -355,11 +355,11 @@ uint64_t Channel::getFlags() const {
   return channelFlags;
 }
 
-void Channel::setActionTriggerCaps(int32_t caps) {
+void Channel::setActionTriggerCaps(uint32_t caps) {
   setFuncList(caps);
 }
 
-int32_t Channel::getActionTriggerCaps() {
+uint32_t Channel::getActionTriggerCaps() {
   return getFuncList();
 }
 
@@ -611,7 +611,7 @@ void Channel::setNewValue(uint8_t red,
   }
 }
 
-int32_t Channel::getChannelType() const {
+uint32_t Channel::getChannelType() const {
   return channelTypeToProtoType(channelType);
 }
 
@@ -1601,7 +1601,7 @@ int8_t *Channel::getValuePtr() {
   return value;
 }
 
-bool Channel::isFunctionValid(int32_t function) const {
+bool Channel::isFunctionValid(uint32_t function) const {
   switch (channelType) {
     // TODO(klew): add other functions
     case ChannelType::BINARYSENSOR: {

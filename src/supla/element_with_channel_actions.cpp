@@ -249,7 +249,7 @@ bool Supla::ElementWithChannelActions::saveConfigChangeFlag() const {
 }
 
 bool Supla::ElementWithChannelActions::setAndSaveFunction(
-    _supla_int_t channelFunction) {
+    uint32_t channelFunction) {
   auto channel = getChannel();
   if (!channel) {
     return false;
@@ -365,7 +365,7 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   }
 
   // Apply channel function setting
-  auto newFunction = result->Func;
+  auto newFunction = static_cast<uint32_t>(result->Func);
   if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
     SUPLA_LOG_INFO("Channel[%d] function changed to %d",
                    getChannelNumber(),

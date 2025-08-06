@@ -109,7 +109,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void runAction(uint16_t event) const override;
 
   // returns true if function was changed (previous one was different)
-  virtual bool setAndSaveFunction(_supla_int_t channelFunction);
+  virtual bool setAndSaveFunction(uint32_t channelFunction);
   virtual bool loadFunctionFromConfig();
   virtual bool saveConfigChangeFlag() const;
   virtual bool loadConfigChangeFlag();

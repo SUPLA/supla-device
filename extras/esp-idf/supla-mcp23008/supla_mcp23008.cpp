@@ -23,7 +23,10 @@
 using Supla::MCP23008;
 
 MCP23008::MCP23008(Supla::I2CDriver *driver, uint8_t address, bool initDefaults)
-    : Io(false), driver(driver), address(address), initDefaults(initDefaults) {
+    : Supla::Io::Base(false),
+      driver(driver),
+      address(address),
+      initDefaults(initDefaults) {
 }
 
 void MCP23008::customPinMode(int channelNumber, uint8_t pin, uint8_t mode) {
@@ -178,7 +181,7 @@ void MCP23008::readAllAndPrint() {
     uint8_t buf = 0;
     uint8_t addr = i;
     i2c_master_transmit_receive(handle, &addr, 1, &buf, 1, 300);
-    snprintf(text + i * 3, 4, " %02X", buf);
+    snprintf(text + i * 3, 4, " %02X", buf);  // NOLINT(runtime/printf)
   }
   SUPLA_LOG_DEBUG("MCP23008: %s", text);
   driver->release();

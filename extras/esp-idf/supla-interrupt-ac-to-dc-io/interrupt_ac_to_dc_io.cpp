@@ -39,7 +39,7 @@ void IRAM_ATTR interruptHandler(void* arg) {
 
 }  // namespace
 
-InterruptAcToDcIo::InterruptAcToDcIo() : Supla::Io(false) {
+InterruptAcToDcIo::InterruptAcToDcIo() : Supla::Io::Base(false) {
   for (int i = 0; i < INTERRUPT_AC_TO_DC_IO_MAX_GPIOS; i++) {
     gpioState[i] = 255;
   }

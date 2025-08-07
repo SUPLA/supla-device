@@ -540,6 +540,7 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       mbedtls_aes_context aes = {};
       mbedtls_aes_init(&aes);
       auto result = mbedtls_aes_setkey_dec(&aes, aesKey, 256);
+      (void)(result);
       SUPLA_LOG_DEBUG("mbedtls_aes_setkey_dec result: %d", result);
 
       prvtKeyLen = prvtKeyLen - IV_SIZE;

@@ -26,7 +26,7 @@ namespace Supla {
 
 #define INTERRUPT_AC_TO_DC_IO_MAX_GPIOS 50
 
-class InterruptAcToDcIo : public Io, public Element {
+class InterruptAcToDcIo : public Io::Base, public Element {
  public:
   InterruptAcToDcIo();
   ~InterruptAcToDcIo();

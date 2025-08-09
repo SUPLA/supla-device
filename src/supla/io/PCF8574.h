@@ -75,5 +75,5 @@ class PCF8574 : public Supla::Io::Base {
   ::PCF8574 pcf_;
 };
 
-}; // namespace Io
-}; // namespace Supla
+};  // namespace Io
+};  // namespace Supla

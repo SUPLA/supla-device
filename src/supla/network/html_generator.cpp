@@ -427,15 +427,21 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
     }
   }
 
-  sender->send("<div class=\"box\">");
-  sender->send("<h3>Additional Settings</h3>");
+  bool boxSend = false;
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_FORM) {
+      if (!boxSend) {
+        sender->send("<div class=\"box\">");
+        sender->send("<h3>Additional Settings</h3>");
+        boxSend = true;
+      }
       htmlElement->send(sender);
     }
   }
-  sender->send("</div>");
+  if (boxSend) {
+    sender->send("</div>");
+  }
 
   sendButtons(sender);
   sender->send("</form>");
@@ -444,15 +450,21 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
 void Supla::HtmlGenerator::sendBetaForm(Supla::WebSender *sender) {
   sender->send("<form id=\"cfgform\" method=\"post\">");
 
-  sender->send("<div class=\"box\">");
-  sender->send("<h3>Additional Settings</h3>");
+  bool boxSend = false;
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_BETA_FORM) {
+      if (!boxSend) {
+        sender->send("<div class=\"box\">");
+        sender->send("<h3>Additional Settings</h3>");
+        boxSend = true;
+      }
       htmlElement->send(sender);
     }
   }
-  sender->send("</div>");
+  if (boxSend) {
+    sender->send("</div>");
+  }
 
   sendButtons(sender);
   sender->send("</form>");

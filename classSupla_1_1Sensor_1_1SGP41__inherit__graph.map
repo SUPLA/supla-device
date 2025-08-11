@@ -1,0 +1,5 @@
+<map id="Supla::Sensor::SGP41" name="Supla::Sensor::SGP41">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,155,105"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="26,5,134,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="83,46,83,79,77,79,77,46"/>
+</map>

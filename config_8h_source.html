@@ -183,7 +183,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>  <span class="keyword">static</span> <span class="keywordtype">void</span> generateKey(<span class="keywordtype">char</span> *, <span class="keywordtype">int</span>, <span class="keyword">const</span> <span class="keywordtype">char</span> *);</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> commit();</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> saveWithDelay(uint32_t delayMs);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> saveWithDelay(uint16_t delayMs);</div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> saveIfNeeded();</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>  <span class="comment">// Device generic config</span></div>
@@ -269,15 +269,16 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
 <div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> <span class="keyword">protected</span>:</div>
 <div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> getBlobSize(<span class="keyword">const</span> <span class="keywordtype">char</span>* key) = 0;</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  uint32_t saveDelayTimestamp = 0;</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  uint32_t deviceConfigUpdateDelayTimestamp = 0;</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>  uint32_t saveDelayMs = 0;</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  int8_t deviceConfigChangeFlag = -1;</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>};</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span> </div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  uint32_t saveDelayTimestamp = 0;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>  uint32_t deviceConfigUpdateDelayTimestamp = 0;</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  uint16_t saveDelayMs = 0;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  int8_t deviceConfigChangeFlag = -1;</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>};</div>
 </div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span> </div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_CONFIG_H_</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span> </div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_CONFIG_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1Config_html_a74280486d8c37b9096797fc7b30b665c"><div class="ttname"><a href="classSupla_1_1Config.html#a74280486d8c37b9096797fc7b30b665c">Supla::Config::getAutoUpdatePolicy</a></div><div class="ttdeci">Supla::AutoUpdatePolicy getAutoUpdatePolicy()</div><div class="ttdoc">Returns current automatic firmware update policy.</div><div class="ttdef"><b>Definition</b> config.cpp:652</div></div>
 <div class="ttc" id="aclassSupla_1_1Config_html_a88e17e4e850a9f1682eec14ab5d88669"><div class="ttname"><a href="classSupla_1_1Config.html#a88e17e4e850a9f1682eec14ab5d88669">Supla::Config::setAutoUpdatePolicy</a></div><div class="ttdeci">void setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy)</div><div class="ttdoc">Sets automatic firmware update policy.</div><div class="ttdef"><b>Definition</b> config.cpp:662</div></div>
 <div class="ttc" id="astructSupla_1_1SaltPassword_html"><div class="ttname"><a href="structSupla_1_1SaltPassword.html">Supla::SaltPassword</a></div><div class="ttdef"><b>Definition</b> config.h:43</div></div>

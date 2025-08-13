@@ -24,7 +24,7 @@
 namespace Supla {
 class SPIDriver {
  public:
-  SPIDriver(int miso, int mosi, int clk);
+  SPIDriver(int16_t miso, int16_t mosi, int16_t clk);
 
   void initialize();
   bool isInitialized() const;
@@ -33,9 +33,9 @@ class SPIDriver {
                  spi_device_handle_t *deviceHandle);
 
  protected:
-  int miso = -1;
-  int mosi = -1;
-  int clk = -1;
+  int16_t miso = -1;
+  int16_t mosi = -1;
+  int16_t clk = -1;
   bool initialized = false;
 };
 

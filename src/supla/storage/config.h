@@ -87,7 +87,7 @@ class Config {
   static void generateKey(char *, int, const char *);
 
   virtual void commit();
-  virtual void saveWithDelay(uint32_t delayMs);
+  virtual void saveWithDelay(uint16_t delayMs);
   virtual void saveIfNeeded();
 
   // Device generic config
@@ -183,9 +183,10 @@ class Config {
 
  protected:
   virtual int getBlobSize(const char* key) = 0;
+
   uint32_t saveDelayTimestamp = 0;
   uint32_t deviceConfigUpdateDelayTimestamp = 0;
-  uint32_t saveDelayMs = 0;
+  uint16_t saveDelayMs = 0;
   int8_t deviceConfigChangeFlag = -1;
 };
 };  // namespace Supla

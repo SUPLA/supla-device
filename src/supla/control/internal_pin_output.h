@@ -65,13 +65,13 @@ class InternalPinOutput : public Element,
   bool isOnOffOnly() const override;
 
  protected:
-  int pin = -1;
+  int8_t pin = -1;
   bool highIsOn = true;
+  int8_t lastOutputValue = 0;
   int8_t stateOnInit = STATE_ON_INIT_OFF;
-  unsigned _supla_int_t durationMs = 0;
-  unsigned _supla_int_t storedTurnOnDurationMs = 0;
+  uint32_t durationMs = 0;
+  uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
-  int lastOutputValue = 0;
   Supla::Io::Base *io = nullptr;
 };
 

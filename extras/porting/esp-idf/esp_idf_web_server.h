@@ -47,9 +47,9 @@ class EspIdfWebServer : public Supla::WebServer {
 
   bool handlePost(httpd_req_t *req, bool beta = false);
 
-  void setServerCertificate(const char *serverCert,
+  void setServerCertificate(const uint8_t *serverCert,
                             int serverCertLen,
-                            const char *prvtKey,
+                            const uint8_t *prvtKey,
                             int prvtKeyLen);
 
   bool dataSaved = false;
@@ -90,18 +90,20 @@ class EspIdfWebServer : public Supla::WebServer {
   void cleanupCerts();
   bool isSessionCookieValid(const char *sessionCookie);
   void setSessionCookie(httpd_req_t *req, char *buf, int bufLen);
+
   httpd_handle_t serverHttps = {};
   httpd_handle_t serverHttp = {};
-  uint8_t *serverCert = nullptr;
+  const uint8_t *serverCert = nullptr;
   uint8_t *prvtKey = nullptr;
-  int serverCertLen = 0;
-  int prvtKeyLen = 0;
-  bool prvtKeyDecrypted = false;
+  uint16_t serverCertLen = 0;
+  uint16_t prvtKeyLen = 0;
 
   uint32_t lastLoginAttemptTimestamp = 0;
   SaltPassword saltPassword = {};
   uint8_t sessionSecret[32] = {};
-  int failedLoginAttempts = 0;
+
+  uint8_t failedLoginAttempts = 0;
+  bool prvtKeyDecrypted = false;
 };
 
 };  // namespace Supla

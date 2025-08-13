@@ -399,7 +399,7 @@ bool Config::setCustomCA(const char* customCA) {
   return setString("custom_ca", customCA);
 }
 
-void Config::saveWithDelay(uint32_t delayMs) {
+void Config::saveWithDelay(uint16_t delayMs) {
   if (saveDelayMs == 0) {
     saveDelayMs = delayMs;
     saveDelayTimestamp = millis();

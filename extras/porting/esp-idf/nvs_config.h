@@ -70,11 +70,12 @@ class NvsConfig : public Config {
   bool initDeviceDataPartitionCopyAndChecksum();
   bool isDeviceDataValid(const DeviceDataBuf &buf) const;
   bool isDeviceDataFilled(const DeviceDataBuf &deviceDataBuf) const;
+
   nvs_handle_t nvsHandle = 0;
   const char* nvsPartitionName = nullptr;
   const esp_partition_t *dataPartition = nullptr;
-  bool dataPartitionInitiazlied = false;
   int dataPartitionOffset = 0;
+  bool dataPartitionInitiazlied = false;
 };
 };  // namespace Supla
 

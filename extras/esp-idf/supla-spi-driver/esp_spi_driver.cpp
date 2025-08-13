@@ -22,7 +22,7 @@
 
 using Supla::SPIDriver;
 
-SPIDriver::SPIDriver(int miso, int mosi, int clk)
+SPIDriver::SPIDriver(int16_t miso, int16_t mosi, int16_t clk)
     : miso(miso), mosi(mosi), clk(clk) {
 }
 

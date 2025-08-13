@@ -202,18 +202,18 @@ class Mqtt : public ProtocolLayer {
   bool connecting = false;
   bool connected = false;
   bool error = false;
+  uint16_t prefixLen = 0;
+  uint16_t channelsCount = 0;
+  uint16_t buttonNumber = 0;
   char *prefix = nullptr;
-  int prefixLen = 0;
-  Supla::Uptime uptime;
-  int channelsCount = 0;
   // Button number is incremented on each publishHADiscoveryActionTrigger call
   // and it is reset on publishDeviceStatus. So we publish button numbers
   // starting from 1 and incrementing on each ActionTrigger channel found
   // in current setup.
   // It is important to call publishDeviceStatus first, then to call
   // publishHADiscoveryActionTrigger for each AT channel.
-  int buttonNumber = 0;
   uint8_t configChangedBit[8] = {};
+  Supla::Uptime uptime;
 };
 }  // namespace Protocol
 }  // namespace Supla

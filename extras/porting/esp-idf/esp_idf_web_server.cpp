@@ -600,12 +600,16 @@ void Supla::EspIdfWebServer::start() {
 
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.lru_purge_enable = true;
-
-  httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
+  config.max_open_sockets = 2;
 
   if (!verifyCertificatesFormat()) {
     SUPLA_LOG_ERROR("Failed to verify certificates format");
   } else {
+    httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
+    configHttps.httpd.lru_purge_enable = true;
+    configHttps.httpd.max_open_sockets = 1;
+    configHttps.httpd.max_uri_handlers = 6;
+
     configHttps.servercert = serverCert;
     configHttps.servercert_len = serverCertLen;
 
@@ -622,6 +626,8 @@ void Supla::EspIdfWebServer::start() {
 
       // start http with redirect
       config.uri_match_fn = uriMatchAll;
+      config.max_uri_handlers = 1;
+      config.max_open_sockets = 1;
       if (httpd_start(&serverHttp, &config) == ESP_OK) {
         httpd_uri_t redirectAll = {
             .uri = "/",  // we use uriMatchAll which will catch all URLs
@@ -696,10 +702,6 @@ void Supla::EspIdfSender::send(const char *buf, int size) {
 }
 
 void Supla::EspIdfWebServer::cleanupCerts() {
-  if (this->serverCert) {
-    delete [] this->serverCert;
-    serverCert = nullptr;
-  }
   if (this->prvtKey) {
     delete [] this->prvtKey;
     prvtKey = nullptr;
@@ -707,14 +709,19 @@ void Supla::EspIdfWebServer::cleanupCerts() {
 }
 
 void Supla::EspIdfWebServer::setServerCertificate(
-    const char *serverCert,
+    const uint8_t *serverCert,
     int serverCertLen,
-    const char *prvtKey,
+    const uint8_t *prvtKey,
     int prvtKeyLen) {
   cleanupCerts();
 
-  this->serverCert = new uint8_t[serverCertLen];
+  this->serverCert = serverCert;
+
   this->prvtKey = new uint8_t[prvtKeyLen];
+
+  SUPLA_LOG_INFO("Server certificate length: %d, private key length: %d",
+                 serverCertLen,
+                 prvtKeyLen);
 
   if (this->serverCert == nullptr || this->prvtKey == nullptr) {
     SUPLA_LOG_ERROR("Failed to allocate memory for https certificates");
@@ -723,7 +730,6 @@ void Supla::EspIdfWebServer::setServerCertificate(
   }
 
   this->serverCertLen = serverCertLen;
-  memcpy(this->serverCert, serverCert, serverCertLen);
 
   this->prvtKeyLen = prvtKeyLen;
   memcpy(this->prvtKey, prvtKey, prvtKeyLen);

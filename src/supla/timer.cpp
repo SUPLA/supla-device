@@ -32,8 +32,7 @@
 #endif
 
 #elif defined(ESP_PLATFORM)
-#include "freertos/FreeRTOS.h"
-#include "freertos/timers.h"
+#include <esp_timer.h>
 #elif defined(SUPLA_LINUX)
 #include <linux_timers.h>
 #endif
@@ -71,14 +70,14 @@ ISR(TIMER2_COMPA_vect) {
   SuplaDevice.onFastTimer();
 }
 #elif defined(ESP_PLATFORM)
-TimerHandle_t slowerTimer;
-TimerHandle_t fasterTimer;
+// TimerHandle_t slowerTimer;
+// TimerHandle_t fasterTimer;
 
-void slowerTimerCb(TimerHandle_t xTimer) {
+void slowerTimerCb(void*) {
   SuplaDevice.onTimer();
 }
 
-void fasterTimerCb(TimerHandle_t xTimer) {
+void fasterTimerCb(void*) {
   SuplaDevice.onFastTimer();
 }
 #endif
@@ -135,17 +134,27 @@ void initTimers() {
 #elif defined(ESP_PLATFORM)
   // ESP-IDF and ESP8266 RTOS (non Arduino)
 
-  slowerTimer = xTimerCreate(
-      "SuplaSlowerTm", pdMS_TO_TICKS(10), pdTRUE, nullptr, &slowerTimerCb);
-  if (xTimerStart(slowerTimer, 100) != pdPASS) {
-    SUPLA_LOG_ERROR("Slower Timer start error");
-  }
+  const esp_timer_create_args_t timerArgsSlow = {
+      .callback = &slowerTimerCb,
+      .arg = NULL,
+      .dispatch_method = ESP_TIMER_TASK,
+      .name = "SuplaSlowerTm",
+      .skip_unhandled_events = true};
 
-  fasterTimer = xTimerCreate(
-      "SuplaFasterTm", pdMS_TO_TICKS(1), pdTRUE, nullptr, &fasterTimerCb);
-  if (xTimerStart(fasterTimer, 100) != pdPASS) {
-    SUPLA_LOG_ERROR("Faster Timer start error");
-  }
+  esp_timer_handle_t slowTimer;
+  ESP_ERROR_CHECK(esp_timer_create(&timerArgsSlow, &slowTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(slowTimer, 10'000));
+
+  const esp_timer_create_args_t timerArgsFast = {
+      .callback = &slowerTimerCb,
+      .arg = NULL,
+      .dispatch_method = ESP_TIMER_TASK,
+      .name = "SuplaFasterTm",
+      .skip_unhandled_events = true};
+
+  esp_timer_handle_t fastTimer;
+  ESP_ERROR_CHECK(esp_timer_create(&timerArgsFast, &fastTimer));
+  ESP_ERROR_CHECK(esp_timer_start_periodic(fastTimer, 1'000));
 
 #elif defined(SUPLA_LINUX)
   Supla::Linux::Timers::init();

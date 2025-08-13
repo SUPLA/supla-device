@@ -146,7 +146,7 @@ void initTimers() {
   ESP_ERROR_CHECK(esp_timer_start_periodic(slowTimer, 10'000));
 
   const esp_timer_create_args_t timerArgsFast = {
-      .callback = &slowerTimerCb,
+      .callback = &fasterTimerCb,
       .arg = NULL,
       .dispatch_method = ESP_TIMER_TASK,
       .name = "SuplaFasterTm",

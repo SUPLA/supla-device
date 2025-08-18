@@ -31,6 +31,11 @@ EspIdfSectorWlStorage::EspIdfSectorWlStorage(uint32_t size) : Storage(0, size,
   setStateSavePeriod(5000);
 }
 
+EspIdfSectorWlStorage::EspIdfSectorWlStorage(uint32_t offset, uint32_t size) :
+    Storage(offset, size, WearLevelingMode::SECTOR_WRITE_MODE) {
+  setStateSavePeriod(5000);
+}
+
 EspIdfSectorWlStorage::~EspIdfSectorWlStorage() {
 }
 

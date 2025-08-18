@@ -626,7 +626,9 @@ bool Supla::SaltPassword::operator==(const SaltPassword& other) const {
 
 bool Supla::SaltPassword::isPasswordStrong(const char* password) const {
   int len = strlen(password);
-  if (len < 8) return false;
+  if (len < 8) {
+    return false;
+  }
 
   bool hasUpper = false;
   bool hasLower = false;

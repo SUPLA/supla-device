@@ -27,6 +27,7 @@ namespace Supla {
 class EspIdfSectorWlStorage : public Storage {
  public:
   explicit EspIdfSectorWlStorage(uint32_t size = 512);
+  EspIdfSectorWlStorage(uint32_t offset, uint32_t size);
   virtual ~EspIdfSectorWlStorage();
 
   bool init() override;

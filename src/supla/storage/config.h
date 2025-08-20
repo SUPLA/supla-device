@@ -61,6 +61,7 @@ class Config {
   virtual void removeAll() = 0;
   virtual bool isMinimalConfigReady(bool showLogs = true);
   virtual bool isConfigModeSupported();
+  virtual bool isEncryptionEnabled();
 
   // Override this method and setup all default value if needed
   virtual void initDefaultDeviceConfig();

@@ -249,6 +249,12 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   void setAutomaticFirmwareUpdateSupported(bool value);
 
+  /**
+   * Triggers "identify" action on status LED
+   *
+   */
+  void identifyStatusLed();
+
  protected:
   /**
    * Performs software update if needed

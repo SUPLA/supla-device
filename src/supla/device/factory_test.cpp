@@ -19,12 +19,13 @@
 #include <SuplaDevice.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
-#include <stdio.h>
 #include <string.h>
 #include <supla/actions.h>
 #include <supla/device/register_device.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/storage.h>
+#include <supla/storage/config.h>
+#include <supla/network/web_server.h>
 
 #include "factory_test.h"
 
@@ -148,6 +149,28 @@ void FactoryTest::onInit() {
     failReason = 15;
     return;
   }
+
+  if (!cfg->isEncryptionEnabled()) {
+    SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
+    testFailed = true;
+    failReason = 16;
+    return;
+  }
+
+
+  auto webServer = Supla::WebServer::Instance();
+  if (webServer == nullptr) {
+    SUPLA_LOG_ERROR("TEST failed: missing web server");
+    testFailed = true;
+    failReason = 17;
+    return;
+  }
+  if (webServer->verifyCertificatesFormat()) {
+    SUPLA_LOG_ERROR("TEST failed: invalid certificates format");
+    testFailed = true;
+    failReason = 18;
+    return;
+  }
 }
 
 void FactoryTest::iterateAlways() {
@@ -219,6 +242,7 @@ void FactoryTest::handleAction(int event, int action) {
             break;
           }
           testStage = Supla::TestStage_RegisteredAndReady;
+          sdc->identifyStatusLed();
         }
       }
       break;

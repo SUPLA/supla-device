@@ -1705,4 +1705,10 @@ void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
   }
 }
 
+void SuplaDeviceClass::identifyStatusLed() {
+  if (statusLed) {
+    statusLed->identify();
+  }
+}
+
 SuplaDeviceClass SuplaDevice;

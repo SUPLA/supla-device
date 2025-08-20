@@ -686,4 +686,8 @@ void Supla::Config::setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy) {
   }
 }
 
+bool Supla::Config::isEncryptionEnabled() {
+  return false;
+}
+
 }  // namespace Supla

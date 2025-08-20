@@ -32,7 +32,7 @@ class NvsConfig : public Config {
   NvsConfig();
   virtual ~NvsConfig();
 
-  bool isEncryptionEnabled();
+  bool isEncryptionEnabled() override;
 
   bool init() override;
   void removeAll() override;

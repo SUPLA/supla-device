@@ -171,7 +171,8 @@ TEST(ContainerTests, ContainerSettersAndGetters) {
   auto ch = container.getChannel();
   EXPECT_FALSE(ch->isUpdateReady());
 
-  EXPECT_EQ(container.readNewValue(), -1);
+  container.setValue(0);
+  EXPECT_EQ(container.readNewValue(), 0);
   EXPECT_FALSE(container.isAlarmActive());
   EXPECT_FALSE(container.isWarningActive());
   EXPECT_FALSE(container.isInvalidSensorStateActive());
@@ -190,6 +191,10 @@ TEST(ContainerTests, ContainerSettersAndGetters) {
   EXPECT_TRUE(ch->isUpdateReady());
 
   ch->clearSendValue();
+  EXPECT_CALL(ah,
+              handleAction(Supla::ON_CONTAINER_INVALID_SENSOR_STATE_ACTIVE,
+                           actionOnInvalidSensorStateActive))
+      .Times(1);
   EXPECT_CALL(ah, handleAction(Supla::ON_CHANGE, actionOnChange)).Times(1);
   container.setValue(150);  // invalid
   EXPECT_EQ(container.readNewValue(), -1);
@@ -200,20 +205,26 @@ TEST(ContainerTests, ContainerSettersAndGetters) {
   time.advance(2000);
   container.iterateAlways();
   EXPECT_TRUE(ch->isUpdateReady());
+  EXPECT_TRUE(container.isInvalidSensorStateActive());
   ch->clearSendValue();
 
   container.setValue(-1);  // invalid
   EXPECT_EQ(container.readNewValue(), -1);
   EXPECT_FALSE(container.isAlarmActive());
   EXPECT_FALSE(container.isWarningActive());
-  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isInvalidSensorStateActive());
   time.advance(2000);
   container.iterateAlways();
   EXPECT_FALSE(ch->isUpdateReady());
+  EXPECT_TRUE(container.isInvalidSensorStateActive());
   ch->clearSendValue();
 
   EXPECT_CALL(
       ah, handleAction(Supla::ON_CONTAINER_ALARM_ACTIVE, actionOnAlarmActive))
+      .Times(1);
+  EXPECT_CALL(ah,
+              handleAction(Supla::ON_CONTAINER_INVALID_SENSOR_STATE_INACTIVE,
+                           actionOnInvalidSensorStateInactive))
       .Times(1);
   EXPECT_CALL(ah, handleAction(Supla::ON_CHANGE, actionOnChange)).Times(1);
   container.setAlarmAboveLevel(90);
@@ -413,7 +424,7 @@ TEST(ContainerTests, AlarmingTests) {
   ch->clearSendValue();
   EXPECT_FALSE(container.isAlarmActive());
   EXPECT_FALSE(container.isWarningActive());
-  EXPECT_FALSE(container.isInvalidSensorStateActive());
+  EXPECT_TRUE(container.isInvalidSensorStateActive());
 
   container.setValue(0);
   time.advance(2000);

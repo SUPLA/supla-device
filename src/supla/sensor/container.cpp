@@ -65,6 +65,9 @@ void Container::iterateAlways() {
     int value = 0;
     if (isInternalLevelReporting()) {
       value = readNewValue();
+      if (value < 0 || value > 100) {
+        invalidSensorState = true;
+      }
       if (sensorValue > value) {
         value = sensorValue;
       } else if (sensorValue >= 0 && !invalidSensorState) {

@@ -615,6 +615,7 @@ void Supla::EspIdfWebServer::start() {
 
     configHttps.prvtkey_pem = prvtKey;
     configHttps.prvtkey_len = prvtKeyLen;
+    delay(100);
     if (httpd_ssl_start(&serverHttps, &configHttps) == ESP_OK) {
       fallbackToHttp = false;
       httpd_register_uri_handler(serverHttps, &uriRoot);

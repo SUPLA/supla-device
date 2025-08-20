@@ -44,6 +44,8 @@
 
 #include "esp_idf_network_common.h"
 
+constexpr int SUPLA_MAX_AP_TX_POWER = 60;
+
 static Supla::EspIdfWifi *thisNetIntfPtr = nullptr;
 
 Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
@@ -148,8 +150,15 @@ uint32_t Supla::EspIdfWifi::getIP() {
 
 void Supla::EspIdfWifi::setup() {
   setIpReady(false);
+  delay(50);
+  int txPower = maxTxPower;
+  if (txPower < 0) {
+    txPower = 80;  // set max value
+  }
+
   if (!initDone) {
     Supla::initEspNetif();
+
 
 #ifdef SUPLA_DEVICE_ESP32
     apNetIf = esp_netif_create_default_wifi_ap();
@@ -185,9 +194,16 @@ void Supla::EspIdfWifi::setup() {
     memcpy(wifi_config.ap.ssid, hostname, strlen(hostname));
     wifi_config.ap.max_connection = 4;  // default
     wifi_config.ap.channel = 6;
+    wifi_config.ap.beacon_interval = 200;
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_AP));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_AP, &wifi_config));
+    uint8_t proto = WIFI_PROTOCOL_11B | WIFI_PROTOCOL_11G;
+    esp_wifi_set_protocol(WIFI_IF_AP, proto);
+    if (txPower > SUPLA_MAX_AP_TX_POWER) {
+      txPower = SUPLA_MAX_AP_TX_POWER;  // limit TX power in AP mode
+    }
+
   } else {
     SUPLA_LOG_INFO(
         "[%s] establishing connection with SSID: \"%s\"", getIntfName(), ssid);
@@ -214,11 +230,15 @@ void Supla::EspIdfWifi::setup() {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
   }
-  ESP_ERROR_CHECK(esp_wifi_start());
+  delay(50);
 
-  if (maxTxPower >= 0) {
-    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(maxTxPower));
+  ESP_ERROR_CHECK(esp_wifi_start());
+  SUPLA_LOG_ERROR("[%s] WiFi TX %d", getIntfName(), txPower);
+  if (txPower >= 0) {
+    SUPLA_LOG_INFO("[%s] setting TX power to %d", getIntfName(), txPower);
+    ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(txPower));
   }
+
 
   allowDisable = true;
   initDone = true;

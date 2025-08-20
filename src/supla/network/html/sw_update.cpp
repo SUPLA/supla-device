@@ -147,9 +147,16 @@ bool SwUpdate::handleResponse(const char* key, const char* value) {
     }
     Supla::AutoUpdatePolicy policy =
         static_cast<Supla::AutoUpdatePolicy>(otaMode);
+    auto currentPolicy = cfg->getAutoUpdatePolicy();
+    if (policy == currentPolicy) {
+      return true;
+    }
     cfg->setAutoUpdatePolicy(policy);
+    cfg->setDeviceConfigChangeFlag();
+    cfg->saveWithDelay(1000);
     return true;
   }
+
   return false;
 }
 

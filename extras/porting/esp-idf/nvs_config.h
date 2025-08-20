@@ -80,7 +80,8 @@ class NvsConfig : public Config {
   int dataPartitionOffset = 0;
   bool dataPartitionInitiazlied = false;
   bool nvsEncrypted = false;
+  bool flashEncryptionReleaseMode = false;
 };
-};  // namespace Supla
+}  // namespace Supla
 
 #endif  // EXTRAS_PORTING_ESP_IDF_NVS_CONFIG_H_

@@ -24,6 +24,7 @@
 #include <esp_system.h>
 #include <nvs.h>
 #include <nvs_flash.h>
+#include <esp_flash_encrypt.h>
 #include <supla/log_wrapper.h>
 #include <supla-common/proto.h>
 #include <string.h>
@@ -120,6 +121,17 @@ bool NvsConfig::init() {
   } else {
     SUPLA_LOG_INFO("NvsConfig: NVS encryption enabled");
     nvsEncrypted = true;
+  }
+
+  // check if flash encryption is in release mode
+  esp_flash_enc_mode_t mode = esp_get_flash_encryption_mode();
+  if (mode == ESP_FLASH_ENC_MODE_RELEASE) {
+    SUPLA_LOG_INFO("NvsConfig: NVS flash encryption in release mode");
+    flashEncryptionReleaseMode = true;
+  } else {
+    SUPLA_LOG_ERROR("NvsConfig: NVS flash encryption not in release mode (%d)",
+                    mode);
+    flashEncryptionReleaseMode = false;
   }
 
   nvsPartitionName = NVS_SUPLA_PARTITION_NAME;
@@ -685,7 +697,7 @@ bool NvsConfig::setAuthKey(const char* key) {
 }
 
 bool NvsConfig::isEncryptionEnabled() {
-  return nvsEncrypted;
+  return nvsEncrypted && flashEncryptionReleaseMode;
 }
 
 }  // namespace Supla

@@ -31,6 +31,9 @@ class NvsConfig : public Config {
 
   NvsConfig();
   virtual ~NvsConfig();
+
+  bool isEncryptionEnabled();
+
   bool init() override;
   void removeAll() override;
 
@@ -76,6 +79,7 @@ class NvsConfig : public Config {
   const esp_partition_t *dataPartition = nullptr;
   int dataPartitionOffset = 0;
   bool dataPartitionInitiazlied = false;
+  bool nvsEncrypted = false;
 };
 };  // namespace Supla
 

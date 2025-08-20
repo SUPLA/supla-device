@@ -72,50 +72,83 @@ bool NvsConfig::init() {
   // check nvs_supla partition
   nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
   esp_err_t err = 0;
-  bool firstStep = true;
-  while (true) {
-    esp_err_t err = nvs_flash_init_partition(nvsPartitionName);
-    if (err == ESP_ERR_NOT_FOUND) {
-      if (firstStep) {
-        SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
-                        nvsPartitionName);
-        return false;
-      }
-      nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
-      break;
-    }
-    SUPLA_LOG_DEBUG(
-        "NvsConfig: initializing nvs config storage on partition %s",
-        nvsPartitionName);
 
+  // First init default nvs. This method will initialize keys partition when
+  // NVS_ENCRYPTION is enabled
+  err = nvs_flash_init();
+  if (err == ESP_ERR_NOT_FOUND) {
+    SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
+                    nvsPartitionName);
+    return false;
+  }
+
+  SUPLA_LOG_DEBUG("NvsConfig: initializing nvs config storage on partition %s",
+                  nvsPartitionName);
+
+  if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
+    nvs_flash_erase_partition(nvsPartitionName);
+    err = nvs_flash_init();
+    if (err != ESP_OK) {
+      SUPLA_LOG_ERROR("NvsConfig: failed to init NVS storage");
+      return false;
+    }
+  }
+  nvs_stats_t nvsStats;
+  nvs_get_stats(nvsPartitionName, &nvsStats);
+  SUPLA_LOG_DEBUG(
+      "NVS \"%s\" Count: UsedEntries: %d/%d, FreeEntries: %d, "
+      ", namespaces = (%d)",
+      nvsPartitionName,
+      nvsStats.used_entries,
+      nvsStats.total_entries,
+      nvsStats.free_entries,
+      nvsStats.namespace_count);
+
+  // Second, try to initialize nvs_supla partition
+  // Check if encryption is enabled
+  nvs_sec_scheme_t *schemeCfg = nvs_flash_get_default_security_scheme();
+  nvs_sec_cfg_t cfg = {};
+  nvs_sec_cfg_t *usedCfg = &cfg;
+
+  err = nvs_flash_read_security_cfg_v2(schemeCfg, usedCfg);
+  if (err != ESP_OK) {
+    SUPLA_LOG_ERROR("Failed to read NVS security cfg: [0x%02X] (%s)",
+                    err,
+                    esp_err_to_name(err));
+    usedCfg = nullptr;
+    nvsEncrypted = false;
+  } else {
+    SUPLA_LOG_INFO("NvsConfig: NVS encryption enabled");
+    nvsEncrypted = true;
+  }
+
+  nvsPartitionName = NVS_SUPLA_PARTITION_NAME;
+  err = nvs_flash_secure_init_partition(nvsPartitionName, usedCfg);
+  if (err == ESP_ERR_NOT_FOUND) {
+    SUPLA_LOG_DEBUG("NvsConfig: NVS \"" NVS_SUPLA_PARTITION_NAME
+                    "\" partition not found, falling back to "
+                    "default partition");
+    nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
+  } else {
     if (err == ESP_ERR_NVS_NO_FREE_PAGES) {
       nvs_flash_erase_partition(nvsPartitionName);
-      err = nvs_flash_init_partition(nvsPartitionName);
+      err = nvs_flash_secure_init_partition(nvsPartitionName, usedCfg);
       if (err != ESP_OK) {
-        SUPLA_LOG_ERROR("NvsConfig: failed to init NVS storage");
+        SUPLA_LOG_ERROR("NvsConfig: failed to init supla NVS partition");
+        nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
         return false;
       }
     }
-    nvs_stats_t nvs_stats;
-    nvs_get_stats(nvsPartitionName, &nvs_stats);
+    nvs_get_stats(nvsPartitionName, &nvsStats);
     SUPLA_LOG_DEBUG(
         "NVS \"%s\" Count: UsedEntries: %d/%d, FreeEntries: %d, "
         ", namespaces = (%d)",
         nvsPartitionName,
-        nvs_stats.used_entries,
-        nvs_stats.total_entries,
-        nvs_stats.free_entries,
-        nvs_stats.namespace_count);
-    if (firstStep) {
-      firstStep = false;
-      nvsPartitionName = NVS_SUPLA_PARTITION_NAME;
-    } else {
-      break;
-    }
-  }
-  if (strncmp(nvsPartitionName,
-              NVS_SUPLA_PARTITION_NAME,
-              strlen(NVS_SUPLA_PARTITION_NAME)) == 0) {
+        nvsStats.used_entries,
+        nvsStats.total_entries,
+        nvsStats.free_entries,
+        nvsStats.namespace_count);
+
     // we'll use suplanvs, however it may be required to cleanup main nvs
     // partition
     nvs_handle_t suplaNamespace;
@@ -651,5 +684,8 @@ bool NvsConfig::setAuthKey(const char* key) {
   return Supla::Config::setAuthKey(key);
 }
 
+bool NvsConfig::isEncryptionEnabled() {
+  return nvsEncrypted;
+}
 
 }  // namespace Supla

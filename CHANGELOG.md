@@ -1,5 +1,77 @@
 # CHANGELOG.md
 
+# 25.08.01 (2025-08-21)
+
+### Generic
+ - DEPERECATION WARNING: ESP8266 RTOS support will be removed from SuplaDevice.
+ - SuplaDevice: change default device behavior in order to not start Wi-Fi soft AP by default on power on. Additionally, cfg mode will be disabled after 5 min inactivity timeout.  Device will leave config mode after timeout, without restart - in case when no HTTP POST requests were received.  If HTTP POST request was received, device will restart after config mode inactivity timeout.
+    Add method setLeaveCfgModeAfterInactivityMin(int valueMin), to setup
+    inactivity timeout (default 5 min). Value 0 -> disable timeout. Allowed
+    range 1-255.
+    Use:
+    SuplaDevice.allowWorkInOfflineMode(0);
+    SuplaDevice.setLeaveCfgModeAfterInactivityMin(0);
+    to restore previous behavior (hovever it is not recommended).
+    Warning: this new behavior will make devices without "cfg button" inaccessible.
+ - MQTT fix: HA autodiscovery topics for EM should be published with "retain" flag set.
+ - Rename Supla::Io class to Supla::Io::Base. Io is now a namespace.
+ - Replace int64 prints with a workaround based on int32 prints. Some ESP platforms doesn't support printing int64 and they can crash on %llu, %lld, PRI.64 etc.
+ - Add "automatic OTA policy" device config support.
+ - Add support for Cloud/server OTA updates and checks for device's firmware.
+ - Add support for "factory reset" button in Cloud.
+ - Add "SuplaDevice (device name)/swVersion" HTTP Agent header in HTTP(s) requests form a device.
+ - Leaveing config mode (after starting it from Cloud) will not trigger device reset anymore (without user interaction with a web interface).
+ - Add getIntfName and getIP implementation for esp32eth.h
+
+### Sensors & peripherals
+ - Add Sensirion SGP41 VOC & NOx sensor support (thanks @malarz).
+ - Add support for MCP23017 (IO expander) (thanks @lukfud).
+ - Add support for TMP102 (temperature sensor) (thanks @lukfud).
+ - Add support for ADS1115 (ADC expander) (thanks @lukfud).
+ - Add support for Sensirion SCD4x therm/hygro/CO2 sensor (thanks @malarz).
+ - Add aqi.ecu WeatherSender integration (thanks @malarz).
+ - Add ButtonAggregator class to aggregate few buttons and capture 5s hold on both of them (i.e. to trigger cfg mode, or other action).
+ - InterruptAcToDc: add ability to use inverted logic (setOffStateLevel(int)).
+ - ActionTrigger: add option to use ON_CLICK_1 as a default button action even if other AT are not enabled (default is to use on_press).
+ - Button: fix storing default multiclick and hold time, when they are not configured (i.e. don't save 0 to Config).
+ - SimpleButton: skip GPIO actions when GPIO is not set (-1)
+ - RollerShutter: add setPinUp(), setPinDown() methods, to change GPIO assignement for relays.
+ - Button: add "Central control" button type (for roller shutters -> it sets position to 0 (up) or to 100 (down) ).
+ - RollerShutter: add "central control" button support, add ability to attach multiple buttons, each with configurable direction and internal/external type. Internal buttons are inverted by upsidedown configuration, and external buttons aren't.
+
+
+### Container
+ - add "invalid sensor state" alarm when internal level reporting (i.e. via analog read) contain invalid value.
+
+### HTML & WebServer
+ - add "OTA automatic update policy" field to sw update form.
+ - skip adding "addional box" when this HTML section is empty
+ - add HTTPS support to web server (esp-idf).
+ - add password protection for local web server (requires https to run, password can be reset via Cloud, or via factory reset).
+ - Login page will block for 1 min after 5 failed login attempts.
+ - fix styles for .wide-link
+
+### Factory test
+ - Add check if Flash Encryption in Release mode is enabled.
+ - Add check for WebServer presence, validity of used https certificates, and NVS config encryption.
+
+### esp-idf
+ - Wi-Fi: limit max TX power in AP mode to 15 dBm.
+ - NVS Config: add support for encrypted NVS storage on default nvs and suplanvs partitions (requires nvs keys partition).
+ - EspIdfSectorWlStorage: add optional storage offset configuration.
+ - move onTimer and onFastTimer execution to esp_timer instead of FreeRTOS timers.
+ - esp-idf version increased to 5.5
+ - enable logs in esp-idf example
+ - changed logging to use ESP_LOGx methods directly.
+ - change partitions.csv example for encryption purposes.
+ - add support for "supla_dev_data" partition with storage for AES key, GUID, Authkey.
+ - add starting https server with http redirect to https.
+ - OTA procedures will use iot.updates.supla.org with Supla root CA verification.
+ - Autodiscover will use iot.autodiscover.supla.org with Supla root CA verification.
+ - SwUpdate: add option to skip iot.updates.supla.org Supla CA verification (only in manual update triggered from local web interface).
+ - Esp-idf OTA: add "securityOnly" POST parameter.
+ - SuplaDevice: add warning/info print about used OTA mode.
+
 # 25.06 (2025-06-10)
 ### HVAC
 - Fixed issue with antifreeze protection not working when thermostat was off after being in "manual override" mode.

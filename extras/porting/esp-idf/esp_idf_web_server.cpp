@@ -425,8 +425,8 @@ bool Supla::EspIdfWebServer::isSessionCookieValid(const char *sessionCookie) {
   }
 
   SUPLA_LOG_WARNING("SERVER: invalid session cookie: hmac mismatch");
-  SUPLA_LOG_WARNING("SERVER: expected: %s, received: %s", sessionHmacHex,
-                    separator + 1);
+//  SUPLA_LOG_WARNING("SERVER: expected: %s, received: %s", sessionHmacHex,
+//                    separator + 1);
   return false;
 }
 

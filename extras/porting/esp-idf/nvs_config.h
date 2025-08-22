@@ -73,6 +73,7 @@ class NvsConfig : public Config {
   bool initDeviceDataPartitionCopyAndChecksum();
   bool isDeviceDataValid(const DeviceDataBuf &buf) const;
   bool isDeviceDataFilled(const DeviceDataBuf &deviceDataBuf) const;
+  void printStats(const char* partitionName) const;
 
   nvs_handle_t nvsHandle = 0;
   const char* nvsPartitionName = nullptr;

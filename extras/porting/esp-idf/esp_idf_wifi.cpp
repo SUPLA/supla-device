@@ -233,7 +233,6 @@ void Supla::EspIdfWifi::setup() {
   delay(50);
 
   ESP_ERROR_CHECK(esp_wifi_start());
-  SUPLA_LOG_ERROR("[%s] WiFi TX %d", getIntfName(), txPower);
   if (txPower >= 0) {
     SUPLA_LOG_INFO("[%s] setting TX power to %d", getIntfName(), txPower);
     ESP_ERROR_CHECK(esp_wifi_set_max_tx_power(txPower));

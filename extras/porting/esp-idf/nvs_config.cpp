@@ -40,12 +40,13 @@ NvsConfig::~NvsConfig() {}
 #define NVS_DEFAULT_PARTITION_NAME "nvs"
 #define SUPLA_DEVICE_DATA_PARTITION_NAME "supla_dev_data"
 #define SUPLA_DEVICE_DATA_PARTITION_TYPE 0x56
-#define SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC "AES_KEY_SET"
-#define SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC "AES_NOT_SET"
-#define SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC "GUID_MAGIC"
-#define SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC "AUTHKEY_MAGIC"
+#define SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC "AES_KEY_SET\0\0\0\0"
+#define SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC "AES_NOT_SET\0\0\0\0"
+#define SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC "GUID_MAGIC\0\0\0\0\0"
+#define SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC "AUTHKEY_MAGIC\0\0"
 
-#define SUPLA_SECTOR_SIZE 4096
+constexpr uint32_t SUPLA_SECTOR_SIZE = 4096;
+constexpr uint32_t DATA_PARTITION_BLOCK_SIZE = 16;
 
 #define SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET 0
 #define SUPLA_DEVICE_DATA_AES_KEY_OFFSET \
@@ -61,10 +62,10 @@ NvsConfig::~NvsConfig() {}
 #define SUPLA_DEVICE_DATA_CHECKSUM_OFFSET \
   (SUPLA_DEVICE_DATA_AUTHKEY_OFFSET + 16)
 
-static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) <= 16);
-static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) <= 16);
-static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC) <= 16);
-static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC) <= 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) == 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) == 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC) == 16);
+static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC) == 16);
 static_assert(sizeof(SUPLA_DEVICE_DATA_PARTITION_NAME) <= 16);
 static_assert(sizeof(NVS_SUPLA_PARTITION_NAME) <= 16);
 static_assert(sizeof(NVS_DEFAULT_PARTITION_NAME) <= 16);
@@ -74,8 +75,57 @@ bool NvsConfig::init() {
   nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
   esp_err_t err = 0;
 
+  // In test mode we use default NVS partition without encryption. However
+  // test mode is stored on NVS itself, so we will try to open it unencrypted
+  // first. Otherwise -> proceed with NVS_ENCRYPTION
+  SUPLA_LOG_DEBUG("NvsConfig: trying to open NVS in TEST mode (unencrypted)");
+  nvs_sec_scheme_t *schemeCfg = nvs_flash_get_default_security_scheme();
+  nvs_sec_cfg_t cfg = {};
+
+  err = nvs_flash_read_security_cfg_v2(schemeCfg, &cfg);
+  if (err != ESP_OK) {
+    SUPLA_LOG_DEBUG(
+        "NvsConfig: NVS read security cfg failed, trying unencrypted NVS");
+    err = nvs_flash_init_partition(nvsPartitionName);
+    if (err == ESP_ERR_NOT_FOUND) {
+      SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
+                      nvsPartitionName);
+      return false;
+    } else if (err == ESP_OK) {
+      SUPLA_LOG_DEBUG("NvsConfig: initialized unencrypted NVS");
+      printStats(nvsPartitionName);
+      err = nvs_open_from_partition(
+          nvsPartitionName, "supla", NVS_READONLY, &nvsHandle);
+      if (err == ESP_OK) {
+        // check if we are in test mode:
+        if (getDeviceMode() == DEVICE_MODE_TEST) {
+          SUPLA_LOG_INFO("NvsConfig: initialized unencrypted NVS in TEST mode");
+          // reopen in READWRITE
+          nvs_close(nvsHandle);
+          err = nvs_open_from_partition(
+              nvsPartitionName, "supla", NVS_READWRITE, &nvsHandle);
+          if (err != ESP_OK) {
+            SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" open failed",
+                            nvsPartitionName);
+          } else {
+            return true;
+          }
+        } else {
+          SUPLA_LOG_DEBUG("NvsConfig: device mode is not TEST");
+          nvs_flash_deinit_partition(nvsPartitionName);
+        }
+      } else {
+        SUPLA_LOG_DEBUG("NvsConfig: missing supla namespace");
+        nvs_flash_deinit_partition(nvsPartitionName);
+      }
+    }
+  } else {
+    SUPLA_LOG_DEBUG("NvsConfig: NVS keys configured, trying encrypted NVS");
+  }
+
   // First init default nvs. This method will initialize keys partition when
   // NVS_ENCRYPTION is enabled
+  SUPLA_LOG_DEBUG("NvsConfig: trying to open NVS in NORMAL mode");
   err = nvs_flash_init();
   if (err == ESP_ERR_NOT_FOUND) {
     SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
@@ -94,21 +144,11 @@ bool NvsConfig::init() {
       return false;
     }
   }
-  nvs_stats_t nvsStats;
-  nvs_get_stats(nvsPartitionName, &nvsStats);
-  SUPLA_LOG_DEBUG(
-      "NVS \"%s\" Count: UsedEntries: %d/%d, FreeEntries: %d, "
-      ", namespaces = (%d)",
-      nvsPartitionName,
-      nvsStats.used_entries,
-      nvsStats.total_entries,
-      nvsStats.free_entries,
-      nvsStats.namespace_count);
+
+  printStats(nvsPartitionName);
 
   // Second, try to initialize nvs_supla partition
   // Check if encryption is enabled
-  nvs_sec_scheme_t *schemeCfg = nvs_flash_get_default_security_scheme();
-  nvs_sec_cfg_t cfg = {};
   nvs_sec_cfg_t *usedCfg = &cfg;
 
   err = nvs_flash_read_security_cfg_v2(schemeCfg, usedCfg);
@@ -151,15 +191,8 @@ bool NvsConfig::init() {
         return false;
       }
     }
-    nvs_get_stats(nvsPartitionName, &nvsStats);
-    SUPLA_LOG_DEBUG(
-        "NVS \"%s\" Count: UsedEntries: %d/%d, FreeEntries: %d, "
-        ", namespaces = (%d)",
-        nvsPartitionName,
-        nvsStats.used_entries,
-        nvsStats.total_entries,
-        nvsStats.free_entries,
-        nvsStats.namespace_count);
+
+    printStats(nvsPartitionName);
 
     // we'll use suplanvs, however it may be required to cleanup main nvs
     // partition
@@ -190,6 +223,19 @@ bool NvsConfig::init() {
 //  }
 //  nvs_release_iterator(it);
   return true;
+}
+
+void NvsConfig::printStats(const char* partitionName) const {
+  nvs_stats_t nvsStats;
+  nvs_get_stats(partitionName, &nvsStats);
+  SUPLA_LOG_DEBUG(
+      "NVS \"%s\" Count: UsedEntries: %d/%d, FreeEntries: %d, "
+      ", namespaces = (%d)",
+      nvsPartitionName,
+      nvsStats.used_entries,
+      nvsStats.total_entries,
+      nvsStats.free_entries,
+      nvsStats.namespace_count);
 }
 
 void NvsConfig::removeAll() {
@@ -442,10 +488,11 @@ bool NvsConfig::isDeviceDataFilled(const DeviceDataBuf &deviceDataBuf) const {
 bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
   // check for AES key signature on main and copy partition. If it is not found
   // then erase all sectors and start initialization.
-  char bufMain[16] = {};
-  char bufCopy[16] = {};
+  char bufMain[DATA_PARTITION_BLOCK_SIZE] = {};
+  char bufCopy[DATA_PARTITION_BLOCK_SIZE] = {};
 
-  char aesMain[32] = {};
+  char aesMain[2 * DATA_PARTITION_BLOCK_SIZE] = {};
+  static_assert(sizeof(aesMain) == 2 * DATA_PARTITION_BLOCK_SIZE);
 
   // 3x magic keys, 2x for AES, 1x for GUID, 1x for authkey, 1x for checksum
   DeviceDataBuf deviceDataBuf = {};
@@ -498,11 +545,10 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
           dataPartition,
           SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
           SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC,
-          strlen(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) + 1);
+          DATA_PARTITION_BLOCK_SIZE);
       if (result != ESP_OK) {
-        SUPLA_LOG_ERROR("Failed to write storage: addr %d, size %d (%d)",
+        SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
             SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
-            strlen(SUPLA_DEVICE_DATA_PARTITION_AES_KEY_SET_MAGIC) + 1,
             result);
         return false;
       }
@@ -523,12 +569,11 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
           dataPartition,
           SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
           SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC,
-          strlen(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) + 1);
+          DATA_PARTITION_BLOCK_SIZE);
       if (result != ESP_OK) {
         SUPLA_LOG_ERROR(
-            "Failed to write storage: addr %d, size %d (%d)",
+            "Failed to write storage: addr %d (%d)",
             SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
-            strlen(SUPLA_DEVICE_DATA_PARTITION_AES_NOT_SET_MAGIC) + 1,
             result);
         return false;
       }
@@ -545,7 +590,7 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
         esp_partition_write(dataPartition,
                             SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET,
                             SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC,
-                            strlen(SUPLA_DEVICE_DATA_PARTITION_GUID_MAGIC) + 1);
+                            DATA_PARTITION_BLOCK_SIZE);
     if (result != ESP_OK) {
       SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
                       SUPLA_DEVICE_DATA_GUID_MAGIC_OFFSET,
@@ -553,6 +598,7 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
       return false;
     }
 
+    static_assert(SUPLA_GUID_SIZE == DATA_PARTITION_BLOCK_SIZE);
     result =
         esp_partition_write(dataPartition,
                             SUPLA_DEVICE_DATA_GUID_OFFSET,
@@ -569,7 +615,7 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
         dataPartition,
         SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET,
         SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC,
-        strlen(SUPLA_DEVICE_DATA_PARTITION_AUTHKEY_MAGIC) + 1);
+        DATA_PARTITION_BLOCK_SIZE);
     if (result != ESP_OK) {
       SUPLA_LOG_ERROR("Failed to write storage: addr %d (%d)",
                       SUPLA_DEVICE_DATA_AUTHKEY_MAGIC_OFFSET,
@@ -577,6 +623,7 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
       return false;
     }
 
+    static_assert(SUPLA_AUTHKEY_SIZE == DATA_PARTITION_BLOCK_SIZE);
     result =
         esp_partition_write(dataPartition,
                             SUPLA_DEVICE_DATA_AUTHKEY_OFFSET,
@@ -610,13 +657,17 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
                        sizeof(DeviceDataBuf) - 16);
 
     // write checksum
+    // copy checksum to 16 B buffer before write:
+    uint8_t crc16Buf[DATA_PARTITION_BLOCK_SIZE] = {};
+    memcpy(crc16Buf, &crc16, sizeof(crc16));
     esp_partition_write(dataPartition,
                         SUPLA_DEVICE_DATA_CHECKSUM_OFFSET,
-                        &crc16,
-                        sizeof(crc16));
+                        crc16Buf,
+                        DATA_PARTITION_BLOCK_SIZE);
     memcpy(deviceDataBuf + sizeof(DeviceDataBuf) - 16, &crc16, sizeof(crc16));
 
     // write backup
+    static_assert(sizeof(deviceDataBuf) % DATA_PARTITION_BLOCK_SIZE == 0);
     esp_partition_write(
         dataPartition, SUPLA_SECTOR_SIZE, deviceDataBuf, sizeof(DeviceDataBuf));
   }

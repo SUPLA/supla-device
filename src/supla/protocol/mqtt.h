@@ -75,7 +75,7 @@ enum HADeviceClass {
 class Mqtt : public ProtocolLayer {
  public:
   explicit Mqtt(SuplaDeviceClass *sdc);
-  ~Mqtt();
+  virtual ~Mqtt();
 
   void onInit() override;
   bool onLoadConfig() override;

@@ -1010,7 +1010,7 @@ unsigned _supla_int_t Supla::Sensor::ElectricityMeter::getCurrent(
     const TElectricityMeter_ExtendedValue_V3 &emValue, int phase) {
   if (phase >= 0 && phase < MAX_PHASES) {
     if (emValue.measured_values & EM_VAR_CURRENT_OVER_65A) {
-      return emValue.m[0].current[phase] * 10;
+      return static_cast<int32_t>(emValue.m[0].current[phase]) * 10;
     } else {
       return emValue.m[0].current[phase];
     }
@@ -1029,7 +1029,7 @@ int64_t Supla::Sensor::ElectricityMeter::getPowerActive(
     const TElectricityMeter_ExtendedValue_V3 &emValue, int phase) {
   if (phase >= 0 && phase < MAX_PHASES) {
     if (emValue.measured_values & EM_VAR_POWER_ACTIVE_KW) {
-      return emValue.m[0].power_active[phase] * 1000;
+      return static_cast<int64_t>(emValue.m[0].power_active[phase]) * 1000;
     } else {
       return emValue.m[0].power_active[phase];
     }
@@ -1042,7 +1042,7 @@ int64_t Supla::Sensor::ElectricityMeter::getPowerReactive(
     const TElectricityMeter_ExtendedValue_V3 &emValue, int phase) {
   if (phase >= 0 && phase < MAX_PHASES) {
     if (emValue.measured_values & EM_VAR_POWER_REACTIVE_KVAR) {
-      return emValue.m[0].power_reactive[phase] * 1000;
+      return static_cast<int64_t>(emValue.m[0].power_reactive[phase]) * 1000;
     }  else {
       return emValue.m[0].power_reactive[phase];
     }
@@ -1055,7 +1055,7 @@ int64_t Supla::Sensor::ElectricityMeter::getPowerApparent(
     const TElectricityMeter_ExtendedValue_V3 &emValue, int phase) {
   if (phase >= 0 && phase < MAX_PHASES) {
     if (emValue.measured_values & EM_VAR_POWER_APPARENT_KVA) {
-      return emValue.m[0].power_apparent[phase] * 1000;
+      return static_cast<int64_t>(emValue.m[0].power_apparent[phase]) * 1000;
     } else {
       return emValue.m[0].power_apparent[phase];
     }
@@ -1172,8 +1172,7 @@ bool Supla::Sensor::ElectricityMeter::isVoltageUsed(
 
 bool Supla::Sensor::ElectricityMeter::isCurrentUsed(
     const TElectricityMeter_ExtendedValue_V3 &emValue) {
-  return emValue.measured_values & EM_VAR_CURRENT ||
-    emValue.measured_values & EM_VAR_CURRENT_OVER_65A;
+  return emValue.measured_values & (EM_VAR_CURRENT | EM_VAR_CURRENT_OVER_65A);
 }
 
 bool Supla::Sensor::ElectricityMeter::isFreqUsed(
@@ -1183,17 +1182,20 @@ bool Supla::Sensor::ElectricityMeter::isFreqUsed(
 
 bool Supla::Sensor::ElectricityMeter::isPowerActiveUsed(
     const TElectricityMeter_ExtendedValue_V3 &emValue) {
-  return emValue.measured_values & EM_VAR_POWER_ACTIVE;
+  return emValue.measured_values &
+         (EM_VAR_POWER_ACTIVE | EM_VAR_POWER_ACTIVE_KW);
 }
 
 bool Supla::Sensor::ElectricityMeter::isPowerReactiveUsed(
     const TElectricityMeter_ExtendedValue_V3 &emValue) {
-  return emValue.measured_values & EM_VAR_POWER_REACTIVE;
+  return emValue.measured_values &
+         (EM_VAR_POWER_REACTIVE | EM_VAR_POWER_REACTIVE_KVAR);
 }
 
 bool Supla::Sensor::ElectricityMeter::isPowerApparentUsed(
     const TElectricityMeter_ExtendedValue_V3 &emValue) {
-  return emValue.measured_values & EM_VAR_POWER_APPARENT;
+  return emValue.measured_values &
+    (EM_VAR_POWER_APPARENT | EM_VAR_POWER_APPARENT_KVA);
 }
 
 bool Supla::Sensor::ElectricityMeter::isPowerFactorUsed(

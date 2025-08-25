@@ -2137,12 +2137,12 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l01857" name="l01857"></a><span class="lineno"> 1857</span>  <span class="keywordtype">unsigned</span> _supla_int16_t freq;        <span class="comment">// * 0.01 Hz</span></div>
 <div class="line"><a id="l01858" name="l01858"></a><span class="lineno"> 1858</span>  <span class="keywordtype">unsigned</span> _supla_int16_t voltage[3];  <span class="comment">// * 0.01 V</span></div>
 <div class="line"><a id="l01859" name="l01859"></a><span class="lineno"> 1859</span>  <span class="keywordtype">unsigned</span> _supla_int16_t</div>
-<div class="line"><a id="l01860" name="l01860"></a><span class="lineno"> 1860</span>      current[3];  <span class="comment">// * 0.001A (0.01A WHEN EM_VAR_CURRENT_OVER_65A)</span></div>
+<div class="line"><a id="l01860" name="l01860"></a><span class="lineno"> 1860</span>      current[3];  <span class="comment">// * 0.001 A (0.01 A WHEN EM_VAR_CURRENT_OVER_65A)</span></div>
 <div class="line"><a id="l01861" name="l01861"></a><span class="lineno"> 1861</span>  _supla_int_t</div>
-<div class="line"><a id="l01862" name="l01862"></a><span class="lineno"> 1862</span>      power_active[3];  <span class="comment">// * 0.00001W (0.01kW WHEN EM_VAR_POWER_ACTIVE_KW)</span></div>
-<div class="line"><a id="l01863" name="l01863"></a><span class="lineno"> 1863</span>  _supla_int_t power_reactive[3];  <span class="comment">// * 0.00001var (0.01kvar WHEN</span></div>
+<div class="line"><a id="l01862" name="l01862"></a><span class="lineno"> 1862</span>      power_active[3];  <span class="comment">// * 0.00001 W (0.00001 kW WHEN EM_VAR_POWER_ACTIVE_KW)</span></div>
+<div class="line"><a id="l01863" name="l01863"></a><span class="lineno"> 1863</span>  _supla_int_t power_reactive[3];  <span class="comment">// * 0.00001 var (0.00001 kvar WHEN</span></div>
 <div class="line"><a id="l01864" name="l01864"></a><span class="lineno"> 1864</span>                                   <span class="comment">// EM_VAR_POWER_REACTIVE_KVAR)</span></div>
-<div class="line"><a id="l01865" name="l01865"></a><span class="lineno"> 1865</span>  _supla_int_t power_apparent[3];  <span class="comment">// * 0.00001VA (0.01kVA WHEN</span></div>
+<div class="line"><a id="l01865" name="l01865"></a><span class="lineno"> 1865</span>  _supla_int_t power_apparent[3];  <span class="comment">// * 0.00001 VA (0.00001 kVA WHEN</span></div>
 <div class="line"><a id="l01866" name="l01866"></a><span class="lineno"> 1866</span>                                   <span class="comment">// EM_VAR_POWER_APPARENT_KVA)</span></div>
 <div class="line"><a id="l01867" name="l01867"></a><span class="lineno"> 1867</span>  _supla_int16_t power_factor[3];  <span class="comment">// * 0.001</span></div>
 <div class="line"><a id="l01868" name="l01868"></a><span class="lineno"> 1868</span>  _supla_int16_t phase_angle[3];   <span class="comment">// * 0.1 degree</span></div>

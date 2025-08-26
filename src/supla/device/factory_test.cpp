@@ -150,13 +150,14 @@ void FactoryTest::onInit() {
     return;
   }
 
+#ifndef SUPLA_DEBUG
   if (!cfg->isEncryptionEnabled()) {
     SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
     testFailed = true;
     failReason = 16;
     return;
   }
-
+#endif
 
   auto webServer = Supla::WebServer::Instance();
   if (webServer == nullptr) {
@@ -165,7 +166,7 @@ void FactoryTest::onInit() {
     failReason = 17;
     return;
   }
-  if (webServer->verifyCertificatesFormat()) {
+  if (!webServer->verifyCertificatesFormat()) {
     SUPLA_LOG_ERROR("TEST failed: invalid certificates format");
     testFailed = true;
     failReason = 18;

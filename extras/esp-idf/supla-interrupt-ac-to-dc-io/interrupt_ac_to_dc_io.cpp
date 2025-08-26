@@ -135,7 +135,7 @@ void InterruptAcToDcIo::onFastTimer() {
         gpioState[i] = 2;
       } else if (gpioState[i] == 2) {
         // for "AC" case we update to ON after second interrupt
-        SUPLA_LOG_DEBUG(" *** GPIO %d is ON ***", i);
+        SUPLA_LOG_DEBUG(" *** GPIO %d is ON (AC) ***", i);
         gpioState[i] = 1;
       }
       gpioLastTimestampMs[i] = now;
@@ -150,7 +150,7 @@ void InterruptAcToDcIo::onFastTimer() {
       } else {
         // for "DC" case we update to ON after filtering timeout
         gpioState[i] = 1;
-        SUPLA_LOG_DEBUG(" *** GPIO %d is ON ***", i);
+        SUPLA_LOG_DEBUG(" *** GPIO %d is ON (DC)***", i);
       }
     }
   }

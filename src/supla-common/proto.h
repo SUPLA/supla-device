@@ -503,6 +503,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNELFNC_WATER_TANK 982                    // ver. >= 26
 #define SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR 990        // ver. >= 26
 #define SUPLA_CHANNELFNC_FLOOD_SENSOR 1000                 // ver. >= 27
+#define SUPLA_CHANNELFNC_MOTION_SENSOR 1010                // ver. >= 27
 
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEGATEWAYLOCK 0x00000001
 #define SUPLA_BIT_FUNC_CONTROLLINGTHEGATE 0x00000002
@@ -3171,14 +3172,29 @@ typedef struct {
 // Device doesn't apply this inverted logic on communication towards server.
 // It is used only for interanal purposes and for other external interfaces
 // like MQTT
+//
 // FilteringTimeMs is used to configure how long device should wait for stable
 // input signal before changing it's state. If value is set to 0, then field
 // is not used by device and server should ignore it. Device may impose minimum
 // and maximum values for this field.
+//
+// Timeout is used to configure how long device should wait since last "1"
+// detection before it sets "0". If value is set to 0, then field is not used
+//
+// Sensitivity is used to configure how sensitive device should be.
+// Sensitivity 1 % (value == 2) is the lowest possible sensitivity.
+// Sensitivity 100 % (value == 101) is the highest possible sensitivity.
+// If value is set to 0, then field is not used
+// Value 1 (0 %) means "OFF"
 typedef struct {
   unsigned char InvertedLogic;              // 0 - not inverted, 1 - inverted
   unsigned _supla_int16_t FilteringTimeMs;  // 0 - not used, > 0 - time in ms
-  unsigned char Reserved[29];
+  unsigned _supla_int16_t
+      Timeout;  // 0 - not used, > 0 - time in 0.1 s, max 36000
+  unsigned char Sensitivity;  // 0 - not used, 1..101 - sensitivity 0..100 %
+                              // value 1 (0 %) means "OFF"
+  unsigned char
+      Reserved[29 - sizeof(unsigned char) - sizeof(unsigned _supla_int16_t)];
 } TChannelConfig_BinarySensor;  // v. >= 21
 
 // Not set is set when there is no thermometer for "AUX" available

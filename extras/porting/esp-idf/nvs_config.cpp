@@ -75,6 +75,17 @@ bool NvsConfig::init() {
   nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
   esp_err_t err = 0;
 
+  // check if flash encryption is in release mode
+  esp_flash_enc_mode_t mode = esp_get_flash_encryption_mode();
+  if (mode == ESP_FLASH_ENC_MODE_RELEASE) {
+    SUPLA_LOG_INFO("NvsConfig: flash encryption in release mode");
+    flashEncryptionReleaseMode = true;
+  } else {
+    SUPLA_LOG_ERROR("NvsConfig: flash encryption not in release mode (%d)",
+                    mode);
+    flashEncryptionReleaseMode = false;
+  }
+
   // In test mode we use default NVS partition without encryption. However
   // test mode is stored on NVS itself, so we will try to open it unencrypted
   // first. Otherwise -> proceed with NVS_ENCRYPTION
@@ -108,6 +119,19 @@ bool NvsConfig::init() {
             SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" open failed",
                             nvsPartitionName);
           } else {
+            auto nvsKeyPartition = esp_partition_find_first(
+                                ESP_PARTITION_TYPE_DATA,
+                ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, "nvs_key");
+
+            if (nvsKeyPartition == nullptr) {
+              SUPLA_LOG_ERROR("NvsConfig: nvs_key partition not found");
+              nvsEncrypted = false;
+            } else {
+              // in test mode we use unencrypted nvs, so we will flag it as
+              // encypted when nvs_key parition is found
+              nvsEncrypted = true;
+            }
+
             return true;
           }
         } else {
@@ -161,17 +185,6 @@ bool NvsConfig::init() {
   } else {
     SUPLA_LOG_INFO("NvsConfig: NVS encryption enabled");
     nvsEncrypted = true;
-  }
-
-  // check if flash encryption is in release mode
-  esp_flash_enc_mode_t mode = esp_get_flash_encryption_mode();
-  if (mode == ESP_FLASH_ENC_MODE_RELEASE) {
-    SUPLA_LOG_INFO("NvsConfig: NVS flash encryption in release mode");
-    flashEncryptionReleaseMode = true;
-  } else {
-    SUPLA_LOG_ERROR("NvsConfig: NVS flash encryption not in release mode (%d)",
-                    mode);
-    flashEncryptionReleaseMode = false;
   }
 
   nvsPartitionName = NVS_SUPLA_PARTITION_NAME;

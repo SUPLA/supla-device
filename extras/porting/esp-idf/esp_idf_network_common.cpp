@@ -25,7 +25,7 @@
 void Supla::initEspNetif() {
   static bool initDone = false;
   if (!initDone) {
-    nvs_flash_init();
+//    nvs_flash_init();
     esp_netif_init();
 
     ESP_ERROR_CHECK(esp_event_loop_create_default());

@@ -45,6 +45,7 @@
 #include <supla/clock/clock.h>
 #include <supla/device/remote_device_config.h>
 #include <supla/device/auto_update_policy.h>
+#include <supla/device/device_mode.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -459,6 +460,7 @@ void SuplaDeviceClass::iterate(void) {
   switch (deviceMode) {
     // Normal and Test mode
     case Supla::DEVICE_MODE_TEST:
+    case Supla::DEVICE_MODE_NORMAL:
     default: {
       // When network is ready iterate over protocol layers
       bool iterateConnected = false;

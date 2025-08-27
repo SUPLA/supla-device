@@ -150,14 +150,16 @@ void FactoryTest::onInit() {
     return;
   }
 
-#ifndef SUPLA_DEBUG
   if (!cfg->isEncryptionEnabled()) {
     SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
+#ifndef SUPLA_DEBUG
     testFailed = true;
     failReason = 16;
     return;
-  }
+#else
+    SUPLA_LOG_ERROR("Skipping failure in debug mode...");
 #endif
+  }
 
   auto webServer = Supla::WebServer::Instance();
   if (webServer == nullptr) {

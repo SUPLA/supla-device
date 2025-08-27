@@ -90,6 +90,12 @@ bool Storage::WriteState(const unsigned char *buf, int size) {
   return false;
 }
 
+void Storage::EraseSector(unsigned int offset, int size) {
+  if (Instance()) {
+    Instance()->eraseSector(offset, size);
+  }
+}
+
 bool Storage::SaveStateAllowed(uint32_t ms) {
   if (Instance()) {
     return Instance()->saveStateAllowed(ms);

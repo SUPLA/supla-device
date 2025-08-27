@@ -33,6 +33,8 @@ class EspIdfSectorWlStorage : public Storage {
   bool init() override;
   void commit() override;
 
+  void eraseSector(unsigned int address, int size) override;
+
  protected:
   int readStorage(unsigned int address,
                   unsigned char *buf,
@@ -41,7 +43,6 @@ class EspIdfSectorWlStorage : public Storage {
   int writeStorage(unsigned int address,
                    const unsigned char *buf,
                    int size) override;
-  void eraseSector(unsigned int address, int size) override;
 
   bool dataChanged = false;
   char *buffer = nullptr;

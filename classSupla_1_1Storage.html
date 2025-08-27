@@ -151,6 +151,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setStateSaveP
 <tr class="memitem:a5d6e999991d60ea60e2628c1350e560a" id="r_a5d6e999991d60ea60e2628c1350e560a"><td class="memItemLeft" align="right" valign="top"><a id="a5d6e999991d60ea60e2628c1350e560a" name="a5d6e999991d60ea60e2628c1350e560a"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>deleteAll</b> ()</td></tr>
 <tr class="separator:a5d6e999991d60ea60e2628c1350e560a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0b19f20c0f8963423b9c38bcc04ff83" id="r_ac0b19f20c0f8963423b9c38bcc04ff83"><td class="memItemLeft" align="right" valign="top"><a id="ac0b19f20c0f8963423b9c38bcc04ff83" name="ac0b19f20c0f8963423b9c38bcc04ff83"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseSector</b> (unsigned int address, int size)</td></tr>
+<tr class="separator:ac0b19f20c0f8963423b9c38bcc04ff83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1ae75d10b5c4ef7f885715481ce3d7a" id="r_ae1ae75d10b5c4ef7f885715481ce3d7a"><td class="memItemLeft" align="right" valign="top"><a id="ae1ae75d10b5c4ef7f885715481ce3d7a" name="ae1ae75d10b5c4ef7f885715481ce3d7a"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableChannelNumbers</b> ()</td></tr>
 <tr class="separator:ae1ae75d10b5c4ef7f885715481ce3d7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -199,6 +202,9 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>ReadState</b> 
 <tr class="memitem:a2ba2478f35d375637df30a4b7e1ecc78" id="r_a2ba2478f35d375637df30a4b7e1ecc78"><td class="memItemLeft" align="right" valign="top"><a id="a2ba2478f35d375637df30a4b7e1ecc78" name="a2ba2478f35d375637df30a4b7e1ecc78"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>WriteState</b> (const unsigned char *, int)</td></tr>
 <tr class="separator:a2ba2478f35d375637df30a4b7e1ecc78"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e1a19d2abd917c04b4a7fd715bf57c7" id="r_a3e1a19d2abd917c04b4a7fd715bf57c7"><td class="memItemLeft" align="right" valign="top"><a id="a3e1a19d2abd917c04b4a7fd715bf57c7" name="a3e1a19d2abd917c04b4a7fd715bf57c7"></a>
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>EraseSector</b> (unsigned int offset, int size)</td></tr>
+<tr class="separator:a3e1a19d2abd917c04b4a7fd715bf57c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae53100eecf6c94c21824cb05eec53a75" id="r_ae53100eecf6c94c21824cb05eec53a75"><td class="memItemLeft" align="right" valign="top"><a id="ae53100eecf6c94c21824cb05eec53a75" name="ae53100eecf6c94c21824cb05eec53a75"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>RegisterSection</b> (int sectionId, int offset, int size, bool addCrc, bool addBackupCopy)</td></tr>
 <tr class="separator:ae53100eecf6c94c21824cb05eec53a75"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -229,9 +235,6 @@ virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>readStorage</b
 <tr class="memitem:aafd6b47249014886feb970db2eb1e521" id="r_aafd6b47249014886feb970db2eb1e521"><td class="memItemLeft" align="right" valign="top"><a id="aafd6b47249014886feb970db2eb1e521" name="aafd6b47249014886feb970db2eb1e521"></a>
 virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>writeStorage</b> (unsigned int address, const unsigned char *buf, int size)=0</td></tr>
 <tr class="separator:aafd6b47249014886feb970db2eb1e521"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0b19f20c0f8963423b9c38bcc04ff83" id="r_ac0b19f20c0f8963423b9c38bcc04ff83"><td class="memItemLeft" align="right" valign="top"><a id="ac0b19f20c0f8963423b9c38bcc04ff83" name="ac0b19f20c0f8963423b9c38bcc04ff83"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseSector</b> (unsigned int address, int size)</td></tr>
-<tr class="separator:ac0b19f20c0f8963423b9c38bcc04ff83"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2dd01f6c8beba4aae48c0310bf2aaa1d" id="r_a2dd01f6c8beba4aae48c0310bf2aaa1d"><td class="memItemLeft" align="right" valign="top"><a id="a2dd01f6c8beba4aae48c0310bf2aaa1d" name="a2dd01f6c8beba4aae48c0310bf2aaa1d"></a>
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>commit</b> ()=0</td></tr>
 <tr class="separator:a2dd01f6c8beba4aae48c0310bf2aaa1d"><td class="memSeparator" colspan="2">&#160;</td></tr>

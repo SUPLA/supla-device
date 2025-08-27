@@ -148,6 +148,9 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>setStateSaveP
 <tr class="memitem:a5d6e999991d60ea60e2628c1350e560a inherit pub_methods_classSupla_1_1Storage" id="r_a5d6e999991d60ea60e2628c1350e560a"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>deleteAll</b> ()</td></tr>
 <tr class="separator:a5d6e999991d60ea60e2628c1350e560a inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac0b19f20c0f8963423b9c38bcc04ff83 inherit pub_methods_classSupla_1_1Storage" id="r_ac0b19f20c0f8963423b9c38bcc04ff83"><td class="memItemLeft" align="right" valign="top">
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseSector</b> (unsigned int address, int size)</td></tr>
+<tr class="separator:ac0b19f20c0f8963423b9c38bcc04ff83 inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae1ae75d10b5c4ef7f885715481ce3d7a inherit pub_methods_classSupla_1_1Storage" id="r_ae1ae75d10b5c4ef7f885715481ce3d7a"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableChannelNumbers</b> ()</td></tr>
 <tr class="separator:ae1ae75d10b5c4ef7f885715481ce3d7a inherit pub_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -165,9 +168,6 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a245104e1c61abd22e3f27a429b0100d2" id="r_a245104e1c61abd22e3f27a429b0100d2"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a245104e1c61abd22e3f27a429b0100d2">writeStorage</a> (unsigned int offset, const unsigned char *buf, int size)</td></tr>
 <tr class="separator:a245104e1c61abd22e3f27a429b0100d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1Storage"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1Storage')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1Storage.html">Supla::Storage</a></td></tr>
-<tr class="memitem:ac0b19f20c0f8963423b9c38bcc04ff83 inherit pro_methods_classSupla_1_1Storage" id="r_ac0b19f20c0f8963423b9c38bcc04ff83"><td class="memItemLeft" align="right" valign="top">
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>eraseSector</b> (unsigned int address, int size)</td></tr>
-<tr class="separator:ac0b19f20c0f8963423b9c38bcc04ff83 inherit pro_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4a8e2f67a1707874cca458389d73c99a inherit pro_methods_classSupla_1_1Storage" id="r_a4a8e2f67a1707874cca458389d73c99a"><td class="memItemLeft" align="right" valign="top">
 virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>updateStorage</b> (unsigned int, const unsigned char *, int)</td></tr>
 <tr class="separator:a4a8e2f67a1707874cca458389d73c99a inherit pro_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -269,6 +269,9 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>ReadState</b> 
 <tr class="memitem:a2ba2478f35d375637df30a4b7e1ecc78 inherit pub_static_methods_classSupla_1_1Storage" id="r_a2ba2478f35d375637df30a4b7e1ecc78"><td class="memItemLeft" align="right" valign="top">
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>WriteState</b> (const unsigned char *, int)</td></tr>
 <tr class="separator:a2ba2478f35d375637df30a4b7e1ecc78 inherit pub_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e1a19d2abd917c04b4a7fd715bf57c7 inherit pub_static_methods_classSupla_1_1Storage" id="r_a3e1a19d2abd917c04b4a7fd715bf57c7"><td class="memItemLeft" align="right" valign="top">
+static void&#160;</td><td class="memItemRight" valign="bottom"><b>EraseSector</b> (unsigned int offset, int size)</td></tr>
+<tr class="separator:a3e1a19d2abd917c04b4a7fd715bf57c7 inherit pub_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae53100eecf6c94c21824cb05eec53a75 inherit pub_static_methods_classSupla_1_1Storage" id="r_ae53100eecf6c94c21824cb05eec53a75"><td class="memItemLeft" align="right" valign="top">
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>RegisterSection</b> (int sectionId, int offset, int size, bool addCrc, bool addBackupCopy)</td></tr>
 <tr class="separator:ae53100eecf6c94c21824cb05eec53a75 inherit pub_static_methods_classSupla_1_1Storage"><td class="memSeparator" colspan="2">&#160;</td></tr>

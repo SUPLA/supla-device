@@ -46,6 +46,9 @@ int16_t FactoryTest::getManufacturerId() {
 void FactoryTest::onInit() {
   initTimestamp = millis();
 
+  SUPLA_LOG_INFO("TEST[%d,%d] started", testStage, testStep);
+  sdc->testStepStatusLed(2);
+
   if (testStage != Supla::TestStage_None || testStep != 0) {
     SUPLA_LOG_ERROR(
         "TEST[%d,%d] failed: invalid step/stage sequence", testStage, testStep);
@@ -245,7 +248,7 @@ void FactoryTest::handleAction(int event, int action) {
             break;
           }
           testStage = Supla::TestStage_RegisteredAndReady;
-          sdc->identifyStatusLed();
+          sdc->testStepStatusLed(4);
         }
       }
       break;

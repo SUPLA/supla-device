@@ -89,7 +89,7 @@ bool Config::setMqttTlsEnabled(bool enabled) {
 }
 
 bool Config::isMqttTlsEnabled() {
-  int8_t result = 0;
+  int8_t result = isEncryptionEnabled() ? 1 : 0;
   getInt8("mqtttls", &result);
   return result == 1;
 }

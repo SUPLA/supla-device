@@ -1713,4 +1713,10 @@ void SuplaDeviceClass::identifyStatusLed() {
   }
 }
 
+void SuplaDeviceClass::testStepStatusLed(int times) {
+  if (statusLed) {
+    statusLed->setCustomSequence(20, 50, 10, times, 1);
+  }
+}
+
 SuplaDeviceClass SuplaDevice;

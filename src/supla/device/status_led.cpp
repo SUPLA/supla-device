@@ -145,6 +145,7 @@ void Supla::Device::StatusLed::iterateAlways() {
     case STATUS_SOFTWARE_RESET:
       offDuration = 1000;
       onDuration = 0;
+      repeatLimit = 0;
       currentSequence = CUSTOM_SEQUENCE;
       break;
 

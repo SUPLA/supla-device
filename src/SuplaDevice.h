@@ -255,6 +255,13 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   void identifyStatusLed();
 
+  /**
+   * Triggers special status LED flashing sequence based on provided "times"
+   *
+   * @param times number of times to flash
+   */
+  void testStepStatusLed(int times);
+
  protected:
   /**
    * Performs software update if needed

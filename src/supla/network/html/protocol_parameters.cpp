@@ -278,7 +278,7 @@ void ProtocolParameters::send(Supla::WebSender* sender) {
           "<option value=\"0\" ");
       sender->send(selected(!cfg->isMqttTlsEnabled()));
       sender->send(
-          ">NO</option>"
+          ">NO (INSECURE)</option>"
           "<option value=\"1\" ");
       sender->send(selected(cfg->isMqttTlsEnabled()));
       sender->send(

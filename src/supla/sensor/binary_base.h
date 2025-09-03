@@ -31,7 +31,7 @@ namespace Sensor {
 #pragma pack(push, 1)
 struct BinarySensorConfig {
   union {
-    uint8_t reserved[32] = {};
+    uint8_t reserved[32];
     struct {
       uint16_t timeoutDs;  // 1 ds -> 0.1 s; 0 - not used; range 1..36000
       uint16_t filteringTimeMs;  // 0 - not used; > 0 - filtering time
@@ -39,6 +39,8 @@ struct BinarySensorConfig {
                                      // value 1 is 0% -> off
     };
   };
+
+  BinarySensorConfig() : reserved{} {}
 };
 
 #pragma pack(pop)

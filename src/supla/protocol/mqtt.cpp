@@ -649,6 +649,8 @@ bool Mqtt::isOpenClosedBinarySensorFunction(int channelFunction) const {
     case SUPLA_CHANNELFNC_ALARMARMAMENTSENSOR:
     case SUPLA_CHANNELFNC_MAILSENSOR:
     case SUPLA_CHANNELFNC_FLOOD_SENSOR:
+    case SUPLA_CHANNELFNC_BINARY_SENSOR:
+    case SUPLA_CHANNELFNC_MOTION_SENSOR:
     default: {
       return false;
     }

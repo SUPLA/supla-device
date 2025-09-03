@@ -67,8 +67,8 @@ bool ConfigTypesBitmap::isConfigFinishedReceived() const {
 }
 
 void ConfigTypesBitmap::set(int configType, bool value) {
-  SUPLA_LOG_DEBUG(
-      "ConfigTypesBitmap: Set config type %d to %d", configType, value);
+//  SUPLA_LOG_DEBUG(
+//      "ConfigTypesBitmap: Set config type %d to %d", configType, value);
   uint8_t v = value ? 1 : 0;
   switch (configType) {
     case SUPLA_CONFIG_TYPE_DEFAULT: {
@@ -463,8 +463,8 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   if (channelConfigState == Supla::ChannelConfigState::SetChannelConfigSend ||
       channelConfigState == Supla::ChannelConfigState::LocalChangeSent) {
-    setChannelConfigAttempts = 0;
     if (receivedConfigTypes != usedConfigTypes) {
+      setChannelConfigAttempts = 0;
       if (channelConfigState ==
           Supla::ChannelConfigState::SetChannelConfigSend) {
         channelConfigState = Supla::ChannelConfigState::ResendConfig;

@@ -573,6 +573,10 @@ const char *Supla::getBinarySensorChannelName(int channelFunction) {
     case SUPLA_CHANNELFNC_MAILSENSOR: {
       return "Mail sensor";
     }
+    case SUPLA_CHANNELFNC_MOTION_SENSOR: {
+      return "Motion sensor";
+    }
+    case SUPLA_CHANNELFNC_BINARY_SENSOR:
     default: {
       return "Binary sensor";
     }

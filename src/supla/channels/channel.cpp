@@ -1618,7 +1618,9 @@ bool Channel::isFunctionValid(uint32_t function) const {
         case SUPLA_CHANNELFNC_OPENINGSENSOR_GATE:
         case SUPLA_CHANNELFNC_OPENINGSENSOR_GATEWAY:
         case SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR:
-        case SUPLA_CHANNELFNC_FLOOD_SENSOR: {
+        case SUPLA_CHANNELFNC_FLOOD_SENSOR:
+        case SUPLA_CHANNELFNC_BINARY_SENSOR:
+        case SUPLA_CHANNELFNC_MOTION_SENSOR: {
           return true;
         }
         default: {

@@ -100,6 +100,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/network/html/roller_shutter_parameters.cpp
   src/supla/network/html/button_refresh.cpp
   src/supla/network/html/modbus_parameters.cpp
+  src/supla/network/html/binary_sensor_parameters.cpp
 
   src/supla/network/client.cpp
   src/supla/network/ip_address.cpp

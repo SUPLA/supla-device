@@ -71,6 +71,7 @@ const char HvacWeeklyCfgTag[] = "hvac_weekly";
 const char HvacAltWeeklyCfgTag[] = "hvac_aweekly";
 
 const char BinarySensorServerInvertedLogicTag[] = "srv_invrt";
+const char BinarySensorCfgTag[] = "bs_cfg";
 
 const char ContainerTag[] = "container";
 
@@ -79,6 +80,51 @@ const char ValveCfgTag[] = "valve_cfg";
 const char ModbusCfgTag[] = "modbus_cfg";
 
 const char OtaModeTag[] = "ota_mode";
+
+static_assert(sizeof(DeviceConfigChangeCfgTag) < 16);
+static_assert(sizeof(ChannelFunctionTag) < 16);
+static_assert(sizeof(ChannelConfigChangedFlagTag) < 16);
+static_assert(sizeof(ScreenBrightnessCfgTag) < 16);
+static_assert(sizeof(ScreenAdjustmentForAutomaticCfgTag) < 16);
+static_assert(sizeof(HomeScreenContentTag) < 16);
+static_assert(sizeof(ScreenDelayTypeCfgTag) < 16);
+static_assert(sizeof(ScreenDelayCfgTag) < 16);
+static_assert(sizeof(DisableUserInterfaceCfgTag) < 16);
+static_assert(sizeof(MinTempUICfgTag) < 16);
+static_assert(sizeof(MaxTempUICfgTag) < 16);
+static_assert(sizeof(MinBrightTag) < 16);
+static_assert(sizeof(PowerStatusLedCfgTag) < 16);
+static_assert(sizeof(StatusLedCfgTag) < 16);
+static_assert(sizeof(BtnTypeTag) < 16);
+static_assert(sizeof(BtnHoldTag) < 16);
+static_assert(sizeof(BtnMulticlickTag) < 16);
+static_assert(sizeof(BtnConfigTag) < 16);
+static_assert(sizeof(BtnActionTriggerCfgTagPrefix) < 16);
+static_assert(sizeof(VolumeCfgTag) < 16);
+static_assert(sizeof(EmCtTypeTag) < 16);
+static_assert(sizeof(EmPhaseLedTag) < 16);
+static_assert(sizeof(EmPhaseLedVoltageLowTag) < 16);
+static_assert(sizeof(EmPhaseLedVoltageHighTag) < 16);
+static_assert(sizeof(EmPhaseLedPowerLowTag) < 16);
+static_assert(sizeof(EmPhaseLedPowerHighTag) < 16);
+static_assert(sizeof(RgbwButtonTag) < 16);
+static_assert(sizeof(RollerShutterTag) < 16);
+static_assert(sizeof(RollerShutterMotorUpsideDownTag) < 16);
+static_assert(sizeof(RollerShutterButtonsUpsideDownTag) < 16);
+static_assert(sizeof(RollerShutterTimeMarginTag) < 16);
+static_assert(sizeof(RollerShutterOpeningTimeTag) < 16);
+static_assert(sizeof(RollerShutterClosingTimeTag) < 16);
+static_assert(sizeof(RelayOvercurrentThreshold) < 16);
+static_assert(sizeof(HvacCfgTag) < 16);
+static_assert(sizeof(HvacWeeklyCfgTag) < 16);
+static_assert(sizeof(HvacAltWeeklyCfgTag) < 16);
+static_assert(sizeof(BinarySensorServerInvertedLogicTag) < 16);
+static_assert(sizeof(BinarySensorCfgTag) < 16);
+static_assert(sizeof(ContainerTag) < 16);
+static_assert(sizeof(ValveCfgTag) < 16);
+static_assert(sizeof(ModbusCfgTag) < 16);
+static_assert(sizeof(OtaModeTag) < 16);
+
 }  // namespace ConfigTag
 }  // namespace Supla
 

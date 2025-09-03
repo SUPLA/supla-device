@@ -30,7 +30,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/clock/clock.h>
 #include <string.h>
-#include <cstdio>
+#include <stdio.h>
 
 using Supla::Html::BinarySensorParameters;
 

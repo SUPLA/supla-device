@@ -1,22 +1,24 @@
 <map id="BinaryBase" name="BinaryBase">
-<area shape="rect" id="Node000001" title=" " alt="" coords="371,292,459,318"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="285,113,465,154"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="386,169,415,291,410,292,381,170"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,8,113,33"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="109,36,320,110,318,115,107,41"/>
-<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="130,11,139,20,131,30,114,33,113,28,129,25,134,20,126,15"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="398,8,528,33"/>
-<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="455,49,430,91,405,115,402,111,426,88,451,46"/>
-<area shape="rect" id="Node000007" href="$classSupla_1_1Channel.html" title=" " alt="" coords="527,121,634,146"/>
-<area shape="poly" id="edge8_Node000007_Node000004" title=" " alt="" coords="489,42,569,118,566,122,485,46"/>
-<area shape="rect" id="Node000005" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="202,8,374,33"/>
-<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="293,48,298,69,307,88,334,111,330,115,303,91,293,71,288,50"/>
-<area shape="rect" id="Node000006" href="$classSupla_1_1BinarySensorChannel.html" title=" " alt="" coords="440,203,624,229"/>
-<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="505,241,433,294,430,289,502,236"/>
-<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="567,162,542,204,537,202,563,159"/>
-<area shape="poly" id="edge9_Node000007_Node000007" title=" " alt="" coords="651,125,661,134,652,142,635,145,634,139,650,137,655,134,648,129"/>
-<area shape="rect" id="Node000008" href="$structTActionTriggerProperties.html" title=" " alt="" coords="552,8,718,33"/>
-<area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="625,48,589,121,584,119,620,46"/>
-<area shape="rect" id="Node000009" href="$structTHVACValue.html" title=" " alt="" coords="747,8,846,33"/>
-<area shape="poly" id="edge11_Node000007_Node000009" title=" " alt="" coords="790,49,778,72,759,91,730,109,698,121,635,133,634,128,696,116,728,104,756,87,773,68,785,47"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="873,199,960,225"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="363,104,543,144"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="559,136,697,159,849,190,874,196,872,201,848,195,696,164,558,141"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,59,145,85"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="160,71,246,76,339,88,390,101,389,106,338,93,245,81,160,76"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="58,42,70,35,91,33,112,35,124,41,128,51,122,60,117,58,122,50,120,45,110,40,92,38,72,40,61,46"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="27,166,156,192"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="171,164,362,135,363,140,172,169"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1Channel.html" title=" " alt="" coords="399,222,506,248"/>
+<area shape="poly" id="edge8_Node000007_Node000004" title=" " alt="" coords="172,189,399,224,398,229,171,194"/>
+<area shape="rect" id="Node000005" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="5,110,178,136"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="194,121,362,121,362,127,194,126"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1BinarySensorChannel.html" title=" " alt="" coords="592,199,777,225"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="792,210,872,210,872,215,792,215"/>
+<area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="521,226,592,219,592,224,522,231"/>
+<area shape="poly" id="edge9_Node000007_Node000007" title=" " alt="" coords="431,205,438,198,453,195,466,198,475,204,477,213,473,223,468,221,472,213,470,207,464,203,453,201,441,203,434,209"/>
+<area shape="rect" id="Node000008" href="$structTActionTriggerProperties.html" title=" " alt="" coords="9,222,174,248"/>
+<area shape="poly" id="edge10_Node000007_Node000008" title=" " alt="" coords="190,232,399,232,399,238,190,238"/>
+<area shape="rect" id="Node000009" href="$structTHVACValue.html" title=" " alt="" coords="42,271,141,297"/>
+<area shape="poly" id="edge11_Node000007_Node000009" title=" " alt="" coords="156,275,338,253,398,242,399,248,339,258,157,280"/>
+<area shape="rect" id="Node000010" href="$structSupla_1_1Sensor_1_1BinarySensorConfig.html" title=" " alt="" coords="592,249,777,290"/>
+<area shape="poly" id="edge12_Node000001_Node000010" title=" " alt="" coords="791,244,848,230,872,223,873,228,849,235,792,249"/>
 </map>

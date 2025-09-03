@@ -86,6 +86,7 @@ $(function(){ initResizable(false); });
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classBinaryBase-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">BinaryBase Class Reference<span class="mlabels"><span class="mlabel abstract">abstract</span></span></div></div>
@@ -116,26 +117,28 @@ Collaboration diagram for BinaryBase:</div>
 <div class="dyncontent">
 <div class="center"><img src="classBinaryBase__coll__graph.png" border="0" usemap="#aBinaryBase_coll__map" alt="Collaboration graph"/></div>
 <map name="aBinaryBase_coll__map" id="aBinaryBase_coll__map">
-<area shape="rect" title=" " alt="" coords="371,292,459,318"/>
-<area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="285,113,465,154"/>
-<area shape="poly" title=" " alt="" coords="386,169,415,291,410,292,381,170"/>
-<area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,8,113,33"/>
-<area shape="poly" title=" " alt="" coords="109,36,320,110,318,115,107,41"/>
-<area shape="poly" title=" " alt="" coords="130,11,139,20,131,30,114,33,113,28,129,25,134,20,126,15"/>
-<area shape="rect" href="classSupla_1_1LocalAction.html" title=" " alt="" coords="398,8,528,33"/>
-<area shape="poly" title=" " alt="" coords="455,49,430,91,405,115,402,111,426,88,451,46"/>
-<area shape="rect" href="classSupla_1_1Channel.html" title=" " alt="" coords="527,121,634,146"/>
-<area shape="poly" title=" " alt="" coords="489,42,569,118,566,122,485,46"/>
-<area shape="rect" href="structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="202,8,374,33"/>
-<area shape="poly" title=" " alt="" coords="293,48,298,69,307,88,334,111,330,115,303,91,293,71,288,50"/>
-<area shape="rect" href="classSupla_1_1BinarySensorChannel.html" title=" " alt="" coords="440,203,624,229"/>
-<area shape="poly" title=" " alt="" coords="505,241,433,294,430,289,502,236"/>
-<area shape="poly" title=" " alt="" coords="567,162,542,204,537,202,563,159"/>
-<area shape="poly" title=" " alt="" coords="651,125,661,134,652,142,635,145,634,139,650,137,655,134,648,129"/>
-<area shape="rect" href="structTActionTriggerProperties.html" title=" " alt="" coords="552,8,718,33"/>
-<area shape="poly" title=" " alt="" coords="625,48,589,121,584,119,620,46"/>
-<area shape="rect" href="structTHVACValue.html" title=" " alt="" coords="747,8,846,33"/>
-<area shape="poly" title=" " alt="" coords="790,49,778,72,759,91,730,109,698,121,635,133,634,128,696,116,728,104,756,87,773,68,785,47"/>
+<area shape="rect" title=" " alt="" coords="873,199,960,225"/>
+<area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="363,104,543,144"/>
+<area shape="poly" title=" " alt="" coords="559,136,697,159,849,190,874,196,872,201,848,195,696,164,558,141"/>
+<area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,59,145,85"/>
+<area shape="poly" title=" " alt="" coords="160,71,246,76,339,88,390,101,389,106,338,93,245,81,160,76"/>
+<area shape="poly" title=" " alt="" coords="58,42,70,35,91,33,112,35,124,41,128,51,122,60,117,58,122,50,120,45,110,40,92,38,72,40,61,46"/>
+<area shape="rect" href="classSupla_1_1LocalAction.html" title=" " alt="" coords="27,166,156,192"/>
+<area shape="poly" title=" " alt="" coords="171,164,362,135,363,140,172,169"/>
+<area shape="rect" href="classSupla_1_1Channel.html" title=" " alt="" coords="399,222,506,248"/>
+<area shape="poly" title=" " alt="" coords="172,189,399,224,398,229,171,194"/>
+<area shape="rect" href="structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="5,110,178,136"/>
+<area shape="poly" title=" " alt="" coords="194,121,362,121,362,127,194,126"/>
+<area shape="rect" href="classSupla_1_1BinarySensorChannel.html" title=" " alt="" coords="592,199,777,225"/>
+<area shape="poly" title=" " alt="" coords="792,210,872,210,872,215,792,215"/>
+<area shape="poly" title=" " alt="" coords="521,226,592,219,592,224,522,231"/>
+<area shape="poly" title=" " alt="" coords="431,205,438,198,453,195,466,198,475,204,477,213,473,223,468,221,472,213,470,207,464,203,453,201,441,203,434,209"/>
+<area shape="rect" href="structTActionTriggerProperties.html" title=" " alt="" coords="9,222,174,248"/>
+<area shape="poly" title=" " alt="" coords="190,232,399,232,399,238,190,238"/>
+<area shape="rect" href="structTHVACValue.html" title=" " alt="" coords="42,271,141,297"/>
+<area shape="poly" title=" " alt="" coords="156,275,338,253,398,242,399,248,339,258,157,280"/>
+<area shape="rect" href="structSupla_1_1Sensor_1_1BinarySensorConfig.html" title=" " alt="" coords="592,249,777,290"/>
+<area shape="poly" title=" " alt="" coords="791,244,848,230,872,223,873,228,849,235,792,249"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -157,19 +160,38 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>getValue</b> 
 <tr class="separator:aaefb9b2a80a0ef03833dc0a18d6429a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acfa656e461f0245c348e676f2236575d" id="r_acfa656e461f0245c348e676f2236575d"><td class="memItemLeft" align="right" valign="top">Supla::ApplyConfigResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#acfa656e461f0245c348e676f2236575d">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *config, bool local=false) override</td></tr>
 <tr class="separator:acfa656e461f0245c348e676f2236575d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0bfbfdd7d1f39d03b7616bd0db8ca1c0" id="r_a0bfbfdd7d1f39d03b7616bd0db8ca1c0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0bfbfdd7d1f39d03b7616bd0db8ca1c0">handleChannelConfigFinished</a> () override</td></tr>
-<tr class="memdesc:a0bfbfdd7d1f39d03b7616bd0db8ca1c0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "channel config finished" message from server.  <br /></td></tr>
-<tr class="separator:a0bfbfdd7d1f39d03b7616bd0db8ca1c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a587387dfff3bb97a095531d7d3d0ac2d" id="r_a587387dfff3bb97a095531d7d3d0ac2d"><td class="memItemLeft" align="right" valign="top"><a id="a587387dfff3bb97a095531d7d3d0ac2d" name="a587387dfff3bb97a095531d7d3d0ac2d"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setServerInvertLogic</b> (bool invertLogic)</td></tr>
-<tr class="separator:a587387dfff3bb97a095531d7d3d0ac2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5fdbfc49e4f69a5714f5af65f84cd0f2" id="r_a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="memItemLeft" align="right" valign="top"><a id="a5fdbfc49e4f69a5714f5af65f84cd0f2" name="a5fdbfc49e4f69a5714f5af65f84cd0f2"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setReadIntervalMs</b> (uint32_t intervalMs)</td></tr>
+<tr class="memitem:a507a29ef86da4b1b983033719eb609ff" id="r_a507a29ef86da4b1b983033719eb609ff"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a507a29ef86da4b1b983033719eb609ff">isServerInvertLogic</a> () const</td></tr>
+<tr class="memdesc:a507a29ef86da4b1b983033719eb609ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the invert logic setting.  <br /></td></tr>
+<tr class="separator:a507a29ef86da4b1b983033719eb609ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a89ab6ac48eee3b9468dbe785dd2d57c8" id="r_a89ab6ac48eee3b9468dbe785dd2d57c8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a89ab6ac48eee3b9468dbe785dd2d57c8">setServerInvertLogic</a> (bool invertLogic, bool local=true)</td></tr>
+<tr class="memdesc:a89ab6ac48eee3b9468dbe785dd2d57c8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the invert logic.  <br /></td></tr>
+<tr class="separator:a89ab6ac48eee3b9468dbe785dd2d57c8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4e14d00e7a6b7ba26220db4abd92fb8" id="r_aa4e14d00e7a6b7ba26220db4abd92fb8"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa4e14d00e7a6b7ba26220db4abd92fb8">getTimeoutDs</a> () const</td></tr>
+<tr class="memdesc:aa4e14d00e7a6b7ba26220db4abd92fb8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the timeout in deciseconds (1 == 0.1 s).  <br /></td></tr>
+<tr class="separator:aa4e14d00e7a6b7ba26220db4abd92fb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf67410078ab856bb091deb3712b1ea9" id="r_aaf67410078ab856bb091deb3712b1ea9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aaf67410078ab856bb091deb3712b1ea9">setTimeoutDs</a> (uint16_t timeoutDs, bool local=true)</td></tr>
+<tr class="memdesc:aaf67410078ab856bb091deb3712b1ea9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the timeout in deciseconds (1 == 0.1 s).  <br /></td></tr>
+<tr class="separator:aaf67410078ab856bb091deb3712b1ea9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1cc08d6eca4b0bb73fe51b7cdf213070" id="r_a1cc08d6eca4b0bb73fe51b7cdf213070"><td class="memItemLeft" align="right" valign="top">uint16_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1cc08d6eca4b0bb73fe51b7cdf213070">getFilteringTimeMs</a> () const</td></tr>
+<tr class="memdesc:a1cc08d6eca4b0bb73fe51b7cdf213070"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the filtering time in ms.  <br /></td></tr>
+<tr class="separator:a1cc08d6eca4b0bb73fe51b7cdf213070"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaea273deeaffcb7e2970e0419043bc9f" id="r_aaea273deeaffcb7e2970e0419043bc9f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aaea273deeaffcb7e2970e0419043bc9f">setFilteringTimeMs</a> (uint16_t filteringTimeMs, bool local=true)</td></tr>
+<tr class="memdesc:aaea273deeaffcb7e2970e0419043bc9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the filtering time in ms.  <br /></td></tr>
+<tr class="separator:aaea273deeaffcb7e2970e0419043bc9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7262f59202cf8feb848de2a32b638d77" id="r_a7262f59202cf8feb848de2a32b638d77"><td class="memItemLeft" align="right" valign="top">uint8_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7262f59202cf8feb848de2a32b638d77">getSensitivity</a> () const</td></tr>
+<tr class="memdesc:a7262f59202cf8feb848de2a32b638d77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the sensitivity.  <br /></td></tr>
+<tr class="separator:a7262f59202cf8feb848de2a32b638d77"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a063afb99658ded818126a60bf6e93fb6" id="r_a063afb99658ded818126a60bf6e93fb6"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a063afb99658ded818126a60bf6e93fb6">setSensitivity</a> (uint8_t sensitivity, bool local=true)</td></tr>
+<tr class="memdesc:a063afb99658ded818126a60bf6e93fb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the sensitivity.  <br /></td></tr>
+<tr class="separator:a063afb99658ded818126a60bf6e93fb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5fdbfc49e4f69a5714f5af65f84cd0f2" id="r_a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5fdbfc49e4f69a5714f5af65f84cd0f2">setReadIntervalMs</a> (uint32_t intervalMs)</td></tr>
+<tr class="memdesc:a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the read interval in ms.  <br /></td></tr>
 <tr class="separator:a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1f50f2e805721a933a7211d892c3e77f" id="r_a1f50f2e805721a933a7211d892c3e77f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1f50f2e805721a933a7211d892c3e77f">purgeConfig</a> () override</td></tr>
-<tr class="memdesc:a1f50f2e805721a933a7211d892c3e77f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
+<tr class="memdesc:a1f50f2e805721a933a7211d892c3e77f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Purge the configuration.  <br /></td></tr>
 <tr class="separator:a1f50f2e805721a933a7211d892c3e77f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee4acb1a8a382dc9afdb1ebbdaa186b1" id="r_aee4acb1a8a382dc9afdb1ebbdaa186b1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aee4acb1a8a382dc9afdb1ebbdaa186b1">fillChannelConfig</a> (void *channelConfig, int *size, uint8_t configType) override</td></tr>
+<tr class="memdesc:aee4acb1a8a382dc9afdb1ebbdaa186b1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fill the channel config.  <br /></td></tr>
 <tr class="separator:aee4acb1a8a382dc9afdb1ebbdaa186b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ElementWithChannelActions')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:ac2b448728b19af200f4e53ccb6461e3b inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_ac2b448728b19af200f4e53ccb6461e3b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#ac2b448728b19af200f4e53ccb6461e3b">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, uint16_t event, bool alwaysEnabled=false) override</td></tr>
@@ -329,6 +351,22 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>enableAction<
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>disableActionsInConfigMode</b> ()</td></tr>
 <tr class="separator:a12c949526a0f81969aa91a4d00ad0031 inherit pub_methods_classSupla_1_1LocalAction"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:a4a315a79dd72a5364b9b17e59f38bc71" id="r_a4a315a79dd72a5364b9b17e59f38bc71"><td class="memItemLeft" align="right" valign="top"><a id="a4a315a79dd72a5364b9b17e59f38bc71" name="a4a315a79dd72a5364b9b17e59f38bc71"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>saveConfig</b> ()</td></tr>
+<tr class="separator:a4a315a79dd72a5364b9b17e59f38bc71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9974b32aea1ba07748877b551db48167" id="r_a9974b32aea1ba07748877b551db48167"><td class="memItemLeft" align="right" valign="top"><a id="a9974b32aea1ba07748877b551db48167" name="a9974b32aea1ba07748877b551db48167"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>printConfig</b> ()</td></tr>
+<tr class="separator:a9974b32aea1ba07748877b551db48167"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
+<tr class="memitem:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a97016624bfef476ddd5a964b42bfc768"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>iterateConfigExchange</b> ()</td></tr>
+<tr class="separator:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a7f1e8b7bd7ef2a97ab541647861a9e89"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a7f1e8b7bd7ef2a97ab541647861a9e89">getNextConfigType</a> () const</td></tr>
+<tr class="memdesc:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next config type to be sent.  <br /></td></tr>
+<tr class="separator:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a7cc55df6a5e9ec1d646278a6f406644d" id="r_a7cc55df6a5e9ec1d646278a6f406644d"><td class="memItemLeft" align="right" valign="top"><a id="a7cc55df6a5e9ec1d646278a6f406644d" name="a7cc55df6a5e9ec1d646278a6f406644d"></a>
@@ -340,6 +378,9 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>readIntervalMs</b
 <tr class="memitem:a2fdf0eb77bf6c74bddc20dad4dd440fa" id="r_a2fdf0eb77bf6c74bddc20dad4dd440fa"><td class="memItemLeft" align="right" valign="top"><a id="a2fdf0eb77bf6c74bddc20dad4dd440fa" name="a2fdf0eb77bf6c74bddc20dad4dd440fa"></a>
 <a class="el" href="classBinarySensorChannel.html">BinarySensorChannel</a>&#160;</td><td class="memItemRight" valign="bottom"><b>channel</b></td></tr>
 <tr class="separator:a2fdf0eb77bf6c74bddc20dad4dd440fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a17ba5d36c8247e360596a2267e4e2413" id="r_a17ba5d36c8247e360596a2267e4e2413"><td class="memItemLeft" align="right" valign="top"><a id="a17ba5d36c8247e360596a2267e4e2413" name="a17ba5d36c8247e360596a2267e4e2413"></a>
+BinarySensorConfig&#160;</td><td class="memItemRight" valign="bottom"><b>config</b></td></tr>
+<tr class="separator:a17ba5d36c8247e360596a2267e4e2413"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1ElementWithChannelActions')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:a1dd8894bbd2cf352cc16037628a4d79c inherit pro_attribs_classSupla_1_1ElementWithChannelActions" id="r_a1dd8894bbd2cf352cc16037628a4d79c"><td class="memItemLeft" align="right" valign="top">Supla::ChannelConfigState&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a1dd8894bbd2cf352cc16037628a4d79c">channelConfigState</a></td></tr>
 <tr class="separator:a1dd8894bbd2cf352cc16037628a4d79c inherit pro_attribs_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -398,13 +439,6 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>NullifyActions
 <tr class="memitem:a73c46eec44d1aae91a9de59aea0415be inherit pub_static_methods_classSupla_1_1LocalAction" id="r_a73c46eec44d1aae91a9de59aea0415be"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandlerClient</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getClientListPtr</b> ()</td></tr>
 <tr class="separator:a73c46eec44d1aae91a9de59aea0415be inherit pub_static_methods_classSupla_1_1LocalAction"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
-<tr class="memitem:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a97016624bfef476ddd5a964b42bfc768"><td class="memItemLeft" align="right" valign="top">
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>iterateConfigExchange</b> ()</td></tr>
-<tr class="separator:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a7f1e8b7bd7ef2a97ab541647861a9e89"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a7f1e8b7bd7ef2a97ab541647861a9e89">getNextConfigType</a> () const</td></tr>
-<tr class="memdesc:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next config type to be sent.  <br /></td></tr>
-<tr class="separator:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Element')"><img src="closed.png" alt="-"/>&#160;Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:afc5f4790686c64e3f58e6000d62ec9de inherit pro_static_attribs_classSupla_1_1Element" id="r_afc5f4790686c64e3f58e6000d62ec9de"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="classSupla_1_1Element.html">Element</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>firstPtr</b> = nullptr</td></tr>
@@ -477,6 +511,16 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </table>
 </div><div class="memdoc">
 
+<p>Fill the channel config. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">channelConfig</td><td></td></tr>
+    <tr><td class="paramname">size</td><td></td></tr>
+    <tr><td class="paramname">configType</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
 
 </div>
@@ -538,33 +582,86 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
-<a id="a0bfbfdd7d1f39d03b7616bd0db8ca1c0" name="a0bfbfdd7d1f39d03b7616bd0db8ca1c0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0bfbfdd7d1f39d03b7616bd0db8ca1c0">&#9670;&#160;</a></span>handleChannelConfigFinished()</h2>
+<a id="a1cc08d6eca4b0bb73fe51b7cdf213070" name="a1cc08d6eca4b0bb73fe51b7cdf213070"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cc08d6eca4b0bb73fe51b7cdf213070">&#9670;&#160;</a></span>getFilteringTimeMs()</h2>
 
 <div class="memitem">
 <div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void BinaryBase::handleChannelConfigFinished </td>
+          <td class="memname">uint16_t BinaryBase::getFilteringTimeMs </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
+          <td> const</td>
         </tr>
       </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
-  </tr>
-</table>
 </div><div class="memdoc">
 
-<p>Handles "channel config finished" message from server. </p>
-<p>This message informs device that server finished sending channel config for this element. </p>
+<p>Get the filtering time in ms. </p>
+<p>0 - not used. Input state changes shorter than this time are ignored.</p>
+<dl class="section return"><dt>Returns</dt><dd>filtering time in ms </dd></dl>
 
-<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#aad55fa65c264d468865589dffb5afc1f">Supla::Element</a>.</p>
+</div>
+</div>
+<a id="a7262f59202cf8feb848de2a32b638d77" name="a7262f59202cf8feb848de2a32b638d77"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7262f59202cf8feb848de2a32b638d77">&#9670;&#160;</a></span>getSensitivity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t BinaryBase::getSensitivity </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the sensitivity. </p>
+<p>0 - not used; 1..101 -&gt; 0..100 % value 1 is 0% -&gt; off Actual interpretation depends on the sensor implementation</p>
+<dl class="section return"><dt>Returns</dt><dd>sensitivity </dd></dl>
+
+</div>
+</div>
+<a id="aa4e14d00e7a6b7ba26220db4abd92fb8" name="aa4e14d00e7a6b7ba26220db4abd92fb8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4e14d00e7a6b7ba26220db4abd92fb8">&#9670;&#160;</a></span>getTimeoutDs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t BinaryBase::getTimeoutDs </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the timeout in deciseconds (1 == 0.1 s). </p>
+<p>0 - not used. When timeout is used, sensor should clear it's state after configured time.</p>
+<dl class="section return"><dt>Returns</dt><dd>timeout in deciseconds </dd></dl>
+
+</div>
+</div>
+<a id="a507a29ef86da4b1b983033719eb609ff" name="a507a29ef86da4b1b983033719eb609ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a507a29ef86da4b1b983033719eb609ff">&#9670;&#160;</a></span>isServerInvertLogic()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool BinaryBase::isServerInvertLogic </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the invert logic setting. </p>
+<dl class="section return"><dt>Returns</dt><dd>true if invert logic is enabled </dd></dl>
 
 </div>
 </div>
@@ -657,9 +754,163 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </table>
 </div><div class="memdoc">
 
-<p>Removes all configration data related to the element from Storage::Config. </p>
+<p>Purge the configuration. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#af0ae5094b287518c30d0c3361f19500b">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="aaea273deeaffcb7e2970e0419043bc9f" name="aaea273deeaffcb7e2970e0419043bc9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaea273deeaffcb7e2970e0419043bc9f">&#9670;&#160;</a></span>setFilteringTimeMs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool BinaryBase::setFilteringTimeMs </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>filteringTimeMs</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the filtering time in ms. </p>
+<p>0 - not used. Input state changes shorter than this time are ignored. Parameter is synchronized with the server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">filteringTimeMs</td><td></td></tr>
+    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if filtering time was changed </dd></dl>
+
+</div>
+</div>
+<a id="a5fdbfc49e4f69a5714f5af65f84cd0f2" name="a5fdbfc49e4f69a5714f5af65f84cd0f2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5fdbfc49e4f69a5714f5af65f84cd0f2">&#9670;&#160;</a></span>setReadIntervalMs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void BinaryBase::setReadIntervalMs </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>intervalMs</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the read interval in ms. </p>
+<p>Sensor will try to read value every interval. Setting to 0 will configure default value 100 ms</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">intervalMs</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a063afb99658ded818126a60bf6e93fb6" name="a063afb99658ded818126a60bf6e93fb6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a063afb99658ded818126a60bf6e93fb6">&#9670;&#160;</a></span>setSensitivity()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool BinaryBase::setSensitivity </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>sensitivity</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the sensitivity. </p>
+<p>0 - not used; 1..101 -&gt; 0..100 % value 1 is 0% -&gt; off Parameter is synchronized with the server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">sensitivity</td><td></td></tr>
+    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if sensitivity was changed </dd></dl>
+
+</div>
+</div>
+<a id="a89ab6ac48eee3b9468dbe785dd2d57c8" name="a89ab6ac48eee3b9468dbe785dd2d57c8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a89ab6ac48eee3b9468dbe785dd2d57c8">&#9670;&#160;</a></span>setServerInvertLogic()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool BinaryBase::setServerInvertLogic </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>invertLogic</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the invert logic. </p>
+<p>Parameter is synchronized with the server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">invertLogic</td><td>true if invert logic should be enabled </td></tr>
+    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if invert logic was changed </dd></dl>
+
+</div>
+</div>
+<a id="aaf67410078ab856bb091deb3712b1ea9" name="aaf67410078ab856bb091deb3712b1ea9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf67410078ab856bb091deb3712b1ea9">&#9670;&#160;</a></span>setTimeoutDs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool BinaryBase::setTimeoutDs </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>timeoutDs</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the timeout in deciseconds (1 == 0.1 s). </p>
+<p>0 - not used. When timeout is used, sensor should clear it's state after configured time. Parameter is synchronized with the server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">timeoutDs</td><td></td></tr>
+    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if timeout was changed </dd></dl>
 
 </div>
 </div>

@@ -52,27 +52,30 @@ void BinaryBase::onLoadConfig(SuplaDeviceClass *sdc) {
     cfg->getUInt8(key, &storedServerInvertLogic);
     setServerInvertLogic(storedServerInvertLogic > 0, false);
 
-    generateKey(key, Supla::ConfigTag::BinarySensorCfgTag);
-    BinarySensorConfig storedConfig = {};
-    cfg->getBlob(key,
-                 reinterpret_cast<char *>(&storedConfig),
-                 sizeof(BinarySensorConfig));
+    if (config.filteringTimeMs > 0 || config.timeoutDs > 0 ||
+        config.sensitivity > 0) {
+      generateKey(key, Supla::ConfigTag::BinarySensorCfgTag);
+      BinarySensorConfig storedConfig = {};
+      cfg->getBlob(key,
+                   reinterpret_cast<char *>(&storedConfig),
+                   sizeof(BinarySensorConfig));
 
-    if (config.filteringTimeMs > 0) {
-      if (storedConfig.filteringTimeMs > 0) {
-        setFilteringTimeMs(storedConfig.filteringTimeMs, false);
+      if (config.filteringTimeMs > 0) {
+        if (storedConfig.filteringTimeMs > 0) {
+          setFilteringTimeMs(storedConfig.filteringTimeMs, false);
+        }
       }
-    }
 
-    if (config.timeoutDs > 0) {
-      if (storedConfig.timeoutDs > 0) {
-        setTimeoutDs(storedConfig.timeoutDs, false);
+      if (config.timeoutDs > 0) {
+        if (storedConfig.timeoutDs > 0) {
+          setTimeoutDs(storedConfig.timeoutDs, false);
+        }
       }
-    }
 
-    if (config.sensitivity > 0) {
-      if (storedConfig.sensitivity > 0) {
-        setSensitivity(storedConfig.sensitivity, false);
+      if (config.sensitivity > 0) {
+        if (storedConfig.sensitivity > 0) {
+          setSensitivity(storedConfig.sensitivity, false);
+        }
       }
     }
 

@@ -134,7 +134,7 @@ void Supla::LittleFsConfig::commit() {
     File cfg = LittleFS.open(file, "w");
     if (!cfg) {
       SUPLA_LOG_ERROR(
-          "LittleFsConfig: failed to open config file \"%s\"for write", file);
+          "LittleFsConfig: failed to open config file \"%s\" for write", file);
       LittleFS.end();
       return;
     }
@@ -323,8 +323,10 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
   snprintf(filename, sizeof(filename), "/supla/%s", key);
   File file = LittleFS.open(filename, "r");
   if (!file) {
-    SUPLA_LOG_ERROR(
-        "LittleFsConfig: failed to open blob file \"%s\" for read", key);
+    SUPLA_LOG_DEBUG(
+        "LittleFsConfig: failed to open blob file \"%s\" for read, blob not "
+        "found",
+        key);
     LittleFS.end();
     return false;
   }
@@ -345,17 +347,17 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
 
 int Supla::LittleFsConfig::getBlobSize(const char* key) {
   if (!initLittleFs()) {
-    return false;
+    return -1;
   }
 
   char filename[50] = {};
   snprintf(filename, sizeof(filename), "/supla/%s", key);
   File file = LittleFS.open(filename, "r");
   if (!file) {
-    SUPLA_LOG_ERROR(
-        "LittleFsConfig: failed to open blob file \"%s\"", key);
+    SUPLA_LOG_DEBUG(
+        "LittleFsConfig: failed to open blob file \"%s\", blob not found", key);
     LittleFS.end();
-    return false;
+    return -1;
   }
   int fileSize = file.size();
 

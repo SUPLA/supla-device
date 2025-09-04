@@ -899,6 +899,11 @@ bool Supla::Protocol::SuplaSrpc::iterate(uint32_t _millis) {
   }
 #endif  // !ARDUINO_ARCH_AVR
 
+  if (Supla::RegisterDevice::isServerNameEmpty() ||
+      Supla::RegisterDevice::isEmailEmpty()) {
+    return false;
+  }
+
   if (client == nullptr) {
     initClient();
   }

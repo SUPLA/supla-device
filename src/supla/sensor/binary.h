@@ -43,6 +43,9 @@ class Binary : public BinaryBase {
   int16_t pin = -1;
   bool pullUp = false;
   bool invertLogic = false;
+  bool newStateCandidateValue = false;
+  bool prevValue = false;
+  uint32_t lastStateChangeMs = 0;
 };
 
 };  // namespace Sensor

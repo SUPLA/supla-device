@@ -33,6 +33,8 @@ namespace Supla {
           proto->sendActionTrigger(static_cast<uint8_t>(channelNumber),
                                    actionId);
         }
+      } else {
+        Channel::sendUpdate();
       }
     } else {
       Channel::sendUpdate();

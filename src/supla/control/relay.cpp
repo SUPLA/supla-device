@@ -547,6 +547,12 @@ void Relay::onLoadState() {
               "Relay[%d] restored durationMs: %d",
               channel.getChannelNumber(),
               storedTurnOnDurationMs);
+    if (storedTurnOnDurationMs == 0) {
+      SUPLA_LOG_WARNING(
+          "Relay[%d] restored durationMs is zero, using default value",
+          channel.getChannelNumber());
+      storedTurnOnDurationMs = 500;
+    }
   } else {
     // restore remaining countdown timer value
     // relay will be on/off in onInit() with configured durationMs

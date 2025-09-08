@@ -37,6 +37,21 @@ bool Supla::Sensor::Binary::getValue() {
       Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) == LOW ? false
                                                                          : true;
   value = !invertLogic ? value : !value;
+
+  if (config.filteringTimeMs > 0) {
+    if (value != newStateCandidateValue) {
+      newStateCandidateValue = value;
+      lastStateChangeMs = millis();
+      return prevValue;
+    } else if (millis() - lastStateChangeMs > config.filteringTimeMs) {
+      value = newStateCandidateValue;
+      prevValue = value;
+      return value;
+    } else {
+      return prevValue;
+    }
+  }
+
   return value;
 }
 

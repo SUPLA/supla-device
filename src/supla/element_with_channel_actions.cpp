@@ -356,17 +356,9 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
       result->ConfigType,
       result->ConfigSize);
 
-  // Channel disabled on server
-  if (result->Func == 0) {
-    SUPLA_LOG_DEBUG("Channel[%d] disabled on server", getChannelNumber());
-    channelConfigState = Supla::ChannelConfigState::None;
-    receivedConfigTypes = usedConfigTypes;
-    return SUPLA_CONFIG_RESULT_TRUE;
-  }
-
   // Apply channel function setting
   auto newFunction = static_cast<uint32_t>(result->Func);
-  if (newFunction != getChannel()->getDefaultFunction() && newFunction != 0) {
+  if (newFunction != getChannel()->getDefaultFunction()) {
     SUPLA_LOG_INFO("Channel[%d] function changed to %d",
                    getChannelNumber(),
                    newFunction);
@@ -375,6 +367,14 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
         proto != nullptr; proto = proto->next()) {
       proto->notifyConfigChange(getChannelNumber());
     }
+  }
+
+  // Channel disabled on server
+  if (result->Func == 0) {
+    SUPLA_LOG_DEBUG("Channel[%d] disabled on server", getChannelNumber());
+    channelConfigState = Supla::ChannelConfigState::None;
+    receivedConfigTypes = usedConfigTypes;
+    return SUPLA_CONFIG_RESULT_TRUE;
   }
 
   // Reject unexpected ConfigType

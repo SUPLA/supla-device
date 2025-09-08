@@ -316,7 +316,12 @@ void Channel::setDefault(uint32_t value) {
     value = 0;
   }
 
+  if (value == defaultFunction) {
+    return;
+  }
+
   defaultFunction = value;
+  runAction(ON_CHANNEL_FUNCTION_CHANGE);
 }
 
 void Channel::setDefaultFunction(uint32_t function) {
@@ -1602,6 +1607,11 @@ int8_t *Channel::getValuePtr() {
 }
 
 bool Channel::isFunctionValid(uint32_t function) const {
+  if (function == 0) {
+    // function 0 -> 'disabled' - assume it is always valid
+    return true;
+  }
+
   switch (channelType) {
     // TODO(klew): add other functions
     case ChannelType::BINARYSENSOR: {

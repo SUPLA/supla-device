@@ -37,6 +37,7 @@ using Supla::Html::BinarySensorParameters;
 namespace {
 constexpr char BinaryTimeoutKey[] = "bs_timeout";
 constexpr char BinarySensitivityKey[] = "bs_sens";
+constexpr char BinaryFilterKey[] = "bs_filter";
 }  // namespace
 
 BinarySensorParameters::BinarySensorParameters(
@@ -80,6 +81,24 @@ void BinarySensorParameters::send(Supla::WebSender* sender) {
     // form-field END
 
     // form-field BEGIN
+    if (binary->getFilteringTimeMs() > 0) {
+      Supla::Config::generateKey(key,
+                                 binary->getChannelNumber(),
+                                 BinaryFilterKey);
+
+      sender->send("<div class=\"form-field\">");
+      sender->sendLabelFor(key, "Filtering time [s]");
+      sender->send(
+          "<input type=\"number\" min=\"0.03\" max=\"3.0\" step=\"0.01\" ");
+      sender->sendNameAndId(key);
+      sender->send(" value=\"");
+      sender->send(binary->getFilteringTimeMs(), 3);
+      sender->send("\">");
+      sender->send("</div>");
+    }
+    // form-field END
+
+    // form-field BEGIN
     if (binary->getTimeoutDs() > 0) {
       Supla::Config::generateKey(key,
                                  binary->getChannelNumber(),
@@ -97,7 +116,7 @@ void BinarySensorParameters::send(Supla::WebSender* sender) {
       // form-field END
     }
 
-        // form-field BEGIN
+    // form-field BEGIN
     if (binary->getSensitivity() > 0) {
       Supla::Config::generateKey(key,
                                  binary->getChannelNumber(),
@@ -158,6 +177,20 @@ bool BinarySensorParameters::handleResponse(const char* key,
     uint32_t param = stringToInt(value);
     if (binary->getSensitivity() > 0 && param <= 100) {
       if (binary->setSensitivity(param + 1)) {
+        configChanged = true;
+      }
+    }
+    return true;
+  }
+
+  Supla::Config::generateKey(
+      expectedKey,
+      binary->getChannelNumber(),
+      BinaryFilterKey);
+  if (strcmp(key, expectedKey) == 0) {
+    uint32_t param = floatStringToInt(value, 3);
+    if (binary->getFilteringTimeMs() > 0 && param < 10000) {
+      if (binary->setFilteringTimeMs(param)) {
         configChanged = true;
       }
     }

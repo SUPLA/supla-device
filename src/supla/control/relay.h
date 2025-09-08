@@ -93,6 +93,7 @@ class Relay : public ChannelElement, public ActionHandler {
   void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
 
   unsigned _supla_int_t getStoredTurnOnDurationMs();
+  void setStoredTurnOnDurationMs(uint32_t durationMs);
 
   bool isStaircaseFunction() const;
   bool isImpulseFunction() const;

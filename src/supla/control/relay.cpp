@@ -589,6 +589,10 @@ unsigned _supla_int_t Relay::getStoredTurnOnDurationMs() {
   return storedTurnOnDurationMs;
 }
 
+void Relay::setStoredTurnOnDurationMs(uint32_t durationMs) {
+  storedTurnOnDurationMs = durationMs;
+}
+
 void Relay::attach(Supla::Control::Button *button) {
   if (button == nullptr) {
     return;

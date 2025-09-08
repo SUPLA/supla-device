@@ -611,6 +611,9 @@ void Supla::Protocol::Mqtt::publishChannelState(int channel) {
     }
 
     case SUPLA_CHANNELTYPE_BINARYSENSOR: {
+      if (ch->getDefaultFunction() == 0) {
+        return;
+      }
       // publish binary sensor state
       if (isOpenClosedBinarySensorFunction(ch->getDefaultFunction())) {
         publishOpenClosed((topic).c_str(), ch->getValueBool(), -1, 1);
@@ -887,7 +890,8 @@ void Supla::Protocol::Mqtt::subscribeChannel(int channel) {
       break;
     }
     case SUPLA_CHANNELTYPE_ACTIONTRIGGER:
-    case SUPLA_CHANNELTYPE_ELECTRICITY_METER: {
+    case SUPLA_CHANNELTYPE_ELECTRICITY_METER:
+    case SUPLA_CHANNELTYPE_BINARYSENSOR: {
       // no subscriptions
       break;
     }
@@ -1095,6 +1099,10 @@ void Mqtt::publishHADiscoveryBinarySensor(Supla::Element *element) {
 
   auto ch = element->getChannel();
   if (ch == nullptr) {
+    return;
+  }
+
+  if (ch->getDefaultFunction() == 0) {
     return;
   }
 
@@ -2236,7 +2244,7 @@ const char *Supla::Protocol::Mqtt::getDeviceClassStr(
     case HADeviceClass_Door:
       return ",\"dev_cla\":\"door\"";
     case HADeviceClass_Garage:
-      return ",\"dev_cla\":\"garage\"";
+      return ",\"dev_cla\":\"garage_door\"";
     case HADeviceClass_Moisture:
       return ",\"dev_cla\":\"moisture\"";
     case HADeviceClass_Window:

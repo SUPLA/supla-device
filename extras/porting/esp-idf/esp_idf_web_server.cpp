@@ -531,7 +531,9 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
   if (!prvtKeyDecrypted) {
     prvtKeyDecrypted = true;
     auto cfg = Supla::Storage::ConfigInstance();
-    uint8_t aesKey[32] = {};
+    uint8_t aesKey[33] =
+        {};  // key is 32 B, however mbedtls_aes_setkey_dec
+             // uses const char* for key, so we add null terminator just in case
     if (cfg && cfg->getAESKey(aesKey)) {
       SUPLA_LOG_INFO("AES key found");
       uint8_t iv[IV_SIZE] = {};
@@ -549,10 +551,10 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       uint8_t *encryptedData = new uint8_t[prvtKeyLen];
       memcpy(encryptedData, prvtKey + IV_SIZE, prvtKeyLen);
       memset(prvtKey, 0, prvtKeyLen);
-      encryptedData[prvtKeyLen - 1] = '\0';
+      encryptedData[prvtKeyLen] = '\0';
       result = mbedtls_aes_crypt_cbc(&aes,
                             MBEDTLS_AES_DECRYPT,
-                            prvtKeyLen - 1,
+                            prvtKeyLen,
                             iv,
                             encryptedData,
                             prvtKey);

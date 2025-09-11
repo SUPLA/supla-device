@@ -550,7 +550,7 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       SUPLA_LOG_INFO("prvtKeyLen: %d, IV_SIZE: %d", prvtKeyLen, IV_SIZE);
       uint8_t *encryptedData = new uint8_t[prvtKeyLen];
       memcpy(encryptedData, prvtKey + IV_SIZE, prvtKeyLen);
-      memset(prvtKey, 0, prvtKeyLen);
+      memset(prvtKey, 0, prvtKeyLen + IV_SIZE);
       encryptedData[prvtKeyLen] = '\0';
       result = mbedtls_aes_crypt_cbc(&aes,
                             MBEDTLS_AES_DECRYPT,
@@ -558,6 +558,7 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
                             iv,
                             encryptedData,
                             prvtKey);
+      prvtKeyLen++;
       SUPLA_LOG_DEBUG("mbedtls_aes_crypt_cbc result: %d", result);
       delete[] encryptedData;
       mbedtls_aes_free(&aes);
@@ -586,6 +587,14 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
   if (strstr(reinterpret_cast<const char *>(prvtKey),
              "-----END PRIVATE KEY-----") == nullptr) {
     SUPLA_LOG_WARNING("prvtKey not valid, missing footer");
+    return false;
+  }
+  if (serverCert[serverCertLen - 1] != '\0') {
+    SUPLA_LOG_WARNING("serverCert not valid, missing null terminator");
+    return false;
+  }
+  if (prvtKey[prvtKeyLen - 1] != '\0') {
+    SUPLA_LOG_WARNING("prvtKey not valid, missing null terminator");
     return false;
   }
 

@@ -36,6 +36,7 @@ using ::testing::Return;
 
 class SuplaDeviceTests : public ::testing::Test {
  protected:
+  SimpleTime time;
   virtual void SetUp() {
     Supla::Channel::resetToDefaults();
   }
@@ -304,7 +305,6 @@ TEST_F(SuplaDeviceTests, TwoChannelElementsNoNetworkWithStorage) {
   StorageMockSimulator storage;
   EXPECT_CALL(storage, commit()).Times(2);
   TimerMock timer;
-  SimpleTime time;
   SuplaDeviceClass sd;
   ElementMock el1;
   ElementMock el2;

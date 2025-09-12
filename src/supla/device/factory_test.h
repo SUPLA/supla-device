@@ -44,6 +44,12 @@ namespace Device {
 
 class FactoryTest : public Supla::ActionHandler, public Supla::Element {
  public:
+   /**
+    * @brief Construct a new Factory Test object
+    *
+    * @param sdc SuplaDeviceClass pointer
+    * @param timeoutS test timeout, when set to 0 -> run only self-test
+    */
   FactoryTest(SuplaDeviceClass *sdc, uint32_t timeoutS);
   virtual ~FactoryTest();
 

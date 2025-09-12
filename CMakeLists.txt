@@ -46,6 +46,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/device/enter_cfg_mode_after_power_cycle.cpp
   src/supla/device/register_device.cpp
   src/supla/device/factory_test.cpp
+  src/supla/device/security_logger.cpp
 
   src/supla/modbus/modbus_configurator.cpp
   src/supla/modbus/modbus_client_handler.cpp

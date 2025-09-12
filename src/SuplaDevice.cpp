@@ -46,6 +46,8 @@
 #include <supla/device/remote_device_config.h>
 #include <supla/device/auto_update_policy.h>
 #include <supla/device/device_mode.h>
+#include <supla/device/security_logger.h>
+#include <supla/device/factory_test.h>
 
 #ifndef ARDUINO
 #ifndef F
@@ -345,6 +347,13 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   setupDeviceMode();
 
   SUPLA_LOG_INFO(" *** Supla - Initialization done");
+  if (deviceMode != Supla::DEVICE_MODE_TEST) {
+    SUPLA_LOG_INFO(" *** Self-test ***");
+    auto tester = new Supla::Device::FactoryTest(this, 0);
+    tester->onInit();
+    delete tester;
+    SUPLA_LOG_INFO(" *** Self-test done ***");
+  }
   return true;
 }
 
@@ -371,6 +380,8 @@ void SuplaDeviceClass::setupDeviceMode() {
       // so we clear logger
       lastStateLogger->clear();
     }
+    addSecurityLog(
+        Supla::SecurityLogSource::LOCAL_DEVICE, "Device in config mode");
     enterConfigMode();
   } else {
     goToOfflineModeTimeout = 2;
@@ -916,6 +927,7 @@ void SuplaDeviceClass::leaveConfigModeWithoutRestart() {
   if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
     return;
   }
+  addSecurityLog(Supla::SecurityLogSource::LOCAL_DEVICE, "Leaving config mode");
   enterConfigModeTimestamp = 0;
 
   if (Supla::WebServer::Instance()) {
@@ -997,6 +1009,8 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
     switch (request->Command) {
       case SUPLA_CALCFG_CMD_ENTER_CFG_MODE: {
         SUPLA_LOG_INFO("CALCFG ENTER CFGMODE received");
+        addSecurityLog(Supla::SecurityLogSource::REMOTE,
+                       "Enter config mode from remote request");
         requestCfgMode();
         cfgModeStartedRemotelyAndNotRefreshed = true;
         return SUPLA_CALCFG_RESULT_DONE;
@@ -1188,11 +1202,16 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
         Supla::SaltPassword saltPassword;
         if (!saltPassword.isPasswordStrong(password->NewPassword)) {
           SUPLA_LOG_WARNING("CALCFG SET CFGMODE PASSWORD: password too weak");
+          addSecurityLog(
+              Supla::SecurityLogSource::REMOTE,
+              "Password change failed: password is not strong enough");
           return SUPLA_CALCFG_RESULT_FALSE;
         }
         Supla::Config::generateSaltPassword(password->NewPassword,
                                             &saltPassword);
         cfg->setCfgModeSaltPassword(saltPassword);
+        addSecurityLog(Supla::SecurityLogSource::REMOTE,
+                       "Password successfully changed");
         cfg->saveWithDelay(2000);
         SUPLA_LOG_INFO("CALCFG SET CFGMODE PASSWORD: new password set");
         return SUPLA_CALCFG_RESULT_DONE;
@@ -1346,12 +1365,16 @@ void SuplaDeviceClass::handleAction(int event, int action) {
     }
     case Supla::ENTER_CONFIG_MODE: {
       if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
+        addSecurityLog(Supla::SecurityLogSource::LOCAL_DEVICE,
+                       "Enter config mode from local action (button)");
         requestCfgMode();
       }
       break;
     }
     case Supla::TOGGLE_CONFIG_MODE: {
       if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
+        addSecurityLog(Supla::SecurityLogSource::LOCAL_DEVICE,
+                       "Enter config mode from local action (button)");
         requestCfgMode();
       } else {
         scheduleSoftRestart(0);
@@ -1378,6 +1401,8 @@ void SuplaDeviceClass::handleAction(int event, int action) {
     }
     case Supla::ENTER_CONFIG_MODE_OR_RESET_TO_FACTORY: {
       if (deviceMode != Supla::DEVICE_MODE_CONFIG) {
+        addSecurityLog(Supla::SecurityLogSource::LOCAL_DEVICE,
+                       "Enter config mode from local action (button)");
         requestCfgMode();
       } else if (millis() - enterConfigModeTimestamp > 2000) {
         triggerResetToFactorySettings = true;
@@ -1388,6 +1413,8 @@ void SuplaDeviceClass::handleAction(int event, int action) {
       if (deviceMode == Supla::DEVICE_MODE_CONFIG) {
         auto cfg = Supla::Storage::ConfigInstance();
         if (allowOfflineMode || (cfg && cfg->isMinimalConfigReady())) {
+          addSecurityLog(Supla::SecurityLogSource::LOCAL_DEVICE,
+              "Leaving config mode, device is restarting...");
           scheduleSoftRestart(0);
         }
       }
@@ -1415,6 +1442,11 @@ void SuplaDeviceClass::resetToFactorySettings() {
   if (storage) {
     SUPLA_LOG_DEBUG("Clearing state storage...");
     storage->deleteAll();
+  }
+
+  if (securityLogger) {
+    SUPLA_LOG_DEBUG("Clearing security log...");
+    securityLogger->deleteAll();
   }
 }
 
@@ -1716,6 +1748,24 @@ void SuplaDeviceClass::identifyStatusLed() {
 void SuplaDeviceClass::testStepStatusLed(int times) {
   if (statusLed) {
     statusLed->setCustomSequence(20, 50, 10, times, 1);
+  }
+}
+
+void SuplaDeviceClass::setSecurityLogger(
+    Supla::Device::SecurityLogger *logger) {
+  securityLogger = logger;
+}
+
+void SuplaDeviceClass::addSecurityLog(uint32_t source, const char *log) const {
+  if (securityLogger) {
+    securityLogger->log(source, log);
+  }
+}
+
+void SuplaDeviceClass::addSecurityLog(Supla::SecurityLogSource source,
+                                      const char *log) const {
+  if (securityLogger) {
+    securityLogger->log(static_cast<uint32_t>(source), log);
   }
 }
 

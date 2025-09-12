@@ -158,6 +158,19 @@ void Supla::WebServer::notifyClientConnected(bool isPost) {
   }
 }
 
+void Supla::WebServer::addSecurityLog(Supla::SecurityLogSource source,
+                                      const char *log) const {
+  if (sdc) {
+    sdc->addSecurityLog(source, log);
+  }
+}
+
+void Supla::WebServer::addSecurityLog(uint32_t source, const char *log) const {
+  if (sdc) {
+    sdc->addSecurityLog(source, log);
+  }
+}
+
 void Supla::WebServer::parsePost(const char *postContent,
                                  int size,
                                  bool lastChunk) {

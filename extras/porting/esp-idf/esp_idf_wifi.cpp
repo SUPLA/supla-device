@@ -39,7 +39,7 @@
 #include <supla/tools.h>
 #include <esp_event.h>
 #include <esp_netif.h>
-
+#include <arpa/inet.h>
 #include <cstring>
 
 #include "esp_idf_network_common.h"
@@ -137,6 +137,16 @@ static void eventHandler(void *arg,
         SUPLA_LOG_DEBUG("[%s] Lost IP", thisNetIntfPtr->getIntfName());
         break;
       }
+      case IP_EVENT_AP_STAIPASSIGNED: {
+        ip_event_ap_staipassigned_t *data =
+            reinterpret_cast<ip_event_ap_staipassigned_t *>(eventData);
+        char log[SUPLA_SECURITY_LOG_TEXT_SIZE] = {};
+        constexpr char LogText[] = "Device (" MACSTR ") joined";
+        static_assert(sizeof(log) > sizeof(LogText));
+        snprintf(log, sizeof(log) - 1, LogText, MAC2STR(data->mac));
+        thisNetIntfPtr->addSecurityLog(ntohl(data->ip.addr), log);
+        break;
+      }
     }
   }
 }
@@ -176,6 +186,8 @@ void Supla::EspIdfWifi::setup() {
         IP_EVENT, IP_EVENT_STA_GOT_IP, &eventHandler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(
         IP_EVENT, IP_EVENT_STA_LOST_IP, &eventHandler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(
+        IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &eventHandler, NULL));
     esp_wifi_set_ps(WIFI_PS_NONE);
 
   } else {
@@ -456,3 +468,8 @@ esp_netif_t *Supla::EspIdfWifi::getStaNetIf() const {
 }
 #endif
 
+void Supla::EspIdfWifi::addSecurityLog(uint32_t ip, const char *log) const {
+  if (sdc) {
+    sdc->addSecurityLog(ip, log);
+  }
+}

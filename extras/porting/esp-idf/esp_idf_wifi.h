@@ -50,6 +50,7 @@ class EspIdfWifi : public Supla::Wifi {
 
   bool isInConfigMode();
   void logWifiReason(int);
+  void addSecurityLog(uint32_t, const char *) const;
 
   uint32_t getIP() override;
   void setMaxTxPower(int power);

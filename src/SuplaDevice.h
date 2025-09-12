@@ -22,6 +22,7 @@
 #include <supla/action_handler.h>
 #include <supla/local_action.h>
 #include <supla/device/device_mode.h>
+#include "supla/device/security_logger.h"
 
 #define STATUS_UNKNOWN                   -1
 #define STATUS_ALREADY_INITIALIZED       1
@@ -83,6 +84,7 @@ class ChannelConflictResolver;
 class SubdevicePairingHandler;
 class StatusLed;
 class LastStateLogger;
+class SecurityLogger;
 }  // namespace Device
 
 namespace Protocol {
@@ -262,6 +264,39 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   void testStepStatusLed(int times);
 
+  /**
+   * Adds security log. It requires instance of Supla::Device::SecurityLogger
+   * to be added earlier by calling setSecurityLogger
+   *
+   * @param source source of security log, i.e. IP address. Values < 10 have
+   *               special meaning
+   * @param log log text (max 52 B)
+   */
+  void addSecurityLog(uint32_t source, const char *log) const;
+
+  /**
+   * Adds security log. It requires instance of Supla::Device::SecurityLogger
+   * to be added earlier by calling setSecurityLogger
+   *
+   * @param source source of security log
+   * @param log log text (max 52 B)
+   */
+  void addSecurityLog(Supla::SecurityLogSource source, const char *log) const;
+
+  /**
+   * Sets instance of Supla::Device::SecurityLogger
+   *
+   * @param logger
+   */
+  void setSecurityLogger(Supla::Device::SecurityLogger *logger);
+
+  /**
+   * Checks if security log is enabled
+   *
+   * @return true if security log is enabled
+   */
+  bool isSecurityLogEnabled() const { return securityLogger != nullptr; }
+
  protected:
   /**
    * Performs software update if needed
@@ -328,6 +363,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   Supla::Mutex *timerAccessMutex = nullptr;
   Supla::Device::SubdevicePairingHandler *subdevicePairingHandler = nullptr;
   Supla::Device::StatusLed *statusLed = nullptr;
+  Supla::Device::SecurityLogger *securityLogger = nullptr;
 
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();

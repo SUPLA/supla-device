@@ -30,6 +30,9 @@
 #include <supla/device/register_device.h>
 #include <ctype.h>
 #include <supla/crypto.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "esp_idf_web_server.h"
 
@@ -136,11 +139,13 @@ esp_err_t loginHandler(httpd_req_t *req) {
       if (!loginResult && !srvInst->ensureAuthorized(
                               req, sessionCookie, sizeof(sessionCookie),
                               true)) {
+        srvInst->addSecurityLog(req, "Failed login attempt");
         SUPLA_LOG_DEBUG("SERVER: login failed, send login page");
         Supla::EspIdfSender sender(req);
         srvInst->htmlGenerator->sendLoginPage(&sender, true);
       } else {
         // redirect based on cookie value
+        srvInst->addSecurityLog(req, "Successful login");
         SUPLA_LOG_DEBUG("SERVER: login success, redirect to root or beta");
         srvInst->redirect(req, 303, nullptr, "deleted");
       }
@@ -461,7 +466,7 @@ bool Supla::EspIdfWebServer::ensureAuthorized(httpd_req_t *req,
       return true;
     } else {
       if (!loginFailed) {
-        failedLoginAttempts++;
+        failedLoginAttempt(req);
         httpd_resp_set_hdr(req, "Auth-Status", "failed");
       }
       return false;
@@ -478,6 +483,17 @@ bool Supla::EspIdfWebServer::ensureAuthorized(httpd_req_t *req,
 
 bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req, bool beta) {
   notifyClientConnected(true);
+  auto cfg = Supla::Storage::ConfigInstance();
+  char email[SUPLA_EMAIL_MAXSIZE] = {};
+  char ssid[MAX_SSID_SIZE] = {};
+  char password[MAX_WIFI_PASSWORD_SIZE] = {};
+  char server[SUPLA_SERVER_NAME_MAXSIZE] = {};
+  if (cfg) {
+    cfg->getEmail(email);
+    cfg->getWiFiSSID(ssid);
+    cfg->getWiFiPassword(password);
+    cfg->getSuplaServer(server);
+  }
   resetParser();
   if (beta) {
     setBetaProcessing();
@@ -509,6 +525,36 @@ bool Supla::EspIdfWebServer::handlePost(httpd_req_t *req, bool beta) {
 
     delay(1);
   }
+
+  if (cfg) {
+    char buf[SUPLA_EMAIL_MAXSIZE] = {};
+    static_assert(SUPLA_EMAIL_MAXSIZE >= MAX_SSID_SIZE);
+    static_assert(SUPLA_EMAIL_MAXSIZE >= MAX_WIFI_PASSWORD_SIZE);
+    static_assert(SUPLA_EMAIL_MAXSIZE >= SUPLA_SERVER_NAME_MAXSIZE);
+    cfg->getEmail(buf);
+    if (strcmp(email, buf) != 0) {
+      addSecurityLog(req, "Email changed");
+    }
+
+    memset(buf, 0, sizeof(buf));
+    cfg->getWiFiSSID(buf);
+    if (strcmp(ssid, buf) != 0) {
+      addSecurityLog(req, "Wi-Fi SSID changed");
+    }
+
+    memset(buf, 0, sizeof(buf));
+    cfg->getWiFiPassword(buf);
+    if (strcmp(password, buf) != 0) {
+      addSecurityLog(req, "Wi-Fi password changed");
+    }
+
+    memset(buf, 0, sizeof(buf));
+    cfg->getSuplaServer(buf);
+    if (strcmp(server, buf) != 0) {
+      addSecurityLog(req, "Supla server changed");
+    }
+  }
+
   if (ret <= 0) {
     resetParser();
     if (ret == HTTPD_SOCK_ERR_TIMEOUT) {
@@ -811,7 +857,7 @@ bool Supla::EspIdfWebServer::login(httpd_req_t *req, const char *password,
       return true;
     }
     httpd_resp_set_hdr(req, "Auth-Status", "failed");
-    failedLoginAttempts++;
+    failedLoginAttempt(req);
   }
   SUPLA_LOG_INFO("Login failed (%d)", failedLoginAttempts);
   return false;
@@ -884,17 +930,21 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(httpd_req_t *req,
   if (isPasswordConfigured()) {
     if (!isPasswordCorrect(oldPassword)) {
       SUPLA_LOG_INFO("Invalid old password");
+      addSecurityLog(req, "Password change failed: invalid old password");
       return SetupRequestResult::INVALID_OLD_PASSWORD;
     }
   }
 
   if (strcmp(password, confirmPassword) != 0) {
     SUPLA_LOG_INFO("Passwords do not match");
+    addSecurityLog(req, "Password change failed: passwords do not match");
     return SetupRequestResult::PASSWORD_MISMATCH;
   }
 
   if (!saltPassword.isPasswordStrong(password)) {
     SUPLA_LOG_INFO("Password is not strong enough");
+    addSecurityLog(req,
+                   "Password change failed: password is not strong enough");
     return SetupRequestResult::WEAK_PASSWORD;
   }
 
@@ -905,6 +955,7 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(httpd_req_t *req,
     cfg->setCfgModeSaltPassword(saltPassword);
     cfg->saveWithDelay(2000);
   }
+  addSecurityLog(req, "Password successfully changed");
   return login(req, password, sessionCookie, sessionCookieLen)
              ? SetupRequestResult::OK
              : SetupRequestResult::INVALID_REQUEST;
@@ -920,3 +971,26 @@ void Supla::EspIdfWebServer::reloadSaltPassword() {
   }
 }
 
+uint32_t Supla::EspIdfWebServer::getIpFromReq(httpd_req_t *req) {
+  uint32_t ip = 0;
+  int sockfd = httpd_req_to_sockfd(req);
+  struct sockaddr_in6 addr;
+  socklen_t addr_len = sizeof(addr);
+  if (getpeername(sockfd, (struct sockaddr *)&addr, &addr_len) == 0) {
+    ip = ntohl(addr.sin6_addr.un.u32_addr[3]);
+  }
+
+  return ip;
+}
+
+void Supla::EspIdfWebServer::addSecurityLog(httpd_req_t *req,
+                                            const char *log) const {
+  WebServer::addSecurityLog(getIpFromReq(req), log);
+}
+
+void Supla::EspIdfWebServer::failedLoginAttempt(httpd_req_t *req) {
+  failedLoginAttempts++;
+  if (isAuthorizationBlocked()) {
+    addSecurityLog(req, "Too many failed login attempts");
+  }
+}

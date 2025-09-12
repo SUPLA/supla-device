@@ -21,6 +21,8 @@
 
 #include <supla/network/html_generator.h>
 #include <supla/network/html_element.h>
+#include <supla/device/security_logger.h>
+#include <stdint.h>
 
 class SuplaDeviceClass;
 
@@ -51,6 +53,9 @@ class WebServer {
   Supla::HtmlGenerator *htmlGenerator = nullptr;
 
  protected:
+  void addSecurityLog(Supla::SecurityLogSource source, const char *log) const;
+  void addSecurityLog(uint32_t source, const char *log) const;
+
   static WebServer *webServerInstance;
   bool destroyGenerator = false;
   SuplaDeviceClass *sdc = nullptr;

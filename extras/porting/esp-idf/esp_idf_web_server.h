@@ -85,11 +85,14 @@ class EspIdfWebServer : public Supla::WebServer {
   bool isHttpsEnalbled() const;
   bool isAuthorizationBlocked();
   void reloadSaltPassword();
+  void addSecurityLog(httpd_req_t *req, const char *log) const;
 
  protected:
+  static uint32_t getIpFromReq(httpd_req_t *req);
   void cleanupCerts();
   bool isSessionCookieValid(const char *sessionCookie);
   void setSessionCookie(httpd_req_t *req, char *buf, int bufLen);
+  void failedLoginAttempt(httpd_req_t *req);
 
   httpd_handle_t serverHttps = {};
   httpd_handle_t serverHttp = {};

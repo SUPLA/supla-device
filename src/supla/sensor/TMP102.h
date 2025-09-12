@@ -80,7 +80,7 @@ class TMP102 : public Thermometer {
 
  protected:
   ::TMP102 tmp102_;
-  bool alertMode_ - false;
+  bool alertMode_ = false;
   bool isConnected_ = false;
 };
 

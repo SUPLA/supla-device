@@ -2429,12 +2429,12 @@ typedef struct {
   char HourValue[24];
 } TThermostatValueGroup;  // v. >= 11
 
-// Used in Heatpol thermostat
+// Used in Heatpol ESP8266 based thermostat
 typedef struct {
   TThermostatValueGroup Group[4];
 } TThermostat_ScheduleCfg;  // v. >= 11
 
-// Temperature definitions for Heatpol thermostat
+// Temperature definitions for Heatpol ESP8266 based thermostat
 // TThermostatTemperatureCfg
 #define TEMPERATURE_INDEX1 0x0001
 #define TEMPERATURE_INDEX2 0x0002
@@ -2448,7 +2448,7 @@ typedef struct {
 #define TEMPERATURE_INDEX10 0x0200
 // TThermostatTemperatureCfg has only 10 fields
 
-// Used in Heatpol thermostat
+// Used in Heatpol ESP8266 based thermostat
 typedef struct {
   _supla_int16_t Index;  // BIT0 Temperature[0], BIT1 Temperature[1] etc...
   unsigned _supla_int16_t Temperature[10];
@@ -2513,7 +2513,7 @@ typedef struct {
   _supla_int16_t Temperature[24];
 } THVACTemperatureCfg;
 
-// Heatpol: Thermostat configuration commands - ver. >= 11
+// Heatpol ESP8266 based: Thermostat configuration commands - ver. >= 11
 #define SUPLA_THERMOSTAT_CMD_TURNON 1
 #define SUPLA_THERMOSTAT_CMD_SET_MODE_AUTO 2
 #define SUPLA_THERMOSTAT_CMD_SET_MODE_COOL 3
@@ -2528,7 +2528,7 @@ typedef struct {
 #define SUPLA_THERMOSTAT_CMD_SET_TIME 12
 #define SUPLA_THERMOSTAT_CMD_SET_TEMPERATURE 13
 
-// Heatpol: Thermostat value flags - ver. >= 11
+// Heatpol ESP8266 based: Thermostat value flags - ver. >= 11
 #define SUPLA_THERMOSTAT_VALUE_FLAG_ON 0x0001
 #define SUPLA_THERMOSTAT_VALUE_FLAG_AUTO_MODE 0x0002
 #define SUPLA_THERMOSTAT_VALUE_FLAG_COOL_MODE 0x0004
@@ -2538,7 +2538,7 @@ typedef struct {
 #define SUPLA_THERMOSTAT_VALUE_FLAG_FANONLY_MODE 0x0040
 #define SUPLA_THERMOSTAT_VALUE_FLAG_PURIFIER_MODE 0x0080
 
-// Heatpol: Thermostat fields - ver. >= 11
+// Heatpol ESP8266 based: Thermostat fields - ver. >= 11
 #define THERMOSTAT_FIELD_MeasuredTemperatures 0x01
 #define THERMOSTAT_FIELD_PresetTemperatures 0x02
 #define THERMOSTAT_FIELD_Flags 0x04
@@ -2546,7 +2546,7 @@ typedef struct {
 #define THERMOSTAT_FIELD_Time 0x10
 #define THERMOSTAT_FIELD_Schedule 0x20
 
-// Used in Heatpol only
+// Used in Heatpol ESP8266 based only
 typedef struct {
   unsigned char Fields;
   _supla_int16_t MeasuredTemperature[10];  // * 0.01
@@ -2557,7 +2557,7 @@ typedef struct {
   TThermostat_Schedule Schedule;  // 7 days x 24h (4bit/hour)
 } TThermostat_ExtendedValue;      // v. >= 11
 
-// Used in Heatpol only
+// Used in Heatpol ESP8266 based only
 typedef struct {
   unsigned char IsOn;
   unsigned char Flags;

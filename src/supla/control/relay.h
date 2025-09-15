@@ -95,8 +95,8 @@ class Relay : public ChannelElement, public ActionHandler {
   unsigned _supla_int_t getStoredTurnOnDurationMs();
   void setStoredTurnOnDurationMs(uint32_t durationMs);
 
-  bool isStaircaseFunction() const;
-  bool isImpulseFunction() const;
+  bool isStaircaseFunction(uint32_t functionToCheck = 0) const;
+  bool isImpulseFunction(uint32_t functionToCheck = 0) const;
   void disableCountdownTimerFunction();
   void enableCountdownTimerFunction();
   bool isCountdownTimerFunctionEnabled() const;
@@ -140,6 +140,26 @@ class Relay : public ChannelElement, public ActionHandler {
    */
   uint32_t getOvercurrentMaxAllowed() const { return overcurrentMaxAllowed; }
 
+  /**
+   * Set default duration for staircase timer function
+   *
+   * @param durationMs
+   */
+  void setDefaultStaircaseDurationMs(uint16_t durationMs) {
+    defaultStaircaseDurationMs = durationMs;
+  }
+
+  /**
+   * Set default duration for impulse functions (controlling gate, door etc.)
+   *
+   * @param durationMs
+   */
+  void setDefaultImpulseDurationMs(uint16_t durationMs) {
+    defaultImpulseDurationMs = durationMs;
+  }
+
+  bool setAndSaveFunction(uint32_t channelFunction) override;
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
@@ -147,13 +167,13 @@ class Relay : public ChannelElement, public ActionHandler {
   };
 
   void saveConfig() const;
-  void setChannelFunction(_supla_int_t newFunction);
   void updateTimerValue();
   void updateRelayHvacAggregator();
-  int32_t channelFunction = 0;
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
+  uint16_t defaultStaircaseDurationMs = 10000;
+  uint16_t defaultImpulseDurationMs = 500;
 
   uint32_t overcurrentThreshold = 0;   // 0.01 A
   uint32_t overcurrentMaxAllowed = 0;  // 0.01 A
@@ -172,6 +192,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool keepTurnOnDurationMs = false;
   bool lastStateOnTimerUpdate = false;
   bool turnOffWhenEmptyAggregator = true;
+  bool initDone = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
 

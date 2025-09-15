@@ -2776,14 +2776,14 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02430" name="l02430"></a><span class="lineno"> 2430</span>} <a class="code hl_struct" href="structTThermostatValueGroup.html">TThermostatValueGroup</a>;  <span class="comment">// v. &gt;= 11</span></div>
 </div>
 <div class="line"><a id="l02431" name="l02431"></a><span class="lineno"> 2431</span> </div>
-<div class="line"><a id="l02432" name="l02432"></a><span class="lineno"> 2432</span><span class="comment">// Used in Heatpol thermostat</span></div>
+<div class="line"><a id="l02432" name="l02432"></a><span class="lineno"> 2432</span><span class="comment">// Used in Heatpol ESP8266 based thermostat</span></div>
 <div class="foldopen" id="foldopen02433" data-start="{" data-end="};">
 <div class="line"><a id="l02433" name="l02433"></a><span class="lineno"><a class="line" href="structTThermostat__ScheduleCfg.html"> 2433</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
 <div class="line"><a id="l02434" name="l02434"></a><span class="lineno"> 2434</span>  <a class="code hl_struct" href="structTThermostatValueGroup.html">TThermostatValueGroup</a> Group[4];</div>
 <div class="line"><a id="l02435" name="l02435"></a><span class="lineno"> 2435</span>} <a class="code hl_struct" href="structTThermostat__ScheduleCfg.html">TThermostat_ScheduleCfg</a>;  <span class="comment">// v. &gt;= 11</span></div>
 </div>
 <div class="line"><a id="l02436" name="l02436"></a><span class="lineno"> 2436</span> </div>
-<div class="line"><a id="l02437" name="l02437"></a><span class="lineno"> 2437</span><span class="comment">// Temperature definitions for Heatpol thermostat</span></div>
+<div class="line"><a id="l02437" name="l02437"></a><span class="lineno"> 2437</span><span class="comment">// Temperature definitions for Heatpol ESP8266 based thermostat</span></div>
 <div class="line"><a id="l02438" name="l02438"></a><span class="lineno"> 2438</span><span class="comment">// TThermostatTemperatureCfg</span></div>
 <div class="line"><a id="l02439" name="l02439"></a><span class="lineno"> 2439</span><span class="preprocessor">#define TEMPERATURE_INDEX1 0x0001</span></div>
 <div class="line"><a id="l02440" name="l02440"></a><span class="lineno"> 2440</span><span class="preprocessor">#define TEMPERATURE_INDEX2 0x0002</span></div>
@@ -2797,7 +2797,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02448" name="l02448"></a><span class="lineno"> 2448</span><span class="preprocessor">#define TEMPERATURE_INDEX10 0x0200</span></div>
 <div class="line"><a id="l02449" name="l02449"></a><span class="lineno"> 2449</span><span class="comment">// TThermostatTemperatureCfg has only 10 fields</span></div>
 <div class="line"><a id="l02450" name="l02450"></a><span class="lineno"> 2450</span> </div>
-<div class="line"><a id="l02451" name="l02451"></a><span class="lineno"> 2451</span><span class="comment">// Used in Heatpol thermostat</span></div>
+<div class="line"><a id="l02451" name="l02451"></a><span class="lineno"> 2451</span><span class="comment">// Used in Heatpol ESP8266 based thermostat</span></div>
 <div class="foldopen" id="foldopen02452" data-start="{" data-end="};">
 <div class="line"><a id="l02452" name="l02452"></a><span class="lineno"><a class="line" href="structTThermostatTemperatureCfg.html"> 2452</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
 <div class="line"><a id="l02453" name="l02453"></a><span class="lineno"> 2453</span>  _supla_int16_t Index;  <span class="comment">// BIT0 Temperature[0], BIT1 Temperature[1] etc...</span></div>
@@ -2866,7 +2866,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02514" name="l02514"></a><span class="lineno"> 2514</span>} <a class="code hl_struct" href="structTHVACTemperatureCfg.html">THVACTemperatureCfg</a>;</div>
 </div>
 <div class="line"><a id="l02515" name="l02515"></a><span class="lineno"> 2515</span> </div>
-<div class="line"><a id="l02516" name="l02516"></a><span class="lineno"> 2516</span><span class="comment">// Heatpol: Thermostat configuration commands - ver. &gt;= 11</span></div>
+<div class="line"><a id="l02516" name="l02516"></a><span class="lineno"> 2516</span><span class="comment">// Heatpol ESP8266 based: Thermostat configuration commands - ver. &gt;= 11</span></div>
 <div class="line"><a id="l02517" name="l02517"></a><span class="lineno"> 2517</span><span class="preprocessor">#define SUPLA_THERMOSTAT_CMD_TURNON 1</span></div>
 <div class="line"><a id="l02518" name="l02518"></a><span class="lineno"> 2518</span><span class="preprocessor">#define SUPLA_THERMOSTAT_CMD_SET_MODE_AUTO 2</span></div>
 <div class="line"><a id="l02519" name="l02519"></a><span class="lineno"> 2519</span><span class="preprocessor">#define SUPLA_THERMOSTAT_CMD_SET_MODE_COOL 3</span></div>
@@ -2881,7 +2881,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02528" name="l02528"></a><span class="lineno"> 2528</span><span class="preprocessor">#define SUPLA_THERMOSTAT_CMD_SET_TIME 12</span></div>
 <div class="line"><a id="l02529" name="l02529"></a><span class="lineno"> 2529</span><span class="preprocessor">#define SUPLA_THERMOSTAT_CMD_SET_TEMPERATURE 13</span></div>
 <div class="line"><a id="l02530" name="l02530"></a><span class="lineno"> 2530</span> </div>
-<div class="line"><a id="l02531" name="l02531"></a><span class="lineno"> 2531</span><span class="comment">// Heatpol: Thermostat value flags - ver. &gt;= 11</span></div>
+<div class="line"><a id="l02531" name="l02531"></a><span class="lineno"> 2531</span><span class="comment">// Heatpol ESP8266 based: Thermostat value flags - ver. &gt;= 11</span></div>
 <div class="line"><a id="l02532" name="l02532"></a><span class="lineno"> 2532</span><span class="preprocessor">#define SUPLA_THERMOSTAT_VALUE_FLAG_ON 0x0001</span></div>
 <div class="line"><a id="l02533" name="l02533"></a><span class="lineno"> 2533</span><span class="preprocessor">#define SUPLA_THERMOSTAT_VALUE_FLAG_AUTO_MODE 0x0002</span></div>
 <div class="line"><a id="l02534" name="l02534"></a><span class="lineno"> 2534</span><span class="preprocessor">#define SUPLA_THERMOSTAT_VALUE_FLAG_COOL_MODE 0x0004</span></div>
@@ -2891,7 +2891,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02538" name="l02538"></a><span class="lineno"> 2538</span><span class="preprocessor">#define SUPLA_THERMOSTAT_VALUE_FLAG_FANONLY_MODE 0x0040</span></div>
 <div class="line"><a id="l02539" name="l02539"></a><span class="lineno"> 2539</span><span class="preprocessor">#define SUPLA_THERMOSTAT_VALUE_FLAG_PURIFIER_MODE 0x0080</span></div>
 <div class="line"><a id="l02540" name="l02540"></a><span class="lineno"> 2540</span> </div>
-<div class="line"><a id="l02541" name="l02541"></a><span class="lineno"> 2541</span><span class="comment">// Heatpol: Thermostat fields - ver. &gt;= 11</span></div>
+<div class="line"><a id="l02541" name="l02541"></a><span class="lineno"> 2541</span><span class="comment">// Heatpol ESP8266 based: Thermostat fields - ver. &gt;= 11</span></div>
 <div class="line"><a id="l02542" name="l02542"></a><span class="lineno"> 2542</span><span class="preprocessor">#define THERMOSTAT_FIELD_MeasuredTemperatures 0x01</span></div>
 <div class="line"><a id="l02543" name="l02543"></a><span class="lineno"> 2543</span><span class="preprocessor">#define THERMOSTAT_FIELD_PresetTemperatures 0x02</span></div>
 <div class="line"><a id="l02544" name="l02544"></a><span class="lineno"> 2544</span><span class="preprocessor">#define THERMOSTAT_FIELD_Flags 0x04</span></div>
@@ -2899,7 +2899,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02546" name="l02546"></a><span class="lineno"> 2546</span><span class="preprocessor">#define THERMOSTAT_FIELD_Time 0x10</span></div>
 <div class="line"><a id="l02547" name="l02547"></a><span class="lineno"> 2547</span><span class="preprocessor">#define THERMOSTAT_FIELD_Schedule 0x20</span></div>
 <div class="line"><a id="l02548" name="l02548"></a><span class="lineno"> 2548</span> </div>
-<div class="line"><a id="l02549" name="l02549"></a><span class="lineno"> 2549</span><span class="comment">// Used in Heatpol only</span></div>
+<div class="line"><a id="l02549" name="l02549"></a><span class="lineno"> 2549</span><span class="comment">// Used in Heatpol ESP8266 based only</span></div>
 <div class="foldopen" id="foldopen02550" data-start="{" data-end="};">
 <div class="line"><a id="l02550" name="l02550"></a><span class="lineno"><a class="line" href="structTThermostat__ExtendedValue.html"> 2550</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
 <div class="line"><a id="l02551" name="l02551"></a><span class="lineno"> 2551</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> Fields;</div>
@@ -2912,7 +2912,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l02558" name="l02558"></a><span class="lineno"> 2558</span>} <a class="code hl_struct" href="structTThermostat__ExtendedValue.html">TThermostat_ExtendedValue</a>;      <span class="comment">// v. &gt;= 11</span></div>
 </div>
 <div class="line"><a id="l02559" name="l02559"></a><span class="lineno"> 2559</span> </div>
-<div class="line"><a id="l02560" name="l02560"></a><span class="lineno"> 2560</span><span class="comment">// Used in Heatpol only</span></div>
+<div class="line"><a id="l02560" name="l02560"></a><span class="lineno"> 2560</span><span class="comment">// Used in Heatpol ESP8266 based only</span></div>
 <div class="foldopen" id="foldopen02561" data-start="{" data-end="};">
 <div class="line"><a id="l02561" name="l02561"></a><span class="lineno"><a class="line" href="structTThermostat__Value.html"> 2561</a></span><span class="keyword">typedef</span> <span class="keyword">struct </span>{</div>
 <div class="line"><a id="l02562" name="l02562"></a><span class="lineno"> 2562</span>  <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> IsOn;</div>

@@ -95,6 +95,13 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
                       overcurrentMaxAllowed);
     }
   }
+  if (isStaircaseFunction() || isImpulseFunction()) {
+    if (storedTurnOnDurationMs == 0) {
+      storedTurnOnDurationMs =
+          (isStaircaseFunction() ? defaultStaircaseDurationMs
+                                 : defaultImpulseDurationMs);
+    }
+  }
 }
 
 void Relay::onRegistered(
@@ -273,6 +280,9 @@ void Relay::onInit() {
   } else {
     turnOff(duration);
   }
+  SUPLA_LOG_DEBUG("Relay[%d] init done, storedTurnOnDurationMs %d",
+                  channel.getChannelNumber(),
+                  storedTurnOnDurationMs);
   initDone = true;
 }
 

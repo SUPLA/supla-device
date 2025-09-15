@@ -2,7 +2,7 @@
 # Name, Type, SubType, Offset, Size, Flags
 # nvs partitions are encrypted via nvs_keys.
 # otadata, phy_init, ota_0, ota_1 are encrypted by default
-# spiffs, suplastorage are NOT encrypted. Use only for state saving
+# spiffs, suplastorage, supla_sslog are NOT encrypted. Use only for state saving
 nvs,      data, nvs,    0x9000,   16K,
 otadata,  data, ota,    0xd000,   8K,
 phy_init, data, phy,    0xf000,   4K,
@@ -10,7 +10,8 @@ ota_0,    app,  ota_0,  0x10000,  1536K,
 ota_1,    app,  ota_1,  0x190000, 1536K,
 supla_dev_data, 0x56, 0x0, 0x310000, 0x2000,   encrypted,
 nvs_key, data, nvs_keys, 0x312000, 0x1000,     encrypted,
-spiffs,   data, spiffs, 0x313000, 0xd000,
+supla_sslog,   data, 0x57, 0x313000, 0x2000,
+spiffs,   data, spiffs, 0x315000, 0xb000,
 suplastorage, 0x55, 0x0,    0x320000, 0x80000,
 
 # optional suplanvs partition

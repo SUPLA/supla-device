@@ -46,8 +46,6 @@ class ArduinoEspClient : public Client {
   void stop() override {
     if (wifiClient) {
       wifiClient->stop();
-      delete wifiClient;
-      wifiClient = nullptr;
     }
   }
 
@@ -65,7 +63,6 @@ class ArduinoEspClient : public Client {
 
  protected:
   int connectImp(const char *host, uint16_t port) override {
-    WiFiClientSecure *clientSec = nullptr;
 #ifdef ARDUINO_ARCH_ESP8266
     X509List *caCert = nullptr;
 #endif
@@ -73,7 +70,9 @@ class ArduinoEspClient : public Client {
     stop();
 
     if (sslEnabled) {
-      clientSec = new WiFiClientSecure();
+      if (clientSec == nullptr) {
+        clientSec = new WiFiClientSecure();
+      }
       wifiClient = clientSec;
 
       wifiClient->setTimeout(timeoutMs);
@@ -111,7 +110,9 @@ class ArduinoEspClient : public Client {
       }
 #endif
     } else {
-      wifiClient = new WiFiClient();
+      if (wifiClient == nullptr) {
+        wifiClient = new WiFiClient();
+      }
     }
 
     int result = wifiClient->connect(host, port);
@@ -173,6 +174,7 @@ class ArduinoEspClient : public Client {
   }
 
   WiFiClient *wifiClient = nullptr;
+  WiFiClientSecure *clientSec = nullptr;
   String fingerprint;
   uint16_t timeoutMs = 3000;
   int lastConnErr = 0;

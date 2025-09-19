@@ -16,6 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/time.h>
@@ -154,3 +156,5 @@ void WebSender::sendTimestamp(uint32_t timestamp) {
 }
 
 };  // namespace Supla
+
+#endif

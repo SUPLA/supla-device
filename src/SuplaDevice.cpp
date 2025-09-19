@@ -1754,6 +1754,9 @@ void SuplaDeviceClass::testStepStatusLed(int times) {
 void SuplaDeviceClass::setSecurityLogger(
     Supla::Device::SecurityLogger *logger) {
   securityLogger = logger;
+  if (securityLogger) {
+    securityLogger->init();
+  }
 }
 
 void SuplaDeviceClass::addSecurityLog(uint32_t source, const char *log) const {
@@ -1767,6 +1770,10 @@ void SuplaDeviceClass::addSecurityLog(Supla::SecurityLogSource source,
   if (securityLogger) {
     securityLogger->log(static_cast<uint32_t>(source), log);
   }
+}
+
+bool SuplaDeviceClass::isSecurityLogEnabled() const {
+  return securityLogger && securityLogger->isEnabled();
 }
 
 SuplaDeviceClass SuplaDevice;

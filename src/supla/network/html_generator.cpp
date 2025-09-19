@@ -56,9 +56,9 @@ const char styles[] =
     "10px;margin:10px 0;box-shadow:0 5px 6px rgb(0 0 0 / .3)}.box "
     "h3{margin-top:0;margin-bottom:5px}.form{text-align:left;max-width:500px;"
     "margin:0 "
-    "auto;margin-top:-80px;padding:10px;padding-top:70px;display:none}.form-"
-    "field{display:flex;align-items:center;padding:8px 10px;border-top:1px "
-    "solid #00d150;margin:0 "
+    "auto;margin-top:-80px;padding:10px;padding-top:70px}#form_content{display:"
+    "none}.form-field{display:flex;align-items:center;padding:8px "
+    "10px;border-top:1px solid #00d150;margin:0 "
     "-10px}.box>.form-field:first-of-type{border-top:0}.form-field "
     "label{width:250px;margin-right:5px;color:#00d150}@media screen and "
     "(max-width:530px){.form-field{flex-direction:column}.form-field "
@@ -80,8 +80,8 @@ const char styles[] =
     ".3);text-align:center;font-size:26px}a.wide-link{display:block;color:#fff;"
     "font-size:1.3em;text-align:center;padding:10px;cursor:pointer}.box."
     "collapsible h3{cursor:pointer}.box.collapsible "
-    "h3:after{content:\'↑\';float:right}.box.collapsible.collapsed "
-    "h3:after{content:\'↓\'}.box.collapsible.collapsed "
+    "h3:after{content:'↑';float:right}.box.collapsible.collapsed "
+    "h3:after{content:'↓'}.box.collapsible.collapsed "
     ".form-field{display:none}.switch{position:relative;display:inline-block;"
     "width:51px;height:25px}.switch "
     "input{opacity:0;width:0;height:0}.slider{position:absolute;cursor:pointer;"
@@ -98,7 +98,13 @@ const char styles[] =
     ".2s}.range-slider::-webkit-slider-thumb{-webkit-appearance:none;"
     "appearance:none;margin-top:-5px;width:25px;height:25px;border-radius:50%;"
     "background:#00d151;cursor:pointer}.range-slider::-moz-range-thumb{width:"
-    "25px;height:25px;border-radius:50%;background:#00d151;cursor:pointer}"
+    "25px;height:25px;border-radius:50%;background:#00d151;cursor:pointer}."
+    "card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgb(0 0 0 / "
+    ".06);padding:12px;color:#333;text-align:left}header{display:flex;align-"
+    "items:center;gap:12px;margin-bottom:10px}table{width:100%;border-collapse:"
+    "collapse;font-size:13px}thead th{border-bottom:2px solid "
+    "#e6e8eb;padding:8px}td{padding:10px 8px;border-bottom:1px solid "
+    "#f0f1f3;vertical-align:middle}"
     "</style>";
 
 const char javascript[] =
@@ -226,6 +232,37 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
     sendSessionLinks(sender);
   }
   sender->send("</div>");  // .form end
+  sender->send("</div>");  // .content end
+  sender->send("</div>");  // .wrapper end
+  sendBodyEnd(sender);
+}
+
+void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
+                                        bool includeSessionLinks) {
+  sendHeaderBegin(sender);
+  sendHeader(sender);
+  sendHeaderEnd(sender);
+  sendBodyBegin(sender);
+  sender->send(wrapperBegin, strlen(wrapperBegin));
+  sendLogo(sender);
+  sender->send("<div id=\"loader\">Loading...</div>");
+  sender->send("<div id=\"form_content\">");
+  sender->send("<div class=\"form\">");
+  sendDeviceInfo(sender);
+  sender->send("</div>");  // .form end
+
+  for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
+      htmlElement = htmlElement->next()) {
+    if (htmlElement->section == HTML_SECTION_LOGS) {
+      htmlElement->send(sender);
+    }
+  }
+
+  sender->send("<div class=\"form\">");
+  sender->send("<a href=\"/\" class=\"wide-link\">Back</a>");
+  if (includeSessionLinks) {
+    sendSessionLinks(sender);
+  }
   sender->send("</div>");  // .content end
   sender->send("</div>");  // .wrapper end
   sendBodyEnd(sender);
@@ -471,13 +508,20 @@ void Supla::HtmlGenerator::sendBetaForm(Supla::WebSender *sender) {
 }
 
 void Supla::HtmlGenerator::sendButtons(Supla::WebSender *sender) {
+  bool securityLogsEnabled = false;
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_BUTTON_BEFORE) {
       htmlElement->send(sender);
     }
+    if (htmlElement->section == HTML_SECTION_LOGS) {
+      securityLogsEnabled = true;
+    }
   }
   sendSubmitButton(sender);
+  if (securityLogsEnabled) {
+    sender->send("<a href=\"/logs\" class=\"wide-link\">Security logs</a>");
+  }
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
     if (htmlElement->section == HTML_SECTION_BUTTON_AFTER) {

@@ -83,6 +83,9 @@ select {
   margin-top: -80px;
   padding: 10px;
   padding-top: 70px;
+}
+
+#form_content {
   display: none;
 }
 
@@ -301,3 +304,10 @@ input:checked+.slider:before {
   background: #00d151;
   cursor: pointer;
 }
+
+.card{background:#fff;border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);padding:12px;color:#333;text-align:left}
+header{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{border-bottom:2px solid #e6e8eb;padding:8px}
+td{padding:10px 8px;border-bottom:1px solid #f0f1f3;vertical-align:middle}
+

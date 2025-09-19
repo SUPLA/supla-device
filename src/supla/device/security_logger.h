@@ -45,6 +45,7 @@ struct SecurityLogEntry {
   };
 
   void print() const;
+  bool isEmpty() const;
 };
 #pragma pack(pop)
 
@@ -64,18 +65,23 @@ class SecurityLogger {
   virtual ~SecurityLogger();
   void log(uint32_t source, const char *log);
 
+  virtual void init();
+  virtual bool isEnabled() const;
   virtual void deleteAll();
 
   // getLog locks the mutex on first call and releases it when all messages
   // have been read, so make sure you call it in a loop until null is returned
-  virtual char *getLog();
+  virtual Supla::SecurityLogEntry *getLog();
   virtual bool prepareGetLog();
 
   virtual void storeLog(const SecurityLogEntry &entry);
 
+  static const char *getSourceName(uint32_t source);
+
  protected:
   uint32_t index = 0;
   Supla::Mutex *mutex = nullptr;
+  static char buffer[SUPLA_SECURITY_LOG_ENTRY_SIZE];
 };
 };  // namespace Device
 };  // namespace Supla

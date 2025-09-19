@@ -221,6 +221,36 @@ esp_err_t setupHandler(httpd_req_t *req) {
   return ESP_FAIL;
 }
 
+
+// request: GET /logs
+// - if not authorized, redirect to /login or /setup
+esp_err_t logsHandler(httpd_req_t *req) {
+  httpd_resp_set_hdr(req, "CN", Supla::RegisterDevice::getName());
+  srvInst->reloadSaltPassword();
+  if (srvInst->isAuthorizationBlocked()) {
+    httpd_resp_set_hdr(req, "Auth-Status", "too-many");
+    httpd_resp_send_err(req, HTTPD_403_FORBIDDEN, "Too many requests");
+    return ESP_OK;
+  }
+  char sessionCookie[256] = {};
+  if (req->method == HTTP_GET) {
+    SUPLA_LOG_DEBUG("SERVER: get request");
+    if (srvInst->htmlGenerator) {
+      if (!srvInst->ensureAuthorized(
+              req, sessionCookie, sizeof(sessionCookie))) {
+        return srvInst->redirect(req, 303, srvInst->loginOrSetupUrl(), "main");
+      } else {
+        Supla::EspIdfSender sender(req);
+        srvInst->htmlGenerator->sendLogsPage(&sender,
+                                             srvInst->isHttpsEnalbled());
+      }
+      srvInst->dataSaved = false;
+    }
+  }
+
+  return ESP_FAIL;
+}
+
 // request: GET/POST /beta
 esp_err_t betaHandler(httpd_req_t *req) {
   srvInst->reloadSaltPassword();
@@ -326,6 +356,12 @@ httpd_uri_t uriSetup = {
     .uri = "/setup",
     .method = static_cast<httpd_method_t>(HTTP_ANY),
     .handler = setupHandler,
+    .user_ctx = NULL};
+
+httpd_uri_t uriLogs = {
+    .uri = "/logs",
+    .method = static_cast<httpd_method_t>(HTTP_ANY),
+    .handler = logsHandler,
     .user_ctx = NULL};
 
 Supla::EspIdfWebServer::EspIdfWebServer(Supla::HtmlGenerator *generator)
@@ -665,7 +701,7 @@ void Supla::EspIdfWebServer::start() {
     httpd_ssl_config_t configHttps = HTTPD_SSL_CONFIG_DEFAULT();
     configHttps.httpd.lru_purge_enable = true;
     configHttps.httpd.max_open_sockets = 1;
-    configHttps.httpd.max_uri_handlers = 6;
+    configHttps.httpd.max_uri_handlers = 7;
 
     configHttps.servercert = serverCert;
     configHttps.servercert_len = serverCertLen;
@@ -681,6 +717,7 @@ void Supla::EspIdfWebServer::start() {
       httpd_register_uri_handler(serverHttps, &uriLogin);
       httpd_register_uri_handler(serverHttps, &uriLogout);
       httpd_register_uri_handler(serverHttps, &uriSetup);
+      httpd_register_uri_handler(serverHttps, &uriLogs);
 
       // start http with redirect
       config.uri_match_fn = uriMatchAll;
@@ -944,7 +981,7 @@ Supla::SetupRequestResult Supla::EspIdfWebServer::handleSetup(httpd_req_t *req,
   if (!saltPassword.isPasswordStrong(password)) {
     SUPLA_LOG_INFO("Password is not strong enough");
     addSecurityLog(req,
-                   "Password change failed: password is not strong enough");
+                   "Password change failed: password too weak");
     return SetupRequestResult::WEAK_PASSWORD;
   }
 

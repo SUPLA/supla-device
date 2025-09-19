@@ -26,13 +26,19 @@
 using Supla::Device::SecurityLogger;
 using Supla::SecurityLogEntry;
 
+char SecurityLogger::buffer[SUPLA_SECURITY_LOG_ENTRY_SIZE] = {};
+
 SecurityLogger::SecurityLogger() {}
 SecurityLogger::~SecurityLogger() {}
 
 void SecurityLogger::log(uint32_t source, const char *log) {
   SecurityLogEntry entry;
+  if (strnlen(log, SUPLA_SECURITY_LOG_TEXT_SIZE + 1) >
+      SUPLA_SECURITY_LOG_TEXT_SIZE) {
+    SUPLA_LOG_WARNING("SecurityLogger: log too long");
+  }
   entry.source = source;
-  strncpy(entry.log, log, sizeof(entry.log));
+  strncpy(entry.log, log, sizeof(entry.log) - 1);
   entry.index = ++index;
   entry.timestamp = time(nullptr);
   entry.print();
@@ -41,10 +47,9 @@ void SecurityLogger::log(uint32_t source, const char *log) {
 
 void SecurityLogger::deleteAll() {
   index = 0;
-  // TODO(klew): implement
 }
 
-char *SecurityLogger::getLog() {
+Supla::SecurityLogEntry *SecurityLogger::getLog() {
   return nullptr;
 }
 
@@ -56,26 +61,25 @@ bool SecurityLogger::prepareGetLog() {
 void SecurityLogger::storeLog(const SecurityLogEntry &) {
 }
 
-void SecurityLogEntry::print() const {
-  char sourceText[32] = {};
+const char *SecurityLogger::getSourceName(uint32_t source) {
   if (source < 10) {
     // Predefined source
     switch (static_cast<Supla::SecurityLogSource>(source)) {
       case Supla::SecurityLogSource::NONE: {
-        snprintf(sourceText, sizeof(sourceText) - 1, "Unknown");
+        return "Unknown";
         break;
       }
       case Supla::SecurityLogSource::LOCAL_DEVICE: {
-        snprintf(sourceText, sizeof(sourceText) - 1, "Local");
+        return "Local";
         break;
       }
       case Supla::SecurityLogSource::REMOTE: {
-        snprintf(sourceText, sizeof(sourceText) - 1, "Remote");
+        return "Remote";
         break;
       }
       default: {
-        snprintf(sourceText,
-                 sizeof(sourceText) - 1,
+        snprintf(buffer,
+                 sizeof(buffer) - 1,
                  "Unknown(%d)",
                  static_cast<int>(source));
         break;
@@ -83,16 +87,40 @@ void SecurityLogEntry::print() const {
     }
   } else {
     // IP
-    snprintf(sourceText,
-             sizeof(sourceText) - 1,
+    uint8_t sourceBytes[4] = {};
+    memcpy(sourceBytes, &source, sizeof(sourceBytes));
+    snprintf(buffer,
+             sizeof(buffer) - 1,
              "%d.%d.%d.%d",
              sourceBytes[3],
              sourceBytes[2],
              sourceBytes[1],
              sourceBytes[0]);
   }
-  SUPLA_LOG_WARNING("***************************");
+
+  return buffer;
+}
+
+void SecurityLogEntry::print() const {
+  const char *sourceText = Supla::Device::SecurityLogger::getSourceName(source);
   SUPLA_LOG_INFO("SSLOG: %d.[%d][%s] %s", index, timestamp, sourceText, log);
-  SUPLA_LOG_WARNING("***************************");
+}
+
+bool SecurityLogger::isEnabled() const {
+  return false;
+}
+
+void SecurityLogger::init() {
+}
+
+bool Supla::SecurityLogEntry::isEmpty() const {
+  bool empty = true;
+  for (size_t i = 0; i < SUPLA_SECURITY_LOG_ENTRY_SIZE; i++) {
+    if (rawData[i] != 0xFF) {
+      empty = false;
+      break;
+    }
+  }
+  return empty;
 }
 

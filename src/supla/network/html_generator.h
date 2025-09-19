@@ -65,6 +65,7 @@ class HtmlGenerator {
       Supla::WebSender*,
       bool changePassword,
       Supla::SetupRequestResult = Supla::SetupRequestResult::NONE);
+  virtual void sendLogsPage(Supla::WebSender *sender, bool includeSessionLinks);
 
   virtual void sendSessionLinks(Supla::WebSender*);
 };

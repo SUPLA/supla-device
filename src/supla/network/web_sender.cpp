@@ -18,6 +18,9 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
+#include <inttypes.h>
 
 #include "web_sender.h"
 
@@ -133,6 +136,21 @@ void WebSender::sendDisabled(bool disabled) {
   if (disabled) {
     send(" disabled");
   }
+}
+
+void WebSender::sendTimestamp(uint32_t timestamp) {
+  // timestamp may contain unix timestamp, or just seconds since board boot
+  char buf[100] = {};
+  if (timestamp < 1600000000) {
+    // somewhere in 2020, so assume it is seconds since board boot
+    snprintf(buf, sizeof(buf), "%" PRIu32 " s (since boot)", timestamp);
+  } else {
+    struct tm timeinfo;
+    time_t time = timestamp;
+    localtime_r(&time, &timeinfo);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  }
+  send(buf);
 }
 
 };  // namespace Supla

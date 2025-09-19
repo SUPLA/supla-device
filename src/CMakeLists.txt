@@ -121,6 +121,7 @@ set(SRCS
   supla/network/html/relay_parameters.cpp
   supla/network/html/modbus_parameters.cpp
   supla/network/html/binary_sensor_parameters.cpp
+  supla/network/html/security_log_list.cpp
   supla/network/web_sender.cpp
   supla/clock/clock.cpp
 

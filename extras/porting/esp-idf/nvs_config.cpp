@@ -82,7 +82,7 @@ bool NvsConfig::init() {
     flashEncryptionReleaseMode = true;
   } else {
     SUPLA_LOG_ERROR("NvsConfig: flash encryption not in release mode (%d)",
-                    mode);
+                     mode);
     flashEncryptionReleaseMode = false;
   }
 

@@ -295,7 +295,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    *
    * @return true if security log is enabled
    */
-  bool isSecurityLogEnabled() const { return securityLogger != nullptr; }
+  bool isSecurityLogEnabled() const;
 
  protected:
   /**

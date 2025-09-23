@@ -199,6 +199,9 @@ class LinuxYamlConfig : public KeyValue {
   bool addDistanceParsed(const YAML::Node& ch,
                          int channelNumber,
                          Supla::Parser::Parser* parser);
+  bool addCustomChannel(const YAML::Node& ch,
+                         int channelNumber,
+                         Supla::Parser::Parser* parser);
   bool addCommonParametersParsed(const YAML::Node& ch,
                                  Supla::Sensor::SensorParsedBase* sensor,
                                  int* paramCount,

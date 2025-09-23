@@ -56,6 +56,7 @@
 #include <supla/payload/json.h>
 #include <supla/payload/simple.h>
 #include <supla/tools.h>
+#include <supla/custom_channel.h>
 
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
@@ -78,6 +79,10 @@ const char Multiplier[] = "multiplier";
 const char MultiplierTemp[] = "multiplier_temp";
 const char MultiplierHumi[] = "multiplier_humi";
 const char InitialCaption[] = "initial_caption";
+const char ChannelType[] = "channel_type";
+const char DefaultFunction[] = "default_function";
+const char DefaultFunctionNumber[] = "default_function_number";
+const char Value[] = "value";
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
 const char ReadWriteConfigStorage[] = "/config_storage.bin";
@@ -713,6 +718,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addThermHygroMeterParsed(ch, channelNumber, parser);
     } else if (type == "ActionTriggerParsed") {
       return addActionTriggerParsed(ch, channelNumber);
+    } else if (type == "CustomChannel") {
+      return addCustomChannel(ch, channelNumber, parser);
     } else {
       SUPLA_LOG_ERROR("Channel[%d] config: unknown type \"%s\"",
                       channelNumber,
@@ -1030,9 +1037,9 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
 
   hvac->setTemperatureHisteresis(40);
 
-  if (ch["default_function"]) {
+  if (ch[Supla::DefaultFunction]) {
     paramCount++;
-    std::string function = ch["default_function"].as<std::string>();
+    std::string function = ch[Supla::DefaultFunction].as<std::string>();
     if (function == "heat") {
       hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
       hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
@@ -1119,9 +1126,9 @@ bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
 
   hvac->setTemperatureHisteresis(40);
 
-  if (ch["default_function"]) {
+  if (ch[Supla::DefaultFunction]) {
     paramCount++;
-    std::string function = ch["default_function"].as<std::string>();
+    std::string function = ch[Supla::DefaultFunction].as<std::string>();
     if (function == "heat") {
       hvac->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT);
       hvac->setDefaultSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
@@ -2177,6 +2184,43 @@ bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
     }
   }
   return addCommonParametersParsed(ch, container, &paramCount, parser);
+}
+
+bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
+                                               int channelNumber,
+                                               Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding CustomChannel", channelNumber);
+  auto custom = new Supla::CustomChannel(parser);
+  if (ch[Supla::ChannelType]) {
+    paramCount++;
+    int32_t type = ch[Supla::ChannelType].as<int32_t>();
+    custom->getChannel()->setType(type);
+    if (custom->getChannel()->getChannelType() != type) {
+      SUPLA_LOG_ERROR("Channel[%d] config: %s value %d not supported",
+                      channelNumber,
+                      Supla::ChannelType,
+                      type);
+      return false;
+    }
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::ChannelType);
+    return false;
+  }
+
+  if (ch[Supla::Value]) {
+    paramCount++;
+    custom->setValue(ch[Supla::Value].as<std::string>());
+  }
+
+  if (ch[Supla::DefaultFunctionNumber]) {
+    paramCount++;
+    int32_t functionNumber = ch[Supla::DefaultFunctionNumber].as<int32_t>();
+    custom->getChannel()->setDefaultFunction(functionNumber);
+  }
+
+  return addCommonParametersParsed(ch, custom, &paramCount, parser);
 }
 
 bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,

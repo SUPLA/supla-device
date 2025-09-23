@@ -317,7 +317,8 @@ Supported channel types:
 * `GeneralPurposeMeterParsed` - related class `Supla::Sensor::GeneralPurposeMeter`
 * `WeightParsed` - related class `Supla::Sensor::Weight`
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
-* `Hvac`, `CustomHvac` - relatedclass `Supla::Control::HvacBase`
+* `Hvac`, `CustomHvac` - related class `Supla::Control::HvacBase`
+* `CustomChannel` - supports arbitrary channel type
 
 Example channels configuration (details are exaplained later):
 
@@ -607,6 +608,12 @@ Example channels configuration (details are exaplained later):
           type: Simple
           refresh_time_ms: 200
 
+    - type: CustomChannel
+      initial_caption: "Custom channel"
+      channel_type: 1000
+      default_function_number: 80
+      value: 01 00 00 00 00 00 00 00
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -749,6 +756,15 @@ three extra configuration options:\
 `CustomHvac` accepts configuration options:\
 `turn_on_payload` - value to be published on turn on,\
 `turn_off_payload` - value to be published on turn on.
+
+### CustomChannel
+
+`CustomChannel` can be used to send any value with any channel type (mainly for testing).
+
+`CustomChannel` accepts configuration options:\
+`channel_type` - int value representing channel type,\
+`default_function_number` - int value representing default function number for this channel type.
+`value` - 8 B hex string representing value to be published, for example "01 00 00 00 00 00 00 00". First value corresponds with value[0] and so on.
 
 ## Parsed channel `source` parameter
 

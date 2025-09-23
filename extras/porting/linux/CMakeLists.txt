@@ -46,6 +46,8 @@ set(SUPLA_DEVICE_LINUX_SRCS
   linux_timers.cpp
   linux_clock.cpp
 
+  supla/custom_channel.cpp
+
   supla/source/cmd.cpp
   supla/source/file.cpp
   supla/source/mqtt_src.cpp

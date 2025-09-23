@@ -19,9 +19,9 @@
 #ifndef EXTRAS_PORTING_LINUX_SUPLA_CUSTOM_CHANNEL_H_
 #define EXTRAS_PORTING_LINUX_SUPLA_CUSTOM_CHANNEL_H_
 
-#include "sensor/sensor_parsed.h"
 #include <supla/element_with_channel_actions.h>
 #include <string>
+#include "sensor/sensor_parsed.h"
 
 namespace Supla {
 class CustomChannel

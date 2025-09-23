@@ -17,10 +17,12 @@
 */
 
 #include "custom_channel.h"
-#include <iostream>
+#include <supla/network/network.h>
+
 #include <sstream>
 #include <string>
-#include <supla/network/network.h>
+#include <iostream>
+
 
 Supla::CustomChannel::CustomChannel(
     Supla::Parser::Parser *parser)

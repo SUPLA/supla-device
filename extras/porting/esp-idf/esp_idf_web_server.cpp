@@ -630,7 +630,7 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       prvtKeyLen = prvtKeyLen - IV_SIZE;
 
       SUPLA_LOG_INFO("prvtKeyLen: %d, IV_SIZE: %d", prvtKeyLen, IV_SIZE);
-      uint8_t *encryptedData = new uint8_t[prvtKeyLen];
+      uint8_t *encryptedData = new uint8_t[prvtKeyLen + 1];
       memcpy(encryptedData, prvtKey + IV_SIZE, prvtKeyLen);
       memset(prvtKey, 0, prvtKeyLen + IV_SIZE);
       encryptedData[prvtKeyLen] = '\0';

@@ -101,6 +101,9 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
           (isStaircaseFunction() ? defaultStaircaseDurationMs
                                  : defaultImpulseDurationMs);
     }
+    if (isStaircaseFunction()) {
+      usedConfigTypes.set(SUPLA_CONFIG_TYPE_EXTENDED);
+    }
   }
 }
 

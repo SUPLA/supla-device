@@ -33,6 +33,7 @@ void Supla::Control::VirtualRelay::onInit() {
   } else {
     turnOff(duration);
   }
+  initDone = true;
 }
 
 void Supla::Control::VirtualRelay::turnOn(_supla_int_t duration) {

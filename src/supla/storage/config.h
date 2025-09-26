@@ -182,6 +182,25 @@ class Config {
   virtual bool clearChannelConfigChangeFlag(int channelNo, int configType = 0);
   virtual bool isChannelConfigChangeFlagSet(int channelNo, int configType = 0);
 
+  /**
+   * Returns channel function stored in config
+   *
+   * @param channelNo channel number (should be >= 0)
+   *
+   * @return channel function (as defined in proto.h) or -1 if not found
+   */
+  int32_t getChannelFunction(int channelNo);
+
+  /**
+   * Stores channel function in config
+   *
+   * @param channelNo channel number (should be >= 0)
+   * @param channelFunction channel function (as defined in proto.h)
+   *
+   * @return true on success
+   */
+  bool setChannelFunction(int channelNo, int32_t channelFunction);
+
  protected:
   virtual int getBlobSize(const char* key) = 0;
 

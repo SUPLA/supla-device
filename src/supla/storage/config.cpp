@@ -690,4 +690,24 @@ bool Supla::Config::isEncryptionEnabled() {
   return false;
 }
 
+int32_t Config::getChannelFunction(int channelNo) {
+  if (channelNo < 0) {
+    return -1;
+  }
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, channelNo, Supla::ConfigTag::ChannelFunctionTag);
+  int32_t channelFunc = -1;
+  getInt32(key, &channelFunc);
+  return channelFunc;
+}
+
+bool Config::setChannelFunction(int channelNo, int32_t channelFunction) {
+  if (channelNo < 0) {
+    return false;
+  }
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  generateKey(key, channelNo, Supla::ConfigTag::ChannelFunctionTag);
+  return setInt32(key, channelFunction);
+}
+
 }  // namespace Supla

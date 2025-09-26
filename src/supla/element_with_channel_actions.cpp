@@ -188,10 +188,8 @@ bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
   auto cfg = Supla::Storage::ConfigInstance();
   auto channel = getChannel();
   if (cfg && channel) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
-    int32_t channelFunc = 0;
-    if (cfg->getInt32(key, &channelFunc)) {
+    int32_t channelFunc = cfg->getChannelFunction(getChannelNumber());
+    if (channelFunc >= 0) {
       if (channel->isFunctionValid(channelFunc)) {
         SUPLA_LOG_INFO("Channel[%d] loaded function: %d",
                        channel->getChannelNumber(),
@@ -258,9 +256,7 @@ bool Supla::ElementWithChannelActions::setAndSaveFunction(
     channel->setDefaultFunction(channelFunction);
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
-      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
-      cfg->setInt32(key, channelFunction);
+      cfg->setChannelFunction(getChannelNumber(), channelFunction);
       cfg->saveWithDelay(5000);
     }
     return true;

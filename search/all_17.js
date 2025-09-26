@@ -8,6 +8,5 @@ var searchData=
   ['wifiparameters_5',['WifiParameters',['../classSupla_1_1Html_1_1WifiParameters.html',1,'Supla::Html']]],
   ['wind_6',['Wind',['../classSupla_1_1Sensor_1_1Wind.html',1,'Supla::Sensor']]],
   ['work_7',['How does it work?',['../index.html#autotoc_md12',1,'']]],
-  ['written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_8',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md13',1,'']]],
-  ['wt32_5feth01_9',['WT32_ETH01',['../classSupla_1_1WT32__ETH01.html',1,'Supla']]]
+  ['written_20in_20supladevice_20libraray_20versions_201_206_20and_20older_8',['How to migrate programs written in SuplaDevice libraray versions 1.6 and older',['../index.html#autotoc_md13',1,'']]]
 ];

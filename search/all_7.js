@@ -22,7 +22,7 @@ var searchData=
   ['esp8266_20rtos_20sdk_20draft_19',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md22',1,'']]],
   ['esp8266_3a_20',['ESP8266:',['../index.html#autotoc_md24',1,'']]],
   ['esp8285_21',['ESP8266 and ESP8285',['../index.html#autotoc_md5',1,'']]],
-  ['espeth_22',['ESPETH',['../classSupla_1_1ESPETH.html',1,'Supla']]],
+  ['espeth_22',['ESPETH',['../classSupla_1_1ESPETH.html',1,'Supla::ESPETH'],['../classSupla_1_1ESPETH.html#ae161e3ecf5e68fc9bb953f16ea3d8324',1,'Supla::ESPETH::ESPETH(uint8_t ethMode)'],['../classSupla_1_1ESPETH.html#a5b77540799c810879bfec1ac922073a8',1,'Supla::ESPETH::ESPETH(eth_phy_type_t ethType, int32_t phyAddr, int mdc, int mdio, int power, eth_clock_mode_t clkMode)']]],
   ['espethspi_23',['ESPETHSPI',['../classSupla_1_1ESPETHSPI.html',1,'Supla']]],
   ['espfreeheap_24',['EspFreeHeap',['../classSupla_1_1Sensor_1_1EspFreeHeap.html',1,'Supla::Sensor']]],
   ['espsender_25',['EspSender',['../classSupla_1_1EspSender.html',1,'Supla']]],

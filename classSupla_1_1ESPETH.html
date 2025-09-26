@@ -174,21 +174,22 @@ Collaboration diagram for Supla::ESPETH:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ade1ec7c9cab7d2e0af1a07b46554965d" id="r_ade1ec7c9cab7d2e0af1a07b46554965d"><td class="memItemLeft" align="right" valign="top"><a id="ade1ec7c9cab7d2e0af1a07b46554965d" name="ade1ec7c9cab7d2e0af1a07b46554965d"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ESPETH</b> (uint8_t ethmode)</td></tr>
-<tr class="separator:ade1ec7c9cab7d2e0af1a07b46554965d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae161e3ecf5e68fc9bb953f16ea3d8324" id="r_ae161e3ecf5e68fc9bb953f16ea3d8324"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae161e3ecf5e68fc9bb953f16ea3d8324">ESPETH</a> (uint8_t ethMode)</td></tr>
+<tr class="memdesc:ae161e3ecf5e68fc9bb953f16ea3d8324"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for LAN8720 or TLK110 (legacy)  <br /></td></tr>
+<tr class="separator:ae161e3ecf5e68fc9bb953f16ea3d8324"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b77540799c810879bfec1ac922073a8" id="r_a5b77540799c810879bfec1ac922073a8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5b77540799c810879bfec1ac922073a8">ESPETH</a> (eth_phy_type_t ethType, int32_t phyAddr, int mdc, int mdio, int power, eth_clock_mode_t clkMode)</td></tr>
+<tr class="memdesc:a5b77540799c810879bfec1ac922073a8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor for ETH_PHY configuration.  <br /></td></tr>
+<tr class="separator:a5b77540799c810879bfec1ac922073a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4f4f6cb026bee41424144e947dc0ea3b" id="r_a4f4f6cb026bee41424144e947dc0ea3b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4f4f6cb026bee41424144e947dc0ea3b">setup</a> () override</td></tr>
 <tr class="separator:a4f4f6cb026bee41424144e947dc0ea3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e4ba637dd30d504d382189a0c55ac15" id="r_a5e4ba637dd30d504d382189a0c55ac15"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5e4ba637dd30d504d382189a0c55ac15">disable</a> () override</td></tr>
 <tr class="separator:a5e4ba637dd30d504d382189a0c55ac15"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae9e7f922736f5f24d27b6e2159cf4788" id="r_ae9e7f922736f5f24d27b6e2159cf4788"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae9e7f922736f5f24d27b6e2159cf4788">getMacAddr</a> (uint8_t *mac) override</td></tr>
 <tr class="separator:ae9e7f922736f5f24d27b6e2159cf4788"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af2b776cf057526193937aaff757ea87b" id="r_af2b776cf057526193937aaff757ea87b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af2b776cf057526193937aaff757ea87b">setHostname</a> (const char *prefix, int macSize) override</td></tr>
-<tr class="separator:af2b776cf057526193937aaff757ea87b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a60deddff7346dcd4d7bcf8cf2790b155" id="r_a60deddff7346dcd4d7bcf8cf2790b155"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a60deddff7346dcd4d7bcf8cf2790b155">getIP</a> () override</td></tr>
-<tr class="separator:a60deddff7346dcd4d7bcf8cf2790b155"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05e1c7684660cb307c6e9292a2d3f8c0" id="r_a05e1c7684660cb307c6e9292a2d3f8c0"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a05e1c7684660cb307c6e9292a2d3f8c0">getIntfName</a> () const override</td></tr>
 <tr class="separator:a05e1c7684660cb307c6e9292a2d3f8c0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2b776cf057526193937aaff757ea87b" id="r_af2b776cf057526193937aaff757ea87b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af2b776cf057526193937aaff757ea87b">setHostname</a> (const char *prefix, int macSize) override</td></tr>
+<tr class="separator:af2b776cf057526193937aaff757ea87b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1LAN"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1LAN')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1LAN.html">Supla::LAN</a></td></tr>
 <tr class="memitem:ac0ec5381b309c32b92588d0e30ec5e3b inherit pub_methods_classSupla_1_1LAN" id="r_ac0ec5381b309c32b92588d0e30ec5e3b"><td class="memItemLeft" align="right" valign="top">const char *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1LAN.html#ac0ec5381b309c32b92588d0e30ec5e3b">getIntfName</a> () const override</td></tr>
 <tr class="separator:ac0ec5381b309c32b92588d0e30ec5e3b inherit pub_methods_classSupla_1_1LAN"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -344,9 +345,6 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>setSSLEnabled<
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a4ed4911d5646495d39fdc82ead2fcd4d" id="r_a4ed4911d5646495d39fdc82ead2fcd4d"><td class="memItemLeft" align="right" valign="top"><a id="a4ed4911d5646495d39fdc82ead2fcd4d" name="a4ed4911d5646495d39fdc82ead2fcd4d"></a>
-uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>ETH_ADDRESS</b> = {}</td></tr>
-<tr class="separator:a4ed4911d5646495d39fdc82ead2fcd4d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af276e6810f09ea218faa75fcc718f0b7" id="r_af276e6810f09ea218faa75fcc718f0b7"><td class="memItemLeft" align="right" valign="top"><a id="af276e6810f09ea218faa75fcc718f0b7" name="af276e6810f09ea218faa75fcc718f0b7"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>allowDisable</b> = false</td></tr>
 <tr class="separator:af276e6810f09ea218faa75fcc718f0b7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -356,6 +354,24 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>macSizeForHostname</b>
 <tr class="memitem:a177c296c5740e86dffb2d458fceff128" id="r_a177c296c5740e86dffb2d458fceff128"><td class="memItemLeft" align="right" valign="top"><a id="a177c296c5740e86dffb2d458fceff128" name="a177c296c5740e86dffb2d458fceff128"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>initDone</b> = false</td></tr>
 <tr class="separator:a177c296c5740e86dffb2d458fceff128"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57db638797106f33051875ddbb886a63" id="r_a57db638797106f33051875ddbb886a63"><td class="memItemLeft" align="right" valign="top"><a id="a57db638797106f33051875ddbb886a63" name="a57db638797106f33051875ddbb886a63"></a>
+eth_phy_type_t&#160;</td><td class="memItemRight" valign="bottom"><b>ethType</b> = ETH_PHY_LAN8720</td></tr>
+<tr class="separator:a57db638797106f33051875ddbb886a63"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2604ed214de1dfa9a35a7de22afb20f2" id="r_a2604ed214de1dfa9a35a7de22afb20f2"><td class="memItemLeft" align="right" valign="top"><a id="a2604ed214de1dfa9a35a7de22afb20f2" name="a2604ed214de1dfa9a35a7de22afb20f2"></a>
+int32_t&#160;</td><td class="memItemRight" valign="bottom"><b>ethAddress</b> = -1</td></tr>
+<tr class="separator:a2604ed214de1dfa9a35a7de22afb20f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ec971c1f7f6b911f0d156fa2c48f06c" id="r_a5ec971c1f7f6b911f0d156fa2c48f06c"><td class="memItemLeft" align="right" valign="top"><a id="a5ec971c1f7f6b911f0d156fa2c48f06c" name="a5ec971c1f7f6b911f0d156fa2c48f06c"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>mdcPin</b> = 23</td></tr>
+<tr class="separator:a5ec971c1f7f6b911f0d156fa2c48f06c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a78e13cdf49bfb9fe60448869f0078571" id="r_a78e13cdf49bfb9fe60448869f0078571"><td class="memItemLeft" align="right" valign="top"><a id="a78e13cdf49bfb9fe60448869f0078571" name="a78e13cdf49bfb9fe60448869f0078571"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>mdioPin</b> = 18</td></tr>
+<tr class="separator:a78e13cdf49bfb9fe60448869f0078571"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f711519e92bc3c3b19a3acdb9c05bb4" id="r_a5f711519e92bc3c3b19a3acdb9c05bb4"><td class="memItemLeft" align="right" valign="top"><a id="a5f711519e92bc3c3b19a3acdb9c05bb4" name="a5f711519e92bc3c3b19a3acdb9c05bb4"></a>
+int&#160;</td><td class="memItemRight" valign="bottom"><b>powerPin</b> = -1</td></tr>
+<tr class="separator:a5f711519e92bc3c3b19a3acdb9c05bb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a32dfa0df09426c33080033a63ca80c3c" id="r_a32dfa0df09426c33080033a63ca80c3c"><td class="memItemLeft" align="right" valign="top"><a id="a32dfa0df09426c33080033a63ca80c3c" name="a32dfa0df09426c33080033a63ca80c3c"></a>
+eth_clock_mode_t&#160;</td><td class="memItemRight" valign="bottom"><b>clkMode</b> = ETH_CLOCK_GPIO17_OUT</td></tr>
+<tr class="separator:a32dfa0df09426c33080033a63ca80c3c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1LAN"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1LAN')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1LAN.html">Supla::LAN</a></td></tr>
 <tr class="memitem:a649a616f66bab089b6d4149ec1c2e4b7 inherit pro_attribs_classSupla_1_1LAN" id="r_a649a616f66bab089b6d4149ec1c2e4b7"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isIpReady</b> = false</td></tr>
@@ -417,6 +433,102 @@ static <a class="el" href="classSupla_1_1Network.html">Network</a> *&#160;</td><
 static enum DeviceMode&#160;</td><td class="memItemRight" valign="bottom"><b>mode</b> = DEVICE_MODE_NORMAL</td></tr>
 <tr class="separator:a07aac9c1c433fa91025208f822a77fb5 inherit pro_static_attribs_classSupla_1_1Network"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="ae161e3ecf5e68fc9bb953f16ea3d8324" name="ae161e3ecf5e68fc9bb953f16ea3d8324"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae161e3ecf5e68fc9bb953f16ea3d8324">&#9670;&#160;</a></span>ESPETH() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Supla::ESPETH::ESPETH </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>ethMode</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel explicit">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructor for LAN8720 or TLK110 (legacy) </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ethmode</td><td>0 for LAN8720, 1 for TLK110 </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a5b77540799c810879bfec1ac922073a8" name="a5b77540799c810879bfec1ac922073a8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b77540799c810879bfec1ac922073a8">&#9670;&#160;</a></span>ESPETH() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Supla::ESPETH::ESPETH </td>
+          <td>(</td>
+          <td class="paramtype">eth_phy_type_t</td>          <td class="paramname"><span class="paramname"><em>ethType</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>phyAddr</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>mdc</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>mdio</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>power</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">eth_clock_mode_t</td>          <td class="paramname"><span class="paramname"><em>clkMode</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructor for ETH_PHY configuration. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">ethType</td><td>ETH type: ETH_PHY_LAN8720, ETH_PHY_TLK110, ETH_PHY_RTL8201, ETH_PHY_DP83848, ETH_PHY_KSZ8041, ETH_PHY_KSZ8081 </td></tr>
+    <tr><td class="paramname">phyAddr</td><td>I2C address </td></tr>
+    <tr><td class="paramname">mdc</td><td>I2C clock GPIO </td></tr>
+    <tr><td class="paramname">mdio</td><td>I2C data GPIO </td></tr>
+    <tr><td class="paramname">power</td><td>Power control GPIO (-1 to disable) </td></tr>
+    <tr><td class="paramname">clkMode</td><td><a class="el" href="classSupla_1_1Clock.html">Clock</a> mode: ETH_CLOCK_GPIO0_IN, ETH_CLOCK_GPIO0_OUT, ETH_CLOCK_GPIO16_OUT, ETH_CLOCK_GPIO17_OUT </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a5e4ba637dd30d504d382189a0c55ac15" name="a5e4ba637dd30d504d382189a0c55ac15"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a5e4ba637dd30d504d382189a0c55ac15">&#9670;&#160;</a></span>disable()</h2>
@@ -459,33 +571,6 @@ static enum DeviceMode&#160;</td><td class="memItemRight" valign="bottom"><b>mod
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel inline">inline</span><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Reimplemented from <a class="el" href="classSupla_1_1Network.html">Supla::Network</a>.</p>
-
-</div>
-</div>
-<a id="a60deddff7346dcd4d7bcf8cf2790b155" name="a60deddff7346dcd4d7bcf8cf2790b155"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a60deddff7346dcd4d7bcf8cf2790b155">&#9670;&#160;</a></span>getIP()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">uint32_t Supla::ESPETH::getIP </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
         </tr>
       </table>
   </td>

@@ -107,7 +107,7 @@ class ESPETHSPI : public Supla::LAN {
       char newHostname[32] = {};
       generateHostname(hostname, macSizeForHostname, newHostname);
       strncpy(hostname, newHostname, sizeof(hostname) - 1);
-      SUPLA_LOG_DEBUG("[%s] Network Lan/hostname: %s", getIntfName(), hostname);
+      SUPLA_LOG_DEBUG("[%s] Network LAN/hostname: %s", getIntfName(), hostname);
       ETH.setHostname(hostname);
     }
 
@@ -129,10 +129,14 @@ class ESPETHSPI : public Supla::LAN {
       return true;
     }
 
+    const char *getIntfName() const override {
+      return "ETH";
+    }
+
     void setHostname(const char *prefix, int macSize) override {
       macSizeForHostname = macSize;
       strncpy(hostname, prefix, sizeof(hostname) - 1);
-      SUPLA_LOG_DEBUG("[%s] Network Lam/hostname: %s", getIntfName(), hostname);
+      SUPLA_LOG_DEBUG("[%s] Network LAN/hostname: %s", getIntfName(), hostname);
     }
 
  protected:

@@ -18,9 +18,22 @@
 #include <supla/control/rgbw_leds.h>
 #include <supla/control/button.h>
 
-#include <supla/network/wt32_eth01.h>
-Supla::WT32_ETH01 Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
+#include <supla/network/esp32eth.h>
 
+#define ETH_TYPE ETH_PHY_LAN8720
+// Pin# of the I²C clock signal for the Ethernet PHY
+#define ETH_MDC_PIN 23
+// Pin# of the I²C IO signal for the Ethernet PHY
+#define ETH_MDIO_PIN 18
+#define ETH_POWER_PIN 16
+#define ETH_CLK_MODE ETH_CLOCK_GPIO0_IN
+
+Supla::ESPETH Eth(ETH_PHY_LAN8720,
+                  1,  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
+                  ETH_MDC_PIN,
+                  ETH_MDIO_PIN,
+                  ETH_POWER_PIN,
+                  ETH_CLK_MODE);
 
 #define RED_PIN              4
 #define GREEN_PIN            5

@@ -33,7 +33,19 @@
 #include <supla/control/button.h>
 
 #include <supla/network/esp32eth.h>
- Supla::ESPETH Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
+Supla::ESPETH Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
+
+// Other ethernet configurations
+// Supla::ESPETH Eth(
+//      type, phy_addr, mdc_gpio, mdio_gpio, power_gpio, clk_mode)
+//       \/                                                 \/
+//  --  type  --                                     ---  clk_mode  ---
+//  ETH_PHY_LAN8720                                  ETH_CLOCK_GPIO0_IN
+//  ETH_PHY_TLK110                                   ETH_CLOCK_GPIO0_OUT
+//  ETH_PHY_RTL8201                                  ETH_CLOCK_GPIO16_OUT
+//  ETH_PHY_DP83848                                  ETH_CLOCK_GPIO17_OUT
+//  ETH_PHY_KSZ8041                                " EMAC_CLK_EXT_IN " - esp32P4
+//  ETH_PHY_KSZ8081
 
 
 #define RED_PIN              4
@@ -46,10 +58,12 @@
 void setup() {
   Serial.begin(115200);
 
-  // Replace the falowing GUID with value that you can retrieve from https://www.supla.org/arduino/get-guid
+  // Replace the falowing GUID with value that you can retrieve from
+  // https://www.supla.org/arduino/get-guid
   char GUID[SUPLA_GUID_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-  // Replace the following AUTHKEY with value that you can retrieve from: https://www.supla.org/arduino/get-authkey
+  // Replace the following AUTHKEY with value that you can retrieve
+  // from: https://www.supla.org/arduino/get-authkey
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
   /*

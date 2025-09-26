@@ -267,21 +267,27 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> setChannelConfigChangeFlag(<span class="keywordtype">int</span> channelNo, <span class="keywordtype">int</span> configType = 0);</div>
 <div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> clearChannelConfigChangeFlag(<span class="keywordtype">int</span> channelNo, <span class="keywordtype">int</span> configType = 0);</div>
 <div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>  <span class="keyword">virtual</span> <span class="keywordtype">bool</span> isChannelConfigChangeFlagSet(<span class="keywordtype">int</span> channelNo, <span class="keywordtype">int</span> configType = 0);</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> getBlobSize(<span class="keyword">const</span> <span class="keywordtype">char</span>* key) = 0;</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span> </div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>  uint32_t saveDelayTimestamp = 0;</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>  uint32_t deviceConfigUpdateDelayTimestamp = 0;</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>  uint16_t saveDelayMs = 0;</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>  int8_t deviceConfigChangeFlag = -1;</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>};</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>  int32_t <a class="code hl_function" href="classSupla_1_1Config.html#aaefacc4cfd08e7a1394d9042346b7763">getChannelFunction</a>(<span class="keywordtype">int</span> channelNo);</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span></div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSupla_1_1Config.html#a954a935520a5cfb6c24a8a2c2c679d57">setChannelFunction</a>(<span class="keywordtype">int</span> channelNo, int32_t channelFunction);</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="keyword">virtual</span> <span class="keywordtype">int</span> getBlobSize(<span class="keyword">const</span> <span class="keywordtype">char</span>* key) = 0;</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span> </div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  uint32_t saveDelayTimestamp = 0;</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  uint32_t deviceConfigUpdateDelayTimestamp = 0;</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  uint16_t saveDelayMs = 0;</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  int8_t deviceConfigChangeFlag = -1;</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>};</div>
 </div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span> </div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_CONFIG_H_</span></div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span> </div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_STORAGE_CONFIG_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1Config_html_a74280486d8c37b9096797fc7b30b665c"><div class="ttname"><a href="classSupla_1_1Config.html#a74280486d8c37b9096797fc7b30b665c">Supla::Config::getAutoUpdatePolicy</a></div><div class="ttdeci">Supla::AutoUpdatePolicy getAutoUpdatePolicy()</div><div class="ttdoc">Returns current automatic firmware update policy.</div><div class="ttdef"><b>Definition</b> config.cpp:654</div></div>
 <div class="ttc" id="aclassSupla_1_1Config_html_a88e17e4e850a9f1682eec14ab5d88669"><div class="ttname"><a href="classSupla_1_1Config.html#a88e17e4e850a9f1682eec14ab5d88669">Supla::Config::setAutoUpdatePolicy</a></div><div class="ttdeci">void setAutoUpdatePolicy(Supla::AutoUpdatePolicy policy)</div><div class="ttdoc">Sets automatic firmware update policy.</div><div class="ttdef"><b>Definition</b> config.cpp:664</div></div>
+<div class="ttc" id="aclassSupla_1_1Config_html_a954a935520a5cfb6c24a8a2c2c679d57"><div class="ttname"><a href="classSupla_1_1Config.html#a954a935520a5cfb6c24a8a2c2c679d57">Supla::Config::setChannelFunction</a></div><div class="ttdeci">bool setChannelFunction(int channelNo, int32_t channelFunction)</div><div class="ttdoc">Stores channel function in config.</div><div class="ttdef"><b>Definition</b> config.cpp:704</div></div>
+<div class="ttc" id="aclassSupla_1_1Config_html_aaefacc4cfd08e7a1394d9042346b7763"><div class="ttname"><a href="classSupla_1_1Config.html#aaefacc4cfd08e7a1394d9042346b7763">Supla::Config::getChannelFunction</a></div><div class="ttdeci">int32_t getChannelFunction(int channelNo)</div><div class="ttdoc">Returns channel function stored in config.</div><div class="ttdef"><b>Definition</b> config.cpp:693</div></div>
 <div class="ttc" id="astructSupla_1_1SaltPassword_html"><div class="ttname"><a href="structSupla_1_1SaltPassword.html">Supla::SaltPassword</a></div><div class="ttdef"><b>Definition</b> config.h:43</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

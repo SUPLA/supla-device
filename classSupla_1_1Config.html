@@ -379,6 +379,12 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>clearChannelC
 <tr class="memitem:ae6d83771595f9e6232fa3edc9d5f9706" id="r_ae6d83771595f9e6232fa3edc9d5f9706"><td class="memItemLeft" align="right" valign="top"><a id="ae6d83771595f9e6232fa3edc9d5f9706" name="ae6d83771595f9e6232fa3edc9d5f9706"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isChannelConfigChangeFlagSet</b> (int channelNo, int configType=0)</td></tr>
 <tr class="separator:ae6d83771595f9e6232fa3edc9d5f9706"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaefacc4cfd08e7a1394d9042346b7763" id="r_aaefacc4cfd08e7a1394d9042346b7763"><td class="memItemLeft" align="right" valign="top">int32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aaefacc4cfd08e7a1394d9042346b7763">getChannelFunction</a> (int channelNo)</td></tr>
+<tr class="memdesc:aaefacc4cfd08e7a1394d9042346b7763"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns channel function stored in config.  <br /></td></tr>
+<tr class="separator:aaefacc4cfd08e7a1394d9042346b7763"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a954a935520a5cfb6c24a8a2c2c679d57" id="r_a954a935520a5cfb6c24a8a2c2c679d57"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a954a935520a5cfb6c24a8a2c2c679d57">setChannelFunction</a> (int channelNo, int32_t channelFunction)</td></tr>
+<tr class="memdesc:a954a935520a5cfb6c24a8a2c2c679d57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores channel function in config.  <br /></td></tr>
+<tr class="separator:a954a935520a5cfb6c24a8a2c2c679d57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -431,6 +437,32 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>deviceConfigChangeF
 
 </div>
 </div>
+<a id="aaefacc4cfd08e7a1394d9042346b7763" name="aaefacc4cfd08e7a1394d9042346b7763"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaefacc4cfd08e7a1394d9042346b7763">&#9670;&#160;</a></span>getChannelFunction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int32_t Supla::Config::getChannelFunction </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>channelNo</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns channel function stored in config. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">channelNo</td><td>channel number (should be &gt;= 0)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>channel function (as defined in <a class="el" href="proto_8h_source.html">proto.h</a>) or -1 if not found </dd></dl>
+
+</div>
+</div>
 <a id="a88e17e4e850a9f1682eec14ab5d88669" name="a88e17e4e850a9f1682eec14ab5d88669"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a88e17e4e850a9f1682eec14ab5d88669">&#9670;&#160;</a></span>setAutoUpdatePolicy()</h2>
 
@@ -453,6 +485,37 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>deviceConfigChangeF
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a954a935520a5cfb6c24a8a2c2c679d57" name="a954a935520a5cfb6c24a8a2c2c679d57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a954a935520a5cfb6c24a8a2c2c679d57">&#9670;&#160;</a></span>setChannelFunction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Config::setChannelFunction </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>channelNo</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>channelFunction</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Stores channel function in config. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">channelNo</td><td>channel number (should be &gt;= 0) </td></tr>
+    <tr><td class="paramname">channelFunction</td><td>channel function (as defined in <a class="el" href="proto_8h_source.html">proto.h</a>)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true on success </dd></dl>
 
 </div>
 </div>

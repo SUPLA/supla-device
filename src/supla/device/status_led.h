@@ -48,7 +48,8 @@ enum LedSequence : uint8_t {
   SW_DOWNLOAD /* very fast flashing 20/20 ms */,
   PACZKOW_WE_HAVE_A_PROBLEM /* some problem 300/100 ms */,
   TESTING_PROCEDURE, /* used to indicate almost finished test 50/50 ms */
-  CUSTOM_SEQUENCE /* values set manually, state changes ignored */
+  CUSTOM_SEQUENCE, /* values set manually, state changes ignored */
+  NOT_CONFIGURED_MODE,  /* double blink, pause */
 };
 
 namespace Device {

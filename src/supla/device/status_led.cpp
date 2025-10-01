@@ -178,6 +178,11 @@ void Supla::Device::StatusLed::iterateAlways() {
       break;
     }
 
+    case STATUS_NOT_CONFIGURED_MODE: {
+      currentSequence = NOT_CONFIGURED_MODE;
+      break;
+    }
+
     case STATUS_UNKNOWN:
     case STATUS_ALREADY_INITIALIZED:
     case STATUS_MISSING_NETWORK_INTERFACE:
@@ -227,17 +232,25 @@ void Supla::Device::StatusLed::iterateAlways() {
   }
 
   switch (currentSequence) {
-    case NETWORK_CONNECTING:
+    case NETWORK_CONNECTING: {
       onDuration = 2000;
       offDuration = 2000;
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
 
-    case SERVER_CONNECTING:
+    case SERVER_CONNECTING: {
       onDuration = 500;
       offDuration = 500;
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
 
-    case REGISTERED_AND_READY:
+    case REGISTERED_AND_READY: {
       if (ledMode == LED_ON_WHEN_CONNECTED) {
         onDuration = 1000;
         offDuration = 0;
@@ -245,31 +258,61 @@ void Supla::Device::StatusLed::iterateAlways() {
         onDuration = 0;
         offDuration = 1000;
       }
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
 
-    case CONFIG_MODE:
+    case CONFIG_MODE: {
       onDuration = 100;
       offDuration = 100;
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
 
-    case SW_DOWNLOAD:
+    case SW_DOWNLOAD: {
       onDuration = 20;
       offDuration = 20;
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
 
-    case PACZKOW_WE_HAVE_A_PROBLEM:
+    case PACZKOW_WE_HAVE_A_PROBLEM: {
       onDuration = 300;
       offDuration = 100;
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
 
-    case TESTING_PROCEDURE:
+    case TESTING_PROCEDURE: {
       onDuration = 50;
       offDuration = 50;
+      pauseDuration = 0;
+      onLimit = 0;
+      repeatLimit = 0;
       break;
+    }
+
+    case NOT_CONFIGURED_MODE: {
+      onDuration = 300;
+      offDuration = 150;
+      pauseDuration = 2000;
+      onLimit = 2;
+      repeatLimit = 0;
+      break;
+    }
 
     case CUSTOM_SEQUENCE:
-    default:
+    default: {
       break;
+    }
   }
 }
 

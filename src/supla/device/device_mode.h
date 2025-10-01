@@ -29,7 +29,8 @@ enum DeviceMode : uint8_t {
   DEVICE_MODE_NORMAL = 2,
   DEVICE_MODE_CONFIG = 3,
   DEVICE_MODE_SW_UPDATE = 4,
-  DEVICE_MODE_OFFLINE = 5
+  DEVICE_MODE_OFFLINE = 5,
+  DEVICE_MODE_NOT_CONFIGURED = 6
 };
 
 }  // namespace Supla

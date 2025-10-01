@@ -26,6 +26,7 @@
 #include <supla/storage/storage.h>
 #include <element_mock.h>
 #include <board_mock.h>
+#include "supla/actions.h"
 #include "supla/protocol/supla_srpc.h"
 #include <network_client_mock.h>
 #include <config_mock.h>
@@ -41,22 +42,22 @@ using ::testing::AtLeast;
 using ::testing::InSequence;
 
 class DeviceStatusInterface {
-  public:
-    DeviceStatusInterface() {
-      deviceStatusPtr = this;
-    }
-    virtual ~DeviceStatusInterface() {
-      deviceStatusPtr = nullptr;
-    }
+ public:
+  DeviceStatusInterface() {
+    deviceStatusPtr = this;
+  }
+  virtual ~DeviceStatusInterface() {
+    deviceStatusPtr = nullptr;
+  }
 
-    virtual void status(int status, std::string msg) = 0;
+  virtual void status(int status, std::string msg) = 0;
 
-    static DeviceStatusInterface *deviceStatusPtr;
+  static DeviceStatusInterface *deviceStatusPtr;
 };
 
 class DeviceStatusMock : public DeviceStatusInterface {
-  public:
-    MOCK_METHOD(void, status, (int status, std::string msg), (override));
+ public:
+  MOCK_METHOD(void, status, (int status, std::string msg), (override));
 };
 
 DeviceStatusInterface *DeviceStatusInterface::deviceStatusPtr = nullptr;
@@ -70,36 +71,36 @@ const char myCA1[] = "test CA1";
 const char myCA2[] = "test CA2";
 
 class FullStartupWithConfig : public ::testing::Test {
-  protected:
-    SrpcMock srpc;
-    NetworkMock net;
-    TimerMock timer;
-    SimpleTime time;
-    SuplaDeviceClass sd;
-    ElementMock el1;
-    ElementMock el2;
-    BoardMock board;
-    NetworkClientMock *client = nullptr;
-    DeviceStatusMock statusMock;
-    ConfigMock cfg;
+ protected:
+  SrpcMock srpc;
+  NetworkMock net;
+  TimerMock timer;
+  SimpleTime time;
+  SuplaDeviceClass sd;
+  ElementMock el1;
+  ElementMock el2;
+  BoardMock board;
+  NetworkClientMock *client = nullptr;
+  DeviceStatusMock statusMock;
+  ConfigMock cfg;
 
-    virtual void SetUp() {
-      client = new NetworkClientMock;  // it will be destroyed in
-                                       // Supla::Protocol::SuplaSrpc
-      sd.setStatusFuncImpl(statusImpl);
-      Supla::Channel::resetToDefaults();
-      sd.setSuplaCACert(myCA1);
-      sd.setSupla3rdPartyCACert(myCA2);
-      sd.setActivityTimeout(45);
-      EXPECT_CALL(cfg, init()).WillOnce(Return(true));
-      EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
-      EXPECT_CALL(net, isWifiConfigRequired()).WillRepeatedly(Return(true));
-    }
+  virtual void SetUp() {
+    client = new NetworkClientMock;  // it will be destroyed in
+                                     // Supla::Protocol::SuplaSrpc
+    sd.setStatusFuncImpl(statusImpl);
+    Supla::Channel::resetToDefaults();
+    sd.setSuplaCACert(myCA1);
+    sd.setSupla3rdPartyCACert(myCA2);
+    sd.setActivityTimeout(45);
+    EXPECT_CALL(cfg, init()).WillOnce(Return(true));
+    EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
+    EXPECT_CALL(net, isWifiConfigRequired()).WillRepeatedly(Return(true));
+  }
 
-    virtual void TearDown() {
-      Supla::Channel::resetToDefaults();
-      client = nullptr;
-    }
+  virtual void TearDown() {
+    Supla::Channel::resetToDefaults();
+    client = nullptr;
+  }
 };
 
 TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
@@ -981,12 +982,16 @@ TEST_F(FullStartupWithConfig,
 TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
   delete client;
   client = nullptr;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_OFFLINE_MODE, _)).Times(1);
+    // enter cfg mode
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+    // leave cfg mode after timeout
     EXPECT_CALL(statusMock, status(STATUS_OFFLINE_MODE, _)).Times(1);
   }
 
@@ -1033,7 +1038,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
 
   EXPECT_CALL(net, isReady()).Times(0);
-  EXPECT_CALL(net, setup()).Times(0);
+  EXPECT_CALL(net, setup()).Times(2);
   EXPECT_CALL(net, iterate()).Times(AtLeast(0));
   EXPECT_CALL(srpc, srpc_iterate(_)).Times(0);
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(0);
@@ -1050,13 +1055,35 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
     time.advance(100);
   }
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
+
+  // *******************
+  // START CFG MODE
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Leave config mode after 5 min (+1 min) timeout
+  // *******************
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);  // +60 s
+  }
+
+  // register in progress is not set again
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_OFFLINE_MODE);
 }
 
 TEST_F(FullStartupWithConfig, OfflineModeProtoDisabled) {
   delete client;
   client = nullptr;
   int dummy = 0;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_ALL_PROTOCOLS_DISABLED, _)).Times(1);
@@ -1133,7 +1160,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOff) {
   delete client;
   client = nullptr;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -1211,7 +1238,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOff) {
   client = nullptr;
   int dummy = 0;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_ALL_PROTOCOLS_DISABLED, _)).Times(1);
@@ -1291,7 +1318,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
   client = nullptr;
   int dummy = 0;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -1381,7 +1408,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
 TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
   delete client;
   client = nullptr;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -1460,7 +1487,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
 TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
   delete client;
   client = nullptr;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -1546,7 +1573,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
   // it).
   delete client;
   client = nullptr;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -1629,7 +1656,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
 TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
   delete client;
   client = nullptr;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
@@ -1713,7 +1740,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
 TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
   delete client;
   client = nullptr;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -1796,7 +1823,7 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
 
 TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   int dummy = 0;
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
@@ -1919,7 +1946,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
   // Supla proto is disabled, so config from Supla (email) is ignored)
   int dummy = 0;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -2018,7 +2045,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnEmailSet) {
   delete client;
   client = nullptr;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -2115,7 +2142,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOffMqttServerSet) {
   delete client;
   client = nullptr;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
@@ -2215,7 +2242,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
   delete client;
   client = nullptr;
   MqttMock mqtt(&sd);
-  sd.allowWorkInOfflineMode();
+  sd.setInitialMode(Supla::InitialMode::StartOffline);
   {
     InSequence s;
     // Supla config check
@@ -2321,3 +2348,579 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
   }
 }
 
+TEST_F(FullStartupWithConfig, NotConfiguredModeFactoryDefaultStart) {
+  delete client;
+  client = nullptr;
+  sd.setInitialMode(Supla::InitialMode::StartInNotConfiguredMode);
+  {
+    InSequence s;
+    // default startup
+    EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_NOT_CONFIGURED_MODE, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button)
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // leave cfg mode after timeout
+    EXPECT_CALL(statusMock, status(STATUS_NOT_CONFIGURED_MODE, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button) again
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // leave cfg mode after timeout
+    EXPECT_CALL(statusMock, status(STATUS_NOT_CONFIGURED_MODE, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button) third time
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // device reset
+    EXPECT_CALL(statusMock, status(STATUS_SOFTWARE_RESET, _)).Times(1);
+  }
+
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level") == 0) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_)).Times(0);
+  EXPECT_CALL(el2, onRegistered(_)).Times(0);
+
+  EXPECT_CALL(timer, initTimers());
+
+  EXPECT_TRUE(sd.begin());
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  EXPECT_CALL(srpc, srpc_iterate(_)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(0);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected()).Times(0);
+  EXPECT_CALL(el2, iterateConnected()).Times(0);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  // *******************
+  // START CFG MODE
+  // *******************
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  // first setup() is called on cfg mode enter, sedond on cfg mode leave
+  // another two for another round with cfg mode
+  // last one (5th) is called on another cfg mode, but we leave it with
+  // device reset
+  EXPECT_CALL(net, setup()).Times(5);
+  // Network::iterate is not called in cfg mode
+  EXPECT_CALL(net, iterate()).Times(AtLeast(0));
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Leave config mode after 5 min (+1 min) timeout
+  // *******************
+
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);  // +60 s
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  // *******************
+  // START CFG MODE again
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Simulate user interaction with web interface... timeout restarted.
+  // *******************
+
+  for (int i = 0; i < 100; i++) {
+    sd.iterate();
+    // this will restart timeout for cfg mode and device will not leave cfg
+    sd.restartCfgModeTimeout(false);
+    time.advance(60000);  // +60 s
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Leave config mode after 5 min (+1 min) timeout
+  // *******************
+
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  // *******************
+  // START CFG MODE third time
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Simulate user interaction with web interface with 'restart required'
+  // *******************
+
+  for (int i = 0; i < 50; i++) {
+    sd.iterate();
+    // this will restart timeout for cfg mode and device will not leave cfg
+    sd.restartCfgModeTimeout(true);
+    time.advance(60000);  // +60 s
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(1);
+  EXPECT_CALL(cfg, commit()).Times(1);
+
+  // leave config mode after timeout + restart
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+//  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+}
+
+TEST_F(FullStartupWithConfig, NotConfiguredInitialModeWithPartialConfig) {
+  delete client;
+  client = nullptr;
+  sd.setInitialMode(Supla::InitialMode::StartInNotConfiguredMode);
+  {
+    InSequence s;
+    // default startup
+    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_NOT_CONFIGURED_MODE, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button)
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // leave cfg mode after timeout
+    EXPECT_CALL(statusMock, status(STATUS_NOT_CONFIGURED_MODE, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button) again
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // leave cfg mode after timeout
+    EXPECT_CALL(statusMock, status(STATUS_NOT_CONFIGURED_MODE, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button) third time
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // device reset
+    EXPECT_CALL(statusMock, status(STATUS_SOFTWARE_RESET, _)).Times(1);
+  }
+
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level") == 0) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
+      char newSsid[] = "SuplaWifi";
+      memcpy(ssid, newSsid, sizeof(newSsid));
+      return true;
+  });
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, sizeof(temp));
+      return true;
+  });
+
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_)).Times(0);
+  EXPECT_CALL(el2, onRegistered(_)).Times(0);
+
+  EXPECT_CALL(timer, initTimers());
+
+  EXPECT_TRUE(sd.begin());
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  EXPECT_CALL(srpc, srpc_iterate(_)).Times(0);
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(0);
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected()).Times(0);
+  EXPECT_CALL(el2, iterateConnected()).Times(0);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  // *******************
+  // START CFG MODE
+  // *******************
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  // first setup() is called on cfg mode enter, sedond on cfg mode leave
+  // another two for another round with cfg mode
+  // last one (5th) is called on another cfg mode, but we leave it with
+  // device reset
+  EXPECT_CALL(net, setup()).Times(5);
+  // Network::iterate is not called in cfg mode
+  EXPECT_CALL(net, iterate()).Times(AtLeast(0));
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Leave config mode after 5 min (+1 min) timeout
+  // *******************
+
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);  // +60 s
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  // *******************
+  // START CFG MODE again
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Simulate user interaction with web interface... timeout restarted.
+  // *******************
+
+  for (int i = 0; i < 100; i++) {
+    sd.iterate();
+    // this will restart timeout for cfg mode and device will not leave cfg
+    sd.restartCfgModeTimeout(false);
+    time.advance(60000);  // +60 s
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Leave config mode after 5 min (+1 min) timeout
+  // *******************
+
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+
+  // *******************
+  // START CFG MODE third time
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Simulate user interaction with web interface with 'restart required'
+  // *******************
+
+  for (int i = 0; i < 50; i++) {
+    sd.iterate();
+    // this will restart timeout for cfg mode and device will not leave cfg
+    sd.restartCfgModeTimeout(true);
+    time.advance(60000);  // +60 s
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(1);
+  EXPECT_CALL(cfg, commit()).Times(1);
+
+  // leave config mode after timeout + restart
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+//  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+}
+
+
+TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
+  int dummy = 0;
+  sd.setInitialMode(Supla::InitialMode::StartInNotConfiguredMode);
+  {
+    InSequence s;
+    // default startup
+//    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_REGISTER_IN_PROGRESS, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_REGISTERED_AND_READY, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button)
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // leave cfg mode after timeout
+//    EXPECT_CALL(statusMock, status(STATUS_REGISTER_IN_PROGRESS, _)).Times(1);
+    EXPECT_CALL(statusMock, status(STATUS_REGISTERED_AND_READY, _)).Times(1);
+
+    // trigger cfg mode via handleAction (i.e. button) third time
+    EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
+
+    // device reset
+    EXPECT_CALL(statusMock, status(STATUS_SOFTWARE_RESET, _)).Times(1);
+  }
+
+  EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
+      char GUID[SUPLA_GUID_SIZE] = {1};
+      memcpy(guid, GUID, SUPLA_GUID_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
+      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+      return true;
+    });
+  EXPECT_CALL(cfg, getDeviceMode())
+    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
+      char temp[] = "ceo@supla.org";
+      memcpy(mail, temp, strlen(temp));
+      return true;
+    });
+  EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
+  EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
+        uint8_t *buf) {
+      if (strcmp(key, "security_level") == 0) {
+        *buf = 0;
+        return true;
+      }
+      return false;
+    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
+      char newSsid[] = "SuplaWifi";
+      memcpy(ssid, newSsid, sizeof(newSsid));
+      return true;
+  });
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
+      char temp[] = "mega.supla.org";
+      memcpy(server, temp, sizeof(temp));
+      return true;
+  });
+
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
+      char temp[] = "pass_test";
+      memcpy(pass, temp, strlen(temp));
+      return true;
+    });
+
+  EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(false));
+
+  EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
+  EXPECT_CALL(el1, onInit()).Times(1);
+  EXPECT_CALL(el2, onInit()).Times(1);
+  EXPECT_CALL(el1, onRegistered(_)).Times(2);
+  EXPECT_CALL(el2, onRegistered(_)).Times(2);
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_CALL(srpc, srpc_params_init(_));
+  EXPECT_CALL(srpc, srpc_init(_)).WillOnce(Return(&dummy));
+  EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23));
+
+  EXPECT_TRUE(sd.begin());
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
+
+  EXPECT_CALL(net, setup()).Times(AtLeast(1));
+  EXPECT_CALL(net, iterate()).Times(AtLeast(1));
+  EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
+  EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
+  EXPECT_CALL(*client, stop()).Times(2);
+  EXPECT_CALL(srpc, srpc_free(_)).Times(1);
+
+  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
+    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
+
+  int registerCounter = 0;
+  EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _))
+      .WillRepeatedly([&](auto &&, auto &&) {
+        registerCounter++;
+        return SUPLA_RESULT_TRUE;
+      });
+
+  EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
+  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
+        .WillOnce(Return(false))
+        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
+  EXPECT_EQ(registerCounter, 0);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTER_IN_PROGRESS);
+  EXPECT_EQ(registerCounter, 1);
+
+  TSD_SuplaRegisterDeviceResult register_device_result{};
+  register_device_result.result_code = SUPLA_RESULTCODE_TRUE;
+  register_device_result.activity_timeout = 45;
+  register_device_result.version = 20;
+  register_device_result.version_min = 1;
+
+  auto srpcLayer = sd.getSrpcLayer();
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  for (int i = 0; i < 15; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  // *******************
+  // START CFG MODE
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Leave config mode after 5 min (+1 min) timeout
+  // *******************
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);  // +60 s
+  }
+
+  // register in progress is not set again
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+  EXPECT_EQ(registerCounter, 2);
+
+  srpcLayer->onRegisterResult(&register_device_result);
+  time.advance(100);
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_REGISTERED_AND_READY);
+
+  // *******************
+  // START CFG MODE again
+  // *******************
+  sd.handleAction(0, Supla::ENTER_CONFIG_MODE);
+
+  for (int i = 0; i < 5; i++) {
+    sd.iterate();
+    time.advance(100);
+  }
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+
+  // *******************
+  // Simulate user interaction with web interface with 'restart required'
+  // *******************
+
+  for (int i = 0; i < 50; i++) {
+    sd.iterate();
+    // this will restart timeout for cfg mode and device will not leave cfg
+    sd.restartCfgModeTimeout(true);
+    time.advance(60000);  // +60 s
+  }
+
+  EXPECT_EQ(sd.getCurrentStatus(), STATUS_CONFIG_MODE);
+  EXPECT_CALL(board, deviceSoftwareReset()).Times(1);
+  EXPECT_CALL(cfg, commit()).Times(1);
+
+  // leave config mode after timeout + restart
+  for (int i = 0; i < 6; i++) {
+    sd.iterate();
+    time.advance(60000);
+  }
+//  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+}

@@ -61,6 +61,7 @@
 #define STATUS_SUPLA_PROTOCOL_DISABLED   60
 #define STATUS_TEST_WAIT_FOR_CFG_BUTTON  70
 #define STATUS_OFFLINE_MODE              80
+#define STATUS_NOT_CONFIGURED_MODE       90
 
 // 10 days
 #define SUPLA_AUTOMATIC_OTA_CHECK_INTERVAL (10ULL * 24 * 60 * 60 * 1000)
@@ -77,6 +78,61 @@ namespace Supla {
 class Clock;
 class Mutex;
 class Element;
+
+/**
+ * @enum InitialMode
+ */
+enum class InitialMode: uint8_t {
+  /** When device starts with factory defaults, it will enable AP and enter
+   * config mode (legacy behavior).
+   */
+  StartInCfgMode = 0,
+  /** When device starts with factory defaults, it will enter offline mode
+   *  immediately. No AP will be started and no config mode will be entered
+   *  automatically.
+   */
+  StartOffline = 1,
+  /** When device starts with factory defaults, it will enable AP and enter
+   *  config mode for 1 hour and then if will fall back to offline mode.
+   */
+  StartWithCfgModeThenOffline = 2,
+  /** When device starts with factory defaults, it will enter not configured
+   *  mode (default).
+   */
+  StartInNotConfiguredMode = 3
+};
+
+enum class CfgModeState: uint8_t {
+  NotSet = 0,
+  CfgModeStartedFor1hPending = 1,
+  CfgModeStartedPending = 2,
+  CfgModeOngoing = 3,
+  Done = 4,
+};
+
+struct ConfigurationState {
+  uint8_t wifiEnabled: 1;
+  uint8_t wifiSsidFilled: 1;
+  uint8_t wifiPassFilled: 1;
+  uint8_t protocolFilled: 1;
+  uint8_t protocolNotEmpty: 1;
+  uint8_t configNotComplete: 1;
+  uint8_t atLeastOneProtoIsEnabled: 1;
+
+  bool isEmpty() const;
+
+  ConfigurationState() {
+    wifiEnabled = 0;
+    wifiSsidFilled = 0;
+    wifiPassFilled = 0;
+    protocolFilled = 0;
+    protocolNotEmpty = 0;
+    configNotComplete = 0;
+    atLeastOneProtoIsEnabled = 0;
+  }
+};
+
+const char *getInitialModeName(const InitialMode mode);
 
 namespace Device {
 class SwUpdate;
@@ -99,9 +155,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   SuplaDeviceClass();
   ~SuplaDeviceClass();
 
-  void fillStateData(TDSC_ChannelState *channelState);
+  void fillStateData(TDSC_ChannelState *channelState) const;
   void addClock(Supla::Clock *clock);  // DEPRECATED
-  Supla::Clock *getClock();
+  Supla::Clock *getClock() const;
 
   bool begin(const char GUID[SUPLA_GUID_SIZE],
              const char *Server,
@@ -130,7 +186,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void addFlags(int32_t);
   void removeFlags(int32_t);
-  bool isSleepingDeviceEnabled();
+  bool isSleepingDeviceEnabled() const;
 
   int generateHostname(char*, int macSize = 6);
 
@@ -163,7 +219,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void disableLocalActionsIfNeeded();
   void requestCfgMode();
 
-  int getCurrentStatus();
+  int8_t getCurrentStatus() const;
   bool loadDeviceConfig();
   bool prepareLastStateLog();
   char *getLastStateLog();
@@ -171,7 +227,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void enableLastStateLog();
   void disableLastStateLog();
   void setRsaPublicKeyPtr(const uint8_t *ptr);
-  const uint8_t *getRsaPublicKey();
+  const uint8_t *getRsaPublicKey() const;
   enum Supla::DeviceMode getDeviceMode() const;
 
   void setActivityTimeout(_supla_int_t newActivityTimeout);
@@ -202,20 +258,56 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool getStorageInitResult();
   bool isSleepingAllowed();
 
-  // Call this method if you want to allow device to work in offline mode
-  // without Wi-Fi network configuration
-  // 1 - offline mode with empty config, but communication protocols may be
-  //     enabled
-  // 2 - offline mode only with empty config and communication protocols
-  //     disabled
-  // 0 - no offline mode
+  /**
+   * Allows device to work in offline mode
+   * DEPRECATED: use setInitialMode() instead
+   *
+   * @param mode
+   *      1 - offline mode with empty config, but communication protocols may be
+   *          enabled
+   *      2 - offline mode only with empty config and communication protocols
+   *          disabled
+   *      0 - no offline mode
+   */
   void allowWorkInOfflineMode(int mode = 1);
 
+  /**
+   * Sets the initial mode of the device. This defines the behavior when the
+   * device starts up with factory defaults (missing configuration).
+   * @See Supla::InitialMode
+   *
+   * @param mode the initial mode
+   */
+  void setInitialMode(Supla::InitialMode mode);
+
+  /**
+   * Returns the initial mode of the device
+   * @See Supla::InitialMode
+   *
+   * @return the initial mode
+   */
+  Supla::InitialMode getInitialMode() const { return initialMode; }
+
+  /**
+   * Checks if remote device configuration is enabled
+   *
+   * @return true if remote device configuration is enabled
+   */
   bool isRemoteDeviceConfigEnabled() const;
+
+  /**
+   * Sets if "uptime" should be added to channel state (i)
+   *
+   * @param value true if "uptime" should be added
+   */
   void setShowUptimeInChannelState(bool value);
 
+  /**
+   * Enables/disables verbose logging of Supla protocol
+   *
+   * @param value true to enable verbose logging
+   */
   void setProtoVerboseLog(bool value);
-  bool isOfflineModeDuringConfig() const;
 
   Supla::Mutex *getTimerAccessMutex();
 
@@ -236,6 +328,16 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    * @param valueMin inactivity timeout in minutes. Use 0 to disable
    */
   void setLeaveCfgModeAfterInactivityMin(int valueMin);
+
+  /**
+   * Checks if leave configuration mode after inactivity is enabled.
+   * It requires leaveCfgModeAfterInactivityMin > 0 and
+   * initialMode to be set to: StartWithCfgModeThenOffline, StartOffline,
+   * StartInNotConfiguredMode
+   *
+   * @return true if function is enabled
+   */
+  bool isLeaveCfgModeAfterInactivityEnabled() const;
 
   /**
    * Checks if automatic firmware update is supported
@@ -315,8 +417,15 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    */
   bool initSwUpdateInstance(bool performUpdate, int securityOnly = -1);
 
-  int networkIsNotReadyCounter = 0;
+  void iterateAlwaysElements(uint32_t _millis);
+  bool iterateNetworkSetup();
+  bool iterateSuplaProtocol(uint32_t _millis);
+  void handleLocalActionTriggers();
+  void checkIfLeaveCfgModeOrRestartIsNeeded();
+  void createSrpcLayerIfNeeded();
+  void setupDeviceMode();
 
+  uint32_t networkIsNotReadyCounter = 0;
   uint32_t deviceRestartTimeoutTimestamp = 0;
   uint32_t protocolRestartTimeoutTimestamp = 0;
   uint32_t waitForIterate = 0;
@@ -326,8 +435,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint32_t protocolRestartTimeMs = 0;
   uint32_t resetOnConnectionFailTimeoutSec = 0;
   uint32_t lastSwUpdateCheckTimestamp = 0;
-  int allowOfflineMode = 1;
-  int currentStatus = STATUS_UNKNOWN;
 
   enum Supla::DeviceMode deviceMode = Supla::DEVICE_MODE_NOT_SET;
   bool triggerResetToFactorySettings = false;
@@ -338,8 +445,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool isNetworkSetupOk = false;
   bool skipNetwork = false;
   bool storageInitResult = false;
-  bool configEmpty = true;
-  bool atLeastOneProtoIsEnabled = false;
   bool showUptimeInChannelState = true;
   bool lastStateLogEnabled = true;
   // used to indicate if begin() method was called - it will be set to
@@ -347,31 +452,26 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
   bool triggerSwUpdateIfAvailable = false;
-  bool cfgModeStartedRemotelyAndNotRefreshed = false;
 
-  uint8_t goToOfflineModeTimeout = 0;
   uint8_t leaveCfgModeAfterInactivityMin = 5;
   uint8_t macLengthInHostname = 6;
+  int8_t currentStatus = STATUS_UNKNOWN;
+
+  Supla::InitialMode initialMode = Supla::InitialMode::StartInNotConfiguredMode;
+  Supla::CfgModeState cfgModeState = Supla::CfgModeState::NotSet;
+  Supla::ConfigurationState configurationState = {};
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
-  const uint8_t *rsaPublicKey = nullptr;
   Supla::Element *iterateConnectedPtr = nullptr;
-  _impl_arduino_status impl_arduino_status = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
-  char *customHostnamePrefix = nullptr;
   Supla::Mutex *timerAccessMutex = nullptr;
   Supla::Device::SubdevicePairingHandler *subdevicePairingHandler = nullptr;
   Supla::Device::StatusLed *statusLed = nullptr;
   Supla::Device::SecurityLogger *securityLogger = nullptr;
-
-  void iterateAlwaysElements(uint32_t _millis);
-  bool iterateNetworkSetup();
-  bool iterateSuplaProtocol(uint32_t _millis);
-  void handleLocalActionTriggers();
-  void checkIfRestartIsNeeded();
-  void createSrpcLayerIfNeeded();
-  void setupDeviceMode();
+  const uint8_t *rsaPublicKey = nullptr;
+  char *customHostnamePrefix = nullptr;
+  _impl_arduino_status impl_arduino_status = nullptr;
 };
 
 extern SuplaDeviceClass SuplaDevice;

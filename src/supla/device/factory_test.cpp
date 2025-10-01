@@ -233,6 +233,15 @@ void FactoryTest::onInit() {
       return;
     }
   }
+
+  if (sdc->getInitialMode() == Supla::InitialMode::StartInCfgMode) {
+    SUPLA_LOG_ERROR("TEST failed: initial mode is set to config mode");
+    testFailed = true;
+    failReason = 21;
+    if (!selfTestMode) {
+      return;
+    }
+  }
 }
 
 void FactoryTest::iterateAlways() {

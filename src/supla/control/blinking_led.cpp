@@ -40,7 +40,7 @@ void BlinkingLed::onInit() {
   Supla::AutoLock autoLock(mutex);
   updatePin();
   if (state == NOT_INITIALIZED) {
-    turnOn();
+    turnOff();
   }
   Supla::Io::pinMode(outPin, OUTPUT, io);
 }

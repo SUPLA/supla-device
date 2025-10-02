@@ -223,6 +223,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>addSecurityLog</b> (S
 <tr class="memitem:a6641b750f09aee6940c68a0eadaed0c6" id="r_a6641b750f09aee6940c68a0eadaed0c6"><td class="memItemLeft" align="right" valign="top"><a id="a6641b750f09aee6940c68a0eadaed0c6" name="a6641b750f09aee6940c68a0eadaed0c6"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>addSecurityLog</b> (uint32_t source, const char *log) const</td></tr>
 <tr class="separator:a6641b750f09aee6940c68a0eadaed0c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4cf6eefbf7ff74d32e61156e3c9bbd55" id="r_a4cf6eefbf7ff74d32e61156e3c9bbd55"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4cf6eefbf7ff74d32e61156e3c9bbd55">isSectionAllowed</a> (Supla::HtmlSection section) const</td></tr>
+<tr class="memdesc:a4cf6eefbf7ff74d32e61156e3c9bbd55"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if section is allowed in current POST request.  <br /></td></tr>
+<tr class="separator:a4cf6eefbf7ff74d32e61156e3c9bbd55"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -244,8 +247,9 @@ char&#160;</td><td class="memItemRight" valign="bottom"><b>key</b> [HTML_KEY_LEN
 <tr class="memitem:adf308e67df47aa838035bc21508cdc17" id="r_adf308e67df47aa838035bc21508cdc17"><td class="memItemLeft" align="right" valign="top"><a id="adf308e67df47aa838035bc21508cdc17" name="adf308e67df47aa838035bc21508cdc17"></a>
 char *&#160;</td><td class="memItemRight" valign="bottom"><b>value</b> = nullptr</td></tr>
 <tr class="separator:adf308e67df47aa838035bc21508cdc17"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3351ce69105f799706ee14443e01a29" id="r_ae3351ce69105f799706ee14443e01a29"><td class="memItemLeft" align="right" valign="top">enum Supla::HtmlSection&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae3351ce69105f799706ee14443e01a29">excludeSection</a></td></tr>
-<tr class="separator:ae3351ce69105f799706ee14443e01a29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d28394be2e4fb3b0ef3831306b32e6c" id="r_a5d28394be2e4fb3b0ef3831306b32e6c"><td class="memItemLeft" align="right" valign="top"><a id="a5d28394be2e4fb3b0ef3831306b32e6c" name="a5d28394be2e4fb3b0ef3831306b32e6c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>betaProcessing</b> = false</td></tr>
+<tr class="separator:a5d28394be2e4fb3b0ef3831306b32e6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
 Static Protected Attributes</h2></td></tr>
@@ -253,9 +257,9 @@ Static Protected Attributes</h2></td></tr>
 static <a class="el" href="classSupla_1_1WebServer.html">WebServer</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>webServerInstance</b> = nullptr</td></tr>
 <tr class="separator:a8a4f7605829d30071cd2a8b4d8b9ddef"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="ae3351ce69105f799706ee14443e01a29" name="ae3351ce69105f799706ee14443e01a29"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3351ce69105f799706ee14443e01a29">&#9670;&#160;</a></span>excludeSection</h2>
+<h2 class="groupheader">Member Function Documentation</h2>
+<a id="a4cf6eefbf7ff74d32e61156e3c9bbd55" name="a4cf6eefbf7ff74d32e61156e3c9bbd55"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4cf6eefbf7ff74d32e61156e3c9bbd55">&#9670;&#160;</a></span>isSectionAllowed()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -264,7 +268,10 @@ static <a class="el" href="classSupla_1_1WebServer.html">WebServer</a> *&#160;</
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">enum Supla::HtmlSection Supla::WebServer::excludeSection</td>
+          <td class="memname">bool Supla::WebServer::isSectionAllowed </td>
+          <td>(</td>
+          <td class="paramtype">Supla::HtmlSection</td>          <td class="paramname"><span class="paramname"><em>section</em></span></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -273,9 +280,17 @@ static <a class="el" href="classSupla_1_1WebServer.html">WebServer</a> *&#160;</
   </tr>
 </table>
 </div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">      Supla::HtmlSection::HTML_SECTION_BETA_FORM</div>
-</div><!-- fragment -->
+
+<p>Check if section is allowed in current POST request. </p>
+<p>It excludes html elements in /beta page POST, and vice versa</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">section</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if section is allowed to be processed </dd></dl>
+
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>

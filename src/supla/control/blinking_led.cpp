@@ -38,11 +38,12 @@ BlinkingLed::BlinkingLed(uint8_t outPin, bool invert)
 
 void BlinkingLed::onInit() {
   Supla::AutoLock autoLock(mutex);
-  updatePin();
   if (state == NOT_INITIALIZED) {
     turnOff();
   }
   Supla::Io::pinMode(outPin, OUTPUT, io);
+  lastUpdate = 0;
+  updatePin();
 }
 
 void BlinkingLed::onTimer() {
@@ -102,10 +103,10 @@ void BlinkingLed::updatePin() {
     turnOff();
   } else if (state == OFF) {
     if (onLimit > 0 && pauseDuration > 0 && onLimitCounter == 0 &&
-        millis() - lastUpdate < pauseDuration) {
+        millis() - lastUpdate < pauseDuration && lastUpdate != 0) {
       return;
     }
-    if (millis() - lastUpdate > offDuration) {
+    if (millis() - lastUpdate > offDuration || lastUpdate == 0) {
       if (onLimit > 0 && pauseDuration > 0 && onLimitCounter == 0) {
         onLimitCounter = onLimit;
         if (repeatLimit > 0) {

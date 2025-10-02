@@ -55,6 +55,15 @@ class WebServer {
  protected:
   void addSecurityLog(Supla::SecurityLogSource source, const char *log) const;
   void addSecurityLog(uint32_t source, const char *log) const;
+  /**
+   * Check if section is allowed in current POST request. It excludes
+   * html elements in /beta page POST, and vice versa
+   *
+   * @param section
+   *
+   * @return true if section is allowed to be processed
+   */
+  bool isSectionAllowed(Supla::HtmlSection section) const;
 
   static WebServer *webServerInstance;
   bool destroyGenerator = false;
@@ -63,8 +72,7 @@ class WebServer {
   int partialSize = 0;
   char key[HTML_KEY_LENGTH] = {};
   char *value = nullptr;
-  enum Supla::HtmlSection excludeSection =
-      Supla::HtmlSection::HTML_SECTION_BETA_FORM;
+  bool betaProcessing = false;
 };
 
 };  // namespace Supla

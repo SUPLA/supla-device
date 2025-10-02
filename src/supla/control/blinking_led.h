@@ -73,7 +73,7 @@ class BlinkingLed : public Supla::Element {
   uint8_t repeatLimit = 0;
   bool invert = false;
   uint32_t onDuration = 0;
-  uint32_t offDuration = 1000;
+  uint32_t offDuration = 100;
   uint32_t pauseDuration = 0;
   uint32_t lastUpdate = 0;
   LedState state = NOT_INITIALIZED;

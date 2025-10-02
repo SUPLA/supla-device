@@ -102,8 +102,11 @@ const char *SecurityLogger::getSourceName(uint32_t source) {
 }
 
 void SecurityLogEntry::print() const {
-  const char *sourceText = Supla::Device::SecurityLogger::getSourceName(source);
-  SUPLA_LOG_INFO("SSLOG: %d.[%d][%s] %s", index, timestamp, sourceText, log);
+  SUPLA_LOG_INFO("SSLOG: %d.[%d][%s] %s",
+                 index,
+                 timestamp,
+                 Supla::Device::SecurityLogger::getSourceName(source),
+                 log);
 }
 
 bool SecurityLogger::isEnabled() const {

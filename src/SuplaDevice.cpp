@@ -979,6 +979,9 @@ void SuplaDeviceClass::leaveConfigModeWithoutRestart() {
 
 void SuplaDeviceClass::softRestart() {
   status(STATUS_SOFTWARE_RESET, F("Software reset"));
+  if (statusLed) {
+    statusLed->setAlwaysOffSequence();
+  }
 
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {

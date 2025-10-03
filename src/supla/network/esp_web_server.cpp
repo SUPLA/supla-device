@@ -126,7 +126,7 @@ bool Supla::EspWebServer::handlePost(bool beta) {
               server.arg(i).c_str());
     for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
          htmlElement = htmlElement->next()) {
-      if (htmlElement->section != excludeSection) {
+      if (isSectionAllowed(htmlElement->section)) {
         if (htmlElement->handleResponse(server.argName(i).c_str(),
                                         server.arg(i).c_str())) {
           break;
@@ -147,7 +147,7 @@ bool Supla::EspWebServer::handlePost(bool beta) {
 
   for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
       htmlElement = htmlElement->next()) {
-    if (htmlElement->section != excludeSection) {
+    if (isSectionAllowed(htmlElement->section)) {
       htmlElement->onProcessingEnd();
     }
   }

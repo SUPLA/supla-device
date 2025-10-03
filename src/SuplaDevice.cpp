@@ -1093,9 +1093,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       }
       case SUPLA_CALCFG_CMD_IDENTIFY_DEVICE: {
         SUPLA_LOG_INFO("CALCFG IDENTIFY DEVICE received");
-        if (statusLed) {
-          statusLed->identify();
-        }
+        identifyStatusLed();
         return SUPLA_CALCFG_RESULT_DONE;
       }
       case SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE: {
@@ -1799,6 +1797,7 @@ void SuplaDeviceClass::setAutomaticFirmwareUpdateSupported(bool value) {
 }
 
 void SuplaDeviceClass::identifyStatusLed() {
+  runAction(Supla::ON_IDENTIFY);
   if (statusLed) {
     statusLed->identify();
   }

@@ -64,6 +64,7 @@ enum Event {
 
   // SuplaDeviceClass events
   ON_DEVICE_STATUS_CHANGE,
+  ON_IDENTIFY,
 
   // Html TextCmdInputParameter
   ON_EVENT_1,

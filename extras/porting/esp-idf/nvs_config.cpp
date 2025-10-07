@@ -147,7 +147,7 @@ bool NvsConfig::init() {
   // First init default nvs. This method will initialize keys partition when
   // NVS_ENCRYPTION is enabled
   SUPLA_LOG_DEBUG("NvsConfig: trying to open NVS in NORMAL mode");
-  if (nvsEncrypted) {
+  if (nvsEncrypted && flashEncryptionReleaseMode) {
     err = nvs_flash_init();
   } else {
     err = nvs_flash_init_partition(nvsPartitionName);

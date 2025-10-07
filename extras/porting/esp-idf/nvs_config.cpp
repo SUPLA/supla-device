@@ -86,6 +86,16 @@ bool NvsConfig::init() {
     flashEncryptionReleaseMode = false;
   }
 
+  auto nvsKeyPartition = esp_partition_find_first(
+      ESP_PARTITION_TYPE_DATA, ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, "nvs_key");
+
+  if (nvsKeyPartition == nullptr) {
+    SUPLA_LOG_ERROR("NvsConfig: nvs_key partition not found");
+    nvsEncrypted = false;
+  } else {
+    nvsEncrypted = true;
+  }
+
   // In test mode we use default NVS partition without encryption. However
   // test mode is stored on NVS itself, so we will try to open it unencrypted
   // first. Otherwise -> proceed with NVS_ENCRYPTION
@@ -119,19 +129,6 @@ bool NvsConfig::init() {
             SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" open failed",
                             nvsPartitionName);
           } else {
-            auto nvsKeyPartition = esp_partition_find_first(
-                                ESP_PARTITION_TYPE_DATA,
-                ESP_PARTITION_SUBTYPE_DATA_NVS_KEYS, "nvs_key");
-
-            if (nvsKeyPartition == nullptr) {
-              SUPLA_LOG_ERROR("NvsConfig: nvs_key partition not found");
-              nvsEncrypted = false;
-            } else {
-              // in test mode we use unencrypted nvs, so we will flag it as
-              // encypted when nvs_key parition is found
-              nvsEncrypted = true;
-            }
-
             return true;
           }
         } else {
@@ -150,7 +147,11 @@ bool NvsConfig::init() {
   // First init default nvs. This method will initialize keys partition when
   // NVS_ENCRYPTION is enabled
   SUPLA_LOG_DEBUG("NvsConfig: trying to open NVS in NORMAL mode");
-  err = nvs_flash_init();
+  if (nvsEncrypted) {
+    err = nvs_flash_init();
+  } else {
+    err = nvs_flash_init_partition(nvsPartitionName);
+  }
   if (err == ESP_ERR_NOT_FOUND) {
     SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
                     nvsPartitionName);

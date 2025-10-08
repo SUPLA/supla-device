@@ -158,6 +158,11 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   SUPLA_LOG_INFO(" *** Supla - starting initialization (platform %d)",
                   Supla::getPlatformId());
 
+  if (getClock() == nullptr) {
+    SUPLA_LOG_DEBUG("Clock not configured, using default clock");
+    new Supla::Clock();
+  }
+
   if (protoVersion < 23) {
     SUPLA_LOG_ERROR(
         "Minimum supported protocol version is 23! Setting to 23 anyway");

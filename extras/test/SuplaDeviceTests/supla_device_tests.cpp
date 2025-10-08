@@ -38,6 +38,9 @@ class SuplaDeviceTests : public ::testing::Test {
  protected:
   SimpleTime time;
   virtual void SetUp() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {

@@ -144,6 +144,10 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
@@ -158,6 +162,9 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
     });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
+
+  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
@@ -267,6 +274,10 @@ TEST_F(FullStartupWithConfig,
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
@@ -282,6 +293,8 @@ TEST_F(FullStartupWithConfig,
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
+  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
@@ -388,6 +401,10 @@ TEST_F(FullStartupWithConfig,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -514,6 +531,10 @@ TEST_F(FullStartupWithConfig,
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
@@ -635,6 +656,10 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
+        *buf = 1;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
         *buf = 1;
         return true;
       }
@@ -770,6 +795,10 @@ TEST_F(FullStartupWithConfig,
         *buf = 1;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       EXPECT_TRUE(false) << "Unexpected config key: " << key;
       return false;
     });
@@ -898,6 +927,10 @@ TEST_F(FullStartupWithConfig,
         *buf = 2;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       EXPECT_TRUE(false) << "Unexpected config key: " << key;
       return false;
     });
@@ -1018,6 +1051,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
@@ -1114,6 +1151,10 @@ TEST_F(FullStartupWithConfig, OfflineModeProtoDisabled) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
@@ -1196,6 +1237,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOff) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
@@ -1271,6 +1316,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOff) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -1352,6 +1401,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
         EXPECT_TRUE(false);
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -1440,6 +1493,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
 
@@ -1517,6 +1574,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -1605,6 +1666,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
 
@@ -1691,6 +1756,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
 
@@ -1773,6 +1842,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -1860,6 +1933,10 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
          uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -1985,6 +2062,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
 
@@ -2083,6 +2164,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnEmailSet) {
         *buf = 0;
         return true;
       }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
+        return true;
+      }
       return false;
     });
 
@@ -2175,6 +2260,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOffMqttServerSet) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -2285,6 +2374,10 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -2400,6 +2493,10 @@ TEST_F(FullStartupWithConfig, NotConfiguredModeFactoryDefaultStart) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -2581,6 +2678,10 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeWithPartialConfig) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;
@@ -2772,6 +2873,10 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
         uint8_t *buf) {
       if (strcmp(key, "security_level") == 0) {
         *buf = 0;
+        return true;
+      }
+      if (strcmp(key, "timesync_auto") == 0) {
+        *buf = 1;
         return true;
       }
       return false;

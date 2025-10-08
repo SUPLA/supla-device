@@ -162,25 +162,27 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>  <span class="keywordtype">void</span> setUseAutomaticTimeSyncRemoteConfig(<span class="keywordtype">bool</span> value);</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>  <span class="keywordtype">void</span> printCurrentTime(<span class="keyword">const</span> <span class="keywordtype">char</span> *prefix = <span class="keyword">nullptr</span>);</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>  <span class="keywordtype">void</span> setSystemTime(time_t newTime);</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>  time_t localtime = {};</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>  uint32_t lastServerUpdate = 0;</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>  uint32_t lastMillis = 0;</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>  <span class="keywordtype">bool</span> isClockReady = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>  <span class="keywordtype">bool</span> automaticTimeSync = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>  <span class="keywordtype">bool</span> useAutomaticTimeSyncRemoteConfig = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>};</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>  <span class="keywordtype">void</span> setAutomaticTimeSync(<span class="keywordtype">bool</span> value) { automaticTimeSync = value; }</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>  <span class="keywordtype">void</span> setSystemTime(time_t newTime);</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>  time_t localtime = {};</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>  uint32_t lastServerUpdate = 0;</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>  uint32_t lastMillis = 0;</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>  <span class="keywordtype">bool</span> isClockReady = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>  <span class="keywordtype">bool</span> automaticTimeSync = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>  <span class="keywordtype">bool</span> useAutomaticTimeSyncRemoteConfig = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>};</div>
 </div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span> </div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>};  <span class="comment">// namespace Supla</span></div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CLOCK_CLOCK_H_</span></div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CLOCK_CLOCK_H_</span></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:153</div></div>
-<div class="ttc" id="aclassSupla_1_1Clock_html_a49ffd81fc665f3443549442a78301ee8"><div class="ttname"><a href="classSupla_1_1Clock.html#a49ffd81fc665f3443549442a78301ee8">Supla::Clock::iterateConnected</a></div><div class="ttdeci">bool iterateConnected() override</div><div class="ttdoc">Method called on each SuplaDevice iteration when device is connected and registered to Supla server o...</div><div class="ttdef"><b>Definition</b> clock.cpp:230</div></div>
-<div class="ttc" id="aclassSupla_1_1Clock_html_a8ce52e5c9e98fb8426349024669ab1d9"><div class="ttname"><a href="classSupla_1_1Clock.html#a8ce52e5c9e98fb8426349024669ab1d9">Supla::Clock::onTimer</a></div><div class="ttdeci">void onTimer() override</div><div class="ttdoc">Method called on timer interupt.</div><div class="ttdef"><b>Definition</b> clock.cpp:214</div></div>
-<div class="ttc" id="aclassSupla_1_1Clock_html_ab2022993aa0dbf89bff46c73642c5ffb"><div class="ttname"><a href="classSupla_1_1Clock.html#ab2022993aa0dbf89bff46c73642c5ffb">Supla::Clock::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *sdc) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> clock.cpp:247</div></div>
-<div class="ttc" id="aclassSupla_1_1Clock_html_aca7b688aa9f9cb5c40cda228f763a6fc"><div class="ttname"><a href="classSupla_1_1Clock.html#aca7b688aa9f9cb5c40cda228f763a6fc">Supla::Clock::onDeviceConfigChange</a></div><div class="ttdeci">void onDeviceConfigChange(uint64_t fieldBit) override</div><div class="ttdoc">Method called when device config is changed.</div><div class="ttdef"><b>Definition</b> clock.cpp:267</div></div>
+<div class="ttc" id="aclassSupla_1_1Clock_html_a49ffd81fc665f3443549442a78301ee8"><div class="ttname"><a href="classSupla_1_1Clock.html#a49ffd81fc665f3443549442a78301ee8">Supla::Clock::iterateConnected</a></div><div class="ttdeci">bool iterateConnected() override</div><div class="ttdoc">Method called on each SuplaDevice iteration when device is connected and registered to Supla server o...</div><div class="ttdef"><b>Definition</b> clock.cpp:233</div></div>
+<div class="ttc" id="aclassSupla_1_1Clock_html_a8ce52e5c9e98fb8426349024669ab1d9"><div class="ttname"><a href="classSupla_1_1Clock.html#a8ce52e5c9e98fb8426349024669ab1d9">Supla::Clock::onTimer</a></div><div class="ttdeci">void onTimer() override</div><div class="ttdoc">Method called on timer interupt.</div><div class="ttdef"><b>Definition</b> clock.cpp:217</div></div>
+<div class="ttc" id="aclassSupla_1_1Clock_html_ab2022993aa0dbf89bff46c73642c5ffb"><div class="ttname"><a href="classSupla_1_1Clock.html#ab2022993aa0dbf89bff46c73642c5ffb">Supla::Clock::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *sdc) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> clock.cpp:250</div></div>
+<div class="ttc" id="aclassSupla_1_1Clock_html_aca7b688aa9f9cb5c40cda228f763a6fc"><div class="ttname"><a href="classSupla_1_1Clock.html#aca7b688aa9f9cb5c40cda228f763a6fc">Supla::Clock::onDeviceConfigChange</a></div><div class="ttdeci">void onDeviceConfigChange(uint64_t fieldBit) override</div><div class="ttdoc">Method called when device config is changed.</div><div class="ttdef"><b>Definition</b> clock.cpp:270</div></div>
 <div class="ttc" id="astructTSDC__UserLocalTimeResult_html"><div class="ttname"><a href="structTSDC__UserLocalTimeResult.html">TSDC_UserLocalTimeResult</a></div><div class="ttdef"><b>Definition</b> proto.h:2568</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

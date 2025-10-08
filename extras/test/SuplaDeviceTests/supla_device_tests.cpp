@@ -30,6 +30,7 @@
 #include <string.h>
 #include <supla/device/register_device.h>
 #include <simple_time.h>
+#include "supla/element.h"
 
 using ::testing::_;
 using ::testing::Return;
@@ -96,6 +97,10 @@ TEST_F(SuplaDeviceTests, StartWithoutNetworkInterfaceNoElementsWithStorage) {
   SuplaDeviceClass sd;
   TimerMock timer;
   StorageMockSimulator storage;
+
+  if (Supla::Element::begin()) {
+    ASSERT_EQ(Supla::Element::begin(), nullptr);
+  }
 
   ASSERT_EQ(Supla::Element::begin(), nullptr);
   EXPECT_CALL(storage, commit()).Times(1);

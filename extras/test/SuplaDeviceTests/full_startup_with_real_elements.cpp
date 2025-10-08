@@ -54,10 +54,16 @@ class FullStartupWithRealElements : public ::testing::Test {
   NetworkClientMock *client = nullptr;
 
   virtual void SetUp() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
+
     Supla::Channel::resetToDefaults();
 
     client = new NetworkClientMock;  // it will be destroyed in
                                      // Supla::Protocol::SuplaSrpc
+    EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+        .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   }
   virtual void TearDown() {
     Supla::Channel::resetToDefaults();

@@ -14,23 +14,24 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <gtest/gtest.h>
-
-#include <supla/element.h>
-#include <supla/channel.h>
 #include <arduino_mock.h>
-#include <srpc_mock.h>
-#include <supla/protocol/supla_srpc.h>
+#include <gtest/gtest.h>
 #include <network_client_mock.h>
 #include <simple_time.h>
+#include <srpc_mock.h>
+#include <supla/channel.h>
+#include <supla/clock/clock.h>
+#include <supla/element.h>
+#include <supla/protocol/supla_srpc.h>
 #include <supla_srpc_layer_mock.h>
 
-using ::testing::Return;
 using ::testing::ElementsAreArray;
+using ::testing::Return;
 
 class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
  public:
-  SuplaSrpcStub(SuplaDeviceClass *sdc) : Supla::Protocol::SuplaSrpc(sdc) {
+  explicit SuplaSrpcStub(SuplaDeviceClass *sdc)
+      : Supla::Protocol::SuplaSrpc(sdc) {
   }
 
   void setRegisteredAndReady() {
@@ -38,34 +39,34 @@ class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
   }
 };
 
-
 class ElementTests : public ::testing::Test {
-  protected:
-    SuplaDeviceClass sd;
-    SuplaSrpcStub *suplaSrpc = nullptr;
+ protected:
+  SuplaDeviceClass sd;
+  SuplaSrpcStub *suplaSrpc = nullptr;
 
-    virtual void SetUp() {
-      suplaSrpc = new SuplaSrpcStub(&sd);
-      suplaSrpc->setRegisteredAndReady();
-      Supla::Channel::resetToDefaults();
+  virtual void SetUp() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
     }
-    virtual void TearDown() {
-      delete suplaSrpc;
-      Supla::Channel::resetToDefaults();
-    }
-
+    suplaSrpc = new SuplaSrpcStub(&sd);
+    suplaSrpc->setRegisteredAndReady();
+    Supla::Channel::resetToDefaults();
+  }
+  virtual void TearDown() {
+    delete suplaSrpc;
+    Supla::Channel::resetToDefaults();
+  }
 };
 
-
 class ElementWithChannel : public Supla::Element {
-  public:
-    Supla::Channel *getChannel() {
-      return &channel;
-    }
-    const Supla::Channel *getChannel() const {
-      return &channel;
-    }
-    Supla::Channel channel;
+ public:
+  Supla::Channel *getChannel() {
+    return &channel;
+  }
+  const Supla::Channel *getChannel() const {
+    return &channel;
+  }
+  Supla::Channel channel;
 };
 
 TEST_F(ElementTests, ElementEmptyListTests) {
@@ -124,7 +125,6 @@ TEST_F(ElementTests, ElementListAdding) {
 
   EXPECT_EQ(Supla::Element::begin(), nullptr);
   EXPECT_EQ(Supla::Element::last(), nullptr);
-
 }
 
 TEST_F(ElementTests, NoChannelElementMethods) {
@@ -133,7 +133,8 @@ TEST_F(ElementTests, NoChannelElementMethods) {
 
   EXPECT_CALL(time, millis()).Times(1);
 
-  // those methods are empty, so just call to make sure that they do nothing and don't crash
+  // those methods are empty, so just call to make sure that they do nothing and
+  // don't crash
   el1.onInit();
   el1.onLoadState();
   el1.onSaveState();
@@ -152,7 +153,8 @@ TEST_F(ElementTests, NoChannelElementMethods) {
 
   EXPECT_EQ(el1.iterateConnected(), true);
   EXPECT_EQ(el1.handleNewValueFromServer(nullptr), -1);
-  EXPECT_EQ(el1.handleCalcfgFromServer(nullptr), SUPLA_CALCFG_RESULT_NOT_SUPPORTED);
+  EXPECT_EQ(el1.handleCalcfgFromServer(nullptr),
+            SUPLA_CALCFG_RESULT_NOT_SUPPORTED);
 }
 
 TEST_F(ElementTests, ChannelElementMethods) {
@@ -183,20 +185,21 @@ TEST_F(ElementTests, ChannelElementMethods) {
   EXPECT_FALSE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), true);
   EXPECT_EQ(el1.handleNewValueFromServer(nullptr), -1);
-  EXPECT_EQ(el1.handleCalcfgFromServer(nullptr), SUPLA_CALCFG_RESULT_NOT_SUPPORTED);
+  EXPECT_EQ(el1.handleCalcfgFromServer(nullptr),
+            SUPLA_CALCFG_RESULT_NOT_SUPPORTED);
 
   EXPECT_FALSE(el1.channel.isUpdateReady());
   el1.channel.setNewValue(true);
   EXPECT_TRUE(el1.channel.isUpdateReady());
 
   EXPECT_CALL(time, millis)
-    .WillOnce(Return(0))
-    .WillOnce(Return(200))
-    .WillOnce(Return(250))
-    .WillOnce(Return(250))
-    .WillOnce(Return(400))
-    .WillOnce(Return(600))
-    .WillOnce(Return(800));
+      .WillOnce(Return(0))
+      .WillOnce(Return(200))
+      .WillOnce(Return(250))
+      .WillOnce(Return(250))
+      .WillOnce(Return(400))
+      .WillOnce(Return(600))
+      .WillOnce(Return(800));
 
   char array0[SUPLA_CHANNELVALUE_SIZE] = {};
   char array1[SUPLA_CHANNELVALUE_SIZE] = {};
@@ -229,8 +232,7 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   TimeInterfaceMock time;
   SrpcMock srpc;
 
-  EXPECT_CALL(srpc, getChannelConfig(0, SUPLA_CONFIG_TYPE_DEFAULT)).
-    Times(2);
+  EXPECT_CALL(srpc, getChannelConfig(0, SUPLA_CONFIG_TYPE_DEFAULT)).Times(2);
 
   EXPECT_CALL(time, millis)
       .WillOnce(Return(0))    // #1
@@ -238,8 +240,7 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
       .WillOnce(Return(250))  // #3
       .WillOnce(Return(400))  // #4
       .WillOnce(Return(600))  // #5
-      .WillOnce(Return(800))  // #6
-      ;
+      .WillOnce(Return(800));  // #6
 
   EXPECT_EQ(el1.iterateConnected(), true);  // #1
 
@@ -247,7 +248,7 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   el1.channel.setSendGetConfig();
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #2
-  EXPECT_EQ(el1.iterateConnected(), true);  // #3
+  EXPECT_EQ(el1.iterateConnected(), true);   // #3
 
   el1.getChannel()->setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   EXPECT_EQ(el1.iterateConnected(), true);  // #4
@@ -256,7 +257,7 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
   el1.channel.setSendGetConfig();
   EXPECT_TRUE(el1.channel.isUpdateReady());
   EXPECT_EQ(el1.iterateConnected(), false);  // #2
-  EXPECT_EQ(el1.iterateConnected(), true);  // #3
+  EXPECT_EQ(el1.iterateConnected(), true);   // #3
 }
 
 TEST(ElementCaptionTests, InitialCaptionTest) {
@@ -274,4 +275,3 @@ TEST(ElementCaptionTests, InitialCaptionTest) {
   el1.iterateConnected();
   Supla::Channel::resetToDefaults();
 }
-

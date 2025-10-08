@@ -68,6 +68,8 @@ class Clock : public Element {
   void setUseAutomaticTimeSyncRemoteConfig(bool value);
   void printCurrentTime(const char *prefix = nullptr);
 
+  void setAutomaticTimeSync(bool value) { automaticTimeSync = value; }
+
  protected:
   void setSystemTime(time_t newTime);
   time_t localtime = {};

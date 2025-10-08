@@ -116,6 +116,9 @@ Clock* Clock::GetInstance() {
 }
 
 Clock::Clock() {
+  if (clockInstance) {
+    delete clockInstance;
+  }
   clockInstance = this;
 }
 

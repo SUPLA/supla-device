@@ -48,6 +48,9 @@ class SuplaDeviceFullStartupTests : public ::testing::Test {
  protected:
   SimpleTime time;
   virtual void SetUp() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     Supla::Channel::resetToDefaults();
   }
   virtual void TearDown() {
@@ -77,6 +80,7 @@ class SuplaDeviceTestsFullStartupNoClient : public SuplaDeviceFullStartupTests {
     char GUID[SUPLA_GUID_SIZE] = "GUID";
     char AUTHKEY[SUPLA_AUTHKEY_SIZE] = "AUTHKEY";
     EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
+    sd.getClock()->setAutomaticTimeSync(false);
     EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   }
 
@@ -327,6 +331,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslDisabledNoConfig) {
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -407,6 +412,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslDisabledCAConfiguredNoConfig) {
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -483,6 +489,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledNoCANoConfig) {
   char GUID[SUPLA_GUID_SIZE] = {1};
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -565,6 +572,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledSuplaCANoConfig) {
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(
       sd.begin(GUID, "ok.supla.org", "superman@supla.org", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -647,6 +655,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual,
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(
       sd.begin(GUID, "supla.rulez", "superman@supla.priv", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -727,6 +736,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledOnlyOnceCASetNoConfig) {
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(
       sd.begin(GUID, "supla.rulez", "superman@supla.priv", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -807,6 +817,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledOnlyOnceCASetv2NoConfig) {
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
   EXPECT_TRUE(
       sd.begin(GUID, "test.supla.org", "superman@supla.org", AUTHKEY, 18));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_CALL(net, isReady()).WillRepeatedly(Return(true));
@@ -1000,6 +1011,7 @@ TEST_F(SuplaDeviceFullStartupTests, CheckCustomNameSoftVer) {
   char GUID[SUPLA_GUID_SIZE] = "GUID";
   char AUTHKEY[SUPLA_AUTHKEY_SIZE] = "AUTHKEY";
   EXPECT_TRUE(sd.begin(GUID, "supla.rulez", "superman@supla.org", AUTHKEY));
+  sd.getClock()->setAutomaticTimeSync(false);
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
 
   EXPECT_STREQ(Supla::RegisterDevice::getEmail(), "superman@supla.org");

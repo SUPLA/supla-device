@@ -53,6 +53,9 @@ class SwUpdateTests : public ::testing::Test {
   SwUpdateMock swUpdate;
 
   virtual void SetUp() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     client = new NetworkClientMock;  // it will be destroyed in
                                      // Supla::Protocol::SuplaSrpc
     Supla::Channel::resetToDefaults();
@@ -369,6 +372,8 @@ TEST_F(SwUpdateTests, FirmwareCheckAndNormalUpdate) {
 }
 
 TEST_F(SwUpdateTests, SecurityOnlyUpdate) {
+  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(timers, initTimers()).Times(1);
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
@@ -532,6 +537,8 @@ TEST_F(SwUpdateTests, SecurityOnlyUpdate) {
 }
 
 TEST_F(SwUpdateTests, AutomaticUpdateForcedOff) {
+  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(timers, initTimers()).Times(1);
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
@@ -1418,6 +1425,8 @@ TEST_F(SwUpdateTests, AutomaticUpdateTriggeredInternallyMissingCfgValue) {
 }
 
 TEST_F(SwUpdateTests, SwUpdateFromCfgDeviceMode) {
+  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(timers, initTimers()).Times(1);
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {

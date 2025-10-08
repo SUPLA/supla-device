@@ -16,30 +16,32 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#include <SuplaDevice.h>
+#include <arduino_mock.h>
+#include <board_mock.h>
+#include <config_mock.h>
+#include <element_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
+#include <mqtt_mock.h>
+#include <network_client_mock.h>
+#include <network_mock.h>
+#include <simple_time.h>
 #include <srpc_mock.h>
-#include <timer_mock.h>
-#include <SuplaDevice.h>
 #include <supla/clock/clock.h>
+#include <supla/sensor/therm_hygro_press_meter.h>
 #include <supla/storage/storage.h>
-#include <element_mock.h>
-#include <board_mock.h>
+#include <timer_mock.h>
+
+#include <string>
+
 #include "supla/actions.h"
 #include "supla/protocol/supla_srpc.h"
-#include <network_client_mock.h>
-#include <config_mock.h>
-#include <supla/sensor/therm_hygro_press_meter.h>
-#include <simple_time.h>
-#include <network_mock.h>
-#include <string>
-#include <mqtt_mock.h>
 
-using ::testing::Return;
 using ::testing::_;
 using ::testing::AtLeast;
 using ::testing::InSequence;
+using ::testing::Return;
 
 class DeviceStatusInterface {
  public:
@@ -85,6 +87,9 @@ class FullStartupWithConfig : public ::testing::Test {
   ConfigMock cfg;
 
   virtual void SetUp() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     client = new NetworkClientMock;  // it will be destroyed in
                                      // Supla::Protocol::SuplaSrpc
     sd.setStatusFuncImpl(statusImpl);
@@ -95,6 +100,8 @@ class FullStartupWithConfig : public ::testing::Test {
     EXPECT_CALL(cfg, init()).WillOnce(Return(true));
     EXPECT_CALL(cfg, isConfigModeSupported()).WillRepeatedly(Return(true));
     EXPECT_CALL(net, isWifiConfigRequired()).WillRepeatedly(Return(true));
+    EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
+        .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   }
 
   virtual void TearDown() {
@@ -113,58 +120,55 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl disabled in config is realized by setting port to 2015
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2015));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
-
-  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
-      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
@@ -188,21 +192,23 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2015)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -232,8 +238,7 @@ TEST_F(FullStartupWithConfig, WithConfigSslDisabled) {
   EXPECT_EQ(client->getRootCACert(), nullptr);
 }
 
-TEST_F(FullStartupWithConfig,
-    WithConfigSslEnabledManually) {
+TEST_F(FullStartupWithConfig, WithConfigSslEnabledManually) {
   int dummy = 0;
   {
     InSequence s;
@@ -243,58 +248,55 @@ TEST_F(FullStartupWithConfig,
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl enabled in config is realized by setting port to 2016
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
-
-  EXPECT_CALL(srpc, srpc_dcs_async_get_user_localtime(_))
-      .WillRepeatedly(Return(SUPLA_RESULT_TRUE));
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
@@ -317,21 +319,23 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -361,8 +365,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_EQ(client->getRootCACert(), myCA1);
 }
 
-TEST_F(FullStartupWithConfig,
-    WithConfigSslEnabled) {
+TEST_F(FullStartupWithConfig, WithConfigSslEnabled) {
   int dummy = 0;
   {
     InSequence s;
@@ -372,57 +375,55 @@ TEST_F(FullStartupWithConfig,
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl enabled in config is realized by setting port to -1 (auto/default)
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
-
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
-
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
@@ -445,21 +446,23 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -489,8 +492,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_EQ(client->getRootCACert(), myCA1);
 }
 
-TEST_F(FullStartupWithConfig,
-    WithConfigSslEnabledPrivateServer) {
+TEST_F(FullStartupWithConfig, WithConfigSslEnabledPrivateServer) {
   int dummy = 0;
   {
     InSequence s;
@@ -500,57 +502,55 @@ TEST_F(FullStartupWithConfig,
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.priv";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.priv";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl enabled in config is realized by setting port to -1 (auto/default)
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
-
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
-
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(1);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(1);
@@ -573,21 +573,23 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -617,8 +619,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_EQ(client->getRootCACert(), myCA2);
 }
 
-TEST_F(FullStartupWithConfig,
-    WithConfigSslEnabledCustomCA) {
+TEST_F(FullStartupWithConfig, WithConfigSslEnabledCustomCA) {
   int dummy = 0;
   {
     InSequence s;
@@ -628,63 +629,62 @@ TEST_F(FullStartupWithConfig,
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl enabled in config is realized by setting port to -1 (auto/default)
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 1;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      EXPECT_TRUE(false) << "Unexpected config key: " << key;
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 1;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        EXPECT_TRUE(false) << "Unexpected config key: " << key;
+        return false;
+      });
   EXPECT_CALL(cfg, getCustomCASize())
-    .WillRepeatedly(Return(strlen("custom ca")));
-  EXPECT_CALL(cfg, getCustomCA(_, _)).WillRepeatedly(
-    [] (char *ca, int maxSize) {
-      char temp[] = "custom ca";
-      EXPECT_GE(maxSize, strlen(temp));
-      memcpy(ca, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(strlen("custom ca")));
+  EXPECT_CALL(cfg, getCustomCA(_, _)).WillRepeatedly([](char *ca, int maxSize) {
+    char temp[] = "custom ca";
+    EXPECT_GE(maxSize, strlen(temp));
+    memcpy(ca, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -709,21 +709,23 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -753,8 +755,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_STREQ(client->getRootCACert(), "custom ca");
 }
 
-TEST_F(FullStartupWithConfig,
-    WithConfigSslEnabledCustomCASelectedButMissing) {
+TEST_F(FullStartupWithConfig, WithConfigSslEnabledCustomCASelectedButMissing) {
   int dummy = 0;
   {
     InSequence s;
@@ -764,57 +765,56 @@ TEST_F(FullStartupWithConfig,
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl enabled in config is realized by setting port to -1 (auto/default)
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 1;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      EXPECT_TRUE(false) << "Unexpected config key: " << key;
-      return false;
-    });
-  EXPECT_CALL(cfg, getCustomCASize())
-    .WillRepeatedly(Return(0));
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 1;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        EXPECT_TRUE(false) << "Unexpected config key: " << key;
+        return false;
+      });
+  EXPECT_CALL(cfg, getCustomCASize()).WillRepeatedly(Return(0));
   EXPECT_CALL(cfg, getCustomCA(_, _)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -839,21 +839,23 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -885,8 +887,7 @@ TEST_F(FullStartupWithConfig,
   EXPECT_STREQ(client->getRootCACert(), "SUPLA");
 }
 
-TEST_F(FullStartupWithConfig,
-    WithConfigSslEnabledInsecure) {
+TEST_F(FullStartupWithConfig, WithConfigSslEnabledInsecure) {
   int dummy = 0;
   {
     InSequence s;
@@ -896,54 +897,54 @@ TEST_F(FullStartupWithConfig,
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   // ssl enabled in config is realized by setting port to -1 (auto/default)
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(-1));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 2;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      EXPECT_TRUE(false) << "Unexpected config key: " << key;
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "ssid_test";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 2;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        EXPECT_TRUE(false) << "Unexpected config key: " << key;
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "ssid_test";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -968,21 +969,23 @@ TEST_F(FullStartupWithConfig,
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
-//  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
-//  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el1, onSaveState()).Times(AtLeast(1));
+  //  EXPECT_CALL(el2, onSaveState()).Times(AtLeast(1));
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_INITIALIZED);
   for (int i = 0; i < 5; i++) {
@@ -1029,34 +1032,34 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProto) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
@@ -1129,34 +1132,34 @@ TEST_F(FullStartupWithConfig, OfflineModeProtoDisabled) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
@@ -1215,34 +1218,34 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOff) {
   EXPECT_CALL(cfg, getMqttPrefix(_)).Times(0);
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
@@ -1296,34 +1299,34 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOff) {
   EXPECT_CALL(cfg, getMqttPrefix(_)).Times(0);
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
@@ -1379,36 +1382,36 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOn) {
   EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
 
   // Supla protocol configuration
   EXPECT_CALL(cfg, getSuplaServer(_)).Times(0);
   EXPECT_CALL(cfg, getEmail(_)).Times(0);
   EXPECT_CALL(cfg, getSuplaServerPort()).Times(0);
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        EXPECT_TRUE(false);
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          EXPECT_TRUE(false);
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
@@ -1471,40 +1474,40 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidSet) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "test_ssid";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "test_ssid";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
@@ -1554,45 +1557,45 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiSsidAndPassSet) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "test_ssid";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "test_ssid";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -1644,45 +1647,45 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoWifiPassSet) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -1730,49 +1733,49 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoServerSet) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "server.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "server.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -1818,49 +1821,49 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoEmailSet) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "server@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "server@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -1905,53 +1908,53 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "server@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "server.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "server@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "server.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-         uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "test_ssid";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "test_ssid";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
 
@@ -1973,17 +1976,20 @@ TEST_F(FullStartupWithConfig, OfflineModeOneProtoFullCfgSetWifiEnabled) {
   EXPECT_CALL(srpc, srpc_iterate(_)).WillRepeatedly(Return(SUPLA_RESULT_TRUE));
   EXPECT_CALL(*client, stop()).Times(0);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillOnce(Return(1));
   EXPECT_CALL(srpc, srpc_ds_async_registerdevice_in_chunks(_, _)).Times(1);
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-    .WillRepeatedly(Return(true));
-  EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1))
-    .WillRepeatedly(Return(true));;
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(el2, iterateConnected())
+      .Times(AtLeast(1))
+      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(board, deviceSoftwareReset()).Times(0);
 
@@ -2027,7 +2033,8 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
   {
     InSequence s;
     EXPECT_CALL(statusMock, status(STATUS_UNKNOWN_SERVER_ADDRESS, _)).Times(1);
-//    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
+    //    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS,
+    //    _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_OFFLINE_MODE, _)).Times(1);
   }
@@ -2036,49 +2043,49 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
   EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "server@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "server@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   // MQTT protocol configuration
   EXPECT_CALL(cfg, getMqttPrefix(_)).WillRepeatedly(Return(false));
@@ -2098,7 +2105,7 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOffMqttOnEmailSet) {
 
   EXPECT_CALL(timer, initTimers());
   EXPECT_CALL(srpc, srpc_params_init(_)).Times(0);
-  EXPECT_CALL(srpc, srpc_init(_)).Times(0);;
+  EXPECT_CALL(srpc, srpc_init(_)).Times(0);
   EXPECT_CALL(srpc, srpc_set_proto_version(&dummy, 23)).Times(0);
 
   EXPECT_CALL(net, isReady()).Times(0);
@@ -2138,49 +2145,49 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnEmailSet) {
   EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "server@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "server@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   // MQTT protocol configuration
   EXPECT_CALL(cfg, getMqttPrefix(_)).WillRepeatedly(Return(false));
@@ -2240,53 +2247,53 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOffMqttServerSet) {
   EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(false));
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   // MQTT protocol configuration
   EXPECT_CALL(cfg, getMqttPrefix(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getMqttServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "server.mqtt.supla.org";
-      memcpy(server, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getMqttServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "server.mqtt.supla.org";
+    memcpy(server, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getMqttServerPort()).WillRepeatedly(Return(1883));
   EXPECT_CALL(cfg, isMqttTlsEnabled()).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, isMqttRetainEnabled()).WillRepeatedly(Return(false));
@@ -2336,16 +2343,19 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
     InSequence s;
     // Supla config check
     EXPECT_CALL(statusMock,
-        status(STATUS_UNKNOWN_SERVER_ADDRESS, "Missing server address"))
-      .Times(1);
+                status(STATUS_UNKNOWN_SERVER_ADDRESS, "Missing server address"))
+        .Times(1);
     EXPECT_CALL(statusMock,
-        status(STATUS_MISSING_CREDENTIALS, "Missing email address")).Times(1);
+                status(STATUS_MISSING_CREDENTIALS, "Missing email address"))
+        .Times(1);
     // Mqtt config check
-    EXPECT_CALL(statusMock,
+    EXPECT_CALL(
+        statusMock,
         status(STATUS_UNKNOWN_SERVER_ADDRESS, "MQTT: Missing server address"))
-      .Times(1);
+        .Times(1);
     EXPECT_CALL(statusMock,
-        status(STATUS_MISSING_CREDENTIALS, "MQTT: Missing username")).Times(1);
+                status(STATUS_MISSING_CREDENTIALS, "MQTT: Missing username"))
+        .Times(1);
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_OFFLINE_MODE, _)).Times(1);
   }
@@ -2354,45 +2364,45 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
   EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(true));
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
 
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char temp[] = "";
-      memcpy(ssid, temp, strlen(temp));
-      return true;
-    });
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "test_pass";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char temp[] = "";
+    memcpy(ssid, temp, strlen(temp));
+    return true;
+  });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "test_pass";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   // MQTT protocol configuration
   EXPECT_CALL(cfg, getMqttPrefix(_)).WillRepeatedly(Return(false));
@@ -2403,11 +2413,11 @@ TEST_F(FullStartupWithConfig, OfflineModeSuplaOnMqttOnMqttPassSet) {
   EXPECT_CALL(cfg, getMqttQos()).WillRepeatedly(Return(0));
   EXPECT_CALL(cfg, isMqttAuthEnabled()).WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, getMqttUser(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getMqttPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "mqtt_pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getMqttPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "mqtt_pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(mqtt, disconnect()).Times(0);
 
@@ -2473,34 +2483,34 @@ TEST_F(FullStartupWithConfig, NotConfiguredModeFactoryDefaultStart) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
   EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
 
@@ -2625,7 +2635,7 @@ TEST_F(FullStartupWithConfig, NotConfiguredModeFactoryDefaultStart) {
     sd.iterate();
     time.advance(60000);
   }
-//  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+  //  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
 }
 
 TEST_F(FullStartupWithConfig, NotConfiguredInitialModeWithPartialConfig) {
@@ -2659,42 +2669,42 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeWithPartialConfig) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
   EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char newSsid[] = "SuplaWifi";
-      memcpy(ssid, newSsid, sizeof(newSsid));
-      return true;
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char newSsid[] = "SuplaWifi";
+    memcpy(ssid, newSsid, sizeof(newSsid));
+    return true;
   });
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, sizeof(temp));
-      return true;
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, sizeof(temp));
+    return true;
   });
 
   EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly(Return(false));
@@ -2820,9 +2830,8 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeWithPartialConfig) {
     sd.iterate();
     time.advance(60000);
   }
-//  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+  //  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
 }
-
 
 TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
   int dummy = 0;
@@ -2830,7 +2839,8 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
   {
     InSequence s;
     // default startup
-//    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS, _)).Times(1);
+    //    EXPECT_CALL(statusMock, status(STATUS_MISSING_CREDENTIALS,
+    //    _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_INITIALIZED, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_REGISTER_IN_PROGRESS, _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_REGISTERED_AND_READY, _)).Times(1);
@@ -2839,7 +2849,8 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
     EXPECT_CALL(statusMock, status(STATUS_CONFIG_MODE, _)).Times(1);
 
     // leave cfg mode after timeout
-//    EXPECT_CALL(statusMock, status(STATUS_REGISTER_IN_PROGRESS, _)).Times(1);
+    //    EXPECT_CALL(statusMock, status(STATUS_REGISTER_IN_PROGRESS,
+    //    _)).Times(1);
     EXPECT_CALL(statusMock, status(STATUS_REGISTERED_AND_READY, _)).Times(1);
 
     // trigger cfg mode via handleAction (i.e. button) third time
@@ -2850,53 +2861,53 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
   }
 
   EXPECT_CALL(cfg, getDeviceName(_)).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([] (char *guid) {
-      char GUID[SUPLA_GUID_SIZE] = {1};
-      memcpy(guid, GUID, SUPLA_GUID_SIZE);
-      return true;
-    });
-  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([] (char *auth) {
-      char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
-      memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
-      return true;
-    });
+  EXPECT_CALL(cfg, getGUID(_)).WillRepeatedly([](char *guid) {
+    char GUID[SUPLA_GUID_SIZE] = {1};
+    memcpy(guid, GUID, SUPLA_GUID_SIZE);
+    return true;
+  });
+  EXPECT_CALL(cfg, getAuthKey(_)).WillRepeatedly([](char *auth) {
+    char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {2};
+    memcpy(auth, AUTHKEY, SUPLA_AUTHKEY_SIZE);
+    return true;
+  });
   EXPECT_CALL(cfg, getDeviceMode())
-    .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
-  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([] (char *mail) {
-      char temp[] = "ceo@supla.org";
-      memcpy(mail, temp, strlen(temp));
-      return true;
-    });
+      .WillRepeatedly(Return(Supla::DEVICE_MODE_NOT_SET));
+  EXPECT_CALL(cfg, getEmail(_)).WillRepeatedly([](char *mail) {
+    char temp[] = "ceo@supla.org";
+    memcpy(mail, temp, strlen(temp));
+    return true;
+  });
   EXPECT_CALL(cfg, getSuplaServerPort()).WillRepeatedly(Return(2016));
   EXPECT_CALL(cfg, saveIfNeeded()).Times(AtLeast(1));
-  EXPECT_CALL(cfg, getUInt8(_, _)).WillRepeatedly([] (const char *key,
-        uint8_t *buf) {
-      if (strcmp(key, "security_level") == 0) {
-        *buf = 0;
-        return true;
-      }
-      if (strcmp(key, "timesync_auto") == 0) {
-        *buf = 1;
-        return true;
-      }
-      return false;
-    });
-  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([] (char *ssid) {
-      char newSsid[] = "SuplaWifi";
-      memcpy(ssid, newSsid, sizeof(newSsid));
-      return true;
+  EXPECT_CALL(cfg, getUInt8(_, _))
+      .WillRepeatedly([](const char *key, uint8_t *buf) {
+        if (strcmp(key, "security_level") == 0) {
+          *buf = 0;
+          return true;
+        }
+        if (strcmp(key, "timesync_auto") == 0) {
+          *buf = 1;
+          return true;
+        }
+        return false;
+      });
+  EXPECT_CALL(cfg, getWiFiSSID(_)).WillRepeatedly([](char *ssid) {
+    char newSsid[] = "SuplaWifi";
+    memcpy(ssid, newSsid, sizeof(newSsid));
+    return true;
   });
-  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([] (char *server) {
-      char temp[] = "mega.supla.org";
-      memcpy(server, temp, sizeof(temp));
-      return true;
+  EXPECT_CALL(cfg, getSuplaServer(_)).WillRepeatedly([](char *server) {
+    char temp[] = "mega.supla.org";
+    memcpy(server, temp, sizeof(temp));
+    return true;
   });
 
-  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([] (char *pass) {
-      char temp[] = "pass_test";
-      memcpy(pass, temp, strlen(temp));
-      return true;
-    });
+  EXPECT_CALL(cfg, getWiFiPassword(_)).WillRepeatedly([](char *pass) {
+    char temp[] = "pass_test";
+    memcpy(pass, temp, strlen(temp));
+    return true;
+  });
 
   EXPECT_CALL(cfg, isSuplaCommProtocolEnabled()).WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, isMqttCommProtocolEnabled()).WillRepeatedly(Return(false));
@@ -2923,8 +2934,9 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
   EXPECT_CALL(*client, stop()).Times(2);
   EXPECT_CALL(srpc, srpc_free(_)).Times(1);
 
-  EXPECT_CALL(*client, connected()).WillOnce(Return(false))
-    .WillRepeatedly(Return(true));
+  EXPECT_CALL(*client, connected())
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(*client, connectImp(_, 2016)).WillRepeatedly(Return(1));
 
   int registerCounter = 0;
@@ -2936,9 +2948,10 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
 
   EXPECT_CALL(el1, iterateAlways()).Times(AtLeast(1));
   EXPECT_CALL(el2, iterateAlways()).Times(AtLeast(1));
-  EXPECT_CALL(el1, iterateConnected()).Times(AtLeast(1))
-        .WillOnce(Return(false))
-        .WillRepeatedly(Return(true));
+  EXPECT_CALL(el1, iterateConnected())
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly(Return(true));
   EXPECT_CALL(el2, iterateConnected()).Times(AtLeast(1));
   EXPECT_EQ(registerCounter, 0);
 
@@ -3027,5 +3040,5 @@ TEST_F(FullStartupWithConfig, NotConfiguredInitialModeFullyConfigured) {
     sd.iterate();
     time.advance(60000);
   }
-//  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
+  //  EXPECT_EQ(sd.getCurrentStatus(), STATUS_NOT_CONFIGURED_MODE);
 }

@@ -350,6 +350,9 @@ void KeyValueElement::setNext(KeyValueElement* toBeSet) {
 }
 
 bool KeyValueElement::setString(const char* value) {
+  if (value == nullptr) {
+    return false;
+  }
   unsigned int newSize = strlen(value) + 1;
   if (dataType == DATA_TYPE_NOT_SET) {
     dataType = DATA_TYPE_STRING;
@@ -365,6 +368,7 @@ bool KeyValueElement::setString(const char* value) {
     data.charPtr = new char[size];
   }
   strncpy(data.charPtr, value, size);
+  data.charPtr[size - 1] = '\0';
   return true;
 }
 
@@ -375,6 +379,7 @@ bool KeyValueElement::getString(char* value, size_t maxSize) {
 
   if (size <= maxSize) {
     strncpy(value, data.charPtr, maxSize);
+    value[size - 1] = '\0';
     return true;
   }
   return false;

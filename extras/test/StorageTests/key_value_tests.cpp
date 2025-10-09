@@ -5,10 +5,12 @@
  modify it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2
  of the License, or (at your option) any later version.
+
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
+
  You should have received a copy of the GNU General Public License
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -17,17 +19,16 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <supla/storage/key_value.h>
+
 #include "supla/storage/config.h"
 
 class KeyValueTest : public Supla::KeyValue {
-  public:
-    bool init() override {
-      return true;
-    };
-    void removeAll() override {};
+ public:
+  bool init() override {
+    return true;
+  };
+  void removeAll() override {};
 };
-
-
 
 TEST(KeyValueElementTests, isKeyEqualTest) {
   Supla::KeyValueElement kve("secret");
@@ -71,7 +72,6 @@ TEST(KeyValueElementTests, elementSequenceTest) {
   EXPECT_EQ(kve2.getNext(), &kve3);
   EXPECT_EQ(kve3.getNext(), &kve4);
   EXPECT_EQ(kve4.getNext(), nullptr);
-
 }
 
 TEST(KeyValueElementTests, gettersOnEmptyTest) {
@@ -207,8 +207,6 @@ TEST(KeyValueElementTests, intTest) {
   EXPECT_TRUE(kve4.setInt32(50));
   EXPECT_TRUE(kve4.getInt32(&result32));
   EXPECT_EQ(result32, 50);
-
-
 }
 
 TEST(KeyValueElementTests, stringTest) {
@@ -219,7 +217,6 @@ TEST(KeyValueElementTests, stringTest) {
   uint32_t resultU32 = 3;
   int32_t result32 = 4;
 
-  // UINT 8
   EXPECT_TRUE(kve1.setString("testing"));
 
   char temp[10] = {};
@@ -241,7 +238,8 @@ TEST(KeyValueElementTests, stringTest) {
 
   char temp2[100] = {};
   EXPECT_TRUE(kve1.getString(temp2, 100));
-  EXPECT_EQ(strncmp(temp2, "This is much longer string used for testing", 100), 0);
+  EXPECT_EQ(strncmp(temp2, "This is much longer string used for testing", 100),
+            0);
 }
 
 TEST(KeyValueElementTests, blobTest) {
@@ -276,12 +274,36 @@ TEST(KeyValueElementTests, blobTest) {
   EXPECT_TRUE(kve1.getBlob(temp, 10));
   EXPECT_EQ(strncmp(temp, "1234567890", 10), 0);
 
-  uint8_t expectedData[] = {'t', 'e', 's', 't', 'i', 'n', 'g', '\0', '\0', '\0',
-    '\0', '\0', '\0', '\0', '\0', // key
-    5, // dataType
-    10, 0, // size -- this part is endian dependent - test will fail if it is
-           // run on machine with different endian.
-   '1', '2', '3', '4', '5', '6', '7', '8', '9', '0' // data
+  uint8_t expectedData[] = {
+      't',
+      'e',
+      's',
+      't',
+      'i',
+      'n',
+      'g',
+      '\0',
+      '\0',
+      '\0',
+      '\0',
+      '\0',
+      '\0',
+      '\0',
+      '\0',  // key
+      5,     // dataType
+      10,
+      0,  // size -- this part is endian dependent - test will fail if it is
+          // run on machine with different endian.
+      '1',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '0'  // data
   };
 
   uint8_t serializedData[100] = {};
@@ -329,15 +351,12 @@ TEST(KeyValueTests, integrationTest) {
   EXPECT_TRUE(kvStorage.getString("wifissid", temp, 50));
   EXPECT_STREQ(temp, "MY wiFi SSID");
 
-
   uint8_t buffer[1024] = {};
   size_t dataWritten = kvStorage.serializeToMemory(buffer, 1024);
   EXPECT_EQ(dataWritten,
-      15 + 1 + 2 + 13 +  // wifissid
-      15 + 1 + 2 + 7 +   // passwdf
-      15 + 1 + 2 + 4     // suplaport
-      );
-
+            15 + 1 + 2 + 13 +     // wifissid
+                15 + 1 + 2 + 7 +  // passwdf
+                15 + 1 + 2 + 4);    // suplaport
 
   KeyValueTest kvStorageRestored;
   EXPECT_TRUE(kvStorageRestored.initFromMemory(buffer, dataWritten));
@@ -350,8 +369,8 @@ TEST(KeyValueTests, integrationTest) {
   EXPECT_EQ(resultU32, 2019);
 
   uint8_t secondBuffer[1024] = {};
-  size_t secondDataWritten = kvStorageRestored.serializeToMemory(
-      secondBuffer, 1024);
+  size_t secondDataWritten =
+      kvStorageRestored.serializeToMemory(secondBuffer, 1024);
 
   EXPECT_EQ(secondDataWritten, dataWritten);
   // make sure that serialized data is the same after serialization ->
@@ -404,7 +423,6 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_TRUE(kvStorage.getSwUpdateServer(buf));
   EXPECT_STREQ(buf, "update.server");
 
-
   EXPECT_TRUE(kvStorage.setMqttCommProtocolEnabled(true));
   EXPECT_TRUE(kvStorage.setMqttServer("mqtt.server"));
   EXPECT_TRUE(kvStorage.setMqttServerPort(42));
@@ -445,6 +463,4 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_STREQ(buf, "altssid");
   EXPECT_TRUE(kvStorage.getAltWiFiPassword(buf));
   EXPECT_STREQ(buf, "altpass");
-
 }
-

@@ -19,6 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <supla/storage/key_value.h>
+#include <supla-common/proto.h>
 
 #include "supla/storage/config.h"
 
@@ -397,7 +398,9 @@ TEST(KeyValueTests, variousKVChecks) {
   // generateGuidAndAuthkey();
   EXPECT_TRUE(kvStorage.setDeviceName("device name"));
   EXPECT_TRUE(kvStorage.setDeviceMode(Supla::DEVICE_MODE_NORMAL));
-  EXPECT_TRUE(kvStorage.setGUID("1234567890"));
+  char guid[SUPLA_GUID_SIZE] = {};
+  snprintf(guid, SUPLA_GUID_SIZE, "1234567890");
+  EXPECT_TRUE(kvStorage.setGUID(guid));
 
   EXPECT_TRUE(kvStorage.setSwUpdateServer("update.server"));
   EXPECT_TRUE(kvStorage.setSwUpdateBeta(true));
@@ -408,7 +411,9 @@ TEST(KeyValueTests, variousKVChecks) {
 
   EXPECT_TRUE(kvStorage.setSuplaServer("supla.server"));
   EXPECT_TRUE(kvStorage.setSuplaServerPort(1234));
-  EXPECT_TRUE(kvStorage.setAuthKey("0987654321"));
+  char authKey[SUPLA_AUTHKEY_SIZE] = {};
+  snprintf(authKey, SUPLA_AUTHKEY_SIZE, "0987654321");
+  EXPECT_TRUE(kvStorage.setAuthKey(authKey));
 
   EXPECT_TRUE(kvStorage.getSuplaServer(buf));
   EXPECT_STREQ(buf, "supla.server");

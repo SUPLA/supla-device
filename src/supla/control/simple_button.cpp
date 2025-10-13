@@ -150,7 +150,7 @@ void ButtonState::setDebounceDelay(unsigned int newDelayMs) {
   debounceDelayMs = newDelayMs;
 }
 
-int8_t SimpleButton::getButtonNumber() const {
+int16_t SimpleButton::getButtonNumber() const {
   return state.getGpio();
 }
 

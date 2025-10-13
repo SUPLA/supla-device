@@ -81,7 +81,7 @@ class SimpleButton : public Element, public LocalAction {
  protected:
   // Returns unique button number (current implementation returns configured
   // GPIO)
-  virtual int8_t getButtonNumber() const;
+  virtual int16_t getButtonNumber() const;
   ButtonState state;
 };
 

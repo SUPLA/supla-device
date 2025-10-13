@@ -503,11 +503,11 @@ uint8_t Button::getMaxMulticlickValue() {
   return maxMulticlickValueConfigured;
 }
 
-int8_t Button::getButtonNumber() const {
+int16_t Button::getButtonNumber() const {
   return buttonNumber;
 }
 
-void Button::setButtonNumber(int8_t btnNumber) {
+void Button::setButtonNumber(int16_t btnNumber) {
   buttonNumber = btnNumber;
 }
 

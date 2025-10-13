@@ -86,8 +86,8 @@ class Button : public SimpleButton, public ActionHandler {
   void setOnLoadConfigType(OnLoadConfigType type);
 
   uint8_t getMaxMulticlickValue();
-  int8_t getButtonNumber() const override;
-  void setButtonNumber(int8_t number);
+  int16_t getButtonNumber() const override;
+  void setButtonNumber(int16_t number);
 
   void handleAction(int event, int action) override;
 
@@ -118,7 +118,7 @@ class Button : public SimpleButton, public ActionHandler {
   uint8_t maxMulticlickValueConfigured = 0;
   bool repeatOnHoldEnabled = false;
   bool configButton = false;
-  int8_t buttonNumber = -1;
+  int16_t buttonNumber = -1;
   bool disabled = false;
   bool allowHoldOnPowerOn = false;
   bool waitingForRelease = false;

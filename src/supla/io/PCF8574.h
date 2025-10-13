@@ -24,7 +24,9 @@ Use library manager to install it
 */
 
 #include <PCF8574.h>
+
 #include <supla/io.h>
+#include <supla/mutex.h>
 #include <supla/log_wrapper.h>
 
 namespace Supla {
@@ -33,9 +35,10 @@ namespace Io {
 class PCF8574 : public Supla::Io::Base {
  public:
   explicit PCF8574(uint8_t address = 0x20,
-                   uint8_t initialPinState = 0x0,
+                   Supla::Mutex *mutex = nullptr,
+                   uint8_t initialPinState = 0xFF,
                    TwoWire *wire = &Wire)
-      : Supla::Io::Base(false), pcf_(address, wire) {
+      : Supla::Io::Base(false), pcf_(address, wire), mutex_(mutex) {
     if (!pcf_.begin(initialPinState)) {
       SUPLA_LOG_ERROR("Unable to find PCF8574 at address 0x%x", address);
     } else {
@@ -44,20 +47,28 @@ class PCF8574 : public Supla::Io::Base {
   }
 
   void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {
+    if (mutex_) mutex_->lock();
     if (mode == INPUT_PULLUP && pcf_.isConnected()) {
       pcf_.write(pin, HIGH);
     }
+    if (mutex_) mutex_->unlock();
   }
 
   void customDigitalWrite(int channelNumber, uint8_t pin,
                                                         uint8_t val) override {
+    if (mutex_) mutex_->lock();
     if (pcf_.isConnected()) {
       pcf_.write(pin, val);
     }
+    if (mutex_) mutex_->unlock();
   }
 
   int customDigitalRead(int channelNumber, uint8_t pin) override {
-    return pcf_.isConnected() ? pcf_.read(pin) : 0;
+    uint8_t val;
+    if (mutex_) mutex_->lock();
+    val =  pcf_.isConnected() ? pcf_.read(pin) : 0;
+    if (mutex_) mutex_->unlock();
+    return val;
   }
 
   unsigned int customPulseIn(int channelNumber, uint8_t pin, uint8_t value,
@@ -73,6 +84,7 @@ class PCF8574 : public Supla::Io::Base {
 
  protected:
   ::PCF8574 pcf_;
+  Supla::Mutex *mutex_ = nullptr;
 };
 
 };  // namespace Io

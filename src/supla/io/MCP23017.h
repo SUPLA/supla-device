@@ -24,7 +24,9 @@
 */
 
 #include <MCP23017.h>
+
 #include <supla/io.h>
+#include <supla/mutex.h>
 #include <supla/element.h>
 #include <supla/log_wrapper.h>
 
@@ -34,9 +36,10 @@ namespace Io {
 class MCP23017 : public Supla::Io::Base, Supla::Element {
  public:
   explicit MCP23017(uint8_t address = 0x20,
+                    Supla::Mutex *mutex = nullptr,
                     TwoWire *wire = &Wire,
                     bool pullUp = false)
-      : Supla::Io::Base(false), mcp_(address, wire) {
+      : Supla::Io::Base(false), mcp_(address, wire), mutex_(mutex) {
     if (!mcp_.begin(pullUp)) {
       SUPLA_LOG_ERROR("Unable to find MCP23017 at address: 0x%x", address);
     } else {
@@ -45,36 +48,42 @@ class MCP23017 : public Supla::Io::Base, Supla::Element {
   }
 
   void onInit() {
-    if (mcp_.isConnected()) {
-      read16FromMCP();
-    }
+    read16FromMCP();
+    outState_ = inState_;
+    lastOutState_ = inState_;
   }
 
   void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {
+    if (mutex_) mutex_->lock();
     if (mcp_.isConnected()) {
       mcp_.pinMode1(pin, mode);
     }
+    if (mutex_) mutex_->unlock();
   }
 
   void customDigitalWrite(int channelNumber, uint8_t pin,
-                                                        uint8_t val) override {
-    if (mcp_.isConnected()) {
-      mcp_.write1(pin, val);
+                                                         uint8_t val) override {
+    if (pin >= 16) {
+      SUPLA_LOG_WARNING("[MCP23017] can't write, pin %d out of range", pin);
+      return;
+    }
+    if (val) {
+      outState_ |= (1 << pin);
     } else {
-      SUPLA_LOG_WARNING(
-                      "[MCP23017] not connected, cannot write to pin %d", pin);
+      outState_ &= ~(1 << pin);
     }
   }
 
   int customDigitalRead(int channelNumber, uint8_t pin) override {
     if (pin >= 16) {
+      SUPLA_LOG_WARNING("[MCP23017] can't read, pin %d out of range", pin);
       return 0;
     }
-    return (gpioState_ >> pin) & 0x01;
+    return (inState_ >> pin) & 0x01;
   }
 
   unsigned int customPulseIn(int channelNumber, uint8_t pin, uint8_t value,
-                                              uint64_t timeoutMicro) override {
+                                               uint64_t timeoutMicro) override {
     return 0;
   }
 
@@ -86,18 +95,34 @@ class MCP23017 : public Supla::Io::Base, Supla::Element {
 
   void onTimer() override {
     read16FromMCP();
+    write16ToMCP();
   }
 
   void read16FromMCP() {
+    if (mutex_) mutex_->lock();
     if (mcp_.isConnected()) {
       uint16_t data = mcp_.read16();
-      gpioState_ = (data >> 8) | (data << 8);
+      inState_ = (data >> 8) | (data << 8);
     }
+    if (mutex_) mutex_->unlock();
+  }
+
+  void write16ToMCP() {
+    if (mutex_) mutex_->lock();
+    if (mcp_.isConnected() && outState_ != lastOutState_) {
+      uint16_t data = (outState_ >> 8) | (outState_ << 8);
+      mcp_.write16(data);
+      lastOutState_ = outState_;
+    }
+    if (mutex_) mutex_->unlock();
   }
 
  protected:
   ::MCP23017 mcp_;
-  uint16_t gpioState_ = 0;
+  uint16_t outState_ = 0;
+  uint16_t inState_ = 0;
+  uint16_t lastOutState_ = 0;
+  Supla::Mutex *mutex_ = nullptr;
 };
 
 };  // namespace Io

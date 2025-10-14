@@ -51,7 +51,8 @@ void I2CDriver::initialize() {
     esp_err_t err = i2c_new_master_bus(&conf, &busHandle);
 
     if (err == ESP_OK) {
-      SUPLA_LOG_INFO("I2C driver initialized");
+      SUPLA_LOG_INFO("I2C driver initialized, SDA %d, SCL %d, %s", sda, scl,
+                     internalPullUp ? "internal pullup" : "external pullup");
       initialized = true;
     } else {
       SUPLA_LOG_WARNING("Failed to init i2c (%d)", err);

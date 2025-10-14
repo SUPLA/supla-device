@@ -18,7 +18,7 @@ var searchData=
   ['closevalve_15',['closeValve',['../classSupla_1_1Control_1_1ValveBase.html#a016316e194423fd6566466e99ce2c5a6',1,'Supla::Control::ValveBase::closeValve()'],['../classValveBase.html#a016316e194423fd6566466e99ce2c5a6',1,'ValveBase::closeValve()']]],
   ['condition_16',['Condition',['../classSupla_1_1Condition.html',1,'Supla']]],
   ['conditiongetter_17',['ConditionGetter',['../classSupla_1_1ConditionGetter.html',1,'Supla']]],
-  ['config_18',['Config',['../classSupla_1_1Config.html',1,'Supla::Config'],['../structSupla_1_1Modbus_1_1Config.html',1,'Supla::Modbus::Config']]],
+  ['config_18',['Config',['../classSupla_1_1Config.html',1,'Supla::Config'],['../structSupla_1_1Modbus_1_1Config.html',1,'Supla::Modbus::Config'],['../structSupla_1_1Sensor_1_1TMP102_1_1Config.html',1,'Supla::Sensor::TMP102::Config']]],
   ['configproperties_19',['ConfigProperties',['../structSupla_1_1Modbus_1_1ConfigProperties.html',1,'Supla::Modbus']]],
   ['configtypesbitmap_20',['ConfigTypesBitmap',['../structConfigTypesBitmap.html',1,'ConfigTypesBitmap'],['../structSupla_1_1ConfigTypesBitmap.html',1,'Supla::ConfigTypesBitmap']]],
   ['configurationstate_21',['ConfigurationState',['../structSupla_1_1ConfigurationState.html',1,'Supla']]],

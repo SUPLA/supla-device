@@ -110,19 +110,21 @@ Collaboration diagram for Supla::Io::PCA9685:</div>
 <div class="dyncontent">
 <div class="center"><img src="classSupla_1_1Io_1_1PCA9685__coll__graph.png" border="0" usemap="#aSupla_1_1Io_1_1PCA9685_coll__map" alt="Collaboration graph"/></div>
 <map name="aSupla_1_1Io_1_1PCA9685_coll__map" id="aSupla_1_1Io_1_1PCA9685_coll__map">
-<area shape="rect" title=" " alt="" coords="5,80,138,106"/>
-<area shape="poly" title=" " alt="" coords="154,86,164,93,156,100,138,103,138,97,154,95,159,93,152,90"/>
-<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="18,5,125,31"/>
-<area shape="poly" title=" " alt="" coords="74,46,74,80,69,80,69,46"/>
-<area shape="poly" title=" " alt="" coords="142,11,152,18,143,25,126,28,125,22,141,21,147,18,139,15"/>
+<area shape="rect" title=" " alt="" coords="152,94,284,120"/>
+<area shape="poly" title=" " alt="" coords="301,99,310,107,302,115,285,117,284,112,300,110,305,107,298,103"/>
+<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="5,5,113,31"/>
+<area shape="poly" title=" " alt="" coords="96,36,197,91,194,96,93,41"/>
+<area shape="poly" title=" " alt="" coords="130,10,139,18,131,26,113,29,113,24,129,21,134,18,127,14"/>
+<area shape="rect" href="classSupla_1_1Mutex.html" title=" " alt="" coords="223,5,319,31"/>
+<area shape="poly" title=" " alt="" coords="258,46,227,95,223,92,253,43"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a9f25163391ca9f6c01715f40e924376f" id="r_a9f25163391ca9f6c01715f40e924376f"><td class="memItemLeft" align="right" valign="top"><a id="a9f25163391ca9f6c01715f40e924376f" name="a9f25163391ca9f6c01715f40e924376f"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>PCA9685</b> (uint8_t address=0x40, TwoWire *wire=&amp;Wire)</td></tr>
-<tr class="separator:a9f25163391ca9f6c01715f40e924376f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7d4d931fd3ccd2fe12d2e3e907bd1752" id="r_a7d4d931fd3ccd2fe12d2e3e907bd1752"><td class="memItemLeft" align="right" valign="top"><a id="a7d4d931fd3ccd2fe12d2e3e907bd1752" name="a7d4d931fd3ccd2fe12d2e3e907bd1752"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>PCA9685</b> (uint8_t address=0x40, <a class="el" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *mutex=nullptr, TwoWire *wire=&amp;Wire)</td></tr>
+<tr class="separator:a7d4d931fd3ccd2fe12d2e3e907bd1752"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa81e50b445175a0a47b48df67d6b9e75" id="r_aa81e50b445175a0a47b48df67d6b9e75"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa81e50b445175a0a47b48df67d6b9e75">customPinMode</a> (int channelNumber, uint8_t pin, uint8_t mode) override</td></tr>
 <tr class="separator:aa81e50b445175a0a47b48df67d6b9e75"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b5c162f4eb2683a40a9c31bd350a4f0" id="r_a6b5c162f4eb2683a40a9c31bd350a4f0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6b5c162f4eb2683a40a9c31bd350a4f0">customDigitalWrite</a> (int channelNumber, uint8_t pin, uint8_t val) override</td></tr>
@@ -157,6 +159,9 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:ab73b47d270d5fac4ad4541eb5d030791" id="r_ab73b47d270d5fac4ad4541eb5d030791"><td class="memItemLeft" align="right" valign="top"><a id="ab73b47d270d5fac4ad4541eb5d030791" name="ab73b47d270d5fac4ad4541eb5d030791"></a>
 ::PCA9685&#160;</td><td class="memItemRight" valign="bottom"><b>pca_</b></td></tr>
 <tr class="separator:ab73b47d270d5fac4ad4541eb5d030791"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0df925ec42c68cb5273d853836be310" id="r_ae0df925ec42c68cb5273d853836be310"><td class="memItemLeft" align="right" valign="top"><a id="ae0df925ec42c68cb5273d853836be310" name="ae0df925ec42c68cb5273d853836be310"></a>
+<a class="el" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>mutex_</b> = nullptr</td></tr>
+<tr class="separator:ae0df925ec42c68cb5273d853836be310"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>

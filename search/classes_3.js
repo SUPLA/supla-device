@@ -12,7 +12,7 @@ var searchData=
   ['clock_9',['Clock',['../classSupla_1_1Clock.html',1,'Supla']]],
   ['condition_10',['Condition',['../classSupla_1_1Condition.html',1,'Supla']]],
   ['conditiongetter_11',['ConditionGetter',['../classSupla_1_1ConditionGetter.html',1,'Supla']]],
-  ['config_12',['Config',['../classSupla_1_1Config.html',1,'Supla::Config'],['../structSupla_1_1Modbus_1_1Config.html',1,'Supla::Modbus::Config']]],
+  ['config_12',['Config',['../classSupla_1_1Config.html',1,'Supla::Config'],['../structSupla_1_1Modbus_1_1Config.html',1,'Supla::Modbus::Config'],['../structSupla_1_1Sensor_1_1TMP102_1_1Config.html',1,'Supla::Sensor::TMP102::Config']]],
   ['configproperties_13',['ConfigProperties',['../structSupla_1_1Modbus_1_1ConfigProperties.html',1,'Supla::Modbus']]],
   ['configtypesbitmap_14',['ConfigTypesBitmap',['../structConfigTypesBitmap.html',1,'ConfigTypesBitmap'],['../structSupla_1_1ConfigTypesBitmap.html',1,'Supla::ConfigTypesBitmap']]],
   ['configurationstate_15',['ConfigurationState',['../structSupla_1_1ConfigurationState.html',1,'Supla']]],

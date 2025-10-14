@@ -33,7 +33,7 @@ Use library manager to install it
 namespace Supla {
 namespace Io {
 
-class ADS1115 : public Supla::Io::Base, Supla::Element {
+class ADS1115 : public Supla::Io::Base {
  public:
   explicit ADS1115(uint8_t address = 0x48,
                    Supla::Mutex *mutex = nullptr,

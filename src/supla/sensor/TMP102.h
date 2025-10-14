@@ -47,16 +47,20 @@ class TMP102 : public Thermometer {
                   Supla::Mutex *mutex,
                   TwoWire *wire,
                   const Config &cfg)
-      : cfg_(cfg) {
-    initSensor(address, wire);
+      : address_(address),
+        mutex_(mutex),
+        wire_(wire),
+        cfg_(cfg) {
   }
 
   explicit TMP102(uint8_t address = 0x48,
                   Supla::Mutex *mutex = nullptr,
                   TwoWire *wire = &Wire)
-      : TMP102(address, mutex, wire, Config{}) {}
+      : TMP102(address, mutex, wire, Config{}) {
+  }
 
   void onInit() override {
+    initSensor(address_, wire_);
     channel.setNewValue(getTemp());
   }
 
@@ -96,11 +100,14 @@ class TMP102 : public Thermometer {
  protected:
   ::TMP102 tmp102_;
   Config cfg_;
+  TwoWire *wire_ = nullptr;
+  Supla::Mutex *mutex_ = nullptr;
+  uint8_t address_ = 0x48;
   bool isConnected_ = false;
   double lastValidTemperature_ = TEMPERATURE_NOT_AVAILABLE;
-  Supla::Mutex *mutex_ = nullptr;
 
   void initSensor(uint8_t address, TwoWire *wire) {
+    if (mutex_) mutex_->lock();
     if (tmp102_.begin(address, *wire)) {
       SUPLA_LOG_DEBUG("TMP102 connected at 0x%x", address);
       tmp102_.wakeup();
@@ -114,6 +121,7 @@ class TMP102 : public Thermometer {
     } else {
       SUPLA_LOG_ERROR("Unable to find TMP102 at 0x%x", address);
     }
+    if (mutex_) mutex_->lock();
   }
 
   static double percentageDifference(double a, double b) {

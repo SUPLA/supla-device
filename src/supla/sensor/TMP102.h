@@ -24,6 +24,7 @@ Use library manager to install it
 */
 
 #include <SparkFunTMP102.h>
+
 #include <supla/log_wrapper.h>
 #include "thermometer.h"
 
@@ -32,56 +33,100 @@ namespace Sensor {
 
 class TMP102 : public Thermometer {
  public:
+  struct Config {
+    float hTemp = 70.0;
+    float lTemp = 65.0;
+    bool extMode = false;
+    bool alertPolarity = false;
+    uint8_t fault = 0;
+    bool alertMode = false;
+    double thresholdPercentage = 30.0;
+  };
+
+  explicit TMP102(uint8_t address,
+                  Supla::Mutex *mutex,
+                  TwoWire *wire,
+                  const Config &cfg)
+      : address_(address),
+        mutex_(mutex),
+        wire_(wire),
+        cfg_(cfg) {
+  }
+
   explicit TMP102(uint8_t address = 0x48,
-                  TwoWire *wire = &Wire,
-                  float hTemp = 70.0,
-                  float lTemp = 65.0,
-                  bool extMode = false,
-                  bool alertPolarity = false,
-                  uint8_t fault = 0,
-                  bool alertMode = false) : alertMode_(alertMode) {
-    if (!tmp102_.begin(address, *wire)) {
-      SUPLA_LOG_ERROR("Unable to find TMP102 at address: 0x%x", address);
-    } else {
-      SUPLA_LOG_DEBUG("TMP102 is connected at address: 0x%x", address);
-      tmp102_.wakeup();
-      tmp102_.setHighTempC(hTemp);
-      tmp102_.setLowTempC(lTemp);
-      tmp102_.setExtendedMode(extMode);
-      tmp102_.setAlertPolarity(alertPolarity);
-      tmp102_.setFault(fault);
-      tmp102_.setAlertMode(alertMode);
-      isConnected_ = true;
-    }
+                  Supla::Mutex *mutex = nullptr,
+                  TwoWire *wire = &Wire)
+      : TMP102(address, mutex, wire, Config{}) {
   }
 
   void onInit() override {
+    initSensor(address_, wire_);
     channel.setNewValue(getTemp());
   }
 
   double getTemp() override {
+    double t = TEMPERATURE_NOT_AVAILABLE;
+    if (mutex_) mutex_->lock();
     if (isConnected_) {
-      double temp = tmp102_.readTempC();
-      if (temp >= -55.0 && temp <= 128.0) {
-        return round(temp * 100) / 100.0;
-      } else {
-        SUPLA_LOG_WARNING("[TMP102] invalid temperature reading: %f", temp);
-        return TEMPERATURE_NOT_AVAILABLE;
-      }
-    } else {
+      t = tmp102_.readTempC();
+    }
+    if (mutex_) mutex_->unlock();
+    if (t == TEMPERATURE_NOT_AVAILABLE) {
+      return t;
+    }
+    if (t < -40.0 || t > 125.0) {
+      SUPLA_LOG_WARNING("[TMP102] invalid reading: %.2f", t);
       return TEMPERATURE_NOT_AVAILABLE;
     }
+    if (lastValidTemperature_ != TEMPERATURE_NOT_AVAILABLE) {
+      double diff = percentageDifference(t, lastValidTemperature_);
+      if (diff > cfg_.thresholdPercentage) {
+        SUPLA_LOG_DEBUG("[TMP102] rejected value: %.2f (diff: %d%%)", t,
+                                                        static_cast<int>(diff));
+        return lastValidTemperature_;
+      }
+    }
+    lastValidTemperature_ = std::round(t * 100) / 100.0;
+    return lastValidTemperature_;
   }
 
   bool getAlertState() {
+    if (mutex_) mutex_->lock();
     bool raw = tmp102_.alert();
-    return alertMode_ ? raw : !raw;
+    if (mutex_) mutex_->unlock();
+    return cfg_.alertMode ? raw : !raw;
   }
 
  protected:
   ::TMP102 tmp102_;
-  bool alertMode_ - false;
+  Config cfg_;
+  TwoWire *wire_ = nullptr;
+  Supla::Mutex *mutex_ = nullptr;
+  uint8_t address_ = 0x48;
   bool isConnected_ = false;
+  double lastValidTemperature_ = TEMPERATURE_NOT_AVAILABLE;
+
+  void initSensor(uint8_t address, TwoWire *wire) {
+    if (mutex_) mutex_->lock();
+    if (tmp102_.begin(address, *wire)) {
+      SUPLA_LOG_DEBUG("TMP102 connected at 0x%x", address);
+      tmp102_.wakeup();
+      tmp102_.setHighTempC(cfg_.hTemp);
+      tmp102_.setLowTempC(cfg_.lTemp);
+      tmp102_.setExtendedMode(cfg_.extMode);
+      tmp102_.setAlertPolarity(cfg_.alertPolarity);
+      tmp102_.setFault(cfg_.fault);
+      tmp102_.setAlertMode(cfg_.alertMode);
+      isConnected_ = true;
+    } else {
+      SUPLA_LOG_ERROR("Unable to find TMP102 at 0x%x", address);
+    }
+    if (mutex_) mutex_->unlock();
+  }
+
+  static double percentageDifference(double a, double b) {
+    return std::abs(a - b) / b * 100.0;
+  }
 };
 
 };  // namespace Sensor

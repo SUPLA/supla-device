@@ -24,7 +24,9 @@ Use library manager to install it
 */
 
 #include <PCA9685.h>
+
 #include <supla/io.h>
+#include <supla/mutex.h>
 #include <supla/log_wrapper.h>
 
 namespace Supla {
@@ -32,33 +34,37 @@ namespace Io {
 
 class PCA9685 : public Supla::Io::Base {
  public:
-  explicit PCA9685(uint8_t address = 0x40, TwoWire *wire = &Wire)
-      : Supla::Io::Base(false), pca_(address, wire) {
+  explicit PCA9685(uint8_t address = 0x40,
+                   Supla::Mutex *mutex = nullptr,
+                   TwoWire *wire = &Wire)
+      : Supla::Io::Base(false), pca_(address, wire), mutex_(mutex) {
     if (!pca_.begin()) {
       SUPLA_LOG_ERROR("Unable to find PCA9685 at address 0x%x", address);
     } else {
       SUPLA_LOG_DEBUG("PCA9685 is connected at address: 0x%x, "
-                         "with PWM freq: %d Hz", address, pca_.getFrequency());
+                          "with PWM freq: %d Hz", address, pca_.getFrequency());
     }
   }
 
   void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {
   }
   void customDigitalWrite(int channelNumber, uint8_t pin,
-                                                      uint8_t val) override {
+                                                         uint8_t val) override {
   }
   int customDigitalRead(int channelNumber, uint8_t pin) override {
     return 0;
   }
   unsigned int customPulseIn(int channelNumber, uint8_t pin, uint8_t value,
-                                            uint64_t timeoutMicro) override {
+                                               uint64_t timeoutMicro) override {
     return 0;
   }
   void customAnalogWrite(int channelNumber, uint8_t pin, int val) override {
+    if (mutex_) mutex_->lock();
     if (pca_.isConnected()) {
       val = map(val, 0, 1023, 0, 4095);
       pca_.setPWM(pin, val);
     }
+    if (mutex_) mutex_->unlock();
   }
 
   int customAnalogRead(int channelNumber, uint8_t pin) override {
@@ -67,15 +73,18 @@ class PCA9685 : public Supla::Io::Base {
 
   // Default frequency: 200 Hz
   void setPWMFrequency(uint16_t frequency) {
+    if (mutex_) mutex_->lock();
     if (pca_.isConnected()) {
       pca_.setFrequency(frequency);
       SUPLA_LOG_DEBUG("[PCA9685] set PWM frequency: %d Hz",
-                                                          pca_.getFrequency());
+                                                           pca_.getFrequency());
     }
+    if (mutex_) mutex_->unlock();
   }
 
  protected:
   ::PCA9685 pca_;
+  Supla::Mutex *mutex_ = nullptr;
 };
 
 };  // namespace Io

@@ -19,45 +19,56 @@
 #pragma once
 
 /*
-Dependency: https://github.com/RobTillaart/ADS1X15
+Dependency: https://github.com/RobTillaart/PCF8574
 Use library manager to install it
 */
 
-#include <ADS1X15.h>
+#include <PCF8574.h>
 
 #include <supla/io.h>
 #include <supla/mutex.h>
-#include <supla/element.h>
 #include <supla/log_wrapper.h>
 
 namespace Supla {
 namespace Io {
 
-class ADS1115 : public Supla::Io::Base {
+class PCF8574 : public Supla::Io::Base {
  public:
-  explicit ADS1115(uint8_t address = 0x48,
+  explicit PCF8574(uint8_t address = 0x20,
                    Supla::Mutex *mutex = nullptr,
-                   TwoWire *wire = &Wire,
-                   uint8_t dataRrate = 7)
-      : Supla::Io::Base(false), ads_(address, wire), mutex_(mutex) {
-    if (!ads_.begin()) {
-      SUPLA_LOG_ERROR("Unable to find ADS1115 at address 0x%x", address);
+                   uint8_t initialPinState = 0xFF,
+                   TwoWire *wire = &Wire)
+      : Supla::Io::Base(false), pcf_(address, wire), mutex_(mutex) {
+    if (!pcf_.begin(initialPinState)) {
+      SUPLA_LOG_ERROR("Unable to find PCF8574 at address 0x%x", address);
     } else {
-      ads_.setDataRate(dataRrate);
-      ads_.setMode(0);
-      ads_.readADC(0);
-      SUPLA_LOG_DEBUG("ADS1115 is connected at address: 0x%x, Gain: %d, "
-                  "DataRate: %d", address, ads_.getGain(), ads_.getDataRate());
+      SUPLA_LOG_DEBUG("PCF8574 is connected at address: 0x%x", address);
     }
   }
 
-  void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {}
+  void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {
+    if (mutex_) mutex_->lock();
+    if (mode == INPUT_PULLUP && pcf_.isConnected()) {
+      pcf_.write(pin, HIGH);
+    }
+    if (mutex_) mutex_->unlock();
+  }
 
   void customDigitalWrite(int channelNumber, uint8_t pin,
-                                                       uint8_t val) override {}
+                                                        uint8_t val) override {
+    if (mutex_) mutex_->lock();
+    if (pcf_.isConnected()) {
+      pcf_.write(pin, val);
+    }
+    if (mutex_) mutex_->unlock();
+  }
 
   int customDigitalRead(int channelNumber, uint8_t pin) override {
-    return 0;
+    uint8_t val;
+    if (mutex_) mutex_->lock();
+    val =  pcf_.isConnected() ? pcf_.read(pin) : 0;
+    if (mutex_) mutex_->unlock();
+    return val;
   }
 
   unsigned int customPulseIn(int channelNumber, uint8_t pin, uint8_t value,
@@ -68,27 +79,11 @@ class ADS1115 : public Supla::Io::Base {
   void customAnalogWrite(int channelNumber, uint8_t pin, int val) override {}
 
   int customAnalogRead(int channelNumber, uint8_t pin) override {
-    if (pin > 3) {
-      SUPLA_LOG_WARNING("[ADS1115] invalid pin %d", pin);
-      return -1;
-    }
-    if (mutex_) mutex_->lock();
-    if (ads_.isConnected()) {
-      ads_.setGain(gain_);
-      readValue_[pin] = ads_.readADC(pin);
-    }
-    if (mutex_) mutex_->unlock();
-    return readValue_[pin];
-  }
-
-  void setGain(uint8_t value) {
-    gain_ = value;
+    return 0;
   }
 
  protected:
-  ::ADS1115 ads_;
-  uint8_t gain_ = 0;
-  int16_t readValue_[4] = {-1, -1, -1, -1};
+  ::PCF8574 pcf_;
   Supla::Mutex *mutex_ = nullptr;
 };
 

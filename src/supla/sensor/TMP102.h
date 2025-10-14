@@ -121,7 +121,7 @@ class TMP102 : public Thermometer {
     } else {
       SUPLA_LOG_ERROR("Unable to find TMP102 at 0x%x", address);
     }
-    if (mutex_) mutex_->lock();
+    if (mutex_) mutex_->unlock();
   }
 
   static double percentageDifference(double a, double b) {

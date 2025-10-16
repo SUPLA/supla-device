@@ -30,7 +30,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/device/supla_ca_cert.h>
 #include <supla/control/hvac_base.h>
 #include <supla/clock/clock.h>
 #include <supla/network/html/time_parameters.h>
@@ -136,10 +135,6 @@ void setup() {
 
   auto cfgButton = new Supla::Control::Button(CFG_BUTTON_GPIO, true, true);
   cfgButton->configureAsConfigButton(&SuplaDevice);
-
-  // configure defualt Supla CA certificate
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   SuplaDevice.setName("Basic thermostat");
   SuplaDevice.begin(21); // Thermostat requires proto version >= 21

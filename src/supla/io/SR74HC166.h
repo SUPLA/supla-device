@@ -1,20 +1,37 @@
+/*
+ Copyright (C) AC SOFTWARE SP. Z O.O.
 
-#ifndef SRC_SUPLA_CONTROL_EXT_SR166_H_
-#define SRC_SUPLA_CONTROL_EXT_166_H_
+ This program is free software; you can redistribute it and/or
+ modify it under the terms of the GNU General Public License
+ as published by the Free Software Foundation; either version 2
+ of the License, or (at your option) any later version.
+
+ This program is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU General Public License for more details.
+
+ You should have received a copy of the GNU General Public License
+ along with this program; if not, write to the Free Software
+ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
+#pragma once
 
 #include <supla/io.h>
+#include <supla/element.h>
 #include <supla/log_wrapper.h>
 
 namespace Supla {
-namespace Control {
+namespace Io {
 
-class ExtSR166 : public Supla::Io {
+class SR74HC166 : public Supla::Io::Base, Supla::Element {
   public:
-    explicit ExtSR166(const uint8_t size,
+    explicit SR74HC166(const uint8_t size,
                       const uint8_t dataPin,
                       const uint8_t clockPin,
                       const uint8_t ploadPin) :
-      _size(size), _clockPin(clockPin), _dataPin(dataPin), _ploadPin(ploadPin) , Supla::Io(false) {
+     Supla::Io::Base(false), _size(size), _clockPin(clockPin), _dataPin(dataPin), _ploadPin(ploadPin) {
 
       pinMode(_clockPin,        OUTPUT);
       pinMode(_dataPin,          INPUT);
@@ -78,7 +95,6 @@ class ExtSR166 : public Supla::Io {
     std::vector<uint8_t>_digitalValue;
 };
 
-};  // namespace Control
+};  // namespace Io
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_CONTROL_EXT_SR166_H_

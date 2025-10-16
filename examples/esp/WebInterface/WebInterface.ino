@@ -49,7 +49,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/device/supla_ca_cert.h>
 #include <supla/events.h>
 
 // Choose where Supla should store roller shutter data in persistent memory
@@ -115,10 +114,6 @@ void setup() {
 
   at3->setRelatedChannel(r1);
   at3->attach(buttonCfgRelay);
-
-  // configure defualt Supla CA certificate
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   SuplaDevice.begin();
 }

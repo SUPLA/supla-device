@@ -55,7 +55,6 @@ Supla::Control::ActionTrigger *at[MAX_CHANNELS] = {};
 #include <supla/control/relay.h>
 Supla::Control::Relay *relay[MAX_CHANNELS] = {};
 
-#include <supla/device/supla_ca_cert.h>
 #include <supla/network/html/device_info.h>
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
@@ -114,9 +113,7 @@ void setup() {
                                                 SuplaDevice, Supla::ON_EVENT_1);
 
   SuplaDevice.setInitialMode(Supla::InitialMode::StartWithCfgModeThenOffline);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
   SuplaDevice.setCustomHostnamePrefix("SUPLA-A16");
-  SuplaDevice.setSuplaCACert(suplaCACert);
   SuplaDevice.setName("KC868-A16");
   SuplaDevice.begin();
 }

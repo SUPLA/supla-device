@@ -27,7 +27,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/device/supla_ca_cert.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/storage/eeprom.h>
 
@@ -53,10 +52,6 @@ void setup() {
   vr->setDefaultFunction(SUPLA_CHANNELFNC_POWERSWITCH);
   // Enable state restore after device restart:
   vr->setDefaultStateRestore();
-
-  // configure defualt Supla CA certificate
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   SuplaDevice.begin();
 }

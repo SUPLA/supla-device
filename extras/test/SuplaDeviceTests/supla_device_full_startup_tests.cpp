@@ -473,6 +473,8 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledNoCANoConfig) {
   EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
   int dummy = 0;
   sd.setActivityTimeout(45);
+  sd.setSuplaCACert(nullptr);
+  sd.setSupla3rdPartyCACert(nullptr);
 
   EXPECT_CALL(el1, onLoadConfig(_)).Times(0);
   EXPECT_CALL(el2, onLoadConfig(_)).Times(0);
@@ -714,7 +716,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledOnlyOnceCASetNoConfig) {
   net.setSSLEnabled(true);
   const char myCA1[] = "test CA1";
   sd.setSuplaCACert(myCA1);
-  //  sd.setSupla3rdPartyCACert(myCA2);
+  sd.setSupla3rdPartyCACert(nullptr);
 
   EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);
   int dummy = 0;
@@ -794,7 +796,7 @@ TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledOnlyOnceCASetNoConfig) {
 TEST_F(SuplaDeviceTestsFullStartupManual, SslEnabledOnlyOnceCASetv2NoConfig) {
   net.setSSLEnabled(true);
   const char myCA2[] = "test CA2";
-  //  sd.setSuplaCACert(myCA1);
+  sd.setSuplaCACert(nullptr);
   sd.setSupla3rdPartyCACert(myCA2);
 
   EXPECT_EQ(Supla::Storage::ConfigInstance(), nullptr);

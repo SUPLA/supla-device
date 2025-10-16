@@ -39,7 +39,6 @@
 #include <supla/device/status_led.h>
 #include <supla/storage/littlefs_config.h>
 #include <supla/network/esp_web_server.h>
-#include <supla/device/supla_ca_cert.h>
 #include <supla/events.h>
 
 // Includes for HTML elements
@@ -97,10 +96,6 @@ void setup() {
   // Action trigger configuration
   at1->setRelatedChannel(r1);
   at1->attach(buttonCfgRelay);
-
-  // configure defualt Supla CA certificate
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   // HTML www component (they appear in sections according to creation
   // sequence).

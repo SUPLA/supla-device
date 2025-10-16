@@ -100,12 +100,6 @@ void cpp_main(void* param) {
 
   SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
 
-  SuplaDevice.setSuplaCACert(
-      reinterpret_cast<const char*>(suplaOrgCertPemStart));
-  SuplaDevice.setSupla3rdPartyCACert(
-      reinterpret_cast<const char*>(supla3rdCertPemStart));
-
-
   SuplaDevice.begin();
   SUPLA_LOG_DEBUG("Free heap: %d", heap_caps_get_free_size(MALLOC_CAP_8BIT));
   SUPLA_LOG_DEBUG("port tick period %d", portTICK_PERIOD_MS);

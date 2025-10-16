@@ -28,7 +28,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/device/supla_ca_cert.h>
 #include <supla/sensor/general_purpose_measurement.h>
 
 Supla::ESPWifi wifi;
@@ -68,10 +67,6 @@ void setup() {
 
   // Set some initial value of measurement
   gpm->setValue(3.1415);
-
-  // configure defualt Supla CA certificate
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   SuplaDevice.begin();
 }

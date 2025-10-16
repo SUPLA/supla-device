@@ -36,7 +36,6 @@
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/device/supla_ca_cert.h>
 
 #include <supla/sensor/max44009.h>
 
@@ -67,10 +66,6 @@ void setup() {
   // If you want to change default units to klx, then uncomment below lines:
   // lightSensor->setDefaultUnitAfterValue("klx");
   // lightSensor->setDefaultValueDivider(1000000);  // in 0.001 units
-
-  // configure defualt Supla CA certificate
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   SuplaDevice.begin();
 }

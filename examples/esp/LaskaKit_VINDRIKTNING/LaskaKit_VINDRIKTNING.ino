@@ -57,7 +57,6 @@
 #include <supla/network/html/device_info.h>
 #include <supla/network/html/protocol_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
-#include <supla/device/supla_ca_cert.h>
 #include <supla/events.h>
 #include <supla/network/html/i2cscanner.h>
 #include <supla/network/html/button_update.h>
@@ -72,9 +71,6 @@ Supla::EspWebServer suplaServer;
 
 void setup() {
   Serial.begin(115200);
-
-  SuplaDevice.setSuplaCACert(suplaCACert);
-  SuplaDevice.setSupla3rdPartyCACert(supla3rdCACert);
 
   // WevInterface with Update
   new Supla::Html::DeviceInfo(&SuplaDevice);

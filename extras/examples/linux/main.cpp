@@ -195,7 +195,7 @@ int main(int argc, char* argv[]) {
     SUPLA_LOG_INFO("Exit");
 
     exit(0);
-  } catch (const cxxopts::OptionException& e) {
+  } catch (const cxxopts::exceptions::exception& e) {
     std::cout << "error parsing options: " << e.what() << std::endl;
     exit(1);
   }

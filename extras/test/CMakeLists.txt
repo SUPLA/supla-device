@@ -1,21 +1,20 @@
-cmake_minimum_required(VERSION 3.11)
+cmake_minimum_required(VERSION 3.20)
 
-project(supladevice)
-
-enable_testing()
+project(supladevice LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_BUILD_TYPE Debug)
-set( CMAKE_EXPORT_COMPILE_COMMANDS ON )
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 find_program(CCACHE_FOUND ccache)
 # set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE include-what-you-use)
 if(CCACHE_FOUND)
   set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
 endif(CCACHE_FOUND)
 
-include_directories(../../src)
-include_directories(doubles)
+enable_testing()
 
 add_subdirectory(../../src/ build)
 
@@ -72,65 +71,50 @@ file(GLOB DOUBLE_SRC doubles/*.cpp)
 
 add_executable(supladevicetests ${TEST_SRC} ${DOUBLE_SRC})
 
+target_include_directories(supladevicetests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../src
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles
+)
+
+target_include_directories(supladevicelib PUBLIC
+  ${CMAKE_CURRENT_SOURCE_DIR}/../../src
+)
+
 target_link_libraries(supladevicetests
-  gmock
-  gtest
-  gtest_main
-  supladevicelib
+  PRIVATE
+    supladevicelib
+    gtest
+    gmock
+    gtest_main
   )
 
-add_test(NAME supladevicetests
-  COMMAND supladevicetests)
+add_test(NAME supladevicetests COMMAND supladevicetests)
 
-target_compile_options(supladevicelib PRIVATE
-  -Werror
+set(WARNINGS
   -Wall
-  #  -Weffc++
-  #  -pedantic
-  # -pedantic-errors
   -Wextra
-  #  -Waggregate-return
+  -Werror
+  -Wformat=2
   -Wcast-align
   -Wcast-qual
-  #  -Wconversion
-  -Wdisabled-optimization
-  #  -Wfloat-equal
-  -Wformat=2
-  -Wformat-nonliteral
-  -Wformat-security
-  -Wformat-y2k
-  -Wimport
-  -Winit-self
-  -Winline
-  -Winvalid-pch
-  #  -Wlong-long
   -Wmissing-field-initializers
-  #  -Wmissing-format-attribute
-  -Wmissing-include-dirs
-  -Wmissing-noreturn
-  -Wpacked
-  #  -Wpadded
   -Wpointer-arith
   -Wredundant-decls
-  #  -Wshadow
-  -Wstack-protector
   -Wstrict-aliasing=2
-  #  -Wswitch-default
-  #  -Wswitch-enum
   -Wunreachable-code
   -Wunused
   -Wunused-parameter
   -Wvariadic-macros
   -Wwrite-strings
-  #  -Wstringop-truncation
-  #  -Werror=stringop-truncation
-  -DSUPLA_TEST
-  -DSUPLA_DEVICE)
+)
+
+target_compile_options(supladevicelib PRIVATE ${WARNINGS})
 target_compile_options(supladevicetests PRIVATE
-  -Werror
-  -Wall
-  -Wextra
+  ${WARNINGS}
   -Wstringop-truncation
   -Werror=stringop-truncation
-  -DSUPLA_TEST
-  -DSUPLA_DEVICE)
+)
+
+target_compile_definitions(supladevicetests PRIVATE SUPLA_TEST SUPLA_DEVICE)
+target_compile_definitions(supladevicelib PRIVATE SUPLA_TEST SUPLA_DEVICE)
+

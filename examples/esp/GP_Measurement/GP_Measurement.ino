@@ -68,6 +68,7 @@ void setup() {
   // Set some initial value of measurement
   gpm->setValue(3.1415);
 
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

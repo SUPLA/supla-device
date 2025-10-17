@@ -16,10 +16,6 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifdef ARDUINO_ARCH_AVR
-#error "This example is not supported on Arduino AVR"
-#endif
-
 #include <SuplaDevice.h>
 #include <supla/storage/eeprom.h>
 #include <supla/network/esp_wifi.h>
@@ -137,11 +133,11 @@ void setup() {
   cfgButton->configureAsConfigButton(&SuplaDevice);
 
   SuplaDevice.setName("Basic thermostat");
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin(21); // Thermostat requires proto version >= 21
 }
 
 void loop() {
   SuplaDevice.iterate();
 }
-
 

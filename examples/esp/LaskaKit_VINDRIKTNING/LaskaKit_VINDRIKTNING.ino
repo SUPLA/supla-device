@@ -107,6 +107,7 @@ void setup() {
   aqieco->addSensor(Supla::SenorType::PRESS, bme280->getSecondaryChannel());
 
   SuplaDevice.setName(DEV_NAME);
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

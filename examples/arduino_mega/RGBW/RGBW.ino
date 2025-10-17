@@ -1,17 +1,19 @@
 /*
-Copyright (C) AC SOFTWARE SP. Z O.O.
+  Copyright (C) AC SOFTWARE SP. Z O.O.
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 2
+  of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include <SuplaDevice.h>
@@ -19,21 +21,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <supla/control/button.h>
 
 // Choose proper network interface for your card:
-#ifdef ARDUINO_ARCH_AVR
-  // Arduino Mega with EthernetShield W5100:
-  #include <supla/network/ethernet_shield.h>
-  // Ethernet MAC address
-  uint8_t mac[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
-  Supla::EthernetShield ethernet(mac);
+// Arduino Mega with EthernetShield W5100:
+#include <supla/network/ethernet_shield.h>
+// Ethernet MAC address
+uint8_t mac[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+Supla::EthernetShield ethernet(mac);
 
-  // Arduino Mega with ENC28J60:
-  // #include <supla/network/ENC28J60.h>
-  // Supla::ENC28J60 ethernet(mac);
-#elif defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
-  // ESP8266 and ESP32 based board:
-  #include <supla/network/esp_wifi.h>
-  Supla::ESPWifi wifi("your_wifi_ssid", "your_wifi_password");
-#endif
+// Arduino Mega with ENC28J60:
+// #include <supla/network/ENC28J60.h>
+// Supla::ENC28J60 ethernet(mac);
 
 /*
  * Youtube: https://youtu.be/FE9tqzTjmA4
@@ -49,11 +45,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 void setup() {
   Serial.begin(115200);
 
-  // Replace the falowing GUID with value that you can retrieve from https://www.supla.org/arduino/get-guid
-  char GUID[SUPLA_GUID_SIZE] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+  // Replace the falowing GUID with value that you can retrieve from
+  // https://www.supla.org/arduino/get-guid
+  char GUID[SUPLA_GUID_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-  // Replace the following AUTHKEY with value that you can retrieve from: https://www.supla.org/arduino/get-authkey
-  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
+  // Replace the following AUTHKEY with value that you can retrieve from:
+  // https://www.supla.org/arduino/get-authkey
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                      0x00, 0x00};
 
   /*
    * Having your device already registered at cloud.supla.org,
@@ -72,9 +73,9 @@ void setup() {
   button->repeatOnHoldEvery(35);
 
   rgbw->setStep(1);
-// rgbw->setMinMaxIterationDelay(750);  // delay between dimming direction
-                                        // change, 750 ms (default)
-//  rgbw->setMinIterationBrightness(1);  // 1 is default value
+  // rgbw->setMinMaxIterationDelay(750);  // delay between dimming direction
+  // change, 750 ms (default)
+  // rgbw->setMinIterationBrightness(1);  // 1 is default value
 
   button->addAction(Supla::ITERATE_DIM_ALL, rgbw, Supla::ON_HOLD);
   button->addAction(Supla::TOGGLE, rgbw, Supla::ON_CLICK_1);

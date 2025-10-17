@@ -53,6 +53,7 @@ void setup() {
   // Enable state restore after device restart:
   vr->setDefaultStateRestore();
 
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

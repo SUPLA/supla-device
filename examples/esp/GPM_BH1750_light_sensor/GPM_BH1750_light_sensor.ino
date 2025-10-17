@@ -65,6 +65,7 @@ void setup() {
   // lightSensor->setDefaultUnitAfterValue("klx");
   // lightSensor->setDefaultValueDivider(1000000);  // in 0.001 units
 
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

@@ -54,6 +54,7 @@ void setup() {
   freeHeapKB->setDefaultUnitAfterValue("KB");
   freeHeapKB->setDefaultValueDivider(1024000);  // in 0.001 units
 
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

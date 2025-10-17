@@ -1,46 +1,41 @@
 /*
-Copyright (C) AC SOFTWARE SP. Z O.O.
+  Copyright (C) AC SOFTWARE SP. Z O.O.
 
-This program is free software; you can redistribute it and/or
-modify it under the terms of the GNU General Public License
-as published by the Free Software Foundation; either version 2
-of the License, or (at your option) any later version.
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-You should have received a copy of the GNU General Public License
-along with this program; if not, write to the Free Software
-Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License
+  as published by the Free Software Foundation; either version 2
+  of the License, or (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
-
-#include <SuplaDevice.h>
-#include <supla/device/notifications.h>
-#include <supla/time.h>
 
 /*
  * This example requires Dallas Temperature Control library installed.
  * https://github.com/milesburton/Arduino-Temperature-Control-Library
  */
-// Add include to DS sensor
+
+#include <SuplaDevice.h>
+#include <supla/device/notifications.h>
+#include <supla/time.h>
 #include <supla/sensor/DS18B20.h>
 
 // Choose proper network interface for your card:
-#ifdef ARDUINO_ARCH_AVR
-  // Arduino Mega with EthernetShield W5100:
-  #include <supla/network/ethernet_shield.h>
-  // Ethernet MAC address
-  uint8_t mac[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
-  Supla::EthernetShield ethernet(mac);
+// Arduino Mega with EthernetShield W5100:
+#include <supla/network/ethernet_shield.h>
+// Ethernet MAC address
+uint8_t mac[6] = {0x00, 0x01, 0x02, 0x03, 0x04, 0x05};
+Supla::EthernetShield ethernet(mac);
 
-  // Arduino Mega with ENC28J60:
-  // #include <supla/network/ENC28J60.h>
-  // Supla::ENC28J60 ethernet(mac);
-#elif defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
-  // ESP8266 and ESP32 based board:
-  #include <supla/network/esp_wifi.h>
-  Supla::ESPWifi wifi("your_wifi_ssid", "your_wifi_password");
-#endif
+// Arduino Mega with ENC28J60:
+// #include <supla/network/ENC28J60.h>
+// Supla::ENC28J60 ethernet(mac);
 
 Supla::Sensor::DS18B20 *t1 = nullptr;
 Supla::Sensor::DS18B20 *t2 = nullptr;

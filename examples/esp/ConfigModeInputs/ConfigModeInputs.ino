@@ -159,6 +159,7 @@ void setup() {
 
   // Set custom device name
   SuplaDevice.setName("SUPLA-INPUT-EXAMPLE");
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   // Start!
   SuplaDevice.begin();
 

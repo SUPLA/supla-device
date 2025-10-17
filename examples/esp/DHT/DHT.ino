@@ -64,6 +64,7 @@ void setup() {
   // CHANNEL1 - DHT22 Sensor
   new Supla::Sensor::DHT(DHT2PIN, DHT2TYPE);
 
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

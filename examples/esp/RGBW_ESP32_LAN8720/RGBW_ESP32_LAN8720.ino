@@ -28,13 +28,6 @@
   3V3                  : VCC
 */
 
-#include <SuplaDevice.h>
-#include <supla/control/rgbw_leds.h>
-#include <supla/control/button.h>
-
-#include <supla/network/esp32eth.h>
-Supla::ESPETH Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
-
 // Other ethernet configurations
 // Supla::ESPETH Eth(
 //      type, phy_addr, mdc_gpio, mdio_gpio, power_gpio, clk_mode)
@@ -47,31 +40,37 @@ Supla::ESPETH Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1
 //  ETH_PHY_KSZ8041                                " EMAC_CLK_EXT_IN " - esp32P4
 //  ETH_PHY_KSZ8081
 
+#include <SuplaDevice.h>
+#include <supla/control/rgbw_leds.h>
+#include <supla/control/button.h>
+#include <supla/network/esp32eth.h>
+#include <supla/storage/littlefs_config.h>
+#include <supla/device/status_led.h>
+#include <supla/network/esp_web_server.h>
+#include <supla/network/html/device_info.h>
+#include <supla/network/html/protocol_parameters.h>
+#include <supla/network/html/status_led_parameters.h>
 
 #define RED_PIN              4
 #define GREEN_PIN            5
 #define BLUE_PIN             12
 #define BRIGHTNESS_PIN       13
 #define BUTTON_PIN           15
+#define STATUS_LED_GPIO 2
 
+Supla::ESPETH Eth(1);  // uint_t ETH_ADDR = I²C-address of Ethernet PHY (0 or 1)
+Supla::LittleFsConfig configSupla;
+
+Supla::Device::StatusLed statusLed(STATUS_LED_GPIO, true); // inverted state
+Supla::EspWebServer suplaServer;
 
 void setup() {
   Serial.begin(115200);
 
-  // Replace the falowing GUID with value that you can retrieve from
-  // https://www.supla.org/arduino/get-guid
-  char GUID[SUPLA_GUID_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-  // Replace the following AUTHKEY with value that you can retrieve
-  // from: https://www.supla.org/arduino/get-authkey
-  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-
-  /*
-     Having your device already registered at cloud.supla.org,
-     you want to change CHANNEL sequence or remove any of them,
-     then you must also remove the device itself from cloud.supla.org.
-     Otherwise you will get "Channel conflict!" error.
-  */
+  // HTML www component
+  new Supla::Html::DeviceInfo(&SuplaDevice);
+  new Supla::Html::ProtocolParameters;
+  new Supla::Html::StatusLedParameters;
 
   // CHANNEL0 - RGB controller and dimmer (RGBW)
   auto rgbw = new Supla::Control::RGBWLeds(
@@ -85,20 +84,8 @@ void setup() {
   button->addAction(Supla::ITERATE_DIM_ALL, rgbw, Supla::ON_HOLD);
   button->addAction(Supla::TOGGLE, rgbw, Supla::ON_CLICK_1);
 
-  /*
-     SuplaDevice Initialization.
-     Server address is available at https://cloud.supla.org
-     If you do not have an account, you can create it at
-     https://cloud.supla.org/account/create SUPLA and SUPLA CLOUD are free of
-     charge
-
-  */
-
-  SuplaDevice.begin(
-    GUID,              // Global Unique Identifier
-    "svr1.supla.org",  // SUPLA server address
-    "email@address",   // Email address used to login to Supla Cloud
-    AUTHKEY);          // Authorization key
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
+  SuplaDevice.begin();
 }
 
 void loop() {

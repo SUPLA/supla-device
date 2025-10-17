@@ -115,6 +115,7 @@ void setup() {
   at3->setRelatedChannel(r1);
   at3->attach(buttonCfgRelay);
 
+  SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();
 }
 

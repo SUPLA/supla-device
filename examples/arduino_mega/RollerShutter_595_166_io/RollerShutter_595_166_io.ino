@@ -15,23 +15,25 @@
 
 */
 
-#define NUMBER_OF_SR595     4  // number of shift registers eg 4 x 74HC595 = 32 outputs  pin 0 - 31
-#define DATA_SR595_GPIO    14  // data pin 14 on 74HC595
-#define CLOCK_SR595_GPIO   13  // clock pin 11 on 74HC595     
-#define LATCH_SR595_GPIO   12  // latch pin 12 on 74HC595
+#define NUMBER_OF_SR595 \
+  4  // number of shift registers eg 4 x 74HC595 = 32 outputs  pin 0 - 31
+#define DATA_SR595_GPIO  14  // data pin 14 on 74HC595
+#define CLOCK_SR595_GPIO 13  // clock pin 11 on 74HC595
+#define LATCH_SR595_GPIO 12  // latch pin 12 on 74HC595
 
-#define NUMBER_OF_SR166     4  // number of shift registers eg 4 x 74HC166 = 32 intputs  pin 0 - 31
-#define DATA_SR166_GPIO     4  // data pin 13 on 74HC166
-#define CLOCK_SR166_GPIO    5  // clock pin 2 on 74HC166     
-#define LOAD_SR166_GPIO     0  // load pin 1 on 74HC166
+#define NUMBER_OF_SR166 \
+  4  // number of shift registers eg 4 x 74HC166 = 32 intputs  pin 0 - 31
+#define DATA_SR166_GPIO  4  // data pin 13 on 74HC166
+#define CLOCK_SR166_GPIO 5  // clock pin 2 on 74HC166
+#define LOAD_SR166_GPIO  0  // load pin 1 on 74HC166
 
 #include <SuplaDevice.h>
-#include <supla/control/roller_shutter.h>
-#include <supla/control/button.h>
-#include <supla/control/relay.h>
-#include <supla/control/pin_status_led.h>
-#include <supla/control/EXT_SR595.h>
 #include <supla/control/EXT_SR166.h>
+#include <supla/control/EXT_SR595.h>
+#include <supla/control/button.h>
+#include <supla/control/pin_status_led.h>
+#include <supla/control/relay.h>
+#include <supla/control/roller_shutter.h>
 
 // Choose where Supla should store roller shutter data in persistant memory
 // We recommend to use external FRAM memory
@@ -42,7 +44,6 @@ Supla::Eeprom eeprom(STORAGE_OFFSET);
 // Supla::FramSpi fram(STORAGE_OFFSET);
 
 // Choose proper network interface for your card:
-#ifdef ARDUINO_ARCH_AVR
 // Arduino Mega with EthernetShield W5100:
 #include <supla/network/ethernet_shield.h>
 // Ethernet MAC address
@@ -52,21 +53,20 @@ Supla::EthernetShield ethernet(mac);
 // Arduino Mega with ENC28J60:
 // #include <supla/network/ENC28J60.h>
 // Supla::ENC28J60 ethernet(mac);
-#elif defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
-// ESP8266 and ESP32 based board:
-#include <supla/network/esp_wifi.h>
-Supla::ESPWifi wifi("your_wifi_ssid", "your_wifi_password");
-#endif
 
 void setup() {
-
   Serial.begin(115200);
 
-  // Replace the falowing GUID with value that you can retrieve from https://www.supla.org/arduino/get-guid
-  char GUID[SUPLA_GUID_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  // Replace the falowing GUID with value that you can retrieve from
+  // https://www.supla.org/arduino/get-guid
+  char GUID[SUPLA_GUID_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
-  // Replace the following AUTHKEY with value that you can retrieve from: https://www.supla.org/arduino/get-authkey
-  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+  // Replace the following AUTHKEY with value that you can retrieve from:
+  // https://www.supla.org/arduino/get-authkey
+  char AUTHKEY[SUPLA_AUTHKEY_SIZE] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+                                      0x00, 0x00};
 
   /*
      Having your device already registered at cloud.supla.org,
@@ -75,24 +75,35 @@ void setup() {
      Otherwise you will get "Channel conflict!" error.
   */
 
-  auto ExtSr595 = new Supla::Control::ExtSR595 (NUMBER_OF_SR595 , DATA_SR595_GPIO, CLOCK_SR595_GPIO, LATCH_SR595_GPIO);
-  auto ExtSr166 = new Supla::Control::ExtSR166 (NUMBER_OF_SR166 , DATA_SR166_GPIO, CLOCK_SR166_GPIO, LOAD_SR166_GPIO);
+  auto ExtSr595 = new Supla::Control::ExtSR595(
+      NUMBER_OF_SR595, DATA_SR595_GPIO, CLOCK_SR595_GPIO, LATCH_SR595_GPIO);
+  auto ExtSr166 = new Supla::Control::ExtSR166(
+      NUMBER_OF_SR166, DATA_SR166_GPIO, CLOCK_SR166_GPIO, LOAD_SR166_GPIO);
 
   auto r1 = new Supla::Control::Relay(ExtSr595, 0, true);
   auto r2 = new Supla::Control::Relay(ExtSr595, 14, false);
   auto r3 = new Supla::Control::Relay(ExtSr595, 27, true);
 
-
-  Supla::Control::RollerShutter *rs = new Supla::Control::RollerShutter(ExtSr595, 3, 4, true); // Q3 and Q4 from first 74HC595
-
+  Supla::Control::RollerShutter *rs = new Supla::Control::RollerShutter(
+      ExtSr595, 3, 4, true);  // Q3 and Q4 from first 74HC595
 
   Supla::Control::Button *buttonOpen = new Supla::Control::Button(ExtSr166, 4);
   Supla::Control::Button *buttonClose = new Supla::Control::Button(ExtSr166, 5);
 
   // Add two LEDs to inform about roller shutter relay status
   // If inverted value is required, please add parameter with true value
-  new Supla::Control::PinStatusLed(NULL, ExtSr595, 15, 30, true); // gpio 15 on ESP status to be informed on pin 30 of 74HC595
-  new Supla::Control::PinStatusLed(ExtSr595, ExtSr595, 4, 31, true); // pin 4 on 74HC595 status to be informed on pin 31 of 74HC595
+  new Supla::Control::PinStatusLed(
+      NULL,
+      ExtSr595,
+      15,
+      30,
+      true);  // gpio 15 on ESP status to be informed on pin 30 of 74HC595
+  new Supla::Control::PinStatusLed(
+      ExtSr595,
+      ExtSr595,
+      4,
+      31,
+      true);  // pin 4 on 74HC595 status to be informed on pin 31 of 74HC595
 
   buttonOpen->addAction(Supla::OPEN_OR_STOP, *rs, Supla::ON_PRESS);
   buttonClose->addAction(Supla::CLOSE_OR_STOP, *rs, Supla::ON_PRESS);
@@ -100,16 +111,17 @@ void setup() {
   /*
      SuplaDevice Initialization.
      Server address is available at https://cloud.supla.org
-     If you do not have an account, you can create it at https://cloud.supla.org/account/create
-     SUPLA and SUPLA CLOUD are free of charge
+     If you do not have an account, you can create it at
+     https://cloud.supla.org/account/create SUPLA and SUPLA CLOUD are free of
+     charge
 
   */
 
-  SuplaDevice.begin(GUID,              // Global Unique Identifier
-                    "svr1.supla.org",  // SUPLA server address
-                    "email@address",   // Email address used to login to Supla Cloud
-                    AUTHKEY);          // Authorization key
-
+  SuplaDevice.begin(
+      GUID,              // Global Unique Identifier
+      "svr1.supla.org",  // SUPLA server address
+      "email@address",   // Email address used to login to Supla Cloud
+      AUTHKEY);          // Authorization key
 }
 
 void loop() {

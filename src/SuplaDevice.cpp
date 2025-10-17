@@ -677,13 +677,14 @@ void SuplaDeviceClass::iterateSwUpdate() {
       result.Result = SUPLA_FIRMWARE_CHECK_RESULT_ERROR;
       if (swUpdate->getNewVersion()) {
         SUPLA_LOG_INFO("New version available: %s", swUpdate->getNewVersion());
-        strncpy(
-            result.SoftVer, swUpdate->getNewVersion(), SUPLA_SOFTVER_MAXSIZE);
+        strncpy(result.SoftVer,
+                swUpdate->getNewVersion(),
+                SUPLA_SOFTVER_MAXSIZE - 1);
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_AVAILABLE;
         if (swUpdate->getChangelogUrl()) {
           strncpy(
               result.ChangelogUrl, swUpdate->getChangelogUrl(),
-              SUPLA_URL_PATH_MAXSIZE);
+              SUPLA_URL_PATH_MAXSIZE - 1);
         }
       } else {
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE;
@@ -1060,8 +1061,8 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
       }
       case SUPLA_CALCFG_CMD_SET_TIME: {
         SUPLA_LOG_INFO("CALCFG SET TIME received");
-        if (request->DataType != 0 &&
-            request->DataSize != sizeof(TSDC_UserLocalTimeResult)) {
+        if (request->DataType != 0 ||
+            request->DataSize > sizeof(TSDC_UserLocalTimeResult)) {
           SUPLA_LOG_WARNING("SET TIME invalid size %d", request->DataSize);
           return SUPLA_CALCFG_RESULT_FALSE;
         }
@@ -1220,8 +1221,8 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
 
       case SUPLA_CALCFG_CMD_SET_CFG_MODE_PASSWORD: {
         SUPLA_LOG_INFO("CALCFG SET CFGMODE PASSWORD received");
-        if (request->DataType != 0 &&
-            request->DataSize != sizeof(TCalCfg_SetCfgModePassword)) {
+        if (request->DataType != 0 ||
+            request->DataSize > sizeof(TCalCfg_SetCfgModePassword)) {
           SUPLA_LOG_WARNING("CALCFG SET CFGMODE PASSWORD invalid size %d",
                             request->DataSize);
           return SUPLA_CALCFG_RESULT_FALSE;
@@ -1325,6 +1326,8 @@ int SuplaDeviceClass::generateHostname(char *buf, int macSize) {
       name[destIdx++] = '-';
     } else if (srcName[i] < 123) {
       name[destIdx++] = srcName[i] - 32;  // capitalize small chars
+    } else {
+      continue;
     }
     if (destIdx == 1) {
       if (name[0] == '-') {
@@ -1376,7 +1379,7 @@ void SuplaDeviceClass::scheduleSoftRestart(int timeout) {
 }
 
 void SuplaDeviceClass::scheduleProtocolsRestart(int timeout) {
-  SUPLA_LOG_INFO("Scheduling protocols restart in %d ms", timeout);;
+  SUPLA_LOG_INFO("Scheduling protocols restart in %d ms", timeout);
   if (timeout <= 0) {
     protocolRestartTimeMs = 1;
   } else {
@@ -1639,17 +1642,17 @@ Supla::Protocol::SuplaSrpc *SuplaDeviceClass::getSrpcLayer() {
 }
 
 void SuplaDeviceClass::setCustomHostnamePrefix(const char *prefix) {
+  if (customHostnamePrefix != nullptr) {
+    delete[] customHostnamePrefix;
+    customHostnamePrefix = nullptr;
+  }
   if (prefix == nullptr) {
-    if (customHostnamePrefix != nullptr) {
-      delete[] customHostnamePrefix;
-      customHostnamePrefix = nullptr;
-    }
     return;
   }
 
-  int len = strlen(prefix);
-  customHostnamePrefix = new char[len + 1];
-  strncpy(customHostnamePrefix, prefix, len + 1);
+  int len = strlen(prefix) + 1;
+  customHostnamePrefix = new char[len];
+  snprintf(customHostnamePrefix, len, "%s", prefix);
 }
 
 void SuplaDeviceClass::disableLocalActionsIfNeeded() {

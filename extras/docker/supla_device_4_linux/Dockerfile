@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:25.10
 LABEL authors="Goral64"
 
 ENV SUPLA_DEVICE_PATH=/supla-device

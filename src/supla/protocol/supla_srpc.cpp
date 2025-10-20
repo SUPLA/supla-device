@@ -50,8 +50,8 @@ static const char wrongCert[] = "SUPLA";
 
 Supla::Protocol::SuplaSrpc::SuplaSrpc(SuplaDeviceClass *sdc, int version)
     : Supla::Protocol::ProtocolLayer(sdc), version(version) {
-  setSuplaCACert(suplaCACert);
-  setSupla3rdPartyCACert(supla3rdCACert);
+  setSuplaCACert(::suplaCACert);
+  setSupla3rdPartyCACert(::supla3rdCACert);
 }
 
 Supla::Protocol::SuplaSrpc::~SuplaSrpc() {

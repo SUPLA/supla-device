@@ -194,7 +194,7 @@ bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
         SUPLA_LOG_INFO("Channel[%d] loaded function: %d",
                        channel->getChannelNumber(),
                        channelFunc);
-        channel->setDefaultFunction(channelFunc);
+        setFunction(channelFunc);
       } else {
         SUPLA_LOG_INFO("Channel[%d] invalid function: %d",
                        channel->getChannelNumber(),
@@ -252,8 +252,7 @@ bool Supla::ElementWithChannelActions::setAndSaveFunction(
   if (!channel) {
     return false;
   }
-  if (channel->getDefaultFunction() != channelFunction) {
-    channel->setDefaultFunction(channelFunction);
+  if (setFunction(channelFunction)) {
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
       cfg->setChannelFunction(getChannelNumber(), channelFunction);

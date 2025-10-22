@@ -381,11 +381,32 @@ class Element {
   void setInitialCaption(const char *caption, bool secondaryChannel = false);
 
   /**
-   * Sets default channel's function
+   * Sets default channel's function. This value can be changed to other
+   * function in runtime, so it stores also current function.
    *
    * @param defaultFunction SUPLA_CHANNELFNC_* see proto.h
+   *
+   * @return true if default function was changed, false otherwise
    */
-  void setDefaultFunction(int32_t defaultFunction);
+  bool setDefaultFunction(uint32_t defaultFunction);
+
+  /**
+   * Sets channel's function.
+   * It calls setDefaultFunction()
+   *
+   * @param function
+   *
+   * @return true if function was changed, false otherwise
+   */
+  bool setFunction(uint32_t newFunction);
+
+  /**
+   * Called when channel function changes
+   *
+   * @param currentFunction old function
+   * @param newFunction new function
+   */
+  virtual void onFunctionChange(uint32_t currentFunction, uint32_t newFunction);
 
  protected:
   static Element *firstPtr;

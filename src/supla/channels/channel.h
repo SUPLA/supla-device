@@ -255,9 +255,17 @@ class Channel : public LocalAction {
   uint32_t getChannelType() const;
 
   void setType(uint32_t type);
+
   // setDefault and setDefaultFunction are the same methods.
   // Second was added for better readability
   void setDefault(uint32_t value);
+
+  /**
+   * Set default function.
+   * It can be also used in runtime to set current function.
+   *
+   * @param function
+   */
   void setDefaultFunction(uint32_t function);
   uint32_t getDefaultFunction() const;
   bool isFunctionValid(uint32_t function) const;

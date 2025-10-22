@@ -54,7 +54,6 @@ struct RollerShutterWithTiltStateData {
 
 RollerShutterInterface::RollerShutterInterface(bool tiltFunctionsSupported) {
   channel.setType(SUPLA_CHANNELTYPE_RELAY);
-  channel.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   channel.setFuncList(SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER |
                       SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
                       SUPLA_BIT_FUNC_TERRACE_AWNING |
@@ -64,6 +63,7 @@ RollerShutterInterface::RollerShutterInterface(bool tiltFunctionsSupported) {
   if (tiltFunctionsSupported) {
     addTiltFunctions();
   }
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }

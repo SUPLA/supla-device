@@ -32,7 +32,7 @@ using Supla::Sensor::Container;
 
 Container::Container() {
   channel.setType(SUPLA_CHANNELTYPE_CONTAINER);
-  setDefaultFunction(SUPLA_CHANNELFNC_CONTAINER);
+  setFunction(SUPLA_CHANNELFNC_CONTAINER);
   channel.setContainerFillValue(-1);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);

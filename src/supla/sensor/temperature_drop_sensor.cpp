@@ -29,7 +29,7 @@ TemperatureDropSensor::TemperatureDropSensor(
     measurements[i] = INT16_MIN;
   }
   measurementIndex = 0;
-  virtualBinary.setDefaultFunction(SUPLA_CHANNELFNC_OPENINGSENSOR_WINDOW);
+  virtualBinary.setFunction(SUPLA_CHANNELFNC_OPENINGSENSOR_WINDOW);
   virtualBinary.set();  // by default "window" is considered to be closed
 }
 

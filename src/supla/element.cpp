@@ -336,11 +336,26 @@ void Element::setInitialCaption(const char *caption, bool secondaryChannel) {
   }
 }
 
-void Element::setDefaultFunction(int32_t defaultFunction) {
+bool Element::setDefaultFunction(uint32_t defaultFunction) {
   Supla::Channel *ch = getChannel();
   if (ch) {
+    auto current = ch->getDefaultFunction();
+    if (current == defaultFunction) {
+      return false;
+    }
     ch->setDefaultFunction(defaultFunction);
+    onFunctionChange(current, defaultFunction);
   }
+  return true;
+}
+
+bool Element::setFunction(uint32_t newFunction) {
+  return setDefaultFunction(newFunction);
+}
+
+void Element::onFunctionChange(uint32_t currentFunction, uint32_t newFunction) {
+  (void)(currentFunction);
+  (void)(newFunction);
 }
 
 bool Element::isOwnerOfSubDeviceId(int) const {

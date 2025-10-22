@@ -59,6 +59,7 @@ class Channel : public LocalAction {
                    uint8_t brightness);
   void setNewValue(uint64_t value);
   void setNewValue(const TDSC_RollerShutterValue &value);
+  void setNewValue(const TDSC_FacadeBlindValue &value);
   bool setNewValue(const char *newValue);
 
   void setStateOffline();

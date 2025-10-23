@@ -225,7 +225,7 @@ idf_component_register(SRCS
     app_update
     esp_http_client
     esp_wifi
-    driver
+    esp_driver_gpio
     mqtt
     esp_timer
     esp_partition

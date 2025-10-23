@@ -29,11 +29,34 @@ namespace Control {
 
 class RollerShutter : public RollerShutterInterface {
  public:
+   /**
+    * Constructor.
+    *
+    * @param io Supla::Io inteface (if other than default)
+    * @param pinUp GPIO pin used for moving up
+    * @param pinDown GPIO pin used for moving down
+    * @param highIsOn true for active high
+    * @param tiltFunctionsEnabled true to enable tilt functions (changing this
+    *        value will reset state storage)
+    */
   RollerShutter(Supla::Io::Base *io,
                 int pinUp,
                 int pinDown,
-                bool highIsOn = true);
-  RollerShutter(int pinUp, int pinDown, bool highIsOn = true);
+                bool highIsOn = true,
+                bool tiltFunctionsEnabled = false);
+  /**
+   * Constructor.
+   *
+   * @param pinUp GPIO pin used for moving up
+   * @param pinDown GPIO pin used for moving down
+   * @param highIsOn true for active high
+   * @param tiltFunctionsEnabled true to enable tilt functions (changing this
+   *        value will reset state storage)
+   */
+  RollerShutter(int pinUp,
+                int pinDown,
+                bool highIsOn = true,
+                bool tiltFunctionsEnabled = false);
 
   void onInit() override;
   void onTimer() override;

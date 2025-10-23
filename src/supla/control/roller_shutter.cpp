@@ -31,13 +31,20 @@ namespace Control {
 RollerShutter::RollerShutter(Supla::Io::Base *io,
                              int pinUp,
                              int pinDown,
-                             bool highIsOn)
-    : RollerShutter(pinUp, pinDown, highIsOn) {
+                             bool highIsOn,
+                             bool tiltFunctionsEnabled)
+    : RollerShutter(pinUp, pinDown, highIsOn, tiltFunctionsEnabled) {
   this->io = io;
 }
 
-RollerShutter::RollerShutter(int pinUp, int pinDown, bool highIsOn)
-    : pinUp(pinUp), pinDown(pinDown), highIsOn(highIsOn) {
+RollerShutter::RollerShutter(int pinUp,
+                             int pinDown,
+                             bool highIsOn,
+                             bool tiltFunctionsEnabled)
+    : RollerShutterInterface(tiltFunctionsEnabled),
+      pinUp(pinUp),
+      pinDown(pinDown),
+      highIsOn(highIsOn) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
 }
@@ -199,9 +206,9 @@ void RollerShutter::onTimer() {
         calibrationTime = 0;
         setCalibrate(false);
         if (currentDirection == Directions::UP_DIR) {
-          setCurrentPosition(0);
+          setCurrentPosition(0, 0);
         } else {
-          setCurrentPosition(100);
+          setCurrentPosition(100, 100);
         }
         if (targetPosition < 0) {
           setTargetPosition(STOP_POSITION);
@@ -305,6 +312,10 @@ void RollerShutter::onTimer() {
   } else {
     // RS is not calibrated
     currentPosition = UNKNOWN_POSITION;
+    if (isTiltFunctionEnabled()) {
+      currentTilt = UNKNOWN_POSITION;
+    }
+
     if (newTargetPositionAvailable) {
       Directions newDirection = Directions::STOP_DIR;
       operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;

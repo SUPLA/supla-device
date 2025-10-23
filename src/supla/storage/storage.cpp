@@ -61,6 +61,8 @@ bool Storage::Init() {
     if (!storageInitDone) {
       storageInitDone = true;
       result = Instance()->init();
+    } else {
+      result = Instance()->getInitResult();
     }
   } else {
     SUPLA_LOG_DEBUG("Main storage not configured");
@@ -69,6 +71,8 @@ bool Storage::Init() {
     if (!configInitDone) {
       configInitDone = true;
       result = ConfigInstance()->init();
+    } else {
+      result = ConfigInstance()->getInitResult();
     }
   } else {
     SUPLA_LOG_DEBUG("Config storage not configured");
@@ -205,10 +209,13 @@ bool Storage::init() {
 
   if (stateStorage == nullptr) {
     SUPLA_LOG_WARNING("Storage: stateStorage is null, abort");
-    return false;
+    initResult = false;
+    return initResult;
   }
 
-  return stateStorage->loadPreambles(storageStartingOffset, availableSize);
+  initResult =
+      stateStorage->loadPreambles(storageStartingOffset, availableSize);
+  return initResult;
 }
 
 void Storage::deleteAll() {
@@ -579,6 +586,10 @@ bool Storage::isAddChannelNumbersEnabled() const {
 
 void Storage::setDeleteAllMethodEnabled(bool value) {
   deleteAllMethodEnabled = value;
+}
+
+bool Storage::getInitResult() const {
+  return initResult;
 }
 
 }  // namespace Supla

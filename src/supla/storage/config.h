@@ -201,6 +201,8 @@ class Config {
    */
   bool setChannelFunction(int channelNo, int32_t channelFunction);
 
+  bool getInitResult() const;
+
  protected:
   virtual int getBlobSize(const char* key) = 0;
 
@@ -208,6 +210,7 @@ class Config {
   uint32_t deviceConfigUpdateDelayTimestamp = 0;
   uint16_t saveDelayMs = 0;
   int8_t deviceConfigChangeFlag = -1;
+  bool initResult = false;
 };
 };  // namespace Supla
 

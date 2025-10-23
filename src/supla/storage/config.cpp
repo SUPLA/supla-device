@@ -710,4 +710,8 @@ bool Config::setChannelFunction(int channelNo, int32_t channelFunction) {
   return setInt32(key, channelFunction);
 }
 
+bool Config::getInitResult() const {
+  return initResult;
+}
+
 }  // namespace Supla

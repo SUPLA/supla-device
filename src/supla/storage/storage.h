@@ -106,6 +106,7 @@ class Storage {
 
  protected:
   virtual bool init();
+  bool getInitResult() const;
   virtual int readStorage(unsigned int address,
                           unsigned char *buf,
                           int size,
@@ -142,6 +143,7 @@ class Storage {
   static Config *configInstance;
   bool addChannelNumbers = false;
   bool deleteAllMethodEnabled = true;
+  bool initResult = false;
 };
 
 #pragma pack(push, 1)

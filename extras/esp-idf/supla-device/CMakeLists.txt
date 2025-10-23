@@ -224,7 +224,6 @@ idf_component_register(SRCS
     esp_https_server
     app_update
     esp_http_client
-    json
     esp_wifi
     driver
     mqtt

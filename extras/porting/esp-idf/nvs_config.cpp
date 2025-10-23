@@ -111,6 +111,7 @@ bool NvsConfig::init() {
     if (err == ESP_ERR_NOT_FOUND) {
       SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
                       nvsPartitionName);
+      initResult = false;
       return false;
     } else if (err == ESP_OK) {
       SUPLA_LOG_DEBUG("NvsConfig: initialized unencrypted NVS");
@@ -129,6 +130,7 @@ bool NvsConfig::init() {
             SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" open failed",
                             nvsPartitionName);
           } else {
+            initResult = true;
             return true;
           }
         } else {
@@ -155,6 +157,7 @@ bool NvsConfig::init() {
   if (err == ESP_ERR_NOT_FOUND) {
     SUPLA_LOG_ERROR("NvsConfig: NVS \"%s\" partition not found",
                     nvsPartitionName);
+    initResult = false;
     return false;
   }
 
@@ -166,6 +169,7 @@ bool NvsConfig::init() {
     err = nvs_flash_init();
     if (err != ESP_OK) {
       SUPLA_LOG_ERROR("NvsConfig: failed to init NVS storage");
+      initResult = false;
       return false;
     }
   }
@@ -202,6 +206,7 @@ bool NvsConfig::init() {
       if (err != ESP_OK) {
         SUPLA_LOG_ERROR("NvsConfig: failed to init supla NVS partition");
         nvsPartitionName = NVS_DEFAULT_PARTITION_NAME;
+        initResult = false;
         return false;
       }
     }
@@ -224,6 +229,7 @@ bool NvsConfig::init() {
       nvsPartitionName, "supla", NVS_READWRITE, &nvsHandle);
   if (err != ESP_OK) {
     SUPLA_LOG_ERROR("NvsConfig: failed to open NVS storage");
+    initResult = false;
     return false;
   }
 //  nvs_iterator_t it = nullptr;
@@ -236,6 +242,7 @@ bool NvsConfig::init() {
 //    res = nvs_entry_next(&it);
 //  }
 //  nvs_release_iterator(it);
+  initResult = true;
   return true;
 }
 

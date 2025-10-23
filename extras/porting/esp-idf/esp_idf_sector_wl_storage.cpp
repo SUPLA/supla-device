@@ -47,7 +47,8 @@ bool EspIdfSectorWlStorage::init() {
 
   if (storagePartition == nullptr) {
     SUPLA_LOG_ERROR("Storage partition not found");
-    return false;
+    initResult = false;
+    return initResult;
   }
 
   return Storage::init();

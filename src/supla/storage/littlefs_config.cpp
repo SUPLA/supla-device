@@ -47,15 +47,17 @@ bool Supla::LittleFsConfig::init() {
     SUPLA_LOG_WARNING(
         "LittleFsConfig: init called on non empty database. Aborting");
     // init can be done only on empty storage
+    initResult = false;
     return false;
   }
 
   if (!initLittleFs()) {
+    initResult = false;
     return false;
   }
 
   auto files = {ConfigFileName, BackupConfigFileName};
-  bool result = false;
+  initResult = false;
 
   for (auto file : files) {
     if (LittleFS.exists(file)) {
@@ -93,12 +95,12 @@ bool Supla::LittleFsConfig::init() {
       }
 
       SUPLA_LOG_DEBUG("LittleFsConfig: initializing storage from file...");
-      result = initFromMemory(buf, fileSize);
+      initResult = initFromMemory(buf, fileSize);
       delete[] buf;
       SUPLA_LOG_DEBUG("LittleFsConfig: init result %s",
-                      result ? "success" : "failure");
+                      initResult ? "success" : "failure");
 
-      if (!result) {
+      if (!initResult) {
         continue;
       } else {
         break;
@@ -108,7 +110,7 @@ bool Supla::LittleFsConfig::init() {
     }
   }
   LittleFS.end();
-  return result;
+  return initResult;
 }
 
 void Supla::LittleFsConfig::commit() {

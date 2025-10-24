@@ -54,6 +54,8 @@ struct TiltConfig {
   uint16_t tilt100Angle = 0;  // 0 - 180 - degree corresponding to tilt 100
   uint8_t tiltControlType =
       SUPLA_TILT_CONTROL_TYPE_UNKNOWN;  // SUPLA_TILT_CONTROL_TYPE_
+
+  void clear();
 };
 #pragma pack(pop)
 

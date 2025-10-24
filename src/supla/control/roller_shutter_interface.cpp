@@ -761,6 +761,8 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
         if (rsConfig.timeMargin > 101) {
           rsConfig.timeMargin = 101;
         }
+        // cleanup tilt config for standard RS functions
+        tiltConfig.clear();
         saveConfig();
         printConfig();
       }
@@ -1218,5 +1220,12 @@ bool RollerShutterInterface::isTiltFunctionEnabled() const {
   auto function = channel.getDefaultFunction();
   return function == SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND ||
          function == SUPLA_CHANNELFNC_VERTICAL_BLIND;
+}
+
+void Supla::Control::TiltConfig::clear() {
+  tiltingTime = 0;
+  tilt0Angle = 0;
+  tilt100Angle = 0;
+  tiltControlType = SUPLA_TILT_CONTROL_TYPE_UNKNOWN;
 }
 

@@ -766,6 +766,64 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
       }
       break;
     }
+    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND:
+    case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
+      if (result->ConfigType == 0 &&
+          result->ConfigSize == sizeof(TChannelConfig_FacadeBlind)) {
+        auto newConfig =
+            reinterpret_cast<TChannelConfig_FacadeBlind *>(result->Config);
+        if (newConfig->OpeningTimeMS >= 0 && newConfig->ClosingTimeMS >= 0) {
+          setOpenCloseTime(newConfig->ClosingTimeMS, newConfig->OpeningTimeMS);
+        }
+        if (newConfig->TiltingTimeMS >= 0) {
+          setTiltingTime(newConfig->TiltingTimeMS);
+        }
+        tiltConfig.tilt0Angle = newConfig->Tilt0Angle;
+        tiltConfig.tilt100Angle = newConfig->Tilt100Angle;
+        tiltConfig.tiltControlType = newConfig->TiltControlType;
+
+        if (!inMove()) {
+          setTargetPosition(STOP_POSITION);
+        }
+        if (rsConfig.buttonsUpsideDown != 0) {
+          if (newConfig->ButtonsUpsideDown > 0) {
+            rsConfig.buttonsUpsideDown = newConfig->ButtonsUpsideDown;
+          } else {
+            setChannelConfigNeeded = true;
+          }
+        }
+        if (rsConfig.motorUpsideDown != 0) {
+          if (newConfig->MotorUpsideDown > 0) {
+            rsConfig.motorUpsideDown = newConfig->MotorUpsideDown;
+          } else {
+            setChannelConfigNeeded = true;
+          }
+        }
+        if (rsConfig.timeMargin != 0) {
+          if (newConfig->TimeMargin != 0) {
+            rsConfig.timeMargin = newConfig->TimeMargin;
+          } else {
+            setChannelConfigNeeded = true;
+          }
+        }
+        rsConfig.visualizationType = newConfig->VisualizationType;
+        if (rsConfig.buttonsUpsideDown > 2) {
+          rsConfig.buttonsUpsideDown = 1;
+        }
+        if (rsConfig.motorUpsideDown > 2) {
+          rsConfig.motorUpsideDown = 1;
+        }
+        if (rsConfig.timeMargin < -1) {
+          rsConfig.timeMargin = -1;
+        }
+        if (rsConfig.timeMargin > 101) {
+          rsConfig.timeMargin = 101;
+        }
+        saveConfig();
+        printConfig();
+      }
+      break;
+    }
 
     default: {
       SUPLA_LOG_WARNING("RS[%d]: Ignoring unsupported channel function %d",

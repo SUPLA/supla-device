@@ -301,6 +301,7 @@ Supported channel types:
 * `VirtualRelay` - related class `Supla::Control::VirtualRelay`
 * `CmdRelay` - related class `Supla::Control::CmdRelay`
 * `CmdValve` - related class `Supla::Control::CmdValve`
+* `CmdRollerShutter` - related class `Supla::Control::CmdRollerShutter`
 * `Fronius` - related class `Supla::PV::Fronius`
 * `Afore` - related class `Supla::PV::Afore`
 * `ThermometerParsed` - related class `Supla::Sensor::ThermometerParsed`
@@ -614,6 +615,20 @@ Example channels configuration (details are exaplained later):
       default_function_number: 80
       value: 01 00 00 00 00 00 00 00
 
+  - type: CmdRollerShutter
+    cmd_up_on: "echo 1 >> up.txt"
+    cmd_up_off: "echo 0 >> up.txt"
+    cmd_down_on: "echo 1 >> down.txt"
+    cmd_down_off: "echo 0 >> down.txt"
+    initial_caption: "Cmd RS"
+    battery_level: 0
+    parser:
+      type: Simple
+      refresh_time_ms: 200
+    source:
+      type: File
+      file: rs_battery.txt
+
 There are some new classes (compared to standard non-Linux supla-device) which
 names end with "Parsed" word. In general, those channels use `parser` and
 `source` functions to get some data from your computer and put it to that
@@ -697,6 +712,19 @@ to send actions. "at1" is a name of `ActionTriggerParsed` instance.
 `cmd_open` - command executed when valve should open,
 `cmd_close` - command executed when valve should close,
 `state` - state of the valve based on `source` and `parser` configuration.
+
+### CmdRollerShutter
+
+`CmdRollerShutter` is a channel which allows to control a roller shutter using a Linux command.
+
+`CmdRollerShutter` requires the following parameters:
+`cmd_up_on` - command executed when roller shutter should go up,
+`cmd_up_off` - command executed when roller shutter should stop going up,
+`cmd_down_on` - command executed when roller shutter should go down,
+`cmd_down_off` - command executed when roller shutter should stop going down.
+
+`CmdRollerShutter` is a "Parsed" channel, so it allows to use `parser` and
+`source` configuration with `battery` settings.
 
 ### Hvac
 

@@ -368,18 +368,18 @@ void RollerShutterInterface::moveUp() {
 }
 
 void RollerShutterInterface::stop() {
-  setTargetPosition(STOP_POSITION);
+  setTargetPosition(STOP_REQUEST);
 }
 
 void RollerShutterInterface::setCurrentPosition(int newPosition, int newTilt) {
-  if (newPosition < 0) {
-    newPosition = 0;
+  if (newPosition < UNKNOWN_POSITION) {
+    newPosition = UNKNOWN_POSITION;
   } else if (newPosition > 100) {
     newPosition = 100;
   }
   if (isTiltFunctionEnabled()) {
-    if (newTilt < 0 && newTilt != UNKNOWN_POSITION) {
-      newTilt = 0;
+    if (newTilt < UNKNOWN_POSITION) {
+      newTilt = UNKNOWN_POSITION;
     } else if (newTilt > 100) {
       newTilt = 100;
     }
@@ -474,6 +474,17 @@ bool RollerShutterInterface::isCalibrated() const {
 
 bool RollerShutterInterface::isCalibrationInProgress() const {
   return calibrationTime > 0;
+}
+
+void RollerShutterInterface::startCalibration(uint32_t timeMs) {
+  // Time used for calibaration is 10% higher then requested by user
+  calibrationTime = timeMs * 1.1;
+  currentPosition = 0;
+  currentTilt = 0;
+}
+
+void RollerShutterInterface::stopCalibration() {
+  calibrationTime = 0;
 }
 
 void RollerShutterInterface::setCalibrationOngoing(int calibrationTime) {
@@ -725,7 +736,7 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
           setOpenCloseTime(newConfig->ClosingTimeMS, newConfig->OpeningTimeMS);
         }
         if (!inMove()) {
-          setTargetPosition(STOP_POSITION);
+          setTargetPosition(STOP_REQUEST);
         }
         if (rsConfig.buttonsUpsideDown != 0) {
           if (newConfig->ButtonsUpsideDown > 0) {
@@ -785,7 +796,7 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
         tiltConfig.tiltControlType = newConfig->TiltControlType;
 
         if (!inMove()) {
-          setTargetPosition(STOP_POSITION);
+          setTargetPosition(STOP_REQUEST);
         }
         if (rsConfig.buttonsUpsideDown != 0) {
           if (newConfig->ButtonsUpsideDown > 0) {

@@ -21,6 +21,7 @@
 #include <supla-common/proto.h>
 #include <supla/control/action_trigger_parsed.h>
 #include <supla/control/cmd_relay.h>
+#include <supla/control/cmd_roller_shutter.h>
 #include <supla/control/cmd_valve.h>
 #include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
@@ -624,6 +625,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addCustomRelay(ch, channelNumber, parser, payload);
     } else if (type == "CmdValve") {
       return addCmdValve(ch, channelNumber, parser);
+    } else if (type == "CmdRollerShutter") {
+      return addCmdRollerShutter(ch, channelNumber, parser);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -831,6 +834,42 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
   }
 
   return addCommonParametersParsed(ch, cv, &paramCount, parser);
+}
+
+bool Supla::LinuxYamlConfig::addCmdRollerShutter(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding CmdRollerShutter", channelNumber);
+  auto cr = new Supla::Control::CmdRollerShutter(parser);
+
+  if (ch["offline_on_invalid_state"]) {
+    paramCount++;
+    auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
+    cr->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
+  }
+
+  if (ch["cmd_up_on"]) {
+    paramCount++;
+    auto cmdUpOn = ch["cmd_up_on"].as<std::string>();
+    cr->setCmdUpOn(cmdUpOn);
+  }
+  if (ch["cmd_up_off"]) {
+    paramCount++;
+    auto cmdUpOff = ch["cmd_up_off"].as<std::string>();
+    cr->setCmdUpOff(cmdUpOff);
+  }
+
+  if (ch["cmd_down_on"]) {
+    paramCount++;
+    auto cmdDownOn = ch["cmd_down_on"].as<std::string>();
+    cr->setCmdDownOn(cmdDownOn);
+  }
+  if (ch["cmd_down_off"]) {
+    paramCount++;
+    auto cmdDownOff = ch["cmd_down_off"].as<std::string>();
+    cr->setCmdDownOff(cmdDownOff);
+  }
+
+  return addCommonParametersParsed(ch, cr, &paramCount, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,

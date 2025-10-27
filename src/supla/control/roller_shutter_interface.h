@@ -26,6 +26,7 @@
 #define STOP_POSITION      -2
 #define MOVE_UP_POSITION   -3
 #define MOVE_DOWN_POSITION -4
+#define STOP_REQUEST       -5
 #define RS_DEFAULT_OPERATION_TIMEOUT_MS 60000
 
 namespace Supla {
@@ -216,6 +217,8 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   virtual bool inMove();
   virtual bool isCalibrationInProgress() const;
+  void startCalibration(uint32_t timeMs);
+  void stopCalibration();
   bool isCalibrationFailed() const;
   bool isCalibrationLost() const;
   bool isMotorProblem() const;
@@ -277,6 +280,7 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   int8_t targetPosition = STOP_POSITION;      // 0-100
   int8_t targetTilt = UNKNOWN_POSITION;          // 0-100
   int8_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
+  int8_t lastTiltBeforeMovement = UNKNOWN_POSITION;      // 0-100
   bool newTargetPositionAvailable = false;
 
   RollerShutterConfig rsConfig;

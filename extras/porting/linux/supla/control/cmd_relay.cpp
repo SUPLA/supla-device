@@ -19,7 +19,6 @@
 #include "cmd_relay.h"
 
 #include <supla/log_wrapper.h>
-#include <supla/sensor/binary_parsed.h>
 #include <supla/time.h>
 
 #include <cstdio>

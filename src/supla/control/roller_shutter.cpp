@@ -85,7 +85,7 @@ void RollerShutter::stopMovement() {
 void RollerShutter::relayDownOn() {
   if (pinUp >= 0 && pinDown >= 0) {
     Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
+                            pinDown,
                             highIsOn ? HIGH : LOW,
                             io);
   }
@@ -94,7 +94,7 @@ void RollerShutter::relayDownOn() {
 void RollerShutter::relayUpOn() {
   if (pinUp >= 0 && pinDown >= 0) {
     Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
+                            pinUp,
                             highIsOn ? HIGH : LOW,
                             io);
   }
@@ -103,7 +103,7 @@ void RollerShutter::relayUpOn() {
 void RollerShutter::relayDownOff() {
   if (pinUp >= 0 && pinDown >= 0) {
     Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            rsConfig.motorUpsideDown == 2 ? pinUp : pinDown,
+                            pinDown,
                             highIsOn ? LOW : HIGH,
                             io);
   }
@@ -112,7 +112,7 @@ void RollerShutter::relayDownOff() {
 void RollerShutter::relayUpOff() {
   if (pinUp >= 0 && pinDown >= 0) {
     Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            rsConfig.motorUpsideDown == 2 ? pinDown : pinUp,
+                            pinUp,
                             highIsOn ? LOW : HIGH,
                             io);
   }
@@ -121,15 +121,25 @@ void RollerShutter::relayUpOff() {
 void RollerShutter::startClosing() {
   lastMovementStartTime = millis();
   currentDirection = Directions::DOWN_DIR;
-  relayUpOff();  // just to make sure
-  relayDownOn();
+  if (rsConfig.motorUpsideDown == 2) {
+    relayDownOff();
+    relayUpOn();
+  } else {
+    relayUpOff();  // just to make sure
+    relayDownOn();
+  }
 }
 
 void RollerShutter::startOpening() {
   lastMovementStartTime = millis();
   currentDirection = Directions::UP_DIR;
-  relayDownOff();  // just to make sure
-  relayUpOn();
+  if (rsConfig.motorUpsideDown == 2) {
+    relayUpOff();
+    relayDownOn();
+  } else {
+    relayDownOff();  // just to make sure
+    relayUpOn();
+  }
 }
 
 void RollerShutter::switchOffRelays() {
@@ -146,9 +156,11 @@ void RollerShutter::onTimer() {
   }
   doNothingTime = 0;
 
-  if (targetPosition == STOP_POSITION && inMove()) {
+  if ((targetPosition == STOP_POSITION && inMove()) ||
+      targetPosition == STOP_REQUEST) {
+    targetPosition = STOP_POSITION;
     stopMovement();
-    calibrationTime = 0;
+    stopCalibration();
     SUPLA_LOG_DEBUG("RS[%d]: Stop movement", channel.getChannelNumber());
   }
   if (targetPosition == STOP_POSITION) {
@@ -157,9 +169,7 @@ void RollerShutter::onTimer() {
 
   if (isCalibrationRequested()) {
     if (targetPosition != STOP_POSITION) {
-      // If calibrationTime is not set, then it means we should start
-      // calibration
-      if (calibrationTime == 0) {
+      if (!isCalibrationInProgress()) {
         // If roller shutter wasn't in move when calibration is requested, we
         // select direction based on requested targetPosition
         operationTimeoutMs = 0;
@@ -170,8 +180,9 @@ void RollerShutter::onTimer() {
                      currentDirection == Directions::DOWN_DIR) {
             SUPLA_LOG_DEBUG("RS[%d]: Calibration: closing",
                             channel.getChannelNumber());
-            calibrationTime = closingTimeMs;
-            if (calibrationTime == 0) {
+            startCalibration(closingTimeMs);
+            if (!isCalibrationInProgress()) {
+              // can happen, when closingTimeMs is 0
               operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;
             }
             startClosing();
@@ -183,27 +194,26 @@ void RollerShutter::onTimer() {
                      currentDirection == Directions::UP_DIR) {
             SUPLA_LOG_DEBUG("RS[%d]: Calibration: opening",
                             channel.getChannelNumber());
-            calibrationTime = openingTimeMs;
-            if (calibrationTime == 0) {
+            startCalibration(openingTimeMs);
+            if (!isCalibrationInProgress()) {
+              // can happen, when openingTimeMs is 0
               operationTimeoutMs = RS_DEFAULT_OPERATION_TIMEOUT_MS;
             }
             startOpening();
           }
         }
-        //
-        // Time used for calibaration is 10% higher then requested by user
-        calibrationTime *= 1.1;
-        if (calibrationTime > 0) {
+
+        if (isCalibrationInProgress()) {
           SUPLA_LOG_DEBUG("RS[%d]: Calibration time: %d",
                           channel.getChannelNumber(),
                           calibrationTime);
         }
       }
 
-      if (calibrationTime != 0 &&
+      if (isCalibrationInProgress() &&
           millis() - lastMovementStartTime > calibrationTime) {
         SUPLA_LOG_DEBUG("RS[%d]: Calibration done", channel.getChannelNumber());
-        calibrationTime = 0;
+        stopCalibration();
         setCalibrate(false);
         if (currentDirection == Directions::UP_DIR) {
           setCurrentPosition(0, 0);
@@ -211,7 +221,7 @@ void RollerShutter::onTimer() {
           setCurrentPosition(100, 100);
         }
         if (targetPosition < 0) {
-          setTargetPosition(STOP_POSITION);
+          setTargetPosition(STOP_REQUEST);
         }
         stopMovement();
       }
@@ -221,16 +231,22 @@ void RollerShutter::onTimer() {
         currentDirection != Directions::STOP_DIR) {
       // no new command available and it is moving, just handle movement/status
       if (currentDirection == Directions::UP_DIR && currentPosition > 0) {
+        // update position and tilt
         int movementDistance = lastPositionBeforeMovement;
         uint32_t timeRequired =
             (1.0 * openingTimeMs * movementDistance / 100.0);
-        float fractionOfMovemendDone =
+        if (timeRequired == 0) {
+          timeRequired = 1;
+        }
+        float fractionOfMovementDone =
             (1.0 * (millis() - lastMovementStartTime) / timeRequired);
-        if (fractionOfMovemendDone > 1) {
-          fractionOfMovemendDone = 1;
+        if (fractionOfMovementDone > 1) {
+          fractionOfMovementDone = 1;
         }
         setCurrentPosition(lastPositionBeforeMovement -
-                          movementDistance * fractionOfMovemendDone);
+                          movementDistance * fractionOfMovementDone);
+
+        // check if target position is reached
         if (targetPosition >= 0 && currentPosition <= targetPosition) {
           if (targetPosition == 0) {
             operationTimeoutMs = getTimeMarginValue(openingTimeMs);
@@ -244,16 +260,19 @@ void RollerShutter::onTimer() {
         }
       } else if (currentDirection == Directions::DOWN_DIR &&
                  currentPosition < 100) {
+        // update position and tilt
         int movementDistance = 100 - lastPositionBeforeMovement;
         uint32_t timeRequired =
             (1.0 * closingTimeMs * movementDistance / 100.0);
-        float fractionOfMovemendDone =
+        float fractionOfMovementDone =
             (1.0 * (millis() - lastMovementStartTime) / timeRequired);
-        if (fractionOfMovemendDone > 1) {
-          fractionOfMovemendDone = 1;
+        if (fractionOfMovementDone > 1) {
+          fractionOfMovementDone = 1;
         }
         setCurrentPosition(lastPositionBeforeMovement +
-                          movementDistance * fractionOfMovemendDone);
+                          movementDistance * fractionOfMovementDone);
+
+        // check if target position is reached
         if (targetPosition >= 0 && currentPosition >= targetPosition) {
           if (targetPosition == 100) {
             operationTimeoutMs = getTimeMarginValue(closingTimeMs);
@@ -300,6 +319,7 @@ void RollerShutter::onTimer() {
                  Directions::STOP_DIR) {  // else start moving
         newTargetPositionAvailable = false;
         lastPositionBeforeMovement = currentPosition;
+        lastTiltBeforeMovement = currentTilt;
         if (newDirection == Directions::DOWN_DIR) {
           startClosing();
         } else {
@@ -339,6 +359,7 @@ void RollerShutter::onTimer() {
                  Directions::STOP_DIR) {  // else start moving
         newTargetPositionAvailable = false;
         lastPositionBeforeMovement = currentPosition;
+        lastTiltBeforeMovement = currentTilt;
         if (newDirection == Directions::DOWN_DIR) {
           startClosing();
         } else {
@@ -353,7 +374,7 @@ void RollerShutter::onTimer() {
 
   if (operationTimeoutMs != 0 &&
       millis() - lastMovementStartTime > operationTimeoutMs) {
-    setTargetPosition(STOP_POSITION);
+    setTargetPosition(STOP_REQUEST);
     operationTimeoutMs = 0;
     SUPLA_LOG_DEBUG("RS[%d]: Operation timeout", channel.getChannelNumber());
   }

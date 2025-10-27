@@ -53,8 +53,8 @@ class RollerShutter : public RollerShutterInterface {
    * @param tiltFunctionsEnabled true to enable tilt functions (changing this
    *        value will reset state storage)
    */
-  RollerShutter(int pinUp,
-                int pinDown,
+  RollerShutter(int pinUp = -1,
+                int pinDown = -1,
                 bool highIsOn = true,
                 bool tiltFunctionsEnabled = false);
 

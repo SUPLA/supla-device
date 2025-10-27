@@ -144,7 +144,7 @@ TEST_F(RollerShutterInterfaceFixture, rsLocalMovement) {
                    SUPLA_CHANNELVALUE_SIZE));
 
   EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);  // not calibrated
-  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+  EXPECT_EQ(rs.getTargetPosition(), STOP_REQUEST);
   EXPECT_FALSE(rs.isCalibrated());
   EXPECT_FALSE(rs.isCalibrationInProgress());
   EXPECT_FALSE(rs.isCalibrationRequested());
@@ -303,7 +303,7 @@ TEST_F(RollerShutterInterfaceFixture, facadeBlindLocalMovement) {
 
   EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);  // not calibrated
   EXPECT_EQ(rs.getCurrentTilt(), UNKNOWN_POSITION);
-  EXPECT_EQ(rs.getTargetPosition(), STOP_POSITION);
+  EXPECT_EQ(rs.getTargetPosition(), STOP_REQUEST);
   EXPECT_EQ(rs.getTargetTilt(), UNKNOWN_POSITION);
   EXPECT_FALSE(rs.isCalibrated());
   EXPECT_FALSE(rs.isCalibrationInProgress());

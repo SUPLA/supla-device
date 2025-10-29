@@ -107,6 +107,28 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
    */
   bool isTiltFunctionEnabled() const;
 
+  /**
+   * Check if tilting is configured (time and control modes are set and
+   * isTiltFunctionEnabled is true)
+   *
+   * @return true if tilting is configured
+   */
+  bool isTiltConfigured() const;
+
+  /**
+   * Check if top position (and tilt if applicable) is reached
+   *
+   * @return true if top position is reached
+   */
+  bool isTopReached() const;
+
+  /**
+   * Check if bottom position (and tilt if applicable) is reached
+   *
+   * @return true if bottom position is reached
+   */
+  bool isBottomReached() const;
+
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void handleAction(int event, int action) override;
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request) override;

@@ -5,10 +5,12 @@
  modify it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2
  of the License, or (at your option) any later version.
+
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
+
  You should have received a copy of the GNU General Public License
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
@@ -229,23 +231,10 @@ void RollerShutter::onTimer() {
   } else if (isCalibrated()) {
     if (!newTargetPositionAvailable &&
         currentDirection != Directions::STOP_DIR) {
+      calculateCurrentPositionAndTilt();
       // no new command available and it is moving, just handle movement/status
-      if (currentDirection == Directions::UP_DIR && currentPosition > 0) {
-        // update position and tilt
-        int movementDistance = lastPositionBeforeMovement;
-        uint32_t timeRequired =
-            (1.0 * openingTimeMs * movementDistance / 100.0);
-        if (timeRequired == 0) {
-          timeRequired = 1;
-        }
-        float fractionOfMovementDone =
-            (1.0 * (millis() - lastMovementStartTime) / timeRequired);
-        if (fractionOfMovementDone > 1) {
-          fractionOfMovementDone = 1;
-        }
-        setCurrentPosition(lastPositionBeforeMovement -
-                          movementDistance * fractionOfMovementDone);
-
+      if (currentDirection == Directions::UP_DIR &&
+          (currentPosition > 0 || currentTilt > 0)) {
         // check if target position is reached
         if (targetPosition >= 0 && currentPosition <= targetPosition) {
           if (targetPosition == 0) {
@@ -259,19 +248,8 @@ void RollerShutter::onTimer() {
           }
         }
       } else if (currentDirection == Directions::DOWN_DIR &&
-                 currentPosition < 100) {
-        // update position and tilt
-        int movementDistance = 100 - lastPositionBeforeMovement;
-        uint32_t timeRequired =
-            (1.0 * closingTimeMs * movementDistance / 100.0);
-        float fractionOfMovementDone =
-            (1.0 * (millis() - lastMovementStartTime) / timeRequired);
-        if (fractionOfMovementDone > 1) {
-          fractionOfMovementDone = 1;
-        }
-        setCurrentPosition(lastPositionBeforeMovement +
-                          movementDistance * fractionOfMovementDone);
-
+                 (currentPosition < 100 ||
+                  (currentTilt < 100 && currentTilt >= 0))) {
         // check if target position is reached
         if (targetPosition >= 0 && currentPosition >= targetPosition) {
           if (targetPosition == 100) {
@@ -378,6 +356,113 @@ void RollerShutter::onTimer() {
     operationTimeoutMs = 0;
     SUPLA_LOG_DEBUG("RS[%d]: Operation timeout", channel.getChannelNumber());
   }
+}
+
+void RollerShutter::calculateCurrentPositionAndTilt() {
+  if (currentDirection == Directions::UP_DIR && isTopReached()) {
+    return;
+  }
+  if (currentDirection == Directions::DOWN_DIR && isBottomReached()) {
+    return;
+  }
+
+  const bool upDir = (currentDirection == Directions::UP_DIR);
+
+  int newTilt = UNKNOWN_POSITION;
+
+  uint32_t fullTiltChangeTime = tiltConfig.tiltingTime;
+  uint32_t fullPositionChangeTime = upDir ? openingTimeMs : closingTimeMs;
+
+  switch (tiltConfig.tiltControlType) {
+    case SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING:
+    case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
+      fullPositionChangeTime -= tiltConfig.tiltingTime;
+      break;
+    }
+  }
+
+  const int positionDistance =
+    upDir ? lastPositionBeforeMovement : 100 - lastPositionBeforeMovement;
+  int tiltingDistance =
+    upDir ? lastTiltBeforeMovement : 100 - lastTiltBeforeMovement;
+
+  uint32_t positionChangeTimeRequired =
+      (1.0 * fullPositionChangeTime * positionDistance / 100.0);
+
+  uint32_t tiltChangeTimeRequired =
+      (1.0 * fullTiltChangeTime * tiltingDistance / 100.0);
+
+  const uint32_t movementTimeElapsed = millis() - lastMovementStartTime;
+  uint32_t positionChangeTimeElapsed = movementTimeElapsed;
+  uint32_t tiltChangeTimeElapsed = movementTimeElapsed;
+  switch (tiltConfig.tiltControlType) {
+    case SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING: {
+      if (movementTimeElapsed <= tiltChangeTimeRequired) {
+        positionChangeTimeElapsed = 0;
+      } else {
+        positionChangeTimeElapsed =
+            movementTimeElapsed - tiltChangeTimeRequired;
+      }
+      break;
+    }
+    case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
+      if (lastPositionBeforeMovement < 100) {
+        // first we move position
+        if (movementTimeElapsed <= positionChangeTimeRequired) {
+          tiltChangeTimeElapsed = 0;
+        } else {
+          tiltChangeTimeElapsed =
+              movementTimeElapsed - positionChangeTimeRequired;
+        }
+      } else {
+        // first we tilt
+        if (movementTimeElapsed <= tiltChangeTimeRequired) {
+          positionChangeTimeElapsed = 0;
+        } else {
+          positionChangeTimeElapsed =
+              movementTimeElapsed - tiltChangeTimeRequired;
+        }
+      }
+      break;
+    }
+  }
+
+  if (isTiltConfigured()) {
+    newTilt = lastTiltBeforeMovement;
+
+    if (tiltChangeTimeRequired && tiltChangeTimeElapsed) {
+      float fractionOfTiltMovementDone =
+          (1.0 * tiltChangeTimeElapsed / tiltChangeTimeRequired);
+      if (fractionOfTiltMovementDone > 1) {
+        // elapsed time is more than required time, so we set 1 == 100%
+        fractionOfTiltMovementDone = 1;
+      }
+
+      if (upDir) {
+        newTilt -= tiltingDistance * fractionOfTiltMovementDone;
+      } else {
+        newTilt += tiltingDistance * fractionOfTiltMovementDone;
+      }
+    }
+  }
+
+  int newPosition = lastPositionBeforeMovement;
+  if (positionChangeTimeRequired && positionChangeTimeElapsed) {
+    float fractionOfPositionMovementDone =
+        (1.0 * positionChangeTimeElapsed / positionChangeTimeRequired);
+    if (fractionOfPositionMovementDone > 1) {
+      // elapsed time is more than required time, so we set 1 == 100%
+      fractionOfPositionMovementDone = 1;
+    }
+
+    if (upDir) {
+      newPosition -= positionDistance * fractionOfPositionMovementDone;
+    } else {
+      newPosition += positionDistance * fractionOfPositionMovementDone;
+    }
+  }
+
+  setCurrentPosition(newPosition, newTilt);
 }
 
 }  // namespace Control

@@ -832,6 +832,18 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
         if (rsConfig.timeMargin > 101) {
           rsConfig.timeMargin = 101;
         }
+        if (isTiltConfigured()) {
+          if (currentTilt == UNKNOWN_POSITION) {
+            setCurrentPosition(currentPosition, 0);
+          }
+          if (tiltConfig.tiltControlType ==
+                  SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED &&
+              currentPosition < 100) {
+            setCurrentPosition(currentPosition, 0);
+          }
+        } else {
+          setCurrentPosition(currentPosition, UNKNOWN_POSITION);
+        }
         saveConfig();
         printConfig();
       }
@@ -1238,5 +1250,28 @@ void Supla::Control::TiltConfig::clear() {
   tilt0Angle = 0;
   tilt100Angle = 0;
   tiltControlType = SUPLA_TILT_CONTROL_TYPE_UNKNOWN;
+}
+
+bool RollerShutterInterface::isTiltConfigured() const {
+  return isTiltFunctionEnabled() && tiltConfig.tiltingTime > 0 &&
+    tiltConfig.tiltControlType != 0;
+}
+
+bool RollerShutterInterface::isTopReached() const  {
+  bool posTop = (currentPosition == 0);
+  bool tiltTop = !isTiltFunctionEnabled();
+  if (!tiltTop) {
+    tiltTop = isTiltConfigured() && (currentTilt == 0);
+  }
+  return posTop && tiltTop;
+}
+
+bool RollerShutterInterface::isBottomReached() const {
+  bool posBottom = (currentPosition == 100);
+  bool tiltBottom = !isTiltFunctionEnabled();
+  if (!tiltBottom) {
+    tiltBottom = isTiltConfigured() && (currentTilt == 100);
+  }
+  return posBottom && tiltBottom;
 }
 

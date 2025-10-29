@@ -73,6 +73,7 @@ class RollerShutter : public RollerShutterInterface {
   virtual void startClosing();
   virtual void startOpening();
   virtual void switchOffRelays();
+  void calculateCurrentPositionAndTilt();
 
   void initGpio(int gpio);
 

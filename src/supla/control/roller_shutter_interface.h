@@ -153,6 +153,13 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   virtual void setTargetPosition(int newPosition,
                                  int newTilt = UNKNOWN_POSITION);
+  /**
+   * Set current roller shutter/facade blind position (and tilt)
+   * (0 = open; 100 = closed)
+   *
+   * @param newPosition
+   * @param newTilt
+   */
   void setCurrentPosition(int newPosition, int newTilt = UNKNOWN_POSITION);
   void setNotCalibrated();
   // Sets calibration ongoing flag, by setting calibration timeout.
@@ -296,13 +303,15 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   Directions currentDirection = Directions::STOP_DIR;  // stop, up, down
   Directions lastDirection = Directions::STOP_DIR;
 
-  int8_t currentPosition = UNKNOWN_POSITION;  // 0 - open; 100 - closed
-  int8_t currentTilt = UNKNOWN_POSITION;      // 0 - opening position
-                                              // 100 - closing position
-  int8_t targetPosition = STOP_POSITION;      // 0-100
+  int16_t currentPosition =
+      UNKNOWN_POSITION;  // 0 - open; 10000 - closed, in 0.01 units
+  int16_t currentTilt =
+      UNKNOWN_POSITION;  // 0 - opening position
+                         // 10000 - closing position, in 0.01 units
+  int8_t targetPosition = STOP_POSITION;         // 0-100
   int8_t targetTilt = UNKNOWN_POSITION;          // 0-100
-  int8_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
-  int8_t lastTiltBeforeMovement = UNKNOWN_POSITION;      // 0-100
+  int16_t lastPositionBeforeMovement = UNKNOWN_POSITION;  // 0-100
+  int16_t lastTiltBeforeMovement = UNKNOWN_POSITION;      // 0-100
   bool newTargetPositionAvailable = false;
 
   RollerShutterConfig rsConfig;

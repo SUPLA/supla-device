@@ -234,9 +234,9 @@ void RollerShutter::onTimer() {
       calculateCurrentPositionAndTilt();
       // no new command available and it is moving, just handle movement/status
       if (currentDirection == Directions::UP_DIR &&
-          (currentPosition > 0 || currentTilt > 0)) {
+          (getCurrentPosition() > 0 || getCurrentTilt() > 0)) {
         // check if target position is reached
-        if (targetPosition >= 0 && currentPosition <= targetPosition) {
+        if (targetPosition >= 0 && getCurrentPosition() <= targetPosition) {
           if (targetPosition == 0) {
             operationTimeoutMs = getTimeMarginValue(openingTimeMs);
             lastMovementStartTime = millis();
@@ -248,10 +248,10 @@ void RollerShutter::onTimer() {
           }
         }
       } else if (currentDirection == Directions::DOWN_DIR &&
-                 (currentPosition < 100 ||
-                  (currentTilt < 100 && currentTilt >= 0))) {
+                 (getCurrentPosition() < 100 ||
+                  (getCurrentTilt() < 100 && getCurrentTilt() >= 0))) {
         // check if target position is reached
-        if (targetPosition >= 0 && currentPosition >= targetPosition) {
+        if (targetPosition >= 0 && getCurrentPosition() >= targetPosition) {
           if (targetPosition == 100) {
             operationTimeoutMs = getTimeMarginValue(closingTimeMs);
             lastMovementStartTime = millis();
@@ -281,7 +281,7 @@ void RollerShutter::onTimer() {
             operationTimeoutMs);
       } else {
         operationTimeoutMs = 0;
-        int newMovementValue = targetPosition - currentPosition;
+        int newMovementValue = targetPosition - getCurrentPosition();
         // 0 - 100 = -100 (move down); 50 -
         // 20 = 30 (move up 30%), etc
         if (newMovementValue > 0) {
@@ -382,15 +382,15 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
   }
 
   const int positionDistance =
-    upDir ? lastPositionBeforeMovement : 100 - lastPositionBeforeMovement;
+    upDir ? lastPositionBeforeMovement : 10000 - lastPositionBeforeMovement;
   int tiltingDistance =
-    upDir ? lastTiltBeforeMovement : 100 - lastTiltBeforeMovement;
+    upDir ? lastTiltBeforeMovement : 10000 - lastTiltBeforeMovement;
 
   uint32_t positionChangeTimeRequired =
-      (1.0 * fullPositionChangeTime * positionDistance / 100.0);
+      (1.0 * fullPositionChangeTime * positionDistance / 10000.0);
 
   uint32_t tiltChangeTimeRequired =
-      (1.0 * fullTiltChangeTime * tiltingDistance / 100.0);
+      (1.0 * fullTiltChangeTime * tiltingDistance / 10000.0);
 
   const uint32_t movementTimeElapsed = millis() - lastMovementStartTime;
   uint32_t positionChangeTimeElapsed = movementTimeElapsed;
@@ -462,7 +462,21 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
     }
   }
 
-  setCurrentPosition(newPosition, newTilt);
+  if (newPosition < UNKNOWN_POSITION) {
+    newPosition = 0;
+  }
+  if (newPosition > 10000) {
+    newPosition = 10000;
+  }
+  if (newTilt < UNKNOWN_POSITION) {
+    newTilt = 0;
+  }
+  if (newTilt > 10000) {
+    newTilt = 10000;
+  }
+
+  currentPosition = newPosition;
+  currentTilt = newTilt;
 }
 
 }  // namespace Control

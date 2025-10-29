@@ -182,7 +182,7 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
         moveDown();
       } else if (lastDirectionWasClose()) {
         moveUp();
-      } else if (currentPosition < 50) {
+      } else if (getCurrentPosition() < 50) {
         moveDown();
       } else {
         moveUp();
@@ -290,7 +290,7 @@ void RollerShutterInterface::handleAction(int event, int action) {
         moveDown();
       } else if (lastDirectionWasClose()) {
         moveUp();
-      } else if (currentPosition < 50) {
+      } else if (getCurrentPosition() < 50) {
         moveDown();
       } else {
         moveUp();
@@ -383,13 +383,13 @@ void RollerShutterInterface::setCurrentPosition(int newPosition, int newTilt) {
     } else if (newTilt > 100) {
       newTilt = 100;
     }
-    currentTilt = newTilt;
+    currentTilt = newTilt * 100;
   } else {
     currentTilt = 0;
   }
 
   calibrationTime = 0;
-  currentPosition = newPosition;
+  currentPosition = newPosition * 100;
   setCalibrate(false);
 }
 
@@ -422,14 +422,14 @@ void RollerShutterInterface::setTargetPosition(int newPosition, int newTilt) {
   } else if (targetPosition == MOVE_DOWN_POSITION) {
     lastDirection = Directions::DOWN_DIR;
   } else if (targetPosition >= 0) {
-    if (targetPosition < currentPosition) {
+    if (targetPosition < getCurrentPosition()) {
       lastDirection = Directions::UP_DIR;
-    } else if (targetPosition > currentPosition) {
+    } else if (targetPosition > getCurrentPosition()) {
       lastDirection = Directions::DOWN_DIR;
     } else if (isTiltFunctionEnabled()) {
-      if (targetTilt < currentTilt) {
+      if (targetTilt < getCurrentTilt()) {
         lastDirection = Directions::UP_DIR;
-      } else if (targetTilt > currentTilt) {
+      } else if (targetTilt > getCurrentTilt()) {
         lastDirection = Directions::DOWN_DIR;
       }
     }
@@ -509,7 +509,7 @@ void RollerShutterInterface::iterateAlways() {
   }
   lastUpdateTime = millis();
   RsFbValue value = {};
-  value.rs.position = currentPosition;
+  value.rs.position = getCurrentPosition();
   if (isCalibrationInProgress()) {
     value.rs.flags |= RS_VALUE_FLAG_CALIBRATION_IN_PROGRESS;
   }
@@ -523,7 +523,7 @@ void RollerShutterInterface::iterateAlways() {
     value.rs.flags |= RS_VALUE_FLAG_MOTOR_PROBLEM;
   }
   if (isTiltFunctionEnabled()) {
-    value.fb.tilt = currentTilt;
+    value.fb.tilt = getCurrentTilt();
     value.fb.flags |= RS_VALUE_FLAG_TILT_IS_SET;
     channel.setNewValue(value.fb);
   } else {
@@ -565,11 +565,11 @@ void RollerShutterInterface::onLoadState() {
     if (Supla::Storage::ReadState((unsigned char *)&data, sizeof(data))) {
       closingTimeMs = data.closingTimeMs;
       openingTimeMs = data.openingTimeMs;
-      currentPosition = data.currentPosition;
+      currentPosition = data.currentPosition * 100;
       if (currentPosition >= 0) {
         setCalibrate(false);
       }
-      currentTilt = data.tiltPosition;
+      currentTilt = data.tiltPosition * 100;
       SUPLA_LOG_DEBUG(
           "RS[%d] settings restored from storage. Opening time: %d "
           "ms; closing time: %d ms. Position: %d, Tilt: %d",
@@ -585,7 +585,7 @@ void RollerShutterInterface::onLoadState() {
     if (Supla::Storage::ReadState((unsigned char *)&data, sizeof(data))) {
       closingTimeMs = data.closingTimeMs;
       openingTimeMs = data.openingTimeMs;
-      currentPosition = data.currentPosition;
+      currentPosition = data.currentPosition * 100;
       if (currentPosition >= 0) {
         setCalibrate(false);
       }
@@ -605,26 +605,29 @@ void RollerShutterInterface::onSaveState() {
     RollerShutterWithTiltStateData data;
     data.closingTimeMs = closingTimeMs;
     data.openingTimeMs = openingTimeMs;
-    data.currentPosition = currentPosition;
-    data.tiltPosition = currentTilt;
+    data.currentPosition = getCurrentPosition();
+    data.tiltPosition = getCurrentTilt();
     Supla::Storage::WriteState((unsigned char *)&data, sizeof(data));
   } else {
     RollerShutterStateData data;
     data.closingTimeMs = closingTimeMs;
     data.openingTimeMs = openingTimeMs;
-    data.currentPosition = currentPosition;
+    data.currentPosition = getCurrentPosition();
 
     Supla::Storage::WriteState((unsigned char *)&data, sizeof(data));
   }
 }
 
 int RollerShutterInterface::getCurrentPosition() const {
-  return currentPosition;
+  if (currentPosition < 0) {
+    return UNKNOWN_POSITION;
+  }
+  return currentPosition / 100;
 }
 
 int RollerShutterInterface::getCurrentTilt() const {
-  if (isTiltFunctionEnabled()) {
-    return currentTilt;
+  if (isTiltFunctionEnabled() && currentTilt >= 0) {
+    return currentTilt / 100;
   }
   return UNKNOWN_POSITION;
 }
@@ -834,15 +837,15 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
         }
         if (isTiltConfigured()) {
           if (currentTilt == UNKNOWN_POSITION) {
-            setCurrentPosition(currentPosition, 0);
+            setCurrentPosition(getCurrentPosition(), 0);
           }
           if (tiltConfig.tiltControlType ==
                   SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED &&
-              currentPosition < 100) {
-            setCurrentPosition(currentPosition, 0);
+              getCurrentPosition() < 100) {
+            setCurrentPosition(getCurrentPosition(), 0);
           }
         } else {
-          setCurrentPosition(currentPosition, UNKNOWN_POSITION);
+          setCurrentPosition(getCurrentPosition(), UNKNOWN_POSITION);
         }
         saveConfig();
         printConfig();
@@ -1258,19 +1261,19 @@ bool RollerShutterInterface::isTiltConfigured() const {
 }
 
 bool RollerShutterInterface::isTopReached() const  {
-  bool posTop = (currentPosition == 0);
+  bool posTop = (getCurrentPosition() == 0);
   bool tiltTop = !isTiltFunctionEnabled();
   if (!tiltTop) {
-    tiltTop = isTiltConfigured() && (currentTilt == 0);
+    tiltTop = isTiltConfigured() && (getCurrentTilt() == 0);
   }
   return posTop && tiltTop;
 }
 
 bool RollerShutterInterface::isBottomReached() const {
-  bool posBottom = (currentPosition == 100);
+  bool posBottom = (getCurrentPosition() == 100);
   bool tiltBottom = !isTiltFunctionEnabled();
   if (!tiltBottom) {
-    tiltBottom = isTiltConfigured() && (currentTilt == 100);
+    tiltBottom = isTiltConfigured() && (getCurrentTilt() == 100);
   }
   return posBottom && tiltBottom;
 }

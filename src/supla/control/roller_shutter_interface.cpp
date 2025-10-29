@@ -145,7 +145,6 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
   int8_t tilt = newValue->value[1];
   SUPLA_LOG_DEBUG("RS[%d] new value from server: position/task %d, tilt %d",
       channel.getChannelNumber(), task, tilt);
-  // TODO(klew): add tilt support
   switch (task) {
     case 0: {
       stop();
@@ -202,6 +201,8 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
       }
       if (task >= 10 && task <= 110) {
         setTargetPosition(task - 10, tilt);
+      } else if (task == UNKNOWN_POSITION) {
+        setTargetPosition(UNKNOWN_POSITION, tilt);
       }
       break;
     }
@@ -406,10 +407,15 @@ void RollerShutterInterface::setNotCalibrated() {
 }
 
 void RollerShutterInterface::setTargetPosition(int newPosition, int newTilt) {
+  SUPLA_LOG_DEBUG("RS[%d] set target position: %d, tilt: %d",
+                  channel.getChannelNumber(),
+                  newPosition,
+                  newTilt);
   targetPosition = newPosition;
   if (isTiltFunctionEnabled()) {
-    if (targetPosition >= 0 && newTilt >= 0) {
-        targetTilt = newTilt;
+    if ((targetPosition == UNKNOWN_POSITION || targetPosition >= 0) &&
+        newTilt >= 0) {
+      targetTilt = newTilt;
     } else {
       targetTilt = UNKNOWN_POSITION;
     }
@@ -421,8 +427,9 @@ void RollerShutterInterface::setTargetPosition(int newPosition, int newTilt) {
     lastDirection = Directions::UP_DIR;
   } else if (targetPosition == MOVE_DOWN_POSITION) {
     lastDirection = Directions::DOWN_DIR;
-  } else if (targetPosition >= 0) {
-    if (targetPosition < getCurrentPosition()) {
+  } else if (targetPosition >= 0 || targetPosition == UNKNOWN_POSITION) {
+    if (targetPosition != UNKNOWN_POSITION &&
+        targetPosition < getCurrentPosition()) {
       lastDirection = Directions::UP_DIR;
     } else if (targetPosition > getCurrentPosition()) {
       lastDirection = Directions::DOWN_DIR;

@@ -77,7 +77,7 @@ void RollerShutter::initGpio(int gpio) {
 }
 
 void RollerShutter::stopMovement() {
-  SUPLA_LOG_DEBUG("RS[%d]: Stop movement", channel.getChannelNumber());
+  SUPLA_LOG_DEBUG("RS[%d] Stop movement", channel.getChannelNumber());
   switchOffRelays();
   currentDirection = Directions::STOP_DIR;
   doNothingTime = millis();
@@ -164,7 +164,7 @@ void RollerShutter::onTimer() {
     targetPosition = STOP_POSITION;
     stopMovement();
     stopCalibration();
-    SUPLA_LOG_DEBUG("RS[%d]: Stop movement", channel.getChannelNumber());
+//    SUPLA_LOG_DEBUG("RS[%d] Stop movement", channel.getChannelNumber());
   }
   if (targetPosition == STOP_POSITION) {
     newTargetPositionAvailable = false;
@@ -181,7 +181,7 @@ void RollerShutter::onTimer() {
             stopMovement();
           } else if (currentDirection == Directions::STOP_DIR ||
                      currentDirection == Directions::DOWN_DIR) {
-            SUPLA_LOG_DEBUG("RS[%d]: Calibration: closing",
+            SUPLA_LOG_DEBUG("RS[%d] Calibration: closing",
                             channel.getChannelNumber());
             startCalibration(closingTimeMs);
             if (!isCalibrationInProgress()) {
@@ -195,7 +195,7 @@ void RollerShutter::onTimer() {
             stopMovement();
           } else if (currentDirection == Directions::STOP_DIR ||
                      currentDirection == Directions::UP_DIR) {
-            SUPLA_LOG_DEBUG("RS[%d]: Calibration: opening",
+            SUPLA_LOG_DEBUG("RS[%d] Calibration: opening",
                             channel.getChannelNumber());
             startCalibration(openingTimeMs);
             if (!isCalibrationInProgress()) {
@@ -207,7 +207,7 @@ void RollerShutter::onTimer() {
         }
 
         if (isCalibrationInProgress()) {
-          SUPLA_LOG_DEBUG("RS[%d]: Calibration time: %d",
+          SUPLA_LOG_DEBUG("RS[%d] Calibration time: %d",
                           channel.getChannelNumber(),
                           calibrationTime);
         }
@@ -215,7 +215,7 @@ void RollerShutter::onTimer() {
 
       if (isCalibrationInProgress() &&
           millis() - lastMovementStartTime > calibrationTime) {
-        SUPLA_LOG_DEBUG("RS[%d]: Calibration done", channel.getChannelNumber());
+        SUPLA_LOG_DEBUG("RS[%d] Calibration done", channel.getChannelNumber());
         stopCalibration();
         setCalibrate(false);
         if (currentDirection == Directions::UP_DIR) {
@@ -243,9 +243,10 @@ void RollerShutter::onTimer() {
           } else if (targetPosition == 0 &&
               (targetTilt == UNKNOWN_POSITION || targetTilt == 0)) {
             targetPosition = UNKNOWN_POSITION;
+            targetTilt = UNKNOWN_POSITION;
             operationTimeoutMs = getTimeMarginValue(openingTimeMs);
             lastMovementStartTime = millis();
-            SUPLA_LOG_DEBUG("RS[%d]: operation timeout: %d",
+            SUPLA_LOG_DEBUG("RS[%d] operation timeout: %d",
                             channel.getChannelNumber(),
                             operationTimeoutMs);
           } else {
@@ -264,9 +265,10 @@ void RollerShutter::onTimer() {
           } else if (targetPosition == 100 &&
               (targetTilt == UNKNOWN_POSITION || targetTilt == 100)) {
             targetPosition = UNKNOWN_POSITION;
+            targetTilt = UNKNOWN_POSITION;
             operationTimeoutMs = getTimeMarginValue(closingTimeMs);
             lastMovementStartTime = millis();
-            SUPLA_LOG_DEBUG("RS[%d]: operation timeout: %d",
+            SUPLA_LOG_DEBUG("RS[%d] operation timeout: %d",
                             channel.getChannelNumber(),
                             operationTimeoutMs);
           } else {
@@ -283,14 +285,14 @@ void RollerShutter::onTimer() {
       if (targetPosition == MOVE_UP_POSITION) {
         newDirection = Directions::UP_DIR;
         operationTimeoutMs = openingTimeMs + getTimeMarginValue(openingTimeMs);
-        SUPLA_LOG_DEBUG("RS[%d]: Set new direction: UP, operation timeout: %d",
+        SUPLA_LOG_DEBUG("RS[%d] Set new direction: UP, operation timeout: %d",
                         channel.getChannelNumber(),
                         operationTimeoutMs);
       } else if (targetPosition == MOVE_DOWN_POSITION) {
         newDirection = Directions::DOWN_DIR;
         operationTimeoutMs = closingTimeMs + getTimeMarginValue(closingTimeMs);
         SUPLA_LOG_DEBUG(
-            "RS[%d]: Set new direction: DOWN, operation timeout: %d",
+            "RS[%d] Set new direction: DOWN, operation timeout: %d",
             channel.getChannelNumber(),
             operationTimeoutMs);
       } else {
@@ -302,7 +304,7 @@ void RollerShutter::onTimer() {
             targetTilt != UNKNOWN_POSITION ? targetTilt - getCurrentTilt() : 0;
         // 0 - 100 = -100 (move down); 50 -
         // 20 = 30 (move up 30%), etc
-        SUPLA_LOG_DEBUG("RS[%d]: New movement value: %d, new tilting value: %d",
+        SUPLA_LOG_DEBUG("RS[%d] New movement value: %d, new tilting value: %d",
                         channel.getChannelNumber(), newMovementValue,
                         newTiltingValue);
         if (newMovementValue > 0) {
@@ -377,7 +379,7 @@ void RollerShutter::onTimer() {
       millis() - lastMovementStartTime > operationTimeoutMs) {
     setTargetPosition(STOP_REQUEST);
     operationTimeoutMs = 0;
-    SUPLA_LOG_DEBUG("RS[%d]: Operation timeout", channel.getChannelNumber());
+    SUPLA_LOG_DEBUG("RS[%d] Operation timeout", channel.getChannelNumber());
   }
 }
 
@@ -500,6 +502,88 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
 
   currentPosition = newPosition;
   currentTilt = newTilt;
+}
+
+void RollerShutter::setTargetPosition(int newPosition, int newTilt) {
+  if (isTiltConfigured() && newTilt > UNKNOWN_POSITION &&
+      newPosition > UNKNOWN_POSITION && isCalibrated() &&
+      tiltConfig.tiltControlType ==
+          SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING) {
+    SUPLA_LOG_DEBUG("RS[%d] new target position before adjustment %d, tilt %d",
+                    channel.getChannelNumber(),
+                    newPosition,
+                    newTilt);
+    if (newTilt > 100) {
+      newTilt = 100;
+    }
+    if (newPosition > 100) {
+      newPosition = 100;
+    }
+
+    // When both tilt and position is set we have to adjust target position
+    // so after tilting it will be in requested position.
+    // So first we calculate what would be the actual position after tilting
+    // to the requested tilt:
+    // If final position will be == to newPosition then we will just perform
+    // tilting.
+    // If the position will be < newPosition then we have to move the
+    // position down to the requested position + time required for tilt up.
+    // If the position will be > newPosition then we have to move the
+    // position up to the requested position + time required for tilt down.
+
+    // if deltaTilt is < 0, then we should move up
+    int32_t deltaTilt = newTilt - static_cast<int32_t>(getCurrentTilt());
+    int32_t tiltingTime =
+        deltaTilt * static_cast<int32_t>(tiltConfig.tiltingTime) / 100;
+    int32_t positionAfterTilting = getCurrentPosition();
+
+    if (tiltingTime < 0) {  // UP
+      positionAfterTilting +=
+          100 * tiltingTime / static_cast<int32_t>(openingTimeMs);
+    } else {  // DOWN or nothing
+      positionAfterTilting +=
+          100 * tiltingTime / static_cast<int32_t>(closingTimeMs);
+    }
+
+    SUPLA_LOG_DEBUG(
+        "RS[%d] currentTilt %d, deltaTilt %d, tiltingTime %d, "
+        "positionAfterTilting %d, cfg tiltingTime %d",
+        channel.getChannelNumber(),
+        getCurrentTilt(),
+        deltaTilt,
+        tiltingTime,
+        positionAfterTilting,
+        tiltConfig.tiltingTime);
+
+    if (positionAfterTilting > newPosition) {
+      uint32_t tiltDownRequiredTime =
+          newTilt * tiltConfig.tiltingTime / 100;
+      uint32_t posChangeForTiltDown =
+          10000 * tiltDownRequiredTime / closingTimeMs;
+      SUPLA_LOG_DEBUG("RS[%d] tiltDownRequiredTime %d, posChangeForTiltDown %d",
+                      channel.getChannelNumber(),
+                      tiltDownRequiredTime,
+                      posChangeForTiltDown);
+      newPosition -= (posChangeForTiltDown + 50) / 100;
+    } else if (positionAfterTilting < newPosition) {
+      uint32_t tiltUpRequiredTime =
+          (100 - newTilt) * tiltConfig.tiltingTime / 100;
+      uint32_t posChangeForTiltUp =
+          10000 * tiltUpRequiredTime / openingTimeMs;
+          SUPLA_LOG_DEBUG("RS[%d] tiltUpRequiredTime %d, posChangeForTiltUp %d",
+                          channel.getChannelNumber(),
+                          tiltUpRequiredTime,
+                          posChangeForTiltUp);
+      newPosition += (posChangeForTiltUp + 50) / 100;
+    }
+    if (newPosition < 0) {
+      newPosition = 0;
+    }
+    if (newPosition > 100) {
+      newPosition = 100;
+    }
+  }
+  RollerShutterInterface::setTargetPosition(newPosition, newTilt);
 }
 
 }  // namespace Control

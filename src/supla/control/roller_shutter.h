@@ -64,6 +64,9 @@ class RollerShutter : public RollerShutterInterface {
   void setPinUp(int pin);
   void setPinDown(int pin);
 
+  void setTargetPosition(int newPosition,
+                         int newTilt = UNKNOWN_POSITION) override;
+
  protected:
   virtual void stopMovement();
   virtual void relayDownOn();

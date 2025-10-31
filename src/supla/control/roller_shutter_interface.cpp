@@ -143,7 +143,7 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
 
   int8_t task = newValue->value[0];
   int8_t tilt = newValue->value[1];
-  SUPLA_LOG_DEBUG("RS[%d] new value from server: position/task %d, tilt %d",
+  SUPLA_LOG_INFO("RS[%d] new value from server: position/task %d, tilt %d",
       channel.getChannelNumber(), task, tilt);
   switch (task) {
     case 0: {
@@ -629,12 +629,12 @@ int RollerShutterInterface::getCurrentPosition() const {
   if (currentPosition < 0) {
     return UNKNOWN_POSITION;
   }
-  return currentPosition / 100;
+  return (currentPosition + 50) / 100;
 }
 
 int RollerShutterInterface::getCurrentTilt() const {
   if (isTiltFunctionEnabled() && currentTilt >= 0) {
-    return currentTilt / 100;
+    return (currentTilt + 50) / 100;
   }
   return UNKNOWN_POSITION;
 }
@@ -720,7 +720,7 @@ int RollerShutterInterface::handleCalcfgFromServer(
 Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "RS[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
+      "RS[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
       getChannelNumber(),
       result->Func,
       result->ConfigType,
@@ -861,7 +861,7 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     }
 
     default: {
-      SUPLA_LOG_WARNING("RS[%d]: Ignoring unsupported channel function %d",
+      SUPLA_LOG_WARNING("RS[%d] Ignoring unsupported channel function %d",
                         getChannelNumber(), result->Func);
       break;
     }
@@ -899,7 +899,7 @@ void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
       rsConfig.visualizationType = storedConfig.visualizationType;
       print = true;
     } else {
-      SUPLA_LOG_DEBUG("RS[%d]: using default config", getChannelNumber());
+      SUPLA_LOG_DEBUG("RS[%d] using default config", getChannelNumber());
     }
     if (isTiltFunctionEnabled()) {
       generateKey(key, Supla::ConfigTag::TiltConfigTag);
@@ -908,7 +908,7 @@ void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
                        sizeof(TiltConfig))) {
         print = true;
       } else {
-        SUPLA_LOG_DEBUG("FB[%d]: using default config", getChannelNumber());
+        SUPLA_LOG_DEBUG("FB[%d] using default config", getChannelNumber());
       }
     }
 
@@ -920,7 +920,7 @@ void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
 
 void RollerShutterInterface::printConfig() const {
   SUPLA_LOG_INFO(
-      "RS[%d]: rsConfig: motor: %s (%d), button: %s (%d), time "
+      "RS[%d] rsConfig: motor: %s (%d), button: %s (%d), time "
       "margin: %d, visualization: %d",
       getChannelNumber(),
       rsConfig.motorUpsideDown == 2 ? "upside down" : "normal",
@@ -931,7 +931,7 @@ void RollerShutterInterface::printConfig() const {
       rsConfig.visualizationType);
   if (isTiltFunctionEnabled()) {
     SUPLA_LOG_INFO(
-        "FB[%d]: tiltConfig: tiltingTime: %d, tilt0Angle: %d, tilt100Angle: "
+        "FB[%d] tiltConfig: tiltingTime: %d, tilt0Angle: %d, tilt100Angle: "
         "%d, "
         "tiltControlType: %s (%d)",
         getChannelNumber(),
@@ -1004,7 +1004,7 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
     case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
       SUPLA_LOG_DEBUG(
-          "RS[%d]: fill channel config for RS functions",
+          "RS[%d] fill channel config for RS functions",
           channel.getChannelNumber());
 
       auto config = reinterpret_cast<TChannelConfig_RollerShutter *>(
@@ -1021,7 +1021,7 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
     case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND:
     case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
       SUPLA_LOG_DEBUG(
-          "RS[%d]: fill channel config for FB functions",
+          "RS[%d] fill channel config for FB functions",
           channel.getChannelNumber());
 
       auto config = reinterpret_cast<TChannelConfig_FacadeBlind *>(
@@ -1041,7 +1041,7 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
     }
     default:
       SUPLA_LOG_WARNING(
-          "RS[%d]: fill channel config for unknown function %d",
+          "RS[%d] fill channel config for unknown function %d",
           channel.getChannelNumber(),
           channel.getDefaultFunction());
       return;

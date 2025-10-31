@@ -161,6 +161,7 @@ void RollerShutter::onTimer() {
 
   if ((targetPosition == STOP_POSITION && inMove()) ||
       targetPosition == STOP_REQUEST) {
+    SUPLA_LOG_DEBUG("RS[%d] Stop requested", channel.getChannelNumber());
     targetPosition = STOP_POSITION;
     stopMovement();
     stopCalibration();
@@ -241,7 +242,8 @@ void RollerShutter::onTimer() {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
           } else if (targetPosition == 0 &&
-              (targetTilt == UNKNOWN_POSITION || targetTilt == 0)) {
+                     (targetTilt == UNKNOWN_POSITION ||
+                      (targetTilt == 0 && getCurrentTilt() == 0))) {
             targetPosition = UNKNOWN_POSITION;
             targetTilt = UNKNOWN_POSITION;
             operationTimeoutMs = getTimeMarginValue(openingTimeMs);
@@ -249,7 +251,7 @@ void RollerShutter::onTimer() {
             SUPLA_LOG_DEBUG("RS[%d] operation timeout: %d",
                             channel.getChannelNumber(),
                             operationTimeoutMs);
-          } else {
+          } else if (targetTilt >= 0 && getCurrentTilt() <= targetTilt) {
             stopMovement();
           }
         } else if (targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&
@@ -263,7 +265,8 @@ void RollerShutter::onTimer() {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
           } else if (targetPosition == 100 &&
-              (targetTilt == UNKNOWN_POSITION || targetTilt == 100)) {
+                     (targetTilt == UNKNOWN_POSITION ||
+                      (targetTilt == 100 && getCurrentTilt() == 100))) {
             targetPosition = UNKNOWN_POSITION;
             targetTilt = UNKNOWN_POSITION;
             operationTimeoutMs = getTimeMarginValue(closingTimeMs);
@@ -271,7 +274,7 @@ void RollerShutter::onTimer() {
             SUPLA_LOG_DEBUG("RS[%d] operation timeout: %d",
                             channel.getChannelNumber(),
                             operationTimeoutMs);
-          } else {
+          } else if (targetTilt >= 0 && getCurrentTilt() >= targetTilt) {
             stopMovement();
           }
         } else if (targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&
@@ -431,7 +434,7 @@ void RollerShutter::calculateCurrentPositionAndTilt() {
       break;
     }
     case SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED: {
-      if (lastPositionBeforeMovement < 100) {
+      if (lastPositionBeforeMovement < 10000) {
         // first we move position
         if (movementTimeElapsed <= positionChangeTimeRequired) {
           tiltChangeTimeElapsed = 0;

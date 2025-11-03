@@ -251,7 +251,8 @@ void RollerShutter::onTimer() {
             SUPLA_LOG_DEBUG("RS[%d] operation timeout: %d",
                             channel.getChannelNumber(),
                             operationTimeoutMs);
-          } else if (targetTilt >= 0 && getCurrentTilt() <= targetTilt) {
+          } else if (targetTilt == UNKNOWN_POSITION ||
+                     getCurrentTilt() <= targetTilt) {
             stopMovement();
           }
         } else if (targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&
@@ -274,7 +275,8 @@ void RollerShutter::onTimer() {
             SUPLA_LOG_DEBUG("RS[%d] operation timeout: %d",
                             channel.getChannelNumber(),
                             operationTimeoutMs);
-          } else if (targetTilt >= 0 && getCurrentTilt() >= targetTilt) {
+          } else if (targetTilt == UNKNOWN_POSITION ||
+                     getCurrentTilt() >= targetTilt) {
             stopMovement();
           }
         } else if (targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&

@@ -47,8 +47,13 @@ enum Action {
   MOVE_DOWN,
   MOVE_UP_OR_STOP,
   MOVE_DOWN_OR_STOP,
+  // "Internal button" actions are inverted when "invert button" config is set
   INTERNAL_BUTTON_MOVE_UP_OR_STOP,
   INTERNAL_BUTTON_MOVE_DOWN_OR_STOP,
+  INTERNAL_BUTTON_MOVE_UP,
+  INTERNAL_BUTTON_MOVE_DOWN,
+  INTERNAL_BUTTON_COMFORT_UP,
+  INTERNAL_BUTTON_COMFORT_DOWN,
 
   // Dimmable light, RGB(W) LEDs
   BRIGHTEN_ALL,

@@ -268,6 +268,9 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
                                               Supla::ON_CHANGE);
           attachedButton->disableOtherClients(this,
                                               Supla::CONDITIONAL_ON_CHANGE);
+        } else if (eventId == Supla::ON_HOLD) {
+          attachedButton->disableOtherClients(this,
+                                              Supla::ON_HOLD_RELEASE);
         }
       } else if (disablesLocalOperation & actionCap) {
         attachedButton->enableOtherClients(this, eventId);
@@ -282,6 +285,9 @@ void Supla::Control::ActionTrigger::parseActiveActionsFromServer() {
                                              Supla::ON_CHANGE);
           attachedButton->enableOtherClients(this,
                                              Supla::CONDITIONAL_ON_CHANGE);
+        } else if (eventId == Supla::ON_HOLD) {
+          attachedButton->enableOtherClients(this,
+                                             Supla::ON_HOLD_RELEASE);
         }
         if (makeSureThatOnClick1IsDisabled && eventId == Supla::ON_CLICK_1) {
           makeSureThatOnClick1IsDisabled = false;

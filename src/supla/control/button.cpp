@@ -75,6 +75,9 @@ void Button::onTimer() {
       runAction(CONDITIONAL_ON_RELEASE);
       runAction(CONDITIONAL_ON_CHANGE);
     }
+    if (clickCounter <= 1 && holdSend > 0) {
+      runAction(ON_HOLD_RELEASE);
+    }
   }
 
   if (waitingForRelease) {

@@ -27,6 +27,7 @@
 #include <supla/storage/config_tags.h>
 #include <supla/local_action.h>
 #include <supla/actions.h>
+#include "supla/events.h"
 
 using Supla::Control::RollerShutterInterface;
 
@@ -279,6 +280,24 @@ void RollerShutterInterface::handleAction(int event, int action) {
       break;
     }
 
+    case INTERNAL_BUTTON_COMFORT_UP: {
+      if (rsConfig.buttonsUpsideDown == 2) {
+        setTargetPosition(comfortDownValue, comfortDownTiltValue);
+      } else {
+        setTargetPosition(comfortUpValue, comfortUpTiltValue);
+      }
+      break;
+    }
+
+    case INTERNAL_BUTTON_COMFORT_DOWN: {
+      if (rsConfig.buttonsUpsideDown == 2) {
+        setTargetPosition(comfortUpValue, comfortUpTiltValue);
+      } else {
+        setTargetPosition(comfortDownValue, comfortDownTiltValue);
+      }
+      break;
+    }
+
     case STOP: {
       stop();
       break;
@@ -329,6 +348,14 @@ void RollerShutterInterface::handleAction(int event, int action) {
       }
       break;
     }
+    case INTERNAL_BUTTON_MOVE_UP: {
+      if (rsConfig.buttonsUpsideDown == 2) {
+        moveDown();
+      } else {
+        moveUp();
+      }
+      break;
+    }
     case MOVE_DOWN_OR_STOP: {
       if (inMove()) {
         stop();
@@ -346,6 +373,14 @@ void RollerShutterInterface::handleAction(int event, int action) {
         } else {
           moveDown();
         }
+      }
+      break;
+    }
+    case INTERNAL_BUTTON_MOVE_DOWN: {
+      if (rsConfig.buttonsUpsideDown == 2) {
+        moveUp();
+      } else {
+        moveDown();
       }
       break;
     }
@@ -420,7 +455,7 @@ void RollerShutterInterface::setTargetPosition(int newPosition, int newTilt) {
       targetTilt = UNKNOWN_POSITION;
     }
   } else {
-    targetTilt = 0;
+    targetTilt = -1;
   }
 
   if (targetPosition == MOVE_UP_POSITION) {
@@ -1207,6 +1242,13 @@ void RollerShutterInterface::setupButtonActions(
                                : Supla::MOVE_UP_OR_STOP,
                     this,
                     Supla::CONDITIONAL_ON_PRESS);
+      if (isTiltFunctionsSupported()) {
+        button->addAction(
+            asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP : Supla::MOVE_UP,
+            this,
+            Supla::ON_HOLD);
+        button->addAction(Supla::STOP, this, Supla::ON_HOLD_RELEASE);
+      }
     } else if (button->isBistable()) {
       button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
                                : Supla::MOVE_UP_OR_STOP,
@@ -1224,6 +1266,13 @@ void RollerShutterInterface::setupButtonActions(
                                  : Supla::MOVE_DOWN_OR_STOP,
                       this,
                       Supla::CONDITIONAL_ON_PRESS);
+      if (isTiltFunctionsSupported()) {
+        button->addAction(
+            asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP : Supla::MOVE_UP,
+            this,
+            Supla::ON_HOLD);
+        button->addAction(Supla::STOP, this, Supla::ON_HOLD_RELEASE);
+      }
     } else if (button->isBistable()) {
       button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
                                  : Supla::MOVE_DOWN_OR_STOP,

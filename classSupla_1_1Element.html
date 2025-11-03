@@ -322,9 +322,15 @@ virtual <a class="el" href="classSupla_1_1Channel.html">Channel</a> *&#160;</td>
 <tr class="memitem:a2da43bb00ea1bccd84d89998e949f7d3" id="r_a2da43bb00ea1bccd84d89998e949f7d3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2da43bb00ea1bccd84d89998e949f7d3">setInitialCaption</a> (const char *caption, bool secondaryChannel=false)</td></tr>
 <tr class="memdesc:a2da43bb00ea1bccd84d89998e949f7d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets initial caption.  <br /></td></tr>
 <tr class="separator:a2da43bb00ea1bccd84d89998e949f7d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0d9713f2bf118f91e803484c20c63415" id="r_a0d9713f2bf118f91e803484c20c63415"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0d9713f2bf118f91e803484c20c63415">setDefaultFunction</a> (int32_t defaultFunction)</td></tr>
-<tr class="memdesc:a0d9713f2bf118f91e803484c20c63415"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default channel's function.  <br /></td></tr>
-<tr class="separator:a0d9713f2bf118f91e803484c20c63415"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae0d75f1ed53558d5f47c485209195c3a" id="r_ae0d75f1ed53558d5f47c485209195c3a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae0d75f1ed53558d5f47c485209195c3a">setDefaultFunction</a> (uint32_t defaultFunction)</td></tr>
+<tr class="memdesc:ae0d75f1ed53558d5f47c485209195c3a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default channel's function.  <br /></td></tr>
+<tr class="separator:ae0d75f1ed53558d5f47c485209195c3a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1f2dea71cf84c6eb0c6bd2f6bfcaf93a" id="r_a1f2dea71cf84c6eb0c6bd2f6bfcaf93a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a1f2dea71cf84c6eb0c6bd2f6bfcaf93a">setFunction</a> (uint32_t newFunction)</td></tr>
+<tr class="memdesc:a1f2dea71cf84c6eb0c6bd2f6bfcaf93a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets channel's function.  <br /></td></tr>
+<tr class="separator:a1f2dea71cf84c6eb0c6bd2f6bfcaf93a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0221bc2346873fca90d653197bc0b30a" id="r_a0221bc2346873fca90d653197bc0b30a"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0221bc2346873fca90d653197bc0b30a">onFunctionChange</a> (uint32_t currentFunction, uint32_t newFunction)</td></tr>
+<tr class="memdesc:a0221bc2346873fca90d653197bc0b30a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when channel function changes.  <br /></td></tr>
+<tr class="separator:a0221bc2346873fca90d653197bc0b30a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -1271,6 +1277,44 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
+<a id="a0221bc2346873fca90d653197bc0b30a" name="a0221bc2346873fca90d653197bc0b30a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0221bc2346873fca90d653197bc0b30a">&#9670;&#160;</a></span>onFunctionChange()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Element::onFunctionChange </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>currentFunction</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>newFunction</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Called when channel function changes. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">currentFunction</td><td>old function </td></tr>
+    <tr><td class="paramname">newFunction</td><td>new function </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="ac0f0e9e97bc326ec8e06d75f916e4573" name="ac0f0e9e97bc326ec8e06d75f916e4573"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac0f0e9e97bc326ec8e06d75f916e4573">&#9670;&#160;</a></span>onInit()</h2>
 
@@ -1491,28 +1535,57 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
-<a id="a0d9713f2bf118f91e803484c20c63415" name="a0d9713f2bf118f91e803484c20c63415"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0d9713f2bf118f91e803484c20c63415">&#9670;&#160;</a></span>setDefaultFunction()</h2>
+<a id="ae0d75f1ed53558d5f47c485209195c3a" name="ae0d75f1ed53558d5f47c485209195c3a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0d75f1ed53558d5f47c485209195c3a">&#9670;&#160;</a></span>setDefaultFunction()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Element::setDefaultFunction </td>
+          <td class="memname">bool Supla::Element::setDefaultFunction </td>
           <td>(</td>
-          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>defaultFunction</em></span></td><td>)</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>defaultFunction</em></span></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Sets default channel's function. </p>
+<p>This value can be changed to other function in runtime, so it stores also current function.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">defaultFunction</td><td>SUPLA_CHANNELFNC_* see <a class="el" href="proto_8h_source.html">proto.h</a> </td></tr>
+    <tr><td class="paramname">defaultFunction</td><td>SUPLA_CHANNELFNC_* see <a class="el" href="proto_8h_source.html">proto.h</a></td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>true if default function was changed, false otherwise </dd></dl>
+
+</div>
+</div>
+<a id="a1f2dea71cf84c6eb0c6bd2f6bfcaf93a" name="a1f2dea71cf84c6eb0c6bd2f6bfcaf93a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1f2dea71cf84c6eb0c6bd2f6bfcaf93a">&#9670;&#160;</a></span>setFunction()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Element::setFunction </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>newFunction</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets channel's function. </p>
+<p>It calls <a class="el" href="#ae0d75f1ed53558d5f47c485209195c3a" title="Sets default channel&#39;s function.">setDefaultFunction()</a></p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">function</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if function was changed, false otherwise </dd></dl>
 
 </div>
 </div>

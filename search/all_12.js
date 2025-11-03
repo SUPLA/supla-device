@@ -15,11 +15,13 @@ var searchData=
   ['rgbwbase_12',['RGBWBase',['../classSupla_1_1Control_1_1RGBWBase.html',1,'Supla::Control']]],
   ['rgbwbuttonparameters_13',['RgbwButtonParameters',['../classRgbwButtonParameters.html',1,'RgbwButtonParameters'],['../classSupla_1_1Html_1_1RgbwButtonParameters.html',1,'Supla::Html::RgbwButtonParameters']]],
   ['rgbwleds_14',['RGBWLeds',['../classSupla_1_1Control_1_1RGBWLeds.html',1,'Supla::Control']]],
-  ['rollershutter_15',['RollerShutter',['../classSupla_1_1Control_1_1RollerShutter.html',1,'Supla::Control']]],
+  ['rollershutter_15',['RollerShutter',['../classSupla_1_1Control_1_1RollerShutter.html',1,'Supla::Control::RollerShutter'],['../classSupla_1_1Control_1_1RollerShutter.html#acba5d1015d5783ba6c55068d6df5fa36',1,'Supla::Control::RollerShutter::RollerShutter(Supla::Io::Base *io, int pinUp, int pinDown, bool highIsOn=true, bool tiltFunctionsEnabled=false)'],['../classSupla_1_1Control_1_1RollerShutter.html#a53615c057896d3c56832c8e6fdc91496',1,'Supla::Control::RollerShutter::RollerShutter(int pinUp=-1, int pinDown=-1, bool highIsOn=true, bool tiltFunctionsEnabled=false)']]],
   ['rollershutterconfig_16',['RollerShutterConfig',['../structSupla_1_1Control_1_1RollerShutterConfig.html',1,'Supla::Control']]],
-  ['rollershutterinterface_17',['RollerShutterInterface',['../classRollerShutterInterface.html',1,'RollerShutterInterface'],['../classSupla_1_1Control_1_1RollerShutterInterface.html',1,'Supla::Control::RollerShutterInterface']]],
+  ['rollershutterinterface_17',['RollerShutterInterface',['../classRollerShutterInterface.html',1,'RollerShutterInterface'],['../classSupla_1_1Control_1_1RollerShutterInterface.html',1,'Supla::Control::RollerShutterInterface'],['../classSupla_1_1Control_1_1RollerShutterInterface.html#a5119c429201cf1df90b89cb52bb5e532',1,'Supla::Control::RollerShutterInterface::RollerShutterInterface()'],['../classRollerShutterInterface.html#a5119c429201cf1df90b89cb52bb5e532',1,'RollerShutterInterface::RollerShutterInterface()']]],
   ['rollershutterparameters_18',['RollerShutterParameters',['../classRollerShutterParameters.html',1,'RollerShutterParameters'],['../classSupla_1_1Html_1_1RollerShutterParameters.html',1,'Supla::Html::RollerShutterParameters']]],
   ['rollershutterstatedata_19',['RollerShutterStateData',['../structRollerShutterStateData.html',1,'']]],
-  ['rsaverificator_20',['RsaVerificator',['../classSupla_1_1RsaVerificator.html',1,'Supla']]],
-  ['rtos_20sdk_20draft_21',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md22',1,'']]]
+  ['rollershutterwithtiltstatedata_20',['RollerShutterWithTiltStateData',['../structRollerShutterWithTiltStateData.html',1,'']]],
+  ['rsaverificator_21',['RsaVerificator',['../classSupla_1_1RsaVerificator.html',1,'Supla']]],
+  ['rsfbvalue_22',['RsFbValue',['../unionRsFbValue.html',1,'']]],
+  ['rtos_20sdk_20draft_23',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md22',1,'']]]
 ];

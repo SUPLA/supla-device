@@ -17,5 +17,7 @@ var searchData=
   ['rollershutterinterface_14',['RollerShutterInterface',['../classRollerShutterInterface.html',1,'RollerShutterInterface'],['../classSupla_1_1Control_1_1RollerShutterInterface.html',1,'Supla::Control::RollerShutterInterface']]],
   ['rollershutterparameters_15',['RollerShutterParameters',['../classRollerShutterParameters.html',1,'RollerShutterParameters'],['../classSupla_1_1Html_1_1RollerShutterParameters.html',1,'Supla::Html::RollerShutterParameters']]],
   ['rollershutterstatedata_16',['RollerShutterStateData',['../structRollerShutterStateData.html',1,'']]],
-  ['rsaverificator_17',['RsaVerificator',['../classSupla_1_1RsaVerificator.html',1,'Supla']]]
+  ['rollershutterwithtiltstatedata_17',['RollerShutterWithTiltStateData',['../structRollerShutterWithTiltStateData.html',1,'']]],
+  ['rsaverificator_18',['RsaVerificator',['../classSupla_1_1RsaVerificator.html',1,'Supla']]],
+  ['rsfbvalue_19',['RsFbValue',['../unionRsFbValue.html',1,'']]]
 ];

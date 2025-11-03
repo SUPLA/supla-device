@@ -225,6 +225,56 @@ void RollerShutterParameters::send(Supla::WebSender* sender) {
   sender->send("</div>");
   sender->send("</div>");
   // form-field END;
+
+  if (rs->isTiltFunctionEnabled()) {
+    // form-field BEGIN
+    rs->generateKey(key, Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Tilt control type");
+    sender->send("<div>");
+    sender->send("<select ");
+    sender->sendNameAndId(key);
+    sender->send(">");
+    sender->sendSelectItem(
+        0, "OFF", rs->getTiltControlType() == SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
+    sender->sendSelectItem(
+        1,
+        "Stands in position while tilting",
+        rs->getTiltControlType() ==
+            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+    sender->sendSelectItem(
+        2,
+        "Changes position while tilting",
+        rs->getTiltControlType() ==
+            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+    sender->sendSelectItem(
+        3,
+        "Tils only when fully closed",
+        rs->getTiltControlType() ==
+            SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED);
+    sender->send("</select>");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
+
+    // form-field BEGIN
+    rs->generateKey(key, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
+    sender->send("<div class=\"form-field\">");
+    sender->sendLabelFor(key, "Tilting time (sec.)");
+    sender->send("<div>");
+    sender->send("<input ");
+    sender->sendNameAndId(key);
+    sender->send(
+        " type=\"number\" min=\"0\" max=\"300\" step=\"0.1\" placeholder=\"Use "
+        "0 "
+        "for default\" ");
+    sender->send(" value=\"");
+    sender->send(static_cast<int>(rs->getTiltingTimeMs() / 100), 1);
+    sender->send("\">");
+    sender->send("</div>");
+    sender->send("</div>");
+    // form-field END
+  }
 }
 
 bool RollerShutterParameters::handleResponse(const char* key,
@@ -285,6 +335,20 @@ bool RollerShutterParameters::handleResponse(const char* key,
     uint32_t time = floatStringToInt(value, 1) * 100;
     auto openingTime = rs->getOpeningTimeMs();
     rs->setOpenCloseTime(time, openingTime);
+    return true;
+  }
+
+  rs->generateKey(keyMatch, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
+  if (strcmp(key, keyMatch) == 0) {
+    uint32_t time = floatStringToInt(value, 1) * 100;
+    rs->setTiltingTime(time);
+    return true;
+  }
+
+  rs->generateKey(keyMatch, Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
+  if (strcmp(key, keyMatch) == 0) {
+    uint32_t tiltControlType = stringToUInt(value);
+    rs->setTiltControlType(tiltControlType);
     return true;
   }
 

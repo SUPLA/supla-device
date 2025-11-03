@@ -221,6 +221,8 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
 
   uint32_t getClosingTimeMs() const;
   uint32_t getOpeningTimeMs() const;
+  uint32_t getTiltingTimeMs() const;
+  uint32_t getTiltControlType() const;
 
   void attach(Supla::Control::Button *up, Supla::Control::Button *down);
   void attach(Supla::Control::Button *button, bool upButton, bool asInternal);
@@ -256,7 +258,8 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   bool isAutoCalibrationSupported() const;
 
   void setOpenCloseTime(uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs);
-  void setTiltingTime(uint32_t newTiltingTimeMs);
+  void setTiltingTime(uint32_t newTiltingTimeMs, bool local = true);
+  void setTiltControlType(uint8_t newTiltControlType, bool local = true);
 
   void setCalibrationFailed(bool value);
   void setCalibrationLost(bool value);

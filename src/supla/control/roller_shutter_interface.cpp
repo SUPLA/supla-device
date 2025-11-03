@@ -229,13 +229,31 @@ void RollerShutterInterface::setOpenCloseTime(uint32_t newClosingTimeMs,
   }
 }
 
-void RollerShutterInterface::setTiltingTime(uint32_t newTiltingTimeMs) {
+void RollerShutterInterface::setTiltingTime(uint32_t newTiltingTimeMs,
+                                            bool local) {
   if (isTimeSettingAvailable()) {
     if (newTiltingTimeMs != tiltConfig.tiltingTime) {
       tiltConfig.tiltingTime = newTiltingTimeMs;
       SUPLA_LOG_DEBUG("FB[%d] new tilting time received. Tilting time: %d ms. ",
                       channel.getChannelNumber(),
                       tiltConfig.tiltingTime);
+      if (local) {
+        saveConfig();
+      }
+    }
+  }
+}
+
+void RollerShutterInterface::setTiltControlType(uint8_t newTiltControlType,
+                                                bool local) {
+  if (newTiltControlType != tiltConfig.tiltControlType) {
+    tiltConfig.tiltControlType = newTiltControlType;
+    SUPLA_LOG_DEBUG(
+        "FB[%d] new tilt control type received. Tilt control type: %d. ",
+        channel.getChannelNumber(),
+        tiltConfig.tiltControlType);
+    if (local) {
+      saveConfig();
     }
   }
 }
@@ -697,6 +715,14 @@ uint32_t RollerShutterInterface::getOpeningTimeMs() const {
   return openingTimeMs;
 }
 
+uint32_t RollerShutterInterface::getTiltingTimeMs() const {
+  return tiltConfig.tiltingTime;
+}
+
+uint32_t RollerShutterInterface::getTiltControlType() const {
+  return tiltConfig.tiltControlType;
+}
+
 void RollerShutterInterface::attach(Supla::Control::Button *up,
     Supla::Control::Button *down) {
   attach(up, true, true);
@@ -834,7 +860,7 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
           setOpenCloseTime(newConfig->ClosingTimeMS, newConfig->OpeningTimeMS);
         }
         if (newConfig->TiltingTimeMS >= 0) {
-          setTiltingTime(newConfig->TiltingTimeMS);
+          setTiltingTime(newConfig->TiltingTimeMS, false);
         }
         tiltConfig.tilt0Angle = newConfig->Tilt0Angle;
         tiltConfig.tilt100Angle = newConfig->Tilt100Angle;

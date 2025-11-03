@@ -63,6 +63,8 @@ const char RollerShutterButtonsUpsideDownTag[] = "bud";
 const char RollerShutterTimeMarginTag[] = "rs_margin";
 const char RollerShutterOpeningTimeTag[] = "rs_ot";
 const char RollerShutterClosingTimeTag[] = "rs_ct";
+const char FacadeBlindTiltingTimeTag[] = "fb_tilt";
+const char FacadeBlindTiltControlTypeTag[] = "fb_type";
 const char TiltConfigTag[] = "tilt_cfg";
 
 const char RelayOvercurrentThreshold[] = "oc_thr";
@@ -116,6 +118,8 @@ static_assert(sizeof(RollerShutterTimeMarginTag) < 12);
 static_assert(sizeof(RollerShutterOpeningTimeTag) < 12);
 static_assert(sizeof(RollerShutterClosingTimeTag) < 12);
 static_assert(sizeof(TiltConfigTag) < 12);
+static_assert(sizeof(FacadeBlindTiltingTimeTag) < 12);
+static_assert(sizeof(FacadeBlindTiltControlTypeTag) < 12);
 static_assert(sizeof(RelayOvercurrentThreshold) < 12);
 static_assert(sizeof(HvacCfgTag) < 12);
 static_assert(sizeof(HvacWeeklyCfgTag) <= 12);

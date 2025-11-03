@@ -18,83 +18,89 @@
 
 #pragma once
 
-#include <supla/io.h>
 #include <supla/element.h>
+#include <supla/io.h>
 #include <supla/log_wrapper.h>
+#include <vector>
 
 namespace Supla {
 namespace Io {
 
 class SR74HC166 : public Supla::Io::Base, Supla::Element {
-  public:
-    explicit SR74HC166(const uint8_t size,
-                      const uint8_t dataPin,
-                      const uint8_t clockPin,
-                      const uint8_t ploadPin) :
-     Supla::Io::Base(false), _size(size), _clockPin(clockPin), _dataPin(dataPin), _ploadPin(ploadPin) {
+ public:
+  explicit SR74HC166(const uint8_t size,
+                     const uint8_t dataPin,
+                     const uint8_t clockPin,
+                     const uint8_t ploadPin)
+      : Supla::Io::Base(false),
+        _size(size),
+        _clockPin(clockPin),
+        _dataPin(dataPin),
+        _ploadPin(ploadPin) {
+    pinMode(_clockPin, OUTPUT);
+    pinMode(_dataPin, INPUT);
+    pinMode(_ploadPin, OUTPUT);
+    digitalWrite(_clockPin, LOW);
+    digitalWrite(_ploadPin, HIGH);
+    _digitalValue.resize(_size, 0);
+  }
 
-      pinMode(_clockPin,        OUTPUT);
-      pinMode(_dataPin,          INPUT);
-      pinMode(_ploadPin,        OUTPUT);
-      digitalWrite(_clockPin,      LOW);
-      digitalWrite(_ploadPin,     HIGH);
+  void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {}
 
-      _digitalValue.resize(_size, 0);
-    }
+  void customDigitalWrite(int channelNumber,
+                          uint8_t pin,
+                          uint8_t val) override {
+  }
 
-    void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override {
+  int customDigitalRead(int channelNumber, uint8_t pin) override {
+    if (millis() - lastSrRead >= 10) {
+      readSR();
+      lastSrRead = millis();
     }
-    void customDigitalWrite(int channelNumber, uint8_t pin,
-                            uint8_t val) override {
-    }
-    int customDigitalRead(int channelNumber, uint8_t pin) override {
-      if (millis() - lastSrRead >= 10) {
-        readSR();
-        lastSrRead = millis();
+    return (_digitalValue[pin / 8] >> (pin % 8)) & 1;
+  }
+
+  unsigned int customPulseIn(int channelNumber,
+                             uint8_t pin,
+                             uint8_t value,
+                             uint64_t timeoutMicro) override {
+    return 0;
+  }
+
+  void customAnalogWrite(int channelNumber, uint8_t pin, int val) override {}
+
+  int customAnalogRead(int channelNumber, uint8_t pin) override {
+    return 0;
+  }
+
+  void readSR() {
+    digitalWrite(_ploadPin, LOW);
+    delayMicroseconds(pulseWidth);
+    digitalWrite(_clockPin, HIGH);  // HC166
+    delayMicroseconds(pulseWidth);  // HC166
+    digitalWrite(_clockPin, LOW);   // HC166
+    digitalWrite(_ploadPin, HIGH);
+    for (int i = _size - 1; i >= 0; i--) {
+      _digitalValue[i] = 0;
+      for (int j = 7; j >= 0; j--) {
+        bool temp = digitalRead(_dataPin);
+        if (temp) _digitalValue[i] = _digitalValue[i] | (1 << j);
+        digitalWrite(_clockPin, HIGH);
+        delayMicroseconds(pulseWidth);
+        digitalWrite(_clockPin, LOW);
       }
-      return (_digitalValue[pin / 8] >> (pin % 8)) & 1;
     }
-    unsigned int customPulseIn(int channelNumber, uint8_t pin, uint8_t value,
-                               uint64_t timeoutMicro) override {
-      return 0;
-    }
-    void customAnalogWrite(int channelNumber, uint8_t pin, int val) override {
-    }
+  }
 
-    int customAnalogRead(int channelNumber, uint8_t pin) override {
-      return 0;
-    }
-    void readSR() {
-      digitalWrite(_ploadPin, LOW);
-      delayMicroseconds(pulseWidth);
-      digitalWrite(_clockPin, HIGH);   // HC166
-      delayMicroseconds(pulseWidth);   // HC166
-      digitalWrite(_clockPin, LOW);    // HC166
-      digitalWrite(_ploadPin, HIGH);
-
-      for (int i = _size - 1; i >= 0; i--) {
-        _digitalValue[i] = 0;
-        for (int j = 7; j >= 0; j--) {
-          bool temp = digitalRead(_dataPin);
-          if (temp)  _digitalValue[i] = _digitalValue[i] | (1 << j);
-          digitalWrite(_clockPin, HIGH);
-          delayMicroseconds(pulseWidth);
-          digitalWrite(_clockPin, LOW);
-        }
-      }
-    }
-
-  protected:
-    uint8_t _size;
-    uint8_t _clockPin;
-    uint8_t _dataPin;
-    uint8_t _ploadPin;
-    uint8_t pulseWidth = 5;
-    unsigned long lastSrRead;
-
-    std::vector<uint8_t>_digitalValue;
+ protected:
+  uint8_t _size;
+  uint8_t _clockPin;
+  uint8_t _dataPin;
+  uint8_t _ploadPin;
+  uint8_t pulseWidth = 5;
+  uint32_t lastSrRead;
+  std::vector<uint8_t> _digitalValue;
 };
 
 };  // namespace Io
 };  // namespace Supla
-

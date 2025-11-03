@@ -305,6 +305,12 @@ uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getClosingTimeMs<
 <tr class="memitem:a9987fc186e1cd8a6de5f9068451ea93e" id="r_a9987fc186e1cd8a6de5f9068451ea93e"><td class="memItemLeft" align="right" valign="top"><a id="a9987fc186e1cd8a6de5f9068451ea93e" name="a9987fc186e1cd8a6de5f9068451ea93e"></a>
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getOpeningTimeMs</b> () const</td></tr>
 <tr class="separator:a9987fc186e1cd8a6de5f9068451ea93e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61790fa23556e566e227ea63ff6d46f5" id="r_a61790fa23556e566e227ea63ff6d46f5"><td class="memItemLeft" align="right" valign="top"><a id="a61790fa23556e566e227ea63ff6d46f5" name="a61790fa23556e566e227ea63ff6d46f5"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getTiltingTimeMs</b> () const</td></tr>
+<tr class="separator:a61790fa23556e566e227ea63ff6d46f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8533e2c3310a4406496dfba42a44b540" id="r_a8533e2c3310a4406496dfba42a44b540"><td class="memItemLeft" align="right" valign="top"><a id="a8533e2c3310a4406496dfba42a44b540" name="a8533e2c3310a4406496dfba42a44b540"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>getTiltControlType</b> () const</td></tr>
+<tr class="separator:a8533e2c3310a4406496dfba42a44b540"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad74cb5a129f0983335077ad09cef7882" id="r_ad74cb5a129f0983335077ad09cef7882"><td class="memItemLeft" align="right" valign="top"><a id="ad74cb5a129f0983335077ad09cef7882" name="ad74cb5a129f0983335077ad09cef7882"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *up, <a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *down)</td></tr>
 <tr class="separator:ad74cb5a129f0983335077ad09cef7882"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -380,9 +386,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isAutoCalibrationSupp
 <tr class="memitem:ade7973acf4bfcad66de30d377a209d03" id="r_ade7973acf4bfcad66de30d377a209d03"><td class="memItemLeft" align="right" valign="top"><a id="ade7973acf4bfcad66de30d377a209d03" name="ade7973acf4bfcad66de30d377a209d03"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setOpenCloseTime</b> (uint32_t newClosingTimeMs, uint32_t newOpeningTimeMs)</td></tr>
 <tr class="separator:ade7973acf4bfcad66de30d377a209d03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a27ea34b3bd1dded09e562a076d7e8df3" id="r_a27ea34b3bd1dded09e562a076d7e8df3"><td class="memItemLeft" align="right" valign="top"><a id="a27ea34b3bd1dded09e562a076d7e8df3" name="a27ea34b3bd1dded09e562a076d7e8df3"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setTiltingTime</b> (uint32_t newTiltingTimeMs)</td></tr>
-<tr class="separator:a27ea34b3bd1dded09e562a076d7e8df3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4bc10fcf0606aa2426c57e4d4b9bfe1" id="r_ab4bc10fcf0606aa2426c57e4d4b9bfe1"><td class="memItemLeft" align="right" valign="top"><a id="ab4bc10fcf0606aa2426c57e4d4b9bfe1" name="ab4bc10fcf0606aa2426c57e4d4b9bfe1"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setTiltingTime</b> (uint32_t newTiltingTimeMs, bool local=true)</td></tr>
+<tr class="separator:ab4bc10fcf0606aa2426c57e4d4b9bfe1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac5d04b16c4e9481a49542f5798506be0" id="r_ac5d04b16c4e9481a49542f5798506be0"><td class="memItemLeft" align="right" valign="top"><a id="ac5d04b16c4e9481a49542f5798506be0" name="ac5d04b16c4e9481a49542f5798506be0"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setTiltControlType</b> (uint8_t newTiltControlType, bool local=true)</td></tr>
+<tr class="separator:ac5d04b16c4e9481a49542f5798506be0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a914a752c9e9a240605d5c560cbb12d0d" id="r_a914a752c9e9a240605d5c560cbb12d0d"><td class="memItemLeft" align="right" valign="top"><a id="a914a752c9e9a240605d5c560cbb12d0d" name="a914a752c9e9a240605d5c560cbb12d0d"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setCalibrationFailed</b> (bool value)</td></tr>
 <tr class="separator:a914a752c9e9a240605d5c560cbb12d0d"><td class="memSeparator" colspan="2">&#160;</td></tr>

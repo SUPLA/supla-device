@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_EVENTS_H_
 #define SRC_SUPLA_EVENTS_H_
 
+#include <stdint.h>
+
 namespace Supla {
 
 enum Event {
@@ -138,7 +140,13 @@ enum Event {
 
   ON_SUBDEVICE_PAIRING_START,
   ON_SUBDEVICE_PAIRING_END,
+
+  // Keep it as last item
+  EVENT_ID_MAX
 };
+
+// Internally, event ids are stored as uint16_t
+static_assert(Supla::EVENT_ID_MAX <= UINT16_MAX);
 
 };  // namespace Supla
 

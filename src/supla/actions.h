@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_ACTIONS_H_
 #define SRC_SUPLA_ACTIONS_H_
 
+#include <stdint.h>
+
 // Actions are used in ActionHandler elements. They are grouped by most common
 // usage, but you should not rely on it. Please check exact supported actions
 // in ActionHandler's element documentation
@@ -137,7 +139,13 @@ enum Action {
   SWITCH_TO_MANUAL_MODE_HEAT_COOL,
   TOGGLE_MANUAL_WEEKLY_SCHEDULE_MODES,
   TOGGLE_OFF_MANUAL_WEEKLY_SCHEDULE_MODES,
+
+  // Keep it as last item
+  ACTION_ID_MAX
 };
-};  // namespace Supla
+}  // namespace Supla
+
+// Internally, action ids are stored as uint16_t
+static_assert(Supla::ACTION_ID_MAX <= UINT16_MAX);
 
 #endif  // SRC_SUPLA_ACTIONS_H_

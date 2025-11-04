@@ -232,12 +232,57 @@ class RollerShutterInterface : public ChannelElement, public ActionHandler {
   bool isCalibrationRequested() const;
   bool isCalibrated() const;
 
+  /**
+   * Enable/disable motor upside down configuration option. If enabled,
+   * then motor upside down can be set in configuration.
+   * If disabled, then motor upside down can not be set in configuration.
+   *
+   * @param enable
+   */
   void setRsConfigMotorUpsideDownEnabled(bool enable);
+
+  /**
+   * Enable/disable buttons upside down configuration option. If enabled,
+   * then buttons upside down can be set in configuration.
+   * If disabled, then buttons upside down can not be set in configuration.
+   *
+   * @param enable
+   */
   void setRsConfigButtonsUpsideDownEnabled(bool enable);
+
+  /**
+   * Enable/disable time margin configuration option. If enabled,
+   * then time margin can be set in configuration.
+   * If disabled, then time margin can not be set in configuration.
+   *
+   * @param enable
+   */
   void setRsConfigTimeMarginEnabled(bool enable);
 
+  /**
+   * Set motor upside down value. Works only if motor upside down
+   * configuration option is enabled.
+   *
+   * @param value 0 - not set/not used, 1 - false, 2 - true
+   */
   void setRsConfigMotorUpsideDownValue(uint8_t value);
+
+  /**
+   * Set buttons upside down value. Works only if buttons upside down
+   * configuration option is enabled.
+   *
+   * @param value 0 - not set/not used, 1 - false, 2 - true
+   */
   void setRsConfigButtonsUpsideDownValue(uint8_t value);
+
+  /**
+   * Set time margin value. Works only if time margin configuration option
+   * is enabled.
+   *
+   * @param value -1 (use device specific default), 0 (not set/not used),
+   * 1 (no margin), > 1 (51% of opening/closing time added on extreme
+   * positions)
+   */
   void setRsConfigTimeMarginValue(int8_t value);
 
   uint8_t getMotorUpsideDown() const;

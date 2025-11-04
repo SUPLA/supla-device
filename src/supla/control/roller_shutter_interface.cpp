@@ -1264,11 +1264,16 @@ void RollerShutterInterface::setupButtonActions(
   if (upDirection) {
     button->onInit();  // make sure button was initialized
     if (button->isMonostable()) {
-      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
-                               : Supla::MOVE_UP_OR_STOP,
-                    this,
-                    Supla::CONDITIONAL_ON_PRESS);
-      if (isTiltFunctionsSupported()) {
+      if (!isTiltFunctionsSupported()) {
+        button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
+                                     : Supla::MOVE_UP_OR_STOP,
+                          this,
+                          Supla::CONDITIONAL_ON_PRESS);
+      } else {
+        button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
+                                     : Supla::MOVE_UP_OR_STOP,
+                          this,
+                          Supla::ON_CLICK_1);
         button->addAction(
             asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP : Supla::MOVE_UP,
             this,
@@ -1288,13 +1293,18 @@ void RollerShutterInterface::setupButtonActions(
   } else {  // down direction
     button->onInit();  // make sure button was initialized
     if (button->isMonostable()) {
-      button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
-                                 : Supla::MOVE_DOWN_OR_STOP,
-                      this,
-                      Supla::CONDITIONAL_ON_PRESS);
-      if (isTiltFunctionsSupported()) {
+      if (!isTiltFunctionsSupported()) {
+        button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
+                                     : Supla::MOVE_DOWN_OR_STOP,
+                          this,
+                          Supla::CONDITIONAL_ON_PRESS);
+      } else {
+        button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
+                                     : Supla::MOVE_DOWN_OR_STOP,
+                          this,
+                          Supla::ON_CLICK_1);
         button->addAction(
-            asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP : Supla::MOVE_UP,
+            asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN : Supla::MOVE_DOWN,
             this,
             Supla::ON_HOLD);
         button->addAction(Supla::STOP, this, Supla::ON_HOLD_RELEASE);

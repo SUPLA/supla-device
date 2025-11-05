@@ -697,7 +697,7 @@ bool NvsConfig::initDeviceDataPartitionCopyAndChecksum() {
     SUPLA_LOG_INFO("Data partition valid");
     return true;
   } else {
-    SUPLA_LOG_INFO("Checkiong data partition backup...");
+    SUPLA_LOG_INFO("Checking data partition backup...");
     dataPartitionOffset = SUPLA_SECTOR_SIZE;
     if (!readDataPartitionImp(SUPLA_DEVICE_DATA_AES_MAGIC_OFFSET,
                               deviceDataBuf,

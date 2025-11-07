@@ -1212,6 +1212,9 @@ void RollerShutterInterface::purgeConfig() {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, Supla::ConfigTag::RollerShutterTag);
     cfg->eraseKey(key);
+
+    generateKey(key, Supla::ConfigTag::TiltConfigTag);
+    cfg->eraseKey(key);
   }
 }
 

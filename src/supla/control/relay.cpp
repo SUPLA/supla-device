@@ -923,7 +923,6 @@ void Relay::saveConfig() const {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    generateKey(key, Supla::ConfigTag::ContainerTag);
     generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
     if (cfg->setUInt32(key, overcurrentThreshold)) {
       SUPLA_LOG_INFO("Relay[%d]: config saved successfully",
@@ -940,3 +939,14 @@ void Relay::saveConfig() const {
     proto->notifyConfigChange(getChannelNumber());
   }
 }
+
+void Relay::purgeConfig() {
+  Supla::ChannelElement::purgeConfig();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (cfg) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
+    cfg->eraseKey(key);
+  }
+}
+

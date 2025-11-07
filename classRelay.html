@@ -216,6 +216,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class=
 <tr class="memitem:a4b6b74c92da14a694952901a1575e955" id="r_a4b6b74c92da14a694952901a1575e955"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4b6b74c92da14a694952901a1575e955">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc) override</td></tr>
 <tr class="memdesc:a4b6b74c92da14a694952901a1575e955"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:a4b6b74c92da14a694952901a1575e955"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a97aa1c7c3d0ffac0a7f959fdcd65de68" id="r_a97aa1c7c3d0ffac0a7f959fdcd65de68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a97aa1c7c3d0ffac0a7f959fdcd65de68">purgeConfig</a> () override</td></tr>
+<tr class="memdesc:a97aa1c7c3d0ffac0a7f959fdcd65de68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
+<tr class="separator:a97aa1c7c3d0ffac0a7f959fdcd65de68"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b4b9978a97efea896f8c793aba9221c" id="r_a6b4b9978a97efea896f8c793aba9221c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6b4b9978a97efea896f8c793aba9221c">onInit</a> () override</td></tr>
 <tr class="memdesc:a6b4b9978a97efea896f8c793aba9221c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
 <tr class="separator:a6b4b9978a97efea896f8c793aba9221c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -331,9 +334,6 @@ virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>addAction</b>
 <tr class="memitem:a6c5c3de5e18d235305a87646677919ac inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a6c5c3de5e18d235305a87646677919ac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a6c5c3de5e18d235305a87646677919ac">handleSetChannelConfigResult</a> (<a class="el" href="structTSDS__SetChannelConfigResult.html">TSDS_SetChannelConfigResult</a> *result) override</td></tr>
 <tr class="memdesc:a6c5c3de5e18d235305a87646677919ac inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "set channel config" reply from server.  <br /></td></tr>
 <tr class="separator:a6c5c3de5e18d235305a87646677919ac inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0230d0fb743c8cfff02ce21c6cfae360 inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a0230d0fb743c8cfff02ce21c6cfae360"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a0230d0fb743c8cfff02ce21c6cfae360">purgeConfig</a> () override</td></tr>
-<tr class="memdesc:a0230d0fb743c8cfff02ce21c6cfae360 inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
-<tr class="separator:a0230d0fb743c8cfff02ce21c6cfae360 inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aba3b92d1404370e5a595df8a22a0b12c inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_aba3b92d1404370e5a595df8a22a0b12c"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>clearChannelConfigChangedFlag</b> ()</td></tr>
 <tr class="separator:aba3b92d1404370e5a595df8a22a0b12c inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1066,6 +1066,35 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <p>It should provide state saving for this elemnet to Storage </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ab9ebf45462dfe94c4b3c9c5797883604">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a97aa1c7c3d0ffac0a7f959fdcd65de68" name="a97aa1c7c3d0ffac0a7f959fdcd65de68"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a97aa1c7c3d0ffac0a7f959fdcd65de68">&#9670;&#160;</a></span>purgeConfig()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Relay::purgeConfig </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Removes all configration data related to the element from Storage::Config. </p>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a0230d0fb743c8cfff02ce21c6cfae360">Supla::ElementWithChannelActions</a>.</p>
 
 </div>
 </div>

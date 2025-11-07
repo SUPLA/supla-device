@@ -112,9 +112,9 @@ void Supla::Control::InternalPinOutput::onInit() {
     turnOff();
   }
 
-  Supla::Io::pinMode(
-      pin, OUTPUT, io);  // pin mode is set after setting pin value in order to
-                         // avoid problems with LOW trigger relays
+  // pin mode is set after setting pin value in order to avoid problems with LOW
+  // trigger relays
+  Supla::Io::pinMode(pin, OUTPUT, io);
   if (stateOnInit == STATE_ON_INIT_ON) {
     turnOn();
   } else {

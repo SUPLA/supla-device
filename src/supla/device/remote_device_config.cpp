@@ -368,7 +368,7 @@ void RemoteDeviceConfig::processConfig(TSDS_SetDeviceConfig *config) {
               fieldBit,
               reinterpret_cast<TDeviceConfig_HomeScreenOffDelayType *>(
                   config->Config + dataIndex));
-          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelay);
+          dataIndex += sizeof(TDeviceConfig_HomeScreenOffDelayType);
           break;
         }
         case SUPLA_DEVICE_CONFIG_FIELD_MODBUS: {

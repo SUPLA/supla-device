@@ -42,8 +42,10 @@ void Supla::Control::ActionTrigger::attach(Supla::Control::Button &button) {
   attach(&button);
 }
 
-void Supla::Control::ActionTrigger::handleAction(int event, int action) {
-  (void)(event);
+void Supla::Control::ActionTrigger::handleAction(int, int action) {
+  if (!enabled) {
+    return;
+  }
   uint32_t actionCap = getActionTriggerCap(action);
 
   if (actionCap & activeActionsFromServer ||
@@ -619,5 +621,13 @@ bool Supla::Control::ActionTrigger::isAnyActionEnabledOnServer() const {
 
 void Supla::Control::ActionTrigger::setAlwaysUseOnClick1() {
   alwaysUseOnClick1 = true;
+}
+
+void Supla::Control::ActionTrigger::enable() {
+  enabled = true;
+}
+
+void Supla::Control::ActionTrigger::disable() {
+  enabled = false;
 }
 

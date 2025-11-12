@@ -30,6 +30,13 @@
 
 #include "factory_test.h"
 
+#ifdef ESP8266
+#define FLASH_STRLEN(p) strlen_P(p)
+#else
+#define FLASH_STRLEN(p) strlen(p)
+#endif
+
+
 namespace Supla {
 namespace Device {
 
@@ -153,7 +160,7 @@ void FactoryTest::onInit() {
     if (!selfTestMode) {
       return;
     }
-  } else if (strlen(srpc->getSuplaCACert()) <= 0) {
+  } else if (FLASH_STRLEN(srpc->getSuplaCACert()) <= 0) {
     SUPLA_LOG_ERROR("TEST failed: Supla CA cert is empty");
     testFailed = true;
     failReason = 10;
@@ -168,7 +175,7 @@ void FactoryTest::onInit() {
     if (!selfTestMode) {
       return;
     }
-  } else if (strlen(srpc->getSupla3rdPartyCACert()) <= 0) {
+  } else if (FLASH_STRLEN(srpc->getSupla3rdPartyCACert()) <= 0) {
     SUPLA_LOG_ERROR("TEST failed: Supla 3rd party CA cert is empty");
     testFailed = true;
     failReason = 12;

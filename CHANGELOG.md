@@ -1,5 +1,63 @@
 # CHANGELOG.md
 
+# 25.11 (2025-11-12 Teddy Bear Edition)
+
+### Roller Shutter
+- Add support for facade blinds with tilt control.
+- Add new internal button actions (INTERNAL_BUTTON_MOVE_UP, INTERNAL_BUTTON_MOVE_DOWN, INTERNAL_BUTTON_COMFORT_UP, INTERNAL_BUTTON_COMFORT_DOWN) for more precise control, including invertable options.
+- Add ON_HOLD action support for tilt control.
+- Add `CmdRollerShutter` support for `sd4linux` to configure roller shutters via commands.
+- Add explicit "stop request" to halt motor actions regardless of the current state.
+- Add tilt-related settings to the HTML configuration form.
+
+### Relay
+- Add `setRestartTimerOnToggle` method for impulse and staircase timers to prolong the "on" state.
+- Add ability to configure a default duration for impulse and staircase functions.
+- Add `purgeConfig` implementation.
+- Fix for ignoring staircase extended config in some scenarios.
+
+### Generic
+- Add option to enable/disable ActionTrigger functionality.
+- Add `setInitialMode` to `SuplaDevice` for defining behavior in the "factory default" state (e.g., start not configured, start offline).
+- Add `ON_IDENTIFY` event to `SuplaDevice`.
+- Add support for PCF8574 GPIO expander with Arduino example for Kincony KC868-A16 (thanks @lukfud)
+- Add `CustomChannel` support for `sd4linux`.
+- BinarySensor: Add support for "motion sensor" and "binary sensor" functions.
+- BinarySensor: Add support for new configuration parameters: Timeout, Sensitivity, FilterinTime.
+- Add `setFunction()` and `onFunctionChange()` methods to `Element`.
+- Add `getChannelFunction` and `setChannelFunction` methods to `Config`.
+- Channel: add sending event ON_CHANNEL_FUNCTION_CHANGE
+- Split `examples` directory into `esp` and `arduino_mega` subdirectories.
+- Enable TLS by default for secured devices in MQTT.
+- Storage: Add EraseSector method to public interface.
+- StatusLed: add new blink sequences: double blink (not configured mode), quick double blink for test mode indication, 4x quick blick on registered and ready in test mode.
+- Add self-test logs on startup.
+- Ethernet classes: cleanup
+- Config: add getChannelFunction and setChannelFunction methods
+- Add default Supla::Clock instance when clock wasn't added by user.
+
+### Fixes
+- **SuplaDevice**: Fix for potential memory corruption.
+- **VirtualRelay**: Fix for staircase timer.
+- **WebServer**: Fix for `/beta` page disabling Wi-Fi/Ethernet interfaces.
+- **ElectricityMeter**: Fix reporting of values exceeding standard integer types.
+- **MQTT**: Correct `device_class` from "garage" to "garage_door".
+- **AtChannel**: Fix sending of channel value when only other fields (like online status) have changed.
+- **FactoryTest**: Fix for invalid HTTPS certificate check.
+- **SuplaSrpc**: Fix for certificate setup. Don't try to connect to a server when config is incomplete.
+- **KeyValue**: Fix potential problem with string copy.
+- **Tests**: Fix various ASAN errors in tests.
+
+### esp-idf
+- Add adjustments for esp-idf 6.0.
+- Add security logger implementation.
+- Replace "driver" dependency with "esp_driver_gpio".
+- Include `cjson` as an external component.
+- Increase `EspIdfWebServer` stack size to 6 KB.
+- Fix for a heap corruption bug.
+- Fix for `sslog` in `partitions.csv` example.
+- Add "security log" partition to the example.
+
 # 25.08.01 (2025-08-21)
 
 ### Generic
@@ -836,4 +894,5 @@ All changes for this and older releases are for Arduino IDE target.
   - Add: MAX thermocouple
   - Change: Supla protocol version updated to 16
   - Fix: Roller shutter was sending invalid channel value for not calibrated state
-  - Fix: Compilaton error and warnings cleanup (especially for ESP32)
+  - Fix: Compilation error and warnings cleanup (especially for ESP32)
+

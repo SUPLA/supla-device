@@ -28,6 +28,7 @@ void ADCDriver::initialize() {
   if (!isInitialized()) {
     adc_oneshot_unit_init_cfg_t initConfig = {
         .unit_id = ADC_UNIT_1,
+        .clk_src = ADC_RTC_CLK_SRC_DEFAULT,
         .ulp_mode = ADC_ULP_MODE_DISABLE
     };
     auto err = adc_oneshot_new_unit(&initConfig, &adcHandle);

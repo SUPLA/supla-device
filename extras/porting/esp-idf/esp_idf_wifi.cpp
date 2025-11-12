@@ -137,7 +137,10 @@ static void eventHandler(void *arg,
         SUPLA_LOG_DEBUG("[%s] Lost IP", thisNetIntfPtr->getIntfName());
         break;
       }
+//      case IP_EVENT_ASSIGNED_IP_TO_CLIENT: {   <- esp-idf 6.0
       case IP_EVENT_AP_STAIPASSIGNED: {
+//        ip_event_assigned_ip_to_client_t *data =   <- esp-idf 6.0
+//            reinterpret_cast<ip_event_assigned_ip_to_client_t *>(eventData);
         ip_event_ap_staipassigned_t *data =
             reinterpret_cast<ip_event_ap_staipassigned_t *>(eventData);
         char log[SUPLA_SECURITY_LOG_TEXT_SIZE] = {};
@@ -188,6 +191,10 @@ void Supla::EspIdfWifi::setup() {
         IP_EVENT, IP_EVENT_STA_LOST_IP, &eventHandler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(
         IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &eventHandler, NULL));
+//  esp-idf 6.0:
+//    ESP_ERROR_CHECK(esp_event_handler_register(
+//        IP_EVENT, IP_EVENT_ASSIGNED_IP_TO_CLIENT, &eventHandler, NULL));
+
     esp_wifi_set_ps(WIFI_PS_NONE);
 
   } else {

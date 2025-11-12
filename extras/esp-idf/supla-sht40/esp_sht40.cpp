@@ -28,8 +28,8 @@ void Supla::Sensor::SHT40::onInit() {
   i2c_config_t conf = {};
 
   conf.mode = I2C_MODE_MASTER;
-  conf.sda_io_num = sda;
-  conf.scl_io_num = scl;
+  conf.sda_io_num = static_cast<gpio_num_t>(sda);
+  conf.scl_io_num = static_cast<gpio_num_t>(scl);
   conf.sda_pullup_en = false;
   conf.scl_pullup_en = false;
   conf.master.clk_speed = 40000;

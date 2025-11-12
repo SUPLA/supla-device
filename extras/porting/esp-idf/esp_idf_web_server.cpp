@@ -694,6 +694,7 @@ void Supla::EspIdfWebServer::start() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
   config.lru_purge_enable = true;
   config.max_open_sockets = 2;
+  config.stack_size = 6144;
 
   if (!verifyCertificatesFormat()) {
     SUPLA_LOG_ERROR("Failed to verify certificates format");

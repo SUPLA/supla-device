@@ -319,7 +319,26 @@ class Channel : public LocalAction {
   bool isInitialCaptionSet() const;
   const char* getInitialCaption() const;
 
+  /**
+   * Sets default icon. Default icon setting is applied by server only when
+   * channel has no icon set (i.e. on channel registration). Changing it
+   * afterwards will have no effect until device is removed from Cloud.
+   *
+   * @param iconId 0..255 (depending on channel's function). 0 is used by
+   *                default. Other values depends on icon availability in
+   *                Cloud. See:
+   * https://github.com/SUPLA/supla-cloud/tree/master/web/assets/img/functions
+   *                File names follows format: "functionId_iconId-variant.svg",
+   *                i.e. 130_2-on.svg - here "2" can be used as iconId for
+   *                function 130 (power switch).
+   */
   void setDefaultIcon(uint8_t iconId);
+
+  /**
+   * Returns default icon
+   *
+   * @return 0..255
+   */
   uint8_t getDefaultIcon() const;
 
   static uint32_t lastCommunicationTimeMs;

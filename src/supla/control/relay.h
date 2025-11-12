@@ -161,6 +161,20 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool setAndSaveFunction(uint32_t channelFunction) override;
 
+  /**
+   * Set restart timer on toggle for staircase and impulse functions
+   *
+   * @param restart true to restart timer on toggle, false to not
+   */
+  void setRestartTimerOnToggle(bool restart);
+
+  /**
+   * Get restart timer on toggle for staircase and impulse functions
+   *
+   * @return true if restart timer on toggle, false if not
+   */
+  bool isRestartTimerOnToggle() const;
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
@@ -191,9 +205,9 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool highIsOn = true;
   bool keepTurnOnDurationMs = false;
-  bool lastStateOnTimerUpdate = false;
   bool turnOffWhenEmptyAggregator = true;
   bool initDone = false;
+  bool restartTimerOnToggle = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
 

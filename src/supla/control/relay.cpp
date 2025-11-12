@@ -493,7 +493,12 @@ void Relay::handleAction(int event, int action) {
       break;
     }
     case TOGGLE: {
-      toggle();
+      if (isRestartTimerOnToggle() &&
+          (isStaircaseFunction() || isImpulseFunction())) {
+        turnOn();
+      } else {
+        toggle();
+      }
       break;
     }
   }
@@ -948,5 +953,13 @@ void Relay::purgeConfig() {
     generateKey(key, Supla::ConfigTag::RelayOvercurrentThreshold);
     cfg->eraseKey(key);
   }
+}
+
+void Relay::setRestartTimerOnToggle(bool restart) {
+  restartTimerOnToggle = restart;
+}
+
+bool Relay::isRestartTimerOnToggle() const {
+  return restartTimerOnToggle;
 }
 

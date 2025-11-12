@@ -26,7 +26,6 @@
 #include <supla/control/relay.h>
 #include <protocol_layer_mock.h>
 #include <supla/device/register_device.h>
-#include "gmock/gmock.h"
 
 using ::testing::_;
 using ::testing::Return;
@@ -1897,6 +1896,53 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   }
   EXPECT_EQ(0, gpioValue);
   r1.onSaveState();
+
+  // check TOGGLE behavior
+  r1.setRestartTimerOnToggle(true);
+  r1.handleAction(0, Supla::TOGGLE);
+  EXPECT_EQ(1, gpioValue);
+
+  for (int i = 0; i < 4; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  r1.handleAction(0, Supla::TOGGLE);  // reset timer
+  EXPECT_EQ(1, gpioValue);
+  for (int i = 0; i < 4; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  r1.handleAction(0, Supla::TOGGLE);  // reset timer
+  EXPECT_EQ(1, gpioValue);
+  for (int i = 0; i < 4; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  r1.handleAction(0, Supla::TOGGLE);  // reset timer
+  EXPECT_EQ(1, gpioValue);
+
+  for (int i = 0; i < 10; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_EQ(0, gpioValue);  // timer elapsed, so relay off
+
+  // check TOGGLE behavior (false)
+  r1.setRestartTimerOnToggle(false);
+  r1.handleAction(0, Supla::TOGGLE);
+  EXPECT_EQ(1, gpioValue);
+
+  for (int i = 0; i < 4; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  r1.handleAction(0, Supla::TOGGLE);  // standard toggle -> turn off
+  EXPECT_EQ(0, gpioValue);
 }
 
 TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {

@@ -92,6 +92,14 @@ void InterruptAcToDcIo::initialize() {
 
   for (int i = 0; i < INTERRUPT_AC_TO_DC_IO_MAX_GPIOS; i++) {
     if (gpioState[i] != 255) {
+      // configure initial state
+      if (gpio_get_level(static_cast<gpio_num_t>(i)) == offStateLevel) {
+        gpioState[i] = 0;
+        SUPLA_LOG_DEBUG(" *** GPIO %d is OFF (initial) ***", i);
+      } else {
+        gpioState[i] = 1;
+        SUPLA_LOG_DEBUG(" *** GPIO %d is ON (initial) ***", i);
+      }
       ret = gpio_isr_handler_add(static_cast<gpio_num_t>(i),
           interruptHandler,
           reinterpret_cast<void*>(i));

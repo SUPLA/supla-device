@@ -237,7 +237,8 @@ void RollerShutter::onTimer() {
       // no new command available and it is moving, just handle movement/status
       if (currentDirection == Directions::UP_DIR) {
         // check if target position is reached
-        if (targetPosition >= 0 && getCurrentPosition() <= targetPosition) {
+        if (targetPosition >= 0 &&
+            currentPosition <= static_cast<int>(targetPosition) * 100) {
           if (targetTilt >= 0 && targetTilt > getCurrentTilt()) {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
@@ -252,16 +253,17 @@ void RollerShutter::onTimer() {
                             channel.getChannelNumber(),
                             operationTimeoutMs);
           } else if (targetTilt == UNKNOWN_POSITION ||
-                     getCurrentTilt() <= targetTilt) {
+                     currentTilt <= static_cast<int>(targetTilt) * 100) {
             stopMovement();
           }
         } else if (targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&
-                   getCurrentTilt() <= targetTilt) {
+                   currentTilt <= static_cast<int>(targetTilt) * 100) {
           stopMovement();
         }
       } else if (currentDirection == Directions::DOWN_DIR) {
         // check if target position is reached
-        if (targetPosition >= 0 && getCurrentPosition() >= targetPosition) {
+        if (targetPosition >= 0 &&
+            currentPosition >= static_cast<int>(targetPosition) * 100) {
           if (targetTilt >= 0 && targetTilt < getCurrentTilt()) {
             stopMovement();
             setTargetPosition(UNKNOWN_POSITION, targetTilt);
@@ -276,11 +278,11 @@ void RollerShutter::onTimer() {
                             channel.getChannelNumber(),
                             operationTimeoutMs);
           } else if (targetTilt == UNKNOWN_POSITION ||
-                     getCurrentTilt() >= targetTilt) {
+                     currentTilt >= static_cast<int>(targetTilt) * 100) {
             stopMovement();
           }
         } else if (targetPosition == UNKNOWN_POSITION && targetTilt >= 0 &&
-                   getCurrentTilt() >= targetTilt) {
+                   currentTilt >= static_cast<int>(targetTilt) * 100) {
           stopMovement();
         }
       }

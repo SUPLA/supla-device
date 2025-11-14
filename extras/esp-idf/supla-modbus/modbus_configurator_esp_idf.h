@@ -36,8 +36,6 @@ class ConfiguratorEspIdf : public Supla::Modbus::Configurator {
                      int txEnGpio,
                      Supla::EspIdfWifi *wifi);
 
-  void onInit() override;
-
   void iterateAlways() override;
 
  private:

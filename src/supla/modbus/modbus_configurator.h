@@ -112,6 +112,7 @@ class Configurator : public Supla::Element {
 
   void onLoadConfig(SuplaDeviceClass *) override;
   void onDeviceConfigChange(uint64_t fieldBit) override;
+  void onInit() override;
 
   bool isNetworkModeEnabled() const;
   bool isSerialModeEnabled() const;
@@ -122,7 +123,7 @@ class Configurator : public Supla::Element {
   bool isAsciiMode() const;
 
   void setConfig(const Supla::Modbus::Config &config);
-  void storeConfig() const;
+  void storeConfig(bool local = false) const;
   void printConfig() const;
   const Supla::Modbus::Config &getConfig() const;
   const Supla::Modbus::ConfigProperties &getProperties() const;
@@ -130,6 +131,7 @@ class Configurator : public Supla::Element {
 
  protected:
   bool configChanged = false;
+  bool initDone = false;
   Supla::Modbus::Config config;
   Supla::Modbus::ConfigProperties properties;
 };

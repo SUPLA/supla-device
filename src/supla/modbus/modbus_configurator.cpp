@@ -206,6 +206,11 @@ bool Supla::Modbus::Config::validateAndFix(const ConfigProperties &properties) {
 
 Configurator::Configurator() {}
 
+void Configurator::onInit() {
+  initDone = true;
+}
+
+
 void Configurator::onLoadConfig(SuplaDeviceClass *) {
   Supla::Device::RemoteDeviceConfig::SetModbusProperties(getProperties());
   auto cfg = Supla::Storage::ConfigInstance();
@@ -218,14 +223,20 @@ void Configurator::onLoadConfig(SuplaDeviceClass *) {
         config = tempConfig;
         configChanged = true;
         SUPLA_LOG_INFO("Modbus config loaded from storage");
-        printConfig();
       }
+    } else {
+      // store default config
+      cfg->setBlob(Supla::ConfigTag::ModbusCfgTag,
+                   reinterpret_cast<const char *>(&config),
+                   sizeof(config));
+      cfg->saveWithDelay(5000);
     }
   }
 
   if (this->config.validateAndFix(getProperties())) {
-    storeConfig();
+    storeConfig(true);
   }
+  printConfig();
 }
 
 void Configurator::onDeviceConfigChange(uint64_t fieldBit) {
@@ -282,18 +293,20 @@ void Configurator::setConfig(const Supla::Modbus::Config &config) {
     this->config.validateAndFix(getProperties());
 
     printConfig();
-    storeConfig();
+    storeConfig(true);
   }
 }
 
-void Configurator::storeConfig() const {
+void Configurator::storeConfig(bool local) const {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     cfg->setBlob(Supla::ConfigTag::ModbusCfgTag,
                  reinterpret_cast<const char *>(&config),
                  sizeof(config));
     cfg->saveWithDelay(5000);
-    cfg->setDeviceConfigChangeFlag();
+    if (initDone && local) {
+      cfg->setDeviceConfigChangeFlag();
+    }
   }
 }
 

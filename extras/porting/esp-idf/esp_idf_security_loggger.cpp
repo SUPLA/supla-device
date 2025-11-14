@@ -23,6 +23,7 @@
 #include <supla/device/security_logger.h>
 #include <supla/mutex.h>
 #include <supla/auto_lock.h>
+#include "supla/network/html/security_log_list.h"
 
 namespace Supla {
 constexpr uint8_t SecurityLoggerPartitionh = 0x57;
@@ -44,7 +45,7 @@ static_assert (sizeof(Supla::SecurityLoggerHead) <= 8);
 static_assert (sizeof(Supla::SecurityLoggerHeader) == 16);
 
 
-ESPIdfSecurityLogger::ESPIdfSecurityLogger() : htmlLog(this) {
+ESPIdfSecurityLogger::ESPIdfSecurityLogger() {
   mutex = Supla::Mutex::Create();
 }
 
@@ -167,9 +168,17 @@ void ESPIdfSecurityLogger::init() {
     currentSector = 0;
     nextFreeEntry = 0;
   }
+
+  if (isEnabled()) {
+    htmlLog = new Supla::Html::SecurityLogList(this);
+  }
 }
 
 ESPIdfSecurityLogger::~ESPIdfSecurityLogger() {
+  if (htmlLog != nullptr) {
+    delete htmlLog;
+    htmlLog = nullptr;
+  }
 }
 
 void ESPIdfSecurityLogger::deleteAll() {

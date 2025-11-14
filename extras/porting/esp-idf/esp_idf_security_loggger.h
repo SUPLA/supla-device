@@ -49,7 +49,7 @@ class ESPIdfSecurityLogger : public Supla::Device::SecurityLogger {
   uint8_t sectorsCount = 0;
   uint8_t nextFreeEntry = 0;
   const esp_partition_t *partition = nullptr;
-  Supla::Html::SecurityLogList htmlLog;
+  Supla::Html::SecurityLogList *htmlLog = nullptr;
 
   uint8_t sectorForOutput = 0;
   uint8_t entryNumberForOutput = 0;

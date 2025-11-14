@@ -133,6 +133,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:aa78570b59a32a59a059e679599005358" id="r_aa78570b59a32a59a059e679599005358"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aa78570b59a32a59a059e679599005358">onDeviceConfigChange</a> (uint64_t fieldBit) override</td></tr>
 <tr class="memdesc:aa78570b59a32a59a059e679599005358"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called when device config is changed.  <br /></td></tr>
 <tr class="separator:aa78570b59a32a59a059e679599005358"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b4a2e790f6e6eb71fe4436b88984bee" id="r_a2b4a2e790f6e6eb71fe4436b88984bee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a2b4a2e790f6e6eb71fe4436b88984bee">onInit</a> () override</td></tr>
+<tr class="memdesc:a2b4a2e790f6e6eb71fe4436b88984bee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
+<tr class="separator:a2b4a2e790f6e6eb71fe4436b88984bee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab83c2d3bc0ae084f4fa464c8ff71148b" id="r_ab83c2d3bc0ae084f4fa464c8ff71148b"><td class="memItemLeft" align="right" valign="top"><a id="ab83c2d3bc0ae084f4fa464c8ff71148b" name="ab83c2d3bc0ae084f4fa464c8ff71148b"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>isNetworkModeEnabled</b> () const</td></tr>
 <tr class="separator:ab83c2d3bc0ae084f4fa464c8ff71148b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -157,9 +160,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isAsciiMode</b> () co
 <tr class="memitem:a9eb8a1460503809e0458497fea8bc0c2" id="r_a9eb8a1460503809e0458497fea8bc0c2"><td class="memItemLeft" align="right" valign="top"><a id="a9eb8a1460503809e0458497fea8bc0c2" name="a9eb8a1460503809e0458497fea8bc0c2"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setConfig</b> (const <a class="el" href="structSupla_1_1Modbus_1_1Config.html">Supla::Modbus::Config</a> &amp;config)</td></tr>
 <tr class="separator:a9eb8a1460503809e0458497fea8bc0c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abfce678f36b475e80dd9662c66fec520" id="r_abfce678f36b475e80dd9662c66fec520"><td class="memItemLeft" align="right" valign="top"><a id="abfce678f36b475e80dd9662c66fec520" name="abfce678f36b475e80dd9662c66fec520"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>storeConfig</b> () const</td></tr>
-<tr class="separator:abfce678f36b475e80dd9662c66fec520"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1dcb6e7d763daa7ae342f6e71960efe8" id="r_a1dcb6e7d763daa7ae342f6e71960efe8"><td class="memItemLeft" align="right" valign="top"><a id="a1dcb6e7d763daa7ae342f6e71960efe8" name="a1dcb6e7d763daa7ae342f6e71960efe8"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>storeConfig</b> (bool local=false) const</td></tr>
+<tr class="separator:a1dcb6e7d763daa7ae342f6e71960efe8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acf2099249400bc1bf325576656170e64" id="r_acf2099249400bc1bf325576656170e64"><td class="memItemLeft" align="right" valign="top"><a id="acf2099249400bc1bf325576656170e64" name="acf2099249400bc1bf325576656170e64"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>printConfig</b> () const</td></tr>
 <tr class="separator:acf2099249400bc1bf325576656170e64"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -182,9 +185,6 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setProperties</b> (co
 <tr class="memitem:a1f705c682cfce0a95e9b93e46a4d68a6 inherit pub_methods_classSupla_1_1Element" id="r_a1f705c682cfce0a95e9b93e46a4d68a6"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Element.html#a1f705c682cfce0a95e9b93e46a4d68a6">onLoadState</a> ()</td></tr>
 <tr class="memdesc:a1f705c682cfce0a95e9b93e46a4d68a6 inherit pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Second method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:a1f705c682cfce0a95e9b93e46a4d68a6 inherit pub_methods_classSupla_1_1Element"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac0f0e9e97bc326ec8e06d75f916e4573 inherit pub_methods_classSupla_1_1Element" id="r_ac0f0e9e97bc326ec8e06d75f916e4573"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Element.html#ac0f0e9e97bc326ec8e06d75f916e4573">onInit</a> ()</td></tr>
-<tr class="memdesc:ac0f0e9e97bc326ec8e06d75f916e4573 inherit pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
-<tr class="separator:ac0f0e9e97bc326ec8e06d75f916e4573 inherit pub_methods_classSupla_1_1Element"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab9ebf45462dfe94c4b3c9c5797883604 inherit pub_methods_classSupla_1_1Element" id="r_ab9ebf45462dfe94c4b3c9c5797883604"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Element.html#ab9ebf45462dfe94c4b3c9c5797883604">onSaveState</a> ()</td></tr>
 <tr class="memdesc:ab9ebf45462dfe94c4b3c9c5797883604 inherit pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called periodically during SuplaDevice iteration.  <br /></td></tr>
 <tr class="separator:ab9ebf45462dfe94c4b3c9c5797883604 inherit pub_methods_classSupla_1_1Element"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -286,6 +286,9 @@ Protected Attributes</h2></td></tr>
 <tr class="memitem:aa9fe3d6ccba335c155a6ef4d0ea9d905" id="r_aa9fe3d6ccba335c155a6ef4d0ea9d905"><td class="memItemLeft" align="right" valign="top"><a id="aa9fe3d6ccba335c155a6ef4d0ea9d905" name="aa9fe3d6ccba335c155a6ef4d0ea9d905"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>configChanged</b> = false</td></tr>
 <tr class="separator:aa9fe3d6ccba335c155a6ef4d0ea9d905"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a79cb40bb4fed96a9982eae69659b462c" id="r_a79cb40bb4fed96a9982eae69659b462c"><td class="memItemLeft" align="right" valign="top"><a id="a79cb40bb4fed96a9982eae69659b462c" name="a79cb40bb4fed96a9982eae69659b462c"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>initDone</b> = false</td></tr>
+<tr class="separator:a79cb40bb4fed96a9982eae69659b462c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92d616bc15e79cca9d4fa335c7d35b55" id="r_a92d616bc15e79cca9d4fa335c7d35b55"><td class="memItemLeft" align="right" valign="top"><a id="a92d616bc15e79cca9d4fa335c7d35b55" name="a92d616bc15e79cca9d4fa335c7d35b55"></a>
 <a class="el" href="structSupla_1_1Modbus_1_1Config.html">Supla::Modbus::Config</a>&#160;</td><td class="memItemRight" valign="bottom"><b>config</b></td></tr>
 <tr class="separator:a92d616bc15e79cca9d4fa335c7d35b55"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -366,6 +369,36 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </dl>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a0d0b32f244ac6c541dfc0d8a0bda2d0d">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a2b4a2e790f6e6eb71fe4436b88984bee" name="a2b4a2e790f6e6eb71fe4436b88984bee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b4a2e790f6e6eb71fe4436b88984bee">&#9670;&#160;</a></span>onInit()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Configurator::onInit </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Third method called on element in SuplaDevice.begin() </p>
+<p>Method called during SuplaDevice initialization. I.e. load initial state, initialize pins etc. </p>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ac0f0e9e97bc326ec8e06d75f916e4573">Supla::Element</a>.</p>
 
 </div>
 </div>

@@ -38,6 +38,8 @@ class Base {
 
   explicit Base(bool useAsSingleton = true);
   virtual ~Base();
+  virtual bool isReady() const;
+
   virtual void customPinMode(int channelNumber, uint8_t pin, uint8_t mode);
   virtual int customDigitalRead(int channelNumber, uint8_t pin);
   virtual unsigned int customPulseIn(int channelNumber,

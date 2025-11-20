@@ -265,8 +265,7 @@ void RollerShutterInterface::setTiltControlType(uint8_t newTiltControlType,
   }
 }
 
-void RollerShutterInterface::handleAction(int event, int action) {
-  (void)(event);
+void RollerShutterInterface::handleAction(int, int action) {
   switch (action) {
     case CLOSE_OR_STOP: {
       if (inMove()) {

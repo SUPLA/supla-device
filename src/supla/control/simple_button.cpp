@@ -84,6 +84,13 @@ enum Supla::Control::StateResults ButtonState::getLastState()
   }
 }
 
+bool ButtonState::isReady() const {
+  if (io && !io->isReady()) {
+    return false;
+  }
+  return true;
+}
+
 SimpleButton::SimpleButton(Supla::Io::Base  *io,
                                            int pin,
                                            bool pullUp,
@@ -99,6 +106,9 @@ SimpleButton::SimpleButton(int pin,
 
 void SimpleButton::onTimer() {
   enum Supla::Control::StateResults stateResult = state.update();
+  if (!state.isReady()) {
+    return;
+  }
   if (stateResult == TO_PRESSED) {
     runAction(ON_PRESS);
     runAction(ON_CHANGE);

@@ -47,6 +47,8 @@ class ButtonState {
   void setDebounceDelay(unsigned int newDelayMs);
   int getGpio() const;
 
+  bool isReady() const;
+
  protected:
   int valueOnPress() const;
 

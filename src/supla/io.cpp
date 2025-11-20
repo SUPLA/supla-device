@@ -207,6 +207,10 @@ Base::~Base() {
   }
 }
 
+bool Base::isReady() const {
+  return true;
+}
+
 void Base::customPinMode(int , uint8_t, uint8_t) {
 }
 

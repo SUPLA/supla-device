@@ -57,6 +57,9 @@ void Button::onTimer() {
   uint32_t timeDelta = millis() - lastStateChangeMs;
   bool stateChanged = false;
   int stateResult = state.update();
+  if (!state.isReady()) {
+    return;
+  }
   if (stateResult == TO_PRESSED) {
     SUPLA_LOG_VERBOSE("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
@@ -113,7 +116,7 @@ void Button::onTimer() {
           ++holdSend;
         }
         if (clickCounter >= 1 && stateResult == PRESSED &&
-            timeDelta > multiclickTimeMs) {
+            timeDelta > (holdTimeMs ? holdTimeMs : 3 * multiclickTimeMs)) {
           clickCounter = 0;
         }
       } else if (stateResult == RELEASED || isBistable() || isMotionSensor() ||

@@ -61,6 +61,9 @@ void InterruptAcToDcIo::addGpio(int gpio,
   }
 
   gpioMinOffTimeout[gpio] = minOffTimeoutMs;
+  if (minOffTimeoutMs > initCounter) {
+    initCounter = minOffTimeoutMs;
+  }
   gpioState[gpio] = 0;
 }
 
@@ -74,7 +77,7 @@ void InterruptAcToDcIo::initialize() {
   gpio_config_t ioConf = {};
   ioConf.intr_type = GPIO_INTR_ANYEDGE;
   ioConf.mode = GPIO_MODE_INPUT;
-//  ioConf.pull_up_en = GPIO_PULLUP_ENABLE;
+//  ioConf.pull_down_en = GPIO_PULLDOWN_ENABLE;
   ioConf.pin_bit_mask = gpioMask;
   auto ret = gpio_config(&ioConf);
   if (ret != ESP_OK) {
@@ -120,6 +123,10 @@ bool InterruptAcToDcIo::isInitialized() const {
   return initialized;
 }
 
+bool InterruptAcToDcIo::isReady() const {
+  return initialized && initCounter == 0;
+}
+
 int InterruptAcToDcIo::customDigitalRead(int channelNumber, uint8_t pin) {
   if (!isInitialized()) {
     SUPLA_LOG_ERROR("InterruptAcToDcIo: not initialized");
@@ -133,6 +140,11 @@ int InterruptAcToDcIo::customDigitalRead(int channelNumber, uint8_t pin) {
 
 void InterruptAcToDcIo::onFastTimer() {
   uint32_t now = millis();
+
+  if (initCounter > 0) {
+    initCounter--;
+  }
+
   for (int i = 0; i < INTERRUPT_AC_TO_DC_IO_MAX_GPIOS; i++) {
     if (gpioState[i] == 255) {
       continue;

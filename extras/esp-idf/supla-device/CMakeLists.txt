@@ -27,6 +27,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/tools.cpp
   ../../../src/supla/uptime.cpp
   ../../../src/supla/mutex.cpp
+  ../../../src/supla/esp_idf_mutex.cpp
   ../../../src/supla/auto_lock.cpp
   ../../../src/supla/sha256.cpp
   ../../../src/supla/crypto.cpp
@@ -199,7 +200,6 @@ set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/spiffs_storage.cpp
   ../../porting/esp-idf/nvs_config.cpp
   ../../porting/esp-idf/esp_idf_web_server.cpp
-  ../../porting/esp-idf/esp_idf_mutex.cpp
   ../../porting/esp-idf/esp_idf_ota.cpp
   ../../porting/esp-idf/esp_idf_client.cpp
   ../../porting/esp-idf/esp_mqtt.cpp

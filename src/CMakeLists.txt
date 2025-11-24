@@ -17,6 +17,7 @@ set(SRCS
   supla/at_channel.cpp
   supla/action_handler.cpp
   supla/mutex.cpp
+  supla/esp_idf_mutex.cpp
   supla/auto_lock.cpp
   supla/crc16.cpp
   supla/crypto.cpp

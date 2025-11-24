@@ -16,8 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_ESP_IDF_ESP_IDF_MUTEX_H_
-#define EXTRAS_PORTING_ESP_IDF_ESP_IDF_MUTEX_H_
+#ifndef SRC_SUPLA_ESP_IDF_MUTEX_H_
+#define SRC_SUPLA_ESP_IDF_MUTEX_H_
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
@@ -40,4 +40,4 @@ class EspIdfMutex : public Mutex {
 
 };  // namespace Supla
 
-#endif  // EXTRAS_PORTING_ESP_IDF_ESP_IDF_MUTEX_H_
+#endif  // SRC_SUPLA_ESP_IDF_MUTEX_H_

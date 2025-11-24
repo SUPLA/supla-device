@@ -14,8 +14,9 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "esp_idf_mutex.h"
+#ifdef ESP32
 
+#include "esp_idf_mutex.h"
 
 Supla::Mutex *Supla::Mutex::Create() {
   return new Supla::EspIdfMutex;
@@ -42,3 +43,4 @@ void Supla::EspIdfMutex::unlock() {
   xSemaphoreGive(mutex);
 }
 
+#endif

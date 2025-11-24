@@ -271,8 +271,9 @@ void Relay::onInit() {
           attachedButton->addAction(
               Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
         } else if (attachedButton->isBistable()) {
-          attachedButton->addAction(
-              Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
+          attachedButton->addAction(Supla::TOGGLE_WITH_POSTPONED_COMM,
+                                    this,
+                                    Supla::CONDITIONAL_ON_CHANGE);
         } else if (attachedButton->isMotionSensor() ||
                    attachedButton->isCentral()) {
           attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
@@ -379,6 +380,11 @@ void Relay::iterateAlways() {
 }
 
 bool Relay::iterateConnected() {
+  if (postponeCommTimestamp != 0 &&  millis() - postponeCommTimestamp < 500) {
+    return true;
+  }
+  postponeCommTimestamp = 0;
+
   if (timerUpdateTimestamp != durationTimestamp) {
     timerUpdateTimestamp = durationTimestamp;
     updateTimerValue();
@@ -543,6 +549,10 @@ void Relay::handleAction(int event, int action) {
     case TURN_OFF: {
       turnOff();
       break;
+    }
+    case TOGGLE_WITH_POSTPONED_COMM: {
+      postponeCommTimestamp = millis();
+      [[fallthrough]];
     }
     case TOGGLE: {
       if (isRestartTimerOnToggle() &&

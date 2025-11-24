@@ -198,12 +198,14 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t overcurrentCheckTimestamp = 0;
 
   uint32_t timerUpdateTimestamp = 0;
+  uint32_t postponeCommTimestamp = 0;
 
   Supla::Io::Base *io = nullptr;
   ButtonListElement *buttonList = nullptr;
 
   uint16_t minimumAllowedDurationMs = 0;
   int16_t pin = -1;
+  int16_t defaultRelatedMeterChannelNo = -1;
 
   bool highIsOn = true;
   bool keepTurnOnDurationMs = false;
@@ -213,8 +215,6 @@ class Relay : public ChannelElement, public ActionHandler {
   bool skipInitialStateSetting = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
-
-  int16_t defaultRelatedMeterChannelNo = -1;
 
   static int16_t relayStorageSaveDelay;
 };

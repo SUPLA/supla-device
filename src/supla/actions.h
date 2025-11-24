@@ -31,6 +31,7 @@ enum Action {
                           // timer should not be used this time
   TURN_OFF,
   TOGGLE,
+  TOGGLE_WITH_POSTPONED_COMM,
 
   // Settable binary sensors
   SET,

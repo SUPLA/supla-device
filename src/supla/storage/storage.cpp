@@ -275,7 +275,7 @@ void Storage::scheduleSave(uint32_t delayMsMax, uint32_t delayMsMin) {
 
   if (delayMsMin != 0) {
     desired = now + delayMsMin;
-    target = static_cast<int32_t>(next - desired) < 0 ? next : desired;
+    target = static_cast<int32_t>(target - desired) < 0 ? desired : target;
   }
 
   lastWriteTimestamp = target - saveStatePeriod;

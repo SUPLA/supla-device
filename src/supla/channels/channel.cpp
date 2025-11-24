@@ -236,13 +236,13 @@ void Channel::setNewValue(int32_t value) {
   }
 }
 
-void Channel::setNewValue(bool state) {
+void Channel::setNewValue(bool newValueState) {
   char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
   static_assert(sizeof(newValue) == sizeof(value));
 
   memcpy(newValue, &value, sizeof(value));
 
-  newValue[0] = state;
+  newValue[0] = newValueState;
   if (setNewValue(newValue)) {
     if (getValueBool()) {
       runAction(Supla::ON_TURN_ON);
@@ -252,7 +252,8 @@ void Channel::setNewValue(bool state) {
     runAction(Supla::ON_CHANGE);
     runAction(ON_SECONDARY_CHANNEL_CHANGE);
 
-    SUPLA_LOG_DEBUG("Channel(%d) value changed to %d", channelNumber, state);
+    SUPLA_LOG_DEBUG(
+        "Channel(%d) value changed to %d", channelNumber, newValueState);
   }
 }
 

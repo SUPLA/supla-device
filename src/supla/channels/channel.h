@@ -377,8 +377,9 @@ class Channel : public LocalAction {
 
   char *initialCaption = nullptr;
 
-  uint64_t channelFlags = 0;
   uint32_t functionsBitmap = 0;
+
+  uint64_t channelFlags = 0;
   uint32_t validityTimeSec = 0;
 
   int16_t channelNumber = -1;

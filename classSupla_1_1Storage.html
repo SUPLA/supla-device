@@ -184,9 +184,9 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>Init</b> ()</t
 <tr class="memitem:a2af46f8acfa5c6fdf32fea1ef8bb8899" id="r_a2af46f8acfa5c6fdf32fea1ef8bb8899"><td class="memItemLeft" align="right" valign="top"><a id="a2af46f8acfa5c6fdf32fea1ef8bb8899" name="a2af46f8acfa5c6fdf32fea1ef8bb8899"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>SaveStateAllowed</b> (uint32_t)</td></tr>
 <tr class="separator:a2af46f8acfa5c6fdf32fea1ef8bb8899"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f6d3dbaed9d093d40702723f2ab53c6" id="r_a5f6d3dbaed9d093d40702723f2ab53c6"><td class="memItemLeft" align="right" valign="top"><a id="a5f6d3dbaed9d093d40702723f2ab53c6" name="a5f6d3dbaed9d093d40702723f2ab53c6"></a>
-static void&#160;</td><td class="memItemRight" valign="bottom"><b>ScheduleSave</b> (uint32_t delayMs)</td></tr>
-<tr class="separator:a5f6d3dbaed9d093d40702723f2ab53c6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5505a4c3b4fe473c9d00e8c890b1618b" id="r_a5505a4c3b4fe473c9d00e8c890b1618b"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5505a4c3b4fe473c9d00e8c890b1618b">ScheduleSave</a> (uint32_t delayMsMax, uint32_t delayMsMin=0)</td></tr>
+<tr class="memdesc:a5505a4c3b4fe473c9d00e8c890b1618b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Schedules save of state storage in given time range.  <br /></td></tr>
+<tr class="separator:a5505a4c3b4fe473c9d00e8c890b1618b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa92bff7c6eab34d27442e589ddaaf58b" id="r_aa92bff7c6eab34d27442e589ddaaf58b"><td class="memItemLeft" align="right" valign="top"><a id="aa92bff7c6eab34d27442e589ddaaf58b" name="aa92bff7c6eab34d27442e589ddaaf58b"></a>
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>IsStateStorageValid</b> ()</td></tr>
 <tr class="separator:aa92bff7c6eab34d27442e589ddaaf58b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -247,9 +247,9 @@ virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>updateStorage<
 <tr class="memitem:a3ba840643c0b3dcd731cbbb71a7a289f" id="r_a3ba840643c0b3dcd731cbbb71a7a289f"><td class="memItemLeft" align="right" valign="top"><a id="a3ba840643c0b3dcd731cbbb71a7a289f" name="a3ba840643c0b3dcd731cbbb71a7a289f"></a>
 virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>saveStateAllowed</b> (uint32_t)</td></tr>
 <tr class="separator:a3ba840643c0b3dcd731cbbb71a7a289f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af59f127077e0ac2bf6ca32bfbb736533" id="r_af59f127077e0ac2bf6ca32bfbb736533"><td class="memItemLeft" align="right" valign="top"><a id="af59f127077e0ac2bf6ca32bfbb736533" name="af59f127077e0ac2bf6ca32bfbb736533"></a>
-virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>scheduleSave</b> (uint32_t delayMs)</td></tr>
-<tr class="separator:af59f127077e0ac2bf6ca32bfbb736533"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af2e9cfbec15e3d1dd56fd933346c732a" id="r_af2e9cfbec15e3d1dd56fd933346c732a"><td class="memItemLeft" align="right" valign="top"><a id="af2e9cfbec15e3d1dd56fd933346c732a" name="af2e9cfbec15e3d1dd56fd933346c732a"></a>
+virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>scheduleSave</b> (uint32_t delayMsMax, uint32_t delayMsMin)</td></tr>
+<tr class="separator:af2e9cfbec15e3d1dd56fd933346c732a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68329c6ff8cb5a1a6349150b8de3218e" id="r_a68329c6ff8cb5a1a6349150b8de3218e"><td class="memItemLeft" align="right" valign="top"><a id="a68329c6ff8cb5a1a6349150b8de3218e" name="a68329c6ff8cb5a1a6349150b8de3218e"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>registerSection</b> (int sectionId, int offset, int size, bool addCrc, bool addBackupCopy)</td></tr>
 <tr class="separator:a68329c6ff8cb5a1a6349150b8de3218e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -318,6 +318,44 @@ class&#160;</td><td class="memItemRight" valign="bottom"><b>StateStorageInterfac
 <tr class="separator:ac90aefdbb4b2117e99b8ac163222dece"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
+<a id="a5505a4c3b4fe473c9d00e8c890b1618b" name="a5505a4c3b4fe473c9d00e8c890b1618b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5505a4c3b4fe473c9d00e8c890b1618b">&#9670;&#160;</a></span>ScheduleSave()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Storage::ScheduleSave </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>delayMsMax</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint32_t</td>          <td class="paramname"><span class="paramname"><em>delayMsMin</em></span><span class="paramdefsep"> = </span><span class="paramdefval">0</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel static">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Schedules save of state storage in given time range. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">delayMsMax</td><td>- maximum delay in ms since now </td></tr>
+    <tr><td class="paramname">delayMsMin</td><td>- minimum delay in ms since now </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a171c36bb21b87cb0a8a6b900cfaadad4" name="a171c36bb21b87cb0a8a6b900cfaadad4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a171c36bb21b87cb0a8a6b900cfaadad4">&#9670;&#160;</a></span>setDeleteAllMethodEnabled()</h2>
 

@@ -14,7 +14,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifdef ESP32
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
 
 #include "esp_idf_mutex.h"
 

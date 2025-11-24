@@ -3140,7 +3140,7 @@ void HvacBase::setOutput(int value, bool force) {
   if (lastValue > 0 && value <= 0) {
     if (!force && lastOutputStateChangeTimestampMs != 0 &&
         millis() - lastOutputStateChangeTimestampMs <
-            config.MinOnTimeS * 1000) {
+            static_cast<uint32_t>(config.MinOnTimeS) * 1000) {
       return;
     }
     // when output should change from heating to cooling, we add off step
@@ -3161,7 +3161,7 @@ void HvacBase::setOutput(int value, bool force) {
   if (lastValue < 0 && value >= 0) {
     if (!force && lastOutputStateChangeTimestampMs != 0 &&
         millis() - lastOutputStateChangeTimestampMs <
-            config.MinOnTimeS * 1000) {
+            static_cast<uint32_t>(config.MinOnTimeS) * 1000) {
       return;
     }
     // when output should change from cooling to heating, we add off step

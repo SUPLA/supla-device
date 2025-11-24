@@ -189,7 +189,7 @@ TEST_F(RollerShutterFixture, movementTests) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
   storage.defaultInitialization(9);
-  EXPECT_CALL(storage, scheduleSave(_)).Times(AtLeast(0));
+  EXPECT_CALL(storage, scheduleSave(_, 1000)).Times(AtLeast(0));
 
   // updates of section preamble
   EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
@@ -312,7 +312,7 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);
 
   storage.defaultInitialization(9);
-  EXPECT_CALL(storage, scheduleSave(_)).Times(AtLeast(0));
+  EXPECT_CALL(storage, scheduleSave(_, 1000)).Times(AtLeast(0));
 
   // updates of section preamble
   EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));

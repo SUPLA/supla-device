@@ -175,6 +175,8 @@ class Relay : public ChannelElement, public ActionHandler {
    */
   bool isRestartTimerOnToggle() const;
 
+  bool isFullyInitialized() const;
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
@@ -208,6 +210,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool turnOffWhenEmptyAggregator = true;
   bool initDone = false;
   bool restartTimerOnToggle = false;
+  bool skipInitialStateSetting = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
 

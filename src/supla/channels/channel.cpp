@@ -34,14 +34,12 @@
 
 using Supla::Channel;
 
-uint32_t Channel::lastCommunicationTimeMs = 0;
 Channel *Channel::firstPtr = nullptr;
 
 #ifdef SUPLA_TEST
 // Method used in tests to restore default values for static members
 void Supla::Channel::resetToDefaults() {
   Supla::RegisterDevice::resetToDefaults();
-  lastCommunicationTimeMs = 0;
 }
 #endif
 

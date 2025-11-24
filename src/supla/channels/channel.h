@@ -341,7 +341,6 @@ class Channel : public LocalAction {
    */
   uint8_t getDefaultIcon() const;
 
-  static uint32_t lastCommunicationTimeMs;
   void fillRawValue(void *value);
   int8_t *getValuePtr();
 

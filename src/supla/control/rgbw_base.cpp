@@ -133,7 +133,7 @@ void RGBWBase::setRGBW(int red,
                   curBrightness);
 
   // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(5000);
+  Supla::Storage::ScheduleSave(5000, 2000);
 }
 
 void RGBWBase::iterateAlways() {

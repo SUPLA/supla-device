@@ -53,7 +53,7 @@ void TrippleButtonRollerShutter::stopMovement() {
   currentDirection = Directions::STOP_DIR;
   doNothingTime = millis();
   // Schedule save in 5 s after stop movement of roller shutter
-  Supla::Storage::ScheduleSave(5000);
+  Supla::Storage::ScheduleSave(5000, 1000);
 }
 
 void TrippleButtonRollerShutter::relayStopOn() {

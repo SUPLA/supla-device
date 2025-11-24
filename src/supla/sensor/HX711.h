@@ -23,6 +23,7 @@ use library manager to install it
 
 #include <HX711_ADC.h>
 #include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 #include "weight.h"
 #include "../storage/storage.h"
@@ -93,7 +94,7 @@ class HX711 : public Weight {
       if (knownMass > 0) {
         calValue = hx711Sensor.getNewCalibration(knownMass);
         SUPLA_LOG_DEBUG("HX711 new calibration value: %.2f", calValue);
-        Supla::Storage::ScheduleSave(100);
+        Supla::Storage::ScheduleSave(1000);
       } else {
         SUPLA_LOG_DEBUG("HX711 known mass must be greater than zero");
       }
@@ -105,7 +106,7 @@ class HX711 : public Weight {
     hx711Sensor.tare();
     tareOffset = hx711Sensor.getTareOffset();
     SUPLA_LOG_DEBUG("HX711 new tare offset: %d", tareOffset);
-    Supla::Storage::ScheduleSave(100);
+    Supla::Storage::ScheduleSave(1000);
     readyToCalibration = true;
   }
 

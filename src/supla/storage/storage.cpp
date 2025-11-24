@@ -107,9 +107,9 @@ bool Storage::SaveStateAllowed(uint32_t ms) {
   return false;
 }
 
-void Storage::ScheduleSave(uint32_t delayMs) {
+void Storage::ScheduleSave(uint32_t delayMsMax, uint32_t delayMsMin) {
   if (Instance()) {
-    Instance()->scheduleSave(delayMs);
+    Instance()->scheduleSave(delayMsMax, delayMsMin);
   }
 }
 
@@ -267,12 +267,18 @@ bool Storage::saveStateAllowed(uint32_t ms) {
   return false;
 }
 
-void Storage::scheduleSave(uint32_t delayMs) {
-  uint32_t currentMs = millis();
-  uint32_t newTimestamp = currentMs - saveStatePeriod - 1 + delayMs;
-  if (currentMs - lastWriteTimestamp < currentMs - newTimestamp) {
-    lastWriteTimestamp = newTimestamp;
+void Storage::scheduleSave(uint32_t delayMsMax, uint32_t delayMsMin) {
+  uint32_t now = millis();
+  uint32_t next = lastWriteTimestamp + saveStatePeriod;
+  uint32_t desired = now + delayMsMax;
+  uint32_t target = static_cast<int32_t>(next - desired) < 0 ? next : desired;
+
+  if (delayMsMin != 0) {
+    desired = now + delayMsMin;
+    target = static_cast<int32_t>(next - desired) < 0 ? next : desired;
   }
+
+  lastWriteTimestamp = target - saveStatePeriod;
 }
 
 bool Storage::registerSection(int sectionId,

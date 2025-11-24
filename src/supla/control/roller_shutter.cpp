@@ -82,7 +82,7 @@ void RollerShutter::stopMovement() {
   currentDirection = Directions::STOP_DIR;
   doNothingTime = millis();
   // Schedule save in 5 s after stop movement of roller shutter
-  Supla::Storage::ScheduleSave(rsStorageSaveDelay);
+  Supla::Storage::ScheduleSave(rsStorageSaveDelay, 1000);
 }
 
 void RollerShutter::relayDownOn() {

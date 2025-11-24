@@ -1490,7 +1490,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_PRESS, false));
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_RELEASE, false));
 
-  EXPECT_CALL(storage, scheduleSave(2000));
+  EXPECT_CALL(storage, scheduleSave(2000, 0));
 
   // updates of section preamble
   EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
@@ -1751,7 +1751,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_PRESS, false));
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_RELEASE, false));
 
-  EXPECT_CALL(storage, scheduleSave(2000));
+  EXPECT_CALL(storage, scheduleSave(2000, 0));
 
   storage.defaultInitialization();
 
@@ -1876,7 +1876,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
 
   storage.defaultInitialization(4);
 
-  EXPECT_CALL(storage, scheduleSave(2000)).Times(2);
+  EXPECT_CALL(storage, scheduleSave(2000, 0)).Times(2);
   // updates of section preamble
   EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
   EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
@@ -2026,7 +2026,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   EXPECT_TRUE(b1.isEventAlreadyUsed(Supla::ON_PRESS, false));
   EXPECT_FALSE(b1.isEventAlreadyUsed(Supla::ON_RELEASE, false));
 
-  EXPECT_CALL(storage, scheduleSave(2000)).Times(2);
+  EXPECT_CALL(storage, scheduleSave(2000, 0)).Times(2);
   storage.defaultInitialization(4);
 
   // updates of section preamble

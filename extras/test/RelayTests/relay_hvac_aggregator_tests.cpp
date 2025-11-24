@@ -54,7 +54,6 @@ class RelayHvacFixture : public testing::Test {
   void TearDown() {
     Supla::Channel::resetToDefaults();
   }
-
 };
 
 TEST_F(RelayHvacFixture, heatingTest) {
@@ -78,6 +77,16 @@ TEST_F(RelayHvacFixture, heatingTest) {
   Supla::Control::HvacBase hvac1(&io1);
   Supla::Control::HvacBase hvac2(&io2);
   Supla::Control::HvacBase hvac3(&io3);
+
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(2);
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(2);
+  r1.onInit();
+  r2.onInit();
+  r3.onInit();
 
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
 
@@ -188,6 +197,16 @@ TEST_F(RelayHvacFixture, mixedTest) {
   Supla::Control::HvacBase hvac2(&io2);
   Supla::Control::HvacBase hvac3(&io3);
 
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(2);
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(2);
+  r1.onInit();
+  r2.onInit();
+  r3.onInit();
+
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
 
   auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
@@ -290,6 +309,16 @@ TEST_F(RelayHvacFixture, turnOffWhenEmptyTest) {
   Supla::Control::HvacBase hvac1(&io1);
   Supla::Control::HvacBase hvac2(&io2);
   Supla::Control::HvacBase hvac3(&io3);
+
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
+  EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
+  EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(2);
+  EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(2);
+  r1.onInit();
+  r2.onInit();
+  r3.onInit();
 
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
 

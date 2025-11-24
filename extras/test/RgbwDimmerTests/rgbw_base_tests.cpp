@@ -1325,7 +1325,7 @@ TEST(RgbwDimmerTests, RgbwStorageTests) {
   storage.defaultInitialization(8);
 
   // setRGBW should call scheduleSave on storage once
-  EXPECT_CALL(storage, scheduleSave(5000));
+  EXPECT_CALL(storage, scheduleSave(5000, 2000));
 
   // updates of section preamble
   EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));

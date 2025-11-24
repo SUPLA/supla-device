@@ -131,7 +131,7 @@ TEST_F(ElementTests, NoChannelElementMethods) {
   TimeInterfaceMock time;
   Supla::Element el1;
 
-  EXPECT_CALL(time, millis()).Times(1);
+//  EXPECT_CALL(time, millis()).Times(1);
 
   // those methods are empty, so just call to make sure that they do nothing and
   // don't crash
@@ -162,7 +162,7 @@ TEST_F(ElementTests, ChannelElementMethods) {
   TimeInterfaceMock time;
   SrpcMock srpc;
 
-  EXPECT_CALL(time, millis()).Times(1);
+//  EXPECT_CALL(time, millis()).Times(1);
 
   // those methods are empty, so just call to make sure that they do nothing and
   // don't crash
@@ -192,14 +192,14 @@ TEST_F(ElementTests, ChannelElementMethods) {
   el1.channel.setNewValue(true);
   EXPECT_TRUE(el1.channel.isUpdateReady());
 
-  EXPECT_CALL(time, millis)
-      .WillOnce(Return(0))
-      .WillOnce(Return(200))
-      .WillOnce(Return(250))
-      .WillOnce(Return(250))
-      .WillOnce(Return(400))
-      .WillOnce(Return(600))
-      .WillOnce(Return(800));
+//  EXPECT_CALL(time, millis)
+//      .WillOnce(Return(0))
+//      .WillOnce(Return(200))
+//      .WillOnce(Return(250))
+//      .WillOnce(Return(250))
+//      .WillOnce(Return(400))
+//      .WillOnce(Return(600))
+//      .WillOnce(Return(800));
 
   char array0[SUPLA_CHANNELVALUE_SIZE] = {};
   char array1[SUPLA_CHANNELVALUE_SIZE] = {};
@@ -234,13 +234,13 @@ TEST_F(ElementTests, ChannelElementWithWeeklySchedule) {
 
   EXPECT_CALL(srpc, getChannelConfig(0, SUPLA_CONFIG_TYPE_DEFAULT)).Times(2);
 
-  EXPECT_CALL(time, millis)
-      .WillOnce(Return(0))    // #1
-      .WillOnce(Return(200))  // #2
-      .WillOnce(Return(250))  // #3
-      .WillOnce(Return(400))  // #4
-      .WillOnce(Return(600))  // #5
-      .WillOnce(Return(800));  // #6
+//  EXPECT_CALL(time, millis)
+//      .WillOnce(Return(0))    // #1
+//      .WillOnce(Return(200))  // #2
+//      .WillOnce(Return(250))  // #3
+//      .WillOnce(Return(400))  // #4
+//      .WillOnce(Return(600))  // #5
+//      .WillOnce(Return(800));  // #6
 
   EXPECT_EQ(el1.iterateConnected(), true);  // #1
 

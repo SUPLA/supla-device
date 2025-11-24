@@ -49,7 +49,7 @@ class RelayFixture : public testing::Test {
 
   void SetUp() {
     Supla::Channel::resetToDefaults();
-    EXPECT_CALL(storage, scheduleSave(_)).WillRepeatedly(Return());
+    EXPECT_CALL(storage, scheduleSave(_, 2000)).WillRepeatedly(Return());
   }
 
   void TearDown() {

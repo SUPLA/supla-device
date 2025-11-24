@@ -207,7 +207,7 @@ Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
                         getChannelNumber(),
                         newDurationMs);
         storedTurnOnDurationMs = newDurationMs;
-        Supla::Storage::ScheduleSave(relayStorageSaveDelay);
+        Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
       }
     }
   } else if (result->Func == SUPLA_CHANNELFNC_CONTROLLINGTHEGATE ||
@@ -240,56 +240,94 @@ void Relay::onInit() {
   }
 
 
-  for (auto buttonListElement = buttonList; buttonListElement;
-       buttonListElement = buttonListElement->next) {
-    auto attachedButton = buttonListElement->button;
-    if (attachedButton) {
-      attachedButton->onInit();  // make sure button was initialized
-      if (attachedButton->isMonostable()) {
-        attachedButton->addAction(
-            Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
-      } else if (attachedButton->isBistable()) {
-        attachedButton->addAction(
-            Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
-      } else if (attachedButton->isMotionSensor() ||
-                 attachedButton->isCentral()) {
-        attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
-        attachedButton->addAction(
-            Supla::TURN_OFF, this, Supla::ON_RELEASE);
-        if (attachedButton->getLastState() == Supla::Control::PRESSED) {
-          stateOn = true;
-        } else {
-          stateOn = false;
+  if (skipInitialStateSetting) {
+    skipInitialStateSetting = false;
+    for (auto buttonListElement = buttonList; buttonListElement;
+         buttonListElement = buttonListElement->next) {
+      auto attachedButton = buttonListElement->button;
+      if (attachedButton) {
+        if (attachedButton->isMotionSensor() ||
+                   attachedButton->isCentral()) {
+          if (attachedButton->isReady()) {
+            if (attachedButton->getLastState() == Supla::Control::PRESSED) {
+              stateOn = true;
+            } else {
+              stateOn = false;
+            }
+          } else {
+            skipInitialStateSetting = true;
+            return;
+          }
+        }
+      }
+    }
+  } else {
+    for (auto buttonListElement = buttonList; buttonListElement;
+         buttonListElement = buttonListElement->next) {
+      auto attachedButton = buttonListElement->button;
+      if (attachedButton) {
+        attachedButton->onInit();  // make sure button was initialized
+        if (attachedButton->isMonostable()) {
+          attachedButton->addAction(
+              Supla::TOGGLE, this, Supla::CONDITIONAL_ON_PRESS);
+        } else if (attachedButton->isBistable()) {
+          attachedButton->addAction(
+              Supla::TOGGLE, this, Supla::CONDITIONAL_ON_CHANGE);
+        } else if (attachedButton->isMotionSensor() ||
+                   attachedButton->isCentral()) {
+          attachedButton->addAction(Supla::TURN_ON, this, Supla::ON_PRESS);
+          attachedButton->addAction(Supla::TURN_OFF, this, Supla::ON_RELEASE);
+          if (!attachedButton->isReady()) {
+            skipInitialStateSetting = true;
+          } else {
+            if (attachedButton->getLastState() == Supla::Control::PRESSED) {
+              stateOn = true;
+            } else {
+              stateOn = false;
+            }
+          }
         }
       }
     }
   }
+  initDone = true;
 
-  uint32_t duration = durationMs;
-  if (!isLastResetSoft()) {
+  if (!skipInitialStateSetting) {
+    uint32_t duration = durationMs;
+    if (!isLastResetSoft()) {
+      if (stateOn) {
+        turnOn(duration);
+      } else {
+        turnOff(duration);
+      }
+    }
+
+    // pin mode is set after setting pin value in order to
+    // avoid problems with LOW trigger relays
+    Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
+
     if (stateOn) {
       turnOn(duration);
     } else {
       turnOff(duration);
     }
-  }
-
-  // pin mode is set after setting pin value in order to
-  // avoid problems with LOW trigger relays
-  Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
-
-  if (stateOn) {
-    turnOn(duration);
+    SUPLA_LOG_DEBUG("Relay[%d] init done, storedTurnOnDurationMs %d",
+                    channel.getChannelNumber(),
+                    storedTurnOnDurationMs);
   } else {
-    turnOff(duration);
+    SUPLA_LOG_DEBUG("Relay[%d] init skipped, button state not ready",
+                    channel.getChannelNumber());
   }
-  SUPLA_LOG_DEBUG("Relay[%d] init done, storedTurnOnDurationMs %d",
-                  channel.getChannelNumber(),
-                  storedTurnOnDurationMs);
-  initDone = true;
 }
 
 void Relay::iterateAlways() {
+  if (!isFullyInitialized()) {
+    onInit();
+    if (!isFullyInitialized()) {
+      return;
+    }
+  }
+
   if (durationMs && millis() - durationTimestamp > durationMs) {
     toggle();
   }
@@ -408,6 +446,13 @@ void Relay::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
 }
 
 void Relay::turnOn(_supla_int_t duration) {
+  if (!isFullyInitialized()) {
+    SUPLA_LOG_WARNING(
+        "Relay[%d] turn ON ignored, not fully initialized",
+        channel.getChannelNumber());
+    return;
+  }
+
   SUPLA_LOG_INFO(
             "Relay[%d] turn ON (duration %d ms)",
             channel.getChannelNumber(),
@@ -433,10 +478,17 @@ void Relay::turnOn(_supla_int_t duration) {
   channel.setNewValue(true);
 
   // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(relayStorageSaveDelay);
+  Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
 }
 
 void Relay::turnOff(_supla_int_t duration) {
+  if (!isFullyInitialized()) {
+    SUPLA_LOG_WARNING(
+        "Relay[%d] turn OFF ignored, not fully initialized",
+        channel.getChannelNumber());
+    return;
+  }
+
   SUPLA_LOG_INFO(
             "Relay[%d] turn OFF (duration %d ms)",
             channel.getChannelNumber(),
@@ -452,7 +504,7 @@ void Relay::turnOff(_supla_int_t duration) {
   channel.setNewValue(false);
 
   // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(relayStorageSaveDelay);
+  Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
 }
 
 bool Relay::isOn() {
@@ -692,10 +744,10 @@ bool Relay::setAndSaveFunction(uint32_t newFunction) {
       Supla::ElementWithChannelActions::setAndSaveFunction(newFunction);
 
   if (wasImpulseFunction != isImpulseFunction()) {
-    Supla::Storage::ScheduleSave(relayStorageSaveDelay);
+    Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
   }
   if (wasStaircaseFunction != isStaircaseFunction()) {
-    Supla::Storage::ScheduleSave(relayStorageSaveDelay);
+    Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
   }
 
   if (isStaircaseFunction() || isImpulseFunction()) {
@@ -961,5 +1013,10 @@ void Relay::setRestartTimerOnToggle(bool restart) {
 
 bool Relay::isRestartTimerOnToggle() const {
   return restartTimerOnToggle;
+}
+
+
+bool Relay::isFullyInitialized() const {
+  return initDone && !skipInitialStateSetting;
 }
 

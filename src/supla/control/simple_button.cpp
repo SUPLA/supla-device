@@ -172,3 +172,7 @@ enum Supla::Control::StateResults SimpleButton::getLastState() const {
   return state.getLastState();
 }
 
+bool SimpleButton::isReady() const {
+  return state.isReady();
+}
+

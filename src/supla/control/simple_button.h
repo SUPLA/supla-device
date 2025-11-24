@@ -80,6 +80,8 @@ class SimpleButton : public Element, public LocalAction {
 
   enum StateResults getLastState() const;
 
+  bool isReady() const;
+
  protected:
   // Returns unique button number (current implementation returns configured
   // GPIO)

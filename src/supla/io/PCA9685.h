@@ -19,6 +19,7 @@
 #pragma once
 
 /*
+Version: 25.11.24
 Dependency: https://github.com/RobTillaart/PCA9685_RT
 Use library manager to install it
 */
@@ -50,9 +51,20 @@ class PCA9685 : public Supla::Io::Base {
   }
   void customDigitalWrite(int channelNumber, uint8_t pin,
                                                          uint8_t val) override {
+    if (mutex_) mutex_->lock();
+    if (pca_.isConnected()) {
+      pca_.write1(pin, val);
+    }
+    if (mutex_) mutex_->unlock();
   }
   int customDigitalRead(int channelNumber, uint8_t pin) override {
-    return 0;
+    uint8_t val = 0;
+    if (mutex_) mutex_->lock();
+    if (pca_.isConnected()) {
+      val = pca_.read1(pin);
+    }
+    if (mutex_) mutex_->unlock();
+    return (val == 1) ? 1 : 0;
   }
   unsigned int customPulseIn(int channelNumber, uint8_t pin, uint8_t value,
                                                uint64_t timeoutMicro) override {

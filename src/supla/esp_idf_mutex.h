@@ -5,40 +5,39 @@
  modify it under the terms of the GNU General Public License
  as published by the Free Software Foundation; either version 2
  of the License, or (at your option) any later version.
+
  This program is distributed in the hope that it will be useful,
  but WITHOUT ANY WARRANTY; without even the implied warranty of
  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  GNU General Public License for more details.
+
  You should have received a copy of the GNU General Public License
  along with this program; if not, write to the Free Software
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "esp_idf_mutex.h"
+#ifndef SRC_SUPLA_ESP_IDF_MUTEX_H_
+#define SRC_SUPLA_ESP_IDF_MUTEX_H_
 
+#include <freertos/FreeRTOS.h>
+#include <freertos/semphr.h>
+#include <supla/mutex.h>
 
-Supla::Mutex *Supla::Mutex::Create() {
-  return new Supla::EspIdfMutex;
-}
+namespace Supla {
 
-Supla::EspIdfMutex::~EspIdfMutex() {
-  unlock();
-}
+class EspIdfMutex : public Mutex {
+ public:
+  friend Supla::Mutex *Supla::Mutex::Create();
+  virtual ~EspIdfMutex();
+  void lock() override;
+  void unlock() override;
 
-Supla::EspIdfMutex::EspIdfMutex() {
-  mutex = xSemaphoreCreateMutex();
-  // there is some issue with mutex creation and its default state when two
-  // tasks try to use them. As a workaround we take and give mutex back and
-  // after such calls it works always as expected.
-  xSemaphoreTake(mutex, portMAX_DELAY);
-  xSemaphoreGive(mutex);
-}
+ protected:
+  EspIdfMutex();
 
-void Supla::EspIdfMutex::lock() {
-  xSemaphoreTake(mutex, portMAX_DELAY);
-}
+  SemaphoreHandle_t mutex = NULL;
+};
 
-void Supla::EspIdfMutex::unlock() {
-  xSemaphoreGive(mutex);
-}
+};  // namespace Supla
 
+#endif  // SRC_SUPLA_ESP_IDF_MUTEX_H_

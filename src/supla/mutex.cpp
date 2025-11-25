@@ -16,8 +16,8 @@
 
 #include "mutex.h"
 
-#if defined(ARDUINO) || defined(SUPLA_TEST) || defined(SUPLA_LINUX) || \
-  defined(SUPLA_FREERTOS)
+#if defined(ARDUINO_ARCH_ESP8266) || defined(SUPLA_TEST) || \
+    defined(SUPLA_LINUX) || defined(SUPLA_FREERTOS) || defined(ARDUINO_ARCH_AVR)
 // TODO(klew): implement mutex for Arduino targets on ESP
 Supla::Mutex *Supla::Mutex::Create() {
   // put target specific stuff here

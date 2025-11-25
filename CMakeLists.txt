@@ -18,6 +18,7 @@ set(SUPLA_DEVICE_SRCS
   src/supla/time.cpp
   src/supla/timer.cpp
   src/supla/mutex.cpp
+  src/supla/esp_idf_mutex.cpp
   src/supla/auto_lock.cpp
   src/supla/sha256.cpp
   src/supla/crypto.cpp

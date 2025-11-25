@@ -65,7 +65,7 @@ void Button::onTimer() {
     stateChanged = true;
     runAction(ON_PRESS);
     runAction(ON_CHANGE);
-    if (clickCounter == 0 && holdSend == 0) {
+    if (clickCounter <= 1 && holdSend == 0) {
       runAction(CONDITIONAL_ON_PRESS);
       runAction(CONDITIONAL_ON_CHANGE);
     }

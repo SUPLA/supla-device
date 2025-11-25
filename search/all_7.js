@@ -25,11 +25,12 @@ var searchData=
   ['espeth_22',['ESPETH',['../classSupla_1_1ESPETH.html',1,'Supla::ESPETH'],['../classSupla_1_1ESPETH.html#ae161e3ecf5e68fc9bb953f16ea3d8324',1,'Supla::ESPETH::ESPETH(uint8_t ethMode)'],['../classSupla_1_1ESPETH.html#a5b77540799c810879bfec1ac922073a8',1,'Supla::ESPETH::ESPETH(eth_phy_type_t ethType, int32_t phyAddr, int mdc, int mdio, int power, eth_clock_mode_t clkMode)']]],
   ['espethspi_23',['ESPETHSPI',['../classSupla_1_1ESPETHSPI.html',1,'Supla']]],
   ['espfreeheap_24',['EspFreeHeap',['../classSupla_1_1Sensor_1_1EspFreeHeap.html',1,'Supla::Sensor']]],
-  ['espsender_25',['EspSender',['../classSupla_1_1EspSender.html',1,'Supla']]],
-  ['espwebserver_26',['EspWebServer',['../classSupla_1_1EspWebServer.html',1,'Supla']]],
-  ['espwifi_27',['ESPWifi',['../classSupla_1_1ESPWifi.html',1,'Supla']]],
-  ['ethernetparameters_28',['EthernetParameters',['../classEthernetParameters.html',1,'EthernetParameters'],['../classSupla_1_1Html_1_1EthernetParameters.html',1,'Supla::Html::EthernetParameters']]],
-  ['ethernetshield_29',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]],
-  ['example_30',['example',['../index.html#autotoc_md27',1,'ESP32 example'],['../index.html#autotoc_md26',1,'ESP8266 example']]],
-  ['exmaples_31',['Exmaples',['../index.html#autotoc_md10',1,'']]]
+  ['espidfmutex_25',['EspIdfMutex',['../classSupla_1_1EspIdfMutex.html',1,'Supla']]],
+  ['espsender_26',['EspSender',['../classSupla_1_1EspSender.html',1,'Supla']]],
+  ['espwebserver_27',['EspWebServer',['../classSupla_1_1EspWebServer.html',1,'Supla']]],
+  ['espwifi_28',['ESPWifi',['../classSupla_1_1ESPWifi.html',1,'Supla']]],
+  ['ethernetparameters_29',['EthernetParameters',['../classEthernetParameters.html',1,'EthernetParameters'],['../classSupla_1_1Html_1_1EthernetParameters.html',1,'Supla::Html::EthernetParameters']]],
+  ['ethernetshield_30',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]],
+  ['example_31',['example',['../index.html#autotoc_md27',1,'ESP32 example'],['../index.html#autotoc_md26',1,'ESP8266 example']]],
+  ['exmaples_32',['Exmaples',['../index.html#autotoc_md10',1,'']]]
 ];

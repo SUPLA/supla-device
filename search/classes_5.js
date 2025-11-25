@@ -12,9 +12,10 @@ var searchData=
   ['espeth_9',['ESPETH',['../classSupla_1_1ESPETH.html',1,'Supla']]],
   ['espethspi_10',['ESPETHSPI',['../classSupla_1_1ESPETHSPI.html',1,'Supla']]],
   ['espfreeheap_11',['EspFreeHeap',['../classSupla_1_1Sensor_1_1EspFreeHeap.html',1,'Supla::Sensor']]],
-  ['espsender_12',['EspSender',['../classSupla_1_1EspSender.html',1,'Supla']]],
-  ['espwebserver_13',['EspWebServer',['../classSupla_1_1EspWebServer.html',1,'Supla']]],
-  ['espwifi_14',['ESPWifi',['../classSupla_1_1ESPWifi.html',1,'Supla']]],
-  ['ethernetparameters_15',['EthernetParameters',['../classEthernetParameters.html',1,'EthernetParameters'],['../classSupla_1_1Html_1_1EthernetParameters.html',1,'Supla::Html::EthernetParameters']]],
-  ['ethernetshield_16',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]]
+  ['espidfmutex_12',['EspIdfMutex',['../classSupla_1_1EspIdfMutex.html',1,'Supla']]],
+  ['espsender_13',['EspSender',['../classSupla_1_1EspSender.html',1,'Supla']]],
+  ['espwebserver_14',['EspWebServer',['../classSupla_1_1EspWebServer.html',1,'Supla']]],
+  ['espwifi_15',['ESPWifi',['../classSupla_1_1ESPWifi.html',1,'Supla']]],
+  ['ethernetparameters_16',['EthernetParameters',['../classEthernetParameters.html',1,'EthernetParameters'],['../classSupla_1_1Html_1_1EthernetParameters.html',1,'Supla::Html::EthernetParameters']]],
+  ['ethernetshield_17',['EthernetShield',['../classSupla_1_1EthernetShield.html',1,'Supla']]]
 ];

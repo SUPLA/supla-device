@@ -804,13 +804,9 @@ TEST_F(SuplaDeviceTests, GenerateHostnameWithCustomPrefixTests) {
   net.getHostName(buf);
   EXPECT_STREQ(buf, "SUPLA-DEVICE-0000");
 
-  /*
-  sd.setName("SuplaDevice 3.14");
-  sd.generateHostname(buf, 2);
-  EXPECT_STREQ(buf, "SUPLA-DEVICE-3-14-0000");
-
-  sd.setName("My Device 2.54");
-  sd.generateHostname(buf, 2);
-  EXPECT_STREQ(buf, "SUPLA-MY-DEVICE-2-54-0000");
-  */
+  sd.setCustomHostnamePrefix("SUPLA-ABCDEFG-GEN3");
+  sd.generateHostname(buf, 6);
+  net.setHostname(buf, 6);
+  net.getHostName(buf);
+  EXPECT_STREQ(buf, "SUPLA-ABCDEFG-GEN3-000000000000");
 }

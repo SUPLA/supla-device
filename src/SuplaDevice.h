@@ -251,8 +251,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   Supla::Protocol::SuplaSrpc *getSrpcLayer();
 
-  void setCustomHostnamePrefix(const char *prefix);
-
   void enableNetwork();
   void disableNetwork();
   bool getStorageInitResult();
@@ -316,7 +314,29 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setSubdevicePairingHandler(
       Supla::Device::SubdevicePairingHandler *handler);
 
+  /**
+   * Sets the byte length of MAC address in hostname and Wi-Fi Soft AP name.
+   * Default value is 6. Only values 2 and 6 are accepted by Supla mobile app
+   * in Add Device Wizard.
+   * MAC appendix will consume 1 + 2*value bytes of hostname (which is 31 chars)
+   *
+   * @param value byte length of MAC address to be used in hostname.
+   */
   void setMacLengthInHostname(int value);
+
+  /**
+   * Sets custom hostname prefix to be used in hostname and Wi-Fi Soft AP name.
+   * By default device name is used as prefix. If custom prefix is set, it will
+   * be used instead.
+   * Prefix length is limited to 31 chars minus MAC appendix length (1 +
+   * 2*macLengthInHostname)
+   * Hostname prefix has to start with "SUPLA" in order to be accepted by Supla
+   * mobile app in Add Device Wizard. There are also vendor specific prefixes
+   * supported by Supla mobile app, but their usage is only for vendor's use.
+   *
+   * @param prefix custom hostname prefix
+   */
+  void setCustomHostnamePrefix(const char *prefix);
 
   void setStatusLed(Supla::Device::StatusLed *led);
 

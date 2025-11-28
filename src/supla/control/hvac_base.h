@@ -462,6 +462,14 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   bool isAltWeeklySchedulePossible() const;
 
+  /**
+   * Returns true if thermostat output is disabled by binary sensor state
+   * (i.e. by open window).
+   *
+   * @return true if forced off
+   */
+  bool isHvacFlagForcedOffBySensor() const;
+
   HvacParameterFlags parameterFlags = {};
 
  protected:

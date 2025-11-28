@@ -695,6 +695,8 @@ void HvacBase::iterateAlways() {
   // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: waiting with reaction to new settings",
+                    getChannelNumber());
     return;
   }
   if (configFixAttempt > 0) {
@@ -781,37 +783,16 @@ void HvacBase::iterateAlways() {
 
   channel.setHvacFlagAntifreezeOverheatActive(false);
 
-  if (isOutputControlledInternally()) {
-    if (getForcedOffSensorState()) {
-      SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit",
-                      getChannelNumber());
-      channel.setHvacFlagForcedOffBySensor(true);
+  if (getForcedOffSensorState()) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit", getChannelNumber());
+    channel.setHvacFlagForcedOffBySensor(true);
+    if (isOutputControlledInternally()) {
       setOutput(0, false);
-      updateChannelState();
-      return;
-    } else {
-      channel.setHvacFlagForcedOffBySensor(false);
     }
+    updateChannelState();
+    return;
   } else {
-    if (getForcedOffSensorState()) {
-      if (channel.getHvacMode() != SUPLA_HVAC_MODE_OFF) {
-        channel.setHvacFlagForcedOffBySensor(true);
-        setTargetMode(SUPLA_HVAC_MODE_OFF, false);
-        SUPLA_LOG_DEBUG("HVAC[%d]: forced off by sensor exit (with turn off)",
-                        getChannelNumber());
-        updateChannelState();
-        return;
-      }
-    } else {
-      if (channel.isHvacFlagForcedOffBySensor()) {
-        channel.setHvacFlagForcedOffBySensor(false);
-        setTargetMode(SUPLA_HVAC_MODE_CMD_TURN_ON);
-        SUPLA_LOG_DEBUG("HVAC[%d]: turn on by sensor state",
-                        getChannelNumber());
-        updateChannelState();
-        return;
-      }
-    }
+    channel.setHvacFlagForcedOffBySensor(false);
   }
 
   switch (channel.getHvacMode()) {
@@ -3253,12 +3234,6 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
     }
   }
 
-  if (!isOutputControlledInternally() &&
-      channel.isHvacFlagForcedOffBySensor() &&
-      mode != SUPLA_HVAC_MODE_OFF) {
-    return;
-  }
-
   if (!keepScheduleOn && mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE) {
     lastProgramManualOverride = -1;
   }
@@ -3585,8 +3560,10 @@ void HvacBase::setTemperatureSetpointHeat(int tHeat) {
   }
   tHeat = getClosestValidTemperature(tHeat);
 
-  channel.setHvacSetpointTemperatureHeat(tHeat);
-  lastConfigChangeTimestampMs = millis();
+  if (channel.getHvacSetpointTemperatureHeat() != tHeat) {
+    channel.setHvacSetpointTemperatureHeat(tHeat);
+    lastConfigChangeTimestampMs = millis();
+  }
 }
 
 void HvacBase::setTemperatureSetpointCool(int tCool) {
@@ -3596,8 +3573,10 @@ void HvacBase::setTemperatureSetpointCool(int tCool) {
 
   tCool = getClosestValidTemperature(tCool);
 
-  channel.setHvacSetpointTemperatureCool(tCool);
-  lastConfigChangeTimestampMs = millis();
+  if (channel.getHvacSetpointTemperatureCool() != tCool) {
+    channel.setHvacSetpointTemperatureCool(tCool);
+    lastConfigChangeTimestampMs = millis();
+  }
 }
 
 void HvacBase::clearTemperatureSetpointHeat() {
@@ -6078,3 +6057,8 @@ int16_t HvacBase::getClosestValidTemperature(int16_t temperature) const {
   }
   return temperature;
 }
+
+bool HvacBase::isHvacFlagForcedOffBySensor() const {
+  return channel.isHvacFlagForcedOffBySensor();
+}
+

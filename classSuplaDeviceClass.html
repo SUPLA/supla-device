@@ -327,9 +327,6 @@ const char *&#160;</td><td class="memItemRight" valign="bottom"><b>getSuplaCACer
 <tr class="memitem:af6879bdf102e0643efcc2bbba6f7690a" id="r_af6879bdf102e0643efcc2bbba6f7690a"><td class="memItemLeft" align="right" valign="top"><a id="af6879bdf102e0643efcc2bbba6f7690a" name="af6879bdf102e0643efcc2bbba6f7690a"></a>
 <a class="el" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getSrpcLayer</b> ()</td></tr>
 <tr class="separator:af6879bdf102e0643efcc2bbba6f7690a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3055762b47c24965a5a0cae83e7aafb1" id="r_a3055762b47c24965a5a0cae83e7aafb1"><td class="memItemLeft" align="right" valign="top"><a id="a3055762b47c24965a5a0cae83e7aafb1" name="a3055762b47c24965a5a0cae83e7aafb1"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setCustomHostnamePrefix</b> (const char *prefix)</td></tr>
-<tr class="separator:a3055762b47c24965a5a0cae83e7aafb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91727d8cb6c954d96c32ccbb839c3425" id="r_a91727d8cb6c954d96c32ccbb839c3425"><td class="memItemLeft" align="right" valign="top"><a id="a91727d8cb6c954d96c32ccbb839c3425" name="a91727d8cb6c954d96c32ccbb839c3425"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>enableNetwork</b> ()</td></tr>
 <tr class="separator:a91727d8cb6c954d96c32ccbb839c3425"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -369,9 +366,12 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setChannelConflictRes
 <tr class="memitem:af07927cc34c31acc876d4437e978482c" id="r_af07927cc34c31acc876d4437e978482c"><td class="memItemLeft" align="right" valign="top"><a id="af07927cc34c31acc876d4437e978482c" name="af07927cc34c31acc876d4437e978482c"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setSubdevicePairingHandler</b> (<a class="el" href="classSupla_1_1Device_1_1SubdevicePairingHandler.html">Supla::Device::SubdevicePairingHandler</a> *handler)</td></tr>
 <tr class="separator:af07927cc34c31acc876d4437e978482c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c21a9aab048406454e78f5382d5b5f4" id="r_a7c21a9aab048406454e78f5382d5b5f4"><td class="memItemLeft" align="right" valign="top"><a id="a7c21a9aab048406454e78f5382d5b5f4" name="a7c21a9aab048406454e78f5382d5b5f4"></a>
-void&#160;</td><td class="memItemRight" valign="bottom"><b>setMacLengthInHostname</b> (int value)</td></tr>
+<tr class="memitem:a7c21a9aab048406454e78f5382d5b5f4" id="r_a7c21a9aab048406454e78f5382d5b5f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7c21a9aab048406454e78f5382d5b5f4">setMacLengthInHostname</a> (int value)</td></tr>
+<tr class="memdesc:a7c21a9aab048406454e78f5382d5b5f4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the byte length of MAC address in hostname and Wi-Fi Soft AP name.  <br /></td></tr>
 <tr class="separator:a7c21a9aab048406454e78f5382d5b5f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3055762b47c24965a5a0cae83e7aafb1" id="r_a3055762b47c24965a5a0cae83e7aafb1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a3055762b47c24965a5a0cae83e7aafb1">setCustomHostnamePrefix</a> (const char *prefix)</td></tr>
+<tr class="memdesc:a3055762b47c24965a5a0cae83e7aafb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets custom hostname prefix to be used in hostname and Wi-Fi Soft AP name.  <br /></td></tr>
+<tr class="separator:a3055762b47c24965a5a0cae83e7aafb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07d6edc22a344604d763eadd3e4bb8fd" id="r_a07d6edc22a344604d763eadd3e4bb8fd"><td class="memItemLeft" align="right" valign="top"><a id="a07d6edc22a344604d763eadd3e4bb8fd" name="a07d6edc22a344604d763eadd3e4bb8fd"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setStatusLed</b> (<a class="el" href="classSupla_1_1Device_1_1StatusLed.html">Supla::Device::StatusLed</a> *led)</td></tr>
 <tr class="separator:a07d6edc22a344604d763eadd3e4bb8fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -928,6 +928,32 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 
 </div>
 </div>
+<a id="a3055762b47c24965a5a0cae83e7aafb1" name="a3055762b47c24965a5a0cae83e7aafb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3055762b47c24965a5a0cae83e7aafb1">&#9670;&#160;</a></span>setCustomHostnamePrefix()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::setCustomHostnamePrefix </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>prefix</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets custom hostname prefix to be used in hostname and Wi-Fi Soft AP name. </p>
+<p>By default device name is used as prefix. If custom prefix is set, it will be used instead. Prefix length is limited to 31 chars minus MAC appendix length (1 + 2*macLengthInHostname) Hostname prefix has to start with "SUPLA" in order to be accepted by Supla mobile app in Add Device Wizard. There are also vendor specific prefixes supported by Supla mobile app, but their usage is only for vendor's use.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">prefix</td><td>custom hostname prefix </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a3c48ed8232bbd86c109384e022d5130b" name="a3c48ed8232bbd86c109384e022d5130b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3c48ed8232bbd86c109384e022d5130b">&#9670;&#160;</a></span>setInitialMode()</h2>
 
@@ -974,6 +1000,32 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">valueMin</td><td>inactivity timeout in minutes. Use 0 to disable </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a7c21a9aab048406454e78f5382d5b5f4" name="a7c21a9aab048406454e78f5382d5b5f4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c21a9aab048406454e78f5382d5b5f4">&#9670;&#160;</a></span>setMacLengthInHostname()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::setMacLengthInHostname </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets the byte length of MAC address in hostname and Wi-Fi Soft AP name. </p>
+<p>Default value is 6. Only values 2 and 6 are accepted by Supla mobile app in Add Device Wizard. MAC appendix will consume 1 + 2*value bytes of hostname (which is 31 chars)</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td>byte length of MAC address to be used in hostname. </td></tr>
   </table>
   </dd>
 </dl>

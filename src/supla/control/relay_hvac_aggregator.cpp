@@ -26,6 +26,9 @@ using Supla::Control::RelayHvacAggregator;
 
 namespace {
 RelayHvacAggregator *FirstInstance = nullptr;
+
+// 15 minutes
+constexpr uint32_t IGNORE_OFFLINE_HVAC_TIMEOUT = 15 * 60 * 1000;
 }
 
 
@@ -117,11 +120,15 @@ void RelayHvacAggregator::registerHvac(HvacBase *hvac) {
     }
     ptr->nextPtr = new HvacPtr;
     ptr->nextPtr->hvac = hvac;
+    if (hvac->getChannel()->isStateOnline()) {
+      ptr->nextPtr->lastSeenTimestamp = millis();
+    }
   }
-  SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] hvac[%d @ %X] registered",
+  SUPLA_LOG_DEBUG("RelayHvacAggregator[%d] hvac[%d @ %X] registered (%s)",
                   relayChannelNumber,
                   hvac->getChannelNumber(),
-                  hvac);
+                  hvac,
+                  hvac->getChannel()->isStateOnline() ? "online" : "offline");
 }
 
 void RelayHvacAggregator::unregisterHvac(HvacBase *hvac) {
@@ -169,12 +176,17 @@ void RelayHvacAggregator::iterateAlways() {
   auto *ptr = firstHvacPtr;
   while (ptr != nullptr) {
     if (ptr->hvac != nullptr && ptr->hvac->getChannel()) {
+      if (ptr->hvac->getChannel()->isStateOnline()) {
+        ptr->lastSeenTimestamp = millis();
+      }
       if (!ptr->hvac->ignoreAggregatorForRelay(relayChannelNumber)) {
         ignore = false;
         if (ptr->hvac->getChannel()->isHvacFlagHeating() ||
             ptr->hvac->getChannel()->isHvacFlagCooling()) {
-          state = true;
-          break;
+          if (millis() - ptr->lastSeenTimestamp < IGNORE_OFFLINE_HVAC_TIMEOUT) {
+            state = true;
+            break;
+          }
         }
       }
     }

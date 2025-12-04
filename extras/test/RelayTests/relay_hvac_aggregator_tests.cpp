@@ -373,3 +373,85 @@ TEST_F(RelayHvacFixture, turnOffWhenEmptyTest) {
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number2));
 }
+
+TEST_F(RelayHvacFixture, turnOffWhenHvacIsOffline) {
+  int gpio1 = 1;
+  Supla::Control::Relay r1(gpio1);
+
+  int number1 = r1.getChannelNumber();
+  ASSERT_EQ(number1, 0);
+
+  auto io1 = Supla::Control::InternalPinOutput(4);
+  auto io2 = Supla::Control::InternalPinOutput(5);
+  auto io3 = Supla::Control::InternalPinOutput(6);
+  Supla::Control::HvacBase hvac1(&io1);
+  Supla::Control::HvacBase hvac2(&io2);
+  Supla::Control::HvacBase hvac3(&io3);
+
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  r1.onInit();
+
+  EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
+
+  auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
+  EXPECT_NE(aggregator, nullptr);
+  EXPECT_EQ(aggregator,
+            Supla::Control::RelayHvacAggregator::GetInstance(number1));
+
+  aggregator->registerHvac(&hvac1);
+  aggregator->registerHvac(&hvac2);
+  aggregator->registerHvac(&hvac3);
+
+  // no time advance, nothing happens
+  aggregator->iterateAlways();
+
+  // hvacs are off , intial turn off
+  time.advance(2000);
+  EXPECT_EQ(gpio1Value, 0);
+  aggregator->iterateAlways();
+
+  EXPECT_EQ(gpio1Value, 0);
+  hvac1.getChannel()->setHvacFlagHeating(true);
+  // hvac1 is on and relay is off, so relay -> turn on
+  time.advance(2000);
+  aggregator->iterateAlways();
+
+  EXPECT_EQ(gpio1Value, 1);
+  // hvac1 go offline
+  hvac1.getChannel()->setStateOffline();
+
+  // after 2s no change
+  time.advance(2000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+
+  time.advance(14 * 60 * 1000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+
+  // it should turn off (since > 15 min elapsed)
+  time.advance(1 * 60 * 1000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
+
+  hvac2.getChannel()->setHvacFlagHeating(true);
+  time.advance(10000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+
+  hvac2.getChannel()->setHvacFlagHeating(false);
+  time.advance(10000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
+
+  hvac1.getChannel()->setStateOnline();
+  time.advance(10000);
+  aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+}

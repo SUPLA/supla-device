@@ -23,6 +23,7 @@
 #include <sys/time.h>
 #include <time.h>
 #include <inttypes.h>
+#include <supla/log_wrapper.h>
 
 #include "web_sender.h"
 
@@ -32,7 +33,15 @@ WebSender::~WebSender() {}
 
 void WebSender::send(int number) {
   char buf[100];
-  snprintf(buf, sizeof(buf), "%d", number);
+  int size = snprintf(buf, sizeof(buf), "%d", number);
+  if (size < 0) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  if (static_cast<size_t>(size) > sizeof(buf)) {
+    SUPLA_LOG_WARNING("WebSender error - buffer too small");
+    return;
+  }
   send(buf);
 }
 
@@ -50,22 +59,49 @@ void WebSender::send(int number, int precision) {
     }
   }
 
-  snprintf(buf, sizeof(buf),
+  int size = snprintf(buf, sizeof(buf),
       "%.*f", printPrecission, static_cast<float>(number) / divider);
-  send(buf);
+  if (size < 0) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  if (static_cast<size_t>(size) > sizeof(buf)) {
+    SUPLA_LOG_WARNING("WebSender error - buffer too small");
+    return;
+  }
+  send(buf, size);
 }
 
 void WebSender::sendNameAndId(const char *id) {
   char buf[100];
-  snprintf(buf, sizeof(buf), " name=\"%s\" id=\"%s\" ",
+  int size = snprintf(buf, sizeof(buf), " name=\"%s\" id=\"%s\" ",
       id ? id : "", id ? id : "");
+  if (size < 0) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  if (static_cast<size_t>(size) > sizeof(buf)) {
+    SUPLA_LOG_WARNING("WebSender error - buffer too small");
+    return;
+  }
   send(buf);
 }
 
 void WebSender::sendLabelFor(const char *id, const char *label) {
   char buf[300];
-  snprintf(buf, sizeof(buf), "<label for=\"%s\">%s</label>", id ? id : "",
-      label ? label : "");
+  int size = snprintf(buf,
+                      sizeof(buf),
+                      "<label for=\"%s\">%s</label>",
+                      id ? id : "",
+                      label ? label : "");
+  if (size < 0) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  if (static_cast<size_t>(size) > sizeof(buf)) {
+    SUPLA_LOG_WARNING("WebSender error - buffer too small");
+    return;
+  }
   send(buf);
 }
 
@@ -112,12 +148,28 @@ void WebSender::sendSelectItem(int value,
                                bool selected,
                                bool emptyValue) {
   char buf[100];
+  int size = 0;
   if (emptyValue) {
-    snprintf(buf, sizeof(buf), "<option value=\"\" %s>%s</option>", selected
-        ? "selected" : "", label);
+    size = snprintf(buf,
+                    sizeof(buf),
+                    "<option value=\"\" %s>%s</option>",
+                    selected ? "selected" : "",
+                    label);
   } else {
-    snprintf(buf, sizeof(buf), "<option value=\"%d\" %s>%s</option>", value,
-        selected ? "selected" : "", label);
+    size = snprintf(buf,
+                    sizeof(buf),
+                    "<option value=\"%d\" %s>%s</option>",
+                    value,
+                    selected ? "selected" : "",
+                    label);
+  }
+  if (size < 0) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  if (static_cast<size_t>(size) > sizeof(buf)) {
+    SUPLA_LOG_WARNING("WebSender error - buffer too small");
+    return;
   }
   send(buf);
 }
@@ -143,14 +195,23 @@ void WebSender::sendDisabled(bool disabled) {
 void WebSender::sendTimestamp(uint32_t timestamp) {
   // timestamp may contain unix timestamp, or just seconds since board boot
   char buf[100] = {};
+  int size = 0;
   if (timestamp < 1600000000) {
     // somewhere in 2020, so assume it is seconds since board boot
-    snprintf(buf, sizeof(buf), "%" PRIu32 " s (since boot)", timestamp);
+    size = snprintf(buf, sizeof(buf), "%" PRIu32 " s (since boot)", timestamp);
   } else {
     struct tm timeinfo;
     time_t time = timestamp;
     localtime_r(&time, &timeinfo);
-    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+    size = strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+  }
+  if (size < 0) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  if (static_cast<size_t>(size) > sizeof(buf)) {
+    SUPLA_LOG_WARNING("WebSender error - buffer too small");
+    return;
   }
   send(buf);
 }

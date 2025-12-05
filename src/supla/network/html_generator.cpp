@@ -23,6 +23,7 @@
 #include <supla/network/html_element.h>
 #include <SuplaDevice.h>
 #include <supla/device/register_device.h>
+#include <supla/time.h>
 
 #include "web_sender.h"
 
@@ -256,6 +257,7 @@ void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
     if (htmlElement->section == HTML_SECTION_LOGS) {
       htmlElement->send(sender);
     }
+    delay(0);
   }
 
   sender->send("<div class=\"form\">");
@@ -443,6 +445,7 @@ void Supla::HtmlGenerator::sendDeviceInfo(Supla::WebSender *sender) {
     if (htmlElement->section == HTML_SECTION_DEVICE_INFO) {
       htmlElement->send(sender);
     }
+    delay(0);
   }
 }
 
@@ -454,6 +457,7 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
     if (htmlElement->section == HTML_SECTION_NETWORK) {
       htmlElement->send(sender);
     }
+    delay(0);
   }
   sender->send("</div>");
 
@@ -462,6 +466,7 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
     if (htmlElement->section == HTML_SECTION_PROTOCOL) {
       htmlElement->send(sender);
     }
+    delay(0);
   }
 
   bool boxSend = false;
@@ -475,6 +480,7 @@ void Supla::HtmlGenerator::sendForm(Supla::WebSender *sender) {
       }
       htmlElement->send(sender);
     }
+    delay(0);
   }
   if (boxSend) {
     sender->send("</div>");
@@ -498,6 +504,7 @@ void Supla::HtmlGenerator::sendBetaForm(Supla::WebSender *sender) {
       }
       htmlElement->send(sender);
     }
+    delay(0);
   }
   if (boxSend) {
     sender->send("</div>");
@@ -517,6 +524,7 @@ void Supla::HtmlGenerator::sendButtons(Supla::WebSender *sender) {
     if (htmlElement->section == HTML_SECTION_LOGS) {
       securityLogsEnabled = true;
     }
+    delay(0);
   }
   sendSubmitButton(sender);
   if (securityLogsEnabled) {
@@ -527,6 +535,7 @@ void Supla::HtmlGenerator::sendButtons(Supla::WebSender *sender) {
     if (htmlElement->section == HTML_SECTION_BUTTON_AFTER) {
       htmlElement->send(sender);
     }
+    delay(0);
   }
 }
 

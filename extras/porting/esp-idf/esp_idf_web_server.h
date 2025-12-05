@@ -29,13 +29,16 @@ namespace Supla {
 
 class EspIdfSender : public Supla::WebSender {
  public:
-  explicit EspIdfSender(httpd_req_t *req);
+  explicit EspIdfSender(httpd_req_t *req, char *sendBuf, int sendBufLen);
   ~EspIdfSender();
   void send(const char *, int) override;
 
  protected:
   httpd_req_t *reqHandler;
   bool error = false;
+  char *sendBuf = nullptr;
+  int sendBufLen = 0;
+  int sendBufPos = 0;
 };
 
 class EspIdfWebServer : public Supla::WebServer {
@@ -87,6 +90,8 @@ class EspIdfWebServer : public Supla::WebServer {
   void reloadSaltPassword();
   void addSecurityLog(httpd_req_t *req, const char *log) const;
 
+  char *getSendBufPtr() const;
+
  protected:
   static uint32_t getIpFromReq(httpd_req_t *req);
   void cleanupCerts();
@@ -107,6 +112,7 @@ class EspIdfWebServer : public Supla::WebServer {
 
   uint8_t failedLoginAttempts = 0;
   bool prvtKeyDecrypted = false;
+  char *sendBuf = nullptr;
 };
 
 };  // namespace Supla

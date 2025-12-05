@@ -45,6 +45,8 @@
 
 static Supla::EspIdfWebServer *srvInst = nullptr;
 
+constexpr int SUPLA_SERVER_SEND_BUF_SIZE = 512;
+
 // request: GET /favicon.ico
 // no auth required, just send the icon
 esp_err_t getFavicon(httpd_req_t *req) {
@@ -76,7 +78,8 @@ esp_err_t rootHandler(httpd_req_t *req) {
               req, sessionCookie, sizeof(sessionCookie))) {
         return srvInst->redirect(req, 303, srvInst->loginOrSetupUrl(), "main");
       } else {
-        Supla::EspIdfSender sender(req);
+        Supla::EspIdfSender sender(
+            req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
         srvInst->htmlGenerator->sendPage(
             &sender, srvInst->dataSaved, srvInst->isHttpsEnalbled());
       }
@@ -125,7 +128,8 @@ esp_err_t loginHandler(httpd_req_t *req) {
         return ESP_OK;
       }
       SUPLA_LOG_DEBUG("SERVER: not authorized, send login page");
-      Supla::EspIdfSender sender(req);
+      Supla::EspIdfSender sender(
+          req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
       srvInst->htmlGenerator->sendLoginPage(&sender);
     }
     return ESP_OK;
@@ -141,7 +145,8 @@ esp_err_t loginHandler(httpd_req_t *req) {
                               true)) {
         srvInst->addSecurityLog(req, "Failed login attempt");
         SUPLA_LOG_DEBUG("SERVER: login failed, send login page");
-        Supla::EspIdfSender sender(req);
+        Supla::EspIdfSender sender(
+            req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
         srvInst->htmlGenerator->sendLoginPage(&sender, true);
       } else {
         // redirect based on cookie value
@@ -188,7 +193,8 @@ esp_err_t setupHandler(httpd_req_t *req) {
   if (req->method == HTTP_GET) {
     SUPLA_LOG_DEBUG("SERVER: GET setup request");
     if (srvInst->htmlGenerator) {
-      Supla::EspIdfSender sender(req);
+      Supla::EspIdfSender sender(
+          req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
       if (!srvInst->isPasswordConfigured()) {
         srvInst->htmlGenerator->sendSetupPage(&sender, false);
       } else if (srvInst->ensureAuthorized(
@@ -208,7 +214,8 @@ esp_err_t setupHandler(httpd_req_t *req) {
         auto setupResult =
             srvInst->handleSetup(req, sessionCookie, sizeof(sessionCookie));
         if (setupResult != Supla::SetupRequestResult::OK) {
-          Supla::EspIdfSender sender(req);
+          Supla::EspIdfSender sender(
+              req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
           srvInst->htmlGenerator->sendSetupPage(
               &sender, srvInst->isPasswordConfigured(), setupResult);
         } else {
@@ -240,7 +247,8 @@ esp_err_t logsHandler(httpd_req_t *req) {
               req, sessionCookie, sizeof(sessionCookie))) {
         return srvInst->redirect(req, 303, srvInst->loginOrSetupUrl(), "main");
       } else {
-        Supla::EspIdfSender sender(req);
+        Supla::EspIdfSender sender(
+            req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
         srvInst->htmlGenerator->sendLogsPage(&sender,
                                              srvInst->isHttpsEnalbled());
       }
@@ -269,7 +277,8 @@ esp_err_t betaHandler(httpd_req_t *req) {
               req, sessionCookie, sizeof(sessionCookie))) {
         return srvInst->redirect(req, 303, srvInst->loginOrSetupUrl(), "beta");
       } else {
-        Supla::EspIdfSender sender(req);
+        Supla::EspIdfSender sender(
+            req, srvInst->getSendBufPtr(), SUPLA_SERVER_SEND_BUF_SIZE);
         srvInst->htmlGenerator->sendBetaPage(
             &sender, srvInst->dataSaved, srvInst->isHttpsEnalbled());
       }
@@ -753,6 +762,10 @@ void Supla::EspIdfWebServer::start() {
 //      httpd_register_uri_handler(serverHttp, &uriSetup);
     }
   }
+
+  if (!sendBuf) {
+    sendBuf = new char[SUPLA_SERVER_SEND_BUF_SIZE];
+  }
 }
 
 void Supla::EspIdfWebServer::stop() {
@@ -765,9 +778,16 @@ void Supla::EspIdfWebServer::stop() {
     httpd_stop(serverHttps);
     serverHttps = nullptr;
   }
+  if (sendBuf) {
+    delete [] sendBuf;
+    sendBuf = nullptr;
+  }
 }
 
-Supla::EspIdfSender::EspIdfSender(httpd_req_t *req) : reqHandler(req) {
+Supla::EspIdfSender::EspIdfSender(httpd_req_t *req,
+                                  char *sendBuf,
+                                  int sendBufLen)
+    : reqHandler(req), sendBuf(sendBuf), sendBufLen(sendBufLen) {
 }
 
 bool Supla::EspIdfWebServer::isHttpsEnalbled() const {
@@ -776,6 +796,10 @@ bool Supla::EspIdfWebServer::isHttpsEnalbled() const {
 
 Supla::EspIdfSender::~EspIdfSender() {
   if (!error) {
+    if (sendBuf && sendBufPos > 0) {
+      httpd_resp_send_chunk(reqHandler, sendBuf, sendBufPos);
+      sendBufPos = 0;
+    }
     httpd_resp_send_chunk(reqHandler, nullptr, 0);
   }
 }
@@ -791,9 +815,34 @@ void Supla::EspIdfSender::send(const char *buf, int size) {
     return;
   }
 
-  esp_err_t err = httpd_resp_send_chunk(reqHandler, buf, size);
-  if (err != ESP_OK) {
-    error = true;
+  if (sendBuf) {
+    if (sendBufPos + size + 1 > sendBufLen) {
+      esp_err_t err = httpd_resp_send_chunk(reqHandler, sendBuf, sendBufPos);
+      if (err != ESP_OK) {
+        error = true;
+      }
+      sendBufPos = 0;
+      if (size + 1 > sendBufLen && !error) {
+        err = httpd_resp_send_chunk(reqHandler, buf, size);
+        if (err != ESP_OK) {
+          error = true;
+        }
+        return;
+      }
+    }
+    memcpy(&sendBuf[sendBufPos], buf, size);
+    while (sendBufPos > 0 && sendBuf[sendBufPos - 1] == 0) {
+      // trim trailing zeros
+      sendBufPos--;
+    }
+    sendBufPos += size;
+    sendBuf[sendBufPos] = 0;
+  } else {
+    esp_err_t err = httpd_resp_send_chunk(reqHandler, buf, size);
+
+    if (err != ESP_OK) {
+      error = true;
+    }
   }
 }
 
@@ -1032,3 +1081,8 @@ void Supla::EspIdfWebServer::failedLoginAttempt(httpd_req_t *req) {
     addSecurityLog(req, "Too many failed login attempts");
   }
 }
+
+char *Supla::EspIdfWebServer::getSendBufPtr() const {
+  return sendBuf;
+}
+

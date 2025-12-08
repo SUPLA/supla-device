@@ -214,6 +214,7 @@ void RelayHvacAggregator::iterateAlways() {
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn on", relayChannelNumber);
       lastStateUpdateTimestamp = millis();
       relay->turnOn();
+      lastRelayState = 1;
     }
   } else {
     if (lastValueSend != 0) {
@@ -221,6 +222,7 @@ void RelayHvacAggregator::iterateAlways() {
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn off", relayChannelNumber);
       lastStateUpdateTimestamp = millis();
       relay->turnOff();
+      lastRelayState = 0;
     }
   }
 }

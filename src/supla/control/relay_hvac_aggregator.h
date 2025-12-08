@@ -48,6 +48,8 @@ class RelayHvacAggregator : public Element {
   void iterateAlways() override;
   void setTurnOffWhenEmpty(bool turnOffWhenEmpty);
 
+  void setInternalStateCheckInterval(uint32_t intervalMs);
+
  protected:
   explicit RelayHvacAggregator(int relayChannelNumber, Relay *relay);
   virtual ~RelayHvacAggregator();
@@ -59,6 +61,7 @@ class RelayHvacAggregator : public Element {
   int relayChannelNumber = 0;
   uint32_t lastUpdateTimestamp = 0;
   uint32_t lastStateUpdateTimestamp = 0;
+  uint32_t relayInternalStateCheckIntervalMs = 10000;
   bool turnOffWhenEmpty = true;
   int8_t lastValueSend = -1;
   int8_t lastRelayState = -1;

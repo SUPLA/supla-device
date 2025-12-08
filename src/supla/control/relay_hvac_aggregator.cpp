@@ -160,10 +160,17 @@ void RelayHvacAggregator::iterateAlways() {
     return;
   }
 
-  if (millis() - lastStateUpdateTimestamp > 5000 || lastRelayState == -1) {
+  if (millis() - lastStateUpdateTimestamp > relayInternalStateCheckIntervalMs ||
+      lastRelayState == -1) {
     if (relay->isOn()) {
+      if (lastRelayState != 1 && lastValueSend != -1) {
+        lastValueSend = 1;
+      }
       lastRelayState = 1;
     } else {
+      if (lastRelayState != 0 && lastValueSend != -1) {
+        lastValueSend = 0;
+      }
       lastRelayState = 0;
     }
     lastStateUpdateTimestamp = millis();
@@ -205,12 +212,14 @@ void RelayHvacAggregator::iterateAlways() {
     if (lastValueSend != 1) {
       lastValueSend = 1;
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn on", relayChannelNumber);
+      lastStateUpdateTimestamp = millis();
       relay->turnOn();
     }
   } else {
     if (lastValueSend != 0) {
       lastValueSend = 0;
       SUPLA_LOG_INFO("RelayHvacAggregator[%d] turn off", relayChannelNumber);
+      lastStateUpdateTimestamp = millis();
       relay->turnOff();
     }
   }
@@ -239,5 +248,9 @@ int RelayHvacAggregator::getHvacCount() const {
     ptr = ptr->nextPtr;
   }
   return count;
+}
+
+void RelayHvacAggregator::setInternalStateCheckInterval(uint32_t intervalMs) {
+  relayInternalStateCheckIntervalMs = intervalMs;
 }
 

@@ -78,10 +78,15 @@ TEST_F(RelayHvacFixture, heatingTest) {
   Supla::Control::HvacBase hvac2(&io2);
   Supla::Control::HvacBase hvac3(&io3);
 
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
   EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(2);
   EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(2);
   r1.onInit();
@@ -103,72 +108,70 @@ TEST_F(RelayHvacFixture, heatingTest) {
 
   // hvacs are off, initial step of relay -> off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   hvac1.getChannel()->setHvacFlagHeating(true);
   // hvac1 is on and relay is off, so relay -> turn on
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   // hvacs are off, but relay is on, so relay -> turn off
   hvac1.getChannel()->setHvacFlagHeating(false);
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   hvac1.getChannel()->setHvacFlagHeating(true);
   hvac2.getChannel()->setHvacFlagHeating(true);
   // hvac1/2 is on and relay is off, so relay -> turn on
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   hvac1.getChannel()->setHvacFlagHeating(false);
   // hvac1 is off, hvac2 is on and relay is on
   time.advance(2000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   hvac2.getChannel()->setHvacFlagHeating(false);
   hvac3.getChannel()->setHvacFlagHeating(true);
   // hvac1/2 is off and relay is on, so relay -> off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   aggregator->registerHvac(&hvac3);
   // hvac3 is on and relay is off, so relay turn on
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   aggregator->unregisterHvac(&hvac3);
   // hvac1/2 is off and relay is on, so relay turn off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   hvac1.getChannel()->setHvacFlagHeating(true);
   aggregator->unregisterHvac(&hvac1);
   time.advance(2000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   // turn on
   hvac2.getChannel()->setHvacFlagHeating(true);
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   // turn off on empty list
   aggregator->unregisterHvac(&hvac2);
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
@@ -190,6 +193,12 @@ TEST_F(RelayHvacFixture, mixedTest) {
   ASSERT_EQ(number2, 1);
   ASSERT_EQ(number3, 2);
 
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+
   auto io1 = Supla::Control::InternalPinOutput(4);
   auto io2 = Supla::Control::InternalPinOutput(5);
   auto io3 = Supla::Control::InternalPinOutput(6);
@@ -200,7 +209,6 @@ TEST_F(RelayHvacFixture, mixedTest) {
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
   EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(2);
   EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(2);
   r1.onInit();
@@ -219,69 +227,69 @@ TEST_F(RelayHvacFixture, mixedTest) {
 
   // no time advance, nothing happens
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   // hvacs are off and relay initial off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   // hvac is on, relay turn on
   hvac1.getChannel()->setHvacFlagCooling(true);
   // hvac1 is on and relay is off, so relay -> turn on
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   // hvacs are off, but relay is on, so relay -> turn off
   hvac1.getChannel()->setHvacFlagCooling(false);
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
 
   hvac2.getChannel()->setHvacFlagHeating(true);
   // hvac2 is on and relay is off, so relay -> turn on
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   hvac1.getChannel()->setHvacFlagCooling(false);
   // hvac2 is on, so relay remains on
   time.advance(2000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   hvac2.getChannel()->setHvacFlagHeating(false);
   hvac3.getChannel()->setHvacFlagCooling(true);
   // hvac1/2 is off, so relay -> turn off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   aggregator->registerHvac(&hvac3);
   // hvac3 is on and relay is off, so relay turn on
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   aggregator->unregisterHvac(&hvac3);
   // hvac1/2 is off and relay is on, so relay turn off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   hvac1.getChannel()->setHvacFlagHeating(true);
   aggregator->unregisterHvac(&hvac1);
   time.advance(2000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   hvac2.getChannel()->setHvacFlagHeating(true);
   aggregator->unregisterHvac(&hvac2);
   time.advance(2000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
@@ -310,10 +318,15 @@ TEST_F(RelayHvacFixture, turnOffWhenEmptyTest) {
   Supla::Control::HvacBase hvac2(&io2);
   Supla::Control::HvacBase hvac3(&io3);
 
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+
   EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(gpio2, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(gpio3, OUTPUT));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(2);
   EXPECT_CALL(ioMock, digitalWrite(gpio2, 0)).Times(2);
   EXPECT_CALL(ioMock, digitalWrite(gpio3, 0)).Times(2);
   r1.onInit();
@@ -335,39 +348,37 @@ TEST_F(RelayHvacFixture, turnOffWhenEmptyTest) {
 
   // hvacs are off , intial turn off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   hvac1.getChannel()->setHvacFlagHeating(true);
   // hvac1 is on and relay is off, so relay -> turn on
   time.advance(2000);
-//  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 1)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
 
   aggregator->unregisterHvac(&hvac1);
   aggregator->unregisterHvac(&hvac2);
   // no hvac registered, but output is on -> turn off
   time.advance(2000);
-  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(1));
-  EXPECT_CALL(ioMock, digitalWrite(gpio1, 0)).Times(1);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   // no hvac registered, output is off -> nothing
   time.advance(2000);
-//  EXPECT_CALL(ioMock, digitalRead(gpio1)).WillOnce(Return(0));
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   // change aggregator behavior -> turnOffWhenEmpty(false)
   // nothing should happen, regardless of relay output state
   aggregator->setTurnOffWhenEmpty(false);
   time.advance(2000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   time.advance(2000);
-//  EXPECT_CALL(ioMock, digitalRead(gpio1)).Times(0);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 0);
 
   EXPECT_TRUE(Supla::Control::RelayHvacAggregator::Remove(number1));
   EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
@@ -453,5 +464,71 @@ TEST_F(RelayHvacFixture, turnOffWhenHvacIsOffline) {
   hvac1.getChannel()->setStateOnline();
   time.advance(10000);
   aggregator->iterateAlways();
+  EXPECT_EQ(gpio1Value, 1);
+}
+
+TEST_F(RelayHvacFixture, overrideRelayInternalState) {
+  int gpio1 = 1;
+  Supla::Control::Relay r1(gpio1);
+
+  int number1 = r1.getChannelNumber();
+  ASSERT_EQ(number1, 0);
+
+  auto io1 = Supla::Control::InternalPinOutput(4);
+  auto io2 = Supla::Control::InternalPinOutput(5);
+  auto io3 = Supla::Control::InternalPinOutput(6);
+  Supla::Control::HvacBase hvac1(&io1);
+  Supla::Control::HvacBase hvac2(&io2);
+  Supla::Control::HvacBase hvac3(&io3);
+
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+  EXPECT_CALL(ioMock, digitalWrite(gpio1, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpio1Value));
+
+  EXPECT_CALL(ioMock, pinMode(gpio1, OUTPUT));
+  r1.onInit();
+
+  EXPECT_FALSE(Supla::Control::RelayHvacAggregator::Remove(number1));
+
+  auto aggregator = Supla::Control::RelayHvacAggregator::Add(number1, &r1);
+  EXPECT_NE(aggregator, nullptr);
+  EXPECT_EQ(aggregator,
+            Supla::Control::RelayHvacAggregator::GetInstance(number1));
+
+  aggregator->registerHvac(&hvac1);
+  aggregator->registerHvac(&hvac2);
+  aggregator->registerHvac(&hvac3);
+
+  // no time advance, nothing happens
+  aggregator->iterateAlways();
+
+  // hvacs are off , intial turn off
+  time.advance(2000);
+  EXPECT_EQ(gpio1Value, 0);
+  aggregator->iterateAlways();
+
+  EXPECT_EQ(gpio1Value, 0);
+  hvac1.getChannel()->setHvacFlagHeating(true);
+  // hvac1 is on and relay is off, so relay -> turn on
+  time.advance(2000);
+  aggregator->iterateAlways();
+
+  EXPECT_EQ(gpio1Value, 1);
+
+  for (int i = 0; i < 11; i++) {
+    time.advance(1000);
+    aggregator->iterateAlways();
+  }
+
+  EXPECT_EQ(gpio1Value, 1);
+
+  r1.turnOff();
+  EXPECT_EQ(gpio1Value, 0);
+  for (int i = 0; i < 11; i++) {
+    time.advance(1000);
+    aggregator->iterateAlways();
+  }
   EXPECT_EQ(gpio1Value, 1);
 }

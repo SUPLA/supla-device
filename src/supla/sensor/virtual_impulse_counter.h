@@ -51,6 +51,12 @@ class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
   void setForceStateSaveOnChange(bool value);
 
  protected:
+  Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
+                                              bool local) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
+
   uint64_t counter = 0;  // Actual count of impulses
   uint32_t lastReadTime = 0;
   bool forceStateSaveOnChange = false;

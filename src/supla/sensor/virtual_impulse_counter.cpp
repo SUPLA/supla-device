@@ -23,12 +23,16 @@
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 #include <supla/events.h>
+#include <string.h>
 
 using Supla::Sensor::VirtualImpulseCounter;
 
 VirtualImpulseCounter::VirtualImpulseCounter() {
   channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
   channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESET_COUNTERS);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  channel.setDefaultFunction(SUPLA_CHANNELFNC_IC_WATER_METER);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 void VirtualImpulseCounter::onInit() {
@@ -109,4 +113,35 @@ int VirtualImpulseCounter::handleCalcfgFromServer(
 
 void VirtualImpulseCounter::setForceStateSaveOnChange(bool value) {
   forceStateSaveOnChange = value;
+}
+
+Supla::ApplyConfigResult VirtualImpulseCounter::applyChannelConfig(
+    TSD_ChannelConfig *result, bool) {
+  if (result->ConfigSize == 0) {
+    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
+  }
+
+  switch (result->ConfigType) {
+    case SUPLA_CONFIG_TYPE_DEFAULT: {
+      // Nothing to do
+      return Supla::ApplyConfigResult::Success;
+    }
+  }
+
+  return Supla::ApplyConfigResult::NotSupported;
+}
+
+void VirtualImpulseCounter::fillChannelConfig(void *channelConfig,
+                                              int *size,
+                                              uint8_t configType) {
+  if (size && channelConfig) {
+    if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
+      // init default impulse counter config with 1000 impulses per unit
+      *size = sizeof(TChannelConfig_ImpulseCounter);
+      TChannelConfig_ImpulseCounter *config =
+        reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
+      memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
+      config->ImpulsesPerUnit = 1000;
+    }
+  }
 }

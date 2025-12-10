@@ -41,13 +41,9 @@
 using Supla::Sensor::OcrImpulseCounter;
 
 OcrImpulseCounter::OcrImpulseCounter() {
-  channel.setType(SUPLA_CHANNELTYPE_IMPULSE_COUNTER);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_OCR);
   addAvailableLightingMode(OCR_LIGHTING_MODE_OFF | OCR_LIGHTING_MODE_ALWAYS_ON |
                            OCR_LIGHTING_MODE_AUTO);
-  channel.setDefaultFunction(SUPLA_CHANNELFNC_IC_WATER_METER);
-  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_OCR);
   clearOcrConfig();
 }
@@ -94,9 +90,11 @@ int OcrImpulseCounter::handleCalcfgFromServer(
 }
 
 Supla::ApplyConfigResult OcrImpulseCounter::applyChannelConfig(
-    TSD_ChannelConfig *result, bool) {
-  if (result->ConfigSize == 0) {
-    return Supla::ApplyConfigResult::SetChannelConfigNeeded;
+    TSD_ChannelConfig *result, bool local) {
+  auto channelConfigResult =
+      Supla::Sensor::VirtualImpulseCounter::applyChannelConfig(result, local);
+  if (channelConfigResult != Supla::ApplyConfigResult::NotSupported) {
+    return channelConfigResult;
   }
 
   switch (result->ConfigType) {
@@ -180,14 +178,13 @@ void OcrImpulseCounter::fillChannelConfig(void *channelConfig,
                                           int *size,
                                           uint8_t configType) {
   if (size && channelConfig) {
-    if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
-      // init default impulse counter config with 1000 impulses per unit
-      *size = sizeof(TChannelConfig_ImpulseCounter);
-      TChannelConfig_ImpulseCounter *config =
-        reinterpret_cast<TChannelConfig_ImpulseCounter *>(channelConfig);
-      memset(config, 0, sizeof(TChannelConfig_ImpulseCounter));
-      config->ImpulsesPerUnit = 1000;
-    } else if (configType == SUPLA_CONFIG_TYPE_OCR) {
+    Supla::Sensor::VirtualImpulseCounter::fillChannelConfig(
+        channelConfig, size, configType);
+    if (*size != 0) {
+      // channel config was filled in base class
+      return;
+    }
+    if (configType == SUPLA_CONFIG_TYPE_OCR) {
       *size = sizeof(ocrConfig);
       memcpy(channelConfig, &ocrConfig, *size);
     }

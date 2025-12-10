@@ -22,6 +22,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
+#include <supla/events.h>
 
 using Supla::Sensor::VirtualImpulseCounter;
 
@@ -59,11 +60,15 @@ void VirtualImpulseCounter::setCounter(uint64_t value) {
 
 void VirtualImpulseCounter::incCounter() {
   counter++;
+  runAction(Supla::ON_IMPULSE);
 }
 
 void VirtualImpulseCounter::iterateAlways() {
   if (millis() - lastReadTime > 500) {
     lastReadTime = millis();
+    if (forceStateSaveOnChange && channel.getValueInt64() != counter) {
+      Supla::Storage::WriteStateStorage();
+    }
     channel.setNewValue(counter);
   }
 }
@@ -100,4 +105,8 @@ int VirtualImpulseCounter::handleCalcfgFromServer(
     }
   }
   return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+}
+
+void VirtualImpulseCounter::setForceStateSaveOnChange(bool value) {
+  forceStateSaveOnChange = value;
 }

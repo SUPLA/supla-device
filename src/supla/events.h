@@ -141,6 +141,9 @@ enum Event {
   ON_SUBDEVICE_PAIRING_START,
   ON_SUBDEVICE_PAIRING_END,
 
+  // Impulse counter
+  ON_IMPULSE,
+
   // Keep it as last item
   EVENT_ID_MAX
 };

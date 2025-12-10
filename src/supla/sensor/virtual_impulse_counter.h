@@ -48,9 +48,12 @@ class VirtualImpulseCounter : public ChannelElement, public ActionHandler {
 
   virtual void resetCounter();
 
+  void setForceStateSaveOnChange(bool value);
+
  protected:
   uint64_t counter = 0;  // Actual count of impulses
   uint32_t lastReadTime = 0;
+  bool forceStateSaveOnChange = false;
 };
 
 }  // namespace Sensor

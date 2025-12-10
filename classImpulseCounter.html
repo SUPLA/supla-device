@@ -148,12 +148,12 @@ Collaboration diagram for ImpulseCounter:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ae4751b54065838e96d71d41a5aa7a820" id="r_ae4751b54065838e96d71d41a5aa7a820"><td class="memItemLeft" align="right" valign="top"><a id="ae4751b54065838e96d71d41a5aa7a820" name="ae4751b54065838e96d71d41a5aa7a820"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ImpulseCounter</b> (<a class="el" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a> *io, int _impulsePin, bool _detectLowToHigh=false, bool inputPullup=true, unsigned int _debounceDelay=10)</td></tr>
-<tr class="separator:ae4751b54065838e96d71d41a5aa7a820"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:adf9c9d646ce85ad8be0955909a4948ad" id="r_adf9c9d646ce85ad8be0955909a4948ad"><td class="memItemLeft" align="right" valign="top"><a id="adf9c9d646ce85ad8be0955909a4948ad" name="adf9c9d646ce85ad8be0955909a4948ad"></a>
-&#160;</td><td class="memItemRight" valign="bottom"><b>ImpulseCounter</b> (int _impulsePin, bool _detectLowToHigh=false, bool inputPullup=true, unsigned int _debounceDelay=10)</td></tr>
-<tr class="separator:adf9c9d646ce85ad8be0955909a4948ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43193744d9ed1ddccfd23a75677023ca" id="r_a43193744d9ed1ddccfd23a75677023ca"><td class="memItemLeft" align="right" valign="top"><a id="a43193744d9ed1ddccfd23a75677023ca" name="a43193744d9ed1ddccfd23a75677023ca"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ImpulseCounter</b> (<a class="el" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a> *io, int _impulsePin, bool _detectLowToHigh=false, bool inputPullup=true, uint16_t _debounceDelay=10, uint16_t minSignalTimeToCountMs=0)</td></tr>
+<tr class="separator:a43193744d9ed1ddccfd23a75677023ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a920004be70ffc5a4d3084db6e37b222d" id="r_a920004be70ffc5a4d3084db6e37b222d"><td class="memItemLeft" align="right" valign="top"><a id="a920004be70ffc5a4d3084db6e37b222d" name="a920004be70ffc5a4d3084db6e37b222d"></a>
+&#160;</td><td class="memItemRight" valign="bottom"><b>ImpulseCounter</b> (int _impulsePin, bool _detectLowToHigh=false, bool inputPullup=true, uint16_t _debounceDelay=10, uint16_t minSignalTimeToCountMs=0)</td></tr>
+<tr class="separator:a920004be70ffc5a4d3084db6e37b222d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0f0672fda28c24a422fae7ffdd095ee8" id="r_a0f0672fda28c24a422fae7ffdd095ee8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0f0672fda28c24a422fae7ffdd095ee8">onInit</a> () override</td></tr>
 <tr class="memdesc:a0f0672fda28c24a422fae7ffdd095ee8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
 <tr class="separator:a0f0672fda28c24a422fae7ffdd095ee8"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -190,6 +190,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>incCounter</b> ()</td
 <tr class="memitem:aa79f3244690efdff84d6dfc9708a5bf5 inherit pub_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_aa79f3244690efdff84d6dfc9708a5bf5"><td class="memItemLeft" align="right" valign="top">
 virtual void&#160;</td><td class="memItemRight" valign="bottom"><b>resetCounter</b> ()</td></tr>
 <tr class="separator:aa79f3244690efdff84d6dfc9708a5bf5 inherit pub_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a07a50644b89dce186e5306595e5a0159 inherit pub_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_a07a50644b89dce186e5306595e5a0159"><td class="memItemLeft" align="right" valign="top">
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setForceStateSaveOnChange</b> (bool value)</td></tr>
+<tr class="separator:a07a50644b89dce186e5306595e5a0159 inherit pub_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>ChannelElement</b> (int channelNumber=-1)</td></tr>
@@ -250,10 +253,6 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>loadConfigCha
 <tr class="memitem:a16fda8aba003fe72b033c73eac0231ad inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a16fda8aba003fe72b033c73eac0231ad"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a16fda8aba003fe72b033c73eac0231ad">isAnyUpdatePending</a> () override</td></tr>
 <tr class="memdesc:a16fda8aba003fe72b033c73eac0231ad inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns true if any update is pending.  <br /></td></tr>
 <tr class="separator:a16fda8aba003fe72b033c73eac0231ad inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b40d383dd0d1eeec0d3da591349c03e inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a6b40d383dd0d1eeec0d3da591349c03e"><td class="memItemLeft" align="right" valign="top">virtual ApplyConfigResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a6b40d383dd0d1eeec0d3da591349c03e">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local)</td></tr>
-<tr class="separator:a6b40d383dd0d1eeec0d3da591349c03e inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abac63a2fdb54c6b91d1e6e85fde5e23b inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_abac63a2fdb54c6b91d1e6e85fde5e23b"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#abac63a2fdb54c6b91d1e6e85fde5e23b">fillChannelConfig</a> (void *channelConfig, int *size, uint8_t index)</td></tr>
-<tr class="separator:abac63a2fdb54c6b91d1e6e85fde5e23b inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfb8b6202737a2e200f47674963ed6b2 inherit pub_methods_classSupla_1_1ElementWithChannelActions" id="r_adfb8b6202737a2e200f47674963ed6b2"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>triggerSetChannelConfig</b> (int configType=SUPLA_CONFIG_TYPE_DEFAULT)</td></tr>
 <tr class="separator:adfb8b6202737a2e200f47674963ed6b2 inherit pub_methods_classSupla_1_1ElementWithChannelActions"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -372,12 +371,18 @@ Protected Attributes</h2></td></tr>
 <tr class="separator:a0d0226f1dba224404f840eb6c1aa2161"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ab87b5f59f87442c96288bdf9789c8081" id="r_ab87b5f59f87442c96288bdf9789c8081"><td class="memItemLeft" align="right" valign="top">uint32_t&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab87b5f59f87442c96288bdf9789c8081">lastImpulseMillis</a></td></tr>
 <tr class="separator:ab87b5f59f87442c96288bdf9789c8081"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a59da418b19c033b6797613fd281300b1" id="r_a59da418b19c033b6797613fd281300b1"><td class="memItemLeft" align="right" valign="top"><a id="a59da418b19c033b6797613fd281300b1" name="a59da418b19c033b6797613fd281300b1"></a>
+uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastChangeMs</b> = 0</td></tr>
+<tr class="separator:a59da418b19c033b6797613fd281300b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa2a2c85047b139f69ee66ebbf8f4f20e" id="r_aa2a2c85047b139f69ee66ebbf8f4f20e"><td class="memItemLeft" align="right" valign="top"><a id="aa2a2c85047b139f69ee66ebbf8f4f20e" name="aa2a2c85047b139f69ee66ebbf8f4f20e"></a>
 int16_t&#160;</td><td class="memItemRight" valign="bottom"><b>impulsePin</b> = -1</td></tr>
 <tr class="separator:aa2a2c85047b139f69ee66ebbf8f4f20e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a103ad558a147b18045d36e19abfe7dfa" id="r_a103ad558a147b18045d36e19abfe7dfa"><td class="memItemLeft" align="right" valign="top"><a id="a103ad558a147b18045d36e19abfe7dfa" name="a103ad558a147b18045d36e19abfe7dfa"></a>
-uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>debounceDelay</b> = 10</td></tr>
-<tr class="separator:a103ad558a147b18045d36e19abfe7dfa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87b3e3518a330c22384cab1168b62803" id="r_a87b3e3518a330c22384cab1168b62803"><td class="memItemLeft" align="right" valign="top"><a id="a87b3e3518a330c22384cab1168b62803" name="a87b3e3518a330c22384cab1168b62803"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>debounceDelayMs</b> = 10</td></tr>
+<tr class="separator:a87b3e3518a330c22384cab1168b62803"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a23b2d39640083626ef49de4bcef2c3d7" id="r_a23b2d39640083626ef49de4bcef2c3d7"><td class="memItemLeft" align="right" valign="top"><a id="a23b2d39640083626ef49de4bcef2c3d7" name="a23b2d39640083626ef49de4bcef2c3d7"></a>
+uint16_t&#160;</td><td class="memItemRight" valign="bottom"><b>minSignalTimeToCountMs</b> = 10</td></tr>
+<tr class="separator:a23b2d39640083626ef49de4bcef2c3d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1ad9382fb15f654c383148e0d8ab1b4a" id="r_a1ad9382fb15f654c383148e0d8ab1b4a"><td class="memItemLeft" align="right" valign="top"><a id="a1ad9382fb15f654c383148e0d8ab1b4a" name="a1ad9382fb15f654c383148e0d8ab1b4a"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>detectLowToHigh</b> = false</td></tr>
 <tr class="separator:a1ad9382fb15f654c383148e0d8ab1b4a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -387,6 +392,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>inputPullup</b> = tru
 <tr class="memitem:accb5f73ca83817ce5f45c1755db5b78d" id="r_accb5f73ca83817ce5f45c1755db5b78d"><td class="memItemLeft" align="right" valign="top"><a id="accb5f73ca83817ce5f45c1755db5b78d" name="accb5f73ca83817ce5f45c1755db5b78d"></a>
 int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>prevState</b> = 0</td></tr>
 <tr class="separator:accb5f73ca83817ce5f45c1755db5b78d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a509cb0dd1ec35f4ec5fd242a0c22af3f" id="r_a509cb0dd1ec35f4ec5fd242a0c22af3f"><td class="memItemLeft" align="right" valign="top"><a id="a509cb0dd1ec35f4ec5fd242a0c22af3f" name="a509cb0dd1ec35f4ec5fd242a0c22af3f"></a>
+int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>newStateCandidate</b> = 0</td></tr>
+<tr class="separator:a509cb0dd1ec35f4ec5fd242a0c22af3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1Sensor_1_1VirtualImpulseCounter.html">Supla::Sensor::VirtualImpulseCounter</a></td></tr>
 <tr class="memitem:a753ae068c7517a1301323fc8ae91227d inherit pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_a753ae068c7517a1301323fc8ae91227d"><td class="memItemLeft" align="right" valign="top">
 uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>counter</b> = 0</td></tr>
@@ -394,6 +402,9 @@ uint64_t&#160;</td><td class="memItemRight" valign="bottom"><b>counter</b> = 0</
 <tr class="memitem:a26340e757db7984b8eb7b789112dc83b inherit pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_a26340e757db7984b8eb7b789112dc83b"><td class="memItemLeft" align="right" valign="top">
 uint32_t&#160;</td><td class="memItemRight" valign="bottom"><b>lastReadTime</b> = 0</td></tr>
 <tr class="separator:a26340e757db7984b8eb7b789112dc83b inherit pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa81687e883f8f48559bfb16a17a39b4d inherit pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_aa81687e883f8f48559bfb16a17a39b4d"><td class="memItemLeft" align="right" valign="top">
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>forceStateSaveOnChange</b> = false</td></tr>
+<tr class="separator:aa81687e883f8f48559bfb16a17a39b4d inherit pro_attribs_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aae2e78ba9cd3c3c4d5017223076af9b6 inherit pro_attribs_classSupla_1_1ChannelElement" id="r_aae2e78ba9cd3c3c4d5017223076af9b6"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classSupla_1_1Channel.html">Channel</a>&#160;</td><td class="memItemRight" valign="bottom"><b>channel</b></td></tr>
@@ -456,6 +467,11 @@ static void&#160;</td><td class="memItemRight" valign="bottom"><b>NullifyActions
 <tr class="memitem:a73c46eec44d1aae91a9de59aea0415be inherit pub_static_methods_classSupla_1_1LocalAction" id="r_a73c46eec44d1aae91a9de59aea0415be"><td class="memItemLeft" align="right" valign="top">
 static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandlerClient</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getClientListPtr</b> ()</td></tr>
 <tr class="separator:a73c46eec44d1aae91a9de59aea0415be inherit pub_static_methods_classSupla_1_1LocalAction"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="inherit_header pro_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1Sensor_1_1VirtualImpulseCounter.html">Supla::Sensor::VirtualImpulseCounter</a></td></tr>
+<tr class="memitem:aed6df60fdea0cf8a05ba867f59ff1cc7 inherit pro_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_aed6df60fdea0cf8a05ba867f59ff1cc7"><td class="memItemLeft" align="right" valign="top">Supla::ApplyConfigResult&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Sensor_1_1VirtualImpulseCounter.html#aed6df60fdea0cf8a05ba867f59ff1cc7">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local) override</td></tr>
+<tr class="separator:aed6df60fdea0cf8a05ba867f59ff1cc7 inherit pro_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab01c2afe3742475ead004528e6d0e3a3 inherit pro_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter" id="r_ab01c2afe3742475ead004528e6d0e3a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Sensor_1_1VirtualImpulseCounter.html#ab01c2afe3742475ead004528e6d0e3a3">fillChannelConfig</a> (void *channelConfig, int *size, uint8_t configType) override</td></tr>
+<tr class="separator:ab01c2afe3742475ead004528e6d0e3a3 inherit pro_methods_classSupla_1_1Sensor_1_1VirtualImpulseCounter"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><img src="closed.png" alt="-"/>&#160;Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a97016624bfef476ddd5a964b42bfc768"><td class="memItemLeft" align="right" valign="top">
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>iterateConfigExchange</b> ()</td></tr>

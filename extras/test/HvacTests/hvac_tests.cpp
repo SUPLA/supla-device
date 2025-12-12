@@ -363,7 +363,7 @@ TEST_F(HvacTestsF, handleChannelConfigTestsOnEmptyElement) {
   hvacConfig->MainThermometerChannelNo = 1;
   hvacConfig->AuxThermometerType =
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_FLOOR;
-  hvacConfig->AuxThermometerChannelNo = 0;
+  hvacConfig->AuxThermometerChannelNo = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
   hvac.clearChannelConfigChangedFlag();
@@ -792,8 +792,8 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
 
   EXPECT_EQ(hvac.getMinOnTimeS(), 0);
   EXPECT_EQ(hvac.getMinOffTimeS(), 0);
-  EXPECT_EQ(hvac.getMainThermometerChannelNo(), 0);
-  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
+  EXPECT_EQ(hvac.getMainThermometerChannelNo(), -1);
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
   EXPECT_EQ(hvac.getAuxThermometerType(),
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
   EXPECT_EQ(hvac.getUsedAlgorithm(),
@@ -838,7 +838,7 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), 1);
   EXPECT_FALSE(hvac.setAuxThermometerChannelNo(1));
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), 1);
-  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
   EXPECT_EQ(hvac.getAuxThermometerType(),
             SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
 
@@ -1393,7 +1393,7 @@ TEST_F(HvacTestWithChannelSetupF,
       SUPLA_CONFIG_RESULT_TRUE);
 
   // above set config from server should be ignored
-  EXPECT_EQ(hvac->getMainThermometerChannelNo(), 0);
+  EXPECT_EQ(hvac->getMainThermometerChannelNo(), -1);
 
   hvac->handleChannelConfigFinished();
 
@@ -1692,7 +1692,7 @@ TEST_F(HvacTestWithChannelSetupF,
       SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   // above set config from server should be ignored beacuse of error in config
-  EXPECT_EQ(hvac->getMainThermometerChannelNo(), 0);
+  EXPECT_EQ(hvac->getMainThermometerChannelNo(), -1);
 
   hvac->handleChannelConfigFinished();
 
@@ -1965,20 +1965,20 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), 2);
   hvac.clearChannelConfigChangedFlag();
 
-  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
   hvac.parameterFlags.AuxThermometerChannelNoReadonly = 1;
   hvacConfig->AuxThermometerChannelNo = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), 0);
+  EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
   hvac.clearChannelConfigChangedFlag();
 
-  EXPECT_EQ(hvac.getBinarySensorChannelNo(), 0);
+  EXPECT_EQ(hvac.getBinarySensorChannelNo(), -1);
   hvac.parameterFlags.BinarySensorChannelNoReadonly = 1;
   hvacConfig->BinarySensorChannelNo = 1;
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
-  EXPECT_EQ(hvac.getBinarySensorChannelNo(), 0);
+  EXPECT_EQ(hvac.getBinarySensorChannelNo(), -1);
   hvac.clearChannelConfigChangedFlag();
 
   EXPECT_EQ(hvac.getAuxThermometerType(), 0);
@@ -2159,7 +2159,7 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(hvac.isPumpSwitchSet());
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
 
   hvac.parameterFlags.PumpSwitchReadonly = 0;
   hvacConfig->PumpSwitchChannelNo = 2;
@@ -2180,7 +2180,7 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
 
   hvac.parameterFlags.HeatOrColdSourceSwitchReadonly = 0;
   hvacConfig->HeatOrColdSourceSwitchChannelNo = 3;
@@ -2202,7 +2202,7 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
   EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
             SUPLA_CONFIG_RESULT_TRUE);
   EXPECT_FALSE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 
   hvac.parameterFlags.MasterThermostatChannelNoReadonly = 0;
   hvacConfig->MasterThermostatChannelNo = 4;
@@ -2235,9 +2235,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterNotSetCheck) {
   EXPECT_FALSE(hvac.isPumpSwitchSet());
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
   EXPECT_FALSE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 
   EXPECT_CALL(output, setOutputValueCheck(0));
 
@@ -2246,9 +2246,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterNotSetCheck) {
   EXPECT_FALSE(hvac.isPumpSwitchSet());
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
   EXPECT_FALSE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 }
 
 TEST_F(HvacTestsF, PumpHeatSourceMasterSetAfterInitCheck) {
@@ -2270,9 +2270,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetAfterInitCheck) {
   EXPECT_FALSE(hvac.isPumpSwitchSet());
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
   EXPECT_FALSE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 
   EXPECT_CALL(output, setOutputValueCheck(0));
 
@@ -2281,9 +2281,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetAfterInitCheck) {
   EXPECT_FALSE(hvac.isPumpSwitchSet());
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
   EXPECT_FALSE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 
   hvac.setPumpSwitchChannelNo(1);
   hvac.setHeatOrColdSourceSwitchChannelNo(2);
@@ -2311,9 +2311,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetAfterInitCheck) {
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
   EXPECT_FALSE(hvac.isMasterThermostatSet());
 
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), hvac.getChannelNumber());
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), hvac.getChannelNumber());
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), hvac.getChannelNumber());
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 }
 
 TEST_F(HvacTestsF, PumpHeatSourceMasterSetBeforeInitCheck) {
@@ -2335,9 +2335,9 @@ TEST_F(HvacTestsF, PumpHeatSourceMasterSetBeforeInitCheck) {
   EXPECT_FALSE(hvac.isPumpSwitchSet());
   EXPECT_FALSE(hvac.isHeatOrColdSourceSwitchSet());
   EXPECT_FALSE(hvac.isMasterThermostatSet());
-  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), 0);
-  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), 0);
+  EXPECT_EQ(hvac.getPumpSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getHeatOrColdSourceSwitchChannelNo(), -1);
+  EXPECT_EQ(hvac.getMasterThermostatChannelNo(), -1);
 
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(::testing::AtLeast(1));
 

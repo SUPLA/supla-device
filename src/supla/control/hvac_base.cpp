@@ -61,11 +61,6 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
 
-  // by default binary sensor and aux thermometers are off (set to HVAC
-  // channel number)
-  defaultBinarySensor = getChannelNumber();
-  defaultAuxThermometer = getChannelNumber();
-
   // default function is set in onInit based on supported modes or loaded from
   // config
 }
@@ -1188,11 +1183,23 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
   // local thermometer
   if (newConfig->AuxThermometerType !=
       SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
-    if (!isChannelThermometer(newConfig->AuxThermometerChannelNo)) {
+    if (!isChannelThermometer(newConfig->AuxThermometerChannelNo) &&
+        newConfig->AuxThermometerChannelNo != getChannelNumber()) {
+      SUPLA_LOG_WARNING(
+          "HVAC[%d]: aux thermometer channel %d is not a thermometer",
+          channel.getChannelNumber(),
+          newConfig->AuxThermometerChannelNo);
       return false;
     }
     if (newConfig->AuxThermometerChannelNo ==
-        newConfig->MainThermometerChannelNo) {
+        newConfig->MainThermometerChannelNo &&
+        newConfig->AuxThermometerChannelNo != getChannelNumber()) {
+      SUPLA_LOG_WARNING(
+          "HVAC[%d]: aux thermometer channel %d is the same as main "
+          "thermometer channel %d",
+          channel.getChannelNumber(),
+          newConfig->AuxThermometerChannelNo,
+          newConfig->MainThermometerChannelNo);
       return false;
     }
   }
@@ -1608,9 +1615,9 @@ bool HvacBase::isTemperatureAboveAlarmValid(
   return isTemperatureAboveAlarmValid(t);
 }
 
-bool HvacBase::isChannelThermometer(uint8_t channelNo) const {
-  if (getChannelNumber() == channelNo) {
-    // skip checking for self (Hvac)
+bool HvacBase::isChannelThermometer(int16_t channelNo) const {
+  if (getChannelNumber() == channelNo || channelNo < 0) {
+    // skip checking for self (Hvac) and "not set"
     return false;
   }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
@@ -1628,13 +1635,17 @@ bool HvacBase::isChannelThermometer(uint8_t channelNo) const {
     default:
       SUPLA_LOG_WARNING("HVAC[%d]: thermometer channel %d has invalid type %d",
                         getChannelNumber(),
-          channelNo, elementType);
+                        channelNo,
+                        elementType);
       return false;
   }
   return true;
 }
 
-bool HvacBase::isChannelBinarySensor(uint8_t channelNo) const {
+bool HvacBase::isChannelBinarySensor(int16_t channelNo) const {
+  if (channelNo < 0 || channelNo == getChannelNumber()) {
+    return false;
+  }
   auto element = Supla::Element::getElementByChannelNumber(channelNo);
   if (element == nullptr) {
     SUPLA_LOG_WARNING("HVAC[%d]: binary sensor not found for channel %d",
@@ -2306,16 +2317,20 @@ unsigned _supla_int16_t HvacBase::getUsedAlgorithm(bool forAux) const {
   return config.UsedAlgorithm;
 }
 
-bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
+bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
   SUPLA_LOG_DEBUG("Hvac[%d]: setMainThermometerChannelNo %d",
                   getChannelNumber(),
-                  channelNo);
+                  newChannelNo);
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->MainThermometerChannelNo = channelNo;
   }
   if (!initDone) {
     config.MainThermometerChannelNo = channelNo;
-    defaultMainThermometer = channelNo;
+    defaultMainThermometer = newChannelNo;
     return true;
   }
   if (channelNo == getChannelNumber()) {
@@ -2326,7 +2341,7 @@ bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
         saveConfig();
       }
     }
-  } else if (isChannelThermometer(channelNo)) {
+  } else if (isChannelThermometer(newChannelNo)) {
     if (getAuxThermometerType() !=
         SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
       if (channelNo == getAuxThermometerChannelNo()) {
@@ -2345,20 +2360,27 @@ bool HvacBase::setMainThermometerChannelNo(uint8_t channelNo) {
   return true;
 }
 
-uint8_t HvacBase::getMainThermometerChannelNo() const {
+int16_t HvacBase::getMainThermometerChannelNo() const {
+  if (config.MainThermometerChannelNo == getChannelNumber()) {
+    return -1;
+  }
   return config.MainThermometerChannelNo;
 }
 
-bool HvacBase::setAuxThermometerChannelNo(uint8_t channelNo) {
+bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->AuxThermometerChannelNo = channelNo;
   }
   if (!initDone) {
     config.AuxThermometerChannelNo = channelNo;
-    defaultAuxThermometer = channelNo;
+    defaultAuxThermometer = newChannelNo;
     return true;
   }
-  if (isChannelThermometer(channelNo)) {
+  if (isChannelThermometer(newChannelNo)) {
     if (getMainThermometerChannelNo() == channelNo) {
       return false;
     }
@@ -2392,7 +2414,10 @@ bool HvacBase::setAuxThermometerChannelNo(uint8_t channelNo) {
   return false;
 }
 
-uint8_t HvacBase::getAuxThermometerChannelNo() const {
+int16_t HvacBase::getAuxThermometerChannelNo() const {
+  if (config.AuxThermometerChannelNo == getChannelNumber()) {
+    return -1;
+  }
   return config.AuxThermometerChannelNo;
 }
 
@@ -3024,7 +3049,7 @@ bool HvacBase::setProgram(int programId,
                           _supla_int16_t tHeat,
                           _supla_int16_t tCool,
                           bool isAltWeeklySchedule) {
-  SUPLA_LOG_DEBUG("HVAC[%d]: set%sProgram(%d, %d, %d, %d, %d)",
+  SUPLA_LOG_DEBUG("HVAC[%d]: set %s program(%d, %d, %d, %d)",
                   channel.getChannelNumber(),
                   isAltWeeklySchedule ? "Alt" : "Main",
                   programId,
@@ -4598,16 +4623,28 @@ void HvacBase::initDefaultConfig() {
   setTemperatureInStruct(&newConfig.Temperatures, TEMPERATURE_ROOM_MAX,
       getDefaultTemperatureRoomMax());
 
-  if (!isChannelThermometer(newConfig.MainThermometerChannelNo)) {
+  if (defaultMainThermometer >= 0 &&
+      isChannelThermometer(defaultMainThermometer)) {
     newConfig.MainThermometerChannelNo = defaultMainThermometer;
+  } else {
+    // disable
+    newConfig.MainThermometerChannelNo = getChannelNumber();
   }
-  if (!isChannelThermometer(newConfig.AuxThermometerChannelNo) &&
-      newConfig.AuxThermometerChannelNo != getChannelNumber()) {
+
+  if (defaultAuxThermometer >= 0 &&
+      isChannelThermometer(defaultAuxThermometer)) {
     newConfig.AuxThermometerChannelNo = defaultAuxThermometer;
+  } else {
+    // disable
+    newConfig.AuxThermometerChannelNo = getChannelNumber();
   }
-  if (!isChannelBinarySensor(newConfig.BinarySensorChannelNo) &&
-      newConfig.BinarySensorChannelNo != getChannelNumber()) {
+
+  if (defaultBinarySensor >= 0 &&
+      isChannelBinarySensor(defaultBinarySensor)) {
     newConfig.BinarySensorChannelNo = defaultBinarySensor;
+  } else {
+    // disable
+    newConfig.BinarySensorChannelNo = getChannelNumber();
   }
 
   if (defaultPumpSwitch >= 0) {
@@ -4615,18 +4652,29 @@ void HvacBase::initDefaultConfig() {
     if (defaultPumpSwitch != getChannelNumber()) {
       newConfig.PumpSwitchIsSet = 1;
     }
+  } else {
+    newConfig.PumpSwitchChannelNo = getChannelNumber();
+    newConfig.PumpSwitchIsSet = 0;
   }
+
   if (defaultHeatOrColdSourceSwitch >= 0) {
     newConfig.HeatOrColdSourceSwitchChannelNo = defaultHeatOrColdSourceSwitch;
     if (defaultHeatOrColdSourceSwitch != getChannelNumber()) {
       newConfig.HeatOrColdSourceSwitchIsSet = 1;
     }
+  } else {
+    newConfig.HeatOrColdSourceSwitchChannelNo = getChannelNumber();
+    newConfig.HeatOrColdSourceSwitchIsSet = 0;
   }
+
   if (defaultMasterThermostat >= 0) {
     newConfig.MasterThermostatChannelNo = defaultMasterThermostat;
     if (defaultMasterThermostat != getChannelNumber()) {
       newConfig.MasterThermostatIsSet = 1;
     }
+  } else {
+    newConfig.MasterThermostatChannelNo = getChannelNumber();
+    newConfig.MasterThermostatIsSet = 0;
   }
 
   memcpy(&config, &newConfig, sizeof(config));
@@ -4800,16 +4848,20 @@ bool HvacBase::getForcedOffSensorState() {
   return false;
 }
 
-bool HvacBase::setBinarySensorChannelNo(uint8_t channelNo) {
+bool HvacBase::setBinarySensorChannelNo(int16_t newChannelNo) {
+  uint8_t channelNo = getChannelNumber();
+  if (newChannelNo >= 0 && newChannelNo <= 255) {
+    channelNo = newChannelNo;
+  }
   if (initialConfig && !initDone) {
     initialConfig->BinarySensorChannelNo = channelNo;
   }
   if (!initDone) {
     config.BinarySensorChannelNo = channelNo;
-    defaultBinarySensor = channelNo;
+    defaultBinarySensor = newChannelNo;
     return true;
   }
-  if (isChannelBinarySensor(channelNo) || channelNo == getChannelNumber()) {
+  if (isChannelBinarySensor(newChannelNo)) {
     if (config.BinarySensorChannelNo != channelNo) {
       config.BinarySensorChannelNo = channelNo;
       if (initDone) {
@@ -4822,7 +4874,10 @@ bool HvacBase::setBinarySensorChannelNo(uint8_t channelNo) {
   return false;
 }
 
-uint8_t HvacBase::getBinarySensorChannelNo() const {
+int16_t HvacBase::getBinarySensorChannelNo() const {
+  if (config.BinarySensorChannelNo == getChannelNumber()) {
+    return -1;
+  }
   return config.BinarySensorChannelNo;
 }
 
@@ -5675,7 +5730,10 @@ bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {
   return true;
 }
 
-uint8_t HvacBase::getPumpSwitchChannelNo() const {
+int16_t HvacBase::getPumpSwitchChannelNo() const {
+  if (config.PumpSwitchIsSet == 0) {
+    return -1;
+  }
   return config.PumpSwitchChannelNo;
 }
 
@@ -5716,7 +5774,10 @@ bool HvacBase::setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo) {
   return true;
 }
 
-uint8_t HvacBase::getHeatOrColdSourceSwitchChannelNo() const {
+int16_t HvacBase::getHeatOrColdSourceSwitchChannelNo() const {
+  if (config.HeatOrColdSourceSwitchIsSet == 0) {
+    return -1;
+  }
   return config.HeatOrColdSourceSwitchChannelNo;
 }
 
@@ -5753,7 +5814,10 @@ bool HvacBase::setMasterThermostatChannelNo(uint8_t channelNo) {
   return true;
 }
 
-uint8_t HvacBase::getMasterThermostatChannelNo() const {
+int16_t HvacBase::getMasterThermostatChannelNo() const {
+  if (config.MasterThermostatIsSet == 0) {
+    return -1;
+  }
   return config.MasterThermostatChannelNo;
 }
 

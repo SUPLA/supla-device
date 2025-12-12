@@ -140,27 +140,27 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setDefaultSubfunction(uint8_t subfunction);
 
   // use this function to set value based on local config change
-  bool setMainThermometerChannelNo(uint8_t channelNo);
-  uint8_t getMainThermometerChannelNo() const;
+  bool setMainThermometerChannelNo(int16_t channelNo);
+  int16_t getMainThermometerChannelNo() const;
 
   // use this function to set value based on local config change
-  bool setAuxThermometerChannelNo(uint8_t channelNo);
-  uint8_t getAuxThermometerChannelNo() const;
+  bool setAuxThermometerChannelNo(int16_t channelNo);
+  int16_t getAuxThermometerChannelNo() const;
   // use this function to set value based on local config change
   void setAuxThermometerType(uint8_t type);
   uint8_t getAuxThermometerType() const;
 
   bool setPumpSwitchChannelNo(uint8_t channelNo);
   void clearPumpSwitchChannelNo();
-  uint8_t getPumpSwitchChannelNo() const;
+  int16_t getPumpSwitchChannelNo() const;
   bool isPumpSwitchSet() const;
   bool setHeatOrColdSourceSwitchChannelNo(uint8_t channelNo);
   void clearHeatOrColdSourceSwitchChannelNo();
-  uint8_t getHeatOrColdSourceSwitchChannelNo() const;
+  int16_t getHeatOrColdSourceSwitchChannelNo() const;
   bool isHeatOrColdSourceSwitchSet() const;
   bool setMasterThermostatChannelNo(uint8_t channelNo);
   void clearMasterThermostatChannelNo();
-  uint8_t getMasterThermostatChannelNo() const;
+  int16_t getMasterThermostatChannelNo() const;
   bool isMasterThermostatSet() const;
 
   // use this function to set value based on local config change
@@ -309,8 +309,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
   bool isWeeklyScheduleValid(
       TChannelConfig_WeeklySchedule *newSchedule,
       bool isAltWeeklySchedule = false) const;
-  bool isChannelThermometer(uint8_t channelNo) const;
-  bool isChannelBinarySensor(uint8_t channelNo) const;
+  bool isChannelThermometer(int16_t channelNo) const;
+  bool isChannelBinarySensor(int16_t channelNo) const;
   bool isAlgorithmValid(unsigned _supla_int16_t algorithm) const;
   bool areTemperaturesValid(const THVACTemperatureCfg *temperatures) const;
   bool fixTempearturesConfig();
@@ -430,8 +430,8 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   _supla_int16_t getLastTemperature();
 
-  bool setBinarySensorChannelNo(uint8_t channelNo);
-  uint8_t getBinarySensorChannelNo() const;
+  bool setBinarySensorChannelNo(int16_t channelNo);
+  int16_t getBinarySensorChannelNo() const;
 
   static void debugPrintConfigStruct(const TChannelConfig_HVAC *config, int id);
   static void debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
@@ -545,9 +545,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint8_t lastManualMode = 0;
   uint8_t previousSubfunction = 0;
   uint8_t defaultSubfunction = 0;
-  uint8_t defaultMainThermometer = 0;
-  uint8_t defaultAuxThermometer = 0;
-  uint8_t defaultBinarySensor = 0;
+  int16_t defaultMainThermometer = -1;
+  int16_t defaultAuxThermometer = -1;
+  int16_t defaultBinarySensor = -1;
   int16_t defaultPumpSwitch = -1;
   int16_t defaultHeatOrColdSourceSwitch = -1;
   int16_t defaultMasterThermostat = -1;

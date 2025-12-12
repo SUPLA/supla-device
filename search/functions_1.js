@@ -1,4 +1,5 @@
 var searchData=
 [
-  ['begin_0',['begin',['../classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028',1,'Supla::Element']]]
+  ['begin_0',['begin',['../classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028',1,'Supla::Element']]],
+  ['bistablerelay_1',['BistableRelay',['../classSupla_1_1Control_1_1BistableRelay.html#aaaa89f8584d200828ce4cbf69bd9ada8',1,'Supla::Control::BistableRelay::BistableRelay(int pin, int statusPin=-1, bool statusPullUp=true, bool statusHighIsOn=true, bool highIsOn=true, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))'],['../classSupla_1_1Control_1_1BistableRelay.html#a2d05e30a25d071f14857ca882b51e922',1,'Supla::Control::BistableRelay::BistableRelay(Supla::Io::Base *io, int pin, int statusPin=-1, bool statusPullUp=true, bool statusHighIsOn=true, bool highIsOn=true, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))'],['../classSupla_1_1Control_1_1BistableRelay.html#adb70b6877412971267a329b1adb0cf5d',1,'Supla::Control::BistableRelay::BistableRelay(Supla::Io::Base *ioOut, Supla::Io::Base *ioState, int pin, int statusPin=-1, bool statusPullUp=true, bool statusHighIsOn=true, bool highIsOn=true, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))']]]
 ];

@@ -168,9 +168,6 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a25d2ef553ec550fa1e2b8736e690fc31" id="r_a25d2ef553ec550fa1e2b8736e690fc31"><td class="memItemLeft" align="right" valign="top"><a id="a25d2ef553ec550fa1e2b8736e690fc31" name="a25d2ef553ec550fa1e2b8736e690fc31"></a>
 &#160;</td><td class="memItemRight" valign="bottom"><b>VirtualRelay</b> (_supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))</td></tr>
 <tr class="separator:a25d2ef553ec550fa1e2b8736e690fc31"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab1c52e5e3c13d8ccf6893c923135a4e4" id="r_ab1c52e5e3c13d8ccf6893c923135a4e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab1c52e5e3c13d8ccf6893c923135a4e4">onInit</a> () override</td></tr>
-<tr class="memdesc:ab1c52e5e3c13d8ccf6893c923135a4e4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
-<tr class="separator:ab1c52e5e3c13d8ccf6893c923135a4e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0492dca0f33360f9a850c311dc68faff" id="r_a0492dca0f33360f9a850c311dc68faff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0492dca0f33360f9a850c311dc68faff">turnOn</a> (_supla_int_t duration=0) override</td></tr>
 <tr class="separator:a0492dca0f33360f9a850c311dc68faff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0ead9822f34e6d1adc7fc2e9c5316b2b" id="r_a0ead9822f34e6d1adc7fc2e9c5316b2b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a0ead9822f34e6d1adc7fc2e9c5316b2b">turnOff</a> (_supla_int_t duration=0) override</td></tr>
@@ -216,6 +213,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class=
 <tr class="memitem:a97aa1c7c3d0ffac0a7f959fdcd65de68 inherit pub_methods_classSupla_1_1Control_1_1Relay" id="r_a97aa1c7c3d0ffac0a7f959fdcd65de68"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Control_1_1Relay.html#a97aa1c7c3d0ffac0a7f959fdcd65de68">purgeConfig</a> () override</td></tr>
 <tr class="memdesc:a97aa1c7c3d0ffac0a7f959fdcd65de68 inherit pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
 <tr class="separator:a97aa1c7c3d0ffac0a7f959fdcd65de68 inherit pub_methods_classSupla_1_1Control_1_1Relay"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b4b9978a97efea896f8c793aba9221c inherit pub_methods_classSupla_1_1Control_1_1Relay" id="r_a6b4b9978a97efea896f8c793aba9221c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Control_1_1Relay.html#a6b4b9978a97efea896f8c793aba9221c">onInit</a> () override</td></tr>
+<tr class="memdesc:a6b4b9978a97efea896f8c793aba9221c inherit pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin()  <br /></td></tr>
+<tr class="separator:a6b4b9978a97efea896f8c793aba9221c inherit pub_methods_classSupla_1_1Control_1_1Relay"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abac1a8bb6b3e77ec6a22f698d0f818bf inherit pub_methods_classSupla_1_1Control_1_1Relay" id="r_abac1a8bb6b3e77ec6a22f698d0f818bf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Control_1_1Relay.html#abac1a8bb6b3e77ec6a22f698d0f818bf">onLoadState</a> () override</td></tr>
 <tr class="memdesc:abac1a8bb6b3e77ec6a22f698d0f818bf inherit pub_methods_classSupla_1_1Control_1_1Relay"><td class="mdescLeft">&#160;</td><td class="mdescRight">Second method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:abac1a8bb6b3e77ec6a22f698d0f818bf inherit pub_methods_classSupla_1_1Control_1_1Relay"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -657,36 +657,6 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Control_1_1Relay.html">Supla::Control::Relay</a>.</p>
-
-</div>
-</div>
-<a id="ab1c52e5e3c13d8ccf6893c923135a4e4" name="ab1c52e5e3c13d8ccf6893c923135a4e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab1c52e5e3c13d8ccf6893c923135a4e4">&#9670;&#160;</a></span>onInit()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">void Supla::Control::VirtualRelay::onInit </td>
-          <td>(</td>
-          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Third method called on element in SuplaDevice.begin() </p>
-<p>Method called during SuplaDevice initialization. I.e. load initial state, initialize pins etc. </p>
-
-<p>Reimplemented from <a class="el" href="classSupla_1_1Control_1_1Relay.html#a6b4b9978a97efea896f8c793aba9221c">Supla::Control::Relay</a>.</p>
 
 </div>
 </div>

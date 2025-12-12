@@ -239,7 +239,6 @@ void Relay::onInit() {
     stateOn = true;
   }
 
-
   if (skipInitialStateSetting) {
     skipInitialStateSetting = false;
     for (auto buttonListElement = buttonList; buttonListElement;
@@ -305,7 +304,9 @@ void Relay::onInit() {
 
     // pin mode is set after setting pin value in order to
     // avoid problems with LOW trigger relays
-    Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
+    if (pin >= 0) {
+      Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
+    }
 
     if (stateOn) {
       turnOn(duration);
@@ -478,7 +479,9 @@ void Relay::turnOn(_supla_int_t duration) {
     durationTimestamp = 0;
   }
 
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
+  if (pin >= 0) {
+    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
+  }
 
   channel.setRelayOvercurrentCutOff(false);
   channel.setNewValue(true);
@@ -505,7 +508,9 @@ void Relay::turnOff(_supla_int_t duration) {
   } else {
     durationTimestamp = 0;
   }
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
+  if (pin >= 0) {
+    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
+  }
 
   channel.setNewValue(false);
 
@@ -514,8 +519,11 @@ void Relay::turnOff(_supla_int_t duration) {
 }
 
 bool Relay::isOn() {
-  return Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) ==
-         pinOnValue();
+  if (pin >= 0) {
+    return Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) ==
+           pinOnValue();
+  }
+  return false;
 }
 
 void Relay::toggle(_supla_int_t duration) {

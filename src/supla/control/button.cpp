@@ -365,7 +365,7 @@ bool Button::isCentral() const {
 }
 
 void Button::onLoadConfig(SuplaDeviceClass *sdc) {
-  if (sdc->getDeviceMode() == Supla::DEVICE_MODE_TEST) {
+  if (sdc && sdc->getDeviceMode() == Supla::DEVICE_MODE_TEST) {
     SUPLA_LOG_DEBUG("Button[%d] test mode", getButtonNumber());
     setButtonType(ButtonType::MONOSTABLE);
     return;

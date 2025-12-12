@@ -85,7 +85,7 @@ bool Supla::Control::CmdRelay::isOn() {
 }
 
 void Supla::Control::CmdRelay::iterateAlways() {
-  Supla::Control::Relay::iterateAlways();
+  Supla::Control::VirtualRelay::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
     refreshParserSource();

@@ -39,6 +39,40 @@ class Base;
 namespace Control {
 class BistableRelay : public Relay {
  public:
+  /**
+   * BistableRelay constructor which works on ESP's GPIO (with defaul Supla::Io)
+   *
+   * @param pin GPIO number where impulses will be generated (to toggle relay)
+   * @param statusPin GPIO number where status of bistable relay will be read
+   * from (default -1 - not used)
+   * @param statusPullUp use pull up resistor for statusPin (default - true)
+   * @param statusHighIsOn statusPin is high when relay is on (default - true),
+   * use false for inverted logic
+   * @param highIsOn generate HIGH state impulse on pin (default - true), use
+   * false for inverted logic
+   * @param functions bit map of SUPLA_BIT_FUNC_* values (defines supported
+   * channel functions.
+   */
+  BistableRelay(int pin,
+                int statusPin = -1,
+                bool statusPullUp = true,
+                bool statusHighIsOn = true,
+                bool highIsOn = true,
+                _supla_int_t functions =
+                    (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+
+  /**
+   * BistableRelay constructor which allows to use custom Supla::Io (the same
+   * for both pin and statusPin)
+   *
+   * @param io Supla::Io interafce pointer
+   * @param pin
+   * @param statusPin
+   * @param statusPullUp
+   * @param statusHighIsOn
+   * @param highIsOn
+   * @param functions
+   */
   BistableRelay(Supla::Io::Base *io,
                 int pin,
                 int statusPin = -1,
@@ -47,13 +81,30 @@ class BistableRelay : public Relay {
                 bool highIsOn = true,
                 _supla_int_t functions =
                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
-  BistableRelay(int pin,
+
+  /**
+   * BistableRelay constructor which allows to use custom Supla::Io
+   * separately for pin and statusPin
+   *
+   * @param ioOut Supla::Io interafce pointer for pin control
+   * @param ioState Supla::Io interafce pointer for statusPin
+   * @param pin
+   * @param statusPin
+   * @param statusPullUp
+   * @param statusHighIsOn
+   * @param highIsOn
+   * @param functions
+   */
+  BistableRelay(Supla::Io::Base *ioOut,
+                Supla::Io::Base *ioState,
+                int pin,
                 int statusPin = -1,
                 bool statusPullUp = true,
                 bool statusHighIsOn = true,
                 bool highIsOn = true,
                 _supla_int_t functions =
                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+
   void onInit() override;
   void iterateAlways() override;
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
@@ -66,6 +117,8 @@ class BistableRelay : public Relay {
 
  protected:
   void internalToggle();
+
+  Supla::Io::Base *ioState = nullptr;
 
   uint32_t disarmTimeMs = 0;
   uint32_t lastReadTime = 0;

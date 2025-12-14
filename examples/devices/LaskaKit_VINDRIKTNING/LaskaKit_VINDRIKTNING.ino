@@ -26,6 +26,7 @@
  * 1) simple WebInterface
  * 2) I2C scnanner
  * 3) Update Button
+ * 4) permanent WebInterface (instead config button)
  *
  * A few elements from ESP-VINDRIKTNING are not used/supported in this example:
  * 1) 3 RGB LEDs

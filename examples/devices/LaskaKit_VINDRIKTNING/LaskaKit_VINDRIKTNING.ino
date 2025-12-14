@@ -63,6 +63,7 @@
 #include <supla/sensor/particle_meter_pm1006k.h>
 #include <supla/protocol/aqi.eco.h>
 #include <supla/network/html/custom_text_parameter.h>
+#include <supla/network/html/permanent_webinterface.h>
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;
@@ -77,6 +78,7 @@ void setup() {
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
   new Supla::Html::ButtonUpdate(&suplaServer);
+  new Supla::Html::PermanentWebInterface;
 
   // I2C start & scan
   Wire.begin(SDA_PIN, SCL_PIN);

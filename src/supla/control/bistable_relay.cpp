@@ -113,7 +113,14 @@ void BistableRelay::iterateAlways() {
 
   if (statusPin >= 0 && (millis() - lastReadTime > 100)) {
     lastReadTime = millis();
-    channel.setNewValue(isOn());
+    bool currentState = isOn();
+    if (!isStatusUnknown() && currentState != channel.getValueBool()) {
+      channel.setNewValue(currentState);
+      if (lastCommandTurnOn && !currentState) {
+        durationMs = 0;
+        durationTimestamp = 0;
+      }
+    }
   }
 
   if (busy && millis() - disarmTimeMs > 200) {
@@ -154,6 +161,7 @@ void BistableRelay::turnOn(_supla_int_t duration) {
   if (isStatusUnknown() || !isOn()) {
     internalToggle();
   }
+  lastCommandTurnOn = true;
 }
 
 void BistableRelay::turnOff(_supla_int_t duration) {
@@ -169,6 +177,7 @@ void BistableRelay::turnOff(_supla_int_t duration) {
   } else if (isOn()) {
     internalToggle();
   }
+  lastCommandTurnOn = false;
 }
 
 bool BistableRelay::isOn() {

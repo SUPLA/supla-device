@@ -587,7 +587,7 @@ void Relay::onSaveState() {
   } else if (isCountdownTimerFunctionEnabled() && stateOnInit < 0) {
     // for other functions we store remaining countdown timer value
     durationForState = 0;
-    if (durationMs) {
+    if (durationMs && durationTimestamp != 0) {
       uint32_t elapsedTimeMs = millis() - durationTimestamp;
       if (elapsedTimeMs < durationMs) {
         // remaining time should always be lower than durationMs in other cases
@@ -800,7 +800,7 @@ void Relay::updateTimerValue() {
   uint8_t state = 0;
   int32_t senderId = 0;
 
-  if (durationMs != 0) {
+  if (durationMs != 0 && durationTimestamp != 0) {
     uint32_t elapsedTimeMs = millis() - durationTimestamp;
     if (elapsedTimeMs <= durationMs) {
       remainingTime = durationMs - elapsedTimeMs;

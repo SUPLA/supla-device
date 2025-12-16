@@ -127,6 +127,7 @@ class BistableRelay : public Relay {
   bool statusPullUp = true;
   bool statusHighIsOn = true;
   bool busy = false;
+  bool lastCommandTurnOn = false;
 };
 
 };  // namespace Control

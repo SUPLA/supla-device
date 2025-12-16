@@ -68,6 +68,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
 
   supla/control/cmd_relay.cpp
   supla/control/cmd_roller_shutter.cpp
+  supla/control/rgbcct_parsed.cpp
   supla/control/cmd_valve.cpp
   supla/control/action_trigger_parsed.cpp
   supla/control/hvac_parsed.cpp

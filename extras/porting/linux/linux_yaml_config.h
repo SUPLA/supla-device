@@ -150,6 +150,9 @@ class LinuxYamlConfig : public KeyValue {
   bool addCmdRollerShutter(const YAML::Node& ch,
                            int channelNumber,
                            Supla::Parser::Parser*);
+  bool addRgbCctParsed(const YAML::Node& ch,
+                       int channelNumber,
+                       Supla::Parser::Parser*);
   bool addCustomRelay(const YAML::Node& ch,
                       int channelNumber,
                       Parser::Parser* parser,

@@ -19,12 +19,12 @@
 #ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_RGBCCT_PARSED_H_
 #define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_RGBCCT_PARSED_H_
 
-#include <supla/control/rgbw_base.h>
+#include <supla/control/rgb_cct_base.h>
 #include <supla/sensor/sensor_parsed.h>
 
 namespace Supla {
 namespace Control {
-class RgbCctParsed : public Sensor::SensorParsed<RGBWBase> {
+class RgbCctParsed : public Sensor::SensorParsed<RGBCCTBase> {
  public:
   explicit RgbCctParsed(Supla::Parser::Parser *parser);
 
@@ -34,11 +34,12 @@ class RgbCctParsed : public Sensor::SensorParsed<RGBWBase> {
 
   void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
 
-  void setRGBWValueOnDevice(uint32_t red,
+  void setRGBCCTValueOnDevice(uint32_t red,
                             uint32_t green,
                             uint32_t blue,
                             uint32_t colorBrightness,
-                            uint32_t brightness) override;
+                            uint32_t whiteBrightness,
+                            uint32_t whiteTemperature) override;
 
  protected:
   uint32_t lastReadTime = 0;

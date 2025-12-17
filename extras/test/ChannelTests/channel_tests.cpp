@@ -194,9 +194,9 @@ TEST_F(ChannelTestsFixture, SetNewValue) {
   EXPECT_TRUE(channel.isUpdateReady());
   channel.clearSendValue();
 
-  // RGBW channel setting
-  channel.setNewValue(1, 2, 3, 4, 5);
-  char rgbwArray[SUPLA_CHANNELVALUE_SIZE] = {5, 4, 3, 2, 1, 0, 0, 0};
+  // RGBW (cct) channel setting
+  channel.setNewValue(1, 2, 3, 4, 5, 6);
+  char rgbwArray[SUPLA_CHANNELVALUE_SIZE] = {5, 4, 3, 2, 1, 0, 0, 6};
   EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(number),
                           rgbwArray,
                           SUPLA_CHANNELVALUE_SIZE));
@@ -323,17 +323,20 @@ TEST_F(ChannelTestsFixture, ChannelValueGetters) {
   EXPECT_FALSE(channel.getValueBool());
 
   uint8_t red = 10, green = 20, blue = 30, colorBright = 50, bright = 90;
-  channel.setNewValue(red, green, blue, colorBright, bright);
+  uint8_t whiteTemperature = 50;
+  channel.setNewValue(red, green, blue, colorBright, bright, whiteTemperature);
   EXPECT_EQ(channel.getValueRed(), red);
   EXPECT_EQ(channel.getValueGreen(), green);
   EXPECT_EQ(channel.getValueBlue(), blue);
   EXPECT_EQ(channel.getValueColorBrightness(), colorBright);
   EXPECT_EQ(channel.getValueBrightness(), bright);
+  EXPECT_EQ(channel.getValueWhiteTemperature(), whiteTemperature);
 }
 
 class SuplaSrpcStub : public Supla::Protocol::SuplaSrpc {
  public:
-  SuplaSrpcStub(SuplaDeviceClass *sdc) : Supla::Protocol::SuplaSrpc(sdc) {
+  explicit SuplaSrpcStub(SuplaDeviceClass *sdc)
+      : Supla::Protocol::SuplaSrpc(sdc) {
   }
 
   void setRegisteredAndReady() {
@@ -596,18 +599,18 @@ TEST_F(ChannelTestsFixture, RgbwChannelWithLocalActions) {
   ch1.addAction(Supla::ON_TURN_ON, mock1, Supla::ON_TURN_ON);
   ch1.addAction(Supla::ON_TURN_OFF, mock1, Supla::ON_TURN_OFF);
 
-  ch1.setNewValue(10, 20, 30, 90, 80);
-  ch1.setNewValue(10, 20, 30, 90, 80);
+  ch1.setNewValue(10, 20, 30, 90, 80, 0);
+  ch1.setNewValue(10, 20, 30, 90, 80, 0);
 
-  ch1.setNewValue(10, 21, 30, 90, 80);
-  ch1.setNewValue(10, 20, 30, 90, 81);
-  ch1.setNewValue(10, 20, 30, 90, 81);
+  ch1.setNewValue(10, 21, 30, 90, 80, 0);
+  ch1.setNewValue(10, 20, 30, 90, 81, 0);
+  ch1.setNewValue(10, 20, 30, 90, 81, 0);
 
-  ch1.setNewValue(10, 20, 0, 90, 81);
+  ch1.setNewValue(10, 20, 0, 90, 81, 0);
 
-  ch1.setNewValue(10, 20, 0, 90, 0);
+  ch1.setNewValue(10, 20, 0, 90, 0, 0);
 
-  ch1.setNewValue(10, 20, 0, 0, 0);
+  ch1.setNewValue(10, 20, 0, 0, 0, 0);
 }
 
 TEST_F(ChannelTestsFixture, SetNewValueWithCorrection) {

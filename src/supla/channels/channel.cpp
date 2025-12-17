@@ -309,6 +309,7 @@ void Channel::setType(uint32_t type) {
 }
 
 void Channel::setDefault(uint32_t value) {
+  SUPLA_LOG_DEBUG("Channel[%d]: setDefault(%d)", channelNumber, value);
   if (value > UINT16_MAX) {
     SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
                     channelNumber, value);
@@ -517,13 +518,17 @@ void Channel::setNewValue(uint8_t red,
                    uint8_t green,
                    uint8_t blue,
                    uint8_t colorBrightness,
-                   uint8_t brightness) {
+                   uint8_t brightness,
+                   uint8_t whiteTemperature) {
   char newValue[SUPLA_CHANNELVALUE_SIZE] = {};
   newValue[0] = brightness;
   newValue[1] = colorBrightness;
   newValue[2] = blue;
   newValue[3] = green;
   newValue[4] = red;
+  // 5-6 not used in DS direction
+  newValue[7] = whiteTemperature;
+  auto prevWhiteTemp = getValueWhiteTemperature();
   auto prevBright = getValueBrightness();
   auto prevColorBright = getValueColorBrightness();
   auto prevRed = getValueRed();
@@ -544,6 +549,9 @@ void Channel::setNewValue(uint8_t red,
     }
     if (prevBright != getValueBrightness()) {
       runAction(ON_DIMMER_BRIGHTNESS_CHANGE);
+    }
+    if (prevWhiteTemp != getValueWhiteTemperature()) {
+      runAction(ON_WHITE_TEMPERATURE_CHANGE);
     }
     if (prevColorBright == 0 && getValueColorBrightness() != 0) {
       runAction(ON_COLOR_TURN_ON);
@@ -622,8 +630,15 @@ void Channel::setNewValue(uint8_t red,
     }
 
     SUPLA_LOG_DEBUG(
-        "Channel(%d) value changed to RGB(%d, %d, %d), colBr(%d), bright(%d)",
-        channelNumber, red, green, blue, colorBrightness, brightness);
+        "Channel(%d) value changed to RGB(%d, %d, %d), colBr(%d), bright(%d), "
+        "whiteTemp(%d)",
+        channelNumber,
+        red,
+        green,
+        blue,
+        colorBrightness,
+        brightness,
+        whiteTemperature);
   }
 }
 
@@ -672,24 +687,28 @@ bool Channel::getValueBool() {
   return value[0] != 0;
 }
 
-uint8_t Channel::getValueRed() {
+uint8_t Channel::getValueRed() const {
   return value[4];
 }
 
-uint8_t Channel::getValueGreen() {
+uint8_t Channel::getValueGreen() const {
   return value[3];
 }
 
-uint8_t Channel::getValueBlue() {
+uint8_t Channel::getValueBlue() const {
   return value[2];
 }
 
-uint8_t Channel::getValueColorBrightness() {
+uint8_t Channel::getValueColorBrightness() const {
   return value[1];
 }
 
-uint8_t Channel::getValueBrightness() {
+uint8_t Channel::getValueBrightness() const {
   return value[0];
+}
+
+uint8_t Channel::getValueWhiteTemperature() const {
+  return value[7];
 }
 
 uint8_t Channel::getValueClosingPercentage() const {

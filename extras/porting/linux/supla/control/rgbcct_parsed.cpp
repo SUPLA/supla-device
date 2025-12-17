@@ -26,11 +26,11 @@
 
 Supla::Control::RgbCctParsed::RgbCctParsed(
     Supla::Parser::Parser *parser)
-    : Supla::Sensor::SensorParsed<Supla::Control::RGBWBase>(parser) {
+    : Supla::Sensor::SensorParsed<Supla::Control::RGBCCTBase>(parser) {
 }
 
 void Supla::Control::RgbCctParsed::iterateAlways() {
-  Supla::Control::RGBWBase::iterateAlways();
+  Supla::Control::RGBCCTBase::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
     refreshParserSource();
@@ -58,15 +58,17 @@ void Supla::Control::RgbCctParsed::setUseOfflineOnInvalidState(
   SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }
 
-void Supla::Control::RgbCctParsed::setRGBWValueOnDevice(
+void Supla::Control::RgbCctParsed::setRGBCCTValueOnDevice(
     uint32_t red,
     uint32_t green,
     uint32_t blue,
     uint32_t colorBrightness,
-    uint32_t brightness) {
+    uint32_t whiteBrightness,
+    uint32_t whiteTemperature) {
   (void)red;
   (void)green;
   (void)blue;
   (void)colorBrightness;
-  (void)brightness;
+  (void)whiteBrightness;
+  (void)whiteTemperature;
 }

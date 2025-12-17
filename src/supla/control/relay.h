@@ -87,6 +87,9 @@ class Relay : public ChannelElement, public ActionHandler {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                               bool local = false) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
   // value for specific channel type (i.e. to prefill durationMS field when
@@ -102,9 +105,6 @@ class Relay : public ChannelElement, public ActionHandler {
   void enableCountdownTimerFunction();
   bool isCountdownTimerFunctionEnabled() const;
   void setMinimumAllowedDurationMs(uint32_t durationMs);
-  void fillChannelConfig(void *channelConfig,
-                         int *size,
-                         uint8_t configType) override;
 
   static void setRelayStorageSaveDelay(int delayMs);
 

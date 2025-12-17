@@ -23,7 +23,6 @@
 #include <supla/actions.h>
 #include <supla/sensor/electricity_meter.h>
 #include <simple_time.h>
-#include "gmock/gmock.h"
 
 class ConditionTestsFixture : public ::testing::Test {
  protected:
@@ -138,50 +137,50 @@ TEST_F(ConditionTestsFixture, handleActionTestsForDouble) {
   // DIMMER use int type on channel value
   channel->setType(SUPLA_CHANNELTYPE_DIMMER);
 
-  channel->setNewValue(-1, -1, -1, -1, 0);
+  channel->setNewValue(-1, -1, -1, -1, 0, 0);
   // channel should be initialized to 0, so condition should be met
   cond->handleAction(Supla::ON_CHANGE, action1);
 
-  channel->setNewValue(-1, -1, -1, -1, 100);
+  channel->setNewValue(-1, -1, -1, -1, 100, 0);
 
   // 100 is not less than 15.1, so nothing should happen
   cond->handleAction(Supla::ON_CHANGE, action2);
 
   // Values below 0 should be ignored
-  channel->setNewValue(-1, -1, -1, -1, -1);
+  channel->setNewValue(-1, -1, -1, -1, -1, 0);
   cond->handleAction(Supla::ON_CHANGE, action2);
 
-  channel->setNewValue(-1, -1, -1, -1, 15);
+  channel->setNewValue(-1, -1, -1, -1, 15, 0);
   // 15 is less than 15.1
   cond->handleAction(Supla::ON_CHANGE, action3);
 
   // nothing should happen
-  channel->setNewValue(-1, -1, -1, -1, 25);
+  channel->setNewValue(-1, -1, -1, -1, 25, 0);
   cond->handleAction(Supla::ON_CHANGE, action1);
 
   // RGB use int type on channel value
   channel->setType(SUPLA_CHANNELTYPE_RGBLEDCONTROLLER);
 
-  channel->setNewValue(-1, -1, -1, 0, -1);
+  channel->setNewValue(-1, -1, -1, 0, -1, 0);
   // channel should be initialized to 0, so condition should be met
   cond->handleAction(Supla::ON_CHANGE, action1);
 
-  channel->setNewValue(-1, -1, -1, 100, -1);
+  channel->setNewValue(-1, -1, -1, 100, -1, 0);
 
   // 100 is not less than 15, so nothing should happen
   cond->handleAction(Supla::ON_CHANGE, action2);
 
   // RGBW values -1 doesn't change actual value on channel, so it won't trigger
   // action
-  channel->setNewValue(-1, -1, -1, -1, -1);
+  channel->setNewValue(-1, -1, -1, -1, -1, 0);
   cond->handleAction(Supla::ON_CHANGE, action2);
 
-  channel->setNewValue(-1, -1, -1, 15, -1);
+  channel->setNewValue(-1, -1, -1, 15, -1, 0);
   // 15 is less than 16
   cond->handleAction(Supla::ON_CHANGE, action3);
 
   // nothing should happen
-  channel->setNewValue(-1, -1, -1, 25, -1);
+  channel->setNewValue(-1, -1, -1, 25, -1, 0);
   cond->handleAction(Supla::ON_CHANGE, action1);
 
   // WEIGHT sensor use int type on channel value

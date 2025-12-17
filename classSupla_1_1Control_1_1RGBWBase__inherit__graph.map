@@ -1,23 +1,25 @@
 <map id="Supla::Control::RGBWBase" name="Supla::Control::RGBWBase">
-<area shape="rect" id="Node000001" title=" " alt="" coords="205,241,382,267"/>
-<area shape="rect" id="Node000007" href="$classSupla_1_1Control_1_1DimmerBase.html" title=" " alt="" coords="5,315,188,341"/>
-<area shape="poly" id="edge6_Node000001_Node000007" title=" " alt="" coords="247,275,131,317,129,312,245,270"/>
-<area shape="rect" id="Node000009" href="$classSupla_1_1Control_1_1RGBBase.html" title=" " alt="" coords="211,315,376,341"/>
-<area shape="poly" id="edge8_Node000001_Node000009" title=" " alt="" coords="296,282,296,315,291,315,291,282"/>
-<area shape="rect" id="Node000011" href="$classSupla_1_1Control_1_1RGBWLeds.html" title=" " alt="" coords="400,315,577,341"/>
-<area shape="poly" id="edge10_Node000001_Node000011" title=" " alt="" coords="342,270,456,312,454,317,340,275"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="131,168,286,193"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="236,201,281,239,278,243,233,205"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="118,79,299,120"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="211,135,211,167,206,167,206,135"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="84,5,192,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="161,41,193,77,189,80,157,45"/>
-<area shape="rect" id="Node000005" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="216,5,345,31"/>
-<area shape="poly" id="edge4_Node000003_Node000005" title=" " alt="" coords="261,45,228,80,224,77,257,41"/>
-<area shape="rect" id="Node000006" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="309,168,452,193"/>
-<area shape="poly" id="edge5_Node000001_Node000006" title=" " alt="" coords="356,206,310,243,307,239,352,201"/>
-<area shape="rect" id="Node000008" href="$classSupla_1_1Control_1_1DimmerLeds.html" title=" " alt="" coords="6,389,187,414"/>
-<area shape="poly" id="edge7_Node000007_Node000008" title=" " alt="" coords="99,356,99,388,94,388,94,356"/>
-<area shape="rect" id="Node000010" href="$classSupla_1_1Control_1_1RGBLeds.html" title=" " alt="" coords="212,389,376,414"/>
-<area shape="poly" id="edge9_Node000009_Node000010" title=" " alt="" coords="296,356,296,388,291,388,291,356"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="205,315,382,341"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Control_1_1DimmerBase.html" title=" " alt="" coords="5,389,188,414"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="247,349,131,391,129,386,245,344"/>
+<area shape="rect" id="Node000010" href="$classSupla_1_1Control_1_1RGBBase.html" title=" " alt="" coords="211,389,376,414"/>
+<area shape="poly" id="edge9_Node000001_Node000010" title=" " alt="" coords="296,356,296,388,291,388,291,356"/>
+<area shape="rect" id="Node000012" href="$classSupla_1_1Control_1_1RGBWLeds.html" title=" " alt="" coords="400,389,577,414"/>
+<area shape="poly" id="edge11_Node000001_Node000012" title=" " alt="" coords="342,344,456,386,454,391,340,349"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1RGBCCTBase.html" title=" " alt="" coords="198,241,390,267"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="296,282,296,315,291,315,291,282"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="131,168,286,193"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="236,201,281,239,278,243,233,205"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="118,79,299,120"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="211,135,211,167,206,167,206,135"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="84,5,192,31"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="161,41,193,77,189,80,157,45"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="216,5,345,31"/>
+<area shape="poly" id="edge5_Node000004_Node000006" title=" " alt="" coords="261,45,228,80,224,77,257,41"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="309,168,452,193"/>
+<area shape="poly" id="edge6_Node000002_Node000007" title=" " alt="" coords="356,206,310,243,307,239,352,201"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Control_1_1DimmerLeds.html" title=" " alt="" coords="6,462,187,488"/>
+<area shape="poly" id="edge8_Node000008_Node000009" title=" " alt="" coords="99,430,99,462,94,462,94,430"/>
+<area shape="rect" id="Node000011" href="$classSupla_1_1Control_1_1RGBLeds.html" title=" " alt="" coords="212,462,376,488"/>
+<area shape="poly" id="edge10_Node000010_Node000011" title=" " alt="" coords="296,430,296,462,291,462,291,430"/>
 </map>

@@ -320,6 +320,7 @@ Supported channel types:
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
 * `Hvac`, `CustomHvac` - related class `Supla::Control::HvacBase`
 * `CustomChannel` - supports arbitrary channel type
+* `RgbCctParsed` - related class `Supla::Control::RgbCctBase` - not a real support for this function. Just a working class to test it.
 
 Example channels configuration (details are exaplained later):
 

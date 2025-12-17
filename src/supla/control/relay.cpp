@@ -464,20 +464,8 @@ void Relay::turnOn(_supla_int_t duration) {
             "Relay[%d] turn ON (duration %d ms)",
             channel.getChannelNumber(),
             duration);
-  durationMs = duration;
 
-  if (minimumAllowedDurationMs > 0 && storedTurnOnDurationMs == 0) {
-    storedTurnOnDurationMs = durationMs;
-  }
-
-  if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
-    durationMs = storedTurnOnDurationMs;
-  }
-  if (durationMs != 0) {
-    durationTimestamp = millis();
-  } else {
-    durationTimestamp = 0;
-  }
+  applyDuration(duration, true);
 
   if (pin >= 0) {
     Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
@@ -488,6 +476,26 @@ void Relay::turnOn(_supla_int_t duration) {
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
+}
+
+void Relay::applyDuration(int duration, bool turnOn) {
+  durationMs = duration;
+
+  if (turnOn) {
+    if (minimumAllowedDurationMs > 0 && storedTurnOnDurationMs == 0) {
+      storedTurnOnDurationMs = durationMs;
+    }
+
+    if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
+      durationMs = storedTurnOnDurationMs;
+    }
+  }
+
+  if (durationMs != 0) {
+    durationTimestamp = millis();
+  } else {
+    durationTimestamp = 0;
+  }
 }
 
 void Relay::turnOff(_supla_int_t duration) {
@@ -502,12 +510,9 @@ void Relay::turnOff(_supla_int_t duration) {
             "Relay[%d] turn OFF (duration %d ms)",
             channel.getChannelNumber(),
             duration);
-  durationMs = duration;
-  if (durationMs != 0) {
-    durationTimestamp = millis();
-  } else {
-    durationTimestamp = 0;
-  }
+
+  applyDuration(duration, false);
+
   if (pin >= 0) {
     Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
   }

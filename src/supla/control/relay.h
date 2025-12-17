@@ -183,6 +183,8 @@ class Relay : public ChannelElement, public ActionHandler {
     ButtonListElement *next = nullptr;
   };
 
+  void applyDuration(int durationMs, bool turnOn);
+
   void saveConfig() const;
   void updateTimerValue();
   void updateRelayHvacAggregator();

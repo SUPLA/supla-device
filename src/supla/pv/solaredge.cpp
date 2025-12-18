@@ -18,11 +18,12 @@
 
 #ifndef ARDUINO_ARCH_AVR
 #include "solaredge.h"
+#include <string.h>
+#include <stdio.h>
 
 #define TEMPERATURE_NOT_AVAILABLE -275.0
 
-namespace Supla {
-namespace PV {
+using Supla::PV::SolarEdge;
 
 // This header should be received from server when data is returned
 // It will be verified with actual header if they match. Otherwise, data
@@ -386,7 +387,5 @@ Supla::Channel *SolarEdge::getSecondaryChannel() {
   return &temperatureChannel;
 }
 
-}  // namespace PV
-}  // namespace Supla
-
 #endif
+

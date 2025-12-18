@@ -62,14 +62,14 @@
 
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
 #include <random>
 #include <string>
-#include <vector>
 #include <algorithm>
+#include <map>
+#include <vector>
 
-#include "supla/control/action_trigger.h"
 #include "supla/control/hvac_parsed.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/sensor/sensor_parsed.h"

@@ -27,6 +27,7 @@
 #include <lwip/netif.h>
 
 #include <string.h>
+#include <stdio.h>
 
 #include "esp_idf_client.h"
 #include "supla/network/client.h"

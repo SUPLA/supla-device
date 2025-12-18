@@ -19,22 +19,22 @@
 #ifndef SRC_SUPLA_MODBUS_MODBUS_CLIENT_HANDLER_H_
 #define SRC_SUPLA_MODBUS_MODBUS_CLIENT_HANDLER_H_
 
-#include <stdint.h>
 #include <stddef.h>
+#include <stdint.h>
 
 namespace Supla {
 
 namespace Modbus {
-  enum class Result {
-    OK,
-    INVALID_STATE,
-    INVALID_REGISTER_ADDRESS,
-  };
+enum class Result {
+  OK,
+  INVALID_STATE,
+  INVALID_REGISTER_ADDRESS,
+};
 
-  enum class Access{
-    READ,
-    WRITE,
-  };
+enum class Access {
+  READ,
+  WRITE,
+};
 }  // namespace Modbus
 
 class ModbusClientHandler {
@@ -108,12 +108,10 @@ class ModbusClientHandler {
  private:
   static ModbusClientHandler *GetHoldingHandler(uint16_t address,
                                                 uint16_t nRegs);
-  static ModbusClientHandler *GetInputHandler(uint16_t address,
-                                              uint16_t nRegs);
+  static ModbusClientHandler *GetInputHandler(uint16_t address, uint16_t nRegs);
   static ModbusClientHandler *GetDiscreteHandler(uint16_t address,
                                                  uint16_t nRegs);
-  static ModbusClientHandler *GetCoilsHandler(uint16_t address,
-                                              uint16_t nRegs);
+  static ModbusClientHandler *GetCoilsHandler(uint16_t address, uint16_t nRegs);
   static ModbusClientHandler *first;
   ModbusClientHandler *next = nullptr;
 };

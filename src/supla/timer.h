@@ -18,7 +18,7 @@
 #define SRC_SUPLA_TIMER_H_
 
 namespace Supla {
-  void initTimers();
+void initTimers();
 };
 
 #endif  // SRC_SUPLA_TIMER_H_

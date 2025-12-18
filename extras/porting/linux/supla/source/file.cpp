@@ -21,6 +21,7 @@
 #include <chrono>  // NOLINT(build/c++11)
 #include <fstream>
 #include <iostream>
+#include <string>
 
 #include "file.h"
 

@@ -21,18 +21,19 @@
 #if !defined(ARDUINO_ARCH_AVR)
 // don't compile it on Arduino Mega
 
-#include <supla/storage/key_value.h>
-#include <supla/log_wrapper.h>
-#include <LittleFS.h>
-#include <string.h>
 #include "littlefs_config.h"
 
-namespace Supla {
-  const char ConfigFileName[] = "/supla-dev.cfg";
-  const char BackupConfigFileName[] = "/supla-dev.cfg.bak";
-  const char CustomCAFileName[] = "/custom_ca.pem";
-};
+#include <LittleFS.h>
+#include <string.h>
+#include <supla/log_wrapper.h>
+#include <supla/storage/key_value.h>
+#include <stdio.h>
 
+namespace Supla {
+const char ConfigFileName[] = "/supla-dev.cfg";
+const char BackupConfigFileName[] = "/supla-dev.cfg.bak";
+const char CustomCAFileName[] = "/custom_ca.pem";
+};  // namespace Supla
 
 #define BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE 32
 
@@ -40,7 +41,8 @@ Supla::LittleFsConfig::LittleFsConfig(int configMaxSize)
     : configMaxSize(configMaxSize) {
 }
 
-Supla::LittleFsConfig::~LittleFsConfig() {}
+Supla::LittleFsConfig::~LittleFsConfig() {
+}
 
 bool Supla::LittleFsConfig::init() {
   if (first) {
@@ -114,7 +116,7 @@ bool Supla::LittleFsConfig::init() {
 }
 
 void Supla::LittleFsConfig::commit() {
-  uint8_t *buf = new uint8_t[configMaxSize];
+  uint8_t* buf = new uint8_t[configMaxSize];
   if (buf == nullptr) {
     SUPLA_LOG_ERROR("LittleFsConfig: failed to allocate memory");
     return;
@@ -144,7 +146,7 @@ void Supla::LittleFsConfig::commit() {
     cfg.write(buf, dataSize);
     cfg.close();
   }
-  delete []buf;
+  delete[] buf;
   LittleFS.end();
 }
 
@@ -170,15 +172,14 @@ bool Supla::LittleFsConfig::getCustomCA(char* customCA, int maxSize) {
       return false;
     }
 
-    int bytesRead = file.read(reinterpret_cast<uint8_t *>(customCA), fileSize);
+    int bytesRead = file.read(reinterpret_cast<uint8_t*>(customCA), fileSize);
 
     file.close();
     LittleFS.end();
     if (bytesRead != fileSize) {
-      SUPLA_LOG_DEBUG(
-          "LittleFsConfig: read bytes %d, while file is %d bytes",
-          bytesRead,
-          fileSize);
+      SUPLA_LOG_DEBUG("LittleFsConfig: read bytes %d, while file is %d bytes",
+                      bytesRead,
+                      fileSize);
       return false;
     }
 
@@ -221,8 +222,7 @@ bool Supla::LittleFsConfig::setCustomCA(const char* customCA) {
 
   File file = LittleFS.open(CustomCAFileName, "w");
   if (!file) {
-    SUPLA_LOG_ERROR(
-        "LittleFsConfig: failed to open custom CA file for write");
+    SUPLA_LOG_ERROR("LittleFsConfig: failed to open custom CA file for write");
     LittleFS.end();
     return false;
   }
@@ -298,8 +298,8 @@ bool Supla::LittleFsConfig::setBlob(const char* key,
   snprintf(filename, sizeof(filename), "/supla/%s", key);
   File file = LittleFS.open(filename, "w");
   if (!file) {
-    SUPLA_LOG_ERROR(
-        "LittleFsConfig: failed to open blob file \"%s\" for write", key);
+    SUPLA_LOG_ERROR("LittleFsConfig: failed to open blob file \"%s\" for write",
+                    key);
     LittleFS.end();
     return false;
   }
@@ -367,7 +367,6 @@ int Supla::LittleFsConfig::getBlobSize(const char* key) {
   LittleFS.end();
   return fileSize;
 }
-
 
 #endif  // !defined(ARDUINO_ARCH_AVR)
 #endif  // SUPLA_EXCLUDE_LITTLEFS_CONFIG

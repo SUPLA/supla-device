@@ -44,6 +44,6 @@ class CmdValve : public Sensor::SensorParsed<ValveBase> {
   uint32_t lastReadTime = 0;
 };
 
-};  // namespace Control
-};  // namespace Supla
+}  // namespace Control
+}  // namespace Supla
 #endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_

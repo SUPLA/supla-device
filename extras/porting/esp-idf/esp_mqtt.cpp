@@ -16,6 +16,8 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#include "esp_mqtt.h"
+
 #include <SuplaDevice.h>
 #include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
@@ -23,24 +25,22 @@
 #include <supla/storage/config.h>
 #include <supla/time.h>
 
-#include "esp_mqtt.h"
-
 Supla::Mutex *Supla::Protocol::EspMqtt::mutex = nullptr;
 Supla::Mutex *Supla::Protocol::EspMqtt::mutexEventHandler = nullptr;
 static Supla::Protocol::EspMqtt *espMqtt = nullptr;
 
 namespace Supla {
-  enum EspMqttStatus {
-    EspMqttStatus_none,
-    EspMqttStatus_transportError,
-    EspMqttStatus_badProtocol,
-    EspMqttStatus_serverUnavailable,
-    EspMqttStatus_badUsernameOrPassword,
-    EspMqttStatus_notAuthorized,
-    EspMqttStatus_connectionRefused,
-    EspMqttStatus_unknownConnectionError,
-    EspMqttStatus_connected
-  };
+enum EspMqttStatus {
+  EspMqttStatus_none,
+  EspMqttStatus_transportError,
+  EspMqttStatus_badProtocol,
+  EspMqttStatus_serverUnavailable,
+  EspMqttStatus_badUsernameOrPassword,
+  EspMqttStatus_notAuthorized,
+  EspMqttStatus_connectionRefused,
+  EspMqttStatus_unknownConnectionError,
+  EspMqttStatus_connected
+};
 }  // namespace Supla
 
 static Supla::EspMqttStatus lastError = Supla::EspMqttStatus_none;
@@ -68,9 +68,9 @@ void mqttEventDataProcess(esp_mqtt_event_handle_t event) {
 }
 
 static void mqttEventHandler(void *handler_args,
-                               esp_event_base_t base,
-                               int32_t eventId,
-                               void *eventData) {
+                             esp_event_base_t base,
+                             int32_t eventId,
+                             void *eventData) {
   SUPLA_LOG_DEBUG(" *** MQTT event handler enter");
   Supla::AutoLock eventHandlerLock(Supla::Protocol::EspMqtt::mutexEventHandler);
   SUPLA_LOG_DEBUG(" *** MQTT event handler waiting");
@@ -116,7 +116,7 @@ static void mqttEventHandler(void *handler_args,
               "MQTT: failed to establish connection");
         }
         SUPLA_LOG_DEBUG("Last error code reported from esp-tls: 0x%x",
-            event->error_handle->esp_tls_last_esp_err);
+                        event->error_handle->esp_tls_last_esp_err);
         SUPLA_LOG_DEBUG("Last tls stack error number: 0x%x",
                         event->error_handle->esp_tls_stack_err);
 #ifdef SUPLA_DEVICE_ESP32
@@ -164,14 +164,14 @@ static void mqttEventHandler(void *handler_args,
             break;
         }
         SUPLA_LOG_DEBUG("Connection refused error: 0x%x",
-            event->error_handle->connect_return_code);
+                        event->error_handle->connect_return_code);
       } else {
         if (lastError != Supla::EspMqttStatus_unknownConnectionError) {
           lastError = Supla::EspMqttStatus_unknownConnectionError;
           espMqtt->getSdc()->addLastStateLog("MQTT: other connection error");
         }
         SUPLA_LOG_DEBUG("Unknown error type: 0x%x",
-            event->error_handle->error_type);
+                        event->error_handle->error_type);
       }
       break;
     default:
@@ -180,7 +180,7 @@ static void mqttEventHandler(void *handler_args,
 }
 
 Supla::Protocol::EspMqtt::EspMqtt(SuplaDeviceClass *sdc)
-  : Supla::Protocol::Mqtt(sdc) {
+    : Supla::Protocol::Mqtt(sdc) {
   espMqtt = this;
 }
 
@@ -208,7 +208,7 @@ void Supla::Protocol::EspMqtt::onInit() {
   lastWill = lastWill / "state" / "connected";
 
 #ifdef SUPLA_DEVICE_ESP32
-// ESP32 ESP-IDF setup
+  // ESP32 ESP-IDF setup
   mqttCfg.broker.address.hostname = server;
   mqttCfg.broker.address.port = port;
   if (useAuth) {
@@ -228,7 +228,7 @@ void Supla::Protocol::EspMqtt::onInit() {
 
   mqttCfg.credentials.client_id = clientId;
 #else
-// ESP866 RTOS setup
+  // ESP866 RTOS setup
   mqttCfg.host = server;
   mqttCfg.port = port;
   if (useAuth) {
@@ -252,12 +252,12 @@ void Supla::Protocol::EspMqtt::onInit() {
   client = esp_mqtt_client_init(&mqttCfg);
   esp_mqtt_client_register_event(
       client, MQTT_EVENT_ANY, mqttEventHandler, nullptr);
-/*MQTT_EVENT_BEFORE_CONNECT
-  MQTT_EVENT_CONNECTED
-  MQTT_EVENT_DISCONNECTED
-  MQTT_EVENT_DATA
-  MQTT_EVENT_ERROR
-  */
+  /*MQTT_EVENT_BEFORE_CONNECT
+    MQTT_EVENT_CONNECTED
+    MQTT_EVENT_DISCONNECTED
+    MQTT_EVENT_DATA
+    MQTT_EVENT_ERROR
+    */
 }
 
 void Supla::Protocol::EspMqtt::disconnect() {
@@ -318,7 +318,6 @@ bool Supla::Protocol::EspMqtt::iterate(uint32_t _millis) {
     if (!connected) {
       return false;
     }
-
 
     if (enterRegisteredAndReady) {
       enterRegisteredAndReady = false;

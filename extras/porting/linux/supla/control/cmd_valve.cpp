@@ -22,6 +22,7 @@
 #include <supla/time.h>
 
 #include <cstdio>
+#include <string>
 
 Supla::Control::CmdValve::CmdValve(Supla::Parser::Parser *parser)
     : Supla::Sensor::SensorParsed<Supla::Control::ValveBase>(parser) {
@@ -72,6 +73,4 @@ void Supla::Control::CmdValve::setCmdOpen(const std::string &newCmdOpen) {
 void Supla::Control::CmdValve::setCmdClose(const std::string &newCmdClose) {
   cmdClose = newCmdClose;
 }
-
-
 

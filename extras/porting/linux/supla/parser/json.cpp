@@ -14,11 +14,11 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <supla/log_wrapper.h>
-
-#include <stdexcept>
-
 #include "json.h"
+
+#include <supla/log_wrapper.h>
+#include <string>
+#include <stdexcept>
 
 Supla::Parser::Json::Json(Supla::Source::Source* src)
     : Supla::Parser::Parser(src) {

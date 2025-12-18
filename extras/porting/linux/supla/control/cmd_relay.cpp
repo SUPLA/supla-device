@@ -22,6 +22,7 @@
 #include <supla/time.h>
 
 #include <cstdio>
+#include <string>
 
 Supla::Control::CmdRelay::CmdRelay(Supla::Parser::Parser *parser,
                                    _supla_int_t functions)

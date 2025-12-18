@@ -351,7 +351,7 @@ TEST_F(BistableRelayFixture, mixedChecks) {
                            std::memcmp(v, expectedValue, 8) == 0;
                   }),
                   0,
-                  0)).Times(5);
+                  0)).Times(7);
   EXPECT_CALL(protoMock,
               sendChannelValueChanged(
                   0,
@@ -362,11 +362,11 @@ TEST_F(BistableRelayFixture, mixedChecks) {
                            std::memcmp(v, expectedValue, 8) == 0;
                   }),
                   0,
-                  0)).Times(5);
-  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0)).Times(5);
+                  0)).Times(7);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0)).Times(7);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 5000, 0, 0));
-  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 3000, 0, 0)).Times(2);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 3000, 0, 0)).Times(4);
 
   // R1
   EXPECT_CALL(ioMock, pinMode(r1Gpio, OUTPUT)).Times(2);
@@ -498,6 +498,48 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   EXPECT_EQ(r1StateValue, 0);
 
   // turn on externally, timer should be applied
+  r1StateValue = 1;
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  // second turn on externally, timer should be applied
+  r1StateValue = 1;
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+  // turn off externally
+  r1StateValue = 0;
+
+  for (int i = 0; i < 5; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  // third turn on externally, timer should be applied
   r1StateValue = 1;
 
   for (int i = 0; i < 20; i++) {

@@ -120,6 +120,7 @@ void BistableRelay::iterateAlways() {
       if (lastCommandTurnOn && !currentState) {
         durationMs = 0;
         durationTimestamp = 0;
+        lastCommandTurnOn = false;
       } else if (!lastCommandTurnOn && currentState) {
         lastCommandTurnOn = true;
         applyDuration(0, true);

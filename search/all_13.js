@@ -100,7 +100,7 @@ var searchData=
   ['si7021sonoff_97',['Si7021Sonoff',['../classSupla_1_1Sensor_1_1Si7021Sonoff.html',1,'Supla::Sensor']]],
   ['simplebutton_98',['SimpleButton',['../classSimpleButton.html',1,'SimpleButton'],['../classSupla_1_1Control_1_1SimpleButton.html',1,'Supla::Control::SimpleButton']]],
   ['simplestate_99',['SimpleState',['../classSimpleState.html',1,'SimpleState'],['../classSupla_1_1SimpleState.html',1,'Supla::SimpleState']]],
-  ['solaredge_100',['SolarEdge',['../classSupla_1_1PV_1_1SolarEdge.html',1,'Supla::PV']]],
+  ['solaredge_100',['SolarEdge',['../classSolarEdge.html',1,'SolarEdge'],['../classSupla_1_1PV_1_1SolarEdge.html',1,'Supla::PV::SolarEdge']]],
   ['somfy_5fremote_5ft_101',['somfy_remote_t',['../structsomfy__remote__t.html',1,'']]],
   ['somfy_5fremotesn_5ft_102',['somfy_remotesn_t',['../unionsomfy__remotesn__t.html',1,'']]],
   ['somfy_5frollingcode_5ft_103',['somfy_rollingcode_t',['../unionsomfy__rollingcode__t.html',1,'']]],

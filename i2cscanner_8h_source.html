@@ -113,36 +113,37 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#define SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;Wire.h&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span>Supla {</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>Html {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span></div>
-<div class="foldopen" id="foldopen00033" data-start="{" data-end="};">
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classSupla_1_1Html_1_1I2Cscanner.html">   33</a></span><span class="keyword">class </span>I2Cscanner : <span class="keyword">public</span> <a class="code hl_class" href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a> {</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> <span class="keyword">public</span>:</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  I2Cscanner() : HtmlElement(HTML_SECTION_DEVICE_INFO) {}</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> send(<a class="code hl_class" href="classSupla_1_1WebSender.html">Supla::WebSender</a>* sender) {</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    sender-&gt;send(<span class="stringliteral">&quot;&lt;span&gt;&quot;</span>);</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    sender-&gt;send(<span class="stringliteral">&quot;&lt;br&gt;I2C:&quot;</span>);</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordflow">for</span> (uint8_t address = 1; address &lt; 127; address++) {</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>      Wire.beginTransmission(address);</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>      uint8_t error = Wire.endTransmission();</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>      <span class="keywordtype">char</span> buffer[6];</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>      <span class="keywordflow">if</span> (error == 0) {</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        snprintf(buffer, <span class="keyword">sizeof</span>(buffer), <span class="stringliteral">&quot; 0x%2x&quot;</span>, address);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        sender-&gt;send(buffer, 5);</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>      }</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    }</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    sender-&gt;send(<span class="stringliteral">&quot;&lt;/span&gt;&quot;</span>);</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  }</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>};  <span class="comment">// I2Cscanner</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;stdio.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>Supla {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span>Html {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span></div>
+<div class="foldopen" id="foldopen00034" data-start="{" data-end="};">
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="classSupla_1_1Html_1_1I2Cscanner.html">   34</a></span><span class="keyword">class </span>I2Cscanner : <span class="keyword">public</span> <a class="code hl_class" href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a> {</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> <span class="keyword">public</span>:</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  I2Cscanner() : HtmlElement(HTML_SECTION_DEVICE_INFO) {}</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span> </div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keywordtype">void</span> send(<a class="code hl_class" href="classSupla_1_1WebSender.html">Supla::WebSender</a>* sender) {</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    sender-&gt;send(<span class="stringliteral">&quot;&lt;span&gt;&quot;</span>);</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    sender-&gt;send(<span class="stringliteral">&quot;&lt;br&gt;I2C:&quot;</span>);</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keywordflow">for</span> (uint8_t address = 1; address &lt; 127; address++) {</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>      Wire.beginTransmission(address);</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>      uint8_t error = Wire.endTransmission();</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>      <span class="keywordtype">char</span> buffer[6];</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>      <span class="keywordflow">if</span> (error == 0) {</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        snprintf(buffer, <span class="keyword">sizeof</span>(buffer), <span class="stringliteral">&quot; 0x%2x&quot;</span>, address);</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        sender-&gt;send(buffer, 5);</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>      }</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    }</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    sender-&gt;send(<span class="stringliteral">&quot;&lt;/span&gt;&quot;</span>);</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>  }</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>};  <span class="comment">// I2Cscanner</span></div>
 </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>}  <span class="comment">// namespace Html</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>}  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>}  <span class="comment">// namespace Html</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>}  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1HtmlElement_html"><div class="ttname"><a href="classSupla_1_1HtmlElement.html">Supla::HtmlElement</a></div><div class="ttdef"><b>Definition</b> html_element.h:37</div></div>
 <div class="ttc" id="aclassSupla_1_1WebSender_html"><div class="ttname"><a href="classSupla_1_1WebSender.html">Supla::WebSender</a></div><div class="ttdef"><b>Definition</b> web_sender.h:28</div></div>
 </div><!-- fragment --></div><!-- contents -->

@@ -58,13 +58,19 @@ int Eeprom::readStorage(unsigned int offset,
                         unsigned char *buf,
                         int size,
                         bool logs) {
+	
+  if(size > 32) {
+    size = 32;	
+  }
+  
   int logSize = 0;
-  char logBuffer[4 * size];
+  int logBufferSize = 4 * size;
+  char logBuffer[logBufferSize];
   
   for (int i = 0; i < size; i++) {
     buf[i] = EEPROM.read(offset + i);
     if (logs) {
-	  logSize += snprintf(logBuffer + logSize, 4, "%02X ", static_cast<unsigned char *>(buf)[i]);
+	  logSize += snprintf(logBuffer + logSize, logBufferSize - logSize, "%02X ", buf[i]);
     }
   }
   if (logs) {

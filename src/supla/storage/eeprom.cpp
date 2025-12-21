@@ -64,19 +64,23 @@ int Eeprom::readStorage(unsigned int offset,
   }
   
   if (logs) {
+	uint8_t sizeMax;
+	  
 	if (size > 32) {
-      size = 32;	
-    }
+      sizeMax = 32;	
+    } else {
+	  sizeMax = size;
+	}
   
     int logSize = 0;
-    int logBufferSize = 4 * size;
+    int logBufferSize = 4 * sizeMax;
     char logBuffer[logBufferSize];
   
-    for (int i = 0; i < size; i++) {
+    for (int i = 0; i < sizeMax; i++) {
 	  logSize += snprintf(logBuffer + logSize, logBufferSize - logSize, "%02X ", buf[i]);	
 	}
 	
-	SUPLA_LOG_INFO("EEPROM: Read %d bytes [%s] (offset %d)", size, logBuffer, offset);
+	SUPLA_LOG_INFO("EEPROM: Read %d bytes [%s] (offset %d)", sizeMax, logBuffer, offset);
   }
   
   return size;

@@ -177,6 +177,10 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool isFullyInitialized() const;
 
+  void enableCyclicMode(uint32_t turnOnTimeMs, uint32_t turnOffTimeMs);
+  void disableCyclicMode();
+  bool isCyclicMode() const;
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
@@ -193,6 +197,7 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
+  uint32_t turnOffDurationForCycle = 0;
   uint16_t defaultStaircaseDurationMs = 10000;
   uint16_t defaultImpulseDurationMs = 500;
 

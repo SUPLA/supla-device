@@ -185,6 +185,8 @@ class Relay : public ChannelElement, public ActionHandler {
 
   void applyDuration(int durationMs, bool turnOn);
 
+  virtual void setNewChannelValue(bool value);
+
   void saveConfig() const;
   void updateTimerValue();
   void updateRelayHvacAggregator();

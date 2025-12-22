@@ -39,7 +39,6 @@ void Supla::Control::CmdRelay::onInit() {
 
 void Supla::Control::CmdRelay::turnOn(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOn(duration);
-  channel.setNewValue(isOn());
 
   if (cmdOn.length() > 0) {
     auto p = popen(cmdOn.c_str(), "r");
@@ -49,7 +48,6 @@ void Supla::Control::CmdRelay::turnOn(_supla_int_t duration) {
 
 void Supla::Control::CmdRelay::turnOff(_supla_int_t duration) {
   Supla::Control::VirtualRelay::turnOff(duration);
-  channel.setNewValue(isOn());
 
   if (cmdOff.length() > 0) {
     auto p = popen(cmdOff.c_str(), "r");
@@ -91,7 +89,7 @@ void Supla::Control::CmdRelay::iterateAlways() {
   if (parser && (millis() - lastReadTime > 100)) {
     refreshParserSource();
     lastReadTime = millis();
-    channel.setNewValue(isOn());
+    setNewChannelValue(true);
     if (isOffline()) {
       channel.setStateOffline();
     } else {

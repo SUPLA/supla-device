@@ -397,6 +397,7 @@ bool Relay::iterateConnected() {
 
 int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   auto channelFunction = getChannel()->getDefaultFunction();
+  bool zeroDurationAllowed = false;
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_PUMPSWITCH:
     case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
@@ -404,12 +405,18 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
                         getChannelNumber());
       return 0;
     }
+    case SUPLA_CHANNELFNC_POWERSWITCH:
+    case SUPLA_CHANNELFNC_LIGHTSWITCH: {
+      zeroDurationAllowed = true;
+      break;
+    }
     default: {}
   }
 
   int result = -1;
   if (newValue->value[0] == 1) {
-    if (newValue->DurationMS < minimumAllowedDurationMs) {
+    if (!zeroDurationAllowed &&
+        newValue->DurationMS < minimumAllowedDurationMs) {
       SUPLA_LOG_DEBUG("Relay[%d] override duration with min value",
                       channel.getChannelNumber());
       newValue->DurationMS = minimumAllowedDurationMs;
@@ -472,7 +479,7 @@ void Relay::turnOn(_supla_int_t duration) {
   }
 
   channel.setRelayOvercurrentCutOff(false);
-  channel.setNewValue(true);
+  setNewChannelValue(true);
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
@@ -517,7 +524,7 @@ void Relay::turnOff(_supla_int_t duration) {
     Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
   }
 
-  channel.setNewValue(false);
+  setNewChannelValue(false);
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(relayStorageSaveDelay, 2000);
@@ -1043,3 +1050,6 @@ bool Relay::isFullyInitialized() const {
   return initDone && !skipInitialStateSetting;
 }
 
+void Relay::setNewChannelValue(bool value) {
+  channel.setNewValue(value);
+}

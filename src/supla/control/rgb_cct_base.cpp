@@ -683,7 +683,7 @@ bool RGBCCTBase::calculateAndUpdate(int targetValue,
 
     int step = distance / divider;
     if (step < 1) {
-      step = 1;
+      return false;
     }
 
     int valueStep = getStep(step, targetValue, *hwValue, distance);

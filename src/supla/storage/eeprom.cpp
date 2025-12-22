@@ -23,6 +23,8 @@
 
 #include "eeprom.h"
 
+#include <supla/log_wrapper.h>
+
 namespace Supla {
 
 // By default, write to EEPROM every 3 min
@@ -56,21 +58,31 @@ int Eeprom::readStorage(unsigned int offset,
                         unsigned char *buf,
                         int size,
                         bool logs) {
-  if (logs) {
-    Serial.print(F("readStorage: "));
-    Serial.print(size);
-    Serial.print(F("; Read: ["));
-  }
+
   for (int i = 0; i < size; i++) {
     buf[i] = EEPROM.read(offset + i);
-    if (logs) {
-      Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
-      Serial.print(F(" "));
-    }
   }
+  
   if (logs) {
-    Serial.println(F("]"));
+	uint8_t sizeMax;
+	  
+	if (size > 32) {
+      sizeMax = 32;	
+    } else {
+	  sizeMax = size;
+	}
+  
+    int logSize = 0;
+    int logBufferSize = 4 * sizeMax;
+    char logBuffer[logBufferSize];
+  
+    for (int i = 0; i < sizeMax; i++) {
+	  logSize += snprintf(logBuffer + logSize, logBufferSize - logSize, "%02X ", buf[i]);	
+	}
+	
+	SUPLA_LOG_INFO("EEPROM: Read %d bytes [%s] (offset %d)", sizeMax, logBuffer, offset);
   }
+  
   return size;
 }
 
@@ -78,13 +90,13 @@ int Eeprom::writeStorage(unsigned int offset,
                          const unsigned char *buf,
                          int size) {
   dataChanged = true;
+  
   for (int i = 0; i < size; i++) {
     EEPROM.write(offset + i, buf[i]);
   }
-  Serial.print(F("Wrote "));
-  Serial.print(size);
-  Serial.print(F(" bytes to storage at "));
-  Serial.println(offset);
+  
+  SUPLA_LOG_INFO("EEPROM: Wrote %d bytes (offset %d)", size, offset);
+  
   return size;
 }
 
@@ -92,7 +104,8 @@ void Eeprom::commit() {
 #if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
   if (dataChanged) {
     EEPROM.commit();
-    Serial.println(F("Commit"));
+	
+    SUPLA_LOG_INFO("EEPROM: Commit");
   }
 #endif
   dataChanged = false;

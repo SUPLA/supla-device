@@ -116,6 +116,7 @@ void setup() {
   aqieco->addSensor(Supla::SenorType::HUMI, bme280->getChannel());
   aqieco->addSensor(Supla::SenorType::PRESS, bme280->getSecondaryChannel());
   aqieco->addSensor(Supla::SenorType::CO2, scd41->getCO2channel());
+// not implemented in aqi.eco
 //  aqieco->addSensor(Supla::SenorType::VOC, sgp41->getVOCchannel());
 //  aqieco->addSensor(Supla::SenorType::NOX, sgp41->getNOxchannel());
 

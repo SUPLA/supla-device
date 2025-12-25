@@ -890,12 +890,12 @@ void SuplaDeviceClass::iterateAlwaysElements(uint32_t _millis) {
   }
 
   // check the startup of the permanent web server
-  if (startPermanentWebServer) {
-    if (!runningPermanentWebServer) {
+  if (startPermanentWebInterface) {
+    if (!runningPermanentWebInterface) {
       if (Supla::Network::IsReady()) {
         if (Supla::WebServer::Instance() != nullptr) {
           Supla::WebServer::Instance()->start();
-          runningPermanentWebServer = true;
+          runningPermanentWebInterface = true;
         }
       }
     }
@@ -1763,12 +1763,12 @@ void SuplaDeviceClass::setProtoVerboseLog(bool value) {
   }
 }
 
-void SuplaDeviceClass::setPermanentWebServer(bool value) {
-  startPermanentWebServer = value;
+void SuplaDeviceClass::setPermanentWebInterface(bool value) {
+  startPermanentWebInterface = value;
 
-  if (!value && runningPermanentWebServer) {
+  if (!value && runningPermanentWebInterface) {
     Supla::WebServer::Instance()->stop();
-    runningPermanentWebServer = false;
+    runningPermanentWebInterface = false;
   }
 }
 

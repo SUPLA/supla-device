@@ -312,7 +312,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    *
    * @param value true to enable permanent web server
    */
-  void setPermanentWebServer(bool value = true);
+  void setPermanentWebInterface(bool value = true);
 
   Supla::Mutex *getTimerAccessMutex();
 
@@ -481,8 +481,8 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool triggerSwUpdateIfAvailable = false;
 
   // used for permanent web server
-  bool startPermanentWebServer = false;
-  bool runningPermanentWebServer = false;
+  bool startPermanentWebInterface = false;
+  bool runningPermanentWebInterface = false;
 
   uint8_t leaveCfgModeAfterInactivityMin = 5;
   uint8_t macLengthInHostname = 6;

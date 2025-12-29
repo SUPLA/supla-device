@@ -34,7 +34,7 @@
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/events.h>
 #include <supla/network/html/button_update.h>
-#include "LEDs.h"
+#include <supla/control/LEDs.h>
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;

@@ -22,7 +22,7 @@
 #include <supla/storage/storage.h>
 #include <supla/log_wrapper.h>
 #include <supla/actions.h>
-#include <supla/control/rgbw_base.h>
+#include <supla/control/rgb_cct_base.h>
 #include <supla/time.h>
 #include <supla/control/rgb_base.h>
 #include <supla/storage/config_tags.h>
@@ -37,7 +37,7 @@ void GroupButtonControlRgbw::attach(Button *button) {
   attachedButton = button;
 }
 
-void GroupButtonControlRgbw::addToGroup(RGBWBase *rgbwElement) {
+void GroupButtonControlRgbw::addToGroup(RGBCCTBase *rgbwElement) {
   if (rgbwCount >= SUPLA_MAX_GROUP_CONTROL_ELEMENTS) {
     SUPLA_LOG_ERROR("GroupButtonControlRgbw: Too many RGBWs in group!");
     return;
@@ -52,19 +52,19 @@ void GroupButtonControlRgbw::addToGroup(RGBWBase *rgbwElement) {
 void GroupButtonControlRgbw::handleTurnOn() {
   for (int i = 0; i < rgbwCount; i++) {
     switch (controlType[i]) {
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGB: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGB: {
         rgbw[i]->handleAction(0, Supla::TURN_ON_RGB);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGBW: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGBW: {
         rgbw[i]->handleAction(0, Supla::TURN_ON);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_W: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_W: {
         rgbw[i]->handleAction(0, Supla::TURN_ON_W);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_NOT_USED: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_NOT_USED: {
         break;
       }
     }
@@ -74,19 +74,19 @@ void GroupButtonControlRgbw::handleTurnOn() {
 void GroupButtonControlRgbw::handleTurnOff() {
   for (int i = 0; i < rgbwCount; i++) {
     switch (controlType[i]) {
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGB: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGB: {
         rgbw[i]->handleAction(0, Supla::TURN_OFF_RGB);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGBW: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGBW: {
         rgbw[i]->handleAction(0, Supla::TURN_OFF);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_W: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_W: {
         rgbw[i]->handleAction(0, Supla::TURN_OFF_W);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_NOT_USED: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_NOT_USED: {
         break;
       }
     }
@@ -99,25 +99,25 @@ void GroupButtonControlRgbw::handleToggle() {
   // if at least one is ON, then toggle will turn off
   for (int i = 0; i < rgbwCount; i++) {
     switch (controlType[i]) {
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGB: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGB: {
         if (rgbw[i]->isOnRGB()) {
           isOn = true;
         }
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGBW: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGBW: {
         if (rgbw[i]->isOn()) {
           isOn = true;
         }
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_W: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_W: {
         if (rgbw[i]->isOnW()) {
           isOn = true;
         }
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_NOT_USED: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_NOT_USED: {
         break;
       }
     }
@@ -131,32 +131,32 @@ void GroupButtonControlRgbw::handleToggle() {
 }
 
 void GroupButtonControlRgbw::handleIterate() {
-  Supla::Control::RGBWBase *mainChannel = nullptr;
+  Supla::Control::RGBCCTBase *mainChannel = nullptr;
   int brightnessValue = -1;
   // first we look for first rgbw with enabled button, iterate brightness on it
   // and get new brightness value
   for (int i = 0; i < rgbwCount; i++) {
     switch (controlType[i]) {
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGB: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGB: {
         mainChannel = rgbw[i];
         mainChannel->handleAction(0, Supla::ITERATE_DIM_RGB);
         brightnessValue = mainChannel->getCurrentRGBBrightness();
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGBW: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGBW: {
         mainChannel = rgbw[i];
         mainChannel->handleAction(0, Supla::ITERATE_DIM_ALL);
         // on iterate dim all, both W and RGB brighness are synced
         brightnessValue = mainChannel->getCurrentRGBBrightness();
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_W: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_W: {
         mainChannel = rgbw[i];
         mainChannel->handleAction(0, Supla::ITERATE_DIM_W);
         brightnessValue = mainChannel->getCurrentDimmerBrightness();
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_NOT_USED: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_NOT_USED: {
         break;
       }
     }
@@ -171,19 +171,19 @@ void GroupButtonControlRgbw::handleIterate() {
       continue;
     }
     switch (controlType[i]) {
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGB: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGB: {
         rgbw[i]->setRGBW(-1, -1, -1, brightnessValue, -1);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_RGBW: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_RGBW: {
         rgbw[i]->setRGBW(-1, -1, -1, brightnessValue, brightnessValue);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_FOR_W: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_FOR_W: {
         rgbw[i]->setRGBW(-1, -1, -1, -1, brightnessValue);
         break;
       }
-      case Supla::Control::RGBWBase::ButtonControlType::BUTTON_NOT_USED: {
+      case Supla::Control::RGBCCTBase::ButtonControlType::BUTTON_NOT_USED: {
         break;
       }
     }
@@ -232,7 +232,7 @@ void GroupButtonControlRgbw::onLoadConfig(SuplaDeviceClass *sdc) {
       if (cfg->getInt32(key, &rgbwButtonControlType)) {
         if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {
           controlType[i] =
-              static_cast<Supla::Control::RGBWBase::ButtonControlType>(
+              static_cast<Supla::Control::RGBCCTBase::ButtonControlType>(
                   rgbwButtonControlType);
         }
       }
@@ -243,7 +243,7 @@ void GroupButtonControlRgbw::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void GroupButtonControlRgbw::setButtonControlType(int rgbwIndex,
-                            RGBWBase::ButtonControlType type) {
+                            RGBCCTBase::ButtonControlType type) {
   if (rgbwIndex < 0 || rgbwIndex >= rgbwCount ||
       rgbwIndex >= SUPLA_MAX_GROUP_CONTROL_ELEMENTS) {
     return;

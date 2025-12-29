@@ -849,6 +849,11 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
     auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
     rgb->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
   }
+  if (ch["fade_effect_ms"]) {
+    paramCount++;
+    auto fadeEffectMs = ch["fade_effect_ms"].as<int>();
+    rgb->setFadeEffectTime(fadeEffectMs);
+  }
   return addCommonParameters(ch, rgb, &paramCount);
 }
 

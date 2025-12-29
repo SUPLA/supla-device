@@ -38,8 +38,8 @@ class RgbCctParsed : public Sensor::SensorParsed<RGBCCTBase> {
                             uint32_t green,
                             uint32_t blue,
                             uint32_t colorBrightness,
-                            uint32_t whiteBrightness,
-                            uint32_t whiteTemperature) override;
+                            uint32_t white1Brightness,
+                            uint32_t white2Brightness) override;
 
  protected:
   uint32_t lastReadTime = 0;

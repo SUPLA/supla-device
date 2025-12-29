@@ -122,6 +122,7 @@ set(SUPLA_DEVICE_SRCS
   ../../../src/supla/control/rgb_base.cpp
   ../../../src/supla/control/rgb_leds.cpp
   ../../../src/supla/control/rgbw_base.cpp
+  ../../../src/supla/control/rgb_cct_base.cpp
   ../../../src/supla/control/rgbw_leds.cpp
   ../../../src/supla/control/roller_shutter.cpp
   ../../../src/supla/control/roller_shutter_interface.cpp

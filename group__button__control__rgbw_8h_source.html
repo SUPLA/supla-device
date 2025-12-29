@@ -114,28 +114,28 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;supla/action_handler.h&gt;</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;supla/element.h&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;supla/control/rgbw_base.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;supla/control/rgb_cct_base.h&gt;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#define SUPLA_MAX_GROUP_CONTROL_ELEMENTS 10</span></div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span>Supla::Control {</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">class </span><a class="code hl_class" href="classSupla_1_1Control_1_1Button.html">Button</a>;</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">class </span><a class="code hl_class" href="classSupla_1_1Control_1_1RGBWBase.html">RGBWBase</a>;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">class </span><a class="code hl_class" href="classSupla_1_1Control_1_1RGBCCTBase.html">RGBCCTBase</a>;</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
 <div class="foldopen" id="foldopen00033" data-start="{" data-end="};">
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classGroupButtonControlRgbw.html">   33</a></span><span class="keyword">class </span>GroupButtonControlRgbw : <span class="keyword">public</span> ActionHandler, <span class="keyword">public</span> Element {</div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> <span class="keyword">public</span>:</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>  <span class="keyword">explicit</span> GroupButtonControlRgbw(<a class="code hl_class" href="classButton.html">Button</a> *button = <span class="keyword">nullptr</span>);</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>  <span class="keywordtype">void</span> attach(<a class="code hl_class" href="classButton.html">Button</a> *button);</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> addToGroup(RGBWBase *rgbwElement);</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>  <span class="keywordtype">void</span> addToGroup(RGBCCTBase *rgbwElement);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1GroupButtonControlRgbw.html#a9d66e74f568ee1e197a8718722c91521">onLoadConfig</a>(<a class="code hl_class" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc) <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1GroupButtonControlRgbw.html#ad6b38fe870aed4a9b0ad35a14f248a33">onInit</a>() <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keywordtype">void</span> handleAction(<span class="keywordtype">int</span> event, <span class="keywordtype">int</span> action) <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>  <span class="keywordtype">void</span> setButtonControlType(<span class="keywordtype">int</span> rgbwChannelNumber,</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>                            RGBWBase::ButtonControlType type);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>                            RGBCCTBase::ButtonControlType type);</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> <span class="keyword">private</span>:</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <span class="keywordtype">void</span> handleTurnOn();</div>
@@ -144,8 +144,8 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>  <span class="keywordtype">void</span> handleIterate();</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>  <a class="code hl_class" href="classButton.html">Button</a> *attachedButton = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  RGBWBase *rgbw[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] = {};</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  RGBWBase::ButtonControlType controlType[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] =</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>  RGBCCTBase *rgbw[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] = {};</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  RGBCCTBase::ButtonControlType controlType[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] =</div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>      {};</div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>  <span class="keywordtype">int</span> rgbwCount = 0;</div>
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>};</div>
@@ -159,7 +159,7 @@ $(function(){ initResizable(false); });
 <div class="ttc" id="aclassSupla_1_1Control_1_1Button_html"><div class="ttname"><a href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a></div><div class="ttdef"><b>Definition</b> button.h:34</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1GroupButtonControlRgbw_html_a9d66e74f568ee1e197a8718722c91521"><div class="ttname"><a href="classSupla_1_1Control_1_1GroupButtonControlRgbw.html#a9d66e74f568ee1e197a8718722c91521">Supla::Control::GroupButtonControlRgbw::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *sdc) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> group_button_control_rgbw.cpp:218</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1GroupButtonControlRgbw_html_ad6b38fe870aed4a9b0ad35a14f248a33"><div class="ttname"><a href="classSupla_1_1Control_1_1GroupButtonControlRgbw.html#ad6b38fe870aed4a9b0ad35a14f248a33">Supla::Control::GroupButtonControlRgbw::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> group_button_control_rgbw.cpp:254</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBWBase_html"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBWBase.html">Supla::Control::RGBWBase</a></div><div class="ttdef"><b>Definition</b> rgbw_base.h:37</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html">Supla::Control::RGBCCTBase</a></div><div class="ttdef"><b>Definition</b> rgb_cct_base.h:58</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

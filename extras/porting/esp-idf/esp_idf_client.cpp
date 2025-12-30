@@ -16,20 +16,20 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <supla/mutex.h>
-#include <supla/auto_lock.h>
-#include <fcntl.h>
-#include <esp_netif.h>
-#include <supla/log_wrapper.h>
-#include <SuplaDevice.h>
-#include <supla/time.h>
-#include <lwip/sockets.h>
-#include <lwip/netif.h>
-
-#include <string.h>
-#include <stdio.h>
-
 #include "esp_idf_client.h"
+
+#include <SuplaDevice.h>
+#include <esp_netif.h>
+#include <fcntl.h>
+#include <lwip/netif.h>
+#include <lwip/sockets.h>
+#include <stdio.h>
+#include <string.h>
+#include <supla/auto_lock.h>
+#include <supla/log_wrapper.h>
+#include <supla/mutex.h>
+#include <supla/time.h>
+
 #include "supla/network/client.h"
 
 #ifndef SUPLA_DEVICE_ESP32
@@ -46,7 +46,6 @@ void esp_tls_get_error_handle(esp_tls_t *client,
 }
 
 #endif
-
 
 Supla::EspIdfClient::EspIdfClient() {
   mutex = Supla::Mutex::Create();
@@ -80,8 +79,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
     SUPLA_LOG_ERROR("ESP TLS INIT FAILED");
     return 0;
   }
-  int result = esp_tls_conn_new_sync(
-      host, strlen(host), port, &cfg, client);
+  int result = esp_tls_conn_new_sync(host, strlen(host), port, &cfg, client);
   if (result == 1) {
     isConnected = true;
     int socketFd = 0;
@@ -101,23 +99,26 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
       }
       (void)(ipArr);
 
-      SUPLA_LOG_DEBUG("Connected via IP %d.%d.%d.%d", ipArr[0], ipArr[1],
-          ipArr[2], ipArr[3]);
+      SUPLA_LOG_DEBUG("Connected via IP %d.%d.%d.%d",
+                      ipArr[0],
+                      ipArr[1],
+                      ipArr[2],
+                      ipArr[3]);
     }
 
   } else {
     esp_tls_error_handle_t errorHandle;
     esp_tls_get_error_handle(client, &errorHandle);
 
-    SUPLA_LOG_DEBUG(
-        "last errors %d %d %d",
-        errorHandle->last_error,
-        errorHandle->esp_tls_error_code,
-        errorHandle->esp_tls_flags);
+    SUPLA_LOG_DEBUG("last errors %d %d %d",
+                    errorHandle->last_error,
+                    errorHandle->esp_tls_error_code,
+                    errorHandle->esp_tls_flags);
     if (!isFirstConnectAfterInit) {
       logConnReason(errorHandle->last_error,
-          errorHandle->esp_tls_error_code,
-          errorHandle->esp_tls_flags);
+                    errorHandle->esp_tls_error_code,
+                    errorHandle->esp_tls_flags,
+                    host);
     }
     isConnected = false;
     esp_tls_conn_destroy(client);
@@ -130,7 +131,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
 }
 
 std::size_t Supla::EspIdfClient::writeImp(const uint8_t *buf,
-    std::size_t size) {
+                                          std::size_t size) {
   Supla::AutoLock autoLock(mutex);
   if (client == nullptr) {
     return 0;
@@ -212,7 +213,6 @@ int Supla::EspIdfClient::readImp(uint8_t *buf, std::size_t size) {
 
 void Supla::EspIdfClient::stop() {
   Supla::AutoLock autoLock(mutex);
-  firstConnectAfterInit = true;
   isConnected = false;
   if (client != nullptr) {
     esp_tls_conn_destroy(client);
@@ -224,39 +224,59 @@ uint8_t Supla::EspIdfClient::connected() {
   return isConnected;
 }
 
-void Supla::EspIdfClient::logConnReason(int error, int tlsError, int tlsFlags) {
+void Supla::EspIdfClient::logConnReason(int error,
+                                        int tlsError,
+                                        int tlsFlags,
+                                        const char *host) {
   if (sdc && (lastConnErr != error || lastTlsErr != tlsError)) {
     lastConnErr = error;
     lastTlsErr = tlsError;
+    char buf[512] = {};
     switch (error) {
       case ESP_ERR_ESP_TLS_CANNOT_RESOLVE_HOSTNAME: {
-        sdc->addLastStateLog("Connection: can't resolve hostname");
+        snprintf(buf,
+                 512,
+                 "Connection: can't resolve hostname \"%s\"",
+                 host);
+        sdc->addLastStateLog(buf);
         break;
       }
       case ESP_ERR_ESP_TLS_FAILED_CONNECT_TO_HOST: {
-        sdc->addLastStateLog("Connection: failed connect to host");
+        snprintf(buf,
+                 512,
+                 "Connection: failed connect to host \"%s\"",
+                 host);
+        sdc->addLastStateLog(buf);
         break;
       }
       case ESP_ERR_ESP_TLS_CONNECTION_TIMEOUT: {
-        sdc->addLastStateLog("Connection: connection timeout");
+        snprintf(buf,
+                 512,
+                 "Connection: connection timeout to host \"%s\"",
+                 host);
+        sdc->addLastStateLog(buf);
         break;
       }
       case ESP_ERR_MBEDTLS_SSL_HANDSHAKE_FAILED: {
         switch (tlsError) {
           case -MBEDTLS_ERR_X509_CERT_VERIFY_FAILED: {
-            sdc->addLastStateLog(
-                "Connection TLS: handshake fail - server "
-                "certificate verification error");
+            snprintf(buf,
+                     512,
+                     "Connection TLS: handshake fail - server "
+                     "certificate verification error \"%s\"",
+                     host);
+
+            sdc->addLastStateLog(buf);
             break;
           }
           default: {
-            char buf[100] = {};
             snprintf(buf,
-                     100,
+                     512,
                      "Connection TLS: handshake fail (TLS 0x%X "
-                     "flags 0x%x)",
+                     "flags 0x%x, \"\"%s\")",
                      tlsError,
-                     tlsFlags);
+                     tlsFlags,
+                     host);
             sdc->addLastStateLog(buf);
             break;
           }
@@ -269,13 +289,13 @@ void Supla::EspIdfClient::logConnReason(int error, int tlsError, int tlsFlags) {
         break;
       }
       default: {
-        char buf[100] = {};
         snprintf(buf,
-                 100,
-                 "Connection: error 0x%X (TLS 0x%X flags 0x%x)",
+                 512,
+                 "Connection: error 0x%X (TLS 0x%X flags 0x%x \"\"%s\")",
                  error,
                  tlsError,
-                 tlsFlags);
+                 tlsFlags,
+                 host);
         sdc->addLastStateLog(buf);
         break;
       }
@@ -290,4 +310,3 @@ void Supla::EspIdfClient::setTimeoutMs(uint16_t _timeoutMs) {
 Supla::Client *Supla::ClientBuilder() {
   return new Supla::EspIdfClient;
 }
-

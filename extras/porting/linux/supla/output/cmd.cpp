@@ -18,6 +18,7 @@
 
 #include <supla/log_wrapper.h>
 
+#include <cstdio>
 #include <sstream>
 #include <string>
 #include <vector>

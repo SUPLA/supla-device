@@ -320,6 +320,7 @@ Supported channel types:
 * `DistanceParsed` - related class `Supla::Sensor::Distance`
 * `Hvac`, `CustomHvac` - related class `Supla::Control::HvacBase`
 * `CustomChannel` - supports arbitrary channel type
+* `RgbCctParsed` - related class `Supla::Control::RgbCctBase` - not a real support for this function. Just a working class to test it.
 
 Example channels configuration (details are exaplained later):
 
@@ -793,6 +794,13 @@ three extra configuration options:\
 `channel_type` - int value representing channel type,\
 `default_function_number` - int value representing default function number for this channel type.
 `value` - 8 B hex string representing value to be published, for example "01 00 00 00 00 00 00 00". First value corresponds with value[0] and so on.
+
+### RgbCctParsed
+
+`RgbCctParsed` is a channel which allows to control RGB+CCT light.
+
+`RgbCctParsed` accepts the following parameters:
+`fade_effect_ms` - fade effect time in milliseconds.
 
 ## Parsed channel `source` parameter
 

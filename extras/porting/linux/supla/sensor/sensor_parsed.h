@@ -120,7 +120,7 @@ class SensorParsed : public T, public SensorParsedBase {
 
 template <typename T>
 SensorParsed<T>::SensorParsed(Supla::Parser::Parser *parser)
-    : SensorParsedBase(parser) {
+    : SensorParsedBase(parser) {  // NOLINT
 }
 
 

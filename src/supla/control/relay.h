@@ -87,6 +87,9 @@ class Relay : public ChannelElement, public ActionHandler {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
                               bool local = false) override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
   // value for specific channel type (i.e. to prefill durationMS field when
@@ -102,9 +105,6 @@ class Relay : public ChannelElement, public ActionHandler {
   void enableCountdownTimerFunction();
   bool isCountdownTimerFunctionEnabled() const;
   void setMinimumAllowedDurationMs(uint32_t durationMs);
-  void fillChannelConfig(void *channelConfig,
-                         int *size,
-                         uint8_t configType) override;
 
   static void setRelayStorageSaveDelay(int delayMs);
 
@@ -177,11 +177,19 @@ class Relay : public ChannelElement, public ActionHandler {
 
   bool isFullyInitialized() const;
 
+  void enableCyclicMode(uint32_t turnOnTimeMs, uint32_t turnOffTimeMs);
+  void disableCyclicMode();
+  bool isCyclicMode() const;
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
     ButtonListElement *next = nullptr;
   };
+
+  void applyDuration(int durationMs, bool turnOn);
+
+  virtual void setNewChannelValue(bool value);
 
   void saveConfig() const;
   void updateTimerValue();
@@ -189,6 +197,7 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
+  uint32_t turnOffDurationForCycle = 0;
   uint16_t defaultStaircaseDurationMs = 10000;
   uint16_t defaultImpulseDurationMs = 500;
 

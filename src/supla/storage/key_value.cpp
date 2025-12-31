@@ -367,6 +367,9 @@ bool KeyValueElement::setString(const char* value) {
     size = newSize;
     data.charPtr = new char[size];
   }
+  if (data.charPtr == nullptr) {
+    return false;
+  }
   strncpy(data.charPtr, value, size);
   data.charPtr[size - 1] = '\0';
   return true;
@@ -405,6 +408,9 @@ bool KeyValueElement::setBlob(const char* value, size_t blobSize) {
     delete[] data.uint8ptr;
     size = blobSize;
     data.uint8ptr = new uint8_t[size];
+  }
+  if (data.uint8ptr == nullptr) {
+    return false;
   }
   memcpy(data.uint8ptr, value, blobSize);
   return true;

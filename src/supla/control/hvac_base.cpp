@@ -1379,7 +1379,8 @@ bool HvacBase::areTemperaturesValid(
   if (isTemperatureSetInStruct(temperatures,
                                TEMPERATURE_AUX_MAX_SETPOINT)) {
     if (!isTemperatureAuxMaxSetpointValid(temperatures)) {
-      SUPLA_LOG_WARNING("HVAC[%d]: invalid aux max setpoint");
+      SUPLA_LOG_WARNING("HVAC[%d]: invalid aux max setpoint",
+                        channel.getChannelNumber());
       return false;
     }
   }

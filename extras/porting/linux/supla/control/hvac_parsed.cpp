@@ -23,6 +23,7 @@
 #include <supla/control/output_interface.h>
 
 #include <cstdio>
+#include <string>
 
 using Supla::Control::HvacParsed;
 

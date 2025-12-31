@@ -18,6 +18,8 @@
 
 #include "control_payload.h"
 
+#include <string>
+
 Supla::Payload::ControlPayloadBase::ControlPayloadBase(
     Supla::Payload::Payload* payload)
     : payload(payload) {
@@ -49,3 +51,4 @@ void Supla::Payload::ControlPayloadBase::setSetOffValue(
     const std::variant<int, bool, std::string>& value) {
   setOffValue = value;
 }
+

@@ -20,6 +20,7 @@
 #include <string.h>
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <stdio.h>
 
 #include "fronius.h"
 #include "supla/network/client.h"

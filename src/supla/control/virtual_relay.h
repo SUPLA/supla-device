@@ -33,6 +33,7 @@ class VirtualRelay : public Relay {
   bool isOn() override;
 
  protected:
+  void setNewChannelValue(bool value) override;
   bool state = false;
 };
 

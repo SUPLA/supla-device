@@ -18,6 +18,8 @@
 #include <supla/time.h>
 #include <supla-common/log.h>
 
+#include <string>
+
 Supla::Parser::Parser::Parser(Supla::Source::Source *src) : source(src) {}
 
 void Supla::Parser::Parser::addKey(const std::string& key, int index) {

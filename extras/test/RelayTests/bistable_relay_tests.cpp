@@ -351,7 +351,7 @@ TEST_F(BistableRelayFixture, mixedChecks) {
                            std::memcmp(v, expectedValue, 8) == 0;
                   }),
                   0,
-                  0)).Times(2);
+                  0)).Times(7);
   EXPECT_CALL(protoMock,
               sendChannelValueChanged(
                   0,
@@ -362,9 +362,11 @@ TEST_F(BistableRelayFixture, mixedChecks) {
                            std::memcmp(v, expectedValue, 8) == 0;
                   }),
                   0,
-                  0)).Times(1);
-  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0));
+                  0)).Times(7);
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0)).Times(7);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 5000, 0, 0));
+  EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 3000, 0, 0)).Times(4);
 
   // R1
   EXPECT_CALL(ioMock, pinMode(r1Gpio, OUTPUT)).Times(2);
@@ -429,5 +431,132 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   }
   EXPECT_TRUE(r1.isOn());
   EXPECT_EQ(r1StateValue, 1);
+
+  // change state externally to 0
+  r1StateValue = 0;
+
+  for (int i = 0; i < 10; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+
+  r1.turnOn(5000);  // turn on for 5 s
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+  // change state externally to 0 (during turn on timer)
+  r1StateValue = 0;
+
+  for (int i = 0; i < 10; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  for (int i = 0; i < 21; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+
+  r1.iterateAlways();
+  r1.iterateConnected();
+  time.advance(100);
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  // change function to staircase, then turn on with 3s timer.
+  // Time should be saved and used later in turnOn(0);
+  r1.setFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
+  r1.setStoredTurnOnDurationMs(3000);  // 3 s
+  r1.turnOn();  // turn on for 3 s
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  // turn on externally, timer should be applied
+  r1StateValue = 1;
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  // second turn on externally, timer should be applied
+  r1StateValue = 1;
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+  // turn off externally
+  r1StateValue = 0;
+
+  for (int i = 0; i < 5; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
+
+  // third turn on externally, timer should be applied
+  r1StateValue = 1;
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_TRUE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 1);
+
+
+  for (int i = 0; i < 20; i++) {
+    r1.iterateAlways();
+    r1.iterateConnected();
+    time.advance(100);
+  }
+  EXPECT_FALSE(r1.isOn());
+  EXPECT_EQ(r1StateValue, 0);
 }
 

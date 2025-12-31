@@ -23,6 +23,7 @@
 #include <supla/log_wrapper.h>
 
 #include <vector>
+#include <string>
 
 namespace Supla::Source {
 

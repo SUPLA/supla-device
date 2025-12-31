@@ -26,6 +26,7 @@
 #include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
 #include <supla/control/virtual_relay.h>
+#include <supla/control/rgbcct_parsed.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
 #include <supla/output/cmd.h>
@@ -61,14 +62,14 @@
 
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
 #include <random>
 #include <string>
-#include <vector>
 #include <algorithm>
+#include <map>
+#include <vector>
 
-#include "supla/control/action_trigger.h"
 #include "supla/control/hvac_parsed.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/sensor/sensor_parsed.h"
@@ -627,6 +628,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addCmdValve(ch, channelNumber, parser);
     } else if (type == "CmdRollerShutter") {
       return addCmdRollerShutter(ch, channelNumber, parser);
+    } else if (type == "RgbCctParsed") {
+      return addRgbCctParsed(ch, channelNumber, parser);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
@@ -834,6 +837,24 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
   }
 
   return addCommonParametersParsed(ch, cv, &paramCount, parser);
+}
+
+bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
+                                             int channelNumber,
+                                             Supla::Parser::Parser *parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding RgbCctParsed", channelNumber);
+  auto rgb = new Supla::Control::RgbCctParsed(parser);
+  if (ch["offline_on_invalid_state"]) {
+    paramCount++;
+    auto useOfflineOnInvalidState = ch["offline_on_invalid_state"].as<bool>();
+    rgb->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
+  }
+  if (ch["fade_effect_ms"]) {
+    paramCount++;
+    auto fadeEffectMs = ch["fade_effect_ms"].as<int>();
+    rgb->setFadeEffectTime(fadeEffectMs);
+  }
+  return addCommonParameters(ch, rgb, &paramCount);
 }
 
 bool Supla::LinuxYamlConfig::addCmdRollerShutter(

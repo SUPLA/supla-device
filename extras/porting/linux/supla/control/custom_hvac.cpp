@@ -24,6 +24,7 @@
 #include <supla/control/control_payload.h>
 
 #include <cstdio>
+#include <string>
 
 using Supla::Control::CustomHvac;
 

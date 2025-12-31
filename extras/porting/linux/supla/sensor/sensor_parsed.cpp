@@ -25,6 +25,9 @@
 #include <algorithm>
 #include <cmath>
 #include <utility>
+#include <string>
+#include <vector>
+#include <map>
 
 using Supla::Sensor::SensorParsedBase;
 

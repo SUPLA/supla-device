@@ -20,6 +20,7 @@
 #define SRC_SUPLA_NETWORK_HTML_I2CSCANNER_H_
 
 #include <Wire.h>
+#include <stdio.h>
 
 namespace Supla {
 namespace Html {

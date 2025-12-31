@@ -55,7 +55,7 @@ class ControlPayload : public T, public ControlPayloadBase {
 
 template <typename T>
 ControlPayload<T>::ControlPayload(Supla::Payload::Payload *payload)
-    : ControlPayloadBase(payload) {
+    : ControlPayloadBase(payload) {  // NOLINT
 }
 
 }  // namespace Payload

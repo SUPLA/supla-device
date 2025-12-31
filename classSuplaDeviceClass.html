@@ -357,6 +357,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>isSleepingAllowed</b>
 <tr class="memitem:a5c3f2a7fe315961ac8c0ba41e898650a" id="r_a5c3f2a7fe315961ac8c0ba41e898650a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a5c3f2a7fe315961ac8c0ba41e898650a">setProtoVerboseLog</a> (bool value)</td></tr>
 <tr class="memdesc:a5c3f2a7fe315961ac8c0ba41e898650a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables/disables verbose logging of Supla protocol.  <br /></td></tr>
 <tr class="separator:a5c3f2a7fe315961ac8c0ba41e898650a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af7fd940e1fa664decec8ed46119c8546" id="r_af7fd940e1fa664decec8ed46119c8546"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#af7fd940e1fa664decec8ed46119c8546">setPermanentWebInterface</a> (bool value=true)</td></tr>
+<tr class="memdesc:af7fd940e1fa664decec8ed46119c8546"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables/disables the permanent web server.  <br /></td></tr>
+<tr class="separator:af7fd940e1fa664decec8ed46119c8546"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af889dce60fd819b8564924ee4e5f8bcd" id="r_af889dce60fd819b8564924ee4e5f8bcd"><td class="memItemLeft" align="right" valign="top"><a id="af889dce60fd819b8564924ee4e5f8bcd" name="af889dce60fd819b8564924ee4e5f8bcd"></a>
 <a class="el" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>getTimerAccessMutex</b> ()</td></tr>
 <tr class="separator:af889dce60fd819b8564924ee4e5f8bcd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -568,6 +571,12 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>goToConfigModeAsap</b
 <tr class="memitem:a6d7eca676b2a4df23ec65aef44f9ccd7" id="r_a6d7eca676b2a4df23ec65aef44f9ccd7"><td class="memItemLeft" align="right" valign="top"><a id="a6d7eca676b2a4df23ec65aef44f9ccd7" name="a6d7eca676b2a4df23ec65aef44f9ccd7"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>triggerSwUpdateIfAvailable</b> = false</td></tr>
 <tr class="separator:a6d7eca676b2a4df23ec65aef44f9ccd7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9e96eb66d38fa445b26792c6810ad2b0" id="r_a9e96eb66d38fa445b26792c6810ad2b0"><td class="memItemLeft" align="right" valign="top"><a id="a9e96eb66d38fa445b26792c6810ad2b0" name="a9e96eb66d38fa445b26792c6810ad2b0"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>startPermanentWebInterface</b> = false</td></tr>
+<tr class="separator:a9e96eb66d38fa445b26792c6810ad2b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afaf53036fa33a15e2089b5f17958af3b" id="r_afaf53036fa33a15e2089b5f17958af3b"><td class="memItemLeft" align="right" valign="top"><a id="afaf53036fa33a15e2089b5f17958af3b" name="afaf53036fa33a15e2089b5f17958af3b"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>runningPermanentWebInterface</b> = false</td></tr>
+<tr class="separator:afaf53036fa33a15e2089b5f17958af3b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac2a2f28bebe34d9435dc2f35bfb563c1" id="r_ac2a2f28bebe34d9435dc2f35bfb563c1"><td class="memItemLeft" align="right" valign="top"><a id="ac2a2f28bebe34d9435dc2f35bfb563c1" name="ac2a2f28bebe34d9435dc2f35bfb563c1"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>leaveCfgModeAfterInactivityMin</b> = 5</td></tr>
 <tr class="separator:ac2a2f28bebe34d9435dc2f35bfb563c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1026,6 +1035,31 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>byte length of MAC address to be used in hostname. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="af7fd940e1fa664decec8ed46119c8546" name="af7fd940e1fa664decec8ed46119c8546"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af7fd940e1fa664decec8ed46119c8546">&#9670;&#160;</a></span>setPermanentWebInterface()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::setPermanentWebInterface </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>value</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enables/disables the permanent web server. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">value</td><td>true to enable permanent web server </td></tr>
   </table>
   </dd>
 </dl>

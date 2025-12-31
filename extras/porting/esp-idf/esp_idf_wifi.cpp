@@ -18,6 +18,8 @@
 
 #include "esp_idf_wifi.h"
 
+#include <stdio.h>
+
 // FreeRTOS includes
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>

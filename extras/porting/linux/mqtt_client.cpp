@@ -25,7 +25,10 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cstdio>
 #include <memory>
+#include <string>
+#include <unordered_map>
 
 #include "linux_mqtt_client.h"
 

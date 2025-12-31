@@ -17,6 +17,7 @@
 #include "simple.h"
 
 #include <sstream>
+#include <string>
 
 Supla::Parser::Simple::Simple(Supla::Source::Source *src)
     : Supla::Parser::Parser(src) {

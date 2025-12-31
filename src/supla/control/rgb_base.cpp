@@ -22,16 +22,18 @@ Supla::Control::RGBBase::RGBBase() {
   channel.setDefaultFunction(SUPLA_CHANNELFNC_RGBLIGHTING);
 }
 
-void Supla::Control::RGBBase::setRGBW(int red,
-                                      int green,
-                                      int blue,
-                                      int colorBrightness,
-                                      int brightness,
-                                      bool toggle,
-                                      bool instant) {
+void Supla::Control::RGBBase::setRGBCCT(int red,
+                                        int green,
+                                        int blue,
+                                        int colorBrightness,
+                                        int brightness,
+                                        int whileTemperature,
+                                        bool toggle,
+                                        bool instant) {
   (void)(brightness);
-  Supla::Control::RGBWBase::setRGBW(
-      red, green, blue, colorBrightness, 0, toggle, instant);
+  (void)(whileTemperature);
+  Supla::Control::RGBWBase::setRGBCCT(
+      red, green, blue, colorBrightness, 0, 0, toggle, instant);
 }
 
 void Supla::Control::RGBBase::onSaveState() {

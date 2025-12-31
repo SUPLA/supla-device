@@ -16,34 +16,37 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_
-#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_
+#ifndef EXTRAS_PORTING_LINUX_SUPLA_CONTROL_RGBCCT_PARSED_H_
+#define EXTRAS_PORTING_LINUX_SUPLA_CONTROL_RGBCCT_PARSED_H_
 
-#include <supla/control/valve_base.h>
+#include <supla/control/rgb_cct_base.h>
 #include <supla/sensor/sensor_parsed.h>
-
-#include <string>
 
 namespace Supla {
 namespace Control {
-class CmdValve : public Sensor::SensorParsed<ValveBase> {
+class RgbCctParsed : public Sensor::SensorParsed<RGBCCTBase> {
  public:
-  explicit CmdValve(Supla::Parser::Parser *parser);
+  explicit RgbCctParsed(Supla::Parser::Parser *parser);
 
-  void onInit() override;
+  void iterateAlways() override;
 
-  void setValueOnDevice(uint8_t openLevel) override;
-  uint8_t getValueOpenStateFromDevice() override;
+  bool isOffline();  // add override
 
-  void setCmdOpen(const std::string &);
-  void setCmdClose(const std::string &);
+  void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
+
+  void setRGBCCTValueOnDevice(uint32_t red,
+                            uint32_t green,
+                            uint32_t blue,
+                            uint32_t colorBrightness,
+                            uint32_t white1Brightness,
+                            uint32_t white2Brightness) override;
 
  protected:
-  std::string cmdOpen;
-  std::string cmdClose;
   uint32_t lastReadTime = 0;
+  bool useOfflineOnInvalidState = false;
 };
 
-}  // namespace Control
-}  // namespace Supla
-#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_VALVE_H_
+};  // namespace Control
+};  // namespace Supla
+
+#endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_RGBCCT_PARSED_H_

@@ -63,6 +63,7 @@ BistableRelay::BistableRelay(Supla::Io::Base *ioOut,
     statusPullUp(statusPullUp),
     statusHighIsOn(statusHighIsOn) {
   stateOnInit = STATE_ON_INIT_KEEP;
+  setMinimumAllowedDurationMs(1000);
 }
 
 BistableRelay::BistableRelay(int pin,
@@ -113,7 +114,18 @@ void BistableRelay::iterateAlways() {
 
   if (statusPin >= 0 && (millis() - lastReadTime > 100)) {
     lastReadTime = millis();
-    channel.setNewValue(isOn());
+    bool currentState = isOn();
+    if (!isStatusUnknown() && currentState != channel.getValueBool()) {
+      channel.setNewValue(currentState);
+      if (lastCommandTurnOn && !currentState) {
+        durationMs = 0;
+        durationTimestamp = 0;
+        lastCommandTurnOn = false;
+      } else if (!lastCommandTurnOn && currentState) {
+        lastCommandTurnOn = true;
+        applyDuration(0, true);
+      }
+    }
   }
 
   if (busy && millis() - disarmTimeMs > 200) {
@@ -137,38 +149,27 @@ void BistableRelay::turnOn(_supla_int_t duration) {
     return;
   }
 
-  durationMs = 0;
-
-  if (keepTurnOnDurationMs) {
-    duration = storedTurnOnDurationMs;
-  }
-  // Change turn on requests duration to be at least 1 s
-  if (duration > 0 && duration < 1000) {
-    duration = 1000;
-  }
-  if (duration > 0) {
-    durationMs = duration;
-    durationTimestamp = millis();
-  }
+  applyDuration(duration, true);
 
   if (isStatusUnknown() || !isOn()) {
     internalToggle();
   }
+  lastCommandTurnOn = true;
 }
 
 void BistableRelay::turnOff(_supla_int_t duration) {
-  (void)(duration);
   if (busy) {
     return;
   }
 
-  durationMs = 0;
+  applyDuration(duration, false);
 
   if (isStatusUnknown()) {
     internalToggle();
   } else if (isOn()) {
     internalToggle();
   }
+  lastCommandTurnOn = false;
 }
 
 bool BistableRelay::isOn() {

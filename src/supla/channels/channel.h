@@ -56,7 +56,8 @@ class Channel : public LocalAction {
                    uint8_t green,
                    uint8_t blue,
                    uint8_t colorBrightness,
-                   uint8_t brightness);
+                   uint8_t whiteBrightness,
+                   uint8_t whiteTemperature);
   void setNewValue(uint64_t value);
   void setNewValue(const TDSC_RollerShutterValue &value);
   void setNewValue(const TDSC_FacadeBlindValue &value);
@@ -160,11 +161,12 @@ class Channel : public LocalAction {
   int32_t getValueInt32();
   uint64_t getValueInt64();
   virtual bool getValueBool();
-  uint8_t getValueRed();
-  uint8_t getValueGreen();
-  uint8_t getValueBlue();
-  uint8_t getValueColorBrightness();
-  uint8_t getValueBrightness();
+  uint8_t getValueRed() const;
+  uint8_t getValueGreen() const;
+  uint8_t getValueBlue() const;
+  uint8_t getValueColorBrightness() const;
+  uint8_t getValueBrightness() const;
+  uint8_t getValueWhiteTemperature() const;
   double getLastTemperature();
   uint8_t getValueClosingPercentage() const;
   uint8_t getValueTilt() const;

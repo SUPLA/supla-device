@@ -26,51 +26,21 @@ Supla::Control::VirtualRelay::VirtualRelay(_supla_int_t functions)
 }
 
 void Supla::Control::VirtualRelay::turnOn(_supla_int_t duration) {
-  SUPLA_LOG_INFO(
-      "VRelay[%d] turn ON (duration %d ms)",
-      channel.getChannelNumber(),
-      duration);
-  durationMs = duration;
-
-  if (minimumAllowedDurationMs > 0 && storedTurnOnDurationMs == 0) {
-    storedTurnOnDurationMs = durationMs;
-  }
-
-  if (keepTurnOnDurationMs || isStaircaseFunction() || isImpulseFunction()) {
-    durationMs = storedTurnOnDurationMs;
-  }
-
-  if (durationMs != 0) {
-    durationTimestamp = millis();
-  } else {
-    durationTimestamp = 0;
-  }
-
   state = true;
-
-  channel.setNewValue(state);
-  // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(5000, 2000);
+  Supla::Control::Relay::turnOn(duration);
 }
 
 void Supla::Control::VirtualRelay::turnOff(_supla_int_t duration) {
-  SUPLA_LOG_INFO(
-      "VRelay[%d] turn OFF (duration %d ms)",
-      channel.getChannelNumber(),
-      duration);
-  durationMs = duration;
-  if (durationMs != 0) {
-    durationTimestamp = millis();
-  } else {
-    durationTimestamp = 0;
-  }
   state = false;
-
-  channel.setNewValue(state);
-  // Schedule save in 5 s after state change
-  Supla::Storage::ScheduleSave(5000, 2000);
+  Supla::Control::Relay::turnOff(duration);
 }
 
 bool Supla::Control::VirtualRelay::isOn() {
   return state;
+}
+
+void Supla::Control::VirtualRelay::setNewChannelValue(bool value) {
+  (void)value;
+  // parameter value is ignored. We use isOn() instead
+  channel.setNewValue(isOn());
 }

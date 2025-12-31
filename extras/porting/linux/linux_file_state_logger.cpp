@@ -19,9 +19,10 @@
 #include <supla/log_wrapper.h>
 
 #include <ctime>
-#include <filesystem>
+#include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
 #include <iomanip>
+#include <string>
 
 #include "linux_file_state_logger.h"
 #include "supla/device/last_state_logger.h"

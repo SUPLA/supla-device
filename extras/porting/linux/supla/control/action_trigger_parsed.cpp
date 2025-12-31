@@ -20,6 +20,7 @@
 
 #include <supla/sensor/sensor_parsed.h>
 #include <supla/log_wrapper.h>
+#include <string>
 
 using Supla::Control::ActionTriggerParsed;
 

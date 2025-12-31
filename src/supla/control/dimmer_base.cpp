@@ -24,32 +24,35 @@ Supla::Control::DimmerBase::DimmerBase() {
   channel.setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
 }
 
-void Supla::Control::DimmerBase::setRGBW(int red,
+void Supla::Control::DimmerBase::setRGBCCT(int red,
                                          int green,
                                          int blue,
                                          int colorBrightness,
-                                         int brightness,
+                                         int whiteBrightness,
+                                         int whiteTemperature,
                                          bool toggle,
                                          bool instant) {
   (void)(red);
   (void)(green);
   (void)(blue);
   (void)(colorBrightness);
-  Supla::Control::RGBWBase::setRGBW(0, 0, 0, 0, brightness, toggle, instant);
+  (void)(whiteTemperature);
+  Supla::Control::RGBWBase::setRGBCCT(
+      0, 0, 0, 0, whiteBrightness, 0, toggle, instant);
 }
 
 void Supla::Control::DimmerBase::onLoadState() {
-  Supla::Storage::ReadState((unsigned char *)&curBrightness,
-                            sizeof(curBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastBrightness,
-                            sizeof(lastBrightness));
+  Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
+                            sizeof(curWhiteBrightness));
+  Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
+                            sizeof(lastWhiteBrightness));
 }
 
 void Supla::Control::DimmerBase::onSaveState() {
-  Supla::Storage::WriteState((unsigned char *)&curBrightness,
-                             sizeof(curBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastBrightness,
-                             sizeof(lastBrightness));
+  Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
+                             sizeof(curWhiteBrightness));
+  Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
+                             sizeof(lastWhiteBrightness));
 }
 
 void Supla::Control::DimmerBase::iterateDimmerRGBW(int rgbStep, int wStep) {

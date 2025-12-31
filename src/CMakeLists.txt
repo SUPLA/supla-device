@@ -49,6 +49,7 @@ set(SRCS
   supla/control/remote_output_interface.cpp
   supla/control/pin_status_led.cpp
   supla/control/rgbw_base.cpp
+  supla/control/rgb_cct_base.cpp
   supla/control/rgb_base.cpp
   supla/control/dimmer_base.cpp
   supla/control/rgbw_leds.cpp

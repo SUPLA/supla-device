@@ -120,7 +120,6 @@ void OcrIc::onInit() {
     ledcChannel.speed_mode = LEDC_LOW_SPEED_MODE;
     ledcChannel.channel = LEDC_CHANNEL_1;
     ledcChannel.timer_sel = LEDC_TIMER_1;
-    ledcChannel.intr_type = LEDC_INTR_DISABLE;
     ledcChannel.gpio_num = ledGpio;
     ledcChannel.duty = 0;
     ledcChannel.hpoint = 0;

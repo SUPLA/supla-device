@@ -21,7 +21,7 @@
 
 #include <supla/parser/parser.h>
 
-#include <filesystem>
+#include <filesystem>  // NOLINT
 #include <string>
 
 #include "source.h"

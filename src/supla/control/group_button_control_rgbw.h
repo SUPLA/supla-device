@@ -21,27 +21,27 @@
 
 #include <supla/action_handler.h>
 #include <supla/element.h>
-#include <supla/control/rgbw_base.h>
+#include <supla/control/rgb_cct_base.h>
 
 #define SUPLA_MAX_GROUP_CONTROL_ELEMENTS 10
 
 namespace Supla::Control {
 
 class Button;
-class RGBWBase;
+class RGBCCTBase;
 
 class GroupButtonControlRgbw : public ActionHandler, public Element {
  public:
   explicit GroupButtonControlRgbw(Button *button = nullptr);
   void attach(Button *button);
-  void addToGroup(RGBWBase *rgbwElement);
+  void addToGroup(RGBCCTBase *rgbwElement);
 
   void onLoadConfig(SuplaDeviceClass *sdc) override;
   void onInit() override;
   void handleAction(int event, int action) override;
 
   void setButtonControlType(int rgbwChannelNumber,
-                            RGBWBase::ButtonControlType type);
+                            RGBCCTBase::ButtonControlType type);
 
  private:
   void handleTurnOn();
@@ -50,8 +50,8 @@ class GroupButtonControlRgbw : public ActionHandler, public Element {
   void handleIterate();
 
   Button *attachedButton = nullptr;
-  RGBWBase *rgbw[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] = {};
-  RGBWBase::ButtonControlType controlType[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] =
+  RGBCCTBase *rgbw[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] = {};
+  RGBCCTBase::ButtonControlType controlType[SUPLA_MAX_GROUP_CONTROL_ELEMENTS] =
       {};
   int rgbwCount = 0;
 };

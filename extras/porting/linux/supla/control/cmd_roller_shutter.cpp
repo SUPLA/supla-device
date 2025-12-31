@@ -22,6 +22,7 @@
 #include <supla/time.h>
 
 #include <cstdio>
+#include <string>
 
 Supla::Control::CmdRollerShutter::CmdRollerShutter(
     Supla::Parser::Parser *parser)

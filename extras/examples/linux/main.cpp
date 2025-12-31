@@ -87,6 +87,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <cxxopts.hpp>
+#include <string>
+#include <memory>
 
 
 // reguired by linux_log.c

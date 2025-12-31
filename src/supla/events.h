@@ -87,16 +87,17 @@ enum Event {
   ON_DIMMER_BRIGHTNESS_CHANGE,  // on every change of "brightness"
   ON_COLOR_TURN_ON,   // when "color brightness" changes from 0 to non-0
   ON_COLOR_TURN_OFF,  // when "color brightness" changes from non-0 to 0
-  ON_COLOR_BRIGHTNESS_CHANGE,  // on every change of "color brightness"
-  ON_RED_TURN_ON,              // when "red" changes from 0 to non-0
-  ON_RED_TURN_OFF,             // when "red" changes from non-0 to 0
-  ON_RED_CHANGE,               // on every change of "red"
-  ON_GREEN_TURN_ON,            // when "green" changes from 0 to non-0
-  ON_GREEN_TURN_OFF,           // when "green" changes from non-0 to 0
-  ON_GREEN_CHANGE,             // on every change of "green"
-  ON_BLUE_TURN_ON,             // when "blue" changes from 0 to non-0
-  ON_BLUE_TURN_OFF,            // when "blue" changes from non-0 to 0
-  ON_BLUE_CHANGE,              // on every change of "blue"
+  ON_COLOR_BRIGHTNESS_CHANGE,   // on every change of "color brightness"
+  ON_RED_TURN_ON,               // when "red" changes from 0 to non-0
+  ON_RED_TURN_OFF,              // when "red" changes from non-0 to 0
+  ON_RED_CHANGE,                // on every change of "red"
+  ON_GREEN_TURN_ON,             // when "green" changes from 0 to non-0
+  ON_GREEN_TURN_OFF,            // when "green" changes from non-0 to 0
+  ON_GREEN_CHANGE,              // on every change of "green"
+  ON_BLUE_TURN_ON,              // when "blue" changes from 0 to non-0
+  ON_BLUE_TURN_OFF,             // when "blue" changes from non-0 to 0
+  ON_BLUE_CHANGE,               // on every change of "blue"
+  ON_WHITE_TEMPERATURE_CHANGE,  // on every change of "white temperature"
 
   ON_CHANNEL_OFFLINE,
   ON_CHANNEL_ONLINE,

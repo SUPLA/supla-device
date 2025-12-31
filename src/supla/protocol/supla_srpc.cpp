@@ -19,7 +19,6 @@
 #include "supla_srpc.h"
 
 #include <SuplaDevice.h>
-#include <string.h>
 #include <supla-common/srpc.h>
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
@@ -33,6 +32,8 @@
 #include <supla/time.h>
 #include <supla/tools.h>
 #include <supla/device/supla_ca_cert.h>
+#include <string.h>
+#include <stdio.h>
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {

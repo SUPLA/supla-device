@@ -19,6 +19,7 @@
 #ifndef ARDUINO
 
 #include <arpa/inet.h>
+#include <string>
 
 IPAddress::IPAddress() {}
 

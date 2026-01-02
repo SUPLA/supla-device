@@ -78,6 +78,8 @@ void delayMicroseconds(uint64_t v) {
   std::this_thread::sleep_for(std::chrono::microseconds(v));
 }
 
+#elif SUPLA_TEST
+// skip - we use mocks instead
 #else
 #error "Please implement time functions for current target"
 #endif

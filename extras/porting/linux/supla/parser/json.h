@@ -53,3 +53,4 @@ class Json : public Parser {
 };  // namespace Parser
 };  // namespace Supla
 #endif  // EXTRAS_PORTING_LINUX_SUPLA_PARSER_JSON_H_
+

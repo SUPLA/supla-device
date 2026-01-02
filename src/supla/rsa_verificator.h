@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_RSA_VERIFICATOR_H_
 #define SRC_SUPLA_RSA_VERIFICATOR_H_
 
+#ifndef SUPLA_TEST
+
 /*
  * Simple wrapper for Nettle RSA methods used to verify sha256 hash
  * against another hash signed with RSA private key.
@@ -43,4 +45,5 @@ class RsaVerificator {
 
 };  // namespace Supla
 
+#endif  // SUPLA_TEST
 #endif  // SRC_SUPLA_RSA_VERIFICATOR_H_

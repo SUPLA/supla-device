@@ -14,6 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef SUPLA_TEST
+
 #include "sha256.h"
 
 Supla::Sha256::Sha256() {
@@ -34,3 +36,6 @@ struct sha256_ctx* Supla::Sha256::getHash() {
 void Supla::Sha256::digest(uint8_t *output, int length) {
   sha256_digest(&hash, length, output);
 }
+
+#endif  // SUPLA_TEST
+

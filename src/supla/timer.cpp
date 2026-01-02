@@ -160,6 +160,8 @@ void initTimers() {
   Supla::Linux::Timers::init();
 #elif defined(SUPLA_FREERTOS)
   SUPLA_LOG_ERROR("Timers initialication: TODO");
+#elif defined(SUPLA_TEST)
+  // skip
 #else
 #error Please implement timers
 #endif

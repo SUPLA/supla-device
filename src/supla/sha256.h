@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_SHA256_H_
 #define SRC_SUPLA_SHA256_H_
 
+#ifndef SUPLA_TEST
+
 #include "nettle/sha2.h"
 
 /*
@@ -39,4 +41,6 @@ class Sha256 {
 
 };  // namespace Supla
 
+#endif  // SUPLA_TEST
 #endif  // SRC_SUPLA_SHA256_H_
+

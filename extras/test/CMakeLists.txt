@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 3.20)
 
-project(supladevice LANGUAGES CXX)
+project(supladevice LANGUAGES C CXX)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
@@ -12,15 +14,16 @@ find_program(CCACHE_FOUND ccache)
 # set(CMAKE_CXX_INCLUDE_WHAT_YOU_USE include-what-you-use)
 if(CCACHE_FOUND)
   set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+  set(CMAKE_C_COMPILER_LAUNCHER ccache)
 endif(CCACHE_FOUND)
 
 enable_testing()
 
-add_subdirectory(../../src/ build)
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SuplaDeviceSources.cmake)
 
 mark_as_advanced(
-BUILD_GMOCK
-BUILD_GTEST
+  BUILD_GMOCK
+  BUILD_GTEST
 )
 
 include(FetchContent)
@@ -32,15 +35,11 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
   )
 
-FetchContent_GetProperties(googletest)
-if(NOT googletest_POPULATED)
-  FetchContent_Populate(googletest)
-  add_subdirectory(${googletest_SOURCE_DIR} ${googletest_BINARY_DIR})
-endif()
+FetchContent_MakeAvailable(googletest)
 
-file(GLOB TEST_SRC
+file(GLOB TEST_SRC CONFIGURE_DEPENDS
   UptimeTests/*.cpp
-  ChannelTests/*cpp
+  ChannelTests/*.cpp
   IoTests/*.cpp
   ElementTests/*.cpp
   LocalActionTests/*.cpp
@@ -65,20 +64,23 @@ file(GLOB TEST_SRC
   RelayTests/*.cpp
   GpmTests/*.cpp
   SwUpdateTests/*.cpp
-  ../../src/supla-common/proto_check.cpp
   )
 
-file(GLOB DOUBLE_SRC doubles/*.cpp)
+list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
+
+file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
+
+add_library(supladevicelib SHARED)
+supla_device(supladevicelib)
+
+target_include_directories(supladevicelib PUBLIC
+  ${SUPLA_DEVICE_SRC_DIR}
+)
 
 add_executable(supladevicetests ${TEST_SRC} ${DOUBLE_SRC})
 
 target_include_directories(supladevicetests PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../src
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
-)
-
-target_include_directories(supladevicelib PUBLIC
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../src
 )
 
 target_link_libraries(supladevicetests
@@ -91,31 +93,27 @@ target_link_libraries(supladevicetests
 
 add_test(NAME supladevicetests COMMAND supladevicetests)
 
-set(WARNINGS
-  -Wall
-  -Wextra
-  -Werror
-  -Wformat=2
-  -Wcast-align
-  -Wcast-qual
-  -Wmissing-field-initializers
-  -Wpointer-arith
-  -Wredundant-decls
-  -Wstrict-aliasing=2
-  -Wunreachable-code
-  -Wunused
-  -Wunused-parameter
-  -Wvariadic-macros
-  -Wwrite-strings
-)
+function(supla_apply_warnings tgt)
+  target_compile_options(${tgt} PRIVATE
+    -Wall -Wextra -Werror -Wformat=2 -Wcast-align -Wcast-qual
+    -Wmissing-field-initializers -Wpointer-arith -Wredundant-decls
+    -Wstrict-aliasing=2 -Wunreachable-code -Wunused -Wunused-parameter
+    -Wvariadic-macros -Wwrite-strings
 
-target_compile_options(supladevicelib PRIVATE ${WARNINGS})
-target_compile_options(supladevicetests PRIVATE
-  ${WARNINGS}
-  -Wstringop-truncation
-  -Werror=stringop-truncation
-)
+    -Wstringop-truncation
+    -Werror=stringop-truncation
+  )
+  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    target_compile_options(${tgt} PRIVATE
+      -Wstringop-truncation
+      -Werror=stringop-truncation
+    )
+  endif()
+endfunction()
 
-target_compile_definitions(supladevicetests PRIVATE SUPLA_TEST SUPLA_DEVICE)
-target_compile_definitions(supladevicelib PRIVATE SUPLA_TEST SUPLA_DEVICE)
+supla_apply_warnings(supladevicetests)
+supla_apply_warnings(supladevicelib)
+
+target_compile_definitions(supladevicetests PRIVATE SUPLA_TEST)
+target_compile_definitions(supladevicelib PRIVATE SUPLA_TEST)
 

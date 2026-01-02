@@ -16,8 +16,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_PORTING_ESP_IDF_ESP_IDF_SECURITY_LOGGGER_H_
-#define EXTRAS_PORTING_ESP_IDF_ESP_IDF_SECURITY_LOGGGER_H_
+#ifndef EXTRAS_PORTING_ESP_IDF_ESP_IDF_SECURITY_LOGGER_H_
+#define EXTRAS_PORTING_ESP_IDF_ESP_IDF_SECURITY_LOGGER_H_
 
 #include <supla/device/security_logger.h>
 #include <esp_partition.h>
@@ -56,4 +56,4 @@ class ESPIdfSecurityLogger : public Supla::Device::SecurityLogger {
   Supla::SecurityLogEntry entryForOutput;
 };
 
-#endif  // EXTRAS_PORTING_ESP_IDF_ESP_IDF_SECURITY_LOGGGER_H_
+#endif  // EXTRAS_PORTING_ESP_IDF_ESP_IDF_SECURITY_LOGGER_H_

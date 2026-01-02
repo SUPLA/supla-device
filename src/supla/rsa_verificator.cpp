@@ -14,6 +14,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef SUPLA_TEST
+
 #include "rsa_verificator.h"
 
 Supla::RsaVerificator::RsaVerificator(const uint8_t *publicKeyBytes) {
@@ -35,3 +37,6 @@ bool Supla::RsaVerificator::verify(Supla::Sha256 *hash,
 
   return result == 1;
 }
+
+#endif  // SUPLA_TEST
+

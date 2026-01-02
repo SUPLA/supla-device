@@ -38,11 +38,11 @@ class EspIdfSectorWlStorage : public Storage {
  protected:
   int readStorage(unsigned int address,
                   unsigned char *buf,
-                  int size,
+                  unsigned int size,
                   bool logs) override;
   int writeStorage(unsigned int address,
                    const unsigned char *buf,
-                   int size) override;
+                   unsigned int size) override;
 
   bool dataChanged = false;
   char *buffer = nullptr;

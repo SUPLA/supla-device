@@ -59,7 +59,7 @@ void EspIdfSectorWlStorage::commit() {
 
 int EspIdfSectorWlStorage::readStorage(unsigned int address,
     unsigned char *buf,
-    int size,
+    unsigned int size,
     bool logs) {
   if (storagePartition == nullptr) {
     return 0;
@@ -78,7 +78,7 @@ int EspIdfSectorWlStorage::readStorage(unsigned int address,
 
 int EspIdfSectorWlStorage::writeStorage(unsigned int address,
     const unsigned char *buf,
-    int size) {
+    unsigned int size) {
   if (storagePartition == nullptr) {
     return 0;
   }

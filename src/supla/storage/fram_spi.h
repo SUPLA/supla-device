@@ -59,12 +59,13 @@ class FramSpi : public Storage {
     return Storage::init();
   }
 
-  void commit() {}
+  void commit() {
+  }
 
  protected:
   int readStorage(unsigned int offset,
                   unsigned char *buf,
-                  int size,
+                  unsigned int size,
                   bool logs) {
     if (logs) {
       Serial.print(F("readStorage: "));
@@ -84,7 +85,9 @@ class FramSpi : public Storage {
     return size;
   }
 
-  int writeStorage(unsigned int offset, const unsigned char *buf, int size) {
+  int writeStorage(unsigned int offset,
+                   const unsigned char *buf,
+                   unsigned int size) {
     fram.writeEnable(true);
     fram.write(offset, const_cast<uint8_t *>(buf), size);
     fram.writeEnable(false);

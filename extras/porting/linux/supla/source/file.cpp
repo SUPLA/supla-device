@@ -59,7 +59,7 @@ std::string Supla::Source::File::getContent() {
         }
       }
     }
-  } catch (std::filesystem::filesystem_error) {
+  } catch (const std::filesystem::filesystem_error &) {
     SUPLA_LOG_ERROR("File: file \"%s\" reading error", filePath.c_str());
   }
 

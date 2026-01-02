@@ -4,7 +4,7 @@ project(supladevice LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 set(CMAKE_BUILD_TYPE Debug)
@@ -20,6 +20,7 @@ endif(CCACHE_FOUND)
 enable_testing()
 
 include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SuplaDeviceSources.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/../../cmake/SuplaTools.cmake)
 
 mark_as_advanced(
   BUILD_GMOCK
@@ -93,23 +94,6 @@ target_link_libraries(supladevicetests
 
 add_test(NAME supladevicetests COMMAND supladevicetests)
 
-function(supla_apply_warnings tgt)
-  target_compile_options(${tgt} PRIVATE
-    -Wall -Wextra -Werror -Wformat=2 -Wcast-align -Wcast-qual
-    -Wmissing-field-initializers -Wpointer-arith -Wredundant-decls
-    -Wstrict-aliasing=2 -Wunreachable-code -Wunused -Wunused-parameter
-    -Wvariadic-macros -Wwrite-strings
-
-    -Wstringop-truncation
-    -Werror=stringop-truncation
-  )
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-    target_compile_options(${tgt} PRIVATE
-      -Wstringop-truncation
-      -Werror=stringop-truncation
-    )
-  endif()
-endfunction()
 
 supla_apply_warnings(supladevicetests)
 supla_apply_warnings(supladevicelib)

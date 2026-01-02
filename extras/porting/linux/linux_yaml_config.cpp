@@ -281,7 +281,7 @@ void Supla::LinuxYamlConfig::commit() {
       getStateFilesPath() + Supla::ReadWriteConfigStorage,
       std::ofstream::out | std::ios::binary);
 
-  for (int i = 0; i < dataSize; i++) {
+  for (size_t i = 0; i < dataSize; i++) {
     rwConfigFile << buf[i];
   }
 
@@ -289,22 +289,26 @@ void Supla::LinuxYamlConfig::commit() {
 }
 
 bool Supla::LinuxYamlConfig::setDeviceName(const char* name) {
+  (void)name;
   SUPLA_LOG_WARNING("setDeviceName is not supported on this platform");
   return false;
 }
 
 bool Supla::LinuxYamlConfig::setSuplaCommProtocolEnabled(bool enabled) {
+  (void)enabled;
   SUPLA_LOG_WARNING(
       "setSuplaCommProtocolEnabled is not supported on this platform");
   return false;
 }
 
 bool Supla::LinuxYamlConfig::setSuplaServerPort(int32_t port) {
+  (void)port;
   SUPLA_LOG_WARNING("setSuplaServerPort is not supported on this platform");
   return false;
 }
 
 bool Supla::LinuxYamlConfig::setEmail(const char* email) {
+  (void)email;
   SUPLA_LOG_WARNING("setEmail is not supported on this platform");
   return false;
 }
@@ -761,7 +765,7 @@ bool Supla::LinuxYamlConfig::addVirtualRelay(const YAML::Node& ch,
       vr->setDefaultStateRestore();
     }
   }
-  return addCommonParameters(ch, vr, &paramCount);
+  return addCommonParameters(ch, vr);
 }
 
 bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
@@ -806,7 +810,7 @@ bool Supla::LinuxYamlConfig::addCmdRelay(const YAML::Node& ch,
     return false;
   }
 
-  return addCommonParametersParsed(ch, cr, &paramCount, parser);
+  return addCommonParametersParsed(ch, cr, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
@@ -836,7 +840,7 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
     return false;
   }
 
-  return addCommonParametersParsed(ch, cv, &paramCount, parser);
+  return addCommonParametersParsed(ch, cv, parser);
 }
 
 bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
@@ -854,7 +858,7 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
     auto fadeEffectMs = ch["fade_effect_ms"].as<int>();
     rgb->setFadeEffectTime(fadeEffectMs);
   }
-  return addCommonParameters(ch, rgb, &paramCount);
+  return addCommonParameters(ch, rgb);
 }
 
 bool Supla::LinuxYamlConfig::addCmdRollerShutter(
@@ -890,7 +894,7 @@ bool Supla::LinuxYamlConfig::addCmdRollerShutter(
     cr->setCmdDownOff(cmdDownOff);
   }
 
-  return addCommonParametersParsed(ch, cr, &paramCount, parser);
+  return addCommonParametersParsed(ch, cr, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
@@ -940,7 +944,7 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
     return false;
   }
 
-  return addCommonParametersParsed(ch, cr, &paramCount, parser);
+  return addCommonParametersParsed(ch, cr, parser);
 }
 
 bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
@@ -968,7 +972,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
 
     IPAddress ipAddr(ip);
     auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
-    return addCommonParameters(ch, fronius, &paramCount);
+    return addCommonParameters(ch, fronius);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
                     channelNumber);
@@ -1011,7 +1015,7 @@ bool Supla::LinuxYamlConfig::addAfore(const YAML::Node& ch, int channelNumber) {
 
     IPAddress ipAddr(ip);
     auto afore = new Supla::PV::Afore(ipAddr, port, loginAndPassword.c_str());
-    return addCommonParameters(ch, afore, &paramCount);
+    return addCommonParameters(ch, afore);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
                     channelNumber);
@@ -1126,7 +1130,7 @@ bool Supla::LinuxYamlConfig::addHvac(const YAML::Node& ch, int channelNumber) {
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
     }
   }
-  return addCommonParameters(ch, hvac, &paramCount);
+  return addCommonParameters(ch, hvac);
 }
 
 bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
@@ -1207,7 +1211,7 @@ bool Supla::LinuxYamlConfig::addCustomHvac(const YAML::Node& ch,
           SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL);
     }
   }
-  return addCommonParameters(ch, hvac, &paramCount);
+  return addCommonParameters(ch, hvac);
 }
 
 bool Supla::LinuxYamlConfig::addThermometerParsed(
@@ -1239,7 +1243,7 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
     therm->setMultiplier(Supla::Parser::Temperature, multiplier);
   }
 
-  return addCommonParametersParsed(ch, therm, &paramCount, parser);
+  return addCommonParametersParsed(ch, therm, parser);
 }
 
 bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
@@ -1327,7 +1331,7 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeasurementParsed(
     gpm->setDefaultUnitAfterValue(unit.c_str());
   }
 
-  return addCommonParametersParsed(ch, gpm, &paramCount, parser);
+  return addCommonParametersParsed(ch, gpm, parser);
 }
 
 bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
@@ -1415,7 +1419,7 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
     gpm->setDefaultUnitAfterValue(unit.c_str());
   }
 
-  return addCommonParametersParsed(ch, gpm, &paramCount, parser);
+  return addCommonParametersParsed(ch, gpm, parser);
 }
 
 bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
@@ -1444,7 +1448,7 @@ bool Supla::LinuxYamlConfig::addImpulseCounterParsed(
     ic->setMultiplier(Supla::Parser::Counter, multiplier);
   }
 
-  return addCommonParametersParsed(ch, ic, &paramCount, parser);
+  return addCommonParametersParsed(ch, ic, parser);
 }
 
 bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
@@ -1480,7 +1484,7 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
 
       for (auto param : phaseParameters) {
         std::string paramName;
-        for (const std::string& name : {"voltage",
+        for (std::string_view name : {"voltage",
                                         "current",
                                         "fwd_act_energy",
                                         "rvr_act_energy",
@@ -1493,7 +1497,7 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
                                         "phase_angle",
                                         "power_factor"}) {
           if (param[name]) {
-            paramName = name + "_" + std::to_string(phaseId);
+            paramName = std::string {name} + "_" + std::to_string(phaseId);
             if (parser->isBasedOnIndex()) {
               int index = param[name].as<int>();
               em->setMapping(paramName, index);
@@ -1511,7 +1515,7 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
     }
   }
 
-  return addCommonParametersParsed(ch, em, &paramCount, parser);
+  return addCommonParametersParsed(ch, em, parser);
 }
 
 bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
@@ -1534,7 +1538,7 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
     binary->setUseOfflineOnInvalidState(useOfflineOnInvalidState);
   }
 
-  return addCommonParametersParsed(ch, binary, &paramCount, parser);
+  return addCommonParametersParsed(ch, binary, parser);
 }
 
 Supla::Parser::Parser* Supla::LinuxYamlConfig::addParser(
@@ -1750,7 +1754,7 @@ Supla::Output::Output* Supla::LinuxYamlConfig::addOutput(
         return nullptr;
       }
       std::string cmd = output["command"].as<std::string>();
-      out = new Supla::Output::Cmd(cmd.c_str());
+      out = new Supla::Output::Cmd(cmd);
     } else if (type == "File") {
       std::string fileName = output["file"].as<std::string>();
       out = new Supla::Output::File(fileName.c_str());
@@ -1898,7 +1902,7 @@ bool Supla::LinuxYamlConfig::addThermHygroMeterParsed(
     thermHumi->setMultiplier(Supla::Parser::Temperature, multiplier);
   }
 
-  return addCommonParametersParsed(ch, thermHumi, &paramCount, parser);
+  return addCommonParametersParsed(ch, thermHumi, parser);
 }
 
 bool Supla::LinuxYamlConfig::addHumidityParsed(const YAML::Node& ch,
@@ -1927,7 +1931,7 @@ bool Supla::LinuxYamlConfig::addHumidityParsed(const YAML::Node& ch,
     humi->setMultiplier(Supla::Parser::Humidity, multiplier);
   }
 
-  return addCommonParametersParsed(ch, humi, &paramCount, parser);
+  return addCommonParametersParsed(ch, humi, parser);
 }
 
 bool Supla::LinuxYamlConfig::addPressureParsed(const YAML::Node& ch,
@@ -1956,7 +1960,7 @@ bool Supla::LinuxYamlConfig::addPressureParsed(const YAML::Node& ch,
     pressure->setMultiplier(Supla::Parser::Pressure, multiplier);
   }
 
-  return addCommonParametersParsed(ch, pressure, &paramCount, parser);
+  return addCommonParametersParsed(ch, pressure, parser);
 }
 
 bool Supla::LinuxYamlConfig::addWindParsed(const YAML::Node& ch,
@@ -1985,7 +1989,7 @@ bool Supla::LinuxYamlConfig::addWindParsed(const YAML::Node& ch,
     wind->setMultiplier(Supla::Parser::Wind, multiplier);
   }
 
-  return addCommonParametersParsed(ch, wind, &paramCount, parser);
+  return addCommonParametersParsed(ch, wind, parser);
 }
 
 bool Supla::LinuxYamlConfig::addRainParsed(const YAML::Node& ch,
@@ -2014,7 +2018,7 @@ bool Supla::LinuxYamlConfig::addRainParsed(const YAML::Node& ch,
     rain->setMultiplier(Supla::Parser::Rain, multiplier);
   }
 
-  return addCommonParametersParsed(ch, rain, &paramCount, parser);
+  return addCommonParametersParsed(ch, rain, parser);
 }
 
 bool Supla::LinuxYamlConfig::addStateParser(
@@ -2219,7 +2223,7 @@ bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
     weight->setMultiplier(Supla::Parser::Weight, multiplier);
   }
 
-  return addCommonParametersParsed(ch, weight, &paramCount, parser);
+  return addCommonParametersParsed(ch, weight, parser);
 }
 
 bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
@@ -2243,7 +2247,7 @@ bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
       container->setMultiplier(Supla::Parser::Level, multiplier);
     }
   }
-  return addCommonParametersParsed(ch, container, &paramCount, parser);
+  return addCommonParametersParsed(ch, container, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
@@ -2253,7 +2257,7 @@ bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
   auto custom = new Supla::CustomChannel(parser);
   if (ch[Supla::ChannelType]) {
     paramCount++;
-    int32_t type = ch[Supla::ChannelType].as<int32_t>();
+    uint32_t type = ch[Supla::ChannelType].as<uint32_t>();
     custom->getChannel()->setType(type);
     if (custom->getChannel()->getChannelType() != type) {
       SUPLA_LOG_ERROR("Channel[%d] config: %s value %d not supported",
@@ -2280,7 +2284,7 @@ bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
     custom->getChannel()->setDefaultFunction(functionNumber);
   }
 
-  return addCommonParametersParsed(ch, custom, &paramCount, parser);
+  return addCommonParametersParsed(ch, custom, parser);
 }
 
 bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,
@@ -2309,13 +2313,12 @@ bool Supla::LinuxYamlConfig::addDistanceParsed(const YAML::Node& ch,
     distance->setMultiplier(Supla::Parser::Distance, multiplier);
   }
 
-  return addCommonParametersParsed(ch, distance, &paramCount, parser);
+  return addCommonParametersParsed(ch, distance, parser);
 }
 
 bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     const YAML::Node& ch,
     Supla::Sensor::SensorParsedBase* sensor,
-    int* paramCount,
     Supla::Parser::Parser* parser) {
   bool batteryAdded = false;
   if (ch[Supla::Sensor::BatteryLevel]) {
@@ -2325,7 +2328,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
       return false;
     }
     batteryAdded = true;
-    (*paramCount)++;
+    paramCount++;
     if (parser->isBasedOnIndex()) {
       int index = ch[Supla::Sensor::BatteryLevel].as<int>();
       sensor->setMapping(Supla::Sensor::BatteryLevel, index);
@@ -2335,7 +2338,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     }
   }
   if (ch[Supla::Sensor::MultiplierBatteryLevel]) {
-    (*paramCount)++;
+    paramCount++;
     double multiplier = ch[Supla::Sensor::MultiplierBatteryLevel].as<double>();
     sensor->setMultiplier(Supla::Sensor::BatteryLevel, multiplier);
   }
@@ -2346,7 +2349,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
       return false;
     }
     batteryAdded = true;
-    (*paramCount)++;
+    paramCount++;
     if (parser->isBasedOnIndex()) {
       int index = ch[Supla::Sensor::BatteryPowered].as<int>();
       sensor->setMapping(Supla::Sensor::BatteryPowered, index);
@@ -2356,7 +2359,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     }
   }
   if (ch[Supla::Sensor::ForceBatteryPowered]) {
-    (*paramCount)++;
+    paramCount++;
     auto forceBatteryPowered =
       ch[Supla::Sensor::ForceBatteryPowered].as<bool>();
     if (forceBatteryPowered) {
@@ -2367,12 +2370,12 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     }
   }
   if (ch[Supla::InitialCaption]) {
-    (*paramCount)++;
+    paramCount++;
     sensor->setInitialCaption(
         ch[Supla::InitialCaption].as<std::string>().c_str());
   }
   if (ch["channel_number"]) {  // optional
-    (*paramCount)++;
+    paramCount++;
     int channelNumber = ch["channel_number"].as<int>();
     auto ch = sensor->getChannel();
     if (ch) {
@@ -2383,7 +2386,7 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
     }
   }
   if (ch["icon_id"]) {  // optional
-    (*paramCount)++;
+    paramCount++;
     int iconId = ch["icon_id"].as<int>();
     auto ch = sensor->getChannel();
     if (ch) {
@@ -2397,10 +2400,9 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
 }
 
 bool Supla::LinuxYamlConfig::addCommonParameters(const YAML::Node& ch,
-                                                 Supla::Element* element,
-                                                 int* paramCount) {
+                                                 Supla::Element* element) {
   if (ch[Supla::InitialCaption]) {
-    (*paramCount)++;
+    paramCount++;
     element->setInitialCaption(
         ch[Supla::InitialCaption].as<std::string>().c_str());
   }

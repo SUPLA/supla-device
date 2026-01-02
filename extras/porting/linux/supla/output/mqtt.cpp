@@ -55,6 +55,7 @@ bool Supla::Output::Mqtt::putContent(int payload) {
 }
 
 bool Supla::Output::Mqtt::putContent(const std::vector<int>& payload) {
+  (void)payload;
   SUPLA_LOG_WARNING("putContent(int[]) is not supported implemented");
   return false;
 }

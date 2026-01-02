@@ -28,16 +28,17 @@ namespace Supla {
 class LinuxFileStorage : public Storage {
  public:
   explicit LinuxFileStorage(const std::string &path,
-      unsigned int storageStartingOffset = 0, int reservedSize = 10000);
+                            unsigned int storageStartingOffset = 0,
+                            unsigned int reservedSize = 10000);
   virtual ~LinuxFileStorage();
   bool init() override;
   void commit() override;
 
  protected:
-  int readStorage(unsigned int, unsigned char *, int, bool) override;
-  int writeStorage(unsigned int, const unsigned char *, int) override;
+  int readStorage(unsigned int, unsigned char *, unsigned int, bool) override;
+  int writeStorage(unsigned int, const unsigned char *, unsigned int) override;
 
-  int reservedSize = 0;
+  unsigned int reservedSize = 0;
   bool dataChanged = false;
   unsigned char *data = nullptr;
   std::string path;

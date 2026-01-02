@@ -30,6 +30,7 @@ bool Supla::Payload::Simple::isBasedOnIndex() {
 
 void Supla::Payload::Simple::turnOn(
     const std::string &key, std::variant<int, bool, std::string> onValue) {
+  (void)key;
   std::visit(
       [this](auto &&arg) {
         using T = std::decay_t<decltype(arg)>;
@@ -44,6 +45,7 @@ void Supla::Payload::Simple::turnOn(
 }
 void Supla::Payload::Simple::turnOff(
     const std::string &key, std::variant<int, bool, std::string> offValue) {
+  (void)key;
   std::visit(
       [this](auto &&arg) {
         using T = std::decay_t<decltype(arg)>;

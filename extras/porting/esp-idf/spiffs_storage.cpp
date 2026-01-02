@@ -105,7 +105,7 @@ bool SpiffsStorage::init() {
 
 int SpiffsStorage::readStorage(unsigned int offset,
                                unsigned char *buf,
-                               int size,
+                               unsigned int size,
                                bool logs) {
   if (!buffer) {
     return 0;
@@ -124,7 +124,7 @@ int SpiffsStorage::readStorage(unsigned int offset,
 
 int SpiffsStorage::writeStorage(unsigned int offset,
                                 const unsigned char *buf,
-                                int size) {
+                                unsigned int size) {
   dataChanged = true;
 
   if (offset + size > bufferSize) {

@@ -36,6 +36,7 @@ LinuxClock::LinuxClock() {
 }
 
 void LinuxClock::onLoadConfig(SuplaDeviceClass *sdc) {
+  (void)(sdc);
 }
 
 void LinuxClock::onTimer() {

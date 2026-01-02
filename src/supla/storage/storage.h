@@ -115,11 +115,11 @@ class Storage {
   bool getInitResult() const;
   virtual int readStorage(unsigned int address,
                           unsigned char *buf,
-                          int size,
+                          unsigned int size,
                           bool logs = true) = 0;
   virtual int writeStorage(unsigned int address,
                            const unsigned char *buf,
-                           int size) = 0;
+                           unsigned int size) = 0;
   virtual void commit() = 0;
 
   virtual int updateStorage(unsigned int, const unsigned char *, int);

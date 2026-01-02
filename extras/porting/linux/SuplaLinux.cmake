@@ -19,7 +19,16 @@ FetchContent_Declare(
   GIT_SHALLOW TRUE
 )
 
-FetchContent_MakeAvailable(json cxxopts)
+FetchContent_Declare(
+  mqttc
+  GIT_REPOSITORY https://github.com/LiamBindle/MQTT-C.git
+  GIT_TAG v1.1.6
+  GIT_SHALLOW TRUE
+)
+set(MQTT_C_OpenSSL_SUPPORT ON CACHE BOOL "Build MQTT-C with OpenSSL support?" FORCE)
+set(MQTT_C_EXAMPLES OFF CACHE BOOL "Build MQTT-C examples?" FORCE)
+
+FetchContent_MakeAvailable(json cxxopts mqttc)
 
 # Bazowy katalog tego portingu
 get_filename_component(SUPLA_LINUX_PORT_DIR "${CMAKE_CURRENT_LIST_DIR}" ABSOLUTE)
@@ -94,6 +103,9 @@ set(SUPLA_DEVICE_LINUX_SRCS
 )
 
 function(supla_linux target_name)
+  find_package(OpenSSL REQUIRED)
+  find_package(Threads REQUIRED)
+
   target_sources(${target_name} PRIVATE ${SUPLA_DEVICE_LINUX_SRCS})
 
   target_include_directories(${target_name} PUBLIC
@@ -107,6 +119,10 @@ function(supla_linux target_name)
     cxxopts::cxxopts
     OpenSSL::SSL
     yaml-cpp
+    mqttc
+    OpenSSL::Crypto
+    Threads::Threads
+    ${CMAKE_DL_LIBS}
   )
 endfunction()
 

@@ -180,6 +180,7 @@ int open_nb_socket(const char* addr, uint16_t port) {
 #endif
 
 void* mqtt_client_loop(void* client) {
+  (void)client;
   auto& mq_client = Supla::LinuxMqttClient::getInstance()->mq_client;
   SUPLA_LOG_DEBUG("Start MQTT client loop...");
   while (st_app_terminate == 0) {

@@ -33,9 +33,9 @@ std::unordered_map<std::string, std::string> Supla::LinuxMqttClient::topics;
 
 Supla::LinuxMqttClient::LinuxMqttClient(
     const Supla::LinuxYamlConfig& yamlConfig)
-    : port(yamlConfig.getMqttClientPort()),
+    : useSSL(yamlConfig.getMqttClientUseSSL()),
       verifyCA(yamlConfig.getMqttClientVerifyCA()),
-      useSSL(yamlConfig.getMqttClientUseSSL()) {
+      port(yamlConfig.getMqttClientPort()) {
   char buffer[256];
   host = yamlConfig.getMqttClientHost(buffer) ? buffer : "";
   if (!yamlConfig.getMqttClientName(buffer)) {
@@ -81,6 +81,7 @@ std::shared_ptr<Supla::LinuxMqttClient>& Supla::LinuxMqttClient::getInstance(
 }
 
 void Supla::LinuxMqttClient::subscribeTopic(const std::string& topic, int qos) {
+  (void)qos;
   topics[topic] = "";
 }
 

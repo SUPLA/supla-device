@@ -27,7 +27,7 @@ namespace Output {
 
 class Cmd : public Output {
  public:
-  explicit Cmd(const char *cmd);
+  explicit Cmd(std::string cmd);
   virtual ~Cmd();
 
  protected:

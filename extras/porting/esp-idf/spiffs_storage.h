@@ -33,9 +33,11 @@ class SpiffsStorage : public Storage {
  protected:
   int readStorage(unsigned int address,
                   unsigned char *buf,
-                  int size,
+                  unsigned int size,
                   bool logs);
-  int writeStorage(unsigned int address, const unsigned char *buf, int size);
+  int writeStorage(unsigned int address,
+                   const unsigned char *buf,
+                   unsigned int size);
 
   bool dataChanged = false;
   char *buffer = nullptr;

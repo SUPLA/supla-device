@@ -31,8 +31,8 @@ class Eeprom : public Storage {
   void commit();
 
  protected:
-  int readStorage(unsigned int, unsigned char *, int, bool);
-  int writeStorage(unsigned int, const unsigned char *, int);
+  int readStorage(unsigned int, unsigned char *, unsigned int, bool);
+  int writeStorage(unsigned int, const unsigned char *, unsigned int);
 
   int reservedSize;
   bool dataChanged;

@@ -54,14 +54,14 @@ bool Eeprom::init() {
 
 int Eeprom::readStorage(unsigned int offset,
                         unsigned char *buf,
-                        int size,
+                        unsigned int size,
                         bool logs) {
   if (logs) {
     Serial.print(F("readStorage: "));
     Serial.print(size);
     Serial.print(F("; Read: ["));
   }
-  for (int i = 0; i < size; i++) {
+  for (unsigned int i = 0; i < size; i++) {
     buf[i] = EEPROM.read(offset + i);
     if (logs) {
       Serial.print(static_cast<unsigned char *>(buf)[i], HEX);
@@ -76,9 +76,9 @@ int Eeprom::readStorage(unsigned int offset,
 
 int Eeprom::writeStorage(unsigned int offset,
                          const unsigned char *buf,
-                         int size) {
+                         unsigned int size) {
   dataChanged = true;
-  for (int i = 0; i < size; i++) {
+  for (unsigned int i = 0; i < size; i++) {
     EEPROM.write(offset + i, buf[i]);
   }
   Serial.print(F("Wrote "));

@@ -28,7 +28,7 @@ StorageMockSimulator::StorageMockSimulator(
 
 int StorageMockSimulator::readStorage(unsigned int offset,
     unsigned char *data,
-    int size,
+    unsigned int size,
     bool) {
   if (offset + size >= STORAGE_SIMULATOR_SIZE) {
     assert(false && "StorageMockSimulator out of bounds");
@@ -44,7 +44,7 @@ int StorageMockSimulator::readStorage(unsigned int offset,
 
 int StorageMockSimulator::writeStorage(unsigned int offset,
     const unsigned char *data,
-    int size) {
+    unsigned int size) {
   if (noWriteExpected) {
     assert(false && "StorageMockSimulator write not expected");
   }
@@ -178,7 +178,7 @@ StorageMockFlashSimulator::StorageMockFlashSimulator(
 
 int StorageMockFlashSimulator::writeStorage(unsigned int offset,
     const unsigned char *data,
-    int size) {
+    unsigned int size) {
   if (noWriteExpected) {
     assert(false && "StorageMockFlashSimulator write not expected");
   }
@@ -186,7 +186,7 @@ int StorageMockFlashSimulator::writeStorage(unsigned int offset,
     assert(false && "StorageMockFlashSimulator out of bounds");
     return 0;
   }
-  for (int i = 0; i < size; i++) {
+  for (unsigned int i = 0; i < size; i++) {
     // flash is NAND memory, so it can only clear bits (set from 1 to 0)
     storageSimulatorData[offset + i] &= data[i];
   }

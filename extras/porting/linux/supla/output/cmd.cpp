@@ -23,77 +23,85 @@
 #include <string>
 #include <vector>
 
-Supla::Output::Cmd::Cmd(const char *cmd) : cmdLine(cmd) {
+static bool replaceFirst(std::string& s,
+                         std::string_view what,
+                         std::string_view with) {
+  const auto pos = s.find(what);
+  if (pos == std::string::npos) {
+    return false;
+  }
+  s.replace(pos, what.size(), with);
+  return true;
+}
+
+static std::string buildCmd(std::string_view cmdLine, std::string_view arg) {
+  std::string cmd(cmdLine);
+
+  if (replaceFirst(cmd, "{}", arg)) {
+    return cmd;
+  }
+  if (replaceFirst(cmd, "%s", arg)) {
+    return cmd;
+  }
+  if (replaceFirst(cmd, "%d", arg)) {
+    return cmd;
+  }
+
+  if (!cmd.empty() && cmd.back() != ' ') {
+    cmd.push_back(' ');
+  }
+  cmd.append(arg);
+  return cmd;
+}
+
+static bool execCmd(const std::string& cmd) {
+  SUPLA_LOG_DEBUG("Command: %s", cmd.c_str());
+  FILE* p = popen(cmd.c_str(), "r");
+  if (!p) {
+    SUPLA_LOG_WARNING("Failed to execute command: %s", cmd.c_str());
+    return false;
+  }
+  pclose(p);
+  return true;
+}
+
+Supla::Output::Cmd::Cmd(std::string cmd) : cmdLine(cmd) {
 }
 
 Supla::Output::Cmd::~Cmd() {
 }
 
 bool Supla::Output::Cmd::putContent(int payload) {
-  if (!cmdLine.empty()) {
-    char buffer[256];
-    snprintf(buffer, sizeof(buffer), cmdLine.c_str(), payload);
-    SUPLA_LOG_DEBUG("Command: %s", buffer);
-    FILE* p = popen(buffer, "r");
-    if (p == nullptr) {
-      SUPLA_LOG_WARNING("Failed to execute command: %s", buffer);
-      return false;
-    }
-    pclose(p);
-    return true;
-  }
-  return false;
+  if (cmdLine.empty()) return false;
+  return execCmd(buildCmd(cmdLine, std::to_string(payload)));
 }
 
 bool Supla::Output::Cmd::putContent(bool payload) {
-  if (!cmdLine.empty()) {
-    char buffer[256];
-    snprintf(
-        buffer, sizeof(buffer), cmdLine.c_str(), payload ? "true" : "false");
-    SUPLA_LOG_DEBUG("Command: %s", buffer);
-    FILE* p = popen(buffer, "r");
-    if (p == nullptr) {
-      SUPLA_LOG_WARNING("Failed to execute command: %s", buffer);
-      return false;
-    }
-    pclose(p);
-    return true;
-  }
-  return false;
+  if (cmdLine.empty()) return false;
+
+  const char* val = payload ? "true" : "false";
+  return execCmd(buildCmd(cmdLine, val));
 }
 
-bool Supla::Output::Cmd::putContent(const std::string &payload) {
-  if (!cmdLine.empty()) {
-    char buffer[256];
-    snprintf(buffer, sizeof(buffer), cmdLine.c_str(), payload.c_str());
-    SUPLA_LOG_DEBUG("Command: %s", buffer);
-    FILE* p = popen(buffer, "r");
-    if (p == nullptr) {
-      SUPLA_LOG_WARNING("Failed to execute command: %s", buffer);
-      return false;
-    }
-    pclose(p);
-    return true;
-  }
-  return false;
+bool Supla::Output::Cmd::putContent(const std::string& payload) {
+  if (cmdLine.empty()) return false;
+
+  return execCmd(buildCmd(cmdLine, payload));
 }
-bool Supla::Output::Cmd::putContent(const std::vector<int> &payload) {
-  if (!cmdLine.empty()) {
-    std::ostringstream oss;
-    for (int i : payload) {
-      oss << i << ' ';
+
+bool Supla::Output::Cmd::putContent(const std::vector<int>& payload) {
+  if (cmdLine.empty()) return false;
+
+  std::string payloadStr;
+  payloadStr.reserve(payload.size() * 12);
+
+  for (size_t i = 0; i < payload.size(); ++i) {
+    if (i) {
+      payloadStr.push_back(' ');
     }
-    std::string payloadStr = oss.str();
-    char buffer[256];
-    snprintf(buffer, sizeof(buffer), cmdLine.c_str(), payloadStr.c_str());
-    SUPLA_LOG_DEBUG("Command: %s", buffer);
-    FILE* p = popen(buffer, "r");
-    if (p == nullptr) {
-      SUPLA_LOG_WARNING("Failed to execute command: %s", buffer);
-      return false;
-    }
-    pclose(p);
-    return true;
+    payloadStr += std::to_string(payload[i]);
   }
-  return false;
+
+  return execCmd(buildCmd(cmdLine, payloadStr));
 }
+

@@ -30,11 +30,11 @@ class StorageMock: public Supla::Storage {
   MOCK_METHOD(void, commit, (), (override));
   MOCK_METHOD(int,
               readStorage,
-              (unsigned int, unsigned char *, int, bool),
+              (unsigned int, unsigned char *, unsigned int, bool),
               (override));
   MOCK_METHOD(int,
               writeStorage,
-              (unsigned int, const unsigned char *, int),
+              (unsigned int, const unsigned char *, unsigned int),
               (override));
 
   void defaultInitialization(int elementStateSize = 0);
@@ -53,11 +53,11 @@ class StorageMockSimulator: public Supla::Storage {
 
   int readStorage(unsigned int offset,
                   unsigned char *data,
-                  int size,
+                  unsigned int size,
                   bool log) override;
   int writeStorage(unsigned int offset,
                    const unsigned char *data,
-                   int size) override;
+                   unsigned int size) override;
 
   bool isEmpty();
   bool isPreampleInitialized(int sectionCount = 1);
@@ -81,7 +81,7 @@ class StorageMockFlashSimulator: public StorageMockSimulator {
 
   int writeStorage(unsigned int offset,
                    const unsigned char *data,
-                   int size) override;
+                   unsigned int size) override;
   void eraseSector(unsigned int address, int size) override;
 
   bool isEmpty();

@@ -185,6 +185,12 @@ Public Types</h2></td></tr>
 , <b>ALL</b>
  }</td></tr>
 <tr class="separator:aa78c1c87345956ae56f3caedf1a7773a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac598fd7778465a980b42c1dfb03a0b33" id="r_ac598fd7778465a980b42c1dfb03a0b33"><td class="memItemLeft" align="right" valign="top"><a id="ac598fd7778465a980b42c1dfb03a0b33" name="ac598fd7778465a980b42c1dfb03a0b33"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>LegacyChannelFunction</b> : uint8_t { <b>None</b>
+, <b>RGBW</b>
+, <b>RGB</b>
+, <b>Dimmer</b>
+ }</td></tr>
+<tr class="separator:ac598fd7778465a980b42c1dfb03a0b33"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
@@ -260,6 +266,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setMinMaxIterationDel
 <tr class="memitem:ae1cd1cb99bec95b12b31d335af41e002" id="r_ae1cd1cb99bec95b12b31d335af41e002"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae1cd1cb99bec95b12b31d335af41e002">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) override</td></tr>
 <tr class="memdesc:ae1cd1cb99bec95b12b31d335af41e002"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:ae1cd1cb99bec95b12b31d335af41e002"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6eff5c2fd4664a56203b06d7753d4ed7" id="r_a6eff5c2fd4664a56203b06d7753d4ed7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6eff5c2fd4664a56203b06d7753d4ed7">convertStorageFromLegacyChannel</a> (LegacyChannelFunction channelFunction)</td></tr>
+<tr class="memdesc:a6eff5c2fd4664a56203b06d7753d4ed7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables storage conversion from legacy channel function to new.  <br /></td></tr>
+<tr class="separator:a6eff5c2fd4664a56203b06d7753d4ed7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9060d602a06b0fbbe5a09969457be953" id="r_a9060d602a06b0fbbe5a09969457be953"><td class="memItemLeft" align="right" valign="top"><a id="a9060d602a06b0fbbe5a09969457be953" name="a9060d602a06b0fbbe5a09969457be953"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *)</td></tr>
 <tr class="separator:a9060d602a06b0fbbe5a09969457be953"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -530,6 +539,9 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>stateOnInit</b> = R
 <tr class="memitem:a808d001fe938054853ddf7055ea42fd2" id="r_a808d001fe938054853ddf7055ea42fd2"><td class="memItemLeft" align="right" valign="top"><a id="a808d001fe938054853ddf7055ea42fd2" name="a808d001fe938054853ddf7055ea42fd2"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>minIterationBrightness</b> = 1</td></tr>
 <tr class="separator:a808d001fe938054853ddf7055ea42fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61cdfa45b078acb2e57d5dd679045e5d" id="r_a61cdfa45b078acb2e57d5dd679045e5d"><td class="memItemLeft" align="right" valign="top"><a id="a61cdfa45b078acb2e57d5dd679045e5d" name="a61cdfa45b078acb2e57d5dd679045e5d"></a>
+LegacyChannelFunction&#160;</td><td class="memItemRight" valign="bottom"><b>legacyChannelFunction</b> = LegacyChannelFunction::None</td></tr>
+<tr class="separator:a61cdfa45b078acb2e57d5dd679045e5d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92c7276644b37e8d8675975bf7aaed7c" id="r_a92c7276644b37e8d8675975bf7aaed7c"><td class="memItemLeft" align="right" valign="top"><a id="a92c7276644b37e8d8675975bf7aaed7c" name="a92c7276644b37e8d8675975bf7aaed7c"></a>
 enum ButtonControlType&#160;</td><td class="memItemRight" valign="bottom"><b>buttonControlType</b> = BUTTON_FOR_RGBW</td></tr>
 <tr class="separator:a92c7276644b37e8d8675975bf7aaed7c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -743,6 +755,31 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a6eff5c2fd4664a56203b06d7753d4ed7" name="a6eff5c2fd4664a56203b06d7753d4ed7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6eff5c2fd4664a56203b06d7753d4ed7">&#9670;&#160;</a></span>convertStorageFromLegacyChannel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RGBCCTBase::convertStorageFromLegacyChannel </td>
+          <td>(</td>
+          <td class="paramtype">LegacyChannelFunction</td>          <td class="paramname"><span class="paramname"><em>channelFunction</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enables storage conversion from legacy channel function to new. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">channelFunction</td><td>None, RGBW, RGB, Dimmer </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

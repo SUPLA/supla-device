@@ -259,6 +259,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setMinMaxIterationDel
 <tr class="memitem:ae1cd1cb99bec95b12b31d335af41e002 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase" id="r_ae1cd1cb99bec95b12b31d335af41e002"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Control_1_1RGBCCTBase.html#ae1cd1cb99bec95b12b31d335af41e002">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) override</td></tr>
 <tr class="memdesc:ae1cd1cb99bec95b12b31d335af41e002 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
 <tr class="separator:ae1cd1cb99bec95b12b31d335af41e002 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6eff5c2fd4664a56203b06d7753d4ed7 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase" id="r_a6eff5c2fd4664a56203b06d7753d4ed7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Control_1_1RGBCCTBase.html#a6eff5c2fd4664a56203b06d7753d4ed7">convertStorageFromLegacyChannel</a> (LegacyChannelFunction channelFunction)</td></tr>
+<tr class="memdesc:a6eff5c2fd4664a56203b06d7753d4ed7 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables storage conversion from legacy channel function to new.  <br /></td></tr>
+<tr class="separator:a6eff5c2fd4664a56203b06d7753d4ed7 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9060d602a06b0fbbe5a09969457be953 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase" id="r_a9060d602a06b0fbbe5a09969457be953"><td class="memItemLeft" align="right" valign="top">
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *)</td></tr>
 <tr class="separator:a9060d602a06b0fbbe5a09969457be953 inherit pub_methods_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -517,6 +520,9 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>stateOnInit</b> = R
 <tr class="memitem:a808d001fe938054853ddf7055ea42fd2 inherit pro_attribs_classSupla_1_1Control_1_1RGBCCTBase" id="r_a808d001fe938054853ddf7055ea42fd2"><td class="memItemLeft" align="right" valign="top">
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>minIterationBrightness</b> = 1</td></tr>
 <tr class="separator:a808d001fe938054853ddf7055ea42fd2 inherit pro_attribs_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61cdfa45b078acb2e57d5dd679045e5d inherit pro_attribs_classSupla_1_1Control_1_1RGBCCTBase" id="r_a61cdfa45b078acb2e57d5dd679045e5d"><td class="memItemLeft" align="right" valign="top">
+LegacyChannelFunction&#160;</td><td class="memItemRight" valign="bottom"><b>legacyChannelFunction</b> = LegacyChannelFunction::None</td></tr>
+<tr class="separator:a61cdfa45b078acb2e57d5dd679045e5d inherit pro_attribs_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92c7276644b37e8d8675975bf7aaed7c inherit pro_attribs_classSupla_1_1Control_1_1RGBCCTBase" id="r_a92c7276644b37e8d8675975bf7aaed7c"><td class="memItemLeft" align="right" valign="top">
 enum ButtonControlType&#160;</td><td class="memItemRight" valign="bottom"><b>buttonControlType</b> = BUTTON_FOR_RGBW</td></tr>
 <tr class="separator:a92c7276644b37e8d8675975bf7aaed7c inherit pro_attribs_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -667,6 +673,12 @@ Additional Inherited Members</h2></td></tr>
 , <b>ALL</b>
  }</td></tr>
 <tr class="separator:aa78c1c87345956ae56f3caedf1a7773a inherit pub_types_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac598fd7778465a980b42c1dfb03a0b33 inherit pub_types_classSupla_1_1Control_1_1RGBCCTBase" id="r_ac598fd7778465a980b42c1dfb03a0b33"><td class="memItemLeft" align="right" valign="top"><a id="ac598fd7778465a980b42c1dfb03a0b33" name="ac598fd7778465a980b42c1dfb03a0b33"></a>enum class &#160;</td><td class="memItemRight" valign="bottom"><b>LegacyChannelFunction</b> : uint8_t { <b>None</b>
+, <b>RGBW</b>
+, <b>RGB</b>
+, <b>Dimmer</b>
+ }</td></tr>
+<tr class="separator:ac598fd7778465a980b42c1dfb03a0b33 inherit pub_types_classSupla_1_1Control_1_1RGBCCTBase"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_static_methods_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_static_methods_classSupla_1_1Element')"><img src="closed.png" alt="-"/>&#160;Static Public Member Functions inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:aa91805a1d7d949293dd84f6d61833028 inherit pub_static_methods_classSupla_1_1Element" id="r_aa91805a1d7d949293dd84f6d61833028"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classSupla_1_1Element.html">Element</a> *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028">begin</a> ()</td></tr>
 <tr class="memdesc:aa91805a1d7d949293dd84f6d61833028 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns first <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> (based on creation order)  <br /></td></tr>

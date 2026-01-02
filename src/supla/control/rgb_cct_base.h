@@ -71,6 +71,13 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
     ALL
   };
 
+  enum class LegacyChannelFunction : uint8_t {
+    None,
+    RGBW,
+    RGB,
+    Dimmer
+  };
+
   RGBCCTBase();
 
   void purgeConfig() override;
@@ -124,6 +131,13 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   void onLoadState() override;
   void onSaveState() override;
   void onLoadConfig(SuplaDeviceClass *) override;
+
+  /**
+   * @brief Enables storage conversion from legacy channel function to new
+   *
+   * @param channelFunction None, RGBW, RGB, Dimmer
+   */
+  void convertStorageFromLegacyChannel(LegacyChannelFunction channelFunction);
 
   void attach(Supla::Control::Button *);
 
@@ -180,6 +194,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   bool instant = false;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   uint8_t minIterationBrightness = 1;
+  LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;
 
   enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
   enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;

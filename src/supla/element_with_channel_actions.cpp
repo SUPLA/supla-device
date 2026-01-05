@@ -263,7 +263,7 @@ bool Supla::ElementWithChannelActions::setAndSaveFunction(
   return false;
 }
 
-bool Supla::ElementWithChannelActions::isAnyUpdatePending() {
+bool Supla::ElementWithChannelActions::isAnyUpdatePending() const {
   auto channel = getChannel();
   if (!channel) {
     return false;

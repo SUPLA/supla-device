@@ -104,16 +104,10 @@ class ElementWithChannelActions : public Element, public LocalAction {
       TSDS_SetChannelConfigResult *result) override;
   void purgeConfig() override;
 
-  void clearChannelConfigChangedFlag();
 
   void runAction(uint16_t event) const override;
 
-  // returns true if function was changed (previous one was different)
-  virtual bool setAndSaveFunction(uint32_t channelFunction);
-  virtual bool loadFunctionFromConfig();
-  virtual bool saveConfigChangeFlag() const;
-  virtual bool loadConfigChangeFlag();
-  bool isAnyUpdatePending() override;
+  bool isAnyUpdatePending() const override;
 
   // methods to override for channels with runtime config support
   virtual ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
@@ -123,6 +117,12 @@ class ElementWithChannelActions : public Element, public LocalAction {
   void triggerSetChannelConfig(int configType = SUPLA_CONFIG_TYPE_DEFAULT);
 
  protected:
+  // returns true if function was changed (previous one was different)
+  virtual bool setAndSaveFunction(uint32_t channelFunction);
+  virtual bool loadFunctionFromConfig();
+  virtual bool saveConfigChangeFlag() const;
+  virtual bool loadConfigChangeFlag();
+  void clearChannelConfigChangedFlag();
   bool iterateConfigExchange();
   /**
    * @brief Returns the next config type to be sent

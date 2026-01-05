@@ -25,10 +25,15 @@ namespace Io {
 class Base;
 }
 
+namespace Html {
+class RollerShutterParameters;
+}
+
 namespace Control {
 
 class RollerShutter : public RollerShutterInterface {
  public:
+  friend class Supla::Html::RollerShutterParameters;
    /**
     * Constructor.
     *

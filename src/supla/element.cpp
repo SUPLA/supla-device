@@ -316,7 +316,7 @@ void Element::ClearInvalidPtr() {
   invalidatePtr = false;
 }
 
-bool Element::isAnyUpdatePending() {
+bool Element::isAnyUpdatePending() const {
   return false;
 }
 

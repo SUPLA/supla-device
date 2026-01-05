@@ -366,7 +366,7 @@ class Element {
    *
    * @return true if any update is pending
    */
-  virtual bool isAnyUpdatePending();
+  virtual bool isAnyUpdatePending() const;
 
   /**
    * Sets initial caption.

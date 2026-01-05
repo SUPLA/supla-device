@@ -18,7 +18,7 @@ var searchData=
   ['ipaddress_15',['IPAddress',['../classIPAddress.html',1,'']]],
   ['isalarmingused_16',['isAlarmingUsed',['../classSupla_1_1Sensor_1_1Container.html#a8a4e188fdada36114301fad2dc3067d9',1,'Supla::Sensor::Container::isAlarmingUsed()'],['../classContainer.html#a8a4e188fdada36114301fad2dc3067d9',1,'Container::isAlarmingUsed()']]],
   ['isanyupdatepending_17',['IsAnyUpdatePending',['../classSupla_1_1Element.html#a0a9b20dc181a9d7d08ff58c9156098ba',1,'Supla::Element']]],
-  ['isanyupdatepending_18',['isAnyUpdatePending',['../classSupla_1_1Element.html#af7f423f1d16feeeb06e3e76a5f9b5bd4',1,'Supla::Element::isAnyUpdatePending()'],['../classSupla_1_1ElementWithChannelActions.html#a16fda8aba003fe72b033c73eac0231ad',1,'Supla::ElementWithChannelActions::isAnyUpdatePending()']]],
+  ['isanyupdatepending_18',['isAnyUpdatePending',['../classSupla_1_1Element.html#aace753c8ae6efcaf5808c62279f1d389',1,'Supla::Element::isAnyUpdatePending()'],['../classSupla_1_1ElementWithChannelActions.html#a66a732a29fb0994e9a907842c1db99c2',1,'Supla::ElementWithChannelActions::isAnyUpdatePending()']]],
   ['isautomaticfirmwareupdateenabled_19',['isAutomaticFirmwareUpdateEnabled',['../classSuplaDeviceClass.html#ae726597cbdc9efd1570166009160ef75',1,'SuplaDeviceClass']]],
   ['isbottomreached_20',['isBottomReached',['../classSupla_1_1Control_1_1RollerShutterInterface.html#a64b31d39bcf8a04c739003c4fb92eb32',1,'Supla::Control::RollerShutterInterface::isBottomReached()'],['../classRollerShutterInterface.html#a64b31d39bcf8a04c739003c4fb92eb32',1,'RollerShutterInterface::isBottomReached()']]],
   ['ischannelstateenabled_21',['isChannelStateEnabled',['../classSupla_1_1Element.html#a8de1700d8a5ff9fa8193af5302d965f3',1,'Supla::Element']]],

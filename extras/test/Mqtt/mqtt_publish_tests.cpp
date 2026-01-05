@@ -71,6 +71,7 @@ class MqttPublishMock : public Supla::Protocol::Mqtt {
 
 TEST_F(MqttPublishTests, powerBelow20kW) {
   ConfigMock config;
+  EXPECT_CALL(config, init());
   NetworkMockWithMac net;
   SuplaDeviceClass sd;
   Supla::Sensor::ElectricityMeter el;
@@ -202,6 +203,7 @@ TEST_F(MqttPublishTests, powerBelow20kW) {
 
 TEST_F(MqttPublishTests, powerAbove20kW) {
   ConfigMock config;
+  EXPECT_CALL(config, init());
   NetworkMockWithMac net;
   SuplaDeviceClass sd;
   Supla::Sensor::ElectricityMeter el;

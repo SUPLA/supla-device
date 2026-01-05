@@ -39,6 +39,8 @@
 
 namespace Supla {
 
+class Storage;
+
 #pragma pack(push, 1)
 struct SaltPassword {
   uint8_t salt[SUPLA_CFG_MODE_SALT_SIZE] = {};
@@ -55,6 +57,8 @@ struct SaltPassword {
 
 class Config {
  public:
+  friend class Storage;
+
   Config();
   virtual ~Config();
   virtual bool init() = 0;
@@ -201,16 +205,30 @@ class Config {
    */
   bool setChannelFunction(int channelNo, int32_t channelFunction);
 
+  /**
+   * Returns init result
+   *
+   * @return true if init was successful, false otherwise
+   */
   bool getInitResult() const;
+
+  /**
+   * Checks if config has been initialized
+   *
+   * @return true if config has been initialized
+   */
+  bool isConfigInitDone() const { return configInitDone; }
 
  protected:
   virtual int getBlobSize(const char* key) = 0;
+  void setConfigInitDone(bool done) { configInitDone = done; }
 
   uint32_t saveDelayTimestamp = 0;
   uint32_t deviceConfigUpdateDelayTimestamp = 0;
   uint16_t saveDelayMs = 0;
   int8_t deviceConfigChangeFlag = -1;
   bool initResult = false;
+  bool configInitDone = false;
 };
 };  // namespace Supla
 

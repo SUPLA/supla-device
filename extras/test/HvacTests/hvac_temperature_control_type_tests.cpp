@@ -16,25 +16,25 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <clock_stub.h>
 #include <config_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <output_mock.h>
 #include <protocol_layer_mock.h>
 #include <simple_time.h>
+#include <storage_mock.h>
 #include <string.h>
+#include <supla/actions.h>
 #include <supla/control/hvac_base.h>
 #include <supla/sensor/virtual_thermometer.h>
-#include <output_mock.h>
-#include <storage_mock.h>
-#include <clock_stub.h>
-#include <supla/actions.h>
 
 using ::testing::_;
-using ::testing::DoAll;
-using ::testing::SetArgPointee;
 using ::testing::AtLeast;
-using ::testing::StrEq;
+using ::testing::DoAll;
 using ::testing::Return;
+using ::testing::SetArgPointee;
+using ::testing::StrEq;
 // using ::testing::Args;
 // using ::testing::ElementsAre;
 
@@ -74,13 +74,13 @@ class HvacTempControlTypeF : public ::testing::Test {
         SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL,
         5000);  // 50 degrees
     hvac->setDefaultTemperatureRoomMax(SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                                       5000);  // 50 degrees
-    hvac->setTemperatureHisteresisMin(20);      // 0.2 degree
-    hvac->setTemperatureHisteresisMax(1000);    // 10 degree
-    hvac->setTemperatureHeatCoolOffsetMin(200);     // 2 degrees
-    hvac->setTemperatureHeatCoolOffsetMax(1000);    // 10 degrees
-    hvac->setTemperatureAuxMin(500);   // 5 degrees
-    hvac->setTemperatureAuxMax(7500);  // 75 degrees
+                                       5000);     // 50 degrees
+    hvac->setTemperatureHisteresisMin(20);        // 0.2 degree
+    hvac->setTemperatureHisteresisMax(1000);      // 10 degree
+    hvac->setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
+    hvac->setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
+    hvac->setTemperatureAuxMin(500);              // 5 degrees
+    hvac->setTemperatureAuxMax(7500);             // 75 degrees
     hvac->addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   }
 
@@ -105,6 +105,7 @@ class HvacTempControlTypeF : public ::testing::Test {
 };
 
 TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
+  EXPECT_CALL(cfg, init());
   EXPECT_EQ(hvac->getChannelNumber(), 0);
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
@@ -121,57 +122,47 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
   EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg,
-              getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .Times(1)
       .WillOnce(Return(false));
   EXPECT_CALL(
       cfg,
-      getBlob(
-          StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg,
-              setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
       .WillOnce(Return(true));
 
-  EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_weekly"), _, _))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_aweekly"), _, _))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(cfg,
-              setUInt8(StrEq("0_weekly_chng"), _))
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
-  EXPECT_CALL(cfg,
-              setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+  EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
 
   EXPECT_CALL(storage, readStorage(_, _, sizeof(THVACValue), _))
-      .WillRepeatedly(
-          [](uint32_t, unsigned char *data, int, bool) {
-            THVACValue hvacValue = {};
-            memcpy(data, &hvacValue, sizeof(THVACValue));
-            return sizeof(THVACValue);
-          });
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        THVACValue hvacValue = {};
+        memcpy(data, &hvacValue, sizeof(THVACValue));
+        return sizeof(THVACValue);
+      });
   EXPECT_CALL(storage, readStorage(_, _, sizeof(int16_t), _))
-      .WillRepeatedly(
-          [](uint32_t, unsigned char *data, int, bool) {
-            int16_t value = INT16_MIN;
-            memcpy(data, &value, sizeof(int16_t));
-            return sizeof(int16_t);
-          });
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        int16_t value = INT16_MIN;
+        memcpy(data, &value, sizeof(int16_t));
+        return sizeof(int16_t);
+      });
   EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
-      .WillRepeatedly(
-          [](uint32_t, unsigned char *data, int, bool) {
-            *data = 0;
-            return sizeof(uint8_t);
-          });
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -206,8 +197,7 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
       SUPLA_HVAC_TEMPERATURE_CONTROL_TYPE_AUX_HEATER_COOLER_TEMPERATURE);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t, int8_t *value, unsigned char,
-                 uint32_t) {
+      .WillOnce([](uint8_t, int8_t *value, unsigned char, uint32_t) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
@@ -216,7 +206,7 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 3000);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
-    });
+      });
 
   // set value 0
   for (int i = 0; i < 10; ++i) {
@@ -242,25 +232,23 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
   moveTime(50);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t, int8_t *value, unsigned char,
-                 uint32_t) {
+      .WillOnce([](uint8_t, int8_t *value, unsigned char, uint32_t) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
                   SUPLA_HVAC_VALUE_FLAG_SETPOINT_TEMP_HEAT_SET |
-                  SUPLA_HVAC_VALUE_FLAG_HEATING);
+                      SUPLA_HVAC_VALUE_FLAG_HEATING);
         EXPECT_EQ(hvacValue->IsOn, 1);
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 3000);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
-    });
+      });
 
   t2->setValue(15.0);
   moveTime(50);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
-    .WillOnce([](uint8_t, int8_t *value, unsigned char,
-                 uint32_t) {
+      .WillOnce([](uint8_t, int8_t *value, unsigned char, uint32_t) {
         auto hvacValue = reinterpret_cast<THVACValue *>(value);
 
         EXPECT_EQ(hvacValue->Flags,
@@ -269,11 +257,8 @@ TEST_F(HvacTempControlTypeF, auxControlTypeTest) {
         EXPECT_EQ(hvacValue->Mode, SUPLA_HVAC_MODE_HEAT);
         EXPECT_EQ(hvacValue->SetpointTemperatureHeat, 3000);
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 0);
-    });
+      });
 
   t2->setValue(30.5);
   moveTime(50);
-
 }
-
-

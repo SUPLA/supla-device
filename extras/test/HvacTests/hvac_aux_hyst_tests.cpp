@@ -54,6 +54,7 @@ class HvacAuxTestsF : public ::testing::Test {
 
   void SetUp() override {
     Supla::Channel::resetToDefaults();
+    EXPECT_CALL(cfg, init());
 
     hvac = new Supla::Control::HvacBase(&primaryOutput);
     t1 = new Supla::Sensor::VirtualThermometer();

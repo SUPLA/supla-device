@@ -59,6 +59,8 @@ class HvacChannelAssignmentTests : public ::testing::Test {
 };
 
 TEST_F(HvacChannelAssignmentTests, binarySensorAsChannelZero) {
+  EXPECT_CALL(cfg, init());
+
   Supla::Sensor::VirtualBinary s1;
   Supla::Control::HvacBase hvac(&primaryOutput);
   Supla::Sensor::VirtualThermometer t1;

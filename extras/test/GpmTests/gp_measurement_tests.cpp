@@ -404,6 +404,7 @@ TEST_F(GpMeasurementTestsFixture, defaultParametersShouldInitializeConfig) {
 TEST_F(GpMeasurementTestsFixture, defaultParametersShouldntOverwriteConfig) {
   Supla::Sensor::GeneralPurposeMeasurement gp;
   ConfigMock config;
+  EXPECT_CALL(config, init());
 
   EXPECT_CALL(config, saveWithDelay(_)).Times(0);
   EXPECT_CALL(
@@ -470,6 +471,7 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigCheck) {
   Supla::Sensor::GeneralPurposeMeasurement gp;
   ConfigMock cfg;
 
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(1);
   EXPECT_CALL(
       cfg,
@@ -540,6 +542,7 @@ TEST_F(GpMeasurementTestsFixture, handleChannelConfigWithInvalidDefaults) {
   Supla::Sensor::GeneralPurposeMeasurement gp;
   ConfigMock cfg;
 
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(1);
   EXPECT_CALL(
       cfg,
@@ -610,6 +613,7 @@ TEST_F(GpMeasurementTestsFixture, localConfigChangeShouldBeSavedAndSend) {
   Supla::Sensor::GeneralPurposeMeasurement gp;
   ConfigMock cfg;
 
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(2);
   EXPECT_CALL(
       cfg,

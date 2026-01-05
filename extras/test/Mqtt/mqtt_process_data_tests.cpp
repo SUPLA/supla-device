@@ -16,19 +16,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-#include <supla/protocol/mqtt.h>
 #include <SuplaDevice.h>
+#include <channel_element_mock.h>
 #include <config_mock.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <network_with_mac_mock.h>
 #include <supla/device/register_device.h>
-#include <channel_element_mock.h>
+#include <supla/protocol/mqtt.h>
 
 using testing::_;
-using ::testing::SetArrayArgument;
 using ::testing::DoAll;
 using ::testing::Return;
+using ::testing::SetArrayArgument;
 
 class MqttProcessDataTests : public ::testing::Test {
  protected:
@@ -67,6 +67,7 @@ TEST_F(MqttProcessDataTests, dataProcessTests) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
   ConfigMock config;
+  EXPECT_CALL(config, init());
   NetworkMockWithMac net;
   ChannelElementMock el1;
   ChannelElementMock el2;
@@ -76,13 +77,13 @@ TEST_F(MqttProcessDataTests, dataProcessTests) {
 
   char cfgPrefix[] = "testowy_prefix";
 
-  EXPECT_CALL(config, getMqttPrefix(_)).WillOnce(DoAll(
-        SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1)
-        , Return(true)));
+  EXPECT_CALL(config, getMqttPrefix(_))
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1),
+          Return(true)));
   uint8_t mac[] = {1, 2, 3, 4, 5, 0xAB};
-  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(DoAll(
-        SetArrayArgument<0>(mac, mac + 6)
-        , Return(true)));
+  EXPECT_CALL(net, getMacAddr(_))
+      .WillRepeatedly(DoAll(SetArrayArgument<0>(mac, mac + 6), Return(true)));
 
   sd.setName("My Device");
 
@@ -94,13 +95,13 @@ TEST_F(MqttProcessDataTests, dataProcessTests) {
 
   char topicWrongPrefix[] = "this/is/test/prefix/channels/3/set/on";
   char topicMissingChannels[] =
-    "testowy_prefix/supla/devices/my-device-0405ab/just_do_it/3/set/on";
+      "testowy_prefix/supla/devices/my-device-0405ab/just_do_it/3/set/on";
   char topicWrongChannel[] =
-    "testowy_prefix/supla/devices/my-device-0405ab/channels/3/set/on";
+      "testowy_prefix/supla/devices/my-device-0405ab/channels/3/set/on";
   char topic0setOn[] =
-    "testowy_prefix/supla/devices/my-device-0405ab/channels/0/set/on";
+      "testowy_prefix/supla/devices/my-device-0405ab/channels/0/set/on";
   char topic1setOn[] =
-    "testowy_prefix/supla/devices/my-device-0405ab/channels/1/set/on";
+      "testowy_prefix/supla/devices/my-device-0405ab/channels/1/set/on";
   char payload[] = "true";
   char payloadFalse[] = "false";
 
@@ -146,6 +147,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
   ConfigMock config;
+  EXPECT_CALL(config, init());
   NetworkMockWithMac net;
   ChannelElementMock el1;
 
@@ -153,21 +155,20 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
 
   char cfgPrefix[] = "";
 
-  EXPECT_CALL(config, getMqttPrefix(_)).WillOnce(DoAll(
-        SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1)
-        , Return(true)));
+  EXPECT_CALL(config, getMqttPrefix(_))
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1),
+          Return(true)));
   uint8_t mac[] = {1, 2, 3, 4, 5, 0xAB};
-  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(DoAll(
-        SetArrayArgument<0>(mac, mac + 6)
-        , Return(true)));
+  EXPECT_CALL(net, getMacAddr(_))
+      .WillRepeatedly(DoAll(SetArrayArgument<0>(mac, mac + 6), Return(true)));
 
   sd.setName("My Device");
 
   mqtt.onInit();
 
   ASSERT_NE(mqtt.test_getPrefix(), nullptr);
-  EXPECT_STREQ(mqtt.test_getPrefix(),
-               "supla/devices/my-device-0405ab");
+  EXPECT_STREQ(mqtt.test_getPrefix(), "supla/devices/my-device-0405ab");
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -184,8 +185,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "true"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "true"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -202,8 +202,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "false"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "false"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -220,8 +219,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "1"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "1"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -238,8 +236,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "YES"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "YES"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -256,8 +253,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "True"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "True"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -274,8 +270,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "11"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "11"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -292,8 +287,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "yes!"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "yes!"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -310,8 +304,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "truest"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "truest"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -328,8 +321,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "FALSE"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "FALSE"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -346,8 +338,7 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "0"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "0"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -363,10 +354,8 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
         return 0;
       });
 
-  EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        ""));
-
+  EXPECT_TRUE(
+      mqtt.processData("supla/devices/my-device-0405ab/channels/0/set/on", ""));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -383,14 +372,14 @@ TEST_F(MqttProcessDataTests, relaySetOnTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/set/on",
-        "tRuE"));
+      "supla/devices/my-device-0405ab/channels/0/set/on", "tRuE"));
 }
 
 TEST_F(MqttProcessDataTests, executeActionTests) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
   ConfigMock config;
+  EXPECT_CALL(config, init());
   NetworkMockWithMac net;
   ChannelElementMock el1;
 
@@ -398,13 +387,13 @@ TEST_F(MqttProcessDataTests, executeActionTests) {
 
   char cfgPrefix[] = "";
 
-  EXPECT_CALL(config, getMqttPrefix(_)).WillOnce(DoAll(
-        SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1)
-        , Return(true)));
+  EXPECT_CALL(config, getMqttPrefix(_))
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1),
+          Return(true)));
   uint8_t mac[] = {1, 2, 3, 4, 5, 0xAB};
-  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(DoAll(
-        SetArrayArgument<0>(mac, mac + 6)
-        , Return(true)));
+  EXPECT_CALL(net, getMacAddr(_))
+      .WillRepeatedly(DoAll(SetArrayArgument<0>(mac, mac + 6), Return(true)));
 
   sd.setName("My Device");
 
@@ -425,8 +414,7 @@ TEST_F(MqttProcessDataTests, executeActionTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/execute_action",
-        "turn_on"));
+      "supla/devices/my-device-0405ab/channels/0/execute_action", "turn_on"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -443,8 +431,7 @@ TEST_F(MqttProcessDataTests, executeActionTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/execute_action",
-        "turn_Off"));
+      "supla/devices/my-device-0405ab/channels/0/execute_action", "turn_Off"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -461,8 +448,7 @@ TEST_F(MqttProcessDataTests, executeActionTests) {
       });
 
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/execute_action",
-        "toggle"));
+      "supla/devices/my-device-0405ab/channels/0/execute_action", "toggle"));
 
   EXPECT_CALL(el1, handleNewValueFromServer(_))
       .Times(1)
@@ -478,15 +464,12 @@ TEST_F(MqttProcessDataTests, executeActionTests) {
         return 0;
       });
 
-
   Supla::RegisterDevice::getChannelValuePtr(0)[0] = 1;
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/execute_action",
-        "toGGle"));
+      "supla/devices/my-device-0405ab/channels/0/execute_action", "toGGle"));
 
   // invalid payload - no reaction
   EXPECT_TRUE(mqtt.processData(
-        "supla/devices/my-device-0405ab/channels/0/execute_action",
-        "land_on_mars"));
-
+      "supla/devices/my-device-0405ab/channels/0/execute_action",
+      "land_on_mars"));
 }

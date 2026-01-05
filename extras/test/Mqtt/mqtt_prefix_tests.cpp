@@ -16,18 +16,19 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-#include <supla/protocol/mqtt.h>
 #include <SuplaDevice.h>
 #include <config_mock.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <network_with_mac_mock.h>
+#include <supla/protocol/mqtt.h>
+
 #include "supla/device/register_device.h"
 
 using testing::_;
-using ::testing::SetArrayArgument;
 using ::testing::DoAll;
 using ::testing::Return;
+using ::testing::SetArrayArgument;
 
 class MqttUT : public Supla::Protocol::Mqtt {
  public:
@@ -62,7 +63,7 @@ TEST(MqttPrefixTests, mqttgenerateClientId) {
   ASSERT_EQ(MQTT_CLIENTID_MAX_SIZE, 23);
 
   char newGuid[SUPLA_GUID_SIZE];
-  for (int i = 0; i <  16; i++) {
+  for (int i = 0; i < 16; i++) {
     newGuid[i] = i + 1;
   }
   Supla::RegisterDevice::setGUID(newGuid);
@@ -70,7 +71,7 @@ TEST(MqttPrefixTests, mqttgenerateClientId) {
   mqtt.test_generateClientId(clientId);
   EXPECT_STREQ(clientId, "SUPLA-0102030405060708");
 
-  for (int i = 0; i <  16; i++) {
+  for (int i = 0; i < 16; i++) {
     newGuid[i] = 16 - i;
   }
   Supla::RegisterDevice::setGUID(newGuid);
@@ -78,12 +79,11 @@ TEST(MqttPrefixTests, mqttgenerateClientId) {
   mqtt.test_generateClientId(clientId);
   EXPECT_STREQ(clientId, "SUPLA-100F0E0D0C0B0A09");
 
-  for (int i = 0; i <  16; i++) {
+  for (int i = 0; i < 16; i++) {
     newGuid[i] = 0;
   }
   Supla::RegisterDevice::setGUID(newGuid);
 }
-
 
 TEST(MqttPrefixTests, mqttgeneratePrefixNoNetworkNoConfig) {
   SuplaDeviceClass sd;
@@ -115,22 +115,22 @@ TEST(MqttPrefixTests, mqttgeneratePrefixCustomName) {
   EXPECT_STREQ(mqtt.test_getPrefix(), "supla/devices/another-name-test");
 }
 
-
 TEST(MqttPrefixTests, mqttgeneratePrefix) {
   SuplaDeviceClass sd;
   MqttUT mqtt(&sd);
   ConfigMock config;
   NetworkMockWithMac net;
+  EXPECT_CALL(config, init());
 
   char cfgPrefix[] = "testowy_prefix";
 
-  EXPECT_CALL(config, getMqttPrefix(_)).WillOnce(DoAll(
-        SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1)
-        , Return(true)));
+  EXPECT_CALL(config, getMqttPrefix(_))
+      .WillOnce(DoAll(
+          SetArrayArgument<0>(cfgPrefix, cfgPrefix + strlen(cfgPrefix) + 1),
+          Return(true)));
   uint8_t mac[] = {1, 2, 3, 4, 5, 0xAB};
-  EXPECT_CALL(net, getMacAddr(_)).WillRepeatedly(DoAll(
-        SetArrayArgument<0>(mac, mac + 6)
-        , Return(true)));
+  EXPECT_CALL(net, getMacAddr(_))
+      .WillRepeatedly(DoAll(SetArrayArgument<0>(mac, mac + 6), Return(true)));
 
   sd.setName("My Device");
 
@@ -139,6 +139,4 @@ TEST(MqttPrefixTests, mqttgeneratePrefix) {
   ASSERT_NE(mqtt.test_getPrefix(), nullptr);
   EXPECT_STREQ(mqtt.test_getPrefix(),
                "testowy_prefix/supla/devices/my-device-0405ab");
-
 }
-

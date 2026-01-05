@@ -874,6 +874,7 @@ TEST_F(HvacTestsF, otherConfigurationSettersAndGetters) {
 }
 
 TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
+  EXPECT_CALL(cfg, init());
   TSD_ChannelConfig configFromServer = {};
   configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
   configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
@@ -1037,6 +1038,7 @@ TEST_F(HvacTestWithChannelSetupF, handleChannelConfigWithConfigStorage) {
 }
 
 TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
+  EXPECT_CALL(cfg, init());
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
@@ -1207,6 +1209,7 @@ TEST_F(HvacTestWithChannelSetupF, startupProcedureWithEmptyConfig) {
 
 TEST_F(HvacTestWithChannelSetupF,
        startupProcedureWithConfigChangedBeforeConnection) {
+  EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
   ::testing::Sequence s1, s2;
   // Config storage doesn't contain any data about HVAC channel, so it returns
@@ -1594,6 +1597,7 @@ TEST_F(HvacTestsF, checkTemperatureConfigCopy) {
 
 TEST_F(HvacTestWithChannelSetupF,
        startupProcedureWithInvalidConfigFromServerAfterRegister) {
+  EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to

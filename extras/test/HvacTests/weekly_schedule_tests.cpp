@@ -76,6 +76,7 @@ class HvacWeeklyScheduleTestsF : public ::testing::Test {
 };
 
 TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AnyNumber());
   EXPECT_CALL(cfg, setInt32(_, _))
@@ -224,6 +225,7 @@ TEST_F(HvacWeeklyScheduleTestsF, WeeklyScheduleBasicSetAndGet) {
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
+  EXPECT_CALL(cfg, init());
   ::testing::Sequence s1;
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
@@ -339,6 +341,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
+  EXPECT_CALL(cfg, init());
   // Config storage doesn't contain any data about HVAC channel, so it returns
   // false on each getxxx call. Then function is initialized and saved to
   // storage.
@@ -425,6 +428,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
 
 TEST_F(HvacWeeklyScheduleTestsF,
        startupProcedureWithScheduleChangedBeforeConnection) {
+  EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;
   ::testing::Sequence s1, s2;
   // Config storage doesn't contain any data about HVAC channel, so it returns
@@ -619,6 +623,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
 }
 
 TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
 

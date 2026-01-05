@@ -1727,6 +1727,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   Supla::Control::ActionTrigger at;
   ActionHandlerMock ah;
 
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
     if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 2;
@@ -1851,6 +1852,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   Supla::Control::ActionTrigger at;
   ActionHandlerMock ah;
 
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
     if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 1;
@@ -2008,6 +2010,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
   Supla::Control::ActionTrigger at;
   ActionHandlerMock ah;
 
+  EXPECT_CALL(cfg, init());
   EXPECT_CALL(cfg, getInt32(_, _)).WillOnce([](const char *key, int32_t *buf) {
     if (strcmp(key, "0_mqtt_at") == 0) {
       *buf = 0;

@@ -43,7 +43,6 @@ class SpecialSectionInfo {
 
 
 bool Supla::Storage::storageInitDone = false;
-static bool configInitDone = false;
 Storage *Storage::instance = nullptr;
 Config *Storage::configInstance = nullptr;
 
@@ -52,6 +51,10 @@ Storage *Storage::Instance() {
 }
 
 Config *Storage::ConfigInstance() {
+  if (configInstance && !configInstance->isConfigInitDone()) {
+    configInstance->init();
+    configInstance->setConfigInitDone(true);
+  }
   return configInstance;
 }
 
@@ -68,12 +71,7 @@ bool Storage::Init() {
     SUPLA_LOG_DEBUG("Main storage not configured");
   }
   if (ConfigInstance()) {
-    if (!configInitDone) {
-      configInitDone = true;
-      result = ConfigInstance()->init();
-    } else {
       result = ConfigInstance()->getInitResult();
-    }
   } else {
     SUPLA_LOG_DEBUG("Config storage not configured");
   }
@@ -115,7 +113,6 @@ void Storage::ScheduleSave(uint32_t delayMsMax, uint32_t delayMsMin) {
 
 void Storage::SetConfigInstance(Config *instance) {
   configInstance = instance;
-  configInitDone = false;
 }
 
 bool Storage::IsConfigStorageAvailable() {

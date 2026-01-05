@@ -93,6 +93,7 @@ $(function(){ initResizable(false); });
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#friends">Friends</a> &#124;
 <a href="classSupla_1_1Config-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Config Class Reference<span class="mlabels"><span class="mlabel abstract">abstract</span></span></div></div>
 </div><!--header-->
@@ -385,9 +386,12 @@ virtual bool&#160;</td><td class="memItemRight" valign="bottom"><b>isChannelConf
 <tr class="memitem:a954a935520a5cfb6c24a8a2c2c679d57" id="r_a954a935520a5cfb6c24a8a2c2c679d57"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a954a935520a5cfb6c24a8a2c2c679d57">setChannelFunction</a> (int channelNo, int32_t channelFunction)</td></tr>
 <tr class="memdesc:a954a935520a5cfb6c24a8a2c2c679d57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Stores channel function in config.  <br /></td></tr>
 <tr class="separator:a954a935520a5cfb6c24a8a2c2c679d57"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae4556ab48f95c36b087b2ba594fac9da" id="r_ae4556ab48f95c36b087b2ba594fac9da"><td class="memItemLeft" align="right" valign="top"><a id="ae4556ab48f95c36b087b2ba594fac9da" name="ae4556ab48f95c36b087b2ba594fac9da"></a>
-bool&#160;</td><td class="memItemRight" valign="bottom"><b>getInitResult</b> () const</td></tr>
+<tr class="memitem:ae4556ab48f95c36b087b2ba594fac9da" id="r_ae4556ab48f95c36b087b2ba594fac9da"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ae4556ab48f95c36b087b2ba594fac9da">getInitResult</a> () const</td></tr>
+<tr class="memdesc:ae4556ab48f95c36b087b2ba594fac9da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns init result.  <br /></td></tr>
 <tr class="separator:ae4556ab48f95c36b087b2ba594fac9da"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a72023222416f5fcc958dc9f3f8b77be0" id="r_a72023222416f5fcc958dc9f3f8b77be0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a72023222416f5fcc958dc9f3f8b77be0">isConfigInitDone</a> () const</td></tr>
+<tr class="memdesc:a72023222416f5fcc958dc9f3f8b77be0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if config has been initialized.  <br /></td></tr>
+<tr class="separator:a72023222416f5fcc958dc9f3f8b77be0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -403,6 +407,9 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:a7293859e0a8e88d1ea56f26420fbcfa5" id="r_a7293859e0a8e88d1ea56f26420fbcfa5"><td class="memItemLeft" align="right" valign="top"><a id="a7293859e0a8e88d1ea56f26420fbcfa5" name="a7293859e0a8e88d1ea56f26420fbcfa5"></a>
 virtual int&#160;</td><td class="memItemRight" valign="bottom"><b>getBlobSize</b> (const char *key)=0</td></tr>
 <tr class="separator:a7293859e0a8e88d1ea56f26420fbcfa5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69a45a5b63685f76b23c0fb28e245643" id="r_a69a45a5b63685f76b23c0fb28e245643"><td class="memItemLeft" align="right" valign="top"><a id="a69a45a5b63685f76b23c0fb28e245643" name="a69a45a5b63685f76b23c0fb28e245643"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>setConfigInitDone</b> (bool done)</td></tr>
+<tr class="separator:a69a45a5b63685f76b23c0fb28e245643"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -421,6 +428,15 @@ int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>deviceConfigChangeF
 <tr class="memitem:ac00c6a81a03d22b2293a829b31694957" id="r_ac00c6a81a03d22b2293a829b31694957"><td class="memItemLeft" align="right" valign="top"><a id="ac00c6a81a03d22b2293a829b31694957" name="ac00c6a81a03d22b2293a829b31694957"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>initResult</b> = false</td></tr>
 <tr class="separator:ac00c6a81a03d22b2293a829b31694957"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a819e14b761e398699a580d0112838fd9" id="r_a819e14b761e398699a580d0112838fd9"><td class="memItemLeft" align="right" valign="top"><a id="a819e14b761e398699a580d0112838fd9" name="a819e14b761e398699a580d0112838fd9"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>configInitDone</b> = false</td></tr>
+<tr class="separator:a819e14b761e398699a580d0112838fd9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
+Friends</h2></td></tr>
+<tr class="memitem:ab647623b3295040f83d3afb2a502a223" id="r_ab647623b3295040f83d3afb2a502a223"><td class="memItemLeft" align="right" valign="top"><a id="ab647623b3295040f83d3afb2a502a223" name="ab647623b3295040f83d3afb2a502a223"></a>
+class&#160;</td><td class="memItemRight" valign="bottom"><b>Storage</b></td></tr>
+<tr class="separator:ab647623b3295040f83d3afb2a502a223"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="a74280486d8c37b9096797fc7b30b665c" name="a74280486d8c37b9096797fc7b30b665c"></a>
@@ -466,6 +482,54 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>initResult</b> = fals
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>channel function (as defined in <a class="el" href="proto_8h_source.html">proto.h</a>) or -1 if not found </dd></dl>
+
+</div>
+</div>
+<a id="ae4556ab48f95c36b087b2ba594fac9da" name="ae4556ab48f95c36b087b2ba594fac9da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4556ab48f95c36b087b2ba594fac9da">&#9670;&#160;</a></span>getInitResult()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Config::getInitResult </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns init result. </p>
+<dl class="section return"><dt>Returns</dt><dd>true if init was successful, false otherwise </dd></dl>
+
+</div>
+</div>
+<a id="a72023222416f5fcc958dc9f3f8b77be0" name="a72023222416f5fcc958dc9f3f8b77be0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a72023222416f5fcc958dc9f3f8b77be0">&#9670;&#160;</a></span>isConfigInitDone()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Config::isConfigInitDone </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Checks if config has been initialized. </p>
+<dl class="section return"><dt>Returns</dt><dd>true if config has been initialized </dd></dl>
 
 </div>
 </div>

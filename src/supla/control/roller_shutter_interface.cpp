@@ -18,25 +18,26 @@
 
 #include "roller_shutter_interface.h"
 
-#include <supla/log_wrapper.h>
-#include <supla/storage/storage.h>
-#include <supla/time.h>
-#include <supla/io.h>
+#include <supla/actions.h>
 #include <supla/control/button.h>
+#include <supla/io.h>
+#include <supla/local_action.h>
+#include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
-#include <supla/local_action.h>
-#include <supla/actions.h>
+#include <supla/storage/storage.h>
+#include <supla/time.h>
+
 #include "supla/events.h"
 
 using Supla::Control::RollerShutterInterface;
 
 int16_t RollerShutterInterface::rsStorageSaveDelay = 5000;
 
-#define RS_FLAG_CALIBRATE (1 << 0)
-#define RS_FLAG_CALIBRATION_LOST (1 << 1)
+#define RS_FLAG_CALIBRATE          (1 << 0)
+#define RS_FLAG_CALIBRATION_LOST   (1 << 1)
 #define RS_FLAG_CALIBRATION_FAILED (1 << 2)
-#define RS_FLAG_MOTOR_PROBLEM (1 << 3)
+#define RS_FLAG_MOTOR_PROBLEM      (1 << 3)
 
 #pragma pack(push, 1)
 struct RollerShutterStateData {
@@ -59,8 +60,7 @@ RollerShutterInterface::RollerShutterInterface(bool tiltFunctionsSupported) {
                       SUPLA_BIT_FUNC_CONTROLLINGTHEROOFWINDOW |
                       SUPLA_BIT_FUNC_TERRACE_AWNING |
                       SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR |
-                      SUPLA_BIT_FUNC_CURTAIN |
-                      SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
+                      SUPLA_BIT_FUNC_CURTAIN | SUPLA_BIT_FUNC_PROJECTOR_SCREEN);
   if (tiltFunctionsSupported) {
     addTiltFunctions();
   }
@@ -70,9 +70,9 @@ RollerShutterInterface::RollerShutterInterface(bool tiltFunctionsSupported) {
 }
 
 RollerShutterInterface::~RollerShutterInterface() {
-  ButtonListElement* currentElement = buttonList;
+  ButtonListElement *currentElement = buttonList;
   while (currentElement) {
-    ButtonListElement* nextElement = currentElement->next;
+    ButtonListElement *nextElement = currentElement->next;
     delete currentElement;
     currentElement = nextElement;
   }
@@ -93,8 +93,7 @@ bool RollerShutterInterface::isFunctionSupported(
       return getChannel()->getFuncList() & SUPLA_BIT_FUNC_TERRACE_AWNING;
     }
     case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
-      return getChannel()->getFuncList() &
-             SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR;
+      return getChannel()->getFuncList() & SUPLA_BIT_FUNC_ROLLER_GARAGE_DOOR;
     }
     case SUPLA_CHANNELFNC_CURTAIN: {
       return getChannel()->getFuncList() & SUPLA_BIT_FUNC_CURTAIN;
@@ -145,7 +144,9 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
   int8_t task = newValue->value[0];
   int8_t tilt = newValue->value[1];
   SUPLA_LOG_INFO("RS[%d] new value from server: position/task %d, tilt %d",
-      channel.getChannelNumber(), task, tilt);
+                 channel.getChannelNumber(),
+                 task,
+                 tilt);
   switch (task) {
     case 0: {
       stop();
@@ -219,7 +220,7 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
 }
 
 void RollerShutterInterface::setOpenCloseTime(uint32_t newClosingTimeMs,
-                                     uint32_t newOpeningTimeMs) {
+                                              uint32_t newOpeningTimeMs) {
   if (isTimeSettingAvailable()) {
     if (newClosingTimeMs != closingTimeMs ||
         newOpeningTimeMs != openingTimeMs) {
@@ -228,7 +229,7 @@ void RollerShutterInterface::setOpenCloseTime(uint32_t newClosingTimeMs,
       setCalibrationNeeded();
       SUPLA_LOG_DEBUG(
           "RS[%d] new time settings received. Opening time: %d ms; "
-          "closing time: %d ms. Starting calibration...",
+          "closing time: %d ms. Setting \"not calibrated\"",
           channel.getChannelNumber(),
           openingTimeMs,
           closingTimeMs);
@@ -443,12 +444,18 @@ void RollerShutterInterface::setCurrentPosition(int newPosition, int newTilt) {
     } else if (newTilt > 100) {
       newTilt = 100;
     }
-    currentTilt = newTilt * 100;
+    currentTilt =
+        newTilt == UNKNOWN_POSITION ? UNKNOWN_POSITION : newTilt * 100;
   } else {
     currentTilt = 0;
   }
 
   calibrationTime = 0;
+  if (newPosition == UNKNOWN_POSITION) {
+    currentPosition = UNKNOWN_POSITION;
+    return;
+  }
+
   currentPosition = newPosition * 100;
   setCalibrate(false);
 }
@@ -527,7 +534,7 @@ void RollerShutterInterface::setCalibrationNeeded() {
 
 bool RollerShutterInterface::isCalibrationRequested() const {
   return getCalibrate() && (!isTimeSettingAvailable() ||
-                       (openingTimeMs != 0 && closingTimeMs != 0));
+                            (openingTimeMs != 0 && closingTimeMs != 0));
 }
 
 bool RollerShutterInterface::isCalibrated() const {
@@ -545,8 +552,6 @@ bool RollerShutterInterface::isCalibrationInProgress() const {
 void RollerShutterInterface::startCalibration(uint32_t timeMs) {
   // Time used for calibaration is 10% higher then requested by user
   calibrationTime = timeMs * 1.1;
-  currentPosition = 0;
-  currentTilt = 0;
 }
 
 void RollerShutterInterface::stopCalibration() {
@@ -730,7 +735,7 @@ uint32_t RollerShutterInterface::getTiltControlType() const {
 }
 
 void RollerShutterInterface::attach(Supla::Control::Button *up,
-    Supla::Control::Button *down) {
+                                    Supla::Control::Button *down) {
   attach(up, true, true);
   attach(down, false, true);
 }
@@ -776,7 +781,7 @@ int RollerShutterInterface::handleCalcfgFromServer(
         return SUPLA_CALCFG_RESULT_UNAUTHORIZED;
       }
       SUPLA_LOG_INFO("RS[%d] - CALCFG recalibrate received",
-          channel.getChannelNumber());
+                     channel.getChannelNumber());
       triggerCalibration();
       return SUPLA_CALCFG_RESULT_DONE;
     }
@@ -929,7 +934,8 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
 
     default: {
       SUPLA_LOG_WARNING("RS[%d] Ignoring unsupported channel function %d",
-                        getChannelNumber(), result->Func);
+                        getChannelNumber(),
+                        result->Func);
       break;
     }
   }
@@ -970,9 +976,8 @@ void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
     }
     if (isTiltFunctionEnabled()) {
       generateKey(key, Supla::ConfigTag::TiltConfigTag);
-      if (cfg->getBlob(key,
-                       reinterpret_cast<char *>(&tiltConfig),
-                       sizeof(TiltConfig))) {
+      if (cfg->getBlob(
+              key, reinterpret_cast<char *>(&tiltConfig), sizeof(TiltConfig))) {
         print = true;
       } else {
         SUPLA_LOG_DEBUG("FB[%d] using default config", getChannelNumber());
@@ -1033,9 +1038,8 @@ void RollerShutterInterface::saveConfig() {
     }
     if (isTiltFunctionEnabled()) {
       generateKey(key, Supla::ConfigTag::TiltConfigTag);
-      if (cfg->setBlob(key,
-                       reinterpret_cast<char *>(&tiltConfig),
-                       sizeof(TiltConfig))) {
+      if (cfg->setBlob(
+              key, reinterpret_cast<char *>(&tiltConfig), sizeof(TiltConfig))) {
         cfg->saveWithDelay(2000);
       }
     }
@@ -1070,12 +1074,11 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
     case SUPLA_CHANNELFNC_CURTAIN:
     case SUPLA_CHANNELFNC_PROJECTOR_SCREEN:
     case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
-      SUPLA_LOG_DEBUG(
-          "RS[%d] fill channel config for RS functions",
-          channel.getChannelNumber());
+      SUPLA_LOG_DEBUG("RS[%d] fill channel config for RS functions",
+                      channel.getChannelNumber());
 
-      auto config = reinterpret_cast<TChannelConfig_RollerShutter *>(
-          channelConfig);
+      auto config =
+          reinterpret_cast<TChannelConfig_RollerShutter *>(channelConfig);
       *size = sizeof(TChannelConfig_RollerShutter);
       config->ButtonsUpsideDown = rsConfig.buttonsUpsideDown;
       config->MotorUpsideDown = rsConfig.motorUpsideDown;
@@ -1087,12 +1090,11 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
     }
     case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND:
     case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
-      SUPLA_LOG_DEBUG(
-          "RS[%d] fill channel config for FB functions",
-          channel.getChannelNumber());
+      SUPLA_LOG_DEBUG("RS[%d] fill channel config for FB functions",
+                      channel.getChannelNumber());
 
-      auto config = reinterpret_cast<TChannelConfig_FacadeBlind *>(
-          channelConfig);
+      auto config =
+          reinterpret_cast<TChannelConfig_FacadeBlind *>(channelConfig);
       *size = sizeof(TChannelConfig_FacadeBlind);
       config->ButtonsUpsideDown = rsConfig.buttonsUpsideDown;
       config->MotorUpsideDown = rsConfig.motorUpsideDown;
@@ -1107,10 +1109,9 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
       break;
     }
     default:
-      SUPLA_LOG_WARNING(
-          "RS[%d] fill channel config for unknown function %d",
-          channel.getChannelNumber(),
-          channel.getDefaultFunction());
+      SUPLA_LOG_WARNING("RS[%d] fill channel config for unknown function %d",
+                        channel.getChannelNumber(),
+                        channel.getDefaultFunction());
       return;
   }
 }
@@ -1250,22 +1251,23 @@ void RollerShutterInterface::setCalibrate(bool value) {
 }
 
 void RollerShutterInterface::setCalibrationFailed(bool value) {
-  flags = value ? flags | RS_FLAG_CALIBRATION_FAILED :
-                 flags & ~RS_FLAG_CALIBRATION_FAILED;
+  flags = value ? flags | RS_FLAG_CALIBRATION_FAILED
+                : flags & ~RS_FLAG_CALIBRATION_FAILED;
 }
 
 void RollerShutterInterface::setCalibrationLost(bool value) {
-  flags = value ? flags | RS_FLAG_CALIBRATION_LOST :
-                 flags & ~RS_FLAG_CALIBRATION_LOST;
+  flags = value ? flags | RS_FLAG_CALIBRATION_LOST
+                : flags & ~RS_FLAG_CALIBRATION_LOST;
 }
 
 void RollerShutterInterface::setMotorProblem(bool value) {
-  flags = value ? flags | RS_FLAG_MOTOR_PROBLEM :
-                 flags & ~RS_FLAG_MOTOR_PROBLEM;
+  flags =
+      value ? flags | RS_FLAG_MOTOR_PROBLEM : flags & ~RS_FLAG_MOTOR_PROBLEM;
 }
 
-void RollerShutterInterface::setupButtonActions(
-    Supla::Control::Button *button, bool upDirection, bool asInternal) {
+void RollerShutterInterface::setupButtonActions(Supla::Control::Button *button,
+                                                bool upDirection,
+                                                bool asInternal) {
   if (!button) {
     return;
   }
@@ -1291,15 +1293,13 @@ void RollerShutterInterface::setupButtonActions(
       }
     } else if (button->isBistable()) {
       button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_UP_OR_STOP
-                               : Supla::MOVE_UP_OR_STOP,
-                    this,
-                    Supla::CONDITIONAL_ON_CHANGE);
+                                   : Supla::MOVE_UP_OR_STOP,
+                        this,
+                        Supla::CONDITIONAL_ON_CHANGE);
     } else if (button->isCentral()) {
-      button->addAction(Supla::OPEN,
-                    this,
-                    Supla::ON_PRESS);
+      button->addAction(Supla::OPEN, this, Supla::ON_PRESS);
     }
-  } else {  // down direction
+  } else {             // down direction
     button->onInit();  // make sure button was initialized
     if (button->isMonostable()) {
       if (!isTiltFunctionsSupported()) {
@@ -1320,13 +1320,11 @@ void RollerShutterInterface::setupButtonActions(
       }
     } else if (button->isBistable()) {
       button->addAction(asInternal ? Supla::INTERNAL_BUTTON_MOVE_DOWN_OR_STOP
-                                 : Supla::MOVE_DOWN_OR_STOP,
-                      this,
-                      Supla::CONDITIONAL_ON_CHANGE);
+                                   : Supla::MOVE_DOWN_OR_STOP,
+                        this,
+                        Supla::CONDITIONAL_ON_CHANGE);
     } else if (button->isCentral()) {
-      button->addAction(Supla::CLOSE,
-                      this,
-                      Supla::ON_PRESS);
+      button->addAction(Supla::CLOSE, this, Supla::ON_PRESS);
     }
   }
 }
@@ -1338,9 +1336,8 @@ void RollerShutterInterface::addTiltFunctions() {
 }
 
 bool RollerShutterInterface::isTiltFunctionsSupported() const {
-  return channel.getFuncList() &
-         (SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND |
-          SUPLA_BIT_FUNC_VERTICAL_BLIND);
+  return channel.getFuncList() & (SUPLA_BIT_FUNC_CONTROLLINGTHEFACADEBLIND |
+                                  SUPLA_BIT_FUNC_VERTICAL_BLIND);
 }
 
 bool RollerShutterInterface::isTiltFunctionEnabled() const {
@@ -1358,10 +1355,10 @@ void Supla::Control::TiltConfig::clear() {
 
 bool RollerShutterInterface::isTiltConfigured() const {
   return isTiltFunctionEnabled() && tiltConfig.tiltingTime > 0 &&
-    tiltConfig.tiltControlType != 0;
+         tiltConfig.tiltControlType != 0;
 }
 
-bool RollerShutterInterface::isTopReached() const  {
+bool RollerShutterInterface::isTopReached() const {
   bool posTop = (currentPosition == 0);
   bool tiltTop = !isTiltFunctionEnabled();
   if (!tiltTop) {
@@ -1378,4 +1375,3 @@ bool RollerShutterInterface::isBottomReached() const {
   }
   return posBottom && tiltBottom;
 }
-

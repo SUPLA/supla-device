@@ -133,7 +133,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   void onLoadConfig(SuplaDeviceClass *) override;
 
   /**
-   * @brief Enables storage conversion from legacy channel function to new
+   * Enables storage conversion from legacy channel function to new
    *
    * @param channelFunction None, RGBW, RGB, Dimmer
    */

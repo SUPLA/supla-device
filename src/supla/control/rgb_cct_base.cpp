@@ -21,8 +21,8 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <supla/log_wrapper.h>
 #include <supla/control/button.h>
+#include <supla/log_wrapper.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
 
@@ -64,7 +64,6 @@ void GeometricBrightnessAdjuster::setMaxHwValue(int maxHwValue) {
   this->maxHwValue = maxHwValue;
 }
 
-
 RGBCCTBase::RGBCCTBase() {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
@@ -97,13 +96,13 @@ void RGBCCTBase::setRGBW(int red,
 }
 
 void RGBCCTBase::setRGBCCT(int red,
-                       int green,
-                       int blue,
-                       int colorBrightness,
-                       int whiteBrightness,
-                       int whiteTemperature,
-                       bool toggle,
-                       bool instant) {
+                           int green,
+                           int blue,
+                           int colorBrightness,
+                           int whiteBrightness,
+                           int whiteTemperature,
+                           bool toggle,
+                           bool instant) {
   if (toggle) {
     lastMsgReceivedMs = 1;
   } else {
@@ -606,20 +605,20 @@ void RGBCCTBase::iterateDimmerRGBW(int rgbStep, int wStep) {
     wStep = minIterationBrightness - curWhiteBrightness;
   }
 
-  if ((wStep != 0 && curWhiteBrightness == 0)
-      || (rgbStep != 0 && curColorBrightness == 0)) {
+  if ((wStep != 0 && curWhiteBrightness == 0) ||
+      (rgbStep != 0 && curColorBrightness == 0)) {
     iterationDelayTimestamp = millis();
     dimIterationDirection = true;
   }
 
   setRGBCCT(-1,
-          -1,
-          -1,
-          addWithLimit(curColorBrightness, rgbStep, 100),
-          addWithLimit(curWhiteBrightness, wStep, 100),
-          -1,
-          false,
-          true);
+            -1,
+            -1,
+            addWithLimit(curColorBrightness, rgbStep, 100),
+            addWithLimit(curWhiteBrightness, wStep, 100),
+            -1,
+            false,
+            true);
 }
 
 void RGBCCTBase::setStep(int step) {
@@ -662,9 +661,9 @@ int RGBCCTBase::getStep(int step, int target, int current, int distance) const {
 }
 
 bool RGBCCTBase::calculateAndUpdate(int targetValue,
-                                  uint16_t *hwValue,
-                                  int distance,
-                                  uint32_t *lastChangeMs) const {
+                                    uint16_t *hwValue,
+                                    int distance,
+                                    uint32_t *lastChangeMs) const {
   if (targetValue != *hwValue) {
     uint32_t timeDiff = millis() - *lastChangeMs;
     if (timeDiff == 0) {
@@ -841,9 +840,12 @@ void RGBCCTBase::onFastTimer() {
         // TODO(klew): add warm/cold channel swap
       }
 
-      setRGBCCTValueOnDevice(
-          hwRed, hwGreen, hwBlue, adjColorBrightness, white1Brightness,
-          white2Brightness);
+      setRGBCCTValueOnDevice(hwRed,
+                             hwGreen,
+                             hwBlue,
+                             adjColorBrightness,
+                             white1Brightness,
+                             white2Brightness);
       valueChanged = false;
     }
   }
@@ -852,7 +854,8 @@ void RGBCCTBase::onFastTimer() {
 void RGBCCTBase::onInit() {
   if (attachedButton) {
     SUPLA_LOG_DEBUG("RGBCCT[%d] configuring attachedButton, control type %d",
-                    getChannel()->getChannelNumber(), buttonControlType);
+                    getChannel()->getChannelNumber(),
+                    buttonControlType);
     if (attachedButton->isMonostable()) {
       SUPLA_LOG_DEBUG("RGBCCT[%d] configuring monostable button",
                       getChannel()->getChannelNumber());
@@ -1037,8 +1040,12 @@ void RGBCCTBase::onLoadState() {
   SUPLA_LOG_DEBUG(
       "RGBCCT[%d] loaded state: red=%d, green=%d, blue=%d, "
       "colorBrightness=%d, whiteBrightness=%d",
-      getChannel()->getChannelNumber(), curRed, curGreen, curBlue,
-      curColorBrightness, curWhiteBrightness);
+      getChannel()->getChannelNumber(),
+      curRed,
+      curGreen,
+      curBlue,
+      curColorBrightness,
+      curWhiteBrightness);
 }
 
 RGBCCTBase &RGBCCTBase::setDefaultStateOn() {
@@ -1063,7 +1070,6 @@ void RGBCCTBase::setMinIterationBrightness(uint8_t minBright) {
 void RGBCCTBase::setMinMaxIterationDelay(uint16_t delayMs) {
   minMaxIterationDelay = delayMs;
 }
-
 
 RGBCCTBase &RGBCCTBase::setBrightnessLimits(int min, int max) {
   if (min < 0) {
@@ -1167,8 +1173,7 @@ void RGBCCTBase::purgeConfig() {
   }
 }
 
-ApplyConfigResult RGBCCTBase::applyChannelConfig(
-    TSD_ChannelConfig *, bool) {
+ApplyConfigResult RGBCCTBase::applyChannelConfig(TSD_ChannelConfig *, bool) {
   SUPLA_LOG_WARNING("RGBCCT[%d] applyChannelConfig missing",
                     getChannelNumber());
   return ApplyConfigResult::Success;
@@ -1179,6 +1184,11 @@ void RGBCCTBase::fillChannelConfig(void *, int *size, uint8_t) {
   if (size) {
     *size = 0;
   }
+}
+
+void RGBCCTBase::convertStorageFromLegacyChannel(
+    LegacyChannelFunction channelFunction) {
+  legacyChannelFunction = channelFunction;
 }
 
 };  // namespace Control

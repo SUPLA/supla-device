@@ -20,6 +20,7 @@
 
 #include <SuplaDevice.h>
 #include <esp_netif.h>
+#include <esp_tls.h>
 #include <fcntl.h>
 #include <lwip/netif.h>
 #include <lwip/sockets.h>
@@ -54,6 +55,18 @@ Supla::EspIdfClient::EspIdfClient() {
 Supla::EspIdfClient::~EspIdfClient() {
 }
 
+static const char *pkTypeStr(mbedtls_pk_type_t t) {
+  switch (t) {
+    case MBEDTLS_PK_RSA:
+      return "RSA";
+    case MBEDTLS_PK_ECKEY:
+      return "EC (ECKEY)";
+    case MBEDTLS_PK_ECDSA:
+      return "ECDSA";
+    default:
+      return "OTHER";
+  }
+}
 int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
   Supla::AutoLock autoLock(mutex);
   if (client != nullptr) {
@@ -99,13 +112,29 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
       }
       (void)(ipArr);
 
+      mbedtls_ssl_context *ssl =
+          static_cast<mbedtls_ssl_context *>(esp_tls_get_ssl_context(client));
+
+      SUPLA_LOG_DEBUG("TLS version: %s", mbedtls_ssl_get_version(ssl));
+      SUPLA_LOG_DEBUG("Cipher suite: %s", mbedtls_ssl_get_ciphersuite(ssl));
+
+      const mbedtls_x509_crt *peer = mbedtls_ssl_get_peer_cert(ssl);
+      if (!peer) {
+        SUPLA_LOG_ERROR(
+            "No peer certificate (unexpected for normal TLS server auth)");
+      } else {
+        mbedtls_pk_type_t kt = mbedtls_pk_get_type(&peer->pk);
+        SUPLA_LOG_DEBUG("Server cert key type: %s", pkTypeStr(kt));
+        SUPLA_LOG_DEBUG("Server cert key bits: %u",
+                        (unsigned)mbedtls_pk_get_bitlen(&peer->pk));
+      }
+
       SUPLA_LOG_DEBUG("Connected via IP %d.%d.%d.%d",
                       ipArr[0],
                       ipArr[1],
                       ipArr[2],
                       ipArr[3]);
     }
-
   } else {
     esp_tls_error_handle_t errorHandle;
     esp_tls_get_error_handle(client, &errorHandle);
@@ -235,7 +264,7 @@ void Supla::EspIdfClient::logConnReason(int error,
     switch (error) {
       case ESP_ERR_ESP_TLS_CANNOT_RESOLVE_HOSTNAME: {
         snprintf(buf,
-                 512,
+                 sizeof(buf),
                  "Connection: can't resolve hostname \"%s\"",
                  host);
         sdc->addLastStateLog(buf);
@@ -243,7 +272,7 @@ void Supla::EspIdfClient::logConnReason(int error,
       }
       case ESP_ERR_ESP_TLS_FAILED_CONNECT_TO_HOST: {
         snprintf(buf,
-                 512,
+                 sizeof(buf),
                  "Connection: failed connect to host \"%s\"",
                  host);
         sdc->addLastStateLog(buf);
@@ -251,7 +280,7 @@ void Supla::EspIdfClient::logConnReason(int error,
       }
       case ESP_ERR_ESP_TLS_CONNECTION_TIMEOUT: {
         snprintf(buf,
-                 512,
+                 sizeof(buf),
                  "Connection: connection timeout to host \"%s\"",
                  host);
         sdc->addLastStateLog(buf);
@@ -261,7 +290,7 @@ void Supla::EspIdfClient::logConnReason(int error,
         switch (tlsError) {
           case -MBEDTLS_ERR_X509_CERT_VERIFY_FAILED: {
             snprintf(buf,
-                     512,
+                     sizeof(buf),
                      "Connection TLS: handshake fail - server "
                      "certificate verification error \"%s\"",
                      host);
@@ -271,7 +300,7 @@ void Supla::EspIdfClient::logConnReason(int error,
           }
           default: {
             snprintf(buf,
-                     512,
+                     sizeof(buf),
                      "Connection TLS: handshake fail (TLS 0x%X "
                      "flags 0x%x, \"\"%s\")",
                      tlsError,
@@ -290,7 +319,7 @@ void Supla::EspIdfClient::logConnReason(int error,
       }
       default: {
         snprintf(buf,
-                 512,
+                 sizeof(buf),
                  "Connection: error 0x%X (TLS 0x%X flags 0x%x \"\"%s\")",
                  error,
                  tlsError,

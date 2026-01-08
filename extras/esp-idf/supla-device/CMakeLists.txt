@@ -53,16 +53,13 @@ target_compile_definitions(${COMPONENT_LIB} PRIVATE
   SUPLA_DEVICE_ESP32
 )
 
-target_compile_definitions(${COMPONENT_LIB} PRIVATE SUPLA_DEVICE_ESP32)
+target_compile_definitions(${COMPONENT_LIB} PUBLIC SUPLA_DEVICE_ESP32)
 if (CONFIG_SUPLA_DEBUG_BUILD)
-  target_compile_definitions(${COMPONENT_LIB} PRIVATE SUPLA_DEBUG)
-  #add_definitions( -DSUPLA_DEBUG )
+  target_compile_definitions(${COMPONENT_LIB} PUBLIC SUPLA_DEBUG)
   if (CONFIG_SUPLA_DISABLE_LOGS)
-    target_compile_definitions(${COMPONENT_LIB} PRIVATE SUPLA_DISABLE_LOGS)
-    #add_definitions( -DSUPLA_DISABLE_LOGS )
+    target_compile_definitions(${COMPONENT_LIB} PUBLIC SUPLA_DISABLE_LOGS)
   endif()
 else()
-  target_compile_definitions(${COMPONENT_LIB} PRIVATE SUPLA_DISABLE_LOGS)
-  #add_definitions( -DSUPLA_DISABLE_LOGS )
+  target_compile_definitions(${COMPONENT_LIB} PUBLIC SUPLA_DISABLE_LOGS)
 endif()
 

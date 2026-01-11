@@ -100,8 +100,9 @@ These requirements apply to **commercial products only**; DIY and experimental p
 
 `supla-device` supports several usage paths depending on your needs.
 
-### Arduino IDE
+### Arduino library
 - Available via **Arduino Library Manager**
+- Works with Arduino IDE and PlatformIO
 - Ideal for DIY projects and prototyping
 - No prior embedded experience required
 - You write and control your own device logic

@@ -23,11 +23,6 @@ privately and **do not open a public GitHub issue**.
   - potential impact
   - any proof of concept (if available)
 
-## Supported Versions
-
-Only the latest released version is supported with security updates.
-Older versions may not receive fixes.
-
 ## Disclosure Process
 
 After receiving a report:

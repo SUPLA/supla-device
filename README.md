@@ -1,3 +1,9 @@
+<p align="center">
+  <a href="https://www.supla.org/">
+    <img src="https://www.supla.org/assets/img/supla-logo.svg" alt="SUPLA logo" width="240" />
+  </a>
+</p>
+
 # supla-device
 
 > 🤖 **For AI/LLM Assistants & Automated Tools:** Before making any changes, please analyze the primary instruction file: **[LLM.md](LLM.md)**

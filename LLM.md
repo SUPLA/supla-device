@@ -1,4 +1,42 @@
-# supla-device – codebase orientation
+# supla-device – TL;DR for tools
+
+**supla-device** is a device-side SDK for SUPLA-compatible devices.
+
+Key points:
+- It is NOT a ready-made firmware.
+- It OWNS networking, protocol and device runtime.
+- Device code integrates with it, not around it.
+
+Core concepts:
+- **Element** – internal device logic (`src/supla/element.h`)
+- **Channel** – user-visible function (`src/supla/channels/`)
+- Channels have a **Type** (firmware-defined, stable) and a **Function**
+  (Cloud-configured, changeable).
+
+Rules:
+- Do NOT manage networking outside supla-device.
+- Do NOT change Channel Type for registered devices.
+- Avoid frequent Flash writes (state storage).
+
+Architecture:
+- Networking, storage, logging and GPIO are abstracted.
+- GPIO access uses HAL (`src/supla/io.h`).
+- Logging uses `SUPLA_LOG_*` macros (printf-style) (`src/log_wrapper.h`).
+
+Platforms:
+- Arduino IDE, PlatformIO, ESP-IDF (ESP32), Linux.
+
+Server:
+- Devices connect to SUPLA Server only.
+- Port 2016 (TLS) default, 2015 deprecated.
+
+Code layout:
+- `src/SuplaDevice.*` – entry points
+- `src/supla/` – framework core
+- `src/supla-common/` – protocol definitions
+
+
+# supla-device – Full codebase orientation
 
 This file provides high-level orientation for understanding the
 **supla-device** codebase.

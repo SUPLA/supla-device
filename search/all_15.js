@@ -1,5 +1,10 @@
 var searchData=
 [
-  ['uptime_0',['Uptime',['../classSupla_1_1Uptime.html',1,'Supla::Uptime'],['../classUptime.html',1,'Uptime']]],
-  ['usage_1',['Usage',['../index.html#autotoc_md8',1,'']]]
+  ['weathersender_0',['WeatherSender',['../classSupla_1_1Protocol_1_1WeatherSender.html',1,'Supla::Protocol']]],
+  ['websender_1',['WebSender',['../classSupla_1_1WebSender.html',1,'Supla']]],
+  ['webserver_2',['WebServer',['../classSupla_1_1WebServer.html',1,'Supla']]],
+  ['weight_3',['Weight',['../classSupla_1_1Sensor_1_1Weight.html',1,'Supla::Sensor::Weight'],['../classWeight.html',1,'Weight']]],
+  ['wifi_4',['Wifi',['../classSupla_1_1Wifi.html',1,'Supla::Wifi'],['../classWifi.html',1,'Wifi']]],
+  ['wifiparameters_5',['WifiParameters',['../classSupla_1_1Html_1_1WifiParameters.html',1,'Supla::Html']]],
+  ['wind_6',['Wind',['../classSupla_1_1Sensor_1_1Wind.html',1,'Supla::Sensor']]]
 ];

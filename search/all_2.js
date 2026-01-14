@@ -1,7 +1,29 @@
 var searchData=
 [
-  ['_5fcolor_5fhsv_5ft_0',['_color_hsv_t',['../struct__color__hsv__t.html',1,'']]],
-  ['_5fdbl_1',['_DBL',['../struct__DBL.html',1,'']]],
-  ['_5fdblconv_2',['_DBLCONV',['../union__DBLCONV.html',1,'']]],
-  ['_5ffloatconv_3',['_FLOATCONV',['../union__FLOATCONV.html',1,'']]]
+  ['base_0',['Base',['../classSupla_1_1Io_1_1Base.html',1,'Supla::Io']]],
+  ['begin_1',['begin',['../classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028',1,'Supla::Element']]],
+  ['bh1750_2',['Bh1750',['../classSupla_1_1Sensor_1_1Bh1750.html',1,'Supla::Sensor']]],
+  ['binary_3',['Binary',['../classSupla_1_1Sensor_1_1Binary.html',1,'Supla::Sensor']]],
+  ['binarybase_4',['BinaryBase',['../classBinaryBase.html',1,'BinaryBase'],['../classSupla_1_1Sensor_1_1BinaryBase.html',1,'Supla::Sensor::BinaryBase']]],
+  ['binarysensorchannel_5',['BinarySensorChannel',['../classBinarySensorChannel.html',1,'BinarySensorChannel'],['../classSupla_1_1BinarySensorChannel.html',1,'Supla::BinarySensorChannel']]],
+  ['binarysensorconfig_6',['BinarySensorConfig',['../structSupla_1_1Sensor_1_1BinarySensorConfig.html',1,'Supla::Sensor']]],
+  ['binarysensorparameters_7',['BinarySensorParameters',['../classBinarySensorParameters.html',1,'BinarySensorParameters'],['../classSupla_1_1Html_1_1BinarySensorParameters.html',1,'Supla::Html::BinarySensorParameters']]],
+  ['bistablerelay_8',['BistableRelay',['../classSupla_1_1Control_1_1BistableRelay.html',1,'Supla::Control::BistableRelay'],['../classSupla_1_1Control_1_1BistableRelay.html#aaaa89f8584d200828ce4cbf69bd9ada8',1,'Supla::Control::BistableRelay::BistableRelay(int pin, int statusPin=-1, bool statusPullUp=true, bool statusHighIsOn=true, bool highIsOn=true, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))'],['../classSupla_1_1Control_1_1BistableRelay.html#a2d05e30a25d071f14857ca882b51e922',1,'Supla::Control::BistableRelay::BistableRelay(Supla::Io::Base *io, int pin, int statusPin=-1, bool statusPullUp=true, bool statusHighIsOn=true, bool highIsOn=true, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))'],['../classSupla_1_1Control_1_1BistableRelay.html#adb70b6877412971267a329b1adb0cf5d',1,'Supla::Control::BistableRelay::BistableRelay(Supla::Io::Base *ioOut, Supla::Io::Base *ioState, int pin, int statusPin=-1, bool statusPullUp=true, bool statusHighIsOn=true, bool highIsOn=true, _supla_int_t functions=(0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER))']]],
+  ['bistablerollershutter_9',['BistableRollerShutter',['../classSupla_1_1Control_1_1BistableRollerShutter.html',1,'Supla::Control']]],
+  ['blinkingled_10',['BlinkingLed',['../classBlinkingLed.html',1,'BlinkingLed'],['../classSupla_1_1Control_1_1BlinkingLed.html',1,'Supla::Control::BlinkingLed']]],
+  ['bme280_11',['BME280',['../classSupla_1_1Sensor_1_1BME280.html',1,'Supla::Sensor']]],
+  ['bmp180_12',['BMP180',['../classSupla_1_1Sensor_1_1BMP180.html',1,'Supla::Sensor']]],
+  ['bmp280_13',['BMP280',['../classSupla_1_1Sensor_1_1BMP280.html',1,'Supla::Sensor']]],
+  ['brightnessadjuster_14',['BrightnessAdjuster',['../classSupla_1_1Control_1_1BrightnessAdjuster.html',1,'Supla::Control']]],
+  ['button_15',['Button',['../classButton.html',1,'Button'],['../classSupla_1_1Control_1_1Button.html',1,'Supla::Control::Button']]],
+  ['buttonactiontriggerconfig_16',['ButtonActionTriggerConfig',['../classSupla_1_1Html_1_1ButtonActionTriggerConfig.html',1,'Supla::Html']]],
+  ['buttonaggregator_17',['ButtonAggregator',['../classButtonAggregator.html',1,'ButtonAggregator'],['../classSupla_1_1Control_1_1ButtonAggregator.html',1,'Supla::Control::ButtonAggregator']]],
+  ['buttonconfigparameters_18',['ButtonConfigParameters',['../classButtonConfigParameters.html',1,'ButtonConfigParameters'],['../classSupla_1_1Html_1_1ButtonConfigParameters.html',1,'Supla::Html::ButtonConfigParameters']]],
+  ['buttonholdtimeparameters_19',['ButtonHoldTimeParameters',['../classButtonHoldTimeParameters.html',1,'ButtonHoldTimeParameters'],['../classSupla_1_1Html_1_1ButtonHoldTimeParameters.html',1,'Supla::Html::ButtonHoldTimeParameters']]],
+  ['buttonlistelement_20',['ButtonListElement',['../structRelay_1_1ButtonListElement.html',1,'Relay::ButtonListElement'],['../structRollerShutterInterface_1_1ButtonListElement.html',1,'RollerShutterInterface::ButtonListElement'],['../structSupla_1_1Control_1_1Relay_1_1ButtonListElement.html',1,'Supla::Control::Relay::ButtonListElement'],['../structSupla_1_1Control_1_1RollerShutterInterface_1_1ButtonListElement.html',1,'Supla::Control::RollerShutterInterface::ButtonListElement']]],
+  ['buttonmulticlickparameters_21',['ButtonMulticlickParameters',['../classSupla_1_1Html_1_1ButtonMulticlickParameters.html',1,'Supla::Html']]],
+  ['buttonrefresh_22',['ButtonRefresh',['../classButtonRefresh.html',1,'ButtonRefresh'],['../classSupla_1_1Html_1_1ButtonRefresh.html',1,'Supla::Html::ButtonRefresh']]],
+  ['buttonstate_23',['ButtonState',['../classButtonState.html',1,'ButtonState'],['../classSupla_1_1Control_1_1ButtonState.html',1,'Supla::Control::ButtonState']]],
+  ['buttontypeparameters_24',['ButtonTypeParameters',['../classButtonTypeParameters.html',1,'ButtonTypeParameters'],['../classSupla_1_1Html_1_1ButtonTypeParameters.html',1,'Supla::Html::ButtonTypeParameters']]],
+  ['buttonupdate_25',['ButtonUpdate',['../classButtonUpdate.html',1,'ButtonUpdate'],['../classSupla_1_1Html_1_1ButtonUpdate.html',1,'Supla::Html::ButtonUpdate']]]
 ];

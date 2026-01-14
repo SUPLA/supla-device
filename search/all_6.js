@@ -1,18 +1,8 @@
 var searchData=
 [
-  ['deviceinfo_0',['DeviceInfo',['../classSupla_1_1Html_1_1DeviceInfo.html',1,'Supla::Html']]],
-  ['dht_1',['DHT',['../classSupla_1_1Sensor_1_1DHT.html',1,'Supla::Sensor']]],
-  ['dimmerbase_2',['DimmerBase',['../classSupla_1_1Control_1_1DimmerBase.html',1,'Supla::Control']]],
-  ['dimmerleds_3',['DimmerLeds',['../classSupla_1_1Control_1_1DimmerLeds.html',1,'Supla::Control']]],
-  ['disablechannelstate_4',['disableChannelState',['../classSupla_1_1Element.html#aa46f400a295476e7cab0c2214ea304d6',1,'Supla::Element']]],
-  ['disableuserinterfaceparameter_5',['DisableUserInterfaceParameter',['../classDisableUserInterfaceParameter.html',1,'DisableUserInterfaceParameter'],['../classSupla_1_1Html_1_1DisableUserInterfaceParameter.html',1,'Supla::Html::DisableUserInterfaceParameter']]],
-  ['distance_6',['Distance',['../classSupla_1_1Sensor_1_1Distance.html',1,'Supla::Sensor']]],
-  ['divbegin_7',['DivBegin',['../classSupla_1_1Html_1_1DivBegin.html',1,'Supla::Html']]],
-  ['divend_8',['DivEnd',['../classSupla_1_1Html_1_1DivEnd.html',1,'Supla::Html']]],
-  ['documentation_9',['Documentation',['../index.html#autotoc_md1',1,'']]],
-  ['does_20it_20work_10',['How does it work?',['../index.html#autotoc_md12',1,'']]],
-  ['draft_11',['Installation instructions for ESP IDF and ESP8266 RTOS SDK (draft)',['../index.html#autotoc_md22',1,'']]],
-  ['ds1307rtc_12',['DS1307RTC',['../classSupla_1_1DS1307RTC.html',1,'Supla']]],
-  ['ds18b20_13',['DS18B20',['../classSupla_1_1Sensor_1_1DS18B20.html',1,'Supla::Sensor']]],
-  ['ds3231rtc_14',['DS3231RTC',['../classSupla_1_1DS3231RTC.html',1,'Supla']]]
+  ['factorytest_0',['FactoryTest',['../classSupla_1_1Device_1_1FactoryTest.html',1,'Supla::Device::FactoryTest'],['../classSupla_1_1Device_1_1FactoryTest.html#a9471e910d4dff52be26760df7f524904',1,'Supla::Device::FactoryTest::FactoryTest()']]],
+  ['fillchannelconfig_1',['fillChannelConfig',['../classSupla_1_1Sensor_1_1BinaryBase.html#aee4acb1a8a382dc9afdb1ebbdaa186b1',1,'Supla::Sensor::BinaryBase::fillChannelConfig()'],['../classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#a841425f65d535b3ad70a5b688c76c0de',1,'Supla::Sensor::GeneralPurposeChannelBase::fillChannelConfig()'],['../classSupla_1_1Sensor_1_1GeneralPurposeMeter.html#af19efb031348188591c5b4efb048abbe',1,'Supla::Sensor::GeneralPurposeMeter::fillChannelConfig()'],['../classBinaryBase.html#aee4acb1a8a382dc9afdb1ebbdaa186b1',1,'BinaryBase::fillChannelConfig()'],['../classGeneralPurposeChannelBase.html#a841425f65d535b3ad70a5b688c76c0de',1,'GeneralPurposeChannelBase::fillChannelConfig()'],['../classGeneralPurposeMeter.html#af19efb031348188591c5b4efb048abbe',1,'GeneralPurposeMeter::fillChannelConfig()']]],
+  ['fillsuplachannelnewvalue_2',['fillSuplaChannelNewValue',['../classSupla_1_1Control_1_1Relay.html#af091b1951026cd090e2445d6913c6eec',1,'Supla::Control::Relay::fillSuplaChannelNewValue()'],['../classSupla_1_1Control_1_1RGBCCTBase.html#afb3f34d0808ae0c69d91a9e7fa504461',1,'Supla::Control::RGBCCTBase::fillSuplaChannelNewValue()'],['../classSupla_1_1Control_1_1RollerShutterInterface.html#aa78d3199c66cc62edd7580b411514d80',1,'Supla::Control::RollerShutterInterface::fillSuplaChannelNewValue()'],['../classSupla_1_1Element.html#aed458ad3458006b93a5a7ed4d79f77bc',1,'Supla::Element::fillSuplaChannelNewValue()'],['../classRelay.html#af091b1951026cd090e2445d6913c6eec',1,'Relay::fillSuplaChannelNewValue()'],['../classRollerShutterInterface.html#aa78d3199c66cc62edd7580b411514d80',1,'RollerShutterInterface::fillSuplaChannelNewValue()']]],
+  ['framspi_3',['FramSpi',['../classSupla_1_1FramSpi.html',1,'Supla']]],
+  ['fronius_4',['Fronius',['../classSupla_1_1PV_1_1Fronius.html',1,'Supla::PV']]]
 ];

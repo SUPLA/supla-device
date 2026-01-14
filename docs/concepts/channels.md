@@ -1,9 +1,7 @@
 # Channels
 
-This document explains how **Channels** work in **supla-device**,
-how they are registered, configured and how they become visible to users.
-
-Channels define **what the user sees and controls** in SUPLA.
+**Channels** represent user-visible device functionality in **supla-device**.
+They define what users can see and control in SUPLA.
 
 ---
 
@@ -16,12 +14,12 @@ Examples include:
 - temperature sensor,
 - roller shutter,
 - thermostat,
-- impulse counter.
+- impulse counter and electricity meter,
+- binary sensor,
+- etc.
 
-Channels are:
-- created in device firmware,
-- registered in SUPLA Server during device startup,
-- configured and presented via SUPLA Cloud and client applications.
+Channels are created in device firmware. Then they are registered in SUPLA Server
+during device startup.
 
 ---
 
@@ -203,16 +201,3 @@ Platform differences affect:
 
 The conceptual Channel behavior remains the same.
 
----
-
-## Summary
-
-- Channels define user-visible device functionality.
-- They are created in firmware and configured in SUPLA Cloud.
-- Channel order and numbering are critical for device registration.
-- Channel conflicts can often be resolved in SUPLA Cloud.
-- Visibility depends on Function, Location and permissions.
-- Channel behavior is platform-independent.
-
-Understanding Channels is essential for building stable
-and upgrade-friendly SUPLA devices.

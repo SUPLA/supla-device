@@ -1,8 +1,5 @@
 # Troubleshooting
 
-This page lists common problems encountered when working with **supla-device**
-and provides guidance on how to diagnose and resolve them.
-
 ---
 
 ## Device does not appear in SUPLA Cloud
@@ -44,6 +41,7 @@ and provides guidance on how to diagnose and resolve them.
 
 ### Possible causes
 - Channel order changed since the last registration (channel conflict).
+- Channel type was changed (channel conflict).
 - A channel was removed (channel conflict).
 - Invalid server address.
 - Invalid user credentials (e-mail).

@@ -1,10 +1,7 @@
 # Storage
 
-This document explains how **persistent storage** is used in **supla-device**,
-what types of data are stored and when storage is required.
-
-Proper storage configuration is essential for reliable device behavior,
-especially across restarts and power cycles.
+**supla-device** uses persistent storage for **configuration**
+and selected runtime **state**.
 
 ---
 
@@ -110,6 +107,11 @@ Common backends include:
 supla-device abstracts storage access so that Element logic
 remains portable across platforms.
 
+On Linux / sd4linux, storage is typically implemented using
+file-based backends provided by the operating system.
+Configuration and state may be stored in regular files,
+depending on the selected implementation.
+
 ---
 
 ## Storage lifecycle
@@ -141,13 +143,4 @@ Platform-specific implementations is located in:
 
 Elements interact with storage through abstractions,
 not directly with hardware or filesystems.
-
----
-
-## Summary
-
-- supla-device uses persistent storage for configuration and state.
-- Configuration and state serve different purposes.
-- Storage backends are platform-dependent but abstracted.
-- Proper storage handling is essential for device stability.
 

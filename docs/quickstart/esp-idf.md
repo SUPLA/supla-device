@@ -1,11 +1,9 @@
 # Quickstart: ESP-IDF (ESP32)
 
-This guide shows how to start using **supla-device** with **ESP-IDF** on ESP32.
+**supla-device** can be used with **ESP-IDF** on ESP32.
 
-ESP-IDF is recommended for:
-- advanced projects and custom architectures,
-- commercial and long-term products,
-- full control over networking, memory and updates.
+This environment provides full control over networking,
+memory management and system updates.
 
 ---
 

@@ -1,6 +1,6 @@
 # supla-device documentation
 
-This documentation covers the **supla-device** SDK/library used to build custom SUPLA-compatible devices.
+**supla-device** is an open-source SDK/library used to build custom SUPLA-compatible devices.
 
 Use it if you are:
 - building your own firmware for **ESP32 / ESP-IDF** or **Arduino** (Arduino IDE / PlatformIO),
@@ -35,11 +35,14 @@ A ready-to-run SUPLA device implementation for desktop environments, useful for 
 
 If you are new to the project, these are the most important concepts:
 
+- **Architecture**: how device code connects to SUPLA server/cloud and how the main loop works  
+  → [Concepts: Architecture](concepts/architecture.md)
+
 - **Channels**: what the user sees and controls in SUPLA  
   → [Concepts: Channels](concepts/channels.md)
 
-- **Architecture**: how device code connects to SUPLA server/cloud and how the main loop works  
-  → [Concepts: Architecture](concepts/architecture.md)
+- **Elements**: how the device works internally  
+  → [Concepts: Elements](concepts/element-lifecycle.md)
 
 ---
 
@@ -59,9 +62,6 @@ Practical guides for common tasks:
 
 - Common problems and fixes  
   → [Troubleshooting](troubleshooting.md)
-
-- Frequently asked questions  
-  → [FAQ](faq.md)
 
 - Terms and abbreviations used across the docs  
   → [Glossary](glossary.md)

@@ -1,11 +1,11 @@
 # Networking
 
-This document explains how networking works in **supla-device**,
-how devices connect to SUPLA Server and what to consider when configuring
-network connectivity.
+**supla-device** manages networking end-to-end:
+from network configuration to connection handling
+and communication with SUPLA Server.
 
-Networking is a critical part of device stability and is a common source
-of configuration and runtime issues.
+Network configuration and stability directly affect
+device reliability and runtime behavior.
 
 ---
 
@@ -224,7 +224,8 @@ Mitigation:
 
 ### Router configuration restrictions
 
-Some router settings may silently block connections.
+In practice, many connection issues are caused by router configuration
+rather than device firmware.
 
 Common examples:
 - MAC address filtering enabled,

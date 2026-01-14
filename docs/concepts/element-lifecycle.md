@@ -1,12 +1,7 @@
 # Element lifecycle
 
-This document describes the **lifecycle of an Element** in **supla-device**
-and the order in which Element callbacks are executed.
-
-Understanding the Element lifecycle is essential when:
-- implementing custom Elements,
-- debugging device behavior,
-- designing gateway or dynamic devices.
+This document describes the **Element lifecycle** in **supla-device**
+and the callback execution order.
 
 The lifecycle is identical across platforms
 (Arduino, ESP-IDF and Linux).
@@ -196,6 +191,11 @@ Notes:
 - storage implementation controls write frequency,
 - Elements should assume this method is called infrequently.
 
+Note:
+Frequent state writes may reduce Flash memory lifetime.
+See also:
+- [How-to: Storage](../howto/storage.md) – write frequency and wear considerations.
+
 ---
 
 ## Callback execution order (summary)
@@ -216,15 +216,6 @@ The typical execution order is:
 
 ---
 
-## Common mistakes
-
-- Creating Elements after the device runtime has started.
-- Performing hardware access in onLoadConfig or onLoadState, or earlier.
-- Blocking execution inside iterateAlways or iterateConnected.
-- Performing heavy logic in onFastTimer.
-
----
-
 ## Best practices
 
 - Keep callbacks short and non-blocking.
@@ -233,14 +224,4 @@ The typical execution order is:
 - Use state storage only when persistence is required.
 - Preserve Channel numbering and Types when modifying firmware.
 
----
-
-## Summary
-
-- Element lifecycle is deterministic and ordered.
-- Initialization and runtime phases are clearly separated.
-- Configuration and state are loaded before hardware initialization.
-- Runtime callbacks must be non-blocking.
-- Timer callbacks are time-critical.
-- Understanding lifecycle prevents subtle bugs and instability.
 

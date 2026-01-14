@@ -1,8 +1,5 @@
 # Glossary
 
-This glossary explains common terms used in **supla-device** documentation
-and codebase.
-
 ---
 
 ## SUPLA

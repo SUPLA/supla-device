@@ -1,10 +1,7 @@
 # Architecture
 
-This document explains the high-level architecture of **supla-device**
-and how devices interact with the SUPLA platform.
-
-It focuses on concepts common to all supported environments:
-Arduino, ESP-IDF and Linux (sd4linux).
+**supla-device** provides a common device-side architecture
+for Arduino, ESP-IDF and Linux (sd4linux).
 
 ---
 

@@ -1,12 +1,10 @@
 # Quickstart: Arduino library (Arduino IDE / PlatformIO)
 
-This guide explains how to use **supla-device** as an **Arduino library**  
-with **Arduino IDE** or **PlatformIO**.
+Use **supla-device** as an **Arduino library** with **Arduino IDE**
+or **PlatformIO**.
 
-This is the recommended starting point for:
-- DIY projects and prototyping,
-- users familiar with the Arduino ecosystem,
-- quick validation of SUPLA-compatible device ideas.
+This is the most common entry point for DIY projects, prototyping
+and early validation of SUPLA-compatible devices.
 
 ---
 

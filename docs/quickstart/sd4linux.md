@@ -1,14 +1,13 @@
 # Quickstart: Linux / macOS (sd4linux)
 
-This guide explains how to use **sd4linux**, a SUPLA-compatible device
-implementation running on **Linux and macOS**.
+Use **sd4linux** as a SUPLA-compatible device implementation running on **Linux and macOS**.
 
-This path is intended for:
+Choose this path if you are:
 - integration with other systems,
 - development, testing and debugging,
 - running SUPLA-compatible devices on small Linux-based platforms.
 
-It is **not** intended for deeply embedded microcontroller firmware.
+It is **not** intended for embedded microcontroller firmware.
 
 ---
 

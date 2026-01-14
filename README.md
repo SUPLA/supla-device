@@ -2,26 +2,22 @@
 
 `supla-device` is an open-source **IoT device library / SDK** for building **custom SUPLA-compatible devices**.
 
-It is used by **DIY enthusiasts, hardware manufacturers and advanced developers** to create devices that connect to the **SUPLA smart home platform**.
-
-This repository provides building blocks for device firmware.  
+It provides building blocks for device firmware.
 It is **not a ready-to-flash firmware**.
 
 ---
 
 ## What is supla-device
 
-`supla-device` is a software foundation for building custom smart home devices that work with SUPLA.
+`supla-device` is a software foundation for implementing custom smart home devices that work with SUPLA.
 
-Typical use cases include devices such as:
-- switches, gates and roller shutters,
-- sensors (temperature, humidity, energy, etc.),
-- **HVAC and thermostat devices**,
+Typical devices include:
+- switches, gates, facade blinds and roller shutters,
+- sensors (temperature, humidity, energy, binary on/off etc.),
+- HVAC and thermostat devices,
 - devices combining multiple functions.
 
-Devices built with `supla-device` communicate with **SUPLA Cloud** or a **self-hosted SUPLA server**.
-
-At its core, the library is built around two key concepts.
+Devices built with `supla-device` connect to **SUPLA Server** (cloud-hosted or self-hosted).
 
 ---
 
@@ -38,6 +34,21 @@ Examples:
 - a thermostat or HVAC-related channel.
 
 Channels define **what the user sees and controls** in SUPLA.
+
+---
+
+### Channels: Type vs Function
+
+Each Channel has a **Type** and a configurable **Function**.
+
+- Channel **Type** is defined in firmware and validated during device registration.
+  It must remain stable.
+- Channel **Function** is selected in SUPLA Cloud and can be changed
+  without firmware updates.
+
+Channel numbering is also defined in firmware.
+For devices with dynamic Channels (e.g. gateways), explicit numbering
+can be used to preserve stable Channel identifiers.
 
 ---
 
@@ -60,14 +71,13 @@ You can think of:
 
 ## Who should use supla-device
 
-`supla-device` is a good fit if you are:
-- a **DIY or hobbyist** working with Arduino Mega, ESP32, or ESP8266,
-- building your own smart home devices,
-- a **hardware manufacturer** developing SUPLA-compatible products,
+`supla-device` is typically used by:
+- **DIY or hobbyist** working with ESP32, ESP8266, or Arduino Mega, building your own smart home devices,
+- hardware manufacturer developing SUPLA-compatible products,
 - someone willing to write and modify device firmware.
 
-You do **not** need deep embedded knowledge to get started.  
-Many users begin with simple Arduino-based projects and learn more advanced concepts over time.
+Basic embedded experience is helpful, but not required.
+Many users start with simple Arduino-based projects and expand from there.
 
 ---
 
@@ -91,7 +101,6 @@ These requirements apply to **commercial products only**; DIY and experimental p
 `supla-device` may not be the best choice if:
 - you are looking for a **ready-made firmware** to flash,
 - you expect a **plug-and-play solution** without modifying code,
-- you want a complete smart home system (cloud, server, UI),
 - you are not interested in working with device firmware at all.
 
 ---
@@ -106,6 +115,10 @@ These requirements apply to **commercial products only**; DIY and experimental p
 - Ideal for DIY projects and prototyping
 - No prior embedded experience required
 - You write and control your own device logic
+
+When used on ESP32, the Arduino library relies on the same underlying
+networking stack as ESP-IDF. From a networking and protocol perspective,
+ESP32 behavior is equivalent across both environments.
 
 ### ESP32 / ESP-IDF
 - Native integration
@@ -145,14 +158,11 @@ See the `docs/` directory for a quick orientation.
 
 ## Documentation
 
+- **Quick orientation (in-repo)**  
+  See the [docs/index.md](docs/index.md) file in the `docs/` directory
+
 - **Online documentation (API & concepts)**  
   https://supla.github.io/supla-device/
-
-- **Quick orientation (in-repo)**  
-  See the `docs/` directory
-
-- **Documentation sources and build scripts**  
-  `extras/docs/`
 
 SUPLA platform overview:  
 https://www.supla.org/

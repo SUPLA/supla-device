@@ -169,6 +169,45 @@ https://www.supla.org/
 
 ---
 
+## Code orientation
+
+Core code lives in `src/`.
+
+### Entry points
+- `src/SuplaDevice.h` / `src/SuplaDevice.cpp` – main user-facing entry point used in Arduino-style projects (`SuplaDevice.begin()`, `SuplaDevice.iterate()`, etc.)
+
+### Core framework
+- `src/supla/` – framework core: Elements, Channels, device runtime, protocol, networking and storage abstractions
+
+Key files:
+- `src/supla/element.h` – Element base class and lifecycle callbacks
+- `src/supla/channels/` – Channel implementation (types, base classes, helpers)
+- `src/supla/network/` – network interfaces and web-based configuration helpers
+- `src/supla/storage/` – configuration storage and state storage backends (including optional wear-leveling)
+- `src/supla/io.h` – GPIO Hardware Abstraction Layer (HAL). Provides a unified interface for GPIO access instead of direct `pinMode`, `digitalRead` and `digitalWrite` usage.
+- `src/supla/io/` – concrete GPIO HAL implementations, including support for external I/O expanders.
+
+Major feature areas:
+- `src/supla/sensor/` – sensors and measurement-related Elements
+- `src/supla/control/` – relays, buttons, roller shutters, HVAC and other control Elements
+- `src/supla/protocol/` – SUPLA protocol layer and MQTT integration
+- `src/supla/device/` – device-side services (registration, updates, status/diagnostics, conflict handling)
+- `src/supla/pv/` – PV inverter integrations
+
+### Protocol definitions shared across projects
+- `src/supla-common/` – SUPLA protocol structures and low-level helpers shared across the ecosystem
+
+---
+
+### Logging
+
+Logging is handled via platform-independent `SUPLA_LOG_*` macros
+with `printf`-style formatting.
+This allows unified logging across Arduino, ESP-IDF and Linux
+and easy compile-time disabling for release builds.
+
+---
+
 ## What supla-device is NOT
 
 - Not a complete SUPLA system (no cloud, no server).
@@ -191,3 +230,7 @@ See **Releases** and **[CHANGELOG](CHANGELOG.md)** for details.
 
 This project is licensed under the **GNU GPL v2**.  
 See the [LICENSE](LICENSE) file for details.
+
+---
+
+For codebase and architecture orientation, see `LLM.md`.

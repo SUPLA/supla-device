@@ -1,5 +1,7 @@
 # supla-device
 
+> 🤖 **For AI/LLM Assistants & Automated Tools:** Before making any changes, please analyze the primary instruction file: **[LLM.md](LLM.md)**
+
 `supla-device` is an open-source **IoT device library / SDK** for building **custom SUPLA-compatible devices**.
 
 It provides building blocks for device firmware.
@@ -232,5 +234,3 @@ This project is licensed under the **GNU GPL v2**.
 See the [LICENSE](LICENSE) file for details.
 
 ---
-
-For codebase and architecture orientation, see `LLM.md`.

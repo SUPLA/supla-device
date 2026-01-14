@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://www.supla.org/">
-    <img src="https://www.supla.org/assets/img/supla-logo.svg" alt="SUPLA logo" width="240" />
+    <img src="docs/assets/img/supla-logo.svg" alt="SUPLA logo" width="180" />
   </a>
 </p>
 

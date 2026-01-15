@@ -93,7 +93,8 @@ Many users start with simple Arduino-based projects and expand from there.
 
 We strongly encourage **self-prototyping** using this repository.
 
-For **commercial products**, we recommend **contacting the SUPLA team**:
+For **commercial products**, we recommend **contacting the SUPLA team**
+at [supla@supla.org](mailto:supla@supla.org):
 - we can assist with device integration and architecture,
 - we can help deliver **production-ready software**,
 - we can support compliance with applicable regulations,  

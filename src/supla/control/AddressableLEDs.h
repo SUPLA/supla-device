@@ -119,7 +119,7 @@ class AddressableLEDs : public Supla::Element {
   bool on = false;
   uint16_t numberOfLeds;
   uint16_t lightedLeds = 0;
-  uint32_t RGBcolor = 0x004400; // color of SUPLA :-)
+  uint32_t RGBcolor = 0x004400;  // color of SUPLA :-)
   uint32_t LastColor = 0;
 
   int OneLedTime = 200;
@@ -142,13 +142,13 @@ class AddressableLEDs : public Supla::Element {
     // LEDs changing colour
     if (LastColor != RGBcolor) {
       LastColor = RGBcolor;
-      for (int i=0; i<lightedLeds; i++) {
+      for (int i=0; i < lightedLeds; i++) {
         pixels->setPixelColor(i, RGBcolor);
       }
       pixels->show();
     }
     // LEDs switching OFF
-    if (!isOn() && lightedLeds>0 && (millis()-lastTime >= OneLedTime)
+    if (!isOn() && lightedLeds > 0 && (millis()-lastTime >= OneLedTime)
         || (millis() < lastTime)) {
       lastTime = millis();
       lightedLeds--;
@@ -160,10 +160,11 @@ class AddressableLEDs : public Supla::Element {
   }
 
   void iterateAlways_Swap() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime) || (millis() < lastTime))) {
+    if (isOn() && ((millis()-lastTime >= OneLedTime)
+        || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         if ((i+counter)%2) {
           pixels->setPixelColor(i, RGBcolor);
         } else {
@@ -173,18 +174,19 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
     }
     if (!isOn()) {
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
     }
-  } 
+  }
 
   void iterateAlways_Flow() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime) || (millis() < lastTime))) {
+    if (isOn() && ((millis()-lastTime >= OneLedTime)
+        || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         if ((i+counter)%4) {
           pixels->setPixelColor(i, RGBcolor);
         } else {
@@ -194,19 +196,20 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
     }
     if (!isOn()) {
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
     }
-  } 
+  }
 
   void iterateAlways_RainbowWheel() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime) || (millis() < lastTime))) {
+    if (isOn() && ((millis()-lastTime >= OneLedTime)
+        || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
-      for (int i=0; i<numberOfLeds; i++) {
-        if (counter>255) {
+      for (int i=0; i < numberOfLeds; i++) {
+        if (counter > 255) {
           counter = 0;
         }
         pixels->setPixelColor(i, RainbowWheel((i*1+counter) & 255));
@@ -214,18 +217,19 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
     }
     if (!isOn()) {
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
     }
-  } 
+  }
 
   void iterateAlways_Rainbow() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime) || (millis() < lastTime))) {
+    if (isOn() && ((millis()-lastTime >= OneLedTime)
+        || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
-      for (int i=0; i<lightedLeds; i++) {
+      for (int i=0; i < lightedLeds; i++) {
         if (counter*256 > 5*65536) {
           counter = 0;
         }
@@ -235,7 +239,7 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
     }
     if (!isOn()) {
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
@@ -252,11 +256,11 @@ class AddressableLEDs : public Supla::Element {
         lightedLeds++;
       }
       // LEDs colour changing
-      for (int i=0; i<lightedLeds; i++) {
+      for (int i=0; i < lightedLeds; i++) {
         if (counter*256 > 5*65536) {
           counter = 0;
         }
-        int pixelHue = 256*counter + (i * 65536L / numberOfLeds);
+        int pixelHue = 256 * counter + (i * 65536L / numberOfLeds);
         pixels->setPixelColor(i, pixels->gamma32(pixels->ColorHSV(pixelHue)));
       }
       pixels->show();

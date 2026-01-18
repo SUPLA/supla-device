@@ -41,7 +41,7 @@
 #include <supla/sensor/BME280.h>
 #include <supla/sensor/DS18B20.h>
 #include <supla/sensor/bh1750.h>
-#include "supla_sensor_particle_meter_sds011.h"
+#include <supla/sensor/particle_meter_sds011.h>
 #include <supla/sensor/sht3x.h>
 #include "heca.h"
 

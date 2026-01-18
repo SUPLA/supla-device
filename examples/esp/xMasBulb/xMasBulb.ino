@@ -64,7 +64,7 @@ void setup() {
   auto cs = new AddressableLEDsColorSelector(strip);
 
   // Effevt switches in App
-  auto sw1 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::VEEROOS, 200);
+  auto sw1 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::STILL, 200, 20);
   sw1->getChannel()->setInitialCaption("VEEROOS");
   sw1->getChannel()->setDefaultIcon(1);
   auto sw2 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::SWAP, 200);
@@ -82,7 +82,7 @@ void setup() {
   auto sw6 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOW, 10);
   sw6->getChannel()->setInitialCaption("RAINBOW FAST");
   sw6->getChannel()->setDefaultIcon(1);
-  auto sw7 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOWVEEROOS, 10);
+  auto sw7 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOW, 10, 20);
   sw7->getChannel()->setInitialCaption("RAINBOW VEEROOS");
   sw7->getChannel()->setDefaultIcon(1);
   sw7->setDefaultStateOn();

@@ -48,7 +48,8 @@ class AddressableLEDs : public Supla::Element {
     pixels->begin();
   }
 
-  void setEffect(AddressableLEDsEffect neweffect, uint16_t newStepTime, uint8_t turnAllLEDsTime = 0) {
+  void setEffect(AddressableLEDsEffect neweffect, uint16_t newStepTime,
+      uint8_t turnAllLEDsTime = 0) {
     if (effect != neweffect) {
       effect = neweffect;
       counter = 0;

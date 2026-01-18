@@ -34,7 +34,8 @@
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/events.h>
 #include <supla/network/html/button_update.h>
-#include <supla/control/LEDs.h>
+#include <supla/control/AddressableLEDs.h>
+#include "AddressableLEDs_control.h"
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;
@@ -57,31 +58,31 @@ void setup() {
   new Supla::Html::ButtonUpdate(&suplaServer);
 
   // WS2812b LEDs strip
-  auto strip = new Supla::Control::LEDs::Strip(RGB_RING_NUM_LEDS, RGB_GPIO);
+  auto strip = new Supla::Control::AddressableLEDs(RGB_RING_NUM_LEDS, RGB_GPIO);
 
   // Manage single color in App
-  auto cs = new Supla::Control::LEDs::colorSelector(strip);
+  auto cs = new AddressableLEDsColorSelector(strip);
 
   // Effevt switches in App
-  auto sw1 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::VEEROOS, 200);
+  auto sw1 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::VEEROOS, 200);
   sw1->getChannel()->setInitialCaption("VEEROOS");
   sw1->getChannel()->setDefaultIcon(1);
-  auto sw2 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::SWAP, 200);
+  auto sw2 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::SWAP, 200);
   sw2->getChannel()->setInitialCaption("SWAP");
   sw2->getChannel()->setDefaultIcon(1);
-  auto sw3 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::FLOW, 200);
+  auto sw3 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::FLOW, 200);
   sw3->getChannel()->setInitialCaption("FLOW");
   sw3->getChannel()->setDefaultIcon(1);
-  auto sw4 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::RAINBOWWHEEL, 30);
+  auto sw4 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOWWHEEL, 30);
   sw4->getChannel()->setInitialCaption("RAINBOWWHEEL");
   sw4->getChannel()->setDefaultIcon(1);
-  auto sw5 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::RAINBOW, 50);
+  auto sw5 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOW, 50);
   sw5->getChannel()->setInitialCaption("RAINBOW");
   sw5->getChannel()->setDefaultIcon(1);
-  auto sw6 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::RAINBOW, 10);
+  auto sw6 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOW, 10);
   sw6->getChannel()->setInitialCaption("RAINBOW FAST");
   sw6->getChannel()->setDefaultIcon(1);
-  auto sw7 = new Supla::Control::LEDs::effectSwitch(strip, Supla::Control::LEDs::RAINBOWVEEROOS, 10);
+  auto sw7 = new AddressableLEDsEffectSwitch(strip, Supla::Control::AddressableLEDsEffect::RAINBOWVEEROOS, 10);
   sw7->getChannel()->setInitialCaption("RAINBOW VEEROOS");
   sw7->getChannel()->setDefaultIcon(1);
   sw7->setDefaultStateOn();

@@ -31,12 +31,11 @@ namespace Supla {
 namespace Control {
 
 enum AddressableLEDsEffect : uint8_t {
-  VEEROOS,
+  STILL,
   SWAP,
   FLOW,
   RAINBOWWHEEL,
   RAINBOW,
-  RAINBOWVEEROOS,
 };
 
 class AddressableLEDs : public Supla::Element {
@@ -49,11 +48,13 @@ class AddressableLEDs : public Supla::Element {
     pixels->begin();
   }
 
-  void setEffect(AddressableLEDsEffect _effect, int time) {
-    if (effect != _effect) {
-      effect = _effect;
+  void setEffect(AddressableLEDsEffect neweffect, uint16_t newStepTime, uint8_t turnAllLEDsTime = 0) {
+    if (effect != neweffect) {
+      effect = neweffect;
       counter = 0;
+    }
 
+    if (turnOnTime != turnAllLEDsTime) {
       // switching OFF all LEDs
       for (int i=0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
@@ -61,13 +62,19 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
       lightedLeds = 0;
     }
-    if (OneLedTime != time) {
-       OneLedTime = time;
-    }
+
+    stepTime = newStepTime;
+    turnOnTime = turnAllLEDsTime;
   }
 
   AddressableLEDsEffect getEffect() {
     return effect;
+  }
+  uint16_t getTurnOnTime() {
+    return turnOnTime;
+  }
+  uint16_t getStepTime() {
+    return stepTime;
   }
 
   bool isOn() {
@@ -91,9 +98,19 @@ class AddressableLEDs : public Supla::Element {
   }
 
   void iterateAlways() {
+    // LEDs switching ON
+    if (isOn() && lightedLeds < numberOfLeds
+        && ((millis()-lastLEDTime >= (1000 * turnOnTime / numberOfLeds))
+        || (millis() < lastLEDTime))) {
+      lastLEDTime = millis();
+      SUPLA_LOG_DEBUG("RGB strip: switching on LED %d", lightedLeds);
+      lightedLeds++;
+    }
+
+    // show effect
     switch (effect) {
-      case VEEROOS:
-        iterateAlways_Veeroos();
+      case STILL:
+        iterateAlways_Still();
         break;
       case SWAP:
         iterateAlways_Swap();
@@ -105,12 +122,19 @@ class AddressableLEDs : public Supla::Element {
         iterateAlways_RainbowWheel();
         break;
       case RAINBOW:
-        lightedLeds = numberOfLeds;
         iterateAlways_Rainbow();
         break;
-      case RAINBOWVEEROOS:
-        iterateAlways_RainbowVeeroos();
-        break;
+    }
+
+    // LEDs switching OFF
+    if (!isOn() && lightedLeds > 0
+        && ((millis()-lastLEDTime >= (1000 * turnOnTime / numberOfLeds))
+        || (millis() < lastLEDTime))) {
+      lastLEDTime = millis();
+      lightedLeds--;
+      SUPLA_LOG_DEBUG("RGB strip: switching off LED %d", lightedLeds);
+      pixels->setPixelColor(lightedLeds, 0);
+      pixels->show();
     }
   }
 
@@ -122,49 +146,32 @@ class AddressableLEDs : public Supla::Element {
   uint32_t RGBcolor = 0x004400;  // color of SUPLA :-)
   uint32_t LastColor = 0;
 
-  int OneLedTime = 200;
+  uint8_t turnOnTime = 0;
+  uint32_t lastLEDTime = 0;
+
+  uint16_t stepTime = 1000;
   uint32_t lastTime = 0;
 
-  AddressableLEDsEffect effect = VEEROOS;
+  AddressableLEDsEffect effect = STILL;
   uint32_t counter = 0;
 
-  void iterateAlways_Veeroos() {
-    // LEDs switching ON
-    if (isOn() && lightedLeds < numberOfLeds
-        && (millis()-lastTime >= OneLedTime) || (millis() < lastTime)) {
+  void iterateAlways_Still() {
+    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
+        || (millis() < lastTime))) {
       lastTime = millis();
-      SUPLA_LOG_DEBUG("RGB strip: switching on LED %d with color 0x%06x",
-        lightedLeds, RGBcolor);
-      pixels->setPixelColor(lightedLeds, RGBcolor);
-      pixels->show();
-      lightedLeds++;
-    }
-    // LEDs changing colour
-    if (LastColor != RGBcolor) {
-      LastColor = RGBcolor;
       for (int i=0; i < lightedLeds; i++) {
         pixels->setPixelColor(i, RGBcolor);
       }
       pixels->show();
     }
-    // LEDs switching OFF
-    if (!isOn() && lightedLeds > 0 && (millis()-lastTime >= OneLedTime)
-        || (millis() < lastTime)) {
-      lastTime = millis();
-      lightedLeds--;
-      SUPLA_LOG_DEBUG("RGB strip: switching off LED %d with color 0x%06x",
-        lightedLeds, RGBcolor);
-      pixels->setPixelColor(lightedLeds, 0);
-      pixels->show();
-    }
   }
 
   void iterateAlways_Swap() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime)
+    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
         || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
-      for (int i=0; i < numberOfLeds; i++) {
+      for (int i=0; i < lightedLeds; i++) {
         if ((i+counter)%2) {
           pixels->setPixelColor(i, RGBcolor);
         } else {
@@ -173,16 +180,10 @@ class AddressableLEDs : public Supla::Element {
       }
       pixels->show();
     }
-    if (!isOn()) {
-      for (int i=0; i < numberOfLeds; i++) {
-        pixels->setPixelColor(i, 0);
-      }
-      pixels->show();
-    }
   }
 
   void iterateAlways_Flow() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime)
+    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
         || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
@@ -196,7 +197,7 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
     }
     if (!isOn()) {
-      for (int i=0; i < numberOfLeds; i++) {
+      for (int i=0; i < lightedLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
@@ -204,11 +205,11 @@ class AddressableLEDs : public Supla::Element {
   }
 
   void iterateAlways_RainbowWheel() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime)
+    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
         || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
-      for (int i=0; i < numberOfLeds; i++) {
+      for (int i=0; i < lightedLeds; i++) {
         if (counter > 255) {
           counter = 0;
         }
@@ -216,16 +217,10 @@ class AddressableLEDs : public Supla::Element {
       }
       pixels->show();
     }
-    if (!isOn()) {
-      for (int i=0; i < numberOfLeds; i++) {
-        pixels->setPixelColor(i, 0);
-      }
-      pixels->show();
-    }
   }
 
   void iterateAlways_Rainbow() {
-    if (isOn() && ((millis()-lastTime >= OneLedTime)
+    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
         || (millis() < lastTime))) {
       lastTime = millis();
       counter++;
@@ -237,39 +232,6 @@ class AddressableLEDs : public Supla::Element {
         pixels->setPixelColor(i, pixels->gamma32(pixels->ColorHSV(pixelHue)));
       }
       pixels->show();
-    }
-    if (!isOn()) {
-      for (int i=0; i < numberOfLeds; i++) {
-        pixels->setPixelColor(i, 0);
-      }
-      pixels->show();
-    }
-  }
-
-  void iterateAlways_RainbowVeeroos() {
-    if ((millis()-lastTime >= OneLedTime) || (millis() < lastTime)) {
-      lastTime = millis();
-      counter++;
-
-      // LEDs switching ON
-      if (isOn() && lightedLeds < numberOfLeds && counter%20 == 0) {
-        lightedLeds++;
-      }
-      // LEDs colour changing
-      for (int i=0; i < lightedLeds; i++) {
-        if (counter*256 > 5*65536) {
-          counter = 0;
-        }
-        int pixelHue = 256 * counter + (i * 65536L / numberOfLeds);
-        pixels->setPixelColor(i, pixels->gamma32(pixels->ColorHSV(pixelHue)));
-      }
-      pixels->show();
-      // LEDs switching OFF
-      if (!isOn() && lightedLeds > 0 && counter%20 == 0) {
-        lightedLeds--;
-        pixels->setPixelColor(lightedLeds, 0);
-        pixels->show();
-      }
     }
   }
 

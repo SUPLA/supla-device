@@ -23,44 +23,52 @@
 
 class AddressableLEDsEffectSwitch : public Supla::Control::VirtualRelay {
   public:
-    AddressableLEDsEffectSwitch(Supla::Control::AddressableLEDs* leds, Supla::Control::AddressableLEDsEffect effect, int time) {
-      _leds = leds;
-      _effect = effect;
-      _time = time;
+    AddressableLEDsEffectSwitch(Supla::Control::AddressableLEDs* newLeds, Supla::Control::AddressableLEDsEffect newEffect, uint16_t switchTime, uint8_t turnTime = 0) {
+      leds = newLeds;
+      effect = newEffect;
+      time = switchTime;
+      turnOnTume = turnTime;
       getChannel()->setDefault(SUPLA_CHANNELFNC_LIGHTSWITCH);
     }
 
     void turnOn(_supla_int_t duration = 0) {
-      _leds->setEffect(_effect, _time);
-      if (!_leds->isOn()) {
-        _leds->turnOn();
+      leds->setEffect(effect, time, turnOnTume);
+      if (!leds->isOn()) {
+        leds->turnOn();
       }
       channel.setNewValue(true);
     }
 
     void turnOff(_supla_int_t duration = 0) {
-      if (_leds->getEffect() == _effect) {
-        _leds->turnOff();
+      if (leds->getEffect() == effect) {
+        leds->turnOff();
         channel.setNewValue(false);
       }
     }
 
     void iterateAlways() {
-      if (_leds->getEffect() != _effect) {
+      if (leds->getEffect() != effect) {
+        channel.setNewValue(false);
+      }
+      if (leds->getStepTime() != time) {
+        channel.setNewValue(false);
+      }
+      if (leds->getTurnOnTime() != turnOnTume) {
         channel.setNewValue(false);
       }
     }
 
   protected:
-    Supla::Control::AddressableLEDs* _leds;
-    Supla::Control::AddressableLEDsEffect _effect;
-    int _time;
+    Supla::Control::AddressableLEDs* leds;
+    Supla::Control::AddressableLEDsEffect effect;
+    uint16_t time;
+    uint8_t turnOnTume;
 };
 
 class AddressableLEDsColorSelector : public Supla::Control::RGBBase {
   public:
-    AddressableLEDsColorSelector(Supla::Control::AddressableLEDs* leds) {
-      _leds = leds;
+    AddressableLEDsColorSelector(Supla::Control::AddressableLEDs* newLeds) {
+      leds = newLeds;
       setDefaultDimmedBrightness(50);
       setDefaultStateOn();
     }
@@ -71,25 +79,24 @@ class AddressableLEDsColorSelector : public Supla::Control::RGBBase {
                               uint32_t colorBrightness,
                               uint32_t brightness) {
 
-      _leds->setColor(red/4, green/4, blue/4);
+      leds->setColor(red/4, green/4, blue/4);
 
       // effects can have diffrent way to switch on/off
-      if (_leds->isOn()) {
-        _leds->setBrightness(colorBrightness/4);
+      if (leds->isOn()) {
+        leds->setBrightness(colorBrightness/4);
       }
     }
 
     void turnOn() {
-      _leds->turnOn();
+      leds->turnOn();
     }
 
     void turnOff() {
-      _leds->turnOff();
+      leds->turnOff();
     }
 
   protected:
-    Supla::Control::AddressableLEDs* _leds;
+    Supla::Control::AddressableLEDs* leds;
 };
-
 
 #endif  // SRC_ADDRESSABLELEDS_CONTROL_H_

@@ -41,7 +41,7 @@ enum AddressableLEDsEffect : uint8_t {
 
 class AddressableLEDs : public Supla::Element {
  public:
-  AddressableLEDs(uint16_t number, int16_t pin, 
+  AddressableLEDs(uint16_t number, int16_t pin,
          neoPixelType type = NEO_GRB + NEO_KHZ800) {
     numberOfLeds = number;
     pixels = new Adafruit_NeoPixel(numberOfLeds, pin, type);
@@ -55,13 +55,13 @@ class AddressableLEDs : public Supla::Element {
       counter = 0;
 
       // switching OFF all LEDs
-      for (int i=0; i<numberOfLeds; i++) {
+      for (int i=0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
       lightedLeds = 0;
     }
-    if (OneLedTime != time) { 
+    if (OneLedTime != time) {
        OneLedTime = time;
     }
   }
@@ -91,7 +91,7 @@ class AddressableLEDs : public Supla::Element {
   }
 
   void iterateAlways() {
-    switch(effect) {
+    switch (effect) {
       case VEEROOS:
         iterateAlways_Veeroos();
         break;
@@ -126,13 +126,15 @@ class AddressableLEDs : public Supla::Element {
   uint32_t lastTime = 0;
 
   AddressableLEDsEffect effect = VEEROOS;
-  long counter = 0;
+  uint32_t counter = 0;
 
   void iterateAlways_Veeroos() {
     // LEDs switching ON
-    if (isOn() && lightedLeds<numberOfLeds && (millis()-lastTime >= OneLedTime) || (millis() < lastTime)) {
+    if (isOn() && lightedLeds < numberOfLeds
+        && (millis()-lastTime >= OneLedTime) || (millis() < lastTime)) {
       lastTime = millis();
-      SUPLA_LOG_DEBUG("RGB strip: switching on LED %d with color 0x%06x", lightedLeds, RGBcolor);
+      SUPLA_LOG_DEBUG("RGB strip: switching on LED %d with color 0x%06x",
+        lightedLeds, RGBcolor);
       pixels->setPixelColor(lightedLeds, RGBcolor);
       pixels->show();
       lightedLeds++;
@@ -146,10 +148,12 @@ class AddressableLEDs : public Supla::Element {
       pixels->show();
     }
     // LEDs switching OFF
-    if (!isOn() && lightedLeds>0 && (millis()-lastTime >= OneLedTime) || (millis() < lastTime)) {
+    if (!isOn() && lightedLeds>0 && (millis()-lastTime >= OneLedTime)
+        || (millis() < lastTime)) {
       lastTime = millis();
       lightedLeds--;
-      SUPLA_LOG_DEBUG("RGB strip: switching off LED %d with color 0x%06x", lightedLeds, RGBcolor);
+      SUPLA_LOG_DEBUG("RGB strip: switching off LED %d with color 0x%06x",
+        lightedLeds, RGBcolor);
       pixels->setPixelColor(lightedLeds, 0);
       pixels->show();
     }
@@ -244,7 +248,7 @@ class AddressableLEDs : public Supla::Element {
       counter++;
 
       // LEDs switching ON
-      if (isOn() && lightedLeds<numberOfLeds && counter%20==0) {
+      if (isOn() && lightedLeds < numberOfLeds && counter%20 == 0) {
         lightedLeds++;
       }
       // LEDs colour changing
@@ -257,7 +261,7 @@ class AddressableLEDs : public Supla::Element {
       }
       pixels->show();
       // LEDs switching OFF
-      if (!isOn() && lightedLeds>0 && counter%20==0) {
+      if (!isOn() && lightedLeds > 0 && counter%20 == 0) {
         lightedLeds--;
         pixels->setPixelColor(lightedLeds, 0);
         pixels->show();

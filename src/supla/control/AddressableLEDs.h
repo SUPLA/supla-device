@@ -38,8 +38,24 @@ enum AddressableLEDsEffect : uint8_t {
   RAINBOW,
 };
 
+/**
+ * Class for using addressable LEDs as ws2812b and many others
+ *
+ * It implements some simple effects for using with strips and rings
+ * constructed with such leds
+ */
+
 class AddressableLEDs : public Supla::Element {
  public:
+  /**
+   * Constructor
+   *
+   * @param number - number of leds in strip/ring
+   * @param pin - GPIO with connected data line of leds
+   * @param type (optional) - type of sytip/ring,
+   *                          see Adafruit Neopixel library
+   *
+   */
   AddressableLEDs(uint16_t number, int16_t pin,
          neoPixelType type = NEO_GRB + NEO_KHZ800) {
     numberOfLeds = number;
@@ -48,6 +64,19 @@ class AddressableLEDs : public Supla::Element {
     pixels->begin();
   }
 
+  /**
+   * Setting effect on strip/ring
+   *
+   * @param neweffect - AddressableLEDsEffect, can be:
+   * - AddressableLEDsEffect::STILL
+   * - AddressableLEDsEffect::SWAP
+   * - AddressableLEDsEffect::FLOW
+   * - AddressableLEDsEffect::RAINBOWWHEEL
+   * - AddressableLEDsEffect::RAINBOW
+   * @param newStepTime - time (in ms) of one effect step
+   * @param turnAllLEDsTime (optional) - time (in sec) of turning on all leds 
+   *
+   */
   void setEffect(AddressableLEDsEffect neweffect, uint16_t newStepTime,
       uint8_t turnAllLEDsTime = 0) {
     if (effect != neweffect) {
@@ -57,7 +86,7 @@ class AddressableLEDs : public Supla::Element {
 
     if (turnOnTime != turnAllLEDsTime) {
       // switching OFF all LEDs
-      for (int i=0; i < numberOfLeds; i++) {
+      for (int i = 0; i < numberOfLeds; i++) {
         pixels->setPixelColor(i, 0);
       }
       pixels->show();
@@ -71,11 +100,11 @@ class AddressableLEDs : public Supla::Element {
   AddressableLEDsEffect getEffect() {
     return effect;
   }
-  uint16_t getTurnOnTime() {
-    return turnOnTime;
-  }
   uint16_t getStepTime() {
     return stepTime;
+  }
+  uint16_t getTurnOnTime() {
+    return turnOnTime;
   }
 
   bool isOn() {
@@ -101,35 +130,40 @@ class AddressableLEDs : public Supla::Element {
   void iterateAlways() {
     // LEDs switching ON
     if (isOn() && lightedLeds < numberOfLeds
-        && ((millis()-lastLEDTime >= (1000 * turnOnTime / numberOfLeds))
+        && ((millis() - lastLEDTime >= (1000 * turnOnTime / numberOfLeds))
         || (millis() < lastLEDTime))) {
       lastLEDTime = millis();
       SUPLA_LOG_DEBUG("RGB strip: switching on LED %d", lightedLeds);
       lightedLeds++;
     }
 
-    // show effect
-    switch (effect) {
-      case STILL:
-        iterateAlways_Still();
-        break;
-      case SWAP:
-        iterateAlways_Swap();
-        break;
-      case FLOW:
-        iterateAlways_Flow();
-        break;
-      case RAINBOWWHEEL:
-        iterateAlways_RainbowWheel();
-        break;
-      case RAINBOW:
-        iterateAlways_Rainbow();
-        break;
+    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
+        || (millis() < lastTime))) {
+      lastTime = millis();
+      counter++;
+      // show effect
+      switch (effect) {
+        case STILL:
+          iterate_Still();
+          break;
+        case SWAP:
+          iterate_Swap();
+          break;
+        case FLOW:
+          iterate_Flow();
+          break;
+        case RAINBOWWHEEL:
+          iterate_RainbowWheel();
+          break;
+        case RAINBOW:
+          iterate_Rainbow();
+          break;
+      }
     }
 
     // LEDs switching OFF
     if (!isOn() && lightedLeds > 0
-        && ((millis()-lastLEDTime >= (1000 * turnOnTime / numberOfLeds))
+        && ((millis() - lastLEDTime >= (1000 * turnOnTime / numberOfLeds))
         || (millis() < lastLEDTime))) {
       lastLEDTime = millis();
       lightedLeds--;
@@ -156,84 +190,54 @@ class AddressableLEDs : public Supla::Element {
   AddressableLEDsEffect effect = STILL;
   uint32_t counter = 0;
 
-  void iterateAlways_Still() {
-    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
-        || (millis() < lastTime))) {
-      lastTime = millis();
-      for (int i=0; i < lightedLeds; i++) {
+  void iterate_Still() {
+    for (int i = 0; i < lightedLeds; i++) {
+      pixels->setPixelColor(i, RGBcolor);
+    }
+    pixels->show();
+  }
+
+  void iterate_Swap() {
+    for (int i = 0; i < lightedLeds; i++) {
+      if ((i+counter)%2) {
         pixels->setPixelColor(i, RGBcolor);
-      }
-      pixels->show();
-    }
-  }
-
-  void iterateAlways_Swap() {
-    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
-        || (millis() < lastTime))) {
-      lastTime = millis();
-      counter++;
-      for (int i=0; i < lightedLeds; i++) {
-        if ((i+counter)%2) {
-          pixels->setPixelColor(i, RGBcolor);
-        } else {
-          pixels->setPixelColor(i, 0);
-        }
-      }
-      pixels->show();
-    }
-  }
-
-  void iterateAlways_Flow() {
-    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
-        || (millis() < lastTime))) {
-      lastTime = millis();
-      counter++;
-      for (int i=0; i < numberOfLeds; i++) {
-        if ((i+counter)%4) {
-          pixels->setPixelColor(i, RGBcolor);
-        } else {
-          pixels->setPixelColor(i, 0);
-        }
-      }
-      pixels->show();
-    }
-    if (!isOn()) {
-      for (int i=0; i < lightedLeds; i++) {
+      } else {
         pixels->setPixelColor(i, 0);
       }
-      pixels->show();
     }
+    pixels->show();
   }
 
-  void iterateAlways_RainbowWheel() {
-    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
-        || (millis() < lastTime))) {
-      lastTime = millis();
-      counter++;
-      for (int i=0; i < lightedLeds; i++) {
-        if (counter > 255) {
-          counter = 0;
-        }
-        pixels->setPixelColor(i, RainbowWheel((i*1+counter) & 255));
+  void iterate_Flow() {
+    for (int i = 0; i < numberOfLeds; i++) {
+      if ((i+counter)%4) {
+        pixels->setPixelColor(i, RGBcolor);
+      } else {
+        pixels->setPixelColor(i, 0);
       }
-      pixels->show();
     }
+    pixels->show();
   }
 
-  void iterateAlways_Rainbow() {
-    if (lightedLeds > 0 && ((millis()-lastTime >= stepTime)
-        || (millis() < lastTime))) {
-      lastTime = millis();
-      counter++;
-      for (int i=0; i < lightedLeds; i++) {
-        if (counter*256 > 5*65536) {
-          counter = 0;
-        }
-        int pixelHue = 256*counter + (i * 65536L / numberOfLeds);
-        pixels->setPixelColor(i, pixels->gamma32(pixels->ColorHSV(pixelHue)));
+  void iterate_RainbowWheel() {
+    for (int i = 0; i < lightedLeds; i++) {
+      if (counter > 255) {
+        counter = 0;
       }
-      pixels->show();
+      pixels->setPixelColor(i, RainbowWheel((i*1+counter) & 255));
     }
+    pixels->show();
+  }
+
+  void iterate_Rainbow() {
+    for (int i = 0; i < lightedLeds; i++) {
+      if (counter*256 > 5*65536) {
+        counter = 0;
+      }
+      int pixelHue = 256*counter + (i * 65536L / numberOfLeds);
+      pixels->setPixelColor(i, pixels->gamma32(pixels->ColorHSV(pixelHue)));
+    }
+    pixels->show();
   }
 
   uint32_t RainbowWheel(byte WheelPos) {

@@ -76,3 +76,4 @@ class HECA : public Supla::Sensor::SHT3x {
 }  // namespace Supla
 
 #endif  // SRC_SUPLA_SENSOR_HECA_H_
+

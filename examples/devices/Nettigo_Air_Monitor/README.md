@@ -13,5 +13,6 @@ It uses Arduino libraries:
 * BH1750 (https://github.com/claws/BH1750)
 * GuL_NovaFitness (https://github.com/boeserfrosch/GuL_NovaFitness)
 * ClosedCube SHT31D fork (https://github.com/malarz-supla/ClosedCube_SHT31D_Arduino)
+
 and only on ESP32:
 * Arduino JSON (https://github.com/arduino-libraries/Arduino_JSON)

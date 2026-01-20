@@ -19,8 +19,8 @@
 // Dependencies:
 // https://github.com/adafruit/Adafruit_NeoPixel
 
-#ifndef SRC_SUPLA_CONTROL_ADDRESSABLELEDS_H_
-#define SRC_SUPLA_CONTROL_ADDRESSABLELEDS_H_
+#ifndef SRC_SUPLA_CONTROL_ADDRESSABLE_LEDS_H_
+#define SRC_SUPLA_CONTROL_ADDRESSABLE_LEDS_H_
 
 #include <Adafruit_NeoPixel.h>
 #include <supla/log_wrapper.h>
@@ -258,5 +258,6 @@ class AddressableLEDs : public Supla::Element {
 }  // namespace Control
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_CONTROL_ADDRESSABLELEDS_H_
+#endif  // SRC_SUPLA_CONTROL_ADDRESSABLE_LEDS_H_
+
 

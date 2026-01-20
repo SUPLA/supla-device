@@ -19,7 +19,7 @@
 #ifndef SRC_ADDRESSABLELEDS_CONTROL_H_
 #define SRC_ADDRESSABLELEDS_CONTROL_H_
 
-#include <supla/control/AddressableLEDs.h>
+#include <supla/control/addressable_leds.h>
 
 class AddressableLEDsEffectSwitch : public Supla::Control::VirtualRelay {
   public:
@@ -100,3 +100,4 @@ class AddressableLEDsColorSelector : public Supla::Control::RGBBase {
 };
 
 #endif  // SRC_ADDRESSABLELEDS_CONTROL_H_
+

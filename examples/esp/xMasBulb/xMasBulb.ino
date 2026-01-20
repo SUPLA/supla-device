@@ -34,8 +34,8 @@
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/events.h>
 #include <supla/network/html/button_update.h>
-#include <supla/control/AddressableLEDs.h>
-#include "AddressableLEDs_control.h"
+#include <supla/control/addressable_leds.h>
+#include "addressable_leds_control.h"
 
 Supla::ESPWifi wifi;
 Supla::LittleFsConfig configSupla;

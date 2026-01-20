@@ -16,8 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef XMAS_HTML_GENERATOR_H_
-#define XMAS_HTML_GENERATOR_H_
+#ifndef XMASHTMLGENERATOR_H_
+#define XMASHTMLGENERATOR_H_
 
 #include <supla/network/html_generator.h>
 
@@ -68,4 +68,5 @@ class xMasHtmlGenerator : public Supla::HtmlGenerator {
 
 };
 
-#endif  // XMAS_HTML_GENERATOR_H_
+
+#endif  // XMASHTMLGENERATOR_H_

@@ -78,7 +78,15 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
     Dimmer
   };
 
-  RGBCCTBase();
+  /**
+   * Constructor
+   *
+   * @param parent parent RGBW object - set to null, for first instance, then
+   * remaining instances should be passed one after another in order to properly
+   * handle channel disabling based on parent's function.
+   */
+  explicit RGBCCTBase(RGBCCTBase *parent = nullptr);
+  virtual ~RGBCCTBase() = default;
 
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
@@ -163,7 +171,35 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   int getCurrentRGBBrightness() const;
   void setMaxHwValue(int newMaxHwValue);
 
+  /**
+   * Checks if this instance has parent
+   *
+   * @return true if this instance has parent
+   */
+  bool hasParent() const;
+
+  /**
+   * Returns number of ancestor instances (by parent)
+   *
+   * @return number of ancestor instances
+   */
+  int getAncestorCount() const;
+
  protected:
+  /**
+   * Returns number of GPIO pins that are required to control this channel.
+   * I.e. RGB channel requires 3 GPIOs, one is given by current RGBCCT object,
+   * and remaining 2 are taken from descendant instances. So if descendant
+   * instance call this on its parent, it will return 2
+   *
+   * @return number of GPIO pins that are required by parent object to allow
+   *         proper operation of it's function
+   */
+  int getMissingGpioCount() const;
+
+  void enableChannel();
+  void disableChannel();
+
   uint8_t addWithLimit(int value, int addition, int limit = 255);
   virtual void iterateDimmerRGBW(int rgbStep, int wStep);
   // Set mapping between interface setting of brightness and actual value
@@ -192,6 +228,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   bool dimIterationDirection = false;
   bool resetDisance = false;
   bool instant = false;
+  bool enabled = true;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   uint8_t minIterationBrightness = 1;
   LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;
@@ -239,6 +276,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
 
   BrightnessAdjuster *brightnessAdjuster = nullptr;
   Supla::Control::Button *attachedButton = nullptr;
+  RGBCCTBase *parent = nullptr;
 };
 
 };  // namespace Control

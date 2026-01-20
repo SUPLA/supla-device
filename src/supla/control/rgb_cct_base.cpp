@@ -64,7 +64,7 @@ void GeometricBrightnessAdjuster::setMaxHwValue(int maxHwValue) {
   this->maxHwValue = maxHwValue;
 }
 
-RGBCCTBase::RGBCCTBase() {
+RGBCCTBase::RGBCCTBase(RGBCCTBase *parent) : parent(parent) {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
@@ -167,6 +167,11 @@ void RGBCCTBase::iterateAlways() {
                         curColorBrightness,
                         curWhiteBrightness,
                         curWhiteTemperature);
+  }
+  if (hasParent() && parent->getMissingGpioCount() > 0) {
+    disableChannel();
+  } else {
+    enableChannel();
   }
 }
 
@@ -698,6 +703,9 @@ bool RGBCCTBase::calculateAndUpdate(int targetValue,
 }
 
 void RGBCCTBase::onFastTimer() {
+  if (!enabled) {
+    return;
+  }
   if (lastTick == 0) {
     lastTick = millis();
     lastChangeRedMs = millis();
@@ -1189,6 +1197,63 @@ void RGBCCTBase::fillChannelConfig(void *, int *size, uint8_t) {
 void RGBCCTBase::convertStorageFromLegacyChannel(
     LegacyChannelFunction channelFunction) {
   legacyChannelFunction = channelFunction;
+}
+
+int RGBCCTBase::getMissingGpioCount() const {
+  if (hasParent()) {
+    auto missingGpioCount = parent->getMissingGpioCount();
+    if (missingGpioCount > 0) {
+      return missingGpioCount - 1;
+    }
+  }
+  switch (getChannel()->getDefaultFunction()) {
+    case SUPLA_CHANNELFNC_DIMMER: {
+      return 0;
+    }
+    case SUPLA_CHANNELFNC_DIMMER_CCT: {
+      return 1;
+    }
+    case SUPLA_CHANNELFNC_RGBLIGHTING: {
+      return 2;
+    }
+    case SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING: {
+      return 3;
+    }
+    case SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB: {
+      return 4;
+    }
+  }
+  return 0;
+}
+
+void RGBCCTBase::enableChannel() {
+  if (enabled) {
+    return;
+  }
+
+  lastTick = 0;
+  enabled = true;
+  getChannel()->setStateOnline();
+}
+
+void RGBCCTBase::disableChannel() {
+  if (!enabled) {
+    return;
+  }
+
+  enabled = false;
+  getChannel()->setStateOnlineAndNotAvailable();
+}
+
+bool RGBCCTBase::hasParent() const {
+  return parent != nullptr;
+}
+
+int RGBCCTBase::getAncestorCount() const {
+  if (hasParent()) {
+    return parent->getAncestorCount() + 1;
+  }
+  return 0;
 }
 
 };  // namespace Control

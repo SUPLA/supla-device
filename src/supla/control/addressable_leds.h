@@ -259,5 +259,3 @@ class AddressableLEDs : public Supla::Element {
 }  // namespace Supla
 
 #endif  // SRC_SUPLA_CONTROL_ADDRESSABLE_LEDS_H_
-
-

@@ -55,6 +55,7 @@ Supla::EspIdfClient::EspIdfClient() {
 Supla::EspIdfClient::~EspIdfClient() {
 }
 
+[[maybe_unused]]
 static const char *pkTypeStr(mbedtls_pk_type_t t) {
   switch (t) {
     case MBEDTLS_PK_RSA:
@@ -124,6 +125,7 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
             "No peer certificate (unexpected for normal TLS server auth)");
       } else {
         mbedtls_pk_type_t kt = mbedtls_pk_get_type(&peer->pk);
+        (void)(kt);
         SUPLA_LOG_DEBUG("Server cert key type: %s", pkTypeStr(kt));
         SUPLA_LOG_DEBUG("Server cert key bits: %u",
                         (unsigned)mbedtls_pk_get_bitlen(&peer->pk));

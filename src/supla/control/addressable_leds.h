@@ -60,8 +60,6 @@ class AddressableLEDs : public Supla::Element {
          neoPixelType type = NEO_GRB + NEO_KHZ800) {
     numberOfLeds = number;
     pixels = new Adafruit_NeoPixel(numberOfLeds, pin, type);
-
-    pixels->begin();
   }
 
   /**
@@ -95,6 +93,10 @@ class AddressableLEDs : public Supla::Element {
 
     stepTime = newStepTime;
     turnOnTime = turnAllLEDsTime;
+  }
+
+  void onInit() override {
+     pixels->begin();
   }
 
   AddressableLEDsEffect getEffect() {
@@ -257,3 +259,4 @@ class AddressableLEDs : public Supla::Element {
 }  // namespace Supla
 
 #endif  // SRC_SUPLA_CONTROL_ADDRESSABLELEDS_H_
+

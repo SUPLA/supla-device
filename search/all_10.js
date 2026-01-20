@@ -10,7 +10,7 @@ var searchData=
   ['removesensor_7',['removeSensor',['../classSupla_1_1Control_1_1ValveBase.html#a1219856ed53ce43581a10a5853110fab',1,'Supla::Control::ValveBase::removeSensor()'],['../classValveBase.html#a1219856ed53ce43581a10a5853110fab',1,'ValveBase::removeSensor()']]],
   ['removesensordata_8',['removeSensorData',['../classSupla_1_1Sensor_1_1Container.html#ac97e08bfea047cd89d7af8ea2fe274fc',1,'Supla::Sensor::Container::removeSensorData()'],['../classContainer.html#ac97e08bfea047cd89d7af8ea2fe274fc',1,'Container::removeSensorData()']]],
   ['rgbbase_9',['RGBBase',['../classSupla_1_1Control_1_1RGBBase.html',1,'Supla::Control']]],
-  ['rgbcctbase_10',['RGBCCTBase',['../classSupla_1_1Control_1_1RGBCCTBase.html',1,'Supla::Control']]],
+  ['rgbcctbase_10',['RGBCCTBase',['../classSupla_1_1Control_1_1RGBCCTBase.html',1,'Supla::Control::RGBCCTBase'],['../classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63',1,'Supla::Control::RGBCCTBase::RGBCCTBase()']]],
   ['rgbleds_11',['RGBLeds',['../classSupla_1_1Control_1_1RGBLeds.html',1,'Supla::Control']]],
   ['rgbwbase_12',['RGBWBase',['../classSupla_1_1Control_1_1RGBWBase.html',1,'Supla::Control']]],
   ['rgbwbuttonparameters_13',['RgbwButtonParameters',['../classRgbwButtonParameters.html',1,'RgbwButtonParameters'],['../classSupla_1_1Html_1_1RgbwButtonParameters.html',1,'Supla::Html::RgbwButtonParameters']]],

@@ -2,6 +2,7 @@
 <area shape="rect" id="Node000001" title=" " alt="" coords="1385,288,1563,314"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1RGBCCTBase.html" title=" " alt="" coords="1145,288,1336,314"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1352,298,1385,298,1385,304,1352,304"/>
+<area shape="poly" id="edge23_Node000002_Node000002" title=" " alt="" coords="1217,271,1225,264,1240,261,1254,264,1263,270,1265,279,1262,289,1257,287,1260,279,1259,273,1252,269,1240,267,1227,269,1221,275"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="824,193,978,219"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="986,220,1121,254,1207,285,1205,290,1120,259,984,225"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="538,186,718,226"/>

@@ -133,6 +133,7 @@ Collaboration diagram for Supla::Control::RGBCCTBase:</div>
 <div class="center"><img src="classSupla_1_1Control_1_1RGBCCTBase__coll__graph.png" border="0" usemap="#aSupla_1_1Control_1_1RGBCCTBase_coll__map" alt="Collaboration graph"/></div>
 <map name="aSupla_1_1Control_1_1RGBCCTBase_coll__map" id="aSupla_1_1Control_1_1RGBCCTBase_coll__map">
 <area shape="rect" title=" " alt="" coords="1145,288,1336,314"/>
+<area shape="poly" title=" " alt="" coords="1208,271,1219,264,1240,261,1260,264,1272,270,1276,279,1270,289,1265,286,1270,279,1268,273,1259,269,1240,267,1221,269,1211,275"/>
 <area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="824,193,978,219"/>
 <area shape="poly" title=" " alt="" coords="986,220,1121,254,1207,285,1205,290,1120,259,984,225"/>
 <area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="538,186,718,226"/>
@@ -194,6 +195,9 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a4ec5a24817eebee8e74f8cb32e284f63" id="r_a4ec5a24817eebee8e74f8cb32e284f63"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> (<a class="el" href="classSupla_1_1Control_1_1RGBCCTBase.html">RGBCCTBase</a> *parent=nullptr)</td></tr>
+<tr class="memdesc:a4ec5a24817eebee8e74f8cb32e284f63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
+<tr class="separator:a4ec5a24817eebee8e74f8cb32e284f63"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58b598129f7d4e0da56f6f632f617e00" id="r_a58b598129f7d4e0da56f6f632f617e00"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a58b598129f7d4e0da56f6f632f617e00">purgeConfig</a> () override</td></tr>
 <tr class="memdesc:a58b598129f7d4e0da56f6f632f617e00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
 <tr class="separator:a58b598129f7d4e0da56f6f632f617e00"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -302,6 +306,12 @@ int&#160;</td><td class="memItemRight" valign="bottom"><b>getCurrentRGBBrightnes
 <tr class="memitem:a48297a8d32dadd3adcfee6beee218d84" id="r_a48297a8d32dadd3adcfee6beee218d84"><td class="memItemLeft" align="right" valign="top"><a id="a48297a8d32dadd3adcfee6beee218d84" name="a48297a8d32dadd3adcfee6beee218d84"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>setMaxHwValue</b> (int newMaxHwValue)</td></tr>
 <tr class="separator:a48297a8d32dadd3adcfee6beee218d84"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac669cebe59eea74541a064d1245dc8a7" id="r_ac669cebe59eea74541a064d1245dc8a7"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ac669cebe59eea74541a064d1245dc8a7">hasParent</a> () const</td></tr>
+<tr class="memdesc:ac669cebe59eea74541a064d1245dc8a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if this instance has parent.  <br /></td></tr>
+<tr class="separator:ac669cebe59eea74541a064d1245dc8a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a57d8fce22db79a77b5e72e00602da261" id="r_a57d8fce22db79a77b5e72e00602da261"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a57d8fce22db79a77b5e72e00602da261">getAncestorCount</a> () const</td></tr>
+<tr class="memdesc:a57d8fce22db79a77b5e72e00602da261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of ancestor instances (by parent)  <br /></td></tr>
+<tr class="separator:a57d8fce22db79a77b5e72e00602da261"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft" align="right" valign="top">
 &#160;</td><td class="memItemRight" valign="bottom"><b>ChannelElement</b> (int channelNumber=-1)</td></tr>
@@ -451,6 +461,15 @@ virtual <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
+<tr class="memitem:a7c6a2563507c6546546e3d1cd5d698a4" id="r_a7c6a2563507c6546546e3d1cd5d698a4"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a7c6a2563507c6546546e3d1cd5d698a4">getMissingGpioCount</a> () const</td></tr>
+<tr class="memdesc:a7c6a2563507c6546546e3d1cd5d698a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of GPIO pins that are required to control this channel.  <br /></td></tr>
+<tr class="separator:a7c6a2563507c6546546e3d1cd5d698a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a169f90adc149e4a141e4cf97f26c878e" id="r_a169f90adc149e4a141e4cf97f26c878e"><td class="memItemLeft" align="right" valign="top"><a id="a169f90adc149e4a141e4cf97f26c878e" name="a169f90adc149e4a141e4cf97f26c878e"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>enableChannel</b> ()</td></tr>
+<tr class="separator:a169f90adc149e4a141e4cf97f26c878e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a387df8419d0f61904912b4be24c4e270" id="r_a387df8419d0f61904912b4be24c4e270"><td class="memItemLeft" align="right" valign="top"><a id="a387df8419d0f61904912b4be24c4e270" name="a387df8419d0f61904912b4be24c4e270"></a>
+void&#160;</td><td class="memItemRight" valign="bottom"><b>disableChannel</b> ()</td></tr>
+<tr class="separator:a387df8419d0f61904912b4be24c4e270"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0d7cf016fb87ae9f4083b57c2cb5d46b" id="r_a0d7cf016fb87ae9f4083b57c2cb5d46b"><td class="memItemLeft" align="right" valign="top"><a id="a0d7cf016fb87ae9f4083b57c2cb5d46b" name="a0d7cf016fb87ae9f4083b57c2cb5d46b"></a>
 uint8_t&#160;</td><td class="memItemRight" valign="bottom"><b>addWithLimit</b> (int value, int addition, int limit=255)</td></tr>
 <tr class="separator:a0d7cf016fb87ae9f4083b57c2cb5d46b"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -533,6 +552,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>resetDisance</b> = fa
 <tr class="memitem:a2498e73b70e71d87515e6d465ff9f523" id="r_a2498e73b70e71d87515e6d465ff9f523"><td class="memItemLeft" align="right" valign="top"><a id="a2498e73b70e71d87515e6d465ff9f523" name="a2498e73b70e71d87515e6d465ff9f523"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>instant</b> = false</td></tr>
 <tr class="separator:a2498e73b70e71d87515e6d465ff9f523"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1069ebc87a41ec79c111e3ec3dd4e505" id="r_a1069ebc87a41ec79c111e3ec3dd4e505"><td class="memItemLeft" align="right" valign="top"><a id="a1069ebc87a41ec79c111e3ec3dd4e505" name="a1069ebc87a41ec79c111e3ec3dd4e505"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>enabled</b> = true</td></tr>
+<tr class="separator:a1069ebc87a41ec79c111e3ec3dd4e505"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff9dbf514663a00f1ddba75b594696c5" id="r_aff9dbf514663a00f1ddba75b594696c5"><td class="memItemLeft" align="right" valign="top"><a id="aff9dbf514663a00f1ddba75b594696c5" name="aff9dbf514663a00f1ddba75b594696c5"></a>
 int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>stateOnInit</b> = RGBW_STATE_ON_INIT_RESTORE</td></tr>
 <tr class="separator:aff9dbf514663a00f1ddba75b594696c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -656,6 +678,9 @@ float&#160;</td><td class="memItemRight" valign="bottom"><b>coldWhiteGain</b> = 
 <tr class="memitem:af2130b227de85bb70ab4c18fb6ffc516" id="r_af2130b227de85bb70ab4c18fb6ffc516"><td class="memItemLeft" align="right" valign="top"><a id="af2130b227de85bb70ab4c18fb6ffc516" name="af2130b227de85bb70ab4c18fb6ffc516"></a>
 <a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>attachedButton</b> = nullptr</td></tr>
 <tr class="separator:af2130b227de85bb70ab4c18fb6ffc516"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa13e2dace2d19e97974bfe11daf91543" id="r_aa13e2dace2d19e97974bfe11daf91543"><td class="memItemLeft" align="right" valign="top"><a id="aa13e2dace2d19e97974bfe11daf91543" name="aa13e2dace2d19e97974bfe11daf91543"></a>
+<a class="el" href="classSupla_1_1Control_1_1RGBCCTBase.html">RGBCCTBase</a> *&#160;</td><td class="memItemRight" valign="bottom"><b>parent</b> = nullptr</td></tr>
+<tr class="separator:aa13e2dace2d19e97974bfe11daf91543"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1ChannelElement')"><img src="closed.png" alt="-"/>&#160;Protected Attributes inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aae2e78ba9cd3c3c4d5017223076af9b6 inherit pro_attribs_classSupla_1_1ChannelElement" id="r_aae2e78ba9cd3c3c4d5017223076af9b6"><td class="memItemLeft" align="right" valign="top">
 <a class="el" href="classSupla_1_1Channel.html">Channel</a>&#160;</td><td class="memItemRight" valign="bottom"><b>channel</b></td></tr>
@@ -726,6 +751,40 @@ static <a class="el" href="classSupla_1_1Element.html">Element</a> *&#160;</td><
 static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr</b> = false</td></tr>
 <tr class="separator:a59f474678e69e1fca9e7301290b10240 inherit pro_static_attribs_classSupla_1_1Element"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="a4ec5a24817eebee8e74f8cb32e284f63" name="a4ec5a24817eebee8e74f8cb32e284f63"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4ec5a24817eebee8e74f8cb32e284f63">&#9670;&#160;</a></span>RGBCCTBase()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Supla::Control::RGBCCTBase::RGBCCTBase </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classSupla_1_1Control_1_1RGBCCTBase.html">RGBCCTBase</a> *</td>          <td class="paramname"><span class="paramname"><em>parent</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel explicit">explicit</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Constructor. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">parent</td><td>parent RGBW object - set to null, for first instance, then remaining instances should be passed one after another in order to properly handle channel disabling based on parent's function. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <h2 class="groupheader">Member Function Documentation</h2>
 <a id="ac864be18dcf1bb18323064d9418c0f4b" name="ac864be18dcf1bb18323064d9418c0f4b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac864be18dcf1bb18323064d9418c0f4b">&#9670;&#160;</a></span>applyChannelConfig()</h2>
@@ -854,6 +913,55 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 
 </div>
 </div>
+<a id="a57d8fce22db79a77b5e72e00602da261" name="a57d8fce22db79a77b5e72e00602da261"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57d8fce22db79a77b5e72e00602da261">&#9670;&#160;</a></span>getAncestorCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Supla::Control::RGBCCTBase::getAncestorCount </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns number of ancestor instances (by parent) </p>
+<dl class="section return"><dt>Returns</dt><dd>number of ancestor instances </dd></dl>
+
+</div>
+</div>
+<a id="a7c6a2563507c6546546e3d1cd5d698a4" name="a7c6a2563507c6546546e3d1cd5d698a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7c6a2563507c6546546e3d1cd5d698a4">&#9670;&#160;</a></span>getMissingGpioCount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">int Supla::Control::RGBCCTBase::getMissingGpioCount </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel protected">protected</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns number of GPIO pins that are required to control this channel. </p>
+<p>I.e. RGB channel requires 3 GPIOs, one is given by current RGBCCT object, and remaining 2 are taken from descendant instances. So if descendant instance call this on its parent, it will return 2</p>
+<dl class="section return"><dt>Returns</dt><dd>number of GPIO pins that are required by parent object to allow proper operation of it's function </dd></dl>
+
+</div>
+</div>
 <a id="a880459d26a819be3fc6b4977932ef795" name="a880459d26a819be3fc6b4977932ef795"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a880459d26a819be3fc6b4977932ef795">&#9670;&#160;</a></span>handleAction()</h2>
 
@@ -918,6 +1026,26 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <dl class="section return"><dt>Returns</dt><dd>-1 - don't send reply to server 0 - success==false 1 - success==true </dd></dl>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a998771d553560a52ca8c5db274cad837">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="ac669cebe59eea74541a064d1245dc8a7" name="ac669cebe59eea74541a064d1245dc8a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac669cebe59eea74541a064d1245dc8a7">&#9670;&#160;</a></span>hasParent()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Control::RGBCCTBase::hasParent </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Checks if this instance has parent. </p>
+<dl class="section return"><dt>Returns</dt><dd>true if this instance has parent </dd></dl>
 
 </div>
 </div>

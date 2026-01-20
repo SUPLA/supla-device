@@ -16,8 +16,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_ADDRESSABLELEDS_CONTROL_H_
-#define SRC_ADDRESSABLELEDS_CONTROL_H_
+#ifndef SRC_ADDRESSABLE_LEDS_CONTROL_H_
+#define SRC_ADDRESSABLE_LEDS_CONTROL_H_
 
 #include <supla/control/addressable_leds.h>
 
@@ -99,6 +99,4 @@ class AddressableLEDsColorSelector : public Supla::Control::RGBBase {
     Supla::Control::AddressableLEDs* leds;
 };
 
-#endif  // SRC_ADDRESSABLELEDS_CONTROL_H_
-
-
+#endif  // SRC_ADDRESSABLE_LEDS_CONTROL_H_

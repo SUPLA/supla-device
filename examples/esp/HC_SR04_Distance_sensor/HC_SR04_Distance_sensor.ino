@@ -16,6 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file HC_SR04_Distance_sensor.ino
+ * @brief Basic example of an HC-SR04 ultrasonic distance sensor with an ESP8266/ESP32 for SUPLA integration.
+ * This example demonstrates how to connect a standard HC-SR04 ultrasonic sensor to an ESP device
+ * and integrate its distance readings with the SUPLA cloud via Wi-Fi.
+ * It includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the sensor in the code.
+ * A status LED is also configured.
+ *
+ * @tags HC-SR04, ultrasonic, distance, sensor, esp, esp32, esp8266, wifi, web_interface
+ */
+
 #include <SuplaDevice.h>
 #include <supla/device/status_led.h>
 #include <supla/network/esp_web_server.h>

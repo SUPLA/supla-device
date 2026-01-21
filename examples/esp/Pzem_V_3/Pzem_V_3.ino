@@ -14,8 +14,20 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
    */
 
-// dependence: Arduino library for the Updated PZEM-004T v3.0 Power and Energy
-// meter  https://github.com/mandulaj/PZEM-004T-v30
+/**
+ * @supla-example
+ * @file Pzem_V_3.ino
+ * @brief Example of connecting a Peacefair PZEM-004T V3 energy monitor to SUPLA using an ESP8266/ESP32.
+ * This example demonstrates how to integrate a PZEM-004T V3 energy monitor with an ESP device
+ * and send its readings (voltage, current, power, energy) to the SUPLA cloud via Wi-Fi.
+ * It includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust the RX/TX pins for the PZEM module, and optionally the PZEM address in the code.
+ * A status LED is also configured.
+ *
+ * @dependency https://github.com/mandulaj/PZEM-004T-v30
+ * @tags PZEM, PZEM-004T, V3, energy, monitor, voltage, current, power, esp, esp32, esp8266, wifi, web_interface, modbus
+ */
 
 #include <SuplaDevice.h>
 #include <supla/device/status_led.h>

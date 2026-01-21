@@ -16,6 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file GPM_EspFreeHeap.ino
+ * @brief Example of monitoring ESP8266/ESP32 free heap memory as a General Purpose Measurement (GPM) for SUPLA.
+ * This example demonstrates how to create virtual GPM sensors to display the available free heap memory
+ * of an ESP device in both bytes and kilobytes within the SUPLA cloud.
+ * It uses Wi-Fi for network connectivity and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * A status LED is also configured.
+ *
+ * @tags GPM, EspFreeHeap, memory, heap, monitor, esp, esp32, esp8266, wifi, web_interface
+ */
+
 #define STATUS_LED_GPIO 2
 
 #include <SuplaDevice.h>

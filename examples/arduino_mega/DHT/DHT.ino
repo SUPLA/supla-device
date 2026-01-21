@@ -16,12 +16,16 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * DHT sensor example for Arduino Mega.
- * This example requires DHT sensor library installed.
- * https://github.com/adafruit/DHT-sensor-library
+/**
+ * @supla-example
+ * @file DHT.ino
+ * @brief Example of connecting multiple DHT (DHT22) temperature and humidity sensors to SUPLA using an Arduino Mega.
+ * This example configures the Arduino Mega with an Ethernet shield (W5100 or ENC28J60)
+ * to read data from two DHT22 sensors and integrate it with the SUPLA cloud.
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and the GPIO pin numbers for the DHT sensors in the code.
  *
- * Please adjust GPIO pin numbers according to your setup.
+ * @dependency https://github.com/adafruit/DHT-sensor-library
+ * @tags DHT, DHT22, temperature, humidity, sensor, arduino_mega, ethernet, w5100, enc28j60
  */
 
 #include <SuplaDevice.h>

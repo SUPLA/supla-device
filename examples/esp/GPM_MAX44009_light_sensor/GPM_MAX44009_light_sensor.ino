@@ -16,8 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-// Dependency: Please install "Max" by Rob Tillaart library in Arduino:
-// https://github.com/RobTillaart/Max44009
+/**
+ * @supla-example
+ * @file GPM_MAX44009_light_sensor.ino
+ * @brief Example of connecting a MAX44009 ambient light sensor to SUPLA using an ESP8266/ESP32.
+ * This example demonstrates how to integrate a MAX44009 digital ambient light sensor (connected via I2C)
+ * with an ESP device and send its illuminance readings to the SUPLA cloud.
+ * It uses Wi-Fi for network connectivity and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust I2C GPIO pins (SDA, SCL), and optionally, the MAX44009 I2C address and units (lux or kilolux) in the code.
+ * A status LED is also configured.
+ *
+ * @dependency https://github.com/RobTillaart/Max44009
+ * @tags MAX44009, light, ambient, illuminance, sensor, lux, kilolux, I2C, esp, esp32, esp8266, wifi, web_interface
+ */
 
 // Please adjust GPIO to your board configuration
 #define STATUS_LED_GPIO 2

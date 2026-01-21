@@ -16,26 +16,25 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#include "factory_test.h"
+
 #include <SuplaDevice.h>
-#include <supla/log_wrapper.h>
-#include <supla/time.h>
 #include <string.h>
 #include <supla/actions.h>
-#include <supla/device/register_device.h>
-#include <supla/protocol/supla_srpc.h>
-#include <supla/storage/storage.h>
-#include <supla/storage/config.h>
-#include <supla/network/web_server.h>
 #include <supla/clock/clock.h>
-
-#include "factory_test.h"
+#include <supla/device/register_device.h>
+#include <supla/log_wrapper.h>
+#include <supla/network/web_server.h>
+#include <supla/protocol/supla_srpc.h>
+#include <supla/storage/config.h>
+#include <supla/storage/storage.h>
+#include <supla/time.h>
 
 #ifdef ESP8266
 #define FLASH_STRLEN(p) strlen_P(p)
 #else
 #define FLASH_STRLEN(p) strlen(p)
 #endif
-
 
 namespace Supla {
 namespace Device {
@@ -197,10 +196,14 @@ void FactoryTest::onInit() {
   if (cfg && !cfg->isEncryptionEnabled()) {
     SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
 #ifndef SUPLA_DEBUG
-    testFailed = true;
-    failReason = 16;
-    if (!selfTestMode) {
-      return;
+    if (ensureAdvancedSecurity) {
+      testFailed = true;
+      failReason = 16;
+      if (!selfTestMode) {
+        return;
+      }
+    } else {
+      SUPLA_LOG_WARNING("TEST skip check: config encryption is disabled");
     }
 #endif
   }
@@ -216,10 +219,14 @@ void FactoryTest::onInit() {
   }
   if (webServer && !webServer->verifyCertificatesFormat()) {
     SUPLA_LOG_ERROR("TEST failed: invalid certificates format");
-    testFailed = true;
-    failReason = 18;
-    if (!selfTestMode) {
-      return;
+    if (ensureAdvancedSecurity) {
+      testFailed = true;
+      failReason = 18;
+      if (!selfTestMode) {
+        return;
+      }
+    } else {
+      SUPLA_LOG_WARNING("TEST skip check: invalid certificates format");
     }
   }
 
@@ -234,10 +241,14 @@ void FactoryTest::onInit() {
 
   if (!sdc->isSecurityLogEnabled()) {
     SUPLA_LOG_ERROR("TEST failed: security log is disabled");
-    testFailed = true;
-    failReason = 20;
-    if (!selfTestMode) {
-      return;
+    if (ensureAdvancedSecurity) {
+      testFailed = true;
+      failReason = 20;
+      if (!selfTestMode) {
+        return;
+      }
+    } else {
+      SUPLA_LOG_WARNING("TEST skip check: security log is disabled");
     }
   }
 
@@ -261,8 +272,7 @@ void FactoryTest::iterateAlways() {
   }
 
   if (!checkTestStep()) {
-    SUPLA_LOG_ERROR("TEST[%d,%d]: check test step failed",
-        testStage, testStep);
+    SUPLA_LOG_ERROR("TEST[%d,%d]: check test step failed", testStage, testStep);
     testFailed = true;
     // failReason should be set in checkTestStep
     // if it wasn't, fill it with default value

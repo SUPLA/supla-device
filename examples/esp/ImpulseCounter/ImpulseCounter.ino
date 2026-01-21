@@ -16,6 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file ImpulseCounter.ino
+ * @brief Example of implementing impulse counters with optional LED feedback for SUPLA using an ESP8266/ESP32.
+ * This example demonstrates how to configure two impulse counters on different pins (counting rising or falling edges, with debounce).
+ * It also shows how to trigger an internal LED (blink or toggle) upon each impulse count.
+ * The device integrates with the SUPLA cloud via Wi-Fi and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * It can store counter data persistently in EEPROM (or optionally FRAM).
+ * Users need to adjust GPIO pins for the impulse counters and LEDs in the code.
+ * A status LED is also configured.
+ *
+ * @tags impulse, counter, LED, debounce, EEPROM, FRAM, esp, esp32, esp8266, wifi, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/sensor/impulse_counter.h>
 #include <supla/actions.h>

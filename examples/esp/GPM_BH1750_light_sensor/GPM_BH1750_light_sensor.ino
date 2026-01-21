@@ -16,8 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-// Dependency: Please install "BH1750" by Christopher Laws library in Arduino:
-// https://github.com/claws/BH1750
+/**
+ * @supla-example
+ * @file GPM_BH1750_light_sensor.ino
+ * @brief Example of connecting a BH1750 ambient light sensor to SUPLA using an ESP8266/ESP32.
+ * This example demonstrates how to integrate a BH1750 digital ambient light sensor (connected via I2C)
+ * with an ESP device and send its illuminance readings to the SUPLA cloud.
+ * It uses Wi-Fi for network connectivity and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust I2C GPIO pins (SDA, SCL), and optionally, the BH1750 I2C address and units (lux or kilolux) in the code.
+ * A status LED is also configured.
+ *
+ * @dependency https://github.com/claws/BH1750
+ * @tags BH1750, light, ambient, illuminance, sensor, lux, kilolux, I2C, esp, esp32, esp8266, wifi, web_interface
+ */
 
 // Please adjust GPIO to your board configuration
 #define STATUS_LED_GPIO 2

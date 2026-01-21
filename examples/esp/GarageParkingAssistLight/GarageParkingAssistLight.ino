@@ -16,6 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file GarageParkingAssistLight.ino
+ * @brief Example of a garage parking assist light system using an HC-SR04 distance sensor with an ESP8266/ESP32.
+ * This example demonstrates how to implement a parking assist system that uses an HC-SR04 ultrasonic sensor
+ * to measure the distance to a car and controls three relays (for red, orange, and green lights) based on predefined distance thresholds.
+ * It integrates with the SUPLA cloud via Wi-Fi and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the sensor and relays in the code.
+ * A status LED is also configured.
+ *
+ * @tags garage, parking, assist, light, HC-SR04, ultrasonic, distance, sensor, relay, esp, esp32, esp8266, wifi, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/actions.h>
 #include <supla/condition.h>

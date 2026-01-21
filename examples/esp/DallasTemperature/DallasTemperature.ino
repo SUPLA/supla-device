@@ -16,9 +16,18 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * This example requires Dallas Temperature Control library installed.
- * https://github.com/milesburton/Arduino-Temperature-Control-Library
+/**
+ * @supla-example
+ * @file DallasTemperature.ino
+ * @brief Example of connecting multiple DS18B20 temperature sensors to SUPLA using an ESP8266/ESP32.
+ * This example configures an ESP device with Wi-Fi to read data from multiple DS18B20 sensors (on a single pin)
+ * and integrate it with the SUPLA cloud. It includes a web server for Wi-Fi and SUPLA server configuration.
+ * Network settings are configured via the web interface.
+ * Users may need to adjust the addresses of their DS18B20 sensors in the code.
+ * A status LED is also configured.
+ *
+ * @dependency https://github.com/milesburton/Arduino-Temperature-Control-Library
+ * @tags DS18B20, DallasTemperature, temperature, sensor, onewire, esp, esp32, esp8266, wifi, web_interface
  */
 
 #include <SuplaDevice.h>

@@ -14,8 +14,17 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
    */
 
-// Dependence: Arduino communication library for Peacefair PZEM-004T Energy
-// monitor  https://github.com/olehs/PZEM004T
+/**
+ * @supla-example
+ * @file Pzem_V_2.ino
+ * @brief Example of connecting a Peacefair PZEM-004T V2 energy monitor to SUPLA using an Arduino Mega.
+ * This example demonstrates how to integrate a PZEM-004T V2 energy monitor with an Arduino Mega
+ * and send its readings (voltage, current, power, energy) to the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and the RX/TX pins for the PZEM module in the code.
+ *
+ * @dependency https://github.com/olehs/PZEM004T
+ * @tags PZEM, PZEM-004T, V2, energy, monitor, voltage, current, power, arduino_mega, ethernet, w5100, enc28j60
+ */
 
 #include <SuplaDevice.h>
 #include <supla/sensor/PzemV2.h>

@@ -14,6 +14,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file SequenceButton.ino
+ * @brief Example of a sequence button (rhythm-based) for triggering actions with an ESP8266/ESP32 for SUPLA integration.
+ * This example demonstrates how to implement a "secret" button sequence or rhythm detection using a `SequenceButton` component.
+ * Based on a predefined sequence of button presses and releases, it can trigger different actions,
+ * such as activating a "secret" relay or an "alarm" relay if the sequence does not match.
+ * The system integrates with the SUPLA cloud via Wi-Fi and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the button and relays, and define their desired button sequence in the code.
+ * A status LED is also configured.
+ *
+ * @tags sequence_button, button, rhythm, secret, relay, esp, esp32, esp8266, wifi, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/actions.h>
 #include <supla/control/relay.h>

@@ -16,9 +16,17 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * This example requires Dallas Temperature Control library installed.
- * https://github.com/milesburton/Arduino-Temperature-Control-Library
+/**
+ * @supla-example
+ * @file DSwithNotification.ino
+ * @brief Example of connecting multiple DS18B20 temperature sensors to SUPLA with notifications using an Arduino Mega.
+ * This example extends the basic DS18B20 sensor setup by demonstrating how to send notifications
+ * to the SUPLA cloud based on sensor readings. It configures the Arduino Mega with an Ethernet shield
+ * to read data from multiple DS18B20 sensors and integrate it with SUPLA, sending alerts (e.g., for low temperatures).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, sensor addresses, and notification logic in the code.
+ *
+ * @dependency https://github.com/milesburton/Arduino-Temperature-Control-Library
+ * @tags DS18B20, DallasTemperature, temperature, sensor, onewire, notifications, arduino_mega, ethernet, w5100, enc28j60
  */
 
 #include <SuplaDevice.h>

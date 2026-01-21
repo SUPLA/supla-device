@@ -16,6 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file LAN_T-ETH-Lite-ESP32S3.ino
+ * @brief Example of implementing impulse counters on a T-ETH-Lite-ESP32S3 board with Ethernet connectivity for SUPLA.
+ * This example demonstrates how to configure two impulse counters on different pins (counting rising or falling edges, with debounce)
+ * on an ESP32S3 board with a W5500 Ethernet PHY.
+ * The device integrates with the SUPLA cloud via Ethernet and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * It can store counter data persistently in EEPROM (or optionally FRAM).
+ * Users need to adjust GPIO pins for the impulse counters and Ethernet configuration in the code.
+ * A status LED is also configured.
+ *
+ * @tags impulse, counter, ESP32S3, W5500, Ethernet, LAN, T-ETH-Lite, EEPROM, FRAM, esp, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/sensor/impulse_counter.h>
 #include <supla/network/esp32ethspi.h>

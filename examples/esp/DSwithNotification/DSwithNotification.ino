@@ -16,6 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file DSwithNotification.ino
+ * @brief Example of connecting multiple DS18B20 temperature sensors to SUPLA with notifications using an ESP8266/ESP32.
+ * This example extends the basic DS18B20 sensor setup by demonstrating how to send notifications
+ * to the SUPLA cloud based on sensor readings. It configures an ESP device with Wi-Fi
+ * to read data from multiple DS18B20 sensors and integrate it with SUPLA, sending alerts (e.g., for low temperatures).
+ * It includes a web server for Wi-Fi and SUPLA server configuration.
+ * Network settings are configured via the web interface.
+ * Users may need to adjust sensor addresses and notification logic in the code.
+ *
+ * @dependency https://github.com/milesburton/Arduino-Temperature-Control-Library
+ * @tags DS18B20, DallasTemperature, temperature, sensor, onewire, notifications, esp, esp32, esp8266, wifi, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/device/notifications.h>
 #include <supla/device/status_led.h>

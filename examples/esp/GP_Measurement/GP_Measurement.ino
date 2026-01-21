@@ -16,6 +16,22 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file GP_Measurement.ino
+ * @brief Example of using a General Purpose Measurement (GPM) virtual sensor for SUPLA with an ESP8266/ESP32.
+ * This example demonstrates the flexibility of the General Purpose Measurement (GPM) sensor type,
+ * which acts as a virtual channel capable of displaying any double value.
+ * It showcases how to set initial values, define custom units (before and after value),
+ * adjust value precision, and apply multipliers/dividers for scaling.
+ * The device integrates with the SUPLA cloud via Wi-Fi and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for their board configuration in the code.
+ * A status LED is also configured.
+ *
+ * @tags GPM, GeneralPurposeMeasurement, virtual_sensor, custom_units, scaling, precision, esp, esp32, esp8266, wifi, web_interface
+ */
+
 // Please adjust GPIO to your board configuration
 #define STATUS_LED_GPIO 2
 

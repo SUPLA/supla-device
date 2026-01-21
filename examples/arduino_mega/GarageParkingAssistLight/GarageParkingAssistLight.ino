@@ -16,6 +16,17 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file GarageParkingAssistLight.ino
+ * @brief Example of a garage parking assist light system using an HC-SR04 distance sensor with an Arduino Mega.
+ * This example demonstrates how to implement a parking assist system that uses an HC-SR04 ultrasonic sensor
+ * to measure the distance to a car and controls three relays (for red, orange, and green lights) based on predefined distance thresholds.
+ * It integrates with the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for the sensor and relays in the code.
+ *
+ * @tags garage, parking, assist, light, HC-SR04, ultrasonic, distance, sensor, relay, arduino_mega, ethernet, w5100, enc28j60
+ */
 #include <SuplaDevice.h>
 #include <supla/sensor/HC_SR04.h>
 #include <supla/control/relay.h>

@@ -16,9 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * This example requires HX711_ADC library installed.
- * https://github.com/olkal/HX711_ADC
+/**
+ * @supla-example
+ * @file HX711_Weight_sensor.ino
+ * @brief Example of connecting an HX711 weight sensor to SUPLA with an ESP8266/ESP32.
+ * This example demonstrates how to integrate an HX711 load cell amplifier with a weight sensor
+ * to an ESP device, providing weight measurements to the SUPLA cloud via Wi-Fi.
+ * It includes functionality for taring the scales using an external button and a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the HX711 module and the button in the code.
+ * A status LED is also configured.
+ *
+ * @dependency https://github.com/olkal/HX711_ADC
+ * @tags HX711, weight, load_cell, sensor, scales, tare, button, esp, esp32, esp8266, wifi, web_interface
  */
 
 #include <SuplaDevice.h>

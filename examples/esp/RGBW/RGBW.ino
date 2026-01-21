@@ -16,6 +16,21 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file RGBW.ino
+ * @brief Example of controlling RGBW LEDs with a button using an ESP8266/ESP32 for SUPLA integration.
+ * This example demonstrates how to control the color and brightness of RGBW LEDs (Red, Green, Blue, White)
+ * using a momentary button connected to an ESP device. The button can be used to toggle the LEDs
+ * and iterate through brightness levels.
+ * The device integrates with the SUPLA cloud via Wi-Fi, allowing remote control of the RGBW lighting,
+ * and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the RGBW channels and the button in the code.
+ * A status LED is also configured.
+ *
+ * @tags RGBW, LED, dimmer, color, brightness, button, esp, esp32, esp8266, wifi, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/control/rgbw_leds.h>
 #include <supla/control/button.h>

@@ -16,9 +16,16 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * This example requires Dallas Temperature Control library installed.
- * https://github.com/milesburton/Arduino-Temperature-Control-Library
+/**
+ * @supla-example
+ * @file DallasTemperature.ino
+ * @brief Example of connecting multiple DS18B20 temperature sensors to SUPLA using an Arduino Mega.
+ * This example configures the Arduino Mega with an Ethernet shield (W5100 or ENC28J60)
+ * to read data from multiple DS18B20 sensors (on a single pin) and integrate it with the SUPLA cloud.
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and optionally, the addresses of their DS18B20 sensors in the code.
+ *
+ * @dependency https://github.com/milesburton/Arduino-Temperature-Control-Library
+ * @tags DS18B20, DallasTemperature, temperature, sensor, onewire, arduino_mega, ethernet, w5100, enc28j60
  */
 
 #include <SuplaDevice.h>

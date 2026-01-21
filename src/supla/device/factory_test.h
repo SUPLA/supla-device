@@ -68,6 +68,7 @@ class FactoryTest : public Supla::ActionHandler, public Supla::Element {
   void dontCheckAutomaticFirmwareUpdate();
 
  protected:
+  bool ensureAdvancedSecurity = true;
   bool testFailed = false;
   bool testFinished = false;
   bool waitForRegisteredAndReady = true;

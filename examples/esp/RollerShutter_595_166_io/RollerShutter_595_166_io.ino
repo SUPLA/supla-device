@@ -17,6 +17,21 @@
 
 */
 
+/**
+ * @supla-example
+ * @file RollerShutter_595_166_io.ino
+ * @brief Example of controlling a roller shutter with 74HC595 (outputs) and 74HC166 (inputs) shift registers on an ESP8266/ESP32 for SUPLA integration.
+ * This example demonstrates an advanced setup for controlling a roller shutter. It utilizes 74HC595 shift registers
+ * to expand output capabilities for motor control (via relays) and status LEDs, and 74HC166 shift registers
+ * for reading multiple button inputs (open, close). The system is integrated with the SUPLA cloud
+ * via Wi-Fi and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the shift registers, buttons, and relays in the code.
+ * A status LED is also configured.
+ *
+ * @tags roller_shutter, 74HC595, 74HC166, shift_register, output_expander, input_expander, button, relay, esp, esp32, esp8266, wifi, web_interface
+ */
+
 #define NUMBER_OF_SR595 \
   4  // number of shift registers eg 4 x 74HC595 = 32 outputs  pin 0 - 31
 #define DATA_SR595_GPIO  14  // data pin 14 on 74HC595

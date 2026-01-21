@@ -16,14 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * DHT sensor example for ESP8266 or ESP32.
- * This example requires DHT sensor library installed.
- * https://github.com/adafruit/DHT-sensor-library
+/**
+ * @supla-example
+ * @file DHT.ino
+ * @brief Example of connecting multiple DHT (DHT22) temperature and humidity sensors to SUPLA using an ESP8266/ESP32.
+ * This example configures an ESP device with Wi-Fi to read data from two DHT22 sensors and integrate it with the SUPLA cloud.
+ * It includes a web server for Wi-Fi and SUPLA server configuration.
+ * Network settings are configured via the web interface.
+ * Users may need to adjust the GPIO pin numbers for the DHT sensors in the code.
+ * A status LED is also configured.
  *
- * Please adjust GPIO pin numbers according to your setup.
+ * @dependency https://github.com/adafruit/DHT-sensor-library
+ * @tags DHT, DHT22, temperature, humidity, sensor, esp, esp32, esp8266, wifi, web_interface
  */
-
 
 #include <SuplaDevice.h>
 #include <supla/sensor/DHT.h>

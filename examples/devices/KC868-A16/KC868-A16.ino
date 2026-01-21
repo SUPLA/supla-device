@@ -15,12 +15,21 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
-  ------------------------------------------------------------------------------------------------
-  The following sketch allows for basic operation of the KC868-A16 device using PCF8574 expanders.
-  It creates 16 relays, 16 buttons, and 16 action triggers.
-  https://www.kincony.com/esp32-board-16-channel-relay-hardware.html
-
 */
+
+/**
+ * @supla-example
+ * @file KC868-A16.ino
+ * @brief Example for KinCony KC868-A16 device with 16 relays and 16 inputs, using PCF8574 expanders for SUPLA integration.
+ * This example demonstrates how to configure and control the KC868-A16 ESP32-based relay board.
+ * It initializes 16 relays and 16 corresponding buttons/action triggers, leveraging PCF8574 I2C expanders for I/O.
+ * The device integrates with the SUPLA cloud via Wi-Fi or Ethernet (ESP32-ETH) and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust I2C GPIOs for PCF8574 expanders in the code. It also includes a factory reset option.
+ *
+ * @dependency https://www.kincony.com/esp32-board-16-channel-relay-hardware.html
+ * @tags KC868-A16, KinCony, ESP32, PCF8574, relay, button, action_trigger, I2C, expander, ethernet, wifi, SUPLA-A16, web_interface
+ */
 
 constexpr uint8_t SDA_ = 4;
 constexpr uint8_t SCL_ = 5;

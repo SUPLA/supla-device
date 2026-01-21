@@ -16,10 +16,17 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * Afore inverter example for ESP8266 or ESP32.
+/**
+ * @supla-example
+ * @file Afore.ino
+ * @brief Example of connecting an Afore inverter to SUPLA using an ESP8266/ESP32.
+ * This example configures an ESP device with Wi-Fi to communicate with an Afore photovoltaic inverter
+ * and integrate its data with the SUPLA cloud. It includes a web server for Wi-Fi and SUPLA server configuration.
+ * Network settings are configured via the web interface.
+ * Users still need to adjust the Afore inverter's IP address, port, and credentials in the code.
+ * A status LED is also configured.
  *
- * Please adjust GPIO pin numbers according to your setup.
+ * @tags afore, inverter, photovoltaic, esp, esp32, esp8266, wifi, pv, energy, web_interface
  */
 
 #include <SuplaDevice.h>

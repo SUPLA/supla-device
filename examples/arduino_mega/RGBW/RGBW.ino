@@ -16,6 +16,18 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file RGBW.ino
+ * @brief Example of controlling RGBW LEDs with a button using an Arduino Mega for SUPLA integration.
+ * This example demonstrates how to control the color and brightness of RGBW LEDs (Red, Green, Blue, White)
+ * using a momentary button connected to an Arduino Mega. The button can be used to toggle the LEDs
+ * and iterate through brightness levels.
+ * The device integrates with the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for the RGBW channels and the button in the code.
+ *
+ * @tags RGBW, LED, dimmer, color, brightness, button, arduino_mega, ethernet, w5100, enc28j60
+ */
 #include <SuplaDevice.h>
 #include <supla/control/rgbw_leds.h>
 #include <supla/control/button.h>

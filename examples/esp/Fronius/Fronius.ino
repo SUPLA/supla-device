@@ -16,6 +16,18 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file Fronius.ino
+ * @brief Example of connecting a Fronius inverter to SUPLA using an ESP8266/ESP32.
+ * This example configures an ESP device with Wi-Fi to communicate with a Fronius photovoltaic inverter
+ * and integrate its data with the SUPLA cloud. It includes a web server for Wi-Fi and SUPLA server configuration.
+ * Network settings are configured via the web interface.
+ * Users still need to adjust the Fronius inverter's IP address in the code.
+ * A status LED is also configured.
+ *
+ * @tags fronius, inverter, photovoltaic, esp, esp32, esp8266, wifi, pv, energy, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/device/status_led.h>
 #include <supla/network/esp_web_server.h>

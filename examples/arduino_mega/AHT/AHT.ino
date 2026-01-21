@@ -17,10 +17,17 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * AHT sensor example for Arduino Mega.
- * This example requires Adafruit AHT sensor library installed.
- * https://github.com/adafruit/Adafruit_AHTX0
+/**
+ * @supla-example
+ * @file AHT.ino
+ * @brief Example of connecting an AHT temperature and humidity sensor to SUPLA using an Arduino Mega.
+ * This example configures the Arduino Mega with an Ethernet shield (W5100 or ENC28J60)
+ * to read data from an AHT sensor and integrate it with the SUPLA cloud.
+ * It requires the Adafruit AHT sensor library to be installed.
+ * Users need to adjust network settings, SUPLA GUID, and AUTHKEY.
+ *
+ * @dependency https://github.com/adafruit/Adafruit_AHTX0
+ * @tags AHT, temperature, humidity, sensor, arduino_mega, ethernet, w5100, enc28j60
  */
 
 #include <SuplaDevice.h>

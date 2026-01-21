@@ -16,6 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @file ConfigModeInputs.ino
+ * @author SUPLA
+ * @brief Comprehensive example of using various HTML input elements in SUPLA's web configuration mode for ESP8266/ESP32.
+ * This example demonstrates a device that starts in configuration mode, offering a web interface to set up Wi-Fi and SUPLA server connections.
+ * It showcases the use of HTML elements like `DeviceInfo`, `WifiParameters`, `ProtocolParameters`, and `StatusLedParameters`.
+ * Furthermore, it illustrates how to implement custom text and numeric input parameters (`CustomTextParameter`, `CustomParameter`),
+ * as well as text-based and select-based command inputs (`TextCmdInputParameter`, `SelectCmdInputParameter`) to control a relay.
+ * The example also includes a configuration button and shows how to access user-defined values from persistent storage.
+ *
+ * @tags config_mode, web_interface, HTML, input, custom_parameter, text_input, select_input, relay, button, wifi, esp, esp32, esp8266
+ */
+
+
 /* This example shows ESP82xx/ESP32 based device with simple web interface
  * used to configure Wi-Fi parameters and Supla server connection.
  * Additionally it shows how to use some of HTML elements provided by

@@ -13,6 +13,23 @@
   along with this program; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
+
+/**
+ * @supla-example
+ * @file RGBW_ESP32_LAN8720.ino
+ * @brief Example of controlling RGBW LEDs with a button on an ESP32 board with LAN8720 Ethernet for SUPLA integration.
+ * This example demonstrates how to control the color and brightness of RGBW LEDs (Red, Green, Blue, White)
+ * using a momentary button connected to an ESP32 board equipped with a LAN8720 Ethernet PHY.
+ * The button can be used to toggle the LEDs and iterate through brightness levels.
+ * The device integrates with the SUPLA cloud via Ethernet, allowing remote control of the RGBW lighting,
+ * and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the RGBW channels, button, and LAN8720 connections in the code.
+ * A status LED is also configured.
+ *
+ * @tags RGBW, LED, dimmer, color, brightness, button, ESP32, LAN8720, Ethernet, esp, web_interface
+ */
+
 /*
   -(50MHz) Osc. Enable to GND -
   GPIO22 - EMAC_TXD1   : TX1

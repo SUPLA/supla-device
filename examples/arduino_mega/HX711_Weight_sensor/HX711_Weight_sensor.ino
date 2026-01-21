@@ -16,9 +16,17 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * This example requires HX711_ADC library installed.
- * https://github.com/olkal/HX711_ADC
+/**
+ * @supla-example
+ * @file HX711_Weight_sensor.ino
+ * @brief Example of connecting an HX711 weight sensor to SUPLA with an Arduino Mega.
+ * This example demonstrates how to integrate an HX711 load cell amplifier with a weight sensor
+ * to an Arduino Mega, providing weight measurements to the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60).
+ * It includes functionality for taring the scales using an external button.
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for the HX711 module and the button in the code.
+ *
+ * @dependency https://github.com/olkal/HX711_ADC
+ * @tags HX711, weight, load_cell, sensor, scales, tare, button, arduino_mega, ethernet, w5100, enc28j60
  */
 
 #include <SuplaDevice.h>

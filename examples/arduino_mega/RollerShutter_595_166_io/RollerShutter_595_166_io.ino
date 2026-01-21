@@ -15,6 +15,19 @@
 
 */
 
+/**
+ * @supla-example
+ * @file RollerShutter_595_166_io.ino
+ * @brief Example of controlling a roller shutter with 74HC595 (outputs) and 74HC166 (inputs) shift registers on an Arduino Mega for SUPLA integration.
+ * This example demonstrates an advanced setup for controlling a roller shutter. It utilizes 74HC595 shift registers
+ * to expand output capabilities for motor control (via relays) and status LEDs, and 74HC166 shift registers
+ * for reading multiple button inputs (open, close). The system is integrated with the SUPLA cloud
+ * via an Ethernet shield (W5100 or ENC28J60) and stores roller shutter data persistently in EEPROM (or optionally FRAM).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for the shift registers, buttons, and relays in the code.
+ *
+ * @tags roller_shutter, 74HC595, 74HC166, shift_register, output_expander, input_expander, button, relay, arduino_mega, ethernet, w5100, enc28j60, EEPROM, FRAM
+ */
+
 #define NUMBER_OF_SR595 \
   4  // number of shift registers eg 4 x 74HC595 = 32 outputs  pin 0 - 31
 #define DATA_SR595_GPIO  14  // data pin 14 on 74HC595

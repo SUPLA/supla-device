@@ -36,10 +36,24 @@
 #include <supla/sensor/virtual_thermometer.h>
 #include <supla/control/button.h>
 
-/*
-  This example requires Dallas Temperature Control library installed.
-  https://github.com/milesburton/Arduino-Temperature-Control-Library
-*/
+/**
+ * @supla-example
+ * @file ThermostatBasic.ino
+ * @brief Basic thermostat implementation example for ESP8266/ESP32 with DS18B20 sensors and SUPLA integration.
+ * This comprehensive example demonstrates a basic thermostat functionality using an ESP device.
+ * It integrates DS18B20 temperature sensors (main and auxiliary, or virtual for testing) with an HVAC controller.
+ * The thermostat controls an output relay (e.g., for heating/cooling) and uses status LEDs (red/blue) to indicate operation modes.
+ * It features adjustable temperature hysteresis, supports different auxiliary thermometer types (e.g., floor sensor),
+ * and stores configuration persistently.
+ * The device integrates with the SUPLA cloud via Wi-Fi and provides a web interface for network, time, and HVAC parameter configuration.
+ * Network settings are configured via the web interface.
+ * A configuration button is also included.
+ * Users need to adjust GPIO pins for sensors, output, LEDs, and buttons in the code.
+ *
+ * @dependency https://github.com/milesburton/Arduino-Temperature-Control-Library
+ * @tags thermostat, HVAC, DS18B20, temperature, sensor, relay, LED, hysteresis, esp, esp32, esp8266, wifi, web_interface, EEPROM
+ */
+
 // Add include to DS sensor
 #include <supla/sensor/DS18B20.h>
 

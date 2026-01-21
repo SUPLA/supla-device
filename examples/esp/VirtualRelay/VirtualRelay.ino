@@ -16,6 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file VirtualRelay.ino
+ * @brief Example of a virtual relay for SUPLA using an ESP8266/ESP32.
+ * This example demonstrates how to create a virtual relay that exists only in the SUPLA cloud,
+ * without controlling any physical output. It can be toggled via the SUPLA app or web interface,
+ * and its state can be restored after a device restart.
+ * It uses Wi-Fi for network connectivity and includes a web server for configuration.
+ * Users need to adjust network settings. A status LED is also configured.
+ *
+ * @tags virtual_relay, relay, esp, esp32, esp8266, wifi
+ */
+
 #define STATUS_LED_GPIO 2
 
 #include <SuplaDevice.h>

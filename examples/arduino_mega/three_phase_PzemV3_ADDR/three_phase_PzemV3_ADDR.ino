@@ -16,8 +16,17 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-// dependence: Arduino library for the Updated PZEM-004T v3.0 Power and Energy
-// meter  https://github.com/mandulaj/PZEM-004T-v30
+/**
+ * @supla-example
+ * @file three_phase_PzemV3_ADDR.ino
+ * @brief Example of connecting multiple (three-phase) Peacefair PZEM-004T V3 energy monitors with unique addresses to SUPLA using an Arduino Mega.
+ * This example demonstrates how to integrate three PZEM-004T V3 energy monitors, each configured with a distinct Modbus address,
+ * with an Arduino Mega. It sends their readings (voltage, current, power, energy for each phase) to the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and the RX/TX pins for the PZEM modules, along with their respective Modbus addresses in the code.
+ *
+ * @dependency https://github.com/mandulaj/PZEM-004T-v30
+ * @tags PZEM, PZEM-004T, V3, three_phase, energy, monitor, voltage, current, power, arduino_mega, ethernet, w5100, enc28j60, modbus
+ */
 
 #include <SuplaDevice.h>
 #include <supla/sensor/three_phase_PzemV3_ADDR.h>

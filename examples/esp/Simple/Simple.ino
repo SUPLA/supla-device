@@ -16,6 +16,20 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file Simple.ino
+ * @brief A simple example of a SUPLA device on ESP8266/ESP32.
+ * This example demonstrates the basic structure of a SUPLA device firmware for ESP8266/ESP32 platforms.
+ * It initializes the device, sets up a configuration button, a status LED, and a web server for Wi-Fi and SUPLA server configuration.
+ * Network settings are configured via the web interface.
+ * This example does not control any specific channels but serves as a starting point for building more complex devices.
+ * It shows how to use the ESPWifi, LittleFsConfig, StatusLed, EspWebServer, and Button components.
+ *
+ * @tags simple, basic, esp, wifi, template
+ */
+
+
 #define BUTTON_CFG_GPIO 0
 #define STATUS_LED_GPIO 2
 

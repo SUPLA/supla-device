@@ -16,6 +16,21 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file RGBW_WT32_ETH01.ino
+ * @brief Example of controlling RGBW LEDs with a button on a WT32-ETH01 board (ESP32 with LAN8720 Ethernet) for SUPLA integration.
+ * This example demonstrates how to control the color and brightness of RGBW LEDs (Red, Green, Blue, White)
+ * using a momentary button connected to a WT32-ETH01 board equipped with a LAN8720 Ethernet PHY.
+ * The button can be used to toggle the LEDs and iterate through brightness levels.
+ * The device integrates with the SUPLA cloud via Ethernet, allowing remote control of the RGBW lighting,
+ * and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for the RGBW channels, button, and LAN8720 connections in the code.
+ * A status LED is also configured.
+ *
+ * @tags RGBW, LED, dimmer, color, brightness, button, ESP32, WT32-ETH01, LAN8720, Ethernet, esp, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/control/rgbw_leds.h>
 #include <supla/control/button.h>

@@ -16,6 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file RollerShutter.ino
+ * @brief Example of controlling a roller shutter directly with an ESP8266/ESP32 for SUPLA integration.
+ * This example demonstrates how to control a roller shutter using dedicated GPIO pins on an ESP device
+ * for motor control (up/down/stop) and physical buttons for local operation.
+ * It also includes status LEDs to indicate the state of the roller shutter.
+ * The system integrates with the SUPLA cloud via Wi-Fi and includes a web server for configuration.
+ * Network settings are configured via the web interface.
+ * Users need to adjust GPIO pins for motor control, buttons, and status LEDs in the code.
+ *
+ * @tags roller_shutter, button, relay, esp, esp32, esp8266, wifi, web_interface
+ */
 #include <SuplaDevice.h>
 #include <supla/control/button.h>
 #include <supla/control/pin_status_led.h>

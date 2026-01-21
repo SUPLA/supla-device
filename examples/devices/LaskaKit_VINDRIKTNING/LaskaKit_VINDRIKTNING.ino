@@ -16,23 +16,18 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/* This example shows ESP82xx/ESP32 based device with 
- * 1) PM1006K semsor from Ikea Vindriktning
- * 2) board LaskaKit ESP-VINDRIKTNING ESP-32 v3.0
- *    https://www.laskakit.cz/en/laskakit-esp-vindriktning-esp-32-i2c/
- * 3) Bosh BME280 sensor
+/**
+ * @supla-example
+ * @file LaskaKit_VINDRIKTNING.ino
+ * @brief Example for the LaskaKit ESP-VINDRIKTNING ESP-32 v3.0 board, integrating particle, temperature, humidity, and pressure sensors with SUPLA.
+ * This comprehensive example demonstrates the use of the LaskaKit ESP-VINDRIKTNING board, featuring a PM1006K particle sensor (from IKEA Vindriktning)
+ * and a BME280 environmental sensor (temperature, humidity, pressure). It also includes optional integration for SCD41 and SGP41 sensors.
+ * The device provides a web interface for configuration, an I2C scanner, an update button, and sends collected sensor data to aqi.eco.
+ * It integrates with the SUPLA cloud via Wi-Fi.
+ * Network settings are configured via the web interface. Users need to adjust the aqi.eco token in the code.
  *
- * It includes
- * 1) simple WebInterface
- * 2) I2C scnanner
- * 3) Update Button
- * 4) permanent WebInterface (instead config button)
- *
- * A few elements from ESP-VINDRIKTNING are not used/supported in this example:
- * 1) 3 RGB LEDs
- * 2) Ambient light sensor (InfeaRed light sensor)
- * 3) buzzer
- * 4) IR remote controller receiver
+ * @dependency https://www.laskakit.cz/en/laskakit-esp-vindriktning-esp-32-i2c/
+ * @tags LaskaKit, VINDRIKTNING, ESP32, PM1006K, BME280, SCD41, SGP41, particle, temperature, humidity, pressure, air_quality, aqi.eco, web_interface, I2C, wifi
  */
 
 #define DEV_NAME "LaskaKit VINDRIKTNING"

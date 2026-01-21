@@ -16,10 +16,15 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * Afore inverter example for Arduino Mega.
+/**
+ * @supla-example
+ * @file Afore.ino
+ * @brief Example of connecting an Afore inverter to SUPLA using an Arduino Mega.
+ * This example configures the Arduino Mega with an Ethernet shield (W5100 or ENC28J60)
+ * to communicate with an Afore photovoltaic inverter and integrate its data with the SUPLA cloud.
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and Afore inverter's IP address, port, and credentials in the code.
  *
- * Please adjust network settings according to your setup.
+ * @tags afore, inverter, photovoltaic, arduino_mega, ethernet, w5100, enc28j60, pv, energy
  */
 
 #include <SuplaDevice.h>

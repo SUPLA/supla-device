@@ -16,6 +16,18 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file ImpulseCounter.ino
+ * @brief Example of implementing impulse counters with optional LED feedback for SUPLA using an Arduino Mega.
+ * This example demonstrates how to configure two impulse counters on different pins (counting rising or falling edges, with debounce).
+ * It also shows how to trigger an internal LED (blink or toggle) upon each impulse count.
+ * The device integrates with the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60)
+ * and can store counter data persistently in EEPROM (or optionally FRAM).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for the impulse counters and LEDs in the code.
+ *
+ * @tags impulse, counter, LED, debounce, EEPROM, FRAM, arduino_mega, ethernet, w5100, enc28j60
+ */
 #include <SuplaDevice.h>
 #include <supla/sensor/impulse_counter.h>
 // Remove below line if you don't want to have internal LED blinking on each

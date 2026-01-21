@@ -16,6 +16,16 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file HC_SR04_Distance_sensor.ino
+ * @brief Basic example of an HC-SR04 ultrasonic distance sensor with an Arduino Mega for SUPLA integration.
+ * This example demonstrates how to connect a standard HC-SR04 ultrasonic sensor to an Arduino Mega
+ * and integrate its distance readings with the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for the sensor in the code.
+ *
+ * @tags HC-SR04, ultrasonic, distance, sensor, arduino_mega, ethernet, w5100, enc28j60
+ */
 #include <SuplaDevice.h>
 #include <supla/sensor/HC_SR04.h>
 

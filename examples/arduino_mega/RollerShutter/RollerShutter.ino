@@ -16,6 +16,19 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/**
+ * @supla-example
+ * @file RollerShutter.ino
+ * @brief Example of controlling a roller shutter directly with an Arduino Mega for SUPLA integration.
+ * This example demonstrates how to control a roller shutter using dedicated GPIO pins on an Arduino Mega
+ * for motor control (up/down/stop) and physical buttons for local operation.
+ * It also includes status LEDs to indicate the state of the roller shutter.
+ * The system integrates with the SUPLA cloud via an Ethernet shield (W5100 or ENC28J60)
+ * and stores roller shutter data persistently in EEPROM (or optionally FRAM).
+ * Users need to adjust network settings, SUPLA GUID, AUTHKEY, and GPIO pins for motor control, buttons, and status LEDs in the code.
+ *
+ * @tags roller_shutter, button, relay, arduino_mega, ethernet, w5100, enc28j60, EEPROM, FRAM
+ */
 #include <SuplaDevice.h>
 #include <supla/control/button.h>
 #include <supla/control/pin_status_led.h>

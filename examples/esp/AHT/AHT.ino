@@ -16,11 +16,18 @@
   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/*
- * AHT sensor example for ESP8266 or ESP32.
- * This example requires Adafruit AHT sensor library installed.
- * https://github.com/adafruit/Adafruit_AHTX0
+/**
+ * @file AHT.ino
+ * @author SUPLA
+ * @brief Example of connecting an AHT temperature and humidity sensor to SUPLA using an ESP8266/ESP32.
+ * This example configures an ESP device with Wi-Fi to read data from an AHT sensor and integrate it with the SUPLA cloud.
+ * It includes a web server for Wi-Fi and SUPLA server configuration.
+ * It requires the Adafruit AHT sensor library to be installed.
+ * Users need to adjust network settings. A status LED is also configured.
+ *
+ * @tags AHT, temperature, humidity, sensor, esp, esp32, esp8266, wifi
  */
+
 
 #include <SuplaDevice.h>
 #include <supla/device/status_led.h>

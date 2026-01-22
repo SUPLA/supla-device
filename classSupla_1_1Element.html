@@ -236,6 +236,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ab9ebf45462dfe94c4b3c9c5797883604" id="r_ab9ebf45462dfe94c4b3c9c5797883604"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#ab9ebf45462dfe94c4b3c9c5797883604">onSaveState</a> ()</td></tr>
 <tr class="memdesc:ab9ebf45462dfe94c4b3c9c5797883604"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called periodically during SuplaDevice iteration.  <br /></td></tr>
 <tr class="separator:ab9ebf45462dfe94c4b3c9c5797883604"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a773fa918dc4a91f223c7eb78c6a5ad46" id="r_a773fa918dc4a91f223c7eb78c6a5ad46"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a773fa918dc4a91f223c7eb78c6a5ad46">isStateStorageMigrationNeeded</a> () const</td></tr>
+<tr class="memdesc:a773fa918dc4a91f223c7eb78c6a5ad46"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called after <a class="el" href="#ac0f0e9e97bc326ec8e06d75f916e4573" title="Third method called on element in SuplaDevice.begin()">onInit()</a> to check if state storage migration is needed.  <br /></td></tr>
+<tr class="separator:a773fa918dc4a91f223c7eb78c6a5ad46"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aabbfe2ea644c8001b4c75c753018228f" id="r_aabbfe2ea644c8001b4c75c753018228f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#aabbfe2ea644c8001b4c75c753018228f">onRegistered</a> (<a class="el" href="classSupla_1_1Protocol_1_1SuplaSrpc.html">Supla::Protocol::SuplaSrpc</a> *suplaSrpc=nullptr)</td></tr>
 <tr class="memdesc:aabbfe2ea644c8001b4c75c753018228f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called each time when device successfully registers to Supla server.  <br /></td></tr>
 <tr class="separator:aabbfe2ea644c8001b4c75c753018228f"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1068,6 +1071,37 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>true if element is owner of subDeviceId </dd></dl>
+
+</div>
+</div>
+<a id="a773fa918dc4a91f223c7eb78c6a5ad46" name="a773fa918dc4a91f223c7eb78c6a5ad46"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a773fa918dc4a91f223c7eb78c6a5ad46">&#9670;&#160;</a></span>isStateStorageMigrationNeeded()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Element::isStateStorageMigrationNeeded </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Method called after <a class="el" href="#ac0f0e9e97bc326ec8e06d75f916e4573" title="Third method called on element in SuplaDevice.begin()">onInit()</a> to check if state storage migration is needed. </p>
+<p>WARNING: state storage migration is not done in a way that it guarantees that data will be properly migrated. If something unexpected happens during migration (i.e. power loss), state storage may be lost. Don't rely on it, when state storage contain critical data (i.e. energy meters or impulse counters).</p>
+<dl class="section return"><dt>Returns</dt><dd>true if storage migration is needed </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RGBCCTBase.html#ae42700a774d37f2535cee0e1e0c9a03b">Supla::Control::RGBCCTBase</a>.</p>
 
 </div>
 </div>

@@ -155,6 +155,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
   initializationDone = true;
 
+  SUPLA_LOG_INFO("");
   SUPLA_LOG_INFO(" *** Supla - starting initialization (platform %d)",
                  Supla::getPlatformId());
 
@@ -184,6 +185,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   storageInitResult = Supla::Storage::Init();
 
   if (Supla::Storage::IsConfigStorageAvailable()) {
+    SUPLA_LOG_INFO("");
     SUPLA_LOG_INFO(" *** Supla - Config initalization");
 
     if (!lastStateLogger) {
@@ -227,6 +229,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
       }
     }
 
+    SUPLA_LOG_INFO("");
     SUPLA_LOG_INFO(" *** Supla - Config load for elements");
     // Load elements configuration
     for (auto element = Supla::Element::begin(); element != nullptr;
@@ -238,6 +241,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   }
 
   if (Supla::Storage::Instance()) {
+    SUPLA_LOG_INFO("");
     SUPLA_LOG_INFO(" *** Supla - Load state storage");
     // Pefrorm dry run of write state to validate stored state section with
     // current device configuration
@@ -247,14 +251,33 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
     SUPLA_LOG_INFO(" *** Supla - Load state storage done");
   }
 
+  SUPLA_LOG_INFO("");
   SUPLA_LOG_INFO(" *** Supla - Init elements");
   // Initialize elements
+  bool isStateStorageMigrationNeeded = false;
   for (auto element = Supla::Element::begin(); element != nullptr;
        element = element->next()) {
     element->onInit();
+    if (element->isStateStorageMigrationNeeded()) {
+      isStateStorageMigrationNeeded = true;
+    }
     delay(0);
   }
   SUPLA_LOG_INFO(" *** Supla - Init elements done");
+  SUPLA_LOG_INFO("");
+
+  if (Supla::Storage::Instance() && isStateStorageMigrationNeeded) {
+    SUPLA_LOG_INFO(" *** Supla - State storage migration");
+    if (Supla::Storage::IsConfigStorageAvailable()) {
+      Supla::Storage::ConfigInstance()->commit();
+    }
+    SUPLA_LOG_DEBUG("Clearing state storage...");
+    Supla::Storage::Instance()->deleteAll();
+    Supla::Storage::Init();
+    Supla::Storage::WriteStateStorage();
+    SUPLA_LOG_INFO(" *** Supla - State storage migration done");
+    SUPLA_LOG_INFO("");
+  }
 
   // Enable timers
   Supla::initTimers();
@@ -349,6 +372,7 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
   setupDeviceMode();
 
   SUPLA_LOG_INFO(" *** Supla - Initialization done");
+  SUPLA_LOG_INFO("");
   if (deviceMode != Supla::DEVICE_MODE_TEST) {
     SUPLA_LOG_INFO(" *** Self-test ***");
     auto tester = new Supla::Device::FactoryTest(this, 0);

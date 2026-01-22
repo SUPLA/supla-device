@@ -359,4 +359,8 @@ bool Element::isOwnerOfSubDeviceId(int) const {
   return false;
 }
 
+bool Element::isStateStorageMigrationNeeded() const {
+  return false;
+}
+
 };  // namespace Supla

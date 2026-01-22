@@ -224,6 +224,7 @@ void Storage::deleteAll() {
       stateStorage->deleteAll();
     }
     commit();
+    storageInitDone = false;
   }
 }
 

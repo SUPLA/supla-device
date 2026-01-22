@@ -309,7 +309,7 @@ void Channel::setType(uint32_t type) {
 }
 
 void Channel::setDefault(uint32_t value) {
-  SUPLA_LOG_DEBUG("Channel[%d]: setDefault(%d)", channelNumber, value);
+  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %d", channelNumber, value);
   if (value > UINT16_MAX) {
     SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
                     channelNumber, value);

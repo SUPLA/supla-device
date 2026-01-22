@@ -151,6 +151,18 @@ class Element {
   virtual void onSaveState();
 
   /**
+   * Method called after onInit() to check if state storage migration is needed.
+   * WARNING: state storage migration is not done in a way that it guarantees
+   * that data will be properly migrated. If something unexpected happens during
+   * migration (i.e. power loss), state storage may be lost. Don't rely on it,
+   * when state storage contain critical data (i.e. energy meters or impulse
+   * counters).
+   *
+   * @return true if storage migration is needed
+   */
+  virtual bool isStateStorageMigrationNeeded() const;
+
+  /**
    * Method called each time when device successfully registers to Supla server
    *
    * @param suplaSrpc

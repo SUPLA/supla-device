@@ -40,6 +40,7 @@ class SpiffsStorage : public Storage {
                    unsigned int size);
 
   bool dataChanged = false;
+  bool spiffsInitDone = false;
   char *buffer = nullptr;
   uint32_t bufferSize = 0;
 };

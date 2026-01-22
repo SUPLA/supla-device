@@ -1000,6 +1000,8 @@ void RGBCCTBase::onInit() {
     curWhiteBrightness = 0;
   }
 
+  initDone = true;
+
   setRGBCCT(curRed,
             curGreen,
             curBlue,
@@ -1010,50 +1012,130 @@ void RGBCCTBase::onInit() {
 }
 
 void RGBCCTBase::onSaveState() {
-  /*
-  uint8_t curRed;                   // 0 - 255
-  uint8_t curGreen;                 // 0 - 255
-  uint8_t curBlue;                  // 0 - 255
-  uint8_t curColorBrightness;       // 0 - 100
-  uint8_t curWhiteBrightness;            // 0 - 100
-  uint8_t lastColorBrightness;      // 0 - 100
-  uint8_t lastWhiteBrightness;           // 0 - 100
-  */
-  Supla::Storage::WriteState((unsigned char *)&curRed, sizeof(curRed));
-  Supla::Storage::WriteState((unsigned char *)&curGreen, sizeof(curGreen));
-  Supla::Storage::WriteState((unsigned char *)&curBlue, sizeof(curBlue));
-  Supla::Storage::WriteState((unsigned char *)&curColorBrightness,
-                             sizeof(curColorBrightness));
-  Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
-                             sizeof(curWhiteBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastColorBrightness,
-                             sizeof(lastColorBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
-                             sizeof(lastWhiteBrightness));
+  if (initDone && legacyChannelFunction != LegacyChannelFunction::None) {
+    // save migration done to cfg
+    auto cfg = Supla::Storage::ConfigInstance();
+    if (cfg) {
+      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+      Supla::Config::generateKey(key,
+                                 getChannel()->getChannelNumber(),
+                                 Supla::ConfigTag::LegacyMigrationTag);
+      cfg->setUInt8(key, 1);
+      legacyChannelFunction = LegacyChannelFunction::None;
+    }
+  }
+
+  switch (legacyChannelFunction) {
+    case LegacyChannelFunction::None: {
+      Supla::Storage::WriteState((unsigned char *)&curRed, sizeof(curRed));
+      Supla::Storage::WriteState((unsigned char *)&curGreen, sizeof(curGreen));
+      Supla::Storage::WriteState((unsigned char *)&curBlue, sizeof(curBlue));
+      Supla::Storage::WriteState((unsigned char *)&curColorBrightness,
+                                 sizeof(curColorBrightness));
+      Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
+                                 sizeof(curWhiteBrightness));
+      Supla::Storage::WriteState((unsigned char *)&lastColorBrightness,
+                                 sizeof(lastColorBrightness));
+      Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
+                                 sizeof(lastWhiteBrightness));
+      Supla::Storage::WriteState((unsigned char *)&curWhiteTemperature,
+                                 sizeof(curWhiteTemperature));
+      break;
+    }
+    case LegacyChannelFunction::RGBW: {
+      Supla::Storage::WriteState((unsigned char *)&curRed, sizeof(curRed));
+      Supla::Storage::WriteState((unsigned char *)&curGreen, sizeof(curGreen));
+      Supla::Storage::WriteState((unsigned char *)&curBlue, sizeof(curBlue));
+      Supla::Storage::WriteState((unsigned char *)&curColorBrightness,
+                                 sizeof(curColorBrightness));
+      Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
+                                 sizeof(curWhiteBrightness));
+      Supla::Storage::WriteState((unsigned char *)&lastColorBrightness,
+                                 sizeof(lastColorBrightness));
+      Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
+                                 sizeof(lastWhiteBrightness));
+      break;
+    }
+    case LegacyChannelFunction::RGB: {
+      Supla::Storage::WriteState((unsigned char *)&curRed, sizeof(curRed));
+      Supla::Storage::WriteState((unsigned char *)&curGreen, sizeof(curGreen));
+      Supla::Storage::WriteState((unsigned char *)&curBlue, sizeof(curBlue));
+      Supla::Storage::WriteState((unsigned char *)&curColorBrightness,
+                                 sizeof(curColorBrightness));
+      Supla::Storage::WriteState((unsigned char *)&lastColorBrightness,
+                                 sizeof(lastColorBrightness));
+      break;
+    }
+    case LegacyChannelFunction::Dimmer: {
+      Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
+                                 sizeof(curWhiteBrightness));
+      Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
+                                 sizeof(lastWhiteBrightness));
+      break;
+    }
+  }
 }
 
 void RGBCCTBase::onLoadState() {
-  Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
-  Supla::Storage::ReadState((unsigned char *)&curGreen, sizeof(curGreen));
-  Supla::Storage::ReadState((unsigned char *)&curBlue, sizeof(curBlue));
-  Supla::Storage::ReadState((unsigned char *)&curColorBrightness,
-                            sizeof(curColorBrightness));
-  Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
-                            sizeof(curWhiteBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
-                            sizeof(lastColorBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
-                            sizeof(lastWhiteBrightness));
-
+  switch (legacyChannelFunction) {
+    case LegacyChannelFunction::None: {
+      Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
+      Supla::Storage::ReadState((unsigned char *)&curGreen, sizeof(curGreen));
+      Supla::Storage::ReadState((unsigned char *)&curBlue, sizeof(curBlue));
+      Supla::Storage::ReadState((unsigned char *)&curColorBrightness,
+                                sizeof(curColorBrightness));
+      Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
+                                sizeof(curWhiteBrightness));
+      Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
+                                sizeof(lastColorBrightness));
+      Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
+                                sizeof(lastWhiteBrightness));
+      Supla::Storage::ReadState((unsigned char *)&curWhiteTemperature,
+                                sizeof(curWhiteTemperature));
+      break;
+    }
+    case LegacyChannelFunction::RGBW: {
+      Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
+      Supla::Storage::ReadState((unsigned char *)&curGreen, sizeof(curGreen));
+      Supla::Storage::ReadState((unsigned char *)&curBlue, sizeof(curBlue));
+      Supla::Storage::ReadState((unsigned char *)&curColorBrightness,
+                                sizeof(curColorBrightness));
+      Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
+                                sizeof(curWhiteBrightness));
+      Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
+                                sizeof(lastColorBrightness));
+      Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
+                                sizeof(lastWhiteBrightness));
+      break;
+    }
+    case LegacyChannelFunction::RGB: {
+      Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
+      Supla::Storage::ReadState((unsigned char *)&curGreen, sizeof(curGreen));
+      Supla::Storage::ReadState((unsigned char *)&curBlue, sizeof(curBlue));
+      Supla::Storage::ReadState((unsigned char *)&curColorBrightness,
+                                sizeof(curColorBrightness));
+      Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
+                                sizeof(lastColorBrightness));
+      break;
+    }
+    case LegacyChannelFunction::Dimmer: {
+      Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
+                                sizeof(curWhiteBrightness));
+      Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
+                                sizeof(lastWhiteBrightness));
+      break;
+    }
+  }
   SUPLA_LOG_DEBUG(
-      "RGBCCT[%d] loaded state: red=%d, green=%d, blue=%d, "
-      "colorBrightness=%d, whiteBrightness=%d",
+      "RGBCCT[%d] loaded state: r=%d, g=%d, b=%d, "
+      "colorBrigh=%d, whiteBrigh=%d, whiteTemp=%d",
       getChannel()->getChannelNumber(),
       curRed,
       curGreen,
       curBlue,
-      curColorBrightness,
-      curWhiteBrightness);
+      lastColorBrightness,
+      lastWhiteBrightness,
+      curWhiteTemperature);
 }
 
 RGBCCTBase &RGBCCTBase::setDefaultStateOn() {
@@ -1131,10 +1213,32 @@ void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
     if (rgbwButtonControlType >= 0 && rgbwButtonControlType <= 4) {
       buttonControlType = static_cast<ButtonControlType>(rgbwButtonControlType);
     }
+
+    if (legacyChannelFunction != LegacyChannelFunction::None) {
+      Supla::Config::generateKey(key,
+                                 getChannel()->getChannelNumber(),
+                                 Supla::ConfigTag::LegacyMigrationTag);
+      uint8_t migrationDoneFlag = 0;
+      // try to read migration done flag
+      // and if it is missing, check if minimal config is NOT ready (so we are
+      // in factory defaults state)
+      // if so, mark migration as done / not needed
+      if (!cfg->getUInt8(key, &migrationDoneFlag)) {
+        if (!cfg->isMinimalConfigReady(false)) {
+          cfg->setUInt8(key, 1);
+          migrationDoneFlag = 1;
+        }
+      }
+      if (migrationDoneFlag == 1) {
+        legacyChannelFunction = LegacyChannelFunction::None;
+      }
+    }
   }
-  SUPLA_LOG_DEBUG("RGBCCT[%d] button control type: %d",
-                  getChannel()->getChannelNumber(),
-                  buttonControlType);
+  SUPLA_LOG_DEBUG(
+      "RGBCCT[%d] button control type: %d, legacy migration needed: %d",
+      getChannel()->getChannelNumber(),
+      buttonControlType,
+      legacyChannelFunction != LegacyChannelFunction::None);
 }
 
 void RGBCCTBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
@@ -1147,6 +1251,7 @@ void RGBCCTBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
   value->value[2] = curBlue;
   value->value[3] = curGreen;
   value->value[4] = curRed;
+  value->value[7] = curWhiteTemperature;
   SUPLA_LOG_DEBUG("RGBCCT[%d] fill: %d,%d,%d,%d,%d",
                   getChannelNumber(),
                   curRed,
@@ -1254,6 +1359,10 @@ int RGBCCTBase::getAncestorCount() const {
     return parent->getAncestorCount() + 1;
   }
   return 0;
+}
+
+bool RGBCCTBase::isStateStorageMigrationNeeded() const {
+  return legacyChannelFunction != LegacyChannelFunction::None;
 }
 
 };  // namespace Control

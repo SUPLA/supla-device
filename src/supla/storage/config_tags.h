@@ -56,6 +56,7 @@ const char EmPhaseLedPowerLowTag[] = "em_led_pl";
 const char EmPhaseLedPowerHighTag[] = "em_led_ph";
 
 const char RgbwButtonTag[] = "rgbw_btn";
+const char LegacyMigrationTag[] = "lgc_mig";
 
 const char RollerShutterTag[] = "rs_cfg";
 const char RollerShutterMotorUpsideDownTag[] = "usd";

@@ -138,6 +138,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   void onFastTimer() override;
   void onLoadState() override;
   void onSaveState() override;
+  bool isStateStorageMigrationNeeded() const override;
   void onLoadConfig(SuplaDeviceClass *) override;
 
   /**
@@ -229,6 +230,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   bool resetDisance = false;
   bool instant = false;
   bool enabled = true;
+  bool initDone = false;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   uint8_t minIterationBrightness = 1;
   LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;

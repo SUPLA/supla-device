@@ -18,22 +18,22 @@
 
 #include "hide_show_container.h"
 
+#include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 #include <supla/network/web_sender.h>
-#include <stdio.h>
-#include <stdint.h>
 
 namespace Supla {
 
 namespace Html {
 
-HideShowContainerBegin::HideShowContainerBegin(const char *displayName) :
-  HtmlElement(HTML_SECTION_FORM) {
-    int size = strlen(displayName);
-    name = new char[size + 1];
-    if (name) {
-      snprintf(name, size + 1, "%s", displayName);
-    }
+HideShowContainerBegin::HideShowContainerBegin(const char* displayName)
+    : HtmlElement(HTML_SECTION_FORM) {
+  int size = strlen(displayName);
+  name = new char[size + 1];
+  if (name) {
+    snprintf(name, size + 1, "%s", displayName);
+  }
 }
 
 HideShowContainerBegin::~HideShowContainerBegin() {
@@ -45,13 +45,15 @@ HideShowContainerBegin::~HideShowContainerBegin() {
 
 void HideShowContainerBegin::send(Supla::WebSender* sender) {
   char idStr[50] = {};
-  snprintf(idStr, sizeof(idStr), "%u", reinterpret_cast<uintptr_t>(this));
+  snprintf(idStr,
+           sizeof(idStr),
+           "%u",
+           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(this)));
 
   sender->send("<div id=\"");
   sender->send(idStr);
   sender->send("_link\">");
-  sender->send(
-      "<button onclick='document.getElementById(\"");
+  sender->send("<button onclick='document.getElementById(\"");
   sender->send(idStr);
   sender->send(
       "\").style.display=\"block\";"
@@ -67,8 +69,7 @@ void HideShowContainerBegin::send(Supla::WebSender* sender) {
       "</div>"
       "<div id=\"");
   sender->send(idStr);
-  sender->send(
-      "\" style=\"display:none\">");
+  sender->send("\" style=\"display:none\">");
 }
 
 void HideShowContainerEnd::send(Supla::WebSender* sender) {
@@ -77,4 +78,3 @@ void HideShowContainerEnd::send(Supla::WebSender* sender) {
 
 };  // namespace Html
 };  // namespace Supla
-

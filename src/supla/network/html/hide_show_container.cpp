@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <supla/network/web_sender.h>
+#include <inttypes.h>
 
 namespace Supla {
 
@@ -47,7 +48,7 @@ void HideShowContainerBegin::send(Supla::WebSender* sender) {
   char idStr[50] = {};
   snprintf(idStr,
            sizeof(idStr),
-           "%u",
+           PRIu32,
            static_cast<uint32_t>(reinterpret_cast<uintptr_t>(this)));
 
   sender->send("<div id=\"");

@@ -113,6 +113,9 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_text_parameter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_parameter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/custom_checkbox_parameter.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/div.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/hide_show_container.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/channel_correction.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/client.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/ip_address.cpp

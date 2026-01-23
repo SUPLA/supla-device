@@ -8,6 +8,9 @@
 
 > 🤖 **For AI/LLM Assistants & Automated Tools:** Before making any changes, please analyze the primary instruction file: **[LLM.md](LLM.md)**
 
+> Part of **SUPLA** — an open smart home platform that brings together hardware manufacturers, the community, and users.  
+> Learn more at https://www.supla.org
+
 `supla-device` is an open-source **IoT device library / SDK** for building **custom SUPLA-compatible devices**.
 
 It provides building blocks for device firmware.
@@ -232,6 +235,14 @@ and easy compile-time disabling for release builds.
 
 Releases may introduce breaking changes required by protocol, platform or architectural evolution.  
 See **Releases** and **[CHANGELOG](CHANGELOG.md)** for details.
+
+---
+
+## About SUPLA
+
+For an overview of the SUPLA platform and ecosystem, see:
+- [github.com/SUPLA](https://github.com/SUPLA)
+- [www.supla.org](https://www.supla.org)
 
 ---
 

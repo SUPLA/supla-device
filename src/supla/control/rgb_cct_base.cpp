@@ -1012,7 +1012,8 @@ void RGBCCTBase::onInit() {
 }
 
 void RGBCCTBase::onSaveState() {
-  if (initDone && legacyChannelFunction != LegacyChannelFunction::None) {
+  if (!skipLegacyMigration && initDone &&
+      legacyChannelFunction != LegacyChannelFunction::None) {
     // save migration done to cfg
     auto cfg = Supla::Storage::ConfigInstance();
     if (cfg) {
@@ -1214,7 +1215,8 @@ void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
       buttonControlType = static_cast<ButtonControlType>(rgbwButtonControlType);
     }
 
-    if (legacyChannelFunction != LegacyChannelFunction::None) {
+    if (!skipLegacyMigration &&
+        legacyChannelFunction != LegacyChannelFunction::None) {
       Supla::Config::generateKey(key,
                                  getChannel()->getChannelNumber(),
                                  Supla::ConfigTag::LegacyMigrationTag);
@@ -1238,7 +1240,8 @@ void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
       "RGBCCT[%d] button control type: %d, legacy migration needed: %d",
       getChannel()->getChannelNumber(),
       buttonControlType,
-      legacyChannelFunction != LegacyChannelFunction::None);
+      !skipLegacyMigration &&
+          legacyChannelFunction != LegacyChannelFunction::None);
 }
 
 void RGBCCTBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
@@ -1362,7 +1365,12 @@ int RGBCCTBase::getAncestorCount() const {
 }
 
 bool RGBCCTBase::isStateStorageMigrationNeeded() const {
-  return legacyChannelFunction != LegacyChannelFunction::None;
+  return !skipLegacyMigration &&
+         legacyChannelFunction != LegacyChannelFunction::None;
+}
+
+void RGBCCTBase::setSkipLegacyMigration() {
+  skipLegacyMigration = true;
 }
 
 };  // namespace Control

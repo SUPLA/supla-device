@@ -148,6 +148,13 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
    */
   void convertStorageFromLegacyChannel(LegacyChannelFunction channelFunction);
 
+  /**
+   * Disables storage conversion from legacy channel function to new. Use
+   * together with convertStorageFromLegacyChannel to keep legacy storage
+   * format.
+   */
+  void setSkipLegacyMigration();
+
   void attach(Supla::Control::Button *);
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
@@ -231,6 +238,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   bool instant = false;
   bool enabled = true;
   bool initDone = false;
+  bool skipLegacyMigration = false;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   uint8_t minIterationBrightness = 1;
   LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;

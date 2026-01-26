@@ -20,6 +20,7 @@
 #include <gtest/gtest.h>
 #include <supla/storage/key_value.h>
 #include <supla-common/proto.h>
+#include <stdio.h>
 
 #include "supla/storage/config.h"
 
@@ -468,4 +469,76 @@ TEST(KeyValueTests, variousKVChecks) {
   EXPECT_STREQ(buf, "altssid");
   EXPECT_TRUE(kvStorage.getAltWiFiPassword(buf));
   EXPECT_STREQ(buf, "altpass");
+}
+
+
+TEST(KeyValueTests, addEraseAddTest) {
+  KeyValueTest kvStorage;
+
+  int8_t result8 = {};
+  int32_t result32 = {};
+
+  EXPECT_TRUE(kvStorage.setInt8("key", 42));
+
+  EXPECT_TRUE(kvStorage.getInt8("key", &result8));
+  EXPECT_EQ(result8, 42);
+
+  EXPECT_FALSE(kvStorage.setInt32("key", 5000));
+  EXPECT_TRUE(kvStorage.getInt8("key", &result8));
+  EXPECT_EQ(result8, 42);
+
+  EXPECT_TRUE(kvStorage.eraseKey("key"));
+  EXPECT_FALSE(kvStorage.getInt8("key", &result8));
+
+  EXPECT_TRUE(kvStorage.setInt32("key", 5000));
+
+  EXPECT_TRUE(kvStorage.getInt32("key", &result32));
+  EXPECT_EQ(result32, 5000);
+
+  // add 10 keys and int8 values:
+  EXPECT_TRUE(kvStorage.setInt8("key1", 1));
+  EXPECT_TRUE(kvStorage.setInt8("key2", 2));
+  EXPECT_TRUE(kvStorage.setInt8("key3", 3));
+  EXPECT_TRUE(kvStorage.setInt8("key4", 4));
+  EXPECT_TRUE(kvStorage.setInt8("key5", 5));
+  EXPECT_TRUE(kvStorage.setInt8("key6", 6));
+  EXPECT_TRUE(kvStorage.setInt8("key7", 7));
+  EXPECT_TRUE(kvStorage.setInt8("key8", 8));
+  EXPECT_TRUE(kvStorage.setInt8("key9", 9));
+  EXPECT_TRUE(kvStorage.setInt8("key10", 10));
+
+  // erase in the middl
+  EXPECT_TRUE(kvStorage.eraseKey("key5"));
+  EXPECT_TRUE(kvStorage.setInt32("key5", 5001));
+
+  EXPECT_TRUE(kvStorage.getInt32("key5", &result32));
+  EXPECT_EQ(result32, 5001);
+
+  // erase first and last
+  EXPECT_TRUE(kvStorage.eraseKey("key1"));
+  EXPECT_TRUE(kvStorage.eraseKey("key10"));
+
+  EXPECT_FALSE(kvStorage.getInt8("key1", &result8));
+  EXPECT_FALSE(kvStorage.getInt8("key10", &result8));
+
+  EXPECT_TRUE(kvStorage.getInt8("key2", &result8));
+  EXPECT_EQ(result8, 2);
+  EXPECT_TRUE(kvStorage.getInt8("key3", &result8));
+  EXPECT_EQ(result8, 3);
+  EXPECT_TRUE(kvStorage.getInt8("key4", &result8));
+  EXPECT_EQ(result8, 4);
+  EXPECT_TRUE(kvStorage.getInt32("key5", &result32));
+  EXPECT_EQ(result32, 5001);
+  EXPECT_TRUE(kvStorage.getInt8("key6", &result8));
+  EXPECT_EQ(result8, 6);
+  EXPECT_TRUE(kvStorage.getInt8("key7", &result8));
+  EXPECT_EQ(result8, 7);
+  EXPECT_TRUE(kvStorage.getInt8("key8", &result8));
+  EXPECT_EQ(result8, 8);
+  EXPECT_TRUE(kvStorage.getInt8("key9", &result8));
+  EXPECT_EQ(result8, 9);
+
+  EXPECT_TRUE(kvStorage.setInt32("key100", 5000));
+  EXPECT_TRUE(kvStorage.getInt32("key100", &result32));
+  EXPECT_EQ(result32, 5000);
 }

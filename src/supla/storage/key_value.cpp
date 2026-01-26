@@ -586,14 +586,18 @@ bool KeyValue::eraseKey(const char* key) {
     return false;
   }
 
-  // find previous:
-  auto previous = first;
-  while (previous) {
-    if (previous->getNext() == elementToDelete) {
-      previous->setNext(elementToDelete->getNext());
-      break;
+  if (first == elementToDelete) {
+    first = elementToDelete->getNext();
+  } else {
+    // find previous:
+    auto previous = first;
+    while (previous) {
+      if (previous->getNext() == elementToDelete) {
+        previous->setNext(elementToDelete->getNext());
+        break;
+      }
+      previous = previous->getNext();
     }
-    previous = previous->getNext();
   }
   delete elementToDelete;
   return true;

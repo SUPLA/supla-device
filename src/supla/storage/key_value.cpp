@@ -181,6 +181,13 @@ size_t KeyValue::serializeToMemory(uint8_t* output, size_t outputMaxSize) {
   size_t sizeCount = 0;
   for (auto element = first; element; element = element->getNext()) {
     size_t bytesWritten = element->serialize(output, outputMaxSize - sizeCount);
+    if (bytesWritten == 0) {
+      SUPLA_LOG_ERROR(
+          "Failed to serialize key-value element. outputMaxSize: %d, "
+          "sizeCount: %d",
+          outputMaxSize,
+          sizeCount);
+    }
     output += bytesWritten;
     sizeCount += bytesWritten;
   }
@@ -542,6 +549,8 @@ size_t KeyValueElement::serialize(uint8_t* destination, size_t maxSize) {
     SUPLA_LOG_ERROR(
         "KeyValue: serialized configuration size is too big. Config will not "
         "work and may be lost");
+    SUPLA_LOG_ERROR(
+        "Key %s, curBlockSize %d, maxSize %d", key, blockSize, maxSize);
     return 0;
   }
 

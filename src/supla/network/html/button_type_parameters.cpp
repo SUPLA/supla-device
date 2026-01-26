@@ -58,7 +58,7 @@ void ButtonTypeParameters::addCentralControlOption() {
   registerValue("CENTRAL CONTROL", 3);
 }
 
-void ButtonTypeParameters::addDefualtOptions() {
+void ButtonTypeParameters::addDefaultOptions() {
   addMonostableOption();
   addBistableOption();
   addMotionSensorOption();

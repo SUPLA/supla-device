@@ -35,7 +35,7 @@ class ButtonTypeParameters : public SelectInputParameter {
   void addCentralControlOption();
 
   // adds: monostable, bistable, and motion sensor
-  void addDefualtOptions();
+  void addDefaultOptions();
  private:
   char *labelPrefix = nullptr;
 };

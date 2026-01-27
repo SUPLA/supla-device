@@ -276,6 +276,9 @@ void&#160;</td><td class="memItemRight" valign="bottom"><b>setMinMaxIterationDel
 <tr class="memitem:a6eff5c2fd4664a56203b06d7753d4ed7" id="r_a6eff5c2fd4664a56203b06d7753d4ed7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a6eff5c2fd4664a56203b06d7753d4ed7">convertStorageFromLegacyChannel</a> (LegacyChannelFunction channelFunction)</td></tr>
 <tr class="memdesc:a6eff5c2fd4664a56203b06d7753d4ed7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables storage conversion from legacy channel function to new.  <br /></td></tr>
 <tr class="separator:a6eff5c2fd4664a56203b06d7753d4ed7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a56c79c1a83b504af2a68ec411a8e73fc" id="r_a56c79c1a83b504af2a68ec411a8e73fc"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="#a56c79c1a83b504af2a68ec411a8e73fc">setSkipLegacyMigration</a> ()</td></tr>
+<tr class="memdesc:a56c79c1a83b504af2a68ec411a8e73fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disables storage conversion from legacy channel function to new.  <br /></td></tr>
+<tr class="separator:a56c79c1a83b504af2a68ec411a8e73fc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9060d602a06b0fbbe5a09969457be953" id="r_a9060d602a06b0fbbe5a09969457be953"><td class="memItemLeft" align="right" valign="top"><a id="a9060d602a06b0fbbe5a09969457be953" name="a9060d602a06b0fbbe5a09969457be953"></a>
 void&#160;</td><td class="memItemRight" valign="bottom"><b>attach</b> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *)</td></tr>
 <tr class="separator:a9060d602a06b0fbbe5a09969457be953"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -561,6 +564,9 @@ bool&#160;</td><td class="memItemRight" valign="bottom"><b>enabled</b> = true</t
 <tr class="memitem:a3b6120bb4805f399dee1b48c51f1ceb6" id="r_a3b6120bb4805f399dee1b48c51f1ceb6"><td class="memItemLeft" align="right" valign="top"><a id="a3b6120bb4805f399dee1b48c51f1ceb6" name="a3b6120bb4805f399dee1b48c51f1ceb6"></a>
 bool&#160;</td><td class="memItemRight" valign="bottom"><b>initDone</b> = false</td></tr>
 <tr class="separator:a3b6120bb4805f399dee1b48c51f1ceb6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab08cff3786acc6663dbdf01850385145" id="r_ab08cff3786acc6663dbdf01850385145"><td class="memItemLeft" align="right" valign="top"><a id="ab08cff3786acc6663dbdf01850385145" name="ab08cff3786acc6663dbdf01850385145"></a>
+bool&#160;</td><td class="memItemRight" valign="bottom"><b>skipLegacyMigration</b> = false</td></tr>
+<tr class="separator:ab08cff3786acc6663dbdf01850385145"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aff9dbf514663a00f1ddba75b594696c5" id="r_aff9dbf514663a00f1ddba75b594696c5"><td class="memItemLeft" align="right" valign="top"><a id="aff9dbf514663a00f1ddba75b594696c5" name="aff9dbf514663a00f1ddba75b594696c5"></a>
 int8_t&#160;</td><td class="memItemRight" valign="bottom"><b>stateOnInit</b> = RGBW_STATE_ON_INIT_RESTORE</td></tr>
 <tr class="separator:aff9dbf514663a00f1ddba75b594696c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1304,6 +1310,26 @@ static bool&#160;</td><td class="memItemRight" valign="bottom"><b>invalidatePtr<
 <p>Removes all configration data related to the element from Storage::Config. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html#a0230d0fb743c8cfff02ce21c6cfae360">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="a56c79c1a83b504af2a68ec411a8e73fc" name="a56c79c1a83b504af2a68ec411a8e73fc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a56c79c1a83b504af2a68ec411a8e73fc">&#9670;&#160;</a></span>setSkipLegacyMigration()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RGBCCTBase::setSkipLegacyMigration </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Disables storage conversion from legacy channel function to new. </p>
+<p>Use together with convertStorageFromLegacyChannel to keep legacy storage format. </p>
 
 </div>
 </div>

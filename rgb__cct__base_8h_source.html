@@ -233,145 +233,149 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#ae1cd1cb99bec95b12b31d335af41e002">onLoadConfig</a>(<a class="code hl_class" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) <span class="keyword">override</span>;</div>
 <div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span></div>
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a6eff5c2fd4664a56203b06d7753d4ed7">convertStorageFromLegacyChannel</a>(LegacyChannelFunction channelFunction);</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>  <span class="keywordtype">void</span> attach(<a class="code hl_class" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *);</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span> </div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>  <span class="comment">// Method is used by external integrations to prepare TSD_SuplaChannelNewValue</span></div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>  <span class="comment">// value for specific channel type (i.e. to prefill durationMS field when</span></div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>  <span class="comment">// required)</span></div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#afb3f34d0808ae0c69d91a9e7fa504461">fillSuplaChannelNewValue</a>(<a class="code hl_struct" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *value) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span></div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a56c79c1a83b504af2a68ec411a8e73fc">setSkipLegacyMigration</a>();</div>
 <div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span> </div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setDefaultStateOn();</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setDefaultStateOff();</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setDefaultStateRestore();</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>  <span class="comment">// Set mapping between interface setting of brightness and actual value</span></div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="comment">// set on device. Values should be between 0 and 1023 (min, max).</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="comment">// I.e. if limit is set to (100, 800), then values from Supla in range</span></div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>  <span class="comment">// 0-100% are mapped to PWM values in range 100 and 800.</span></div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setBrightnessLimits(<span class="keywordtype">int</span> min, <span class="keywordtype">int</span> max);</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>  <span class="comment">// Set mapping between interface setting of color brightness and actual value</span></div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="comment">// set on device. Values should be between 0 and 1023 (min, max).</span></div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setColorBrightnessLimits(<span class="keywordtype">int</span> min, <span class="keywordtype">int</span> max);</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <span class="keywordtype">void</span> setBrightnessAdjuster(<a class="code hl_class" href="classSupla_1_1Control_1_1BrightnessAdjuster.html">BrightnessAdjuster</a> *adjuster);</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="keywordtype">int</span> getCurrentDimmerBrightness() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  <span class="keywordtype">int</span> getCurrentRGBBrightness() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>  <span class="keywordtype">void</span> setMaxHwValue(<span class="keywordtype">int</span> newMaxHwValue);</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span></div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#ac669cebe59eea74541a064d1245dc8a7">hasParent</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>  <span class="keywordtype">void</span> attach(<a class="code hl_class" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *);</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span> </div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>  <span class="comment">// Method is used by external integrations to prepare TSD_SuplaChannelNewValue</span></div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>  <span class="comment">// value for specific channel type (i.e. to prefill durationMS field when</span></div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>  <span class="comment">// required)</span></div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#afb3f34d0808ae0c69d91a9e7fa504461">fillSuplaChannelNewValue</a>(<a class="code hl_struct" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *value) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setDefaultStateOn();</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setDefaultStateOff();</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setDefaultStateRestore();</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>  <span class="comment">// Set mapping between interface setting of brightness and actual value</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>  <span class="comment">// set on device. Values should be between 0 and 1023 (min, max).</span></div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>  <span class="comment">// I.e. if limit is set to (100, 800), then values from Supla in range</span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>  <span class="comment">// 0-100% are mapped to PWM values in range 100 and 800.</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setBrightnessLimits(<span class="keywordtype">int</span> min, <span class="keywordtype">int</span> max);</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>  <span class="comment">// Set mapping between interface setting of color brightness and actual value</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>  <span class="comment">// set on device. Values should be between 0 and 1023 (min, max).</span></div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>  <span class="keyword">virtual</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;setColorBrightnessLimits(<span class="keywordtype">int</span> min, <span class="keywordtype">int</span> max);</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span> </div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>  <span class="keywordtype">void</span> setBrightnessAdjuster(<a class="code hl_class" href="classSupla_1_1Control_1_1BrightnessAdjuster.html">BrightnessAdjuster</a> *adjuster);</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>  <span class="keywordtype">int</span> getCurrentDimmerBrightness() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>  <span class="keywordtype">int</span> getCurrentRGBBrightness() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>  <span class="keywordtype">void</span> setMaxHwValue(<span class="keywordtype">int</span> newMaxHwValue);</div>
 <div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span></div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  <span class="keywordtype">int</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a57d8fce22db79a77b5e72e00602da261">getAncestorCount</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> <span class="keyword">protected</span>:</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>  <span class="keywordtype">int</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a7c6a2563507c6546546e3d1cd5d698a4">getMissingGpioCount</a>() <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>  <span class="keywordtype">void</span> enableChannel();</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>  <span class="keywordtype">void</span> disableChannel();</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span> </div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>  uint8_t addWithLimit(<span class="keywordtype">int</span> value, <span class="keywordtype">int</span> addition, <span class="keywordtype">int</span> limit = 255);</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> iterateDimmerRGBW(<span class="keywordtype">int</span> rgbStep, <span class="keywordtype">int</span> wStep);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="comment">// Set mapping between interface setting of brightness and actual value</span></div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>  <span class="comment">// set on device.</span></div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <span class="comment">// Input value is in range 0-100.</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="comment">// Returns value in range 0-1023 adjusted by selected function.</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>  <span class="keywordtype">int</span> adjustBrightness(<span class="keywordtype">int</span> value);</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  <span class="keywordtype">int</span> getStep(<span class="keywordtype">int</span> step, <span class="keywordtype">int</span> target, <span class="keywordtype">int</span> current, <span class="keywordtype">int</span> distance) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  <span class="keywordtype">bool</span> calculateAndUpdate(<span class="keywordtype">int</span> targetValue,</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>                          uint16_t *hwValue,</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                          <span class="keywordtype">int</span> distance,</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                          uint32_t *lastChangeMs) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>  <span class="keywordtype">bool</span> valueChanged = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  uint8_t buttonStep = 10;               <span class="comment">// 10</span></div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  uint8_t curRed = 0;                   <span class="comment">// 0 - 255</span></div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>  uint8_t curGreen = 255;                 <span class="comment">// 0 - 255</span></div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>  uint8_t curBlue = 0;                  <span class="comment">// 0 - 255</span></div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>  uint8_t curColorBrightness = 0;       <span class="comment">// 0 - 100</span></div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>  uint8_t curWhiteBrightness = 0;            <span class="comment">// 0 - 100</span></div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  uint8_t curWhiteTemperature = 0;            <span class="comment">// 0 - 100</span></div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  uint8_t lastColorBrightness = 100;      <span class="comment">// 0 - 100</span></div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  uint8_t lastWhiteBrightness = 100;           <span class="comment">// 0 - 100</span></div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  uint8_t defaultDimmedBrightness = 20;  <span class="comment">// 20</span></div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  <span class="keywordtype">bool</span> dimIterationDirection = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  <span class="keywordtype">bool</span> resetDisance = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  <span class="keywordtype">bool</span> instant = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>  <span class="keywordtype">bool</span> enabled = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>  <span class="keywordtype">bool</span> initDone = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>  int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  uint8_t minIterationBrightness = 1;</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span> </div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>  <span class="keyword">enum</span> ButtonControlType buttonControlType = BUTTON_FOR_RGBW;</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>  <span class="keyword">enum</span> AutoIterateMode autoIterateMode = AutoIterateMode::OFF;</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span> </div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>  uint16_t maxHwValue = 1023;</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>  uint16_t hwRed = 0;              <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>  uint16_t hwGreen = 0;            <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>  uint16_t hwBlue = 0;             <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>  uint16_t hwColorBrightness = 0;  <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>  uint16_t hwBrightness = 0;       <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>  uint16_t hwWhiteTemperature = 0;       <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>  uint16_t hwWhite1Brightness = 0;       <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  uint16_t hwWhite2Brightness = 0;       <span class="comment">// 0 - maxHwValue</span></div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  uint16_t minBrightness = 1;</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  uint16_t maxBrightness = 1023;</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  uint16_t minColorBrightness = 1;</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  uint16_t maxColorBrightness = 1023;</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  uint16_t redDistance = 0;</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  uint16_t greenDistance = 0;</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  uint16_t blueDistance = 0;</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  uint16_t colorBrightnessDistance = 0;</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  uint16_t brightnessDistance = 0;</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  uint16_t whiteTemperatureDistance = 0;</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> </div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  uint16_t minMaxIterationDelay = 750;</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  uint16_t fadeEffect = 500;</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span> </div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>  uint32_t lastTick = 0;</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>  uint32_t lastChangeRedMs = 0;</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>  uint32_t lastChangeGreenMs = 0;</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>  uint32_t lastChangeBlueMs = 0;</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>  uint32_t lastChangeColorBrightnessMs = 0;</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  uint32_t lastChangeBrightnessMs = 0;</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  uint32_t lastChangeWhiteTemperatureMs = 0;</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>  uint32_t lastMsgReceivedMs = 0;</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>  uint32_t lastIterateDimmerTimestamp = 0;</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>  uint32_t iterationDelayTimestamp = 0;</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>  uint32_t lastAutoIterateStartTimestamp = 0;</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span> </div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>  <span class="keywordtype">float</span> warmWhiteGain = 1.0;</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>  <span class="keywordtype">float</span> coldWhiteGain = 1.0;</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  <a class="code hl_class" href="classSupla_1_1Control_1_1BrightnessAdjuster.html">BrightnessAdjuster</a> *brightnessAdjuster = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  <a class="code hl_class" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *attachedButton = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> *parent = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>};</div>
-</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>  <span class="keywordtype">bool</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#ac669cebe59eea74541a064d1245dc8a7">hasParent</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span></div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>  <span class="keywordtype">int</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a57d8fce22db79a77b5e72e00602da261">getAncestorCount</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> <span class="keyword">protected</span>:</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>  <span class="keywordtype">int</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a7c6a2563507c6546546e3d1cd5d698a4">getMissingGpioCount</a>() <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>  <span class="keywordtype">void</span> enableChannel();</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>  <span class="keywordtype">void</span> disableChannel();</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>  uint8_t addWithLimit(<span class="keywordtype">int</span> value, <span class="keywordtype">int</span> addition, <span class="keywordtype">int</span> limit = 255);</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> iterateDimmerRGBW(<span class="keywordtype">int</span> rgbStep, <span class="keywordtype">int</span> wStep);</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>  <span class="comment">// Set mapping between interface setting of brightness and actual value</span></div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>  <span class="comment">// set on device.</span></div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>  <span class="comment">// Input value is in range 0-100.</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>  <span class="comment">// Returns value in range 0-1023 adjusted by selected function.</span></div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>  <span class="keywordtype">int</span> adjustBrightness(<span class="keywordtype">int</span> value);</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span> </div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>  <span class="keywordtype">int</span> getStep(<span class="keywordtype">int</span> step, <span class="keywordtype">int</span> target, <span class="keywordtype">int</span> current, <span class="keywordtype">int</span> distance) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>  <span class="keywordtype">bool</span> calculateAndUpdate(<span class="keywordtype">int</span> targetValue,</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>                          uint16_t *hwValue,</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                          <span class="keywordtype">int</span> distance,</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>                          uint32_t *lastChangeMs) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span> </div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>  <span class="keywordtype">bool</span> valueChanged = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>  uint8_t buttonStep = 10;               <span class="comment">// 10</span></div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>  uint8_t curRed = 0;                   <span class="comment">// 0 - 255</span></div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>  uint8_t curGreen = 255;                 <span class="comment">// 0 - 255</span></div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>  uint8_t curBlue = 0;                  <span class="comment">// 0 - 255</span></div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>  uint8_t curColorBrightness = 0;       <span class="comment">// 0 - 100</span></div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>  uint8_t curWhiteBrightness = 0;            <span class="comment">// 0 - 100</span></div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>  uint8_t curWhiteTemperature = 0;            <span class="comment">// 0 - 100</span></div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>  uint8_t lastColorBrightness = 100;      <span class="comment">// 0 - 100</span></div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>  uint8_t lastWhiteBrightness = 100;           <span class="comment">// 0 - 100</span></div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>  uint8_t defaultDimmedBrightness = 20;  <span class="comment">// 20</span></div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>  <span class="keywordtype">bool</span> dimIterationDirection = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>  <span class="keywordtype">bool</span> resetDisance = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>  <span class="keywordtype">bool</span> instant = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>  <span class="keywordtype">bool</span> enabled = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>  <span class="keywordtype">bool</span> initDone = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>  <span class="keywordtype">bool</span> skipLegacyMigration = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>  int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>  uint8_t minIterationBrightness = 1;</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>  LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span> </div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>  <span class="keyword">enum</span> ButtonControlType buttonControlType = BUTTON_FOR_RGBW;</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>  <span class="keyword">enum</span> AutoIterateMode autoIterateMode = AutoIterateMode::OFF;</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>  uint16_t maxHwValue = 1023;</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>  uint16_t hwRed = 0;              <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>  uint16_t hwGreen = 0;            <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>  uint16_t hwBlue = 0;             <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>  uint16_t hwColorBrightness = 0;  <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>  uint16_t hwBrightness = 0;       <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>  uint16_t hwWhiteTemperature = 0;       <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>  uint16_t hwWhite1Brightness = 0;       <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>  uint16_t hwWhite2Brightness = 0;       <span class="comment">// 0 - maxHwValue</span></div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>  uint16_t minBrightness = 1;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>  uint16_t maxBrightness = 1023;</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>  uint16_t minColorBrightness = 1;</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>  uint16_t maxColorBrightness = 1023;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>  uint16_t redDistance = 0;</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>  uint16_t greenDistance = 0;</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>  uint16_t blueDistance = 0;</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>  uint16_t colorBrightnessDistance = 0;</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>  uint16_t brightnessDistance = 0;</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>  uint16_t whiteTemperatureDistance = 0;</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>  uint16_t minMaxIterationDelay = 750;</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>  uint16_t fadeEffect = 500;</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span> </div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>  uint32_t lastTick = 0;</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>  uint32_t lastChangeRedMs = 0;</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>  uint32_t lastChangeGreenMs = 0;</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>  uint32_t lastChangeBlueMs = 0;</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>  uint32_t lastChangeColorBrightnessMs = 0;</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>  uint32_t lastChangeBrightnessMs = 0;</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>  uint32_t lastChangeWhiteTemperatureMs = 0;</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>  uint32_t lastMsgReceivedMs = 0;</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>  uint32_t lastIterateDimmerTimestamp = 0;</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>  uint32_t iterationDelayTimestamp = 0;</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>  uint32_t lastAutoIterateStartTimestamp = 0;</div>
 <div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>};  <span class="comment">// namespace Control</span></div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>  <span class="keywordtype">float</span> warmWhiteGain = 1.0;</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>  <span class="keywordtype">float</span> coldWhiteGain = 1.0;</div>
 <div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_RGB_CCT_BASE_H_</span></div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>  <a class="code hl_class" href="classSupla_1_1Control_1_1BrightnessAdjuster.html">BrightnessAdjuster</a> *brightnessAdjuster = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>  <a class="code hl_class" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *attachedButton = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>  <a class="code hl_function" href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> *parent = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>};</div>
+</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span> </div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>};  <span class="comment">// namespace Control</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span> </div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_RGB_CCT_BASE_H_</span></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:153</div></div>
 <div class="ttc" id="aclassSupla_1_1ActionHandler_html"><div class="ttname"><a href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a></div><div class="ttdef"><b>Definition</b> action_handler.h:21</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1BrightnessAdjuster_html"><div class="ttname"><a href="classSupla_1_1Control_1_1BrightnessAdjuster.html">Supla::Control::BrightnessAdjuster</a></div><div class="ttdef"><b>Definition</b> rgb_cct_base.h:35</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1Button_html"><div class="ttname"><a href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a></div><div class="ttdef"><b>Definition</b> button.h:34</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a2fc7719c392378825cc3697dedad08b8"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a2fc7719c392378825cc3697dedad08b8">Supla::Control::RGBCCTBase::onFastTimer</a></div><div class="ttdeci">void onFastTimer() override</div><div class="ttdoc">Method called on fast timer interupt.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:705</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a4ec5a24817eebee8e74f8cb32e284f63"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">Supla::Control::RGBCCTBase::RGBCCTBase</a></div><div class="ttdeci">RGBCCTBase(RGBCCTBase *parent=nullptr)</div><div class="ttdoc">Constructor.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:67</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a57d8fce22db79a77b5e72e00602da261"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a57d8fce22db79a77b5e72e00602da261">Supla::Control::RGBCCTBase::getAncestorCount</a></div><div class="ttdeci">int getAncestorCount() const</div><div class="ttdoc">Returns number of ancestor instances (by parent)</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1357</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a58b598129f7d4e0da56f6f632f617e00"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a58b598129f7d4e0da56f6f632f617e00">Supla::Control::RGBCCTBase::purgeConfig</a></div><div class="ttdeci">void purgeConfig() override</div><div class="ttdoc">Removes all configration data related to the element from Storage::Config.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1279</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a56c79c1a83b504af2a68ec411a8e73fc"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a56c79c1a83b504af2a68ec411a8e73fc">Supla::Control::RGBCCTBase::setSkipLegacyMigration</a></div><div class="ttdeci">void setSkipLegacyMigration()</div><div class="ttdoc">Disables storage conversion from legacy channel function to new.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1372</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a57d8fce22db79a77b5e72e00602da261"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a57d8fce22db79a77b5e72e00602da261">Supla::Control::RGBCCTBase::getAncestorCount</a></div><div class="ttdeci">int getAncestorCount() const</div><div class="ttdoc">Returns number of ancestor instances (by parent)</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1360</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a58b598129f7d4e0da56f6f632f617e00"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a58b598129f7d4e0da56f6f632f617e00">Supla::Control::RGBCCTBase::purgeConfig</a></div><div class="ttdeci">void purgeConfig() override</div><div class="ttdoc">Removes all configration data related to the element from Storage::Config.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1282</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a62970faaf3294a8a33097f0ae2ab501a"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a62970faaf3294a8a33097f0ae2ab501a">Supla::Control::RGBCCTBase::handleNewValueFromServer</a></div><div class="ttdeci">int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override</div><div class="ttdoc">Handles &quot;new value&quot; request from server.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:178</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a6eff5c2fd4664a56203b06d7753d4ed7"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a6eff5c2fd4664a56203b06d7753d4ed7">Supla::Control::RGBCCTBase::convertStorageFromLegacyChannel</a></div><div class="ttdeci">void convertStorageFromLegacyChannel(LegacyChannelFunction channelFunction)</div><div class="ttdoc">Enables storage conversion from legacy channel function to new.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1302</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a74897eab2910f877bab340bca1792da9"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a74897eab2910f877bab340bca1792da9">Supla::Control::RGBCCTBase::onLoadState</a></div><div class="ttdeci">void onLoadState() override</div><div class="ttdoc">Second method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1079</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a7c6a2563507c6546546e3d1cd5d698a4"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a7c6a2563507c6546546e3d1cd5d698a4">Supla::Control::RGBCCTBase::getMissingGpioCount</a></div><div class="ttdeci">int getMissingGpioCount() const</div><div class="ttdoc">Returns number of GPIO pins that are required to control this channel.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1307</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a6eff5c2fd4664a56203b06d7753d4ed7"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a6eff5c2fd4664a56203b06d7753d4ed7">Supla::Control::RGBCCTBase::convertStorageFromLegacyChannel</a></div><div class="ttdeci">void convertStorageFromLegacyChannel(LegacyChannelFunction channelFunction)</div><div class="ttdoc">Enables storage conversion from legacy channel function to new.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1305</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a74897eab2910f877bab340bca1792da9"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a74897eab2910f877bab340bca1792da9">Supla::Control::RGBCCTBase::onLoadState</a></div><div class="ttdeci">void onLoadState() override</div><div class="ttdoc">Second method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1080</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a7c6a2563507c6546546e3d1cd5d698a4"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a7c6a2563507c6546546e3d1cd5d698a4">Supla::Control::RGBCCTBase::getMissingGpioCount</a></div><div class="ttdeci">int getMissingGpioCount() const</div><div class="ttdoc">Returns number of GPIO pins that are required to control this channel.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1310</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a9015ae789f93b7d66e5c2dde4be05dba"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a9015ae789f93b7d66e5c2dde4be05dba">Supla::Control::RGBCCTBase::iterateAlways</a></div><div class="ttdeci">void iterateAlways() override</div><div class="ttdoc">Method called on each SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:160</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_ac669cebe59eea74541a064d1245dc8a7"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#ac669cebe59eea74541a064d1245dc8a7">Supla::Control::RGBCCTBase::hasParent</a></div><div class="ttdeci">bool hasParent() const</div><div class="ttdoc">Checks if this instance has parent.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1353</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_ac669cebe59eea74541a064d1245dc8a7"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#ac669cebe59eea74541a064d1245dc8a7">Supla::Control::RGBCCTBase::hasParent</a></div><div class="ttdeci">bool hasParent() const</div><div class="ttdoc">Checks if this instance has parent.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1356</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_adf81ee71ec50a9c208e8f20c37af7b68"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#adf81ee71ec50a9c208e8f20c37af7b68">Supla::Control::RGBCCTBase::onSaveState</a></div><div class="ttdeci">void onSaveState() override</div><div class="ttdoc">Method called periodically during SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1014</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_ae1cd1cb99bec95b12b31d335af41e002"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#ae1cd1cb99bec95b12b31d335af41e002">Supla::Control::RGBCCTBase::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1197</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_ae42700a774d37f2535cee0e1e0c9a03b"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#ae42700a774d37f2535cee0e1e0c9a03b">Supla::Control::RGBCCTBase::isStateStorageMigrationNeeded</a></div><div class="ttdeci">bool isStateStorageMigrationNeeded() const override</div><div class="ttdoc">Method called after onInit() to check if state storage migration is needed.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1364</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_ae1cd1cb99bec95b12b31d335af41e002"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#ae1cd1cb99bec95b12b31d335af41e002">Supla::Control::RGBCCTBase::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1198</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_ae42700a774d37f2535cee0e1e0c9a03b"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#ae42700a774d37f2535cee0e1e0c9a03b">Supla::Control::RGBCCTBase::isStateStorageMigrationNeeded</a></div><div class="ttdeci">bool isStateStorageMigrationNeeded() const override</div><div class="ttdoc">Method called after onInit() to check if state storage migration is needed.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1367</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_af27cd33ace4eeaa33256d6d71cfcba1e"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#af27cd33ace4eeaa33256d6d71cfcba1e">Supla::Control::RGBCCTBase::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin()</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:862</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_afb3f34d0808ae0c69d91a9e7fa504461"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#afb3f34d0808ae0c69d91a9e7fa504461">Supla::Control::RGBCCTBase::fillSuplaChannelNewValue</a></div><div class="ttdeci">void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override</div><div class="ttdoc">Fills TSD_SuplaChannelNewValue based on current state.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1244</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_afb3f34d0808ae0c69d91a9e7fa504461"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#afb3f34d0808ae0c69d91a9e7fa504461">Supla::Control::RGBCCTBase::fillSuplaChannelNewValue</a></div><div class="ttdeci">void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override</div><div class="ttdoc">Fills TSD_SuplaChannelNewValue based on current state.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:1247</div></div>
 <div class="ttc" id="astructTSD__ChannelConfig_html"><div class="ttname"><a href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a></div><div class="ttdef"><b>Definition</b> proto.h:3071</div></div>
 <div class="ttc" id="astructTSD__SuplaChannelNewValue_html"><div class="ttname"><a href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a></div><div class="ttdef"><b>Definition</b> proto.h:1199</div></div>
 </div><!-- fragment --></div><!-- contents -->

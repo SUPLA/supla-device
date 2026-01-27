@@ -17,10 +17,11 @@
 */
 
 #include "relay_hvac_aggregator.h"
-#include <supla/control/relay.h>
+
 #include <supla/control/hvac_base.h>
-#include <supla/time.h>
+#include <supla/control/relay.h>
 #include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 using Supla::Control::RelayHvacAggregator;
 
@@ -29,8 +30,7 @@ RelayHvacAggregator *FirstInstance = nullptr;
 
 // 15 minutes
 constexpr uint32_t IGNORE_OFFLINE_HVAC_TIMEOUT = 15 * 60 * 1000;
-}
-
+}  // namespace
 
 RelayHvacAggregator::RelayHvacAggregator(int relayChannelNumber,
                                          Supla::Control::Relay *relay)
@@ -160,24 +160,6 @@ void RelayHvacAggregator::iterateAlways() {
     return;
   }
 
-  if (millis() - lastStateUpdateTimestamp > relayInternalStateCheckIntervalMs ||
-      lastRelayState == -1) {
-    if (relay->isOn()) {
-      if (lastRelayState != 1 && lastValueSend != -1) {
-        lastValueSend = 1;
-      }
-      lastRelayState = 1;
-    } else {
-      if (lastRelayState != 0 && lastValueSend != -1) {
-        lastValueSend = 0;
-      }
-      lastRelayState = 0;
-    }
-    lastStateUpdateTimestamp = millis();
-  }
-
-  lastUpdateTimestamp = millis();
-
   bool state = false;
   bool ignore = true;
   auto *ptr = firstHvacPtr;
@@ -200,6 +182,25 @@ void RelayHvacAggregator::iterateAlways() {
     ptr = ptr->nextPtr;
   }
 
+  if (millis() - lastStateUpdateTimestamp > relayInternalStateCheckIntervalMs ||
+      lastRelayState == -1) {
+    if (relay->isOn()) {
+      if (lastRelayState != 1 && lastValueSend != -1 &&
+          (!ignore || turnOffSendOnEmpty == 0)) {
+        lastValueSend = 1;
+      }
+      lastRelayState = 1;
+    } else {
+      if (lastRelayState != 0 && lastValueSend != -1) {
+        lastValueSend = 0;
+      }
+      lastRelayState = 0;
+    }
+    lastStateUpdateTimestamp = millis();
+  }
+
+  lastUpdateTimestamp = millis();
+
   if (ignore && (!turnOffWhenEmpty || state == lastValueSend)) {
     return;
   }
@@ -215,6 +216,7 @@ void RelayHvacAggregator::iterateAlways() {
       lastStateUpdateTimestamp = millis();
       relay->turnOn();
       lastRelayState = 1;
+      turnOffSendOnEmpty = 0;
     }
   } else {
     if (lastValueSend != 0) {
@@ -223,6 +225,9 @@ void RelayHvacAggregator::iterateAlways() {
       lastStateUpdateTimestamp = millis();
       relay->turnOff();
       lastRelayState = 0;
+      if (ignore) {
+        turnOffSendOnEmpty++;
+      }
     }
   }
 }
@@ -255,4 +260,3 @@ int RelayHvacAggregator::getHvacCount() const {
 void RelayHvacAggregator::setInternalStateCheckInterval(uint32_t intervalMs) {
   relayInternalStateCheckIntervalMs = intervalMs;
 }
-

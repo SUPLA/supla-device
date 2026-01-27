@@ -4838,6 +4838,9 @@ bool HvacBase::getForcedOffSensorState() {
                         config.BinarySensorChannelNo);
       return false;
     }
+    if (element->getChannel()->isStateOnline() == false) {
+      return false;
+    }
     auto elementType = element->getChannel()->getChannelType();
     if (elementType == SUPLA_CHANNELTYPE_BINARYSENSOR) {
       // open window == false

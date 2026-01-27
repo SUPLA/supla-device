@@ -65,6 +65,7 @@ class RelayHvacAggregator : public Element {
   bool turnOffWhenEmpty = true;
   int8_t lastValueSend = -1;
   int8_t lastRelayState = -1;
+  int8_t turnOffSendOnEmpty = 0;
 };
 
 }  // namespace Control

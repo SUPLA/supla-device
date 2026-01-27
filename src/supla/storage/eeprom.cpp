@@ -20,6 +20,7 @@
 
 #include <Arduino.h>
 #include <EEPROM.h>
+#include <stdio.h>
 
 #include "eeprom.h"
 
@@ -56,7 +57,7 @@ bool Eeprom::init() {
 
 int Eeprom::readStorage(unsigned int offset,
                         unsigned char *buf,
-                        int size,
+                        unsigned int size,
                         bool logs) {
 
   for (int i = 0; i < size; i++) {
@@ -83,7 +84,7 @@ int Eeprom::readStorage(unsigned int offset,
 
 int Eeprom::writeStorage(unsigned int offset,
                          const unsigned char *buf,
-                         int size) {
+                         unsigned int size) {
   dataChanged = true;
   for (int i = 0; i < size; i++) {
     EEPROM.write(offset + i, buf[i]);

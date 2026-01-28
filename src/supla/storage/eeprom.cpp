@@ -18,12 +18,11 @@
 
 #ifdef ARDUINO
 
+#include "eeprom.h"
+
 #include <Arduino.h>
 #include <EEPROM.h>
 #include <stdio.h>
-
-#include "eeprom.h"
-
 #include <supla/log_wrapper.h>
 
 namespace Supla {
@@ -59,26 +58,27 @@ int Eeprom::readStorage(unsigned int offset,
                         unsigned char *buf,
                         unsigned int size,
                         bool logs) {
-
   for (int i = 0; i < size; i++) {
     buf[i] = EEPROM.read(offset + i);
   }
   if (logs) {
-	uint8_t sizeMax;
-	if (size > 32) {
-      sizeMax = 32;	
-    } else {
-	  sizeMax = size;
-	}
+    static constexpr uint8_t MaxLogBytes = 32;
+    static constexpr uint16_t LogBufferSize = MaxLogBytes * 3 + 1;
+
+    uint8_t sizeMax = (size > MaxLogBytes) ? MaxLogBytes : size;
+
+    char logBuffer[LogBufferSize];
     int logSize = 0;
-    int logBufferSize = 4 * sizeMax;
-    char logBuffer[logBufferSize];
-    for (int i = 0; i < sizeMax; i++) {
-	  logSize += snprintf(logBuffer + logSize, logBufferSize - logSize, "%02X ", buf[i]);	
-	}
-	SUPLA_LOG_INFO("EEPROM: Read %d bytes [%s] (offset %d)", sizeMax, logBuffer, offset);
+
+    for (uint8_t i = 0; i < sizeMax && logSize < LogBufferSize - 1; i++) {
+      logSize += snprintf(
+          logBuffer + logSize, LogBufferSize - logSize, "%02X ", buf[i]);
+    }
+
+    SUPLA_LOG_INFO(
+        "EEPROM: Read %d bytes [%s] (offset %d)", sizeMax, logBuffer, offset);
   }
-  
+
   return size;
 }
 
@@ -90,7 +90,7 @@ int Eeprom::writeStorage(unsigned int offset,
     EEPROM.write(offset + i, buf[i]);
   }
   SUPLA_LOG_INFO("EEPROM: Wrote %d bytes (offset %d)", size, offset);
-  
+
   return size;
 }
 

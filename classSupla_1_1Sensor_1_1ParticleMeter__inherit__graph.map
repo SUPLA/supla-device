@@ -1,7 +1,9 @@
 <map id="Supla::Sensor::ParticleMeter" name="Supla::Sensor::ParticleMeter">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,79,190,105"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="109,79,294,105"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1ParticleMeterPM1006K.html" title=" " alt="" coords="5,153,190,193"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="100,120,100,152,95,152,95,120"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="44,5,151,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,46,100,79,95,79,95,46"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="175,116,125,154,122,150,172,112"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Sensor_1_1ParticleMeterSDS011.html" title=" " alt="" coords="213,153,398,193"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="231,112,281,150,278,154,228,116"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="148,5,255,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="204,46,204,79,199,79,199,46"/>
 </map>

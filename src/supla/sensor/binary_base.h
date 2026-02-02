@@ -42,8 +42,8 @@ struct BinarySensorConfig {
 
   BinarySensorConfig() : reserved{} {}
 };
-
 #pragma pack(pop)
+
 class BinaryBase : public ElementWithChannelActions {
  public:
   BinaryBase();

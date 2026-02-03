@@ -120,6 +120,7 @@ class ElementWithChannelActions : public Element, public LocalAction {
   // returns true if function was changed (previous one was different)
   virtual bool setAndSaveFunction(uint32_t channelFunction);
   virtual bool loadFunctionFromConfig();
+  bool setAndSaveConfigChangeFlag(bool value);
   virtual bool saveConfigChangeFlag() const;
   virtual bool loadConfigChangeFlag();
   void clearChannelConfigChangedFlag();

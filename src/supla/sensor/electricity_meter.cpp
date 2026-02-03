@@ -540,8 +540,7 @@ void Supla::Sensor::ElectricityMeter::onLoadConfig(SuplaDeviceClass *) {
     }
 
     if (configChange) {
-      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
-      saveConfigChangeFlag();
+      setAndSaveConfigChangeFlag(true);
     }
 
     SUPLA_LOG_INFO(

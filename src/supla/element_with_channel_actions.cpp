@@ -227,6 +227,13 @@ bool Supla::ElementWithChannelActions::loadConfigChangeFlag() {
   return false;
 }
 
+bool Supla::ElementWithChannelActions::setAndSaveConfigChangeFlag(bool value) {
+  if (value) {
+    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+  }
+  return saveConfigChangeFlag();
+}
+
 bool Supla::ElementWithChannelActions::saveConfigChangeFlag() const {
   if (getChannelNumber() < 0) {
     return false;

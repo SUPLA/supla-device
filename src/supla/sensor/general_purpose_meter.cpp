@@ -107,8 +107,7 @@ Supla::ApplyConfigResult GeneralPurposeMeter::applyChannelConfig(
               SUPLA_GENERAL_PURPOSE_UNIT_SIZE)) {
     SUPLA_LOG_INFO("GPM[%d]: meter config changed", getChannelNumber());
     if (local) {
-      channelConfigState = Supla::ChannelConfigState::LocalChangePending;
-      saveConfigChangeFlag();
+      setAndSaveConfigChangeFlag(true);
     }
 
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
@@ -177,9 +176,8 @@ void GeneralPurposeMeter::setCounterType(uint8_t counterType, bool local) {
   auto oldCounterType = getCounterType();
   meterSpecificConfig.counterType = counterType;
   if (counterType != oldCounterType && local) {
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    setAndSaveConfigChangeFlag(true);
     saveMeterSpecificConfig();
-    saveConfigChangeFlag();
   }
 }
 
@@ -188,9 +186,8 @@ void GeneralPurposeMeter::setIncludeValueAddedInHistory(
   auto oldIncludeValueAddedInHistory = getIncludeValueAddedInHistory();
   meterSpecificConfig.includeValueAddedInHistory = includeValueAddedInHistory;
   if (includeValueAddedInHistory != oldIncludeValueAddedInHistory && local) {
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    setAndSaveConfigChangeFlag(true);
     saveMeterSpecificConfig();
-    saveConfigChangeFlag();
   }
 }
 
@@ -199,9 +196,8 @@ void GeneralPurposeMeter::setFillMissingData(uint8_t fillMissingData,
   auto oldFillMissingData = getFillMissingData();
   meterSpecificConfig.fillMissingData = fillMissingData;
   if (fillMissingData != oldFillMissingData && local) {
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    setAndSaveConfigChangeFlag(true);
     saveMeterSpecificConfig();
-    saveConfigChangeFlag();
   }
 }
 

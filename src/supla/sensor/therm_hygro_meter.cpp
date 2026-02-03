@@ -251,7 +251,7 @@ void Supla::Sensor::ThermHygroMeter::setHumidityCorrection(int32_t correction) {
 void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt(
     int32_t temperatureCorrection, int32_t humidityCorrection, bool local) {
   if (local) {
-    channelConfigState = Supla::ChannelConfigState::LocalChangePending;
+    setAndSaveConfigChangeFlag(true);
   } else {
     channelConfigState = Supla::ChannelConfigState::None;
   }
@@ -263,8 +263,6 @@ void Supla::Sensor::ThermHygroMeter::applyCorrectionsAndStoreIt(
   if (!cfg) {
     return;
   }
-
-  saveConfigChangeFlag();
 
   // reload config
   onLoadConfig(nullptr);

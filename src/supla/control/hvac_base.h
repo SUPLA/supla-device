@@ -66,10 +66,10 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   uint8_t handleChannelConfig(TSD_ChannelConfig *config,
-                              bool local = false) override;
+                              bool localfalse) override;
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
-                               bool altSchedule = false,
-                               bool local = false) override;
+                               bool altSchedule,
+                               bool local) override;
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void handleChannelConfigFinished() override;

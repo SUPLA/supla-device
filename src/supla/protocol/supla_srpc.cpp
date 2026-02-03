@@ -19,21 +19,21 @@
 #include "supla_srpc.h"
 
 #include <SuplaDevice.h>
+#include <stdio.h>
+#include <string.h>
 #include <supla-common/srpc.h>
 #include <supla/channels/channel.h>
 #include <supla/clock/clock.h>
 #include <supla/device/channel_conflict_resolver.h>
 #include <supla/device/register_device.h>
 #include <supla/device/remote_device_config.h>
+#include <supla/device/supla_ca_cert.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/client.h>
 #include <supla/network/network.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
 #include <supla/tools.h>
-#include <supla/device/supla_ca_cert.h>
-#include <string.h>
-#include <stdio.h>
 
 namespace Supla::Protocol {
 struct CalCfgResultPendingItem {
@@ -390,15 +390,15 @@ void Supla::messageReceived(void *srpc,
             switch (result->ConfigType) {
               default:
               case SUPLA_CONFIG_TYPE_DEFAULT: {
-                element->handleChannelConfig(result);
+                element->handleChannelConfig(result, false);
                 break;
               }
               case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
-                element->handleWeeklySchedule(result);
+                element->handleWeeklySchedule(result, false, false);
                 break;
               }
               case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE: {
-                element->handleWeeklySchedule(result, true);
+                element->handleWeeklySchedule(result, true, false);
                 break;
               }
             }
@@ -445,15 +445,17 @@ void Supla::messageReceived(void *srpc,
             switch (request->ConfigType) {
               default:
               case SUPLA_CONFIG_TYPE_DEFAULT: {
-                result.Result = element->handleChannelConfig(request);
+                result.Result = element->handleChannelConfig(request, false);
                 break;
               }
               case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
-                result.Result = element->handleWeeklySchedule(request);
+                result.Result =
+                    element->handleWeeklySchedule(request, false, false);
                 break;
               }
               case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE: {
-                result.Result = element->handleWeeklySchedule(request, true);
+                result.Result =
+                    element->handleWeeklySchedule(request, true, false);
                 break;
               }
             }

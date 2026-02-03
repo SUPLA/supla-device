@@ -245,6 +245,7 @@ static_assert(sizeof(TCSD_RollerShutterValue) <= SUPLA_CHANNELVALUE_SIZE);
 static_assert(sizeof(TDSC_FacadeBlindValue) <= SUPLA_CHANNELVALUE_SIZE);
 static_assert(sizeof(TCSD_FacadeBlindValue) <= SUPLA_CHANNELVALUE_SIZE);
 static_assert((unsigned int)15 == sizeof(TDS_ActionTrigger));
+static_assert((unsigned int)8 >= sizeof(TActionTriggerProperties));
 static_assert((unsigned int)420 == sizeof(TSC_SuplaScene));
 static_assert((unsigned int)8408 == sizeof(TSC_SuplaScenePack));
 static_assert((unsigned int)220 == sizeof(TSC_SuplaSceneState));

@@ -263,7 +263,7 @@ TEST_F(HvacIntegrationScheduleF, startupWithEmptyConfigHeating) {
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
 
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   for (int i = 0; i < 60; ++i) {
@@ -646,7 +646,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
 
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   for (int i = 0; i < 60; ++i) {
@@ -825,7 +825,7 @@ TEST_F(HvacIntegrationScheduleF, mixedCommandsCheck) {
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
 
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))

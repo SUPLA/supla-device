@@ -292,7 +292,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
           &configFromServer.Config);
 
   // empty weekly schedule is filled with "off", so it is fine
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -303,7 +303,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_COOL;
   weeklySchedule->Program[2].SetpointTemperatureHeat = 2300;
 
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -313,7 +313,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServer) {
   weeklySchedule->Quarters[1] = 3;
 
   configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   TWeeklyScheduleProgram program1 = {SUPLA_HVAC_MODE_HEAT, {2100}, {0}};
@@ -411,7 +411,7 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
   configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
 
   // empty weekly schedule is filled with "off", so it is fine
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   // check if schedule was properly configured (off)
@@ -520,7 +520,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
   configFromServer.ConfigSize = sizeof(TChannelConfig_WeeklySchedule);
 
   // empty weekly schedule is filled with "off", so it is fine
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   // above set config from server should be ignored
@@ -600,7 +600,7 @@ TEST_F(HvacWeeklyScheduleTestsF,
 
   // send anothoer set channel config from server - this time it should be
   // applied to the channel
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 }
 
@@ -673,7 +673,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
           &configFromServer.Config);
 
   // empty weekly schedule is filled with "off", so it is fine
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   weeklySchedule->Program[0].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -684,7 +684,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_COOL;
   weeklySchedule->Program[2].SetpointTemperatureHeat = 2300;
 
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_DATA_ERROR);
 
   weeklySchedule->Program[2].Mode = SUPLA_HVAC_MODE_HEAT;
@@ -693,7 +693,7 @@ TEST_F(HvacWeeklyScheduleTestsF, handleWeeklyScehduleFromServerForDiffMode) {
   weeklySchedule->Quarters[0] = (1 | (2 << 4));
   weeklySchedule->Quarters[1] = 3;
 
-  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer),
+  EXPECT_EQ(hvac->handleWeeklySchedule(&configFromServer, false, false),
             SUPLA_CONFIG_RESULT_TRUE);
 
   TWeeklyScheduleProgram program1 = {SUPLA_HVAC_MODE_HEAT, {2100}, {0}};

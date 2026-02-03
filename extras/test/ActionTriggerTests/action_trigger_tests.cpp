@@ -131,7 +131,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
 
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_CLICK_1);
   b1.runAction(Supla::ON_HOLD);
@@ -157,7 +157,7 @@ TEST_F(ActionTriggerTests, AttachToMonostableButton) {
                          SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   // it should be executed on ah mock
   b1.runAction(Supla::ON_CLICK_1);
@@ -215,7 +215,7 @@ TEST_F(ActionTriggerTests, AttachToBistableButton) {
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   EXPECT_EQ(b1.getMaxMulticlickValue(), 1);
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
   EXPECT_EQ(b1.getMaxMulticlickValue(), 5);
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_CLICK_1);
@@ -291,7 +291,7 @@ TEST_F(ActionTriggerTests, AttachToMotionSensorButton) {
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
   // actions toggle x1, x2, x3, x4, x5 are not supported for Motion sensor
   // button type, so they won't be enabled even if such data was send by server
   EXPECT_EQ(b1.getMaxMulticlickValue(), 0);
@@ -328,12 +328,12 @@ TEST_F(ActionTriggerTests, SendActionOnce) {
   config.ActiveActions = SUPLA_ACTION_CAP_TURN_ON;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   config.ActiveActions = SUPLA_ACTION_CAP_SHORT_PRESS_x1;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
-  at2.handleChannelConfig(&result);
+  at2.handleChannelConfig(&result, false);
 
   at.iterateConnected();
 
@@ -366,7 +366,7 @@ TEST_F(ActionTriggerTests, SendFewActions) {
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
   at.iterateConnected();
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_CALL(srpc, actionTrigger(0, SUPLA_ACTION_CAP_TURN_ON));
 
@@ -497,7 +497,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
   EXPECT_EQ(b1.getMaxMulticlickValue(), 5);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -526,7 +526,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -542,7 +542,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -557,7 +557,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnPress) {
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -634,7 +634,7 @@ TEST_F(ActionTriggerTests,
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_PRESS)->isEnabled());
@@ -664,7 +664,7 @@ TEST_F(ActionTriggerTests,
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_PRESS)->isEnabled());
@@ -681,7 +681,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_PRESS)->isEnabled());
@@ -697,7 +697,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_PRESS)->isEnabled());
@@ -771,7 +771,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -799,7 +799,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -815,7 +815,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -830,7 +830,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonOnRelease) {
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -907,7 +907,7 @@ TEST_F(ActionTriggerTests,
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
@@ -937,7 +937,7 @@ TEST_F(ActionTriggerTests,
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
@@ -954,7 +954,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
@@ -971,7 +971,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_RELEASE)->isEnabled());
@@ -1048,7 +1048,7 @@ TEST_F(ActionTriggerTests,
 
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -1076,7 +1076,7 @@ TEST_F(ActionTriggerTests,
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -1093,7 +1093,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -1109,7 +1109,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_RELEASE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
@@ -1180,7 +1180,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1206,7 +1206,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   config.ActiveActions =
       SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1221,7 +1221,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   // another config from server which disables some actions
   config.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1236,7 +1236,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForBistableButton) {
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CHANGE)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1308,7 +1308,7 @@ TEST_F(ActionTriggerTests,
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_CHANGE)->isEnabled());
@@ -1335,7 +1335,7 @@ TEST_F(ActionTriggerTests,
   config.ActiveActions =
       SUPLA_ACTION_CAP_TOGGLE_x1 | SUPLA_ACTION_CAP_TOGGLE_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_CHANGE)->isEnabled());
@@ -1352,7 +1352,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables some actions
   config.ActiveActions = SUPLA_ACTION_CAP_TOGGLE_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_CHANGE)->isEnabled());
@@ -1368,7 +1368,7 @@ TEST_F(ActionTriggerTests,
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(
       b1.getHandlerForFirstClient(Supla::CONDITIONAL_ON_CHANGE)->isEnabled());
@@ -1441,7 +1441,7 @@ TEST_F(ActionTriggerTests, AlwaysEnabledLocalAction) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1551,7 +1551,7 @@ TEST_F(ActionTriggerTests, RemoveSomeActionsFromATAttachWithStorage) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1646,7 +1646,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1674,7 +1674,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
                          SUPLA_ACTION_CAP_SHORT_PRESS_x1 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_CLICK_1)->isEnabled());
@@ -1690,7 +1690,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   config.ActiveActions =
       SUPLA_ACTION_CAP_HOLD | SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForClient(&ah, Supla::ON_CLICK_1)->isEnabled());
@@ -1705,7 +1705,7 @@ TEST_F(ActionTriggerTests, ManageLocalActionsForMonostableButtonWithCfg) {
   // another config from server which disables all actions
   config.ActiveActions = 0;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_TRUE(b1.getHandlerForClient(&ah, Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForClient(&ah, Supla::ON_CLICK_1)->isEnabled());
@@ -1813,7 +1813,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableAllTest) {
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
   // however actionHandlerType is set to disable all local actions
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1926,7 +1926,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   b1.runAction(Supla::ON_CLICK_5);  // published
 
   for (int i = 0; i < 10; i++) {
-    at.iterateConnected(nullptr);
+    at.iterateConnected();
   }
 
   TSD_ChannelConfig result = {};
@@ -1943,7 +1943,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
   // however actionHandlerType is set to disable all local actions
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -1972,7 +1972,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_PublishAllDisableNoneTest) {
 
   // we received channel config with SHORT_PRESS_x1 used, so
   // ON_CLICK_1 is disabled locally and published to servers
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   b1.runAction(Supla::ON_PRESS);    // this one should be disabled
   b1.runAction(Supla::ON_CLICK_1);  // published, local action disabled
@@ -2093,7 +2093,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
 
   // we received channel config with no SHORT_PRESS_x1 used, so
   // ON_CLICK_1 should be executed on local ah element
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   EXPECT_FALSE(b1.getHandlerForFirstClient(Supla::ON_PRESS)->isEnabled());
   EXPECT_TRUE(b1.getHandlerForFirstClient(Supla::ON_CLICK_1)->isEnabled());
@@ -2122,7 +2122,7 @@ TEST_F(ActionTriggerTests, ActionHandlingType_RelayOnSuplaServerTest) {
 
   // we received channel config with SHORT_PRESS_x1 used, so
   // ON_CLICK_1 is disabled locally and published to servers
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   b1.runAction(Supla::ON_PRESS);    // this one should be disabled
   b1.runAction(Supla::ON_CLICK_1);  // published, local action disabled
@@ -2207,7 +2207,7 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
 
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
 
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
   b1.runAction(Supla::ON_PRESS);
   b1.runAction(Supla::ON_CLICK_1);
   b1.runAction(Supla::ON_HOLD);
@@ -2233,7 +2233,7 @@ TEST_F(ActionTriggerTests, MqttSendAtTest) {
                          SUPLA_ACTION_CAP_SHORT_PRESS_x2 |
                          SUPLA_ACTION_CAP_SHORT_PRESS_x5;
   memcpy(result.Config, &config, sizeof(TChannelConfig_ActionTrigger));
-  at.handleChannelConfig(&result);
+  at.handleChannelConfig(&result, false);
 
   // it should be executed on ah mock
   b1.runAction(Supla::ON_CLICK_1);

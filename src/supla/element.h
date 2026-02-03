@@ -186,8 +186,6 @@ class Element {
    *         false otherwise.
    */
   virtual bool iterateConnected();
-  /// deprecated
-  virtual bool iterateConnected(void *ptr);
 
   /**
    * Method called on timer interupt.
@@ -267,7 +265,7 @@ class Element {
    * @return SUPLA_RESULTCODE_* (see proto.h)
    */
   virtual uint8_t handleChannelConfig(TSD_ChannelConfig *newChannelConfig,
-                                      bool local = false);
+                                      bool local);
 
   /**
    * Handles "set channel config" with "weekly schedule" type request from
@@ -282,8 +280,8 @@ class Element {
    * @return SUPLA_RESULTCODE_* (see proto.h)
    */
   virtual uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
-                                       bool altSchedule = false,
-                                       bool local = false);
+                                       bool altSchedule,
+                                       bool local);
 
   // handleSetChannelConfigResult should handle both standard channel config
   // and weekly schedule config

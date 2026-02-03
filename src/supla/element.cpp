@@ -140,11 +140,6 @@ bool Element::isChannelStateEnabled() const {
 
 void Element::iterateAlways() {}
 
-bool Element::iterateConnected(void *ptr) {
-  (void)(ptr);
-  return iterateConnected();
-}
-
 bool Element::iterateConnected() {
   bool response = true;
   Channel *secondaryChannel = getSecondaryChannel();

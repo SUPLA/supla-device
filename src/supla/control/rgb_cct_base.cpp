@@ -103,6 +103,10 @@ void RGBCCTBase::setRGBCCT(int red,
                            int whiteTemperature,
                            bool toggle,
                            bool instant) {
+  if (!instant) {
+    // Stop brightness adjustment when some command is received
+    autoIterateMode = AutoIterateMode::OFF;
+  }
   if (toggle) {
     lastMsgReceivedMs = 1;
   } else {
@@ -186,8 +190,8 @@ int32_t RGBCCTBase::handleNewValueFromServer(
   uint8_t colorBrightness = static_cast<uint8_t>(newValue->value[1]);
   uint8_t whiteBrightness = static_cast<uint8_t>(newValue->value[0]);
 
-  SUPLA_LOG_DEBUG(
-      "RGBCCT[%d]: red=%d, green=%d, blue=%d, colorBrightness=%d, "
+  SUPLA_LOG_INFO(
+      "RGBCCT[%d] received: red=%d, green=%d, blue=%d, colorBrightness=%d, "
       "whiteBrightness=%d, whiteTemperature=%d, command=%d, toggleOnOff=%d",
       getChannelNumber(),
       red,
@@ -282,7 +286,7 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::DIMMER;
-      } else {
+      } else if (autoIterateMode == AutoIterateMode::RGB) {
         autoIterateMode = AutoIterateMode::ALL;
       }
       break;
@@ -291,7 +295,7 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::RGB;
-      } else {
+      } else if (autoIterateMode == AutoIterateMode::DIMMER) {
         autoIterateMode = AutoIterateMode::ALL;
       }
       break;

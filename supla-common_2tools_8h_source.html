@@ -138,7 +138,7 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="keywordtype">void</span> st_hook_signals(<span class="keywordtype">void</span>);</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="keywordtype">void</span> st_hook_critical_signals(<span class="keywordtype">void</span>);</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="keywordtype">char</span> st_try_fork(<span class="keywordtype">void</span>);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="keywordtype">char</span> st_set_ug_id(<span class="keywordtype">int</span> uid, <span class="keywordtype">int</span> gid);</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="keywordtype">char</span> st_set_ug_id(<span class="keyword">const</span> <span class="keywordtype">char</span> *username, <span class="keywordtype">int</span> uid, <span class="keywordtype">int</span> gid);</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="keywordtype">char</span> st_setpidfile(<span class="keywordtype">char</span> *pidfile_path);</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="keywordtype">void</span> st_delpidfile(<span class="keywordtype">char</span> *pidfile_path);</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="keywordtype">void</span> st_mainloop_init();</div>
@@ -177,23 +177,24 @@ $(function(){ initResizable(false); });
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><span class="keywordtype">char</span> st_bcrypt_crypt(<span class="keywordtype">char</span> *str, <span class="keywordtype">char</span> *hash, <span class="keywordtype">int</span> hash_buffer_size, <span class="keywordtype">char</span> rounds);</div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="keywordtype">char</span> st_bcrypt_check(<span class="keyword">const</span> <span class="keywordtype">char</span> *str, <span class="keywordtype">char</span> *hash, <span class="keywordtype">int</span> hash_len);</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><span class="keywordtype">char</span> *st_get_authkey_hash_hex(<span class="keyword">const</span> <span class="keywordtype">char</span> AuthKey[SUPLA_AUTHKEY_SIZE]);</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span><span class="keywordtype">unsigned</span> _supla_int_t st_crc32_checksum(<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *data,</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                                        <span class="keywordtype">size_t</span> length);</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><span class="preprocessor">#ifdef __OPENSSL_TOOLS</span></div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="keywordtype">char</span> *st_openssl_base64_encode(<span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">int</span> src_len);</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="keywordtype">char</span> *st_openssl_base64_decode(<span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">int</span> src_len, <span class="keywordtype">int</span> *dst_len);</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>}</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="preprocessor">#endif </span><span class="comment">/* suplatools_H_ */</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">#endif </span><span class="comment">/* !ARDUINO */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span><span class="keywordtype">int</span> format_decimal_trunc(<span class="keywordtype">double</span> x, <span class="keywordtype">int</span> precision, <span class="keywordtype">int</span> scale, <span class="keywordtype">char</span> *out,</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>                         <span class="keywordtype">size_t</span> outsz);</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span><span class="keywordtype">unsigned</span> _supla_int_t st_crc32_checksum(<span class="keyword">const</span> <span class="keywordtype">unsigned</span> <span class="keywordtype">char</span> *data,</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                                        <span class="keywordtype">size_t</span> length);</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><span class="preprocessor">#ifdef __OPENSSL_TOOLS</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span><span class="keywordtype">char</span> *st_openssl_base64_encode(<span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">int</span> src_len);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span><span class="keywordtype">char</span> *st_openssl_base64_decode(<span class="keyword">const</span> <span class="keywordtype">char</span> *src, <span class="keywordtype">int</span> src_len, <span class="keywordtype">int</span> *dst_len);</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>}</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">#endif </span><span class="comment">/* suplatools_H_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="preprocessor">#endif </span><span class="comment">/* !ARDUINO */</span><span class="preprocessor"></span></div>
 <div class="ttc" id="astruct__color__hsv__t_html"><div class="ttname"><a href="struct__color__hsv__t.html">_color_hsv_t</a></div><div class="ttdef"><b>Definition</b> tools.h:32</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

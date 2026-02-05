@@ -191,8 +191,8 @@ int32_t RGBCCTBase::handleNewValueFromServer(
   uint8_t whiteBrightness = static_cast<uint8_t>(newValue->value[0]);
 
   SUPLA_LOG_INFO(
-      "RGBCCT[%d] received: red=%d, green=%d, blue=%d, colorBrightness=%d, "
-      "whiteBrightness=%d, whiteTemperature=%d, command=%d, toggleOnOff=%d",
+      "RGBCCT[%d] received: R=%d, R=%d, B=%d, colorBright=%d, "
+      "whiteBright=%d, whiteTemp=%d, Cmd=%d, toggleOnOff=%d",
       getChannelNumber(),
       red,
       green,
@@ -282,7 +282,7 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       setRGBCCT(red, green, blue, -1, -1, -1);
       break;
     }
-    case RGBW_COMMAND_START_ITERATE_DIMMER: {
+    case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_DIMMER_START: {
       lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::DIMMER;
@@ -291,7 +291,7 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       }
       break;
     }
-    case RGBW_COMMAND_START_ITERATE_RGB: {
+    case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_COLOR_START: {
       lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::RGB;
@@ -300,12 +300,12 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       }
       break;
     }
-    case RGBW_COMMAND_START_ITERATE_ALL: {
+    case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_ALL_START: {
       autoIterateMode = AutoIterateMode::ALL;
       lastAutoIterateStartTimestamp = millis();
       break;
     }
-    case RGBW_COMMAND_STOP_ITERATE_DIMMER: {
+    case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_DIMMER_STOP: {
       if (autoIterateMode == AutoIterateMode::DIMMER) {
         autoIterateMode = AutoIterateMode::OFF;
       } else if (autoIterateMode == AutoIterateMode::ALL) {
@@ -313,7 +313,7 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       }
       break;
     }
-    case RGBW_COMMAND_STOP_ITERATE_RGB: {
+    case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_COLOR_STOP: {
       if (autoIterateMode == AutoIterateMode::RGB) {
         autoIterateMode = AutoIterateMode::OFF;
       } else if (autoIterateMode == AutoIterateMode::ALL) {
@@ -321,11 +321,11 @@ int32_t RGBCCTBase::handleNewValueFromServer(
       }
       break;
     }
-    case RGBW_COMMAND_STOP_ITERATE_ALL: {
+    case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_ALL_STOP: {
       autoIterateMode = AutoIterateMode::OFF;
       break;
     }
-    case RGBW_COMMAND_SET_DIMMER_CCT_WITHOUT_TURN_ON: {
+    case RGBW_COMMAND_SET_WHITE_TEMPERATURE_WITHOUT_TURN_ON: {
       setRGBCCT(-1, -1, -1, -1, -1, whiteTemperature);
       break;
     }

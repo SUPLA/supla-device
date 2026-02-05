@@ -52,7 +52,7 @@ void setRGBCCTValues(TRGBW_Value *value,
   value->B = blue;
   value->colorBrightness = colorBrightness;
   value->brightness = brightness;
-  value->dimmerCct = whiteTemperature;
+  value->whiteTemperature = whiteTemperature;
 }
 
 TEST(RgbCctTests, InitializationWithDefaultValues) {
@@ -156,7 +156,7 @@ TEST(RgbCctTests, BasicTests) {
                   5,
                   100,
                   0,
-                  RGBW_COMMAND_SET_DIMMER_CCT_WITHOUT_TURN_ON);
+                  RGBW_COMMAND_SET_WHITE_TEMPERATURE_WITHOUT_TURN_ON);
   rgb.handleNewValueFromServer(&msg);
   time.advance(1000);
   rgb.iterateAlways();
@@ -175,7 +175,7 @@ TEST(RgbCctTests, BasicTests) {
                   5,
                   33,
                   0,
-                  RGBW_COMMAND_SET_DIMMER_CCT_WITHOUT_TURN_ON);
+                  RGBW_COMMAND_SET_WHITE_TEMPERATURE_WITHOUT_TURN_ON);
   rgb.handleNewValueFromServer(&msg);
   time.advance(1000);
   rgb.iterateAlways();

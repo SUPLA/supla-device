@@ -43,7 +43,7 @@ unsigned char st_file_exists(const char *fp);
 void st_hook_signals(void);
 void st_hook_critical_signals(void);
 char st_try_fork(void);
-char st_set_ug_id(int uid, int gid);
+char st_set_ug_id(const char *username, int uid, int gid);
 char st_setpidfile(char *pidfile_path);
 void st_delpidfile(char *pidfile_path);
 void st_mainloop_init();
@@ -82,7 +82,8 @@ char st_bcrypt_hash(const char *str, const char *salt, char *hash,
 char st_bcrypt_crypt(char *str, char *hash, int hash_buffer_size, char rounds);
 char st_bcrypt_check(const char *str, char *hash, int hash_len);
 char *st_get_authkey_hash_hex(const char AuthKey[SUPLA_AUTHKEY_SIZE]);
-
+int format_decimal_trunc(double x, int precision, int scale, char *out,
+                         size_t outsz);
 #endif
 
 unsigned _supla_int_t st_crc32_checksum(const unsigned char *data,

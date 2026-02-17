@@ -22,6 +22,7 @@
 #include <supla/log_wrapper.h>
 #include <supla/local_action.h>
 #include <supla/device/subdevice_pairing_handler.h>
+#include <supla/device/channel_conflict_resolver.h>
 
 #include "multi_ds_sensor.h"
 
@@ -38,8 +39,8 @@ enum class MultiDsState {
 };
 
 class MultiDsHandlerBase : public Element,
-                           public Supla::Device::SubdevicePairingHandler {
-
+                           public Supla::Device::SubdevicePairingHandler,
+                           public Supla::Device::ChannelConflictResolver {
  public:
   explicit MultiDsHandlerBase(SuplaDeviceClass *sdc, uint8_t pin);
   virtual ~MultiDsHandlerBase() = default;
@@ -49,6 +50,13 @@ class MultiDsHandlerBase : public Element,
 
   bool startPairing(Supla::Protocol::SuplaSrpc *srpc,
                    TCalCfg_SubdevicePairingResult *result) override;
+
+  bool onChannelConflictReport(
+      uint8_t *channelReport,
+      uint8_t channelReportSize,
+      bool hasConflictInvalidType,
+      bool hasConflictChannelMissingOnServer,
+      bool hasConflictChannelMissingOnDevice) override;
 
   virtual double getTemperature(const uint8_t *address) = 0;
   virtual int refreshSensorsCount() = 0;
@@ -61,6 +69,7 @@ class MultiDsHandlerBase : public Element,
  protected:
   SuplaDeviceClass *sdc = nullptr;
   Supla::Sensor::MultiDsSensor *addDevice(DeviceAddress deviceAddress,
+                                          int channelNumber = -1,
                                           int subDeviceId = -1);
 
  private:
@@ -71,14 +80,14 @@ class MultiDsHandlerBase : public Element,
   Supla::Protocol::SuplaSrpc *srpc = nullptr;
 
   MultiDsState state = MultiDsState::READY;
-  MultiDsSensor *devices[MULTI_DS_MAX_DEVICES_COUNT] = {};
+  MultiDsSensor *sensors[MULTI_DS_MAX_DEVICES_COUNT] = {};
 
   uint32_t pairingStartTimeMs = 0;
   uint32_t helperTimeMs = 0;
   uint32_t lastBusReadTime = 0;
 
   uint8_t maxDeviceCount = MULTI_DS_MAX_DEVICES_COUNT;
-  uint8_t channelNumberOffset = 0;
+  int channelNumberOffset = -1;
 };
 
 };  // namespace Sensor

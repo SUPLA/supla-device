@@ -18,17 +18,20 @@
 
 #include <stdio.h>
 
-#include <supla/storage/config.h>
-#include <supla-common/proto.h>
+#include <supla/auto_lock.h>
 #include <supla/log_wrapper.h>
+#include <supla-common/proto.h>
+#include <supla/storage/config.h>
 #include <supla/protocol/supla_srpc.h>
+#include <supla/device/register_device.h>
+
+#define DS_HANDLER_ADDRESS_LENGTH 24
 
 using Supla::Sensor::MultiDsHandlerBase;
 
 MultiDsHandlerBase::MultiDsHandlerBase(
     SuplaDeviceClass *sdc,
-    uint8_t pin): sdc(sdc), pin(pin) {
-}
+    uint8_t pin): sdc(sdc), pin(pin) {}
 
 void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
   auto config = Supla::Storage::ConfigInstance();
@@ -38,21 +41,26 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   for (int i = 0; i < maxDeviceCount; i++) {
-    Supla::Config::generateKey(key, i, DS_SENSOR_CONFIG_KEY);
+    int subDeviceId = i + 1;
+    Supla::Config::generateKey(key, subDeviceId, DS_SENSOR_CONFIG_KEY);
     Supla::Sensor::DsSensorConfig sensorConfig;
 
+    SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
     bool configExists = config->getBlob(key,
         reinterpret_cast<char *>(&sensorConfig), sizeof(sensorConfig));
 
     if (configExists) {
-      char addressString[24] = {};
+      char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
       addressToString(addressString, sensorConfig.address);
-      SUPLA_LOG_INFO("Adding device with address %s", addressString);
+      SUPLA_LOG_INFO("MultiDS: Adding device with address %s", addressString);
 
-      auto device = addDevice(sensorConfig.address, i);
+      auto device = addDevice(sensorConfig.address, sensorConfig.channelNumber,
+                              subDeviceId);
       if (device == nullptr) {
         SUPLA_LOG_ERROR(
-            "Failed to create a new device %d (address: %s)", i, addressString);
+            "MultiDS: Failed to create a new device %d (address: %s)",
+            subDeviceId,
+            addressString);
       }
     }
   }
@@ -65,15 +73,15 @@ void MultiDsHandlerBase::iterateAlways() {
     if (helperTimeMs == 0 || millis() - helperTimeMs > 1000) {
       // Verify every second
       int deviceCount = refreshSensorsCount();
-      SUPLA_LOG_DEBUG("Devices count %d", deviceCount);
+      SUPLA_LOG_DEBUG("MultiDS: Devices count %d", deviceCount);
 
       for (int i = 0; i < deviceCount; i++) {
         DeviceAddress address;
         if (getSensorAddress(address, i)) {
           bool found = false;
           for (int j = 0; j < maxDeviceCount; j++) {
-            if (devices[j] != nullptr) {
-              if (memcmp(address, devices[j]->getAddress(), 8) == 0) {
+            if (sensors[j] != nullptr) {
+              if (memcmp(address, sensors[j]->getAddress(), 8) == 0) {
                 found = true;
                 break;
               }
@@ -81,19 +89,20 @@ void MultiDsHandlerBase::iterateAlways() {
           }
 
           if (found) {
-            SUPLA_LOG_DEBUG("Device at idx %d already loaded, skipping...", i);
+            SUPLA_LOG_DEBUG(
+                "MultiDS: Device at idx %d already loaded, skipping...", i);
             continue;
           }
 
-          SUPLA_LOG_DEBUG("Adding new device from idx %d", i);
+          SUPLA_LOG_DEBUG("MultiDS: Adding new device from idx %d", i);
           auto newDevice = addDevice(address);
           if (newDevice == nullptr) {
-            SUPLA_LOG_ERROR("Failed to create a new device");
+            SUPLA_LOG_ERROR("MultiDS: Failed to create a new device");
             notifySrpcAboutParingEnd(
                 SUPLA_CALCFG_PAIRINGRESULT_RESOURCES_LIMIT_EXCEEDED, nullptr);
           } else {
             char name[SUPLA_DEVICE_NAME_MAXSIZE] = {};
-            char addressString[24] = {};
+            char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
             addressToString(addressString, address);
             snprintf(name, SUPLA_DEVICE_NAME_MAXSIZE, "DS %s", addressString);
             notifySrpcAboutParingEnd(SUPLA_CALCFG_PAIRINGRESULT_SUCCESS, name);
@@ -116,7 +125,7 @@ void MultiDsHandlerBase::iterateAlways() {
       helperTimeMs = 0;
     } else if (millis() - pairingStartTimeMs >
         MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC * 1000) {
-      SUPLA_LOG_DEBUG("Pairing timeout - no device found!");
+      SUPLA_LOG_DEBUG("MultiDS: Pairing timeout - no device found!");
       notifySrpcAboutParingEnd(SUPLA_CALCFG_PAIRINGRESULT_NO_NEW_DEVICE_FOUND);
       state = MultiDsState::READY;
       pairingStartTimeMs = 0;
@@ -133,45 +142,58 @@ void MultiDsHandlerBase::iterateAlways() {
 }
 
 Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
-    DeviceAddress deviceAddress, int subDeviceId) {
+    DeviceAddress deviceAddress, int channelNumber, int subDeviceId) {
 
   bool newDevice = (subDeviceId == -1);
   if (subDeviceId == -1) {
     for (int i = 0; i < maxDeviceCount; i++) {
-      if (devices[i] == nullptr) {
+      if (sensors[i] == nullptr) {
         subDeviceId = i + 1;
         break;
       }
     }
   }
 
-  if (subDeviceId == -1 || subDeviceId >= maxDeviceCount) {
-    SUPLA_LOG_DEBUG("Cannot add new device - limit exceeded!");
+  if (subDeviceId == -1 || subDeviceId > maxDeviceCount) {
+    SUPLA_LOG_DEBUG("MultiDS: Cannot add new device - limit exceeded!");
     return nullptr;
   }
 
-  SUPLA_LOG_DEBUG("Creating new sub device with id %d", subDeviceId);
+  if (channelNumber == -1) {
+    if (channelNumberOffset == -1) {
+      channelNumber = Supla::RegisterDevice::getNextFreeChannelNumber();
+      SUPLA_LOG_DEBUG("MultiDS: Took next channel number - %d", channelNumber);
+    } else {
+      channelNumber = channelNumberOffset + subDeviceId - 1;
+      SUPLA_LOG_DEBUG("MultiDS: Channel number calculated - %d", channelNumber);
+    }
+  }
+
+  SUPLA_LOG_DEBUG("MultiDS: Creating new sub device with id %d", subDeviceId);
   Supla::Sensor::MultiDsSensor *sensor =
       new Supla::Sensor::MultiDsSensor(
         subDeviceId,
         deviceAddress,
         [this](const uint8_t* a) { return this->getTemperature(a); });
 
+  sensor->getChannel()->setChannelNumber(channelNumber);
   if (newDevice) {
     sensor->saveSensorConfig();
-    SUPLA_LOG_INFO("Successfully added a new device");
+    SUPLA_LOG_INFO("MultiDS: Successfully added a new device");
   }
-  devices[subDeviceId - 1] = sensor;
+  SUPLA_LOG_DEBUG("MultiDS: Device added (subId: %d, number %d)",
+      subDeviceId, sensor->getChannel()->getChannelNumber());
+  sensors[subDeviceId - 1] = sensor;
   return sensor;
 }
 
 bool MultiDsHandlerBase::startPairing(Supla::Protocol::SuplaSrpc *srpc,
-                                  TCalCfg_SubdevicePairingResult *result) {
-  SUPLA_LOG_DEBUG("Start pairing received");
+    TCalCfg_SubdevicePairingResult *result) {
+  SUPLA_LOG_DEBUG("MultiDS: Start pairing received");
   if (result != nullptr) {
     result->MaximumDurationSec = MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC;
     if (state == MultiDsState::PARING) {
-      SUPLA_LOG_DEBUG("Pairing already in progress");
+      SUPLA_LOG_DEBUG("MultiDS: Pairing already in progress");
       if (pairingStartTimeMs != 0) {
         result->ElapsedTimeSec = (millis() - pairingStartTimeMs) / 1000;
       }
@@ -189,9 +211,64 @@ bool MultiDsHandlerBase::startPairing(Supla::Protocol::SuplaSrpc *srpc,
   return true;
 }
 
+bool MultiDsHandlerBase::onChannelConflictReport(
+    uint8_t *channelReport,
+    uint8_t channelReportSize,
+    bool hasConflictInvalidType,
+    bool hasConflictChannelMissingOnServer,
+    bool hasConflictChannelMissingOnDevice) {
+  if (hasConflictChannelMissingOnDevice) {
+    SUPLA_LOG_ERROR("MultiDS: Channel conflict - channel missing on device. "
+        "Aborting...");
+    return false;
+  }
+  if (hasConflictInvalidType) {
+    SUPLA_LOG_ERROR("MultiDS: Channel conflict - channel type mismatch. "
+        "Aborting...");
+    return false;
+  }
+  if (hasConflictChannelMissingOnServer) {
+    SUPLA_LOG_INFO(
+        "MultiDS: Channel conflict - channel missing on server. "
+        "Trying to remove affected devices...");
+
+    for (int i = 0; i < maxDeviceCount; i++) {
+      auto sensor = sensors[i];
+      if (sensor == nullptr) {
+        SUPLA_LOG_DEBUG("MultiDS: No sensor at position: %d", i);
+        continue;
+      }
+
+      int channelNumber = sensor->getChannel()->getChannelNumber();
+      int subDeviceId = sensor->getChannel()->getSubDeviceId();
+      if ((channelNumber >= channelReportSize ||
+          channelReport[channelNumber] == 0) &&
+          !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
+        Supla::AutoLock lock(sdc->getTimerAccessMutex());
+
+        sensor->purgeConfig();
+        delete sensor;
+        sensor = nullptr;
+        sensors[i] = nullptr;
+
+        SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
+                        subDeviceId,
+                        channelNumber);
+
+        if (!Supla::Storage::IsStateStorageValid()) {
+          Supla::Storage::WriteStateStorage();
+        }
+      }
+    }
+  }
+
+  return false;
+}
+
 void MultiDsHandlerBase::setMaxDeviceCount(uint8_t count) {
   if (count > MULTI_DS_MAX_DEVICES_COUNT) {
-    SUPLA_LOG_WARNING("Setting max count bigger then allowed - value ignored!");
+    SUPLA_LOG_WARNING("MultiDS: Setting max count bigger then allowed"
+        " - value ignored!");
   }
   maxDeviceCount = count;
 }
@@ -229,10 +306,16 @@ void MultiDsHandlerBase::notifySrpcAboutParingEnd(
 
 
 void MultiDsHandlerBase::addressToString(char *buffor, uint8_t *address) {
-  for (uint8_t i = 0; i < 8; i++) {
-    snprintf(&buffor[i * 3], 2, "%02X", address[i]);
-    if (i < 7) {
-      buffor[i * 3 + 2] = ':';
-    }
-  }
+  snprintf(
+      buffor,
+      DS_HANDLER_ADDRESS_LENGTH,
+      "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
+      address[0],
+      address[1],
+      address[2],
+      address[3],
+      address[4],
+      address[5],
+      address[6],
+      address[7]);
 }

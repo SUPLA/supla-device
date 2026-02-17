@@ -29,12 +29,17 @@ namespace Sensor {
 class MultiDsHandler : public MultiDsHandlerBase {
  public:
   explicit MultiDsHandler(SuplaDeviceClass *sdc, uint8_t pin) :
-      MultiDsHandlerBase(sdc, pin), oneWire(pin) {}
+      MultiDsHandlerBase(sdc, pin), oneWire(pin) {
+    if (sdc) {
+      sdc->setChannelConflictResolver(this);
+    }
+  }
 
   ~MultiDsHandler() {}
 
   void onInit() override {
     sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING);
+    sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
     sdc->setSubdevicePairingHandler(this);
 
     sensors.setOneWire(&oneWire);

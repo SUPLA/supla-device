@@ -17,23 +17,25 @@
 #ifndef SRC_SUPLA_SENSOR_MULTI_DS_SENSOR_H_
 #define SRC_SUPLA_SENSOR_MULTI_DS_SENSOR_H_
 
+#include <supla/sensor/thermometer_driver.h>
+#include <supla/sensor/thermometer.h>
+#include <supla/storage/storage.h>
+#include <supla/storage/config.h>
+
 #include <functional>
 #include <cstdint>
 #include <utility>
 
 #include <DallasTemperature.h>
 #include <OneWire.h>
-#include <supla/sensor/thermometer_driver.h>
-#include <supla/sensor/thermometer.h>
-#include <supla/storage/storage.h>
-#include <supla/storage/config.h>
 
 #define DS_SENSOR_CONFIG_KEY "ds_sensor"
 
 namespace Supla {
 namespace Sensor {
-  
+
 struct DsSensorConfig {
+  uint8_t channelNumber = 0;
   uint8_t address[8] = {};
 };
 
@@ -45,7 +47,6 @@ class MultiDsSensor : public Thermometer {
       uint8_t *deviceAddress, GetValueFn valueProvider) :
           subDeviceId(subDeviceId),
           valueProvider(std::move(valueProvider)) {
-
     channel.setSubDeviceId(subDeviceId);
     channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESTART_SUBDEVICE);
     channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_IDENTIFY_SUBDEVICE);
@@ -53,10 +54,12 @@ class MultiDsSensor : public Thermometer {
     memcpy(address, deviceAddress, 8);
   }
 
+  void onInit() override;
   void iterateAlways() override;
   double getValue() override;
 
   void saveSensorConfig();
+  void purgeConfig();
 
   uint8_t *getAddress() {
     return address;

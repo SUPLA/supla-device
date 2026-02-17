@@ -16,7 +16,13 @@
 
 #include "multi_ds_sensor.h"
 
+#include <supla/log_wrapper.h>
+
 using Supla::Sensor::MultiDsSensor;
+
+void MultiDsSensor::onInit() {
+  channel.setFlag(SUPLA_CHANNEL_FLAG_ALWAYS_ALLOW_CHANNEL_DELETION);
+}
 
 void MultiDsSensor::iterateAlways() {
   if (millis() - lastReadTime > 1000) {
@@ -61,11 +67,26 @@ void MultiDsSensor::saveSensorConfig() {
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     Supla::Config::generateKey(key, subDeviceId, DS_SENSOR_CONFIG_KEY);
+    SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
     DsSensorConfig sensorConfig;
+    sensorConfig.channelNumber = channel.getChannelNumber();
     memcpy(sensorConfig.address, address, 8);
-    config->setBlob(key, reinterpret_cast<char *>(&sensorConfig), 
+    config->setBlob(key, reinterpret_cast<char *>(&sensorConfig),
                     sizeof(sensorConfig));
 
+    config->commit();
+  }
+}
+
+void MultiDsSensor::purgeConfig() {
+  Supla::Sensor::ThermHygroMeter::purgeConfig();
+
+  auto config = Supla::Storage::ConfigInstance();
+  if (config) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    Supla::Config::generateKey(key, subDeviceId, DS_SENSOR_CONFIG_KEY);
+    SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
+    config->eraseKey(key);
     config->commit();
   }
 }

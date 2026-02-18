@@ -46,9 +46,27 @@ class MultiDsHandler : public MultiDsHandlerBase {
     sensors.begin();
   }
 
-  double getTemperature(const uint8_t *address) override {
-    return sensors.getTempC(address);
+  /**
+   * Enables or disables synchronous (blocking) temperature conversion.
+   *
+   * By default, DallasTemperature operates in synchronous mode (true),
+   * meaning requestTemperatures() blocks execution until the DS18B20
+   * conversion is complete (up to 750 ms at 12-bit resolution).
+   *
+   * When set to false, requestTemperatures() starts the conversion
+   * and returns immediately (non-blocking mode). The caller is then
+   * responsible for ensuring that enough time has passed before
+   * reading the temperature value.
+   *
+   * This method is a wrapper for DallasTemperature::setWaitForConversion().
+   */
+  void setUseSynchronousCommunication(bool synchronous) {
+    sensors.setWaitForConversion(synchronous);
   }
+
+ protected:
+  OneWire oneWire;
+  DallasTemperature sensors;
 
   int refreshSensorsCount() override {
     oneWire.reset_search();
@@ -57,17 +75,17 @@ class MultiDsHandler : public MultiDsHandlerBase {
     return sensors.getDeviceCount();
   }
 
-  bool getSensorAddress(uint8_t *address, int index) override {
-    return sensors.getAddress(address, index);
-  }
-
   void requestTemperatures() override {
     sensors.requestTemperatures();
   }
 
- protected:
-  OneWire oneWire;
-  DallasTemperature sensors;
+  double getTemperature(const uint8_t *address) override {
+    return sensors.getTempC(address);
+  }
+
+  bool getSensorAddress(uint8_t *address, int index) override {
+    return sensors.getAddress(address, index);
+  }
 };
 
 };  // namespace Sensor

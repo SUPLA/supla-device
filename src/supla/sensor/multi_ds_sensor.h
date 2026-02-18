@@ -44,10 +44,12 @@ class MultiDsSensor : public Thermometer {
   using GetValueFn = std::function<double(const uint8_t* address)>;
 
   explicit MultiDsSensor(int subDeviceId,
-      uint8_t *deviceAddress, GetValueFn valueProvider) :
+      uint8_t *deviceAddress, bool useSubDevices, GetValueFn valueProvider) :
           subDeviceId(subDeviceId),
           valueProvider(std::move(valueProvider)) {
-    channel.setSubDeviceId(subDeviceId);
+    if (useSubDevices) {
+      channel.setSubDeviceId(subDeviceId);
+    }
     channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESTART_SUBDEVICE);
     channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_IDENTIFY_SUBDEVICE);
 

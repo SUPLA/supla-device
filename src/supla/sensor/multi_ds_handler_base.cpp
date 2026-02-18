@@ -123,8 +123,7 @@ void MultiDsHandlerBase::iterateAlways() {
       state = MultiDsState::READY;
       pairingStartTimeMs = 0;
       helperTimeMs = 0;
-    } else if (millis() - pairingStartTimeMs >
-        MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC * 1000) {
+    } else if (millis() - pairingStartTimeMs > pairingTimeout * 1000) {
       SUPLA_LOG_DEBUG("MultiDS: Pairing timeout - no device found!");
       notifySrpcAboutParingEnd(SUPLA_CALCFG_PAIRINGRESULT_NO_NEW_DEVICE_FOUND);
       state = MultiDsState::READY;
@@ -174,6 +173,7 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
       new Supla::Sensor::MultiDsSensor(
         subDeviceId,
         deviceAddress,
+        useSubDevices,
         [this](const uint8_t* a) { return this->getTemperature(a); });
 
   sensor->getChannel()->setChannelNumber(channelNumber);
@@ -191,7 +191,7 @@ bool MultiDsHandlerBase::startPairing(Supla::Protocol::SuplaSrpc *srpc,
     TCalCfg_SubdevicePairingResult *result) {
   SUPLA_LOG_DEBUG("MultiDS: Start pairing received");
   if (result != nullptr) {
-    result->MaximumDurationSec = MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC;
+    result->MaximumDurationSec = pairingTimeout;
     if (state == MultiDsState::PARING) {
       SUPLA_LOG_DEBUG("MultiDS: Pairing already in progress");
       if (pairingStartTimeMs != 0) {
@@ -251,12 +251,13 @@ bool MultiDsHandlerBase::onChannelConflictReport(
         sensor = nullptr;
         sensors[i] = nullptr;
 
-        SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
-                        subDeviceId,
-                        channelNumber);
-
-        if (!Supla::Storage::IsStateStorageValid()) {
-          Supla::Storage::WriteStateStorage();
+        if (useSubDevices) {
+          SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
+                         sensor->getChannel()->getSubDeviceId(),
+                         channelNumber);
+        } else {
+          SUPLA_LOG_DEBUG("MultiDS: Channel removed (idx: %d, number: %d)", i,
+                         channelNumber);
         }
       }
     }
@@ -277,7 +278,15 @@ void MultiDsHandlerBase::setChannelNumberOffset(uint8_t offset) {
   channelNumberOffset = offset;
 }
 
-void MultiDsHandlerBase::notifySrpcAboutParingEnd(
+void MultiDsHandlerBase::setUseSubDevices(bool useSubDevices) {
+  this->useSubDevices = useSubDevices;
+}
+
+void MultiDsHandlerBase::setPairingTimeout(uint8_t timeout) {
+  this->pairingTimeout = timeout;
+}
+
+void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(
     int pairingResult, const char *name) {
 
   if (srpc) {

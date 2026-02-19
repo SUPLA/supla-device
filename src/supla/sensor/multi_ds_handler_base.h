@@ -58,6 +58,8 @@ class MultiDsHandlerBase : public Element,
       bool hasConflictChannelMissingOnServer,
       bool hasConflictChannelMissingOnDevice) override;
 
+  virtual double getTemperature(const uint8_t *address) = 0;
+
   /**
    * Sets the maximum number of DS18B20 devices handled by this instance.
    *
@@ -114,7 +116,6 @@ class MultiDsHandlerBase : public Element,
                                           int subDeviceId = -1);
   virtual int refreshSensorsCount() = 0;
   virtual void requestTemperatures() = 0;
-  virtual double getTemperature(const uint8_t *address) = 0;
   virtual bool getSensorAddress(uint8_t *address, int index) = 0;
 
  private:

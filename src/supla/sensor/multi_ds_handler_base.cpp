@@ -170,11 +170,8 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
 
   SUPLA_LOG_DEBUG("MultiDS: Creating new sub device with id %d", subDeviceId);
   Supla::Sensor::MultiDsSensor *sensor =
-      new Supla::Sensor::MultiDsSensor(
-        subDeviceId,
-        deviceAddress,
-        useSubDevices,
-        [this](const uint8_t* a) { return this->getTemperature(a); });
+      new Supla::Sensor::MultiDsSensor(subDeviceId, deviceAddress,
+          useSubDevices, this);
 
   sensor->getChannel()->setChannelNumber(channelNumber);
   if (newDevice) {

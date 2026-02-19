@@ -22,9 +22,7 @@
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
 
-#include <functional>
-#include <cstdint>
-#include <utility>
+#include <stdint.h>
 
 #include <DallasTemperature.h>
 #include <OneWire.h>
@@ -34,6 +32,8 @@
 namespace Supla {
 namespace Sensor {
 
+class MultiDsHandlerBase;
+
 struct DsSensorConfig {
   uint8_t channelNumber = 0;
   uint8_t address[8] = {};
@@ -41,12 +41,11 @@ struct DsSensorConfig {
 
 class MultiDsSensor : public Thermometer {
  public:
-  using GetValueFn = std::function<double(const uint8_t* address)>;
-
   explicit MultiDsSensor(int subDeviceId,
-      uint8_t *deviceAddress, bool useSubDevices, GetValueFn valueProvider) :
-          subDeviceId(subDeviceId),
-          valueProvider(std::move(valueProvider)) {
+      uint8_t *deviceAddress, bool useSubDevices,
+          Supla::Sensor::MultiDsHandlerBase *handler) :
+              subDeviceId(subDeviceId),
+              handler(handler) {
     if (useSubDevices) {
       channel.setSubDeviceId(subDeviceId);
     }
@@ -76,7 +75,7 @@ class MultiDsSensor : public Thermometer {
   }
 
  protected:
-  GetValueFn valueProvider;
+  Supla::Sensor::MultiDsHandlerBase *handler;
   DeviceAddress address;
 
  private:

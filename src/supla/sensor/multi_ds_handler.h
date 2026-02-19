@@ -46,6 +46,10 @@ class MultiDsHandler : public MultiDsHandlerBase {
     sensors.begin();
   }
 
+  double getTemperature(const uint8_t *address) override {
+    return sensors.getTempC(address);
+  }
+
   /**
    * Enables or disables synchronous (blocking) temperature conversion.
    *
@@ -77,10 +81,6 @@ class MultiDsHandler : public MultiDsHandlerBase {
 
   void requestTemperatures() override {
     sensors.requestTemperatures();
-  }
-
-  double getTemperature(const uint8_t *address) override {
-    return sensors.getTempC(address);
   }
 
   bool getSensorAddress(uint8_t *address, int index) override {

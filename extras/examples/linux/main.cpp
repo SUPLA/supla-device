@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
         "i,integer", "Int param", cxxopts::value<int>())(
         "c,config",
         "Config file name",
-        cxxopts::value<std::string>()->default_value("etc/supla-device.yaml"))(
+        cxxopts::value<std::string>()->default_value("/etc/supla-device.yaml"))(
         "d,daemon", "Run in daemon mode (run in background and log to syslog)")(
         "s,service", "Run as a service (log to syslog but don't fork)")(
         "h,help", "Show this help")("v,version", "Show version");

@@ -76,11 +76,11 @@ void supla_vlog(int __pri, const char *message) {
     time_t t = tv.tv_sec;
     struct tm tms;
     struct tm* tm_info = localtime_r(&t, &tms);
-    printf("[%02d:%02d:%02d.%03ld] ",
+    printf("[%02d:%02d:%02d.%03d] ",
            tm_info->tm_hour,
            tm_info->tm_min,
            tm_info->tm_sec,
-           tv.tv_usec / 1000);
+           (int)(tv.tv_usec / 1000));
 
     switch (__pri) {
       case LOG_EMERG:

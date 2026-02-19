@@ -15,6 +15,7 @@
 */
 
 #include "multi_ds_sensor.h"
+#include "multi_ds_handler_base.h"
 
 #include <supla/log_wrapper.h>
 
@@ -32,7 +33,7 @@ void MultiDsSensor::iterateAlways() {
 }
 
 double MultiDsSensor::getValue() {
-  double value = valueProvider(address);
+  double value = handler->getTemperature(address);
   if (value == DEVICE_DISCONNECTED_C) {
     channel.setStateOffline();
     lastValidValue = TEMPERATURE_NOT_AVAILABLE;

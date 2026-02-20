@@ -28,6 +28,7 @@
 
 #define MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC 5
 #define MULTI_DS_MAX_DEVICES_COUNT 10
+#define MULTI_DS_MAX_ACTIONS 10
 
 namespace Supla {
 
@@ -36,6 +37,14 @@ namespace Sensor {
 enum class MultiDsState {
   READY,
   PARING
+};
+
+struct MultiDsActionHolder {
+  uint8_t idx;
+  uint16_t action;
+  Supla::ActionHandler *client;
+  Supla::Condition *condition;
+  bool allwaysEnabled;
 };
 
 class MultiDsHandlerBase : public Element,
@@ -49,7 +58,7 @@ class MultiDsHandlerBase : public Element,
   void onLoadConfig(SuplaDeviceClass *sdc) override;
 
   bool startPairing(Supla::Protocol::SuplaSrpc *srpc,
-                   TCalCfg_SubdevicePairingResult *result) override;
+                    TCalCfg_SubdevicePairingResult *result) override;
 
   bool onChannelConflictReport(
       uint8_t *channelReport,
@@ -57,6 +66,14 @@ class MultiDsHandlerBase : public Element,
       bool hasConflictInvalidType,
       bool hasConflictChannelMissingOnServer,
       bool hasConflictChannelMissingOnDevice) override;
+
+  /**
+   * Adds action to thermometer at idx. Idx is counted from 0.
+   * 
+   * Currenlty there is a limit for 10 actions defined.
+   */
+  void addAction(uint8_t idx, uint16_t action, Supla::ActionHandler *client,
+                 Supla::Condition *condition, bool alwaysEnabled = false);
 
   virtual double getTemperature(const uint8_t *address) = 0;
 
@@ -109,8 +126,14 @@ class MultiDsHandlerBase : public Element,
    */
   void setPairingTimeout(uint8_t timeout);
 
+  /**
+   * Disables channel state in all thermometers managed by this handler.
+   */
+  void disableSensorsChannelState();
+
  protected:
   SuplaDeviceClass *sdc = nullptr;
+  MultiDsSensor *sensors[MULTI_DS_MAX_DEVICES_COUNT] = {};
   Supla::Sensor::MultiDsSensor *addDevice(DeviceAddress deviceAddress,
                                           int channelNumber = -1,
                                           int subDeviceId = -1);
@@ -126,7 +149,8 @@ class MultiDsHandlerBase : public Element,
   Supla::Protocol::SuplaSrpc *srpc = nullptr;
 
   MultiDsState state = MultiDsState::READY;
-  MultiDsSensor *sensors[MULTI_DS_MAX_DEVICES_COUNT] = {};
+  Supla::Sensor::MultiDsActionHolder *actions[MULTI_DS_MAX_ACTIONS] = {};
+  uint8_t actionsCount = 0;
 
   uint32_t pairingStartTimeMs = 0;
   uint32_t helperTimeMs = 0;
@@ -136,6 +160,7 @@ class MultiDsHandlerBase : public Element,
   uint8_t pairingTimeout = MUTLI_DS_DEFAULT_PAIRING_DURATION_SEC;
   int channelNumberOffset = -1;
   bool useSubDevices = true;
+  bool channelStateDisabled = false;
 };
 
 };  // namespace Sensor

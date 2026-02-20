@@ -173,6 +173,30 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
       new Supla::Sensor::MultiDsSensor(subDeviceId, deviceAddress,
           useSubDevices, this);
 
+  // Check if allocated
+  if (sensor == nullptr) {
+    SUPLA_LOG_ERROR("MultiDS: Device add failed!");
+    return nullptr;
+  }
+
+  // Assign actions if configured
+  for (int i = 0; i < MULTI_DS_MAX_ACTIONS; i++) {
+    auto action = actions[i];
+    if (action == nullptr) {
+      break;
+    }
+    uint8_t idx = subDeviceId - 1;
+    if (action->idx == idx) {
+      SUPLA_LOG_DEBUG("MultiDS: Assigning action %d for channel on idx %d",
+                      action->action, idx);
+      sensor->addAction(action->action, action->client, action->condition,
+                        action->allwaysEnabled);
+    }
+  }
+
+  if (channelStateDisabled) {
+    sensor->disableChannelState();
+  }
   sensor->getChannel()->setChannelNumber(channelNumber);
   if (newDevice) {
     sensor->saveSensorConfig();
@@ -180,6 +204,7 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   }
   SUPLA_LOG_DEBUG("MultiDS: Device added (subId: %d, number %d)",
       subDeviceId, sensor->getChannel()->getChannelNumber());
+
   sensors[subDeviceId - 1] = sensor;
   return sensor;
 }
@@ -263,6 +288,22 @@ bool MultiDsHandlerBase::onChannelConflictReport(
   return false;
 }
 
+void MultiDsHandlerBase::addAction(uint8_t idx, uint16_t action,
+    Supla::ActionHandler *client, Supla::Condition *condition,
+    bool alwaysEnabled) {
+  if (actionsCount < MULTI_DS_MAX_ACTIONS) {
+    auto actionHolder = new Supla::Sensor::MultiDsActionHolder();
+    actionHolder->idx = idx;
+    actionHolder->action = action;
+    actionHolder->client = client;
+    actionHolder->condition = condition;
+    actionHolder->allwaysEnabled = alwaysEnabled;
+    actions[actionsCount++] = actionHolder;
+  } else {
+    SUPLA_LOG_WARNING("MultiDS: Actions limit reached, action skipped!");
+  }
+}
+
 void MultiDsHandlerBase::setMaxDeviceCount(uint8_t count) {
   if (count > MULTI_DS_MAX_DEVICES_COUNT) {
     SUPLA_LOG_WARNING("MultiDS: Setting max count bigger then allowed"
@@ -281,6 +322,10 @@ void MultiDsHandlerBase::setUseSubDevices(bool useSubDevices) {
 
 void MultiDsHandlerBase::setPairingTimeout(uint8_t timeout) {
   this->pairingTimeout = timeout;
+}
+
+void MultiDsHandlerBase::disableSensorsChannelState() {
+  channelStateDisabled = true;
 }
 
 void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(

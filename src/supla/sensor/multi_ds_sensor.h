@@ -49,9 +49,6 @@ class MultiDsSensor : public Thermometer {
     if (useSubDevices) {
       channel.setSubDeviceId(subDeviceId);
     }
-    channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RESTART_SUBDEVICE);
-    channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_IDENTIFY_SUBDEVICE);
-
     memcpy(address, deviceAddress, 8);
   }
 
@@ -74,6 +71,9 @@ class MultiDsSensor : public Thermometer {
     return channel.getSubDeviceId() == subDeviceId;
   }
 
+  void setDetailsSend(bool send) { detailsSend = send; }
+  bool getDetailsSend() { return detailsSend; }
+
  protected:
   Supla::Sensor::MultiDsHandlerBase *handler;
   DeviceAddress address;
@@ -83,6 +83,7 @@ class MultiDsSensor : public Thermometer {
   int8_t retryCounter = 0;
   uint32_t lastReadTime = 0;
   double lastValidValue = TEMPERATURE_NOT_AVAILABLE;
+  bool detailsSend = false;
 };
 
 };  // namespace Sensor

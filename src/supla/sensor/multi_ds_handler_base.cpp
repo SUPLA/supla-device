@@ -26,6 +26,8 @@
 #include <supla/device/register_device.h>
 
 #define DS_HANDLER_ADDRESS_LENGTH 24
+#define DS_NAME "DS18B20"
+#define DS_UNUSED_STRING "-"
 
 using Supla::Sensor::MultiDsHandlerBase;
 
@@ -51,7 +53,8 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
 
     if (configExists) {
       char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
-      addressToString(addressString, sensorConfig.address);
+      addressToString(addressString, DS_HANDLER_ADDRESS_LENGTH,
+                      sensorConfig.address);
       SUPLA_LOG_INFO("MultiDS: Adding device with address %s", addressString);
 
       auto device = addDevice(sensorConfig.address, sensorConfig.channelNumber,
@@ -62,6 +65,19 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
             subDeviceId,
             addressString);
       }
+    }
+  }
+}
+
+void MultiDsHandlerBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
+  Element::onRegistered(suplaSrpc);
+
+  this->srpc = suplaSrpc;
+
+  for (int i = 0; i < maxDeviceCount; i++) {
+    auto sensor = sensors[i];
+    if (sensor != nullptr) {
+      sensor->setDetailsSend(false);
     }
   }
 }
@@ -103,7 +119,7 @@ void MultiDsHandlerBase::iterateAlways() {
           } else {
             char name[SUPLA_DEVICE_NAME_MAXSIZE] = {};
             char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
-            addressToString(addressString, address);
+            addressToString(addressString, DS_HANDLER_ADDRESS_LENGTH, address);
             snprintf(name, SUPLA_DEVICE_NAME_MAXSIZE, "DS %s", addressString);
             notifySrpcAboutParingEnd(SUPLA_CALCFG_PAIRINGRESULT_SUCCESS, name);
             sdc->scheduleProtocolsRestart(1500);
@@ -138,6 +154,39 @@ void MultiDsHandlerBase::iterateAlways() {
       lastBusReadTime = millis();
     }
   }
+}
+
+
+bool MultiDsHandlerBase::iterateConnected() {
+  bool dataSend = false;
+  if (srpc == nullptr) {
+    return !dataSend;
+  }
+
+  for (int i = 0; i < maxDeviceCount; i++) {
+    auto sensor = sensors[i];
+    if (sensor && !sensor->getDetailsSend()) {
+      SUPLA_LOG_DEBUG("MultiDS: Sending sub device info (idx: %d)", i);
+
+      TDS_SubdeviceDetails subdeviceDetails = {};
+      subdeviceDetails.SubDeviceId = i + 1;
+      strncpy(subdeviceDetails.Name, DS_NAME, SUPLA_DEVICE_NAME_MAXSIZE - 1);
+      strncpy(subdeviceDetails.SoftVer, DS_UNUSED_STRING,
+              SUPLA_SOFTVER_MAXSIZE - 1);
+      strncpy(subdeviceDetails.ProductCode, DS_UNUSED_STRING,
+              SUPLA_SUBDEVICE_PRODUCT_CODE_MAXSIZE);
+      addressToString(subdeviceDetails.SerialNumber,
+                      SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE,
+                      sensor->getAddress());
+
+      srpc->sendSubdeviceDetails(&subdeviceDetails);
+      sensor->setDetailsSend(true);
+      dataSend = true;
+      break;
+    }
+  }
+
+  return !dataSend;
 }
 
 Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
@@ -291,16 +340,23 @@ bool MultiDsHandlerBase::onChannelConflictReport(
 void MultiDsHandlerBase::addAction(uint8_t idx, uint16_t action,
     Supla::ActionHandler *client, Supla::Condition *condition,
     bool alwaysEnabled) {
-  if (actionsCount < MULTI_DS_MAX_ACTIONS) {
-    auto actionHolder = new Supla::Sensor::MultiDsActionHolder();
-    actionHolder->idx = idx;
-    actionHolder->action = action;
-    actionHolder->client = client;
-    actionHolder->condition = condition;
-    actionHolder->allwaysEnabled = alwaysEnabled;
-    actions[actionsCount++] = actionHolder;
-  } else {
-    SUPLA_LOG_WARNING("MultiDS: Actions limit reached, action skipped!");
+  if (idx < MULTI_DS_MAX_DEVICES_COUNT) {
+    if (actionsCount < MULTI_DS_MAX_ACTIONS) {
+      auto actionHolder = new Supla::Sensor::MultiDsActionHolder();
+      actionHolder->idx = idx;
+      actionHolder->action = action;
+      actionHolder->client = client;
+      actionHolder->condition = condition;
+      actionHolder->allwaysEnabled = alwaysEnabled;
+      actions[actionsCount++] = actionHolder;
+    } else {
+      SUPLA_LOG_WARNING("MultiDS: Actions limit reached, action skipped!");
+    }
+
+    auto sensor = sensors[idx];
+    if (sensor) {
+      sensor->addAction(action, client, condition, alwaysEnabled);
+    }
   }
 }
 
@@ -356,10 +412,11 @@ void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(
 }
 
 
-void MultiDsHandlerBase::addressToString(char *buffor, uint8_t *address) {
+void MultiDsHandlerBase::addressToString(char *buffor, uint8_t bufforLength,
+                                         uint8_t *address) {
   snprintf(
       buffor,
-      DS_HANDLER_ADDRESS_LENGTH,
+      bufforLength,
       "%02X:%02X:%02X:%02X:%02X:%02X:%02X:%02X",
       address[0],
       address[1],

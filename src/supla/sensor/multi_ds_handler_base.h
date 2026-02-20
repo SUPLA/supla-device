@@ -54,7 +54,9 @@ class MultiDsHandlerBase : public Element,
   explicit MultiDsHandlerBase(SuplaDeviceClass *sdc, uint8_t pin);
   virtual ~MultiDsHandlerBase() = default;
 
+  void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
+  bool iterateConnected() override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
 
   bool startPairing(Supla::Protocol::SuplaSrpc *srpc,
@@ -143,7 +145,7 @@ class MultiDsHandlerBase : public Element,
 
  private:
   void notifySrpcAboutParingEnd(int pairingResult, const char *name = nullptr);
-  void addressToString(char *buffor, uint8_t *address);
+  void addressToString(char *buffor, uint8_t bufforLength, uint8_t *address);
 
   uint8_t pin;
   Supla::Protocol::SuplaSrpc *srpc = nullptr;

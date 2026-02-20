@@ -56,7 +56,7 @@ class MultiDsHandler : public MultiDsHandlerBase {
     }
 
     auto sensor = sensors[idx];
-    if (sensor = nullptr) {
+    if (sensor == nullptr) {
       return TEMPERATURE_NOT_AVAILABLE;
     }
 

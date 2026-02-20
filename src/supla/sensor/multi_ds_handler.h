@@ -42,12 +42,25 @@ class MultiDsHandler : public MultiDsHandlerBase {
     sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
     sdc->setSubdevicePairingHandler(this);
 
-    sensors.setOneWire(&oneWire);
-    sensors.begin();
+    dallasTemperature.setOneWire(&oneWire);
+    dallasTemperature.begin();
   }
 
   double getTemperature(const uint8_t *address) override {
-    return sensors.getTempC(address);
+    return dallasTemperature.getTempC(address);
+  }
+
+  double getTemperature(uint8_t idx) {
+    if (idx >= MULTI_DS_MAX_DEVICES_COUNT) {
+      return TEMPERATURE_NOT_AVAILABLE;
+    }
+
+    auto sensor = sensors[idx];
+    if (sensor = nullptr) {
+      return TEMPERATURE_NOT_AVAILABLE;
+    }
+
+    return sensor->getValue();
   }
 
   /**
@@ -65,26 +78,26 @@ class MultiDsHandler : public MultiDsHandlerBase {
    * This method is a wrapper for DallasTemperature::setWaitForConversion().
    */
   void setUseSynchronousCommunication(bool synchronous) {
-    sensors.setWaitForConversion(synchronous);
+    dallasTemperature.setWaitForConversion(synchronous);
   }
 
  protected:
   OneWire oneWire;
-  DallasTemperature sensors;
+  DallasTemperature dallasTemperature;
 
   int refreshSensorsCount() override {
     oneWire.reset_search();
-    sensors.begin();
+    dallasTemperature.begin();
 
-    return sensors.getDeviceCount();
+    return dallasTemperature.getDeviceCount();
   }
 
   void requestTemperatures() override {
-    sensors.requestTemperatures();
+    dallasTemperature.requestTemperatures();
   }
 
   bool getSensorAddress(uint8_t *address, int index) override {
-    return sensors.getAddress(address, index);
+    return dallasTemperature.getAddress(address, index);
   }
 };
 

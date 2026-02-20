@@ -63,6 +63,14 @@ class MultiDsHandler : public MultiDsHandlerBase {
     return sensor->getValue();
   }
 
+  Supla::Sensor::MultiDsSensor * getThermometer(uint8_t idx) {
+    if (idx < MULTI_DS_MAX_DEVICES_COUNT) {
+      return sensors[idx];
+    }
+
+    return nullptr;
+  }
+
   /**
    * Enables or disables synchronous (blocking) temperature conversion.
    *

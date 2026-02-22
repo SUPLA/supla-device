@@ -52,12 +52,13 @@ class MultiDsHandlerBase : public Element,
                            public Supla::Device::ChannelConflictResolver {
  public:
   explicit MultiDsHandlerBase(SuplaDeviceClass *sdc, uint8_t pin);
-  virtual ~MultiDsHandlerBase() = default;
+  virtual ~MultiDsHandlerBase();
 
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
   bool iterateConnected() override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
+  void onInit() override;
 
   bool startPairing(Supla::Protocol::SuplaSrpc *srpc,
                     TCalCfg_SubdevicePairingResult *result) override;
@@ -133,6 +134,25 @@ class MultiDsHandlerBase : public Element,
    */
   void disableSensorsChannelState();
 
+  /**
+   * Sets automatic single-sensor initialization mode.
+   *
+   * When this flag is enabled, the device will attempt to detect and
+   * register one DS18B20 sensor during the initialization phase
+   * (onInit), but only if no sensors were restored from configuration
+   * inside onLoadConfig().
+   *
+   * This mechanism is intended for simple setups with a single
+   * thermometer, where automatic pairing at startup is desired
+   * without requiring explicit user action.
+   *
+   * If at least one sensor is successfully loaded from configuration,
+   * no additional scan will be performed.
+   *
+   * By default, this flag is not set.
+   */
+  void searchForFirstSensorDuringInitialization();
+
  protected:
   SuplaDeviceClass *sdc = nullptr;
   MultiDsSensor *sensors[MULTI_DS_MAX_DEVICES_COUNT] = {};
@@ -146,6 +166,7 @@ class MultiDsHandlerBase : public Element,
  private:
   void notifySrpcAboutParingEnd(int pairingResult, const char *name = nullptr);
   void addressToString(char *buffor, uint8_t bufforLength, uint8_t *address);
+  void initialSensorSearch();
 
   uint8_t pin;
   Supla::Protocol::SuplaSrpc *srpc = nullptr;
@@ -163,6 +184,8 @@ class MultiDsHandlerBase : public Element,
   int channelNumberOffset = -1;
   bool useSubDevices = true;
   bool channelStateDisabled = false;
+  bool anySensorLoaded = false;
+  bool searchFirstDevice = false;
 };
 
 };  // namespace Sensor

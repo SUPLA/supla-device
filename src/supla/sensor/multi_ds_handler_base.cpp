@@ -35,12 +35,31 @@ MultiDsHandlerBase::MultiDsHandlerBase(
     SuplaDeviceClass *sdc,
     uint8_t pin): sdc(sdc), pin(pin) {}
 
+MultiDsHandlerBase::~MultiDsHandlerBase() {
+  for (int i = 0; i < MULTI_DS_MAX_DEVICES_COUNT; i++) {
+    auto sensor = sensors[i];
+    if (sensor != nullptr) {
+      delete sensor;
+      sensors[i] = nullptr;
+    }
+  }
+
+  for (int i = 0; i < MULTI_DS_MAX_ACTIONS; i++) {
+    auto action = actions[i];
+    if (action != nullptr) {
+      delete action;
+      actions[i] = nullptr;
+    }
+  }
+}
+
 void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
   auto config = Supla::Storage::ConfigInstance();
   if (!config) {
     return;
   }
 
+  anySensorLoaded = false;
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   for (int i = 0; i < maxDeviceCount; i++) {
     int subDeviceId = i + 1;
@@ -52,6 +71,7 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
         reinterpret_cast<char *>(&sensorConfig), sizeof(sensorConfig));
 
     if (configExists) {
+      anySensorLoaded = true;
       char addressString[DS_HANDLER_ADDRESS_LENGTH] = {};
       addressToString(addressString, DS_HANDLER_ADDRESS_LENGTH,
                       sensorConfig.address);
@@ -66,6 +86,12 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
             addressString);
       }
     }
+  }
+}
+
+void MultiDsHandlerBase::onInit() {
+  if (searchFirstDevice && !anySensorLoaded) {
+    initialSensorSearch();
   }
 }
 
@@ -163,6 +189,10 @@ bool MultiDsHandlerBase::iterateConnected() {
     return !dataSend;
   }
 
+  if (!useSubDevices) {
+    return !dataSend;
+  }
+
   for (int i = 0; i < maxDeviceCount; i++) {
     auto sensor = sensors[i];
     if (sensor && !sensor->getDetailsSend()) {
@@ -171,10 +201,6 @@ bool MultiDsHandlerBase::iterateConnected() {
       TDS_SubdeviceDetails subdeviceDetails = {};
       subdeviceDetails.SubDeviceId = i + 1;
       strncpy(subdeviceDetails.Name, DS_NAME, SUPLA_DEVICE_NAME_MAXSIZE - 1);
-      strncpy(subdeviceDetails.SoftVer, DS_UNUSED_STRING,
-              SUPLA_SOFTVER_MAXSIZE - 1);
-      strncpy(subdeviceDetails.ProductCode, DS_UNUSED_STRING,
-              SUPLA_SUBDEVICE_PRODUCT_CODE_MAXSIZE);
       addressToString(subdeviceDetails.SerialNumber,
                       SUPLA_SUBDEVICE_SERIAL_NUMBER_MAXSIZE,
                       sensor->getAddress());
@@ -384,6 +410,10 @@ void MultiDsHandlerBase::disableSensorsChannelState() {
   channelStateDisabled = true;
 }
 
+void MultiDsHandlerBase::searchForFirstSensorDuringInitialization() {
+  searchFirstDevice = true;
+}
+
 void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(
     int pairingResult, const char *name) {
 
@@ -411,6 +441,28 @@ void MultiDsHandlerBase::MultiDsHandlerBase::notifySrpcAboutParingEnd(
   }
 }
 
+void MultiDsHandlerBase::initialSensorSearch() {
+  SUPLA_LOG_DEBUG("MultiDS: Trying to find first thermometer sensor");
+
+  int deviceCount = refreshSensorsCount();
+  if (deviceCount == 0) {
+    SUPLA_LOG_WARNING("MultiDS: Initial search end up with no thermometer");
+    return;
+  }
+
+  DeviceAddress address;
+  if (!getSensorAddress(address, 0)) {
+    SUPLA_LOG_ERROR("MultiDS: Initial search found theremometer but could "
+                    "not get it address");
+    return;
+  }
+
+  auto newDevice = addDevice(address);
+  if (newDevice == nullptr) {
+    SUPLA_LOG_ERROR("MultiDS: Adding initial device failed!");
+    return;
+  }
+}
 
 void MultiDsHandlerBase::addressToString(char *buffor, uint8_t bufforLength,
                                          uint8_t *address) {

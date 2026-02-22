@@ -44,6 +44,8 @@ class MultiDsHandler : public MultiDsHandlerBase {
 
     dallasTemperature.setOneWire(&oneWire);
     dallasTemperature.begin();
+
+    MultiDsHandlerBase::onInit();
   }
 
   double getTemperature(const uint8_t *address) override {

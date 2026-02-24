@@ -30,6 +30,7 @@
 #include <supla/actions.h>
 #include <supla/condition.h>
 #include <supla/storage/eeprom.h>
+#include <supla/sensor/multi_ds_handler.h>
 
 /**
  * @supla-example
@@ -54,10 +55,8 @@
  * @tags Handler, DS18B20, temperature, sensor, relay, esp, esp32, esp8266, wifi, web_interface, EEPROM
  */
 
-#include <supla/sensor/multi_ds_handler.h>
-
 #define STATUS_LED_GPIO 2
-#define HANDLER_GPIO 18
+#define DS_BUS_GPIO 18
 #define FIRST_RELAY_GPIO 19
 #define SECOND_RELAY_GPIO 20
 
@@ -77,21 +76,19 @@ void setup() {
   new Supla::Html::StatusLedParameters;
 
   // Channel 0
-  new Supla::Control::LightRelay(FIRST_RELAY_GPIO);
+  auto relay1 = new Supla::Control::LightRelay(FIRST_RELAY_GPIO);
+  relay1->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
 
   // Handler (channels 1-5)
-  auto handler = new Supla::Sensor::MultiDsHandler(&SuplaDevice, HANDLER_GPIO);
+  auto handler = new Supla::Sensor::MultiDsHandler(&SuplaDevice, DS_BUS_GPIO);
   handler->setChannelNumberOffset(1);
   handler->setMaxDeviceCount(5);
   handler->disableSensorsChannelState();
 
   // Channel 6
-  auto relay = new Supla::Control::LightRelay(SECOND_RELAY_GPIO);
-  relay->getChannel()->setChannelNumber(6);
-
-  // Actions dynamically attached to first paired thermometer
-  handler->addAction(0, Supla::TURN_ON, relay, OnLess(25));
-  handler->addAction(0, Supla::TURN_OFF, relay, OnGreater(26));
+  auto relay2 = new Supla::Control::LightRelay(SECOND_RELAY_GPIO);
+  relay2->getChannel()->setChannelNumber(6);
+  relay2->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_LIGHTSWITCH);
 
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.setName("MultiDS");

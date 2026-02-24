@@ -19,6 +19,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <driver/ledc.h>
 #include <supla/io.h>
 #include <supla/log_wrapper.h>
+#include <supla/time.h>
 
 using Supla::Control::RGBWLedsEspIdf;
 
@@ -84,7 +85,7 @@ void RGBWLedsEspIdf::setRGBCCTValueOnDevice(uint32_t red,
       break;
     }
     case SUPLA_CHANNELFNC_DIMMER: {
-      valueAdj[0] =  w1Brightness;
+      valueAdj[0] = w1Brightness;
       usedChannels = 1;
       break;
     }
@@ -95,27 +96,27 @@ void RGBWLedsEspIdf::setRGBCCTValueOnDevice(uint32_t red,
   bool changed = false;
   for (int i = 0; i < usedChannels; i++) {
     if (channelPrevValue[i] != valueAdj[i]) {
+      tryCounter = 0;
       changed = true;
       break;
     }
   }
 
-  if (!changed) {
+  tryCounter++;
+
+  if (!changed && tryCounter > 10) {
+    tryCounter = 10;
     return;
   }
 
   for (int i = 0; i < usedChannels; i++) {
     channelPrevValue[i] = valueAdj[i];
     if (gpios[i] >= 0) {
-      if (ledc_get_duty(LEDC_HIGH_SPEED_MODE, channels[i]) != valueAdj[i]) {
-        ledc_set_duty(LEDC_HIGH_SPEED_MODE, channels[i], valueAdj[i]);
-      }
-    }
-  }
-
-  for (int i = 0; i < usedChannels; i++) {
-    if (gpios[i] >= 0) {
+      ledc_set_duty(LEDC_HIGH_SPEED_MODE, channels[i], valueAdj[i]);
       ledc_update_duty(LEDC_HIGH_SPEED_MODE, channels[i]);
+      if (valueAdj[i] == 0) {
+        ledc_stop(LEDC_HIGH_SPEED_MODE, channels[i], 0);
+      }
     }
   }
 }
@@ -133,11 +134,12 @@ ledc_channel_t RGBWLedsEspIdf::initChannel(int gpio) {
   ledcChannel.duty = 0;
   ledcChannel.hpoint = 0;
 
-  ledcChannel.flags.output_invert = 1;
+  ledcChannel.flags.output_invert = outputInvert ? 1: 0;
 
   ESP_ERROR_CHECK(ledc_channel_config(&ledcChannel));
   ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channelId, 0));
   ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE, channelId));
+  ESP_ERROR_CHECK(ledc_stop(LEDC_HIGH_SPEED_MODE, channelId, 0));
 
   SUPLA_LOG_DEBUG("RGBW[%d]: LEDC PWM channel %d initialized for GPIO %d",
                   getChannelNumber(),  // Supla channel
@@ -172,7 +174,7 @@ void RGBWLedsEspIdf::onInit() {
           .speed_mode = LEDC_HIGH_SPEED_MODE,
           .duty_resolution = LEDC_TIMER_13_BIT,
           .timer_num = static_cast<ledc_timer_t>(ledcTimerId),
-          .freq_hz = 5120,
+          .freq_hz = frequency,
           .clk_cfg = LEDC_AUTO_CLK,
           .deconfigure = false};
       ESP_ERROR_CHECK(ledc_timer_config(&ledcTimer));
@@ -199,3 +201,4 @@ ledc_channel_t RGBWLedsEspIdf::getLedcChannel(int gpio) const {
   }
   return LEDC_CHANNEL_0;
 }
+

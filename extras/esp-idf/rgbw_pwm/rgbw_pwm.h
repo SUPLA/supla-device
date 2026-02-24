@@ -59,6 +59,9 @@ class RGBWLedsEspIdf : public RGBCCTBase {
 
   void onInit() override;
 
+  void setOutputInvert(bool outputInvert) { this->outputInvert = outputInvert; }
+  void setFrequency(uint32_t frequency) { this->frequency = frequency; }
+
  protected:
   /**
    * Obtains ledc channel from parent instance based on given GPIO
@@ -79,8 +82,12 @@ class RGBWLedsEspIdf : public RGBCCTBase {
   ledc_channel_t initChannel(int gpio);
   bool initialized = false;
   bool enabled = true;
+  bool outputInvert = false;
+
+  int tryCounter = 0;
 
   int32_t channelPrevValue[RGB_CCT_MAX] = {-1, -1, -1, -1, -1};
+  uint32_t frequency = 512;
   RGBWLedsEspIdf *parentLedsEspIdf = nullptr;
 };
 

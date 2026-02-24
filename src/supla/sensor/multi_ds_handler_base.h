@@ -39,14 +39,6 @@ enum class MultiDsState {
   PARING
 };
 
-struct MultiDsActionHolder {
-  uint8_t idx;
-  uint16_t action;
-  Supla::ActionHandler *client;
-  Supla::Condition *condition;
-  bool allwaysEnabled;
-};
-
 class MultiDsHandlerBase : public Element,
                            public Supla::Device::SubdevicePairingHandler,
                            public Supla::Device::ChannelConflictResolver {
@@ -69,14 +61,6 @@ class MultiDsHandlerBase : public Element,
       bool hasConflictInvalidType,
       bool hasConflictChannelMissingOnServer,
       bool hasConflictChannelMissingOnDevice) override;
-
-  /**
-   * Adds action to thermometer at idx. Idx is counted from 0.
-   * 
-   * Currenlty there is a limit for 10 actions defined.
-   */
-  void addAction(uint8_t idx, uint16_t action, Supla::ActionHandler *client,
-                 Supla::Condition *condition, bool alwaysEnabled = false);
 
   virtual double getTemperature(const uint8_t *address) = 0;
 
@@ -170,10 +154,7 @@ class MultiDsHandlerBase : public Element,
 
   uint8_t pin;
   Supla::Protocol::SuplaSrpc *srpc = nullptr;
-
   MultiDsState state = MultiDsState::READY;
-  Supla::Sensor::MultiDsActionHolder *actions[MULTI_DS_MAX_ACTIONS] = {};
-  uint8_t actionsCount = 0;
 
   uint32_t pairingStartTimeMs = 0;
   uint32_t helperTimeMs = 0;

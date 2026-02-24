@@ -24,16 +24,20 @@
 #include <supla/storage/config.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/device/register_device.h>
+#include <supla/storage/config_tags.h>
 
 #define DS_HANDLER_ADDRESS_LENGTH 24
 #define DS_NAME "DS18B20"
-#define DS_UNUSED_STRING "-"
 
 using Supla::Sensor::MultiDsHandlerBase;
 
 MultiDsHandlerBase::MultiDsHandlerBase(
     SuplaDeviceClass *sdc,
-    uint8_t pin): sdc(sdc), pin(pin) {}
+    uint8_t pin): sdc(sdc), pin(pin) {
+  if (sdc) {
+    sdc->setChannelConflictResolver(this);
+  }
+}
 
 MultiDsHandlerBase::~MultiDsHandlerBase() {
   for (int i = 0; i < MULTI_DS_MAX_DEVICES_COUNT; i++) {
@@ -41,14 +45,6 @@ MultiDsHandlerBase::~MultiDsHandlerBase() {
     if (sensor != nullptr) {
       delete sensor;
       sensors[i] = nullptr;
-    }
-  }
-
-  for (int i = 0; i < MULTI_DS_MAX_ACTIONS; i++) {
-    auto action = actions[i];
-    if (action != nullptr) {
-      delete action;
-      actions[i] = nullptr;
     }
   }
 }
@@ -63,7 +59,8 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   for (int i = 0; i < maxDeviceCount; i++) {
     int subDeviceId = i + 1;
-    Supla::Config::generateKey(key, subDeviceId, DS_SENSOR_CONFIG_KEY);
+    Supla::Config::generateKey(key, subDeviceId,
+                               Supla::ConfigTag::DsSensorConfig);
     Supla::Sensor::DsSensorConfig sensorConfig;
 
     SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
@@ -90,6 +87,10 @@ void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
 }
 
 void MultiDsHandlerBase::onInit() {
+  sdc->addFlags(SUPLA_DEVICE_FLAG_CALCFG_SUBDEVICE_PAIRING);
+  sdc->addFlags(SUPLA_DEVICE_FLAG_BLOCK_ADDING_CHANNELS_AFTER_DELETION);
+  sdc->setSubdevicePairingHandler(this);
+
   if (searchFirstDevice && !anySensorLoaded) {
     initialSensorSearch();
   }
@@ -209,7 +210,7 @@ bool MultiDsHandlerBase::iterateConnected() {
       sensor->setDetailsSend(true);
       dataSend = true;
       break;
-    }
+    }  // TODO(klew): move subdevice details sending/update to common class
   }
 
   return !dataSend;
@@ -252,21 +253,6 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   if (sensor == nullptr) {
     SUPLA_LOG_ERROR("MultiDS: Device add failed!");
     return nullptr;
-  }
-
-  // Assign actions if configured
-  for (int i = 0; i < MULTI_DS_MAX_ACTIONS; i++) {
-    auto action = actions[i];
-    if (action == nullptr) {
-      break;
-    }
-    uint8_t idx = subDeviceId - 1;
-    if (action->idx == idx) {
-      SUPLA_LOG_DEBUG("MultiDS: Assigning action %d for channel on idx %d",
-                      action->action, idx);
-      sensor->addAction(action->action, action->client, action->condition,
-                        action->allwaysEnabled);
-    }
   }
 
   if (channelStateDisabled) {
@@ -337,7 +323,6 @@ bool MultiDsHandlerBase::onChannelConflictReport(
       }
 
       int channelNumber = sensor->getChannel()->getChannelNumber();
-      int subDeviceId = sensor->getChannel()->getSubDeviceId();
       if ((channelNumber >= channelReportSize ||
           channelReport[channelNumber] == 0) &&
           !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
@@ -348,42 +333,14 @@ bool MultiDsHandlerBase::onChannelConflictReport(
         sensor = nullptr;
         sensors[i] = nullptr;
 
-        if (useSubDevices) {
-          SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
-                         sensor->getChannel()->getSubDeviceId(),
-                         channelNumber);
-        } else {
-          SUPLA_LOG_DEBUG("MultiDS: Channel removed (idx: %d, number: %d)", i,
-                         channelNumber);
-        }
+
+        SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
+                        sensor->getSubDeviceId(), channelNumber);
       }
     }
   }
 
   return false;
-}
-
-void MultiDsHandlerBase::addAction(uint8_t idx, uint16_t action,
-    Supla::ActionHandler *client, Supla::Condition *condition,
-    bool alwaysEnabled) {
-  if (idx < MULTI_DS_MAX_DEVICES_COUNT) {
-    if (actionsCount < MULTI_DS_MAX_ACTIONS) {
-      auto actionHolder = new Supla::Sensor::MultiDsActionHolder();
-      actionHolder->idx = idx;
-      actionHolder->action = action;
-      actionHolder->client = client;
-      actionHolder->condition = condition;
-      actionHolder->allwaysEnabled = alwaysEnabled;
-      actions[actionsCount++] = actionHolder;
-    } else {
-      SUPLA_LOG_WARNING("MultiDS: Actions limit reached, action skipped!");
-    }
-
-    auto sensor = sensors[idx];
-    if (sensor) {
-      sensor->addAction(action, client, condition, alwaysEnabled);
-    }
-  }
 }
 
 void MultiDsHandlerBase::setMaxDeviceCount(uint8_t count) {

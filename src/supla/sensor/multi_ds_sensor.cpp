@@ -18,6 +18,7 @@
 #include "multi_ds_handler_base.h"
 
 #include <supla/log_wrapper.h>
+#include <supla/storage/config_tags.h>
 
 using Supla::Sensor::MultiDsSensor;
 
@@ -44,7 +45,7 @@ double MultiDsSensor::getValue() {
     channel.setStateOnline();
   }
 
-  if (value == DEVICE_DISCONNECTED_C || value == 85.0) {
+  if (value == 85.0) {
     value = TEMPERATURE_NOT_AVAILABLE;
   }
 
@@ -67,8 +68,9 @@ void MultiDsSensor::saveSensorConfig() {
   auto config = Supla::Storage::ConfigInstance();
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, subDeviceId, DS_SENSOR_CONFIG_KEY);
-    SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
+    Supla::Config::generateKey(key, subDeviceId,
+                               Supla::ConfigTag::DsSensorConfig);
+    SUPLA_LOG_DEBUG("MultiDS: Saving config for key %s", key);
     DsSensorConfig sensorConfig;
     sensorConfig.channelNumber = channel.getChannelNumber();
     memcpy(sensorConfig.address, address, 8);
@@ -80,13 +82,14 @@ void MultiDsSensor::saveSensorConfig() {
 }
 
 void MultiDsSensor::purgeConfig() {
-  Supla::Sensor::ThermHygroMeter::purgeConfig();
+  Supla::Sensor::Thermometer::purgeConfig();
 
   auto config = Supla::Storage::ConfigInstance();
   if (config) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    Supla::Config::generateKey(key, subDeviceId, DS_SENSOR_CONFIG_KEY);
-    SUPLA_LOG_DEBUG("MultiDS: Loading config for key %s", key);
+    Supla::Config::generateKey(key, subDeviceId,
+                               Supla::ConfigTag::DsSensorConfig);
+    SUPLA_LOG_DEBUG("MultiDS: Erasing config for key %s", key);
     config->eraseKey(key);
     config->commit();
   }

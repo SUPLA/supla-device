@@ -824,6 +824,7 @@ void RGBCCTBase::onFastTimer() {
                                          maxColorBrightness);
       } else {
         hwColorBrightness = 0;
+        adjColorBrightness = 0;
       }
 
       // White channel(s) brightness
@@ -833,6 +834,7 @@ void RGBCCTBase::onFastTimer() {
             adjBrightness, 1, maxHwValue, minBrightness, maxBrightness);
       } else {
         hwBrightness = 0;
+        adjBrightness = 0;
       }
 
       uint32_t white1Brightness = adjBrightness;

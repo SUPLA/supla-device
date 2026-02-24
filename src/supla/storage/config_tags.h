@@ -85,6 +85,8 @@ const char ModbusCfgTag[] = "modbus_cfg";
 
 const char OtaModeTag[] = "ota_mode";
 
+const char DsSensorConfig[] = "ds_sensor";
+
 static_assert(sizeof(DeviceConfigChangeCfgTag) < 16);
 static_assert(sizeof(ChannelFunctionTag) < 12);
 static_assert(sizeof(ChannelConfigChangedFlagTag) < 12);
@@ -131,6 +133,7 @@ static_assert(sizeof(ContainerTag) < 12);
 static_assert(sizeof(ValveCfgTag) < 12);
 static_assert(sizeof(ModbusCfgTag) < 16);
 static_assert(sizeof(OtaModeTag) < 16);
+static_assert(sizeof(DsSensorConfig) < 12);
 
 }  // namespace ConfigTag
 }  // namespace Supla

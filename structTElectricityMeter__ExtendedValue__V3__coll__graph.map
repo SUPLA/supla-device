@@ -1,5 +1,5 @@
 <map id="TElectricityMeter_ExtendedValue_V3" name="TElectricityMeter_ExtendedValue_V3">
-<area shape="rect" id="Node000001" title=" " alt="" coords="18,94,197,135"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="18,102,197,143"/>
 <area shape="rect" id="Node000002" href="$structTElectricityMeter__Measurement.html" title=" " alt="" coords="5,5,210,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,46,110,93,105,93,105,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,46,110,102,105,102,105,46"/>
 </map>

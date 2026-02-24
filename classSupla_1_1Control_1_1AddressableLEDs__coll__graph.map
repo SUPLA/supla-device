@@ -1,6 +1,6 @@
 <map id="Supla::Control::AddressableLEDs" name="Supla::Control::AddressableLEDs">
-<area shape="rect" id="Node000001" title="Class for using addressable LEDs as ws2812b and many others." alt="" coords="5,85,217,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="57,8,165,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="114,49,114,84,108,84,108,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="182,13,191,20,183,28,165,30,165,25,181,23,186,20,179,17"/>
+<area shape="rect" id="Node000001" title="Class for using addressable LEDs as ws2812b and many others." alt="" coords="5,98,217,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="57,14,165,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="114,55,114,97,108,97,108,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="182,18,191,27,183,35,165,38,165,33,181,31,186,27,179,23"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="Supla::Notification" name="Supla::Notification">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,131,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="14,8,122,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="71,49,71,84,65,84,65,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="139,13,148,20,140,28,122,30,122,25,138,23,143,20,136,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,131,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="14,14,122,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="71,55,71,97,65,97,65,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="139,18,148,27,140,35,122,38,122,33,138,31,143,27,136,23"/>
 </map>

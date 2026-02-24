@@ -1,9 +1,9 @@
 <map id="TDS_SuplaRegisterDevice_F" name="TDS_SuplaRegisterDevice_F">
-<area shape="rect" id="Node000001" title=" " alt="" coords="77,183,267,208"/>
-<area shape="rect" id="Node000002" href="$structTDS__SuplaDeviceChannel__D.html" title=" " alt="" coords="77,94,267,120"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="175,135,175,182,169,182,169,135"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="80,199,270,224"/>
+<area shape="rect" id="Node000002" href="$structTDS__SuplaDeviceChannel__D.html" title=" " alt="" coords="80,102,270,128"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="177,143,177,198,172,198,172,143"/>
 <area shape="rect" id="Node000003" href="$structTActionTriggerProperties.html" title=" " alt="" coords="5,5,171,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="86,46,87,58,92,69,105,82,121,91,119,96,101,86,87,71,82,59,81,46"/>
-<area shape="rect" id="Node000004" href="$structTHVACValue.html" title=" " alt="" coords="206,5,306,31"/>
-<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="247,46,229,72,197,96,194,91,225,68,242,43"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="86,46,87,62,92,77,105,90,122,99,119,104,102,94,88,79,81,63,80,47"/>
+<area shape="rect" id="Node000004" href="$structTHVACValue.html" title=" " alt="" coords="212,5,311,31"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="254,47,234,80,202,104,199,99,230,76,250,44"/>
 </map>

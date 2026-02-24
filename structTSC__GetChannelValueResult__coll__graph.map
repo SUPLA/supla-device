@@ -1,7 +1,7 @@
 <map id="TSC_GetChannelValueResult" name="TSC_GetChannelValueResult">
-<area shape="rect" id="Node000001" title=" " alt="" coords="88,94,281,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="88,102,281,128"/>
 <area shape="rect" id="Node000002" href="$structTSuplaChannelValue__B.html" title=" " alt="" coords="5,5,164,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,39,172,92,169,96,108,43"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,39,173,99,170,103,106,43"/>
 <area shape="rect" id="Node000003" href="$structTSuplaChannelExtendedValue.html" title=" " alt="" coords="188,5,384,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="262,43,200,96,197,92,259,39"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="264,43,199,103,196,99,260,39"/>
 </map>

@@ -1,8 +1,8 @@
 <map id="Supla::DS3231RTC" name="Supla::DS3231RTC">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,160,138,185"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Clock.html" title=" " alt="" coords="25,85,118,110"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,126,74,159,69,159,69,126"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="18,8,125,33"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,49,74,84,69,84,69,49"/>
-<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="142,13,152,20,143,28,126,30,125,25,141,23,147,20,139,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,173,138,199"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Clock.html" title=" " alt="" coords="25,98,118,124"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="74,139,74,173,69,173,69,139"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="18,14,125,40"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="74,55,74,97,69,97,69,55"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="142,18,152,27,144,35,126,38,125,33,141,31,147,27,139,23"/>
 </map>

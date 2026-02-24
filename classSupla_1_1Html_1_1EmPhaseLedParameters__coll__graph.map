@@ -1,6 +1,6 @@
 <map id="Supla::Html::EmPhaseLedParameters" name="Supla::Html::EmPhaseLedParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,245,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="57,8,193,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="128,49,128,84,122,84,122,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="209,13,219,20,211,28,193,30,193,25,209,23,214,20,207,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,245,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="57,14,193,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="128,55,128,97,122,97,122,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="209,19,219,27,211,35,193,38,193,33,209,30,214,27,206,23"/>
 </map>

@@ -1,9 +1,9 @@
 <map id="Supla::Io::ADS1115" name="Supla::Io::ADS1115">
-<area shape="rect" id="Node000001" title=" " alt="" coords="152,94,284,120"/>
-<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="301,99,310,107,302,115,285,117,284,112,300,110,305,107,298,103"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="156,102,288,128"/>
+<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="305,106,314,115,306,123,289,126,288,121,304,118,309,115,301,110"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="5,5,113,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="96,36,197,91,194,96,93,41"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="130,10,139,18,131,26,113,29,113,24,129,21,134,18,127,14"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="223,5,319,31"/>
-<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="258,46,227,95,223,92,253,43"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,37,202,99,199,104,92,41"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,9,139,18,131,27,114,30,113,24,129,22,134,18,126,13"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="229,5,324,31"/>
+<area shape="poly" id="edge4_Node000001_Node000003" title=" " alt="" coords="264,46,231,103,226,100,259,43"/>
 </map>

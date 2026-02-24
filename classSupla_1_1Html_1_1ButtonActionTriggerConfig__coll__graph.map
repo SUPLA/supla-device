@@ -1,6 +1,6 @@
 <map id="Supla::Html::ButtonActionTriggerConfig" name="Supla::Html::ButtonActionTriggerConfig">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,175,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="22,8,158,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,49,93,85,87,85,87,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="174,13,184,20,176,28,158,30,158,25,174,23,179,20,172,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,175,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="22,14,158,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,56,93,97,87,97,87,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="174,19,184,27,176,35,158,38,158,33,174,30,179,27,171,23"/>
 </map>

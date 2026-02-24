@@ -1,4 +1,4 @@
 <map id="Supla::Element" name="Supla::Element">
-<area shape="rect" id="Node000001" title="Base class for all elements of SuplaDevice." alt="" coords="5,8,113,33"/>
-<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="129,14,139,20,131,26,113,28,113,22,129,21,134,20,127,19"/>
+<area shape="rect" id="Node000001" title="Base class for all elements of SuplaDevice." alt="" coords="5,14,113,40"/>
+<area shape="poly" id="edge1_Node000001_Node000001" title=" " alt="" coords="129,21,139,27,131,33,113,34,113,29,129,28,134,27,127,26"/>
 </map>

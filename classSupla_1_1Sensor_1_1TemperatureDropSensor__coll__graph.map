@@ -1,6 +1,6 @@
 <map id="Supla::Sensor::TemperatureDropSensor" name="Supla::Sensor::TemperatureDropSensor">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,186,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="42,8,149,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,49,98,85,93,85,93,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="166,13,176,20,167,28,150,30,149,25,165,23,171,20,163,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,186,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="42,14,149,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,56,98,97,93,97,93,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="166,18,176,27,168,35,150,38,149,33,165,31,171,27,163,23"/>
 </map>

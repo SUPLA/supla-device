@@ -1,6 +1,6 @@
 <map id="Supla::Html::ScreenBrightnessParameters" name="Supla::Html::ScreenBrightnessParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,203,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="36,8,172,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,49,107,85,101,85,101,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="188,13,198,20,190,28,172,30,172,25,188,23,193,20,186,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,203,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="36,14,172,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,56,107,97,101,97,101,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="188,19,198,27,190,35,172,38,172,33,188,30,193,27,185,23"/>
 </map>

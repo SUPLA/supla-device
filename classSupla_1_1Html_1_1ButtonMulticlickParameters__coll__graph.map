@@ -1,6 +1,6 @@
 <map id="Supla::Html::ButtonMulticlickParameters" name="Supla::Html::ButtonMulticlickParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,193,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="31,8,167,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,49,102,85,96,85,96,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="183,13,193,20,185,28,167,30,167,25,183,23,188,20,181,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,193,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="31,14,167,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,56,102,97,96,97,96,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="183,19,193,27,185,35,167,38,167,33,183,30,188,27,180,23"/>
 </map>

@@ -1,5 +1,5 @@
 <map id="TSC_SuplaChannel" name="TSC_SuplaChannel">
-<area shape="rect" id="Node000001" title=" " alt="" coords="9,94,144,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="9,102,144,128"/>
 <area shape="rect" id="Node000002" href="$structTSuplaChannelValue.html" title=" " alt="" coords="5,5,148,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,47,79,94,74,94,74,47"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="79,46,79,101,74,101,74,46"/>
 </map>

@@ -1,7 +1,7 @@
 <map id="TChannelConfig_HVAC" name="TChannelConfig_HVAC">
-<area shape="rect" id="Node000001" title=" " alt="" coords="87,94,244,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="87,102,244,128"/>
 <area shape="rect" id="Node000002" href="$structHvacParameterFlags.html" title=" " alt="" coords="5,5,150,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,40,155,92,152,96,99,44"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,42,126,76,152,100,149,104,122,80,93,45"/>
 <area shape="rect" id="Node000003" href="$structTHVACTemperatureCfg.html" title=" " alt="" coords="174,5,333,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="244,46,226,72,193,96,190,91,222,68,240,43"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="246,47,226,80,194,104,191,99,222,76,242,44"/>
 </map>

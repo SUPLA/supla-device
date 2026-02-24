@@ -1,6 +1,6 @@
 <map id="Supla::Html::ScreenDelayParameters" name="Supla::Html::ScreenDelayParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,173,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="21,8,157,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,49,92,85,86,85,86,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="173,13,183,20,175,28,157,30,157,25,173,23,178,20,171,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,173,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="21,14,157,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="92,56,92,97,86,97,86,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="173,19,183,27,175,35,157,38,157,33,173,30,178,27,170,23"/>
 </map>

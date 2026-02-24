@@ -1,14 +1,14 @@
 <map id="Supla::ChannelExtended" name="Supla::ChannelExtended">
-<area shape="rect" id="Node000001" title=" " alt="" coords="282,187,442,213"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Channel.html" title=" " alt="" coords="188,96,296,122"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="272,129,347,184,344,189,269,133"/>
-<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="313,100,322,109,314,117,296,120,296,115,312,113,317,109,310,105"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="286,216,446,242"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Channel.html" title=" " alt="" coords="188,111,296,136"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="270,144,353,214,350,218,266,149"/>
+<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="312,113,319,117,322,124,314,133,297,137,296,132,312,129,317,123,315,121,310,118"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="5,5,135,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="108,36,220,93,218,98,106,41"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="104,37,223,108,221,113,102,41"/>
 <area shape="rect" id="Node000004" href="$structTActionTriggerProperties.html" title=" " alt="" coords="159,5,325,31"/>
-<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="245,46,245,96,239,96,239,46"/>
-<area shape="rect" id="Node000005" href="$structTHVACValue.html" title=" " alt="" coords="360,5,460,31"/>
-<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="403,46,394,60,382,72,341,94,297,105,295,100,339,89,379,68,390,57,398,43"/>
-<area shape="rect" id="Node000006" href="$structTSuplaChannelExtendedValue.html" title=" " alt="" coords="384,96,580,122"/>
-<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="455,133,380,189,377,184,452,129"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="245,46,245,111,239,111,239,46"/>
+<area shape="rect" id="Node000005" href="$structTHVACValue.html" title=" " alt="" coords="366,5,465,31"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="410,47,401,64,388,80,367,94,344,105,297,119,295,114,342,100,364,90,384,76,396,62,405,45"/>
+<area shape="rect" id="Node000006" href="$structTSuplaChannelExtendedValue.html" title=" " alt="" coords="392,111,588,136"/>
+<area shape="poly" id="edge6_Node000001_Node000006" title=" " alt="" coords="466,149,382,218,379,214,462,144"/>
 </map>

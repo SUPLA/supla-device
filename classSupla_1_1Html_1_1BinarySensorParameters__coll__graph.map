@@ -1,6 +1,6 @@
 <map id="Supla::Html::BinarySensorParameters" name="Supla::Html::BinarySensorParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,177,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="23,8,159,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,49,94,85,88,85,88,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="175,13,185,20,177,28,159,30,159,25,175,23,180,20,173,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,177,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="23,14,159,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="94,56,94,97,88,97,88,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="175,19,185,27,177,35,159,38,159,33,175,30,180,27,172,23"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="Supla::Html::DisableUserInterfaceParameter" name="Supla::Html::DisableUserInterfaceParameter">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,171,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="20,8,156,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,49,91,85,85,85,85,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="172,13,182,20,174,28,156,30,156,25,172,23,177,20,170,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,171,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="20,14,156,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="91,56,91,97,85,97,85,56"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="172,19,182,27,174,35,156,38,156,33,172,30,177,27,169,23"/>
 </map>

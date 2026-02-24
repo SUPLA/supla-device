@@ -1,5 +1,5 @@
 <map id="TSC_SuplaSceneStatePack" name="TSC_SuplaSceneStatePack">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,94,191,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,102,191,128"/>
 <area shape="rect" id="Node000002" href="$structTSC__SuplaSceneState.html" title=" " alt="" coords="20,5,176,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,47,101,94,95,94,95,47"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,46,101,101,95,101,95,46"/>
 </map>

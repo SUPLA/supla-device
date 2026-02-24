@@ -1,9 +1,9 @@
 <map id="TDeviceConfig_Modbus" name="TDeviceConfig_Modbus">
-<area shape="rect" id="Node000001" title=" " alt="" coords="162,94,321,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="162,102,321,128"/>
 <area shape="rect" id="Node000002" href="$structModbusSerialConfig.html" title=" " alt="" coords="5,5,142,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,37,165,68,215,91,213,96,163,72,106,41"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="102,38,160,76,211,99,208,104,158,80,99,42"/>
 <area shape="rect" id="Node000003" href="$structModbusNetworkConfig.html" title=" " alt="" coords="165,5,318,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="244,47,244,94,239,94,239,47"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="244,46,244,101,239,101,239,46"/>
 <area shape="rect" id="Node000004" href="$structModbusConfigProperties.html" title=" " alt="" coords="342,5,504,31"/>
-<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="392,42,336,72,278,96,276,91,334,68,390,37"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="398,43,341,80,284,104,282,99,339,76,395,39"/>
 </map>

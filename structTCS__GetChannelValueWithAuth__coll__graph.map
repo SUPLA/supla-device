@@ -1,5 +1,5 @@
 <map id="TCS_GetChannelValueWithAuth" name="TCS_GetChannelValueWithAuth">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,94,214,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,102,214,128"/>
 <area shape="rect" id="Node000002" href="$structTCS__ClientAuthorizationDetails.html" title=" " alt="" coords="8,5,211,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,47,112,94,107,94,107,47"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="112,46,112,101,107,101,107,46"/>
 </map>

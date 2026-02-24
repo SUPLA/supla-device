@@ -1,14 +1,14 @@
 <map id="StateWearLevelingByte" name="StateWearLevelingByte">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,94,163,120"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1StateStorageInterface.html" title=" " alt="" coords="17,5,204,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="105,47,90,94,85,93,100,45"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Storage.html" title=" " alt="" coords="223,94,329,120"/>
-<area shape="poly" id="edge5_Node000003_Node000002" title=" " alt="" coords="115,46,119,58,126,68,141,77,165,85,223,96,222,102,164,90,139,82,123,72,114,61,110,48"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="249,86,205,57,150,34,152,29,208,53,252,82"/>
-<area shape="poly" id="edge6_Node000003_Node000003" title=" " alt="" coords="346,98,355,107,347,115,329,118,329,112,345,110,350,107,343,103"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1SpecialSectionInfo.html" title=" " alt="" coords="229,5,398,31"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="305,46,284,95,279,93,300,44"/>
-<area shape="poly" id="edge4_Node000004_Node000004" title=" " alt="" coords="415,10,425,18,417,26,399,28,398,23,414,21,419,18,412,15"/>
-<area shape="rect" id="Node000005" href="$classSupla_1_1Config.html" title=" " alt="" coords="473,5,570,31"/>
-<area shape="poly" id="edge7_Node000003_Node000005" title=" " alt="" coords="479,40,393,73,319,96,317,91,391,67,477,35"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,102,163,128"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1StateStorageInterface.html" title=" " alt="" coords="26,5,214,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="109,46,105,56,90,103,85,101,100,54,105,44"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Storage.html" title=" " alt="" coords="229,102,334,128"/>
+<area shape="poly" id="edge5_Node000003_Node000002" title=" " alt="" coords="118,46,120,62,127,76,142,86,167,94,228,106,228,111,166,100,140,91,123,80,115,64,113,47"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="254,94,211,57,159,34,161,29,213,53,258,90"/>
+<area shape="poly" id="edge6_Node000003_Node000003" title=" " alt="" coords="351,106,361,115,352,124,335,126,334,121,350,119,355,115,348,110"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1SpecialSectionInfo.html" title=" " alt="" coords="238,5,407,31"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="314,46,289,102,284,100,309,44"/>
+<area shape="poly" id="edge4_Node000004_Node000004" title=" " alt="" coords="424,10,434,18,426,26,408,29,407,24,424,21,429,18,421,14"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Config.html" title=" " alt="" coords="488,5,584,31"/>
+<area shape="poly" id="edge7_Node000003_Node000005" title=" " alt="" coords="500,41,408,81,331,104,330,99,406,75,498,36"/>
 </map>

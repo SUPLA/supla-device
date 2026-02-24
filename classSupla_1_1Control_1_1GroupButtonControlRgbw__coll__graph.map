@@ -1,8 +1,8 @@
 <map id="Supla::Control::GroupButtonControlRgbw" name="Supla::Control::GroupButtonControlRgbw">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,186,125"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="8,8,151,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,48,94,84,89,85,82,49"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="175,8,282,33"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="198,44,129,86,126,82,195,39"/>
-<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="300,13,309,20,301,28,283,30,283,25,299,23,304,20,297,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,186,139"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="8,14,151,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="87,55,95,97,89,98,82,56"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="175,14,282,40"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="200,51,126,100,123,95,197,46"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="300,18,309,27,301,35,283,38,283,33,299,31,304,27,296,23"/>
 </map>

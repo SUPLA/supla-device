@@ -1,84 +1,84 @@
 <map id="Supla::PV::Afore" name="Supla::PV::Afore">
-<area shape="rect" id="Node000001" title=" " alt="" coords="1926,241,2041,266"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1OnePhaseElectricityMeter.html" title=" " alt="" coords="1482,233,1706,274"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1722,251,1926,251,1926,256,1722,256"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1ElectricityMeter.html" title=" " alt="" coords="1195,165,1358,206"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1374,204,1497,230,1496,235,1373,209"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="375,57,555,98"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="571,87,837,119,1158,163,1195,169,1195,174,1157,168,837,125,570,92"/>
-<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,378,145,404"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="122,367,150,341,175,311,183,292,185,274,188,256,200,237,217,223,235,215,270,210,304,206,320,199,337,185,347,167,348,148,349,128,361,108,375,96,379,101,365,111,354,130,353,148,352,168,341,189,323,203,305,211,271,216,236,220,220,227,204,241,193,258,190,274,188,293,180,314,154,345,126,371"/>
-<area shape="poly" id="edge5_Node000005_Node000005" title=" " alt="" coords="58,361,70,354,91,352,112,354,124,360,128,370,122,379,117,376,122,369,120,363,110,359,92,357,72,359,61,365"/>
-<area shape="rect" id="Node000017" href="$classSuplaDeviceClass.html" title=" " alt="" coords="1213,494,1340,520"/>
-<area shape="poly" id="edge35_Node000017_Node000005" title=" " alt="" coords="160,383,309,373,514,365,749,365,869,370,987,379,1075,386,1113,395,1159,413,1191,430,1221,452,1265,492,1261,496,1217,456,1188,435,1157,417,1111,400,1074,392,986,384,869,376,749,371,514,371,309,379,161,388"/>
-<area shape="rect" id="Node000030" href="$classSupla_1_1Control_1_1BlinkingLed.html" title=" " alt="" coords="377,436,552,461"/>
-<area shape="poly" id="edge42_Node000030_Node000005" title=" " alt="" coords="161,397,339,423,393,432,392,438,338,428,160,402"/>
-<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="27,225,156,250"/>
-<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="134,216,201,188,241,179,274,177,304,171,337,152,345,142,348,131,352,119,361,108,378,96,381,101,364,112,356,122,353,133,350,144,340,156,306,176,274,182,242,185,202,194,136,221"/>
-<area shape="rect" id="Node000012" href="$classSupla_1_1Channel.html" title=" " alt="" coords="411,226,518,252"/>
-<area shape="poly" id="edge13_Node000012_Node000006" title=" " alt="" coords="172,235,411,236,411,241,172,241"/>
-<area shape="poly" id="edge21_Node000017_Node000006" title=" " alt="" coords="172,244,738,313,1019,351,1113,367,1159,378,1196,404,1228,436,1270,492,1266,495,1224,439,1193,408,1157,383,1112,372,1018,356,738,318,171,249"/>
-<area shape="rect" id="Node000007" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="5,65,178,90"/>
-<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="193,75,374,75,374,80,193,80"/>
-<area shape="rect" id="Node000008" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="826,394,969,420"/>
-<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="933,384,1239,204,1241,209,936,388"/>
-<area shape="poly" id="edge20_Node000017_Node000008" title=" " alt="" coords="984,412,1069,425,1158,447,1211,468,1254,491,1252,496,1208,473,1157,452,1068,430,984,417"/>
-<area shape="rect" id="Node000009" href="$structTElectricityMeter__ExtendedValue__V3.html" title=" " alt="" coords="808,5,987,46"/>
-<area shape="poly" id="edge9_Node000003_Node000009" title=" " alt="" coords="1002,26,1081,39,1121,51,1159,67,1191,88,1221,114,1263,163,1259,167,1217,118,1188,93,1156,72,1119,56,1080,45,1001,32"/>
-<area shape="rect" id="Node000010" href="$structTElectricityMeter__Measurement.html" title=" " alt="" coords="363,8,567,33"/>
-<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="583,19,808,22,808,27,583,24"/>
-<area shape="rect" id="Node000011" href="$classSupla_1_1ChannelExtended.html" title=" " alt="" coords="817,173,978,198"/>
-<area shape="poly" id="edge11_Node000003_Node000011" title=" " alt="" coords="993,183,1195,183,1195,188,993,188"/>
-<area shape="poly" id="edge12_Node000011_Node000012" title=" " alt="" coords="534,228,816,193,817,198,534,233"/>
-<area shape="poly" id="edge14_Node000012_Node000012" title=" " alt="" coords="429,209,441,202,465,200,487,202,500,208,504,218,498,227,493,224,499,217,496,212,485,207,465,205,442,207,431,214"/>
-<area shape="rect" id="Node000013" href="$structTActionTriggerProperties.html" title=" " alt="" coords="9,274,174,300"/>
-<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="189,275,338,257,410,246,411,251,339,262,190,280"/>
-<area shape="rect" id="Node000014" href="$structTHVACValue.html" title=" " alt="" coords="42,116,141,141"/>
-<area shape="poly" id="edge16_Node000012_Node000014" title=" " alt="" coords="153,144,419,223,418,228,152,149"/>
-<area shape="rect" id="Node000015" href="$structTSuplaChannelExtendedValue.html" title=" " alt="" coords="367,122,562,148"/>
-<area shape="poly" id="edge17_Node000011_Node000015" title=" " alt="" coords="578,146,817,174,817,179,578,151"/>
-<area shape="rect" id="Node000016" href="$classSupla_1_1Client.html" title=" " alt="" coords="1548,450,1641,476"/>
-<area shape="poly" id="edge18_Node000001_Node000016" title=" " alt="" coords="1656,459,1706,453,1761,443,1818,425,1871,398,1907,368,1937,330,1974,266,1978,268,1941,333,1911,371,1874,403,1820,430,1763,448,1706,459,1657,464"/>
-<area shape="rect" id="Node000020" href="$classSupla_1_1Protocol_1_1SuplaSrpc.html" title=" " alt="" coords="1896,502,2071,528"/>
-<area shape="poly" id="edge28_Node000020_Node000016" title=" " alt="" coords="1656,467,1873,494,1906,499,1906,504,1872,499,1656,472"/>
-<area shape="poly" id="edge19_Node000016_Node000017" title=" " alt="" coords="1356,493,1546,467,1547,472,1357,499"/>
-<area shape="rect" id="Node000021" href="$classSupla_1_1Protocol_1_1ProtocolLayer.html" title=" " alt="" coords="1513,681,1675,722"/>
-<area shape="poly" id="edge27_Node000021_Node000017" title=" " alt="" coords="1314,526,1560,679,1558,683,1311,531"/>
-<area shape="rect" id="Node000025" href="$classSupla_1_1Device_1_1SwUpdate.html" title=" " alt="" coords="1510,390,1678,416"/>
-<area shape="poly" id="edge34_Node000025_Node000017" title=" " alt="" coords="1301,481,1342,448,1368,432,1395,419,1453,404,1510,399,1510,404,1454,410,1397,424,1370,437,1345,452,1304,486"/>
-<area shape="rect" id="Node000018" href="$classSupla_1_1Uptime.html" title=" " alt="" coords="846,672,949,697"/>
-<area shape="poly" id="edge22_Node000017_Node000018" title=" " alt="" coords="964,684,1009,682,1059,675,1109,663,1156,642,1194,614,1226,580,1266,519,1271,522,1230,583,1198,618,1159,647,1111,668,1060,680,1009,687,964,689"/>
-<area shape="rect" id="Node000019" href="$structSupla_1_1ConfigurationState.html" title=" " alt="" coords="814,721,981,746"/>
-<area shape="poly" id="edge23_Node000017_Node000019" title=" " alt="" coords="996,740,1036,738,1078,733,1119,721,1156,702,1180,683,1201,660,1235,608,1257,558,1269,520,1275,521,1262,559,1239,611,1206,664,1184,687,1159,707,1121,726,1079,738,1037,744,996,745"/>
-<area shape="poly" id="edge24_Node000017_Node000020" title=" " alt="" coords="1881,517,1341,510,1341,505,1881,511"/>
-<area shape="poly" id="edge25_Node000020_Node000021" title=" " alt="" coords="1657,672,1871,573,1958,526,1960,531,1874,577,1659,677"/>
-<area shape="poly" id="edge26_Node000021_Node000021" title=" " alt="" coords="1565,663,1576,657,1594,655,1611,657,1623,663,1628,671,1626,681,1621,680,1623,672,1619,666,1610,662,1594,660,1577,662,1567,668"/>
-<area shape="rect" id="Node000022" href="$classSupla_1_1Protocol_1_1CalCfgResultPending.html" title=" " alt="" coords="1499,320,1689,361"/>
-<area shape="poly" id="edge29_Node000020_Node000022" title=" " alt="" coords="1705,335,1790,347,1833,360,1874,378,1910,406,1940,440,1978,500,1973,503,1936,443,1906,410,1871,383,1831,365,1789,352,1704,341"/>
-<area shape="rect" id="Node000023" href="$structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html" title=" " alt="" coords="1182,315,1372,355"/>
-<area shape="poly" id="edge30_Node000022_Node000023" title=" " alt="" coords="1388,334,1499,336,1498,341,1388,340"/>
-<area shape="poly" id="edge31_Node000023_Node000023" title=" " alt="" coords="1250,297,1260,290,1277,288,1292,290,1303,296,1307,305,1306,314,1301,314,1302,306,1299,300,1291,295,1277,293,1262,295,1253,301"/>
-<area shape="rect" id="Node000024" href="$classSupla_1_1Device_1_1ChannelConflictResolver.html" title=" " alt="" coords="1496,563,1692,603"/>
-<area shape="poly" id="edge32_Node000020_Node000024" title=" " alt="" coords="1707,571,1788,561,1872,546,1944,526,1945,531,1873,551,1789,566,1708,576"/>
-<area shape="poly" id="edge33_Node000017_Node000025" title=" " alt="" coords="1530,423,1397,464,1312,496,1310,491,1395,459,1529,418"/>
-<area shape="rect" id="Node000026" href="$classSupla_1_1Device_1_1LastStateLogger.html" title=" " alt="" coords="606,537,769,578"/>
-<area shape="poly" id="edge36_Node000017_Node000026" title=" " alt="" coords="784,552,958,542,1157,523,1212,515,1213,520,1158,528,959,547,785,557"/>
-<area shape="rect" id="Node000027" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="44,532,139,557"/>
-<area shape="poly" id="edge38_Node000017_Node000027" title=" " alt="" coords="154,535,201,531,498,517,789,509,1213,504,1213,510,789,514,499,522,202,536,155,540"/>
-<area shape="poly" id="edge37_Node000026_Node000027" title=" " alt="" coords="155,544,202,546,606,554,606,559,202,551,154,550"/>
-<area shape="poly" id="edge45_Node000030_Node000027" title=" " alt="" coords="135,522,201,498,394,459,395,464,202,503,136,527"/>
-<area shape="rect" id="Node000032" href="$classSupla_1_1Device_1_1SecurityLogger.html" title=" " alt="" coords="591,728,784,753"/>
-<area shape="poly" id="edge48_Node000032_Node000027" title=" " alt="" coords="149,560,646,724,645,729,147,565"/>
-<area shape="rect" id="Node000028" href="$classSupla_1_1Device_1_1SubdevicePairingHandler.html" title=" " alt="" coords="814,607,981,647"/>
-<area shape="poly" id="edge39_Node000017_Node000028" title=" " alt="" coords="996,623,1076,613,1117,603,1157,590,1188,575,1216,555,1260,518,1264,522,1220,560,1190,579,1159,595,1119,608,1077,618,997,628"/>
-<area shape="rect" id="Node000029" href="$classSupla_1_1Device_1_1StatusLed.html" title=" " alt="" coords="814,444,981,469"/>
-<area shape="poly" id="edge40_Node000017_Node000029" title=" " alt="" coords="996,465,1158,486,1213,494,1212,499,1157,491,995,470"/>
-<area shape="poly" id="edge41_Node000029_Node000030" title=" " alt="" coords="568,448,814,452,814,457,568,453"/>
-<area shape="poly" id="edge46_Node000030_Node000030" title=" " alt="" coords="429,418,441,412,465,409,487,411,500,417,504,427,498,437,493,434,499,426,496,421,485,416,465,414,442,417,431,423"/>
-<area shape="rect" id="Node000031" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="38,468,145,493"/>
-<area shape="poly" id="edge43_Node000030_Node000031" title=" " alt="" coords="155,461,201,452,292,445,377,443,377,449,292,450,202,458,156,466"/>
-<area shape="poly" id="edge44_Node000031_Node000031" title=" " alt="" coords="58,450,70,443,91,441,112,443,124,449,128,459,122,469,117,466,122,458,120,453,110,448,92,446,72,448,61,455"/>
-<area shape="poly" id="edge47_Node000017_Node000032" title=" " alt="" coords="739,756,826,781,879,791,935,797,994,798,1051,791,1106,774,1156,746,1183,722,1206,692,1225,660,1240,627,1261,564,1271,520,1276,521,1266,566,1245,629,1230,662,1211,695,1187,725,1159,750,1108,779,1052,796,994,803,935,803,878,796,824,786,737,761"/>
-<area shape="rect" id="Node000033" href="$classIPAddress.html" title=" " alt="" coords="1553,184,1635,209"/>
-<area shape="poly" id="edge49_Node000001_Node000033" title=" " alt="" coords="1651,201,1873,232,1926,241,1925,246,1872,238,1650,206"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1946,250,2061,276"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1OnePhaseElectricityMeter.html" title=" " alt="" coords="1497,243,1721,283"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1737,260,1946,260,1946,266,1737,266"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1ElectricityMeter.html" title=" " alt="" coords="1205,183,1368,223"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1384,218,1497,240,1496,245,1383,224"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="380,64,560,105"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="575,92,845,123,1007,146,1168,173,1205,180,1204,185,1167,178,1006,151,844,128,575,97"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,398,145,424"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="117,386,147,355,175,318,183,300,185,284,188,268,200,252,218,238,237,231,273,228,308,225,325,218,342,204,349,193,353,183,353,161,353,138,357,126,366,115,380,103,383,107,370,118,362,129,359,139,358,161,358,184,354,196,346,208,328,222,310,230,274,233,238,236,221,243,204,256,193,270,190,285,188,302,180,320,151,359,121,390"/>
+<area shape="poly" id="edge5_Node000005_Node000005" title=" " alt="" coords="58,381,70,374,91,372,112,374,124,380,128,390,122,399,118,396,123,389,121,384,110,379,92,377,71,379,61,385"/>
+<area shape="rect" id="Node000017" href="$classSuplaDeviceClass.html" title=" " alt="" coords="1223,516,1350,541"/>
+<area shape="poly" id="edge35_Node000017_Node000005" title=" " alt="" coords="161,404,310,397,516,391,752,390,992,400,1082,403,1122,409,1169,426,1202,445,1233,469,1276,513,1273,517,1229,473,1199,450,1167,431,1120,414,1082,408,992,406,752,396,516,396,310,402,161,409"/>
+<area shape="rect" id="Node000030" href="$classSupla_1_1Control_1_1BlinkingLed.html" title=" " alt="" coords="382,464,558,489"/>
+<area shape="poly" id="edge42_Node000030_Node000005" title=" " alt="" coords="161,416,344,443,420,460,418,466,343,448,160,421"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="27,232,156,257"/>
+<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="147,224,201,207,243,200,277,198,308,191,342,171,351,158,353,144,356,129,366,115,381,103,385,108,370,118,361,131,358,145,356,160,345,174,310,196,278,203,244,205,202,212,148,229"/>
+<area shape="rect" id="Node000012" href="$classSupla_1_1Channel.html" title=" " alt="" coords="416,246,524,272"/>
+<area shape="poly" id="edge13_Node000012_Node000006" title=" " alt="" coords="172,245,416,254,416,260,172,250"/>
+<area shape="poly" id="edge21_Node000017_Node000006" title=" " alt="" coords="172,253,368,282,491,294,598,297,782,294,869,299,960,314,1058,344,1169,396,1207,422,1239,455,1280,514,1276,517,1235,459,1203,426,1166,400,1056,349,958,319,869,304,782,300,598,303,491,300,367,287,171,259"/>
+<area shape="rect" id="Node000007" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="5,72,178,97"/>
+<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="193,82,379,82,379,87,193,87"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="831,416,974,441"/>
+<area shape="poly" id="edge8_Node000003_Node000008" title=" " alt="" coords="938,405,1249,222,1251,226,941,410"/>
+<area shape="poly" id="edge20_Node000017_Node000008" title=" " alt="" coords="989,428,1077,438,1123,447,1169,459,1225,485,1269,513,1266,517,1222,490,1167,464,1122,452,1076,443,989,434"/>
+<area shape="rect" id="Node000009" href="$structTElectricityMeter__ExtendedValue__V3.html" title=" " alt="" coords="813,11,992,51"/>
+<area shape="poly" id="edge9_Node000003_Node000009" title=" " alt="" coords="1007,29,1089,41,1130,53,1169,70,1204,94,1234,124,1275,181,1271,184,1230,128,1200,99,1166,75,1128,58,1088,46,1007,34"/>
+<area shape="rect" id="Node000010" href="$structTElectricityMeter__Measurement.html" title=" " alt="" coords="368,14,572,40"/>
+<area shape="poly" id="edge10_Node000009_Node000010" title=" " alt="" coords="588,26,813,28,813,33,588,31"/>
+<area shape="rect" id="Node000011" href="$classSupla_1_1ChannelExtended.html" title=" " alt="" coords="822,190,983,216"/>
+<area shape="poly" id="edge11_Node000003_Node000011" title=" " alt="" coords="998,200,1205,200,1205,206,998,206"/>
+<area shape="poly" id="edge12_Node000011_Node000012" title=" " alt="" coords="539,248,821,211,822,216,539,253"/>
+<area shape="poly" id="edge14_Node000012_Node000012" title=" " alt="" coords="433,229,446,222,470,220,492,222,505,228,509,238,503,247,499,244,504,237,502,232,491,227,470,225,447,227,436,234"/>
+<area shape="rect" id="Node000013" href="$structTActionTriggerProperties.html" title=" " alt="" coords="9,281,174,307"/>
+<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="189,290,343,280,415,268,416,273,344,285,189,295"/>
+<area shape="rect" id="Node000014" href="$structTHVACValue.html" title=" " alt="" coords="42,134,141,160"/>
+<area shape="poly" id="edge16_Node000012_Node000014" title=" " alt="" coords="153,162,424,243,423,248,151,167"/>
+<area shape="rect" id="Node000015" href="$structTSuplaChannelExtendedValue.html" title=" " alt="" coords="372,129,568,155"/>
+<area shape="poly" id="edge17_Node000011_Node000015" title=" " alt="" coords="581,155,822,189,821,194,580,160"/>
+<area shape="rect" id="Node000016" href="$classSupla_1_1Client.html" title=" " alt="" coords="1562,477,1656,503"/>
+<area shape="poly" id="edge18_Node000001_Node000016" title=" " alt="" coords="1671,482,1795,465,1852,452,1891,436,1912,419,1931,398,1962,353,1983,309,1996,275,2001,277,1988,311,1966,356,1935,402,1916,423,1894,440,1854,457,1796,470,1672,487"/>
+<area shape="rect" id="Node000020" href="$classSupla_1_1Protocol_1_1SuplaSrpc.html" title=" " alt="" coords="1916,537,2091,563"/>
+<area shape="poly" id="edge28_Node000020_Node000016" title=" " alt="" coords="1672,496,1893,529,1925,534,1924,539,1892,534,1671,501"/>
+<area shape="poly" id="edge19_Node000016_Node000017" title=" " alt="" coords="1366,516,1562,493,1563,498,1366,522"/>
+<area shape="rect" id="Node000021" href="$classSupla_1_1Protocol_1_1ProtocolLayer.html" title=" " alt="" coords="1528,729,1690,770"/>
+<area shape="poly" id="edge27_Node000021_Node000017" title=" " alt="" coords="1321,548,1579,727,1576,731,1318,552"/>
+<area shape="rect" id="Node000025" href="$classSupla_1_1Device_1_1SwUpdate.html" title=" " alt="" coords="1526,414,1693,440"/>
+<area shape="poly" id="edge34_Node000025_Node000017" title=" " alt="" coords="1307,502,1349,464,1376,445,1405,431,1465,418,1525,416,1525,421,1466,423,1407,436,1379,450,1353,468,1311,506"/>
+<area shape="rect" id="Node000018" href="$classSupla_1_1Uptime.html" title=" " alt="" coords="851,701,954,727"/>
+<area shape="poly" id="edge22_Node000017_Node000018" title=" " alt="" coords="969,719,1015,720,1066,717,1118,706,1166,686,1188,672,1207,654,1240,613,1263,572,1278,541,1283,543,1268,575,1244,616,1211,658,1191,676,1169,691,1120,712,1067,722,1016,726,969,725"/>
+<area shape="rect" id="Node000019" href="$structSupla_1_1ConfigurationState.html" title=" " alt="" coords="819,750,986,776"/>
+<area shape="poly" id="edge23_Node000017_Node000019" title=" " alt="" coords="980,776,1025,780,1074,778,1122,769,1166,749,1193,728,1216,702,1234,672,1249,642,1270,583,1281,541,1286,542,1275,585,1254,644,1239,675,1220,705,1197,732,1169,754,1124,774,1074,784,1025,785,980,781"/>
+<area shape="poly" id="edge24_Node000017_Node000020" title=" " alt="" coords="1901,551,1497,541,1351,534,1351,529,1497,535,1901,545"/>
+<area shape="poly" id="edge25_Node000020_Node000021" title=" " alt="" coords="1673,720,1776,673,1891,615,1981,561,1984,565,1894,620,1778,678,1675,725"/>
+<area shape="poly" id="edge26_Node000021_Node000021" title=" " alt="" coords="1579,712,1590,705,1609,703,1627,705,1638,711,1643,720,1642,729,1637,728,1638,721,1635,715,1625,710,1609,708,1592,710,1582,716"/>
+<area shape="rect" id="Node000022" href="$classSupla_1_1Protocol_1_1CalCfgResultPending.html" title=" " alt="" coords="1514,331,1704,371"/>
+<area shape="poly" id="edge29_Node000020_Node000022" title=" " alt="" coords="1720,354,1808,371,1852,386,1894,408,1930,437,1960,473,1998,535,1994,538,1956,476,1927,441,1891,412,1850,391,1807,376,1719,359"/>
+<area shape="rect" id="Node000023" href="$structSupla_1_1Protocol_1_1CalCfgResultPendingItem.html" title=" " alt="" coords="1192,325,1382,366"/>
+<area shape="poly" id="edge30_Node000022_Node000023" title=" " alt="" coords="1398,345,1514,347,1514,352,1398,350"/>
+<area shape="poly" id="edge31_Node000023_Node000023" title=" " alt="" coords="1260,308,1270,301,1287,299,1303,301,1313,307,1318,316,1317,325,1311,324,1313,317,1309,311,1301,306,1287,304,1272,306,1263,312"/>
+<area shape="rect" id="Node000024" href="$classSupla_1_1Device_1_1ChannelConflictResolver.html" title=" " alt="" coords="1511,597,1707,638"/>
+<area shape="poly" id="edge32_Node000020_Node000024" title=" " alt="" coords="1722,612,1806,604,1892,589,1935,576,1972,561,1974,566,1936,581,1893,594,1807,609,1723,617"/>
+<area shape="poly" id="edge33_Node000017_Node000025" title=" " alt="" coords="1538,447,1407,484,1320,518,1318,513,1405,479,1536,442"/>
+<area shape="rect" id="Node000026" href="$classSupla_1_1Device_1_1LastStateLogger.html" title=" " alt="" coords="611,571,774,611"/>
+<area shape="poly" id="edge36_Node000017_Node000026" title=" " alt="" coords="790,583,991,567,1167,545,1222,536,1223,541,1168,550,992,573,790,588"/>
+<area shape="rect" id="Node000027" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="44,562,139,588"/>
+<area shape="poly" id="edge38_Node000017_Node000027" title=" " alt="" coords="154,569,202,567,1222,528,1223,533,202,572,155,575"/>
+<area shape="poly" id="edge37_Node000026_Node000027" title=" " alt="" coords="155,584,202,590,313,596,424,597,611,593,611,598,424,603,312,601,201,595,154,590"/>
+<area shape="poly" id="edge45_Node000030_Node000027" title=" " alt="" coords="140,554,201,534,272,521,343,509,424,487,426,492,344,514,273,526,202,539,141,559"/>
+<area shape="rect" id="Node000032" href="$classSupla_1_1Device_1_1SecurityLogger.html" title=" " alt="" coords="596,766,789,792"/>
+<area shape="poly" id="edge48_Node000032_Node000027" title=" " alt="" coords="132,593,203,625,324,669,446,708,640,763,638,768,444,713,322,674,201,630,130,598"/>
+<area shape="rect" id="Node000028" href="$classSupla_1_1Device_1_1SubdevicePairingHandler.html" title=" " alt="" coords="819,636,986,677"/>
+<area shape="poly" id="edge39_Node000017_Node000028" title=" " alt="" coords="1001,658,1084,651,1126,642,1167,628,1200,609,1230,585,1273,540,1277,544,1233,589,1203,613,1169,633,1128,647,1085,656,1002,663"/>
+<area shape="rect" id="Node000029" href="$classSupla_1_1Device_1_1StatusLed.html" title=" " alt="" coords="819,465,986,491"/>
+<area shape="poly" id="edge40_Node000017_Node000029" title=" " alt="" coords="1001,486,1168,507,1223,515,1222,521,1167,512,1001,491"/>
+<area shape="poly" id="edge41_Node000029_Node000030" title=" " alt="" coords="573,474,819,475,819,480,573,479"/>
+<area shape="poly" id="edge46_Node000030_Node000030" title=" " alt="" coords="433,447,446,440,470,437,492,439,505,445,509,455,503,465,499,462,504,454,502,449,491,444,470,442,447,445,436,451"/>
+<area shape="rect" id="Node000031" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="38,496,145,521"/>
+<area shape="poly" id="edge43_Node000030_Node000031" title=" " alt="" coords="155,489,201,481,294,473,382,472,382,477,295,478,202,486,156,494"/>
+<area shape="poly" id="edge44_Node000031_Node000031" title=" " alt="" coords="58,478,70,472,91,469,112,471,124,477,128,487,122,497,118,494,123,486,121,481,110,476,92,474,71,477,61,483"/>
+<area shape="poly" id="edge47_Node000017_Node000032" title=" " alt="" coords="743,795,831,820,884,831,942,838,1001,839,1060,832,1115,815,1166,786,1195,760,1219,728,1238,693,1253,657,1273,589,1281,541,1287,542,1278,590,1258,658,1243,695,1223,731,1199,763,1169,791,1118,820,1061,837,1002,844,942,843,884,836,829,826,742,800"/>
+<area shape="rect" id="Node000033" href="$classIPAddress.html" title=" " alt="" coords="1568,193,1650,219"/>
+<area shape="poly" id="edge49_Node000001_Node000033" title=" " alt="" coords="1666,210,1893,242,1946,250,1945,256,1892,247,1665,216"/>
 </map>

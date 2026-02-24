@@ -1,19 +1,19 @@
 <map id="OnGreaterCond" name="OnGreaterCond">
-<area shape="rect" id="Node000001" title=" " alt="" coords="137,292,248,318"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Condition.html" title=" " alt="" coords="135,217,250,243"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="195,258,195,292,190,292,190,258"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="10,121,153,146"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="99,158,127,191,165,214,162,219,124,195,95,161"/>
-<area shape="poly" id="edge8_Node000002_Node000003" title=" " alt="" coords="109,154,180,214,176,218,105,158"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="177,113,357,154"/>
-<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="244,168,204,218,200,215,240,165"/>
-<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,8,113,33"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="96,38,231,110,229,115,94,43"/>
-<area shape="poly" id="edge5_Node000005_Node000005" title=" " alt="" coords="130,11,139,20,131,30,114,33,113,28,129,25,134,20,126,15"/>
-<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="202,8,332,33"/>
-<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="270,49,270,113,264,113,264,49"/>
-<area shape="rect" id="Node000007" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="356,8,528,33"/>
-<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="411,44,299,115,296,111,408,40"/>
-<area shape="rect" id="Node000008" href="$classSupla_1_1ConditionGetter.html" title=" " alt="" coords="381,121,532,146"/>
-<area shape="poly" id="edge9_Node000002_Node000008" title=" " alt="" coords="409,155,227,219,226,214,407,150"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="143,327,255,352"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Condition.html" title=" " alt="" coords="142,252,256,277"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="202,293,202,326,196,326,196,293"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="18,148,161,173"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="104,186,117,207,133,226,169,249,166,253,129,230,112,210,99,189"/>
+<area shape="poly" id="edge8_Node000002_Node000003" title=" " alt="" coords="116,182,188,249,184,253,112,186"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="185,140,365,181"/>
+<area shape="poly" id="edge3_Node000002_Node000004" title=" " alt="" coords="253,195,210,253,206,250,249,192"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,14,113,40"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="93,46,244,137,241,142,90,50"/>
+<area shape="poly" id="edge5_Node000005_Node000005" title=" " alt="" coords="129,15,136,20,139,27,131,38,114,42,112,37,129,33,134,27,132,23,126,20"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="210,14,340,40"/>
+<area shape="poly" id="edge6_Node000004_Node000006" title=" " alt="" coords="278,56,278,139,272,139,272,56"/>
+<area shape="rect" id="Node000007" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="364,14,536,40"/>
+<area shape="poly" id="edge7_Node000004_Node000007" title=" " alt="" coords="423,51,303,142,300,137,420,47"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1ConditionGetter.html" title=" " alt="" coords="389,148,540,173"/>
+<area shape="poly" id="edge9_Node000002_Node000008" title=" " alt="" coords="420,182,295,230,232,254,231,249,293,225,418,177"/>
 </map>

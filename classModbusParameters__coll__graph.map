@@ -1,20 +1,20 @@
 <map id="ModbusParameters" name="ModbusParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="254,280,389,306"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="6,189,141,215"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="123,218,289,277,287,282,121,223"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="158,194,168,202,160,210,142,213,141,208,158,205,163,202,155,198"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Modbus_1_1Configurator.html" title=" " alt="" coords="231,189,412,215"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="324,230,324,280,319,280,319,230"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,96,113,122"/>
-<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="109,125,288,186,286,191,108,130"/>
-<area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="130,100,139,109,131,117,113,120,113,115,129,113,134,109,127,105"/>
-<area shape="rect" id="Node000005" href="$structSupla_1_1Modbus_1_1Config.html" title=" " alt="" coords="433,96,581,122"/>
-<area shape="poly" id="edge10_Node000001_Node000005" title=" " alt="" coords="492,136,470,165,450,193,426,219,403,240,378,258,343,282,340,277,375,254,400,236,422,215,445,189,466,161,488,133"/>
-<area shape="poly" id="edge6_Node000003_Node000005" title=" " alt="" coords="470,131,348,191,345,186,468,127"/>
-<area shape="rect" id="Node000006" href="$structSupla_1_1Modbus_1_1SerialConfig.html" title=" " alt="" coords="310,5,491,31"/>
-<area shape="poly" id="edge7_Node000005_Node000006" title=" " alt="" coords="428,39,494,94,491,98,425,43"/>
-<area shape="rect" id="Node000007" href="$structSupla_1_1Modbus_1_1NetworkConfig.html" title=" " alt="" coords="515,5,712,31"/>
-<area shape="poly" id="edge8_Node000005_Node000007" title=" " alt="" coords="589,43,523,98,520,94,586,39"/>
-<area shape="rect" id="Node000008" href="$structSupla_1_1Modbus_1_1ConfigProperties.html" title=" " alt="" coords="202,96,409,122"/>
-<area shape="poly" id="edge9_Node000003_Node000008" title=" " alt="" coords="313,136,322,188,317,189,308,137"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="262,331,397,356"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="6,225,141,251"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,254,301,328,299,333,117,259"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="158,228,168,238,160,247,142,251,141,246,157,243,163,238,155,232"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Modbus_1_1Configurator.html" title=" " alt="" coords="239,225,420,251"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="332,266,332,331,327,331,327,266"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,111,113,136"/>
+<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="103,140,301,222,299,227,101,145"/>
+<area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="129,113,136,117,139,124,131,133,114,137,113,132,129,129,134,123,132,121,127,118"/>
+<area shape="rect" id="Node000005" href="$structSupla_1_1Modbus_1_1Config.html" title=" " alt="" coords="441,111,589,136"/>
+<area shape="poly" id="edge10_Node000001_Node000005" title=" " alt="" coords="505,152,462,228,430,271,391,309,355,332,352,328,388,305,426,267,457,225,501,149"/>
+<area shape="poly" id="edge6_Node000003_Node000005" title=" " alt="" coords="482,147,440,172,350,227,347,222,437,167,480,142"/>
+<area shape="rect" id="Node000006" href="$structSupla_1_1Modbus_1_1SerialConfig.html" title=" " alt="" coords="318,5,499,31"/>
+<area shape="poly" id="edge7_Node000005_Node000006" title=" " alt="" coords="433,40,505,109,501,113,430,44"/>
+<area shape="rect" id="Node000007" href="$structSupla_1_1Modbus_1_1NetworkConfig.html" title=" " alt="" coords="523,5,720,31"/>
+<area shape="poly" id="edge8_Node000005_Node000007" title=" " alt="" coords="600,44,529,113,525,109,597,40"/>
+<area shape="rect" id="Node000008" href="$structSupla_1_1Modbus_1_1ConfigProperties.html" title=" " alt="" coords="210,111,417,136"/>
+<area shape="poly" id="edge9_Node000003_Node000008" title=" " alt="" coords="320,151,331,224,325,225,315,152"/>
 </map>

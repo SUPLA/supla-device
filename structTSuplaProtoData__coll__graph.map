@@ -1,7 +1,7 @@
 <map id="TSuplaProtoData" name="TSuplaProtoData">
-<area shape="rect" id="Node000001" title=" " alt="" coords="98,94,219,120"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="98,102,219,128"/>
 <area shape="rect" id="Node000002" href="$structTSuplaProtoInBuffer.html" title=" " alt="" coords="5,5,144,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="99,41,149,92,145,96,95,44"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="97,41,150,100,146,103,93,44"/>
 <area shape="rect" id="Node000003" href="$structTSuplaProtoOutBuffer.html" title=" " alt="" coords="168,5,317,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="222,44,172,96,168,92,218,41"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="224,44,171,103,167,100,220,41"/>
 </map>

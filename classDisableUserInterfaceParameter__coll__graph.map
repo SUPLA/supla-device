@@ -1,6 +1,6 @@
 <map id="DisableUserInterfaceParameter" name="DisableUserInterfaceParameter">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,209,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="39,8,175,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,49,110,84,104,84,104,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="191,13,201,20,193,28,175,30,175,25,191,23,196,20,189,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,209,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="39,14,175,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="110,55,110,97,104,97,104,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="191,19,201,27,193,35,175,38,175,33,191,30,196,27,188,23"/>
 </map>

@@ -1,6 +1,6 @@
 <map id="PowerStatusLedParameters" name="PowerStatusLedParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,191,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="30,8,166,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,49,101,84,95,84,95,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="182,13,192,20,184,28,166,30,166,25,182,23,187,20,180,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,191,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="30,14,166,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="101,55,101,97,95,97,95,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="182,19,192,27,184,35,166,38,166,33,182,30,187,27,179,23"/>
 </map>

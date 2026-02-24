@@ -1,6 +1,6 @@
 <map id="Supla::Html::VolumeParameters" name="Supla::Html::VolumeParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,211,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="40,8,176,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,49,111,84,105,84,105,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="192,13,202,20,194,28,176,30,176,25,192,23,197,20,190,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,211,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="40,14,176,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="111,55,111,97,105,97,105,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="192,19,202,27,194,35,176,38,176,33,192,30,197,27,189,23"/>
 </map>

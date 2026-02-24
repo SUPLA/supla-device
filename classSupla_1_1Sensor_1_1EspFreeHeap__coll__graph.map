@@ -1,30 +1,30 @@
 <map id="Supla::Sensor::EspFreeHeap" name="Supla::Sensor::EspFreeHeap">
-<area shape="rect" id="Node000001" title=" " alt="" coords="1376,191,1562,217"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1Thermometer.html" title=" " alt="" coords="1142,191,1326,217"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1342,202,1375,202,1375,207,1342,207"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1ThermHygroMeter.html" title=" " alt="" coords="878,150,1056,191"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1072,181,1142,190,1141,195,1071,187"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="655,158,809,184"/>
-<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="824,168,877,168,877,174,824,174"/>
-<area shape="rect" id="Node000005" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="363,104,543,144"/>
-<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="559,139,655,155,654,161,558,144"/>
-<area shape="rect" id="Node000006" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,59,145,85"/>
-<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="160,71,246,76,339,88,390,101,389,106,338,93,245,81,160,76"/>
-<area shape="poly" id="edge6_Node000006_Node000006" title=" " alt="" coords="58,42,70,35,91,33,112,35,124,41,128,51,122,60,117,58,122,50,120,45,110,40,92,38,72,40,61,46"/>
-<area shape="rect" id="Node000007" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="27,166,156,192"/>
-<area shape="poly" id="edge7_Node000005_Node000007" title=" " alt="" coords="171,164,362,135,363,140,172,169"/>
-<area shape="rect" id="Node000009" href="$classSupla_1_1Channel.html" title=" " alt="" coords="399,222,506,248"/>
-<area shape="poly" id="edge10_Node000009_Node000007" title=" " alt="" coords="172,189,399,224,398,229,171,194"/>
-<area shape="rect" id="Node000008" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="5,110,178,136"/>
-<area shape="poly" id="edge8_Node000005_Node000008" title=" " alt="" coords="194,121,362,121,362,127,194,126"/>
-<area shape="poly" id="edge9_Node000004_Node000009" title=" " alt="" coords="521,217,672,182,673,187,522,222"/>
-<area shape="poly" id="edge11_Node000009_Node000009" title=" " alt="" coords="427,205,436,198,453,195,469,198,479,204,481,213,477,223,472,220,476,213,474,207,467,203,453,201,438,203,430,209"/>
-<area shape="rect" id="Node000010" href="$structTActionTriggerProperties.html" title=" " alt="" coords="9,222,174,248"/>
-<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="190,232,399,232,399,238,190,238"/>
-<area shape="rect" id="Node000011" href="$structTHVACValue.html" title=" " alt="" coords="42,271,141,297"/>
-<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="156,275,338,253,398,242,399,248,339,258,157,280"/>
-<area shape="rect" id="Node000012" href="$classSupla_1_1Sensor_1_1ThermometerDriver.html" title=" " alt="" coords="875,216,1059,256"/>
-<area shape="poly" id="edge14_Node000002_Node000012" title=" " alt="" coords="1074,221,1141,213,1142,218,1075,226"/>
-<area shape="rect" id="Node000013" href="$classSupla_1_1Sensor_1_1MeasurementDriver.html" title=" " alt="" coords="639,216,825,256"/>
-<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="841,234,874,234,874,239,841,239"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="1391,222,1577,248"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1Thermometer.html" title=" " alt="" coords="1157,222,1341,248"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1357,232,1390,232,1390,238,1357,238"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1ThermHygroMeter.html" title=" " alt="" coords="888,181,1066,222"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1082,212,1157,221,1156,226,1081,217"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="665,189,819,214"/>
+<area shape="poly" id="edge3_Node000003_Node000004" title=" " alt="" coords="834,199,887,199,887,204,834,204"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="368,129,548,170"/>
+<area shape="poly" id="edge4_Node000004_Node000005" title=" " alt="" coords="563,166,668,185,667,191,563,171"/>
+<area shape="rect" id="Node000006" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,73,145,98"/>
+<area shape="poly" id="edge5_Node000005_Node000006" title=" " alt="" coords="161,82,249,87,344,102,414,126,413,131,343,107,248,92,160,88"/>
+<area shape="poly" id="edge6_Node000006_Node000006" title=" " alt="" coords="58,55,70,49,91,46,112,48,124,54,128,64,122,74,118,71,123,63,121,58,110,53,92,51,71,54,61,60"/>
+<area shape="rect" id="Node000007" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="27,197,156,222"/>
+<area shape="poly" id="edge7_Node000005_Node000007" title=" " alt="" coords="171,194,367,162,368,167,172,199"/>
+<area shape="rect" id="Node000009" href="$classSupla_1_1Channel.html" title=" " alt="" coords="404,261,512,286"/>
+<area shape="poly" id="edge10_Node000009_Node000007" title=" " alt="" coords="172,217,344,244,404,257,403,263,343,249,171,222"/>
+<area shape="rect" id="Node000008" href="$structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="5,137,178,162"/>
+<area shape="poly" id="edge8_Node000005_Node000008" title=" " alt="" coords="193,147,367,147,367,152,193,152"/>
+<area shape="poly" id="edge9_Node000004_Node000009" title=" " alt="" coords="526,254,688,212,689,218,527,259"/>
+<area shape="poly" id="edge11_Node000009_Node000009" title=" " alt="" coords="431,243,440,237,458,234,474,236,484,243,487,252,482,261,477,259,481,252,480,246,472,241,458,239,442,242,434,248"/>
+<area shape="rect" id="Node000010" href="$structTActionTriggerProperties.html" title=" " alt="" coords="9,259,174,285"/>
+<area shape="poly" id="edge12_Node000009_Node000010" title=" " alt="" coords="190,270,404,271,404,276,190,275"/>
+<area shape="rect" id="Node000011" href="$structTHVACValue.html" title=" " alt="" coords="42,313,141,338"/>
+<area shape="poly" id="edge13_Node000009_Node000011" title=" " alt="" coords="157,319,245,312,343,299,409,284,410,290,344,304,246,317,157,325"/>
+<area shape="rect" id="Node000012" href="$classSupla_1_1Sensor_1_1ThermometerDriver.html" title=" " alt="" coords="885,246,1069,287"/>
+<area shape="poly" id="edge14_Node000002_Node000012" title=" " alt="" coords="1084,253,1133,247,1156,244,1157,250,1133,252,1085,258"/>
+<area shape="rect" id="Node000013" href="$classSupla_1_1Sensor_1_1MeasurementDriver.html" title=" " alt="" coords="649,246,835,287"/>
+<area shape="poly" id="edge15_Node000012_Node000013" title=" " alt="" coords="851,264,884,264,884,270,851,270"/>
 </map>

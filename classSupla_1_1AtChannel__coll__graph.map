@@ -1,12 +1,12 @@
 <map id="Supla::AtChannel" name="Supla::AtChannel">
-<area shape="rect" id="Node000001" title=" " alt="" coords="182,173,302,199"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Channel.html" title=" " alt="" coords="188,96,296,122"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="245,137,245,173,239,173,239,137"/>
-<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="313,101,322,109,314,117,296,119,296,114,312,112,317,109,310,106"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="182,195,302,220"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Channel.html" title=" " alt="" coords="188,111,296,136"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="245,152,245,194,239,194,239,152"/>
+<area shape="poly" id="edge3_Node000002_Node000002" title=" " alt="" coords="313,115,322,124,314,132,296,135,296,130,312,127,317,124,310,119"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="5,5,135,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="108,36,220,93,218,98,106,41"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="104,37,223,108,221,113,102,41"/>
 <area shape="rect" id="Node000004" href="$structTActionTriggerProperties.html" title=" " alt="" coords="159,5,325,31"/>
-<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="245,46,245,96,239,96,239,46"/>
-<area shape="rect" id="Node000005" href="$structTHVACValue.html" title=" " alt="" coords="360,5,460,31"/>
-<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="403,46,394,60,382,72,341,94,297,105,295,100,339,89,379,68,390,57,398,43"/>
+<area shape="poly" id="edge4_Node000002_Node000004" title=" " alt="" coords="245,46,245,111,239,111,239,46"/>
+<area shape="rect" id="Node000005" href="$structTHVACValue.html" title=" " alt="" coords="366,5,465,31"/>
+<area shape="poly" id="edge5_Node000002_Node000005" title=" " alt="" coords="410,47,401,64,388,80,367,94,344,105,297,119,295,114,342,100,364,90,384,76,396,62,405,45"/>
 </map>

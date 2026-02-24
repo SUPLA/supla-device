@@ -1,12 +1,12 @@
 <map id="Supla::StateStorageInterface" name="Supla::StateStorageInterface">
 <area shape="rect" id="Node000001" title=" " alt="" coords="5,5,193,31"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Storage.html" title=" " alt="" coords="201,94,306,120"/>
-<area shape="poly" id="edge4_Node000002_Node000001" title=" " alt="" coords="97,46,99,58,104,68,118,78,142,86,201,97,200,102,141,91,116,83,100,72,94,60,92,47"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="226,86,183,57,132,34,134,29,186,53,229,82"/>
-<area shape="poly" id="edge5_Node000002_Node000002" title=" " alt="" coords="324,98,333,107,325,115,307,118,306,112,322,110,328,107,320,103"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Storage.html" title=" " alt="" coords="204,102,309,128"/>
+<area shape="poly" id="edge4_Node000002_Node000001" title=" " alt="" coords="95,46,95,62,100,76,116,87,141,95,204,106,203,111,140,100,113,91,96,80,89,63,89,46"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="230,94,184,57,134,34,136,29,187,53,233,89"/>
+<area shape="poly" id="edge5_Node000002_Node000002" title=" " alt="" coords="326,106,336,115,327,124,310,126,309,121,325,119,330,115,323,110"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1SpecialSectionInfo.html" title=" " alt="" coords="217,5,386,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="290,46,263,95,258,92,285,44"/>
-<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="403,10,413,18,405,26,387,28,386,23,403,21,408,18,400,15"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1Config.html" title=" " alt="" coords="462,5,558,31"/>
-<area shape="poly" id="edge6_Node000002_Node000004" title=" " alt="" coords="466,40,377,73,300,96,298,91,375,67,465,35"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="292,46,265,103,260,100,287,44"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="403,10,413,18,405,26,387,29,386,24,403,21,408,18,400,14"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Config.html" title=" " alt="" coords="467,5,563,31"/>
+<area shape="poly" id="edge6_Node000002_Node000004" title=" " alt="" coords="478,41,385,81,307,104,306,99,383,75,476,36"/>
 </map>

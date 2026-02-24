@@ -1,6 +1,6 @@
 <map id="Supla::Html::StatusLedParameters" name="Supla::Html::StatusLedParameters">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,85,227,110"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="48,8,184,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,49,119,84,113,84,113,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="200,13,210,20,202,28,184,30,184,25,200,23,205,20,198,17"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,98,227,124"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1HtmlElement.html" title=" " alt="" coords="48,14,184,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="119,55,119,97,113,97,113,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="200,19,210,27,202,35,184,38,184,33,200,30,205,27,197,23"/>
 </map>

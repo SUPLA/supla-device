@@ -1,6 +1,6 @@
 <map id="Correction" name="Correction">
-<area shape="rect" id="Node000001" title=" " alt="" coords="25,113,105,139"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Correction.html" title=" " alt="" coords="5,8,125,33"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="68,48,68,113,62,113,62,48"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="142,11,151,20,143,29,126,33,125,28,141,25,146,20,138,15"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="25,140,105,166"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Correction.html" title=" " alt="" coords="5,14,125,40"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="68,55,68,140,62,140,62,55"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="141,15,148,20,151,27,143,38,126,42,125,37,141,33,146,27,144,23,139,20"/>
 </map>

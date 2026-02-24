@@ -1,8 +1,8 @@
 <map id="Supla::ActionHandlerClient" name="Supla::ActionHandlerClient">
-<area shape="rect" id="Node000001" title=" " alt="" coords="62,96,238,122"/>
-<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="255,101,264,109,256,117,238,120,238,114,254,112,259,109,252,105"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="62,111,238,136"/>
+<area shape="poly" id="edge3_Node000001_Node000001" title=" " alt="" coords="255,115,264,124,256,132,239,136,237,131,254,128,259,124,251,119"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1LocalAction.html" title=" " alt="" coords="5,5,135,31"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="93,41,141,94,137,98,89,44"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="90,41,143,109,139,112,86,45"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="159,5,301,31"/>
-<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="211,44,163,98,159,94,207,41"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="214,45,161,112,157,109,210,41"/>
 </map>

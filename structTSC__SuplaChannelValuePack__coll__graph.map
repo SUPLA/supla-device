@@ -1,7 +1,7 @@
 <map id="TSC_SuplaChannelValuePack" name="TSC_SuplaChannelValuePack">
-<area shape="rect" id="Node000001" title=" " alt="" coords="5,183,203,208"/>
-<area shape="rect" id="Node000002" href="$structTSC__SuplaChannelValue.html" title=" " alt="" coords="20,94,188,120"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,135,107,182,101,182,101,135"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,199,203,224"/>
+<area shape="rect" id="Node000002" href="$structTSC__SuplaChannelValue.html" title=" " alt="" coords="20,102,188,128"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="107,143,107,198,101,198,101,143"/>
 <area shape="rect" id="Node000003" href="$structTSuplaChannelValue.html" title=" " alt="" coords="33,5,175,31"/>
-<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="107,47,107,94,101,94,101,47"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="107,46,107,101,101,101,101,46"/>
 </map>

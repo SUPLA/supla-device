@@ -256,6 +256,22 @@ int&#160;</td><td class="memItemRight"><b>getCurrentDimmerBrightness</b> () cons
 int&#160;</td><td class="memItemRight"><b>getCurrentRGBBrightness</b> () const</td></tr>
 <tr class="memitem:a48297a8d32dadd3adcfee6beee218d84" id="r_a48297a8d32dadd3adcfee6beee218d84"><td class="memItemLeft"><a id="a48297a8d32dadd3adcfee6beee218d84" name="a48297a8d32dadd3adcfee6beee218d84"></a>
 void&#160;</td><td class="memItemRight"><b>setMaxHwValue</b> (int newMaxHwValue)</td></tr>
+<tr class="memitem:ae9e593ec1e6122751868a3470fb3e9d7" id="r_ae9e593ec1e6122751868a3470fb3e9d7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae9e593ec1e6122751868a3470fb3e9d7">setMinPwmFrequency</a> (uint16_t minPwmFrequency)</td></tr>
+<tr class="memdesc:ae9e593ec1e6122751868a3470fb3e9d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets minimum PWM frequency.  <br /></td></tr>
+<tr class="memitem:af8f730c55bf2870fa104a14ae8c750ff" id="r_af8f730c55bf2870fa104a14ae8c750ff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af8f730c55bf2870fa104a14ae8c750ff">setMaxPwmFrequency</a> (uint16_t maxPwmFrequency)</td></tr>
+<tr class="memdesc:af8f730c55bf2870fa104a14ae8c750ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets maximum PWM frequency.  <br /></td></tr>
+<tr class="memitem:a14421696cf6a47f54b49944df4240d26" id="r_a14421696cf6a47f54b49944df4240d26"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a14421696cf6a47f54b49944df4240d26">setPwmFrequency</a> (uint16_t pwmFrequency)</td></tr>
+<tr class="memdesc:a14421696cf6a47f54b49944df4240d26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency and applies validation.  <br /></td></tr>
+<tr class="memitem:a875afc88556a5f08b431ea3f853ee001" id="r_a875afc88556a5f08b431ea3f853ee001"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a875afc88556a5f08b431ea3f853ee001">setStepPwmFrequency</a> (uint16_t stepPwmFrequency)</td></tr>
+<tr class="memdesc:a875afc88556a5f08b431ea3f853ee001"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency step.  <br /></td></tr>
+<tr class="memitem:ab4b886388f93540e352d9964544e2ee6" id="r_ab4b886388f93540e352d9964544e2ee6"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#ab4b886388f93540e352d9964544e2ee6">getMinPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:ab4b886388f93540e352d9964544e2ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns minimum PWM frequency.  <br /></td></tr>
+<tr class="memitem:a70d920c804871dbb56c0460c78022a82" id="r_a70d920c804871dbb56c0460c78022a82"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a70d920c804871dbb56c0460c78022a82">getMaxPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:a70d920c804871dbb56c0460c78022a82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns maximum PWM frequency.  <br /></td></tr>
+<tr class="memitem:af5bd9ed8447da51cde8f756965a98481" id="r_af5bd9ed8447da51cde8f756965a98481"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#af5bd9ed8447da51cde8f756965a98481">getPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:af5bd9ed8447da51cde8f756965a98481"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current PWM frequency.  <br /></td></tr>
+<tr class="memitem:a2d38866263383d2685fb100f3f45ab08" id="r_a2d38866263383d2685fb100f3f45ab08"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a2d38866263383d2685fb100f3f45ab08">getStepPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:a2d38866263383d2685fb100f3f45ab08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns PWM frequency step.  <br /></td></tr>
 <tr class="memitem:ac669cebe59eea74541a064d1245dc8a7" id="r_ac669cebe59eea74541a064d1245dc8a7"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac669cebe59eea74541a064d1245dc8a7">hasParent</a> () const</td></tr>
 <tr class="memdesc:ac669cebe59eea74541a064d1245dc8a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if this instance has parent.  <br /></td></tr>
 <tr class="memitem:a57d8fce22db79a77b5e72e00602da261" id="r_a57d8fce22db79a77b5e72e00602da261"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a57d8fce22db79a77b5e72e00602da261">getAncestorCount</a> () const</td></tr>
@@ -481,6 +497,14 @@ uint16_t&#160;</td><td class="memItemRight"><b>whiteTemperatureDistance</b> = 0<
 uint16_t&#160;</td><td class="memItemRight"><b>minMaxIterationDelay</b> = 750</td></tr>
 <tr class="memitem:a0f5821b920b6e1e2d8fb14c2c83481f6" id="r_a0f5821b920b6e1e2d8fb14c2c83481f6"><td class="memItemLeft"><a id="a0f5821b920b6e1e2d8fb14c2c83481f6" name="a0f5821b920b6e1e2d8fb14c2c83481f6"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>fadeEffect</b> = 500</td></tr>
+<tr class="memitem:ac668647b69aa1c6513dc0096120f1ef4" id="r_ac668647b69aa1c6513dc0096120f1ef4"><td class="memItemLeft"><a id="ac668647b69aa1c6513dc0096120f1ef4" name="ac668647b69aa1c6513dc0096120f1ef4"></a>
+uint16_t&#160;</td><td class="memItemRight"><b>minPwmFrequency</b> = 100</td></tr>
+<tr class="memitem:a80d381d115b8220ad4226871d7d46cc3" id="r_a80d381d115b8220ad4226871d7d46cc3"><td class="memItemLeft"><a id="a80d381d115b8220ad4226871d7d46cc3" name="a80d381d115b8220ad4226871d7d46cc3"></a>
+uint16_t&#160;</td><td class="memItemRight"><b>maxPwmFrequency</b> = 9000</td></tr>
+<tr class="memitem:a196b951ade2e368dbffcc0d3c2e39601" id="r_a196b951ade2e368dbffcc0d3c2e39601"><td class="memItemLeft"><a id="a196b951ade2e368dbffcc0d3c2e39601" name="a196b951ade2e368dbffcc0d3c2e39601"></a>
+uint16_t&#160;</td><td class="memItemRight"><b>pwmFrequency</b> = 500</td></tr>
+<tr class="memitem:a48b5e1e3be42d4e1ff468ec5a20d4245" id="r_a48b5e1e3be42d4e1ff468ec5a20d4245"><td class="memItemLeft"><a id="a48b5e1e3be42d4e1ff468ec5a20d4245" name="a48b5e1e3be42d4e1ff468ec5a20d4245"></a>
+uint16_t&#160;</td><td class="memItemRight"><b>stepPwmFrequency</b> = 1</td></tr>
 <tr class="memitem:aa958bcf2db09b3525a8389c938c68a65" id="r_aa958bcf2db09b3525a8389c938c68a65"><td class="memItemLeft"><a id="aa958bcf2db09b3525a8389c938c68a65" name="aa958bcf2db09b3525a8389c938c68a65"></a>
 uint32_t&#160;</td><td class="memItemRight"><b>lastTick</b> = 0</td></tr>
 <tr class="memitem:a22be5489d435dc84d1d9a8d28b92f746" id="r_a22be5489d435dc84d1d9a8d28b92f746"><td class="memItemLeft"><a id="a22be5489d435dc84d1d9a8d28b92f746" name="a22be5489d435dc84d1d9a8d28b92f746"></a>
@@ -745,6 +769,46 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
+<a id="a70d920c804871dbb56c0460c78022a82" name="a70d920c804871dbb56c0460c78022a82"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a70d920c804871dbb56c0460c78022a82">&#9670;&#160;</a></span>getMaxPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getMaxPwmFrequency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns maximum PWM frequency. </p>
+<dl class="section return"><dt>Returns</dt><dd>maximum PWM frequency [Hz] </dd></dl>
+
+</div>
+</div>
+<a id="ab4b886388f93540e352d9964544e2ee6" name="ab4b886388f93540e352d9964544e2ee6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4b886388f93540e352d9964544e2ee6">&#9670;&#160;</a></span>getMinPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getMinPwmFrequency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns minimum PWM frequency. </p>
+<dl class="section return"><dt>Returns</dt><dd>minimum PWM frequency [Hz] </dd></dl>
+
+</div>
+</div>
 <a id="a7c6a2563507c6546546e3d1cd5d698a4" name="a7c6a2563507c6546546e3d1cd5d698a4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7c6a2563507c6546546e3d1cd5d698a4">&#9670;&#160;</a></span>getMissingGpioCount()</h2>
 
@@ -771,6 +835,46 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 <p>Returns number of GPIO pins that are required to control this channel. </p>
 <p>I.e. RGB channel requires 3 GPIOs, one is given by current RGBCCT object, and remaining 2 are taken from descendant instances. So if descendant instance call this on its parent, it will return 2</p>
 <dl class="section return"><dt>Returns</dt><dd>number of GPIO pins that are required by parent object to allow proper operation of it's function </dd></dl>
+
+</div>
+</div>
+<a id="af5bd9ed8447da51cde8f756965a98481" name="af5bd9ed8447da51cde8f756965a98481"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af5bd9ed8447da51cde8f756965a98481">&#9670;&#160;</a></span>getPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getPwmFrequency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns current PWM frequency. </p>
+<dl class="section return"><dt>Returns</dt><dd>current PWM frequency [Hz] </dd></dl>
+
+</div>
+</div>
+<a id="a2d38866263383d2685fb100f3f45ab08" name="a2d38866263383d2685fb100f3f45ab08"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d38866263383d2685fb100f3f45ab08">&#9670;&#160;</a></span>getStepPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getStepPwmFrequency </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns PWM frequency step. </p>
+<dl class="section return"><dt>Returns</dt><dd>PWM frequency step [Hz] </dd></dl>
 
 </div>
 </div>
@@ -1113,6 +1217,85 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
+<a id="af8f730c55bf2870fa104a14ae8c750ff" name="af8f730c55bf2870fa104a14ae8c750ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af8f730c55bf2870fa104a14ae8c750ff">&#9670;&#160;</a></span>setMaxPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RGBCCTBase::setMaxPwmFrequency </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>maxPwmFrequency</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets maximum PWM frequency. </p>
+<p>This will only set class member. Actual usage of PWM frequency settings depends on RGBCCT object implementation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">maxPwmFrequency</td><td>[Hz] </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="ae9e593ec1e6122751868a3470fb3e9d7" name="ae9e593ec1e6122751868a3470fb3e9d7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9e593ec1e6122751868a3470fb3e9d7">&#9670;&#160;</a></span>setMinPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RGBCCTBase::setMinPwmFrequency </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>minPwmFrequency</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets minimum PWM frequency. </p>
+<p>This will only set class member. Actual usage of PWM frequency settings depends on RGBCCT object implementation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">minPwmFrequency</td><td>[Hz] </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a14421696cf6a47f54b49944df4240d26" name="a14421696cf6a47f54b49944df4240d26"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a14421696cf6a47f54b49944df4240d26">&#9670;&#160;</a></span>setPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RGBCCTBase::setPwmFrequency </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>pwmFrequency</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets PWM frequency and applies validation. </p>
+<p>Stored value will be set to the nearest allowed value.</p>
+<p>This will only set class member. Actual usage of PWM frequency settings depends on RGBCCT object implementation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">pwmFrequency</td><td>[Hz] </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a56c79c1a83b504af2a68ec411a8e73fc" name="a56c79c1a83b504af2a68ec411a8e73fc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a56c79c1a83b504af2a68ec411a8e73fc">&#9670;&#160;</a></span>setSkipLegacyMigration()</h2>
 
@@ -1130,6 +1313,32 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 <p>Disables storage conversion from legacy channel function to new. </p>
 <p>Use together with convertStorageFromLegacyChannel to keep legacy storage format. </p>
+
+</div>
+</div>
+<a id="a875afc88556a5f08b431ea3f853ee001" name="a875afc88556a5f08b431ea3f853ee001"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a875afc88556a5f08b431ea3f853ee001">&#9670;&#160;</a></span>setStepPwmFrequency()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::RGBCCTBase::setStepPwmFrequency </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>stepPwmFrequency</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets PWM frequency step. </p>
+<p>This will only set class member. Actual usage of PWM frequency settings depends on RGBCCT object implementation.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">stepPwmFrequency</td><td>[Hz] </td></tr>
+  </table>
+  </dd>
+</dl>
 
 </div>
 </div>

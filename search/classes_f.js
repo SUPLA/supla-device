@@ -14,6 +14,7 @@ var searchData=
   ['pressure_11',['Pressure',['../classSupla_1_1Sensor_1_1Pressure.html',1,'Supla::Sensor']]],
   ['protocollayer_12',['ProtocolLayer',['../classSupla_1_1Protocol_1_1ProtocolLayer.html',1,'Supla::Protocol']]],
   ['protocolparameters_13',['ProtocolParameters',['../classSupla_1_1Html_1_1ProtocolParameters.html',1,'Supla::Html']]],
-  ['pzemv2_14',['PZEMv2',['../classSupla_1_1Sensor_1_1PZEMv2.html',1,'Supla::Sensor']]],
-  ['pzemv3_15',['PZEMv3',['../classSupla_1_1Sensor_1_1PZEMv3.html',1,'Supla::Sensor']]]
+  ['pwmfrequencyparameters_14',['PwmFrequencyParameters',['../classPwmFrequencyParameters.html',1,'PwmFrequencyParameters'],['../classSupla_1_1Html_1_1PwmFrequencyParameters.html',1,'Supla::Html::PwmFrequencyParameters']]],
+  ['pzemv2_15',['PZEMv2',['../classSupla_1_1Sensor_1_1PZEMv2.html',1,'Supla::Sensor']]],
+  ['pzemv3_16',['PZEMv3',['../classSupla_1_1Sensor_1_1PZEMv3.html',1,'Supla::Sensor']]]
 ];

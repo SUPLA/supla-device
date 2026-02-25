@@ -19,6 +19,9 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <driver/ledc.h>
 #include <supla/io.h>
 #include <supla/log_wrapper.h>
+#include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
+#include <supla/storage/storage.h>
 #include <supla/time.h>
 
 using Supla::Control::RGBWLedsEspIdf;
@@ -134,7 +137,7 @@ ledc_channel_t RGBWLedsEspIdf::initChannel(int gpio) {
   ledcChannel.duty = 0;
   ledcChannel.hpoint = 0;
 
-  ledcChannel.flags.output_invert = outputInvert ? 1: 0;
+  ledcChannel.flags.output_invert = outputInvert ? 1 : 0;
 
   ESP_ERROR_CHECK(ledc_channel_config(&ledcChannel));
   ESP_ERROR_CHECK(ledc_set_duty(LEDC_HIGH_SPEED_MODE, channelId, 0));
@@ -174,7 +177,7 @@ void RGBWLedsEspIdf::onInit() {
           .speed_mode = LEDC_HIGH_SPEED_MODE,
           .duty_resolution = LEDC_TIMER_13_BIT,
           .timer_num = static_cast<ledc_timer_t>(ledcTimerId),
-          .freq_hz = frequency,
+          .freq_hz = pwmFrequency,
           .clk_cfg = LEDC_AUTO_CLK,
           .deconfigure = false};
       ESP_ERROR_CHECK(ledc_timer_config(&ledcTimer));

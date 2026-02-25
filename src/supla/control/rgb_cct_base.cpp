@@ -1241,6 +1241,18 @@ void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
         legacyChannelFunction = LegacyChannelFunction::None;
       }
     }
+
+    // load PWM frequency from config
+    uint32_t cfgFrequency = pwmFrequency;
+    if (cfg->getUInt32(Supla::ConfigTag::PwmFrequencyTag, &cfgFrequency)) {
+      SUPLA_LOG_INFO("RGBCCT[%d] PWM frequency loaded from config: %d",
+                     getChannel()->getChannelNumber(),
+                     cfgFrequency);
+    }
+    if (cfgFrequency > UINT16_MAX) {
+      cfgFrequency = UINT16_MAX;
+    }
+    setPwmFrequency(cfgFrequency);
   }
   SUPLA_LOG_DEBUG(
       "RGBCCT[%d] button control type: %d, legacy migration needed: %d",
@@ -1377,6 +1389,52 @@ bool RGBCCTBase::isStateStorageMigrationNeeded() const {
 
 void RGBCCTBase::setSkipLegacyMigration() {
   skipLegacyMigration = true;
+}
+
+void RGBCCTBase::setMinPwmFrequency(uint16_t minPwmFrequency) {
+  this->minPwmFrequency = minPwmFrequency;
+}
+
+void RGBCCTBase::setMaxPwmFrequency(uint16_t maxPwmFrequency) {
+  this->maxPwmFrequency = maxPwmFrequency;
+}
+
+void RGBCCTBase::setStepPwmFrequency(uint16_t stepPwmFrequency) {
+  this->stepPwmFrequency = stepPwmFrequency;
+}
+
+void RGBCCTBase::setPwmFrequency(uint16_t frequency) {
+  if (frequency < minPwmFrequency) {
+    frequency = minPwmFrequency;
+  } else if (frequency > maxPwmFrequency) {
+    frequency = maxPwmFrequency;
+  }
+
+  if ((frequency - minPwmFrequency) % stepPwmFrequency != 0) {
+    frequency =
+        minPwmFrequency +
+        ((frequency - minPwmFrequency) / stepPwmFrequency) * stepPwmFrequency;
+  }
+
+  pwmFrequency = frequency;
+  SUPLA_LOG_INFO(
+      "RGBCCT[%d] PWM frequency set to %d", getChannelNumber(), pwmFrequency);
+}
+
+uint16_t RGBCCTBase::getMinPwmFrequency() const {
+  return minPwmFrequency;
+}
+
+uint16_t RGBCCTBase::getMaxPwmFrequency() const {
+  return maxPwmFrequency;
+}
+
+uint16_t RGBCCTBase::getPwmFrequency() const {
+  return pwmFrequency;
+}
+
+uint16_t RGBCCTBase::getStepPwmFrequency() const {
+  return stepPwmFrequency;
 }
 
 };  // namespace Control

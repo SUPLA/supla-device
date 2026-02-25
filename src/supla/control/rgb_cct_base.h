@@ -180,6 +180,72 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   void setMaxHwValue(int newMaxHwValue);
 
   /**
+   * Sets minimum PWM frequency.
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param minPwmFrequency [Hz]
+   */
+  void setMinPwmFrequency(uint16_t minPwmFrequency);
+
+  /**
+   * Sets maximum PWM frequency.
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param maxPwmFrequency [Hz]
+   */
+  void setMaxPwmFrequency(uint16_t maxPwmFrequency);
+
+  /**
+   * Sets PWM frequency and applies validation. Stored value will be set to the
+   * nearest allowed value.
+   *
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param pwmFrequency [Hz]
+   */
+  void setPwmFrequency(uint16_t pwmFrequency);
+
+  /**
+   * Sets PWM frequency step.
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param stepPwmFrequency [Hz]
+   */
+  void setStepPwmFrequency(uint16_t stepPwmFrequency);
+
+  /**
+   * Returns minimum PWM frequency
+   *
+   * @return minimum PWM frequency [Hz]
+   */
+  uint16_t getMinPwmFrequency() const;
+
+  /**
+   * Returns maximum PWM frequency
+   *
+   * @return maximum PWM frequency [Hz]
+   */
+  uint16_t getMaxPwmFrequency() const;
+
+  /**
+   * Returns current PWM frequency
+   *
+   * @return current PWM frequency [Hz]
+   */
+  uint16_t getPwmFrequency() const;
+
+  /**
+   * Returns PWM frequency step
+   *
+   * @return PWM frequency step [Hz]
+   */
+  uint16_t getStepPwmFrequency() const;
+
+  /**
    * Checks if this instance has parent
    *
    * @return true if this instance has parent
@@ -268,6 +334,11 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
 
   uint16_t minMaxIterationDelay = 750;
   uint16_t fadeEffect = 500;
+
+  uint16_t minPwmFrequency = 100;
+  uint16_t maxPwmFrequency = 9000;
+  uint16_t pwmFrequency = 500;
+  uint16_t stepPwmFrequency = 1;
 
   uint32_t lastTick = 0;
   uint32_t lastChangeRedMs = 0;

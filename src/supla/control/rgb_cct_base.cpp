@@ -837,14 +837,16 @@ void RGBCCTBase::onFastTimer() {
         adjBrightness = 0;
       }
 
+      // by default white1 is warm, white2 is cold.
+      // whiteTemperature is in 0..100 range, where 0 is warm and 100 is cold
       uint32_t white1Brightness = adjBrightness;
       uint32_t white2Brightness = 0;
 
       if (hwWhiteTemperature > 0) {
-        float white1Fraction = 1.0 * hwWhiteTemperature / maxHwValue;
-        white1Brightness = adjBrightness * white1Fraction * warmWhiteGain;
-        white2Brightness =
-            adjBrightness * (1.0 - white1Fraction) * coldWhiteGain;
+        float white2Fraction = 1.0 * hwWhiteTemperature / maxHwValue;
+        white2Brightness = adjBrightness * white2Fraction * warmWhiteGain;
+        white1Brightness =
+            adjBrightness * (1.0 - white2Fraction) * coldWhiteGain;
         if (white1Brightness > maxHwValue) {
           white1Brightness = maxHwValue;
         }

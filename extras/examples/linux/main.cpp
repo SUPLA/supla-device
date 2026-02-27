@@ -54,6 +54,8 @@
 #include <supla/parser/simple.h>
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
+#include <supla/pv/fronius3p.h>
+#include <supla/pv/fronius3pmeter.h>
 #include <supla/rsa_verificator.h>
 #include <supla/sensor/binary.h>
 #include <supla/sensor/binary_parsed.h>

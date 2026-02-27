@@ -38,6 +38,8 @@
 #include <supla/parser/simple.h>
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
+#include <supla/pv/fronius3p.h>
+#include <supla/pv/fronius3pmeter.h>
 #include <supla/sensor/binary_parsed.h>
 #include <supla/sensor/distance_parsed.h>
 #include <supla/sensor/electricity_meter_parsed.h>
@@ -635,7 +637,11 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "RgbCctParsed") {
       return addRgbCctParsed(ch, channelNumber, parser);
     } else if (type == "Fronius") {
-      return addFronius(ch, channelNumber);
+      return addFronius(ch, channelNumber, type);
+    } else if (type == "Fronius3p") {
+      return addFronius(ch, channelNumber, type);
+    } else if (type == "Fronius3pmeter") {
+      return addFronius(ch, channelNumber, type);
     } else if (type == "Afore") {
       return addAfore(ch, channelNumber);
     } else if (type == "Hvac") {
@@ -948,7 +954,8 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
-                                        int channelNumber) {
+                                        int channelNumber,
+                                        const std::string& type) {
   int port = 80;
   int deviceId = 1;
   if (ch["port"]) {
@@ -971,8 +978,19 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
         deviceId);
 
     IPAddress ipAddr(ip);
-    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
-    return addCommonParameters(ch, fronius);
+    if (type == "Fronius") {
+      auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
+      return addCommonParameters(ch, fronius);
+    } else if (type == "Fronius3p") {
+      auto fronius = new Supla::PV::Fronius3p(ipAddr, port, deviceId);
+      return addCommonParameters(ch, fronius);
+    } else if (type == "Fronius3pmeter") {
+      auto fronius = new Supla::PV::Fronius3pmeter(ipAddr, port, deviceId);
+      return addCommonParameters(ch, fronius);
+    } else {
+      SUPLA_LOG_ERROR("Type: %s unsupported for Fronius", type);
+      return false;
+    }
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
                     channelNumber);

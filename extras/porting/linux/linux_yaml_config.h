@@ -160,7 +160,8 @@ class LinuxYamlConfig : public KeyValue {
   bool addCmdValve(const YAML::Node& ch,
                    int channelNumber,
                    Supla::Parser::Parser*);
-  bool addFronius(const YAML::Node& ch, int channelNumber);
+  bool addFronius(const YAML::Node& ch, int channelNumber,
+                  const std::string& type);
   bool addAfore(const YAML::Node& ch, int channelNumber);
   bool addHvac(const YAML::Node& ch, int channelNumber);
   bool addCustomHvac(const YAML::Node& ch,

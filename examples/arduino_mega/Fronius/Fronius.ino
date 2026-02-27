@@ -18,6 +18,8 @@
 
 #include <SuplaDevice.h>
 #include <supla/pv/fronius.h>
+#include <supla/pv/fronius3p.h>
+#include <supla/pv/fronius3pmeter.h>
 
 // Choose proper network interface for your card:
 // Arduino Mega with EthernetShield W5100:
@@ -53,7 +55,10 @@ void setup() {
 
   // CHANNEL0
   // Put IP address of your Fronius inverter, then port (deafult is 80)
-  new Supla::PV::Fronius(IPAddress(192, 168, 0, 59));
+  new Supla::PV::Fronius(IPAddress(192, 168, 0, 59), 80, 1);
+  new Supla::PV::Fronius3p(IPAddress(192, 168, 0, 59), 80, 1);
+  new Supla::PV::Fronius3p(IPAddress(192, 168, 0, 59), 80, 2);
+  new Supla::PV::Fronius3pmeter(IPAddress(192, 168, 0, 59), 80, 0);
 
   /*
    * Server address is available at https://cloud.supla.org

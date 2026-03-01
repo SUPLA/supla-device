@@ -93,6 +93,8 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/supla/control/control_payload.cpp
 
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/fronius.cpp
+  ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/fronius3p.cpp
+  ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/fronius3pmeter.cpp
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/afore.cpp
 
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla-common/tools.c

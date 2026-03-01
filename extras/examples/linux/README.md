@@ -303,6 +303,8 @@ Supported channel types:
 * `CmdValve` - related class `Supla::Control::CmdValve`
 * `CmdRollerShutter` - related class `Supla::Control::CmdRollerShutter`
 * `Fronius` - related class `Supla::PV::Fronius`
+* `Fronius3p` - related class `Supla::PV::Fronius3p`
+* `Fronius3pmeter` - related class `Supla::PV::Fronius3pmeter`
 * `Afore` - related class `Supla::PV::Afore`
 * `ThermometerParsed` - related class `Supla::Sensor::ThermometerParsed`
 * `ThermHygroMeterParsed` - related class `Supla::Sensor::ThermHygroMeterParsed`
@@ -357,6 +359,16 @@ Example channels configuration (details are exaplained later):
         ip: 192.168.1.7
         port: 80
         device_id: 1
+
+      - type: Fronius3p
+        ip: 192.168.1.7
+        port: 80
+        device_id: 1
+
+      - type: Fronius3pmeter
+        ip: 192.168.1.7
+        port: 80
+        device_id: 0
 
       - type: Afore
         ip: 192.168.1.17

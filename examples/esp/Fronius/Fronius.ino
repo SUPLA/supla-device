@@ -37,6 +37,8 @@
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/pv/fronius.h>
+#include <supla/pv/fronius3p.h>
+#include <supla/pv/fronius3pmeter.h>
 #include <supla/storage/littlefs_config.h>
 
 #define STATUS_LED_GPIO 2
@@ -59,7 +61,10 @@ void setup() {
   // CHANNEL0
   // Put IP address of your Fronius inverter, then port (deafult is 80)
   // TODO(anyone): add HTML element for IP address configuration
-  new Supla::PV::Fronius(IPAddress(192, 168, 0, 59));
+  new Supla::PV::Fronius(IPAddress(192, 168, 0, 59), 80, 1);
+  new Supla::PV::Fronius3p(IPAddress(192, 168, 0, 59), 80, 1);
+  new Supla::PV::Fronius3p(IPAddress(192, 168, 0, 59), 80, 2);
+  new Supla::PV::Fronius3pmeter(IPAddress(192, 168, 0, 59), 80, 0);
 
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();

@@ -61,6 +61,7 @@ class BlinkingLed : public Supla::Element {
   void setCopyStateTo(BlinkingLed *led);
   void disable();
   void enable();
+  void setInvert(bool newInvert);
 
  protected:
   void updatePin();

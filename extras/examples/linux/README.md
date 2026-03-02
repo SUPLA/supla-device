@@ -436,6 +436,7 @@ Example channels configuration (details are exaplained later):
 
       - type: BinaryParsed
         state: 1
+        default_function: mail
         parser:
           use: parser_1
 
@@ -965,6 +966,12 @@ Optional parameter: `multiplier` - defines multiplier for fetched value
 
 Values equal to "1" (approx) are considered as on/1/true. All other values
 are considered as off/0/false.
+
+Optional parameter: `default_function` - defines default function for binary
+sensor. Allowed values: `opening_door`, `opening_window`, `opening_roller_shutter`,
+`opening_roof_window`, `opening_garag_edoor`, `opening_gate`, `opening_gateway`,
+`no_liquid`, `hotel_card`, `alarm_armament`, `mail`, `container_level`, `flood`,
+`binary`, `motion`.
 
 ### `ElectricityMeterParsed`
 

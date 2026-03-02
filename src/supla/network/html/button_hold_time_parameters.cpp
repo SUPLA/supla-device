@@ -27,14 +27,14 @@
 
 using Supla::Html::ButtonHoldTimeParameters;
 
-ButtonHoldTimeParameters::ButtonHoldTimeParameters()
-    : HtmlElement(HTML_SECTION_FORM) {
+ButtonHoldTimeParameters::ButtonHoldTimeParameters(uint32_t defaultHoldTime)
+    : HtmlElement(HTML_SECTION_FORM), defaultHoldTime(defaultHoldTime) {
 }
 
 void ButtonHoldTimeParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    uint32_t value = 700;  // default value
+    uint32_t value = defaultHoldTime;  // default value
     cfg->getUInt32(Supla::ConfigTag::BtnHoldTag, &value);
     if (value < 200) {
       value = 200;

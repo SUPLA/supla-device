@@ -169,3 +169,8 @@ void BlinkingLed::disable() {
 void BlinkingLed::enable() {
   enabled = true;
 }
+
+void BlinkingLed::setInvert(bool newInvert) {
+  invert = newInvert;
+}
+

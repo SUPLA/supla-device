@@ -20,6 +20,7 @@
 #define SRC_SUPLA_NETWORK_HTML_BUTTON_HOLD_TIME_PARAMETERS_H_
 
 #include <supla/network/html_element.h>
+#include <stdint.h>
 
 namespace Supla {
 
@@ -27,9 +28,12 @@ namespace Html {
 
 class ButtonHoldTimeParameters : public HtmlElement {
  public:
-  ButtonHoldTimeParameters();
+  explicit ButtonHoldTimeParameters(uint32_t defaultHoldTime = 700);
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
+
+ protected:
+  uint32_t defaultHoldTime = 700;
 };
 
 };  // namespace Html

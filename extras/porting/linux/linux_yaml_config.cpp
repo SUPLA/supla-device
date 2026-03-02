@@ -25,8 +25,9 @@
 #include <supla/control/cmd_valve.h>
 #include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
-#include <supla/control/virtual_relay.h>
 #include <supla/control/rgbcct_parsed.h>
+#include <supla/control/virtual_relay.h>
+#include <supla/custom_channel.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
 #include <supla/output/cmd.h>
@@ -36,9 +37,12 @@
 #include <supla/parser/json.h>
 #include <supla/parser/parser.h>
 #include <supla/parser/simple.h>
+#include <supla/payload/json.h>
+#include <supla/payload/simple.h>
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
 #include <supla/sensor/binary_parsed.h>
+#include <supla/sensor/container_parsed.h>
 #include <supla/sensor/distance_parsed.h>
 #include <supla/sensor/electricity_meter_parsed.h>
 #include <supla/sensor/general_purpose_measurement_parsed.h>
@@ -49,29 +53,25 @@
 #include <supla/sensor/rain_parsed.h>
 #include <supla/sensor/thermometer_parsed.h>
 #include <supla/sensor/weight_parsed.h>
-#include <supla/sensor/container_parsed.h>
 #include <supla/sensor/wind_parsed.h>
 #include <supla/source/cmd.h>
 #include <supla/source/file.h>
 #include <supla/source/mqtt_src.h>
 #include <supla/source/source.h>
-#include <supla/payload/json.h>
-#include <supla/payload/simple.h>
 #include <supla/tools.h>
-#include <supla/custom_channel.h>
 
+#include <algorithm>
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
+#include <map>
 #include <random>
 #include <string>
-#include <algorithm>
-#include <map>
 #include <vector>
 
-#include "supla/control/hvac_parsed.h"
 #include "supla/control/custom_hvac.h"
+#include "supla/control/hvac_parsed.h"
 #include "supla/sensor/sensor_parsed.h"
 #include "supla/sensor/therm_hygro_meter_parsed.h"
 #include "supla/storage/key_value.h"
@@ -845,7 +845,7 @@ bool Supla::LinuxYamlConfig::addCmdValve(const YAML::Node& ch,
 
 bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
                                              int channelNumber,
-                                             Supla::Parser::Parser *parser) {
+                                             Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding RgbCctParsed", channelNumber);
   auto rgb = new Supla::Control::RgbCctParsed(parser);
   if (ch["offline_on_invalid_state"]) {
@@ -1485,17 +1485,17 @@ bool Supla::LinuxYamlConfig::addElectricityMeterParsed(
       for (auto param : phaseParameters) {
         std::string paramName;
         for (std::string_view name : {"voltage",
-                                        "current",
-                                        "fwd_act_energy",
-                                        "rvr_act_energy",
-                                        "fwd_react_energy",
-                                        "rvr_react_energy",
-                                        "power_active",
-                                        "rvr_power_active",
-                                        "power_reactive",
-                                        "power_apparent",
-                                        "phase_angle",
-                                        "power_factor"}) {
+                                      "current",
+                                      "fwd_act_energy",
+                                      "rvr_act_energy",
+                                      "fwd_react_energy",
+                                      "rvr_react_energy",
+                                      "power_active",
+                                      "rvr_power_active",
+                                      "power_reactive",
+                                      "power_apparent",
+                                      "phase_angle",
+                                      "power_factor"}) {
           if (param[name]) {
             paramName = std::string {name} + "_" + std::to_string(phaseId);
             if (parser->isBasedOnIndex()) {
@@ -1530,6 +1530,57 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
 
   if (!addActionTriggerActions(ch, binary, false)) {
     return false;
+  }
+
+  if (ch[Supla::DefaultFunction]) {
+    paramCount++;
+    std::string function = ch[Supla::DefaultFunction].as<std::string>();
+    if (function == "no_liquid") {
+      binary->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_NOLIQUIDSENSOR);
+    } else if (function == "opening_door") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR);
+    } else if (function == "opening_window") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_WINDOW);
+    } else if (function == "hotel_card") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_HOTELCARDSENSOR);
+    } else if (function == "alarm_armament") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_ALARMARMAMENTSENSOR);
+    } else if (function == "mail") {
+      binary->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_MAILSENSOR);
+    } else if (function == "opening_roller_shutter") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_ROLLERSHUTTER);
+    } else if (function == "opening_roof_window") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_ROOFWINDOW);
+    } else if (function == "opening_garag_edoor") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_GARAGEDOOR);
+    } else if (function == "opening_gate") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_GATE);
+    } else if (function == "opening_gateway") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_OPENINGSENSOR_GATEWAY);
+    } else if (function == "container_level") {
+      binary->getChannel()->setDefaultFunction(
+          SUPLA_CHANNELFNC_CONTAINER_LEVEL_SENSOR);
+    } else if (function == "flood") {
+      binary->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_FLOOD_SENSOR);
+    } else if (function == "binary") {
+      binary->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_BINARY_SENSOR);
+    } else if (function == "motion") {
+      binary->getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_MOTION_SENSOR);
+    } else {
+      SUPLA_LOG_ERROR("Channel[%d] config: unknown default function \"%s\"",
+                      channelNumber,
+                      function.c_str());
+      return false;
+    }
   }
 
   if (ch["offline_on_invalid_state"]) {
@@ -2227,8 +2278,8 @@ bool Supla::LinuxYamlConfig::addWeightParsed(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
-                                             int channelNumber,
-                                             Supla::Parser::Parser* parser) {
+                                                int channelNumber,
+                                                Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ContainerParsed", channelNumber);
   auto container = new Supla::Sensor::ContainerParsed(parser);
   if (ch[Supla::Parser::Level]) {
@@ -2251,8 +2302,8 @@ bool Supla::LinuxYamlConfig::addContainerParsed(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addCustomChannel(const YAML::Node& ch,
-                                               int channelNumber,
-                                               Supla::Parser::Parser* parser) {
+                                              int channelNumber,
+                                              Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding CustomChannel", channelNumber);
   auto custom = new Supla::CustomChannel(parser);
   if (ch[Supla::ChannelType]) {
@@ -2361,10 +2412,10 @@ bool Supla::LinuxYamlConfig::addCommonParametersParsed(
   if (ch[Supla::Sensor::ForceBatteryPowered]) {
     paramCount++;
     auto forceBatteryPowered =
-      ch[Supla::Sensor::ForceBatteryPowered].as<bool>();
+        ch[Supla::Sensor::ForceBatteryPowered].as<bool>();
     if (forceBatteryPowered) {
-    // we add ForceBatteryPowered, but it is not read from index 0. It is only
-    // checked if mapping was added
+      // we add ForceBatteryPowered, but it is not read from index 0. It is only
+      // checked if mapping was added
       batteryAdded = true;
       sensor->setMapping(Supla::Sensor::ForceBatteryPowered, 0);
     }

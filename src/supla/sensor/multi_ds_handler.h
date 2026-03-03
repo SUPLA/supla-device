@@ -36,6 +36,7 @@ class MultiDsHandler : public MultiDsHandlerBase {
   void onInit() override {
     dallasTemperature.setOneWire(&oneWire);
     dallasTemperature.begin();
+    dallasTemperature.setWaitForConversion(false);
 
     MultiDsHandlerBase::onInit();
   }
@@ -68,14 +69,14 @@ class MultiDsHandler : public MultiDsHandlerBase {
   /**
    * Enables or disables synchronous (blocking) temperature conversion.
    *
-   * By default, DallasTemperature operates in synchronous mode (true),
-   * meaning requestTemperatures() blocks execution until the DS18B20
-   * conversion is complete (up to 750 ms at 12-bit resolution).
-   *
-   * When set to false, requestTemperatures() starts the conversion
+   * By default, DallasTemperature operates in asynchronous mode (false),
+   * meaning requestTemperatures() starts the conversion
    * and returns immediately (non-blocking mode). The caller is then
    * responsible for ensuring that enough time has passed before
    * reading the temperature value.
+   *
+   * When set to true, requestTemperatures() blocks execution until the DS18B20
+   * conversion is complete (up to 750 ms at 12-bit resolution).
    *
    * This method is a wrapper for DallasTemperature::setWaitForConversion().
    */

@@ -328,14 +328,13 @@ bool MultiDsHandlerBase::onChannelConflictReport(
           !Supla::RegisterDevice::isChannelNumberFree(channelNumber)) {
         Supla::AutoLock lock(sdc->getTimerAccessMutex());
 
+        SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
+                        sensor->getSubDeviceId(), channelNumber);
+
         sensor->purgeConfig();
         delete sensor;
         sensor = nullptr;
         sensors[i] = nullptr;
-
-
-        SUPLA_LOG_DEBUG("MultiDS: Channel removed (subId: %d, number: %d)",
-                        sensor->getSubDeviceId(), channelNumber);
       }
     }
   }

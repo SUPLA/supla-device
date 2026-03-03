@@ -10,5 +10,6 @@ var searchData=
   ['divend_7',['DivEnd',['../classSupla_1_1Html_1_1DivEnd.html',1,'Supla::Html']]],
   ['ds1307rtc_8',['DS1307RTC',['../classSupla_1_1DS1307RTC.html',1,'Supla']]],
   ['ds18b20_9',['DS18B20',['../classSupla_1_1Sensor_1_1DS18B20.html',1,'Supla::Sensor']]],
-  ['ds3231rtc_10',['DS3231RTC',['../classSupla_1_1DS3231RTC.html',1,'Supla']]]
+  ['ds3231rtc_10',['DS3231RTC',['../classSupla_1_1DS3231RTC.html',1,'Supla']]],
+  ['dssensorconfig_11',['DsSensorConfig',['../structSupla_1_1Sensor_1_1DsSensorConfig.html',1,'Supla::Sensor']]]
 ];

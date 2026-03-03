@@ -1,0 +1,7 @@
+<map id="Supla::Device::ChannelConflictResolver" name="Supla::Device::ChannelConflictResolver">
+<area shape="rect" id="Node000001" title=" " alt="" coords="20,5,217,46"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Sensor_1_1MultiDsHandlerBase.html" title=" " alt="" coords="5,94,232,120"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="121,62,121,93,116,93,116,62"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Sensor_1_1MultiDsHandler.html" title=" " alt="" coords="20,168,217,193"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="121,135,121,167,116,167,116,135"/>
+</map>

@@ -1,0 +1,11 @@
+<map id="MultiDsHandlerBase" name="MultiDsHandlerBase">
+<area shape="rect" id="Node000001" title=" " alt="" coords="250,63,390,88"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Sensor_1_1MultiDsHandler.html" title=" " alt="" coords="438,63,634,88"/>
+<area shape="poly" id="edge4_Node000001_Node000005" title=" " alt="" coords="406,73,437,73,437,78,406,78"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="50,5,157,31"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="172,33,202,41,271,60,270,65,201,46,171,38"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Device_1_1SubdevicePairingHandler.html" title=" " alt="" coords="20,55,187,96"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="202,73,249,73,249,78,202,78"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Device_1_1ChannelConflictResolver.html" title=" " alt="" coords="5,120,202,161"/>
+<area shape="poly" id="edge3_Node000001_Node000004" title=" " alt="" coords="187,113,274,86,275,92,188,118"/>
+</map>

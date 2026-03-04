@@ -1632,6 +1632,10 @@ void SuplaDeviceClass::setRsaPublicKeyPtr(const uint8_t *ptr) {
 
 void SuplaDeviceClass::setAutomaticResetOnConnectionProblem(
     unsigned int timeSec) {
+  if (timeSec < 60) {
+    // disabled
+    timeSec = 0;
+  }
   resetOnConnectionFailTimeoutSec = timeSec;
 }
 

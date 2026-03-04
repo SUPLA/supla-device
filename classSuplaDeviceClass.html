@@ -248,8 +248,8 @@ void&#160;</td><td class="memItemRight"><b>setActivityTimeout</b> (_supla_int_t 
 <tr class="memitem:acecc4e3cc6d13d97d57727bb62feae25" id="r_acecc4e3cc6d13d97d57727bb62feae25"><td class="memItemLeft"><a id="acecc4e3cc6d13d97d57727bb62feae25" name="acecc4e3cc6d13d97d57727bb62feae25"></a>
 uint32_t&#160;</td><td class="memItemRight"><b>getActivityTimeout</b> ()</td></tr>
 <tr class="memitem:abd7be7f117d9370103f372301b073dfc" id="r_abd7be7f117d9370103f372301b073dfc"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abd7be7f117d9370103f372301b073dfc">handleAction</a> (int event, int action) override</td></tr>
-<tr class="memitem:a9363171f8b76f5936b2b84d2284ae159" id="r_a9363171f8b76f5936b2b84d2284ae159"><td class="memItemLeft"><a id="a9363171f8b76f5936b2b84d2284ae159" name="a9363171f8b76f5936b2b84d2284ae159"></a>
-void&#160;</td><td class="memItemRight"><b>setAutomaticResetOnConnectionProblem</b> (unsigned int timeSec)</td></tr>
+<tr class="memitem:a9363171f8b76f5936b2b84d2284ae159" id="r_a9363171f8b76f5936b2b84d2284ae159"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9363171f8b76f5936b2b84d2284ae159">setAutomaticResetOnConnectionProblem</a> (unsigned int timeSec)</td></tr>
+<tr class="memdesc:a9363171f8b76f5936b2b84d2284ae159"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables automatic software reset of device in case of network/server connection problems longer than timeSec.  <br /></td></tr>
 <tr class="memitem:a155d4de0ca984a112a158af43042ad58" id="r_a155d4de0ca984a112a158af43042ad58"><td class="memItemLeft"><a id="a155d4de0ca984a112a158af43042ad58" name="a155d4de0ca984a112a158af43042ad58"></a>
 void&#160;</td><td class="memItemRight"><b>setLastStateLogger</b> (<a class="el" href="classSupla_1_1Device_1_1LastStateLogger.html">Supla::Device::LastStateLogger</a> *logger)</td></tr>
 <tr class="memitem:a679922436b6305a189f6e3a47b6dafd3" id="r_a679922436b6305a189f6e3a47b6dafd3"><td class="memItemLeft"><a id="a679922436b6305a189f6e3a47b6dafd3" name="a679922436b6305a189f6e3a47b6dafd3"></a>
@@ -764,6 +764,32 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">value</td><td>true to enable, false to disable </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="a9363171f8b76f5936b2b84d2284ae159" name="a9363171f8b76f5936b2b84d2284ae159"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9363171f8b76f5936b2b84d2284ae159">&#9670;&#160;</a></span>setAutomaticResetOnConnectionProblem()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::setAutomaticResetOnConnectionProblem </td>
+          <td>(</td>
+          <td class="paramtype">unsigned int</td>          <td class="paramname"><span class="paramname"><em>timeSec</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enables automatic software reset of device in case of network/server connection problems longer than timeSec. </p>
+<p>timeSec is always round down to multiplication of 10 s. timeSec &lt; 60 will disable automatic restart.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">timeSec</td><td>time in seconds </td></tr>
   </table>
   </dd>
 </dl>

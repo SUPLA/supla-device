@@ -16,8 +16,9 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "../storage/storage.h"
 #include "dimmer_base.h"
+
+#include "../storage/storage.h"
 
 Supla::Control::DimmerBase::DimmerBase() {
   channel.setType(SUPLA_CHANNELTYPE_DIMMER);
@@ -25,13 +26,13 @@ Supla::Control::DimmerBase::DimmerBase() {
 }
 
 void Supla::Control::DimmerBase::setRGBCCT(int red,
-                                         int green,
-                                         int blue,
-                                         int colorBrightness,
-                                         int whiteBrightness,
-                                         int whiteTemperature,
-                                         bool toggle,
-                                         bool instant) {
+                                           int green,
+                                           int blue,
+                                           int colorBrightness,
+                                           int whiteBrightness,
+                                           int whiteTemperature,
+                                           bool toggle,
+                                           bool instant) {
   (void)(red);
   (void)(green);
   (void)(blue);
@@ -58,4 +59,10 @@ void Supla::Control::DimmerBase::onSaveState() {
 void Supla::Control::DimmerBase::iterateDimmerRGBW(int rgbStep, int wStep) {
   (void)(rgbStep);
   Supla::Control::RGBWBase::iterateDimmerRGBW(0, wStep);
+}
+
+void Supla::Control::DimmerBase::setRGBCCTValueOnDevice(uint32_t output[5],
+                                                        int usedOutputs) {
+  (void)(usedOutputs);
+  setRGBWValueOnDevice(0, 0, 0, output[0]);
 }

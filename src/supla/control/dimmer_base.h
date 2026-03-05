@@ -39,6 +39,8 @@ class DimmerBase : public RGBWBase {
   void onLoadState() override;
   void onSaveState() override;
 
+  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
+
  protected:
   void iterateDimmerRGBW(int rgbStep, int wStep) override;
 };

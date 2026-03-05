@@ -44,11 +44,10 @@ Supla::Control::RGBWLeds::RGBWLeds(int redPin,
 void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
                           uint32_t green,
                           uint32_t blue,
-                          uint32_t colorBrightness,
                           uint32_t brightness) {
-  uint32_t redAdj =   red   * colorBrightness / 1023;
-  uint32_t greenAdj = green * colorBrightness / 1023;
-  uint32_t blueAdj =  blue  * colorBrightness / 1023;
+  uint32_t redAdj =   red;
+  uint32_t greenAdj = green;
+  uint32_t blueAdj =  blue;
   uint32_t brightnessAdj = brightness;
 
 #ifdef ARDUINO_ARCH_AVR

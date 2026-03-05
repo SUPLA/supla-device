@@ -35,6 +35,8 @@
 int esp32PwmChannelCounter = 0;
 #endif
 
+constexpr int SUPLA_MAX_OUTPUT_COUNT = 5;
+
 namespace Supla {
 namespace Control {
 
@@ -172,6 +174,10 @@ void RGBCCTBase::iterateAlways() {
                         curWhiteBrightness,
                         curWhiteTemperature);
   }
+  updateEnabledState();
+}
+
+void RGBCCTBase::updateEnabledState() {
   if (hasParent() && parent->getMissingGpioCount() > 0) {
     disableChannel();
   } else {
@@ -649,8 +655,7 @@ int RGBCCTBase::adjustBrightness(int value) {
   return adjustRange(value, 0, 100, 0, maxHwValue);
 }
 
-int RGBCCTBase::getStep(int step, int target, int current, int distance) const {
-  (void)(distance);
+int RGBCCTBase::getStep(int step, int target, int current) const {
   if (step && target != current) {
     int result = step;
     if (target > current) {
@@ -670,61 +675,70 @@ int RGBCCTBase::getStep(int step, int target, int current, int distance) const {
 }
 
 bool RGBCCTBase::calculateAndUpdate(int targetValue,
-                                    uint16_t *hwValue,
+                                    int16_t *hwValue,
                                     int distance,
-                                    uint32_t *lastChangeMs) const {
-  if (targetValue != *hwValue) {
-    uint32_t timeDiff = millis() - *lastChangeMs;
-    if (timeDiff == 0) {
-      return false;
-    }
-
-    int currentFadeEffectTime = fadeEffect;
-    if (distance < maxHwValue / 10) {
-      currentFadeEffectTime = fadeEffect / 3;
-    }
-
-    double divider = 1.0 * currentFadeEffectTime / timeDiff;
-    if (divider <= 1) {
-      divider = 1;
-    }
-
-    int step = distance / divider;
-    if (step < 1) {
-      return false;
-    }
-
-    int valueStep = getStep(step, targetValue, *hwValue, distance);
-    if (valueStep != 0) {
-      *hwValue += valueStep;
-      *lastChangeMs = millis();
-      return true;
-    }
-  } else {
-    *lastChangeMs = millis();
+                                    uint32_t *lastChangeMs,
+                                    const uint32_t now) const {
+  uint32_t timeDiff = now - *lastChangeMs;
+  *lastChangeMs = now;
+  if (targetValue == *hwValue || timeDiff == 0) {
+    return false;
   }
-  return false;
+
+  int currentFadeEffectTime = fadeEffect;
+  if (distance < maxHwValue / 10) {
+    currentFadeEffectTime = fadeEffect / 3;
+  }
+
+  float divider = 1.0 * currentFadeEffectTime / timeDiff;
+  if (divider <= 1) {
+    divider = 1;
+  }
+
+  int step = distance / divider;
+  if (step < 1) {
+    return false;
+  }
+
+  int valueStep = getStep(step, targetValue, *hwValue);
+  if (valueStep == 0) {
+    return false;
+  }
+
+  *hwValue += valueStep;
+  *lastChangeMs = now;
+  return true;
 }
 
 void RGBCCTBase::onFastTimer() {
   if (!enabled) {
     return;
   }
+  uint32_t now = millis();
+
+  uint32_t fn = getChannel()->getDefaultFunction();
+  if (fn != previousChannelFunction) {
+    autoIterateMode = AutoIterateMode::OFF;
+    auto fnCopy = previousChannelFunction;
+    previousChannelFunction = fn;
+    fn = fnCopy;
+    setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
+  }
+
   if (lastTick == 0) {
-    lastTick = millis();
-    lastChangeRedMs = millis();
-    lastChangeGreenMs = millis();
-    lastChangeBlueMs = millis();
-    lastChangeBrightnessMs = millis();
-    lastChangeWhiteTemperatureMs = millis();
-    lastChangeColorBrightnessMs = millis();
+    lastTick = now;
+    lastChangeRedMs = now;
+    lastChangeGreenMs = now;
+    lastChangeBlueMs = now;
+    lastChangeBrightnessMs = now;
+    lastChangeWhiteTemperatureMs = now;
+    lastChangeColorBrightnessMs = now;
     return;
   }
-  uint32_t timeDiff = millis() - lastTick;
 
   if (autoIterateMode != AutoIterateMode::OFF &&
-      millis() - lastAutoIterateStartTimestamp < 10000) {
-    if (millis() - lastIterateDimmerTimestamp >= 35) {
+      now - lastAutoIterateStartTimestamp < 10000) {
+    if (now - lastIterateDimmerTimestamp >= 35) {
       // lastIterateDimmerTimestamp is updated in handleAction calls below
       switch (autoIterateMode) {
         case AutoIterateMode::DIMMER: {
@@ -748,126 +762,222 @@ void RGBCCTBase::onFastTimer() {
     autoIterateMode = AutoIterateMode::OFF;
   }
 
-  if (timeDiff > 0) {
-    lastTick = millis();
+  uint32_t timeDiff = now - lastTick;
 
-    // target values are in 0..maxHwValue range
-    int targetRed = adjustRange(curRed, 0, 255, 0, maxHwValue);
-    int targetGreen = adjustRange(curGreen, 0, 255, 0, maxHwValue);
-    int targetBlue = adjustRange(curBlue, 0, 255, 0, maxHwValue);
-    int targetColorBrightness = adjustBrightness(curColorBrightness);
-    int targetBrightness = adjustBrightness(curWhiteBrightness);
-    int targetWhiteTemperature =
+  if (timeDiff == 0) {
+    return;
+  }
+
+  lastTick = now;
+  bool valueChanged = false;
+
+  if (hwRed == -1) {
+    hwRed = 0;
+    hwGreen = 0;
+    hwBlue = 0;
+    hwColorBrightness = 0;
+    hwBrightness = 0;
+    hwWhiteTemperature = 0;
+    valueChanged = true;
+  }
+
+
+  const bool useRGB = (fn == SUPLA_CHANNELFNC_RGBLIGHTING) ||
+                      (fn == SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING) ||
+                      (fn == SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
+
+  const bool useDimmer = (fn == SUPLA_CHANNELFNC_DIMMER) ||
+                         (fn == SUPLA_CHANNELFNC_DIMMER_CCT) ||
+                         (fn == SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING) ||
+                         (fn == SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
+
+  const bool useCCT = (fn == SUPLA_CHANNELFNC_DIMMER_CCT) ||
+                      (fn == SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
+
+  // target values are in 0..maxHwValue range
+  int targetRed = 0;
+  int targetGreen = 0;
+  int targetBlue = 0;
+  int targetColorBrightness = 0;
+  int targetBrightness = 0;
+  int targetWhiteTemperature = 0;
+
+  if (useRGB) {
+    targetRed = adjustRange(curRed, 0, 255, 0, maxHwValue);
+    targetGreen = adjustRange(curGreen, 0, 255, 0, maxHwValue);
+    targetBlue = adjustRange(curBlue, 0, 255, 0, maxHwValue);
+    targetColorBrightness = adjustBrightness(curColorBrightness);
+  }
+  if (useDimmer) {
+    targetBrightness = adjustBrightness(curWhiteBrightness);
+  }
+  if (useCCT) {
+    targetWhiteTemperature =
         adjustRange(curWhiteTemperature, 0, 100, 0, maxHwValue);
+  }
 
-    if (resetDisance) {
-      resetDisance = false;
+  if (resetDisance) {
+    resetDisance = false;
 
+    if (useRGB) {
       redDistance = abs(targetRed - hwRed);
       greenDistance = abs(targetGreen - hwGreen);
       blueDistance = abs(targetBlue - hwBlue);
       colorBrightnessDistance = abs(targetColorBrightness - hwColorBrightness);
+    }
+    if (useDimmer) {
       brightnessDistance = abs(targetBrightness - hwBrightness);
+    }
+    if (useCCT) {
       whiteTemperatureDistance =
           abs(targetWhiteTemperature - hwWhiteTemperature);
     }
+  }
 
-    if (instant) {
-      hwRed = targetRed;
-      hwGreen = targetGreen;
-      hwBlue = targetBlue;
-      hwColorBrightness = targetColorBrightness;
-      hwBrightness = targetBrightness;
-      valueChanged = true;
-      instant = false;
-    } else {
+  if (instant) {
+    hwRed = targetRed;
+    hwGreen = targetGreen;
+    hwBlue = targetBlue;
+    hwColorBrightness = targetColorBrightness;
+    hwBrightness = targetBrightness;
+    hwWhiteTemperature = targetWhiteTemperature;
+    valueChanged = true;
+    instant = false;
+  } else {
+    if (useRGB) {
       if (calculateAndUpdate(
-              targetRed, &hwRed, redDistance, &lastChangeRedMs)) {
+              targetRed, &hwRed, redDistance, &lastChangeRedMs, now)) {
         valueChanged = true;
       }
       if (calculateAndUpdate(
-              targetGreen, &hwGreen, greenDistance, &lastChangeGreenMs)) {
+              targetGreen, &hwGreen, greenDistance, &lastChangeGreenMs, now)) {
         valueChanged = true;
       }
       if (calculateAndUpdate(
-              targetBlue, &hwBlue, blueDistance, &lastChangeBlueMs)) {
+              targetBlue, &hwBlue, blueDistance, &lastChangeBlueMs, now)) {
         valueChanged = true;
       }
       if (calculateAndUpdate(targetColorBrightness,
                              &hwColorBrightness,
                              colorBrightnessDistance,
-                             &lastChangeColorBrightnessMs)) {
-        valueChanged = true;
-      }
-      if (calculateAndUpdate(targetBrightness,
-                             &hwBrightness,
-                             brightnessDistance,
-                             &lastChangeBrightnessMs)) {
-        valueChanged = true;
-      }
-      if (calculateAndUpdate(targetWhiteTemperature,
-                             &hwWhiteTemperature,
-                             whiteTemperatureDistance,
-                             &lastChangeWhiteTemperatureMs)) {
+                             &lastChangeColorBrightnessMs,
+                             now)) {
         valueChanged = true;
       }
     }
-
-    if (valueChanged) {
-      // RGB Color brightness
-      uint32_t adjColorBrightness = hwColorBrightness;
-      if (hwColorBrightness > 0) {
-        adjColorBrightness = adjustRange(adjColorBrightness,
-                                         1,
-                                         maxHwValue,
-                                         minColorBrightness,
-                                         maxColorBrightness);
-      } else {
-        hwColorBrightness = 0;
-        adjColorBrightness = 0;
+    if (useDimmer) {
+      if (calculateAndUpdate(targetBrightness,
+                             &hwBrightness,
+                             brightnessDistance,
+                             &lastChangeBrightnessMs,
+                             now)) {
+        valueChanged = true;
       }
-
-      // White channel(s) brightness
-      uint32_t adjBrightness = hwBrightness;
-      if (hwBrightness > 0) {
-        adjBrightness = adjustRange(
-            adjBrightness, 1, maxHwValue, minBrightness, maxBrightness);
-      } else {
-        hwBrightness = 0;
-        adjBrightness = 0;
+    }
+    if (useCCT) {
+      if (calculateAndUpdate(targetWhiteTemperature,
+                             &hwWhiteTemperature,
+                             whiteTemperatureDistance,
+                             &lastChangeWhiteTemperatureMs,
+                             now)) {
+        valueChanged = true;
       }
+    }
+  }
 
-      // by default white1 is warm, white2 is cold.
-      // whiteTemperature is in 0..100 range, where 0 is warm and 100 is cold
-      uint32_t white1Brightness = adjBrightness;
-      uint32_t white2Brightness = 0;
+  if (!valueChanged) {
+    return;
+  }
 
-      if (hwWhiteTemperature > 0) {
-        float white2Fraction = 1.0 * hwWhiteTemperature / maxHwValue;
-        white2Brightness = adjBrightness * white2Fraction * warmWhiteGain;
-        white1Brightness =
-            adjBrightness * (1.0 - white2Fraction) * coldWhiteGain;
-        if (white1Brightness > maxHwValue) {
-          white1Brightness = maxHwValue;
-        }
-        if (white2Brightness > maxHwValue) {
-          white2Brightness = maxHwValue;
-        }
-        // TODO(klew): add warm/cold channel swap
-      }
+  // RGB Color brightness
+  uint32_t adjColorBrightness = hwColorBrightness;
+  if (useRGB && hwColorBrightness > 0) {
+    adjColorBrightness = adjustRange(adjColorBrightness,
+                                     1,
+                                     maxHwValue,
+                                     minColorBrightness,
+                                     maxColorBrightness);
+  } else {
+    hwColorBrightness = 0;
+    adjColorBrightness = 0;
+  }
 
-      setRGBCCTValueOnDevice(hwRed,
-                             hwGreen,
-                             hwBlue,
-                             adjColorBrightness,
-                             white1Brightness,
-                             white2Brightness);
-      valueChanged = false;
+  // White channel(s) brightness
+  uint32_t adjBrightness = hwBrightness;
+  if (useDimmer && hwBrightness > 0) {
+    adjBrightness = adjustRange(
+        adjBrightness, 1, maxHwValue, minBrightness, maxBrightness);
+  } else {
+    hwBrightness = 0;
+    adjBrightness = 0;
+  }
+
+  // by default white1 is warm, white2 is cold.
+  // whiteTemperature is in 0..100 range, where 0 is warm and 100 is cold
+  uint32_t white1Brightness = adjBrightness;
+  uint32_t white2Brightness = 0;
+
+  if (useCCT && hwWhiteTemperature > 0) {
+    float white2Fraction = 1.0 * hwWhiteTemperature / maxHwValue;
+    white2Brightness = adjBrightness * white2Fraction * warmWhiteGain;
+    white1Brightness = adjBrightness * (1.0 - white2Fraction) * coldWhiteGain;
+    if (white1Brightness > maxHwValue) {
+      white1Brightness = maxHwValue;
+    }
+    if (white2Brightness > maxHwValue) {
+      white2Brightness = maxHwValue;
+    }
+    // TODO(klew): add warm/cold channel swap
+  }
+
+  uint32_t red = 0;
+  uint32_t green = 0;
+  uint32_t blue = 0;
+  if (useRGB) {
+    red = hwRed * adjColorBrightness / maxHwValue;
+    green = hwGreen * adjColorBrightness / maxHwValue;
+    blue = hwBlue * adjColorBrightness / maxHwValue;
+    if (red > maxHwValue) {
+      red = maxHwValue;
+    }
+    if (green > maxHwValue) {
+      green = maxHwValue;
+    }
+    if (blue > maxHwValue) {
+      blue = maxHwValue;
+    }
+  }
+
+  uint32_t valueAdj[SUPLA_MAX_OUTPUT_COUNT] = {0};
+  usedChannels = 0;
+
+  if (useRGB) {
+    valueAdj[usedChannels++] = red;
+    valueAdj[usedChannels++] = green;
+    valueAdj[usedChannels++] = blue;
+  }
+
+  if (useDimmer) {
+    valueAdj[usedChannels++] = white1Brightness;
+  }
+
+  if (useCCT) {
+    valueAdj[usedChannels++] = white2Brightness;
+  }
+
+  if (usedChannels > 0) {
+    setRGBCCTValueOnDevice(valueAdj, usedChannels);
+    for (int i = 0; i < usedChannels; i++) {
+      valueAdj[i] = valueAdj[i] * 100.0 / maxHwValue;
     }
   }
 }
 
 void RGBCCTBase::onInit() {
+  updateEnabledState();
+  if (!enabled) {
+    SUPLA_LOG_DEBUG("RGBCCT[%d] disabled", getChannel()->getChannelNumber());
+  }
   if (attachedButton) {
     SUPLA_LOG_DEBUG("RGBCCT[%d] configuring attachedButton, control type %d",
                     getChannel()->getChannelNumber(),
@@ -1009,6 +1119,8 @@ void RGBCCTBase::onInit() {
   }
 
   initDone = true;
+
+  previousChannelFunction = getChannel()->getDefaultFunction();
 
   setRGBCCT(curRed,
             curGreen,
@@ -1368,6 +1480,16 @@ void RGBCCTBase::disableChannel() {
   if (!enabled) {
     return;
   }
+
+  uint32_t valueAdj[SUPLA_MAX_OUTPUT_COUNT] = {0};
+  setRGBCCTValueOnDevice(valueAdj, usedChannels);
+  hwRed = 0;
+  hwGreen = 0;
+  hwBlue = 0;
+  hwColorBrightness = 0;
+  hwBrightness = 0;
+  hwWhiteTemperature = 0;
+  usedChannels = 0;
 
   enabled = false;
   getChannel()->setStateOnlineAndNotAvailable();

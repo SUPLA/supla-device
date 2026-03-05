@@ -44,18 +44,13 @@ class RGBWLedsEspIdf : public RGBCCTBase {
    */
   RGBWLedsEspIdf(Supla::Control::RGBWLedsEspIdf *parent,
                  int ledcTimerId,
-                 int redPin,
-                 int greenPin,
-                 int bluePin,
-                 int w1BrightnessPin,
-                 int w2BrightnessPin);
+                 int out1Gpio,
+                 int out2Gpio,
+                 int out3Gpio,
+                 int out4Gpio,
+                 int out5Gpio);
 
-  void setRGBCCTValueOnDevice(uint32_t red,
-                              uint32_t green,
-                              uint32_t blue,
-                              uint32_t colorBrightness,
-                              uint32_t w1Brightness,
-                              uint32_t w2Brightness) override;
+  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
 
   void onInit() override;
 

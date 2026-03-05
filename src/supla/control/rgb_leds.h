@@ -34,7 +34,6 @@ class RGBLeds : public RGBBase {
   void setRGBWValueOnDevice(uint32_t red,
                             uint32_t green,
                             uint32_t blue,
-                            uint32_t colorBrightness,
                             uint32_t brightness) override;
 
   void onInit() override;

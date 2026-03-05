@@ -64,19 +64,9 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
     BUTTON_NOT_USED
   };
 
-  enum class AutoIterateMode : uint8_t {
-    OFF,
-    DIMMER,
-    RGB,
-    ALL
-  };
+  enum class AutoIterateMode : uint8_t { OFF, DIMMER, RGB, ALL };
 
-  enum class LegacyChannelFunction : uint8_t {
-    None,
-    RGBW,
-    RGB,
-    Dimmer
-  };
+  enum class LegacyChannelFunction : uint8_t { None, RGBW, RGB, Dimmer };
 
   /**
    * Constructor
@@ -90,17 +80,12 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
 
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
-                              bool local = false) override;
+                                              bool local = false) override;
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
 
-  virtual void setRGBCCTValueOnDevice(uint32_t red,
-                                      uint32_t green,
-                                      uint32_t blue,
-                                      uint32_t colorBrightness,
-                                      uint32_t white1Brightness,
-                                      uint32_t white2Brightness) = 0;
+  virtual void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) = 0;
 
   virtual void setRGBW(int red,
                        int green,
@@ -273,6 +258,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
 
   void enableChannel();
   void disableChannel();
+  void updateEnabledState();
 
   uint8_t addWithLimit(int value, int addition, int limit = 255);
   virtual void iterateDimmerRGBW(int rgbStep, int wStep);
@@ -282,22 +268,22 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   // Returns value in range 0-1023 adjusted by selected function.
   int adjustBrightness(int value);
 
-  int getStep(int step, int target, int current, int distance) const;
+  int getStep(int step, int target, int current) const;
   bool calculateAndUpdate(int targetValue,
-                          uint16_t *hwValue,
+                          int16_t *hwValue,
                           int distance,
-                          uint32_t *lastChangeMs) const;
+                          uint32_t *lastChangeMs,
+                          const uint32_t now) const;
 
-  bool valueChanged = true;
   uint8_t buttonStep = 10;               // 10
-  uint8_t curRed = 0;                   // 0 - 255
-  uint8_t curGreen = 255;                 // 0 - 255
-  uint8_t curBlue = 0;                  // 0 - 255
-  uint8_t curColorBrightness = 0;       // 0 - 100
-  uint8_t curWhiteBrightness = 0;            // 0 - 100
-  uint8_t curWhiteTemperature = 0;            // 0 - 100
-  uint8_t lastColorBrightness = 100;      // 0 - 100
-  uint8_t lastWhiteBrightness = 100;           // 0 - 100
+  uint8_t curRed = 0;                    // 0 - 255
+  uint8_t curGreen = 255;                // 0 - 255
+  uint8_t curBlue = 0;                   // 0 - 255
+  uint8_t curColorBrightness = 0;        // 0 - 100
+  uint8_t curWhiteBrightness = 0;        // 0 - 100
+  uint8_t curWhiteTemperature = 0;       // 0 - 100
+  uint8_t lastColorBrightness = 100;     // 0 - 100
+  uint8_t lastWhiteBrightness = 100;     // 0 - 100
   uint8_t defaultDimmedBrightness = 20;  // 20
   bool dimIterationDirection = false;
   bool resetDisance = false;
@@ -307,20 +293,22 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   bool skipLegacyMigration = false;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   uint8_t minIterationBrightness = 1;
+  uint8_t maxTotalHwPower = 100;
+  uint8_t usedChannels = 0;
   LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;
 
   enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
   enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;
 
   uint16_t maxHwValue = 1023;
-  uint16_t hwRed = 0;              // 0 - maxHwValue
-  uint16_t hwGreen = 0;            // 0 - maxHwValue
-  uint16_t hwBlue = 0;             // 0 - maxHwValue
-  uint16_t hwColorBrightness = 0;  // 0 - maxHwValue
-  uint16_t hwBrightness = 0;       // 0 - maxHwValue
-  uint16_t hwWhiteTemperature = 0;       // 0 - maxHwValue
-  uint16_t hwWhite1Brightness = 0;       // 0 - maxHwValue
-  uint16_t hwWhite2Brightness = 0;       // 0 - maxHwValue
+  int16_t hwRed = -1;               // 0 - maxHwValue
+  int16_t hwGreen = -1;             // 0 - maxHwValue
+  int16_t hwBlue = -1;              // 0 - maxHwValue
+  int16_t hwColorBrightness = -1;   // 0 - maxHwValue
+  int16_t hwBrightness = -1;        // 0 - maxHwValue
+  int16_t hwWhiteTemperature = -1;  // 0 - maxHwValue
+  int16_t hwWhite1Brightness = -1;  // 0 - maxHwValue
+  int16_t hwWhite2Brightness = -1;  // 0 - maxHwValue
   uint16_t minBrightness = 1;
   uint16_t maxBrightness = 1023;
   uint16_t minColorBrightness = 1;
@@ -351,6 +339,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   uint32_t lastIterateDimmerTimestamp = 0;
   uint32_t iterationDelayTimestamp = 0;
   uint32_t lastAutoIterateStartTimestamp = 0;
+  uint32_t previousChannelFunction = 0;
 
   float warmWhiteGain = 1.0;
   float coldWhiteGain = 1.0;

@@ -93,14 +93,9 @@ void RGBWBase::onLoadState() {
       curWhiteBrightness);
 }
 
-void RGBWBase::setRGBCCTValueOnDevice(uint32_t red,
-                                      uint32_t green,
-                                      uint32_t blue,
-                                      uint32_t colorBrightness,
-                                      uint32_t white1Brightness,
-                                      uint32_t white2Brightness) {
-  (void)(white2Brightness);
-  setRGBWValueOnDevice(red, green, blue, colorBrightness, white1Brightness);
+void RGBWBase::setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) {
+  (void)(usedOutputs);
+  setRGBWValueOnDevice(output[0], output[1], output[2], output[3]);
 }
 
 };  // namespace Control

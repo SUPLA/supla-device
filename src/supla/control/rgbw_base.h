@@ -41,15 +41,9 @@ class RGBWBase : public RGBCCTBase {
   virtual void setRGBWValueOnDevice(uint32_t red,
                                     uint32_t green,
                                     uint32_t blue,
-                                    uint32_t colorBrightness,
                                     uint32_t whiteBrightness) = 0;
 
-  void setRGBCCTValueOnDevice(uint32_t red,
-                              uint32_t green,
-                              uint32_t blue,
-                              uint32_t colorBrightness,
-                              uint32_t white1Brightness,
-                              uint32_t white2Brightness) override;
+  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
 
   void onLoadState() override;
   void onSaveState() override;

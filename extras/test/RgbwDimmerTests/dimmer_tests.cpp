@@ -29,13 +29,13 @@ class DimmerBaseForTest : public Supla::Control::DimmerBase {
  public:
   MOCK_METHOD(void,
               setRGBWValueOnDevice,
-              (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t),
+              (uint32_t, uint32_t, uint32_t, uint32_t),
               (override));
 };
 
 class TimeInterfaceStub : public TimeInterface {
  public:
-  virtual uint32_t millis() override {
+  uint32_t millis() override {
     static uint32_t value = 0;
     value += 1000;
     return value;
@@ -47,7 +47,7 @@ class SimpleTime : public TimeInterface {
   SimpleTime() : value(0) {
   }
 
-  virtual uint32_t millis() override {
+  uint32_t millis() override {
     return value;
   }
 
@@ -102,8 +102,8 @@ TEST(DimmerTests, DimmerShouldIgnoreRGBValues) {
   // disable fading effect so we'll get instant setting value on device call
   dimmer.setFadeEffectTime(0);
 
-  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, 0)).Times(1);
-  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, (5*1023/100))).Times(1);
+  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0)).Times(1);
+  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, (5*1023/100))).Times(1);
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);
@@ -154,7 +154,7 @@ TEST(DimmerTests, HandleActionTests) {
   DimmerBaseForTest dimmer;
 
   auto ch = dimmer.getChannel();
-  EXPECT_CALL(dimmer, setRGBWValueOnDevice(_, _, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(dimmer, setRGBWValueOnDevice(_, _, _, _)).Times(AtLeast(1));
 
   dimmer.setStep(10);
   dimmer.setMinIterationBrightness(10);
@@ -274,10 +274,10 @@ TEST(DimmerTests, IterateDimmerChangeDirection) {
   };
 
   enum Expectation expectation = EXPECT_ZERO;
-  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0, _))
+  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, _))
       .WillRepeatedly(
           [&prevBrightness, &expectation](
-              uint32_t, uint32_t, uint32_t, uint32_t, uint32_t brightness) {
+              uint32_t, uint32_t, uint32_t, uint32_t brightness) {
             if (expectation == EXPECT_ZERO) {
               EXPECT_EQ(brightness, 0);
             } else if (expectation == EXPECT_GREATER) {

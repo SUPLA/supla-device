@@ -34,12 +34,10 @@ Supla::Control::DimmerLeds::DimmerLeds(int brightnessPin)
 void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
                                                       uint32_t green,
                                                       uint32_t blue,
-                                                      uint32_t colorBrightness,
                                                       uint32_t brightness) {
   (void)(red);
   (void)(green);
   (void)(blue);
-  (void)(colorBrightness);
 
   uint32_t brightnessAdj = brightness;
 

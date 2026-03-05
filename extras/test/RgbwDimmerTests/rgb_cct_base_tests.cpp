@@ -32,7 +32,7 @@ class RgbCctBaseForTest : public Supla::Control::RGBCCTBase {
  public:
   MOCK_METHOD(void,
               setRGBCCTValueOnDevice,
-              (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t),
+              (uint32_t[5], int),
               (override));
 };
 

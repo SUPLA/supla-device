@@ -30,75 +30,29 @@ int RGBWLedsEspIdf::pwmChannelCounter = 0;
 
 RGBWLedsEspIdf::RGBWLedsEspIdf(Supla::Control::RGBWLedsEspIdf *parent,
                                int ledcTimerId,
-                               int redPin,
-                               int greenPin,
-                               int bluePin,
-                               int w1BrightnessPin,
-                               int w2BrightnessPin)
+                               int out1Gpio,
+                               int out2Gpio,
+                               int out3Gpio,
+                               int out4Gpio,
+                               int out5Gpio)
     : RGBCCTBase(parent), ledcTimerId(ledcTimerId), parentLedsEspIdf(parent) {
-  gpios[0] = redPin;
-  gpios[1] = greenPin;
-  gpios[2] = bluePin;
-  gpios[3] = w1BrightnessPin;
-  gpios[4] = w2BrightnessPin;
+  gpios[0] = out1Gpio;
+  gpios[1] = out2Gpio;
+  gpios[2] = out3Gpio;
+  gpios[3] = out4Gpio;
+  gpios[4] = out5Gpio;
 
   setMaxHwValue(8192 - 1);
 }
 
-void RGBWLedsEspIdf::setRGBCCTValueOnDevice(uint32_t red,
-                                            uint32_t green,
-                                            uint32_t blue,
-                                            uint32_t colorBrightness,
-                                            uint32_t w1Brightness,
-                                            uint32_t w2Brightness) {
+void RGBWLedsEspIdf::setRGBCCTValueOnDevice(uint32_t output[5],
+                                            int usedOutputs) {
   if (!initDone || !enabled) {
     return;
   }
-  uint32_t valueAdj[RGB_CCT_MAX] = {0};
-  int usedChannels = 0;
-  switch (getChannel()->getDefaultFunction()) {
-    case SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB: {
-      valueAdj[0] = red * colorBrightness / maxHwValue;
-      valueAdj[1] = green * colorBrightness / maxHwValue;
-      valueAdj[2] = blue * colorBrightness / maxHwValue;
-      valueAdj[3] = w1Brightness;
-      valueAdj[4] = w2Brightness;
-      usedChannels = 5;
-      break;
-    }
-    case SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING: {
-      valueAdj[0] = red * colorBrightness / maxHwValue;
-      valueAdj[1] = green * colorBrightness / maxHwValue;
-      valueAdj[2] = blue * colorBrightness / maxHwValue;
-      valueAdj[3] = w1Brightness;
-      usedChannels = 4;
-      break;
-    }
-    case SUPLA_CHANNELFNC_RGBLIGHTING: {
-      valueAdj[0] = red * colorBrightness / maxHwValue;
-      valueAdj[1] = green * colorBrightness / maxHwValue;
-      valueAdj[2] = blue * colorBrightness / maxHwValue;
-      usedChannels = 3;
-      break;
-    }
-    case SUPLA_CHANNELFNC_DIMMER_CCT: {
-      valueAdj[0] = w1Brightness;
-      valueAdj[1] = w2Brightness;
-      usedChannels = 2;
-      break;
-    }
-    case SUPLA_CHANNELFNC_DIMMER: {
-      valueAdj[0] = w1Brightness;
-      usedChannels = 1;
-      break;
-    }
-    default:
-      break;
-  }
-
   bool changed = false;
-  for (int i = 0; i < usedChannels; i++) {
-    if (channelPrevValue[i] != valueAdj[i]) {
+  for (int i = 0; i < usedOutputs; i++) {
+    if (channelPrevValue[i] != output[i]) {
       tryCounter = 0;
       changed = true;
       break;
@@ -112,12 +66,16 @@ void RGBWLedsEspIdf::setRGBCCTValueOnDevice(uint32_t red,
     return;
   }
 
-  for (int i = 0; i < usedChannels; i++) {
-    channelPrevValue[i] = valueAdj[i];
+  for (int i = 0; i < usedOutputs; i++) {
+    channelPrevValue[i] = output[i];
     if (gpios[i] >= 0) {
-      ledc_set_duty(LEDC_HIGH_SPEED_MODE, channels[i], valueAdj[i]);
+      //      SUPLA_LOG_DEBUG("RGBW[%d]: set channel %d to duty %d",
+      //                      getChannelNumber(),
+      //                      channels[i],
+      //                      output[i]);
+      ledc_set_duty(LEDC_HIGH_SPEED_MODE, channels[i], output[i]);
       ledc_update_duty(LEDC_HIGH_SPEED_MODE, channels[i]);
-      if (valueAdj[i] == 0) {
+      if (output[i] == 0) {
         ledc_stop(LEDC_HIGH_SPEED_MODE, channels[i], 0);
       }
     }
@@ -164,7 +122,7 @@ void RGBWLedsEspIdf::onInit() {
         channels[i] = parentLedsEspIdf->getLedcChannel(gpios[i]);
         SUPLA_LOG_DEBUG("RGBW[%d]: channel %d assigned to GPIO %d",
                         getChannelNumber(),
-                        i,
+                        channels[i],
                         gpios[i]);
       }
     }
@@ -204,4 +162,3 @@ ledc_channel_t RGBWLedsEspIdf::getLedcChannel(int gpio) const {
   }
   return LEDC_CHANNEL_0;
 }
-

@@ -38,8 +38,6 @@
 #include <supla/parser/simple.h>
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
-#include <supla/pv/fronius3p.h>
-#include <supla/pv/fronius3pmeter.h>
 #include <supla/sensor/binary_parsed.h>
 #include <supla/sensor/distance_parsed.h>
 #include <supla/sensor/electricity_meter_parsed.h>
@@ -214,6 +212,34 @@ bool Supla::LinuxYamlConfig::isVerbose() {
     if (config["log_level"]) {
       auto logLevel = config["log_level"].as<std::string>();
       if (logLevel == "verbose") {
+        return true;
+      }
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
+bool Supla::LinuxYamlConfig::isWarning() {
+  try {
+    if (config["log_level"]) {
+      auto logLevel = config["log_level"].as<std::string>();
+      if (logLevel == "warning") {
+        return true;
+      }
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
+bool Supla::LinuxYamlConfig::isError() {
+  try {
+    if (config["log_level"]) {
+      auto logLevel = config["log_level"].as<std::string>();
+      if (logLevel == "error") {
         return true;
       }
     }
@@ -637,11 +663,7 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "RgbCctParsed") {
       return addRgbCctParsed(ch, channelNumber, parser);
     } else if (type == "Fronius") {
-      return addFronius(ch, channelNumber, type);
-    } else if (type == "Fronius3p") {
-      return addFronius(ch, channelNumber, type);
-    } else if (type == "Fronius3pmeter") {
-      return addFronius(ch, channelNumber, type);
+      return addFronius(ch, channelNumber);
     } else if (type == "Afore") {
       return addAfore(ch, channelNumber);
     } else if (type == "Hvac") {
@@ -954,10 +976,10 @@ bool Supla::LinuxYamlConfig::addCustomRelay(const YAML::Node& ch,
 }
 
 bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
-                                        int channelNumber,
-                                        const std::string& type) {
+                                        int channelNumber) {
   int port = 80;
   int deviceId = 1;
+  int deviceType = 0;
   if (ch["port"]) {
     paramCount++;
     port = ch["port"].as<int>();
@@ -965,6 +987,10 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
   if (ch["device_id"]) {
     paramCount++;
     deviceId = ch["device_id"].as<int>();
+  }
+  if (ch["device_type"]) {
+    paramCount++;
+    deviceType = ch["device_type"].as<int>();
   }
 
   if (ch["ip"]) {  // mandatory
@@ -978,19 +1004,8 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
         deviceId);
 
     IPAddress ipAddr(ip);
-    if (type == "Fronius") {
-      auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
-      return addCommonParameters(ch, fronius);
-    } else if (type == "Fronius3p") {
-      auto fronius = new Supla::PV::Fronius3p(ipAddr, port, deviceId);
-      return addCommonParameters(ch, fronius);
-    } else if (type == "Fronius3pmeter") {
-      auto fronius = new Supla::PV::Fronius3pmeter(ipAddr, port, deviceId);
-      return addCommonParameters(ch, fronius);
-    } else {
-      SUPLA_LOG_ERROR("Type: %s unsupported for Fronius", type);
-      return false;
-    }
+    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId, deviceType);
+    return addCommonParameters(ch, fronius);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
                     channelNumber);

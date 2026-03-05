@@ -16,41 +16,65 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+/*
+ Library tested on:
+ Fronius Symo 6.0-3 M with DataManager 2.0 and Smart Meter 63A-3
+*/
+
 #ifndef SRC_SUPLA_PV_FRONIUS_H_
 #define SRC_SUPLA_PV_FRONIUS_H_
 
 #include <IPAddress.h>
-#include <supla/sensor/one_phase_electricity_meter.h>
+#include <supla/sensor/electricity_meter.h>
 #include <supla/network/client.h>
 
 namespace Supla {
 namespace PV {
-class Fronius : public Supla::Sensor::OnePhaseElectricityMeter {
+class Fronius : public Supla::Sensor::ElectricityMeter {
  public:
-  explicit Fronius(IPAddress ip, int port = 80, int deviceId = 1);
+  explicit Fronius(IPAddress ip, int port = 80, int deviceId = 1, int deviceType = 0);
   ~Fronius();
   void readValuesFromDevice();
   void iterateAlways();
   bool iterateConnected();
 
  protected:
+  void getSinglePhaseInverterValues(char* varName, char* varValue);
+  void getThreePhaseInverterValues(char* varName, char* varValue);
+  void getThreePhaseMeterValues(char* varName, char* varValue);
+  void setSinglePhaseInverterValues(bool zeroValues);
+  void setThreePhaseInverterValues(bool zeroValues);
+  void setThreePhaseMeterValues(bool zeroValues);
+  void getSinglePhaseInverterURL(char* buf, char* idBuf);
+  void getThreePhaseInverterURL(char* buf, char* idBuf);
+  void getThreePhaseMeterURL(char* buf, char* idBuf);
   ::Supla::Client *client = nullptr;
   IPAddress ip;
   int port;
+  int deviceType;
   char buf[80];
   unsigned _supla_int64_t totalGeneratedEnergy;
-  _supla_int_t currentPower;
-  unsigned _supla_int16_t currentCurrent;
+  unsigned _supla_int64_t FwdReactEnergy;
+  unsigned _supla_int64_t RvrReactEnergy;
+  unsigned _supla_int64_t FwdActEnergy;
+  unsigned _supla_int64_t RvrActEnergy;
+  _supla_int_t currentActivePower[3];
+  _supla_int_t currentApparentPower[3];
+  _supla_int_t currentReactivePower[3];
+  _supla_int_t currentPowerFactor[3];
+  unsigned _supla_int16_t currentCurrent[3];
   unsigned _supla_int16_t currentFreq;
-  unsigned _supla_int16_t currentVoltage;
+  unsigned _supla_int16_t currentVoltage[3];
   int bytesCounter;
   int retryCounter;
-  int valueToFetch;
   int deviceId;
   bool startCharFound;
   bool dataIsReady;
   bool dataFetchInProgress;
-  uint32_t connectionTimeoutMs;
+  uint64_t connectionTimeoutMs;
+  char variableToFetch[80];
+  bool fetch3p;
+  int invDisabledCounter;
 };
 };  // namespace PV
 };  // namespace Supla

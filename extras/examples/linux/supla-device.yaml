@@ -21,16 +21,19 @@ channels:
     ip: 192.168.1.7
     port: 80
     device_id: 1
+    device_type: 0
 
-  - type: Fronius3p
+  - type: Fronius
     ip: 192.168.1.7
     port: 80
     device_id: 1
+    device_type: 1
 
-  - type: Fronius3pmeter
+  - type: Fronius
     ip: 192.168.1.7
     port: 80
     device_id: 0
+    device_type: 2
 
   - type: ThermometerParsed
     name: t1

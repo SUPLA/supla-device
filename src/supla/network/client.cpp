@@ -51,7 +51,7 @@ int Supla::Client::connect(const char *host, uint16_t port) {
     }
   }
 
-  SUPLA_LOG_DEBUG(
+  SUPLA_LOG_INFO(
             "Establishing %sencrypted connection with: %s (port: %d)",
             sslEnabled ? "" : "NOT ",
             host,

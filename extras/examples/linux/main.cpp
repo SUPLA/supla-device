@@ -54,8 +54,6 @@
 #include <supla/parser/simple.h>
 #include <supla/pv/afore.h>
 #include <supla/pv/fronius.h>
-#include <supla/pv/fronius3p.h>
-#include <supla/pv/fronius3pmeter.h>
 #include <supla/rsa_verificator.h>
 #include <supla/sensor/binary.h>
 #include <supla/sensor/binary_parsed.h>
@@ -162,6 +160,14 @@ int main(int argc, char* argv[]) {
 
     if (result.count("verbose") || config->isVerbose()) {
       logLevel = LOG_VERBOSE;
+    }
+
+    if (result.count("warning") || config->isWarning()) {
+      logLevel = LOG_WARNING;
+    }
+
+    if (result.count("error") || config->isError()) {
+      logLevel = LOG_ERR;
     }
 
     SUPLA_LOG_INFO(" *** Starting supla-device ***");

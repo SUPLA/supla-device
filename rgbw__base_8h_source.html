@@ -122,27 +122,21 @@ $(function() {
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>  <span class="keyword">virtual</span> <span class="keywordtype">void</span> setRGBWValueOnDevice(uint32_t red,</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>                                    uint32_t green,</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>                                    uint32_t blue,</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>                                    uint32_t colorBrightness,</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>                                    uint32_t whiteBrightness) = 0;</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>  <span class="keywordtype">void</span> setRGBCCTValueOnDevice(uint32_t red,</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                              uint32_t green,</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                              uint32_t blue,</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>                              uint32_t colorBrightness,</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>                              uint32_t white1Brightness,</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>                              uint32_t white2Brightness) <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBWBase.html#afd24e1ffc18485d151da46e5bd5db8e4">onLoadState</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBWBase.html#af778fa211bf7b72b82e251601807c815">onSaveState</a>() <span class="keyword">override</span>;</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>};</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>                                    uint32_t whiteBrightness) = 0;</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>  <span class="keywordtype">void</span> setRGBCCTValueOnDevice(uint32_t output[5], <span class="keywordtype">int</span> usedOutputs) <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBWBase.html#afd24e1ffc18485d151da46e5bd5db8e4">onLoadState</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>  <span class="keywordtype">void</span> <a class="code hl_function" href="classSupla_1_1Control_1_1RGBWBase.html#af778fa211bf7b72b82e251601807c815">onSaveState</a>() <span class="keyword">override</span>;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>};</div>
 </div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span> </div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>};  <span class="comment">// namespace Control</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>};  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_RGBW_BASE_H_</span></div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>};  <span class="comment">// namespace Control</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>};  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_RGBW_BASE_H_</span></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1Button_html"><div class="ttname"><a href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a></div><div class="ttdef"><b>Definition</b> button.h:34</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a4ec5a24817eebee8e74f8cb32e284f63"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">Supla::Control::RGBCCTBase::RGBCCTBase</a></div><div class="ttdeci">RGBCCTBase(RGBCCTBase *parent=nullptr)</div><div class="ttdoc">Constructor.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:67</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1RGBCCTBase_html_a4ec5a24817eebee8e74f8cb32e284f63"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBCCTBase.html#a4ec5a24817eebee8e74f8cb32e284f63">Supla::Control::RGBCCTBase::RGBCCTBase</a></div><div class="ttdeci">RGBCCTBase(RGBCCTBase *parent=nullptr)</div><div class="ttdoc">Constructor.</div><div class="ttdef"><b>Definition</b> rgb_cct_base.cpp:69</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBWBase_html_af778fa211bf7b72b82e251601807c815"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBWBase.html#af778fa211bf7b72b82e251601807c815">Supla::Control::RGBWBase::onSaveState</a></div><div class="ttdeci">void onSaveState() override</div><div class="ttdoc">Method called periodically during SuplaDevice iteration.</div><div class="ttdef"><b>Definition</b> rgbw_base.cpp:48</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1RGBWBase_html_afd24e1ffc18485d151da46e5bd5db8e4"><div class="ttname"><a href="classSupla_1_1Control_1_1RGBWBase.html#afd24e1ffc18485d151da46e5bd5db8e4">Supla::Control::RGBWBase::onLoadState</a></div><div class="ttdeci">void onLoadState() override</div><div class="ttdoc">Second method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> rgbw_base.cpp:71</div></div>
 </div><!-- fragment --></div><!-- contents -->

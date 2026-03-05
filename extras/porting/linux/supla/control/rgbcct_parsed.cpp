@@ -57,19 +57,10 @@ void Supla::Control::RgbCctParsed::setUseOfflineOnInvalidState(
   SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }
 
-void Supla::Control::RgbCctParsed::setRGBCCTValueOnDevice(
-    uint32_t red,
-    uint32_t green,
-    uint32_t blue,
-    uint32_t colorBrightness,
-    uint32_t white1Brightness,
-    uint32_t white2Brightness) {
-  (void)red;
-  (void)green;
-  (void)blue;
-  (void)colorBrightness;
-  (void)white1Brightness;
-  (void)white2Brightness;
+void Supla::Control::RgbCctParsed::setRGBCCTValueOnDevice(uint32_t output[5],
+                                                          int usedOutputs) {
+  (void)usedOutputs;
+  (void)output;
 
   //  SUPLA_LOG_DEBUG("RGBCCT[%d]: R %d G %d B %d C %d W1 %d W2 %d",
   //                  getChannelNumber(),

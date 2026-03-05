@@ -34,12 +34,7 @@ class RgbCctParsed : public Sensor::SensorParsed<RGBCCTBase> {
 
   void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
 
-  void setRGBCCTValueOnDevice(uint32_t red,
-                            uint32_t green,
-                            uint32_t blue,
-                            uint32_t colorBrightness,
-                            uint32_t white1Brightness,
-                            uint32_t white2Brightness) override;
+  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
 
  protected:
   uint32_t lastReadTime = 0;

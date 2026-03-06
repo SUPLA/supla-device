@@ -379,17 +379,25 @@ void Fronius::iterateAlways() {
             Fronius::getThreePhaseMeterValues(varName, varValue);
           } else {
             // inverter values are in dict so we need to look for "Value"
-            if (strncmp(varName, "Unit", strlen("Unit")) != 0) {              
+            if (strncmp(varName, "Unit", strlen("Unit")) != 0) {
               if (strlen(variableToFetch) != 0 &&
                 strncmp(varName, "Value", strlen("Value")) == 0) {
                 if (deviceType == FRONIUS_SINGLE_PHASE_INVERTER) {
-                  Fronius::getSinglePhaseInverterValues(variableToFetch, varValue);
+                  Fronius::getSinglePhaseInverterValues(
+                    variableToFetch,
+                    varValue);
                 } else if (deviceType == FRONIUS_THREE_PHASE_INVERTER) {
-                  Fronius::getThreePhaseInverterValues(variableToFetch, varValue);
+                  Fronius::getThreePhaseInverterValues(
+                    variableToFetch,
+                    varValue);
                 }
                 variableToFetch[0] = 0;
               } else {
-                snprintf(variableToFetch, sizeof(variableToFetch), "%s", varName);
+                snprintf(
+                  variableToFetch,
+                  sizeof(variableToFetch),
+                  "%s",
+                  varName);
               }
             }
           }

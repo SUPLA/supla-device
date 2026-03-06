@@ -37,8 +37,6 @@
 #include <supla/network/html/status_led_parameters.h>
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/pv/fronius.h>
-#include <supla/pv/fronius3p.h>
-#include <supla/pv/fronius3pmeter.h>
 #include <supla/storage/littlefs_config.h>
 
 #define STATUS_LED_GPIO 2

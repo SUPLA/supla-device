@@ -32,7 +32,11 @@ namespace Supla {
 namespace PV {
 class Fronius : public Supla::Sensor::ElectricityMeter {
  public:
-  explicit Fronius(IPAddress ip, int port = 80, int deviceId = 1, int deviceType = 0);
+  explicit Fronius(
+    IPAddress ip,
+    int port = 80,
+    int deviceId = 1,
+    int deviceType = 0);
   ~Fronius();
   void readValuesFromDevice();
   void iterateAlways();

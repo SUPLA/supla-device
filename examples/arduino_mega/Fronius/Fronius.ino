@@ -18,8 +18,6 @@
 
 #include <SuplaDevice.h>
 #include <supla/pv/fronius.h>
-#include <supla/pv/fronius3p.h>
-#include <supla/pv/fronius3pmeter.h>
 
 // Choose proper network interface for your card:
 // Arduino Mega with EthernetShield W5100:

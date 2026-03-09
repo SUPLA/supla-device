@@ -4,7 +4,7 @@ var searchData=
   ['identifystatusled_1',['identifyStatusLed',['../classSuplaDeviceClass.html#a1751fed6a611cd9cc8b3cecbc4bf3a20',1,'SuplaDeviceClass']]],
   ['ieeefloat_2',['IEEEfloat',['../structIEEEfloat.html',1,'']]],
   ['impulsecounter_3',['ImpulseCounter',['../classImpulseCounter.html',1,'ImpulseCounter'],['../classSupla_1_1Sensor_1_1ImpulseCounter.html',1,'Supla::Sensor::ImpulseCounter']]],
-  ['initswupdateinstance_4',['initSwUpdateInstance',['../classSuplaDeviceClass.html#a59f47acec41835b1db2520d3e41a350e',1,'SuplaDeviceClass']]],
+  ['initswupdateinstance_4',['initSwUpdateInstance',['../classSuplaDeviceClass.html#ae9dae65461a426ca7af0e89618b5d99e',1,'SuplaDeviceClass']]],
   ['internalpinoutput_5',['InternalPinOutput',['../classSupla_1_1Control_1_1InternalPinOutput.html',1,'Supla::Control']]],
   ['ipaddress_6',['IPAddress',['../classIPAddress.html',1,'']]],
   ['isalarmingused_7',['isAlarmingUsed',['../classSupla_1_1Sensor_1_1Container.html#a8a4e188fdada36114301fad2dc3067d9',1,'Supla::Sensor::Container::isAlarmingUsed()'],['../classContainer.html#a8a4e188fdada36114301fad2dc3067d9',1,'Container::isAlarmingUsed()']]],

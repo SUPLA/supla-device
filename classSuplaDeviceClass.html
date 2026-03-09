@@ -360,8 +360,8 @@ Protected Member Functions</h2></td></tr>
 <tr class="memitem:ab6e2a71094d29b9fdce5115e93438e23" id="r_ab6e2a71094d29b9fdce5115e93438e23"><td class="memItemLeft"><a id="ab6e2a71094d29b9fdce5115e93438e23" name="ab6e2a71094d29b9fdce5115e93438e23"></a>
 void&#160;</td><td class="memItemRight"><b>iterateSwUpdate</b> ()</td></tr>
 <tr class="memdesc:ab6e2a71094d29b9fdce5115e93438e23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Performs software update if needed. <br /></td></tr>
-<tr class="memitem:a59f47acec41835b1db2520d3e41a350e" id="r_a59f47acec41835b1db2520d3e41a350e"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a59f47acec41835b1db2520d3e41a350e">initSwUpdateInstance</a> (bool performUpdate, int securityOnly=-1)</td></tr>
-<tr class="memdesc:a59f47acec41835b1db2520d3e41a350e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes SW update instance.  <br /></td></tr>
+<tr class="memitem:ae9dae65461a426ca7af0e89618b5d99e" id="r_ae9dae65461a426ca7af0e89618b5d99e"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae9dae65461a426ca7af0e89618b5d99e">initSwUpdateInstance</a> (Supla::SwUpdateMode mode, int securityOnly=-1)</td></tr>
+<tr class="memdesc:ae9dae65461a426ca7af0e89618b5d99e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Initializes SW update instance.  <br /></td></tr>
 <tr class="memitem:a19e05d762df2f9fe2cfab37851a17988" id="r_a19e05d762df2f9fe2cfab37851a17988"><td class="memItemLeft"><a id="a19e05d762df2f9fe2cfab37851a17988" name="a19e05d762df2f9fe2cfab37851a17988"></a>
 void&#160;</td><td class="memItemRight"><b>iterateAlwaysElements</b> (uint32_t _millis)</td></tr>
 <tr class="memitem:a83f6593a074cf8293fdff07113623dbb" id="r_a83f6593a074cf8293fdff07113623dbb"><td class="memItemLeft"><a id="a83f6593a074cf8293fdff07113623dbb" name="a83f6593a074cf8293fdff07113623dbb"></a>
@@ -425,8 +425,6 @@ bool&#160;</td><td class="memItemRight"><b>lastStateLogEnabled</b> = true</td></
 bool&#160;</td><td class="memItemRight"><b>initializationDone</b> = false</td></tr>
 <tr class="memitem:afc85589fa8e040409755e71d21fcea6d" id="r_afc85589fa8e040409755e71d21fcea6d"><td class="memItemLeft"><a id="afc85589fa8e040409755e71d21fcea6d" name="afc85589fa8e040409755e71d21fcea6d"></a>
 bool&#160;</td><td class="memItemRight"><b>goToConfigModeAsap</b> = false</td></tr>
-<tr class="memitem:a6d7eca676b2a4df23ec65aef44f9ccd7" id="r_a6d7eca676b2a4df23ec65aef44f9ccd7"><td class="memItemLeft"><a id="a6d7eca676b2a4df23ec65aef44f9ccd7" name="a6d7eca676b2a4df23ec65aef44f9ccd7"></a>
-bool&#160;</td><td class="memItemRight"><b>triggerSwUpdateIfAvailable</b> = false</td></tr>
 <tr class="memitem:a9e96eb66d38fa445b26792c6810ad2b0" id="r_a9e96eb66d38fa445b26792c6810ad2b0"><td class="memItemLeft"><a id="a9e96eb66d38fa445b26792c6810ad2b0" name="a9e96eb66d38fa445b26792c6810ad2b0"></a>
 bool&#160;</td><td class="memItemRight"><b>startPermanentWebInterface</b> = false</td></tr>
 <tr class="memitem:afaf53036fa33a15e2089b5f17958af3b" id="r_afaf53036fa33a15e2089b5f17958af3b"><td class="memItemLeft"><a id="afaf53036fa33a15e2089b5f17958af3b" name="afaf53036fa33a15e2089b5f17958af3b"></a>
@@ -437,6 +435,8 @@ uint8_t&#160;</td><td class="memItemRight"><b>leaveCfgModeAfterInactivityMin</b>
 uint8_t&#160;</td><td class="memItemRight"><b>macLengthInHostname</b> = 6</td></tr>
 <tr class="memitem:a87f6ca2c7d849e3a662b5ff22eb7ed31" id="r_a87f6ca2c7d849e3a662b5ff22eb7ed31"><td class="memItemLeft"><a id="a87f6ca2c7d849e3a662b5ff22eb7ed31" name="a87f6ca2c7d849e3a662b5ff22eb7ed31"></a>
 int8_t&#160;</td><td class="memItemRight"><b>currentStatus</b> = STATUS_UNKNOWN</td></tr>
+<tr class="memitem:aa5f5a73093738a836c16fc342534ae53" id="r_aa5f5a73093738a836c16fc342534ae53"><td class="memItemLeft"><a id="aa5f5a73093738a836c16fc342534ae53" name="aa5f5a73093738a836c16fc342534ae53"></a>
+uint8_t&#160;</td><td class="memItemRight"><b>swUpdateAttempts</b> = 0</td></tr>
 <tr class="memitem:a8f387955f9d07985af073eb7c5833e83" id="r_a8f387955f9d07985af073eb7c5833e83"><td class="memItemLeft"><a id="a8f387955f9d07985af073eb7c5833e83" name="a8f387955f9d07985af073eb7c5833e83"></a>
 Supla::InitialMode&#160;</td><td class="memItemRight"><b>initialMode</b> = Supla::InitialMode::StartInNotConfiguredMode</td></tr>
 <tr class="memitem:ac7649b973c3bcbd859bd46bf2360adf4" id="r_ac7649b973c3bcbd859bd46bf2360adf4"><td class="memItemLeft"><a id="ac7649b973c3bcbd859bd46bf2360adf4" name="ac7649b973c3bcbd859bd46bf2360adf4"></a>
@@ -625,8 +625,8 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 
 </div>
 </div>
-<a id="a59f47acec41835b1db2520d3e41a350e" name="a59f47acec41835b1db2520d3e41a350e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59f47acec41835b1db2520d3e41a350e">&#9670;&#160;</a></span>initSwUpdateInstance()</h2>
+<a id="ae9dae65461a426ca7af0e89618b5d99e" name="ae9dae65461a426ca7af0e89618b5d99e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae9dae65461a426ca7af0e89618b5d99e">&#9670;&#160;</a></span>initSwUpdateInstance()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -637,7 +637,7 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
         <tr>
           <td class="memname">bool SuplaDeviceClass::initSwUpdateInstance </td>
           <td>(</td>
-          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>performUpdate</em></span>, </td>
+          <td class="paramtype">Supla::SwUpdateMode</td>          <td class="paramname"><span class="paramname"><em>mode</em></span>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>

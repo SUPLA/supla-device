@@ -161,10 +161,8 @@ bool&#160;</td><td class="memItemRight"><b>isAborted</b> ()</td></tr>
 void&#160;</td><td class="memItemRight"><b>useBeta</b> ()</td></tr>
 <tr class="memitem:a40a595aa55f083e0faaa768a89193f2d" id="r_a40a595aa55f083e0faaa768a89193f2d"><td class="memItemLeft"><a id="a40a595aa55f083e0faaa768a89193f2d" name="a40a595aa55f083e0faaa768a89193f2d"></a>
 void&#160;</td><td class="memItemRight"><b>setSkipCert</b> ()</td></tr>
-<tr class="memitem:ad3da6e6039c5ce4be12ee1249581174a" id="r_ad3da6e6039c5ce4be12ee1249581174a"><td class="memItemLeft"><a id="ad3da6e6039c5ce4be12ee1249581174a" name="ad3da6e6039c5ce4be12ee1249581174a"></a>
-bool&#160;</td><td class="memItemRight"><b>isCheckUpdateAndAbort</b> () const</td></tr>
-<tr class="memitem:ac625acc2f0d7cc282cbc8ed6765c6733" id="r_ac625acc2f0d7cc282cbc8ed6765c6733"><td class="memItemLeft"><a id="ac625acc2f0d7cc282cbc8ed6765c6733" name="ac625acc2f0d7cc282cbc8ed6765c6733"></a>
-void&#160;</td><td class="memItemRight"><b>setCheckUpdateAndAbort</b> ()</td></tr>
+<tr class="memitem:ad92a478905e4293ea9fcb1a3b7163d1b" id="r_ad92a478905e4293ea9fcb1a3b7163d1b"><td class="memItemLeft"><a id="ad92a478905e4293ea9fcb1a3b7163d1b" name="ad92a478905e4293ea9fcb1a3b7163d1b"></a>
+bool&#160;</td><td class="memItemRight"><b>isRetryAllowed</b> ()</td></tr>
 <tr class="memitem:a3701b8e8ec550436e9534f7611a01ed5" id="r_a3701b8e8ec550436e9534f7611a01ed5"><td class="memItemLeft"><a id="a3701b8e8ec550436e9534f7611a01ed5" name="a3701b8e8ec550436e9534f7611a01ed5"></a>
 const char *&#160;</td><td class="memItemRight"><b>getUrl</b> () const</td></tr>
 <tr class="memitem:abc9409d567dd824f8954729040e7ccd9" id="r_abc9409d567dd824f8954729040e7ccd9"><td class="memItemLeft"><a id="abc9409d567dd824f8954729040e7ccd9" name="abc9409d567dd824f8954729040e7ccd9"></a>
@@ -178,13 +176,13 @@ void&#160;</td><td class="memItemRight"><b>setSecurityOnly</b> ()</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a55cd811838dc33e6e3b0a1a9cc0cbe91" id="r_a55cd811838dc33e6e3b0a1a9cc0cbe91"><td class="memItemLeft"><a id="a55cd811838dc33e6e3b0a1a9cc0cbe91" name="a55cd811838dc33e6e3b0a1a9cc0cbe91"></a>
-static SwUpdate *&#160;</td><td class="memItemRight"><b>Create</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc, const char *newUrl)</td></tr>
+<tr class="memitem:a338686a390417eea157269d097ad5898" id="r_a338686a390417eea157269d097ad5898"><td class="memItemLeft"><a id="a338686a390417eea157269d097ad5898" name="a338686a390417eea157269d097ad5898"></a>
+static SwUpdate *&#160;</td><td class="memItemRight"><b>Create</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc, const char *newUrl, Supla::SwUpdateMode mode)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a82bfb7c615613b82e755e7b87a82f7e2" id="r_a82bfb7c615613b82e755e7b87a82f7e2"><td class="memItemLeft"><a id="a82bfb7c615613b82e755e7b87a82f7e2" name="a82bfb7c615613b82e755e7b87a82f7e2"></a>
-&#160;</td><td class="memItemRight"><b>SwUpdate</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc, const char *newUrl=nullptr)</td></tr>
+<tr class="memitem:a2fb47f8c5450c2c543f06afe9e346f84" id="r_a2fb47f8c5450c2c543f06afe9e346f84"><td class="memItemLeft"><a id="a2fb47f8c5450c2c543f06afe9e346f84" name="a2fb47f8c5450c2c543f06afe9e346f84"></a>
+&#160;</td><td class="memItemRight"><b>SwUpdate</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc, const char *newUrl, Supla::SwUpdateMode mode)</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
@@ -196,8 +194,6 @@ bool&#160;</td><td class="memItemRight"><b>skipCert</b> = false</td></tr>
 bool&#160;</td><td class="memItemRight"><b>securityOnly</b> = false</td></tr>
 <tr class="memitem:ade1df870c33570dddf25bf3e07e87935" id="r_ade1df870c33570dddf25bf3e07e87935"><td class="memItemLeft"><a id="ade1df870c33570dddf25bf3e07e87935" name="ade1df870c33570dddf25bf3e07e87935"></a>
 bool&#160;</td><td class="memItemRight"><b>started</b> = false</td></tr>
-<tr class="memitem:ab5e1c95127a4a6ad9526125bf2acdb2e" id="r_ab5e1c95127a4a6ad9526125bf2acdb2e"><td class="memItemLeft"><a id="ab5e1c95127a4a6ad9526125bf2acdb2e" name="ab5e1c95127a4a6ad9526125bf2acdb2e"></a>
-bool&#160;</td><td class="memItemRight"><b>checkUpdateAndAbort</b> = false</td></tr>
 <tr class="memitem:a3357267750b3fa2b12304f2da4c9c874" id="r_a3357267750b3fa2b12304f2da4c9c874"><td class="memItemLeft"><a id="a3357267750b3fa2b12304f2da4c9c874" name="a3357267750b3fa2b12304f2da4c9c874"></a>
 bool&#160;</td><td class="memItemRight"><b>finished</b> = false</td></tr>
 <tr class="memitem:a8aef0e234bd1f00e914d0ed149c3f99f" id="r_a8aef0e234bd1f00e914d0ed149c3f99f"><td class="memItemLeft"><a id="a8aef0e234bd1f00e914d0ed149c3f99f" name="a8aef0e234bd1f00e914d0ed149c3f99f"></a>
@@ -210,6 +206,10 @@ char *&#160;</td><td class="memItemRight"><b>updateUrl</b> = nullptr</td></tr>
 char *&#160;</td><td class="memItemRight"><b>newVersion</b> = nullptr</td></tr>
 <tr class="memitem:a7c9eb596efbdf5ff432bf6450adb9671" id="r_a7c9eb596efbdf5ff432bf6450adb9671"><td class="memItemLeft"><a id="a7c9eb596efbdf5ff432bf6450adb9671" name="a7c9eb596efbdf5ff432bf6450adb9671"></a>
 char *&#160;</td><td class="memItemRight"><b>changelogUrl</b> = nullptr</td></tr>
+<tr class="memitem:a2d1b5c5d5fe799463a3587821363227c" id="r_a2d1b5c5d5fe799463a3587821363227c"><td class="memItemLeft"><a id="a2d1b5c5d5fe799463a3587821363227c" name="a2d1b5c5d5fe799463a3587821363227c"></a>
+bool&#160;</td><td class="memItemRight"><b>retryAllowed</b> = false</td></tr>
+<tr class="memitem:aa7f65c9301723eec3c91533677f23c8d" id="r_aa7f65c9301723eec3c91533677f23c8d"><td class="memItemLeft"><a id="aa7f65c9301723eec3c91533677f23c8d" name="aa7f65c9301723eec3c91533677f23c8d"></a>
+Supla::SwUpdateMode&#160;</td><td class="memItemRight"><b>mode</b> = Supla::SwUpdateMode::NotSet</td></tr>
 <tr class="memitem:a6cc2b6280bc5cb7feb98103a5d5d3a10" id="r_a6cc2b6280bc5cb7feb98103a5d5d3a10"><td class="memItemLeft"><a id="a6cc2b6280bc5cb7feb98103a5d5d3a10" name="a6cc2b6280bc5cb7feb98103a5d5d3a10"></a>
 char&#160;</td><td class="memItemRight"><b>url</b> [SUPLA_MAX_URL_LENGTH] = {}</td></tr>
 </table>

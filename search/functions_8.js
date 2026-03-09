@@ -1,7 +1,7 @@
 var searchData=
 [
   ['identifystatusled_0',['identifyStatusLed',['../classSuplaDeviceClass.html#a1751fed6a611cd9cc8b3cecbc4bf3a20',1,'SuplaDeviceClass']]],
-  ['initswupdateinstance_1',['initSwUpdateInstance',['../classSuplaDeviceClass.html#a59f47acec41835b1db2520d3e41a350e',1,'SuplaDeviceClass']]],
+  ['initswupdateinstance_1',['initSwUpdateInstance',['../classSuplaDeviceClass.html#ae9dae65461a426ca7af0e89618b5d99e',1,'SuplaDeviceClass']]],
   ['isalarmingused_2',['isAlarmingUsed',['../classSupla_1_1Sensor_1_1Container.html#a8a4e188fdada36114301fad2dc3067d9',1,'Supla::Sensor::Container::isAlarmingUsed()'],['../classContainer.html#a8a4e188fdada36114301fad2dc3067d9',1,'Container::isAlarmingUsed()']]],
   ['isanyupdatepending_3',['IsAnyUpdatePending',['../classSupla_1_1Element.html#a0a9b20dc181a9d7d08ff58c9156098ba',1,'Supla::Element']]],
   ['isanyupdatepending_4',['isAnyUpdatePending',['../classSupla_1_1Element.html#aace753c8ae6efcaf5808c62279f1d389',1,'Supla::Element::isAnyUpdatePending()'],['../classSupla_1_1ElementWithChannelActions.html#a66a732a29fb0994e9a907842c1db99c2',1,'Supla::ElementWithChannelActions::isAnyUpdatePending()']]],

@@ -18,24 +18,57 @@
 
 #include "sha256.h"
 
-Supla::Sha256::Sha256() {
-  sha256_init(&hash);
+#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
+
+#include <mbedtls/sha256.h>
+#include <string.h>
+
+Supla::Sha256::Sha256() : ctx(nullptr) {
+  mbedtls_sha256_context *shaCtx = new mbedtls_sha256_context();
+  mbedtls_sha256_init(shaCtx);
+  mbedtls_sha256_starts(shaCtx, 0);
+  ctx = shaCtx;
 }
 
 Supla::Sha256::~Sha256() {
+  if (ctx == nullptr) {
+    return;
+  }
+  mbedtls_sha256_context *shaCtx =
+      static_cast<mbedtls_sha256_context *>(ctx);
+  mbedtls_sha256_free(shaCtx);
+  delete shaCtx;
+  ctx = nullptr;
 }
 
 void Supla::Sha256::update(const uint8_t *data, const int size) {
-  sha256_update(&hash, size, static_cast<const unsigned char *>(data));
-}
-
-struct sha256_ctx* Supla::Sha256::getHash() {
-  return &hash;
+  if (ctx == nullptr) {
+    return;
+  }
+  mbedtls_sha256_context *shaCtx =
+      static_cast<mbedtls_sha256_context *>(ctx);
+  mbedtls_sha256_update(shaCtx,
+                        static_cast<const unsigned char *>(data),
+                        size);
 }
 
 void Supla::Sha256::digest(uint8_t *output, int length) {
-  sha256_digest(&hash, length, output);
+  if (ctx == nullptr || output == nullptr || length <= 0) {
+    return;
+  }
+  uint8_t fullDigest[32] = {};
+  mbedtls_sha256_context tmp;
+  mbedtls_sha256_init(&tmp);
+  mbedtls_sha256_clone(&tmp,
+      static_cast<const mbedtls_sha256_context *>(ctx));
+  mbedtls_sha256_finish(&tmp, fullDigest);
+  mbedtls_sha256_free(&tmp);
+
+  if (length > 32) {
+    length = 32;
+  }
+  memcpy(output, fullDigest, length);
 }
 
+#endif  // SUPLA_DEVICE_ESP32
 #endif  // SUPLA_TEST
-

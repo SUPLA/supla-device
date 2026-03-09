@@ -1,3 +1,0 @@
-nettle contain SHA256 and RSA related methods.
-Those methods are used in supla-device to verify signature of new firmware
-version downloaded from server (OTA).

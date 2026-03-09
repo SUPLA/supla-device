@@ -566,11 +566,10 @@ void SuplaDeviceClass::iterate(void) {
         // check SW update availability
         if (swUpdate == nullptr && isAutomaticFirmwareUpdateEnabled()) {
           if (millis() - lastSwUpdateCheckTimestamp >
-              SUPLA_AUTOMATIC_OTA_CHECK_INTERVAL) {
-            initSwUpdateInstance(false, -1);
-            lastSwUpdateCheckTimestamp = millis();
-            if (swUpdate) {
-              triggerSwUpdateIfAvailable = true;
+              Supla::AutomaticOtaCheckInterval) {
+            if (initSwUpdateInstance(
+                    Supla::SwUpdateMode::PeriodicCheckAndUpdate, -1)) {
+              lastSwUpdateCheckTimestamp = millis();
             }
           }
         }
@@ -591,7 +590,8 @@ void SuplaDeviceClass::iterate(void) {
     // SW update mode
     case Supla::DEVICE_MODE_SW_UPDATE: {
       if (swUpdate == nullptr) {
-        initSwUpdateInstance(true, 0);
+        SUPLA_LOG_INFO("DEVICE_MODE_SW_UPDATE Starting SW update");
+        initSwUpdateInstance(Supla::SwUpdateMode::CheckAndUpdate, 0);
       }
       iterateSwUpdate();
       if (swUpdate == nullptr) {
@@ -607,7 +607,7 @@ void SuplaDeviceClass::iterate(void) {
   }
 }
 
-bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
+bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
                                             int securityOnly) {
   if (swUpdate) {
     // already initialized earlier
@@ -615,6 +615,21 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
   }
   if (!isAutomaticFirmwareUpdateEnabled() && securityOnly != 0) {
     return false;
+  }
+
+  if (mode == Supla::SwUpdateMode::CheckAndUpdate ||
+      mode == Supla::SwUpdateMode::PeriodicCheckAndUpdate) {
+    swUpdateAttempts = 0;
+  }
+
+  if (mode == Supla::SwUpdateMode::RetryCheckAndUpdate) {
+    swUpdateAttempts++;
+    if (swUpdateAttempts > 3) {
+      SUPLA_LOG_WARNING("Firmware update retry limit exceeded");
+      return false;
+    }
+    SUPLA_LOG_INFO("Firmware update retry %d", swUpdateAttempts);
+    mode = Supla::SwUpdateMode::CheckAndUpdate;
   }
 
   lastSwUpdateCheckTimestamp = millis();
@@ -650,9 +665,9 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
 
   if (strlen(url) == 0) {
     swUpdate = Supla::Device::SwUpdate::Create(
-        this, "https://iot.updates.supla.org/check-updates");
+        this, "https://iot.updates.supla.org/check-updates", mode);
   } else {
-    swUpdate = Supla::Device::SwUpdate::Create(this, url);
+    swUpdate = Supla::Device::SwUpdate::Create(this, url, mode);
   }
   if (swUpdate == nullptr) {
     SUPLA_LOG_WARNING("Failed to create SW update instance");
@@ -670,13 +685,10 @@ bool SuplaDeviceClass::initSwUpdateInstance(bool performUpdate,
   if (securityOnly == 1) {
     swUpdate->setSecurityOnly();
   }
-  if (!performUpdate) {
-    SUPLA_LOG_INFO("Checking SW update");
-    swUpdate->setCheckUpdateAndAbort();
-  } else {
+  if (mode == Supla::SwUpdateMode::CheckAndUpdate) {
     deviceMode = Supla::DEVICE_MODE_SW_UPDATE;
   }
-  return swUpdate != nullptr;
+  return true;
 }
 
 void SuplaDeviceClass::iterateSwUpdate() {
@@ -685,7 +697,7 @@ void SuplaDeviceClass::iterateSwUpdate() {
   }
 
   if (!swUpdate->isStarted()) {
-    if (!swUpdate->isCheckUpdateAndAbort()) {
+    if (deviceMode == Supla::DEVICE_MODE_SW_UPDATE) {
       SUPLA_LOG_INFO("Starting SW update");
       status(STATUS_SW_DOWNLOAD, F("SW update in progress..."));
       Supla::Network::DisconnectProtocols();
@@ -695,7 +707,11 @@ void SuplaDeviceClass::iterateSwUpdate() {
     swUpdate->iterate();
     if (swUpdate->isAborted()) {
       SUPLA_LOG_INFO("SW update aborted");
-      int securityOnly = swUpdate->isSecurityOnly() ? 1 : 0;
+
+      bool retryAllowed = swUpdate->isRetryAllowed();
+      int securityPolicy = swUpdate->isSecurityOnly() ? 1 : 0;
+
+      //      int swUpdatePolicy = swUpdate->isSecurityOnly() ? 1 : 0;
       TCalCfg_FirmwareCheckResult result = {};
       result.Result = SUPLA_FIRMWARE_CHECK_RESULT_ERROR;
       if (swUpdate->getNewVersion()) {
@@ -709,9 +725,9 @@ void SuplaDeviceClass::iterateSwUpdate() {
                   swUpdate->getChangelogUrl(),
                   SUPLA_URL_PATH_MAXSIZE - 1);
         }
-      } else {
+      } else if (!swUpdate->isRetryAllowed()) {
         result.Result = SUPLA_FIRMWARE_CHECK_RESULT_UPDATE_NOT_AVAILABLE;
-        triggerSwUpdateIfAvailable = false;
+        //        triggerSwUpdateIfAvailableAttempts = 0;
       }
       srpcLayer->sendPendingCalCfgResult(
           -1, SUPLA_CALCFG_RESULT_TRUE, -1, sizeof(result), &result);
@@ -719,10 +735,15 @@ void SuplaDeviceClass::iterateSwUpdate() {
           -1, SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE);
       delete swUpdate;
       swUpdate = nullptr;
-      if (triggerSwUpdateIfAvailable) {
-        initSwUpdateInstance(true, securityOnly);
+      if (retryAllowed) {
+        initSwUpdateInstance(Supla::SwUpdateMode::RetryCheckAndUpdate,
+                             securityPolicy);
       }
-
+      //      if (triggerSwUpdateIfAvailableAttempts > 0) {
+      //        SUPLA_LOG_INFO("Triggering SW update again (%d attempts left)",
+      //                       triggerSwUpdateIfAvailableAttempts);
+      //        initSwUpdateInstance(true, swUpdatePolicy);
+      //      }
     } else if (swUpdate->isFinished()) {
       SUPLA_LOG_INFO("Finished SW update, restarting...");
       delete swUpdate;
@@ -1165,7 +1186,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
           }
         }
         // only check firmware for all updates
-        initSwUpdateInstance(false, 0);
+        initSwUpdateInstance(Supla::SwUpdateMode::OnlyCheck, 0);
         if (swUpdate) {
           SUPLA_LOG_INFO("Firmware update check started");
           return SUPLA_CALCFG_RESULT_TRUE;
@@ -1200,10 +1221,8 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
             break;
           }
         }
-        // only check firmware for all updates
-        initSwUpdateInstance(false, 0);
-        triggerSwUpdateIfAvailable = true;
-        if (swUpdate) {
+
+        if (initSwUpdateInstance(Supla::SwUpdateMode::CheckAndUpdate, 0)) {
           SUPLA_LOG_INFO("Firmware update started");
           return SUPLA_CALCFG_RESULT_TRUE;
         }
@@ -1237,10 +1256,7 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
             break;
           }
         }
-        // only check firmware for all updates
-        initSwUpdateInstance(false, 1);
-        triggerSwUpdateIfAvailable = true;
-        if (swUpdate) {
+        if (initSwUpdateInstance(Supla::SwUpdateMode::CheckAndUpdate, 1)) {
           SUPLA_LOG_INFO("Firmware update started");
           return SUPLA_CALCFG_RESULT_TRUE;
         }

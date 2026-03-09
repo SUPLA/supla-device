@@ -18,10 +18,11 @@
 #define SRC_SUPLADEVICE_H_
 
 #include <supla-common/proto.h>
-#include <supla/uptime.h>
 #include <supla/action_handler.h>
-#include <supla/local_action.h>
 #include <supla/device/device_mode.h>
+#include <supla/local_action.h>
+#include <supla/uptime.h>
+
 #include "supla/device/security_logger.h"
 
 #define STATUS_UNKNOWN                   -1
@@ -35,36 +36,33 @@
 #define STATUS_NETWORK_DISCONNECTED      8
 #define STATUS_ALL_PROTOCOLS_DISABLED    9
 
-#define STATUS_REGISTER_IN_PROGRESS      10  // Don't change
-#define STATUS_REGISTERED_AND_READY      17  // Don't change
+#define STATUS_REGISTER_IN_PROGRESS 10  // Don't change
+#define STATUS_REGISTERED_AND_READY 17  // Don't change
 
-#define STATUS_TEMPORARILY_UNAVAILABLE   21
-#define STATUS_INVALID_GUID              22
-#define STATUS_CHANNEL_LIMIT_EXCEEDED    23
-#define STATUS_PROTOCOL_VERSION_ERROR    24
-#define STATUS_BAD_CREDENTIALS           25
-#define STATUS_LOCATION_CONFLICT         26
-#define STATUS_CHANNEL_CONFLICT          27
-#define STATUS_DEVICE_IS_DISABLED        28
-#define STATUS_LOCATION_IS_DISABLED      29
-#define STATUS_DEVICE_LIMIT_EXCEEDED     30
-#define STATUS_REGISTRATION_DISABLED     31
-#define STATUS_MISSING_CREDENTIALS       32
-#define STATUS_INVALID_AUTHKEY           33
-#define STATUS_NO_LOCATION_AVAILABLE     34
-#define STATUS_UNKNOWN_ERROR             35
-#define STATUS_COUNTRY_REJECTED          36
+#define STATUS_TEMPORARILY_UNAVAILABLE 21
+#define STATUS_INVALID_GUID            22
+#define STATUS_CHANNEL_LIMIT_EXCEEDED  23
+#define STATUS_PROTOCOL_VERSION_ERROR  24
+#define STATUS_BAD_CREDENTIALS         25
+#define STATUS_LOCATION_CONFLICT       26
+#define STATUS_CHANNEL_CONFLICT        27
+#define STATUS_DEVICE_IS_DISABLED      28
+#define STATUS_LOCATION_IS_DISABLED    29
+#define STATUS_DEVICE_LIMIT_EXCEEDED   30
+#define STATUS_REGISTRATION_DISABLED   31
+#define STATUS_MISSING_CREDENTIALS     32
+#define STATUS_INVALID_AUTHKEY         33
+#define STATUS_NO_LOCATION_AVAILABLE   34
+#define STATUS_UNKNOWN_ERROR           35
+#define STATUS_COUNTRY_REJECTED        36
 
-#define STATUS_CONFIG_MODE               40
-#define STATUS_SOFTWARE_RESET            41
-#define STATUS_SW_DOWNLOAD               50
-#define STATUS_SUPLA_PROTOCOL_DISABLED   60
-#define STATUS_TEST_WAIT_FOR_CFG_BUTTON  70
-#define STATUS_OFFLINE_MODE              80
-#define STATUS_NOT_CONFIGURED_MODE       90
-
-// 10 days
-#define SUPLA_AUTOMATIC_OTA_CHECK_INTERVAL (10ULL * 24 * 60 * 60 * 1000)
+#define STATUS_CONFIG_MODE              40
+#define STATUS_SOFTWARE_RESET           41
+#define STATUS_SW_DOWNLOAD              50
+#define STATUS_SUPLA_PROTOCOL_DISABLED  60
+#define STATUS_TEST_WAIT_FOR_CFG_BUTTON 70
+#define STATUS_OFFLINE_MODE             80
+#define STATUS_NOT_CONFIGURED_MODE      90
 
 typedef void (*_impl_arduino_status)(int status, const char *msg);
 
@@ -79,10 +77,21 @@ class Clock;
 class Mutex;
 class Element;
 
+// 10 days
+constexpr uint32_t AutomaticOtaCheckInterval = (10ULL * 24 * 60 * 60 * 1000);
+
+enum class SwUpdateMode : uint8_t {
+  NotSet,
+  PeriodicCheckAndUpdate,
+  OnlyCheck,
+  CheckAndUpdate,
+  RetryCheckAndUpdate,
+};
+
 /**
  * @enum InitialMode
  */
-enum class InitialMode: uint8_t {
+enum class InitialMode : uint8_t {
   /** When device starts with factory defaults, it will enable AP and enter
    * config mode (legacy behavior).
    */
@@ -102,7 +111,7 @@ enum class InitialMode: uint8_t {
   StartInNotConfiguredMode = 3
 };
 
-enum class CfgModeState: uint8_t {
+enum class CfgModeState : uint8_t {
   NotSet = 0,
   CfgModeStartedFor1hPending = 1,
   CfgModeStartedPending = 2,
@@ -111,13 +120,13 @@ enum class CfgModeState: uint8_t {
 };
 
 struct ConfigurationState {
-  uint8_t wifiEnabled: 1;
-  uint8_t wifiSsidFilled: 1;
-  uint8_t wifiPassFilled: 1;
-  uint8_t protocolFilled: 1;
-  uint8_t protocolNotEmpty: 1;
-  uint8_t configNotComplete: 1;
-  uint8_t atLeastOneProtoIsEnabled: 1;
+  uint8_t wifiEnabled : 1;
+  uint8_t wifiSsidFilled : 1;
+  uint8_t wifiPassFilled : 1;
+  uint8_t protocolFilled : 1;
+  uint8_t protocolNotEmpty : 1;
+  uint8_t configNotComplete : 1;
+  uint8_t atLeastOneProtoIsEnabled : 1;
 
   bool isEmpty() const;
 
@@ -150,7 +159,7 @@ class SuplaSrpc;
 }  // namespace Supla
 
 class SuplaDeviceClass : public Supla::ActionHandler,
-  public Supla::LocalAction {
+                         public Supla::LocalAction {
  public:
   SuplaDeviceClass();
   ~SuplaDeviceClass();
@@ -188,7 +197,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void removeFlags(int32_t);
   bool isSleepingDeviceEnabled() const;
 
-  int generateHostname(char*, int macSize = 6);
+  int generateHostname(char *, int macSize = 6);
 
   // Timer with 100 Hz frequency (10 ms)
   void onTimer(void);
@@ -223,7 +232,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool loadDeviceConfig();
   bool prepareLastStateLog();
   char *getLastStateLog();
-  void addLastStateLog(const char*);
+  void addLastStateLog(const char *);
   void enableLastStateLog();
   void disableLastStateLog();
   void setRsaPublicKeyPtr(const uint8_t *ptr);
@@ -249,7 +258,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setSuplaCACert(const char *);
   void setSupla3rdPartyCACert(const char *);
-  const char* getSuplaCACert() const;
+  const char *getSuplaCACert() const;
 
   Supla::Uptime uptime;
 
@@ -288,7 +297,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    *
    * @return the initial mode
    */
-  Supla::InitialMode getInitialMode() const { return initialMode; }
+  Supla::InitialMode getInitialMode() const {
+    return initialMode;
+  }
 
   /**
    * Checks if remote device configuration is enabled
@@ -446,7 +457,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
    *
    * @return true if SW update instance was initialized
    */
-  bool initSwUpdateInstance(bool performUpdate, int securityOnly = -1);
+  bool initSwUpdateInstance(Supla::SwUpdateMode mode, int securityOnly = -1);
 
   void iterateAlwaysElements(uint32_t _millis);
   bool iterateNetworkSetup();
@@ -482,7 +493,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   // true even if initialization procedure failed for some reason
   bool initializationDone = false;
   bool goToConfigModeAsap = false;
-  bool triggerSwUpdateIfAvailable = false;
 
   // used for permanent web server
   bool startPermanentWebInterface = false;
@@ -491,6 +501,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   uint8_t leaveCfgModeAfterInactivityMin = 5;
   uint8_t macLengthInHostname = 6;
   int8_t currentStatus = STATUS_UNKNOWN;
+  uint8_t swUpdateAttempts = 0;
 
   Supla::InitialMode initialMode = Supla::InitialMode::StartInNotConfiguredMode;
   Supla::CfgModeState cfgModeState = Supla::CfgModeState::NotSet;

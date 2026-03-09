@@ -18,15 +18,14 @@
 
 #include "sw_update.h"
 
-#include <supla/storage/config.h>
 #include <string.h>
+#include <supla/storage/config.h>
 
 #if !defined(SUPLA_TEST)
-#if defined(ARDUINO) || defined(SUPLA_LINUX) || \
-    defined(SUPLA_FREERTOS)
+#if defined(ARDUINO) || defined(SUPLA_LINUX) || defined(SUPLA_FREERTOS)
 // TODO(klew): implement sw update for remaining targets
-Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(SuplaDeviceClass *sdc,
-                                                         const char *newUrl) {
+Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
+    SuplaDeviceClass *sdc, const char *newUrl, Supla::SwUpdateMode mode) {
   (void)(newUrl);
   (void)(sdc);
   return nullptr;
@@ -49,8 +48,10 @@ Supla::Device::SwUpdate::~SwUpdate() {
   }
 }
 
-Supla::Device::SwUpdate::SwUpdate(SuplaDeviceClass *sdc, const char *newUrl)
-    : sdc(sdc) {
+Supla::Device::SwUpdate::SwUpdate(SuplaDeviceClass *sdc,
+                                  const char *newUrl,
+                                  Supla::SwUpdateMode mode)
+    : sdc(sdc), mode(mode) {
   setUrl(newUrl);
 }
 
@@ -60,5 +61,3 @@ void Supla::Device::SwUpdate::setUrl(const char *newUrl) {
     url[SUPLA_MAX_URL_LENGTH - 1] = '\0';
   }
 }
-
-

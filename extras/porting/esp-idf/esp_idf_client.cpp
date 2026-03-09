@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <lwip/netif.h>
 #include <lwip/sockets.h>
+#include <mbedtls/pk.h>
 #include <stdio.h>
 #include <string.h>
 #include <supla/auto_lock.h>
@@ -55,6 +56,7 @@ Supla::EspIdfClient::EspIdfClient() {
 Supla::EspIdfClient::~EspIdfClient() {
 }
 
+#if !defined(MBEDTLS_PK_HAVE_PRIVATE_HEADER)
 [[maybe_unused]]
 static const char *pkTypeStr(mbedtls_pk_type_t t) {
   switch (t) {
@@ -68,6 +70,7 @@ static const char *pkTypeStr(mbedtls_pk_type_t t) {
       return "OTHER";
   }
 }
+#endif
 int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
   Supla::AutoLock autoLock(mutex);
   if (client != nullptr) {
@@ -124,9 +127,11 @@ int Supla::EspIdfClient::connectImp(const char *host, uint16_t port) {
         SUPLA_LOG_ERROR(
             "No peer certificate (unexpected for normal TLS server auth)");
       } else {
+#if !defined(MBEDTLS_PK_HAVE_PRIVATE_HEADER)
         mbedtls_pk_type_t kt = mbedtls_pk_get_type(&peer->pk);
         (void)(kt);
         SUPLA_LOG_DEBUG("Server cert key type: %s", pkTypeStr(kt));
+#endif
         SUPLA_LOG_DEBUG("Server cert key bits: %u",
                         (unsigned)mbedtls_pk_get_bitlen(&peer->pk));
       }

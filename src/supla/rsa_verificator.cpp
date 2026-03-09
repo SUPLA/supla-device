@@ -20,58 +20,171 @@
 
 #if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
 
-#include <mbedtls/rsa.h>
-#include <mbedtls/version.h>
+#include <mbedtls/md.h>
+#include <mbedtls/pk.h>
+#include <string.h>
+
+namespace {
+
+static size_t derLenBytes(size_t len) {
+  if (len < 128) {
+    return 1;
+  }
+  size_t n = 0;
+  while (len > 0) {
+    n++;
+    len >>= 8;
+  }
+  return 1 + n;
+}
+
+static bool derWriteLen(uint8_t *out,
+                        size_t outLen,
+                        size_t *pos,
+                        size_t len) {
+  if (*pos >= outLen) {
+    return false;
+  }
+  if (len < 128) {
+    out[(*pos)++] = static_cast<uint8_t>(len);
+    return true;
+  }
+  uint8_t lenBytes[8] = {};
+  size_t lenLen = 0;
+  while (len > 0) {
+    if (lenLen >= sizeof(lenBytes)) {
+      return false;
+    }
+    lenBytes[lenLen++] = static_cast<uint8_t>(len & 0xFF);
+    len >>= 8;
+  }
+  if (*pos + 1 + lenLen > outLen) {
+    return false;
+  }
+  out[(*pos)++] = static_cast<uint8_t>(0x80 | lenLen);
+  for (size_t i = 0; i < lenLen; i++) {
+    out[(*pos)++] = lenBytes[lenLen - 1 - i];
+  }
+  return true;
+}
+
+static bool derWriteTagLen(uint8_t *out,
+                           size_t outLen,
+                           size_t *pos,
+                           uint8_t tag,
+                           size_t len) {
+  if (*pos + 1 > outLen) {
+    return false;
+  }
+  out[(*pos)++] = tag;
+  return derWriteLen(out, outLen, pos, len);
+}
+
+static bool buildRsaSpkiDer(const uint8_t *modulus,
+                            size_t modulusLen,
+                            uint8_t *out,
+                            size_t outLen,
+                            size_t *outWritten) {
+  if (modulus == nullptr || modulusLen == 0 || out == nullptr ||
+      outWritten == nullptr) {
+    return false;
+  }
+
+  const bool modNeedsZero = (modulus[0] & 0x80) != 0;
+  const size_t modValLen = modulusLen + (modNeedsZero ? 1 : 0);
+  const size_t modTlvLen = 1 + derLenBytes(modValLen) + modValLen;
+
+  const uint8_t exponent[] = {0x01, 0x00, 0x01};
+  const size_t expValLen = sizeof(exponent);
+  const size_t expTlvLen = 1 + derLenBytes(expValLen) + expValLen;
+
+  const size_t rsaContentLen = modTlvLen + expTlvLen;
+  const size_t rsaSeqLen = 1 + derLenBytes(rsaContentLen) + rsaContentLen;
+
+  const size_t bitContentLen = 1 + rsaSeqLen;  // 1 byte for unused bits
+  const size_t bitTlvLen = 1 + derLenBytes(bitContentLen) + bitContentLen;
+
+  const uint8_t algId[] = {
+      0x30, 0x0D, 0x06, 0x09, 0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01,
+      0x01, 0x01, 0x05, 0x00};
+  const size_t algIdLen = sizeof(algId);
+
+  const size_t spkiContentLen = algIdLen + bitTlvLen;
+  const size_t spkiSeqLen = 1 + derLenBytes(spkiContentLen) + spkiContentLen;
+
+  if (spkiSeqLen > outLen) {
+    return false;
+  }
+
+  size_t pos = 0;
+  if (!derWriteTagLen(out, outLen, &pos, 0x30, spkiContentLen)) {
+    return false;
+  }
+  memcpy(out + pos, algId, algIdLen);
+  pos += algIdLen;
+
+  if (!derWriteTagLen(out, outLen, &pos, 0x03, bitContentLen)) {
+    return false;
+  }
+  out[pos++] = 0x00;  // unused bits
+
+  if (!derWriteTagLen(out, outLen, &pos, 0x30, rsaContentLen)) {
+    return false;
+  }
+  if (!derWriteTagLen(out, outLen, &pos, 0x02, modValLen)) {
+    return false;
+  }
+  if (modNeedsZero) {
+    out[pos++] = 0x00;
+  }
+  memcpy(out + pos, modulus, modulusLen);
+  pos += modulusLen;
+
+  if (!derWriteTagLen(out, outLen, &pos, 0x02, expValLen)) {
+    return false;
+  }
+  memcpy(out + pos, exponent, expValLen);
+  pos += expValLen;
+
+  *outWritten = pos;
+  return true;
+}
+
+}  // namespace
 
 Supla::RsaVerificator::RsaVerificator(const uint8_t *publicKeyBytes)
     : rsa_ctx(nullptr), ready(false) {
   if (publicKeyBytes == nullptr) {
     return;
   }
-  mbedtls_rsa_context *rsa = new mbedtls_rsa_context();
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
-  mbedtls_rsa_init(rsa);
-  mbedtls_rsa_set_padding(rsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_SHA256);
-#else
-  mbedtls_rsa_init(rsa, MBEDTLS_RSA_PKCS_V15, MBEDTLS_MD_SHA256);
-#endif
-
-  const unsigned char exponent[] = {0x01, 0x00, 0x01};
-  int ret = mbedtls_rsa_import_raw(rsa,
-                                   publicKeyBytes,
-                                   RSA_NUM_BYTES,
-                                   nullptr,
-                                   0,
-                                   nullptr,
-                                   0,
-                                   nullptr,
-                                   0,
-                                   exponent,
-                                   sizeof(exponent));
-  if (ret == 0) {
-    ret = mbedtls_rsa_complete(rsa);
+  uint8_t spkiDer[800] = {};
+  size_t spkiLen = 0;
+  if (!buildRsaSpkiDer(publicKeyBytes,
+                       RSA_NUM_BYTES,
+                       spkiDer,
+                       sizeof(spkiDer),
+                       &spkiLen)) {
+    return;
   }
+  mbedtls_pk_context *pk = new mbedtls_pk_context();
+  mbedtls_pk_init(pk);
+  int ret = mbedtls_pk_parse_public_key(pk, spkiDer, spkiLen);
   if (ret == 0) {
-    ret = mbedtls_rsa_check_pubkey(rsa);
-  }
-
-  if (ret == 0) {
-    rsa_ctx = rsa;
+    rsa_ctx = pk;
     ready = true;
     return;
   }
-
-  mbedtls_rsa_free(rsa);
-  delete rsa;
+  mbedtls_pk_free(pk);
+  delete pk;
 }
 
 Supla::RsaVerificator::~RsaVerificator() {
   if (rsa_ctx == nullptr) {
     return;
   }
-  mbedtls_rsa_context *rsa = static_cast<mbedtls_rsa_context *>(rsa_ctx);
-  mbedtls_rsa_free(rsa);
-  delete rsa;
+  mbedtls_pk_context *pk = static_cast<mbedtls_pk_context *>(rsa_ctx);
+  mbedtls_pk_free(pk);
+  delete pk;
   rsa_ctx = nullptr;
 }
 
@@ -83,20 +196,13 @@ bool Supla::RsaVerificator::verify(Supla::Sha256 *hash,
   uint8_t digest[32] = {};
   hash->digest(digest, sizeof(digest));
 
-  mbedtls_rsa_context *rsa = static_cast<mbedtls_rsa_context *>(rsa_ctx);
-#if MBEDTLS_VERSION_NUMBER >= 0x03000000
-  int result = mbedtls_rsa_pkcs1_verify(
-      rsa, MBEDTLS_MD_SHA256, sizeof(digest), digest, signatureBytes);
-#else
-  int result = mbedtls_rsa_pkcs1_verify(rsa,
-                                        nullptr,
-                                        nullptr,
-                                        MBEDTLS_RSA_PUBLIC,
-                                        MBEDTLS_MD_SHA256,
-                                        sizeof(digest),
-                                        digest,
-                                        signatureBytes);
-#endif
+  mbedtls_pk_context *pk = static_cast<mbedtls_pk_context *>(rsa_ctx);
+  int result = mbedtls_pk_verify(pk,
+                                 MBEDTLS_MD_SHA256,
+                                 digest,
+                                 sizeof(digest),
+                                 signatureBytes,
+                                 RSA_NUM_BYTES);
 
   return result == 0;
 }

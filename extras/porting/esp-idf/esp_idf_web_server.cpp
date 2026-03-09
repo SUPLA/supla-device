@@ -26,7 +26,6 @@
 #include <supla/storage/storage.h>
 #include <supla/storage/config.h>
 #include <esp_tls.h>
-#include <mbedtls/aes.h>
 #include <supla/device/register_device.h>
 #include <ctype.h>
 #include <supla/crypto.h>
@@ -34,6 +33,19 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdio.h>
+#if defined(__has_include)
+#if __has_include(<mbedtls/aes.h>)
+#define SUPLA_HAVE_MBEDTLS_AES 1
+#include <mbedtls/aes.h>
+#elif __has_include(<psa/crypto.h>)
+#define SUPLA_HAVE_PSA_CRYPTO 1
+#include <psa/crypto.h>
+#endif
+#endif
+#if !defined(SUPLA_HAVE_MBEDTLS_AES) && !defined(SUPLA_HAVE_PSA_CRYPTO)
+#define SUPLA_HAVE_MBEDTLS_AES 1
+#include <mbedtls/aes.h>
+#endif
 
 #include "esp_idf_web_server.h"
 
@@ -47,6 +59,74 @@
 static Supla::EspIdfWebServer *srvInst = nullptr;
 
 constexpr int SUPLA_SERVER_SEND_BUF_SIZE = 512;
+
+#if defined(SUPLA_HAVE_MBEDTLS_AES)
+static int decryptAesCbc(const uint8_t *key,
+                         size_t keyLen,
+                         uint8_t *iv,
+                         const uint8_t *input,
+                         size_t inputLen,
+                         uint8_t *output) {
+  mbedtls_aes_context aes = {};
+  mbedtls_aes_init(&aes);
+  int result = mbedtls_aes_setkey_dec(&aes, key, keyLen * 8);
+  if (result == 0) {
+    result = mbedtls_aes_crypt_cbc(&aes,
+                                   MBEDTLS_AES_DECRYPT,
+                                   inputLen,
+                                   iv,
+                                   input,
+                                   output);
+  }
+  mbedtls_aes_free(&aes);
+  return result;
+}
+#elif defined(SUPLA_HAVE_PSA_CRYPTO)
+static int decryptAesCbc(const uint8_t *key,
+                         size_t keyLen,
+                         uint8_t *iv,
+                         const uint8_t *input,
+                         size_t inputLen,
+                         uint8_t *output) {
+  psa_status_t status = psa_crypto_init();
+  if (status != PSA_SUCCESS) {
+    return -1;
+  }
+  psa_key_attributes_t attr = psa_key_attributes_init();
+  psa_set_key_type(&attr, PSA_KEY_TYPE_AES);
+  psa_set_key_usage_flags(&attr, PSA_KEY_USAGE_DECRYPT);
+  psa_set_key_algorithm(&attr, PSA_ALG_CBC_NO_PADDING);
+  psa_key_id_t keyId = 0;
+  status = psa_import_key(&attr, key, keyLen, &keyId);
+  psa_reset_key_attributes(&attr);
+  if (status != PSA_SUCCESS) {
+    return -1;
+  }
+  psa_cipher_operation_t op = psa_cipher_operation_init();
+  status = psa_cipher_decrypt_setup(&op, keyId, PSA_ALG_CBC_NO_PADDING);
+  if (status == PSA_SUCCESS) {
+    status = psa_cipher_set_iv(&op, iv, IV_SIZE);
+  }
+  size_t outLen = 0;
+  if (status == PSA_SUCCESS) {
+    status = psa_cipher_update(&op,
+                               input,
+                               inputLen,
+                               output,
+                               inputLen,
+                               &outLen);
+  }
+  if (status == PSA_SUCCESS) {
+    size_t finishLen = 0;
+    status = psa_cipher_finish(&op, output + outLen,
+                               inputLen - outLen, &finishLen);
+    outLen += finishLen;
+  }
+  psa_cipher_abort(&op);
+  psa_destroy_key(keyId);
+  return status == PSA_SUCCESS ? 0 : -1;
+}
+#endif
 
 // request: GET /favicon.ico
 // no auth required, just send the icon
@@ -631,12 +711,6 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       uint8_t iv[IV_SIZE] = {};
       memcpy(iv, prvtKey, IV_SIZE);
 
-      mbedtls_aes_context aes = {};
-      mbedtls_aes_init(&aes);
-      auto result = mbedtls_aes_setkey_dec(&aes, aesKey, 256);
-      (void)(result);
-      SUPLA_LOG_DEBUG("mbedtls_aes_setkey_dec result: %d", result);
-
       prvtKeyLen = prvtKeyLen - IV_SIZE;
 
       SUPLA_LOG_INFO("prvtKeyLen: %d, IV_SIZE: %d", prvtKeyLen, IV_SIZE);
@@ -644,16 +718,15 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       memcpy(encryptedData, prvtKey + IV_SIZE, prvtKeyLen);
       memset(prvtKey, 0, prvtKeyLen + IV_SIZE);
       encryptedData[prvtKeyLen] = '\0';
-      result = mbedtls_aes_crypt_cbc(&aes,
-                            MBEDTLS_AES_DECRYPT,
-                            prvtKeyLen,
-                            iv,
-                            encryptedData,
-                            prvtKey);
+      auto result = decryptAesCbc(aesKey,
+                                  32,
+                                  iv,
+                                  encryptedData,
+                                  prvtKeyLen,
+                                  prvtKey);
       prvtKeyLen++;
-      SUPLA_LOG_DEBUG("mbedtls_aes_crypt_cbc result: %d", result);
+      SUPLA_LOG_DEBUG("AES-CBC decrypt result: %d", result);
       delete[] encryptedData;
-      mbedtls_aes_free(&aes);
     } else {
       SUPLA_LOG_INFO("AES key not found");
     }
@@ -1086,4 +1159,3 @@ void Supla::EspIdfWebServer::failedLoginAttempt(httpd_req_t *req) {
 char *Supla::EspIdfWebServer::getSendBufPtr() const {
   return sendBuf;
 }
-

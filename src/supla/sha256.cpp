@@ -20,24 +20,32 @@
 
 #if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
 
-#include <mbedtls/sha256.h>
+#include <mbedtls/md.h>
 #include <string.h>
 
 Supla::Sha256::Sha256() : ctx(nullptr) {
-  mbedtls_sha256_context *shaCtx = new mbedtls_sha256_context();
-  mbedtls_sha256_init(shaCtx);
-  mbedtls_sha256_starts(shaCtx, 0);
-  ctx = shaCtx;
+  mbedtls_md_context_t *mdCtx = new mbedtls_md_context_t();
+  mbedtls_md_init(mdCtx);
+  const mbedtls_md_info_t *mdInfo =
+      mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+  if (mdInfo == nullptr ||
+      mbedtls_md_setup(mdCtx, mdInfo, 0) != 0 ||
+      mbedtls_md_starts(mdCtx) != 0) {
+    mbedtls_md_free(mdCtx);
+    delete mdCtx;
+    return;
+  }
+  ctx = mdCtx;
 }
 
 Supla::Sha256::~Sha256() {
   if (ctx == nullptr) {
     return;
   }
-  mbedtls_sha256_context *shaCtx =
-      static_cast<mbedtls_sha256_context *>(ctx);
-  mbedtls_sha256_free(shaCtx);
-  delete shaCtx;
+  mbedtls_md_context_t *mdCtx =
+      static_cast<mbedtls_md_context_t *>(ctx);
+  mbedtls_md_free(mdCtx);
+  delete mdCtx;
   ctx = nullptr;
 }
 
@@ -45,11 +53,11 @@ void Supla::Sha256::update(const uint8_t *data, const int size) {
   if (ctx == nullptr) {
     return;
   }
-  mbedtls_sha256_context *shaCtx =
-      static_cast<mbedtls_sha256_context *>(ctx);
-  mbedtls_sha256_update(shaCtx,
-                        static_cast<const unsigned char *>(data),
-                        size);
+  mbedtls_md_context_t *mdCtx =
+      static_cast<mbedtls_md_context_t *>(ctx);
+  mbedtls_md_update(mdCtx,
+                    static_cast<const unsigned char *>(data),
+                    size);
 }
 
 void Supla::Sha256::digest(uint8_t *output, int length) {
@@ -57,12 +65,19 @@ void Supla::Sha256::digest(uint8_t *output, int length) {
     return;
   }
   uint8_t fullDigest[32] = {};
-  mbedtls_sha256_context tmp;
-  mbedtls_sha256_init(&tmp);
-  mbedtls_sha256_clone(&tmp,
-      static_cast<const mbedtls_sha256_context *>(ctx));
-  mbedtls_sha256_finish(&tmp, fullDigest);
-  mbedtls_sha256_free(&tmp);
+  mbedtls_md_context_t tmp;
+  mbedtls_md_init(&tmp);
+  const mbedtls_md_info_t *mdInfo =
+      mbedtls_md_info_from_type(MBEDTLS_MD_SHA256);
+  if (mdInfo == nullptr ||
+      mbedtls_md_setup(&tmp, mdInfo, 0) != 0 ||
+      mbedtls_md_clone(&tmp,
+          static_cast<const mbedtls_md_context_t *>(ctx)) != 0 ||
+      mbedtls_md_finish(&tmp, fullDigest) != 0) {
+    mbedtls_md_free(&tmp);
+    return;
+  }
+  mbedtls_md_free(&tmp);
 
   if (length > 32) {
     length = 32;

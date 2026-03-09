@@ -60,7 +60,7 @@ steps:
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/
   - rm -fr build_devel
-  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py -B build_devel build"
+  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py -B build_devel -D SDKCONFIG=build_devel/sdkconfig build"
   - /bin/bash -c "[ -f build_devel/supla_esp32.bin ] && true || false"
 
 - name: esp_idf_stable_compilation_check
@@ -72,7 +72,7 @@ steps:
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/
   - rm -fr build_stable
-  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py -B build_stable build"
+  - /bin/bash -c "source /supla/esp/esp-idf/export.sh && idf.py -B build_stable  -D SDKCONFIG=build_stable/sdkconfig build"
   - /bin/bash -c "[ -f build_stable/supla_esp32.bin ] && true || false"
 
 - name: freertos_linux_compilation_check

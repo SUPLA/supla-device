@@ -56,7 +56,7 @@ class Bh1750 : public GeneralPurposeMeasurement {
  protected:
   double getValue() override {
     double value = sensor.readLightLevel();
-    if (isnan(value) || value <= 0) {
+    if (isnan(value) || value < 0) {
       invalidCounter++;
       if (invalidCounter < 4) {
         return lastValue;

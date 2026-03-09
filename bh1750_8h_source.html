@@ -140,7 +140,7 @@ $(function() {
 <div class="foldopen" id="foldopen00057" data-start="{" data-end="}">
 <div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classSupla_1_1Sensor_1_1Bh1750.html#a19aee354fcfb0f45073d99b8ece330b7">   57</a></span>  <span class="keywordtype">double</span> <a class="code hl_function" href="classSupla_1_1Sensor_1_1Bh1750.html#a19aee354fcfb0f45073d99b8ece330b7">getValue</a>()<span class="keyword"> override </span>{</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="keywordtype">double</span> value = sensor.readLightLevel();</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keywordflow">if</span> (isnan(value) || value &lt;= 0) {</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <span class="keywordflow">if</span> (isnan(value) || value &lt; 0) {</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>      invalidCounter++;</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>      <span class="keywordflow">if</span> (invalidCounter &lt; 4) {</div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        <span class="keywordflow">return</span> lastValue;</div>

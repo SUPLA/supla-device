@@ -18,6 +18,8 @@
 
 #include "lck.h"
 
+#include <stdlib.h>
+
 #if defined(__AVR__) || defined(ARDUINO_ARCH_ESP8266) || \
     defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_DEVICE)
 #define __SINGLE_THREAD
@@ -34,7 +36,6 @@
 #endif  // defined(__AVR__) || defined(ARDUINO_ARCH_ESP8266)
         // || defined(ARDUINO_ARCH_ESP32)
 
-#include <stdlib.h>
 
 #ifndef __SINGLE_THREAD
 

@@ -5,6 +5,8 @@ steps:
 - name: tests_compilation
   image: devel/freertos
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - mkdir extras/test/build
   - cd extras/test/build
@@ -78,6 +80,8 @@ steps:
 - name: freertos_linux_compilation_check
   image: devel/freertos
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - pwd
   - echo $SUPLA_DEVICE_PATH
@@ -95,6 +99,8 @@ steps:
 # which is also part of our freertos docker, so we just reuse it here
   image: devel/freertos
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/linux
@@ -106,6 +112,8 @@ steps:
 - name: arduino_esp8266_compilation_check_part_1
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -121,6 +129,8 @@ steps:
 - name: arduino_esp8266_compilation_check_part_2
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -136,6 +146,8 @@ steps:
 - name: arduino_esp8266_compilation_check_part_3
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -152,6 +164,8 @@ steps:
 - name: arduino_esp32_compilation_check_part_1
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -166,6 +180,8 @@ steps:
 - name: arduino_esp32_compilation_check_part_2
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -179,6 +195,8 @@ steps:
 - name: arduino_esp32_compilation_check_part_3
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -194,6 +212,8 @@ steps:
 - name: arduino_esp32_compilation_check_part_4
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -207,6 +227,8 @@ steps:
 - name: arduino_esp32_compilation_check_part_5
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -221,6 +243,8 @@ steps:
 - name: arduino_esp32_compilation_check_part_6
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -235,6 +259,8 @@ steps:
 - name: arduino_mega_compilation_check
   image: devel/arduino-cli
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - rm ~/Arduino/libraries/supla-device
@@ -260,6 +286,8 @@ steps:
 - name: cpplint
   image: devel/supla-core
   pull: never
+  depends_on:
+    - esp_idf_compilation_check
   commands:
     - ./check_cpplint.sh
 

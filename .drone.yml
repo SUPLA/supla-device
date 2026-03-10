@@ -67,7 +67,7 @@ steps:
   image: stable/esp-idf
   pull: never
   depends_on:
-    - esp_idf_setup
+    - esp_idf_compilation_check
   commands:
   - export SUPLA_DEVICE_PATH=/drone/src
   - cd extras/examples/esp_idf/

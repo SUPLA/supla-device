@@ -718,7 +718,7 @@ bool Supla::EspIdfWebServer::verifyCertificatesFormat() {
       memcpy(encryptedData, prvtKey + IV_SIZE, prvtKeyLen);
       memset(prvtKey, 0, prvtKeyLen + IV_SIZE);
       encryptedData[prvtKeyLen] = '\0';
-      auto result = decryptAesCbc(aesKey,
+      [[maybe_unused]] auto result = decryptAesCbc(aesKey,
                                   32,
                                   iv,
                                   encryptedData,

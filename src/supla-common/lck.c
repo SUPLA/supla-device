@@ -20,7 +20,6 @@
 
 #if defined(__AVR__) || defined(ARDUINO_ARCH_ESP8266) || \
     defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_DEVICE)
-This should not compile
 #define __SINGLE_THREAD
 #else
 
@@ -36,8 +35,6 @@ This should not compile
         // || defined(ARDUINO_ARCH_ESP32)
 
 #include <stdlib.h>
-
-#define MUTEX_COUNT 4
 
 #ifndef __SINGLE_THREAD
 

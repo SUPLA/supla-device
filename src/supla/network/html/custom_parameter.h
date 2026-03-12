@@ -19,6 +19,8 @@
 #ifndef SRC_SUPLA_NETWORK_HTML_CUSTOM_PARAMETER_H_
 #define SRC_SUPLA_NETWORK_HTML_CUSTOM_PARAMETER_H_
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -308,4 +310,5 @@ using CustomParameter = CustomParameterTemplate<int32_t>;
 };  // namespace Html
 };  // namespace Supla
 
+#endif  // ARDUINO_ARCH_AVR
 #endif  // SRC_SUPLA_NETWORK_HTML_CUSTOM_PARAMETER_H_

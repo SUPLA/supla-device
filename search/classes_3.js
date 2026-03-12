@@ -23,7 +23,8 @@ var searchData=
   ['correction_20',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
   ['currentgetter_21',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
   ['customcheckboxparameter_22',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
-  ['customparameter_23',['CustomParameter',['../classCustomParameter.html',1,'CustomParameter'],['../classSupla_1_1Html_1_1CustomParameter.html',1,'Supla::Html::CustomParameter']]],
-  ['customswupdate_24',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_25',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
+  ['customparametertemplate_23',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customparametertemplate_3c_20int32_5ft_20_3e_24',['CustomParameterTemplate&lt; int32_t &gt;',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customswupdate_25',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
+  ['customtextparameter_26',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
 ];

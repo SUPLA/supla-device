@@ -29,7 +29,8 @@ var searchData=
   ['correction_26',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
   ['currentgetter_27',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
   ['customcheckboxparameter_28',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
-  ['customparameter_29',['CustomParameter',['../classCustomParameter.html',1,'CustomParameter'],['../classSupla_1_1Html_1_1CustomParameter.html',1,'Supla::Html::CustomParameter']]],
-  ['customswupdate_30',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_31',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
+  ['customparametertemplate_29',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customparametertemplate_3c_20int32_5ft_20_3e_30',['CustomParameterTemplate&lt; int32_t &gt;',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customswupdate_31',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
+  ['customtextparameter_32',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
 ];

@@ -201,6 +201,8 @@ virtual&#160;</td><td class="memItemRight"><b>~GeneralPurposeChannelBase</b> ()<
 <tr class="memdesc:a2f9981edbe6312035b9da5c1066bcf68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default unit which is displayed before value.  <br /></td></tr>
 <tr class="memitem:a02ae477dde512a288f7e64e51ebac57b" id="r_a02ae477dde512a288f7e64e51ebac57b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a02ae477dde512a288f7e64e51ebac57b">getDefaultUnitAfterValue</a> (char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE])</td></tr>
 <tr class="memdesc:a02ae477dde512a288f7e64e51ebac57b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns default unit which is displayed after value.  <br /></td></tr>
+<tr class="memitem:addd4ee9957ce662fe3796724b289276c" id="r_addd4ee9957ce662fe3796724b289276c"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#addd4ee9957ce662fe3796724b289276c">setDefaultRefreshIntervalMs</a> (int32_t intervalMs)</td></tr>
+<tr class="memdesc:addd4ee9957ce662fe3796724b289276c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets default refresh interval in milliseconds.  <br /></td></tr>
 <tr id="pub-methods-2" class="groupHeader"><td colspan="2"><div class="groupHeader">Setters for modification of current channel configuration.</div></td></tr>
 <tr><td colspan="2" class="ititle"><div class="groupText"><p>Each call to setters will modify channel config and send it to Supla Server.</p>
 <p>This shouldn't be used as a channel config setup step, because on each device startup it will overwrite user's configuration.</p>
@@ -383,12 +385,16 @@ bool&#160;</td><td class="memItemRight"><b>iterateConfigExchange</b> ()</td></tr
 Protected Attributes</h2></td></tr>
 <tr class="memitem:af9b3f7e9d6c609a09e1306ea50d328bb" id="r_af9b3f7e9d6c609a09e1306ea50d328bb"><td class="memItemLeft"><a id="af9b3f7e9d6c609a09e1306ea50d328bb" name="af9b3f7e9d6c609a09e1306ea50d328bb"></a>
 MeasurementDriver *&#160;</td><td class="memItemRight"><b>driver</b> = nullptr</td></tr>
+<tr class="memitem:ac76ba961d4e572fa3b46f44edfe39423" id="r_ac76ba961d4e572fa3b46f44edfe39423"><td class="memItemLeft"><a id="ac76ba961d4e572fa3b46f44edfe39423" name="ac76ba961d4e572fa3b46f44edfe39423"></a>
+uint16_t&#160;</td><td class="memItemRight"><b>defaultRefreshIntervalMs</b> = 5000</td></tr>
 <tr class="memitem:a35f647221d3d72c830c67b6050a1ae29" id="r_a35f647221d3d72c830c67b6050a1ae29"><td class="memItemLeft"><a id="a35f647221d3d72c830c67b6050a1ae29" name="a35f647221d3d72c830c67b6050a1ae29"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>refreshIntervalMs</b> = 5000</td></tr>
 <tr class="memitem:a2d91db3c009524256648433c5a4d6fe2" id="r_a2d91db3c009524256648433c5a4d6fe2"><td class="memItemLeft"><a id="a2d91db3c009524256648433c5a4d6fe2" name="a2d91db3c009524256648433c5a4d6fe2"></a>
 uint32_t&#160;</td><td class="memItemRight"><b>lastReadTime</b> = 0</td></tr>
 <tr class="memitem:af8163cadeb816123c7beaac45125a115" id="r_af8163cadeb816123c7beaac45125a115"><td class="memItemLeft"><a id="af8163cadeb816123c7beaac45125a115" name="af8163cadeb816123c7beaac45125a115"></a>
 bool&#160;</td><td class="memItemRight"><b>deleteDriver</b> = false</td></tr>
+<tr class="memitem:aebccb311d1c5aa372b206c77e340e63a" id="r_aebccb311d1c5aa372b206c77e340e63a"><td class="memItemLeft"><a id="aebccb311d1c5aa372b206c77e340e63a" name="aebccb311d1c5aa372b206c77e340e63a"></a>
+bool&#160;</td><td class="memItemRight"><b>initDone</b> = false</td></tr>
 <tr class="memitem:ae9a84fb298e50fdd86b71359f0536992" id="r_ae9a84fb298e50fdd86b71359f0536992"><td class="memItemLeft"><a id="ae9a84fb298e50fdd86b71359f0536992" name="ae9a84fb298e50fdd86b71359f0536992"></a>
 int32_t&#160;</td><td class="memItemRight"><b>defaultValueDivider</b> = 0</td></tr>
 <tr class="memitem:a4b61b500e0cc62ad79614d149cf33b52" id="r_a4b61b500e0cc62ad79614d149cf33b52"><td class="memItemLeft"><a id="a4b61b500e0cc62ad79614d149cf33b52" name="a4b61b500e0cc62ad79614d149cf33b52"></a>
@@ -1146,6 +1152,31 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <table class="params">
     <tr><td class="paramname">chartType</td><td></td></tr>
     <tr><td class="paramname">local</td><td></td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
+<a id="addd4ee9957ce662fe3796724b289276c" name="addd4ee9957ce662fe3796724b289276c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#addd4ee9957ce662fe3796724b289276c">&#9670;&#160;</a></span>setDefaultRefreshIntervalMs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void <a class="el" href="classSupla_1_1Sensor_1_1GeneralPurposeChannelBase.html#addd4ee9957ce662fe3796724b289276c">GeneralPurposeChannelBase::setDefaultRefreshIntervalMs</a> </td>
+          <td>(</td>
+          <td class="paramtype">int32_t</td>          <td class="paramname"><span class="paramname"><em>intervalMs</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets default refresh interval in milliseconds. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">intervalMs</td><td>in milliseconds in 0-65535 range </td></tr>
   </table>
   </dd>
 </dl>

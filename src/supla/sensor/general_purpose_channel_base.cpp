@@ -18,22 +18,22 @@
 
 #include "general_purpose_channel_base.h"
 
-#include <stdio.h>
 #include <math.h>
+#include <stdio.h>
 #include <string.h>
-#include <supla/time.h>
 #include <supla/log_wrapper.h>
+#include <supla/protocol/protocol_layer.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
-#include <supla/protocol/protocol_layer.h>
+#include <supla/time.h>
 
 #include "measurement_driver.h"
 #include "memory_variable_driver.h"
 
 using Supla::Sensor::GeneralPurposeChannelBase;
 
-GeneralPurposeChannelBase::GeneralPurposeChannelBase(MeasurementDriver *driver,
-    bool addMemoryVariableDriver)
+GeneralPurposeChannelBase::GeneralPurposeChannelBase(
+    MeasurementDriver *driver, bool addMemoryVariableDriver)
     : driver(driver) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
@@ -95,22 +95,22 @@ void GeneralPurposeChannelBase::getFormattedValue(char *result, int maxSize) {
 
   if (isnan(calculatedValue)) {
     snprintf(result,
-        maxSize,
-        "%s%s---%s%s",
-        unitBefore,
-        noSpaceBeforeValue ? noSpace : space,
-        noSpaceAfterValue ? noSpace : space,
-        unitAfter);
+             maxSize,
+             "%s%s---%s%s",
+             unitBefore,
+             noSpaceBeforeValue ? noSpace : space,
+             noSpaceAfterValue ? noSpace : space,
+             unitAfter);
   } else {
     snprintf(result,
-        maxSize,
-        "%s%s%.*f%s%s",
-        unitBefore,
-        noSpaceBeforeValue ? noSpace : space,
-        precision,
-        getCalculatedValue(),
-        noSpaceAfterValue ? noSpace : space,
-        unitAfter);
+             maxSize,
+             "%s%s%.*f%s%s",
+             unitBefore,
+             noSpaceBeforeValue ? noSpace : space,
+             precision,
+             getCalculatedValue(),
+             noSpaceAfterValue ? noSpace : space,
+             unitAfter);
   }
 }
 
@@ -122,8 +122,8 @@ void GeneralPurposeChannelBase::onLoadConfig(SuplaDeviceClass *sdc) {
     char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     generateKey(key, "gpm_common");
     if (cfg->getBlob(key,
-          reinterpret_cast<char *>(&commonConfig),
-          sizeof(GPMCommonConfig))) {
+                     reinterpret_cast<char *>(&commonConfig),
+                     sizeof(GPMCommonConfig))) {
       SUPLA_LOG_INFO("GPM[%d]: config loaded successfully", getChannelNumber());
       setChannelRefreshIntervalMs(commonConfig.refreshIntervalMs);
       configLoaded = true;
@@ -161,6 +161,7 @@ double GeneralPurposeChannelBase::getValue() {
 }
 
 void GeneralPurposeChannelBase::onInit() {
+  initDone = true;
   if (driver) {
     driver->initialize();
   }
@@ -182,8 +183,7 @@ void GeneralPurposeChannelBase::setDefaultValueDivider(int32_t divider) {
 
 void GeneralPurposeChannelBase::setDefaultValueMultiplier(int32_t multiplier) {
   SUPLA_LOG_DEBUG(
-      "GPM[%d]: DefaultValueMultiplier %d", getChannelNumber(),
-      multiplier);
+      "GPM[%d]: DefaultValueMultiplier %d", getChannelNumber(), multiplier);
   defaultValueMultiplier = multiplier;
 }
 
@@ -196,8 +196,7 @@ void GeneralPurposeChannelBase::setDefaultValueAdded(int64_t added) {
 
 void GeneralPurposeChannelBase::setDefaultValuePrecision(uint8_t precision) {
   SUPLA_LOG_DEBUG(
-      "GPM[%d]: DefaultValuePrecision %d", getChannelNumber(),
-      precision);
+      "GPM[%d]: DefaultValuePrecision %d", getChannelNumber(), precision);
   defaultValuePrecision = precision;
 }
 
@@ -271,8 +270,8 @@ void GeneralPurposeChannelBase::getUnitBeforeValue(
     char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]) const {
   if (unit) {
     memcpy(unit,
-            commonConfig.unitBeforeValue,
-            SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
+           commonConfig.unitBeforeValue,
+           SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1);
     unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE - 1] = '\0';
   }
 }
@@ -308,12 +307,13 @@ uint16_t GeneralPurposeChannelBase::getRefreshIntervalMs() const {
 void GeneralPurposeChannelBase::setChannelRefreshIntervalMs(
     uint16_t intervalMs) {
   if (intervalMs == 0) {
-    intervalMs = 5000;
+    intervalMs = defaultRefreshIntervalMs;
   } else if (intervalMs < 200) {
     intervalMs = 200;
   }
   refreshIntervalMs = intervalMs;
-  SUPLA_LOG_DEBUG("GPM[%d]: RefreshIntervalMs %d ms", getChannelNumber(),
+  SUPLA_LOG_DEBUG("GPM[%d]: RefreshIntervalMs %d ms",
+                  getChannelNumber(),
                   refreshIntervalMs);
 }
 
@@ -559,15 +559,15 @@ void GeneralPurposeChannelBase::saveConfig() {
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   generateKey(key, "gpm_common");
   if (cfg->setBlob(key,
-        reinterpret_cast<char *>(&commonConfig),
-        sizeof(GPMCommonConfig))) {
+                   reinterpret_cast<char *>(&commonConfig),
+                   sizeof(GPMCommonConfig))) {
     SUPLA_LOG_INFO("GPM[%d]: common config saved successfully",
                    getChannelNumber());
     cfg->saveWithDelay(5000);
   }
 
-  for (auto proto = Supla::Protocol::ProtocolLayer::first();
-      proto != nullptr; proto = proto->next()) {
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
     proto->notifyConfigChange(getChannelNumber());
   }
 }
@@ -575,5 +575,21 @@ void GeneralPurposeChannelBase::saveConfig() {
 void GeneralPurposeChannelBase::setValue(const double &value) {
   if (driver) {
     driver->setValue(value);
+  }
+}
+
+void GeneralPurposeChannelBase::setDefaultRefreshIntervalMs(
+    int32_t intervalMs) {
+  if (intervalMs == 0) {
+    intervalMs = 5000;
+  } else if (intervalMs < 200) {
+    intervalMs = 200;
+  } else if (intervalMs > 65535) {
+    intervalMs = 65535;
+  }
+
+  defaultRefreshIntervalMs = intervalMs;
+  if (!initDone) {
+    refreshIntervalMs = defaultRefreshIntervalMs;
   }
 }

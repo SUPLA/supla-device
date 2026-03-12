@@ -19,6 +19,7 @@
 #ifndef SRC_SUPLA_NETWORK_HTML_CUSTOM_PARAMETER_H_
 #define SRC_SUPLA_NETWORK_HTML_CUSTOM_PARAMETER_H_
 
+#include <inttypes.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
@@ -191,7 +192,7 @@ void CustomParameterTemplate<T>::formatValue(char* buffer,
                                              size_t bufferSize,
                                              int32_t value) const {
   if (std::is_integral<T>::value) {
-    snprintf(buffer, bufferSize, "%d", static_cast<int32_t>(value));
+    snprintf(buffer, bufferSize, "%" PRId32, static_cast<int32_t>(value));
     return;
   }
 

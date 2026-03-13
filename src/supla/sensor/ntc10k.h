@@ -43,6 +43,7 @@ class NTC10k : public Thermometer {
  protected:
   double lastValidTemp = TEMPERATURE_NOT_AVAILABLE;
   int8_t retryCountTemp = 0;
+  float Analog_Read_Value = 0;
 };
 
 };  // namespace Sensor

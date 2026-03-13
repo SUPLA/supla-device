@@ -25,7 +25,12 @@ namespace Supla {
 namespace Sensor {
 class NTC10k : public Thermometer {
  public:
-  NTC10k();
+  NTC10k(int pin, 
+         float seriesResistor = 10000,
+         float nominalResistance = 10000,
+         float nominalTemp = 25,
+         float beta = 3950,
+         int samples = 10);
 
   void onInit() override;
   void iterateAlways() override;

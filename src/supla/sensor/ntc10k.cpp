@@ -21,57 +21,60 @@
 
 #include "ntc10k.h"
 
-Supla::Sensor::NTC10k::NTC10k((int pin, float seriesResistor,
+namespace Supla {
+namespace Sensor {
+  NTC10k::NTC10k(int pin, float seriesResistor,
                                float nominalResistance,
                                float nominalTemp,
                                float beta,
-                               int samples)) 
-{
-  this->pin = pin;
-  this->seriesResistor = seriesResistor;
-  this->nominalResistance = nominalResistance;
-  this->nominalTemp = nominalTemp;
-  this->beta = beta;
-  this->samples = samples;
+                               int samples) 
+                               : pin(pin),
+                               seriesResistor(seriesResistor),
+                               nominalResistance(nominalResistance),
+                               nominalTemp(nominalTemp),
+                               beta(beta),
+                               samples(samples)
+                               { 
 }
 
-void Supla::Sensor::NTC10k::onInit() {
+void NTC10k::onInit() {
 }
 
-void Supla::Sensor::NTC10k::readSensor() {
+void NTC10k::readSensor() {
   for(int i=0; i < samples; i++)
   {
     Analog_Read_Value += analogRead(pin);
     delay(2);
   }
   Analog_Read_Value /= samples;
-  res = Analog_Read_Value/4096;
-  abc = seriesResistor * (1 / res - 1);
-  def = abc/nominalResistance;
-  def = log(def);
-  def /= beta;
-  def += 1/(nominalTemp + 273.15);
-  def = 1/def;
-  def -= 273.15;
+
+  float temperature_ = (seriesResistor * (1 / (Analog_Read_Value/Analog_Read_) - 1))/nominalResistance;
+  temperature_ = log(temperature_);
+  temperature_ /= beta;
+  temperature_ += 1/(nominalTemp + 273.15);
+  temperature_ = 1/temperature_;
+  temperature_ -= 273.15;
   
   
 //  double temperature = 0;
 //  SUPLA_LOG_DEBUG("NTC10k: temp: %.2f", temperature);
-  lastValidTemp = def;
+  lastValidTemp = temperature_;
 }
 
-double Supla::Sensor::NTC10k::getValue() {
+double NTC10k::getValue() {
   readSensor();
   return lastValidTemp;
 }
 
-void Supla::Sensor::NTC10k::set(double val) {
+void NTC10k::set(double val) {
   lastValidTemp = val;
 }
 
-void Supla::Sensor::NTC10k::iterateAlways() {
+void NTC10k::iterateAlways() {
   if (millis() - lastReadTime > 2000) {
     lastReadTime = millis();
     channel.setNewValue(getValue());
   }
 }
+}; //Sensor
+}; //Supla

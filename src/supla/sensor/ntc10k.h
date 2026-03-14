@@ -21,6 +21,12 @@
 
 #include <supla/sensor/thermometer.h>
 
+#ifdef ARDUINO_ARCH_ESP32
+int Analog_Read_ = 4095;
+#else
+int Analog_Read_ = 1023;
+#endif
+
 namespace Supla {
 namespace Sensor {
 class NTC10k : public Thermometer {
@@ -41,6 +47,12 @@ class NTC10k : public Thermometer {
   void readSensor();
 
  protected:
+  int pin;
+  float seriesResistor;
+  float nominalResistance;
+  float nominalTemp;
+  float beta;
+  int samples;
   double lastValidTemp = TEMPERATURE_NOT_AVAILABLE;
   int8_t retryCountTemp = 0;
   float Analog_Read_Value = 0;

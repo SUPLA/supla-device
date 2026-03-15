@@ -822,13 +822,16 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    field.
 3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
    section. A subscribed topic name containing status information is provided by
-   `state_topic`. If we need more simple data that are in different subtopics, 
-   we can define them as a `sub_topics` array and assign them an index in this array 
+   `state_topic`. If we need more simple data that are in different subtopics,
+   we can define them as a `sub_topics` array and assign them an index in this array
    in the parameters, just like with the `Simple` parser (index counting starts with 0).
    I.e. please take a look at `th5` channel above.
    If source was already defined earlier, and you want to reuse it, you can specify
    `use` parameter with proper name of previously defined source. When `use`
    parameter is used, then no other source configuration parameters are allowed.
+   When the connection to the MQTT broker is lost, all channels using `MQTT` source
+   will be automatically set to offline state. They return to online state once the
+   connection is restored and data is received.
 
 ## Parsed channel `parser` parameter
 

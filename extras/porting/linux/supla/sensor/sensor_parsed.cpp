@@ -76,9 +76,26 @@ std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
 }
 
 bool SensorParsedBase::refreshParserSource() {
-  if (parser && parser->refreshParserSource()) {
-    updateBatteryInfoFlags();
-    return true;
+  if (parser) {
+    if (!parser->isSourceConnected()) {
+      if (auto channel = getChannel()) {
+        channel->setStateOffline();
+      }
+      if (auto secondaryChannel = getSecondaryChannel()) {
+        secondaryChannel->setStateOffline();
+      }
+      return false;
+    }
+    if (parser->refreshParserSource()) {
+      if (auto channel = getChannel()) {
+        channel->setStateOnline();
+      }
+      if (auto secondaryChannel = getSecondaryChannel()) {
+        secondaryChannel->setStateOnline();
+      }
+      updateBatteryInfoFlags();
+      return true;
+    }
   }
   return false;
 }

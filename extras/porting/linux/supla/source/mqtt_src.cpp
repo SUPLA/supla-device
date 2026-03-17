@@ -47,6 +47,10 @@ Mqtt::~Mqtt() {
   }
 }
 
+bool Supla::Source::Mqtt::isConnected() {
+  return client && client->isConnected();
+}
+
 std::string Supla::Source::Mqtt::getContent() {
   std::string combinedMessages;
   for (const auto& topic : topics) {

@@ -28,6 +28,7 @@ class Source {
  public:
   virtual ~Source() {}
   virtual std::string getContent() = 0;
+  virtual bool isConnected() { return true; }
 };
 };  // namespace Source
 };  // namespace Supla

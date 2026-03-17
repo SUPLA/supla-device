@@ -162,6 +162,14 @@ int main(int argc, char* argv[]) {
       logLevel = LOG_VERBOSE;
     }
 
+    if (result.count("warning") || config->isWarning()) {
+      logLevel = LOG_WARNING;
+    }
+
+    if (result.count("error") || config->isError()) {
+      logLevel = LOG_ERR;
+    }
+
     SUPLA_LOG_INFO(" *** Starting supla-device ***");
     SUPLA_LOG_INFO("Using config file %s", cfgFile.c_str());
 

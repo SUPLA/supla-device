@@ -221,6 +221,34 @@ bool Supla::LinuxYamlConfig::isVerbose() {
   return false;
 }
 
+bool Supla::LinuxYamlConfig::isWarning() {
+  try {
+    if (config["log_level"]) {
+      auto logLevel = config["log_level"].as<std::string>();
+      if (logLevel == "warning") {
+        return true;
+      }
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
+bool Supla::LinuxYamlConfig::isError() {
+  try {
+    if (config["log_level"]) {
+      auto logLevel = config["log_level"].as<std::string>();
+      if (logLevel == "error") {
+        return true;
+      }
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
 bool Supla::LinuxYamlConfig::generateGuidAndAuthkey() {
   char guid[SUPLA_GUID_SIZE] = {};
   char authkey[SUPLA_AUTHKEY_SIZE] = {};
@@ -951,6 +979,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
                                         int channelNumber) {
   int port = 80;
   int deviceId = 1;
+  int deviceType = 0;
   if (ch["port"]) {
     paramCount++;
     port = ch["port"].as<int>();
@@ -958,6 +987,10 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
   if (ch["device_id"]) {
     paramCount++;
     deviceId = ch["device_id"].as<int>();
+  }
+  if (ch["device_type"]) {
+    paramCount++;
+    deviceType = ch["device_type"].as<int>();
   }
 
   if (ch["ip"]) {  // mandatory
@@ -971,7 +1004,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
         deviceId);
 
     IPAddress ipAddr(ip);
-    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
+    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId, deviceType);
     return addCommonParameters(ch, fronius);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",

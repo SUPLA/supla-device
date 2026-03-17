@@ -143,7 +143,7 @@ Example:
 
 Use it to change log level to different value.
 Parameter is optional. Default log level is `info`.
-Allowed values: `debug`, `verbose`
+Allowed values: `debug`, `verbose`, `warning`, `error`
 
 Example:
 
@@ -353,10 +353,26 @@ Example channels configuration (details are exaplained later):
           refresh_time_ms: 1000
         state: 0
 
+    # Single phase Fronius inverter
       - type: Fronius
         ip: 192.168.1.7
         port: 80
         device_id: 1
+        device_type: 0
+
+    # Three phase Fronius inverter
+      - type: Fronius
+        ip: 192.168.1.7
+        port: 80
+        device_id: 1
+        device_type: 1
+
+    # Three phase Fronius meter
+      - type: Fronius
+        ip: 192.168.1.7
+        port: 80
+        device_id: 0
+        device_type: 2
 
       - type: Afore
         ip: 192.168.1.17

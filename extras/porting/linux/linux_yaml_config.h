@@ -32,7 +32,7 @@
  * Please pay attantion to spaces, as those are important in yaml files.
 
 name: Device name
-# log_level - optional, values: info (default), debug, verbose
+# log_level - optional, values: info (default), debug, verbose, warning, error
 log_level: debug
 
 supla:
@@ -84,6 +84,8 @@ class LinuxYamlConfig : public KeyValue {
 
   bool isDebug();
   bool isVerbose();
+  bool isWarning();
+  bool isError();
 
   bool loadChannels();
 

@@ -479,51 +479,51 @@ int&#160;</td><td class="memItemRight"><b>port</b></td></tr>
 <tr class="memitem:a3de85d1209ead513a7b346e87fcaafc3" id="r_a3de85d1209ead513a7b346e87fcaafc3"><td class="memItemLeft"><a id="a3de85d1209ead513a7b346e87fcaafc3" name="a3de85d1209ead513a7b346e87fcaafc3"></a>
 int&#160;</td><td class="memItemRight"><b>deviceType</b></td></tr>
 <tr class="memitem:a226ae12c782b5b8269591cb30291bc1a" id="r_a226ae12c782b5b8269591cb30291bc1a"><td class="memItemLeft"><a id="a226ae12c782b5b8269591cb30291bc1a" name="a226ae12c782b5b8269591cb30291bc1a"></a>
-char&#160;</td><td class="memItemRight"><b>buf</b> [80]</td></tr>
+char&#160;</td><td class="memItemRight"><b>buf</b> [80] = {}</td></tr>
 <tr class="memitem:a81afbe15c3e361d2ff3d7c3afa6f756e" id="r_a81afbe15c3e361d2ff3d7c3afa6f756e"><td class="memItemLeft"><a id="a81afbe15c3e361d2ff3d7c3afa6f756e" name="a81afbe15c3e361d2ff3d7c3afa6f756e"></a>
-unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>totalGeneratedEnergy</b></td></tr>
-<tr class="memitem:a1d72e562d0bd3eca0736f738c06cd17a" id="r_a1d72e562d0bd3eca0736f738c06cd17a"><td class="memItemLeft"><a id="a1d72e562d0bd3eca0736f738c06cd17a" name="a1d72e562d0bd3eca0736f738c06cd17a"></a>
-unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>FwdReactEnergy</b></td></tr>
-<tr class="memitem:a7d0159c537e09a283d1c8af9d1cdde08" id="r_a7d0159c537e09a283d1c8af9d1cdde08"><td class="memItemLeft"><a id="a7d0159c537e09a283d1c8af9d1cdde08" name="a7d0159c537e09a283d1c8af9d1cdde08"></a>
-unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>RvrReactEnergy</b></td></tr>
-<tr class="memitem:a6bad0be7ebab518fd404e098fc6ba1f8" id="r_a6bad0be7ebab518fd404e098fc6ba1f8"><td class="memItemLeft"><a id="a6bad0be7ebab518fd404e098fc6ba1f8" name="a6bad0be7ebab518fd404e098fc6ba1f8"></a>
-unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>FwdActEnergy</b></td></tr>
-<tr class="memitem:a7560f68436730192fc871914328a5377" id="r_a7560f68436730192fc871914328a5377"><td class="memItemLeft"><a id="a7560f68436730192fc871914328a5377" name="a7560f68436730192fc871914328a5377"></a>
-unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>RvrActEnergy</b></td></tr>
+unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>totalGeneratedEnergy</b> = 0</td></tr>
+<tr class="memitem:aaf42c798371c0f02e9a3a947c4a1ba97" id="r_aaf42c798371c0f02e9a3a947c4a1ba97"><td class="memItemLeft"><a id="aaf42c798371c0f02e9a3a947c4a1ba97" name="aaf42c798371c0f02e9a3a947c4a1ba97"></a>
+unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>fwdReactEnergy</b> = 0</td></tr>
+<tr class="memitem:a8db5abed894fc9dd93cc2404225816ae" id="r_a8db5abed894fc9dd93cc2404225816ae"><td class="memItemLeft"><a id="a8db5abed894fc9dd93cc2404225816ae" name="a8db5abed894fc9dd93cc2404225816ae"></a>
+unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>rvrReactEnergy</b> = 0</td></tr>
+<tr class="memitem:a6823f18e7eb10105b408f97801134a45" id="r_a6823f18e7eb10105b408f97801134a45"><td class="memItemLeft"><a id="a6823f18e7eb10105b408f97801134a45" name="a6823f18e7eb10105b408f97801134a45"></a>
+unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>fwdActEnergy</b> = 0</td></tr>
+<tr class="memitem:aa23b3797b3dfb0d1d53514546f79c386" id="r_aa23b3797b3dfb0d1d53514546f79c386"><td class="memItemLeft"><a id="aa23b3797b3dfb0d1d53514546f79c386" name="aa23b3797b3dfb0d1d53514546f79c386"></a>
+unsigned _supla_int64_t&#160;</td><td class="memItemRight"><b>rvrActEnergy</b> = 0</td></tr>
 <tr class="memitem:aeb5af7e2fa3cc5de88eae400ca793398" id="r_aeb5af7e2fa3cc5de88eae400ca793398"><td class="memItemLeft"><a id="aeb5af7e2fa3cc5de88eae400ca793398" name="aeb5af7e2fa3cc5de88eae400ca793398"></a>
-_supla_int_t&#160;</td><td class="memItemRight"><b>currentActivePower</b> [3]</td></tr>
+_supla_int_t&#160;</td><td class="memItemRight"><b>currentActivePower</b> [3] = {}</td></tr>
 <tr class="memitem:add915a53e42d3e804b14563a7e98590f" id="r_add915a53e42d3e804b14563a7e98590f"><td class="memItemLeft"><a id="add915a53e42d3e804b14563a7e98590f" name="add915a53e42d3e804b14563a7e98590f"></a>
-_supla_int_t&#160;</td><td class="memItemRight"><b>currentApparentPower</b> [3]</td></tr>
+_supla_int_t&#160;</td><td class="memItemRight"><b>currentApparentPower</b> [3] = {}</td></tr>
 <tr class="memitem:a1fae27e63c25469e3080944bd75ecdda" id="r_a1fae27e63c25469e3080944bd75ecdda"><td class="memItemLeft"><a id="a1fae27e63c25469e3080944bd75ecdda" name="a1fae27e63c25469e3080944bd75ecdda"></a>
-_supla_int_t&#160;</td><td class="memItemRight"><b>currentReactivePower</b> [3]</td></tr>
+_supla_int_t&#160;</td><td class="memItemRight"><b>currentReactivePower</b> [3] = {}</td></tr>
 <tr class="memitem:a27b47dc2c98d2a4bfa900400ed3ac5fc" id="r_a27b47dc2c98d2a4bfa900400ed3ac5fc"><td class="memItemLeft"><a id="a27b47dc2c98d2a4bfa900400ed3ac5fc" name="a27b47dc2c98d2a4bfa900400ed3ac5fc"></a>
-_supla_int_t&#160;</td><td class="memItemRight"><b>currentPowerFactor</b> [3]</td></tr>
+_supla_int_t&#160;</td><td class="memItemRight"><b>currentPowerFactor</b> [3] = {}</td></tr>
 <tr class="memitem:a177cdef2ef891328e72c5145cf627080" id="r_a177cdef2ef891328e72c5145cf627080"><td class="memItemLeft"><a id="a177cdef2ef891328e72c5145cf627080" name="a177cdef2ef891328e72c5145cf627080"></a>
-unsigned _supla_int16_t&#160;</td><td class="memItemRight"><b>currentCurrent</b> [3]</td></tr>
+unsigned _supla_int16_t&#160;</td><td class="memItemRight"><b>currentCurrent</b> [3] = {}</td></tr>
 <tr class="memitem:a569ae3367e2e62f5947aa880d990168d" id="r_a569ae3367e2e62f5947aa880d990168d"><td class="memItemLeft"><a id="a569ae3367e2e62f5947aa880d990168d" name="a569ae3367e2e62f5947aa880d990168d"></a>
-unsigned _supla_int16_t&#160;</td><td class="memItemRight"><b>currentFreq</b></td></tr>
+unsigned _supla_int16_t&#160;</td><td class="memItemRight"><b>currentFreq</b> = 0</td></tr>
 <tr class="memitem:a1fee5b3be5a288007ae8de7cd83d7e9b" id="r_a1fee5b3be5a288007ae8de7cd83d7e9b"><td class="memItemLeft"><a id="a1fee5b3be5a288007ae8de7cd83d7e9b" name="a1fee5b3be5a288007ae8de7cd83d7e9b"></a>
-unsigned _supla_int16_t&#160;</td><td class="memItemRight"><b>currentVoltage</b> [3]</td></tr>
+unsigned _supla_int16_t&#160;</td><td class="memItemRight"><b>currentVoltage</b> [3] = {}</td></tr>
 <tr class="memitem:a236babfed669cd2896ebf61d34c0d23e" id="r_a236babfed669cd2896ebf61d34c0d23e"><td class="memItemLeft"><a id="a236babfed669cd2896ebf61d34c0d23e" name="a236babfed669cd2896ebf61d34c0d23e"></a>
-int&#160;</td><td class="memItemRight"><b>bytesCounter</b></td></tr>
+int&#160;</td><td class="memItemRight"><b>bytesCounter</b> = 0</td></tr>
 <tr class="memitem:a7bfa799df7970d62267f1b1092a868fd" id="r_a7bfa799df7970d62267f1b1092a868fd"><td class="memItemLeft"><a id="a7bfa799df7970d62267f1b1092a868fd" name="a7bfa799df7970d62267f1b1092a868fd"></a>
-int&#160;</td><td class="memItemRight"><b>retryCounter</b></td></tr>
+int&#160;</td><td class="memItemRight"><b>retryCounter</b> = 0</td></tr>
 <tr class="memitem:a3cbce5985e7435e1f2dda30a2cabf200" id="r_a3cbce5985e7435e1f2dda30a2cabf200"><td class="memItemLeft"><a id="a3cbce5985e7435e1f2dda30a2cabf200" name="a3cbce5985e7435e1f2dda30a2cabf200"></a>
 int&#160;</td><td class="memItemRight"><b>deviceId</b></td></tr>
 <tr class="memitem:a771b10adceb53b5af69a2047cfe23796" id="r_a771b10adceb53b5af69a2047cfe23796"><td class="memItemLeft"><a id="a771b10adceb53b5af69a2047cfe23796" name="a771b10adceb53b5af69a2047cfe23796"></a>
-bool&#160;</td><td class="memItemRight"><b>startCharFound</b></td></tr>
+bool&#160;</td><td class="memItemRight"><b>startCharFound</b> = false</td></tr>
 <tr class="memitem:ada142a097c7b08bb625d2215ad6745ba" id="r_ada142a097c7b08bb625d2215ad6745ba"><td class="memItemLeft"><a id="ada142a097c7b08bb625d2215ad6745ba" name="ada142a097c7b08bb625d2215ad6745ba"></a>
-bool&#160;</td><td class="memItemRight"><b>dataIsReady</b></td></tr>
+bool&#160;</td><td class="memItemRight"><b>dataIsReady</b> = false</td></tr>
 <tr class="memitem:a11b66a2cf9e7026f20818df6ad43441a" id="r_a11b66a2cf9e7026f20818df6ad43441a"><td class="memItemLeft"><a id="a11b66a2cf9e7026f20818df6ad43441a" name="a11b66a2cf9e7026f20818df6ad43441a"></a>
-bool&#160;</td><td class="memItemRight"><b>dataFetchInProgress</b></td></tr>
+bool&#160;</td><td class="memItemRight"><b>dataFetchInProgress</b> = false</td></tr>
 <tr class="memitem:a35714375d613c32ea076bdc5236a49e9" id="r_a35714375d613c32ea076bdc5236a49e9"><td class="memItemLeft"><a id="a35714375d613c32ea076bdc5236a49e9" name="a35714375d613c32ea076bdc5236a49e9"></a>
-uint64_t&#160;</td><td class="memItemRight"><b>connectionTimeoutMs</b></td></tr>
+uint64_t&#160;</td><td class="memItemRight"><b>connectionTimeoutMs</b> = 0</td></tr>
 <tr class="memitem:a7c3620abc3314fec2cb21ac579b24cbd" id="r_a7c3620abc3314fec2cb21ac579b24cbd"><td class="memItemLeft"><a id="a7c3620abc3314fec2cb21ac579b24cbd" name="a7c3620abc3314fec2cb21ac579b24cbd"></a>
-char&#160;</td><td class="memItemRight"><b>variableToFetch</b> [80]</td></tr>
+char&#160;</td><td class="memItemRight"><b>variableToFetch</b> [80] = {}</td></tr>
 <tr class="memitem:a696c81120abe70d7a4418554b39aa8fa" id="r_a696c81120abe70d7a4418554b39aa8fa"><td class="memItemLeft"><a id="a696c81120abe70d7a4418554b39aa8fa" name="a696c81120abe70d7a4418554b39aa8fa"></a>
-bool&#160;</td><td class="memItemRight"><b>fetch3p</b></td></tr>
+bool&#160;</td><td class="memItemRight"><b>fetch3p</b> = false</td></tr>
 <tr class="memitem:abf3d339aa9fd7d184398beacb0ab1f76" id="r_abf3d339aa9fd7d184398beacb0ab1f76"><td class="memItemLeft"><a id="abf3d339aa9fd7d184398beacb0ab1f76" name="abf3d339aa9fd7d184398beacb0ab1f76"></a>
-int&#160;</td><td class="memItemRight"><b>invDisabledCounter</b></td></tr>
+int&#160;</td><td class="memItemRight"><b>invDisabledCounter</b> = 0</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Sensor_1_1ElectricityMeter"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1Sensor_1_1ElectricityMeter')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Attributes inherited from <a class="el" href="classSupla_1_1Sensor_1_1ElectricityMeter.html">Supla::Sensor::ElectricityMeter</a></td></tr>
 <tr class="memitem:aa357cc34c8cb84356b1e82f548f3109b inherit pro_attribs_classSupla_1_1Sensor_1_1ElectricityMeter" id="r_aa357cc34c8cb84356b1e82f548f3109b"><td class="memItemLeft">
 <a class="el" href="structTElectricityMeter__ExtendedValue__V3.html">TElectricityMeter_ExtendedValue_V3</a>&#160;</td><td class="memItemRight"><b>emValue</b> = {}</td></tr>

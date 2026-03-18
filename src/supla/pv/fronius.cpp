@@ -34,31 +34,9 @@ namespace PV {
 
 Fronius::Fronius(IPAddress ip, int port, int deviceId, int deviceType)
     : ip(ip),
-      port(port),
-      deviceType(deviceType),
-      buf(),
-      totalGeneratedEnergy(0),
-      FwdReactEnergy(0),
-      RvrReactEnergy(0),
-      FwdActEnergy(0),
-      RvrActEnergy(0),
-      currentActivePower{},
-      currentApparentPower{},
-      currentReactivePower{},
-      currentPowerFactor{},
-      currentCurrent{},
-      currentFreq(0),
-      currentVoltage{},
-      bytesCounter(0),
-      retryCounter(0),
-      deviceId(deviceId),
-      startCharFound(false),
-      dataIsReady(false),
-      dataFetchInProgress(false),
-      connectionTimeoutMs(0),
-      variableToFetch(),
-      fetch3p(false),
-      invDisabledCounter(0) {
+    port(port),
+    deviceType(deviceType),
+    deviceId(deviceId) {
   if (deviceType == FRONIUS_SINGLE_PHASE_INVERTER) {
     extChannel.setFlag(SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED);
     extChannel.setFlag(SUPLA_CHANNEL_FLAG_PHASE3_UNSUPPORTED);
@@ -164,19 +142,19 @@ void Fronius::getThreePhaseMeterValues(char* varName, char* varValue) {
   } else if (strncmp(
       varName, "EnergyReactive_VArAC_Sum_Consumed",
       strlen("EnergyReactive_VArAC_Sum_Consumed")) == 0) {
-    FwdReactEnergy = atof(varValue) * 100;
+    fwdReactEnergy = atof(varValue) * 100;
   } else if (strncmp(
       varName, "EnergyReactive_VArAC_Sum_Produced",
       strlen("EnergyReactive_VArAC_Sum_Produced")) == 0) {
-    RvrReactEnergy = atof(varValue) * 100;
+    rvrReactEnergy = atof(varValue) * 100;
   } else if (strncmp(
       varName, "EnergyReal_WAC_Sum_Consumed",
       strlen("EnergyReal_WAC_Sum_Consumed")) == 0) {
-    FwdActEnergy = atof(varValue) * 100;
+    fwdActEnergy = atof(varValue) * 100;
   } else if (strncmp(
       varName, "EnergyReal_WAC_Sum_Produced",
       strlen("EnergyReal_WAC_Sum_Produced")) == 0) {
-    RvrActEnergy = atof(varValue) * 100;
+    rvrActEnergy = atof(varValue) * 100;
   } else if (strncmp(
       varName, "Frequency_Phase_Average",
       strlen("Frequency_Phase_Average")) == 0) {
@@ -291,10 +269,10 @@ void Fronius::setThreePhaseInverterValues(bool zeroValues) {
 
 void Fronius::setThreePhaseMeterValues(bool zeroValues) {
   if (zeroValues) {
-    FwdActEnergy = 0;
-    RvrActEnergy = 0;
-    FwdReactEnergy = 0;
-    RvrReactEnergy = 0;
+    fwdActEnergy = 0;
+    rvrActEnergy = 0;
+    fwdReactEnergy = 0;
+    rvrReactEnergy = 0;
     currentVoltage[0] = 0;
     currentVoltage[1] = 0;
     currentVoltage[2] = 0;
@@ -315,10 +293,10 @@ void Fronius::setThreePhaseMeterValues(bool zeroValues) {
     currentPowerFactor[1] = 0;
     currentPowerFactor[2] = 0;
   } else {
-    setFwdActEnergy(0, FwdActEnergy);
-    setRvrActEnergy(0, RvrActEnergy);
-    setFwdReactEnergy(0, FwdReactEnergy);
-    setRvrReactEnergy(0, RvrReactEnergy);
+    setFwdActEnergy(0, fwdActEnergy);
+    setRvrActEnergy(0, rvrActEnergy);
+    setFwdReactEnergy(0, fwdReactEnergy);
+    setRvrReactEnergy(0, rvrReactEnergy);
     setVoltage(0, currentVoltage[0]);
     setVoltage(1, currentVoltage[1]);
     setVoltage(2, currentVoltage[2]);

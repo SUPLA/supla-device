@@ -33,9 +33,7 @@ const char headerBegin[] =
 "<head>"
 "<meta content=\"text/html;charset=UTF-8\" http-equiv=content-type>"
 "<meta content=\"width=device-width,initial-scale=1,"
-               "maximum-scale=1,user-scalable=no\" name=viewport>"
-"<title>Configuration Page</title>";
-
+               "maximum-scale=1,user-scalable=no\" name=viewport>";
 
 // CSS from minifier tool.
 // Input data is in extras/resources/css_for_cfg_page.css
@@ -217,6 +215,7 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
                                     bool dataSaved,
                                     bool includeSessionLinks) {
   sendHeaderBegin(sender);
+  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -241,6 +240,7 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
 void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
                                         bool includeSessionLinks) {
   sendHeaderBegin(sender);
+  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -273,6 +273,7 @@ void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
 void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
     bool dataSaved, bool includeSessionLinks) {
   sendHeaderBegin(sender);
+  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -297,6 +298,7 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
 void Supla::HtmlGenerator::sendLoginPage(Supla::WebSender *sender,
                                          bool loginError) {
   sendHeaderBegin(sender);
+  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -338,6 +340,7 @@ void Supla::HtmlGenerator::sendSetupPage(
     bool changePassword,
     Supla::SetupRequestResult setupResult) {
   sendHeaderBegin(sender);
+  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -417,6 +420,12 @@ void Supla::HtmlGenerator::sendSetupPage(
 
 void Supla::HtmlGenerator::sendHeaderBegin(Supla::WebSender *sender) {
   sender->send(headerBegin, strlen(headerBegin));
+}
+
+void Supla::HtmlGenerator::sendTitle(Supla::WebSender *sender) {
+  sender->send("<title>");
+  sender->send(Supla::RegisterDevice::getName());
+  sender->send("</title>");
 }
 
 void Supla::HtmlGenerator::sendHeader(Supla::WebSender *sender) {

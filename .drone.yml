@@ -17,6 +17,7 @@ steps:
   commands:
   - cd extras/test/build
   - ./supladevicetests --gtest_repeat=50 --gtest_shuffle
+  - ./sd4linuxtests --gtest_repeat=50 --gtest_shuffle
   depends_on:
   - tests_compilation
 
@@ -26,6 +27,7 @@ steps:
   commands:
   - cd extras/test/build
   - valgrind --error-exitcode=1 --leak-check=full ./supladevicetests
+  - valgrind --error-exitcode=1 --leak-check=full ./sd4linuxtests
   depends_on:
   - tests_compilation
 
@@ -296,4 +298,3 @@ steps:
                esp_idf_stable_compilation_check,
                tests_with_valgrind
               ]
-

@@ -1251,6 +1251,7 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ThremometerParsed", channelNumber);
   auto therm = new Supla::Sensor::ThermometerParsed(parser);
+  therm->setRefreshIntervalMs(200);
   if (ch[Supla::Parser::Temperature]) {
     paramCount++;
     if (parser->isBasedOnIndex()) {

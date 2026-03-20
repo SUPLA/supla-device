@@ -87,6 +87,9 @@ bool SensorParsedBase::refreshParserSource() {
       return false;
     }
     if (parser->refreshParserSource()) {
+      if (!parser->isValid()) {
+        return false;
+      }
       if (auto channel = getChannel()) {
         channel->setStateOnline();
       }

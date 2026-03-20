@@ -215,7 +215,6 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
                                     bool dataSaved,
                                     bool includeSessionLinks) {
   sendHeaderBegin(sender);
-  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -240,7 +239,6 @@ void Supla::HtmlGenerator::sendPage(Supla::WebSender *sender,
 void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
                                         bool includeSessionLinks) {
   sendHeaderBegin(sender);
-  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -273,7 +271,6 @@ void Supla::HtmlGenerator::sendLogsPage(Supla::WebSender *sender,
 void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
     bool dataSaved, bool includeSessionLinks) {
   sendHeaderBegin(sender);
-  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -298,7 +295,6 @@ void Supla::HtmlGenerator::sendBetaPage(Supla::WebSender *sender,
 void Supla::HtmlGenerator::sendLoginPage(Supla::WebSender *sender,
                                          bool loginError) {
   sendHeaderBegin(sender);
-  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -340,7 +336,6 @@ void Supla::HtmlGenerator::sendSetupPage(
     bool changePassword,
     Supla::SetupRequestResult setupResult) {
   sendHeaderBegin(sender);
-  sendTitle(sender);
   sendHeader(sender);
   sendHeaderEnd(sender);
   sendBodyBegin(sender);
@@ -420,6 +415,7 @@ void Supla::HtmlGenerator::sendSetupPage(
 
 void Supla::HtmlGenerator::sendHeaderBegin(Supla::WebSender *sender) {
   sender->send(headerBegin, strlen(headerBegin));
+  sendTitle(sender);
 }
 
 void Supla::HtmlGenerator::sendTitle(Supla::WebSender *sender) {

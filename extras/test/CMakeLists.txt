@@ -67,9 +67,20 @@ file(GLOB TEST_SRC CONFIGURE_DEPENDS
   SwUpdateTests/*.cpp
   )
 
+file(GLOB SD4LINUX_TEST_SRC CONFIGURE_DEPENDS
+  LinuxPortTests/*.cpp
+  )
+
 list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
 
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
+
+set(SD4LINUX_PORT_SRC
+  ../porting/linux/supla/control/action_trigger_parsed.cpp
+  ../porting/linux/supla/parser/parser.cpp
+  ../porting/linux/supla/sensor/sensor_parsed.cpp
+  ../porting/linux/supla/sensor/binary_parsed.cpp
+  )
 
 add_library(supladevicelib SHARED)
 supla_device(supladevicelib)
@@ -80,8 +91,19 @@ target_include_directories(supladevicelib PUBLIC
 
 add_executable(supladevicetests ${TEST_SRC} ${DOUBLE_SRC})
 
+add_executable(sd4linuxtests
+  ${SD4LINUX_TEST_SRC}
+  ${DOUBLE_SRC}
+  ${SD4LINUX_PORT_SRC}
+  )
+
 target_include_directories(supladevicetests PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/doubles
+)
+
+target_include_directories(sd4linuxtests PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles
+  ${CMAKE_CURRENT_SOURCE_DIR}/../porting/linux
 )
 
 target_link_libraries(supladevicetests
@@ -92,12 +114,22 @@ target_link_libraries(supladevicetests
     gtest_main
   )
 
+target_link_libraries(sd4linuxtests
+  PRIVATE
+    supladevicelib
+    gtest
+    gmock
+    gtest_main
+  )
+
 add_test(NAME supladevicetests COMMAND supladevicetests)
+add_test(NAME sd4linuxtests COMMAND sd4linuxtests)
 
 
 supla_apply_warnings(supladevicetests)
+supla_apply_warnings(sd4linuxtests)
 supla_apply_warnings(supladevicelib)
 
 target_compile_definitions(supladevicetests PRIVATE SUPLA_TEST)
+target_compile_definitions(sd4linuxtests PRIVATE SUPLA_TEST)
 target_compile_definitions(supladevicelib PRIVATE SUPLA_TEST)
-

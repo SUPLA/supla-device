@@ -33,9 +33,7 @@ const char headerBegin[] =
 "<head>"
 "<meta content=\"text/html;charset=UTF-8\" http-equiv=content-type>"
 "<meta content=\"width=device-width,initial-scale=1,"
-               "maximum-scale=1,user-scalable=no\" name=viewport>"
-"<title>Configuration Page</title>";
-
+               "maximum-scale=1,user-scalable=no\" name=viewport>";
 
 // CSS from minifier tool.
 // Input data is in extras/resources/css_for_cfg_page.css
@@ -417,6 +415,13 @@ void Supla::HtmlGenerator::sendSetupPage(
 
 void Supla::HtmlGenerator::sendHeaderBegin(Supla::WebSender *sender) {
   sender->send(headerBegin, strlen(headerBegin));
+  sendTitle(sender);
+}
+
+void Supla::HtmlGenerator::sendTitle(Supla::WebSender *sender) {
+  sender->send("<title>");
+  sender->send(Supla::RegisterDevice::getName());
+  sender->send("</title>");
 }
 
 void Supla::HtmlGenerator::sendHeader(Supla::WebSender *sender) {

@@ -80,6 +80,7 @@ set(SD4LINUX_PORT_SRC
   ../porting/linux/supla/parser/parser.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp
   ../porting/linux/supla/sensor/binary_parsed.cpp
+  ../porting/linux/supla/sensor/thermometer_parsed.cpp
   )
 
 add_library(supladevicelib SHARED)

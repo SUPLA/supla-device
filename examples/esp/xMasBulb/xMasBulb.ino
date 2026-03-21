@@ -90,7 +90,7 @@ void setup() {
   SuplaDevice.setName(DEV_NAME);
   SuplaDevice.setSwVersion(DEV_VERSION);
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
-  SuplaDevice.setPermanentWebServer();
+  SuplaDevice.setPermanentWebInterface();
   SuplaDevice.begin();
 }
 

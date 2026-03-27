@@ -80,7 +80,7 @@ void supla_vlog(int __pri, const char *message) {
            tm_info->tm_hour,
            tm_info->tm_min,
            tm_info->tm_sec,
-           static_cast<int>(tv.tv_usec / 1000));
+           (int)(tv.tv_usec / 1000));
 
     switch (__pri) {
       case LOG_EMERG:

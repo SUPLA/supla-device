@@ -94,6 +94,8 @@ Inheritance diagram for Supla::WebSender:</div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:aa143497ca4d33881f17b99266c2d0712" id="r_aa143497ca4d33881f17b99266c2d0712"><td class="memItemLeft">virtual&#160;</td><td class="memItemRight"><a class="el" href="#aa143497ca4d33881f17b99266c2d0712">~WebSender</a> ()</td></tr>
+<tr class="memdesc:aa143497ca4d33881f17b99266c2d0712"><td class="mdescLeft">&#160;</td><td class="mdescRight">Base interface for emitting generated HTML.  <br /></td></tr>
 <tr class="memitem:a105946939dbe883ba9f3117fa64c5efd" id="r_a105946939dbe883ba9f3117fa64c5efd"><td class="memItemLeft"><a id="a105946939dbe883ba9f3117fa64c5efd" name="a105946939dbe883ba9f3117fa64c5efd"></a>
 virtual void&#160;</td><td class="memItemRight"><b>send</b> (const char *, int size=-1)=0</td></tr>
 <tr class="memitem:a193439ef54fa5d2c6bcc675d7f16b5aa" id="r_a193439ef54fa5d2c6bcc675d7f16b5aa"><td class="memItemLeft"><a id="a193439ef54fa5d2c6bcc675d7f16b5aa" name="a193439ef54fa5d2c6bcc675d7f16b5aa"></a>
@@ -116,7 +118,201 @@ virtual void&#160;</td><td class="memItemRight"><b>sendReadonly</b> (bool readon
 virtual void&#160;</td><td class="memItemRight"><b>sendDisabled</b> (bool disabled)</td></tr>
 <tr class="memitem:aca1d30de4023b3628bc639f742f30250" id="r_aca1d30de4023b3628bc639f742f30250"><td class="memItemLeft"><a id="aca1d30de4023b3628bc639f742f30250" name="aca1d30de4023b3628bc639f742f30250"></a>
 virtual void&#160;</td><td class="memItemRight"><b>sendTimestamp</b> (uint32_t timestamp)</td></tr>
+<tr class="memitem:a3ff0aa624c037175c62100b43d95bed5" id="r_a3ff0aa624c037175c62100b43d95bed5"><td class="memTemplParams" colspan="2">template&lt;typename Fn&gt; </td></tr>
+<tr class="memitem:a3ff0aa624c037175c62100b43d95bed5 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3ff0aa624c037175c62100b43d95bed5">formField</a> (Fn &amp;&amp;fn, const char *className=&quot;form-field&quot;)</td></tr>
+<tr class="memdesc:a3ff0aa624c037175c62100b43d95bed5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a <span class="tt">&lt;div class="form-field"&gt;...&lt;/div&gt;</span> block.  <br /></td></tr>
+<tr class="memitem:ab84d27a9820ef3ed19284b3c00bcd063" id="r_ab84d27a9820ef3ed19284b3c00bcd063"><td class="memTemplParams" colspan="2"><a id="ab84d27a9820ef3ed19284b3c00bcd063" name="ab84d27a9820ef3ed19284b3c00bcd063"></a>
+template&lt;typename Fn&gt; </td></tr>
+<tr class="memitem:ab84d27a9820ef3ed19284b3c00bcd063 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>selectInput</b> (const char *name, const char *id, Fn &amp;&amp;fn)</td></tr>
+<tr class="memdesc:ab84d27a9820ef3ed19284b3c00bcd063"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a <span class="tt">&lt;select&gt;</span> block with optional <span class="tt">name</span> and <span class="tt">id</span>. <br /></td></tr>
+<tr class="memitem:a78596bcebcc8759d0b0c32613f7aca54" id="r_a78596bcebcc8759d0b0c32613f7aca54"><td class="memItemLeft"><a id="a78596bcebcc8759d0b0c32613f7aca54" name="a78596bcebcc8759d0b0c32613f7aca54"></a>
+void&#160;</td><td class="memItemRight"><b>labelFor</b> (const char *id, const char *text)</td></tr>
+<tr class="memdesc:a78596bcebcc8759d0b0c32613f7aca54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a <span class="tt">&lt;label for="..."&gt;...&lt;/label&gt;</span> pair. <br /></td></tr>
+<tr class="memitem:adc3259e1fa292015b378bbcfd6983423" id="r_adc3259e1fa292015b378bbcfd6983423"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adc3259e1fa292015b378bbcfd6983423">textInput</a> (const char *name, const char *id, const char *value=nullptr, int maxLength=-1)</td></tr>
+<tr class="memdesc:adc3259e1fa292015b378bbcfd6983423"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a text input control.  <br /></td></tr>
+<tr class="memitem:ad650dda25b418ffd36d7a6ca596b0836" id="r_ad650dda25b418ffd36d7a6ca596b0836"><td class="memItemLeft"><a id="ad650dda25b418ffd36d7a6ca596b0836" name="ad650dda25b418ffd36d7a6ca596b0836"></a>
+void&#160;</td><td class="memItemRight"><b>passwordInput</b> (const char *name, const char *id)</td></tr>
+<tr class="memdesc:ad650dda25b418ffd36d7a6ca596b0836"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a password input control. <br /></td></tr>
+<tr class="memitem:ac3c1cde4a6b0c16671032da2584ec63a" id="r_ac3c1cde4a6b0c16671032da2584ec63a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac3c1cde4a6b0c16671032da2584ec63a">checkboxInput</a> (const char *name, const char *id, bool checked, const char *value=&quot;on&quot;)</td></tr>
+<tr class="memdesc:ac3c1cde4a6b0c16671032da2584ec63a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a checkbox input control.  <br /></td></tr>
+<tr class="memitem:ab8fb2febcf79876e13c868dbe2f9ec36" id="r_ab8fb2febcf79876e13c868dbe2f9ec36"><td class="memItemLeft"><a id="ab8fb2febcf79876e13c868dbe2f9ec36" name="ab8fb2febcf79876e13c868dbe2f9ec36"></a>
+void&#160;</td><td class="memItemRight"><b>selectOption</b> (const char *value, const char *text, bool selected=false)</td></tr>
+<tr class="memdesc:ab8fb2febcf79876e13c868dbe2f9ec36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a single <span class="tt">&lt;option&gt;</span> element. <br /></td></tr>
+<tr class="memitem:ab09f9c3a1203002f8ddbf1c6a2fe5124" id="r_ab09f9c3a1203002f8ddbf1c6a2fe5124"><td class="memItemLeft"><a class="el" href="classSupla_1_1HtmlTag.html">HtmlTag</a>&#160;</td><td class="memItemRight"><a class="el" href="#ab09f9c3a1203002f8ddbf1c6a2fe5124">tag</a> (const char *tagName, bool paired=true)</td></tr>
+<tr class="memdesc:ab09f9c3a1203002f8ddbf1c6a2fe5124"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start an HTML tag builder.  <br /></td></tr>
+<tr class="memitem:a5ddf65453b6e87bc4e30944eebdab460" id="r_a5ddf65453b6e87bc4e30944eebdab460"><td class="memItemLeft"><a id="a5ddf65453b6e87bc4e30944eebdab460" name="a5ddf65453b6e87bc4e30944eebdab460"></a>
+<a class="el" href="classSupla_1_1HtmlTag.html">HtmlTag</a>&#160;</td><td class="memItemRight"><b>voidTag</b> (const char *tagName)</td></tr>
+<tr class="memdesc:a5ddf65453b6e87bc4e30944eebdab460"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a builder for a void HTML tag such as <span class="tt">&lt;input&gt;</span>. <br /></td></tr>
 </table>
+<a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<a id="aa143497ca4d33881f17b99266c2d0712" name="aa143497ca4d33881f17b99266c2d0712"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa143497ca4d33881f17b99266c2d0712">&#9670;&#160;</a></span>~WebSender()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">Supla::WebSender::~WebSender </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Base interface for emitting generated HTML. </p>
+<p>The class exposes low-level <span class="tt">send()</span> primitives plus a small streaming HTML builder. The builder is designed for embedded targets and avoids dynamic string assembly.</p>
+<p>Example: </p><div class="fragment"><div class="line">sender-&gt;formField([&amp;]() {</div>
+<div class="line">  sender-&gt;labelFor(<span class="stringliteral">&quot;ssid&quot;</span>, <span class="stringliteral">&quot;Wi-Fi name&quot;</span>);</div>
+<div class="line">  sender-&gt;textInput(<span class="stringliteral">&quot;ssid&quot;</span>, <span class="stringliteral">&quot;ssid&quot;</span>, currentSsid);</div>
+<div class="line">});</div>
+</div><!-- fragment --><p>Use the lower-level <span class="tt"><a class="el" href="#ab09f9c3a1203002f8ddbf1c6a2fe5124" title="Start an HTML tag builder.">tag()</a></span> / <span class="tt"><a class="el" href="#a5ddf65453b6e87bc4e30944eebdab460" title="Start a builder for a void HTML tag such as &lt;input&gt;.">voidTag()</a></span> helpers when you need direct control over the generated markup. </p>
+
+</div>
+</div>
+<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="ac3c1cde4a6b0c16671032da2584ec63a" name="ac3c1cde4a6b0c16671032da2584ec63a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3c1cde4a6b0c16671032da2584ec63a">&#9670;&#160;</a></span>checkboxInput()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::WebSender::checkboxInput </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>id</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>checked</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>value</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;on&quot;</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Emit a checkbox input control. </p>
+<p>The <span class="tt">value</span> attribute defaults to <span class="tt">on</span>, which matches standard HTML checkbox semantics. </p>
+
+</div>
+</div>
+<a id="a3ff0aa624c037175c62100b43d95bed5" name="a3ff0aa624c037175c62100b43d95bed5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ff0aa624c037175c62100b43d95bed5">&#9670;&#160;</a></span>formField()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename Fn&gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::WebSender::formField </td>
+          <td>(</td>
+          <td class="paramtype">Fn &amp;&amp;</td>          <td class="paramname"><span class="paramname"><em>fn</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>className</em></span><span class="paramdefsep"> = </span><span class="paramdefval">&quot;form-field&quot;</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Emit a <span class="tt">&lt;div class="form-field"&gt;...&lt;/div&gt;</span> block. </p>
+<p>The default class name is <span class="tt">form-field</span>, but it can be overridden when a different wrapper class is needed. </p>
+
+</div>
+</div>
+<a id="ab09f9c3a1203002f8ddbf1c6a2fe5124" name="ab09f9c3a1203002f8ddbf1c6a2fe5124"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab09f9c3a1203002f8ddbf1c6a2fe5124">&#9670;&#160;</a></span>tag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classSupla_1_1HtmlTag.html">HtmlTag</a> Supla::WebSender::tag </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>tagName</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>paired</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Start an HTML tag builder. </p>
+<p>The returned object emits <span class="tt">&lt;tagName</span> immediately and finishes the tag automatically at scope exit if it has not already been completed. </p>
+
+</div>
+</div>
+<a id="adc3259e1fa292015b378bbcfd6983423" name="adc3259e1fa292015b378bbcfd6983423"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adc3259e1fa292015b378bbcfd6983423">&#9670;&#160;</a></span>textInput()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::WebSender::textInput </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>id</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>value</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>maxLength</em></span><span class="paramdefsep"> = </span><span class="paramdefval">-1</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Emit a text input control. </p>
+<p>Generates an <span class="tt">&lt;input type="text"&gt;</span> element. The <span class="tt">value</span> attribute is emitted only when <span class="tt">value != nullptr</span>. </p>
+
+</div>
+</div>
 <hr/>The documentation for this class was generated from the following files:<ul>
 <li>src/supla/network/<a class="el" href="web__sender_8h_source.html">web_sender.h</a></li>
 <li>src/supla/network/<b>web_sender.cpp</b></li>

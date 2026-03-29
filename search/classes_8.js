@@ -8,11 +8,12 @@ var searchData=
   ['homescreencontentparameters_5',['HomeScreenContentParameters',['../classHomeScreenContentParameters.html',1,'HomeScreenContentParameters'],['../classSupla_1_1Html_1_1HomeScreenContentParameters.html',1,'Supla::Html::HomeScreenContentParameters']]],
   ['htmlelement_6',['HtmlElement',['../classSupla_1_1HtmlElement.html',1,'Supla']]],
   ['htmlgenerator_7',['HtmlGenerator',['../classSupla_1_1HtmlGenerator.html',1,'Supla']]],
-  ['hvacbase_8',['HvacBase',['../classHvacBase.html',1,'HvacBase'],['../classSupla_1_1Control_1_1HvacBase.html',1,'Supla::Control::HvacBase']]],
-  ['hvacparameterflags_9',['HvacParameterFlags',['../structHvacParameterFlags.html',1,'']]],
-  ['hvacparameters_10',['HvacParameters',['../classHvacParameters.html',1,'HvacParameters'],['../classSupla_1_1Html_1_1HvacParameters.html',1,'Supla::Html::HvacParameters']]],
-  ['hvacptr_11',['HvacPtr',['../structRelayHvacAggregator_1_1HvacPtr.html',1,'RelayHvacAggregator::HvacPtr'],['../structSupla_1_1Control_1_1RelayHvacAggregator_1_1HvacPtr.html',1,'Supla::Control::RelayHvacAggregator::HvacPtr']]],
-  ['hx711_12',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
-  ['hx711configdata_13',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
-  ['hygrometer_14',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
+  ['htmltag_8',['HtmlTag',['../classSupla_1_1HtmlTag.html',1,'Supla']]],
+  ['hvacbase_9',['HvacBase',['../classHvacBase.html',1,'HvacBase'],['../classSupla_1_1Control_1_1HvacBase.html',1,'Supla::Control::HvacBase']]],
+  ['hvacparameterflags_10',['HvacParameterFlags',['../structHvacParameterFlags.html',1,'']]],
+  ['hvacparameters_11',['HvacParameters',['../classHvacParameters.html',1,'HvacParameters'],['../classSupla_1_1Html_1_1HvacParameters.html',1,'Supla::Html::HvacParameters']]],
+  ['hvacptr_12',['HvacPtr',['../structRelayHvacAggregator_1_1HvacPtr.html',1,'RelayHvacAggregator::HvacPtr'],['../structSupla_1_1Control_1_1RelayHvacAggregator_1_1HvacPtr.html',1,'Supla::Control::RelayHvacAggregator::HvacPtr']]],
+  ['hx711_13',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
+  ['hx711configdata_14',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
+  ['hygrometer_15',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
 ];

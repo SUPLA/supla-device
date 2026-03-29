@@ -10,6 +10,7 @@ var searchData=
   ['virtualthermhygrometer_7',['VirtualThermHygroMeter',['../classSupla_1_1Sensor_1_1VirtualThermHygroMeter.html',1,'Supla::Sensor']]],
   ['virtualthermometer_8',['VirtualThermometer',['../classSupla_1_1Sensor_1_1VirtualThermometer.html',1,'Supla::Sensor']]],
   ['virtualvalve_9',['VirtualValve',['../classSupla_1_1Control_1_1VirtualValve.html',1,'Supla::Control::VirtualValve'],['../classVirtualValve.html',1,'VirtualValve'],['../classSupla_1_1Control_1_1VirtualValve.html#a5fb3cd3355f652fe041f67b73458068d',1,'Supla::Control::VirtualValve::VirtualValve()'],['../classVirtualValve.html#a5fb3cd3355f652fe041f67b73458068d',1,'VirtualValve::VirtualValve()']]],
-  ['voltagegetter_10',['VoltageGetter',['../classSupla_1_1VoltageGetter.html',1,'Supla']]],
-  ['volumeparameters_11',['VolumeParameters',['../classSupla_1_1Html_1_1VolumeParameters.html',1,'Supla::Html::VolumeParameters'],['../classVolumeParameters.html',1,'VolumeParameters']]]
+  ['voidtag_10',['voidTag',['../classSupla_1_1WebSender.html#a5ddf65453b6e87bc4e30944eebdab460',1,'Supla::WebSender']]],
+  ['voltagegetter_11',['VoltageGetter',['../classSupla_1_1VoltageGetter.html',1,'Supla']]],
+  ['volumeparameters_12',['VolumeParameters',['../classSupla_1_1Html_1_1VolumeParameters.html',1,'Supla::Html::VolumeParameters'],['../classVolumeParameters.html',1,'VolumeParameters']]]
 ];

@@ -1,4 +1,6 @@
 var searchData=
 [
-  ['teststepstatusled_0',['testStepStatusLed',['../classSuplaDeviceClass.html#a3a40abe12efe6ffbb2f350270c7d789e',1,'SuplaDeviceClass']]]
+  ['tag_0',['tag',['../classSupla_1_1WebSender.html#ab09f9c3a1203002f8ddbf1c6a2fe5124',1,'Supla::WebSender']]],
+  ['teststepstatusled_1',['testStepStatusLed',['../classSuplaDeviceClass.html#a3a40abe12efe6ffbb2f350270c7d789e',1,'SuplaDeviceClass']]],
+  ['textinput_2',['textInput',['../classSupla_1_1WebSender.html#adc3259e1fa292015b378bbcfd6983423',1,'Supla::WebSender']]]
 ];

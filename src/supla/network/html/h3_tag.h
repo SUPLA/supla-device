@@ -25,6 +25,12 @@ namespace Supla {
 
 namespace Html {
 
+/**
+ * @deprecated Use WebSender::tag("h3").body(text) instead.
+ *
+ * This class is a thin wrapper around a single heading tag and is kept only
+ * for compatibility with older callers.
+ */
 class H3Tag : public HtmlElement {
  public:
   explicit H3Tag(const char *text);

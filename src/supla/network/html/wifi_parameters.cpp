@@ -34,53 +34,47 @@ WifiParameters::~WifiParameters() {
 void WifiParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    sender->send("<h3>Wi-Fi Settings</h3>");
+    sender->tag("h3").body("Wi-Fi Settings");
     char buf[256] = {};
 
     if (Supla::Network::GetNetIntfCount() > 1) {
-      // form-field START
       const char wifiEn[] = "wifi_en";  // HTML field
       uint8_t wifiDisabled = 0;
       cfg->getUInt8(Supla::WifiDisableTag, &wifiDisabled);
 
-      sender->send("<div class=\"form-field right-checkbox\">");
-      sender->sendLabelFor(wifiEn, "Enable Wi-Fi");
-      sender->send("<label>");
-      sender->send("<span class=\"switch\">");
-      sender->send("<input type=\"checkbox\" value=\"on\" ");
-      sender->send(checked(wifiDisabled == 0));
-      sender->sendNameAndId(wifiEn);
-      sender->send(">");
-      sender->send("<span class=\"slider\"></span>");
-      sender->send("</span>");
-      sender->send("</label>");
-      sender->send("</div>");
-      // form-field END
+      sender->formField([&]() {
+        sender->labelFor(wifiEn, "Enable Wi-Fi");
+
+        auto switchLabel = sender->tag("label");
+        switchLabel.body([&]() {
+          auto sw = sender->tag("span");
+          sw.attr("class", "switch");
+          sw.body([&]() {
+            sender->checkboxInput(wifiEn, wifiEn, wifiDisabled == 0);
+
+            auto slider = sender->tag("span");
+            slider.attr("class", "slider");
+            slider.body("");
+          });
+        });
+      }, "form-field right-checkbox");
     }
 
-    // form-field START
-    sender->send("<div class=\"form-field\">");
     const char key[] = "sid";
-    sender->sendLabelFor(key, "Network name");
-    sender->send("<input ");
-    sender->sendNameAndId(key);
-    if (cfg->getWiFiSSID(buf)) {
-      sender->send("value=\"");
-      sender->send(buf);
-    }
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
+    sender->formField([&]() {
+      sender->labelFor(key, "Network name");
+      if (cfg->getWiFiSSID(buf)) {
+        sender->textInput(key, key, buf);
+      } else {
+        sender->textInput(key, key);
+      }
+    });
 
-    // form-field START
-    sender->send("<div class=\"form-field\">");
     const char keyPass[] = "wpw";
-    sender->sendLabelFor(keyPass, "Password");
-    sender->send("<input type=\"password\" ");
-    sender->sendNameAndId(keyPass);
-    sender->send(">");
-    sender->send("</div>");
-    // form-field END
+    sender->formField([&]() {
+      sender->labelFor(keyPass, "Password");
+      sender->passwordInput(keyPass, keyPass);
+    });
   }
 }
 

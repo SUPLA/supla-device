@@ -27,6 +27,13 @@ namespace Supla {
 
 namespace Html {
 
+/**
+ * @deprecated Use WebSender::tag("div") / WebSender::voidTag() instead.
+ *
+ * This helper only wraps plain `<div>` emission. The new streaming builder in
+ * WebSender provides the same functionality with clearer ownership and less
+ * manual tag handling.
+ */
 class DivBegin : public HtmlElement {
  public:
   explicit DivBegin(const char *className = nullptr,
@@ -39,6 +46,12 @@ class DivBegin : public HtmlElement {
   char *idName = nullptr;
 };
 
+/**
+ * @deprecated Use WebSender::tag("div") with body() instead.
+ *
+ * This is a legacy closing tag helper kept for compatibility with older
+ * code paths.
+ */
 class DivEnd : public HtmlElement {
  public:
   void send(Supla::WebSender* sender) override;

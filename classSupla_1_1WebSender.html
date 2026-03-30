@@ -125,6 +125,8 @@ virtual void&#160;</td><td class="memItemRight"><b>sendTimestamp</b> (uint32_t t
 template&lt;typename Fn&gt; </td></tr>
 <tr class="memitem:ab84d27a9820ef3ed19284b3c00bcd063 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>selectInput</b> (const char *name, const char *id, Fn &amp;&amp;fn)</td></tr>
 <tr class="memdesc:ab84d27a9820ef3ed19284b3c00bcd063"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a <span class="tt">&lt;select&gt;</span> block with optional <span class="tt">name</span> and <span class="tt">id</span>. <br /></td></tr>
+<tr class="memitem:a64065122ccd52d4b827f870415a8bb20" id="r_a64065122ccd52d4b827f870415a8bb20"><td class="memItemLeft"><a class="el" href="classSupla_1_1HtmlTag.html">HtmlTag</a>&#160;</td><td class="memItemRight"><a class="el" href="#a64065122ccd52d4b827f870415a8bb20">selectTag</a> (const char *name, const char *id)</td></tr>
+<tr class="memdesc:a64065122ccd52d4b827f870415a8bb20"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start a <span class="tt">&lt;select&gt;</span> tag builder.  <br /></td></tr>
 <tr class="memitem:a78596bcebcc8759d0b0c32613f7aca54" id="r_a78596bcebcc8759d0b0c32613f7aca54"><td class="memItemLeft"><a id="a78596bcebcc8759d0b0c32613f7aca54" name="a78596bcebcc8759d0b0c32613f7aca54"></a>
 void&#160;</td><td class="memItemRight"><b>labelFor</b> (const char *id, const char *text)</td></tr>
 <tr class="memdesc:a78596bcebcc8759d0b0c32613f7aca54"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a <span class="tt">&lt;label for="..."&gt;...&lt;/label&gt;</span> pair. <br /></td></tr>
@@ -135,9 +137,15 @@ void&#160;</td><td class="memItemRight"><b>passwordInput</b> (const char *name, 
 <tr class="memdesc:ad650dda25b418ffd36d7a6ca596b0836"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a password input control. <br /></td></tr>
 <tr class="memitem:ac3c1cde4a6b0c16671032da2584ec63a" id="r_ac3c1cde4a6b0c16671032da2584ec63a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac3c1cde4a6b0c16671032da2584ec63a">checkboxInput</a> (const char *name, const char *id, bool checked, const char *value=&quot;on&quot;)</td></tr>
 <tr class="memdesc:ac3c1cde4a6b0c16671032da2584ec63a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a checkbox input control.  <br /></td></tr>
+<tr class="memitem:a3efe40008e5d86498f5b5b0cafb77a53" id="r_a3efe40008e5d86498f5b5b0cafb77a53"><td class="memItemLeft"><a id="a3efe40008e5d86498f5b5b0cafb77a53" name="a3efe40008e5d86498f5b5b0cafb77a53"></a>
+void&#160;</td><td class="memItemRight"><b>selectOption</b> (int value, int text, bool selected=false)</td></tr>
+<tr class="memdesc:a3efe40008e5d86498f5b5b0cafb77a53"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a single <span class="tt">&lt;option&gt;</span> element. <br /></td></tr>
+<tr class="memitem:acdbe7f01ff4e1bb27b8b3b4c9e89186c" id="r_acdbe7f01ff4e1bb27b8b3b4c9e89186c"><td class="memItemLeft"><a id="acdbe7f01ff4e1bb27b8b3b4c9e89186c" name="acdbe7f01ff4e1bb27b8b3b4c9e89186c"></a>
+void&#160;</td><td class="memItemRight"><b>selectOption</b> (int value, const char *text, bool selected=false)</td></tr>
+<tr class="memitem:addf5f2e2dea9b02ab34a081e1d871cd7" id="r_addf5f2e2dea9b02ab34a081e1d871cd7"><td class="memItemLeft"><a id="addf5f2e2dea9b02ab34a081e1d871cd7" name="addf5f2e2dea9b02ab34a081e1d871cd7"></a>
+void&#160;</td><td class="memItemRight"><b>selectOption</b> (const char *value, int text, bool selected=false)</td></tr>
 <tr class="memitem:ab8fb2febcf79876e13c868dbe2f9ec36" id="r_ab8fb2febcf79876e13c868dbe2f9ec36"><td class="memItemLeft"><a id="ab8fb2febcf79876e13c868dbe2f9ec36" name="ab8fb2febcf79876e13c868dbe2f9ec36"></a>
 void&#160;</td><td class="memItemRight"><b>selectOption</b> (const char *value, const char *text, bool selected=false)</td></tr>
-<tr class="memdesc:ab8fb2febcf79876e13c868dbe2f9ec36"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a single <span class="tt">&lt;option&gt;</span> element. <br /></td></tr>
 <tr class="memitem:ab09f9c3a1203002f8ddbf1c6a2fe5124" id="r_ab09f9c3a1203002f8ddbf1c6a2fe5124"><td class="memItemLeft"><a class="el" href="classSupla_1_1HtmlTag.html">HtmlTag</a>&#160;</td><td class="memItemRight"><a class="el" href="#ab09f9c3a1203002f8ddbf1c6a2fe5124">tag</a> (const char *tagName, bool paired=true)</td></tr>
 <tr class="memdesc:ab09f9c3a1203002f8ddbf1c6a2fe5124"><td class="mdescLeft">&#160;</td><td class="mdescRight">Start an HTML tag builder.  <br /></td></tr>
 <tr class="memitem:a5ddf65453b6e87bc4e30944eebdab460" id="r_a5ddf65453b6e87bc4e30944eebdab460"><td class="memItemLeft"><a id="a5ddf65453b6e87bc4e30944eebdab460" name="a5ddf65453b6e87bc4e30944eebdab460"></a>
@@ -244,6 +252,38 @@ template&lt;typename Fn&gt; </div>
 
 <p>Emit a <span class="tt">&lt;div class="form-field"&gt;...&lt;/div&gt;</span> block. </p>
 <p>The default class name is <span class="tt">form-field</span>, but it can be overridden when a different wrapper class is needed. </p>
+
+</div>
+</div>
+<a id="a64065122ccd52d4b827f870415a8bb20" name="a64065122ccd52d4b827f870415a8bb20"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a64065122ccd52d4b827f870415a8bb20">&#9670;&#160;</a></span>selectTag()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classSupla_1_1HtmlTag.html">HtmlTag</a> Supla::WebSender::selectTag </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>id</em></span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel inline">inline</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Start a <span class="tt">&lt;select&gt;</span> tag builder. </p>
+<p>This is the low-level variant when extra attributes such as <span class="tt">onchange</span> need to be chained manually before calling <a class="el" href="classSupla_1_1HtmlTag.html#a24639357d3595f0aee5b0eca3e310102" title="HtmlTag::body()">HtmlTag::body()</a>. </p>
 
 </div>
 </div>

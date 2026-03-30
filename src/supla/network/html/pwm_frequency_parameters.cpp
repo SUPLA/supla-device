@@ -57,24 +57,18 @@ void PwmFrequencyParameters::send(Supla::WebSender* sender) {
     frequency = rgbCct->getPwmFrequency();
     frequencyStep = rgbCct->getStepPwmFrequency();
   }
-
-  // form-field BEGIN
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(Supla::ConfigTag::PwmFrequencyTag,
-                       "PWM frequency [Hz] (reboot required to take effect)");
-  sender->send("<input type=\"number\" min=\"");
-  sender->send(minFrequency, 0);
-  sender->send("\"\" max=\"");
-  sender->send(maxFrequency, 0);
-  sender->send("\" step =\"");
-  sender->send(frequencyStep, 0);
-  sender->send("\" ");
-  sender->sendNameAndId(Supla::ConfigTag::PwmFrequencyTag);
-  sender->send(" value=\"");
-  sender->send(frequency, 0);
-  sender->send("\">");
-  sender->send("</div>");
-  // form-field END
+  sender->labeledField(
+      Supla::ConfigTag::PwmFrequencyTag,
+      "PWM frequency [Hz] (reboot required to take effect)", [&]() {
+        sender->numberInput(
+            Supla::ConfigTag::PwmFrequencyTag,
+            Supla::NumericInputSpec{
+                .min = static_cast<int>(minFrequency),
+                .max = static_cast<int>(maxFrequency),
+                .value = static_cast<int>(frequency),
+                .step = static_cast<int>(frequencyStep),
+            });
+      });
 }
 
 bool PwmFrequencyParameters::handleResponse(const char* key,

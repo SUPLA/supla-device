@@ -288,8 +288,8 @@ TEST_F(HtmlCaptureTest, CustomParameterTemplateRendersFloatingField) {
   EXPECT_THAT(sendHtml, HasSubstr("Temperature limit"));
   EXPECT_THAT(sendHtml, HasSubstr("type=\"number\""));
   EXPECT_THAT(sendHtml, HasSubstr("step=\"0.01\""));
-  EXPECT_THAT(sendHtml, HasSubstr("min=\"0.50\""));
-  EXPECT_THAT(sendHtml, HasSubstr("max=\"3.00\""));
+  EXPECT_THAT(sendHtml, HasSubstr("min=\"0.5\""));
+  EXPECT_THAT(sendHtml, HasSubstr("max=\"3\""));
   EXPECT_THAT(sendHtml, HasSubstr("value=\"2.75\""));
 }
 
@@ -327,9 +327,11 @@ TEST_F(HtmlCaptureTest, HideShowContainerGeneratesToggledSection) {
                                          linkPos - (prefixPos + prefix.size()));
   ASSERT_FALSE(id.empty());
 
-  EXPECT_THAT(sendHtml, HasSubstr("document.getElementById(\"" + id + "\")"));
   EXPECT_THAT(sendHtml,
-              HasSubstr("document.getElementById(\"" + id + "_link\")"));
+              HasSubstr("document.getElementById(&quot;" + id + "&quot;)"));
+  EXPECT_THAT(
+      sendHtml,
+      HasSubstr("document.getElementById(&quot;" + id + "_link&quot;)"));
   EXPECT_THAT(sendHtml,
               HasSubstr("<div id=\"" + id + "\" style=\"display:none\">"));
 }
@@ -413,8 +415,8 @@ TEST_F(HtmlCaptureTest, CustomCheckboxParameterRendersCheckedState) {
             "<label for=\"feature_x\">Feature X</label>"
             "<label>"
             "<span class=\"switch\">"
-            "<input type=\"checkbox\" value=\"on\"  checked name=\"feature_x\" "
-            "id=\"feature_x\" >"
+            "<input type=\"checkbox\" value=\"on\" checked name=\"feature_x\" "
+            "id=\"feature_x\">"
             "<span class=\"slider\"></span>"
             "</span>"
             "</label>"
@@ -439,8 +441,8 @@ TEST_F(HtmlCaptureTest, ButtonHoldTimeParametersUseDefaultFallback) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"btn_hold\">Hold detection time [s]</label>"
-            "<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\"  "
-            "name=\"btn_hold\" id=\"btn_hold\"  value=\"0.7\">"
+            "<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" "
+            "name=\"btn_hold\" id=\"btn_hold\" value=\"0.7\">"
             "</div>");
 }
 
@@ -463,8 +465,8 @@ TEST_F(HtmlCaptureTest, ButtonMulticlickParametersUseDefaultFallback) {
       sendHtml,
       "<div class=\"form-field\">"
       "<label for=\"btn_multiclick\">Multiclick detection time [s]</label>"
-      "<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\"  "
-      "name=\"btn_multiclick\" id=\"btn_multiclick\"  value=\"0.3\">"
+      "<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" "
+      "name=\"btn_multiclick\" id=\"btn_multiclick\" value=\"0.3\">"
       "</div>");
 }
 
@@ -486,13 +488,13 @@ TEST_F(HtmlCaptureTest, VolumeParametersRendersRangeInput) {
   Supla::Html::VolumeParameters param;
   param.send(&sender);
 
-  EXPECT_EQ(sendHtml,
-            "<div class=\"form-field\">"
-            "<label for=\"volume\">Button volume</label>"
-            "<input type=\"range\" min=\"0\" max=\"100\" step=\"1\" "
-            "class=\"range-slider\"  name=\"volume\" id=\"volume\"  "
-            "value=\"42\">"
-            "</div>");
+  EXPECT_EQ(
+      sendHtml,
+      "<div class=\"form-field\">"
+      "<label for=\"volume\">Button volume</label>"
+      "<input type=\"range\" class=\"range-slider\" min=\"0\" max=\"100\" "
+      "step=\"1\" name=\"volume\" id=\"volume\" value=\"42\">"
+      "</div>");
 }
 
 TEST_F(HtmlCaptureTest, StatusLedParametersRendersSelectedOption) {
@@ -516,13 +518,11 @@ TEST_F(HtmlCaptureTest, StatusLedParametersRendersSelectedOption) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"led\">Status LED</label>"
-            "<div>"
-            "<select  name=\"led\" id=\"led\" >"
+            "<select name=\"led\" id=\"led\">"
             "<option value=\"0\">ON - WHEN CONNECTED</option>"
             "<option value=\"1\" selected>OFF - WHEN CONNECTED</option>"
             "<option value=\"2\">ALWAYS OFF</option>"
             "</select>"
-            "</div>"
             "</div>");
 }
 
@@ -547,7 +547,7 @@ TEST_F(HtmlCaptureTest, CustomSwUpdateRendersUrlInput) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"swupdateurl\">Update server address</label>"
-            "<input  name=\"swupdateurl\" id=\"swupdateurl\"  "
+            "<input type=\"text\" name=\"swupdateurl\" id=\"swupdateurl\" "
             "value=\"https://updates.example.com\">"
             "</div>");
 }
@@ -610,19 +610,18 @@ TEST_F(HtmlCaptureTest, ButtonActionTriggerConfigRendersSelectedOption) {
   Supla::Html::ButtonActionTriggerConfig param(3, 2);
   param.send(&sender);
 
-  EXPECT_EQ(sendHtml,
-            "<div class=\"form-field\">"
-            "<label for=\"3_mqtt_at\">IN2 MQTT action trigger type</label>"
-            "<div>"
-            "<select  name=\"3_mqtt_at\" id=\"3_mqtt_at\" >"
-            "<option value=\"0\">Publish based on Supla Cloud config</option>"
-            "<option value=\"1\" selected>Publish all triggers, don't disable "
-            "local function</option>"
-            "<option value=\"2\">Publish all triggers, disable local "
-            "function</option>"
-            "</select>"
-            "</div>"
-            "</div>");
+  EXPECT_EQ(
+      sendHtml,
+      "<div class=\"form-field\">"
+      "<label for=\"3_mqtt_at\">IN2 MQTT action trigger type</label>"
+      "<select name=\"3_mqtt_at\" id=\"3_mqtt_at\">"
+      "<option value=\"0\">Publish based on Supla Cloud config</option>"
+      "<option value=\"1\" selected>Publish all triggers, don&apos;t disable "
+      "local function</option>"
+      "<option value=\"2\">Publish all triggers, disable local "
+      "function</option>"
+      "</select>"
+      "</div>");
 }
 
 TEST_F(HtmlCaptureTest, SwUpdateBetaRendersSelectedState) {
@@ -644,15 +643,13 @@ TEST_F(HtmlCaptureTest, SwUpdateBetaRendersSelectedState) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"updbeta\">Firmware update</label>"
-            "<div>"
-            "<select  name=\"updbeta\" id=\"updbeta\" >"
+            "<select name=\"updbeta\" id=\"updbeta\">"
             "<option value=\"0\">NO</option>"
             "<option value=\"1\">YES</option>"
             "<option value=\"2\" selected>YES - BETA</option>"
             "</select>"
             "<div class=\"hint\">Warning: beta SW versions may contain bugs "
             "and your device may not work properly.</div>"
-            "</div>"
             "</div>");
 }
 
@@ -677,7 +674,7 @@ TEST_F(HtmlCaptureTest, ProtocolParametersRendersSimpleProtocolSelector) {
   EXPECT_THAT(sendHtml, HasSubstr(">Supla</option>"));
   EXPECT_THAT(sendHtml, HasSubstr("<option value=\"1\""));
   EXPECT_THAT(sendHtml, HasSubstr(">MQTT</option>"));
-  EXPECT_THAT(sendHtml, HasSubstr("onchange=\"protocolChanged();\""));
+  EXPECT_THAT(sendHtml, HasSubstr("onchange=\"protocolChanged()\""));
 }
 
 TEST_F(HtmlCaptureTest, SwUpdateRendersSimpleFirmwareSelector) {
@@ -730,12 +727,10 @@ TEST_F(HtmlCaptureTest, PowerStatusLedParametersRendersSelectedOption) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"pwr_led\">Power Status LED</label>"
-            "<div>"
-            "<select  name=\"pwr_led\" id=\"pwr_led\" >"
+            "<select name=\"pwr_led\" id=\"pwr_led\">"
             "<option value=\"0\">Enabled</option>"
             "<option value=\"1\" selected>Disabled</option>"
             "</select>"
-            "</div>"
             "</div>");
 }
 
@@ -760,8 +755,8 @@ TEST_F(HtmlCaptureTest, ScreenDelayParametersRendersNumberInput) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"scr_delay\">Turn screen off after [sec]</label>"
-            "<input type=\"number\" min=\"0\" max=\"65535\" step=\"1\"  "
-            "name=\"scr_delay\" id=\"scr_delay\"  value=\"120\">"
+            "<input type=\"number\" min=\"0\" max=\"65535\" step=\"1\" "
+            "name=\"scr_delay\" id=\"scr_delay\" value=\"120\">"
             "</div>");
 }
 
@@ -835,7 +830,7 @@ TEST_F(HtmlCaptureTest, DisableUserInterfaceParameterRendersRestrictionBox) {
           "<option value=\"2\" selected>Allow temperature change</option>"));
   EXPECT_THAT(
       sendHtml,
-      HasSubstr("<div id=\"min_max_temp_ui\" style=\"display:block;\">"));
+      HasSubstr("<div id=\"min_max_temp_ui\" style=\"display: block\">"));
   EXPECT_THAT(
       sendHtml,
       HasSubstr(
@@ -898,8 +893,8 @@ TEST_F(HtmlCaptureTest, RelayParametersRendersThresholdInput) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"0_oc_thr\">Overcurrent protection [A]</label>"
-            "<input type=\"number\" min=\"0\" max=\"56.78\" step=\"0.01\"  "
-            "name=\"0_oc_thr\" id=\"0_oc_thr\"  value=\"12.34\">"
+            "<input type=\"number\" min=\"0\" max=\"56.78\" step=\"0.01\" "
+            "name=\"0_oc_thr\" id=\"0_oc_thr\" value=\"12.34\">"
             "</div>");
 }
 
@@ -954,8 +949,8 @@ TEST_F(HtmlCaptureTest, EthernetParametersRendersCheckbox) {
             "<label for=\"eth_en\">Enable Ethernet</label>"
             "<label>"
             "<span class=\"switch\">"
-            "<input type=\"checkbox\" value=\"on\"  checked name=\"eth_en\" "
-            "id=\"eth_en\" >"
+            "<input type=\"checkbox\" value=\"on\" checked name=\"eth_en\" "
+            "id=\"eth_en\">"
             "<span class=\"slider\"></span>"
             "</span>"
             "</label>"
@@ -978,8 +973,8 @@ TEST_F(HtmlCaptureTest, PwmFrequencyParametersRendersDefaultRange) {
             "<div class=\"form-field\">"
             "<label for=\"pwm_freq\">PWM frequency [Hz] (reboot required to "
             "take effect)</label>"
-            "<input type=\"number\" min=\"100\"\" max=\"9000\" step =\"1\"  "
-            "name=\"pwm_freq\" id=\"pwm_freq\"  value=\"500\">"
+            "<input type=\"number\" min=\"100\" max=\"9000\" step=\"1\" "
+            "name=\"pwm_freq\" id=\"pwm_freq\" value=\"500\">"
             "</div>");
 }
 
@@ -1027,7 +1022,7 @@ TEST_F(HtmlCaptureTest, TextCmdInputParameterRendersTextInput) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"text_cmd\">Text command</label>"
-            "<input type=\"text\"  name=\"text_cmd\" id=\"text_cmd\" >"
+            "<input type=\"text\" name=\"text_cmd\" id=\"text_cmd\">"
             "</div>");
 }
 
@@ -1047,8 +1042,8 @@ TEST_F(HtmlCaptureTest, SelectCmdInputParameterRendersSelectInput) {
   EXPECT_EQ(sendHtml,
             "<div class=\"form-field\">"
             "<label for=\"select_cmd\">Select command</label>"
-            "<select  name=\"select_cmd\" id=\"select_cmd\" >"
-            "<option selected value></option>"
+            "<select name=\"select_cmd\" id=\"select_cmd\">"
+            "<option selected></option>"
             "<option value=\"one\">one</option>"
             "<option value=\"two\">two</option>"
             "</select>"
@@ -1246,7 +1241,7 @@ TEST_F(HtmlCaptureTest, ModbusParametersRendersSerialAndNetworkSelectors) {
       sendHtml,
       HasSubstr("<option value=\"1\" selected>Master (client)</option>"));
   EXPECT_THAT(sendHtml,
-              HasSubstr("<option value=\"2\" >Slave (server)</option>"));
+              HasSubstr("<option value=\"2\">Slave (server)</option>"));
   EXPECT_THAT(sendHtml,
               HasSubstr("<option value=\"2\" selected>ASCII</option>"));
   EXPECT_THAT(sendHtml,

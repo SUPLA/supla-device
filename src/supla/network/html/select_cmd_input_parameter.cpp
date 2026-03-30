@@ -29,24 +29,14 @@ Supla::Html::SelectCmdInputParameter::~SelectCmdInputParameter() {
 }
 
 void Supla::Html::SelectCmdInputParameter::send(Supla::WebSender* sender) {
-  // form-field BEGIN
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(tag, label);
-  sender->send("<select ");
-  sender->sendNameAndId(tag);
-  sender->send(">");
-  sender->send("<option selected value></option>");
-  auto ptr = firstCmd;
-  while (ptr) {
-    sender->send("<option value=\"");
-    sender->send(ptr->cmd);
-    sender->send("\">");
-    sender->send(ptr->cmd);
-    sender->send("</option>");
-    ptr = ptr->next;
-  }
-  sender->send("</select>");
-  sender->send("</div>");
-  // form-field END
+  sender->labeledField(tag, label, [&]() {
+    sender->selectTag(tag, tag).body([&]() {
+      sender->tag("option").attrIf("selected", true).body("");
+      auto ptr = firstCmd;
+      while (ptr) {
+        sender->tag("option").attr("value", ptr->cmd).body(ptr->cmd);
+        ptr = ptr->next;
+      }
+    });
+  });
 }
-

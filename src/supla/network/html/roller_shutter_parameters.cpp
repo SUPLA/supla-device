@@ -18,15 +18,15 @@
 
 #include "roller_shutter_parameters.h"
 
-#include <supla/control/roller_shutter.h>
-#include <supla/storage/storage.h>
-#include <supla/network/web_sender.h>
-#include <supla/tools.h>
-#include <supla/log_wrapper.h>
-#include <supla/channels/channel.h>
-
 #include <stdio.h>
 #include <string.h>
+#include <supla/channels/channel.h>
+#include <supla/control/roller_shutter.h>
+#include <supla/log_wrapper.h>
+#include <supla/network/web_sender.h>
+#include <supla/storage/storage.h>
+#include <supla/tools.h>
+
 #include "supla/storage/config.h"
 #include "supla/storage/config_tags.h"
 
@@ -40,7 +40,7 @@ RollerShutterParameters::RollerShutterParameters(
 RollerShutterParameters::~RollerShutterParameters() {
 }
 
-void RollerShutterParameters::setRsPtr(Supla::Control::RollerShutter *rs) {
+void RollerShutterParameters::setRsPtr(Supla::Control::RollerShutter* rs) {
   this->rs = rs;
 }
 
@@ -49,6 +49,28 @@ void RollerShutterParameters::send(Supla::WebSender* sender) {
   if (rs == nullptr || rs->getChannel() == nullptr || cfg == nullptr) {
     return;
   }
+  auto emitField = [&](const char* keyName, const char* label, auto&& render) {
+    sender->formField([&]() {
+      sender->labelFor(keyName, label);
+      sender->tag("div").body([&]() { render(); });
+    });
+  };
+
+  auto emitSelectField =
+      [&](const char* keyName, const char* label, auto&& renderOptions) {
+        emitField(keyName, label, [&]() {
+          auto select = sender->selectTag(keyName, keyName);
+          select.body([&]() { renderOptions(); });
+        });
+      };
+
+  auto emitYesNoField =
+      [&](const char* keyName, const char* label, bool yesSelected) {
+        emitSelectField(keyName, label, [&]() {
+          sender->selectOption(0, "NO", !yesSelected);
+          sender->selectOption(1, "YES", yesSelected);
+        });
+      };
 
   char key[16] = {};
   int32_t channelFunc = rs->getChannel()->getDefaultFunction();
@@ -61,219 +83,152 @@ void RollerShutterParameters::send(Supla::WebSender* sender) {
            rs->getChannelNumber());
 
   sender->send("</div><div class=\"box\">");
-  sender->send("<h3>");
-  sender->send(tmp);
-  sender->send("</h3>");
+  sender->tag("h3").body(tmp);
 
-  // form-field BEGIN
   rs->generateKey(key, Supla::ConfigTag::ChannelFunctionTag);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Channel function");
-  sender->send("<div>");
-  sender->send("<select ");
-  sender->sendNameAndId(key);
-  sender->send(">");
-//  switch (channelFunction) {
-//    case SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER: {
-//    case SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW: {
-//    case SUPLA_CHANNELFNC_TERRACE_AWNING: {
-//    case SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR: {
-//    case SUPLA_CHANNELFNC_CURTAIN: {
-//    case SUPLA_CHANNELFNC_PROJECTOR_SCREEN: {
-//    case SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND: {
-//    case SUPLA_CHANNELFNC_VERTICAL_BLIND: {
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
-        Supla::getRelayChannelName(
-            SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER),
-        channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
-        Supla::getRelayChannelName(
-            SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW),
-        channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_TERRACE_AWNING)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_TERRACE_AWNING,
-        Supla::getRelayChannelName(SUPLA_CHANNELFNC_TERRACE_AWNING),
-        channelFunc == SUPLA_CHANNELFNC_TERRACE_AWNING);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
-        Supla::getRelayChannelName(SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR),
-        channelFunc == SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CURTAIN)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_CURTAIN,
-        Supla::getRelayChannelName(SUPLA_CHANNELFNC_CURTAIN),
-        channelFunc == SUPLA_CHANNELFNC_CURTAIN);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_PROJECTOR_SCREEN)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_PROJECTOR_SCREEN,
-        Supla::getRelayChannelName(SUPLA_CHANNELFNC_PROJECTOR_SCREEN),
-        channelFunc == SUPLA_CHANNELFNC_PROJECTOR_SCREEN);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
-        Supla::getRelayChannelName(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND),
-        channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
-  }
-  if (rs->isFunctionSupported(SUPLA_CHANNELFNC_VERTICAL_BLIND)) {
-    sender->sendSelectItem(
-        SUPLA_CHANNELFNC_VERTICAL_BLIND,
-        Supla::getRelayChannelName(SUPLA_CHANNELFNC_VERTICAL_BLIND),
-        channelFunc == SUPLA_CHANNELFNC_VERTICAL_BLIND);
-  }
-  sender->send("</select>");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END
+  emitSelectField(key, "Channel function", [&]() {
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER,
+          Supla::getRelayChannelName(
+              SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER),
+          channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW,
+          Supla::getRelayChannelName(SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW),
+          channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEROOFWINDOW);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_TERRACE_AWNING)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_TERRACE_AWNING,
+          Supla::getRelayChannelName(SUPLA_CHANNELFNC_TERRACE_AWNING),
+          channelFunc == SUPLA_CHANNELFNC_TERRACE_AWNING);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR,
+          Supla::getRelayChannelName(SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR),
+          channelFunc == SUPLA_CHANNELFNC_ROLLER_GARAGE_DOOR);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CURTAIN)) {
+      sender->selectOption(SUPLA_CHANNELFNC_CURTAIN,
+                           Supla::getRelayChannelName(SUPLA_CHANNELFNC_CURTAIN),
+                           channelFunc == SUPLA_CHANNELFNC_CURTAIN);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_PROJECTOR_SCREEN)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_PROJECTOR_SCREEN,
+          Supla::getRelayChannelName(SUPLA_CHANNELFNC_PROJECTOR_SCREEN),
+          channelFunc == SUPLA_CHANNELFNC_PROJECTOR_SCREEN);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND,
+          Supla::getRelayChannelName(
+              SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND),
+          channelFunc == SUPLA_CHANNELFNC_CONTROLLINGTHEFACADEBLIND);
+    }
+    if (rs->isFunctionSupported(SUPLA_CHANNELFNC_VERTICAL_BLIND)) {
+      sender->selectOption(
+          SUPLA_CHANNELFNC_VERTICAL_BLIND,
+          Supla::getRelayChannelName(SUPLA_CHANNELFNC_VERTICAL_BLIND),
+          channelFunc == SUPLA_CHANNELFNC_VERTICAL_BLIND);
+    }
+  });
 
   if (rs->getMotorUpsideDown() != 0) {
-    // form-field BEGIN
     rs->generateKey(key, Supla::ConfigTag::RollerShutterMotorUpsideDownTag);
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key, "Motor upside down");
-    sender->send("<div>");
-    sender->send("<select ");
-    sender->sendNameAndId(key);
-    sender->send(">");
-    sender->sendSelectItem(0, "NO", rs->getMotorUpsideDown() != 2);
-    sender->sendSelectItem(1, "YES", rs->getMotorUpsideDown() == 2);
-    sender->send("</select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    emitYesNoField(key, "Motor upside down", rs->getMotorUpsideDown() == 2);
   }
 
   if (rs->getButtonsUpsideDown() != 0) {
-    // form-field BEGIN
     rs->generateKey(key, Supla::ConfigTag::RollerShutterButtonsUpsideDownTag);
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key, "Buttons upside down");
-    sender->send("<div>");
-    sender->send("<select ");
-    sender->sendNameAndId(key);
-    sender->send(">");
-    sender->sendSelectItem(0, "NO", rs->getButtonsUpsideDown() != 2);
-    sender->sendSelectItem(1, "YES", rs->getButtonsUpsideDown() == 2);
-    sender->send("</select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    emitYesNoField(key, "Buttons upside down", rs->getButtonsUpsideDown() == 2);
   }
 
-  // form-field BEGIN
   rs->generateKey(key, Supla::ConfigTag::RollerShutterTimeMarginTag);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Time margin (%)");
-  sender->send("<div>");
-  sender->send("<input ");
-  sender->sendNameAndId(key);
-  sender->send(
-      " type=\"number\" min=\"-1\" max=\"100\" step=\"1\" placeholder=\"Use -1 "
-      "for default\" ");
-  sender->send(" value=\"");
-  sender->send(static_cast<int>(rs->getTimeMargin()));
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END;
+  emitField(key, "Time margin (%)", [&]() {
+    auto input = sender->voidTag("input");
+    input.attr("type", "number")
+        .attr("min", -1)
+        .attr("max", 100)
+        .attr("step", 1)
+        .attr("placeholder", "Use -1 for default")
+        .attr("name", key)
+        .attr("id", key)
+        .attr("value", static_cast<int>(rs->getTimeMargin()))
+        .finish();
+  });
 
-  // form-field BEGIN
   rs->generateKey(key, Supla::ConfigTag::RollerShutterOpeningTimeTag);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Full opening time (sec.)");
-  sender->send("<div>");
-  sender->send("<input ");
-  sender->sendNameAndId(key);
-  sender->send(
-      " type=\"number\" min=\"0\" max=\"300\" step=\"0.1\" ");
-  if (rs->isAutoCalibrationSupported()) {
-    sender->send(" placeholder=\"Use 0 for autocalibration\" ");
-  }
-  sender->send(" value=\"");
-  sender->send(rs->getOpeningTimeMs() / 100, 1);
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END;
+  emitField(key, "Full opening time (sec.)", [&]() {
+    auto input = sender->voidTag("input");
+    input.attr("type", "number")
+        .attr("min", 0)
+        .attr("max", 300)
+        .attr("step", 1, 1)
+        .attr("name", key)
+        .attr("id", key);
+    if (rs->isAutoCalibrationSupported()) {
+      input.attr("placeholder", "Use 0 for autocalibration");
+    }
+    input.attr("value", rs->getOpeningTimeMs() / 100, 1).finish();
+  });
 
-  // form-field BEGIN
   rs->generateKey(key, Supla::ConfigTag::RollerShutterClosingTimeTag);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Full closing time (sec.)");
-  sender->send("<div>");
-  sender->send("<input ");
-  sender->sendNameAndId(key);
-  sender->send(
-      " type=\"number\" min=\"0\" max=\"300\" step=\"0.1\" ");
-  if (rs->isAutoCalibrationSupported()) {
-    sender->send(" placeholder=\"Use 0 for autocalibration\" ");
-  }
-  sender->send(" value=\"");
-  sender->send(rs->getClosingTimeMs() / 100, 1);
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END;
+  emitField(key, "Full closing time (sec.)", [&]() {
+    auto input = sender->voidTag("input");
+    input.attr("type", "number")
+        .attr("min", 0)
+        .attr("max", 300)
+        .attr("step", 1, 1)
+        .attr("name", key)
+        .attr("id", key);
+    if (rs->isAutoCalibrationSupported()) {
+      input.attr("placeholder", "Use 0 for autocalibration");
+    }
+    input.attr("value", rs->getClosingTimeMs() / 100, 1).finish();
+  });
 
   if (rs->isTiltFunctionEnabled()) {
-    // form-field BEGIN
     rs->generateKey(key, Supla::ConfigTag::FacadeBlindTiltControlTypeTag);
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key, "Tilt control type");
-    sender->send("<div>");
-    sender->send("<select ");
-    sender->sendNameAndId(key);
-    sender->send(">");
-    sender->sendSelectItem(
-        0, "OFF", rs->getTiltControlType() == SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
-    sender->sendSelectItem(
-        1,
-        "Stands in position while tilting",
-        rs->getTiltControlType() ==
-            SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
-    sender->sendSelectItem(
-        2,
-        "Changes position while tilting",
-        rs->getTiltControlType() ==
-            SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
-    sender->sendSelectItem(
-        3,
-        "Tils only when fully closed",
-        rs->getTiltControlType() ==
-            SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED);
-    sender->send("</select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    emitSelectField(key, "Tilt control type", [&]() {
+      sender->selectOption(
+          0,
+          "OFF",
+          rs->getTiltControlType() == SUPLA_TILT_CONTROL_TYPE_UNKNOWN);
+      sender->selectOption(
+          1,
+          "Stands in position while tilting",
+          rs->getTiltControlType() ==
+              SUPLA_TILT_CONTROL_TYPE_STANDS_IN_POSITION_WHILE_TILTING);
+      sender->selectOption(
+          2,
+          "Changes position while tilting",
+          rs->getTiltControlType() ==
+              SUPLA_TILT_CONTROL_TYPE_CHANGES_POSITION_WHILE_TILTING);
+      sender->selectOption(
+          3,
+          "Tils only when fully closed",
+          rs->getTiltControlType() ==
+              SUPLA_TILT_CONTROL_TYPE_TILTS_ONLY_WHEN_FULLY_CLOSED);
+    });
 
-    // form-field BEGIN
     rs->generateKey(key, Supla::ConfigTag::FacadeBlindTiltingTimeTag);
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key, "Tilting time (sec.)");
-    sender->send("<div>");
-    sender->send("<input ");
-    sender->sendNameAndId(key);
-    sender->send(
-        " type=\"number\" min=\"0\" max=\"300\" step=\"0.1\" placeholder=\"Use "
-        "0 "
-        "for default\" ");
-    sender->send(" value=\"");
-    sender->send(static_cast<int>(rs->getTiltingTimeMs() / 100), 1);
-    sender->send("\">");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    emitField(key, "Tilting time (sec.)", [&]() {
+      auto input = sender->voidTag("input");
+      input.attr("type", "number")
+          .attr("min", 0)
+          .attr("max", 300)
+          .attr("step", 1, 1)
+          .attr("placeholder", "Use 0 for default")
+          .attr("name", key)
+          .attr("id", key)
+          .attr("value", static_cast<int>(rs->getTiltingTimeMs() / 100), 1)
+          .finish();
+    });
   }
 }
 

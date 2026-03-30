@@ -58,24 +58,19 @@ DivBegin::~DivBegin() {
 }
 
 void DivBegin::send(Supla::WebSender* sender) {
-  sender->send("<div");
+  auto div = sender->tag("div");
   if (className != nullptr) {
-    sender->send(" class=\"");
-    sender->send(className);
-    sender->send("\"");
+    div.attr("class", className);
   }
   if (idName != nullptr) {
-    sender->send(" id=\"");
-    sender->send(idName);
-    sender->send("\"");
+    div.attr("id", idName);
   }
-  sender->send(">");
+  div.close().finish();
 }
 
 void DivEnd::send(Supla::WebSender* sender) {
-    sender->send("</div>");
+  sender->send("</div>");
 }
 
 };  // namespace Html
 };  // namespace Supla
-

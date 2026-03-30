@@ -42,9 +42,10 @@ void WifiParameters::send(Supla::WebSender* sender) {
       uint8_t wifiDisabled = 0;
       cfg->getUInt8(Supla::WifiDisableTag, &wifiDisabled);
 
-      sender->formField([&]() {
-        sender->labelFor(wifiEn, "Enable Wi-Fi");
-
+      sender->labeledField(
+          wifiEn,
+          "Enable Wi-Fi",
+          [&]() {
         auto switchLabel = sender->tag("label");
         switchLabel.body([&]() {
           auto sw = sender->tag("span");
@@ -57,12 +58,12 @@ void WifiParameters::send(Supla::WebSender* sender) {
             slider.body("");
           });
         });
-      }, "form-field right-checkbox");
+      },
+          "form-field right-checkbox");
     }
 
     const char key[] = "sid";
-    sender->formField([&]() {
-      sender->labelFor(key, "Network name");
+    sender->labeledField(key, "Network name", [&]() {
       if (cfg->getWiFiSSID(buf)) {
         sender->textInput(key, key, buf);
       } else {
@@ -71,8 +72,7 @@ void WifiParameters::send(Supla::WebSender* sender) {
     });
 
     const char keyPass[] = "wpw";
-    sender->formField([&]() {
-      sender->labelFor(keyPass, "Password");
+    sender->labeledField(keyPass, "Password", [&]() {
       sender->passwordInput(keyPass, keyPass);
     });
   }

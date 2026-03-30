@@ -42,8 +42,6 @@ H2Tag::~H2Tag() {
 
 void H2Tag::send(Supla::WebSender* sender) {
   // form-field BEGIN
-  sender->send("<h2>");
-  sender->send(text);
-  sender->send("</h2>");
+  sender->tag("h2").body(text);
   // form-field END
 }

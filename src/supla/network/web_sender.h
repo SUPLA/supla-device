@@ -19,13 +19,36 @@
 #ifndef SRC_SUPLA_NETWORK_WEB_SENDER_H_
 #define SRC_SUPLA_NETWORK_WEB_SENDER_H_
 
-#include <supla/network/html_generator.h>
-
+#include <stddef.h>
 #include <stdint.h>
+#include <supla/network/html_generator.h>
 
 namespace Supla {
 
 class WebSender;
+
+struct FixedValue {
+  int raw = 0;
+  int precision = 0;
+
+  constexpr FixedValue() = default;
+  // NOLINTNEXTLINE(runtime/explicit)
+  constexpr FixedValue(int value) : raw(value), precision(0) {
+  }
+  constexpr FixedValue(int value, int prec) : raw(value), precision(prec) {
+  }
+};
+
+constexpr FixedValue fixed(int value, int precision) {
+  return FixedValue(value, precision);
+}
+
+struct NumericInputSpec {
+  FixedValue min;
+  FixedValue max;
+  FixedValue value;
+  FixedValue step;
+};
 
 /**
  * @brief RAII helper for emitting a single HTML tag.
@@ -72,6 +95,14 @@ class HtmlTag {
   HtmlTag& attr(const char* name, int value);
 
   /**
+   * @brief Append a quoted HTML attribute with formatted numeric value.
+   *
+   * This is useful for attributes such as `value`, `min`, `max` or `step`
+   * when the number must be emitted with fixed precision.
+   */
+  HtmlTag& attr(const char* name, int value, int precision);
+
+  /**
    * @brief Append a boolean HTML attribute when enabled.
    *
    * Example: `checked`, `selected`, `readonly`.
@@ -103,6 +134,19 @@ class HtmlTag {
     close();
     fn();
     end();
+  }
+
+  /**
+   * @brief Emit a text body using escaped content.
+   */
+  void body(char* text);
+
+  /**
+   * @brief Emit a text body using escaped content.
+   */
+  template <size_t N>
+  void body(const char (&text)[N]) {
+    body(static_cast<const char*>(text));
   }
 
   /**
@@ -153,10 +197,10 @@ class WebSender {
   virtual void sendSafe(const char*, int size = -1);
   virtual void send(int number);
   virtual void send(int number, int precision);
-  virtual void sendNameAndId(const char *id);
-  virtual void sendLabelFor(const char *id, const char *label);
+  virtual void sendNameAndId(const char* id);
+  virtual void sendLabelFor(const char* id, const char* label);
   virtual void sendSelectItem(int value,
-                              const char *label,
+                              const char* label,
                               bool selected,
                               bool emptyValue = false);
   virtual void sendHidden(bool hidden);
@@ -175,6 +219,47 @@ class WebSender {
     auto field = tag("div");
     field.attr("class", className);
     field.body(fn);
+  }
+
+  /**
+   * @brief Emit a labeled field wrapper.
+   *
+   * This couples the label and the control into one semantic unit, which keeps
+   * the HTML classes shorter and avoids repeating the `for`/`id` pairing.
+   */
+  template <typename Fn>
+  void labeledField(const char* id,
+                    const char* text,
+                    Fn&& fn,
+                    const char* className = "form-field") {
+    formField(
+        [&]() {
+          labelFor(id, text);
+          fn();
+        },
+        className);
+  }
+
+  /**
+   * @brief Emit a `<div>` whose visibility is controlled via `display`.
+   *
+   * The helper is useful for UI sections that are shown or hidden as a block
+   * depending on a checkbox or another configuration value.
+   */
+  template <typename Fn>
+  void toggleBox(const char* id,
+                 bool visible,
+                 Fn&& fn,
+                 const char* className = nullptr) {
+    auto box = tag("div");
+    if (id) {
+      box.attr("id", id);
+    }
+    if (className) {
+      box.attr("class", className);
+    }
+    box.attr("style", visible ? "display: block" : "display: none");
+    box.body(fn);
   }
 
   /**
@@ -235,14 +320,48 @@ class WebSender {
                      const char* value = "on");
 
   /**
+   * @brief Emit a numeric input control.
+   *
+   * The `FixedValue` fields allow integer and fixed-point values without
+   * forcing call sites to preformat strings.
+   */
+  void numberInput(const char* key,
+                   const NumericInputSpec& spec,
+                   const char* cssClass = nullptr);
+
+  /**
+   * @brief Emit a range input control.
+   *
+   * This mirrors @ref numberInput but uses `type="range"` for slider-style
+   * controls.
+   */
+  void rangeInput(const char* key,
+                  const NumericInputSpec& spec,
+                  const char* cssClass = nullptr);
+
+  /**
+   * @brief Emit a numeric input control with separate `name` and `id`.
+   */
+  void numberInput(const char* name,
+                   const char* id,
+                   const NumericInputSpec& spec,
+                   const char* cssClass = nullptr);
+
+  /**
+   * @brief Emit a range input control with separate `name` and `id`.
+   */
+  void rangeInput(const char* name,
+                  const char* id,
+                  const NumericInputSpec& spec,
+                  const char* cssClass = nullptr);
+
+  /**
    * @brief Emit a single `<option>` element.
    */
   void selectOption(int value, int text, bool selected = false);
   void selectOption(int value, const char* text, bool selected = false);
   void selectOption(const char* value, int text, bool selected = false);
-  void selectOption(const char* value,
-                    const char* text,
-                    bool selected = false);
+  void selectOption(const char* value, const char* text, bool selected = false);
 
   /**
    * @brief Start an HTML tag builder.

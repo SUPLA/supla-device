@@ -42,8 +42,6 @@ H3Tag::~H3Tag() {
 
 void H3Tag::send(Supla::WebSender* sender) {
   // form-field BEGIN
-  sender->send("<h3>");
-  sender->send(text);
-  sender->send("</h3>");
+  sender->tag("h3").body(text);
   // form-field END
 }

@@ -18,12 +18,13 @@
 
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <supla/network/html/text_cmd_input_parameter.h>
-#include <supla/network/web_sender.h>
-#include <string>
+#include <supla/action_handler.h>
 #include <supla/actions.h>
 #include <supla/events.h>
-#include <supla/action_handler.h>
+#include <supla/network/html/text_cmd_input_parameter.h>
+#include <supla/network/web_sender.h>
+
+#include <string>
 
 using ::testing::_;
 
@@ -34,32 +35,30 @@ class ActionHandlerMock : public Supla::ActionHandler {
 
 class SenderMock : public Supla::WebSender {
  public:
-  MOCK_METHOD(void, send, (const char*, int ), (override));
+  MOCK_METHOD(void, send, (const char *, int), (override));
 };
-
-static std::string sendHtml;
 
 TEST(TextCmdInputTests, EmptyElementTests) {
   Supla::Html::TextCmdInputParameter cmdInput("test_tag", "test_label");
   ActionHandlerMock ahMock;
   SenderMock senderMock;
+  std::string sendHtml;
 
   sendHtml.clear();
 
   EXPECT_EQ(sendHtml, "");
 
-  EXPECT_CALL(senderMock, send(_, _)).WillRepeatedly([] (const char *data,
-        int) {
-    sendHtml.append(data);
-  });
+  EXPECT_CALL(senderMock, send(_, _)).WillRepeatedly(
+      [&sendHtml](const char *data, int) { sendHtml.append(data); });
 
   EXPECT_EQ(sendHtml, "");
 
   // Check generated HTML for TextCmdInput element
   cmdInput.send(&senderMock);
-  EXPECT_EQ(sendHtml,
+  EXPECT_EQ(
+      sendHtml,
       "<div class=\"form-field\"><label for=\"test_tag\">test_label</label>"
-      "<input type=\"text\"  name=\"test_tag\" id=\"test_tag\" ></div>");
+      "<input type=\"text\" name=\"test_tag\" id=\"test_tag\"></div>");
 
   sendHtml.clear();
 
@@ -77,6 +76,7 @@ TEST(TextCmdInputTests, CommandsTests) {
   Supla::Html::TextCmdInputParameter cmdInput("test_tag", "test_label");
   ActionHandlerMock ahMock1;
   ActionHandlerMock ahMock2;
+  std::string sendHtml;
 
   // There are 3 commands. "veni" generated EVENT_1, "vidi" and "vici"
   // generates EVENT_2.
@@ -107,7 +107,8 @@ TEST(TextCmdInputTests, CommandsTests) {
   cmdInput.handleResponse("test_tag", "VIDI");
   cmdInput.handleResponse("test_tag", "vic");
   cmdInput.handleResponse("test_tag", "");
-  cmdInput.handleResponse("test_tag",
+  cmdInput.handleResponse(
+      "test_tag",
       "this is very long text where each line is joined with previous one"
       "this is very long text where each line is joined with previous one"
       "this is very long text where each line is joined with previous one"
@@ -124,11 +125,9 @@ TEST(TextCmdInputTests, CommandsTests) {
       "this is very long text where each line is joined with previous one"
       "this is very long text where each line is joined with previous one"
       "this is very long text where each line is joined with previous one"
-      "this is very long text where each line is joined with previous one"
-      );
+      "this is very long text where each line is joined with previous one");
 
   cmdInput.handleResponse("fredy", "veni");
   cmdInput.handleResponse("elon", "vidi");
   cmdInput.handleResponse("bill", "vici");
 }
-

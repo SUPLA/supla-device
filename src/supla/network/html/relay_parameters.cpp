@@ -19,17 +19,16 @@
 #include "relay_parameters.h"
 
 #include <stdint.h>
-#include <supla/network/html_element.h>
-#include <supla/storage/config_tags.h>
-#include <supla/control/relay.h>
-
 #include <string.h>
+#include <supla/clock/clock.h>
+#include <supla/control/relay.h>
+#include <supla/log_wrapper.h>
+#include <supla/network/html_element.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
-#include <supla/log_wrapper.h>
-#include <supla/clock/clock.h>
 
 using Supla::Html::RelayParameters;
 
@@ -48,25 +47,24 @@ void RelayParameters::send(Supla::WebSender* sender) {
                                relay->getChannelNumber(),
                                Supla::ConfigTag::RelayOvercurrentThreshold);
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key,
-                         "Overcurrent protection [A]");
-    sender->send("<input type=\"number\" min=\"0\" max=\"");
-    sender->send(relay->getOvercurrentMaxAllowed(), 2);
-    sender->send("\" step=\"0.01\" ");
-    sender->sendNameAndId(key);
-    sender->send(" value=\"");
-    sender->send(value, 2);
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(key, "Overcurrent protection [A]", [&]() {
+      sender->numberInput(
+          key,
+          {
+              .min = 0,
+              .max =
+                  fixed(static_cast<int>(relay->getOvercurrentMaxAllowed()), 2),
+              .value = fixed(static_cast<int>(value), 2),
+              .step = fixed(1, 2),
+          });
+    });
   }
 }
 
 bool RelayParameters::handleResponse(const char* key, const char* value) {
   char expectedKey[16] = {};
-  Supla::Config::generateKey(expectedKey, relay->getChannelNumber(),
+  Supla::Config::generateKey(expectedKey,
+                             relay->getChannelNumber(),
                              Supla::ConfigTag::RelayOvercurrentThreshold);
 
   if (strcmp(key, expectedKey) == 0) {
@@ -77,5 +75,3 @@ bool RelayParameters::handleResponse(const char* key, const char* value) {
 
   return false;
 }
-
-

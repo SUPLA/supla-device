@@ -60,8 +60,7 @@ void CustomTextParameter::send(Supla::WebSender* sender) {
       memset(value, 0, size + 1);
       cfg->getString(tag, value, size);
     }
-    sender->formField([&]() {
-      sender->labelFor(tag, label);
+    sender->labeledField(tag, label, [&]() {
       sender->textInput(tag, tag, value, maxSize);
     });
 

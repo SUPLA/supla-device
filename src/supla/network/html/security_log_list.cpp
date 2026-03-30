@@ -24,62 +24,57 @@
 using Supla::Html::SecurityLogList;
 
 SecurityLogList::SecurityLogList(Supla::Device::SecurityLogger* logger)
-    : HtmlElement(HTML_SECTION_LOGS), logger(logger)  {
+    : HtmlElement(HTML_SECTION_LOGS), logger(logger) {
 }
 
 SecurityLogList::~SecurityLogList() {
 }
 
 void SecurityLogList::send(Supla::WebSender* sender) {
-  sender->send("<div class=\"card\">");
-  sender->send("<header>");
-  sender->send("<h1>Security log</h1>");
-  sender->send("</header>");
-  if (logger == nullptr) {
-    sender->send("<p>No security log</p>");
-    sender->send("</div>");
-    return;
-  }
+  sender->tag("div").attr("class", "card").body([&]() {
+    sender->tag("header").body(
+        [&]() { sender->tag("h1").body("Security log"); });
 
-  sender->send("<main>");
-  sender->send("<table aria-label=\"Security log\">");
-  sender->send("<thead>");
-  sender->send("<tr>");
-  sender->send("<th class=\"col-num\">#</th>");
-  sender->send("<th class=\"col-ts\">Timestamp</th>");
-  sender->send("<th class=\"col-src\">Source</th>");
-  sender->send("<th class=\"col-msg\">Message</th>");
-  sender->send("</tr>");
-  sender->send("</thead>");
-  sender->send("<tbody id=\"log-body\">");
-
-  Supla::SecurityLogEntry *entry = nullptr;
-  int count = 0;
-  logger->prepareGetLog();
-  while ((entry = logger->getLog()) != nullptr) {
-    if (entry->isEmpty()) {
-      continue;
+    if (logger == nullptr) {
+      sender->tag("p").body("No security log");
+      return;
     }
-    count++;
-    sender->send("<tr><td>");
-    sender->send(entry->index);
-    sender->send("</td><td>");
-    sender->sendTimestamp(entry->timestamp);
-    sender->send("</td><td>");
-    sender->send(Supla::Device::SecurityLogger::getSourceName(entry->source));
-    sender->send("</td><td>");
-    sender->send(entry->log);
-    sender->send("</td></tr>");
-  }
 
-  if (count == 0) {
-    sender->send("<tr>");
-    sender->send("<td colspan=\"4\">Empty</td>");
-    sender->send("</tr>");
-  }
+    sender->tag("main").body([&]() {
+      sender->tag("table").attr("aria-label", "Security log").body([&]() {
+        sender->tag("thead").body([&]() {
+          sender->tag("tr").body([&]() {
+            sender->tag("th").attr("class", "col-num").body("#");
+            sender->tag("th").attr("class", "col-ts").body("Timestamp");
+            sender->tag("th").attr("class", "col-src").body("Source");
+            sender->tag("th").attr("class", "col-msg").body("Message");
+          });
+        });
+        sender->tag("tbody").attr("id", "log-body").body([&]() {
+          Supla::SecurityLogEntry* entry = nullptr;
+          int count = 0;
+          logger->prepareGetLog();
+          while ((entry = logger->getLog()) != nullptr) {
+            if (entry->isEmpty()) {
+              continue;
+            }
+            count++;
+            sender->tag("tr").body([&]() {
+              sender->tag("td").body([&]() { sender->send(entry->index); });
+              sender->tag("td").body(
+                  [&]() { sender->sendTimestamp(entry->timestamp); });
+              sender->tag("td").body(
+                  Supla::Device::SecurityLogger::getSourceName(entry->source));
+              sender->tag("td").body(entry->log);
+            });
+          }
 
-  sender->send("</tbody>");
-  sender->send("</table>");
-  sender->send("</main>");
-  sender->send("</div>");
+          if (count == 0) {
+            sender->tag("tr").body(
+                [&]() { sender->tag("td").attr("colspan", 4).body("Empty"); });
+          }
+        });
+      });
+    });
+  });
 }

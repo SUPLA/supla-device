@@ -43,30 +43,14 @@ void StatusLedParameters::send(Supla::WebSender* sender) {
     int8_t value = 0;
     cfg->getInt8(Supla::ConfigTag::StatusLedCfgTag, &value);
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
     const char key[] = "led";
-    sender->sendLabelFor(key, "Status LED");
-    sender->send("<div>");
-    sender->send(
-        "<select ");
-    sender->sendNameAndId(key);
-    sender->send(">"
-        "<option value=\"0\"");
-    sender->send(selected(value == 0));
-    sender->send(
-        ">ON - WHEN CONNECTED</option>"
-        "<option value=\"1\"");
-    sender->send(selected(value == 1));
-    sender->send(
-        ">OFF - WHEN CONNECTED</option>"
-        "<option value=\"2\"");
-    sender->send(selected(value == 2));
-    sender->send(
-        ">ALWAYS OFF</option></select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(key, "Status LED", [&]() {
+      sender->selectTag(key, key).body([&]() {
+        sender->selectOption(0, "ON - WHEN CONNECTED", value == 0);
+        sender->selectOption(1, "OFF - WHEN CONNECTED", value == 1);
+        sender->selectOption(2, "ALWAYS OFF", value == 2);
+      });
+    });
   }
 }
 

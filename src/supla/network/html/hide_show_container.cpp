@@ -48,29 +48,33 @@ void HideShowContainerBegin::send(Supla::WebSender* sender) {
   char idStr[50] = {};
   snprintf(idStr,
            sizeof(idStr),
-           PRIu32,
-           static_cast<uint32_t>(reinterpret_cast<uintptr_t>(this)));
+           "%" PRIuPTR,
+           reinterpret_cast<uintptr_t>(this));
 
-  sender->send("<div id=\"");
-  sender->send(idStr);
-  sender->send("_link\">");
-  sender->send("<button onclick='document.getElementById(\"");
-  sender->send(idStr);
-  sender->send(
-      "\").style.display=\"block\";"
-      "document.getElementById(\"");
-  sender->send(idStr);
-  sender->send(
-      "_link\").style.display=\"none\";"
-      "return false;'>"
-      "Show ");
-  sender->send(name);
-  sender->send(
-      "</button>"
-      "</div>"
-      "<div id=\"");
-  sender->send(idStr);
-  sender->send("\" style=\"display:none\">");
+  char linkId[60] = {};
+  snprintf(linkId, sizeof(linkId), "%s_link", idStr);
+
+  char onclick[240] = {};
+  snprintf(onclick,
+           sizeof(onclick),
+           "document.getElementById(\"%s\").style.display=\"block\";"
+           "document.getElementById(\"%s\").style.display=\"none\";"
+           "return false;",
+           idStr,
+           linkId);
+
+  auto link = sender->tag("div");
+  link.attr("id", linkId);
+  link.body([&]() {
+    auto button = sender->tag("button");
+    button.attr("onclick", onclick);
+    button.body([&]() {
+      sender->send("Show ");
+      sender->sendSafe(name ? name : "");
+    });
+  });
+
+  sender->tag("div").attr("id", idStr).attr("style", "display:none").body("");
 }
 
 void HideShowContainerEnd::send(Supla::WebSender* sender) {

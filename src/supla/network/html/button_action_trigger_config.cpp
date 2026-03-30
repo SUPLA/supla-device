@@ -70,28 +70,23 @@ void ButtonActionTriggerConfig::send(Supla::WebSender* sender) {
           buttonNumber);
     }
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key, label);
-    sender->send("<div>");
-    sender->send("<select ");
-    sender->sendNameAndId(key);
-    sender->send(">"
-        "<option value=\"0\"");
-    sender->send(selected(value == 0));
-    sender->send(
-        ">Publish based on Supla Cloud config</option>"
-        "<option value=\"1\"");
-    sender->send(selected(value == 1));
-    sender->send(
-        ">Publish all triggers, don't disable local function</option>"
-        "<option value=\"2\"");
-    sender->send(selected(value == 2));
-    sender->send(
-        ">Publish all triggers, disable local function</option></select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(key, label, [&]() {
+      auto select = sender->selectTag(key, key);
+      select.body([&]() {
+        sender->selectOption(
+            0,
+            "Publish based on Supla Cloud config",
+            value == 0);
+        sender->selectOption(
+            1,
+            "Publish all triggers, don't disable local function",
+            value == 1);
+        sender->selectOption(
+            2,
+            "Publish all triggers, disable local function",
+            value == 2);
+      });
+    });
   }
 }
 
@@ -122,5 +117,4 @@ bool ButtonActionTriggerConfig::handleResponse(const char* key,
 
 };  // namespace Html
 };  // namespace Supla
-
 

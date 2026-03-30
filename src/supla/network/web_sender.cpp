@@ -83,6 +83,17 @@ HtmlTag& HtmlTag::attr(const char* name, int value) {
   return *this;
 }
 
+HtmlTag& HtmlTag::attr(const char* name, int value, int precision) {
+  if (!finished_ && sender_ && name) {
+    sender_->send(" ");
+    sender_->send(name);
+    sender_->send("=\"");
+    sender_->send(value, precision);
+    sender_->send("\"");
+  }
+  return *this;
+}
+
 HtmlTag& HtmlTag::attrIf(const char* name, bool enabled) {
   if (enabled && sender_ && name && !finished_) {
     sender_->send(" ");
@@ -111,6 +122,10 @@ void HtmlTag::body(const char* text) {
     sender_->sendSafe(text ? text : "");
   }
   end();
+}
+
+void HtmlTag::body(char* text) {
+  body(static_cast<const char*>(text));
 }
 
 void HtmlTag::end() {
@@ -187,6 +202,62 @@ void WebSender::checkboxInput(const char* name,
   if (id) {
     input.attr("id", id);
   }
+  input.finish();
+}
+
+void WebSender::numberInput(const char* key,
+                            const NumericInputSpec& spec,
+                            const char* cssClass) {
+  numberInput(key, key, spec, cssClass);
+}
+
+void WebSender::rangeInput(const char* key,
+                           const NumericInputSpec& spec,
+                           const char* cssClass) {
+  rangeInput(key, key, spec, cssClass);
+}
+
+void WebSender::numberInput(const char* name,
+                            const char* id,
+                            const NumericInputSpec& spec,
+                            const char* cssClass) {
+  auto input = voidTag("input");
+  input.attr("type", "number");
+  if (cssClass) {
+    input.attr("class", cssClass);
+  }
+  input.attr("min", spec.min.raw, spec.min.precision);
+  input.attr("max", spec.max.raw, spec.max.precision);
+  input.attr("step", spec.step.raw, spec.step.precision);
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  input.attr("value", spec.value.raw, spec.value.precision);
+  input.finish();
+}
+
+void WebSender::rangeInput(const char* name,
+                           const char* id,
+                           const NumericInputSpec& spec,
+                           const char* cssClass) {
+  auto input = voidTag("input");
+  input.attr("type", "range");
+  if (cssClass) {
+    input.attr("class", cssClass);
+  }
+  input.attr("min", spec.min.raw, spec.min.precision);
+  input.attr("max", spec.max.raw, spec.max.precision);
+  input.attr("step", spec.step.raw, spec.step.precision);
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  input.attr("value", spec.value.raw, spec.value.precision);
   input.finish();
 }
 

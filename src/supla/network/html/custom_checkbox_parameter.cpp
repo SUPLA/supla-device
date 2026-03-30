@@ -83,20 +83,20 @@ void CustomCheckboxParameter::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     cfg->getUInt8(tag, &checkboxValue);
-    // form-field BEGIN
-    sender->send("<div class=\"form-field right-checkbox\">");
-    sender->sendLabelFor(tag, label);
-    sender->send("<label>");
-    sender->send("<span class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(checked(checkboxValue));
-    sender->sendNameAndId(tag);
-    sender->send(">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</span>");
-    sender->send("</label>");
-    sender->send("</div>");
-    // form-field END
+    sender->formField(
+        [&]() {
+          sender->labelFor(tag, label);
+          auto wrapper = sender->tag("label");
+          wrapper.body([&]() {
+            auto switchTag = sender->tag("span");
+            switchTag.attr("class", "switch");
+            switchTag.body([&]() {
+              sender->checkboxInput(tag, tag, checkboxValue);
+              sender->tag("span").attr("class", "slider").body("");
+            });
+          });
+        },
+        "form-field right-checkbox");
   }
 }
 

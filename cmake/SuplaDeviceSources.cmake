@@ -117,6 +117,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/hide_show_container.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/channel_correction.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/hvac_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/container_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/pwm_frequency_parameters.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/client.cpp
@@ -201,4 +202,3 @@ function(supla_device target_name)
 
   target_compile_definitions(${target_name} PUBLIC SUPLA_DEVICE)
 endfunction()
-

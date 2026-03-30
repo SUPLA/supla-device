@@ -191,6 +191,48 @@ void WebSender::checkboxInput(const char* name,
 }
 
 void WebSender::selectOption(const char* value,
+                             int text,
+                             bool selected) {
+  char textBuf[32];
+  int size = snprintf(textBuf, sizeof(textBuf), "%d", text);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(textBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  selectOption(value, textBuf, selected);
+}
+
+void WebSender::selectOption(int value,
+                             const char* text,
+                             bool selected) {
+  char valueBuf[32];
+  int size = snprintf(valueBuf, sizeof(valueBuf), "%d", value);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(valueBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  selectOption(valueBuf, text, selected);
+}
+
+void WebSender::selectOption(int value,
+                             int text,
+                             bool selected) {
+  char valueBuf[32];
+  char textBuf[32];
+  int size = snprintf(valueBuf, sizeof(valueBuf), "%d", value);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(valueBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  size = snprintf(textBuf, sizeof(textBuf), "%d", text);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(textBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  selectOption(valueBuf, textBuf, selected);
+}
+
+void WebSender::selectOption(const char* value,
                              const char* text,
                              bool selected) {
   auto option = tag("option");

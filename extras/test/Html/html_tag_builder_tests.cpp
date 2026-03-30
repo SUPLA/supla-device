@@ -150,6 +150,28 @@ TEST_F(HtmlTagBuilderTests, SelectInputParameterUsesBuilder) {
             "</div>");
 }
 
+TEST_F(HtmlTagBuilderTests, SelectInputSupportsOnChange) {
+  SenderMock sender;
+  sendHtml.clear();
+
+  EXPECT_CALL(sender, send(_, _))
+      .WillRepeatedly(
+          [this](const char* data, int size) { appendSentHtml(data, size); });
+
+  sender.selectTag("mode", "mode").attr("onchange", "update()").body([&]() {
+    sender.selectOption(1, 1, true);
+    sender.selectOption(2, "Two", false);
+    sender.selectOption("3", 3, false);
+  });
+
+  EXPECT_EQ(sendHtml,
+            "<select name=\"mode\" id=\"mode\" onchange=\"update()\">"
+            "<option value=\"1\" selected>1</option>"
+            "<option value=\"2\">Two</option>"
+            "<option value=\"3\">3</option>"
+            "</select>");
+}
+
 TEST_F(HtmlTagBuilderTests, WifiParametersRegressionBeforeRefactor) {
   NetworkStateResetter::reset();
 

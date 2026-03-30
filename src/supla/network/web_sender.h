@@ -182,6 +182,16 @@ class WebSender {
    */
   template <typename Fn>
   void selectInput(const char* name, const char* id, Fn&& fn) {
+    selectTag(name, id).body(fn);
+  }
+
+  /**
+   * @brief Start a `<select>` tag builder.
+   *
+   * This is the low-level variant when extra attributes such as `onchange`
+   * need to be chained manually before calling @ref HtmlTag::body().
+   */
+  HtmlTag selectTag(const char* name, const char* id) {
     auto select = tag("select");
     if (name) {
       select.attr("name", name);
@@ -189,7 +199,7 @@ class WebSender {
     if (id) {
       select.attr("id", id);
     }
-    select.body(fn);
+    return select;
   }
 
   /**
@@ -227,6 +237,9 @@ class WebSender {
   /**
    * @brief Emit a single `<option>` element.
    */
+  void selectOption(int value, int text, bool selected = false);
+  void selectOption(int value, const char* text, bool selected = false);
+  void selectOption(const char* value, int text, bool selected = false);
   void selectOption(const char* value,
                     const char* text,
                     bool selected = false);

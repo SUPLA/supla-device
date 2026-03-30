@@ -105,6 +105,8 @@ HtmlTag &amp;&#160;</td><td class="memItemRight"><b>attr</b> (const char *name, 
 <tr class="memitem:a6c0b7ba3dcf3cb73c17082e0e5aa98ac" id="r_a6c0b7ba3dcf3cb73c17082e0e5aa98ac"><td class="memItemLeft"><a id="a6c0b7ba3dcf3cb73c17082e0e5aa98ac" name="a6c0b7ba3dcf3cb73c17082e0e5aa98ac"></a>
 HtmlTag &amp;&#160;</td><td class="memItemRight"><b>attr</b> (const char *name, int value)</td></tr>
 <tr class="memdesc:a6c0b7ba3dcf3cb73c17082e0e5aa98ac"><td class="mdescLeft">&#160;</td><td class="mdescRight">Append a quoted HTML attribute with integer value. <br /></td></tr>
+<tr class="memitem:a322be605c1d799edbe49d4049ea27e3c" id="r_a322be605c1d799edbe49d4049ea27e3c"><td class="memItemLeft">HtmlTag &amp;&#160;</td><td class="memItemRight"><a class="el" href="#a322be605c1d799edbe49d4049ea27e3c">attr</a> (const char *name, int value, int precision)</td></tr>
+<tr class="memdesc:a322be605c1d799edbe49d4049ea27e3c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Append a quoted HTML attribute with formatted numeric value.  <br /></td></tr>
 <tr class="memitem:af40942a31cea4e011b92657e500d7716" id="r_af40942a31cea4e011b92657e500d7716"><td class="memItemLeft">HtmlTag &amp;&#160;</td><td class="memItemRight"><a class="el" href="#af40942a31cea4e011b92657e500d7716">attrIf</a> (const char *name, bool enabled)</td></tr>
 <tr class="memdesc:af40942a31cea4e011b92657e500d7716"><td class="mdescLeft">&#160;</td><td class="mdescRight">Append a boolean HTML attribute when enabled.  <br /></td></tr>
 <tr class="memitem:a4723e2d57fa1a70b7cad6092c6368032" id="r_a4723e2d57fa1a70b7cad6092c6368032"><td class="memItemLeft"><a id="a4723e2d57fa1a70b7cad6092c6368032" name="a4723e2d57fa1a70b7cad6092c6368032"></a>
@@ -115,6 +117,13 @@ HtmlTag &amp;&#160;</td><td class="memItemRight"><b>close</b> ()</td></tr>
 <tr class="memitem:a24639357d3595f0aee5b0eca3e310102" id="r_a24639357d3595f0aee5b0eca3e310102"><td class="memTemplParams" colspan="2">template&lt;typename Fn&gt; </td></tr>
 <tr class="memitem:a24639357d3595f0aee5b0eca3e310102 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a24639357d3595f0aee5b0eca3e310102">body</a> (Fn &amp;&amp;fn)</td></tr>
 <tr class="memdesc:a24639357d3595f0aee5b0eca3e310102"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a paired body using a callback.  <br /></td></tr>
+<tr class="memitem:afb7f22ed0f9fdbabfa418516b53b2af7" id="r_afb7f22ed0f9fdbabfa418516b53b2af7"><td class="memItemLeft"><a id="afb7f22ed0f9fdbabfa418516b53b2af7" name="afb7f22ed0f9fdbabfa418516b53b2af7"></a>
+void&#160;</td><td class="memItemRight"><b>body</b> (char *text)</td></tr>
+<tr class="memdesc:afb7f22ed0f9fdbabfa418516b53b2af7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a text body using escaped content. <br /></td></tr>
+<tr class="memitem:a08d8845968699dc82fd0bb146ef69cc0" id="r_a08d8845968699dc82fd0bb146ef69cc0"><td class="memTemplParams" colspan="2"><a id="a08d8845968699dc82fd0bb146ef69cc0" name="a08d8845968699dc82fd0bb146ef69cc0"></a>
+template&lt;size_t N&gt; </td></tr>
+<tr class="memitem:a08d8845968699dc82fd0bb146ef69cc0 template"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><b>body</b> (const char(&amp;text)[N])</td></tr>
+<tr class="memdesc:a08d8845968699dc82fd0bb146ef69cc0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a text body using escaped content. <br /></td></tr>
 <tr class="memitem:a19ca351c484f4f5e9ce6a19d3fd890b0" id="r_a19ca351c484f4f5e9ce6a19d3fd890b0"><td class="memItemLeft"><a id="a19ca351c484f4f5e9ce6a19d3fd890b0" name="a19ca351c484f4f5e9ce6a19d3fd890b0"></a>
 void&#160;</td><td class="memItemRight"><b>body</b> (const char *text)</td></tr>
 <tr class="memdesc:a19ca351c484f4f5e9ce6a19d3fd890b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Emit a text body using escaped content. <br /></td></tr>
@@ -137,6 +146,35 @@ void&#160;</td><td class="memItemRight"><b>body</b> (const char *text)</td></tr>
 <div class="line">  });</div>
 </div><!-- fragment --><p>For void elements such as <span class="tt">&lt;input&gt;</span>, use <a class="el" href="classSupla_1_1WebSender.html#a5ddf65453b6e87bc4e30944eebdab460" title="WebSender::voidTag()">WebSender::voidTag()</a>. </p>
 </div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="a322be605c1d799edbe49d4049ea27e3c" name="a322be605c1d799edbe49d4049ea27e3c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a322be605c1d799edbe49d4049ea27e3c">&#9670;&#160;</a></span>attr()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">HtmlTag &amp; Supla::HtmlTag::attr </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>name</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>value</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>precision</em></span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Append a quoted HTML attribute with formatted numeric value. </p>
+<p>This is useful for attributes such as <span class="tt">value</span>, <span class="tt">min</span>, <span class="tt">max</span> or <span class="tt">step</span> when the number must be emitted with fixed precision. </p>
+
+</div>
+</div>
 <a id="af40942a31cea4e011b92657e500d7716" name="af40942a31cea4e011b92657e500d7716"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#af40942a31cea4e011b92657e500d7716">&#9670;&#160;</a></span>attrIf()</h2>
 

@@ -14,7 +14,7 @@ var searchData=
   ['bme280_11',['BME280',['../classSupla_1_1Sensor_1_1BME280.html',1,'Supla::Sensor']]],
   ['bmp180_12',['BMP180',['../classSupla_1_1Sensor_1_1BMP180.html',1,'Supla::Sensor']]],
   ['bmp280_13',['BMP280',['../classSupla_1_1Sensor_1_1BMP280.html',1,'Supla::Sensor']]],
-  ['body_14',['body',['../classSupla_1_1HtmlTag.html#a24639357d3595f0aee5b0eca3e310102',1,'Supla::HtmlTag::body(Fn &amp;&amp;fn)'],['../classSupla_1_1HtmlTag.html#a19ca351c484f4f5e9ce6a19d3fd890b0',1,'Supla::HtmlTag::body(const char *text)']]],
+  ['body_14',['body',['../classSupla_1_1HtmlTag.html#a24639357d3595f0aee5b0eca3e310102',1,'Supla::HtmlTag::body(Fn &amp;&amp;fn)'],['../classSupla_1_1HtmlTag.html#afb7f22ed0f9fdbabfa418516b53b2af7',1,'Supla::HtmlTag::body(char *text)'],['../classSupla_1_1HtmlTag.html#a08d8845968699dc82fd0bb146ef69cc0',1,'Supla::HtmlTag::body(const char(&amp;text)[N])'],['../classSupla_1_1HtmlTag.html#a19ca351c484f4f5e9ce6a19d3fd890b0',1,'Supla::HtmlTag::body(const char *text)']]],
   ['brightnessadjuster_15',['BrightnessAdjuster',['../classSupla_1_1Control_1_1BrightnessAdjuster.html',1,'Supla::Control']]],
   ['button_16',['Button',['../classButton.html',1,'Button'],['../classSupla_1_1Control_1_1Button.html',1,'Supla::Control::Button']]],
   ['buttonactiontriggerconfig_17',['ButtonActionTriggerConfig',['../classSupla_1_1Html_1_1ButtonActionTriggerConfig.html',1,'Supla::Html']]],

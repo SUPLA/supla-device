@@ -4,5 +4,6 @@ var searchData=
   ['networkconfig_1',['NetworkConfig',['../structSupla_1_1Modbus_1_1NetworkConfig.html',1,'Supla::Modbus']]],
   ['normallyopen_2',['NormallyOpen',['../classSupla_1_1Sensor_1_1NormallyOpen.html',1,'Supla::Sensor']]],
   ['notification_3',['Notification',['../classNotification.html',1,'Notification'],['../classSupla_1_1Notification.html',1,'Supla::Notification']]],
-  ['ntc10k_4',['NTC10k',['../classSupla_1_1Sensor_1_1NTC10k.html',1,'Supla::Sensor']]]
+  ['ntc10k_4',['NTC10k',['../classSupla_1_1Sensor_1_1NTC10k.html',1,'Supla::Sensor']]],
+  ['numericinputspec_5',['NumericInputSpec',['../structSupla_1_1NumericInputSpec.html',1,'Supla']]]
 ];

@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include <string.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/config.h>
@@ -78,3 +79,5 @@ bool ButtonMulticlickParameters::handleResponse(const char* key,
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

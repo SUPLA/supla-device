@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "button_action_trigger_config.h"
 
 #include <string.h>
@@ -118,3 +119,5 @@ bool ButtonActionTriggerConfig::handleResponse(const char* key,
 };  // namespace Html
 };  // namespace Supla
 
+
+#endif  // ARDUINO_ARCH_AVR

@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "custom_text_parameter.h"
 
 #include <stdio.h>
@@ -102,3 +103,5 @@ void CustomTextParameter::setParameterValue(const char *newValue) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

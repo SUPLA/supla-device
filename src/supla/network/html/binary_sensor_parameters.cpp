@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "binary_sensor_parameters.h"
 
 #include <stdint.h>
@@ -223,3 +224,5 @@ void BinarySensorParameters::onProcessingEnd() {
   checkboxFound = false;
   configChanged = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

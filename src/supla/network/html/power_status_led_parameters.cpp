@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "power_status_led_parameters.h"
 
 #include <string.h>
@@ -81,3 +82,5 @@ bool PowerStatusLedParameters::handleResponse(const char* key,
   }
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

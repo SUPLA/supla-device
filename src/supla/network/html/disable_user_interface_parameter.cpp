@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "disable_user_interface_parameter.h"
 
 #include <SuplaDevice.h>
@@ -178,3 +179,5 @@ void DisableUserInterfaceParameter::onProcessingEnd() {
   }
   change = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

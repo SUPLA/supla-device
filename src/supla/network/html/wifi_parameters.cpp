@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include <string.h>
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
@@ -109,3 +110,5 @@ void WifiParameters::onProcessingEnd() {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

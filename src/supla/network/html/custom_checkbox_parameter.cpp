@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "custom_checkbox_parameter.h"
 
 #include <stdio.h>
@@ -121,3 +122,5 @@ void CustomCheckboxParameter::onProcessingEnd() {
   }
   checkboxFound = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "screen_delay_parameters.h"
 
 #include <string.h>
@@ -92,3 +93,5 @@ bool ScreenDelayParameters::handleResponse(const char* key,
   }
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

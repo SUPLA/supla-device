@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "screen_brightness_parameters.h"
 
 #include <string.h>
@@ -205,3 +206,5 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
 void ScreenBrightnessParameters::onProcessingEnd() {
   checkboxFound = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

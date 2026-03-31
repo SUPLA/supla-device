@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "select_cmd_input_parameter.h"
 #include <supla/network/web_sender.h>
 #include "supla/network/html/text_cmd_input_parameter.h"
@@ -40,3 +41,5 @@ void Supla::Html::SelectCmdInputParameter::send(Supla::WebSender* sender) {
     });
   });
 }
+
+#endif  // ARDUINO_ARCH_AVR

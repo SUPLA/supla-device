@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "protocol_parameters.h"
 
 #include <stdio.h>
@@ -529,3 +530,5 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

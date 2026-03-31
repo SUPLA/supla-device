@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "button_hold_time_parameters.h"
 
 #include <string.h>
@@ -70,3 +71,5 @@ bool ButtonHoldTimeParameters::handleResponse(const char* key,
   }
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

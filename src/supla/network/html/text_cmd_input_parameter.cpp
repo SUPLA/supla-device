@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "text_cmd_input_parameter.h"
 
 #include <stdio.h>
@@ -113,3 +114,5 @@ void TextCmdInputParameter::registerCmd(const char* cmd, int eventId) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

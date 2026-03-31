@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "roller_shutter_parameters.h"
 
 #include <stdio.h>
@@ -309,3 +310,5 @@ bool RollerShutterParameters::handleResponse(const char* key,
 
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

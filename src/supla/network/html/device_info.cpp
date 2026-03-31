@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include <SuplaDevice.h>
 #include <string.h>
 #include <supla/channel.h>
@@ -98,3 +99,5 @@ void DeviceInfo::send(Supla::WebSender *sender) {
 }
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

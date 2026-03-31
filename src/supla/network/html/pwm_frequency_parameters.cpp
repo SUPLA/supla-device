@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "pwm_frequency_parameters.h"
 
 #include <stdint.h>
@@ -98,3 +99,5 @@ bool PwmFrequencyParameters::handleResponse(const char* key,
 
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

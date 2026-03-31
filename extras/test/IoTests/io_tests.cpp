@@ -17,34 +17,9 @@
 #include <arduino_mock.h>
 #include <gtest/gtest.h>
 #include <supla/io.h>
+#include <supla_io_mock.h>
 
 using ::testing::Return;
-
-class CustomIoMock : public Supla::Io::Base {
- public:
-  MOCK_METHOD(void,
-              customPinMode,
-              (int channelNumber, uint8_t pin, uint8_t mode));
-  MOCK_METHOD(int, customDigitalRead, (int channelNumber, uint8_t pin));
-  MOCK_METHOD(void,
-              customDigitalWrite,
-              (int channelNumber, uint8_t pin, uint8_t val));
-  MOCK_METHOD(unsigned int,
-              customPulseIn,
-              (int channelNumber,
-               uint8_t pin,
-               uint8_t value,
-               uint64_t timeoutMicro));
-  MOCK_METHOD(void,
-              customAnalogWrite,
-              (int channelNumber, uint8_t pin, int val));
-  MOCK_METHOD(int, customAnalogRead, (int channelNumber, uint8_t pin));
-  MOCK_METHOD(void,
-              customAttachInterrupt,
-              (uint8_t pin, void (*func)(void), int mode));
-  MOCK_METHOD(void, customDetachInterrupt, (uint8_t pin));
-  MOCK_METHOD(uint8_t, customPinToInterrupt, (uint8_t pin));
-};
 
 TEST(IoTests, PinMode) {
   DigitalInterfaceMock ioMock;
@@ -151,7 +126,7 @@ TEST(IoTests, IoPinDefaultsAndFlags) {
 }
 
 TEST(IoTests, IoPinDelegatesToCustomIo) {
-  CustomIoMock ioMock;
+  SuplaIoMock ioMock(true);
   ::testing::InSequence seq;
   Supla::Io::IoPin pin(12, &ioMock);
 
@@ -176,7 +151,7 @@ TEST(IoTests, IoPinDelegatesToCustomIo) {
 }
 
 TEST(IoTests, IoPinActiveLowInvertsReadAndWriteLevels) {
-  CustomIoMock ioMock;
+  SuplaIoMock ioMock(true);
   ::testing::InSequence seq;
   Supla::Io::IoPin pin(13, &ioMock);
 
@@ -194,9 +169,9 @@ TEST(IoTests, IoPinActiveLowInvertsReadAndWriteLevels) {
   pin.writeInactive(9);
 }
 
-TEST(IoTest, OperationsWithCustomIoInteface) {
+TEST(IoTests, OperationsWithCustomIoInteface) {
   DigitalInterfaceMock hwInterfaceMock;
-  CustomIoMock ioMock;
+  SuplaIoMock ioMock(true);
 
   EXPECT_CALL(hwInterfaceMock, pinMode).Times(0);
   EXPECT_CALL(hwInterfaceMock, digitalWrite).Times(0);
@@ -210,9 +185,10 @@ TEST(IoTest, OperationsWithCustomIoInteface) {
   EXPECT_EQ(Supla::Io::digitalRead(11), HIGH);
   Supla::Io::digitalWrite(13, HIGH);
 }
-TEST(IoTest, OperationsWithCustomIoIntefaceWithChannel) {
+
+TEST(IoTests, OperationsWithCustomIoIntefaceWithChannel) {
   DigitalInterfaceMock hwInterfaceMock;
-  CustomIoMock ioMock;
+  SuplaIoMock ioMock(true);
 
   // Custom io interface should not call arduino's methods
   EXPECT_CALL(hwInterfaceMock, pinMode).Times(0);

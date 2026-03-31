@@ -27,6 +27,7 @@
 #include <supla/control/relay.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
+#include <supla_io_mock.h>
 
 using ::testing::_;
 using ::testing::AtLeast;
@@ -71,36 +72,8 @@ class RelayFixture : public testing::Test {
   }
 };
 
-class RelayIoMock : public Supla::Io::Base {
- public:
-  RelayIoMock() : Supla::Io::Base(false) {
-  }
-  MOCK_METHOD(void,
-              customPinMode,
-              (int channelNumber, uint8_t pin, uint8_t mode));
-  MOCK_METHOD(int, customDigitalRead, (int channelNumber, uint8_t pin));
-  MOCK_METHOD(void,
-              customDigitalWrite,
-              (int channelNumber, uint8_t pin, uint8_t val));
-  MOCK_METHOD(unsigned int,
-              customPulseIn,
-              (int channelNumber,
-               uint8_t pin,
-               uint8_t value,
-               uint64_t timeoutMicro));
-  MOCK_METHOD(void,
-              customAnalogWrite,
-              (int channelNumber, uint8_t pin, int val));
-  MOCK_METHOD(int, customAnalogRead, (int channelNumber, uint8_t pin));
-  MOCK_METHOD(void,
-              customAttachInterrupt,
-              (uint8_t pin, void (*func)(void), int mode));
-  MOCK_METHOD(void, customDetachInterrupt, (uint8_t pin));
-  MOCK_METHOD(uint8_t, customPinToInterrupt, (uint8_t pin));
-};
-
 TEST_F(RelayFixture, IoPinConstructorUsesConfiguredIoAndPolarity) {
-  RelayIoMock outputIo;
+  SuplaIoMock outputIo;
   Supla::Io::IoPin outputPin(11, &outputIo);
   outputPin.setActiveHigh(false);
   outputPin.setMode(OUTPUT);
@@ -115,7 +88,7 @@ TEST_F(RelayFixture, IoPinConstructorUsesConfiguredIoAndPolarity) {
 }
 
 TEST_F(RelayFixture, UnsetIoPinDoesNothing) {
-  RelayIoMock outputIo;
+  SuplaIoMock outputIo;
   Supla::Io::IoPin outputPin;
   outputPin.io = &outputIo;
 

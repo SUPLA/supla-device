@@ -28,6 +28,7 @@
 #include <supla/control/button.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
+#include <supla_io_mock.h>
 
 #include <cstring>
 
@@ -74,37 +75,9 @@ class BistableRelayFixture : public testing::Test {
   }
 };
 
-class BistableRelayIoMock : public Supla::Io::Base {
- public:
-  BistableRelayIoMock() : Supla::Io::Base(false) {
-  }
-  MOCK_METHOD(void,
-              customPinMode,
-              (int channelNumber, uint8_t pin, uint8_t mode));
-  MOCK_METHOD(int, customDigitalRead, (int channelNumber, uint8_t pin));
-  MOCK_METHOD(void,
-              customDigitalWrite,
-              (int channelNumber, uint8_t pin, uint8_t val));
-  MOCK_METHOD(unsigned int,
-              customPulseIn,
-              (int channelNumber,
-               uint8_t pin,
-               uint8_t value,
-               uint64_t timeoutMicro));
-  MOCK_METHOD(void,
-              customAnalogWrite,
-              (int channelNumber, uint8_t pin, int val));
-  MOCK_METHOD(int, customAnalogRead, (int channelNumber, uint8_t pin));
-  MOCK_METHOD(void,
-              customAttachInterrupt,
-              (uint8_t pin, void (*func)(void), int mode));
-  MOCK_METHOD(void, customDetachInterrupt, (uint8_t pin));
-  MOCK_METHOD(uint8_t, customPinToInterrupt, (uint8_t pin));
-};
-
 TEST_F(BistableRelayFixture, IoPinConstructorUsesSeparateOutputAndStatusIo) {
-  BistableRelayIoMock outputIo;
-  BistableRelayIoMock statusIo;
+  SuplaIoMock outputIo;
+  SuplaIoMock statusIo;
   Supla::Io::IoPin outputPin(4, &outputIo);
   outputPin.setActiveHigh(true);
   outputPin.setMode(OUTPUT);
@@ -127,8 +100,8 @@ TEST_F(BistableRelayFixture, IoPinConstructorUsesSeparateOutputAndStatusIo) {
 }
 
 TEST_F(BistableRelayFixture, UnsetIoPinsDoNothing) {
-  BistableRelayIoMock outputIo;
-  BistableRelayIoMock statusIo;
+  SuplaIoMock outputIo;
+  SuplaIoMock statusIo;
   Supla::Io::IoPin outputPin;
   Supla::Io::IoPin statusPin;
   outputPin.io = &outputIo;

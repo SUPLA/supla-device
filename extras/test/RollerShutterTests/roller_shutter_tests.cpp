@@ -24,11 +24,28 @@
 #include <supla/device/register_device.h>
 
 #include <supla/control/roller_shutter.h>
+#include <supla/control/bistable_roller_shutter.h>
+#include <supla/control/tripple_button_roller_shutter.h>
 #include <supla/actions.h>
+#include <supla_io_mock.h>
 #include "gmock/gmock.h"
 
 using ::testing::_;
 using ::testing::AtLeast;
+using ::testing::Return;
+
+namespace {
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
+                               int pin,
+                               bool highIsOn) {
+  Supla::Io::IoPin result(pin, io);
+  result.setActiveHigh(highIsOn);
+  result.setMode(OUTPUT);
+  return result;
+}
+
+}  // namespace
 
 class RollerShutterFixture : public testing::Test {
  public:
@@ -98,6 +115,33 @@ TEST_F(RollerShutterFixture, onInitLowIsOn) {
   EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
   EXPECT_CALL(ioMock, digitalWrite(gpioDown, 1));
   EXPECT_CALL(ioMock, pinMode(gpioDown,  OUTPUT));
+
+  rs.onInit();
+}
+
+TEST_F(RollerShutterFixture, ioPinConstructorUsesSeparateIo) {
+  SuplaIoMock ioMockUp;
+  SuplaIoMock ioMockDown;
+
+  Supla::Control::RollerShutter rs(
+      MakeOutputPin(&ioMockUp, gpioUp, false),
+      MakeOutputPin(&ioMockDown, gpioDown, true));
+
+  ::testing::InSequence seq;
+
+  EXPECT_CALL(ioMockUp, customDigitalWrite(0, gpioUp, HIGH));
+  EXPECT_CALL(ioMockUp, customPinMode(0, gpioUp, OUTPUT));
+  EXPECT_CALL(ioMockDown, customDigitalWrite(0, gpioDown, LOW));
+  EXPECT_CALL(ioMockDown, customPinMode(0, gpioDown, OUTPUT));
+
+  rs.onInit();
+}
+
+TEST_F(RollerShutterFixture, unsetIoPinsDoNothing) {
+  Supla::Control::RollerShutter rs;
+
+  EXPECT_CALL(ioMock, digitalWrite(_, _)).Times(0);
+  EXPECT_CALL(ioMock, pinMode(_, _)).Times(0);
 
   rs.onInit();
 }
@@ -181,8 +225,6 @@ TEST_F(RollerShutterFixture, notCalibratedStartup) {
     time.advance(100);
   }
 }
-
-using ::testing::Return;
 
 TEST_F(RollerShutterFixture, movementTests) {
   StorageMock storage;
@@ -305,6 +347,46 @@ TEST_F(RollerShutterFixture, movementTests) {
   }
 
   EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(0)[0], 0);
+}
+
+TEST_F(RollerShutterFixture, bistableIoPinConstructorUsesSeparateIo) {
+  SuplaIoMock ioMockUp;
+  SuplaIoMock ioMockDown;
+
+  Supla::Control::BistableRollerShutter rs(
+      MakeOutputPin(&ioMockUp, gpioUp, true),
+      MakeOutputPin(&ioMockDown, gpioDown, false));
+
+  ::testing::InSequence seq;
+
+  EXPECT_CALL(ioMockUp, customDigitalWrite(0, gpioUp, LOW));
+  EXPECT_CALL(ioMockUp, customPinMode(0, gpioUp, OUTPUT));
+  EXPECT_CALL(ioMockDown, customDigitalWrite(0, gpioDown, HIGH));
+  EXPECT_CALL(ioMockDown, customPinMode(0, gpioDown, OUTPUT));
+
+  rs.onInit();
+}
+
+TEST_F(RollerShutterFixture, trippleButtonIoPinConstructorUsesSeparateIo) {
+  SuplaIoMock ioMockUp;
+  SuplaIoMock ioMockDown;
+  SuplaIoMock ioMockStop;
+
+  Supla::Control::TrippleButtonRollerShutter rs(
+      MakeOutputPin(&ioMockUp, gpioUp, true),
+      MakeOutputPin(&ioMockDown, gpioDown, true),
+      MakeOutputPin(&ioMockStop, 3, false));
+
+  ::testing::InSequence seq;
+
+  EXPECT_CALL(ioMockStop, customDigitalWrite(0, 3, HIGH));
+  EXPECT_CALL(ioMockStop, customPinMode(0, 3, OUTPUT));
+  EXPECT_CALL(ioMockUp, customDigitalWrite(0, gpioUp, LOW));
+  EXPECT_CALL(ioMockUp, customPinMode(0, gpioUp, OUTPUT));
+  EXPECT_CALL(ioMockDown, customDigitalWrite(0, gpioDown, LOW));
+  EXPECT_CALL(ioMockDown, customPinMode(0, gpioDown, OUTPUT));
+
+  rs.onInit();
 }
 
 TEST_F(RollerShutterFixture, movementByServerTests) {

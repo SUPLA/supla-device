@@ -82,7 +82,7 @@ TEST(ToolsTests, hexStringToIntTests) {
   hexStringToInt("FFFFFFFF2", 9);
 }
 
-TEST(ToolsTest, urlDecodeInplaceTests) {
+TEST(ToolsTests, urlDecodeInplaceTests) {
   {
     char buf[] = "%61la ma+supla%1";
     urlDecodeInplace(buf, sizeof(buf) - 1);
@@ -112,10 +112,9 @@ TEST(ToolsTest, urlDecodeInplaceTests) {
     urlDecodeInplace(buf, sizeof(buf) - 1);
     EXPECT_STREQ(buf, "ala ma supla");
   }
-
 }
 
-TEST(ToolsTest, urlEncodeTests) {
+TEST(ToolsTests, urlEncodeTests) {
   {
     char input[] = "ala ma supla";
     char output[1024] = {};
@@ -135,7 +134,9 @@ TEST(ToolsTest, urlEncodeTests) {
     char input[] = "~@#$   +~-';][/., ala MA supla";
     char output[1024] = {};
     EXPECT_EQ(urlEncode(input, output, 1024), 62);
-    EXPECT_STREQ(output, "~%40%23%24%20%20%20%2B~-%27%3B%5D%5B%2F.%2C%20ala%20MA%20supla");
+    EXPECT_STREQ(
+        output,
+        "~%40%23%24%20%20%20%2B~-%27%3B%5D%5B%2F.%2C%20ala%20MA%20supla");
   }
 
   {
@@ -172,10 +173,9 @@ TEST(ToolsTest, urlEncodeTests) {
     EXPECT_EQ(urlEncode(input, output, 1024), 0);
     EXPECT_STREQ(output, "");
   }
-
 }
 
-TEST(ToolsTest, strncmpInsensitiveTests) {
+TEST(ToolsTests, strncmpInsensitiveTests) {
   {
     char s1[] = "ala ma supla";
     char s2[] = "test";
@@ -311,7 +311,7 @@ TEST(ToolsTests, stringToIntTests) {
   EXPECT_EQ(stringToInt("-1-"), 0);
 }
 
-TEST(ToolsTest, stringToColorTests) {
+TEST(ToolsTests, stringToColorTests) {
   uint8_t red = 0;
   uint8_t green = 0;
   uint8_t blue = 0;
@@ -364,7 +364,7 @@ TEST(ToolsTest, stringToColorTests) {
   EXPECT_EQ(blue, 255);
 }
 
-TEST(ToolsTest, rssiToSignalStrengthTests) {
+TEST(ToolsTests, rssiToSignalStrengthTests) {
   EXPECT_EQ(Supla::rssiToSignalStrength(0), 100);
   EXPECT_EQ(Supla::rssiToSignalStrength(10), 100);
   EXPECT_EQ(Supla::rssiToSignalStrength(-100), 0);
@@ -386,7 +386,7 @@ TEST(ToolsTest, rssiToSignalStrengthTests) {
   EXPECT_EQ(Supla::rssiToSignalStrength(-100, -150), 50);
 }
 
-TEST(ToolsTest, compareSemVerTests) {
+TEST(ToolsTests, compareSemVerTests) {
   EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.0.0"), 0);
   EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.0.1"), -1);
   EXPECT_EQ(Supla::compareSemVer("1.0.0", "1.1.0"), -1);

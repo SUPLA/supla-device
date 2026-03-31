@@ -30,25 +30,48 @@
 namespace Supla {
 namespace Control {
 
+namespace {
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
+                               int pin,
+                               bool highIsOn) {
+  Supla::Io::IoPin result(pin, io);
+  result.setActiveHigh(highIsOn);
+  result.setMode(OUTPUT);
+  return result;
+}
+
+}  // namespace
+
 RollerShutter::RollerShutter(Supla::Io::Base *io,
                              int pinUp,
                              int pinDown,
                              bool highIsOn,
                              bool tiltFunctionsEnabled)
     : RollerShutter(pinUp, pinDown, highIsOn, tiltFunctionsEnabled) {
-  this->io = io;
+  this->pinUp.io = io;
+  this->pinDown.io = io;
+}
+
+RollerShutter::RollerShutter(Supla::Io::IoPin pinUp,
+                             Supla::Io::IoPin pinDown,
+                             bool tiltFunctionsEnabled)
+    : RollerShutterInterface(tiltFunctionsEnabled),
+      pinUp(pinUp),
+      pinDown(pinDown) {
+  this->pinUp.setMode(OUTPUT);
+  this->pinDown.setMode(OUTPUT);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
 }
 
 RollerShutter::RollerShutter(int pinUp,
                              int pinDown,
                              bool highIsOn,
                              bool tiltFunctionsEnabled)
-    : RollerShutterInterface(tiltFunctionsEnabled),
-      pinUp(pinUp),
-      pinDown(pinDown),
-      highIsOn(highIsOn) {
-  channel.setFlag(SUPLA_CHANNEL_FLAG_RS_SBS_AND_STOP_ACTIONS);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_CALCFG_RECALIBRATE);
+    : RollerShutter(MakeOutputPin(nullptr, pinUp, highIsOn),
+                    MakeOutputPin(nullptr, pinDown, highIsOn),
+                    tiltFunctionsEnabled) {
 }
 
 void RollerShutter::onInit() {
@@ -59,21 +82,20 @@ void RollerShutter::onInit() {
 }
 
 void RollerShutter::setPinUp(int pin) {
-  pinUp = pin;
+  pinUp.setPin(pin);
+  pinUp.setMode(OUTPUT);
   initGpio(pinUp);
 }
 
 void RollerShutter::setPinDown(int pin) {
-  pinDown = pin;
+  pinDown.setPin(pin);
+  pinDown.setMode(OUTPUT);
   initGpio(pinDown);
 }
 
-void RollerShutter::initGpio(int gpio) {
-  if (gpio >= 0) {
-    Supla::Io::digitalWrite(
-        channel.getChannelNumber(), gpio, highIsOn ? LOW : HIGH, io);
-    Supla::Io::pinMode(channel.getChannelNumber(), gpio, OUTPUT, io);
-  }
+void RollerShutter::initGpio(const Supla::Io::IoPin &pin) {
+  pin.writeInactive(channel.getChannelNumber());
+  pin.pinMode(channel.getChannelNumber());
 }
 
 void RollerShutter::stopMovement() {
@@ -86,39 +108,19 @@ void RollerShutter::stopMovement() {
 }
 
 void RollerShutter::relayDownOn() {
-  if (pinUp >= 0 && pinDown >= 0) {
-    Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            pinDown,
-                            highIsOn ? HIGH : LOW,
-                            io);
-  }
+  pinDown.writeActive(channel.getChannelNumber());
 }
 
 void RollerShutter::relayUpOn() {
-  if (pinUp >= 0 && pinDown >= 0) {
-    Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            pinUp,
-                            highIsOn ? HIGH : LOW,
-                            io);
-  }
+  pinUp.writeActive(channel.getChannelNumber());
 }
 
 void RollerShutter::relayDownOff() {
-  if (pinUp >= 0 && pinDown >= 0) {
-    Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            pinDown,
-                            highIsOn ? LOW : HIGH,
-                            io);
-  }
+  pinDown.writeInactive(channel.getChannelNumber());
 }
 
 void RollerShutter::relayUpOff() {
-  if (pinUp >= 0 && pinDown >= 0) {
-    Supla::Io::digitalWrite(channel.getChannelNumber(),
-                            pinUp,
-                            highIsOn ? LOW : HIGH,
-                            io);
-  }
+  pinUp.writeInactive(channel.getChannelNumber());
 }
 
 void RollerShutter::startClosing() {

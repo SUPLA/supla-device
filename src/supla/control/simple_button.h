@@ -21,22 +21,19 @@
 
 #include <stdint.h>
 
+#include "../io.h"
 #include "../element.h"
 #include "../events.h"
 #include "../local_action.h"
 
 namespace Supla {
-
-namespace Io {
-class Base;
-}
-
 namespace Control {
 
 enum StateResults { PRESSED, RELEASED, TO_PRESSED, TO_RELEASED };
 
 class ButtonState {
  public:
+  explicit ButtonState(Supla::Io::IoPin inputPin);
   ButtonState(Supla::Io::Base *io, int pin, bool pullUp, bool invertLogic);
   ButtonState(int pin, bool pullUp, bool invertLogic);
   enum StateResults update();
@@ -52,21 +49,19 @@ class ButtonState {
  protected:
   int valueOnPress() const;
 
-  Supla::Io::Base *io = nullptr;
+  Supla::Io::IoPin inputPin;
 
   uint16_t debounceDelayMs = 50;
   uint16_t swNoiseFilterDelayMs = 20;
   uint32_t debounceTimestampMs = 0;
   uint32_t filterTimestampMs = 0;
-  int16_t pin = -1;
   int8_t newStatusCandidate = 0;
   int8_t prevState = -1;
-  bool pullUp = false;
-  bool invertLogic = false;
 };
 
 class SimpleButton : public Element, public LocalAction {
  public:
+  explicit SimpleButton(Supla::Io::IoPin inputPin);
   explicit SimpleButton(Supla::Io::Base *io,
                         int pin,
                         bool pullUp = false,

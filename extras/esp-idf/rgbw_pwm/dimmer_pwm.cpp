@@ -20,7 +20,7 @@
 
 using Supla::Control::DimmerLedEspIdf;
 
-DimmerLedEspIdf::DimmerLedEspIdf(Supla::Control::RGBWLedsEspIdf *parent,
+DimmerLedEspIdf::DimmerLedEspIdf(Supla::Control::RGBWPwmBase *parent,
                                  int ledcTimerId,
                                  int gpio1,
                                  int gpio2,
@@ -31,4 +31,3 @@ DimmerLedEspIdf::DimmerLedEspIdf(Supla::Control::RGBWLedsEspIdf *parent,
   channel.setType(SUPLA_CHANNELTYPE_DIMMER);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMER);
 }
-

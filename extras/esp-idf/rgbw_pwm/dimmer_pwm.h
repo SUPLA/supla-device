@@ -24,7 +24,7 @@
 namespace Supla::Control {
 class DimmerLedEspIdf : public RGBWLedsEspIdf {
  public:
-  DimmerLedEspIdf(Supla::Control::RGBWLedsEspIdf *parent,
+  DimmerLedEspIdf(Supla::Control::RGBWPwmBase *parent,
                   int ledcTimerId,
                   int gpio1,
                   int gpio2 = -1,
@@ -36,4 +36,3 @@ class DimmerLedEspIdf : public RGBWLedsEspIdf {
 }  // namespace Supla::Control
 
 #endif  // EXTRAS_ESP_IDF_RGBW_PWM_DIMMER_PWM_H_
-

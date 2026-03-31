@@ -102,6 +102,7 @@ COMPONENT_OBJS := \
   ../../../src/supla/control/rgb_base.o \
   ../../../src/supla/control/rgb_leds.o \
   ../../../src/supla/control/rgbw_base.o \
+  ../../../src/supla/control/rgbw_pwm_base.o \
   ../../../src/supla/control/rgbw_leds.o \
   ../../../src/supla/control/roller_shutter.o \
   ../../../src/supla/control/roller_shutter_interface.o \

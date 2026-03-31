@@ -75,6 +75,58 @@ uint8_t digitalPinToInterrupt(uint8_t pin) {
 
 namespace Supla {
 namespace Io {
+void IoPin::pinMode(int channelNumber) const {
+  if (isSet()) {
+    uint8_t effectiveMode = mode;
+    if (effectiveMode == INPUT && isPullUp()) {
+      effectiveMode = INPUT_PULLUP;
+    }
+    Supla::Io::pinMode(channelNumber,
+                       static_cast<uint8_t>(pin),
+                       effectiveMode,
+                       io);
+  }
+}
+
+int IoPin::digitalRead(int channelNumber) const {
+  if (!isSet()) {
+    return 0;
+  }
+  return Supla::Io::digitalRead(channelNumber,
+                                static_cast<uint8_t>(pin),
+                                io);
+}
+
+void IoPin::digitalWrite(uint8_t value, int channelNumber) const {
+  if (isSet()) {
+    Supla::Io::digitalWrite(channelNumber,
+                            static_cast<uint8_t>(pin),
+                            value,
+                            io);
+  }
+}
+
+void IoPin::analogWrite(int value, int channelNumber) const {
+  if (isSet()) {
+    Supla::Io::analogWrite(channelNumber,
+                           static_cast<uint8_t>(pin),
+                           value,
+                           io);
+  }
+}
+
+void IoPin::writeActive(int channelNumber) const {
+  digitalWrite(isActiveHigh() ? 1 : 0, channelNumber);
+}
+
+void IoPin::writeInactive(int channelNumber) const {
+  digitalWrite(isActiveHigh() ? 0 : 1, channelNumber);
+}
+
+bool IoPin::readActive(int channelNumber) const {
+  return digitalRead(channelNumber) == (isActiveHigh() ? 1 : 0);
+}
+
 void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io) {
   return pinMode(-1, pin, mode, io);
 }

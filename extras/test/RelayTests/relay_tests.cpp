@@ -16,23 +16,24 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <arduino_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
+#include <protocol_layer_mock.h>
 #include <simple_time.h>
 #include <storage_mock.h>
 #include <supla/actions.h>
 #include <supla/channel.h>
 #include <supla/control/relay.h>
-#include <protocol_layer_mock.h>
 #include <supla/device/register_device.h>
+#include <supla/io.h>
 
 using ::testing::_;
-using ::testing::Return;
-using ::testing::SetArgPointee;
+using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::Pointee;
-using ::testing::AtLeast;
+using ::testing::Return;
+using ::testing::SetArgPointee;
 
 class RelayFixture : public testing::Test {
  public:
@@ -63,12 +64,68 @@ class RelayFixture : public testing::Test {
     if (func == SUPLA_CHANNELFNC_STAIRCASETIMER) {
       result.ConfigSize = sizeof(TChannelConfig_StaircaseTimer);
       TChannelConfig_StaircaseTimer *config =
-        reinterpret_cast<TChannelConfig_StaircaseTimer *>(&result.Config);
+          reinterpret_cast<TChannelConfig_StaircaseTimer *>(&result.Config);
       config->TimeMS = timeMs;
     }
     r->handleChannelConfig(&result, false);
   }
 };
+
+class RelayIoMock : public Supla::Io::Base {
+ public:
+  RelayIoMock() : Supla::Io::Base(false) {
+  }
+  MOCK_METHOD(void,
+              customPinMode,
+              (int channelNumber, uint8_t pin, uint8_t mode));
+  MOCK_METHOD(int, customDigitalRead, (int channelNumber, uint8_t pin));
+  MOCK_METHOD(void,
+              customDigitalWrite,
+              (int channelNumber, uint8_t pin, uint8_t val));
+  MOCK_METHOD(unsigned int,
+              customPulseIn,
+              (int channelNumber,
+               uint8_t pin,
+               uint8_t value,
+               uint64_t timeoutMicro));
+  MOCK_METHOD(void,
+              customAnalogWrite,
+              (int channelNumber, uint8_t pin, int val));
+  MOCK_METHOD(int, customAnalogRead, (int channelNumber, uint8_t pin));
+  MOCK_METHOD(void,
+              customAttachInterrupt,
+              (uint8_t pin, void (*func)(void), int mode));
+  MOCK_METHOD(void, customDetachInterrupt, (uint8_t pin));
+  MOCK_METHOD(uint8_t, customPinToInterrupt, (uint8_t pin));
+};
+
+TEST_F(RelayFixture, IoPinConstructorUsesConfiguredIoAndPolarity) {
+  RelayIoMock outputIo;
+  Supla::Io::IoPin outputPin(11, &outputIo);
+  outputPin.setActiveHigh(false);
+  outputPin.setMode(OUTPUT);
+
+  EXPECT_CALL(outputIo, customPinMode(0, 11, OUTPUT));
+  EXPECT_CALL(outputIo, customDigitalWrite(0, 11, HIGH)).Times(2);
+  EXPECT_CALL(outputIo, customDigitalRead(0, 11)).WillOnce(Return(HIGH));
+
+  Supla::Control::Relay relay(outputPin);
+  relay.onInit();
+  EXPECT_FALSE(relay.isOn());
+}
+
+TEST_F(RelayFixture, UnsetIoPinDoesNothing) {
+  RelayIoMock outputIo;
+  Supla::Io::IoPin outputPin;
+  outputPin.io = &outputIo;
+
+  EXPECT_CALL(outputIo, customPinMode).Times(0);
+  EXPECT_CALL(outputIo, customDigitalRead).Times(0);
+  EXPECT_CALL(outputIo, customDigitalWrite).Times(0);
+
+  Supla::Control::Relay relay(outputPin);
+  relay.onInit();
+}
 
 TEST_F(RelayFixture, basicTests) {
   int gpio1 = 1;
@@ -93,8 +150,8 @@ TEST_F(RelayFixture, basicTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number1), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number1),
                    &value,
@@ -108,8 +165,8 @@ TEST_F(RelayFixture, basicTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number2), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number2),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number2),
                    &value,
@@ -123,8 +180,8 @@ TEST_F(RelayFixture, basicTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number3), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number3),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number3),
                    &value,
@@ -148,14 +205,14 @@ TEST_F(RelayFixture, basicTests) {
   r1.disableCountdownTimerFunction();
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_FALSE(r1.isCountdownTimerFunctionEnabled());
   r1.enableCountdownTimerFunction();
   EXPECT_TRUE(r1.isCountdownTimerFunctionEnabled());
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
 TEST_F(RelayFixture, stateOnInitTests) {
@@ -174,13 +231,13 @@ TEST_F(RelayFixture, stateOnInitTests) {
 
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpio1Value = 0;
   int gpio2Value = 0;
@@ -263,13 +320,13 @@ TEST_F(RelayFixture, startupTestsForLight) {
   // data is read from storage, but it is not used by Relay
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -335,9 +392,10 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
 
   char value[SUPLA_CHANNELVALUE_SIZE] = {};
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_ON);
   for (int i = 0; i < 10; i++) {
@@ -348,9 +406,10 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_OFF);
   for (int i = 0; i < 10; i++) {
@@ -361,9 +420,10 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 0);
 
   value[0] = 0;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_ON);
   for (int i = 0; i < 10; i++) {
@@ -374,9 +434,10 @@ TEST_F(RelayFixture, startupTestsForLight) {
   EXPECT_EQ(gpioValue, 1);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.turnOff();
   EXPECT_EQ(gpioValue, 0);
@@ -853,13 +914,13 @@ TEST_F(RelayFixture, durationMsTests) {
   // duration should be ignored, becuase keepTurnOnDuration is not enabled
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio1))
@@ -889,7 +950,6 @@ TEST_F(RelayFixture, durationMsTests) {
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 1);
-
 
   r1.turnOn(1000);  // turn on for 1000 ms
   EXPECT_EQ(gpioValue, 1);
@@ -1081,13 +1141,13 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {
 
   unsigned char storedRelayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio1))
@@ -1170,13 +1230,13 @@ TEST_F(RelayFixture, keepTurnOnDurationRestoreOffTests) {
 
   unsigned char storedRelayFlags = RELAY_FLAGS_STAIRCASE;  // ON flag is not set
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio1))
@@ -1246,13 +1306,13 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOn) {
   // data is read from storage
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1304,13 +1364,13 @@ TEST_F(RelayFixture, startupTestsForLightRestoreTimerOff) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1362,13 +1422,13 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOn) {
   // data is read from storage
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1410,13 +1470,13 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOff) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1456,31 +1516,31 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
 
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    // initial read in onLoadState
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // initial read in onLoadState
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    // read before first write
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // read before first write
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    // read before second write
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // read before second write
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 900;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    // initial read in onLoadState
-    .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
-    // read before first write
-    .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
-    // read before second write
-    .WillOnce(DoAll(SetArgPointee<1>(1), Return(1)));
+      // initial read in onLoadState
+      .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+      // read before first write
+      .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+      // read before second write
+      .WillOnce(DoAll(SetArgPointee<1>(1), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1500,7 +1560,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   uint8_t relayFlags = 1;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 900);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 900);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1509,7 +1569,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForLight) {
   relayFlags = 0;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 0);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 0);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1567,13 +1627,13 @@ TEST_F(RelayFixture, startupTestsForLightRestoreOnButConfiguredToOff) {
   // data is read from storage
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 2500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1612,25 +1672,25 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
 
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 900;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
-    .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
-    .WillOnce(DoAll(SetArgPointee<1>(1), Return(1)));
+      .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+      .WillOnce(DoAll(SetArgPointee<1>(0), Return(1)))
+      .WillOnce(DoAll(SetArgPointee<1>(1), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1650,7 +1710,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   uint8_t relayFlags = 1;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 900);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 900);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1659,7 +1719,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForPowerSwitch) {
   relayFlags = 0;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 0);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 0);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1719,13 +1779,13 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1745,7 +1805,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   uint8_t relayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 4000);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 4000);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1754,7 +1814,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForStaircaseTimer) {
   relayFlags = RELAY_FLAGS_STAIRCASE;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 4000);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 4000);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1813,13 +1873,13 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   // data is read from storage
   unsigned char storedRelayFlags = 0;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -1839,7 +1899,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   uint8_t relayFlags = RELAY_FLAGS_ON | RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 500);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1848,7 +1908,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunction) {
   relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 500);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -1954,22 +2014,22 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
 
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -2007,7 +2067,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoad) {
   uint8_t relayFlags = RELAY_FLAGS_IMPULSE_FUNCTION | RELAY_FLAGS_ON;
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 500);
         return 4;
       });
   EXPECT_CALL(storage, writeStorage(_, Pointee(relayFlags), 1))
@@ -2080,26 +2140,26 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
 
   // data is read from storage
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    // Load state storage
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // Load state storage
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    // First write, no change
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // First write, no change
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    // Second write, change to 500, but we read previous value
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // Second write, change to 500, but we read previous value
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 600;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       })
-    // Last write, no change
-    .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+      // Last write, no change
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 500;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
@@ -2129,7 +2189,7 @@ TEST_F(RelayFixture, checkTimerStateStorageForImpulseFunctionOnLoadNoRestore) {
   // save
   EXPECT_CALL(storage, writeStorage(_, _, 4))
       .WillOnce([](uint32_t, const unsigned char *value, int32_t) {
-        EXPECT_EQ(*reinterpret_cast<const uint32_t*>(value), 500);
+        EXPECT_EQ(*reinterpret_cast<const uint32_t *>(value), 500);
         return 4;
       });
 
@@ -2196,13 +2256,13 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   // data is read from storage, but it is not used by Relay
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   int gpioValue = 0;
   EXPECT_CALL(ioMock, digitalRead(gpio))
@@ -2234,9 +2294,10 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
 
   char value[SUPLA_CHANNELVALUE_SIZE] = {};
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_ON);
   EXPECT_EQ(1, gpioValue);
@@ -2248,9 +2309,10 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_OFF);
   EXPECT_EQ(0, gpioValue);
@@ -2262,9 +2324,10 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(0, gpioValue);
 
   value[0] = 0;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.handleAction(0, Supla::TURN_ON);
   EXPECT_EQ(1, gpioValue);
@@ -2276,9 +2339,10 @@ TEST_F(RelayFixture, startupTestsForPowerSwitch) {
   EXPECT_EQ(1, gpioValue);
 
   value[0] = 1;
-  EXPECT_EQ(0, memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
-                          &value,
-                          SUPLA_CHANNELVALUE_SIZE));
+  EXPECT_EQ(0,
+            memcmp(Supla::RegisterDevice::getChannelValuePtr(0),
+                   &value,
+                   SUPLA_CHANNELVALUE_SIZE));
 
   r1.turnOff();
   EXPECT_EQ(0, gpioValue);
@@ -2813,7 +2877,7 @@ TEST_F(RelayFixture, hvacRelatedTest) {
   newValueFromServer.value[0] = 0;  // turn off
   EXPECT_EQ(0, r1.handleNewValueFromServer(&newValueFromServer));
 
-    newValueFromServer.ChannelNumber = 1;
+  newValueFromServer.ChannelNumber = 1;
   EXPECT_EQ(0, r2.handleNewValueFromServer(&newValueFromServer));
 
   newValueFromServer.ChannelNumber = 2;

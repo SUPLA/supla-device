@@ -20,13 +20,11 @@
 #define EXTRAS_ESP_IDF_RGBW_PWM_RGBW_PWM_H_
 
 #include <driver/ledc.h>
-#include <supla/control/rgb_cct_base.h>
-
-#define RGB_CCT_MAX 5
+#include <supla/control/rgbw_pwm_base.h>
 
 namespace Supla {
 namespace Control {
-class RGBWLedsEspIdf : public RGBCCTBase {
+class RGBWLedsEspIdf : public RGBWPwmBase {
  public:
   /**
    * Constructor
@@ -42,7 +40,7 @@ class RGBWLedsEspIdf : public RGBCCTBase {
    * @param w1BrightnessPin as above -> GPIO[3]
    * @param w2BrightnessPin as above -> GPIO[4]
    */
-  RGBWLedsEspIdf(Supla::Control::RGBWLedsEspIdf *parent,
+  RGBWLedsEspIdf(Supla::Control::RGBWPwmBase *parent,
                  int ledcTimerId,
                  int out1Gpio,
                  int out2Gpio,
@@ -50,41 +48,13 @@ class RGBWLedsEspIdf : public RGBCCTBase {
                  int out4Gpio,
                  int out5Gpio);
 
-  void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
-
-  void onInit() override;
-
-  void setOutputInvert(bool outputInvert) {
-    this->outputInvert = outputInvert;
-  }
-
  protected:
-  /**
-   * Obtains ledc channel from parent instance based on given GPIO
-   * In parent-child relationship, only one instance of RGBWLedsEspIdf is
-   * allowed to initialize LEDC, other instances rely on ledc_counter from
-   * parent
-   *
-   * @param gpio
-   *
-   * @return ledc channel
-   */
-  ledc_channel_t getLedcChannel(int gpio) const;
+  void initializePwmTimer() override;
+  int initializePwmChannel(int gpio) override;
+  void writePwmValue(int channel, uint32_t value) override;
+  void stopPwmChannel(int channel) override;
 
-  int gpios[RGB_CCT_MAX] = {-1, -1, -1, -1, -1};
   int ledcTimerId = 0;
-  static int pwmChannelCounter;
-  ledc_channel_t channels[RGB_CCT_MAX] = {};
-
-  ledc_channel_t initChannel(int gpio);
-  bool initialized = false;
-  bool enabled = true;
-  bool outputInvert = false;
-
-  int tryCounter = 0;
-
-  int32_t channelPrevValue[RGB_CCT_MAX] = {-1, -1, -1, -1, -1};
-  RGBWLedsEspIdf *parentLedsEspIdf = nullptr;
 };
 
 };  // namespace Control

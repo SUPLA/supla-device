@@ -145,6 +145,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_leds.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgbw_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_cct_base.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgbw_pwm_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgbw_leds.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/roller_shutter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/roller_shutter_interface.cpp

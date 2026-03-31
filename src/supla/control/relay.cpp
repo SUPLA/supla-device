@@ -41,26 +41,42 @@ using Supla::Control::Relay;
 
 int16_t Relay::relayStorageSaveDelay = 5000;
 
+namespace {
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
+                               int pin,
+                               bool highIsOn) {
+  Supla::Io::IoPin outputPin(pin, io);
+  outputPin.setActiveHigh(highIsOn);
+  outputPin.setMode(OUTPUT);
+  return outputPin;
+}
+
+}  // namespace
+
 void Relay::setRelayStorageSaveDelay(int delayMs) {
   relayStorageSaveDelay = delayMs;
+}
+
+Relay::Relay(Supla::Io::IoPin outputPin, _supla_int_t functions)
+    : outputPin(outputPin) {
+  this->outputPin.setMode(OUTPUT);
+  channel.setType(SUPLA_CHANNELTYPE_RELAY);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
+  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+  channel.setFuncList(functions);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
 Relay::Relay(Supla::Io::Base *io,
              int pin,
              bool highIsOn,
              _supla_int_t functions)
-    : Relay(pin, highIsOn, functions) {
-  this->io = io;
+    : Relay(MakeOutputPin(io, pin, highIsOn), functions) {
 }
 
 Relay::Relay(int pin, bool highIsOn, _supla_int_t functions)
-    : pin(pin),
-      highIsOn(highIsOn) {
-  channel.setType(SUPLA_CHANNELTYPE_RELAY);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
-  channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
-  channel.setFuncList(functions);
-  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+    : Relay(MakeOutputPin(nullptr, pin, highIsOn), functions) {
 }
 
 Relay::~Relay() {
@@ -225,11 +241,11 @@ Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
 }
 
 uint8_t Relay::pinOnValue() {
-  return highIsOn ? HIGH : LOW;
+  return outputPin.isActiveHigh() ? HIGH : LOW;
 }
 
 uint8_t Relay::pinOffValue() {
-  return highIsOn ? LOW : HIGH;
+  return outputPin.isActiveHigh() ? LOW : HIGH;
 }
 
 void Relay::onInit() {
@@ -304,9 +320,7 @@ void Relay::onInit() {
 
     // pin mode is set after setting pin value in order to
     // avoid problems with LOW trigger relays
-    if (pin >= 0) {
-      Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
-    }
+    outputPin.pinMode(channel.getChannelNumber());
 
     if (stateOn) {
       turnOn(duration);
@@ -474,9 +488,7 @@ void Relay::turnOn(_supla_int_t duration) {
 
   applyDuration(duration, true);
 
-  if (pin >= 0) {
-    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
-  }
+  outputPin.writeActive(channel.getChannelNumber());
 
   channel.setRelayOvercurrentCutOff(false);
   setNewChannelValue(true);
@@ -527,9 +539,7 @@ void Relay::turnOff(_supla_int_t duration) {
 
   applyDuration(duration, false);
 
-  if (pin >= 0) {
-    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
-  }
+  outputPin.writeInactive(channel.getChannelNumber());
 
   setNewChannelValue(false);
 
@@ -538,11 +548,7 @@ void Relay::turnOff(_supla_int_t duration) {
 }
 
 bool Relay::isOn() {
-  if (pin >= 0) {
-    return Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) ==
-           pinOnValue();
-  }
-  return false;
+  return outputPin.readActive(channel.getChannelNumber());
 }
 
 void Relay::toggle(_supla_int_t duration) {

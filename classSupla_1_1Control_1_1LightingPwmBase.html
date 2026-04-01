@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.16.1"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>supla-device: Supla::Control::RGBCCTBase Class Reference</title>
+<title>supla-device: Supla::Control::LightingPwmBase Class Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -70,108 +70,128 @@ $(function() {
 
 <div id="nav-path" class="navpath">
   <ul>
-<li class="navelem"><b>Supla</b></li><li class="navelem"><b>Control</b></li><li class="navelem"><a href="classSupla_1_1Control_1_1RGBCCTBase.html">RGBCCTBase</a></li>  </ul>
+<li class="navelem"><b>Supla</b></li><li class="navelem"><b>Control</b></li><li class="navelem"><a href="classSupla_1_1Control_1_1LightingPwmBase.html">LightingPwmBase</a></li>  </ul>
 </div>
 </div><!-- top -->
 <div id="doc-content">
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
-<a href="classSupla_1_1Control_1_1RGBCCTBase-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">Supla::Control::RGBCCTBase Class Reference<span class="mlabels"><span class="mlabel abstract">abstract</span></span></div></div>
+<a href="classSupla_1_1Control_1_1LightingPwmBase-members.html">List of all members</a>  </div>
+  <div class="headertitle"><div class="title">Supla::Control::LightingPwmBase Class Reference<span class="mlabels"><span class="mlabel abstract">abstract</span></span></div></div>
 </div><!--header-->
 <div class="contents">
 <div class="dynheader">
-Inheritance diagram for Supla::Control::RGBCCTBase:</div>
+Inheritance diagram for Supla::Control::LightingPwmBase:</div>
 <div class="dyncontent">
-<div class="center"><img src="classSupla_1_1Control_1_1RGBCCTBase__inherit__graph.png" border="0" usemap="#aSupla_1_1Control_1_1RGBCCTBase_inherit__map" loading="lazy" alt="Inheritance graph"/></div>
-<map name="aSupla_1_1Control_1_1RGBCCTBase_inherit__map" id="aSupla_1_1Control_1_1RGBCCTBase_inherit__map">
-<area shape="rect" title=" " alt="" coords="198,241,390,267"/>
-<area shape="rect" href="classSupla_1_1Control_1_1RGBWBase.html" title=" " alt="" coords="205,315,382,341"/>
-<area shape="poly" title=" " alt="" coords="296,282,296,315,291,315,291,282"/>
-<area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="131,168,286,193"/>
-<area shape="poly" title=" " alt="" coords="236,201,281,239,278,243,233,205"/>
-<area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="118,79,299,120"/>
-<area shape="poly" title=" " alt="" coords="211,135,211,167,206,167,206,135"/>
-<area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="84,5,192,31"/>
-<area shape="poly" title=" " alt="" coords="161,41,193,77,189,80,157,45"/>
-<area shape="rect" href="classSupla_1_1LocalAction.html" title=" " alt="" coords="216,5,345,31"/>
-<area shape="poly" title=" " alt="" coords="261,45,228,80,224,77,257,41"/>
-<area shape="rect" href="classSupla_1_1ActionHandler.html" title=" " alt="" coords="309,168,452,193"/>
-<area shape="poly" title=" " alt="" coords="356,206,310,243,307,239,352,201"/>
-<area shape="rect" href="classSupla_1_1Control_1_1DimmerBase.html" title=" " alt="" coords="5,389,188,414"/>
-<area shape="poly" title=" " alt="" coords="247,349,131,391,129,386,245,344"/>
-<area shape="rect" href="classSupla_1_1Control_1_1RGBBase.html" title=" " alt="" coords="211,389,376,414"/>
-<area shape="poly" title=" " alt="" coords="296,356,296,388,291,388,291,356"/>
-<area shape="rect" href="classSupla_1_1Control_1_1RGBWLeds.html" title=" " alt="" coords="400,389,577,414"/>
-<area shape="poly" title=" " alt="" coords="342,344,456,386,454,391,340,349"/>
-<area shape="rect" href="classSupla_1_1Control_1_1DimmerLeds.html" title=" " alt="" coords="6,462,187,488"/>
-<area shape="poly" title=" " alt="" coords="99,430,99,462,94,462,94,430"/>
-<area shape="rect" href="classSupla_1_1Control_1_1RGBLeds.html" title=" " alt="" coords="212,462,376,488"/>
-<area shape="poly" title=" " alt="" coords="296,430,296,462,291,462,291,430"/>
+<div class="center"><img src="classSupla_1_1Control_1_1LightingPwmBase__inherit__graph.png" border="0" usemap="#aSupla_1_1Control_1_1LightingPwmBase_inherit__map" loading="lazy" alt="Inheritance graph"/></div>
+<map name="aSupla_1_1Control_1_1LightingPwmBase_inherit__map" id="aSupla_1_1Control_1_1LightingPwmBase_inherit__map">
+<area shape="rect" title=" " alt="" coords="138,241,292,282"/>
+<area shape="rect" href="classSupla_1_1Control_1_1LightingPwmLeds.html" title=" " alt="" coords="44,330,197,371"/>
+<area shape="poly" title=" " alt="" coords="184,295,144,332,140,328,180,291"/>
+<area shape="rect" href="classSupla_1_1Control_1_1RGBWBase.html" title=" " alt="" coords="221,338,398,363"/>
+<area shape="poly" title=" " alt="" coords="249,291,299,335,295,339,246,295"/>
+<area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="52,168,207,193"/>
+<area shape="poly" title=" " alt="" coords="156,202,196,239,192,243,152,206"/>
+<area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="40,79,220,120"/>
+<area shape="poly" title=" " alt="" coords="132,135,132,167,127,167,127,135"/>
+<area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,5,113,31"/>
+<area shape="poly" title=" " alt="" coords="82,41,114,77,110,80,78,45"/>
+<area shape="rect" href="classSupla_1_1LocalAction.html" title=" " alt="" coords="137,5,266,31"/>
+<area shape="poly" title=" " alt="" coords="182,45,149,80,145,77,178,41"/>
+<area shape="rect" href="classSupla_1_1ActionHandler.html" title=" " alt="" coords="230,168,373,193"/>
+<area shape="poly" title=" " alt="" coords="279,206,238,243,235,239,275,202"/>
+<area shape="rect" href="classSupla_1_1Control_1_1DimmerBase.html" title=" " alt="" coords="21,419,204,444"/>
+<area shape="poly" title=" " alt="" coords="266,372,143,421,141,416,264,367"/>
+<area shape="rect" href="classSupla_1_1Control_1_1RGBBase.html" title=" " alt="" coords="227,419,392,444"/>
+<area shape="poly" title=" " alt="" coords="312,379,312,418,307,418,307,379"/>
+<area shape="rect" href="classSupla_1_1Control_1_1RGBWLeds.html" title=" " alt="" coords="416,419,592,444"/>
+<area shape="poly" title=" " alt="" coords="355,367,476,416,474,421,353,372"/>
+<area shape="rect" href="classSupla_1_1Control_1_1DimmerLeds.html" title=" " alt="" coords="22,492,203,518"/>
+<area shape="poly" title=" " alt="" coords="115,460,115,492,110,492,110,460"/>
+<area shape="rect" href="classSupla_1_1Control_1_1RGBLeds.html" title=" " alt="" coords="228,492,392,518"/>
+<area shape="poly" title=" " alt="" coords="312,460,312,492,307,492,307,460"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <div class="dynheader">
-Collaboration diagram for Supla::Control::RGBCCTBase:</div>
+Collaboration diagram for Supla::Control::LightingPwmBase:</div>
 <div class="dyncontent">
-<div class="center"><img src="classSupla_1_1Control_1_1RGBCCTBase__coll__graph.png" border="0" usemap="#aSupla_1_1Control_1_1RGBCCTBase_coll__map" loading="lazy" alt="Collaboration graph"/></div>
-<map name="aSupla_1_1Control_1_1RGBCCTBase_coll__map" id="aSupla_1_1Control_1_1RGBCCTBase_coll__map">
-<area shape="rect" title=" " alt="" coords="1165,317,1356,343"/>
-<area shape="poly" title=" " alt="" coords="1227,300,1239,293,1260,291,1280,293,1293,299,1296,309,1290,318,1286,315,1291,308,1289,302,1279,298,1260,296,1240,298,1230,304"/>
-<area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="839,213,993,239"/>
-<area shape="poly" title=" " alt="" coords="999,240,1069,257,1142,278,1231,314,1229,319,1140,283,1068,262,998,245"/>
-<area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="548,206,728,246"/>
-<area shape="poly" title=" " alt="" coords="743,223,838,223,838,229,743,229"/>
-<area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="213,311,320,336"/>
-<area shape="poly" title=" " alt="" coords="333,303,556,244,558,250,334,309"/>
-<area shape="poly" title=" " alt="" coords="244,293,252,287,267,284,281,286,290,293,292,302,288,311,283,309,287,301,285,296,279,291,267,289,254,291,247,297"/>
-<area shape="rect" href="classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="545,307,730,332"/>
-<area shape="poly" title=" " alt="" coords="336,320,545,318,545,323,336,325"/>
-<area shape="rect" href="classSupla_1_1LocalAction.html" title=" " alt="" coords="202,193,332,219"/>
-<area shape="poly" title=" " alt="" coords="347,208,547,218,547,224,347,213"/>
-<area shape="rect" href="classSupla_1_1Channel.html" title=" " alt="" coords="584,109,691,135"/>
-<area shape="poly" title=" " alt="" coords="347,199,431,190,520,171,569,153,611,133,614,138,572,158,522,177,432,195,347,205"/>
-<area shape="poly" title=" " alt="" coords="330,221,356,229,595,303,594,309,354,234,328,226"/>
-<area shape="rect" href="structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="181,136,353,162"/>
-<area shape="poly" title=" " alt="" coords="361,162,522,194,557,202,556,208,520,199,360,167"/>
-<area shape="poly" title=" " alt="" coords="690,138,880,210,878,215,688,143"/>
-<area shape="poly" title=" " alt="" coords="611,92,620,85,638,83,654,85,664,91,667,100,662,110,658,108,662,100,660,94,652,90,638,88,622,90,614,96"/>
-<area shape="rect" href="structTActionTriggerProperties.html" title=" " alt="" coords="184,8,350,34"/>
-<area shape="poly" title=" " alt="" coords="365,24,443,35,522,55,576,80,619,106,616,111,573,85,520,61,442,41,364,29"/>
-<area shape="rect" href="structTHVACValue.html" title=" " alt="" coords="217,61,316,87"/>
-<area shape="poly" title=" " alt="" coords="332,78,521,101,584,110,583,116,521,106,332,83"/>
-<area shape="rect" href="classSupla_1_1ActionHandler.html" title=" " alt="" coords="566,363,709,388"/>
-<area shape="poly" title=" " alt="" coords="724,380,831,386,919,389,987,387,1055,380,1140,362,1217,341,1218,346,1141,367,1055,385,987,393,919,394,831,391,724,385"/>
-<area shape="rect" href="classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="843,287,989,312"/>
-<area shape="poly" title=" " alt="" coords="701,355,865,310,867,315,703,361"/>
-<area shape="rect" href="classSupla_1_1Control_1_1BrightnessAdjuster.html" title=" " alt="" coords="831,336,1001,377"/>
-<area shape="poly" title=" " alt="" coords="1016,357,1140,352,1204,341,1205,346,1141,357,1016,362"/>
-<area shape="poly" title=" " alt="" coords="1004,304,1164,319,1164,324,1003,310"/>
-<area shape="poly" title=" " alt="" coords="746,309,843,302,843,307,746,314"/>
-<area shape="rect" href="classSupla_1_1Control_1_1ButtonState.html" title=" " alt="" coords="179,360,355,386"/>
-<area shape="poly" title=" " alt="" coords="370,365,444,358,520,348,593,330,594,335,522,353,445,364,371,370"/>
-<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="5,360,113,386"/>
-<area shape="poly" title=" " alt="" coords="128,370,178,370,178,375,128,375"/>
-<area shape="poly" title=" " alt="" coords="42,342,48,336,59,333,70,336,76,342,75,360,70,359,71,344,67,340,59,339,50,340,46,346"/>
+<div class="center"><img src="classSupla_1_1Control_1_1LightingPwmBase__coll__graph.png" border="0" usemap="#aSupla_1_1Control_1_1LightingPwmBase_coll__map" loading="lazy" alt="Collaboration graph"/></div>
+<map name="aSupla_1_1Control_1_1LightingPwmBase_coll__map" id="aSupla_1_1Control_1_1LightingPwmBase_coll__map">
+<area shape="rect" title=" " alt="" coords="1400,217,1553,257"/>
+<area shape="poly" title=" " alt="" coords="1449,199,1459,192,1477,190,1493,192,1504,198,1509,207,1507,216,1502,215,1504,208,1500,202,1491,197,1477,195,1461,197,1451,203"/>
+<area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="1062,444,1216,470"/>
+<area shape="poly" title=" " alt="" coords="1231,445,1305,426,1341,411,1374,391,1407,360,1433,323,1465,256,1470,259,1437,326,1411,363,1378,395,1344,416,1306,431,1232,451"/>
+<area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="758,313,938,353"/>
+<area shape="poly" title=" " alt="" coords="931,357,942,362,971,380,992,397,1013,413,1043,429,1076,441,1074,446,1041,434,1010,417,989,401,968,384,939,367,928,362"/>
+<area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="424,256,531,282"/>
+<area shape="poly" title=" " alt="" coords="547,266,636,270,732,285,804,309,802,315,731,290,635,276,547,271"/>
+<area shape="poly" title=" " alt="" coords="451,239,460,232,477,229,493,232,503,238,506,247,501,257,497,254,501,247,499,241,491,237,477,235,462,237,454,243"/>
+<area shape="rect" href="classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="755,163,941,188"/>
+<area shape="poly" title=" " alt="" coords="514,246,550,229,589,214,673,194,754,181,755,187,674,199,590,219,552,234,517,251"/>
+<area shape="rect" href="classSupla_1_1LocalAction.html" title=" " alt="" coords="412,369,542,395"/>
+<area shape="poly" title=" " alt="" coords="557,369,757,342,758,347,558,374"/>
+<area shape="rect" href="classSupla_1_1Channel.html" title=" " alt="" coords="794,444,902,470"/>
+<area shape="poly" title=" " alt="" coords="558,394,732,428,795,442,793,447,731,433,556,399"/>
+<area shape="poly" title=" " alt="" coords="554,364,563,356,574,339,575,321,577,302,587,282,620,263,679,237,809,187,811,191,681,242,622,267,591,285,582,303,581,322,579,341,567,360,557,368"/>
+<area shape="rect" href="structSupla_1_1ConfigTypesBitmap.html" title=" " alt="" coords="391,320,563,346"/>
+<area shape="poly" title=" " alt="" coords="579,330,757,330,757,336,579,336"/>
+<area shape="poly" title=" " alt="" coords="917,454,1061,454,1061,460,917,460"/>
+<area shape="poly" title=" " alt="" coords="821,427,830,420,848,417,864,420,875,426,877,435,873,445,868,442,872,435,870,429,863,425,848,423,832,425,824,431"/>
+<area shape="rect" href="structTActionTriggerProperties.html" title=" " alt="" coords="394,496,560,522"/>
+<area shape="poly" title=" " alt="" coords="575,501,652,493,731,483,798,468,799,473,732,488,652,499,576,506"/>
+<area shape="rect" href="structTHVACValue.html" title=" " alt="" coords="428,443,527,468"/>
+<area shape="poly" title=" " alt="" coords="542,453,794,454,794,459,542,458"/>
+<area shape="rect" href="classSupla_1_1ActionHandler.html" title=" " alt="" coords="777,39,919,64"/>
+<area shape="poly" title=" " alt="" coords="910,32,1006,13,1065,6,1128,3,1192,5,1257,15,1319,33,1377,61,1398,77,1415,95,1443,138,1462,180,1473,216,1468,217,1457,182,1438,140,1411,99,1394,81,1375,66,1317,38,1256,20,1192,11,1128,8,1065,11,1007,18,911,37"/>
+<area shape="rect" href="classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="1066,68,1212,94"/>
+<area shape="poly" title=" " alt="" coords="935,58,1066,71,1065,76,935,63"/>
+<area shape="rect" href="structSupla_1_1Control_1_1LightingPwmBase_1_1RequestedState.html" title=" " alt="" coords="1049,118,1229,159"/>
+<area shape="poly" title=" " alt="" coords="1245,151,1311,166,1377,185,1440,214,1438,218,1375,190,1309,171,1244,157"/>
+<area shape="rect" href="structSupla_1_1Control_1_1LightingPwmBase_1_1LastNonZeroState.html" title=" " alt="" coords="1042,183,1236,224"/>
+<area shape="poly" title=" " alt="" coords="1252,212,1400,227,1399,232,1251,217"/>
+<area shape="rect" href="structSupla_1_1Control_1_1LightingPwmBase_1_1HardwareState.html" title=" " alt="" coords="1052,249,1226,289"/>
+<area shape="poly" title=" " alt="" coords="1241,264,1376,253,1399,250,1400,255,1376,259,1242,269"/>
+<area shape="rect" href="structSupla_1_1Control_1_1LightingPwmBase_1_1TimingState.html" title=" " alt="" coords="1060,314,1218,355"/>
+<area shape="poly" title=" " alt="" coords="1232,323,1303,311,1375,291,1411,274,1444,255,1446,260,1414,279,1377,296,1304,316,1233,328"/>
+<area shape="rect" href="classSupla_1_1Control_1_1BrightnessAdjuster.html" title=" " alt="" coords="1054,379,1224,420"/>
+<area shape="poly" title=" " alt="" coords="1238,390,1308,375,1342,363,1375,347,1402,327,1426,303,1461,256,1465,259,1430,306,1405,331,1377,351,1344,368,1309,380,1239,395"/>
+<area shape="poly" title=" " alt="" coords="1227,83,1302,97,1341,110,1377,127,1405,146,1429,169,1464,214,1460,218,1425,173,1401,150,1375,131,1339,115,1301,102,1226,88"/>
+<area shape="poly" title=" " alt="" coords="897,154,1041,104,1083,92,1084,97,1042,109,899,159"/>
+<area shape="rect" href="classSupla_1_1Control_1_1ButtonState.html" title=" " alt="" coords="389,139,565,164"/>
+<area shape="poly" title=" " alt="" coords="581,156,755,167,755,172,581,161"/>
+<area shape="rect" href="structSupla_1_1Io_1_1IoPin.html" title=" " alt="" coords="179,139,286,164"/>
+<area shape="poly" title=" " alt="" coords="302,149,389,149,389,154,302,154"/>
+<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="5,139,113,164"/>
+<area shape="poly" title=" " alt="" coords="128,149,178,149,178,154,128,154"/>
+<area shape="poly" title=" " alt="" coords="42,121,48,115,59,112,70,114,76,121,75,139,70,138,71,123,67,119,59,117,50,119,46,125"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-nested-classes" class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:RequestedState" id="r_RequestedState"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1RequestedState.html">RequestedState</a></td></tr>
+<tr class="memitem:LastNonZeroState" id="r_LastNonZeroState"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1LastNonZeroState.html">LastNonZeroState</a></td></tr>
+<tr class="memitem:HardwareState" id="r_HardwareState"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1HardwareState.html">HardwareState</a></td></tr>
+<tr class="memitem:TimingState" id="r_TimingState"><td class="memItemLeft">struct &#160;</td><td class="memItemRight"><a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1TimingState.html">TimingState</a></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-types" class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:aa036161548db1cc5781bcfc8673c29c6" id="r_aa036161548db1cc5781bcfc8673c29c6"><td class="memItemLeft"><a id="aa036161548db1cc5781bcfc8673c29c6" name="aa036161548db1cc5781bcfc8673c29c6"></a>enum &#160;</td><td class="memItemRight"><b>ButtonControlType</b> : uint8_t { <b>BUTTON_FOR_RGBW</b>
+<tr class="memitem:a0c3d2d731aab3803a2b57307b4de9165" id="r_a0c3d2d731aab3803a2b57307b4de9165"><td class="memItemLeft"><a id="a0c3d2d731aab3803a2b57307b4de9165" name="a0c3d2d731aab3803a2b57307b4de9165"></a>enum &#160;</td><td class="memItemRight"><b>ButtonControlType</b> : uint8_t { <b>BUTTON_FOR_RGBW</b>
 , <b>BUTTON_FOR_RGB</b>
 , <b>BUTTON_FOR_W</b>
 , <b>BUTTON_NOT_USED</b>
  }</td></tr>
-<tr class="memitem:aa78c1c87345956ae56f3caedf1a7773a" id="r_aa78c1c87345956ae56f3caedf1a7773a"><td class="memItemLeft"><a id="aa78c1c87345956ae56f3caedf1a7773a" name="aa78c1c87345956ae56f3caedf1a7773a"></a>enum class &#160;</td><td class="memItemRight"><b>AutoIterateMode</b> : uint8_t { <b>OFF</b>
+<tr class="memitem:a4d55831bb92dddbc3f172b6de82aafce" id="r_a4d55831bb92dddbc3f172b6de82aafce"><td class="memItemLeft"><a id="a4d55831bb92dddbc3f172b6de82aafce" name="a4d55831bb92dddbc3f172b6de82aafce"></a>enum class &#160;</td><td class="memItemRight"><b>AutoIterateMode</b> : uint8_t { <b>OFF</b>
 , <b>DIMMER</b>
 , <b>RGB</b>
 , <b>ALL</b>
  }</td></tr>
-<tr class="memitem:ac598fd7778465a980b42c1dfb03a0b33" id="r_ac598fd7778465a980b42c1dfb03a0b33"><td class="memItemLeft"><a id="ac598fd7778465a980b42c1dfb03a0b33" name="ac598fd7778465a980b42c1dfb03a0b33"></a>enum class &#160;</td><td class="memItemRight"><b>LegacyChannelFunction</b> : uint8_t { <b>None</b>
+<tr class="memitem:a41c500aa1075a57fa6018587ec537bda" id="r_a41c500aa1075a57fa6018587ec537bda"><td class="memItemLeft"><a id="a41c500aa1075a57fa6018587ec537bda" name="a41c500aa1075a57fa6018587ec537bda"></a>enum class &#160;</td><td class="memItemRight"><b>LegacyChannelFunction</b> : uint8_t { <b>None</b>
 , <b>RGBW</b>
 , <b>RGB</b>
 , <b>Dimmer</b>
@@ -179,103 +199,103 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:a4ec5a24817eebee8e74f8cb32e284f63" id="r_a4ec5a24817eebee8e74f8cb32e284f63"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> (RGBCCTBase *parent=nullptr)</td></tr>
-<tr class="memdesc:a4ec5a24817eebee8e74f8cb32e284f63"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
-<tr class="memitem:a58b598129f7d4e0da56f6f632f617e00" id="r_a58b598129f7d4e0da56f6f632f617e00"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a58b598129f7d4e0da56f6f632f617e00">purgeConfig</a> () override</td></tr>
-<tr class="memdesc:a58b598129f7d4e0da56f6f632f617e00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
-<tr class="memitem:ac864be18dcf1bb18323064d9418c0f4b" id="r_ac864be18dcf1bb18323064d9418c0f4b"><td class="memItemLeft">Supla::ApplyConfigResult&#160;</td><td class="memItemRight"><a class="el" href="#ac864be18dcf1bb18323064d9418c0f4b">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local=false) override</td></tr>
-<tr class="memitem:a835656ae8512ec20be5c463193646649" id="r_a835656ae8512ec20be5c463193646649"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a835656ae8512ec20be5c463193646649">fillChannelConfig</a> (void *channelConfig, int *size, uint8_t configType) override</td></tr>
-<tr class="memitem:aa14ca1c73d0569ca4dbcbb38e05d6453" id="r_aa14ca1c73d0569ca4dbcbb38e05d6453"><td class="memItemLeft"><a id="aa14ca1c73d0569ca4dbcbb38e05d6453" name="aa14ca1c73d0569ca4dbcbb38e05d6453"></a>
+<tr class="memitem:a336c27c93866604ee8d1422a6148ada0" id="r_a336c27c93866604ee8d1422a6148ada0"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> (LightingPwmBase *parent=nullptr)</td></tr>
+<tr class="memdesc:a336c27c93866604ee8d1422a6148ada0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <br /></td></tr>
+<tr class="memitem:aa11d4084181aa01ae451215a6cd039d5" id="r_aa11d4084181aa01ae451215a6cd039d5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa11d4084181aa01ae451215a6cd039d5">purgeConfig</a> () override</td></tr>
+<tr class="memdesc:aa11d4084181aa01ae451215a6cd039d5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
+<tr class="memitem:a1cad36c06e9734f8ab50d619b1360e62" id="r_a1cad36c06e9734f8ab50d619b1360e62"><td class="memItemLeft">Supla::ApplyConfigResult&#160;</td><td class="memItemRight"><a class="el" href="#a1cad36c06e9734f8ab50d619b1360e62">applyChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *result, bool local=false) override</td></tr>
+<tr class="memitem:aa65e56bff0b87a6f77e896a8268a9b6a" id="r_aa65e56bff0b87a6f77e896a8268a9b6a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa65e56bff0b87a6f77e896a8268a9b6a">fillChannelConfig</a> (void *channelConfig, int *size, uint8_t configType) override</td></tr>
+<tr class="memitem:a92f535e0d5eb781367bd14ff16c00aef" id="r_a92f535e0d5eb781367bd14ff16c00aef"><td class="memItemLeft"><a id="a92f535e0d5eb781367bd14ff16c00aef" name="a92f535e0d5eb781367bd14ff16c00aef"></a>
 virtual void&#160;</td><td class="memItemRight"><b>setRGBCCTValueOnDevice</b> (uint32_t output[5], int usedOutputs)=0</td></tr>
-<tr class="memitem:a7254feb83e18e91de3d89b2de8a21fce" id="r_a7254feb83e18e91de3d89b2de8a21fce"><td class="memItemLeft"><a id="a7254feb83e18e91de3d89b2de8a21fce" name="a7254feb83e18e91de3d89b2de8a21fce"></a>
+<tr class="memitem:ac639e13efb140b60b1246099fc5eed0e" id="r_ac639e13efb140b60b1246099fc5eed0e"><td class="memItemLeft"><a id="ac639e13efb140b60b1246099fc5eed0e" name="ac639e13efb140b60b1246099fc5eed0e"></a>
 virtual void&#160;</td><td class="memItemRight"><b>setRGBW</b> (int red, int green, int blue, int colorBrightness, int whiteBrightness, bool toggle=false, bool instant=false)</td></tr>
-<tr class="memitem:a8e7ee87937b34c8de04821e7a949d8c9" id="r_a8e7ee87937b34c8de04821e7a949d8c9"><td class="memItemLeft"><a id="a8e7ee87937b34c8de04821e7a949d8c9" name="a8e7ee87937b34c8de04821e7a949d8c9"></a>
+<tr class="memitem:a859a0a1026e8a9ff5283ef421b9b15eb" id="r_a859a0a1026e8a9ff5283ef421b9b15eb"><td class="memItemLeft"><a id="a859a0a1026e8a9ff5283ef421b9b15eb" name="a859a0a1026e8a9ff5283ef421b9b15eb"></a>
 virtual void&#160;</td><td class="memItemRight"><b>setRGBCCT</b> (int red, int green, int blue, int colorBrightness, int whiteBrightness, int whiteTemperature, bool toggle=false, bool instant=false)</td></tr>
-<tr class="memitem:a62970faaf3294a8a33097f0ae2ab501a" id="r_a62970faaf3294a8a33097f0ae2ab501a"><td class="memItemLeft">int32_t&#160;</td><td class="memItemRight"><a class="el" href="#a62970faaf3294a8a33097f0ae2ab501a">handleNewValueFromServer</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *newValue) override</td></tr>
-<tr class="memdesc:a62970faaf3294a8a33097f0ae2ab501a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "new value" request from server.  <br /></td></tr>
-<tr class="memitem:a368e9c577986cb1fa60a2aebd03446fc" id="r_a368e9c577986cb1fa60a2aebd03446fc"><td class="memItemLeft"><a id="a368e9c577986cb1fa60a2aebd03446fc" name="a368e9c577986cb1fa60a2aebd03446fc"></a>
+<tr class="memitem:a6dbb6ae86f26e3d1d7c9e4883d76b9c9" id="r_a6dbb6ae86f26e3d1d7c9e4883d76b9c9"><td class="memItemLeft">int32_t&#160;</td><td class="memItemRight"><a class="el" href="#a6dbb6ae86f26e3d1d7c9e4883d76b9c9">handleNewValueFromServer</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *newValue) override</td></tr>
+<tr class="memdesc:a6dbb6ae86f26e3d1d7c9e4883d76b9c9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "new value" request from server.  <br /></td></tr>
+<tr class="memitem:a3b55e2a14078cfe88d04f535422ba111" id="r_a3b55e2a14078cfe88d04f535422ba111"><td class="memItemLeft"><a id="a3b55e2a14078cfe88d04f535422ba111" name="a3b55e2a14078cfe88d04f535422ba111"></a>
 virtual void&#160;</td><td class="memItemRight"><b>turnOn</b> ()</td></tr>
-<tr class="memitem:a937a3b80ffc9784aed7c4558a2693733" id="r_a937a3b80ffc9784aed7c4558a2693733"><td class="memItemLeft"><a id="a937a3b80ffc9784aed7c4558a2693733" name="a937a3b80ffc9784aed7c4558a2693733"></a>
+<tr class="memitem:aedf6d2f65e8a8800789dd166014c8078" id="r_aedf6d2f65e8a8800789dd166014c8078"><td class="memItemLeft"><a id="aedf6d2f65e8a8800789dd166014c8078" name="aedf6d2f65e8a8800789dd166014c8078"></a>
 virtual void&#160;</td><td class="memItemRight"><b>turnOff</b> ()</td></tr>
-<tr class="memitem:a44b0f6f01926bb8793527d2ed6d6ea04" id="r_a44b0f6f01926bb8793527d2ed6d6ea04"><td class="memItemLeft"><a id="a44b0f6f01926bb8793527d2ed6d6ea04" name="a44b0f6f01926bb8793527d2ed6d6ea04"></a>
+<tr class="memitem:ab6dab0d10d35ab515dedff9bbd744e4a" id="r_ab6dab0d10d35ab515dedff9bbd744e4a"><td class="memItemLeft"><a id="ab6dab0d10d35ab515dedff9bbd744e4a" name="ab6dab0d10d35ab515dedff9bbd744e4a"></a>
 virtual void&#160;</td><td class="memItemRight"><b>toggle</b> ()</td></tr>
-<tr class="memitem:a023c0a33ca538a8561161b0b149a739e" id="r_a023c0a33ca538a8561161b0b149a739e"><td class="memItemLeft"><a id="a023c0a33ca538a8561161b0b149a739e" name="a023c0a33ca538a8561161b0b149a739e"></a>
+<tr class="memitem:af23aaeed16f173de412534e1f5ea5e2d" id="r_af23aaeed16f173de412534e1f5ea5e2d"><td class="memItemLeft"><a id="af23aaeed16f173de412534e1f5ea5e2d" name="af23aaeed16f173de412534e1f5ea5e2d"></a>
 bool&#160;</td><td class="memItemRight"><b>isOn</b> ()</td></tr>
-<tr class="memitem:ad4af8d5fde5501ea704ea044f3146b5b" id="r_ad4af8d5fde5501ea704ea044f3146b5b"><td class="memItemLeft"><a id="ad4af8d5fde5501ea704ea044f3146b5b" name="ad4af8d5fde5501ea704ea044f3146b5b"></a>
+<tr class="memitem:a3e46dc99140853326ea49aef6e129ee0" id="r_a3e46dc99140853326ea49aef6e129ee0"><td class="memItemLeft"><a id="a3e46dc99140853326ea49aef6e129ee0" name="a3e46dc99140853326ea49aef6e129ee0"></a>
 bool&#160;</td><td class="memItemRight"><b>isOnW</b> ()</td></tr>
-<tr class="memitem:abbea2eb82cbb1e2b449a3d41eea4c73c" id="r_abbea2eb82cbb1e2b449a3d41eea4c73c"><td class="memItemLeft"><a id="abbea2eb82cbb1e2b449a3d41eea4c73c" name="abbea2eb82cbb1e2b449a3d41eea4c73c"></a>
+<tr class="memitem:a909d7eb35fed956b83b36901018b3f4f" id="r_a909d7eb35fed956b83b36901018b3f4f"><td class="memItemLeft"><a id="a909d7eb35fed956b83b36901018b3f4f" name="a909d7eb35fed956b83b36901018b3f4f"></a>
 bool&#160;</td><td class="memItemRight"><b>isOnRGB</b> ()</td></tr>
-<tr class="memitem:a880459d26a819be3fc6b4977932ef795" id="r_a880459d26a819be3fc6b4977932ef795"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a880459d26a819be3fc6b4977932ef795">handleAction</a> (int event, int action) override</td></tr>
-<tr class="memitem:a1eebcdf713439703792a6edbf45b90bb" id="r_a1eebcdf713439703792a6edbf45b90bb"><td class="memItemLeft"><a id="a1eebcdf713439703792a6edbf45b90bb" name="a1eebcdf713439703792a6edbf45b90bb"></a>
+<tr class="memitem:a1b1229eb1f89f4e2d5b784fda034d64e" id="r_a1b1229eb1f89f4e2d5b784fda034d64e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1b1229eb1f89f4e2d5b784fda034d64e">handleAction</a> (int event, int action) override</td></tr>
+<tr class="memitem:ad9acdd7107e79c59926d4c450ea0dfcd" id="r_ad9acdd7107e79c59926d4c450ea0dfcd"><td class="memItemLeft"><a id="ad9acdd7107e79c59926d4c450ea0dfcd" name="ad9acdd7107e79c59926d4c450ea0dfcd"></a>
 void&#160;</td><td class="memItemRight"><b>setStep</b> (int step)</td></tr>
-<tr class="memitem:a4e1c187b1f32959bca6f56d90983306f" id="r_a4e1c187b1f32959bca6f56d90983306f"><td class="memItemLeft"><a id="a4e1c187b1f32959bca6f56d90983306f" name="a4e1c187b1f32959bca6f56d90983306f"></a>
+<tr class="memitem:a494a66c567a2bd7cfdb0aa20ad5a75e4" id="r_a494a66c567a2bd7cfdb0aa20ad5a75e4"><td class="memItemLeft"><a id="a494a66c567a2bd7cfdb0aa20ad5a75e4" name="a494a66c567a2bd7cfdb0aa20ad5a75e4"></a>
 void&#160;</td><td class="memItemRight"><b>setDefaultDimmedBrightness</b> (int dimmedBrightness)</td></tr>
-<tr class="memitem:ac153328a2685f61f46c6ad180f44cef7" id="r_ac153328a2685f61f46c6ad180f44cef7"><td class="memItemLeft"><a id="ac153328a2685f61f46c6ad180f44cef7" name="ac153328a2685f61f46c6ad180f44cef7"></a>
+<tr class="memitem:ad16335b5c2d108873f908a0fc6e3ba98" id="r_ad16335b5c2d108873f908a0fc6e3ba98"><td class="memItemLeft"><a id="ad16335b5c2d108873f908a0fc6e3ba98" name="ad16335b5c2d108873f908a0fc6e3ba98"></a>
 void&#160;</td><td class="memItemRight"><b>setFadeEffectTime</b> (int timeMs)</td></tr>
-<tr class="memitem:a0f792f977f03c42709a65ee9c6050065" id="r_a0f792f977f03c42709a65ee9c6050065"><td class="memItemLeft"><a id="a0f792f977f03c42709a65ee9c6050065" name="a0f792f977f03c42709a65ee9c6050065"></a>
+<tr class="memitem:add261ffa1760161367b79c287eeda5b5" id="r_add261ffa1760161367b79c287eeda5b5"><td class="memItemLeft"><a id="add261ffa1760161367b79c287eeda5b5" name="add261ffa1760161367b79c287eeda5b5"></a>
 void&#160;</td><td class="memItemRight"><b>setMinIterationBrightness</b> (uint8_t minBright)</td></tr>
-<tr class="memitem:a27611dd5c06a1f318f53c3980e845336" id="r_a27611dd5c06a1f318f53c3980e845336"><td class="memItemLeft"><a id="a27611dd5c06a1f318f53c3980e845336" name="a27611dd5c06a1f318f53c3980e845336"></a>
+<tr class="memitem:a6a305d3f4db53cfcc9001c82fa786349" id="r_a6a305d3f4db53cfcc9001c82fa786349"><td class="memItemLeft"><a id="a6a305d3f4db53cfcc9001c82fa786349" name="a6a305d3f4db53cfcc9001c82fa786349"></a>
 void&#160;</td><td class="memItemRight"><b>setMinMaxIterationDelay</b> (uint16_t delayMs)</td></tr>
-<tr class="memitem:af27cd33ace4eeaa33256d6d71cfcba1e" id="r_af27cd33ace4eeaa33256d6d71cfcba1e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af27cd33ace4eeaa33256d6d71cfcba1e">onInit</a> () override</td></tr>
-<tr class="memdesc:af27cd33ace4eeaa33256d6d71cfcba1e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin().  <br /></td></tr>
-<tr class="memitem:a9015ae789f93b7d66e5c2dde4be05dba" id="r_a9015ae789f93b7d66e5c2dde4be05dba"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9015ae789f93b7d66e5c2dde4be05dba">iterateAlways</a> () override</td></tr>
-<tr class="memdesc:a9015ae789f93b7d66e5c2dde4be05dba"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
-<tr class="memitem:a2fc7719c392378825cc3697dedad08b8" id="r_a2fc7719c392378825cc3697dedad08b8"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2fc7719c392378825cc3697dedad08b8">onFastTimer</a> () override</td></tr>
-<tr class="memdesc:a2fc7719c392378825cc3697dedad08b8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on fast timer interupt.  <br /></td></tr>
-<tr class="memitem:a74897eab2910f877bab340bca1792da9" id="r_a74897eab2910f877bab340bca1792da9"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a74897eab2910f877bab340bca1792da9">onLoadState</a> () override</td></tr>
-<tr class="memdesc:a74897eab2910f877bab340bca1792da9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Second method called on element in SuplaDevice.begin().  <br /></td></tr>
-<tr class="memitem:adf81ee71ec50a9c208e8f20c37af7b68" id="r_adf81ee71ec50a9c208e8f20c37af7b68"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adf81ee71ec50a9c208e8f20c37af7b68">onSaveState</a> () override</td></tr>
-<tr class="memdesc:adf81ee71ec50a9c208e8f20c37af7b68"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called periodically during SuplaDevice iteration.  <br /></td></tr>
-<tr class="memitem:ae42700a774d37f2535cee0e1e0c9a03b" id="r_ae42700a774d37f2535cee0e1e0c9a03b"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae42700a774d37f2535cee0e1e0c9a03b">isStateStorageMigrationNeeded</a> () const override</td></tr>
-<tr class="memdesc:ae42700a774d37f2535cee0e1e0c9a03b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called after <a class="el" href="#af27cd33ace4eeaa33256d6d71cfcba1e" title="Third method called on element in SuplaDevice.begin().">onInit()</a> to check if state storage migration is needed.  <br /></td></tr>
-<tr class="memitem:ae1cd1cb99bec95b12b31d335af41e002" id="r_ae1cd1cb99bec95b12b31d335af41e002"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae1cd1cb99bec95b12b31d335af41e002">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) override</td></tr>
-<tr class="memdesc:ae1cd1cb99bec95b12b31d335af41e002"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
-<tr class="memitem:a6eff5c2fd4664a56203b06d7753d4ed7" id="r_a6eff5c2fd4664a56203b06d7753d4ed7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a6eff5c2fd4664a56203b06d7753d4ed7">convertStorageFromLegacyChannel</a> (LegacyChannelFunction channelFunction)</td></tr>
-<tr class="memdesc:a6eff5c2fd4664a56203b06d7753d4ed7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables storage conversion from legacy channel function to new.  <br /></td></tr>
-<tr class="memitem:a56c79c1a83b504af2a68ec411a8e73fc" id="r_a56c79c1a83b504af2a68ec411a8e73fc"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a56c79c1a83b504af2a68ec411a8e73fc">setSkipLegacyMigration</a> ()</td></tr>
-<tr class="memdesc:a56c79c1a83b504af2a68ec411a8e73fc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disables storage conversion from legacy channel function to new.  <br /></td></tr>
-<tr class="memitem:a9060d602a06b0fbbe5a09969457be953" id="r_a9060d602a06b0fbbe5a09969457be953"><td class="memItemLeft"><a id="a9060d602a06b0fbbe5a09969457be953" name="a9060d602a06b0fbbe5a09969457be953"></a>
+<tr class="memitem:a84cb9914af3de79b6fd5ab5e5490d38a" id="r_a84cb9914af3de79b6fd5ab5e5490d38a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a84cb9914af3de79b6fd5ab5e5490d38a">onInit</a> () override</td></tr>
+<tr class="memdesc:a84cb9914af3de79b6fd5ab5e5490d38a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin().  <br /></td></tr>
+<tr class="memitem:adf0fc9002cfff534a71afeeb9a9bc355" id="r_adf0fc9002cfff534a71afeeb9a9bc355"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adf0fc9002cfff534a71afeeb9a9bc355">iterateAlways</a> () override</td></tr>
+<tr class="memdesc:adf0fc9002cfff534a71afeeb9a9bc355"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
+<tr class="memitem:a80e8e06cceb0dd7f01babba2b4d6ac32" id="r_a80e8e06cceb0dd7f01babba2b4d6ac32"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a80e8e06cceb0dd7f01babba2b4d6ac32">onFastTimer</a> () override</td></tr>
+<tr class="memdesc:a80e8e06cceb0dd7f01babba2b4d6ac32"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on fast timer interupt.  <br /></td></tr>
+<tr class="memitem:ae22b17a4f9f340ce5cf12b3ed4c285aa" id="r_ae22b17a4f9f340ce5cf12b3ed4c285aa"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae22b17a4f9f340ce5cf12b3ed4c285aa">onLoadState</a> () override</td></tr>
+<tr class="memdesc:ae22b17a4f9f340ce5cf12b3ed4c285aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Second method called on element in SuplaDevice.begin().  <br /></td></tr>
+<tr class="memitem:a9d6074e4bfedc261140dd42b37f622b2" id="r_a9d6074e4bfedc261140dd42b37f622b2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9d6074e4bfedc261140dd42b37f622b2">onSaveState</a> () override</td></tr>
+<tr class="memdesc:a9d6074e4bfedc261140dd42b37f622b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called periodically during SuplaDevice iteration.  <br /></td></tr>
+<tr class="memitem:a7141d9a0887f08b797c08a92e417f42f" id="r_a7141d9a0887f08b797c08a92e417f42f"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a7141d9a0887f08b797c08a92e417f42f">isStateStorageMigrationNeeded</a> () const override</td></tr>
+<tr class="memdesc:a7141d9a0887f08b797c08a92e417f42f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called after <a class="el" href="#a84cb9914af3de79b6fd5ab5e5490d38a" title="Third method called on element in SuplaDevice.begin().">onInit()</a> to check if state storage migration is needed.  <br /></td></tr>
+<tr class="memitem:abade0e7d020757a0afee10dcb31a879e" id="r_abade0e7d020757a0afee10dcb31a879e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#abade0e7d020757a0afee10dcb31a879e">onLoadConfig</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *) override</td></tr>
+<tr class="memdesc:abade0e7d020757a0afee10dcb31a879e"><td class="mdescLeft">&#160;</td><td class="mdescRight">First method called on element in SuplaDevice.begin().  <br /></td></tr>
+<tr class="memitem:a61e8b252f9d73a5b0ed35e3068cc2985" id="r_a61e8b252f9d73a5b0ed35e3068cc2985"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a61e8b252f9d73a5b0ed35e3068cc2985">convertStorageFromLegacyChannel</a> (LegacyChannelFunction channelFunction)</td></tr>
+<tr class="memdesc:a61e8b252f9d73a5b0ed35e3068cc2985"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables storage conversion from legacy channel function to new.  <br /></td></tr>
+<tr class="memitem:a3a7467138e69287299688de0b75d7621" id="r_a3a7467138e69287299688de0b75d7621"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3a7467138e69287299688de0b75d7621">setSkipLegacyMigration</a> ()</td></tr>
+<tr class="memdesc:a3a7467138e69287299688de0b75d7621"><td class="mdescLeft">&#160;</td><td class="mdescRight">Disables storage conversion from legacy channel function to new.  <br /></td></tr>
+<tr class="memitem:ad2b34f9a25f6cf827e510f9dba69f2c2" id="r_ad2b34f9a25f6cf827e510f9dba69f2c2"><td class="memItemLeft"><a id="ad2b34f9a25f6cf827e510f9dba69f2c2" name="ad2b34f9a25f6cf827e510f9dba69f2c2"></a>
 void&#160;</td><td class="memItemRight"><b>attach</b> (<a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *)</td></tr>
-<tr class="memitem:afb3f34d0808ae0c69d91a9e7fa504461" id="r_afb3f34d0808ae0c69d91a9e7fa504461"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#afb3f34d0808ae0c69d91a9e7fa504461">fillSuplaChannelNewValue</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *value) override</td></tr>
-<tr class="memdesc:afb3f34d0808ae0c69d91a9e7fa504461"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills <a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> based on current state.  <br /></td></tr>
-<tr class="memitem:ad10bd185c108124de797e1169406c607" id="r_ad10bd185c108124de797e1169406c607"><td class="memItemLeft"><a id="ad10bd185c108124de797e1169406c607" name="ad10bd185c108124de797e1169406c607"></a>
-virtual <a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;&#160;</td><td class="memItemRight"><b>setDefaultStateOn</b> ()</td></tr>
-<tr class="memitem:ae6e3377f3e23a4a7368167599c78f448" id="r_ae6e3377f3e23a4a7368167599c78f448"><td class="memItemLeft"><a id="ae6e3377f3e23a4a7368167599c78f448" name="ae6e3377f3e23a4a7368167599c78f448"></a>
-virtual <a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;&#160;</td><td class="memItemRight"><b>setDefaultStateOff</b> ()</td></tr>
-<tr class="memitem:af1e7bab9ea436a1af6a03aad6472cb76" id="r_af1e7bab9ea436a1af6a03aad6472cb76"><td class="memItemLeft"><a id="af1e7bab9ea436a1af6a03aad6472cb76" name="af1e7bab9ea436a1af6a03aad6472cb76"></a>
-virtual <a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;&#160;</td><td class="memItemRight"><b>setDefaultStateRestore</b> ()</td></tr>
-<tr class="memitem:aa20ffe44d309733b327fda70fa070b29" id="r_aa20ffe44d309733b327fda70fa070b29"><td class="memItemLeft"><a id="aa20ffe44d309733b327fda70fa070b29" name="aa20ffe44d309733b327fda70fa070b29"></a>
-virtual <a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;&#160;</td><td class="memItemRight"><b>setBrightnessLimits</b> (int min, int max)</td></tr>
-<tr class="memitem:aaf72ecfbcdb7f798b15e21186eed61b4" id="r_aaf72ecfbcdb7f798b15e21186eed61b4"><td class="memItemLeft"><a id="aaf72ecfbcdb7f798b15e21186eed61b4" name="aaf72ecfbcdb7f798b15e21186eed61b4"></a>
-virtual <a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> &amp;&#160;</td><td class="memItemRight"><b>setColorBrightnessLimits</b> (int min, int max)</td></tr>
-<tr class="memitem:a76e97d8d4ff7e7ea43f15c2393a88f8f" id="r_a76e97d8d4ff7e7ea43f15c2393a88f8f"><td class="memItemLeft"><a id="a76e97d8d4ff7e7ea43f15c2393a88f8f" name="a76e97d8d4ff7e7ea43f15c2393a88f8f"></a>
+<tr class="memitem:adfd417ba554f4a704b2a552e0ea52ef0" id="r_adfd417ba554f4a704b2a552e0ea52ef0"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#adfd417ba554f4a704b2a552e0ea52ef0">fillSuplaChannelNewValue</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *value) override</td></tr>
+<tr class="memdesc:adfd417ba554f4a704b2a552e0ea52ef0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills <a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> based on current state.  <br /></td></tr>
+<tr class="memitem:a5d254377d2b5a3bc55b63697b1ef8530" id="r_a5d254377d2b5a3bc55b63697b1ef8530"><td class="memItemLeft"><a id="a5d254377d2b5a3bc55b63697b1ef8530" name="a5d254377d2b5a3bc55b63697b1ef8530"></a>
+virtual <a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> &amp;&#160;</td><td class="memItemRight"><b>setDefaultStateOn</b> ()</td></tr>
+<tr class="memitem:a15c042782067c72ece9dfe8444eb5a99" id="r_a15c042782067c72ece9dfe8444eb5a99"><td class="memItemLeft"><a id="a15c042782067c72ece9dfe8444eb5a99" name="a15c042782067c72ece9dfe8444eb5a99"></a>
+virtual <a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> &amp;&#160;</td><td class="memItemRight"><b>setDefaultStateOff</b> ()</td></tr>
+<tr class="memitem:a47925cff7dd8cb0e4ca73c729581a495" id="r_a47925cff7dd8cb0e4ca73c729581a495"><td class="memItemLeft"><a id="a47925cff7dd8cb0e4ca73c729581a495" name="a47925cff7dd8cb0e4ca73c729581a495"></a>
+virtual <a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> &amp;&#160;</td><td class="memItemRight"><b>setDefaultStateRestore</b> ()</td></tr>
+<tr class="memitem:a3ab9c85f47bb13bd7b8c777300d083f9" id="r_a3ab9c85f47bb13bd7b8c777300d083f9"><td class="memItemLeft"><a id="a3ab9c85f47bb13bd7b8c777300d083f9" name="a3ab9c85f47bb13bd7b8c777300d083f9"></a>
+<a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> &amp;&#160;</td><td class="memItemRight"><b>setBrightnessRatioLimits</b> (float min, float max)</td></tr>
+<tr class="memitem:a026cfe010938fbc249e2e6b00bbb2b9d" id="r_a026cfe010938fbc249e2e6b00bbb2b9d"><td class="memItemLeft"><a id="a026cfe010938fbc249e2e6b00bbb2b9d" name="a026cfe010938fbc249e2e6b00bbb2b9d"></a>
+<a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> &amp;&#160;</td><td class="memItemRight"><b>setColorBrightnessRatioLimits</b> (float min, float max)</td></tr>
+<tr class="memitem:abae624f930709dda74a66d17d40d3d64" id="r_abae624f930709dda74a66d17d40d3d64"><td class="memItemLeft"><a id="abae624f930709dda74a66d17d40d3d64" name="abae624f930709dda74a66d17d40d3d64"></a>
 void&#160;</td><td class="memItemRight"><b>setBrightnessAdjuster</b> (<a class="el" href="classSupla_1_1Control_1_1BrightnessAdjuster.html">BrightnessAdjuster</a> *adjuster)</td></tr>
-<tr class="memitem:aa2bb3d0c6f836e7eb364d76ac2f0f7c9" id="r_aa2bb3d0c6f836e7eb364d76ac2f0f7c9"><td class="memItemLeft"><a id="aa2bb3d0c6f836e7eb364d76ac2f0f7c9" name="aa2bb3d0c6f836e7eb364d76ac2f0f7c9"></a>
+<tr class="memitem:a565e03d622e22830036b8bd5d103758d" id="r_a565e03d622e22830036b8bd5d103758d"><td class="memItemLeft"><a id="a565e03d622e22830036b8bd5d103758d" name="a565e03d622e22830036b8bd5d103758d"></a>
 int&#160;</td><td class="memItemRight"><b>getCurrentDimmerBrightness</b> () const</td></tr>
-<tr class="memitem:ac5099f72ac4cc536cc7eec21ef75586f" id="r_ac5099f72ac4cc536cc7eec21ef75586f"><td class="memItemLeft"><a id="ac5099f72ac4cc536cc7eec21ef75586f" name="ac5099f72ac4cc536cc7eec21ef75586f"></a>
+<tr class="memitem:ad080d39e83eea325411dc6745814c3c7" id="r_ad080d39e83eea325411dc6745814c3c7"><td class="memItemLeft"><a id="ad080d39e83eea325411dc6745814c3c7" name="ad080d39e83eea325411dc6745814c3c7"></a>
 int&#160;</td><td class="memItemRight"><b>getCurrentRGBBrightness</b> () const</td></tr>
-<tr class="memitem:a48297a8d32dadd3adcfee6beee218d84" id="r_a48297a8d32dadd3adcfee6beee218d84"><td class="memItemLeft"><a id="a48297a8d32dadd3adcfee6beee218d84" name="a48297a8d32dadd3adcfee6beee218d84"></a>
+<tr class="memitem:aed6bfcfe6a9ed567cc71d854175855ea" id="r_aed6bfcfe6a9ed567cc71d854175855ea"><td class="memItemLeft"><a id="aed6bfcfe6a9ed567cc71d854175855ea" name="aed6bfcfe6a9ed567cc71d854175855ea"></a>
 void&#160;</td><td class="memItemRight"><b>setMaxHwValue</b> (int newMaxHwValue)</td></tr>
-<tr class="memitem:ae9e593ec1e6122751868a3470fb3e9d7" id="r_ae9e593ec1e6122751868a3470fb3e9d7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae9e593ec1e6122751868a3470fb3e9d7">setMinPwmFrequency</a> (uint16_t minPwmFrequency)</td></tr>
-<tr class="memdesc:ae9e593ec1e6122751868a3470fb3e9d7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets minimum PWM frequency.  <br /></td></tr>
-<tr class="memitem:af8f730c55bf2870fa104a14ae8c750ff" id="r_af8f730c55bf2870fa104a14ae8c750ff"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af8f730c55bf2870fa104a14ae8c750ff">setMaxPwmFrequency</a> (uint16_t maxPwmFrequency)</td></tr>
-<tr class="memdesc:af8f730c55bf2870fa104a14ae8c750ff"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets maximum PWM frequency.  <br /></td></tr>
-<tr class="memitem:a14421696cf6a47f54b49944df4240d26" id="r_a14421696cf6a47f54b49944df4240d26"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a14421696cf6a47f54b49944df4240d26">setPwmFrequency</a> (uint16_t pwmFrequency)</td></tr>
-<tr class="memdesc:a14421696cf6a47f54b49944df4240d26"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency and applies validation.  <br /></td></tr>
-<tr class="memitem:a875afc88556a5f08b431ea3f853ee001" id="r_a875afc88556a5f08b431ea3f853ee001"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a875afc88556a5f08b431ea3f853ee001">setStepPwmFrequency</a> (uint16_t stepPwmFrequency)</td></tr>
-<tr class="memdesc:a875afc88556a5f08b431ea3f853ee001"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency step.  <br /></td></tr>
-<tr class="memitem:ab4b886388f93540e352d9964544e2ee6" id="r_ab4b886388f93540e352d9964544e2ee6"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#ab4b886388f93540e352d9964544e2ee6">getMinPwmFrequency</a> () const</td></tr>
-<tr class="memdesc:ab4b886388f93540e352d9964544e2ee6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns minimum PWM frequency.  <br /></td></tr>
-<tr class="memitem:a70d920c804871dbb56c0460c78022a82" id="r_a70d920c804871dbb56c0460c78022a82"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a70d920c804871dbb56c0460c78022a82">getMaxPwmFrequency</a> () const</td></tr>
-<tr class="memdesc:a70d920c804871dbb56c0460c78022a82"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns maximum PWM frequency.  <br /></td></tr>
-<tr class="memitem:af5bd9ed8447da51cde8f756965a98481" id="r_af5bd9ed8447da51cde8f756965a98481"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#af5bd9ed8447da51cde8f756965a98481">getPwmFrequency</a> () const</td></tr>
-<tr class="memdesc:af5bd9ed8447da51cde8f756965a98481"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current PWM frequency.  <br /></td></tr>
-<tr class="memitem:a2d38866263383d2685fb100f3f45ab08" id="r_a2d38866263383d2685fb100f3f45ab08"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a2d38866263383d2685fb100f3f45ab08">getStepPwmFrequency</a> () const</td></tr>
-<tr class="memdesc:a2d38866263383d2685fb100f3f45ab08"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns PWM frequency step.  <br /></td></tr>
-<tr class="memitem:ac669cebe59eea74541a064d1245dc8a7" id="r_ac669cebe59eea74541a064d1245dc8a7"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ac669cebe59eea74541a064d1245dc8a7">hasParent</a> () const</td></tr>
-<tr class="memdesc:ac669cebe59eea74541a064d1245dc8a7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if this instance has parent.  <br /></td></tr>
-<tr class="memitem:a57d8fce22db79a77b5e72e00602da261" id="r_a57d8fce22db79a77b5e72e00602da261"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a57d8fce22db79a77b5e72e00602da261">getAncestorCount</a> () const</td></tr>
-<tr class="memdesc:a57d8fce22db79a77b5e72e00602da261"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of ancestor instances (by parent).  <br /></td></tr>
+<tr class="memitem:a2d5027e4b7c5fe6706ef544f3a44b6c7" id="r_a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2d5027e4b7c5fe6706ef544f3a44b6c7">setMinPwmFrequency</a> (uint16_t minPwmFrequency)</td></tr>
+<tr class="memdesc:a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets minimum PWM frequency.  <br /></td></tr>
+<tr class="memitem:a2a529cd97bf0c7ce64990122caf239aa" id="r_a2a529cd97bf0c7ce64990122caf239aa"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2a529cd97bf0c7ce64990122caf239aa">setMaxPwmFrequency</a> (uint16_t maxPwmFrequency)</td></tr>
+<tr class="memdesc:a2a529cd97bf0c7ce64990122caf239aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets maximum PWM frequency.  <br /></td></tr>
+<tr class="memitem:a93971acd32a846f2801f7ab455e6610b" id="r_a93971acd32a846f2801f7ab455e6610b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a93971acd32a846f2801f7ab455e6610b">setPwmFrequency</a> (uint16_t pwmFrequency)</td></tr>
+<tr class="memdesc:a93971acd32a846f2801f7ab455e6610b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency and applies validation.  <br /></td></tr>
+<tr class="memitem:a41c38f3173f22ad0fac394ec6fc1aa3e" id="r_a41c38f3173f22ad0fac394ec6fc1aa3e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a41c38f3173f22ad0fac394ec6fc1aa3e">setStepPwmFrequency</a> (uint16_t stepPwmFrequency)</td></tr>
+<tr class="memdesc:a41c38f3173f22ad0fac394ec6fc1aa3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency step.  <br /></td></tr>
+<tr class="memitem:aedac22f5d3cbaf955077af45ed4c7cf5" id="r_aedac22f5d3cbaf955077af45ed4c7cf5"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#aedac22f5d3cbaf955077af45ed4c7cf5">getMinPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:aedac22f5d3cbaf955077af45ed4c7cf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns minimum PWM frequency.  <br /></td></tr>
+<tr class="memitem:a3a39c0146829804c5b5d2d554e584066" id="r_a3a39c0146829804c5b5d2d554e584066"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a3a39c0146829804c5b5d2d554e584066">getMaxPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:a3a39c0146829804c5b5d2d554e584066"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns maximum PWM frequency.  <br /></td></tr>
+<tr class="memitem:a62c15fc88e28c8fc34b5d0717851dc3b" id="r_a62c15fc88e28c8fc34b5d0717851dc3b"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a62c15fc88e28c8fc34b5d0717851dc3b">getPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:a62c15fc88e28c8fc34b5d0717851dc3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current PWM frequency.  <br /></td></tr>
+<tr class="memitem:ae49ea0891526e76231b8b9a4034a79da" id="r_ae49ea0891526e76231b8b9a4034a79da"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#ae49ea0891526e76231b8b9a4034a79da">getStepPwmFrequency</a> () const</td></tr>
+<tr class="memdesc:ae49ea0891526e76231b8b9a4034a79da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns PWM frequency step.  <br /></td></tr>
+<tr class="memitem:ab1f50e4ae718b43d970533040d953078" id="r_ab1f50e4ae718b43d970533040d953078"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ab1f50e4ae718b43d970533040d953078">hasParent</a> () const</td></tr>
+<tr class="memdesc:ab1f50e4ae718b43d970533040d953078"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if this instance has parent.  <br /></td></tr>
+<tr class="memitem:a2070780094b7e949c7523710d8d69b00" id="r_a2070780094b7e949c7523710d8d69b00"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a2070780094b7e949c7523710d8d69b00">getAncestorCount</a> () const</td></tr>
+<tr class="memdesc:a2070780094b7e949c7523710d8d69b00"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of ancestor instances (by parent).  <br /></td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1ChannelElement')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aa021153ea264129bda3fc4c642f0e690 inherit pub_methods_classSupla_1_1ChannelElement" id="r_aa021153ea264129bda3fc4c642f0e690"><td class="memItemLeft">
 &#160;</td><td class="memItemRight"><b>ChannelElement</b> (int channelNumber=-1)</td></tr>
@@ -377,23 +397,23 @@ virtual <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a7c6a2563507c6546546e3d1cd5d698a4" id="r_a7c6a2563507c6546546e3d1cd5d698a4"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a7c6a2563507c6546546e3d1cd5d698a4">getMissingGpioCount</a> () const</td></tr>
-<tr class="memdesc:a7c6a2563507c6546546e3d1cd5d698a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of GPIO pins that are required to control this channel.  <br /></td></tr>
-<tr class="memitem:a169f90adc149e4a141e4cf97f26c878e" id="r_a169f90adc149e4a141e4cf97f26c878e"><td class="memItemLeft"><a id="a169f90adc149e4a141e4cf97f26c878e" name="a169f90adc149e4a141e4cf97f26c878e"></a>
+<tr class="memitem:ac2867d9300d6b6a2b66234721e7313f8" id="r_ac2867d9300d6b6a2b66234721e7313f8"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ac2867d9300d6b6a2b66234721e7313f8">getMissingGpioCount</a> () const</td></tr>
+<tr class="memdesc:ac2867d9300d6b6a2b66234721e7313f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of GPIO pins that are required to control this channel.  <br /></td></tr>
+<tr class="memitem:ad41638addc65f7a951ac93df116025d2" id="r_ad41638addc65f7a951ac93df116025d2"><td class="memItemLeft"><a id="ad41638addc65f7a951ac93df116025d2" name="ad41638addc65f7a951ac93df116025d2"></a>
 void&#160;</td><td class="memItemRight"><b>enableChannel</b> ()</td></tr>
-<tr class="memitem:a387df8419d0f61904912b4be24c4e270" id="r_a387df8419d0f61904912b4be24c4e270"><td class="memItemLeft"><a id="a387df8419d0f61904912b4be24c4e270" name="a387df8419d0f61904912b4be24c4e270"></a>
+<tr class="memitem:ab43fa7ecbfd5cc686d7bfa4ce897d089" id="r_ab43fa7ecbfd5cc686d7bfa4ce897d089"><td class="memItemLeft"><a id="ab43fa7ecbfd5cc686d7bfa4ce897d089" name="ab43fa7ecbfd5cc686d7bfa4ce897d089"></a>
 void&#160;</td><td class="memItemRight"><b>disableChannel</b> ()</td></tr>
-<tr class="memitem:ac942b9bf713b00063f8b60eb73fd0dd2" id="r_ac942b9bf713b00063f8b60eb73fd0dd2"><td class="memItemLeft"><a id="ac942b9bf713b00063f8b60eb73fd0dd2" name="ac942b9bf713b00063f8b60eb73fd0dd2"></a>
+<tr class="memitem:ae2305d0ec7ee313ba38382d08e67b83d" id="r_ae2305d0ec7ee313ba38382d08e67b83d"><td class="memItemLeft"><a id="ae2305d0ec7ee313ba38382d08e67b83d" name="ae2305d0ec7ee313ba38382d08e67b83d"></a>
 void&#160;</td><td class="memItemRight"><b>updateEnabledState</b> ()</td></tr>
-<tr class="memitem:a0d7cf016fb87ae9f4083b57c2cb5d46b" id="r_a0d7cf016fb87ae9f4083b57c2cb5d46b"><td class="memItemLeft"><a id="a0d7cf016fb87ae9f4083b57c2cb5d46b" name="a0d7cf016fb87ae9f4083b57c2cb5d46b"></a>
+<tr class="memitem:af4e6dc99be9e4b8cf4850079ac76f499" id="r_af4e6dc99be9e4b8cf4850079ac76f499"><td class="memItemLeft"><a id="af4e6dc99be9e4b8cf4850079ac76f499" name="af4e6dc99be9e4b8cf4850079ac76f499"></a>
 uint8_t&#160;</td><td class="memItemRight"><b>addWithLimit</b> (int value, int addition, int limit=255)</td></tr>
-<tr class="memitem:aac0a1f9aac5444ccac170e4406a8a188" id="r_aac0a1f9aac5444ccac170e4406a8a188"><td class="memItemLeft"><a id="aac0a1f9aac5444ccac170e4406a8a188" name="aac0a1f9aac5444ccac170e4406a8a188"></a>
+<tr class="memitem:a49c9a978ce54754393e60a1f7bee595d" id="r_a49c9a978ce54754393e60a1f7bee595d"><td class="memItemLeft"><a id="a49c9a978ce54754393e60a1f7bee595d" name="a49c9a978ce54754393e60a1f7bee595d"></a>
 virtual void&#160;</td><td class="memItemRight"><b>iterateDimmerRGBW</b> (int rgbStep, int wStep)</td></tr>
-<tr class="memitem:a91ecb5b58137958fc101de5f08ac09a5" id="r_a91ecb5b58137958fc101de5f08ac09a5"><td class="memItemLeft"><a id="a91ecb5b58137958fc101de5f08ac09a5" name="a91ecb5b58137958fc101de5f08ac09a5"></a>
+<tr class="memitem:a8a08357d8a1a0d633e080c65a9ce501a" id="r_a8a08357d8a1a0d633e080c65a9ce501a"><td class="memItemLeft"><a id="a8a08357d8a1a0d633e080c65a9ce501a" name="a8a08357d8a1a0d633e080c65a9ce501a"></a>
 int&#160;</td><td class="memItemRight"><b>adjustBrightness</b> (int value)</td></tr>
-<tr class="memitem:a532a65efe0717cb829511d1072f6e4dc" id="r_a532a65efe0717cb829511d1072f6e4dc"><td class="memItemLeft"><a id="a532a65efe0717cb829511d1072f6e4dc" name="a532a65efe0717cb829511d1072f6e4dc"></a>
+<tr class="memitem:a99343801ab8e4ce4180312501fb93300" id="r_a99343801ab8e4ce4180312501fb93300"><td class="memItemLeft"><a id="a99343801ab8e4ce4180312501fb93300" name="a99343801ab8e4ce4180312501fb93300"></a>
 int&#160;</td><td class="memItemRight"><b>getStep</b> (int step, int target, int current) const</td></tr>
-<tr class="memitem:a354007d2e59e3d961f758b314745c63b" id="r_a354007d2e59e3d961f758b314745c63b"><td class="memItemLeft"><a id="a354007d2e59e3d961f758b314745c63b" name="a354007d2e59e3d961f758b314745c63b"></a>
+<tr class="memitem:abe1591034c966cbb27a369a653e66643" id="r_abe1591034c966cbb27a369a653e66643"><td class="memItemLeft"><a id="abe1591034c966cbb27a369a653e66643" name="abe1591034c966cbb27a369a653e66643"></a>
 bool&#160;</td><td class="memItemRight"><b>calculateAndUpdate</b> (int targetValue, int16_t *hwValue, int distance, uint32_t *lastChangeMs, const uint32_t now) const</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:ae380adb55e2757c1c4d4a8ec8919a4b5 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ae380adb55e2757c1c4d4a8ec8919a4b5"><td class="memItemLeft">
@@ -413,136 +433,78 @@ bool&#160;</td><td class="memItemRight"><b>iterateConfigExchange</b> ()</td></tr
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:add1d260e1ec706a8e0f3231fd12737bf" id="r_add1d260e1ec706a8e0f3231fd12737bf"><td class="memItemLeft"><a id="add1d260e1ec706a8e0f3231fd12737bf" name="add1d260e1ec706a8e0f3231fd12737bf"></a>
+<tr class="memitem:a2cd14378f1ab9da21e67d55f6a5b961f" id="r_a2cd14378f1ab9da21e67d55f6a5b961f"><td class="memItemLeft"><a id="a2cd14378f1ab9da21e67d55f6a5b961f" name="a2cd14378f1ab9da21e67d55f6a5b961f"></a>
+struct <a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1RequestedState.html">Supla::Control::LightingPwmBase::RequestedState</a>&#160;</td><td class="memItemRight"><b>requested</b></td></tr>
+<tr class="memitem:a286bd0c6ffe3600ec469452401494115" id="r_a286bd0c6ffe3600ec469452401494115"><td class="memItemLeft"><a id="a286bd0c6ffe3600ec469452401494115" name="a286bd0c6ffe3600ec469452401494115"></a>
+struct <a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1LastNonZeroState.html">Supla::Control::LightingPwmBase::LastNonZeroState</a>&#160;</td><td class="memItemRight"><b>lastNonZero</b></td></tr>
+<tr class="memitem:a4572f190f5cf017fb05c5d06504c9a95" id="r_a4572f190f5cf017fb05c5d06504c9a95"><td class="memItemLeft"><a id="a4572f190f5cf017fb05c5d06504c9a95" name="a4572f190f5cf017fb05c5d06504c9a95"></a>
+struct <a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1HardwareState.html">Supla::Control::LightingPwmBase::HardwareState</a>&#160;</td><td class="memItemRight"><b>hardware</b></td></tr>
+<tr class="memitem:aedfb523316b8fc398926dc34b77dbdc1" id="r_aedfb523316b8fc398926dc34b77dbdc1"><td class="memItemLeft"><a id="aedfb523316b8fc398926dc34b77dbdc1" name="aedfb523316b8fc398926dc34b77dbdc1"></a>
+struct <a class="el" href="structSupla_1_1Control_1_1LightingPwmBase_1_1TimingState.html">Supla::Control::LightingPwmBase::TimingState</a>&#160;</td><td class="memItemRight"><b>timing</b></td></tr>
+<tr class="memitem:adb037d4de5683016231bf4fa53c4e10f" id="r_adb037d4de5683016231bf4fa53c4e10f"><td class="memItemLeft"><a id="adb037d4de5683016231bf4fa53c4e10f" name="adb037d4de5683016231bf4fa53c4e10f"></a>
 uint8_t&#160;</td><td class="memItemRight"><b>buttonStep</b> = 10</td></tr>
-<tr class="memitem:a7f0342fac32ba34952f00a8ef2d65557" id="r_a7f0342fac32ba34952f00a8ef2d65557"><td class="memItemLeft"><a id="a7f0342fac32ba34952f00a8ef2d65557" name="a7f0342fac32ba34952f00a8ef2d65557"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>curRed</b> = 0</td></tr>
-<tr class="memitem:ac5fda1770c6c42e27616c3163e1c2797" id="r_ac5fda1770c6c42e27616c3163e1c2797"><td class="memItemLeft"><a id="ac5fda1770c6c42e27616c3163e1c2797" name="ac5fda1770c6c42e27616c3163e1c2797"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>curGreen</b> = 255</td></tr>
-<tr class="memitem:a1560d63279095097b7464b214d3c6216" id="r_a1560d63279095097b7464b214d3c6216"><td class="memItemLeft"><a id="a1560d63279095097b7464b214d3c6216" name="a1560d63279095097b7464b214d3c6216"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>curBlue</b> = 0</td></tr>
-<tr class="memitem:ac1b9641748da45ad541a92b6648cdd3c" id="r_ac1b9641748da45ad541a92b6648cdd3c"><td class="memItemLeft"><a id="ac1b9641748da45ad541a92b6648cdd3c" name="ac1b9641748da45ad541a92b6648cdd3c"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>curColorBrightness</b> = 0</td></tr>
-<tr class="memitem:aeae111db1e556cfc17f4d49ff9f45ac9" id="r_aeae111db1e556cfc17f4d49ff9f45ac9"><td class="memItemLeft"><a id="aeae111db1e556cfc17f4d49ff9f45ac9" name="aeae111db1e556cfc17f4d49ff9f45ac9"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>curWhiteBrightness</b> = 0</td></tr>
-<tr class="memitem:a4c90a5cc91d2badbad50186275284a27" id="r_a4c90a5cc91d2badbad50186275284a27"><td class="memItemLeft"><a id="a4c90a5cc91d2badbad50186275284a27" name="a4c90a5cc91d2badbad50186275284a27"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>curWhiteTemperature</b> = 0</td></tr>
-<tr class="memitem:a86a7aee28e09211c8210cfea5e62876e" id="r_a86a7aee28e09211c8210cfea5e62876e"><td class="memItemLeft"><a id="a86a7aee28e09211c8210cfea5e62876e" name="a86a7aee28e09211c8210cfea5e62876e"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>lastColorBrightness</b> = 100</td></tr>
-<tr class="memitem:ab855f069f0cd41393c677308d11f4ded" id="r_ab855f069f0cd41393c677308d11f4ded"><td class="memItemLeft"><a id="ab855f069f0cd41393c677308d11f4ded" name="ab855f069f0cd41393c677308d11f4ded"></a>
-uint8_t&#160;</td><td class="memItemRight"><b>lastWhiteBrightness</b> = 100</td></tr>
-<tr class="memitem:a3fe6561ad904a433f0a547f9accadca4" id="r_a3fe6561ad904a433f0a547f9accadca4"><td class="memItemLeft"><a id="a3fe6561ad904a433f0a547f9accadca4" name="a3fe6561ad904a433f0a547f9accadca4"></a>
+<tr class="memitem:a88c8a492567c4b83b3812bdddefc1e5a" id="r_a88c8a492567c4b83b3812bdddefc1e5a"><td class="memItemLeft"><a id="a88c8a492567c4b83b3812bdddefc1e5a" name="a88c8a492567c4b83b3812bdddefc1e5a"></a>
 uint8_t&#160;</td><td class="memItemRight"><b>defaultDimmedBrightness</b> = 20</td></tr>
-<tr class="memitem:a6642952315e2082b7a1b21400e1c4d4b" id="r_a6642952315e2082b7a1b21400e1c4d4b"><td class="memItemLeft"><a id="a6642952315e2082b7a1b21400e1c4d4b" name="a6642952315e2082b7a1b21400e1c4d4b"></a>
+<tr class="memitem:a028caa7cac10a81fb96bc6d027a3698c" id="r_a028caa7cac10a81fb96bc6d027a3698c"><td class="memItemLeft"><a id="a028caa7cac10a81fb96bc6d027a3698c" name="a028caa7cac10a81fb96bc6d027a3698c"></a>
 bool&#160;</td><td class="memItemRight"><b>dimIterationDirection</b> = false</td></tr>
-<tr class="memitem:afccbced3bde264af849e2ac324b65dd3" id="r_afccbced3bde264af849e2ac324b65dd3"><td class="memItemLeft"><a id="afccbced3bde264af849e2ac324b65dd3" name="afccbced3bde264af849e2ac324b65dd3"></a>
+<tr class="memitem:a6711891ffc5630fa2b3e65da05aef9b4" id="r_a6711891ffc5630fa2b3e65da05aef9b4"><td class="memItemLeft"><a id="a6711891ffc5630fa2b3e65da05aef9b4" name="a6711891ffc5630fa2b3e65da05aef9b4"></a>
 bool&#160;</td><td class="memItemRight"><b>resetDisance</b> = false</td></tr>
-<tr class="memitem:a2498e73b70e71d87515e6d465ff9f523" id="r_a2498e73b70e71d87515e6d465ff9f523"><td class="memItemLeft"><a id="a2498e73b70e71d87515e6d465ff9f523" name="a2498e73b70e71d87515e6d465ff9f523"></a>
+<tr class="memitem:a4a856b8915ec6e220465f6b1d5a1366f" id="r_a4a856b8915ec6e220465f6b1d5a1366f"><td class="memItemLeft"><a id="a4a856b8915ec6e220465f6b1d5a1366f" name="a4a856b8915ec6e220465f6b1d5a1366f"></a>
 bool&#160;</td><td class="memItemRight"><b>instant</b> = false</td></tr>
-<tr class="memitem:a1069ebc87a41ec79c111e3ec3dd4e505" id="r_a1069ebc87a41ec79c111e3ec3dd4e505"><td class="memItemLeft"><a id="a1069ebc87a41ec79c111e3ec3dd4e505" name="a1069ebc87a41ec79c111e3ec3dd4e505"></a>
+<tr class="memitem:aeb371b8e33a8b9698f95156286fc1145" id="r_aeb371b8e33a8b9698f95156286fc1145"><td class="memItemLeft"><a id="aeb371b8e33a8b9698f95156286fc1145" name="aeb371b8e33a8b9698f95156286fc1145"></a>
 bool&#160;</td><td class="memItemRight"><b>enabled</b> = true</td></tr>
-<tr class="memitem:a3b6120bb4805f399dee1b48c51f1ceb6" id="r_a3b6120bb4805f399dee1b48c51f1ceb6"><td class="memItemLeft"><a id="a3b6120bb4805f399dee1b48c51f1ceb6" name="a3b6120bb4805f399dee1b48c51f1ceb6"></a>
+<tr class="memitem:a926b6febaf3d51538c9b70d4fb3a1566" id="r_a926b6febaf3d51538c9b70d4fb3a1566"><td class="memItemLeft"><a id="a926b6febaf3d51538c9b70d4fb3a1566" name="a926b6febaf3d51538c9b70d4fb3a1566"></a>
 bool&#160;</td><td class="memItemRight"><b>initDone</b> = false</td></tr>
-<tr class="memitem:ab08cff3786acc6663dbdf01850385145" id="r_ab08cff3786acc6663dbdf01850385145"><td class="memItemLeft"><a id="ab08cff3786acc6663dbdf01850385145" name="ab08cff3786acc6663dbdf01850385145"></a>
+<tr class="memitem:a7dbfff1abe89d87943d19f598a0c60a7" id="r_a7dbfff1abe89d87943d19f598a0c60a7"><td class="memItemLeft"><a id="a7dbfff1abe89d87943d19f598a0c60a7" name="a7dbfff1abe89d87943d19f598a0c60a7"></a>
 bool&#160;</td><td class="memItemRight"><b>skipLegacyMigration</b> = false</td></tr>
-<tr class="memitem:aff9dbf514663a00f1ddba75b594696c5" id="r_aff9dbf514663a00f1ddba75b594696c5"><td class="memItemLeft"><a id="aff9dbf514663a00f1ddba75b594696c5" name="aff9dbf514663a00f1ddba75b594696c5"></a>
+<tr class="memitem:aa2cd5f1bed2b57e0f256acb8ad700d53" id="r_aa2cd5f1bed2b57e0f256acb8ad700d53"><td class="memItemLeft"><a id="aa2cd5f1bed2b57e0f256acb8ad700d53" name="aa2cd5f1bed2b57e0f256acb8ad700d53"></a>
 int8_t&#160;</td><td class="memItemRight"><b>stateOnInit</b> = RGBW_STATE_ON_INIT_RESTORE</td></tr>
-<tr class="memitem:a808d001fe938054853ddf7055ea42fd2" id="r_a808d001fe938054853ddf7055ea42fd2"><td class="memItemLeft"><a id="a808d001fe938054853ddf7055ea42fd2" name="a808d001fe938054853ddf7055ea42fd2"></a>
+<tr class="memitem:aa60efd523cb674072c21ba6ae1cf2fc5" id="r_aa60efd523cb674072c21ba6ae1cf2fc5"><td class="memItemLeft"><a id="aa60efd523cb674072c21ba6ae1cf2fc5" name="aa60efd523cb674072c21ba6ae1cf2fc5"></a>
 uint8_t&#160;</td><td class="memItemRight"><b>minIterationBrightness</b> = 1</td></tr>
-<tr class="memitem:aa66c7b05434de447b062800fd76aa76b" id="r_aa66c7b05434de447b062800fd76aa76b"><td class="memItemLeft"><a id="aa66c7b05434de447b062800fd76aa76b" name="aa66c7b05434de447b062800fd76aa76b"></a>
+<tr class="memitem:a27bbd012cbe4b1442e25de2e3b8b7839" id="r_a27bbd012cbe4b1442e25de2e3b8b7839"><td class="memItemLeft"><a id="a27bbd012cbe4b1442e25de2e3b8b7839" name="a27bbd012cbe4b1442e25de2e3b8b7839"></a>
 uint8_t&#160;</td><td class="memItemRight"><b>maxTotalHwPower</b> = 100</td></tr>
-<tr class="memitem:a72fc4a079fb12c29c1fc328c0fbf7522" id="r_a72fc4a079fb12c29c1fc328c0fbf7522"><td class="memItemLeft"><a id="a72fc4a079fb12c29c1fc328c0fbf7522" name="a72fc4a079fb12c29c1fc328c0fbf7522"></a>
+<tr class="memitem:ac500d5ebd868902baa4631eea3b8e207" id="r_ac500d5ebd868902baa4631eea3b8e207"><td class="memItemLeft"><a id="ac500d5ebd868902baa4631eea3b8e207" name="ac500d5ebd868902baa4631eea3b8e207"></a>
 uint8_t&#160;</td><td class="memItemRight"><b>usedChannels</b> = 0</td></tr>
-<tr class="memitem:a61cdfa45b078acb2e57d5dd679045e5d" id="r_a61cdfa45b078acb2e57d5dd679045e5d"><td class="memItemLeft"><a id="a61cdfa45b078acb2e57d5dd679045e5d" name="a61cdfa45b078acb2e57d5dd679045e5d"></a>
+<tr class="memitem:a52c664ff9927a23b55f4cc3fdbfd26ce" id="r_a52c664ff9927a23b55f4cc3fdbfd26ce"><td class="memItemLeft"><a id="a52c664ff9927a23b55f4cc3fdbfd26ce" name="a52c664ff9927a23b55f4cc3fdbfd26ce"></a>
 LegacyChannelFunction&#160;</td><td class="memItemRight"><b>legacyChannelFunction</b> = LegacyChannelFunction::None</td></tr>
-<tr class="memitem:a92c7276644b37e8d8675975bf7aaed7c" id="r_a92c7276644b37e8d8675975bf7aaed7c"><td class="memItemLeft"><a id="a92c7276644b37e8d8675975bf7aaed7c" name="a92c7276644b37e8d8675975bf7aaed7c"></a>
+<tr class="memitem:ae2f0fd3993f4977b255024aceb8b89b6" id="r_ae2f0fd3993f4977b255024aceb8b89b6"><td class="memItemLeft"><a id="ae2f0fd3993f4977b255024aceb8b89b6" name="ae2f0fd3993f4977b255024aceb8b89b6"></a>
 enum ButtonControlType&#160;</td><td class="memItemRight"><b>buttonControlType</b> = BUTTON_FOR_RGBW</td></tr>
-<tr class="memitem:a4455795f78dd71fdb384d672500931dd" id="r_a4455795f78dd71fdb384d672500931dd"><td class="memItemLeft"><a id="a4455795f78dd71fdb384d672500931dd" name="a4455795f78dd71fdb384d672500931dd"></a>
+<tr class="memitem:a69b8300ed58f8b9e409ead4c640edbd7" id="r_a69b8300ed58f8b9e409ead4c640edbd7"><td class="memItemLeft"><a id="a69b8300ed58f8b9e409ead4c640edbd7" name="a69b8300ed58f8b9e409ead4c640edbd7"></a>
 enum AutoIterateMode&#160;</td><td class="memItemRight"><b>autoIterateMode</b> = AutoIterateMode::OFF</td></tr>
-<tr class="memitem:a9c7593a6837ef75fda9724e27f5674e8" id="r_a9c7593a6837ef75fda9724e27f5674e8"><td class="memItemLeft"><a id="a9c7593a6837ef75fda9724e27f5674e8" name="a9c7593a6837ef75fda9724e27f5674e8"></a>
+<tr class="memitem:aa04de0a1af7306be81df64c57e763bb4" id="r_aa04de0a1af7306be81df64c57e763bb4"><td class="memItemLeft"><a id="aa04de0a1af7306be81df64c57e763bb4" name="aa04de0a1af7306be81df64c57e763bb4"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>maxHwValue</b> = 1023</td></tr>
-<tr class="memitem:a1d04b208ad7c8aae13e92708424db72e" id="r_a1d04b208ad7c8aae13e92708424db72e"><td class="memItemLeft"><a id="a1d04b208ad7c8aae13e92708424db72e" name="a1d04b208ad7c8aae13e92708424db72e"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwRed</b> = -1</td></tr>
-<tr class="memitem:a28802055bf8165f8677dfa0ae0b2251f" id="r_a28802055bf8165f8677dfa0ae0b2251f"><td class="memItemLeft"><a id="a28802055bf8165f8677dfa0ae0b2251f" name="a28802055bf8165f8677dfa0ae0b2251f"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwGreen</b> = -1</td></tr>
-<tr class="memitem:ad75ba8c807892252ae644cc4be3747e0" id="r_ad75ba8c807892252ae644cc4be3747e0"><td class="memItemLeft"><a id="ad75ba8c807892252ae644cc4be3747e0" name="ad75ba8c807892252ae644cc4be3747e0"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwBlue</b> = -1</td></tr>
-<tr class="memitem:a20eff44f80d1a97121dafb2afee18f01" id="r_a20eff44f80d1a97121dafb2afee18f01"><td class="memItemLeft"><a id="a20eff44f80d1a97121dafb2afee18f01" name="a20eff44f80d1a97121dafb2afee18f01"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwColorBrightness</b> = -1</td></tr>
-<tr class="memitem:a5c1fd8ab229521ad03a73077e691082e" id="r_a5c1fd8ab229521ad03a73077e691082e"><td class="memItemLeft"><a id="a5c1fd8ab229521ad03a73077e691082e" name="a5c1fd8ab229521ad03a73077e691082e"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwBrightness</b> = -1</td></tr>
-<tr class="memitem:ac0714be06cbd15859b1dbe0e32f2cfe2" id="r_ac0714be06cbd15859b1dbe0e32f2cfe2"><td class="memItemLeft"><a id="ac0714be06cbd15859b1dbe0e32f2cfe2" name="ac0714be06cbd15859b1dbe0e32f2cfe2"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwWhiteTemperature</b> = -1</td></tr>
-<tr class="memitem:acb9d662e8464160b50e1e794e1ad9879" id="r_acb9d662e8464160b50e1e794e1ad9879"><td class="memItemLeft"><a id="acb9d662e8464160b50e1e794e1ad9879" name="acb9d662e8464160b50e1e794e1ad9879"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwWhite1Brightness</b> = -1</td></tr>
-<tr class="memitem:a124f23a499730f3ed75b82673979da8e" id="r_a124f23a499730f3ed75b82673979da8e"><td class="memItemLeft"><a id="a124f23a499730f3ed75b82673979da8e" name="a124f23a499730f3ed75b82673979da8e"></a>
-int16_t&#160;</td><td class="memItemRight"><b>hwWhite2Brightness</b> = -1</td></tr>
-<tr class="memitem:ad0519840703c524a9005dea45209de38" id="r_ad0519840703c524a9005dea45209de38"><td class="memItemLeft"><a id="ad0519840703c524a9005dea45209de38" name="ad0519840703c524a9005dea45209de38"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>minBrightness</b> = 1</td></tr>
-<tr class="memitem:a1d1d6dba31fe252f3f57b5cc65fab14c" id="r_a1d1d6dba31fe252f3f57b5cc65fab14c"><td class="memItemLeft"><a id="a1d1d6dba31fe252f3f57b5cc65fab14c" name="a1d1d6dba31fe252f3f57b5cc65fab14c"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>maxBrightness</b> = 1023</td></tr>
-<tr class="memitem:a429adbe33e8aa9329073334393764961" id="r_a429adbe33e8aa9329073334393764961"><td class="memItemLeft"><a id="a429adbe33e8aa9329073334393764961" name="a429adbe33e8aa9329073334393764961"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>minColorBrightness</b> = 1</td></tr>
-<tr class="memitem:a28453038fa757d125a5180d2aa09cccb" id="r_a28453038fa757d125a5180d2aa09cccb"><td class="memItemLeft"><a id="a28453038fa757d125a5180d2aa09cccb" name="a28453038fa757d125a5180d2aa09cccb"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>maxColorBrightness</b> = 1023</td></tr>
-<tr class="memitem:a5f925c78bf391d1d07f1d237993dd3a5" id="r_a5f925c78bf391d1d07f1d237993dd3a5"><td class="memItemLeft"><a id="a5f925c78bf391d1d07f1d237993dd3a5" name="a5f925c78bf391d1d07f1d237993dd3a5"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>redDistance</b> = 0</td></tr>
-<tr class="memitem:a67615cc5ce14c07fa4e8e97ee0d625f9" id="r_a67615cc5ce14c07fa4e8e97ee0d625f9"><td class="memItemLeft"><a id="a67615cc5ce14c07fa4e8e97ee0d625f9" name="a67615cc5ce14c07fa4e8e97ee0d625f9"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>greenDistance</b> = 0</td></tr>
-<tr class="memitem:ae75aaeab69e560721421a05121ce173d" id="r_ae75aaeab69e560721421a05121ce173d"><td class="memItemLeft"><a id="ae75aaeab69e560721421a05121ce173d" name="ae75aaeab69e560721421a05121ce173d"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>blueDistance</b> = 0</td></tr>
-<tr class="memitem:a4f794b9c596e634cd2e842f24350652a" id="r_a4f794b9c596e634cd2e842f24350652a"><td class="memItemLeft"><a id="a4f794b9c596e634cd2e842f24350652a" name="a4f794b9c596e634cd2e842f24350652a"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>colorBrightnessDistance</b> = 0</td></tr>
-<tr class="memitem:aa56399a5a7a23aa4d25c00f8fa75069a" id="r_aa56399a5a7a23aa4d25c00f8fa75069a"><td class="memItemLeft"><a id="aa56399a5a7a23aa4d25c00f8fa75069a" name="aa56399a5a7a23aa4d25c00f8fa75069a"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>brightnessDistance</b> = 0</td></tr>
-<tr class="memitem:a6f1530865ccb6881015b761a4e432ae0" id="r_a6f1530865ccb6881015b761a4e432ae0"><td class="memItemLeft"><a id="a6f1530865ccb6881015b761a4e432ae0" name="a6f1530865ccb6881015b761a4e432ae0"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>whiteTemperatureDistance</b> = 0</td></tr>
-<tr class="memitem:a81f437e1561678e24fa85ba9fa5abe16" id="r_a81f437e1561678e24fa85ba9fa5abe16"><td class="memItemLeft"><a id="a81f437e1561678e24fa85ba9fa5abe16" name="a81f437e1561678e24fa85ba9fa5abe16"></a>
+<tr class="memitem:a2aae6f306447a9989f786ce1e3e24b14" id="r_a2aae6f306447a9989f786ce1e3e24b14"><td class="memItemLeft"><a id="a2aae6f306447a9989f786ce1e3e24b14" name="a2aae6f306447a9989f786ce1e3e24b14"></a>
+float&#160;</td><td class="memItemRight"><b>minBrightnessRatio</b> = 0.0f</td></tr>
+<tr class="memitem:a749199fc58f1560a7d035ddc3e1933ce" id="r_a749199fc58f1560a7d035ddc3e1933ce"><td class="memItemLeft"><a id="a749199fc58f1560a7d035ddc3e1933ce" name="a749199fc58f1560a7d035ddc3e1933ce"></a>
+float&#160;</td><td class="memItemRight"><b>maxBrightnessRatio</b> = 1.0f</td></tr>
+<tr class="memitem:a914fdab2a0a9b85335cffe9698443357" id="r_a914fdab2a0a9b85335cffe9698443357"><td class="memItemLeft"><a id="a914fdab2a0a9b85335cffe9698443357" name="a914fdab2a0a9b85335cffe9698443357"></a>
+float&#160;</td><td class="memItemRight"><b>minColorBrightnessRatio</b> = 0.0f</td></tr>
+<tr class="memitem:ad0cd2ebecf4d7e3110c3bc72abe742fd" id="r_ad0cd2ebecf4d7e3110c3bc72abe742fd"><td class="memItemLeft"><a id="ad0cd2ebecf4d7e3110c3bc72abe742fd" name="ad0cd2ebecf4d7e3110c3bc72abe742fd"></a>
+float&#160;</td><td class="memItemRight"><b>maxColorBrightnessRatio</b> = 1.0f</td></tr>
+<tr class="memitem:a776dd4745a5be87b7af9c0d5dff86bb4" id="r_a776dd4745a5be87b7af9c0d5dff86bb4"><td class="memItemLeft"><a id="a776dd4745a5be87b7af9c0d5dff86bb4" name="a776dd4745a5be87b7af9c0d5dff86bb4"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>minMaxIterationDelay</b> = 750</td></tr>
-<tr class="memitem:a0f5821b920b6e1e2d8fb14c2c83481f6" id="r_a0f5821b920b6e1e2d8fb14c2c83481f6"><td class="memItemLeft"><a id="a0f5821b920b6e1e2d8fb14c2c83481f6" name="a0f5821b920b6e1e2d8fb14c2c83481f6"></a>
+<tr class="memitem:a1da94fb508db3ddf788151bf2648890e" id="r_a1da94fb508db3ddf788151bf2648890e"><td class="memItemLeft"><a id="a1da94fb508db3ddf788151bf2648890e" name="a1da94fb508db3ddf788151bf2648890e"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>fadeEffect</b> = 500</td></tr>
-<tr class="memitem:ac668647b69aa1c6513dc0096120f1ef4" id="r_ac668647b69aa1c6513dc0096120f1ef4"><td class="memItemLeft"><a id="ac668647b69aa1c6513dc0096120f1ef4" name="ac668647b69aa1c6513dc0096120f1ef4"></a>
+<tr class="memitem:a16b1eae7ea51e4159db1f285937a1a58" id="r_a16b1eae7ea51e4159db1f285937a1a58"><td class="memItemLeft"><a id="a16b1eae7ea51e4159db1f285937a1a58" name="a16b1eae7ea51e4159db1f285937a1a58"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>minPwmFrequency</b> = 100</td></tr>
-<tr class="memitem:a80d381d115b8220ad4226871d7d46cc3" id="r_a80d381d115b8220ad4226871d7d46cc3"><td class="memItemLeft"><a id="a80d381d115b8220ad4226871d7d46cc3" name="a80d381d115b8220ad4226871d7d46cc3"></a>
+<tr class="memitem:a4ea8fca65d3d0cbcb5898eff8767f008" id="r_a4ea8fca65d3d0cbcb5898eff8767f008"><td class="memItemLeft"><a id="a4ea8fca65d3d0cbcb5898eff8767f008" name="a4ea8fca65d3d0cbcb5898eff8767f008"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>maxPwmFrequency</b> = 9000</td></tr>
-<tr class="memitem:a196b951ade2e368dbffcc0d3c2e39601" id="r_a196b951ade2e368dbffcc0d3c2e39601"><td class="memItemLeft"><a id="a196b951ade2e368dbffcc0d3c2e39601" name="a196b951ade2e368dbffcc0d3c2e39601"></a>
+<tr class="memitem:ac4b7b38d27d91f14508ce6475ff0558a" id="r_ac4b7b38d27d91f14508ce6475ff0558a"><td class="memItemLeft"><a id="ac4b7b38d27d91f14508ce6475ff0558a" name="ac4b7b38d27d91f14508ce6475ff0558a"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>pwmFrequency</b> = 500</td></tr>
-<tr class="memitem:a48b5e1e3be42d4e1ff468ec5a20d4245" id="r_a48b5e1e3be42d4e1ff468ec5a20d4245"><td class="memItemLeft"><a id="a48b5e1e3be42d4e1ff468ec5a20d4245" name="a48b5e1e3be42d4e1ff468ec5a20d4245"></a>
+<tr class="memitem:ae62d6efe4c5e9c054e9fb703a1bafec2" id="r_ae62d6efe4c5e9c054e9fb703a1bafec2"><td class="memItemLeft"><a id="ae62d6efe4c5e9c054e9fb703a1bafec2" name="ae62d6efe4c5e9c054e9fb703a1bafec2"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>stepPwmFrequency</b> = 1</td></tr>
-<tr class="memitem:aa958bcf2db09b3525a8389c938c68a65" id="r_aa958bcf2db09b3525a8389c938c68a65"><td class="memItemLeft"><a id="aa958bcf2db09b3525a8389c938c68a65" name="aa958bcf2db09b3525a8389c938c68a65"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastTick</b> = 0</td></tr>
-<tr class="memitem:a22be5489d435dc84d1d9a8d28b92f746" id="r_a22be5489d435dc84d1d9a8d28b92f746"><td class="memItemLeft"><a id="a22be5489d435dc84d1d9a8d28b92f746" name="a22be5489d435dc84d1d9a8d28b92f746"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastChangeRedMs</b> = 0</td></tr>
-<tr class="memitem:a8745c996a6c4bddd3eb211339ad60022" id="r_a8745c996a6c4bddd3eb211339ad60022"><td class="memItemLeft"><a id="a8745c996a6c4bddd3eb211339ad60022" name="a8745c996a6c4bddd3eb211339ad60022"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastChangeGreenMs</b> = 0</td></tr>
-<tr class="memitem:ad9dd7acc16e4bf6e22affd23de0f872e" id="r_ad9dd7acc16e4bf6e22affd23de0f872e"><td class="memItemLeft"><a id="ad9dd7acc16e4bf6e22affd23de0f872e" name="ad9dd7acc16e4bf6e22affd23de0f872e"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastChangeBlueMs</b> = 0</td></tr>
-<tr class="memitem:a3564d3c4e28cbb60a4f63549140b40b1" id="r_a3564d3c4e28cbb60a4f63549140b40b1"><td class="memItemLeft"><a id="a3564d3c4e28cbb60a4f63549140b40b1" name="a3564d3c4e28cbb60a4f63549140b40b1"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastChangeColorBrightnessMs</b> = 0</td></tr>
-<tr class="memitem:ac70b608a152adbad6d18c3b5de7500e7" id="r_ac70b608a152adbad6d18c3b5de7500e7"><td class="memItemLeft"><a id="ac70b608a152adbad6d18c3b5de7500e7" name="ac70b608a152adbad6d18c3b5de7500e7"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastChangeBrightnessMs</b> = 0</td></tr>
-<tr class="memitem:a29098a8b4c31659eb7f1c780159058f7" id="r_a29098a8b4c31659eb7f1c780159058f7"><td class="memItemLeft"><a id="a29098a8b4c31659eb7f1c780159058f7" name="a29098a8b4c31659eb7f1c780159058f7"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastChangeWhiteTemperatureMs</b> = 0</td></tr>
-<tr class="memitem:a611dd906a3717835311a8f145a942205" id="r_a611dd906a3717835311a8f145a942205"><td class="memItemLeft"><a id="a611dd906a3717835311a8f145a942205" name="a611dd906a3717835311a8f145a942205"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastMsgReceivedMs</b> = 0</td></tr>
-<tr class="memitem:a01a2fd1a86ea92c4000e687895e4246a" id="r_a01a2fd1a86ea92c4000e687895e4246a"><td class="memItemLeft"><a id="a01a2fd1a86ea92c4000e687895e4246a" name="a01a2fd1a86ea92c4000e687895e4246a"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastIterateDimmerTimestamp</b> = 0</td></tr>
-<tr class="memitem:a5043fbd6ccdb0b1760d6a1ccbec76124" id="r_a5043fbd6ccdb0b1760d6a1ccbec76124"><td class="memItemLeft"><a id="a5043fbd6ccdb0b1760d6a1ccbec76124" name="a5043fbd6ccdb0b1760d6a1ccbec76124"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>iterationDelayTimestamp</b> = 0</td></tr>
-<tr class="memitem:a36188239e74be2ce736cbd96c45456e3" id="r_a36188239e74be2ce736cbd96c45456e3"><td class="memItemLeft"><a id="a36188239e74be2ce736cbd96c45456e3" name="a36188239e74be2ce736cbd96c45456e3"></a>
-uint32_t&#160;</td><td class="memItemRight"><b>lastAutoIterateStartTimestamp</b> = 0</td></tr>
-<tr class="memitem:ab2b006d95d292ddbae3353946d1b999e" id="r_ab2b006d95d292ddbae3353946d1b999e"><td class="memItemLeft"><a id="ab2b006d95d292ddbae3353946d1b999e" name="ab2b006d95d292ddbae3353946d1b999e"></a>
+<tr class="memitem:af5da8b216c6ebec2549803b3c243fcb5" id="r_af5da8b216c6ebec2549803b3c243fcb5"><td class="memItemLeft"><a id="af5da8b216c6ebec2549803b3c243fcb5" name="af5da8b216c6ebec2549803b3c243fcb5"></a>
 uint32_t&#160;</td><td class="memItemRight"><b>previousChannelFunction</b> = 0</td></tr>
-<tr class="memitem:ab3c21e04df5047d1260c17d6a618982f" id="r_ab3c21e04df5047d1260c17d6a618982f"><td class="memItemLeft"><a id="ab3c21e04df5047d1260c17d6a618982f" name="ab3c21e04df5047d1260c17d6a618982f"></a>
+<tr class="memitem:a9a5385fcd1b5769ef764a500931b7b03" id="r_a9a5385fcd1b5769ef764a500931b7b03"><td class="memItemLeft"><a id="a9a5385fcd1b5769ef764a500931b7b03" name="a9a5385fcd1b5769ef764a500931b7b03"></a>
 float&#160;</td><td class="memItemRight"><b>warmWhiteGain</b> = 1.0</td></tr>
-<tr class="memitem:aaad2a4dfd4ff91d9b11ddb9638939949" id="r_aaad2a4dfd4ff91d9b11ddb9638939949"><td class="memItemLeft"><a id="aaad2a4dfd4ff91d9b11ddb9638939949" name="aaad2a4dfd4ff91d9b11ddb9638939949"></a>
+<tr class="memitem:a932a5e334779ca3868850beab9f3f1cb" id="r_a932a5e334779ca3868850beab9f3f1cb"><td class="memItemLeft"><a id="a932a5e334779ca3868850beab9f3f1cb" name="a932a5e334779ca3868850beab9f3f1cb"></a>
 float&#160;</td><td class="memItemRight"><b>coldWhiteGain</b> = 1.0</td></tr>
-<tr class="memitem:ac99214032a0754d15bb0e4d17c75c768" id="r_ac99214032a0754d15bb0e4d17c75c768"><td class="memItemLeft"><a id="ac99214032a0754d15bb0e4d17c75c768" name="ac99214032a0754d15bb0e4d17c75c768"></a>
+<tr class="memitem:a844de755078db6b08dc3b5a16b14ef99" id="r_a844de755078db6b08dc3b5a16b14ef99"><td class="memItemLeft"><a id="a844de755078db6b08dc3b5a16b14ef99" name="a844de755078db6b08dc3b5a16b14ef99"></a>
 <a class="el" href="classSupla_1_1Control_1_1BrightnessAdjuster.html">BrightnessAdjuster</a> *&#160;</td><td class="memItemRight"><b>brightnessAdjuster</b> = nullptr</td></tr>
-<tr class="memitem:af2130b227de85bb70ab4c18fb6ffc516" id="r_af2130b227de85bb70ab4c18fb6ffc516"><td class="memItemLeft"><a id="af2130b227de85bb70ab4c18fb6ffc516" name="af2130b227de85bb70ab4c18fb6ffc516"></a>
+<tr class="memitem:aa9cb6c1e0bcce2eb5f0c6f7962ddb265" id="r_aa9cb6c1e0bcce2eb5f0c6f7962ddb265"><td class="memItemLeft"><a id="aa9cb6c1e0bcce2eb5f0c6f7962ddb265" name="aa9cb6c1e0bcce2eb5f0c6f7962ddb265"></a>
 <a class="el" href="classSupla_1_1Control_1_1Button.html">Supla::Control::Button</a> *&#160;</td><td class="memItemRight"><b>attachedButton</b> = nullptr</td></tr>
-<tr class="memitem:aa13e2dace2d19e97974bfe11daf91543" id="r_aa13e2dace2d19e97974bfe11daf91543"><td class="memItemLeft"><a id="aa13e2dace2d19e97974bfe11daf91543" name="aa13e2dace2d19e97974bfe11daf91543"></a>
-<a class="el" href="#a4ec5a24817eebee8e74f8cb32e284f63">RGBCCTBase</a> *&#160;</td><td class="memItemRight"><b>parent</b> = nullptr</td></tr>
+<tr class="memitem:ad490c66d0929575f3dad6c4c4b6ec913" id="r_ad490c66d0929575f3dad6c4c4b6ec913"><td class="memItemLeft"><a id="ad490c66d0929575f3dad6c4c4b6ec913" name="ad490c66d0929575f3dad6c4c4b6ec913"></a>
+<a class="el" href="#a336c27c93866604ee8d1422a6148ada0">LightingPwmBase</a> *&#160;</td><td class="memItemRight"><b>parent</b> = nullptr</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1ChannelElement"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1ChannelElement')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Attributes inherited from <a class="el" href="classSupla_1_1ChannelElement.html">Supla::ChannelElement</a></td></tr>
 <tr class="memitem:aae2e78ba9cd3c3c4d5017223076af9b6 inherit pro_attribs_classSupla_1_1ChannelElement" id="r_aae2e78ba9cd3c3c4d5017223076af9b6"><td class="memItemLeft">
 <a class="el" href="classChannel.html">Channel</a>&#160;</td><td class="memItemRight"><b>channel</b></td></tr>
@@ -594,8 +556,8 @@ static Element *&#160;</td><td class="memItemRight"><b>firstPtr</b> = nullptr</t
 static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td></tr>
 </table>
 <a name="doc-constructors" id="doc-constructors"></a><h2 id="header-doc-constructors" class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a4ec5a24817eebee8e74f8cb32e284f63" name="a4ec5a24817eebee8e74f8cb32e284f63"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4ec5a24817eebee8e74f8cb32e284f63">&#9670;&#160;</a></span>RGBCCTBase()</h2>
+<a id="a336c27c93866604ee8d1422a6148ada0" name="a336c27c93866604ee8d1422a6148ada0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a336c27c93866604ee8d1422a6148ada0">&#9670;&#160;</a></span>LightingPwmBase()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -604,9 +566,9 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">Supla::Control::RGBCCTBase::RGBCCTBase </td>
+          <td class="memname">Supla::Control::LightingPwmBase::LightingPwmBase </td>
           <td>(</td>
-          <td class="paramtype">RGBCCTBase *</td>          <td class="paramname"><span class="paramname"><em>parent</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span></td><td>)</td>
+          <td class="paramtype">LightingPwmBase *</td>          <td class="paramname"><span class="paramname"><em>parent</em></span><span class="paramdefsep"> = </span><span class="paramdefval">nullptr</span></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -628,8 +590,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div>
 </div>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
-<a id="ac864be18dcf1bb18323064d9418c0f4b" name="ac864be18dcf1bb18323064d9418c0f4b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac864be18dcf1bb18323064d9418c0f4b">&#9670;&#160;</a></span>applyChannelConfig()</h2>
+<a id="a1cad36c06e9734f8ab50d619b1360e62" name="a1cad36c06e9734f8ab50d619b1360e62"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1cad36c06e9734f8ab50d619b1360e62">&#9670;&#160;</a></span>applyChannelConfig()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -638,7 +600,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">ApplyConfigResult Supla::Control::RGBCCTBase::applyChannelConfig </td>
+          <td class="memname">ApplyConfigResult Supla::Control::LightingPwmBase::applyChannelConfig </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *</td>          <td class="paramname"><span class="paramname"><em>result</em></span>, </td>
         </tr>
@@ -659,14 +621,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a6eff5c2fd4664a56203b06d7753d4ed7" name="a6eff5c2fd4664a56203b06d7753d4ed7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6eff5c2fd4664a56203b06d7753d4ed7">&#9670;&#160;</a></span>convertStorageFromLegacyChannel()</h2>
+<a id="a61e8b252f9d73a5b0ed35e3068cc2985" name="a61e8b252f9d73a5b0ed35e3068cc2985"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61e8b252f9d73a5b0ed35e3068cc2985">&#9670;&#160;</a></span>convertStorageFromLegacyChannel()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::convertStorageFromLegacyChannel </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::convertStorageFromLegacyChannel </td>
           <td>(</td>
           <td class="paramtype">LegacyChannelFunction</td>          <td class="paramname"><span class="paramname"><em>channelFunction</em></span></td><td>)</td>
           <td></td>
@@ -684,8 +646,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a835656ae8512ec20be5c463193646649" name="a835656ae8512ec20be5c463193646649"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a835656ae8512ec20be5c463193646649">&#9670;&#160;</a></span>fillChannelConfig()</h2>
+<a id="aa65e56bff0b87a6f77e896a8268a9b6a" name="aa65e56bff0b87a6f77e896a8268a9b6a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa65e56bff0b87a6f77e896a8268a9b6a">&#9670;&#160;</a></span>fillChannelConfig()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -694,7 +656,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::fillChannelConfig </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::fillChannelConfig </td>
           <td>(</td>
           <td class="paramtype">void *</td>          <td class="paramname"><span class="paramname"><em>channelConfig</em></span>, </td>
         </tr>
@@ -720,8 +682,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="afb3f34d0808ae0c69d91a9e7fa504461" name="afb3f34d0808ae0c69d91a9e7fa504461"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afb3f34d0808ae0c69d91a9e7fa504461">&#9670;&#160;</a></span>fillSuplaChannelNewValue()</h2>
+<a id="adfd417ba554f4a704b2a552e0ea52ef0" name="adfd417ba554f4a704b2a552e0ea52ef0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adfd417ba554f4a704b2a552e0ea52ef0">&#9670;&#160;</a></span>fillSuplaChannelNewValue()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -730,7 +692,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::fillSuplaChannelNewValue </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::fillSuplaChannelNewValue </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *</td>          <td class="paramname"><span class="paramname"><em>value</em></span></td><td>)</td>
           <td></td>
@@ -755,14 +717,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a57d8fce22db79a77b5e72e00602da261" name="a57d8fce22db79a77b5e72e00602da261"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a57d8fce22db79a77b5e72e00602da261">&#9670;&#160;</a></span>getAncestorCount()</h2>
+<a id="a2070780094b7e949c7523710d8d69b00" name="a2070780094b7e949c7523710d8d69b00"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2070780094b7e949c7523710d8d69b00">&#9670;&#160;</a></span>getAncestorCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">int Supla::Control::RGBCCTBase::getAncestorCount </td>
+          <td class="memname">int Supla::Control::LightingPwmBase::getAncestorCount </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -775,14 +737,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a70d920c804871dbb56c0460c78022a82" name="a70d920c804871dbb56c0460c78022a82"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a70d920c804871dbb56c0460c78022a82">&#9670;&#160;</a></span>getMaxPwmFrequency()</h2>
+<a id="a3a39c0146829804c5b5d2d554e584066" name="a3a39c0146829804c5b5d2d554e584066"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a39c0146829804c5b5d2d554e584066">&#9670;&#160;</a></span>getMaxPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getMaxPwmFrequency </td>
+          <td class="memname">uint16_t Supla::Control::LightingPwmBase::getMaxPwmFrequency </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -795,14 +757,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="ab4b886388f93540e352d9964544e2ee6" name="ab4b886388f93540e352d9964544e2ee6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab4b886388f93540e352d9964544e2ee6">&#9670;&#160;</a></span>getMinPwmFrequency()</h2>
+<a id="aedac22f5d3cbaf955077af45ed4c7cf5" name="aedac22f5d3cbaf955077af45ed4c7cf5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aedac22f5d3cbaf955077af45ed4c7cf5">&#9670;&#160;</a></span>getMinPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getMinPwmFrequency </td>
+          <td class="memname">uint16_t Supla::Control::LightingPwmBase::getMinPwmFrequency </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -815,8 +777,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a7c6a2563507c6546546e3d1cd5d698a4" name="a7c6a2563507c6546546e3d1cd5d698a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c6a2563507c6546546e3d1cd5d698a4">&#9670;&#160;</a></span>getMissingGpioCount()</h2>
+<a id="ac2867d9300d6b6a2b66234721e7313f8" name="ac2867d9300d6b6a2b66234721e7313f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2867d9300d6b6a2b66234721e7313f8">&#9670;&#160;</a></span>getMissingGpioCount()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -825,7 +787,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int Supla::Control::RGBCCTBase::getMissingGpioCount </td>
+          <td class="memname">int Supla::Control::LightingPwmBase::getMissingGpioCount </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -844,14 +806,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="af5bd9ed8447da51cde8f756965a98481" name="af5bd9ed8447da51cde8f756965a98481"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5bd9ed8447da51cde8f756965a98481">&#9670;&#160;</a></span>getPwmFrequency()</h2>
+<a id="a62c15fc88e28c8fc34b5d0717851dc3b" name="a62c15fc88e28c8fc34b5d0717851dc3b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a62c15fc88e28c8fc34b5d0717851dc3b">&#9670;&#160;</a></span>getPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getPwmFrequency </td>
+          <td class="memname">uint16_t Supla::Control::LightingPwmBase::getPwmFrequency </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -864,14 +826,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a2d38866263383d2685fb100f3f45ab08" name="a2d38866263383d2685fb100f3f45ab08"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2d38866263383d2685fb100f3f45ab08">&#9670;&#160;</a></span>getStepPwmFrequency()</h2>
+<a id="ae49ea0891526e76231b8b9a4034a79da" name="ae49ea0891526e76231b8b9a4034a79da"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae49ea0891526e76231b8b9a4034a79da">&#9670;&#160;</a></span>getStepPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">uint16_t Supla::Control::RGBCCTBase::getStepPwmFrequency </td>
+          <td class="memname">uint16_t Supla::Control::LightingPwmBase::getStepPwmFrequency </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -884,8 +846,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a880459d26a819be3fc6b4977932ef795" name="a880459d26a819be3fc6b4977932ef795"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a880459d26a819be3fc6b4977932ef795">&#9670;&#160;</a></span>handleAction()</h2>
+<a id="a1b1229eb1f89f4e2d5b784fda034d64e" name="a1b1229eb1f89f4e2d5b784fda034d64e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1b1229eb1f89f4e2d5b784fda034d64e">&#9670;&#160;</a></span>handleAction()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -894,7 +856,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::handleAction </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::handleAction </td>
           <td>(</td>
           <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>event</em></span>, </td>
         </tr>
@@ -915,8 +877,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a62970faaf3294a8a33097f0ae2ab501a" name="a62970faaf3294a8a33097f0ae2ab501a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a62970faaf3294a8a33097f0ae2ab501a">&#9670;&#160;</a></span>handleNewValueFromServer()</h2>
+<a id="a6dbb6ae86f26e3d1d7c9e4883d76b9c9" name="a6dbb6ae86f26e3d1d7c9e4883d76b9c9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6dbb6ae86f26e3d1d7c9e4883d76b9c9">&#9670;&#160;</a></span>handleNewValueFromServer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -925,7 +887,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int32_t Supla::Control::RGBCCTBase::handleNewValueFromServer </td>
+          <td class="memname">int32_t Supla::Control::LightingPwmBase::handleNewValueFromServer </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *</td>          <td class="paramname"><span class="paramname"><em>newValue</em></span></td><td>)</td>
           <td></td>
@@ -951,14 +913,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="ac669cebe59eea74541a064d1245dc8a7" name="ac669cebe59eea74541a064d1245dc8a7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac669cebe59eea74541a064d1245dc8a7">&#9670;&#160;</a></span>hasParent()</h2>
+<a id="ab1f50e4ae718b43d970533040d953078" name="ab1f50e4ae718b43d970533040d953078"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab1f50e4ae718b43d970533040d953078">&#9670;&#160;</a></span>hasParent()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">bool Supla::Control::RGBCCTBase::hasParent </td>
+          <td class="memname">bool Supla::Control::LightingPwmBase::hasParent </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -971,8 +933,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="ae42700a774d37f2535cee0e1e0c9a03b" name="ae42700a774d37f2535cee0e1e0c9a03b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae42700a774d37f2535cee0e1e0c9a03b">&#9670;&#160;</a></span>isStateStorageMigrationNeeded()</h2>
+<a id="a7141d9a0887f08b797c08a92e417f42f" name="a7141d9a0887f08b797c08a92e417f42f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7141d9a0887f08b797c08a92e417f42f">&#9670;&#160;</a></span>isStateStorageMigrationNeeded()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -981,7 +943,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool Supla::Control::RGBCCTBase::isStateStorageMigrationNeeded </td>
+          <td class="memname">bool Supla::Control::LightingPwmBase::isStateStorageMigrationNeeded </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td> const</td>
@@ -994,7 +956,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </table>
 </div><div class="memdoc">
 
-<p>Method called after <a class="el" href="#af27cd33ace4eeaa33256d6d71cfcba1e" title="Third method called on element in SuplaDevice.begin().">onInit()</a> to check if state storage migration is needed. </p>
+<p>Method called after <a class="el" href="#a84cb9914af3de79b6fd5ab5e5490d38a" title="Third method called on element in SuplaDevice.begin().">onInit()</a> to check if state storage migration is needed. </p>
 <p>WARNING: state storage migration is not done in a way that it guarantees that data will be properly migrated. If something unexpected happens during migration (i.e. power loss), state storage may be lost. Don't rely on it, when state storage contain critical data (i.e. energy meters or impulse counters).</p>
 <dl class="section return"><dt>Returns</dt><dd>true if storage migration is needed </dd></dl>
 
@@ -1002,8 +964,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a9015ae789f93b7d66e5c2dde4be05dba" name="a9015ae789f93b7d66e5c2dde4be05dba"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9015ae789f93b7d66e5c2dde4be05dba">&#9670;&#160;</a></span>iterateAlways()</h2>
+<a id="adf0fc9002cfff534a71afeeb9a9bc355" name="adf0fc9002cfff534a71afeeb9a9bc355"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adf0fc9002cfff534a71afeeb9a9bc355">&#9670;&#160;</a></span>iterateAlways()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1012,7 +974,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::iterateAlways </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::iterateAlways </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1032,8 +994,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a2fc7719c392378825cc3697dedad08b8" name="a2fc7719c392378825cc3697dedad08b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2fc7719c392378825cc3697dedad08b8">&#9670;&#160;</a></span>onFastTimer()</h2>
+<a id="a80e8e06cceb0dd7f01babba2b4d6ac32" name="a80e8e06cceb0dd7f01babba2b4d6ac32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a80e8e06cceb0dd7f01babba2b4d6ac32">&#9670;&#160;</a></span>onFastTimer()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1042,7 +1004,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::onFastTimer </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::onFastTimer </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1062,8 +1024,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="af27cd33ace4eeaa33256d6d71cfcba1e" name="af27cd33ace4eeaa33256d6d71cfcba1e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af27cd33ace4eeaa33256d6d71cfcba1e">&#9670;&#160;</a></span>onInit()</h2>
+<a id="a84cb9914af3de79b6fd5ab5e5490d38a" name="a84cb9914af3de79b6fd5ab5e5490d38a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84cb9914af3de79b6fd5ab5e5490d38a">&#9670;&#160;</a></span>onInit()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1072,7 +1034,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::onInit </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::onInit </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1090,12 +1052,12 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ac0f0e9e97bc326ec8e06d75f916e4573">Supla::Element</a>.</p>
 
-<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RGBLeds.html#a0005841752386c02d1765fc4be45246e">Supla::Control::RGBLeds</a>, and <a class="el" href="classSupla_1_1Control_1_1RGBWLeds.html#a67cee1b5b8bbe0ebaef62cc5ae89beae">Supla::Control::RGBWLeds</a>.</p>
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1LightingPwmLeds.html#ad5660e10dacdf6cd29228dde7bb77630">Supla::Control::LightingPwmLeds</a>, <a class="el" href="classSupla_1_1Control_1_1RGBLeds.html#a0005841752386c02d1765fc4be45246e">Supla::Control::RGBLeds</a>, and <a class="el" href="classSupla_1_1Control_1_1RGBWLeds.html#a67cee1b5b8bbe0ebaef62cc5ae89beae">Supla::Control::RGBWLeds</a>.</p>
 
 </div>
 </div>
-<a id="ae1cd1cb99bec95b12b31d335af41e002" name="ae1cd1cb99bec95b12b31d335af41e002"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae1cd1cb99bec95b12b31d335af41e002">&#9670;&#160;</a></span>onLoadConfig()</h2>
+<a id="abade0e7d020757a0afee10dcb31a879e" name="abade0e7d020757a0afee10dcb31a879e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abade0e7d020757a0afee10dcb31a879e">&#9670;&#160;</a></span>onLoadConfig()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1104,7 +1066,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::onLoadConfig </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::onLoadConfig </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *</td>          <td class="paramname"><span class="paramname"><em>sdc</em></span></td><td>)</td>
           <td></td>
@@ -1128,10 +1090,12 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a9d8deade88f280e66e263bd034ba0e4c">Supla::Element</a>.</p>
 
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1LightingPwmLeds.html#a90d2b720ab4309d0dd4bf4a889e4caa1">Supla::Control::LightingPwmLeds</a>.</p>
+
 </div>
 </div>
-<a id="a74897eab2910f877bab340bca1792da9" name="a74897eab2910f877bab340bca1792da9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a74897eab2910f877bab340bca1792da9">&#9670;&#160;</a></span>onLoadState()</h2>
+<a id="ae22b17a4f9f340ce5cf12b3ed4c285aa" name="ae22b17a4f9f340ce5cf12b3ed4c285aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae22b17a4f9f340ce5cf12b3ed4c285aa">&#9670;&#160;</a></span>onLoadState()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1140,7 +1104,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::onLoadState </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::onLoadState </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1158,12 +1122,12 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#a1f705c682cfce0a95e9b93e46a4d68a6">Supla::Element</a>.</p>
 
-<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RGBWBase.html#afd24e1ffc18485d151da46e5bd5db8e4">Supla::Control::RGBWBase</a>.</p>
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RGBBase.html#af5da7d642c1308e7363428b64cc9e599">Supla::Control::RGBBase</a>, and <a class="el" href="classSupla_1_1Control_1_1RGBWBase.html#afd24e1ffc18485d151da46e5bd5db8e4">Supla::Control::RGBWBase</a>.</p>
 
 </div>
 </div>
-<a id="adf81ee71ec50a9c208e8f20c37af7b68" name="adf81ee71ec50a9c208e8f20c37af7b68"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adf81ee71ec50a9c208e8f20c37af7b68">&#9670;&#160;</a></span>onSaveState()</h2>
+<a id="a9d6074e4bfedc261140dd42b37f622b2" name="a9d6074e4bfedc261140dd42b37f622b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9d6074e4bfedc261140dd42b37f622b2">&#9670;&#160;</a></span>onSaveState()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1172,7 +1136,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::onSaveState </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::onSaveState </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1190,12 +1154,12 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ab9ebf45462dfe94c4b3c9c5797883604">Supla::Element</a>.</p>
 
-<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RGBWBase.html#af778fa211bf7b72b82e251601807c815">Supla::Control::RGBWBase</a>.</p>
+<p>Reimplemented in <a class="el" href="classSupla_1_1Control_1_1RGBBase.html#af8d09112d175be5af3d510a07d49aa5a">Supla::Control::RGBBase</a>, and <a class="el" href="classSupla_1_1Control_1_1RGBWBase.html#af778fa211bf7b72b82e251601807c815">Supla::Control::RGBWBase</a>.</p>
 
 </div>
 </div>
-<a id="a58b598129f7d4e0da56f6f632f617e00" name="a58b598129f7d4e0da56f6f632f617e00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58b598129f7d4e0da56f6f632f617e00">&#9670;&#160;</a></span>purgeConfig()</h2>
+<a id="aa11d4084181aa01ae451215a6cd039d5" name="aa11d4084181aa01ae451215a6cd039d5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa11d4084181aa01ae451215a6cd039d5">&#9670;&#160;</a></span>purgeConfig()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1204,7 +1168,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::purgeConfig </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::purgeConfig </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1223,14 +1187,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="af8f730c55bf2870fa104a14ae8c750ff" name="af8f730c55bf2870fa104a14ae8c750ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af8f730c55bf2870fa104a14ae8c750ff">&#9670;&#160;</a></span>setMaxPwmFrequency()</h2>
+<a id="a2a529cd97bf0c7ce64990122caf239aa" name="a2a529cd97bf0c7ce64990122caf239aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a529cd97bf0c7ce64990122caf239aa">&#9670;&#160;</a></span>setMaxPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::setMaxPwmFrequency </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::setMaxPwmFrequency </td>
           <td>(</td>
           <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>maxPwmFrequency</em></span></td><td>)</td>
           <td></td>
@@ -1249,14 +1213,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="ae9e593ec1e6122751868a3470fb3e9d7" name="ae9e593ec1e6122751868a3470fb3e9d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9e593ec1e6122751868a3470fb3e9d7">&#9670;&#160;</a></span>setMinPwmFrequency()</h2>
+<a id="a2d5027e4b7c5fe6706ef544f3a44b6c7" name="a2d5027e4b7c5fe6706ef544f3a44b6c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d5027e4b7c5fe6706ef544f3a44b6c7">&#9670;&#160;</a></span>setMinPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::setMinPwmFrequency </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::setMinPwmFrequency </td>
           <td>(</td>
           <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>minPwmFrequency</em></span></td><td>)</td>
           <td></td>
@@ -1275,14 +1239,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a14421696cf6a47f54b49944df4240d26" name="a14421696cf6a47f54b49944df4240d26"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14421696cf6a47f54b49944df4240d26">&#9670;&#160;</a></span>setPwmFrequency()</h2>
+<a id="a93971acd32a846f2801f7ab455e6610b" name="a93971acd32a846f2801f7ab455e6610b"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93971acd32a846f2801f7ab455e6610b">&#9670;&#160;</a></span>setPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::setPwmFrequency </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::setPwmFrequency </td>
           <td>(</td>
           <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>pwmFrequency</em></span></td><td>)</td>
           <td></td>
@@ -1302,14 +1266,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a56c79c1a83b504af2a68ec411a8e73fc" name="a56c79c1a83b504af2a68ec411a8e73fc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a56c79c1a83b504af2a68ec411a8e73fc">&#9670;&#160;</a></span>setSkipLegacyMigration()</h2>
+<a id="a3a7467138e69287299688de0b75d7621" name="a3a7467138e69287299688de0b75d7621"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a7467138e69287299688de0b75d7621">&#9670;&#160;</a></span>setSkipLegacyMigration()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::setSkipLegacyMigration </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::setSkipLegacyMigration </td>
           <td>(</td>
           <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
           <td></td>
@@ -1322,14 +1286,14 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
-<a id="a875afc88556a5f08b431ea3f853ee001" name="a875afc88556a5f08b431ea3f853ee001"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a875afc88556a5f08b431ea3f853ee001">&#9670;&#160;</a></span>setStepPwmFrequency()</h2>
+<a id="a41c38f3173f22ad0fac394ec6fc1aa3e" name="a41c38f3173f22ad0fac394ec6fc1aa3e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a41c38f3173f22ad0fac394ec6fc1aa3e">&#9670;&#160;</a></span>setStepPwmFrequency()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void Supla::Control::RGBCCTBase::setStepPwmFrequency </td>
+          <td class="memname">void Supla::Control::LightingPwmBase::setStepPwmFrequency </td>
           <td>(</td>
           <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>stepPwmFrequency</em></span></td><td>)</td>
           <td></td>
@@ -1349,8 +1313,8 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>src/supla/control/<a class="el" href="rgb__cct__base_8h_source.html">rgb_cct_base.h</a></li>
-<li>src/supla/control/<b>rgb_cct_base.cpp</b></li>
+<li>src/supla/control/<a class="el" href="lighting__pwm__base_8h_source.html">lighting_pwm_base.h</a></li>
+<li>src/supla/control/<b>lighting_pwm_base.cpp</b></li>
 </ul>
 </div><!-- contents -->
 <!-- start footer part -->

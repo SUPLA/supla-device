@@ -1,0 +1,8 @@
+<map id="Supla::Control::LightingPwmLeds::OutputState" name="Supla::Control::LightingPwmLeds::OutputState">
+<area shape="rect" id="Node000001" title=" " alt="" coords="5,199,162,239"/>
+<area shape="rect" id="Node000002" href="$structSupla_1_1Io_1_1IoPin.html" title=" " alt="" coords="30,102,137,128"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="86,143,86,198,81,198,81,143"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="30,5,137,31"/>
+<area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="86,46,86,101,81,101,81,46"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="154,9,164,18,156,27,138,30,137,24,153,22,159,18,151,13"/>
+</map>

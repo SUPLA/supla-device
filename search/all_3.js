@@ -27,7 +27,7 @@ var searchData=
   ['container_24',['Container',['../classContainer.html',1,'Container'],['../classSupla_1_1Sensor_1_1Container.html',1,'Supla::Sensor::Container']]],
   ['containerconfig_25',['ContainerConfig',['../structSupla_1_1Sensor_1_1ContainerConfig.html',1,'Supla::Sensor']]],
   ['containerparameters_26',['ContainerParameters',['../classContainerParameters.html',1,'ContainerParameters'],['../classSupla_1_1Html_1_1ContainerParameters.html',1,'Supla::Html::ContainerParameters']]],
-  ['convertstoragefromlegacychannel_27',['convertStorageFromLegacyChannel',['../classSupla_1_1Control_1_1RGBCCTBase.html#a6eff5c2fd4664a56203b06d7753d4ed7',1,'Supla::Control::RGBCCTBase']]],
+  ['convertstoragefromlegacychannel_27',['convertStorageFromLegacyChannel',['../classSupla_1_1Control_1_1LightingPwmBase.html#a61e8b252f9d73a5b0ed35e3068cc2985',1,'Supla::Control::LightingPwmBase']]],
   ['correction_28',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
   ['currentgetter_29',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
   ['customcheckboxparameter_30',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],

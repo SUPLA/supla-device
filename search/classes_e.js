@@ -11,5 +11,6 @@ var searchData=
   ['oninvalidcond_8',['OnInvalidCond',['../classOnInvalidCond.html',1,'']]],
   ['onlesscond_9',['OnLessCond',['../classOnLessCond.html',1,'']]],
   ['onlesseqcond_10',['OnLessEqCond',['../classOnLessEqCond.html',1,'']]],
-  ['outputinterface_11',['OutputInterface',['../classSupla_1_1Control_1_1OutputInterface.html',1,'Supla::Control']]]
+  ['outputinterface_11',['OutputInterface',['../classSupla_1_1Control_1_1OutputInterface.html',1,'Supla::Control']]],
+  ['outputstate_12',['OutputState',['../structSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState.html',1,'Supla::Control::LightingPwmLeds']]]
 ];

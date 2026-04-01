@@ -1378,7 +1378,8 @@ void LightingPwmBase::setMinMaxIterationDelay(uint16_t delayMs) {
   minMaxIterationDelay = delayMs;
 }
 
-LightingPwmBase &LightingPwmBase::setBrightnessLimits(float min, float max) {
+LightingPwmBase &LightingPwmBase::setBrightnessRatioLimits(float min,
+                                                           float max) {
   minBrightnessRatio = min;
   maxBrightnessRatio = max;
   normalizeLimitPair(minBrightnessRatio, maxBrightnessRatio);
@@ -1388,8 +1389,8 @@ LightingPwmBase &LightingPwmBase::setBrightnessLimits(float min, float max) {
                   static_cast<double>(maxBrightnessRatio));
   return *this;
 }
-LightingPwmBase &LightingPwmBase::setColorBrightnessLimits(float min,
-                                                           float max) {
+LightingPwmBase &LightingPwmBase::setColorBrightnessRatioLimits(float min,
+                                                                float max) {
   minColorBrightnessRatio = min;
   maxColorBrightnessRatio = max;
   normalizeLimitPair(minColorBrightnessRatio, maxColorBrightnessRatio);

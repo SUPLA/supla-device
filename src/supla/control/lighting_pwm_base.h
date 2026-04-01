@@ -154,10 +154,10 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   // set on device. Values should be between 0.0 and 1.0.
   // I.e. if limit is set to (0.05, 1.0), then values from Supla in range
   // 0-100% are mapped to PWM values in range 5% and 100% of hardware max.
-  virtual LightingPwmBase &setBrightnessLimits(float min, float max);
+  LightingPwmBase &setBrightnessRatioLimits(float min, float max);
   // Set mapping between interface setting of color brightness and actual value
   // set on device. Values should be between 0.0 and 1.0.
-  virtual LightingPwmBase &setColorBrightnessLimits(float min, float max);
+  LightingPwmBase &setColorBrightnessRatioLimits(float min, float max);
 
   void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
   int getCurrentDimmerBrightness() const;

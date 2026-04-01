@@ -185,8 +185,8 @@ TEST(RgbwPwmBaseTests, ChildUsesHardwareMaxValueForDutyScaling) {
 
   parent.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
   child.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
-  child.setBrightnessLimits(0.0f, 1.0f);
-  child.setColorBrightnessLimits(0.0f, 1.0f);
+  child.setBrightnessRatioLimits(0.0f, 1.0f);
+  child.setColorBrightnessRatioLimits(0.0f, 1.0f);
 
   time.advance(1000);
   parent.onInit();
@@ -298,7 +298,7 @@ TEST(RgbwPwmBaseTests, LoweringHwMaxClampsBrightnessLimits) {
   time.advance(1000);
   pwm.onInit();
 
-  pwm.setBrightnessLimits(0.0f, 1.0f);
+  pwm.setBrightnessRatioLimits(0.0f, 1.0f);
   pwm.setMaxHwValue(255);
 
   TSD_SuplaChannelNewValue msg = {};
@@ -376,8 +376,8 @@ TEST(RgbwPwmBaseTests, CctOutputsRespectConfiguredBrightnessFloor) {
       Supla::Io::IoPin(22, &coldIo));
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT);
-  pwm.setBrightnessLimits(100.0f / 8191.0f, 1.0f);
-  pwm.setColorBrightnessLimits(100.0f / 8191.0f, 1.0f);
+  pwm.setBrightnessRatioLimits(100.0f / 8191.0f, 1.0f);
+  pwm.setColorBrightnessRatioLimits(100.0f / 8191.0f, 1.0f);
   pwm.setFadeEffectTime(0);
 
   time.advance(1000);

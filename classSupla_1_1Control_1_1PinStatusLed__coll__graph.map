@@ -1,9 +1,11 @@
 <map id="Supla::Control::PinStatusLed" name="Supla::Control::PinStatusLed">
-<area shape="rect" id="Node000001" title=" " alt="" coords="67,140,254,166"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,14,113,40"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="80,50,153,138,148,141,76,54"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,15,136,20,139,27,131,38,114,42,112,37,129,33,134,27,132,23,126,20"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="209,14,317,40"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="246,53,172,141,168,138,242,50"/>
-<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="333,15,340,20,343,27,335,38,318,42,316,37,333,33,338,27,336,23,330,20"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="67,237,254,262"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,111,113,136"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="80,147,153,235,148,238,76,150"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,113,136,117,139,124,131,133,114,137,113,132,129,129,134,123,132,121,127,118"/>
+<area shape="rect" id="Node000003" href="$structSupla_1_1Io_1_1IoPin.html" title=" " alt="" coords="209,111,317,136"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="246,150,172,238,168,235,242,147"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="209,5,317,31"/>
+<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="266,46,266,111,260,111,260,46"/>
+<area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="333,9,343,18,335,27,318,30,317,24,333,22,338,18,330,13"/>
 </map>

@@ -1,12 +1,14 @@
 <map id="Supla::Control::BlinkingLed" name="Supla::Control::BlinkingLed">
-<area shape="rect" id="Node000001" title=" " alt="" coords="175,120,351,145"/>
-<area shape="poly" id="edge6_Node000001_Node000001" title=" " alt="" coords="368,124,377,132,369,140,351,143,351,138,367,135,372,133,365,129"/>
-<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,14,113,40"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,45,241,117,238,122,95,50"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,16,136,20,139,27,131,37,114,40,113,35,129,32,134,27,132,24,127,21"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="209,14,317,40"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="266,55,266,120,260,120,260,55"/>
-<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="333,16,340,20,343,27,335,37,318,40,317,35,333,32,338,27,336,24,331,21"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="433,14,528,40"/>
-<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="443,49,290,121,287,117,441,44"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="175,216,351,242"/>
+<area shape="poly" id="edge7_Node000001_Node000001" title=" " alt="" coords="368,221,377,229,369,237,351,240,351,235,367,232,372,229,365,225"/>
+<area shape="rect" id="Node000002" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,111,113,136"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="98,141,241,214,238,218,95,146"/>
+<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,113,136,117,139,124,131,133,114,137,113,132,129,129,134,123,132,121,127,118"/>
+<area shape="rect" id="Node000003" href="$structSupla_1_1Io_1_1IoPin.html" title=" " alt="" coords="209,111,317,136"/>
+<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="266,152,266,216,260,216,260,152"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="209,5,317,31"/>
+<area shape="poly" id="edge4_Node000003_Node000004" title=" " alt="" coords="266,46,266,111,260,111,260,46"/>
+<area shape="poly" id="edge5_Node000004_Node000004" title=" " alt="" coords="333,9,343,18,335,27,318,30,317,24,333,22,338,18,330,13"/>
+<area shape="rect" id="Node000005" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="341,111,436,136"/>
+<area shape="poly" id="edge6_Node000001_Node000005" title=" " alt="" coords="367,149,315,194,283,218,280,214,312,190,363,145"/>
 </map>

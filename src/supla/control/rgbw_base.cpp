@@ -55,42 +55,48 @@ void RGBWBase::onSaveState() {
   uint8_t lastColorBrightness;      // 0 - 100
   uint8_t lastWhiteBrightness;           // 0 - 100
   */
-  Supla::Storage::WriteState((unsigned char *)&curRed, sizeof(curRed));
-  Supla::Storage::WriteState((unsigned char *)&curGreen, sizeof(curGreen));
-  Supla::Storage::WriteState((unsigned char *)&curBlue, sizeof(curBlue));
-  Supla::Storage::WriteState((unsigned char *)&curColorBrightness,
-                             sizeof(curColorBrightness));
-  Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
-                             sizeof(curWhiteBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastColorBrightness,
-                             sizeof(lastColorBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
-                             sizeof(lastWhiteBrightness));
+  Supla::Storage::WriteState((unsigned char *)&requested.red,
+                             sizeof(requested.red));
+  Supla::Storage::WriteState((unsigned char *)&requested.green,
+                             sizeof(requested.green));
+  Supla::Storage::WriteState((unsigned char *)&requested.blue,
+                             sizeof(requested.blue));
+  Supla::Storage::WriteState((unsigned char *)&requested.colorBrightness,
+                             sizeof(requested.colorBrightness));
+  Supla::Storage::WriteState((unsigned char *)&requested.whiteBrightness,
+                             sizeof(requested.whiteBrightness));
+  Supla::Storage::WriteState((unsigned char *)&lastNonZero.colorBrightness,
+                             sizeof(lastNonZero.colorBrightness));
+  Supla::Storage::WriteState((unsigned char *)&lastNonZero.whiteBrightness,
+                             sizeof(lastNonZero.whiteBrightness));
 }
 
 void RGBWBase::onLoadState() {
-  Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
-  Supla::Storage::ReadState((unsigned char *)&curGreen, sizeof(curGreen));
-  Supla::Storage::ReadState((unsigned char *)&curBlue, sizeof(curBlue));
-  Supla::Storage::ReadState((unsigned char *)&curColorBrightness,
-                            sizeof(curColorBrightness));
-  Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
-                            sizeof(curWhiteBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
-                            sizeof(lastColorBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
-                            sizeof(lastWhiteBrightness));
-  curWhiteTemperature = 0;
+  Supla::Storage::ReadState((unsigned char *)&requested.red,
+                            sizeof(requested.red));
+  Supla::Storage::ReadState((unsigned char *)&requested.green,
+                            sizeof(requested.green));
+  Supla::Storage::ReadState((unsigned char *)&requested.blue,
+                            sizeof(requested.blue));
+  Supla::Storage::ReadState((unsigned char *)&requested.colorBrightness,
+                            sizeof(requested.colorBrightness));
+  Supla::Storage::ReadState((unsigned char *)&requested.whiteBrightness,
+                            sizeof(requested.whiteBrightness));
+  Supla::Storage::ReadState((unsigned char *)&lastNonZero.colorBrightness,
+                            sizeof(lastNonZero.colorBrightness));
+  Supla::Storage::ReadState((unsigned char *)&lastNonZero.whiteBrightness,
+                            sizeof(lastNonZero.whiteBrightness));
+  requested.whiteTemperature = 0;
 
   SUPLA_LOG_DEBUG(
       "RGBWBase[%d] loaded state: red=%d, green=%d, blue=%d, "
       "colorBrightness=%d, whiteBrightness=%d",
       getChannel()->getChannelNumber(),
-      curRed,
-      curGreen,
-      curBlue,
-      curColorBrightness,
-      curWhiteBrightness);
+      requested.red,
+      requested.green,
+      requested.blue,
+      requested.colorBrightness,
+      requested.whiteBrightness);
 }
 
 void RGBWBase::setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) {

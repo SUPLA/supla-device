@@ -16,8 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_CONTROL_RGBW_PWM_BASE_H_
-#define SRC_SUPLA_CONTROL_RGBW_PWM_BASE_H_
+#ifndef SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_
+#define SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_
 
 #include <stdint.h>
 
@@ -53,12 +53,15 @@ class LightingPwmLeds : public LightingPwmBase {
   int getOutputPin(int outputIndex) const;
 
  protected:
-  int getPwmChannelForGpio(int gpio) const;
   void applyPwmFrequencyToOutputs();
 
-  Supla::Io::IoPin outputs[kMaxOutputs];
-  int32_t channelPrevValue[kMaxOutputs] = {-1, -1, -1, -1, -1};
-  int32_t lastAnalogWriteValue[kMaxOutputs] = {-1, -1, -1, -1, -1};
+  struct OutputState {
+    Supla::Io::IoPin pin;
+    int32_t lastSourceValue = -1;
+    int32_t lastDutyValue = -1;
+  };
+
+  OutputState outputs[kMaxOutputs];
   int tryCounter = 0;
   LightingPwmLeds *parentPwm = nullptr;
 };
@@ -68,4 +71,4 @@ using RGBWPwmBase = LightingPwmLeds;
 }  // namespace Control
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_CONTROL_RGBW_PWM_BASE_H_
+#endif  // SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_

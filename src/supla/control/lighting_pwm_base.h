@@ -55,7 +55,7 @@ class GeometricBrightnessAdjuster : public BrightnessAdjuster {
 
 class Button;
 
-class RGBCCTBase : public ChannelElement, public ActionHandler {
+class LightingPwmBase : public ChannelElement, public ActionHandler {
  public:
   enum ButtonControlType : uint8_t {
     BUTTON_FOR_RGBW,
@@ -75,8 +75,8 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
    * remaining instances should be passed one after another in order to properly
    * handle channel disabling based on parent's function.
    */
-  explicit RGBCCTBase(RGBCCTBase *parent = nullptr);
-  virtual ~RGBCCTBase() = default;
+  explicit LightingPwmBase(LightingPwmBase *parent = nullptr);
+  virtual ~LightingPwmBase() = default;
 
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
@@ -147,17 +147,17 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   // required)
   void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
 
-  virtual RGBCCTBase &setDefaultStateOn();
-  virtual RGBCCTBase &setDefaultStateOff();
-  virtual RGBCCTBase &setDefaultStateRestore();
+  virtual LightingPwmBase &setDefaultStateOn();
+  virtual LightingPwmBase &setDefaultStateOff();
+  virtual LightingPwmBase &setDefaultStateRestore();
   // Set mapping between interface setting of brightness and actual value
-  // set on device. Values should be between 0 and 1023 (min, max).
-  // I.e. if limit is set to (100, 800), then values from Supla in range
-  // 0-100% are mapped to PWM values in range 100 and 800.
-  virtual RGBCCTBase &setBrightnessLimits(int min, int max);
+  // set on device. Values should be between 0.0 and 1.0.
+  // I.e. if limit is set to (0.05, 1.0), then values from Supla in range
+  // 0-100% are mapped to PWM values in range 5% and 100% of hardware max.
+  virtual LightingPwmBase &setBrightnessLimits(float min, float max);
   // Set mapping between interface setting of color brightness and actual value
-  // set on device. Values should be between 0 and 1023 (min, max).
-  virtual RGBCCTBase &setColorBrightnessLimits(int min, int max);
+  // set on device. Values should be between 0.0 and 1.0.
+  virtual LightingPwmBase &setColorBrightnessLimits(float min, float max);
 
   void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
   int getCurrentDimmerBrightness() const;
@@ -309,10 +309,10 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   int16_t hwWhiteTemperature = -1;  // 0 - maxHwValue
   int16_t hwWhite1Brightness = -1;  // 0 - maxHwValue
   int16_t hwWhite2Brightness = -1;  // 0 - maxHwValue
-  uint16_t minBrightness = 1;
-  uint16_t maxBrightness = 1023;
-  uint16_t minColorBrightness = 1;
-  uint16_t maxColorBrightness = 1023;
+  float minBrightnessRatio = 0.0f;
+  float maxBrightnessRatio = 1.0f;
+  float minColorBrightnessRatio = 0.0f;
+  float maxColorBrightnessRatio = 1.0f;
   uint16_t redDistance = 0;
   uint16_t greenDistance = 0;
   uint16_t blueDistance = 0;
@@ -346,8 +346,10 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
 
   BrightnessAdjuster *brightnessAdjuster = nullptr;
   Supla::Control::Button *attachedButton = nullptr;
-  RGBCCTBase *parent = nullptr;
+  LightingPwmBase *parent = nullptr;
 };
+
+using RGBCCTBase = LightingPwmBase;
 
 };  // namespace Control
 };  // namespace Supla

@@ -43,6 +43,11 @@ class SuplaIoMock : public Supla::Io::Base {
   MOCK_METHOD(void,
               customAnalogWrite,
               (int channelNumber, uint8_t pin, int val));
+  MOCK_METHOD(void, customSetPwmResolutionBits, (uint8_t resolutionBits));
+  MOCK_METHOD(void,
+              customConfigureAnalogOutput,
+              (int channelNumber, uint8_t pin, bool outputInvert));
+  MOCK_METHOD(void, customSetPwmFrequency, (uint16_t pwmFrequency));
   MOCK_METHOD(int, customAnalogRead, (int channelNumber, uint8_t pin));
   MOCK_METHOD(void,
               customAttachInterrupt,

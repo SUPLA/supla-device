@@ -14,10 +14,11 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include "arduino_mock.h"
+
+#include <gmock/gmock.h>
 
 #include "Arduino.h"
-#include <gmock/gmock.h>
-#include "arduino_mock.h"
 
 SerialStub Serial;
 
@@ -61,17 +62,46 @@ void pinMode(uint8_t pin, uint8_t mode) {
   DigitalInterface::instance->pinMode(pin, mode);
 }
 
+void analogWriteResolution(uint8_t pin, uint8_t bits) {
+  assert(DigitalInterface::instance);
+  DigitalInterface::instance->analogWriteResolution(pin, bits);
+}
+
+void analogWriteFrequency(uint8_t pin, uint32_t frequencyHz) {
+  assert(DigitalInterface::instance);
+  DigitalInterface::instance->analogWriteFrequency(pin, frequencyHz);
+}
+
+void analogWriteFreq(uint32_t frequencyHz) {
+  assert(DigitalInterface::instance);
+  DigitalInterface::instance->analogWriteFreq(frequencyHz);
+}
+
+void analogWriteRange(uint32_t range) {
+  assert(DigitalInterface::instance);
+  DigitalInterface::instance->analogWriteRange(range);
+}
+
 uint32_t millis() {
   assert(TimeInterface::instance);
   return TimeInterface::instance->millis();
 }
 
-void delay(uint64_t) {}
+void delay(uint64_t) {
+}
 
-long map(long input, long inMin, long inMax, long outMin, long outMax) {
-  long result = (input - inMin) * (outMax - outMin) / (inMax - inMin);
+long map(  // NOLINT
+    long input,  // NOLINT
+    long inMin,  // NOLINT
+    long inMax,  // NOLINT
+    long outMin,  // NOLINT
+    long outMax) {  // NOLINT
+  long result =  // NOLINT
+      (input - inMin) * (outMax - outMin) / (inMax - inMin);
   return result + outMin;
 }
 
-DigitalInterfaceMock::DigitalInterfaceMock() {}
-DigitalInterfaceMock::~DigitalInterfaceMock() {}
+DigitalInterfaceMock::DigitalInterfaceMock() {
+}
+DigitalInterfaceMock::~DigitalInterfaceMock() {
+}

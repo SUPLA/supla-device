@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 
-#include "rgb_cct_base.h"
+#include "lighting_pwm_base.h"
 #include "../action_handler.h"
 #include "../channel_element.h"
 
@@ -34,7 +34,7 @@ namespace Control {
 
 class Button;
 
-class RGBWBase : public RGBCCTBase {
+class RGBWBase : public LightingPwmBase {
  public:
   RGBWBase();
 

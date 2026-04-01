@@ -19,7 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <arduino_mock.h>
-#include <supla/control/rgb_cct_base.h>
+#include <supla/control/lighting_pwm_base.h>
 #include <supla/actions.h>
 #include <storage_mock.h>
 #include <simple_time.h>
@@ -28,7 +28,7 @@ using ::testing::Return;
 using ::testing::_;
 using ::testing::Le;
 
-class RgbCctBaseForTest : public Supla::Control::RGBCCTBase {
+class RgbCctBaseForTest : public Supla::Control::LightingPwmBase {
  public:
   MOCK_METHOD(void,
               setRGBCCTValueOnDevice,
@@ -225,3 +225,16 @@ TEST(RgbCctTests, BasicTests) {
   EXPECT_EQ(ch->getValueWhiteTemperature(), 60);
 }
 
+TEST(RgbCctTests, LegacyStorageMigrationIsOptIn) {
+  RgbCctBaseForTest rgb;
+
+  EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+
+  rgb.convertStorageFromLegacyChannel(
+      Supla::Control::LightingPwmBase::LegacyChannelFunction::RGB);
+
+  EXPECT_TRUE(rgb.isStateStorageMigrationNeeded());
+
+  rgb.setSkipLegacyMigration();
+  EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+}

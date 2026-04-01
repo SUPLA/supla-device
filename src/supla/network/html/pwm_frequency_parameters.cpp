@@ -23,7 +23,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <supla/clock/clock.h>
-#include <supla/control/rgb_cct_base.h>
+#include <supla/control/lighting_pwm_base.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
 #include <supla/network/web_sender.h>
@@ -40,7 +40,7 @@ constexpr uint32_t PWM_FREQUENCY_STEP = 1;
 constexpr uint32_t PWM_FREQUENCY_DEFAULT = 500;
 
 PwmFrequencyParameters::PwmFrequencyParameters(
-    Supla::Control::RGBCCTBase* rgbCct)
+    Supla::Control::LightingPwmBase* rgbCct)
     : HtmlElement(HTML_SECTION_FORM), rgbCct(rgbCct) {
 }
 

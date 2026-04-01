@@ -21,57 +21,49 @@
 
 #include <stdint.h>
 
-#include "rgb_cct_base.h"
-
-namespace Supla {
-namespace Io {
-class Base;
-}
-}  // namespace Supla
+#include "lighting_pwm_base.h"
+#include <supla/io.h>
 
 namespace Supla {
 namespace Control {
 
-class RGBWPwmBase : public RGBCCTBase {
+class LightingPwmLeds : public LightingPwmBase {
  public:
   static constexpr int kMaxOutputs = 5;
 
-  struct Output {
-    int pin = -1;
-    Supla::Io::Base *io = nullptr;
-  };
-
-  RGBWPwmBase(RGBWPwmBase *parent,
-              int out1,
-              int out2,
-              int out3,
-              int out4,
-              int out5);
+  LightingPwmLeds(LightingPwmLeds *parent,
+                  int out1,
+                  int out2,
+                  int out3,
+                  int out4,
+                  int out5);
+  LightingPwmLeds(LightingPwmLeds *parent,
+                  Supla::Io::IoPin out1,
+                  Supla::Io::IoPin out2 = {},
+                  Supla::Io::IoPin out3 = {},
+                  Supla::Io::IoPin out4 = {},
+                  Supla::Io::IoPin out5 = {});
 
   void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
   void onInit() override;
+  void onLoadConfig(SuplaDeviceClass *sdc) override;
 
-  void setOutputInvert(bool outputInvert) { this->outputInvert = outputInvert; }
   void setOutputIo(int outputIndex, Supla::Io::Base *io);
   Supla::Io::Base *getOutputIo(int outputIndex) const;
   int getOutputPin(int outputIndex) const;
 
  protected:
-  virtual void initializePwmTimer() = 0;
-  virtual int initializePwmChannel(int outputIndex) = 0;
-  virtual void writePwmValue(int channel, uint32_t value) = 0;
-  virtual void stopPwmChannel(int channel) = 0;
-
   int getPwmChannelForGpio(int gpio) const;
-  static int &pwmChannelCounter();
+  void applyPwmFrequencyToOutputs();
 
-  Output outputs[kMaxOutputs];
-  int channels[kMaxOutputs] = {};
+  Supla::Io::IoPin outputs[kMaxOutputs];
   int32_t channelPrevValue[kMaxOutputs] = {-1, -1, -1, -1, -1};
+  int32_t lastAnalogWriteValue[kMaxOutputs] = {-1, -1, -1, -1, -1};
   int tryCounter = 0;
-  RGBWPwmBase *parentPwm = nullptr;
-  bool outputInvert = false;
+  LightingPwmLeds *parentPwm = nullptr;
 };
+
+using RGBWPwmBase = LightingPwmLeds;
 
 }  // namespace Control
 }  // namespace Supla

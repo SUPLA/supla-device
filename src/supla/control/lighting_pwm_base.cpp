@@ -16,7 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include "rgb_cct_base.h"
+#include "lighting_pwm_base.h"
 
 #include <math.h>
 #include <stdint.h>
@@ -39,6 +39,38 @@ constexpr int SUPLA_MAX_OUTPUT_COUNT = 5;
 
 namespace Supla {
 namespace Control {
+
+namespace {
+
+float normalizeLimitRatio(float value) {
+  if (value < 0.0f) {
+    return 0.0f;
+  }
+  if (value > 1.0f) {
+    return 1.0f;
+  }
+  return value;
+}
+
+void normalizeLimitPair(float &minValue, float &maxValue) {
+  minValue = normalizeLimitRatio(minValue);
+  maxValue = normalizeLimitRatio(maxValue);
+  if (minValue > maxValue) {
+    minValue = maxValue;
+  }
+}
+
+uint32_t ratioToHwValue(float ratio, uint32_t maxHwValue) {
+  if (ratio <= 0.0f) {
+    return 0;
+  }
+  if (ratio >= 1.0f) {
+    return maxHwValue;
+  }
+  return static_cast<uint32_t>(lroundf(ratio * maxHwValue));
+}
+
+}  // namespace
 
 GeometricBrightnessAdjuster::GeometricBrightnessAdjuster(double power,
                                                          int offset,
@@ -66,7 +98,7 @@ void GeometricBrightnessAdjuster::setMaxHwValue(int maxHwValue) {
   this->maxHwValue = maxHwValue;
 }
 
-RGBCCTBase::RGBCCTBase(RGBCCTBase *parent) : parent(parent) {
+LightingPwmBase::LightingPwmBase(LightingPwmBase *parent) : parent(parent) {
   channel.setType(SUPLA_CHANNELTYPE_DIMMERANDRGBLED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
@@ -78,7 +110,7 @@ RGBCCTBase::RGBCCTBase(RGBCCTBase *parent) : parent(parent) {
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
 }
 
-void RGBCCTBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
+void LightingPwmBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
   if (brightnessAdjuster) {
     delete brightnessAdjuster;
   }
@@ -86,25 +118,25 @@ void RGBCCTBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
   brightnessAdjuster->setMaxHwValue(maxHwValue);
 }
 
-void RGBCCTBase::setRGBW(int red,
-                         int green,
-                         int blue,
-                         int colorBrightness,
-                         int whiteBrightness,
-                         bool toggle,
-                         bool instant) {
+void LightingPwmBase::setRGBW(int red,
+                              int green,
+                              int blue,
+                              int colorBrightness,
+                              int whiteBrightness,
+                              bool toggle,
+                              bool instant) {
   setRGBCCT(
       red, green, blue, colorBrightness, whiteBrightness, -1, toggle, instant);
 }
 
-void RGBCCTBase::setRGBCCT(int red,
-                           int green,
-                           int blue,
-                           int colorBrightness,
-                           int whiteBrightness,
-                           int whiteTemperature,
-                           bool toggle,
-                           bool instant) {
+void LightingPwmBase::setRGBCCT(int red,
+                                int green,
+                                int blue,
+                                int colorBrightness,
+                                int whiteBrightness,
+                                int whiteTemperature,
+                                bool toggle,
+                                bool instant) {
   if (!instant) {
     // Stop brightness adjustment when some command is received
     autoIterateMode = AutoIterateMode::OFF;
@@ -150,7 +182,7 @@ void RGBCCTBase::setRGBCCT(int red,
   this->instant = instant;
   resetDisance = true;
 
-  SUPLA_LOG_DEBUG("RGBCCT[%d]: %d,%d,%d,%d,%d,%d",
+  SUPLA_LOG_DEBUG("Light[%d]: %d,%d,%d,%d,%d,%d",
                   getChannelNumber(),
                   curRed,
                   curGreen,
@@ -163,7 +195,7 @@ void RGBCCTBase::setRGBCCT(int red,
   Supla::Storage::ScheduleSave(5000, 2000);
 }
 
-void RGBCCTBase::iterateAlways() {
+void LightingPwmBase::iterateAlways() {
   if (lastMsgReceivedMs != 0 && millis() - lastMsgReceivedMs >= 400) {
     lastMsgReceivedMs = 0;
     // Send to Supla server new values
@@ -177,7 +209,7 @@ void RGBCCTBase::iterateAlways() {
   updateEnabledState();
 }
 
-void RGBCCTBase::updateEnabledState() {
+void LightingPwmBase::updateEnabledState() {
   if (hasParent() && parent->getMissingGpioCount() > 0) {
     disableChannel();
   } else {
@@ -185,7 +217,7 @@ void RGBCCTBase::updateEnabledState() {
   }
 }
 
-int32_t RGBCCTBase::handleNewValueFromServer(
+int32_t LightingPwmBase::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
   uint8_t whiteTemperature = static_cast<uint8_t>(newValue->value[7]);
   uint8_t command = static_cast<uint8_t>(newValue->value[6]);
@@ -197,7 +229,7 @@ int32_t RGBCCTBase::handleNewValueFromServer(
   uint8_t whiteBrightness = static_cast<uint8_t>(newValue->value[0]);
 
   SUPLA_LOG_INFO(
-      "RGBCCT[%d] received: R=%d, R=%d, B=%d, colorBright=%d, "
+      "Light[%d] received: R=%d, R=%d, B=%d, colorBright=%d, "
       "whiteBright=%d, whiteTemp=%d, Cmd=%d, toggleOnOff=%d",
       getChannelNumber(),
       red,
@@ -342,14 +374,14 @@ int32_t RGBCCTBase::handleNewValueFromServer(
   return -1;
 }
 
-void RGBCCTBase::turnOn() {
+void LightingPwmBase::turnOn() {
   setRGBCCT(-1, -1, -1, lastColorBrightness, lastWhiteBrightness, -1);
 }
-void RGBCCTBase::turnOff() {
+void LightingPwmBase::turnOff() {
   setRGBCCT(-1, -1, -1, 0, 0, -1);
 }
 
-void RGBCCTBase::toggle() {
+void LightingPwmBase::toggle() {
   if (isOn()) {
     turnOff();
   } else {
@@ -357,19 +389,19 @@ void RGBCCTBase::toggle() {
   }
 }
 
-bool RGBCCTBase::isOn() {
+bool LightingPwmBase::isOn() {
   return isOnRGB() || isOnW();
 }
 
-bool RGBCCTBase::isOnW() {
+bool LightingPwmBase::isOnW() {
   return curWhiteBrightness > 0;
 }
 
-bool RGBCCTBase::isOnRGB() {
+bool LightingPwmBase::isOnRGB() {
   return curColorBrightness > 0;
 }
 
-uint8_t RGBCCTBase::addWithLimit(int value, int addition, int limit) {
+uint8_t LightingPwmBase::addWithLimit(int value, int addition, int limit) {
   if (addition > 0 && value + addition > limit) {
     return limit;
   }
@@ -379,7 +411,7 @@ uint8_t RGBCCTBase::addWithLimit(int value, int addition, int limit) {
   return value + addition;
 }
 
-void RGBCCTBase::handleAction(int event, int action) {
+void LightingPwmBase::handleAction(int event, int action) {
   (void)(event);
   switch (action) {
     case TURN_ON: {
@@ -532,7 +564,7 @@ void RGBCCTBase::handleAction(int event, int action) {
   }
 }
 
-void RGBCCTBase::iterateDimmerRGBW(int rgbStep, int wStep) {
+void LightingPwmBase::iterateDimmerRGBW(int rgbStep, int wStep) {
   // if we iterate both RGB and W, then we should sync brightness
   if (rgbStep > 0 && wStep > 0) {
     curWhiteBrightness = curColorBrightness;
@@ -636,26 +668,26 @@ void RGBCCTBase::iterateDimmerRGBW(int rgbStep, int wStep) {
             true);
 }
 
-void RGBCCTBase::setStep(int step) {
+void LightingPwmBase::setStep(int step) {
   buttonStep = step;
 }
 
-void RGBCCTBase::setDefaultDimmedBrightness(int dimmedBrightness) {
+void LightingPwmBase::setDefaultDimmedBrightness(int dimmedBrightness) {
   defaultDimmedBrightness = dimmedBrightness;
 }
 
-void RGBCCTBase::setFadeEffectTime(int timeMs) {
+void LightingPwmBase::setFadeEffectTime(int timeMs) {
   fadeEffect = timeMs;
 }
 
-int RGBCCTBase::adjustBrightness(int value) {
+int LightingPwmBase::adjustBrightness(int value) {
   if (brightnessAdjuster) {
     return brightnessAdjuster->adjustBrightness(value);
   }
   return adjustRange(value, 0, 100, 0, maxHwValue);
 }
 
-int RGBCCTBase::getStep(int step, int target, int current) const {
+int LightingPwmBase::getStep(int step, int target, int current) const {
   if (step && target != current) {
     int result = step;
     if (target > current) {
@@ -674,14 +706,14 @@ int RGBCCTBase::getStep(int step, int target, int current) const {
   return 0;
 }
 
-bool RGBCCTBase::calculateAndUpdate(int targetValue,
-                                    int16_t *hwValue,
-                                    int distance,
-                                    uint32_t *lastChangeMs,
-                                    const uint32_t now) const {
+bool LightingPwmBase::calculateAndUpdate(int targetValue,
+                                         int16_t *hwValue,
+                                         int distance,
+                                         uint32_t *lastChangeMs,
+                                         const uint32_t now) const {
   uint32_t timeDiff = now - *lastChangeMs;
-  *lastChangeMs = now;
   if (targetValue == *hwValue || timeDiff == 0) {
+    *lastChangeMs = now;
     return false;
   }
 
@@ -710,7 +742,7 @@ bool RGBCCTBase::calculateAndUpdate(int targetValue,
   return true;
 }
 
-void RGBCCTBase::onFastTimer() {
+void LightingPwmBase::onFastTimer() {
   if (!enabled) {
     return;
   }
@@ -780,7 +812,6 @@ void RGBCCTBase::onFastTimer() {
     hwWhiteTemperature = 0;
     valueChanged = true;
   }
-
 
   const bool useRGB = (fn == SUPLA_CHANNELFNC_RGBLIGHTING) ||
                       (fn == SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING) ||
@@ -892,6 +923,10 @@ void RGBCCTBase::onFastTimer() {
   // RGB Color brightness
   uint32_t adjColorBrightness = hwColorBrightness;
   if (useRGB && hwColorBrightness > 0) {
+    const uint32_t minColorBrightness =
+        ratioToHwValue(minColorBrightnessRatio, maxHwValue);
+    const uint32_t maxColorBrightness =
+        ratioToHwValue(maxColorBrightnessRatio, maxHwValue);
     adjColorBrightness = adjustRange(adjColorBrightness,
                                      1,
                                      maxHwValue,
@@ -905,8 +940,12 @@ void RGBCCTBase::onFastTimer() {
   // White channel(s) brightness
   uint32_t adjBrightness = hwBrightness;
   if (useDimmer && hwBrightness > 0) {
-    adjBrightness = adjustRange(
-        adjBrightness, 1, maxHwValue, minBrightness, maxBrightness);
+    const uint32_t minBrightness =
+        ratioToHwValue(minBrightnessRatio, maxHwValue);
+    const uint32_t maxBrightness =
+        ratioToHwValue(maxBrightnessRatio, maxHwValue);
+    adjBrightness =
+        adjustRange(adjBrightness, 1, maxHwValue, minBrightness, maxBrightness);
   } else {
     hwBrightness = 0;
     adjBrightness = 0;
@@ -918,9 +957,17 @@ void RGBCCTBase::onFastTimer() {
   uint32_t white2Brightness = 0;
 
   if (useCCT && hwWhiteTemperature > 0) {
+    const uint32_t minBrightness =
+        ratioToHwValue(minBrightnessRatio, maxHwValue);
     float white2Fraction = 1.0 * hwWhiteTemperature / maxHwValue;
     white2Brightness = adjBrightness * white2Fraction * warmWhiteGain;
     white1Brightness = adjBrightness * (1.0 - white2Fraction) * coldWhiteGain;
+    if (white1Brightness > 0 && white1Brightness < minBrightness) {
+      white1Brightness = minBrightness;
+    }
+    if (white2Brightness > 0 && white2Brightness < minBrightness) {
+      white2Brightness = minBrightness;
+    }
     if (white1Brightness > maxHwValue) {
       white1Brightness = maxHwValue;
     }
@@ -973,17 +1020,17 @@ void RGBCCTBase::onFastTimer() {
   }
 }
 
-void RGBCCTBase::onInit() {
+void LightingPwmBase::onInit() {
   updateEnabledState();
   if (!enabled) {
-    SUPLA_LOG_DEBUG("RGBCCT[%d] disabled", getChannel()->getChannelNumber());
+    SUPLA_LOG_DEBUG("Light[%d] disabled", getChannel()->getChannelNumber());
   }
   if (attachedButton) {
-    SUPLA_LOG_DEBUG("RGBCCT[%d] configuring attachedButton, control type %d",
+    SUPLA_LOG_DEBUG("Light[%d] configuring attachedButton, control type %d",
                     getChannel()->getChannelNumber(),
                     buttonControlType);
     if (attachedButton->isMonostable()) {
-      SUPLA_LOG_DEBUG("RGBCCT[%d] configuring monostable button",
+      SUPLA_LOG_DEBUG("Light[%d] configuring monostable button",
                       getChannel()->getChannelNumber());
       switch (buttonControlType) {
         case BUTTON_FOR_RGBW: {
@@ -1008,7 +1055,7 @@ void RGBCCTBase::onInit() {
         }
       }
     } else if (attachedButton->isBistable()) {
-      SUPLA_LOG_DEBUG("RGBCCT[%d] configuring bistable button",
+      SUPLA_LOG_DEBUG("Light[%d] configuring bistable button",
                       getChannel()->getChannelNumber());
       switch (buttonControlType) {
         case BUTTON_FOR_RGBW: {
@@ -1032,7 +1079,7 @@ void RGBCCTBase::onInit() {
       }
     } else if (attachedButton->isMotionSensor() ||
                attachedButton->isCentral()) {
-      SUPLA_LOG_DEBUG("RGBCCT[%d] configuring motion sensor/central button",
+      SUPLA_LOG_DEBUG("Light[%d] configuring motion sensor/central button",
                       getChannel()->getChannelNumber());
       switch (buttonControlType) {
         case BUTTON_FOR_RGBW: {
@@ -1056,7 +1103,7 @@ void RGBCCTBase::onInit() {
         }
       }
       if (attachedButton->getLastState() == Supla::Control::PRESSED) {
-        SUPLA_LOG_DEBUG("RGBCCT[%d] button pressed",
+        SUPLA_LOG_DEBUG("Light[%d] button pressed",
                         getChannel()->getChannelNumber());
         switch (buttonControlType) {
           case BUTTON_FOR_RGBW: {
@@ -1077,7 +1124,7 @@ void RGBCCTBase::onInit() {
           }
         }
       } else {
-        SUPLA_LOG_DEBUG("RGBCCT[%d] button not pressed",
+        SUPLA_LOG_DEBUG("Light[%d] button not pressed",
                         getChannel()->getChannelNumber());
         switch (buttonControlType) {
           case BUTTON_FOR_RGBW: {
@@ -1099,20 +1146,20 @@ void RGBCCTBase::onInit() {
         }
       }
     } else {
-      SUPLA_LOG_WARNING("RGBCCT[%d] unknown button type",
+      SUPLA_LOG_WARNING("Light[%d] unknown button type",
                         getChannel()->getChannelNumber());
     }
   }
 
   bool toggle = false;
   if (stateOnInit == RGBW_STATE_ON_INIT_ON) {
-    SUPLA_LOG_DEBUG("RGBCCT[%d] TURN on onInit",
+    SUPLA_LOG_DEBUG("Light[%d] TURN on onInit",
                     getChannel()->getChannelNumber());
     curColorBrightness = 100;
     curWhiteBrightness = 100;
     toggle = true;
   } else if (stateOnInit == RGBW_STATE_ON_INIT_OFF) {
-    SUPLA_LOG_DEBUG("RGBCCT[%d] TURN off onInit",
+    SUPLA_LOG_DEBUG("Light[%d] TURN off onInit",
                     getChannel()->getChannelNumber());
     curColorBrightness = 0;
     curWhiteBrightness = 0;
@@ -1131,7 +1178,7 @@ void RGBCCTBase::onInit() {
             toggle);
 }
 
-void RGBCCTBase::onSaveState() {
+void LightingPwmBase::onSaveState() {
   if (!skipLegacyMigration && initDone &&
       legacyChannelFunction != LegacyChannelFunction::None) {
     // save migration done to cfg
@@ -1197,7 +1244,7 @@ void RGBCCTBase::onSaveState() {
   }
 }
 
-void RGBCCTBase::onLoadState() {
+void LightingPwmBase::onLoadState() {
   switch (legacyChannelFunction) {
     case LegacyChannelFunction::None: {
       Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
@@ -1248,7 +1295,7 @@ void RGBCCTBase::onLoadState() {
     }
   }
   SUPLA_LOG_DEBUG(
-      "RGBCCT[%d] loaded state: r=%d, g=%d, b=%d, "
+      "Light[%d] loaded state: r=%d, g=%d, b=%d, "
       "colorBrigh=%d, whiteBrigh=%d, whiteTemp=%d",
       getChannel()->getChannelNumber(),
       curRed,
@@ -1259,63 +1306,55 @@ void RGBCCTBase::onLoadState() {
       curWhiteTemperature);
 }
 
-RGBCCTBase &RGBCCTBase::setDefaultStateOn() {
+LightingPwmBase &LightingPwmBase::setDefaultStateOn() {
   stateOnInit = RGBW_STATE_ON_INIT_ON;
   return *this;
 }
 
-RGBCCTBase &RGBCCTBase::setDefaultStateOff() {
+LightingPwmBase &LightingPwmBase::setDefaultStateOff() {
   stateOnInit = RGBW_STATE_ON_INIT_OFF;
   return *this;
 }
 
-RGBCCTBase &RGBCCTBase::setDefaultStateRestore() {
+LightingPwmBase &LightingPwmBase::setDefaultStateRestore() {
   stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   return *this;
 }
 
-void RGBCCTBase::setMinIterationBrightness(uint8_t minBright) {
+void LightingPwmBase::setMinIterationBrightness(uint8_t minBright) {
   minIterationBrightness = minBright;
 }
 
-void RGBCCTBase::setMinMaxIterationDelay(uint16_t delayMs) {
+void LightingPwmBase::setMinMaxIterationDelay(uint16_t delayMs) {
   minMaxIterationDelay = delayMs;
 }
 
-RGBCCTBase &RGBCCTBase::setBrightnessLimits(int min, int max) {
-  if (min < 0) {
-    min = 0;
-  }
-  if (max > maxHwValue) {
-    setMaxHwValue(maxHwValue);
-  }
-  if (min > max) {
-    min = max;
-  }
-  minBrightness = min;
-  maxBrightness = max;
+LightingPwmBase &LightingPwmBase::setBrightnessLimits(float min, float max) {
+  minBrightnessRatio = min;
+  maxBrightnessRatio = max;
+  normalizeLimitPair(minBrightnessRatio, maxBrightnessRatio);
+  SUPLA_LOG_DEBUG("Light[%d] set brightness limits: min=%.3f, max=%.3f",
+                  getChannel()->getChannelNumber(),
+                  static_cast<double>(minBrightnessRatio),
+                  static_cast<double>(maxBrightnessRatio));
   return *this;
 }
-RGBCCTBase &RGBCCTBase::setColorBrightnessLimits(int min, int max) {
-  if (min < 0) {
-    min = 0;
-  }
-  if (max > maxHwValue) {
-    setMaxHwValue(maxHwValue);
-  }
-  if (min > max) {
-    min = max;
-  }
-  minColorBrightness = min;
-  maxColorBrightness = max;
+LightingPwmBase &LightingPwmBase::setColorBrightnessLimits(float min, float max) {
+  minColorBrightnessRatio = min;
+  maxColorBrightnessRatio = max;
+  normalizeLimitPair(minColorBrightnessRatio, maxColorBrightnessRatio);
+  SUPLA_LOG_DEBUG("Light[%d] set color brightness limits: min=%.3f, max=%.3f",
+                  getChannel()->getChannelNumber(),
+                  static_cast<double>(minColorBrightnessRatio),
+                  static_cast<double>(maxColorBrightnessRatio));
   return *this;
 }
 
-void RGBCCTBase::attach(Supla::Control::Button *button) {
+void LightingPwmBase::attach(Supla::Control::Button *button) {
   attachedButton = button;
 }
 
-void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
+void LightingPwmBase::onLoadConfig(SuplaDeviceClass *sdc) {
   (void)(sdc);
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
@@ -1359,7 +1398,7 @@ void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
     // load PWM frequency from config
     uint32_t cfgFrequency = pwmFrequency;
     if (cfg->getUInt32(Supla::ConfigTag::PwmFrequencyTag, &cfgFrequency)) {
-      SUPLA_LOG_INFO("RGBCCT[%d] PWM frequency loaded from config: %d",
+      SUPLA_LOG_INFO("Light[%d] PWM frequency loaded from config: %d",
                      getChannel()->getChannelNumber(),
                      cfgFrequency);
     }
@@ -1369,14 +1408,15 @@ void RGBCCTBase::onLoadConfig(SuplaDeviceClass *sdc) {
     setPwmFrequency(cfgFrequency);
   }
   SUPLA_LOG_DEBUG(
-      "RGBCCT[%d] button control type: %d, legacy migration needed: %d",
+      "Light[%d] button control type: %d, legacy migration needed: %d",
       getChannel()->getChannelNumber(),
       buttonControlType,
       !skipLegacyMigration &&
           legacyChannelFunction != LegacyChannelFunction::None);
 }
 
-void RGBCCTBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
+void LightingPwmBase::fillSuplaChannelNewValue(
+    TSD_SuplaChannelNewValue *value) {
   if (value == nullptr) {
     return;
   }
@@ -1387,7 +1427,7 @@ void RGBCCTBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
   value->value[3] = curGreen;
   value->value[4] = curRed;
   value->value[7] = curWhiteTemperature;
-  SUPLA_LOG_DEBUG("RGBCCT[%d] fill: %d,%d,%d,%d,%d",
+  SUPLA_LOG_DEBUG("Light[%d] fill: %d,%d,%d,%d,%d",
                   getChannelNumber(),
                   curRed,
                   curGreen,
@@ -1396,22 +1436,27 @@ void RGBCCTBase::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
                   curWhiteBrightness);
 }
 
-int RGBCCTBase::getCurrentDimmerBrightness() const {
+int LightingPwmBase::getCurrentDimmerBrightness() const {
   return curWhiteBrightness;
 }
 
-int RGBCCTBase::getCurrentRGBBrightness() const {
+int LightingPwmBase::getCurrentRGBBrightness() const {
   return curColorBrightness;
 }
 
-void RGBCCTBase::setMaxHwValue(int newMaxHwValue) {
+void LightingPwmBase::setMaxHwValue(int newMaxHwValue) {
+  if (newMaxHwValue < 1) {
+    newMaxHwValue = 1;
+  } else if (newMaxHwValue > UINT16_MAX) {
+    newMaxHwValue = UINT16_MAX;
+  }
   maxHwValue = newMaxHwValue;
   if (brightnessAdjuster) {
     brightnessAdjuster->setMaxHwValue(newMaxHwValue);
   }
 }
 
-void RGBCCTBase::purgeConfig() {
+void LightingPwmBase::purgeConfig() {
   Supla::ChannelElement::purgeConfig();
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
@@ -1421,25 +1466,25 @@ void RGBCCTBase::purgeConfig() {
   }
 }
 
-ApplyConfigResult RGBCCTBase::applyChannelConfig(TSD_ChannelConfig *, bool) {
-  SUPLA_LOG_WARNING("RGBCCT[%d] applyChannelConfig missing",
-                    getChannelNumber());
+ApplyConfigResult LightingPwmBase::applyChannelConfig(TSD_ChannelConfig *,
+                                                      bool) {
+  SUPLA_LOG_WARNING("Light[%d] applyChannelConfig missing", getChannelNumber());
   return ApplyConfigResult::Success;
 }
 
-void RGBCCTBase::fillChannelConfig(void *, int *size, uint8_t) {
-  SUPLA_LOG_DEBUG("RGBCCT[%d] fillChannelConfig missing", getChannelNumber());
+void LightingPwmBase::fillChannelConfig(void *, int *size, uint8_t) {
+  SUPLA_LOG_DEBUG("Light[%d] fillChannelConfig missing", getChannelNumber());
   if (size) {
     *size = 0;
   }
 }
 
-void RGBCCTBase::convertStorageFromLegacyChannel(
+void LightingPwmBase::convertStorageFromLegacyChannel(
     LegacyChannelFunction channelFunction) {
   legacyChannelFunction = channelFunction;
 }
 
-int RGBCCTBase::getMissingGpioCount() const {
+int LightingPwmBase::getMissingGpioCount() const {
   if (hasParent()) {
     auto missingGpioCount = parent->getMissingGpioCount();
     if (missingGpioCount > 0) {
@@ -1466,7 +1511,7 @@ int RGBCCTBase::getMissingGpioCount() const {
   return 0;
 }
 
-void RGBCCTBase::enableChannel() {
+void LightingPwmBase::enableChannel() {
   if (enabled) {
     return;
   }
@@ -1476,7 +1521,7 @@ void RGBCCTBase::enableChannel() {
   getChannel()->setStateOnline();
 }
 
-void RGBCCTBase::disableChannel() {
+void LightingPwmBase::disableChannel() {
   if (!enabled) {
     return;
   }
@@ -1495,39 +1540,39 @@ void RGBCCTBase::disableChannel() {
   getChannel()->setStateOnlineAndNotAvailable();
 }
 
-bool RGBCCTBase::hasParent() const {
+bool LightingPwmBase::hasParent() const {
   return parent != nullptr;
 }
 
-int RGBCCTBase::getAncestorCount() const {
+int LightingPwmBase::getAncestorCount() const {
   if (hasParent()) {
     return parent->getAncestorCount() + 1;
   }
   return 0;
 }
 
-bool RGBCCTBase::isStateStorageMigrationNeeded() const {
+bool LightingPwmBase::isStateStorageMigrationNeeded() const {
   return !skipLegacyMigration &&
          legacyChannelFunction != LegacyChannelFunction::None;
 }
 
-void RGBCCTBase::setSkipLegacyMigration() {
+void LightingPwmBase::setSkipLegacyMigration() {
   skipLegacyMigration = true;
 }
 
-void RGBCCTBase::setMinPwmFrequency(uint16_t minPwmFrequency) {
+void LightingPwmBase::setMinPwmFrequency(uint16_t minPwmFrequency) {
   this->minPwmFrequency = minPwmFrequency;
 }
 
-void RGBCCTBase::setMaxPwmFrequency(uint16_t maxPwmFrequency) {
+void LightingPwmBase::setMaxPwmFrequency(uint16_t maxPwmFrequency) {
   this->maxPwmFrequency = maxPwmFrequency;
 }
 
-void RGBCCTBase::setStepPwmFrequency(uint16_t stepPwmFrequency) {
+void LightingPwmBase::setStepPwmFrequency(uint16_t stepPwmFrequency) {
   this->stepPwmFrequency = stepPwmFrequency;
 }
 
-void RGBCCTBase::setPwmFrequency(uint16_t frequency) {
+void LightingPwmBase::setPwmFrequency(uint16_t frequency) {
   if (frequency < minPwmFrequency) {
     frequency = minPwmFrequency;
   } else if (frequency > maxPwmFrequency) {
@@ -1542,22 +1587,22 @@ void RGBCCTBase::setPwmFrequency(uint16_t frequency) {
 
   pwmFrequency = frequency;
   SUPLA_LOG_INFO(
-      "RGBCCT[%d] PWM frequency set to %d", getChannelNumber(), pwmFrequency);
+      "Light[%d] PWM frequency set to %d", getChannelNumber(), pwmFrequency);
 }
 
-uint16_t RGBCCTBase::getMinPwmFrequency() const {
+uint16_t LightingPwmBase::getMinPwmFrequency() const {
   return minPwmFrequency;
 }
 
-uint16_t RGBCCTBase::getMaxPwmFrequency() const {
+uint16_t LightingPwmBase::getMaxPwmFrequency() const {
   return maxPwmFrequency;
 }
 
-uint16_t RGBCCTBase::getPwmFrequency() const {
+uint16_t LightingPwmBase::getPwmFrequency() const {
   return pwmFrequency;
 }
 
-uint16_t RGBCCTBase::getStepPwmFrequency() const {
+uint16_t LightingPwmBase::getStepPwmFrequency() const {
   return stepPwmFrequency;
 }
 

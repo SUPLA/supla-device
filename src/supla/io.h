@@ -48,6 +48,13 @@ class Base {
                                      uint64_t timeoutMicro);
   virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
   virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
+  virtual void customSetPwmResolutionBits(uint8_t resolutionBits);
+  virtual void customConfigureAnalogOutput(int channelNumber,
+                                           uint8_t pin,
+                                           bool outputInvert = false);
+  virtual void customSetPwmFrequency(uint16_t pwmFrequency);
+  virtual uint8_t customAnalogWriteResolutionBits() const;
+  virtual uint32_t customAnalogWriteMaxValue() const;
   virtual int customAnalogRead(int channelNumber, uint8_t pin);
   virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
   virtual void customDetachInterrupt(uint8_t pin);
@@ -65,8 +72,9 @@ struct IoPin {
   };
 
   uint8_t pin = 0;
-  uint8_t flags = 0;
+  uint8_t flags = ActiveHigh;
   uint8_t mode = 0;
+  mutable uint8_t analogWriteResolutionBitsValue = 0;
   Base *io = nullptr;
 
   IoPin() = default;
@@ -113,10 +121,15 @@ struct IoPin {
   void setMode(uint8_t value) { mode = value; }
   uint8_t getMode() const { return mode; }
 
+  void setAnalogOutputResolutionBits(uint8_t resolutionBits);
+  void setAnalogOutputFrequency(uint32_t frequencyHz);
+  void configureAnalogOutput(int channelNumber = -1) const;
   void pinMode(int channelNumber = -1) const;
   int digitalRead(int channelNumber = -1) const;
   void digitalWrite(uint8_t value, int channelNumber = -1) const;
   void analogWrite(int value, int channelNumber = -1) const;
+  uint8_t analogWriteResolutionBits() const;
+  uint32_t analogWriteMaxValue() const;
   void writeActive(int channelNumber = -1) const;
   void writeInactive(int channelNumber = -1) const;
   bool readActive(int channelNumber = -1) const;

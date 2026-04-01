@@ -1257,8 +1257,8 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   ::testing::InSequence seq;
 
   RgbwBaseForTest rgb;
-  rgb.setBrightnessLimits(100, 500);
-  rgb.setColorBrightnessLimits(600, 700);
+  rgb.setBrightnessLimits(100.0f / 1023.0f, 500.0f / 1023.0f);
+  rgb.setColorBrightnessLimits(600.0f / 1023.0f, 700.0f / 1023.0f);
 
   // fade effect 1000 ms, time step 1000 ms
   // Limits: brightness (100, 500), colorBrightness (600, 700)

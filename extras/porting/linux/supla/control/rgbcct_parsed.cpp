@@ -25,11 +25,11 @@
 #include <cstdio>
 
 Supla::Control::RgbCctParsed::RgbCctParsed(Supla::Parser::Parser *parser)
-    : Supla::Sensor::SensorParsed<Supla::Control::RGBCCTBase>(parser) {
+    : Supla::Sensor::SensorParsed<Supla::Control::LightingPwmBase>(parser) {
 }
 
 void Supla::Control::RgbCctParsed::iterateAlways() {
-  Supla::Control::RGBCCTBase::iterateAlways();
+  Supla::Control::LightingPwmBase::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
     refreshParserSource();

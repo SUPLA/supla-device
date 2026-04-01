@@ -15,23 +15,43 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "rgb_leds.h"
-#include <supla/io.h>
-#include <supla/log_wrapper.h>
 
-#ifdef ARDUINO_ARCH_ESP32
-extern int esp32PwmChannelCounter;
-#endif
+namespace {
+constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
+constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin) {
+  Supla::Io::IoPin result(pin, io);
+  result.setMode(OUTPUT);
+  return result;
+}
+
+void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
+  pin.setAnalogOutputResolutionBits(LegacyAnalogWriteResolutionBits);
+  pin.setAnalogOutputFrequency(LegacyAnalogWriteFrequencyHz);
+}
+}  // namespace
 
 Supla::Control::RGBLeds::RGBLeds(Supla::Io::Base *io,
                                  int redPin,
                                  int greenPin,
                                  int bluePin)
-    : RGBLeds(redPin, greenPin, bluePin) {
-  this->io = io;
-}
+    : RGBLeds(MakeOutputPin(io, redPin),
+              MakeOutputPin(io, greenPin),
+              MakeOutputPin(io, bluePin)) {}
 
 Supla::Control::RGBLeds::RGBLeds(int redPin, int greenPin, int bluePin)
+    : RGBLeds(MakeOutputPin(nullptr, redPin),
+              MakeOutputPin(nullptr, greenPin),
+              MakeOutputPin(nullptr, bluePin)) {}
+
+Supla::Control::RGBLeds::RGBLeds(Supla::Io::IoPin redPin,
+                                 Supla::Io::IoPin greenPin,
+                                 Supla::Io::IoPin bluePin)
     : redPin(redPin), greenPin(greenPin), bluePin(bluePin) {
+  this->redPin.setMode(OUTPUT);
+  this->greenPin.setMode(OUTPUT);
+  this->bluePin.setMode(OUTPUT);
 }
 
 void Supla::Control::RGBLeds::setRGBWValueOnDevice(uint32_t red,
@@ -39,81 +59,21 @@ void Supla::Control::RGBLeds::setRGBWValueOnDevice(uint32_t red,
                                                    uint32_t blue,
                                                    uint32_t brightness) {
   (void)(brightness);
-  uint32_t redAdj =   red;
-  uint32_t greenAdj = green;
-  uint32_t blueAdj =  blue;
-
-#ifdef ARDUINO_ARCH_AVR
-  redAdj = map(redAdj, 0, 1023, 0, 255);
-  greenAdj = map(greenAdj, 0, 1023, 0, 255);
-  blueAdj = map(blueAdj, 0, 1023, 0, 255);
-#endif
-
-#ifdef ARDUINO_ARCH_ESP32
-  if (io) {
-    Supla::Io::analogWrite(redPin, redAdj, io);
-    Supla::Io::analogWrite(greenPin, greenAdj, io);
-    Supla::Io::analogWrite(bluePin, blueAdj, io);
-  } else {
-    // TODO(klew): move to IO for ESP32
-    ledcWrite(redPin, redAdj);
-    ledcWrite(greenPin, greenAdj);
-    ledcWrite(bluePin, blueAdj);
-  }
-#else
-  Supla::Io::analogWrite(redPin, redAdj, io);
-  Supla::Io::analogWrite(greenPin, greenAdj, io);
-  Supla::Io::analogWrite(bluePin, blueAdj, io);
-#endif
+  redPin.analogWrite(red);
+  greenPin.analogWrite(green);
+  bluePin.analogWrite(blue);
 }
 
 void Supla::Control::RGBLeds::onInit() {
-#ifdef ARDUINO_ARCH_ESP32
-  if (io) {
-    Supla::Io::pinMode(redPin, OUTPUT, io);
-    Supla::Io::pinMode(greenPin, OUTPUT, io);
-    Supla::Io::pinMode(bluePin, OUTPUT, io);
-  } else {
-    // TODO(klew): move to IO for ESP32
-#ifdef ESP_ARDUINO_VERSION_MAJOR
-#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-    // Code for version 3.x
-    ledcAttach(redPin, 1000, 10);
-    ledcAttach(greenPin, 1000, 10);
-    ledcAttach(bluePin, 1000, 10);
-#else
-    // Code for version 2.x
-    SUPLA_LOG_DEBUG("RGB: attaching pin %d to PWM channel %d",
-        redPin, esp32PwmChannelCounter);
-
-    ledcSetup(esp32PwmChannelCounter, 1000, 10);
-    ledcAttachPin(redPin, esp32PwmChannelCounter);
-    // on ESP32 we write to PWM channels instead of pins, so we copy channel
-    // number as pin in order to reuse variable
-    redPin = esp32PwmChannelCounter;
-    esp32PwmChannelCounter++;
-
-    ledcSetup(esp32PwmChannelCounter, 1000, 10);
-    ledcAttachPin(greenPin, esp32PwmChannelCounter);
-    greenPin = esp32PwmChannelCounter;
-    esp32PwmChannelCounter++;
-
-    ledcSetup(esp32PwmChannelCounter, 1000, 10);
-    ledcAttachPin(bluePin, esp32PwmChannelCounter);
-    bluePin = esp32PwmChannelCounter;
-    esp32PwmChannelCounter++;
-#endif
-#endif
-  }
-#else
-  Supla::Io::pinMode(redPin, OUTPUT, io);
-  Supla::Io::pinMode(greenPin, OUTPUT, io);
-  Supla::Io::pinMode(bluePin, OUTPUT, io);
-
-#ifdef ARDUINO_ARCH_ESP8266
-  analogWriteRange(1024);
-#endif
-#endif
+  ConfigureLegacyAnalogOutput(redPin);
+  ConfigureLegacyAnalogOutput(greenPin);
+  ConfigureLegacyAnalogOutput(bluePin);
+  redPin.configureAnalogOutput();
+  greenPin.configureAnalogOutput();
+  bluePin.configureAnalogOutput();
+  redPin.pinMode();
+  greenPin.pinMode();
+  bluePin.pinMode();
 
   Supla::Control::RGBBase::onInit();
 }

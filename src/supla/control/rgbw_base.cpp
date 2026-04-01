@@ -40,7 +40,7 @@ RGBWBase::RGBWBase() {
   channel.setFlag(SUPLA_CHANNEL_FLAG_RGBW_COMMANDS_SUPPORTED);
   // RGBWBase works in legacy mode where Dimmer/RGB/RGBW function was
   // assigned to dedicated channel type.
-  // Use RGBCCTBase class if you want to have flexible control over
+  // Use LightingPwmBase class if you want to have flexible control over
   // Dimmer/RGB/RGBW/CCT functions
   channel.setFuncList(0);
 }

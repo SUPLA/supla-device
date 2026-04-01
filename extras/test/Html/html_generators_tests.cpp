@@ -26,7 +26,7 @@
 #include <supla-common/proto.h>
 #include <supla/control/hvac_base.h>
 #include <supla/control/relay.h>
-#include <supla/control/rgb_cct_base.h>
+#include <supla/control/lighting_pwm_base.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/device/register_device.h>
 #include <supla/device/security_logger.h>
@@ -151,7 +151,7 @@ class SecurityLoggerStub : public Supla::Device::SecurityLogger {
   size_t nextIndex_ = 0;
 };
 
-class PwmFrequencyStub : public Supla::Control::RGBCCTBase {
+class PwmFrequencyStub : public Supla::Control::LightingPwmBase {
  public:
   PwmFrequencyStub() = default;
 

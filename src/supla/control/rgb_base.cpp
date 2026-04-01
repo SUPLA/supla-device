@@ -62,4 +62,3 @@ void Supla::Control::RGBBase::onLoadState() {
   Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
                              sizeof(lastColorBrightness));
 }
-

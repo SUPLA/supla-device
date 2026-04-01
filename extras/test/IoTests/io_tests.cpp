@@ -105,7 +105,7 @@ TEST(IoTests, IoPinDefaultsAndFlags) {
   EXPECT_FALSE(pin.isSet());
   EXPECT_EQ(pin.getPin(), -1);
   EXPECT_FALSE(pin.isPullUp());
-  EXPECT_FALSE(pin.isActiveHigh());
+  EXPECT_TRUE(pin.isActiveHigh());
   EXPECT_EQ(pin.getMode(), 0);
 
   pin.setPin(7);
@@ -148,6 +148,25 @@ TEST(IoTests, IoPinDelegatesToCustomIo) {
   pin.writeActive(7);
   pin.writeInactive(7);
   pin.analogWrite(123, 7);
+}
+
+TEST(IoTests, IoPinConfigureAnalogOutputDelegatesToCustomIo) {
+  SuplaIoMock ioMock(true);
+  Supla::Io::IoPin pin(15, &ioMock);
+
+  EXPECT_CALL(ioMock, customConfigureAnalogOutput(5, 15, false));
+
+  pin.configureAnalogOutput(5);
+}
+
+TEST(IoTests, IoPinConfigureAnalogOutputPassesInvertFlag) {
+  SuplaIoMock ioMock(true);
+  Supla::Io::IoPin pin(15, &ioMock);
+  pin.setActiveHigh(false);
+
+  EXPECT_CALL(ioMock, customConfigureAnalogOutput(5, 15, true));
+
+  pin.configureAnalogOutput(5);
 }
 
 TEST(IoTests, IoPinActiveLowInvertsReadAndWriteLevels) {

@@ -19,9 +19,9 @@
 #ifndef SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_
 #define SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_
 
-#include <stdint.h>
-
 #include "lighting_pwm_base.h"
+
+#include <stdint.h>
 #include <supla/io.h>
 
 namespace Supla {

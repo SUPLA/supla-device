@@ -103,7 +103,7 @@ TEST(DimmerTests, DimmerShouldIgnoreRGBValues) {
   dimmer.setFadeEffectTime(0);
 
   EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 0)).Times(1);
-  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, (5*1023/100))).Times(1);
+  EXPECT_CALL(dimmer, setRGBWValueOnDevice(0, 0, 0, 50)).Times(1);
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 0);

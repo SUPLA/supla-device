@@ -23,6 +23,8 @@
 #include <simple_time.h>
 #include <arduino_mock.h>
 
+#include "../doubles/supla_io_mock.h"
+
 TEST(BinarySensorTests, VirtualBinaryValuesTest) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;
@@ -128,3 +130,35 @@ TEST(BinarySensorTests, BinaryValuesWithLocalInvertTest) {
   EXPECT_EQ(sensor.getChannel()->getValueBool(), false);
 }
 
+TEST(BinarySensorTests, BinaryIoPinConstructorUsesSeparateIoAndPolarity) {
+  Supla::Channel::resetToDefaults();
+  SuplaIoMock ioMock;
+  SimpleTime time;
+
+  int gpio1Value = 0;
+  EXPECT_CALL(ioMock, customPinMode(0, 1, INPUT_PULLUP))
+      .WillOnce(::testing::Return());
+  EXPECT_CALL(ioMock, customDigitalRead(0, 1))
+      .WillRepeatedly(::testing::ReturnPointee(&gpio1Value));
+
+  Supla::Io::IoPin inputPin(1, &ioMock);
+  inputPin.setPullUp(true);
+  inputPin.setActiveHigh(false);
+
+  Supla::Sensor::Binary sensor(inputPin);
+
+  sensor.onInit();
+
+  EXPECT_EQ(sensor.getValue(), true);
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), true);
+
+  gpio1Value = 1;
+
+  for (int i = 0; i < 50; ++i) {
+    sensor.iterateAlways();
+    time.advance(100);
+  }
+
+  EXPECT_EQ(sensor.getValue(), false);
+  EXPECT_EQ(sensor.getChannel()->getValueBool(), false);
+}

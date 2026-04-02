@@ -18,25 +18,28 @@
 
 #include <supla/time.h>
 
-#include "../io.h"
+Supla::Sensor::Binary::Binary(Supla::Io::IoPin inputPin)
+    : inputPin(inputPin) {
+  this->inputPin.setMode(INPUT);
+}
 
 Supla::Sensor::Binary::Binary(Supla::Io::Base *io,
                               int pin,
                               bool pullUp,
                               bool invertLogic)
-    : Binary(pin, pullUp, invertLogic) {
-  this->io = io;
+    : Binary(Supla::Io::IoPin(pin, io)) {
+  inputPin.setPullUp(pullUp);
+  inputPin.setActiveHigh(!invertLogic);
 }
 
 Supla::Sensor::Binary::Binary(int pin, bool pullUp, bool invertLogic)
-    : pin(pin), pullUp(pullUp), invertLogic(invertLogic) {
+    : Binary(Supla::Io::IoPin(pin)) {
+  inputPin.setPullUp(pullUp);
+  inputPin.setActiveHigh(!invertLogic);
 }
 
 bool Supla::Sensor::Binary::getValue() {
-  auto value =
-      Supla::Io::digitalRead(channel.getChannelNumber(), pin, io) == LOW ? false
-                                                                         : true;
-  value = !invertLogic ? value : !value;
+  auto value = inputPin.readActive(channel.getChannelNumber());
 
   if (config.filteringTimeMs > 0) {
     if (value != newStateCandidateValue) {
@@ -56,8 +59,6 @@ bool Supla::Sensor::Binary::getValue() {
 }
 
 void Supla::Sensor::Binary::onInit() {
-  Supla::Io::pinMode(
-      channel.getChannelNumber(), pin, pullUp ? INPUT_PULLUP : INPUT, io);
+  inputPin.pinMode(channel.getChannelNumber());
   channel.setNewValue(getValue());
 }
-

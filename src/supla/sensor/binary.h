@@ -19,17 +19,18 @@
 #ifndef SRC_SUPLA_SENSOR_BINARY_H_
 #define SRC_SUPLA_SENSOR_BINARY_H_
 
+#include <supla/io.h>
 #include <supla/sensor/binary_base.h>
 
 namespace Supla {
 
 namespace Io {
-class Base;
 }
 
 namespace Sensor {
 class Binary : public BinaryBase {
  public:
+  explicit Binary(Supla::Io::IoPin inputPin);
   explicit Binary(Supla::Io::Base *io,
                   int pin,
                   bool pullUp = false,
@@ -39,10 +40,7 @@ class Binary : public BinaryBase {
   void onInit() override;
 
  protected:
-  Supla::Io::Base *io = nullptr;
-  int16_t pin = -1;
-  bool pullUp = false;
-  bool invertLogic = false;
+  Supla::Io::IoPin inputPin;
   bool newStateCandidateValue = false;
   bool prevValue = false;
   uint32_t lastStateChangeMs = 0;

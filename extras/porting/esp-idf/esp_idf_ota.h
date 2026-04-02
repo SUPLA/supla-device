@@ -29,15 +29,18 @@ namespace Supla {
 class EspIdfOta : public Supla::Device::SwUpdate {
  public:
   friend Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
-      SuplaDeviceClass *sdc, const char *url);
+      SuplaDeviceClass *sdc, const char *url, Supla::SwUpdateMode mode);
   ~EspIdfOta();
   void iterate() override;
 
  protected:
+  EspIdfOta(SuplaDeviceClass *sdc,
+            const char *newUrl,
+            Supla::SwUpdateMode mode);
+
   bool verifyRsaSignature(const esp_partition_t *update_partition, int binSize);
   void fail(const char *);
   void log(const char *);
-  EspIdfOta(SuplaDeviceClass *sdc, const char *newUrl);
   esp_http_client_handle_t client = {};
   esp_ota_handle_t updateHandle = 0;
   uint8_t *otaBuffer = nullptr;

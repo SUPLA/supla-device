@@ -19,7 +19,7 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <arduino_mock.h>
-#include <supla/control/rgb_cct_base.h>
+#include <supla/control/lighting_pwm_base.h>
 #include <supla/actions.h>
 #include <storage_mock.h>
 #include <simple_time.h>
@@ -28,11 +28,11 @@ using ::testing::Return;
 using ::testing::_;
 using ::testing::Le;
 
-class RgbCctBaseForTest : public Supla::Control::RGBCCTBase {
+class RgbCctBaseForTest : public Supla::Control::LightingPwmBase {
  public:
   MOCK_METHOD(void,
               setRGBCCTValueOnDevice,
-              (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t, uint32_t),
+              (uint32_t[5], int),
               (override));
 };
 
@@ -52,7 +52,7 @@ void setRGBCCTValues(TRGBW_Value *value,
   value->B = blue;
   value->colorBrightness = colorBrightness;
   value->brightness = brightness;
-  value->dimmerCct = whiteTemperature;
+  value->whiteTemperature = whiteTemperature;
 }
 
 TEST(RgbCctTests, InitializationWithDefaultValues) {
@@ -156,7 +156,7 @@ TEST(RgbCctTests, BasicTests) {
                   5,
                   100,
                   0,
-                  RGBW_COMMAND_SET_DIMMER_CCT_WITHOUT_TURN_ON);
+                  RGBW_COMMAND_SET_WHITE_TEMPERATURE_WITHOUT_TURN_ON);
   rgb.handleNewValueFromServer(&msg);
   time.advance(1000);
   rgb.iterateAlways();
@@ -175,7 +175,7 @@ TEST(RgbCctTests, BasicTests) {
                   5,
                   33,
                   0,
-                  RGBW_COMMAND_SET_DIMMER_CCT_WITHOUT_TURN_ON);
+                  RGBW_COMMAND_SET_WHITE_TEMPERATURE_WITHOUT_TURN_ON);
   rgb.handleNewValueFromServer(&msg);
   time.advance(1000);
   rgb.iterateAlways();
@@ -225,3 +225,16 @@ TEST(RgbCctTests, BasicTests) {
   EXPECT_EQ(ch->getValueWhiteTemperature(), 60);
 }
 
+TEST(RgbCctTests, LegacyStorageMigrationIsOptIn) {
+  RgbCctBaseForTest rgb;
+
+  EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+
+  rgb.convertStorageFromLegacyChannel(
+      Supla::Control::LightingPwmBase::LegacyChannelFunction::RGB);
+
+  EXPECT_TRUE(rgb.isStateStorageMigrationNeeded());
+
+  rgb.setSkipLegacyMigration();
+  EXPECT_FALSE(rgb.isStateStorageMigrationNeeded());
+}

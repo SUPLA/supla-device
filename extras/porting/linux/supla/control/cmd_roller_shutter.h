@@ -37,14 +37,10 @@ class CmdRollerShutter : public Sensor::SensorParsed<RollerShutter> {
 
   void iterateAlways() override;
 
-  bool isOffline();  // add override
-
   void setCmdUpOn(const std::string &);
   void setCmdUpOff(const std::string &);
   void setCmdDownOn(const std::string &);
   void setCmdDownOff(const std::string &);
-
-  void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
 
  protected:
   std::string cmdUpOn;
@@ -52,11 +48,9 @@ class CmdRollerShutter : public Sensor::SensorParsed<RollerShutter> {
   std::string cmdDownOn;
   std::string cmdDownOff;
   uint32_t lastReadTime = 0;
-  bool useOfflineOnInvalidState = false;
 };
 
 };  // namespace Control
 };  // namespace Supla
-
 
 #endif  // EXTRAS_PORTING_LINUX_SUPLA_CONTROL_CMD_ROLLER_SHUTTER_H_

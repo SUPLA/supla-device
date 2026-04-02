@@ -96,6 +96,18 @@ TEST_F(ChannelTestsFixture, ChannelMethods) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelFunctionList(number), 11);
 }
 
+TEST_F(ChannelTestsFixture, ChannelNumberOffset) {
+  Supla::Channel::setStartingChannelNumber(10);
+
+  EXPECT_EQ(Supla::RegisterDevice::getNextFreeChannelNumber(), 10);
+
+  Supla::Channel first;
+  Supla::Channel second;
+
+  EXPECT_EQ(first.getChannelNumber(), 10);
+  EXPECT_EQ(second.getChannelNumber(), 11);
+}
+
 TEST_F(ChannelTestsFixture, SetNewValue) {
   Supla::Channel channel;
   int number = channel.getChannelNumber();

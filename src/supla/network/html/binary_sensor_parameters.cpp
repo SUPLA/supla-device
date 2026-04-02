@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "binary_sensor_parameters.h"
 
 #include <stdint.h>
@@ -56,82 +57,93 @@ void BinarySensorParameters::send(Supla::WebSender* sender) {
     snprintf(tmp, sizeof(tmp), "Binary sensor #%d", binary->getChannelNumber());
 
     sender->send("</div><div class=\"box\">");
-    sender->send("<h3>");
-    sender->send(tmp);
-    sender->send("</h3>");
+    sender->tag("h3").body(tmp);
 
     Supla::Config::generateKey(
         key,
         binary->getChannelNumber(),
         Supla::ConfigTag::BinarySensorServerInvertedLogicTag);
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field right-checkbox\">");
-    sender->sendLabelFor(key, "Inverted logic");
-    sender->send("<label>");
-    sender->send("<span class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(checked(binary->isServerInvertLogic()));
-    sender->sendNameAndId(key);
-    sender->send(">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</span>");
-    sender->send("</label>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(
+        key,
+        "Inverted logic",
+        [&]() {
+          sender->tag("label").body([&]() {
+            sender->tag("span").attr("class", "switch").body([&]() {
+              auto input = sender->voidTag("input");
+              input.attr("type", "checkbox");
+              input.attr("value", "on");
+              input.attrIf("checked", binary->isServerInvertLogic());
+              input.attr("name", key);
+              input.attr("id", key);
+              input.finish();
+              sender->tag("span").attr("class", "slider").body([]() {});
+            });
+          });
+        },
+        "form-field right-checkbox");
 
-    // form-field BEGIN
     if (binary->getFilteringTimeMs() > 0) {
       Supla::Config::generateKey(key,
                                  binary->getChannelNumber(),
                                  BinaryFilterKey);
 
-      sender->send("<div class=\"form-field\">");
-      sender->sendLabelFor(key, "Filtering time [s]");
-      sender->send(
-          "<input type=\"number\" min=\"0.03\" max=\"3.0\" step=\"0.01\" ");
-      sender->sendNameAndId(key);
-      sender->send(" value=\"");
-      sender->send(binary->getFilteringTimeMs(), 3);
-      sender->send("\">");
-      sender->send("</div>");
+      sender->labeledField(
+          key,
+          "Filtering time [s]",
+          [&]() {
+            auto input = sender->voidTag("input");
+            input.attr("type", "number");
+            input.attr("min", "0.03");
+            input.attr("max", "3.0");
+            input.attr("step", "0.01");
+            input.attr("name", key);
+            input.attr("id", key);
+            input.attr("value", binary->getFilteringTimeMs(), 3);
+            input.finish();
+          });
     }
-    // form-field END
 
-    // form-field BEGIN
     if (binary->getTimeoutDs() > 0) {
       Supla::Config::generateKey(key,
                                  binary->getChannelNumber(),
                                  BinaryTimeoutKey);
 
-      sender->send("<div class=\"form-field\">");
-      sender->sendLabelFor(key, "Sensor timeout [s]");
-      sender->send(
-          "<input type=\"number\" min=\"0.1\" max=\"3600\" step=\"0.1\" ");
-      sender->sendNameAndId(key);
-      sender->send(" value=\"");
-      sender->send(binary->getTimeoutDs(), 1);
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
+      sender->labeledField(
+          key,
+          "Sensor timeout [s]",
+          [&]() {
+            auto input = sender->voidTag("input");
+            input.attr("type", "number");
+            input.attr("min", "0.1");
+            input.attr("max", "3600");
+            input.attr("step", "0.1");
+            input.attr("name", key);
+            input.attr("id", key);
+            input.attr("value", binary->getTimeoutDs(), 1);
+            input.finish();
+          });
     }
 
-    // form-field BEGIN
     if (binary->getSensitivity() > 0) {
       Supla::Config::generateKey(key,
                                  binary->getChannelNumber(),
                                  BinarySensitivityKey);
 
-      sender->send("<div class=\"form-field\">");
-      sender->sendLabelFor(key, "Sensor sensitivity [%]");
-      sender->send(
-          "<input type=\"number\" min=\"0\" max=\"100\" step=\"1\" ");
-      sender->sendNameAndId(key);
-      sender->send(" value=\"");
-      sender->send(binary->getSensitivity() - 1, 0);
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
+      sender->labeledField(
+          key,
+          "Sensor sensitivity [%]",
+          [&]() {
+            auto input = sender->voidTag("input");
+            input.attr("type", "number");
+            input.attr("min", 0);
+            input.attr("max", 100);
+            input.attr("step", 1);
+            input.attr("name", key);
+            input.attr("id", key);
+            input.attr("value", binary->getSensitivity() - 1, 0);
+            input.finish();
+          });
     }
   }
 }
@@ -213,3 +225,4 @@ void BinarySensorParameters::onProcessingEnd() {
   configChanged = false;
 }
 
+#endif  // ARDUINO_ARCH_AVR

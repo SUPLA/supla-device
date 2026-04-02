@@ -38,6 +38,10 @@ bool Supla::Parser::Parser::refreshParserSource() {
   return true;
 }
 
+bool Supla::Parser::Parser::isSourceConnected() const {
+  return source ? source->isConnected() : false;
+}
+
 void Supla::Parser::Parser::setRefreshTime(unsigned int timeMs) {
   if (timeMs < 10) {
     timeMs = 10;

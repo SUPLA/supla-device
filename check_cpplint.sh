@@ -1,5 +1,7 @@
 #!/bin/bash
 
+cpplint --version
+
 EXIT_STATUS=0
 cpplint --filter=-build/include_subdir --quiet ./src/* || EXIT_STATUS=$?
 cpplint --filter=-build/include_subdir --quiet --recursive ./src/supla/* || EXIT_STATUS=$?

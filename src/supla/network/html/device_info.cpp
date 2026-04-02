@@ -16,15 +16,16 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include <SuplaDevice.h>
+#include <string.h>
 #include <supla/channel.h>
+#include <supla/device/register_device.h>
+#include <supla/log_wrapper.h>
 #include <supla/network/html/device_info.h>
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
 #include <supla/tools.h>
-#include <supla/log_wrapper.h>
-#include <string.h>
-#include <supla/device/register_device.h>
 
 namespace Supla {
 
@@ -34,12 +35,14 @@ DeviceInfo::DeviceInfo(SuplaDeviceClass *sdc)
     : HtmlElement(HTML_SECTION_DEVICE_INFO), sdc(sdc) {
 }
 
-DeviceInfo::~DeviceInfo() {}
+DeviceInfo::~DeviceInfo() {
+}
 
 void DeviceInfo::send(Supla::WebSender *sender) {
-  sender->send("<h1>");
-  sender->send(Supla::RegisterDevice::getName());
-  sender->send("</h1><span>");
+  sender->tag("h1").body(Supla::RegisterDevice::getName());
+
+  auto span = sender->tag("span");
+  span.close();
   if (sdc && sdc->prepareLastStateLog()) {
     sender->send("LAST STATE: ");
 
@@ -50,38 +53,51 @@ void DeviceInfo::send(Supla::WebSender *sender) {
       }
       firstElemenet = false;
 
-      sender->send(lastState);
+      sender->sendSafe(lastState);
     }
   }
-  sender->send("<br>Firmware: ");
+
+  sender->voidTag("br").finish();
+  sender->send("Firmware: ");
   sender->send(Supla::RegisterDevice::getSoftVer());
-  sender->send("<br>GUID: ");
+  sender->voidTag("br").finish();
+  sender->send("GUID: ");
+
   char buf[512] = {};
   generateHexString(Supla::RegisterDevice::getGUID(), buf, SUPLA_GUID_SIZE);
   sender->send(buf);
   uint8_t mac[6] = {};
   if (Supla::Network::GetMainMacAddr(mac)) {
-    sender->send("<br>MAC: ");
+    sender->voidTag("br").finish();
+    sender->send("MAC: ");
     generateHexString(mac, buf, 6, ':');
     sender->send(buf);
   }
-  sender->send("</span><span>");
+
+  span.end();
+
+  auto span2 = sender->tag("span");
+  span2.close();
   if (Supla::Network::GetNetIntfCount() > 1) {
     for (auto net = Supla::Network::FirstInstance(); net;
          net = net->NextInstance(net)) {
       uint8_t curMac[6] = {};
       if (net->getMacAddr(curMac) && memcmp(curMac, mac, 6) != 0) {
         generateHexString(curMac, buf, 6, ':');
-        sender->send("<br>");
-        sender->send(net->getIntfName());
+        sender->voidTag("br").finish();
+        sender->sendSafe(net->getIntfName());
         sender->send(" MAC: ");
         sender->send(buf);
       }
     }
   }
-  sender->send("<br>Uptime: ");
+  sender->voidTag("br").finish();
+  sender->send("Uptime: ");
   sender->send(sdc->uptime.getUptime());
-  sender->send(" s</span>");
+  sender->send(" s");
+  span2.end();
 }
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

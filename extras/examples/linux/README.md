@@ -143,7 +143,7 @@ Example:
 
 Use it to change log level to different value.
 Parameter is optional. Default log level is `info`.
-Allowed values: `debug`, `verbose`
+Allowed values: `debug`, `verbose`, `warning`, `error`
 
 Example:
 
@@ -353,10 +353,26 @@ Example channels configuration (details are exaplained later):
           refresh_time_ms: 1000
         state: 0
 
+    # Single phase Fronius inverter
       - type: Fronius
         ip: 192.168.1.7
         port: 80
         device_id: 1
+        device_type: 0
+
+    # Three phase Fronius inverter
+      - type: Fronius
+        ip: 192.168.1.7
+        port: 80
+        device_id: 1
+        device_type: 1
+
+    # Three phase Fronius meter
+      - type: Fronius
+        ip: 192.168.1.7
+        port: 80
+        device_id: 0
+        device_type: 2
 
       - type: Afore
         ip: 192.168.1.17
@@ -436,6 +452,7 @@ Example channels configuration (details are exaplained later):
 
       - type: BinaryParsed
         state: 1
+        default_function: mail
         parser:
           use: parser_1
 
@@ -821,13 +838,16 @@ In order to disable time expiration check, please set `expiration_time_sec` to 0
    field.
 3. `MQTT` - use subscribe topic from MQTT broker. Requires defining the [`mqtt`](#mqtt-broker-connection)
    section. A subscribed topic name containing status information is provided by
-   `state_topic`. If we need more simple data that are in different subtopics, 
-   we can define them as a `sub_topics` array and assign them an index in this array 
+   `state_topic`. If we need more simple data that are in different subtopics,
+   we can define them as a `sub_topics` array and assign them an index in this array
    in the parameters, just like with the `Simple` parser (index counting starts with 0).
    I.e. please take a look at `th5` channel above.
    If source was already defined earlier, and you want to reuse it, you can specify
    `use` parameter with proper name of previously defined source. When `use`
    parameter is used, then no other source configuration parameters are allowed.
+   When the connection to the MQTT broker is lost, all channels using `MQTT` source
+   will be automatically set to offline state. They return to online state once the
+   connection is restored and data is received.
 
 ## Parsed channel `parser` parameter
 
@@ -965,6 +985,12 @@ Optional parameter: `multiplier` - defines multiplier for fetched value
 
 Values equal to "1" (approx) are considered as on/1/true. All other values
 are considered as off/0/false.
+
+Optional parameter: `default_function` - defines default function for binary
+sensor. Allowed values: `opening_door`, `opening_window`, `opening_roller_shutter`,
+`opening_roof_window`, `opening_garag_edoor`, `opening_gate`, `opening_gateway`,
+`no_liquid`, `hotel_card`, `alarm_armament`, `mail`, `container_level`, `flood`,
+`binary`, `motion`.
 
 ### `ElectricityMeterParsed`
 

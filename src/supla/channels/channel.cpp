@@ -35,13 +35,23 @@
 using Supla::Channel;
 
 Channel *Channel::firstPtr = nullptr;
+int Channel::startingChannelNumber = 0;
 
 #ifdef SUPLA_TEST
 // Method used in tests to restore default values for static members
 void Supla::Channel::resetToDefaults() {
   Supla::RegisterDevice::resetToDefaults();
+  startingChannelNumber = 0;
 }
 #endif
+
+void Supla::Channel::setStartingChannelNumber(int channelNumber) {
+  startingChannelNumber = channelNumber < 0 ? 0 : channelNumber;
+}
+
+int Supla::Channel::getStartingChannelNumber() {
+  return startingChannelNumber;
+}
 
 Channel::Channel(int number) {
   if (firstPtr == nullptr) {
@@ -2059,4 +2069,3 @@ bool Channel::isRelayOvercurrentCutOff() const {
   }
   return false;
 }
-

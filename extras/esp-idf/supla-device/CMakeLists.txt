@@ -1,6 +1,5 @@
 include(${COMPONENT_DIR}/../../../cmake/SuplaDeviceSources.cmake)
 include(${COMPONENT_DIR}/../../../cmake/SuplaCommonSources.cmake)
-include(${COMPONENT_DIR}/../../../cmake/NettleSources.cmake)
 
 set(SUPLA_DEVICE_PORTING_SRCS
   ../../porting/esp-idf/esp_platform.cpp
@@ -40,7 +39,6 @@ idf_component_register(SRCS
 
 supla_device(${COMPONENT_LIB})
 supla_common(${COMPONENT_LIB})
-nettle(${COMPONENT_LIB})
 
 target_include_directories(${COMPONENT_LIB} PUBLIC
   ${SUPLA_DEVICE_SRC_DIR}

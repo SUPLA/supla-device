@@ -56,10 +56,27 @@ void setup() {
   new Supla::Html::ProtocolParameters;
   new Supla::Html::StatusLedParameters;
 
-  // CHANNEL0
-  // Put IP address of your Fronius inverter, then port (deafult is 80)
-  // TODO(anyone): add HTML element for IP address configuration
-  new Supla::PV::Fronius(IPAddress(192, 168, 0, 59));
+  /*
+   * Parameters in order:
+   * - IP address of your Fronius DataManager card,
+   * - port (deafult is 80),
+   * - device ID (for inverters: SolarNet inverter id, usually starts with 1,
+   * for meters starts with 0)
+   * - device type: 0 - single phase inverter, 1 - three phase inverter,
+   * 2 - three phase meter
+   * 
+   * Uncomment one or multiple lines according to your installation
+   * Each line is a new CHANNEL
+   */
+  // Single phase inverter
+  new Supla::PV::Fronius(IPAddress(192, 168, 0, 59), 80, 1, 0);
+  // Three phase inverter
+  //new Supla::PV::Fronius(IPAddress(192, 168, 0, 59), 80, 1, 1);
+  // Three phase inverter with id = 2
+  // (can be also a second one connected to same DataManager card)
+  //new Supla::PV::Fronius(IPAddress(192, 168, 0, 59), 80, 2, 1);
+  // Three phase Smart Meter
+  //new Supla::PV::Fronius(IPAddress(192, 168, 0, 59), 80, 0, 2);
 
   SuplaDevice.setInitialMode(Supla::InitialMode::StartInCfgMode);
   SuplaDevice.begin();

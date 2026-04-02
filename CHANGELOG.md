@@ -1,5 +1,191 @@
 # CHANGELOG.md
 
+# 26.04 (2026-04-02 IoPin & Lighting PWM)
+
+### Breaking changes
+- Rename `setBrightnessLimits` and `setColorBrightnessLimits` to ratio-based variants. Existing code must switch to `setBrightnessRatioLimits` and `setColorBrightnessRatioLimits`.
+
+### Generic
+- Add `Supla::Io::IoPin` as a shared pin description with per-pin backend, direction, pull-up and polarity handling.
+- Add `LedcIo` backend for ESP-IDF PWM with configurable resolution and frequency.
+- Move PWM setup, pin direction and polarity handling into `IoPin` and `Io` backends.
+- Add automatic default PWM function list selection in `LightingPwmLeds` based on the configured output count.
+- Add ratio-based brightness limits for lighting PWM channels.
+- Rename the lighting PWM base to `LightingPwmBase` and add `LightingPwmLeds` as the generic 1-5 output PWM implementation.
+
+### Sensors & Devices
+- Move `Binary` sensor GPIO handling to `IoPin`.
+- Move `ImpulseCounter` GPIO handling to `IoPin`.
+- Move `PinStatusLed`, `BlinkingLed`, `InternalPinOutput`, `Relay`, `LightRelay`, `RollerShutter`, `BistableRelay`, `TrippleButtonRollerShutter`, `Button`, `SimpleButton` and `SequenceButton` to `IoPin`-based constructors.
+
+### LED & UI
+- Refactor `RGBLeds`, `RGBWLeds`, `DimmerLeds` and `LightingPwmLeds` to use `IoPin`-based outputs.
+- Keep legacy RGB / RGBW / Dimmer LED classes as compatibility wrappers.
+- Improve lighting PWM scaling and deduplicate repeated duty writes.
+- Add support for mixed GPIO backends per output, including GPIO expanders.
+
+### Fixes
+- Fix `BlinkingLed` mutex leak.
+- Fix lighting PWM duty scaling for custom backend resolution.
+- Fix lighting PWM initialization so child instances do not reconfigure parent outputs.
+- Fix brightness floor handling for CCT / dimmer lighting combinations.
+
+# 26.03.02 (2026-03-30 HTML helpers and config polish)
+
+### Generic
+- Add `setStartingChannelNumber(int)` to control automatic channel numbering.
+- Add typed `selectInput` variants for integer values.
+- Move HTML generation to helper methods and add more HTML tests.
+- Add device name to the config page title.
+
+### Linux / sd4linux
+- Add `default_function` support for `BinaryParsed`.
+- Improve parsing of numeric values from strings and error reporting in YAML config.
+- Fix online/offline state handling and Yocto build issues in `sd4linux`.
+
+### HTML
+- Introduce the new `WebSender` HTML generation helpers and deprecate the old tag helpers.
+
+# 26.03.01 (2026-03-12 typed parameters and refresh interval)
+
+### Generic
+- Add typed `CustomParameter` support for signed integers and floating point.
+- Add default refresh interval setting to `GeneralPurposeChannelBase`.
+
+### Sensors & Devices
+- Add `DS18B20` support for multiple sensors on a single OneWire bus.
+- Add support for Fronius 3-phase inverters and electricity meters.
+
+### Fixes
+- Add parser and MQTT connection status checks.
+- Fix `setAutomaticResetOnConnectionProblem` behavior.
+- Clean up compilation warnings and Arduino Mega build issues.
+
+# 26.03 (2026-03-02 lighting and BinaryParsed polish)
+
+### Generic
+- Add `default_function` YAML support for `BinaryParsed`.
+- Add `BlinkingLed::setInvert(bool)`.
+- Add default hold-time support in HTML button parameters.
+
+### Lighting
+- Refactor RGB / Dim / CCT brightness handling into the common base class.
+- Fix output state handling when channel function changes.
+
+### ESP-IDF
+- Add MQTT as an ESP-IDF component.
+
+### Fixes
+- Fix `BH1750` zero-light readings.
+- Add retry handling for `SwUpdate`.
+- Update the build for ESP-IDF 6.0 changes.
+
+# 26.02.02 (2026-02-25 PWM frequency controls)
+
+### Lighting
+- Add configurable min / max / step PWM frequency to `RgbCctBase`.
+- Add HTML `PwmFrequencyParameters` support.
+
+### ESP-IDF
+- Add PWM frequency and output inversion configuration to `RgbwPwm`.
+
+### Fixes
+- Swap white channel ordering in temperature calculations.
+- Update the ESP-IDF stable dockerfile to 5.5.3.
+
+# 26.02.01 (2026-02-23 RGBW PWM tweaks)
+
+### ESP-IDF
+- Add option to configure PWM frequency and output inverted state in `RgbwPwm`.
+
+### Fixes
+- Fix a missing variable assignment when dimming to zero in RGBCCT.
+- Update the ESP-IDF stable dockerfile to 5.5.3.
+
+# 26.02 (2026-02-02 RGB/CCT iteration improvements)
+
+### Lighting
+- Improve handling of `start` / `stop iterate` in `RgbCctBase`.
+
+### ESP-IDF
+- Add a dedicated component for RGBW / CCT handling.
+
+# 26.01 (2026-01-20 RGBCCT migration and storage)
+
+### Lighting
+- Add parent instance handling for cascaded `RGBCCT` channels.
+- Add `RgbCctBase` legacy migration methods.
+- Add an option to keep the legacy storage format without migration.
+- Add state storage migration support and `RgbCctBase` migration implementation.
+
+### Generic
+- Add automatic config initialization and `SpiffsStorage` re-init support.
+- Add missing CMake entries and update the README.
+- Add a simple Arduino IDE example.
+
+### Fixes
+- Improve `EspIdfClient` debug logs and build-system defines.
+- Fix compilation issues on ESP-IDF 6.0.
+- Add a few extra compilation fixes and warning cleanups.
+
+# 25.12 (2025-12-10 impulse counters and RGBCCT groundwork)
+
+### Relay
+- Add support for cyclic relay mode.
+- Improve relay and bistable relay timer handling.
+
+### Sensors & Devices
+- Add `ImpulseCounter` minimum signal time filtering.
+- Add `VirtualImpulseCounter` default function, default config and `ON_IMPULSE` event generation.
+- Add `BistableRelay` fixes and a separate I/O interface for the status pin.
+
+### Lighting
+- Add the first `RGBCCT` / `RGBW` draft and parent-instance handling for cascaded channels.
+- Add legacy channel migration groundwork and the option to keep the legacy storage format.
+- Improve `RgbCctBase` handling of iterate start/stop.
+
+### Generic
+- Add permanent web interface support.
+- Add default `Supla::Clock` instance when the user does not provide one.
+
+### ESP-IDF
+- Update ESP-IDF to 5.5.1 and improve `EspIdfClient` last-state logging.
+- Add `host` to last-state logs.
+
+# 25.11.02 (2025-12-05 relay / HVAC improvements)
+
+### Relay / HVAC
+- Add offline detection in `RelayHvacAggregator` and ignore stale HVAC state.
+- Add an internal state change check interval for relays.
+- Improve relay state handling after external `turnOn` / `turnOff` commands.
+
+### Storage
+- Adjust relay state save scheduling to use a 2-5 s window after state changes.
+- Improve `Storage::scheduleSave` min/max handling.
+
+### ESP-IDF
+- Add a sending buffer to `EspIdfWebServer`.
+
+# 25.11.01 (2025-11-14 roller shutter and IO startup fixes)
+
+### Roller Shutter
+- Improve facade blind position and tilt calculations.
+- Change app button behavior so up / down commands fully open or close, including tilt.
+- Add support for explicit stop requests.
+- Add support for tilt-related settings in the HTML configuration form.
+
+### Generic
+- Add `Io::isReady()` support for slow I/O backends.
+- Make buttons ignore startup state changes until I/O is ready.
+- Fix missing `ON_CLICK_1` when a button is held longer than `multiclickTimeMs`.
+
+### HVAC / Modbus / ESP-IDF
+- Allow initial configuration in `ModbusConfigurator` and enable RTU slave mode by default in ESP-IDF.
+- Fix `HvacBase` behavior for externally controlled outputs.
+- Fix `InterruptAcToDcIo` initial state handling in DC mode.
+- Add `esp_idf_mutex` for Arduino.
+- Make `EspIdfSecurityLogger` skip its HTML page when disabled.
+
 # 25.11 (2025-11-12 Teddy Bear Edition)
 
 ### Roller Shutter
@@ -895,4 +1081,3 @@ All changes for this and older releases are for Arduino IDE target.
   - Change: Supla protocol version updated to 16
   - Fix: Roller shutter was sending invalid channel value for not calibrated state
   - Fix: Compilation error and warnings cleanup (especially for ESP32)
-

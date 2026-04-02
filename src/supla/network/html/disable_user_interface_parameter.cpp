@@ -16,18 +16,18 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "disable_user_interface_parameter.h"
 
 #include <SuplaDevice.h>
 #include <string.h>
+#include <supla/element.h>
+#include <supla/log_wrapper.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
-#include <supla/log_wrapper.h>
-#include <supla/storage/config_tags.h>
-#include <supla/element.h>
-#include <stdio.h>
 
 using Supla::Html::DisableUserInterfaceParameter;
 
@@ -44,33 +44,23 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
     uint8_t value = 0;  // default value
     cfg->getUInt8(Supla::ConfigTag::DisableUserInterfaceCfgTag, &value);
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::DisableUserInterfaceCfgTag,
-                         "Local interface restriction");
-    sender->send("<select ");
-    sender->sendNameAndId(Supla::ConfigTag::DisableUserInterfaceCfgTag);
-    sender->send(" onchange=\"disableUserInterfaceChange();\">");
-    sender->send("<option value=\"0\"");
-    if (value == 0) {
-      sender->send(" selected");
-    }
-    sender->send(">NONE</option>");
-    sender->send("<option value=\"1\"");
-    if (value == 1) {
-      sender->send(" selected");
-    }
-    sender->send(">FULL</option>");
-    sender->send("<option value=\"2\"");
-    if (value == 2) {
-      sender->send(" selected");
-    }
-    sender->send(">Allow temperature change</option>");
-    sender->send("</select>");
-    sender->send("<p>Warning: you can enter config mode only from Cloud, "
-        "local user interface, and by power cycling the device 3 times.</p>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(
+        Supla::ConfigTag::DisableUserInterfaceCfgTag,
+        "Local interface restriction",
+        [&]() {
+          auto select =
+              sender->selectTag(Supla::ConfigTag::DisableUserInterfaceCfgTag,
+                                Supla::ConfigTag::DisableUserInterfaceCfgTag);
+          select.attr("onchange", "disableUserInterfaceChange()");
+          select.body([&]() {
+            sender->selectOption(0, "NONE", value == 0);
+            sender->selectOption(1, "FULL", value == 1);
+            sender->selectOption(2, "Allow temperature change", value == 2);
+          });
+          sender->tag("p").body(
+              "Warning: you can enter config mode only from Cloud, local user "
+              "interface, and by power cycling the device 3 times.");
+        });
 
     sender->send(
         "<script>"
@@ -81,63 +71,52 @@ void DisableUserInterfaceParameter::send(Supla::WebSender* sender) {
         "c.style.display=l;}"
         "</script>");
 
-    // form-field BEGIN
-    sender->send("<div id=\"min_max_temp_ui\" ");
-    if (value == 2) {
-      sender->send("style=\"display:block;\">");
-    } else {
-      sender->send("style=\"display:none;\">");
-    }
-    int32_t minTempUI = 0;
-    cfg->getInt32(Supla::ConfigTag::MinTempUICfgTag, &minTempUI);
-    if (minTempUI < INT16_MIN) {
-      minTempUI = INT16_MIN;
-    }
-    if (minTempUI > INT16_MAX) {
-      minTempUI = INT16_MAX;
-    }
+    auto roundToTenth = [](int32_t valueInHundredths) {
+      return valueInHundredths >= 0 ? (valueInHundredths + 5) / 10
+                                    : (valueInHundredths - 5) / 10;
+    };
 
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::MinTempUICfgTag,
-                         "Interface minimum temperature");
-    sender->send("<div>");
-    sender->send("<input type=\"number\" step=\"0.1\" ");
-    sender->sendNameAndId(Supla::ConfigTag::MinTempUICfgTag);
-    sender->send(" value=\"");
-    char buf[100] = {};
-    snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(minTempUI) / 100.0);
-    sender->send(buf);
-    sender->send("\">");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    auto emitTempField = [&](const char* id, const char* label, int32_t raw) {
+      Supla::NumericInputSpec spec;
+      spec.min = Supla::fixed(roundToTenth(INT16_MIN), 1);
+      spec.max = Supla::fixed(roundToTenth(INT16_MAX), 1);
+      spec.step = Supla::fixed(1, 1);
+      spec.value = Supla::fixed(roundToTenth(raw), 1);
+      sender->labeledField(
+          id, label, [&]() { sender->numberInput(id, id, spec); });
+    };
 
-    // form-field BEGIN
-    int32_t maxTempUI = 0;
-    cfg->getInt32(Supla::ConfigTag::MaxTempUICfgTag, &maxTempUI);
-    if (maxTempUI < INT16_MIN) {
-      maxTempUI = INT16_MIN;
-    }
-    if (maxTempUI > INT16_MAX) {
-      maxTempUI = INT16_MAX;
-    }
+    sender->toggleBox("min_max_temp_ui", value == 2, [&]() {
+      int32_t minTempUI = 0;
+      cfg->getInt32(Supla::ConfigTag::MinTempUICfgTag, &minTempUI);
+      if (minTempUI < INT16_MIN) {
+        minTempUI = INT16_MIN;
+      }
+      if (minTempUI > INT16_MAX) {
+        minTempUI = INT16_MAX;
+      }
 
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::MaxTempUICfgTag,
-                         "Interface maximum temperature");
-    sender->send("<div>");
-    sender->send("<input type=\"number\" step=\"0.1\" ");
-    sender->sendNameAndId(Supla::ConfigTag::MaxTempUICfgTag);
-    sender->send(" value=\"");
-    snprintf(buf, sizeof(buf), "%.1f", static_cast<double>(maxTempUI) / 100.0);
-    sender->send(buf);
-    sender->send("\"></div></div></div>");
-    // form-field END
+      emitTempField(Supla::ConfigTag::MinTempUICfgTag,
+                    "Interface minimum temperature",
+                    minTempUI);
+
+      int32_t maxTempUI = 0;
+      cfg->getInt32(Supla::ConfigTag::MaxTempUICfgTag, &maxTempUI);
+      if (maxTempUI < INT16_MIN) {
+        maxTempUI = INT16_MIN;
+      }
+      if (maxTempUI > INT16_MAX) {
+        maxTempUI = INT16_MAX;
+      }
+      emitTempField(Supla::ConfigTag::MaxTempUICfgTag,
+                    "Interface maximum temperature",
+                    maxTempUI);
+    });
   }
 }
 
 bool DisableUserInterfaceParameter::handleResponse(const char* key,
-    const char* value) {
+                                                   const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (!cfg) {
     return false;
@@ -201,3 +180,4 @@ void DisableUserInterfaceParameter::onProcessingEnd() {
   change = false;
 }
 
+#endif  // ARDUINO_ARCH_AVR

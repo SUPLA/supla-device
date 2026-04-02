@@ -21,12 +21,14 @@
 
 #include <supla-common/proto.h>
 #include <stdint.h>
+#include <supla/io.h>
 #include "relay.h"
 
 namespace Supla {
 namespace Control {
 class LightRelay : public Relay {
  public:
+  explicit LightRelay(Supla::Io::IoPin outputPin);
   explicit LightRelay(int pin, bool highIsOn = true);
   void handleGetChannelState(TDSC_ChannelState *channelState);
   int handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request);

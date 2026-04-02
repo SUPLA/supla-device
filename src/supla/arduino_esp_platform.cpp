@@ -139,7 +139,9 @@ class ArduinoEspClient : public Client {
         SUPLA_LOG_ERROR("SSL error: %d, %s", lastErr, buf);
         if (sdc && (lastConnErr != lastErr)) {
           lastConnErr = lastErr;
-          sdc->addLastStateLog(buf);
+          if (lastErr != 48) {
+            sdc->addLastStateLog(buf);
+          }
         }
       }
     }

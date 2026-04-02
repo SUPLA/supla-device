@@ -34,6 +34,8 @@ class Channel : public LocalAction {
  public:
   explicit Channel(int number = -1);
   virtual ~Channel();
+  static void setStartingChannelNumber(int channelNumber);
+  static int getStartingChannelNumber();
   static Channel *Begin();
   static Channel *Last();
   static Channel *GetByChannelNumber(int channelNumber);
@@ -375,6 +377,7 @@ class Channel : public LocalAction {
   bool isStateInfoUpdateReady() const;
 
   static Channel *firstPtr;
+  static int startingChannelNumber;
   Channel *nextPtr = nullptr;
 
   char *initialCaption = nullptr;

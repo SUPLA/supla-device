@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "sw_update.h"
 
 #include <string.h>
@@ -54,62 +55,42 @@ void SwUpdate::send(Supla::WebSender* sender) {
     }
 
     if (useRemoteOta) {
-      // form-field BEGIN
-      sender->send("<div class=\"form-field\">");
       const char keyOta[] = "otamode";
-      sender->sendLabelFor(keyOta, "Automatic remote OTA updates");
-      sender->send("<div>");
-      sender->send("<select ");
-      sender->sendNameAndId(keyOta);
-      sender->send("><option value=\"0\"");
-      sender->send(selected(otaPolicy == Supla::AutoUpdatePolicy::ForcedOff));
-      sender->send(
-          ">Disabled on a device (can't be changed remotely, updates possible "
-          "only via local web interface)</option>"
-          "<option value=\"1\"");
-      sender->send(selected(otaPolicy == Supla::AutoUpdatePolicy::Disabled));
-      sender->send(
-          ">Allow only manual updates (triggered by user via Cloud or via "
-          "local web interface)</option>"
-          "<option value=\"2\"");
-      sender->send(
-          selected(otaPolicy == Supla::AutoUpdatePolicy::SecurityOnly));
-      sender->send(
-          ">Install only security updates automatically</option>"
-          "<option value=\"3\"");
-      sender->send(selected(otaPolicy == Supla::AutoUpdatePolicy::AllUpdates));
-      sender->send(">Install all updates automatically</option></select>");
-      sender->send("</div>");
-      sender->send("</div>");
-      // form-field END
+      sender->labeledField(keyOta, "Automatic remote OTA updates", [&]() {
+        auto select = sender->selectTag(keyOta, keyOta);
+        select.body([&]() {
+          sender->selectOption(
+              0,
+              "Disabled on a device (can't be changed remotely, updates "
+              "possible only via local web interface)",
+              otaPolicy == Supla::AutoUpdatePolicy::ForcedOff);
+          sender->selectOption(
+              1,
+              "Allow only manual updates (triggered by user via Cloud or via "
+              "local web interface)",
+              otaPolicy == Supla::AutoUpdatePolicy::Disabled);
+          sender->selectOption(
+              2,
+              "Install only security updates automatically",
+              otaPolicy == Supla::AutoUpdatePolicy::SecurityOnly);
+          sender->selectOption(
+              3,
+              "Install all updates automatically",
+              otaPolicy == Supla::AutoUpdatePolicy::AllUpdates);
+        });
+      });
     }
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
     const char key[] = "upd";
-    sender->sendLabelFor(key, "Firmware update");
-    sender->send("<div>");
-
-    sender->send(
-        "<select ");
-    sender->sendNameAndId(key);
-    sender->send("><option value=\"0\"");
-    sender->send(selected(!update));
-    sender->send(
-        ">NO</option>"
-
-        "<option value=\"1\"");
-    sender->send(selected(update && !skipCert));
-    sender->send(
-        ">YES</option>"
-
-        "<option value=\"2\"");
-    sender->send(selected(update && skipCert));
-    sender->send(
-        ">YES - SKIP CERTIFICATE (dangerous)</option></select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(key, "Firmware update", [&]() {
+      auto select = sender->selectTag(key, key);
+      select.body([&]() {
+        sender->selectOption(0, "NO", !update);
+        sender->selectOption(1, "YES", update && !skipCert);
+        sender->selectOption(2, "YES - SKIP CERTIFICATE (dangerous)",
+                             update && skipCert);
+      });
+    });
   }
 }
 
@@ -162,3 +143,5 @@ bool SwUpdate::handleResponse(const char* key, const char* value) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

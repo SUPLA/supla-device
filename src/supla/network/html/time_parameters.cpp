@@ -48,50 +48,56 @@ void TimeParameters::send(Supla::WebSender* sender) {
     uint8_t value = 1;  // default value
     cfg->getUInt8(Supla::AutomaticTimeSyncCfgTag, &value);
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field right-checkbox\">");
-    sender->sendLabelFor(Supla::AutomaticTimeSyncCfgTag, "Automatic time sync");
-    sender->send("<label>");
-    sender->send("<span class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(checked(value == 1));
-    sender->sendNameAndId(Supla::AutomaticTimeSyncCfgTag);
-    sender->send(" onclick=\"showHideTimeSettingsToggle()\">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</span>");
-    sender->send("</label>");
-    sender->send("</div>");
-    // form-field BEGIN
-    sender->send("<div id=\"time_settings_box\" style=\"display: ");
+    sender->formField([&]() {
+      sender->labelFor(Supla::AutomaticTimeSyncCfgTag, "Automatic time sync");
+      auto label = sender->tag("label");
+      label.body([&]() {
+        auto switchSpan = sender->tag("span");
+        switchSpan.attr("class", "switch").body([&]() {
+          auto input = sender->voidTag("input");
+          input.attr("type", "checkbox")
+              .attr("value", "on")
+              .attrIf("checked", value == 1)
+              .attr("name", Supla::AutomaticTimeSyncCfgTag)
+              .attr("id", Supla::AutomaticTimeSyncCfgTag)
+              .attr("onclick", "showHideTimeSettingsToggle()")
+              .finish();
+          sender->tag("span").attr("class", "slider").body("");
+        });
+      });
+    }, "form-field right-checkbox");
 
-    if (value == 1) {
-      sender->send("none\">");
-    } else {
-      sender->send("block\">");
-    }
+    sender->toggleBox("time_settings_box", value != 1, [&]() {
+      sender->formField([&]() {
+        sender->labelFor("set_time_toggle", "Set time?");
+        auto label = sender->tag("label");
+        label.body([&]() {
+          auto switchSpan = sender->tag("span");
+          switchSpan.attr("class", "switch").body([&]() {
+            auto input = sender->voidTag("input");
+            input.attr("type", "checkbox")
+                .attr("value", "on")
+                .attr("name", "set_time_toggle")
+                .attr("id", "set_time_toggle")
+                .attr("onclick", "showHideTimeSettings()")
+                .finish();
 
-    sender->send("<div class=\"form-field right-checkbox\">");
-    sender->sendLabelFor("set_time_toggle", "Set time?");
-    sender->send("<label>");
-    sender->send("<span class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->sendNameAndId("set_time_toggle");
-    sender->send(" onclick=\"showHideTimeSettings()\">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</span>");
-    sender->send("</label>");
-    sender->send("</div>");
+            sender->tag("span").attr("class", "slider").body("");
+          });
+        });
+      }, "form-field right-checkbox");
 
-    sender->send(
-        "<div class=\"form-field\" id=\"time_settings_inner_box\" "
-        "style=\"display: none\">");
-    sender->sendLabelFor("date_time_value", "Date and time");
-    sender->send(
-        "<input type=\"datetime-local\" id=\"date_time_value\" "
-        "name=\"date_time_value\">");
-
-    sender->send("</div>");  // time setting inner box end
-    sender->send("</div>");  // time setting box end
+      sender->toggleBox("time_settings_inner_box", false, [&]() {
+        sender->formField([&]() {
+          sender->labelFor("date_time_value", "Date and time");
+          auto input = sender->voidTag("input");
+          input.attr("type", "datetime-local")
+              .attr("id", "date_time_value")
+              .attr("name", "date_time_value")
+              .finish();
+        });
+      }, "form-field");
+    });
     sender->send("<script>"
          "function showHideTimeSettingsToggle() {"
             "var checkBox = document.getElementById(\"");

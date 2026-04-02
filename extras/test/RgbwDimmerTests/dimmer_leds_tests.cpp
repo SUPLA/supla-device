@@ -14,21 +14,22 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <arduino_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
-#include <supla/control/dimmer_leds.h>
 #include <simple_time.h>
+#include <supla/control/dimmer_leds.h>
+#include <supla_io_mock.h>
 
 using ::testing::Return;
 
 class TimeInterfaceStub : public TimeInterface {
-  public:
-    virtual uint32_t millis() override {
-      static uint32_t value = 0;
-      value += 1000;
-      return value;
-    }
+ public:
+  uint32_t millis() override {
+    static uint32_t value = 0;
+    value += 1000;
+    return value;
+  }
 };
 
 TEST(DimmerLedsTests, SettingNewDimValue) {
@@ -39,7 +40,7 @@ TEST(DimmerLedsTests, SettingNewDimValue) {
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
   EXPECT_CALL(ioMock, analogWrite(1, 0)).Times(1);
 
-  EXPECT_CALL(ioMock, analogWrite(1, (1023*10)/100)).Times(1);
+  EXPECT_CALL(ioMock, analogWrite(1, 101)).Times(1);
 
   Supla::Control::DimmerLeds dim(1);
 
@@ -87,8 +88,21 @@ TEST(DimmerLedsTests, SettingNewDimValue) {
   EXPECT_EQ(ch->getValueBlue(), 0);
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 10);
-
 }
 
+TEST(DimmerLedsTests, IoPinConstructorUsesSeparateIoForBrightness) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  SuplaIoMock brightnessIo;
 
+  EXPECT_CALL(brightnessIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(brightnessIo, customSetPwmFrequency(1000));
+  EXPECT_CALL(brightnessIo, customConfigureAnalogOutput(-1, 7, false));
+  EXPECT_CALL(brightnessIo, customPinMode(-1, 7, OUTPUT));
+  EXPECT_CALL(brightnessIo, customAnalogWrite(-1, 7, 123));
 
+  Supla::Control::DimmerLeds dim(Supla::Io::IoPin(7, &brightnessIo));
+  time.advance(1000);
+  dim.onInit();
+  dim.setRGBWValueOnDevice(0, 0, 0, 123);
+}

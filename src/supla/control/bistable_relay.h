@@ -29,11 +29,13 @@
 
 #include <supla-common/proto.h>
 #include <stdint.h>
+
+#include "../io.h"
 #include "relay.h"
 
 namespace Supla {
 namespace Io {
-class Base;
+struct IoPin;
 }
 
 namespace Control {
@@ -58,6 +60,11 @@ class BistableRelay : public Relay {
                 bool statusPullUp = true,
                 bool statusHighIsOn = true,
                 bool highIsOn = true,
+                _supla_int_t functions =
+                    (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+
+  BistableRelay(Supla::Io::IoPin outputPin,
+                Supla::Io::IoPin statusPin = {},
                 _supla_int_t functions =
                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
 
@@ -118,14 +125,10 @@ class BistableRelay : public Relay {
  protected:
   void internalToggle();
 
-  Supla::Io::Base *ioState = nullptr;
-
   uint32_t disarmTimeMs = 0;
   uint32_t lastReadTime = 0;
 
-  int16_t statusPin = -1;
-  bool statusPullUp = true;
-  bool statusHighIsOn = true;
+  Supla::Io::IoPin statusInputPin;
   bool busy = false;
   bool lastCommandTurnOn = false;
 };

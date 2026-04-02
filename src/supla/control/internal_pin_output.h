@@ -19,6 +19,8 @@
 #ifndef SRC_SUPLA_CONTROL_INTERNAL_PIN_OUTPUT_H_
 #define SRC_SUPLA_CONTROL_INTERNAL_PIN_OUTPUT_H_
 
+#include <supla/io.h>
+
 #include "../action_handler.h"
 #include "../element.h"
 #include "../local_action.h"
@@ -39,6 +41,8 @@ class InternalPinOutput : public Element,
                           public LocalAction,
                           public OutputInterface {
  public:
+  explicit InternalPinOutput(Supla::Io::IoPin outPin);
+  explicit InternalPinOutput(Supla::Io::IoPin outPin, bool highIsOn);
   explicit InternalPinOutput(Supla::Io::Base *io,
                              int pin,
                              bool highIsOn = true);
@@ -65,14 +69,12 @@ class InternalPinOutput : public Element,
   bool isOnOffOnly() const override;
 
  protected:
-  int8_t pin = -1;
-  bool highIsOn = true;
+  Supla::Io::IoPin outPin;
   int8_t lastOutputValue = 0;
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
   uint32_t durationTimestamp = 0;
-  Supla::Io::Base *io = nullptr;
 };
 
 };  // namespace Control

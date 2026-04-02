@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_CONTROL_ROLLER_SHUTTER_H_
 #define SRC_SUPLA_CONTROL_ROLLER_SHUTTER_H_
 
+#include <supla/io.h>
+
 #include "roller_shutter_interface.h"
 
 namespace Supla {
@@ -62,6 +64,17 @@ class RollerShutter : public RollerShutterInterface {
                 int pinDown = -1,
                 bool highIsOn = true,
                 bool tiltFunctionsEnabled = false);
+  /**
+   * Constructor.
+   *
+   * @param pinUp GPIO pin used for moving up
+   * @param pinDown GPIO pin used for moving down
+   * @param tiltFunctionsEnabled true to enable tilt functions (changing this
+   *        value will reset state storage)
+   */
+  RollerShutter(Supla::Io::IoPin pinUp,
+                Supla::Io::IoPin pinDown,
+                bool tiltFunctionsEnabled = false);
 
   void onInit() override;
   void onTimer() override;
@@ -83,18 +96,15 @@ class RollerShutter : public RollerShutterInterface {
   virtual void switchOffRelays();
   void calculateCurrentPositionAndTilt();
 
-  void initGpio(int gpio);
+  void initGpio(const Supla::Io::IoPin &pin);
 
-  int16_t pinUp = -1;
-  int16_t pinDown = -1;
+  Supla::Io::IoPin pinUp;
+  Supla::Io::IoPin pinDown;
 
   uint32_t lastMovementStartTime = 0;
   uint32_t doNothingTime = 0;
-  Supla::Io::Base *io = nullptr;
 
   uint32_t operationTimeoutMs = 0;
-
-  bool highIsOn = true;
 };
 
 }  // namespace Control

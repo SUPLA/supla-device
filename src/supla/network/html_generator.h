@@ -44,6 +44,7 @@ class HtmlGenerator {
                             bool includeSessionLinks = false);
 
   virtual void sendHeaderBegin(Supla::WebSender*);
+  virtual void sendTitle(Supla::WebSender*);
   virtual void sendHeader(Supla::WebSender*);
   virtual void sendHeaderEnd(Supla::WebSender*);
   virtual void sendBodyBegin(Supla::WebSender*);

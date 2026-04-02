@@ -41,6 +41,7 @@
 #include <supla/tools.h>
 #include <esp_event.h>
 #include <esp_netif.h>
+#include <esp_idf_version.h>
 #include <arpa/inet.h>
 #include <cstring>
 
@@ -139,12 +140,20 @@ static void eventHandler(void *arg,
         SUPLA_LOG_DEBUG("[%s] Lost IP", thisNetIntfPtr->getIntfName());
         break;
       }
-//      case IP_EVENT_ASSIGNED_IP_TO_CLIENT: {   <- esp-idf 6.0
-      case IP_EVENT_AP_STAIPASSIGNED: {
-//        ip_event_assigned_ip_to_client_t *data =   <- esp-idf 6.0
-//            reinterpret_cast<ip_event_assigned_ip_to_client_t *>(eventData);
+      case
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+          IP_EVENT_ASSIGNED_IP_TO_CLIENT:
+#else
+          IP_EVENT_AP_STAIPASSIGNED:
+#endif
+      {
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+        ip_event_assigned_ip_to_client_t *data =
+            reinterpret_cast<ip_event_assigned_ip_to_client_t *>(eventData);
+#else
         ip_event_ap_staipassigned_t *data =
             reinterpret_cast<ip_event_ap_staipassigned_t *>(eventData);
+#endif
         char log[SUPLA_SECURITY_LOG_TEXT_SIZE] = {};
         constexpr char LogText[] = "Device (" MACSTR ") joined";
         static_assert(sizeof(log) > sizeof(LogText));
@@ -192,10 +201,14 @@ void Supla::EspIdfWifi::setup() {
     ESP_ERROR_CHECK(esp_event_handler_register(
         IP_EVENT, IP_EVENT_STA_LOST_IP, &eventHandler, NULL));
     ESP_ERROR_CHECK(esp_event_handler_register(
-        IP_EVENT, IP_EVENT_AP_STAIPASSIGNED, &eventHandler, NULL));
-//  esp-idf 6.0:
-//    ESP_ERROR_CHECK(esp_event_handler_register(
-//        IP_EVENT, IP_EVENT_ASSIGNED_IP_TO_CLIENT, &eventHandler, NULL));
+        IP_EVENT,
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(6, 0, 0)
+        IP_EVENT_ASSIGNED_IP_TO_CLIENT,
+#else
+        IP_EVENT_AP_STAIPASSIGNED,
+#endif
+        &eventHandler,
+        NULL));
 
     esp_wifi_set_ps(WIFI_PS_NONE);
 

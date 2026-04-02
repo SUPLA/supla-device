@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "select_input_parameter.h"
 
 #include <stdio.h>
@@ -126,28 +127,16 @@ void SelectInputParameter::send(Supla::WebSender* sender) {
     }
   }
 
-  // form-field BEGIN
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(tag, label);
-  sender->send("<select ");
-  sender->sendNameAndId(tag);
-  sender->send(">");
-  auto ptr = firstValue;
-  while (ptr) {
-    sender->send("<option value=\"");
-    sender->send(ptr->name);
-    sender->send("\"");
-    if (value == ptr->value) {
-      sender->send(" selected");
-    }
-    sender->send(">");
-    sender->send(ptr->name);
-    sender->send("</option>");
-    ptr = ptr->next;
-  }
-  sender->send("</select>");
-  sender->send("</div>");
-  // form-field END
+  sender->formField([&]() {
+    sender->labelFor(tag, label);
+    sender->selectInput(tag, tag, [&]() {
+      auto ptr = firstValue;
+      while (ptr) {
+        sender->selectOption(ptr->name, ptr->name, value == ptr->value);
+        ptr = ptr->next;
+      }
+    });
+  });
 }
 
 bool SelectInputParameter::handleResponse(const char* key, const char* value) {
@@ -222,3 +211,4 @@ void SelectInputParameter::setBaseTypeBitCount(uint8_t value) {
 };  // namespace Html
 };  // namespace Supla
 
+#endif  // ARDUINO_ARCH_AVR

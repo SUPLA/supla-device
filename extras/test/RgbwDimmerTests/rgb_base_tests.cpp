@@ -14,46 +14,48 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <arduino_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
-#include <supla/control/rgb_base.h>
 #include <supla/actions.h>
+#include <supla/control/rgb_base.h>
 #include <supla/storage/storage.h>
 
-using ::testing::Return;
 using ::testing::_;
 using ::testing::AtLeast;
 
 class RgbBaseForTest : public Supla::Control::RGBBase {
-  public:
-    MOCK_METHOD(void, setRGBWValueOnDevice, (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t), (override));
+ public:
+  MOCK_METHOD(void,
+              setRGBWValueOnDevice,
+              (uint32_t, uint32_t, uint32_t, uint32_t),
+              (override));
 };
 
 class TimeInterfaceStub : public TimeInterface {
-  public:
-    virtual uint32_t millis() override {
-      static uint32_t value = 0;
-      value += 1000;
-      return value;
-    }
+ public:
+  uint32_t millis() override {
+    static uint32_t value = 0;
+    value += 1000;
+    return value;
+  }
 };
 
 class SimpleTime : public TimeInterface {
-  public:
-    SimpleTime() : value(0) {}
+ public:
+  SimpleTime() : value(0) {
+  }
 
-    virtual uint32_t millis() override {
-      return value;
-    }
+  uint32_t millis() override {
+    return value;
+  }
 
-    void advance(int advanceMs) {
-      value += advanceMs;
-    }
+  void advance(int advanceMs) {
+    value += advanceMs;
+  }
 
-    uint32_t value;
+  uint32_t value;
 };
-
 
 TEST(RgbTests, InitializationWithDefaultValues) {
   Supla::Channel::resetToDefaults();
@@ -99,13 +101,10 @@ TEST(RgbTests, RgbShouldIgnoreBrightnessValue) {
   // disable fading effect so we'll get instant setting value on device call
   rgb.setFadeEffectTime(0);
 
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0)).Times(1);
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0)).Times(1);
   EXPECT_CALL(rgb,
-              setRGBWValueOnDevice((1 * 1023 / 255),
-                                   (2 * 1023 / 255),
-                                   (3 * 1023 / 255),
-                                   (4 * 1023 / 100),
-                                   0))
+              setRGBWValueOnDevice(
+                  (1 * 1023 / 255), (2 * 1023 / 255), (3 * 1023 / 255), 0))
       .Times(1);
 
   EXPECT_EQ(ch->getValueRed(), 0);
@@ -129,6 +128,8 @@ TEST(RgbTests, RgbShouldIgnoreBrightnessValue) {
   rgb.onFastTimer();
   time.advance(1);
   rgb.onFastTimer();
+  time.advance(1);
+  rgb.onFastTimer();
 
   EXPECT_EQ(ch->getValueRed(), 0);
   EXPECT_EQ(ch->getValueGreen(), 255);
@@ -136,8 +137,9 @@ TEST(RgbTests, RgbShouldIgnoreBrightnessValue) {
   EXPECT_EQ(ch->getValueColorBrightness(), 0);
   EXPECT_EQ(ch->getValueBrightness(), 0);
 
-  // we call with 5 as brightness - it should be passed as 0 to device and to channel
-  rgb.setRGBW(1, 2, 3, 4, 5);
+  // we call with 5 as brightness - it should be passed as 0 to device and to
+  // channel
+  rgb.setRGBW(1, 2, 3, 100, 5);
 
   time.advance(1000);
   rgb.iterateAlways();
@@ -147,9 +149,8 @@ TEST(RgbTests, RgbShouldIgnoreBrightnessValue) {
   EXPECT_EQ(ch->getValueRed(), 1);
   EXPECT_EQ(ch->getValueGreen(), 2);
   EXPECT_EQ(ch->getValueBlue(), 3);
-  EXPECT_EQ(ch->getValueColorBrightness(), 4);
+  EXPECT_EQ(ch->getValueColorBrightness(), 100);
   EXPECT_EQ(ch->getValueBrightness(), 0);
-
 }
 
 TEST(RgbTests, HandleActionTests) {
@@ -159,7 +160,7 @@ TEST(RgbTests, HandleActionTests) {
   RgbBaseForTest rgb;
 
   auto ch = rgb.getChannel();
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(_, _, _, _, _)).Times(AtLeast(1));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(_, _, _, _)).Times(AtLeast(1));
 
   time.advance(1000);
   rgb.setStep(10);
@@ -224,5 +225,3 @@ TEST(RgbTests, HandleActionTests) {
   EXPECT_EQ(ch->getValueColorBrightness(), 40);
   EXPECT_EQ(ch->getValueBrightness(), 0);
 }
-
-

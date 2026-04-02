@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "home_screen_content.h"
 
 #include <supla/storage/config.h>
@@ -71,3 +72,5 @@ void HomeScreenContentParameters::onProcessingEnd() {
   }
 }
 
+
+#endif  // ARDUINO_ARCH_AVR

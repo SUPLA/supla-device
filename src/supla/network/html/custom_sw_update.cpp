@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include <string.h>
 #include <supla/device/sw_update.h>
 #include <supla/network/web_sender.h>
@@ -39,20 +40,16 @@ void CustomSwUpdate::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
     char url[SUPLA_MAX_URL_LENGTH] = {};
-
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
     const char key[] = "swupdateurl";
-    sender->sendLabelFor(key, "Update server address");
-    sender->send("<input ");
-    sender->sendNameAndId(key);
     if (cfg->getSwUpdateServer(url)) {
-      sender->send(" value=\"");
-      sender->send(url);
+      sender->labeledField(key, "Update server address", [&]() {
+        sender->textInput(key, key, url);
+      });
+    } else {
+      sender->labeledField(key, "Update server address", [&]() {
+        sender->textInput(key, key);
+      });
     }
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
   }
 }
 
@@ -69,3 +66,5 @@ bool CustomSwUpdate::handleResponse(const char* key, const char* value) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

@@ -1,10 +1,9 @@
-<p align="center">
+<h1 align="left">
   <a href="https://www.supla.org/">
-    <img src="docs/assets/supla-logo.svg" alt="SUPLA logo" width="180" />
+    <img src="docs/assets/supla-logo.svg" alt="SUPLA logo" width="30" style="vertical-align: middle; margin-right: 6px;" />
   </a>
-</p>
-
-# supla-device
+  supla-device
+</h1>
 
 > 🤖 **For AI/LLM Assistants & Automated Tools:** Before making any changes, please analyze the primary instruction file: **[LLM.md](LLM.md)**
 

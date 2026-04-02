@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "screen_brightness_parameters.h"
 
 #include <string.h>
@@ -60,67 +61,60 @@ void ScreenBrightnessParameters::send(Supla::WebSender* sender) {
       cfgAdjustmentForAutomatic = 100;
     }
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field right-checkbox\">");
-    sender->sendLabelFor("auto_bright", "Automatic screen brightness");
-    sender->send("<label>");
-    sender->send("<span class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(checked(automatic));
-    sender->sendNameAndId("auto_bright");
-    sender->send(" onclick=\"showHideBrightnessSettingsToggle()\">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</span>");
-    sender->send("</label>");
-    sender->send("</div>");
-    // form-field END
+    sender->formField([&]() {
+      sender->labelFor("auto_bright", "Automatic screen brightness");
+      auto label = sender->tag("label");
+      label.body([&]() {
+        auto switchSpan = sender->tag("span");
+        switchSpan.attr("class", "switch").body([&]() {
+          auto input = sender->voidTag("input");
+          input.attr("type", "checkbox")
+              .attr("value", "on")
+              .attrIf("checked", automatic)
+              .attr("name", "auto_bright")
+              .attr("id", "auto_bright")
+              .attr("onclick", "showHideBrightnessSettingsToggle()")
+              .finish();
+
+          sender->tag("span").attr("class", "slider").body("");
+        });
+      });
+    }, "form-field right-checkbox");
 
     // adjustment for auto
-    sender->send("<div id=\"adjustment_auto_box\" style=\"display: ");
-    if (automatic) {
-      sender->send("block\">");
-    } else {
-      sender->send("none\">");
-    }
+    sender->toggleBox("adjustment_auto_box", automatic, [&]() {
+      sender->formField([&]() {
+        sender->labelFor(
+            Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
+            "Brightness adjustment for automatic mode");
+        sender->rangeInput(
+            Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
+            {
+                .min = -100,
+                .max = 100,
+                .value = cfgAdjustmentForAutomatic,
+                .step = 10,
+            },
+            "range-slider");
+        sender->tag("div").attr("style", "text-align: center;").body("0");
+      });
+    });
 
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(
-        Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag,
-        "Brightness adjustment for automatic mode");
-    sender->send(
-        "<input type=\"range\" min=\"-100\" max=\"100\" step=\"10\" "
-        "class=\"range-slider\"");
-    sender->sendNameAndId(Supla::ConfigTag::ScreenAdjustmentForAutomaticCfgTag);
-    sender->send(" value=\"");
-    sender->send(cfgAdjustmentForAutomatic, 0);
-    sender->send("\">");
-    sender->send(
-        "<div style=\"text-align: center;\">0</div>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
-
-
-    // form-field BEGIN
-    sender->send("<div id=\"brightness_settings_box\" style=\"display: ");
-    if (automatic) {
-      sender->send("none\">");
-    } else {
-      sender->send("block\">");
-    }
-
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::ScreenBrightnessCfgTag,
+    sender->toggleBox("brightness_settings_box", !automatic, [&]() {
+      sender->formField([&]() {
+        sender->labelFor(Supla::ConfigTag::ScreenBrightnessCfgTag,
                          "Screen brightness");
-    sender->send(
-        "<input type=\"range\" min=\"1\" max=\"100\" step=\"1\" "
-        "class=\"range-slider\" ");
-        sender->sendNameAndId(Supla::ConfigTag::ScreenBrightnessCfgTag);
-    sender->send(" value=\"");
-    sender->send(cfgBrightness, 0);
-    sender->send("\">");
-    sender->send("</div>");
-    sender->send("</div>");  // time setting box end
+        sender->rangeInput(
+            Supla::ConfigTag::ScreenBrightnessCfgTag,
+            {
+                .min = 1,
+                .max = 100,
+                .value = cfgBrightness,
+                .step = 1,
+            },
+            "range-slider");
+      });
+    });
 
     sender->send("<script>"
          "function showHideBrightnessSettingsToggle() {"
@@ -212,3 +206,5 @@ bool ScreenBrightnessParameters::handleResponse(const char* key,
 void ScreenBrightnessParameters::onProcessingEnd() {
   checkboxFound = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

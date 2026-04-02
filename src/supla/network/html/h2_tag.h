@@ -25,6 +25,12 @@ namespace Supla {
 
 namespace Html {
 
+/**
+ * @deprecated Use WebSender::tag("h2").body(text) instead.
+ *
+ * This class is a thin wrapper around a single heading tag and is kept only
+ * for compatibility with older callers.
+ */
 class H2Tag : public HtmlElement {
  public:
   explicit H2Tag(const char *text);

@@ -20,23 +20,23 @@
 
 #if defined(__AVR__) || defined(ARDUINO_ARCH_ESP8266) || \
     defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_DEVICE)
-// TODO(klew): add multithread support for SUPLA_DEVICE
+#include <stdlib.h>
 #define __SINGLE_THREAD
 #else
 
 #ifdef _WIN32
 #include <Windows.h>
 #else
+#define _XOPEN_SOURCE 700
 #include <pthread.h>
 #include <time.h>
 #endif /*_WIN32*/
 
+#include <stdlib.h>
+
 #endif  // defined(__AVR__) || defined(ARDUINO_ARCH_ESP8266)
         // || defined(ARDUINO_ARCH_ESP32)
 
-#include <stdlib.h>
-
-#define MUTEX_COUNT 4
 
 #ifndef __SINGLE_THREAD
 

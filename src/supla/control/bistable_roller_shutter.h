@@ -17,6 +17,8 @@
 #ifndef SRC_SUPLA_CONTROL_BISTABLE_ROLLER_SHUTTER_H_
 #define SRC_SUPLA_CONTROL_BISTABLE_ROLLER_SHUTTER_H_
 
+#include <supla/io.h>
+
 #include "roller_shutter.h"
 
 namespace Supla {
@@ -32,6 +34,7 @@ class BistableRollerShutter : public RollerShutter {
                         int pinDown,
                         bool highIsOn = true);
   BistableRollerShutter(int pinUp, int pinDown, bool highIsOn = true);
+  BistableRollerShutter(Supla::Io::IoPin pinUp, Supla::Io::IoPin pinDown);
 
   void onTimer() override;
 

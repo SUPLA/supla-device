@@ -44,22 +44,27 @@ void Supla::Control::RGBBase::onSaveState() {
   uint8_t curColorBrightness;       // 0 - 100
   uint8_t lastColorBrightness;      // 0 - 100
   */
-  Supla::Storage::WriteState((unsigned char *)&curRed, sizeof(curRed));
-  Supla::Storage::WriteState((unsigned char *)&curGreen, sizeof(curGreen));
-  Supla::Storage::WriteState((unsigned char *)&curBlue, sizeof(curBlue));
-  Supla::Storage::WriteState((unsigned char *)&curColorBrightness,
-                             sizeof(curColorBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastColorBrightness,
-                             sizeof(lastColorBrightness));
+  Supla::Storage::WriteState((unsigned char *)&requested.red,
+                             sizeof(requested.red));
+  Supla::Storage::WriteState((unsigned char *)&requested.green,
+                             sizeof(requested.green));
+  Supla::Storage::WriteState((unsigned char *)&requested.blue,
+                             sizeof(requested.blue));
+  Supla::Storage::WriteState((unsigned char *)&requested.colorBrightness,
+                             sizeof(requested.colorBrightness));
+  Supla::Storage::WriteState((unsigned char *)&lastNonZero.colorBrightness,
+                             sizeof(lastNonZero.colorBrightness));
 }
 
 void Supla::Control::RGBBase::onLoadState() {
-  Supla::Storage::ReadState((unsigned char *)&curRed, sizeof(curRed));
-  Supla::Storage::ReadState((unsigned char *)&curGreen, sizeof(curGreen));
-  Supla::Storage::ReadState((unsigned char *)&curBlue, sizeof(curBlue));
-  Supla::Storage::ReadState((unsigned char *)&curColorBrightness,
-                             sizeof(curColorBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastColorBrightness,
-                             sizeof(lastColorBrightness));
+  Supla::Storage::ReadState((unsigned char *)&requested.red,
+                            sizeof(requested.red));
+  Supla::Storage::ReadState((unsigned char *)&requested.green,
+                            sizeof(requested.green));
+  Supla::Storage::ReadState((unsigned char *)&requested.blue,
+                            sizeof(requested.blue));
+  Supla::Storage::ReadState((unsigned char *)&requested.colorBrightness,
+                            sizeof(requested.colorBrightness));
+  Supla::Storage::ReadState((unsigned char *)&lastNonZero.colorBrightness,
+                            sizeof(lastNonZero.colorBrightness));
 }
-

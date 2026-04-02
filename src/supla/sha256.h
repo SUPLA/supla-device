@@ -19,10 +19,10 @@
 
 #ifndef SUPLA_TEST
 
-#include "nettle/sha2.h"
+#include <stdint.h>
 
 /*
- * Simple wrapper for nettle SHA256 methods.
+ * Simple wrapper for mbedTLS SHA256 methods without exposing mbedTLS types.
  */
 
 namespace Supla {
@@ -32,15 +32,13 @@ class Sha256 {
   Sha256();
   ~Sha256();
   void update(const uint8_t *data, const int size);
-  struct sha256_ctx* getHash();
   void digest(uint8_t *output, int length = 32);
 
  protected:
-  struct sha256_ctx hash;
+  void *ctx;
 };
 
 };  // namespace Supla
 
 #endif  // SUPLA_TEST
 #endif  // SRC_SUPLA_SHA256_H_
-

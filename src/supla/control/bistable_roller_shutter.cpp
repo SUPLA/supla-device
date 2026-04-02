@@ -25,6 +25,11 @@
 namespace Supla {
 namespace Control {
 
+BistableRollerShutter::BistableRollerShutter(Supla::Io::IoPin pinUp,
+                                             Supla::Io::IoPin pinDown)
+    : RollerShutter(pinUp, pinDown) {
+}
+
 BistableRollerShutter::BistableRollerShutter(Supla::Io::Base *io,
                                              int pinUp,
                                              int pinDown,
@@ -53,27 +58,23 @@ void BistableRollerShutter::stopMovement() {
 void BistableRollerShutter::relayDownOn() {
   activeBiRelay = true;
   toggleTime = millis();
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? HIGH : LOW, io);
+  pinDown.writeActive(channel.getChannelNumber());
 }
 
 void BistableRollerShutter::relayUpOn() {
   activeBiRelay = true;
   toggleTime = millis();
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? HIGH : LOW, io);
+  pinUp.writeActive(channel.getChannelNumber());
 }
 
 void BistableRollerShutter::relayDownOff() {
   activeBiRelay = false;
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinDown, highIsOn ? LOW : HIGH, io);
+  pinDown.writeInactive(channel.getChannelNumber());
 }
 
 void BistableRollerShutter::relayUpOff() {
   activeBiRelay = false;
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinUp, highIsOn ? LOW : HIGH, io);
+  pinUp.writeInactive(channel.getChannelNumber());
 }
 
 void BistableRollerShutter::onTimer() {

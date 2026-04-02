@@ -24,12 +24,12 @@
 #include <esp_task_wdt.h>
 #include <stdio.h>
 #include <supla-common/log.h>
+#include <supla/device/register_device.h>
 #include <supla/log_wrapper.h>
 #include <supla/rsa_verificator.h>
 #include <supla/sha256.h>
 #include <supla/time.h>
 #include <supla/tools.h>
-#include <supla/device/register_device.h>
 
 #include <cerrno>
 
@@ -43,13 +43,15 @@
 #define OTA_WITH_SEQUENTIAL_WRITES OTA_SIZE_UNKNOWN
 #endif
 
-Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(SuplaDeviceClass *sdc,
-                                                         const char *newUrl) {
-  return new Supla::EspIdfOta(sdc, newUrl);
+Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
+    SuplaDeviceClass *sdc, const char *newUrl, Supla::SwUpdateMode mode) {
+  return new Supla::EspIdfOta(sdc, newUrl, mode);
 }
 
-Supla::EspIdfOta::EspIdfOta(SuplaDeviceClass *sdc, const char *newUrl)
-    : Supla::Device::SwUpdate(sdc, newUrl) {
+Supla::EspIdfOta::EspIdfOta(SuplaDeviceClass *sdc,
+                            const char *newUrl,
+                            Supla::SwUpdateMode mode)
+    : Supla::Device::SwUpdate(sdc, newUrl, mode) {
 }
 
 Supla::EspIdfOta::~EspIdfOta() {
@@ -91,9 +93,8 @@ void Supla::EspIdfOta::iterate() {
   int v = 0;
 
   while (1) {
-    v = stringAppend(queryParams + curPos,
-                     "manufacturerId=",
-                     URL_SIZE - curPos - 1);
+    v = stringAppend(
+        queryParams + curPos, "manufacturerId=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
     snprintf(
@@ -120,8 +121,7 @@ void Supla::EspIdfOta::iterate() {
     if (v == 0) break;
     curPos += v;
 
-    v = stringAppend(
-        queryParams + curPos, "&platform=", URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, "&platform=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
     snprintf(buf, sizeof(buf), "%d", Supla::getPlatformId());
@@ -129,8 +129,7 @@ void Supla::EspIdfOta::iterate() {
     if (v == 0) break;
     curPos += v;
 
-    v = stringAppend(
-        queryParams + curPos, "&version=", URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, "&version=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
     urlEncode(Supla::RegisterDevice::getSoftVer(), buf, BUF_SIZE);
@@ -138,8 +137,7 @@ void Supla::EspIdfOta::iterate() {
     if (v == 0) break;
     curPos += v;
 
-    v = stringAppend(
-        queryParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
+    v = stringAppend(queryParams + curPos, "&guidHash=", URL_SIZE - curPos - 1);
     if (v == 0) break;
     curPos += v;
     {
@@ -206,9 +204,11 @@ void Supla::EspIdfOta::iterate() {
     fail("SW update: fail - too long request url");
     return;
   }
+
   SUPLA_LOG_INFO(
       "SW update: checking updates from url: \"%s\", with query: \"%s\"",
-      url, queryParams);
+      url,
+      queryParams);
 
   int querySize = strlen(queryParams);
 
@@ -232,9 +232,8 @@ void Supla::EspIdfOta::iterate() {
   }
 
   esp_http_client_set_method(client, HTTP_METHOD_POST);
-  esp_http_client_set_header(client,
-                             "Content-Type",
-                             "application/x-www-form-urlencoded");
+  esp_http_client_set_header(
+      client, "Content-Type", "application/x-www-form-urlencoded");
   esp_err_t err;
   err = esp_http_client_open(client, querySize);
   if (err != ESP_OK) {
@@ -292,7 +291,7 @@ void Supla::EspIdfOta::iterate() {
   if (cJSON_IsString(status) && (status->valuestring != NULL)) {
     snprintf(buf, BUF_SIZE, "SW update status: %s", status->valuestring);
     SUPLA_LOG_INFO("%s", buf);
-    log(buf);
+//    log(buf);
   }
 
   esp_http_client_cleanup(client);
@@ -303,6 +302,9 @@ void Supla::EspIdfOta::iterate() {
     cJSON *url = cJSON_GetObjectItemCaseSensitive(latestUpdate, "updateUrl");
     if (cJSON_IsString(version) && (version->valuestring != NULL) &&
         cJSON_IsString(url) && (url->valuestring != NULL)) {
+      if (mode == Supla::SwUpdateMode::PeriodicCheckAndUpdate) {
+        mode = Supla::SwUpdateMode::CheckAndUpdate;
+      }
       snprintf(
           buf, BUF_SIZE, "SW update new version: %s", version->valuestring);
       SUPLA_LOG_INFO("%s", buf);
@@ -362,16 +364,19 @@ void Supla::EspIdfOta::iterate() {
     }
   } else {
     fail("SW update: no new update available");
+    retryAllowed = false;
     cJSON_Delete(json);
     return;
   }
 
   cJSON_Delete(json);
 
-  if (checkUpdateAndAbort) {
+  if (mode == Supla::SwUpdateMode::OnlyCheck) {
     abort = true;
+    retryAllowed = false;
     return;
   }
+  mode = Supla::SwUpdateMode::CheckAndUpdate;
 
   //////////////////
   // download update
@@ -386,17 +391,20 @@ void Supla::EspIdfOta::iterate() {
   }
   client = esp_http_client_init(&configGet);
   if (client == NULL) {
+    retryAllowed = true;
     fail("SW update: failed initialize GET connection with update server");
     return;
   }
   esp_http_client_set_method(client, HTTP_METHOD_GET);
   err = esp_http_client_open(client, 0);
   if (err != ESP_OK) {
+    retryAllowed = true;
     fail("SW update: failed to open HTTP connection");
     return;
   }
   err = esp_http_client_fetch_headers(client);
   if (err < 0) {
+    retryAllowed = true;
     fail("SW update: failed to read file from url");
     SUPLA_LOG_DEBUG("SW update: result %d", err);
     return;
@@ -405,8 +413,11 @@ void Supla::EspIdfOta::iterate() {
   int returnCode = esp_http_client_get_status_code(client);
   SUPLA_LOG_INFO("HTTP return code %d", returnCode);
   if (returnCode != 200) {
-    snprintf(buf, BUF_SIZE, "SW update: HTTP GET failed with status code %d",
-         returnCode);
+    snprintf(buf,
+             BUF_SIZE,
+             "SW update: HTTP GET failed with status code %d",
+             returnCode);
+    retryAllowed = true;
     fail(buf);
     return;
   }
@@ -416,6 +427,7 @@ void Supla::EspIdfOta::iterate() {
 
   updatePartition = esp_ota_get_next_update_partition(NULL);
   if (updatePartition == NULL) {
+    retryAllowed = true;
     fail("SW update: failed to get next update partition");
     return;
   }
@@ -426,8 +438,9 @@ void Supla::EspIdfOta::iterate() {
   int binSize = 0;
 
   err =
-    esp_ota_begin(updatePartition, OTA_WITH_SEQUENTIAL_WRITES, &updateHandle);
+      esp_ota_begin(updatePartition, OTA_WITH_SEQUENTIAL_WRITES, &updateHandle);
   if (err != ESP_OK) {
+    retryAllowed = true;
     fail("SW update: OTA begin failed");
     return;
   }
@@ -439,6 +452,7 @@ void Supla::EspIdfOta::iterate() {
     int dataRead = esp_http_client_read(
         client, reinterpret_cast<char *>(otaBuffer), BUFFER_SIZE);
     if (dataRead < 0) {
+      retryAllowed = true;
       fail("SW update: data read error");
       return;
     } else if (dataRead > 0) {
@@ -449,10 +463,12 @@ void Supla::EspIdfOta::iterate() {
       }
       err = esp_ota_write(updateHandle, (const void *)otaBuffer, dataRead);
       if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
+        retryAllowed = true;
         fail("SW update: image corrupted - invalid magic byte");
         return;
       }
       if (err != ESP_OK) {
+        retryAllowed = true;
         fail("SW update: flash write fail");
         return;
       }
@@ -469,6 +485,7 @@ void Supla::EspIdfOta::iterate() {
   }
   SUPLA_LOG_INFO("Download complete. Wrote %d bytes", binSize);
   if (esp_http_client_is_complete_data_received(client) != true) {
+    retryAllowed = true;
     fail("SW update: error in receiving complete file");
     return;
   }
@@ -480,6 +497,7 @@ void Supla::EspIdfOta::iterate() {
   updateHandle = 0;
 
   if (err != ESP_OK) {
+    retryAllowed = true;
     if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
       fail("SW update: image validation failed - image is corrupted");
     } else {
@@ -492,6 +510,7 @@ void Supla::EspIdfOta::iterate() {
   // We apply here additional RSA signature check added to Supla firmware
 
   if (!verifyRsaSignature(updatePartition, binSize)) {
+    retryAllowed = true;
     fail("SW update: RSA signature verification failed");
     return;
   }
@@ -499,6 +518,7 @@ void Supla::EspIdfOta::iterate() {
   // RSA signature check done
   err = esp_ota_set_boot_partition(updatePartition);
   if (err != ESP_OK) {
+    retryAllowed = true;
     fail("SW update: failed to set boot partition");
     return;
   }
@@ -615,7 +635,8 @@ void Supla::EspIdfOta::fail(const char *reason) {
 }
 
 void Supla::EspIdfOta::log(const char *value) {
-  if (sdc && !checkUpdateAndAbort) {
+  if (sdc && mode != Supla::SwUpdateMode::PeriodicCheckAndUpdate) {
+    // in periodic check mode we don't log to last state
     sdc->addLastStateLog(value);
   }
 }

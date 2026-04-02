@@ -16,8 +16,8 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SRC_SUPLA_CONTROL_RGB_CCT_BASE_H_
-#define SRC_SUPLA_CONTROL_RGB_CCT_BASE_H_
+#ifndef SRC_SUPLA_CONTROL_LIGHTING_PWM_BASE_H_
+#define SRC_SUPLA_CONTROL_LIGHTING_PWM_BASE_H_
 
 #include <stdint.h>
 
@@ -55,7 +55,7 @@ class GeometricBrightnessAdjuster : public BrightnessAdjuster {
 
 class Button;
 
-class RGBCCTBase : public ChannelElement, public ActionHandler {
+class LightingPwmBase : public ChannelElement, public ActionHandler {
  public:
   enum ButtonControlType : uint8_t {
     BUTTON_FOR_RGBW,
@@ -64,19 +64,9 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
     BUTTON_NOT_USED
   };
 
-  enum class AutoIterateMode : uint8_t {
-    OFF,
-    DIMMER,
-    RGB,
-    ALL
-  };
+  enum class AutoIterateMode : uint8_t { OFF, DIMMER, RGB, ALL };
 
-  enum class LegacyChannelFunction : uint8_t {
-    None,
-    RGBW,
-    RGB,
-    Dimmer
-  };
+  enum class LegacyChannelFunction : uint8_t { None, RGBW, RGB, Dimmer };
 
   /**
    * Constructor
@@ -85,22 +75,17 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
    * remaining instances should be passed one after another in order to properly
    * handle channel disabling based on parent's function.
    */
-  explicit RGBCCTBase(RGBCCTBase *parent = nullptr);
-  virtual ~RGBCCTBase() = default;
+  explicit LightingPwmBase(LightingPwmBase *parent = nullptr);
+  virtual ~LightingPwmBase() = default;
 
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
-                              bool local = false) override;
+                                              bool local = false) override;
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
 
-  virtual void setRGBCCTValueOnDevice(uint32_t red,
-                                      uint32_t green,
-                                      uint32_t blue,
-                                      uint32_t colorBrightness,
-                                      uint32_t white1Brightness,
-                                      uint32_t white2Brightness) = 0;
+  virtual void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) = 0;
 
   virtual void setRGBW(int red,
                        int green,
@@ -162,22 +147,88 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   // required)
   void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) override;
 
-  virtual RGBCCTBase &setDefaultStateOn();
-  virtual RGBCCTBase &setDefaultStateOff();
-  virtual RGBCCTBase &setDefaultStateRestore();
+  virtual LightingPwmBase &setDefaultStateOn();
+  virtual LightingPwmBase &setDefaultStateOff();
+  virtual LightingPwmBase &setDefaultStateRestore();
   // Set mapping between interface setting of brightness and actual value
-  // set on device. Values should be between 0 and 1023 (min, max).
-  // I.e. if limit is set to (100, 800), then values from Supla in range
-  // 0-100% are mapped to PWM values in range 100 and 800.
-  virtual RGBCCTBase &setBrightnessLimits(int min, int max);
+  // set on device. Values should be between 0.0 and 1.0.
+  // I.e. if limit is set to (0.05, 1.0), then values from Supla in range
+  // 0-100% are mapped to PWM values in range 5% and 100% of hardware max.
+  LightingPwmBase &setBrightnessRatioLimits(float min, float max);
   // Set mapping between interface setting of color brightness and actual value
-  // set on device. Values should be between 0 and 1023 (min, max).
-  virtual RGBCCTBase &setColorBrightnessLimits(int min, int max);
+  // set on device. Values should be between 0.0 and 1.0.
+  LightingPwmBase &setColorBrightnessRatioLimits(float min, float max);
 
   void setBrightnessAdjuster(BrightnessAdjuster *adjuster);
   int getCurrentDimmerBrightness() const;
   int getCurrentRGBBrightness() const;
   void setMaxHwValue(int newMaxHwValue);
+
+  /**
+   * Sets minimum PWM frequency.
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param minPwmFrequency [Hz]
+   */
+  void setMinPwmFrequency(uint16_t minPwmFrequency);
+
+  /**
+   * Sets maximum PWM frequency.
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param maxPwmFrequency [Hz]
+   */
+  void setMaxPwmFrequency(uint16_t maxPwmFrequency);
+
+  /**
+   * Sets PWM frequency and applies validation. Stored value will be set to the
+   * nearest allowed value.
+   *
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param pwmFrequency [Hz]
+   */
+  void setPwmFrequency(uint16_t pwmFrequency);
+
+  /**
+   * Sets PWM frequency step.
+   * This will only set class member. Actual usage of PWM frequency settings
+   * depends on RGBCCT object implementation.
+   *
+   * @param stepPwmFrequency [Hz]
+   */
+  void setStepPwmFrequency(uint16_t stepPwmFrequency);
+
+  /**
+   * Returns minimum PWM frequency
+   *
+   * @return minimum PWM frequency [Hz]
+   */
+  uint16_t getMinPwmFrequency() const;
+
+  /**
+   * Returns maximum PWM frequency
+   *
+   * @return maximum PWM frequency [Hz]
+   */
+  uint16_t getMaxPwmFrequency() const;
+
+  /**
+   * Returns current PWM frequency
+   *
+   * @return current PWM frequency [Hz]
+   */
+  uint16_t getPwmFrequency() const;
+
+  /**
+   * Returns PWM frequency step
+   *
+   * @return PWM frequency step [Hz]
+   */
+  uint16_t getStepPwmFrequency() const;
 
   /**
    * Checks if this instance has parent
@@ -207,6 +258,7 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
 
   void enableChannel();
   void disableChannel();
+  void updateEnabledState();
 
   uint8_t addWithLimit(int value, int addition, int limit = 255);
   virtual void iterateDimmerRGBW(int rgbStep, int wStep);
@@ -216,22 +268,59 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   // Returns value in range 0-1023 adjusted by selected function.
   int adjustBrightness(int value);
 
-  int getStep(int step, int target, int current, int distance) const;
+  int getStep(int step, int target, int current) const;
   bool calculateAndUpdate(int targetValue,
-                          uint16_t *hwValue,
+                          int16_t *hwValue,
                           int distance,
-                          uint32_t *lastChangeMs) const;
+                          uint32_t *lastChangeMs,
+                          const uint32_t now) const;
 
-  bool valueChanged = true;
+  struct RequestedState {
+    uint8_t red = 0;               // 0 - 255
+    uint8_t green = 255;           // 0 - 255
+    uint8_t blue = 0;              // 0 - 255
+    uint8_t colorBrightness = 0;   // 0 - 100
+    uint8_t whiteBrightness = 0;   // 0 - 100
+    uint8_t whiteTemperature = 0;  // 0 - 100
+  } requested;
+
+  struct LastNonZeroState {
+    uint8_t colorBrightness = 100;  // 0 - 100
+    uint8_t whiteBrightness = 100;  // 0 - 100
+  } lastNonZero;
+
+  struct HardwareState {
+    int16_t red = -1;               // 0 - maxHwValue
+    int16_t green = -1;             // 0 - maxHwValue
+    int16_t blue = -1;              // 0 - maxHwValue
+    int16_t colorBrightness = -1;   // 0 - maxHwValue
+    int16_t brightness = -1;        // 0 - maxHwValue
+    int16_t whiteTemperature = -1;  // 0 - maxHwValue
+    int16_t white1Brightness = -1;  // 0 - maxHwValue
+    int16_t white2Brightness = -1;  // 0 - maxHwValue
+    uint16_t redDistance = 0;
+    uint16_t greenDistance = 0;
+    uint16_t blueDistance = 0;
+    uint16_t colorBrightnessDistance = 0;
+    uint16_t brightnessDistance = 0;
+    uint16_t whiteTemperatureDistance = 0;
+  } hardware;
+
+  struct TimingState {
+    uint32_t lastTick = 0;
+    uint32_t lastChangeRedMs = 0;
+    uint32_t lastChangeGreenMs = 0;
+    uint32_t lastChangeBlueMs = 0;
+    uint32_t lastChangeColorBrightnessMs = 0;
+    uint32_t lastChangeBrightnessMs = 0;
+    uint32_t lastChangeWhiteTemperatureMs = 0;
+    uint32_t lastMsgReceivedMs = 0;
+    uint32_t lastIterateDimmerTimestamp = 0;
+    uint32_t iterationDelayTimestamp = 0;
+    uint32_t lastAutoIterateStartTimestamp = 0;
+  } timing;
+
   uint8_t buttonStep = 10;               // 10
-  uint8_t curRed = 0;                   // 0 - 255
-  uint8_t curGreen = 255;                 // 0 - 255
-  uint8_t curBlue = 0;                  // 0 - 255
-  uint8_t curColorBrightness = 0;       // 0 - 100
-  uint8_t curWhiteBrightness = 0;            // 0 - 100
-  uint8_t curWhiteTemperature = 0;            // 0 - 100
-  uint8_t lastColorBrightness = 100;      // 0 - 100
-  uint8_t lastWhiteBrightness = 100;           // 0 - 100
   uint8_t defaultDimmedBrightness = 20;  // 20
   bool dimIterationDirection = false;
   bool resetDisance = false;
@@ -241,55 +330,40 @@ class RGBCCTBase : public ChannelElement, public ActionHandler {
   bool skipLegacyMigration = false;
   int8_t stateOnInit = RGBW_STATE_ON_INIT_RESTORE;
   uint8_t minIterationBrightness = 1;
+  uint8_t maxTotalHwPower = 100;
+  uint8_t usedChannels = 0;
   LegacyChannelFunction legacyChannelFunction = LegacyChannelFunction::None;
 
   enum ButtonControlType buttonControlType = BUTTON_FOR_RGBW;
   enum AutoIterateMode autoIterateMode = AutoIterateMode::OFF;
 
   uint16_t maxHwValue = 1023;
-  uint16_t hwRed = 0;              // 0 - maxHwValue
-  uint16_t hwGreen = 0;            // 0 - maxHwValue
-  uint16_t hwBlue = 0;             // 0 - maxHwValue
-  uint16_t hwColorBrightness = 0;  // 0 - maxHwValue
-  uint16_t hwBrightness = 0;       // 0 - maxHwValue
-  uint16_t hwWhiteTemperature = 0;       // 0 - maxHwValue
-  uint16_t hwWhite1Brightness = 0;       // 0 - maxHwValue
-  uint16_t hwWhite2Brightness = 0;       // 0 - maxHwValue
-  uint16_t minBrightness = 1;
-  uint16_t maxBrightness = 1023;
-  uint16_t minColorBrightness = 1;
-  uint16_t maxColorBrightness = 1023;
-  uint16_t redDistance = 0;
-  uint16_t greenDistance = 0;
-  uint16_t blueDistance = 0;
-  uint16_t colorBrightnessDistance = 0;
-  uint16_t brightnessDistance = 0;
-  uint16_t whiteTemperatureDistance = 0;
+  float minBrightnessRatio = 0.0f;
+  float maxBrightnessRatio = 1.0f;
+  float minColorBrightnessRatio = 0.0f;
+  float maxColorBrightnessRatio = 1.0f;
 
   uint16_t minMaxIterationDelay = 750;
   uint16_t fadeEffect = 500;
 
-  uint32_t lastTick = 0;
-  uint32_t lastChangeRedMs = 0;
-  uint32_t lastChangeGreenMs = 0;
-  uint32_t lastChangeBlueMs = 0;
-  uint32_t lastChangeColorBrightnessMs = 0;
-  uint32_t lastChangeBrightnessMs = 0;
-  uint32_t lastChangeWhiteTemperatureMs = 0;
-  uint32_t lastMsgReceivedMs = 0;
-  uint32_t lastIterateDimmerTimestamp = 0;
-  uint32_t iterationDelayTimestamp = 0;
-  uint32_t lastAutoIterateStartTimestamp = 0;
+  uint16_t minPwmFrequency = 100;
+  uint16_t maxPwmFrequency = 9000;
+  uint16_t pwmFrequency = 500;
+  uint16_t stepPwmFrequency = 1;
+
+  uint32_t previousChannelFunction = 0;
 
   float warmWhiteGain = 1.0;
   float coldWhiteGain = 1.0;
 
   BrightnessAdjuster *brightnessAdjuster = nullptr;
   Supla::Control::Button *attachedButton = nullptr;
-  RGBCCTBase *parent = nullptr;
+  LightingPwmBase *parent = nullptr;
 };
+
+using RGBCCTBase = LightingPwmBase;
 
 };  // namespace Control
 };  // namespace Supla
 
-#endif  // SRC_SUPLA_CONTROL_RGB_CCT_BASE_H_
+#endif  // SRC_SUPLA_CONTROL_LIGHTING_PWM_BASE_H_

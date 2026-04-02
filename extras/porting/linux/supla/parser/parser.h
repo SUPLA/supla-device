@@ -42,6 +42,7 @@ class Parser {
   virtual bool isValid();
   virtual bool isBasedOnIndex() = 0;
   void setRefreshTime(unsigned int timeMs);
+  bool isSourceConnected() const;
 
  protected:
   virtual bool refreshSource() = 0;

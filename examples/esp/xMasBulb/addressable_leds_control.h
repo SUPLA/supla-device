@@ -76,15 +76,9 @@ class AddressableLEDsColorSelector : public Supla::Control::RGBBase {
     void setRGBWValueOnDevice(uint32_t red,
                               uint32_t green,
                               uint32_t blue,
-                              uint32_t colorBrightness,
                               uint32_t brightness) {
 
       leds->setColor(red/4, green/4, blue/4);
-
-      // effects can have diffrent way to switch on/off
-      if (leds->isOn()) {
-        leds->setBrightness(colorBrightness/4);
-      }
     }
 
     void turnOn() {

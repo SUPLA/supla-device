@@ -50,6 +50,8 @@ class LinuxMqttClient {
                           const std::string& message,
                           int qos);
 
+  bool isConnected() const;
+
   struct mqtt_client* mq_client = nullptr;
 
   static std::unordered_map<std::string, std::string> topics;

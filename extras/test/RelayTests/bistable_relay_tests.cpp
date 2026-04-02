@@ -16,25 +16,28 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <arduino_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
+#include <protocol_layer_mock.h>
 #include <simple_time.h>
 #include <storage_mock.h>
 #include <supla/actions.h>
 #include <supla/channel.h>
 #include <supla/control/bistable_relay.h>
-#include <protocol_layer_mock.h>
-#include <supla/device/register_device.h>
 #include <supla/control/button.h>
+#include <supla/device/register_device.h>
+#include <supla/io.h>
+#include <supla_io_mock.h>
+
 #include <cstring>
 
 using ::testing::_;
-using ::testing::Return;
-using ::testing::SetArgPointee;
+using ::testing::AtLeast;
 using ::testing::DoAll;
 using ::testing::Pointee;
-using ::testing::AtLeast;
+using ::testing::Return;
+using ::testing::SetArgPointee;
 
 class BistableRelayFixture : public testing::Test {
  public:
@@ -65,12 +68,56 @@ class BistableRelayFixture : public testing::Test {
     if (func == SUPLA_CHANNELFNC_STAIRCASETIMER) {
       result.ConfigSize = sizeof(TChannelConfig_StaircaseTimer);
       TChannelConfig_StaircaseTimer *config =
-        reinterpret_cast<TChannelConfig_StaircaseTimer *>(&result.Config);
+          reinterpret_cast<TChannelConfig_StaircaseTimer *>(&result.Config);
       config->TimeMS = timeMs;
     }
     r->handleChannelConfig(&result, false);
   }
 };
+
+TEST_F(BistableRelayFixture, IoPinConstructorUsesSeparateOutputAndStatusIo) {
+  SuplaIoMock outputIo;
+  SuplaIoMock statusIo;
+  Supla::Io::IoPin outputPin(4, &outputIo);
+  outputPin.setActiveHigh(true);
+  outputPin.setMode(OUTPUT);
+  Supla::Io::IoPin statusPin(7, &statusIo);
+  statusPin.setPullUp(true);
+  statusPin.setActiveHigh(true);
+  statusPin.setMode(INPUT);
+
+  EXPECT_CALL(statusIo, customPinMode(0, 7, INPUT_PULLUP));
+  EXPECT_CALL(statusIo, customDigitalRead(0, 7))
+      .WillOnce(Return(HIGH))
+      .WillOnce(Return(HIGH));
+  EXPECT_CALL(outputIo, customPinMode(0, 4, OUTPUT)).Times(2);
+  EXPECT_CALL(outputIo, customDigitalWrite(0, 4, LOW)).Times(1);
+
+  Supla::Control::BistableRelay relay(outputPin, statusPin);
+  relay.onInit();
+
+  EXPECT_TRUE(relay.isOn());
+}
+
+TEST_F(BistableRelayFixture, UnsetIoPinsDoNothing) {
+  SuplaIoMock outputIo;
+  SuplaIoMock statusIo;
+  Supla::Io::IoPin outputPin;
+  Supla::Io::IoPin statusPin;
+  outputPin.io = &outputIo;
+  statusPin.io = &statusIo;
+
+  EXPECT_CALL(outputIo, customPinMode).Times(0);
+  EXPECT_CALL(outputIo, customDigitalRead).Times(0);
+  EXPECT_CALL(outputIo, customDigitalWrite).Times(0);
+  EXPECT_CALL(statusIo, customPinMode).Times(0);
+  EXPECT_CALL(statusIo, customDigitalRead).Times(0);
+  EXPECT_CALL(statusIo, customDigitalWrite).Times(0);
+
+  Supla::Control::BistableRelay relay(outputPin, statusPin);
+  relay.onInit();
+  EXPECT_TRUE(relay.isStatusUnknown());
+}
 
 TEST_F(BistableRelayFixture, basicTests) {
   int r1Gpio = 1;
@@ -99,8 +146,8 @@ TEST_F(BistableRelayFixture, basicTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number1), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number1),
                    &value,
@@ -114,8 +161,8 @@ TEST_F(BistableRelayFixture, basicTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number2), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number2),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number2),
                    &value,
@@ -129,8 +176,8 @@ TEST_F(BistableRelayFixture, basicTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelDefaultFunction(number3), 0);
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number3),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_EQ(0,
             memcmp(Supla::RegisterDevice::getChannelValuePtr(number3),
                    &value,
@@ -169,14 +216,14 @@ TEST_F(BistableRelayFixture, basicTests) {
   r1.disableCountdownTimerFunction();
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   EXPECT_FALSE(r1.isCountdownTimerFunctionEnabled());
   r1.enableCountdownTimerFunction();
   EXPECT_TRUE(r1.isCountdownTimerFunctionEnabled());
   EXPECT_EQ(Supla::RegisterDevice::getChannelFlags(number1),
             SUPLA_CHANNEL_FLAG_CHANNELSTATE |
-            SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
-            SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
+                SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED |
+                SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
 }
 
 TEST_F(BistableRelayFixture, stateOnInitTests) {
@@ -245,13 +292,13 @@ TEST_F(BistableRelayFixture, stateOnInitTests) {
 
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   // send channel value is not verified in detail
   EXPECT_CALL(protoMock, sendChannelValueChanged(_, _, _, _)).Times(AtLeast(1));
@@ -333,13 +380,13 @@ TEST_F(BistableRelayFixture, mixedChecks) {
 
   unsigned char storedRelayFlags = 1;
   EXPECT_CALL(storage, readStorage(_, _, 4, _))
-    .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
         uint32_t storedDurationMs = 0;
         memcpy(data, &storedDurationMs, sizeof(storedDurationMs));
         return 4;
       });
   EXPECT_CALL(storage, readStorage(_, _, 1, _))
-    .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
+      .WillRepeatedly(DoAll(SetArgPointee<1>(storedRelayFlags), Return(1)));
 
   EXPECT_CALL(protoMock,
               sendChannelValueChanged(
@@ -351,7 +398,8 @@ TEST_F(BistableRelayFixture, mixedChecks) {
                            std::memcmp(v, expectedValue, 8) == 0;
                   }),
                   0,
-                  0)).Times(7);
+                  0))
+      .Times(7);
   EXPECT_CALL(protoMock,
               sendChannelValueChanged(
                   0,
@@ -362,7 +410,8 @@ TEST_F(BistableRelayFixture, mixedChecks) {
                            std::memcmp(v, expectedValue, 8) == 0;
                   }),
                   0,
-                  0)).Times(7);
+                  0))
+      .Times(7);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 0, 0, 0)).Times(7);
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 2000, 0, 0));
   EXPECT_CALL(protoMock, sendRemainingTimeValue(0, 5000, 0, 0));
@@ -403,7 +452,6 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   EXPECT_FALSE(r1.isOn());
   EXPECT_EQ(r1StateValue, 0);
 
-
   r1.turnOn(2000);  // turn on for 2 s
   for (int i = 0; i < 10; i++) {
     r1.iterateAlways();
@@ -443,7 +491,6 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   EXPECT_FALSE(r1.isOn());
   EXPECT_EQ(r1StateValue, 0);
 
-
   r1.turnOn(5000);  // turn on for 5 s
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
@@ -480,7 +527,7 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   // Time should be saved and used later in turnOn(0);
   r1.setFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
   r1.setStoredTurnOnDurationMs(3000);  // 3 s
-  r1.turnOn();  // turn on for 3 s
+  r1.turnOn();                         // turn on for 3 s
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     r1.iterateConnected();
@@ -507,7 +554,6 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   }
   EXPECT_TRUE(r1.isOn());
   EXPECT_EQ(r1StateValue, 1);
-
 
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
@@ -550,7 +596,6 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   EXPECT_TRUE(r1.isOn());
   EXPECT_EQ(r1StateValue, 1);
 
-
   for (int i = 0; i < 20; i++) {
     r1.iterateAlways();
     r1.iterateConnected();
@@ -559,4 +604,3 @@ TEST_F(BistableRelayFixture, mixedChecks) {
   EXPECT_FALSE(r1.isOn());
   EXPECT_EQ(r1StateValue, 0);
 }
-

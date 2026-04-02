@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "em_phase_led.h"
 
 #include <string.h>
@@ -26,7 +27,6 @@
 #include <supla/element.h>
 #include <supla/sensor/electricity_meter.h>
 #include <supla/storage/config_tags.h>
-#include <stdio.h>
 
 using Supla::Html::EmPhaseLedParameters;
 
@@ -48,43 +48,50 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
   Supla::Config::generateKey(
       key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedTag);
 
-  // form-field BEGIN
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Phase indicator LED");
-  sender->send("<div>");
-  sender->send("<select ");
-  sender->sendNameAndId(key);
-  sender->send(" onChange=\"emPhaseChange(this.value)\">");
-  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_OFF)) {
-    sender->send("<option value=\"0\"");
-    sender->send(selected(value == 0));
-    sender->send(">OFF</option>");
-  }
-  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_VOLTAGE_PRESENCE)) {
-    sender->send("<option value=\"1\"");
-    sender->send(selected(value == 1));
-    sender->send(">Voltage indicator</option>");
-  }
-  if (em->isPhaseLedTypeSupported(
-          EM_PHASE_LED_TYPE_VOLTAGE_PRESENCE_INVERTED)) {
-    sender->send("<option value=\"2\"");
-    sender->send(selected(value == 2));
-    sender->send(">No voltage indicator</option>");
-  }
-  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_VOLTAGE_LEVEL)) {
-    sender->send("<option value=\"3\"");
-    sender->send(selected(value == 3));
-    sender->send(">Voltage level</option>");
-  }
-  if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_POWER_ACTIVE_DIRECTION)) {
-    sender->send("<option value=\"4\"");
-    sender->send(selected(value == 4));
-    sender->send(">Active power direction</option>");
-  }
-  sender->send("</select>");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END
+  auto emitFixedField = [&](const char* fieldKey,
+                            const char* label,
+                            int32_t rawValue) {
+    sender->labeledField(fieldKey, label, [&]() {
+      sender->tag("div").body([&]() {
+        auto input = sender->voidTag("input");
+        input.attr("type", "number");
+        input.attr("step", "0.1");
+        input.attr("name", fieldKey);
+        input.attr("id", fieldKey);
+        input.attr(
+            "value",
+            rawValue >= 0 ? (rawValue + 5) / 10 : (rawValue - 5) / 10,
+            1);
+        input.finish();
+      });
+    });
+  };
+
+  sender->labeledField(key, "Phase indicator LED", [&]() {
+    sender->tag("div").body([&]() {
+      auto select = sender->selectTag(key, key);
+      select.attr("onChange", "emPhaseChange(this.value)");
+      select.body([&]() {
+        if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_OFF)) {
+          sender->selectOption(0, "OFF", value == 0);
+        }
+        if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_VOLTAGE_PRESENCE)) {
+          sender->selectOption(1, "Voltage indicator", value == 1);
+        }
+        if (em->isPhaseLedTypeSupported(
+                EM_PHASE_LED_TYPE_VOLTAGE_PRESENCE_INVERTED)) {
+          sender->selectOption(2, "No voltage indicator", value == 2);
+        }
+        if (em->isPhaseLedTypeSupported(EM_PHASE_LED_TYPE_VOLTAGE_LEVEL)) {
+          sender->selectOption(3, "Voltage level", value == 3);
+        }
+        if (em->isPhaseLedTypeSupported(
+                EM_PHASE_LED_TYPE_POWER_ACTIVE_DIRECTION)) {
+          sender->selectOption(4, "Active power direction", value == 4);
+        }
+      });
+    });
+  });
 
   // js for emPhaseChange
   sender->send(
@@ -105,94 +112,37 @@ void EmPhaseLedParameters::send(Supla::WebSender* sender) {
       "}"
       "</script>");
 
-  // Voltage div
-  sender->send("<div id=\"em_phase_voltage\" ");
-  if (value == 3) {
-    sender->send("style=\"display:block;\">");
-  } else {
-    sender->send("style=\"display:none;\">");
-  }
+  sender->toggleBox("em_phase_voltage", value == 3, [&]() {
+    Supla::Config::generateKey(
+        key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedVoltageLowTag);
+    int32_t voltageLow = em->getLedVoltageLow();
+    cfg->getInt32(key, &voltageLow);
+    emitFixedField(key, "Low voltage level [V]", voltageLow);
 
-  // form-field BEGIN
-  Supla::Config::generateKey(
-      key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedVoltageLowTag);
-  int32_t voltageLow = em->getLedVoltageLow();
-  cfg->getInt32(key, &voltageLow);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Low voltage level [V]");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"0.1\" ");
-  sender->sendNameAndId(key);
-  sender->send(" value=\"");
-  char buf[100] = {};
-  snprintf(buf, sizeof(buf), "%.1f", voltageLow / 100.0);
-  sender->send(buf);
-  sender->send("\">");
-  sender->send("</div></div>");
-  // form-field END
+    Supla::Config::generateKey(
+        key,
+        em->getChannelNumber(),
+        Supla::ConfigTag::EmPhaseLedVoltageHighTag);
+    int32_t voltageHigh = em->getLedVoltageHigh();
+    cfg->getInt32(key, &voltageHigh);
+    emitFixedField(key, "High voltage level [V]", voltageHigh);
+  });
 
-  // form-field BEGIN
-  Supla::Config::generateKey(
-      key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedVoltageHighTag);
-  int32_t voltageHigh = em->getLedVoltageHigh();
-  cfg->getInt32(key, &voltageHigh);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "High voltage level [V]");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"0.1\" ");
-  sender->sendNameAndId(key);
-  sender->send(" value=\"");
-  snprintf(buf, sizeof(buf), "%.1f", voltageHigh / 100.0);
-  sender->send(buf);
-  sender->send("\">");
-  sender->send("</div></div>");
-  // form-field END
+  sender->toggleBox("em_phase_power", value == 4, [&]() {
+    Supla::Config::generateKey(
+        key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedPowerLowTag);
+    int32_t powerLow = em->getLedPowerLow();
+    cfg->getInt32(key, &powerLow);
+    emitFixedField(key, "Low power level [W]", powerLow);
 
-  sender->send("</div>");
-
-  // Power div
-  sender->send("<div id=\"em_phase_power\" ");
-  if (value == 4) {
-    sender->send("style=\"display:block;\">");
-  } else {
-    sender->send("style=\"display:none;\">");
-  }
-
-  // form-field BEGIN
-  Supla::Config::generateKey(
-      key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedPowerLowTag);
-  int32_t powerLow = em->getLedPowerLow();
-  cfg->getInt32(key, &powerLow);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Low power level [W]");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"0.1\" ");
-  sender->sendNameAndId(key);
-  sender->send(" value=\"");
-  snprintf(buf, sizeof(buf), "%.1f", powerLow / 100.0);
-  sender->send(buf);
-  sender->send("\">");
-  sender->send("</div></div>");
-  // form-field END
-
-  // form-field BEGIN
-  Supla::Config::generateKey(
-      key, em->getChannelNumber(), Supla::ConfigTag::EmPhaseLedPowerHighTag);
-  int32_t powerHigh = em->getLedPowerHigh();
-  cfg->getInt32(key, &powerHigh);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "High power level [W]");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"0.1\" ");
-  sender->sendNameAndId(key);
-  sender->send(" value=\"");
-  snprintf(buf, sizeof(buf), "%.1f", powerHigh / 100.0);
-  sender->send(buf);
-  sender->send("\">");
-  sender->send("</div></div>");
-  // form-field END
-
-  sender->send("</div>");
+    Supla::Config::generateKey(
+        key,
+        em->getChannelNumber(),
+        Supla::ConfigTag::EmPhaseLedPowerHighTag);
+    int32_t powerHigh = em->getLedPowerHigh();
+    cfg->getInt32(key, &powerHigh);
+    emitFixedField(key, "High power level [W]", powerHigh);
+  });
 }
 
 bool EmPhaseLedParameters::handleResponse(const char* key, const char* value) {
@@ -286,3 +236,5 @@ void EmPhaseLedParameters::onProcessingEnd() {
   }
   channelConfigChanged = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

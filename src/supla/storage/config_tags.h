@@ -58,6 +58,8 @@ const char EmPhaseLedPowerHighTag[] = "em_led_ph";
 const char RgbwButtonTag[] = "rgbw_btn";
 const char LegacyMigrationTag[] = "lgc_mig";
 
+const char PwmFrequencyTag[] = "pwm_freq";
+
 const char RollerShutterTag[] = "rs_cfg";
 const char RollerShutterMotorUpsideDownTag[] = "usd";
 const char RollerShutterButtonsUpsideDownTag[] = "bud";
@@ -87,6 +89,8 @@ const char ValveCfgTag[] = "valve_cfg";
 const char ModbusCfgTag[] = "modbus_cfg";
 
 const char OtaModeTag[] = "ota_mode";
+
+const char DsSensorConfig[] = "ds_sensor";
 
 static_assert(sizeof(DeviceConfigChangeCfgTag) < 16);
 static_assert(sizeof(ChannelFunctionTag) < 12);
@@ -137,6 +141,8 @@ static_assert(sizeof(ContainerTag) < 12);
 static_assert(sizeof(ValveCfgTag) < 12);
 static_assert(sizeof(ModbusCfgTag) < 16);
 static_assert(sizeof(OtaModeTag) < 16);
+static_assert(sizeof(PwmFrequencyTag) < 16);
+static_assert(sizeof(DsSensorConfig) < 12);
 
 }  // namespace ConfigTag
 }  // namespace Supla

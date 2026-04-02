@@ -25,25 +25,46 @@
 namespace Supla {
 namespace Control {
 
+namespace {
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
+                               int pin,
+                               bool highIsOn) {
+  Supla::Io::IoPin result(pin, io);
+  result.setActiveHigh(highIsOn);
+  result.setMode(OUTPUT);
+  return result;
+}
+
+}  // namespace
+
 TrippleButtonRollerShutter::TrippleButtonRollerShutter(
     Supla::Io::Base  *io, int pinUp, int pinDown, int pinStop, bool highIsOn)
-    : BistableRollerShutter(io, pinUp, pinDown, highIsOn), pinStop(pinStop) {
+    : BistableRollerShutter(io, pinUp, pinDown, highIsOn),
+      pinStop(MakeOutputPin(io, pinStop, highIsOn)) {
 }
 
 TrippleButtonRollerShutter::TrippleButtonRollerShutter(int pinUp,
                                                        int pinDown,
                                                        int pinStop,
                                                        bool highIsOn)
-    : BistableRollerShutter(pinUp, pinDown, highIsOn), pinStop(pinStop) {
+    : BistableRollerShutter(pinUp, pinDown, highIsOn),
+      pinStop(MakeOutputPin(nullptr, pinStop, highIsOn)) {
+}
+
+TrippleButtonRollerShutter::TrippleButtonRollerShutter(
+    Supla::Io::IoPin pinUp,
+    Supla::Io::IoPin pinDown,
+    Supla::Io::IoPin pinStop)
+    : BistableRollerShutter(pinUp, pinDown), pinStop(pinStop) {
 }
 
 TrippleButtonRollerShutter::~TrippleButtonRollerShutter() {
 }
 
 void TrippleButtonRollerShutter::onInit() {
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH, io);
-  Supla::Io::pinMode(channel.getChannelNumber(), pinStop, OUTPUT, io);
+  pinStop.writeInactive(channel.getChannelNumber());
+  pinStop.pinMode(channel.getChannelNumber());
 
   BistableRollerShutter::onInit();
 }
@@ -59,14 +80,12 @@ void TrippleButtonRollerShutter::stopMovement() {
 void TrippleButtonRollerShutter::relayStopOn() {
   activeBiRelay = true;
   toggleTime = millis();
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinStop, highIsOn ? HIGH : LOW, io);
+  pinStop.writeActive(channel.getChannelNumber());
 }
 
 void TrippleButtonRollerShutter::relayStopOff() {
   activeBiRelay = false;
-  Supla::Io::digitalWrite(
-      channel.getChannelNumber(), pinStop, highIsOn ? LOW : HIGH, io);
+  pinStop.writeInactive(channel.getChannelNumber());
 }
 
 void TrippleButtonRollerShutter::switchOffRelays() {

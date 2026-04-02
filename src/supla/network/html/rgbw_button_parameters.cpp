@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "rgbw_button_parameters.h"
 
 #include <supla/network/web_sender.h>
@@ -81,3 +82,5 @@ RgbwButtonParameters::RgbwButtonParameters(int id, const char *labelValue) {
   }
 }
 
+
+#endif  // ARDUINO_ARCH_AVR

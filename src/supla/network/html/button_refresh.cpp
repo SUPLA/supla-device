@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "button_refresh.h"
 
 #include <supla/network/web_sender.h>
@@ -31,3 +32,5 @@ void ButtonRefresh::send(Supla::WebSender* sender) {
       "REFRESH"
       "</button>");
 }
+
+#endif  // ARDUINO_ARCH_AVR

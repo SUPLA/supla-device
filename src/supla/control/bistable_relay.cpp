@@ -32,6 +32,40 @@ namespace Control {
 
 #define STATE_ON_INIT_KEEP 2
 
+namespace {
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
+                               int pin,
+                               bool highIsOn) {
+  Supla::Io::IoPin outputPin(pin, io);
+  outputPin.setActiveHigh(highIsOn);
+  outputPin.setMode(OUTPUT);
+  return outputPin;
+}
+
+Supla::Io::IoPin MakeStatusInputPin(Supla::Io::Base *io,
+                                    int statusPin,
+                                    bool statusPullUp,
+                                    bool statusHighIsOn) {
+  Supla::Io::IoPin inputPin(statusPin, io);
+  inputPin.setPullUp(statusPullUp);
+  inputPin.setActiveHigh(statusHighIsOn);
+  inputPin.setMode(INPUT);
+  return inputPin;
+}
+
+}  // namespace
+
+BistableRelay::BistableRelay(Supla::Io::IoPin outputPin,
+                             Supla::Io::IoPin statusPin,
+                             _supla_int_t functions)
+    : Relay(outputPin, functions),
+      statusInputPin(statusPin) {
+  statusInputPin.setMode(INPUT);
+  stateOnInit = STATE_ON_INIT_KEEP;
+  setMinimumAllowedDurationMs(1000);
+}
+
 BistableRelay::BistableRelay(Supla::Io::Base *io,
                              int pin,
                              int statusPin,
@@ -39,31 +73,12 @@ BistableRelay::BistableRelay(Supla::Io::Base *io,
                              bool statusHighIsOn,
                              bool highIsOn,
                              _supla_int_t functions)
-    : BistableRelay(io,
-                    io,
-                    pin,
-                    statusPin,
-                    statusPullUp,
-                    statusHighIsOn,
-                    highIsOn,
+    : BistableRelay(MakeOutputPin(io, pin, highIsOn),
+                    MakeStatusInputPin(io,
+                                       statusPin,
+                                       statusPullUp,
+                                       statusHighIsOn),
                     functions) {
-}
-
-BistableRelay::BistableRelay(Supla::Io::Base *ioOut,
-                Supla::Io::Base *ioState,
-                int pin,
-                int statusPin,
-                bool statusPullUp,
-                bool statusHighIsOn,
-                bool highIsOn,
-                _supla_int_t functions) :
-    Relay(ioOut, pin, highIsOn, functions),
-    ioState(ioState),
-    statusPin(statusPin),
-    statusPullUp(statusPullUp),
-    statusHighIsOn(statusHighIsOn) {
-  stateOnInit = STATE_ON_INIT_KEEP;
-  setMinimumAllowedDurationMs(1000);
 }
 
 BistableRelay::BistableRelay(int pin,
@@ -72,28 +87,35 @@ BistableRelay::BistableRelay(int pin,
                              bool statusHighIsOn,
                              bool highIsOn,
                              _supla_int_t functions)
-    : BistableRelay(nullptr,
-                    nullptr,
-                    pin,
-                    statusPin,
-                    statusPullUp,
-                    statusHighIsOn,
-                    highIsOn,
+    : BistableRelay(MakeOutputPin(nullptr, pin, highIsOn),
+                    MakeStatusInputPin(nullptr,
+                                       statusPin,
+                                       statusPullUp,
+                                       statusHighIsOn),
+                    functions) {
+}
+
+BistableRelay::BistableRelay(Supla::Io::Base *ioOut,
+                             Supla::Io::Base *ioState,
+                             int pin,
+                             int statusPin,
+                             bool statusPullUp,
+                             bool statusHighIsOn,
+                             bool highIsOn,
+                             _supla_int_t functions)
+    : BistableRelay(MakeOutputPin(ioOut, pin, highIsOn),
+                    MakeStatusInputPin(ioState,
+                                       statusPin,
+                                       statusPullUp,
+                                       statusHighIsOn),
                     functions) {
 }
 
 void BistableRelay::onInit() {
-  if (statusPin >= 0) {
-    Supla::Io::pinMode(channel.getChannelNumber(),
-                       statusPin,
-                       statusPullUp ? INPUT_PULLUP : INPUT, ioState);
-    channel.setNewValue(isOn());
-  } else {
-    channel.setNewValue(false);
-  }
-
-  Supla::Io::pinMode(channel.getChannelNumber(), pin, OUTPUT, io);
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
+  statusInputPin.pinMode(channel.getChannelNumber());
+  channel.setNewValue(isOn());
+  outputPin.pinMode(channel.getChannelNumber());
+  outputPin.writeInactive(channel.getChannelNumber());
 
   busy = true;
   Supla::Control::Relay::onInit();
@@ -112,7 +134,7 @@ void BistableRelay::onInit() {
 void BistableRelay::iterateAlways() {
   Relay::iterateAlways();
 
-  if (statusPin >= 0 && (millis() - lastReadTime > 100)) {
+  if (millis() - lastReadTime > 100) {
     lastReadTime = millis();
     bool currentState = isOn();
     if (!isStatusUnknown() && currentState != channel.getValueBool()) {
@@ -130,7 +152,7 @@ void BistableRelay::iterateAlways() {
 
   if (busy && millis() - disarmTimeMs > 200) {
     busy = false;
-    Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOffValue(), io);
+    outputPin.writeInactive(channel.getChannelNumber());
   }
 }
 
@@ -176,20 +198,18 @@ bool BistableRelay::isOn() {
   if (isStatusUnknown()) {
     return false;
   }
-  return Supla::Io::digitalRead(channel.getChannelNumber(),
-                                statusPin,
-                                ioState) == (statusHighIsOn ? HIGH : LOW);
+  return statusInputPin.readActive(channel.getChannelNumber());
 }
 
 bool BistableRelay::isStatusUnknown() {
-  return (statusPin < 0);
+  return statusInputPin.getPin() < 0;
 }
 
 void BistableRelay::internalToggle() {
   SUPLA_LOG_INFO("BistableRelay[%d] toggle relay", channel.getChannelNumber());
   busy = true;
   disarmTimeMs = millis();
-  Supla::Io::digitalWrite(channel.getChannelNumber(), pin, pinOnValue(), io);
+  outputPin.writeActive(channel.getChannelNumber());
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000, 2000);

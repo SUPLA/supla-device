@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "ethernet_parameters.h"
 
 #include <string.h>
@@ -32,26 +33,29 @@ EthernetParameters::~EthernetParameters() {
 void EthernetParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
-    sender->send("<h3>Ethernet Settings</h3>");
-
-    // form-field START
     const char ethEn[] = "eth_en";    // HTML field
     uint8_t ethDisabled = 0;
     cfg->getUInt8(Supla::EthDisableTag, &ethDisabled);
 
-    sender->send("<div class=\"form-field right-checkbox\">");
-    sender->sendLabelFor(ethEn, "Enable Ethernet");
-    sender->send("<label>");
-    sender->send("<span class=\"switch\">");
-    sender->send("<input type=\"checkbox\" value=\"on\" ");
-    sender->send(checked(ethDisabled == 0));
-    sender->sendNameAndId(ethEn);
-    sender->send(">");
-    sender->send("<span class=\"slider\"></span>");
-    sender->send("</span>");
-    sender->send("</label>");
-    sender->send("</div>");
-    // form-field END
+    sender->tag("h3").body("Ethernet Settings");
+    sender->labeledField(
+        ethEn,
+        "Enable Ethernet",
+        [&]() {
+          sender->tag("label").body([&]() {
+            sender->tag("span").attr("class", "switch").body([&]() {
+              auto input = sender->voidTag("input");
+              input.attr("type", "checkbox");
+              input.attr("value", "on");
+              input.attrIf("checked", ethDisabled == 0);
+              input.attr("name", ethEn);
+              input.attr("id", ethEn);
+              input.finish();
+              sender->tag("span").attr("class", "slider").body([]() {});
+            });
+          });
+        },
+        "form-field right-checkbox");
   }
 }
 
@@ -75,3 +79,5 @@ void EthernetParameters::onProcessingEnd() {
   }
   checkboxFound = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

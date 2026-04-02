@@ -245,6 +245,14 @@ class GeneralPurposeChannelBase : public ChannelElement {
    * @param unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE] result is stored into this
    */
   void getDefaultUnitAfterValue(char unit[SUPLA_GENERAL_PURPOSE_UNIT_SIZE]);
+
+  /**
+   * Sets default refresh interval in milliseconds.
+   *
+   * @param intervalMs in milliseconds in 0-65535 range
+   */
+  void setDefaultRefreshIntervalMs(int32_t intervalMs);
+
   ///@}
 
   /** @name Setters for modification of current channel configuration.
@@ -454,9 +462,11 @@ class GeneralPurposeChannelBase : public ChannelElement {
   virtual void setChannelRefreshIntervalMs(uint16_t intervalMs);
 
   MeasurementDriver *driver = nullptr;
+  uint16_t defaultRefreshIntervalMs = 5000;
   uint16_t refreshIntervalMs = 5000;
   uint32_t lastReadTime = 0;
   bool deleteDriver = false;
+  bool initDone = false;
 
   int32_t defaultValueDivider = 0;  // 0.001 units; 0 is considered as 1
   int32_t defaultValueMultiplier = 0;  // 0.001 units; 0 is considered as 1

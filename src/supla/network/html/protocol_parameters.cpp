@@ -16,13 +16,15 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
+#include "protocol_parameters.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <supla/network/web_sender.h>
 #include <supla/storage/storage.h>
 #include <supla/tools.h>
 
-#include "protocol_parameters.h"
 #include "supla/network/network.h"
 
 namespace Supla {
@@ -31,7 +33,8 @@ namespace Html {
 
 ProtocolParameters::ProtocolParameters(bool addMqttParams,
                                        bool concurrentProtocols)
-    : HtmlElement(HTML_SECTION_PROTOCOL), addMqtt(addMqttParams),
+    : HtmlElement(HTML_SECTION_PROTOCOL),
+      addMqtt(addMqttParams),
       concurrent(concurrentProtocols) {
 }
 
@@ -41,358 +44,404 @@ ProtocolParameters::~ProtocolParameters() {
 void ProtocolParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
+    char buf[512] = {};
     if (!concurrent && addMqtt) {
-      // Protocol selector
-      sender->send("<div class=\"box\">");
-
-      // form-field BEGIN
-      sender->send("<div class=\"form-field\">");
-      const char key[] = "pro";
-      sender->sendLabelFor(key, "Protocol");
-      sender->send(
-          "<div><select ");
-      sender->sendNameAndId(key);
-      sender->send(" onchange=\"protocolChanged();\">"
-          "<option value=\"0\"");
-      sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
-      sender->send(
-          ">Supla</option>"
-          "<option value=\"1\"");
-      sender->send(selected(cfg->isMqttCommProtocolEnabled()));
-      sender->send(
-          ">MQTT</option>"
-          "</select></div>");
-      sender->send("</div>");
-      // form-field END
-
-      sender->send("</div>");  // close box
+      sender->tag("div").attr("class", "box").body([&]() {
+        sender->formField([&]() {
+          sender->labelFor("pro", "Protocol");
+          auto select = sender->selectTag("pro", "pro");
+          select.attr("onchange", "protocolChanged()").body([&]() {
+            sender->selectOption(0, "Supla", cfg->isSuplaCommProtocolEnabled());
+            sender->selectOption(1, "MQTT", cfg->isMqttCommProtocolEnabled());
+          });
+        });
+      });
     }
 
     if (concurrent) {
-      sender->send("<div class=\"box\">");
-      sender->send("<h3>Supla Settings</h3>");
+      sender->tag("div").attr("class", "box").body([&]() {
+        sender->tag("h3").body("Supla Settings");
+        sender->formField([&]() {
+          sender->labelFor("protocol_supla", "Supla protocol");
+          auto select = sender->selectTag("protocol_supla", "protocol_supla");
+          select.attr("onchange", "protocolChanged()").body([&]() {
+            sender->selectOption(
+                0, "DISABLED", !cfg->isSuplaCommProtocolEnabled());
+            sender->selectOption(
+                1, "ENABLED", cfg->isSuplaCommProtocolEnabled());
+          });
+        });
+        sender->toggleBox("proto_supla", true, [&]() {
+          // Parameters for Supla protocol
+          sender->formField([&]() {
+            sender->labelFor("svr", "Server");
+            auto input = sender->voidTag("input");
+            input.attr("maxlength", 64)
+                .attr("placeholder",
+                      "Custom server (leave empty for official servers)")
+                .attr("name", "svr")
+                .attr("id", "svr");
+            if (cfg->getSuplaServer(buf)) {
+              input.attr("value", buf);
+            }
+            input.finish();
+          });
 
-      // form-field BEGIN
-      sender->send("<div class=\"form-field\">");
-      const char keySupla[] = "protocol_supla";
-      sender->sendLabelFor(keySupla, "Supla protocol");
-      sender->send("<div>");
-      sender->send(
-          "<select ");
-      sender->sendNameAndId(keySupla);
-      sender->send(
-          "onchange=\"protocolChanged();\">"
-          "<option value=\"0\"");
-      sender->send(selected(!cfg->isSuplaCommProtocolEnabled()));
-      sender->send(
-          ">DISABLED</option>"
-          "<option value=\"1\"");
-      sender->send(selected(cfg->isSuplaCommProtocolEnabled()));
-      sender->send(
-          ">ENABLED</option>"
-          "</select>");
-      sender->send("</div>");
-      sender->send("</div>");
-      // form-field END
+          sender->formField([&]() {
+            sender->labelFor("eml", "E-mail");
+            auto input = sender->voidTag("input");
+            input.attr("maxlength", 255).attr("name", "eml").attr("id", "eml");
+            if (cfg->getEmail(buf)) {
+              input.attr("value", buf);
+            }
+            input.finish();
+          });
 
-      sender->send(
-          "<div id=\"proto_supla\">");
+          sender->send(
+              "<script>"
+              "function securityChange(){"
+              "var e=document.getElementById(\"sec\"),"
+              "c=document.getElementById(\"custom_ca_input\"),"
+              "l=\"1\"==e.value?\"block\":\"none\";"
+              "c.style.display=l;}"
+              "</script>");
+
+          uint8_t securityLevel = 0;
+          cfg->getUInt8("security_level", &securityLevel);
+          sender->formField([&]() {
+            sender->labelFor("sec", "Certificate verification");
+            auto select = sender->selectTag("sec", "sec");
+            select.attr("onchange", "securityChange();").body([&]() {
+              sender->selectOption(0, "Supla CA", securityLevel == 0);
+              sender->selectOption(1, "Custom CA", securityLevel == 1);
+              sender->selectOption(2,
+                                   "Skip certificate verification (INSECURE)",
+                                   securityLevel == 2);
+            });
+          });
+
+          sender->toggleBox("custom_ca_input", securityLevel == 1, [&]() {
+            sender->formField([&]() {
+              sender->labelFor(
+                  "custom_ca",
+                  "Custom CA (paste here CA certificate in PEM format)");
+              auto textarea = sender->tag("textarea");
+              textarea.attr("name", "custom_ca")
+                  .attr("maxlength", 4000)
+                  .close();
+              char* bufCert = new char[4000];
+              memset(bufCert, 0, 4000);
+              if (cfg->getCustomCA(bufCert, 4000)) {
+                textarea.body(bufCert);
+              } else {
+                textarea.body("");
+              }
+              delete[] bufCert;
+            });
+          });
+        });
+      });
     } else {
-      sender->send(
-          "<div class=\"box\" id=\"proto_supla\">");
-      sender->send(
-          "<h3>Supla Settings</h3>");
-    }
-    // Parameters for Supla protocol
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    const char keySvr[] = "svr";
-    sender->sendLabelFor(keySvr, "Server");
-    sender->send("<input ");
-    sender->sendNameAndId(keySvr);
-    sender->send(
-        " maxlength=\"64\" placeholder=\"Custom server (leave empty for "
-        "official servers)\" value=\"");
-    char buf[512];
-    if (cfg->getSuplaServer(buf)) {
-      sender->sendSafe(buf);
-    }
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
+      sender->tag("div")
+          .attr("class", "box")
+          .attr("id", "proto_supla")
+          .body([&]() {
+            sender->tag("h3").body("Supla Settings");
+            // Parameters for Supla protocol
+            sender->formField([&]() {
+              sender->labelFor("svr", "Server");
+              auto input = sender->voidTag("input");
+              input.attr("maxlength", 64)
+                  .attr("placeholder",
+                        "Custom server (leave empty for official servers)")
+                  .attr("name", "svr")
+                  .attr("id", "svr");
+              char buf[512];
+              if (cfg->getSuplaServer(buf)) {
+                input.attr("value", buf);
+              }
+              input.finish();
+            });
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    const char keyEml[] = "eml";
-    sender->sendLabelFor(keyEml, "E-mail");
-    sender->send("<input ");
-    sender->sendNameAndId(keyEml);
-    sender->send(" maxlength=\"255\" value=\"");
-    if (cfg->getEmail(buf)) {
-      sender->sendSafe(buf);
-    }
-    sender->send("\">");
-    sender->send("</div>");  // form-field
-    // form-field END
+            sender->formField([&]() {
+              sender->labelFor("eml", "E-mail");
+              auto input = sender->voidTag("input");
+              input.attr("maxlength", 255)
+                  .attr("name", "eml")
+                  .attr("id", "eml");
+              char buf[512];
+              if (cfg->getEmail(buf)) {
+                input.attr("value", buf);
+              }
+              input.finish();
+            });
 
-    sender->send(
-        "<script>"
-        "function securityChange(){"
-        "var e=document.getElementById(\"sec\"),"
-        "c=document.getElementById(\"custom_ca_input\"),"
-        "l=\"1\"==e.value?\"block\":\"none\";"
-        "c.style.display=l;}"
-        "</script>");
+            sender->send(
+                "<script>"
+                "function securityChange(){"
+                "var e=document.getElementById(\"sec\"),"
+                "c=document.getElementById(\"custom_ca_input\"),"
+                "l=\"1\"==e.value?\"block\":\"none\";"
+                "c.style.display=l;}"
+                "</script>");
 
-    // form-field BEGIN
-    uint8_t securityLevel = 0;
-    cfg->getUInt8("security_level", &securityLevel);
-    sender->send("<div class=\"form-field\">");
-    const char keySec[] = "sec";
-    sender->sendLabelFor(keySec, "Certificate verification");
-    sender->send("<div>");
-    sender->send(
-        "<select ");
-    sender->sendNameAndId(keySec);
-    sender->send(" onchange=\"securityChange();\">"
-        "<option value=\"0\"");
-    sender->send(selected(securityLevel == 0));
-    sender->send(
-        ">Supla CA</option>"
-        "<option value=\"1\"");
-    sender->send(selected(securityLevel == 1));
-    sender->send(
-        ">Custom CA</option>"
-        "<option value=\"2\"");
-    sender->send(selected(securityLevel == 2));
-    sender->send(">Skip certificate verification (INSECURE)</option>");
-    sender->send("</select>");
-    sender->send("</div>");
-    sender->send("</div>");  // form-field
-    // form-field END
+            uint8_t securityLevel = 0;
+            cfg->getUInt8("security_level", &securityLevel);
+            sender->formField([&]() {
+              sender->labelFor("sec", "Certificate verification");
+              auto select = sender->selectTag("sec", "sec");
+              select.attr("onchange", "securityChange();").body([&]() {
+                sender->selectOption(0, "Supla CA", securityLevel == 0);
+                sender->selectOption(1, "Custom CA", securityLevel == 1);
+                sender->selectOption(2,
+                                     "Skip certificate verification (INSECURE)",
+                                     securityLevel == 2);
+              });
+            });
 
-    sender->send("<div id=\"custom_ca_input\" style=\"display:");
-    if (securityLevel == 1) {
-      sender->send("block");
-    } else {
-      sender->send("none");
-    }
-    sender->send("\">");
-
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    const char keyCustomCa[] = "custom_ca";
-    sender->sendLabelFor(
-        keyCustomCa, "Custom CA (paste here CA certificate in PEM format)");
-    sender->send("<textarea ");
-    sender->sendNameAndId(keyCustomCa);
-    sender->send("maxlength=\"4000\">");
-    char* bufCert = new char[4000];
-    memset(bufCert, 0, 4000);
-    if (cfg->getCustomCA(bufCert, 4000)) {
-      sender->sendSafe(bufCert);
-    }
-    delete[] bufCert;
-    sender->send("</textarea>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
-
-    sender->send("</div>");
-    if (concurrent) {
-      sender->send("</div>");
+            sender->toggleBox("custom_ca_input", securityLevel == 1, [&]() {
+              sender->formField([&]() {
+                sender->labelFor(
+                    "custom_ca",
+                    "Custom CA (paste here CA certificate in PEM format)");
+                auto textarea = sender->tag("textarea");
+                textarea.attr("name", "custom_ca")
+                    .attr("maxlength", 4000)
+                    .close();
+                char* bufCert = new char[4000];
+                memset(bufCert, 0, 4000);
+                if (cfg->getCustomCA(bufCert, 4000)) {
+                  textarea.body(bufCert);
+                } else {
+                  textarea.body("");
+                }
+                delete[] bufCert;
+              });
+            });
+          });
     }
 
     if (addMqtt) {
       if (concurrent) {
-        sender->send(
-            "<div class=\"box\">");
-        sender->send(
-            "<h3>MQTT Settings</h3>");
+        sender->tag("div").attr("class", "box").body([&]() {
+          sender->tag("h3").body("MQTT Settings");
+          sender->formField([&]() {
+            sender->labelFor("protocol_mqtt", "MQTT protocol");
+            auto select = sender->selectTag("protocol_mqtt", "protocol_mqtt");
+            select.attr("onchange", "protocolChanged();").body([&]() {
+              sender->selectOption(
+                  0, "DISABLED", !cfg->isMqttCommProtocolEnabled());
+              sender->selectOption(
+                  1, "ENABLED", cfg->isMqttCommProtocolEnabled());
+            });
+          });
+          sender->tag("div").attr("class", "mqtt").body([&]() {
+            // Parameters for MQTT protocol
+            sender->formField([&]() {
+              sender->labelFor("mqttserver", "Server");
+              auto input = sender->voidTag("input");
+              input.attr("maxlength", 64)
+                  .attr("name", "mqttserver")
+                  .attr("id", "mqttserver");
+              if (cfg->getMqttServer(buf)) {
+                input.attr("value", buf);
+              }
+              input.finish();
+            });
 
-        // form-field START
-        sender->send("<div class=\"form-field\">");
-        const char keyProtocolMqtt[] = "protocol_mqtt";
-        sender->sendLabelFor(keyProtocolMqtt, "MQTT protocol");
-        sender->send("<div>");
-        sender->send("<select ");
-        sender->sendNameAndId(keyProtocolMqtt);
-        sender->send(
-            " onchange=\"protocolChanged();\">"
-            "<option value=\"0\"");
-        sender->send(selected(!cfg->isMqttCommProtocolEnabled()));
-        sender->send(
-            ">DISABLED</option>"
-            "<option value=\"1\"");
-        sender->send(selected(cfg->isMqttCommProtocolEnabled()));
-        sender->send(
-            ">ENABLED</option>"
-            "</select>");
-        sender->send("</div>");
-        sender->send("</div>");
-        // form-field END
+            sender->send(
+                "<script>"
+                "function mqttTlsChange(){"
+                "var port=document.getElementById(\"mqttport\"),"
+                "mqtt_tls=document.getElementById(\"mqtttls\");"
+                "if(mqtt_tls.value==\"0\")"
+                "{port.value=1883;}else"
+                "{port.value=8883;}"
+                "}"
+                "</script>");
 
-        sender->send(
-            "<div class=\"mqtt\">");
+            sender->formField([&]() {
+              sender->labelFor("mqtttls", "TLS");
+              auto select = sender->selectTag("mqtttls", "mqtttls");
+              select.attr("onchange", "mqttTlsChange();").body([&]() {
+                sender->selectOption(
+                    0, "NO (INSECURE)", !cfg->isMqttTlsEnabled());
+                sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
+              });
+            });
+
+            sender->numberInput("mqttport",
+                                {
+                                    .min = 1,
+                                    .max = 65535,
+                                    .value = cfg->getMqttServerPort(),
+                                    .step = 1,
+                                });
+
+            sender->formField([&]() {
+              sender->labelFor("mqttauth", "Auth");
+              auto select = sender->selectTag("mqttauth", "mqttauth");
+              select.body([&]() {
+                sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
+                sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
+              });
+            });
+
+            sender->formField([&]() {
+              sender->labelFor("mqttuser", "Username");
+              auto input = sender->voidTag("input");
+              input.attr("maxlength", 255)
+                  .attr("name", "mqttuser")
+                  .attr("id", "mqttuser");
+              if (cfg->getMqttUser(buf)) {
+                input.attr("value", buf);
+              }
+              input.finish();
+            });
+
+            sender->formField([&]() {
+              sender->labelFor("mqttpasswd", "Password (required, max 255)");
+              auto input = sender->voidTag("input");
+              input.attr("maxlength", 255)
+                  .attr("name", "mqttpasswd")
+                  .attr("id", "mqttpasswd")
+                  .finish();
+            });
+
+            sender->formField([&]() {
+              sender->labelFor("mqttprefix", "Topic prefix");
+              auto input = sender->voidTag("input");
+              input.attr("maxlength", 48)
+                  .attr("name", "mqttprefix")
+                  .attr("id", "mqttprefix");
+              if (cfg->getMqttPrefix(buf)) {
+                input.attr("value", buf);
+              }
+              input.finish();
+            });
+
+            sender->numberInput("mqttqos",
+                                {
+                                    .min = 0,
+                                    .max = 2,
+                                    .value = cfg->getMqttQos(),
+                                    .step = 1,
+                                });
+
+            sender->formField([&]() {
+              sender->labelFor("mqttretain", "Retain");
+              auto select = sender->selectTag("mqttretain", "mqttretain");
+              select.body([&]() {
+                sender->selectOption(0, "NO", !cfg->isMqttRetainEnabled());
+                sender->selectOption(1, "YES", cfg->isMqttRetainEnabled());
+              });
+            });
+          });
+        });
       } else {
-        sender->send(
-            "<div class=\"box mqtt\">");
-        sender->send(
-            "<h3>MQTT Settings</h3>");
-      }
-      // Parameters for MQTT protocol
+        sender->tag("div").attr("class", "box mqtt").body([&]() {
+          sender->tag("h3").body("MQTT Settings");
+          // Parameters for MQTT protocol
+          sender->formField([&]() {
+            sender->labelFor("mqttserver", "Server");
+            auto input = sender->voidTag("input");
+            input.attr("maxlength", 64)
+                .attr("name", "mqttserver")
+                .attr("id", "mqttserver");
+            if (cfg->getMqttServer(buf)) {
+              input.attr("value", buf);
+            }
+            input.finish();
+          });
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttServer[] = "mqttserver";
-      sender->sendLabelFor(keyMqttServer, "Server");
-      sender->send("<input ");
-      sender->sendNameAndId(keyMqttServer);
-      sender->send(" maxlength=\"64\" value=\"");
-      if (cfg->getMqttServer(buf)) {
-        sender->sendSafe(buf);
-      }
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
-
-      sender->send(
-          "<script>"
-            "function mqttTlsChange(){"
+          sender->send(
+              "<script>"
+              "function mqttTlsChange(){"
               "var port=document.getElementById(\"mqttport\"),"
               "mqtt_tls=document.getElementById(\"mqtttls\");"
               "if(mqtt_tls.value==\"0\")"
               "{port.value=1883;}else"
               "{port.value=8883;}"
-            "}"
-          "</script>");
+              "}"
+              "</script>");
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttTls[] = "mqtttls";
-      sender->sendLabelFor(keyMqttTls, "TLS");
-      sender->send("<div>");
-      sender->send("<select ");
-      sender->sendNameAndId(keyMqttTls);
-      sender->send(" onchange=\"mqttTlsChange();\">"
-          "<option value=\"0\" ");
-      sender->send(selected(!cfg->isMqttTlsEnabled()));
-      sender->send(
-          ">NO (INSECURE)</option>"
-          "<option value=\"1\" ");
-      sender->send(selected(cfg->isMqttTlsEnabled()));
-      sender->send(
-          ">YES</option></select>");
-      sender->send("</div>");
-      sender->send("</div>");
-      // form-field END
+          sender->formField([&]() {
+            sender->labelFor("mqtttls", "TLS");
+            auto select = sender->selectTag("mqtttls", "mqtttls");
+            select.attr("onchange", "mqttTlsChange();").body([&]() {
+              sender->selectOption(
+                  0, "NO (INSECURE)", !cfg->isMqttTlsEnabled());
+              sender->selectOption(1, "YES", cfg->isMqttTlsEnabled());
+            });
+          });
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttPort[] = "mqttport";
-      sender->sendLabelFor(keyMqttPort, "Port");
-      sender->send("<input ");
-      sender->sendNameAndId(keyMqttPort);
-      sender->send(" min=\"1\" max=\"65535\" type=\"number\" value=\"");
-      sender->send(cfg->getMqttServerPort());
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
+          sender->numberInput("mqttport",
+                              {
+                                  .min = 1,
+                                  .max = 65535,
+                                  .value = cfg->getMqttServerPort(),
+                                  .step = 1,
+                              });
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttAuth[] = "mqttauth";
-      sender->sendLabelFor(keyMqttAuth, "Auth");
-      sender->send("<div>");
-      sender->send("<select ");
-      sender->sendNameAndId(keyMqttAuth);
-      sender->send(
-          "onchange=\"mAuthChanged();\">"
-          "<option value=\"0\" ");
-      sender->send(selected(!cfg->isMqttAuthEnabled()));
-      sender->send(
-          ">NO</option>"
-          "<option value=\"1\" ");
-      sender->send(selected(cfg->isMqttAuthEnabled()));
-      sender->send(">YES</option></select>");
-      sender->send("</div>");
-      sender->send("</div>");
-      // form-field END
+          sender->formField([&]() {
+            sender->labelFor("mqttauth", "Auth");
+            auto select = sender->selectTag("mqttauth", "mqttauth");
+            select.body([&]() {
+              sender->selectOption(0, "NO", !cfg->isMqttAuthEnabled());
+              sender->selectOption(1, "YES", cfg->isMqttAuthEnabled());
+            });
+          });
 
-      // form-field START
-      sender->send("<div class=\"form-field\" id=\"mauth_usr\">");
-      const char keyMqttUser[] = "mqttuser";
-      sender->sendLabelFor(keyMqttUser, "Username");
-      sender->send("<input ");
-      sender->sendNameAndId(keyMqttUser);
-      sender->send("maxlength=\"255\" value=\"");
-      if (cfg->getMqttUser(buf)) {
-        sender->sendSafe(buf);
-      }
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
+          sender->formField([&]() {
+            sender->labelFor("mqttuser", "Username");
+            auto input = sender->voidTag("input");
+            input.attr("maxlength", 255)
+                .attr("name", "mqttuser")
+                .attr("id", "mqttuser");
+            if (cfg->getMqttUser(buf)) {
+              input.attr("value", buf);
+            }
+            input.finish();
+          });
 
-      // form-field START
-      sender->send("<div class=\"form-field\" id=\"mauth_pwd\">");
-      const char keyMqttPasswd[] = "mqttpasswd";
-      sender->sendLabelFor(keyMqttPasswd, "Password (required, max 255)");
-      sender->send("<input ");
-      sender->sendNameAndId(keyMqttPasswd);
-      sender->send(" maxlength=\"255\">");
-      sender->send("</div>");
-      // form-field END
+          sender->formField([&]() {
+            sender->labelFor("mqttpasswd", "Password (required, max 255)");
+            auto input = sender->voidTag("input");
+            input.attr("maxlength", 255)
+                .attr("name", "mqttpasswd")
+                .attr("id", "mqttpasswd")
+                .finish();
+          });
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttPrefix[] = "mqttprefix";
-      sender->sendLabelFor(keyMqttPrefix, "Topic prefix");
-      sender->send("<input ");
-      sender->sendNameAndId(keyMqttPrefix);
-      sender->send(" maxlength=\"48\" value=\"");
-      if (cfg->getMqttPrefix(buf)) {
-        sender->sendSafe(buf);
-      }
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
+          sender->formField([&]() {
+            sender->labelFor("mqttprefix", "Topic prefix");
+            auto input = sender->voidTag("input");
+            input.attr("maxlength", 48)
+                .attr("name", "mqttprefix")
+                .attr("id", "mqttprefix");
+            if (cfg->getMqttPrefix(buf)) {
+              input.attr("value", buf);
+            }
+            input.finish();
+          });
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttQos[] = "mqttqos";
-      sender->sendLabelFor(keyMqttQos, "QoS");
-      sender->send("<input ");
-      sender->sendNameAndId(keyMqttQos);
-      sender->send(" min=\"0\" max=\"2\" type=\"number\" "
-          "value=\"");
-      sender->send(cfg->getMqttQos());
-      sender->send("\">");
-      sender->send("</div>");
-      // form-field END
+          sender->numberInput("mqttqos",
+                              {
+                                  .min = 0,
+                                  .max = 2,
+                                  .value = cfg->getMqttQos(),
+                                  .step = 1,
+                              });
 
-      // form-field START
-      sender->send("<div class=\"form-field\">");
-      const char keyMqttRetain[] = "mqttretain";
-      sender->sendLabelFor(keyMqttRetain, "Retain");
-      sender->send("<div>");
-      sender->send("<select ");
-      sender->sendNameAndId(keyMqttRetain);
-      sender->send(">"
-          "<option value=\"0\" ");
-      sender->send(selected(!cfg->isMqttRetainEnabled()));
-      sender->send(
-          ">NO</option>"
-          "<option value=\"1\" ");
-      sender->send(selected(cfg->isMqttRetainEnabled()));
-      sender->send(
-          ">YES</option></select>");
-      sender->send("</div>");
-      sender->send("</div>");
-      // form-field END
-
-      sender->send("</div>");
-      if (concurrent) {
-        sender->send("</div>");
+          sender->formField([&]() {
+            sender->labelFor("mqttretain", "Retain");
+            auto select = sender->selectTag("mqttretain", "mqttretain");
+            select.body([&]() {
+              sender->selectOption(0, "NO", !cfg->isMqttRetainEnabled());
+              sender->selectOption(1, "YES", cfg->isMqttRetainEnabled());
+            });
+          });
+        });
       }
     }
   }
@@ -481,3 +530,5 @@ bool ProtocolParameters::handleResponse(const char* key, const char* value) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

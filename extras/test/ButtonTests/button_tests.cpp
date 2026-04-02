@@ -18,7 +18,9 @@
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
 #include <simple_time.h>
+#include <supla/io.h>
 #include <supla/control/button.h>
+#include <supla/control/sequence_button.h>
 #include "supla/events.h"
 
 using ::testing::Return;
@@ -27,6 +29,38 @@ class ActionHandlerMock : public Supla::ActionHandler {
  public:
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
+
+TEST(ButtonTests, IoPinConstructorUsesConfiguredPolarity) {
+  DigitalInterfaceMock ioMock;
+
+  Supla::Io::IoPin inputPin(5);
+  inputPin.setPullUp(true);
+  inputPin.setActiveHigh(false);
+
+  EXPECT_CALL(ioMock, pinMode(5, INPUT_PULLUP));
+  EXPECT_CALL(ioMock, digitalRead(5)).WillOnce(Return(1));
+
+  Supla::Control::Button button(inputPin);
+  button.onInit();
+
+  EXPECT_EQ(button.getLastState(), Supla::Control::RELEASED);
+}
+
+TEST(ButtonTests, SequenceButtonIoPinConstructorUsesConfiguredPolarity) {
+  DigitalInterfaceMock ioMock;
+
+  Supla::Io::IoPin inputPin(6);
+  inputPin.setPullUp(true);
+  inputPin.setActiveHigh(false);
+
+  EXPECT_CALL(ioMock, pinMode(6, INPUT_PULLUP));
+  EXPECT_CALL(ioMock, digitalRead(6)).WillOnce(Return(1));
+
+  Supla::Control::SequenceButton button(inputPin);
+  button.onInit();
+
+  EXPECT_EQ(button.getLastState(), Supla::Control::RELEASED);
+}
 
 TEST(ButtonTests, OnPressAndOnRelease) {
   SimpleTime time;

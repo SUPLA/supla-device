@@ -30,7 +30,7 @@ class RgbwBaseForTest : public Supla::Control::RGBWBase {
  public:
   MOCK_METHOD(void,
               setRGBWValueOnDevice,
-              (uint32_t, uint32_t, uint32_t, uint32_t, uint32_t),
+              (uint32_t, uint32_t, uint32_t, uint32_t),
               (override));
 };
 
@@ -1085,12 +1085,12 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithoutFading) {
   ::testing::InSequence seq;
 
   RgbwBaseForTest rgb;
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023, 1023));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, (20*1023/100)));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023, (20*1023/100)));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 203));
 
 
   auto ch = rgb.getChannel();
@@ -1135,38 +1135,38 @@ TEST(RgbwDimmerTests, SetValueOnDeviceWithFading) {
   RgbwBaseForTest rgb;
 
   // fade effect 1000 ms, time step 1000 ms
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023, 1023));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, (20*1023/100)));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023, (20*1023/100)));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
 
   // fade effect 10000 ms, time step 1000 ms
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 102, 20));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 204, 40));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 306, 60));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 408, 80));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 510, 100));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 612, 120));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 714, 140));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 816, 160));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 918, 180));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1020, 200));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 1023, 204));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 101, 0, 19));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 203, 0, 39));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 305, 0, 59));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 407, 0, 79));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 509, 0, 99));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 611, 0, 119));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 713, 0, 139));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 815, 0, 159));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 917, 0, 179));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1019, 0, 199));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 203));
 
   // fade effect 10000 ms, time step 1000 ms
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(40, 1001, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(80, 979, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(120, 957, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(160, 935, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(200, 913, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(240, 891, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(280, 869, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(320, 847, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(360, 825, 0, 1023, 204));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(400, 803, 0, 1023, 204));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(40, 1001, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(80, 979, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(120, 957, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(160, 935, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(200, 913, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(240, 891, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(280, 869, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(320, 847, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(360, 825, 0, 203));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(400, 803, 0, 203));
 
   auto ch = rgb.getChannel();
 
@@ -1257,21 +1257,21 @@ TEST(RgbwDimmerTests, MinAndMaxLimits) {
   ::testing::InSequence seq;
 
   RgbwBaseForTest rgb;
-  rgb.setBrightnessLimits(100, 500);
-  rgb.setColorBrightnessLimits(600, 700);
+  rgb.setBrightnessRatioLimits(100.0f / 1023.0f, 500.0f / 1023.0f);
+  rgb.setColorBrightnessRatioLimits(600.0f / 1023.0f, 700.0f / 1023.0f);
 
   // fade effect 1000 ms, time step 1000 ms
   // Limits: brightness (100, 500), colorBrightness (600, 700)
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 700, 500));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, (20*4 + 100 - 1)));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 700, (20*4 + 100 - 1)));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 700, 0, 500));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, (20*4 + 100 - 1)));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 700, 0, (20*4 + 100 - 1)));
   EXPECT_CALL(
       rgb,
-      setRGBWValueOnDevice(0, 1023, 0, Le(700), Le((20 * 4 + 100 - 1))));
-  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 1023, 0, 0, 0));
+      setRGBWValueOnDevice(0, Le(700), 0, Le((20 * 4 + 100 - 1))));
+  EXPECT_CALL(rgb, setRGBWValueOnDevice(0, 0, 0, 0));
 
   auto ch = rgb.getChannel();
 

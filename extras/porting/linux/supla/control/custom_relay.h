@@ -47,13 +47,9 @@ class CustomRelay : public Sensor::SensorParsed<CustomVirtualRelay>,
   void turnOff(_supla_int_t duration = 0) override;
   bool isOn() override;
   void iterateAlways() override;
-  bool isOffline();  // add override
-
-  void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
 
  protected:
   uint32_t lastReadTime = 0;
-  bool useOfflineOnInvalidState = false;
 };
 
 };  // namespace Control

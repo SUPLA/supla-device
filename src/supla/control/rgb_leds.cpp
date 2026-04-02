@@ -20,12 +20,6 @@ namespace {
 constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
 constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
 
-Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin) {
-  Supla::Io::IoPin result(pin, io);
-  result.setMode(OUTPUT);
-  return result;
-}
-
 void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
   pin.setAnalogOutputResolutionBits(LegacyAnalogWriteResolutionBits);
   pin.setAnalogOutputFrequency(LegacyAnalogWriteFrequencyHz);
@@ -36,14 +30,14 @@ Supla::Control::RGBLeds::RGBLeds(Supla::Io::Base *io,
                                  int redPin,
                                  int greenPin,
                                  int bluePin)
-    : RGBLeds(MakeOutputPin(io, redPin),
-              MakeOutputPin(io, greenPin),
-              MakeOutputPin(io, bluePin)) {}
+    : RGBLeds(Supla::Io::IoPin(redPin, io),
+              Supla::Io::IoPin(greenPin, io),
+              Supla::Io::IoPin(bluePin, io)) {}
 
 Supla::Control::RGBLeds::RGBLeds(int redPin, int greenPin, int bluePin)
-    : RGBLeds(MakeOutputPin(nullptr, redPin),
-              MakeOutputPin(nullptr, greenPin),
-              MakeOutputPin(nullptr, bluePin)) {}
+    : RGBLeds(Supla::Io::IoPin(redPin),
+              Supla::Io::IoPin(greenPin),
+              Supla::Io::IoPin(bluePin)) {}
 
 Supla::Control::RGBLeds::RGBLeds(Supla::Io::IoPin redPin,
                                  Supla::Io::IoPin greenPin,

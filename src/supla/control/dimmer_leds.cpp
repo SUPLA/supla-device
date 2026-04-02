@@ -20,12 +20,6 @@ namespace {
 constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
 constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
 
-Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io, int pin) {
-  Supla::Io::IoPin result(pin, io);
-  result.setMode(OUTPUT);
-  return result;
-}
-
 void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
   pin.setAnalogOutputResolutionBits(LegacyAnalogWriteResolutionBits);
   pin.setAnalogOutputFrequency(LegacyAnalogWriteFrequencyHz);
@@ -33,10 +27,10 @@ void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
 }  // namespace
 
 Supla::Control::DimmerLeds::DimmerLeds(Supla::Io::Base *io, int brightnessPin)
-    : DimmerLeds(MakeOutputPin(io, brightnessPin)) {}
+    : DimmerLeds(Supla::Io::IoPin(brightnessPin, io)) {}
 
 Supla::Control::DimmerLeds::DimmerLeds(int brightnessPin)
-    : DimmerLeds(MakeOutputPin(nullptr, brightnessPin)) {}
+    : DimmerLeds(Supla::Io::IoPin(brightnessPin)) {}
 
 Supla::Control::DimmerLeds::DimmerLeds(Supla::Io::IoPin brightnessPin)
     : brightnessPin(brightnessPin) {

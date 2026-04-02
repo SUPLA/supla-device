@@ -77,11 +77,17 @@ list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
 
 set(SD4LINUX_PORT_SRC
+  ../porting/linux/supla/control/cmd_relay.cpp
+  ../porting/linux/supla/control/control_payload.cpp
+  ../porting/linux/supla/control/custom_relay.cpp
+  ../porting/linux/supla/control/cmd_roller_shutter.cpp
+  ../porting/linux/supla/control/rgbcct_parsed.cpp
   ../porting/linux/supla/control/action_trigger_parsed.cpp
   ../porting/linux/supla/parser/parser.cpp
   ../porting/linux/supla/sensor/sensor_parsed.cpp
   ../porting/linux/supla/sensor/binary_parsed.cpp
   ../porting/linux/supla/sensor/thermometer_parsed.cpp
+  ../porting/linux/supla/payload/payload.cpp
   )
 
 add_library(supladevicelib SHARED)

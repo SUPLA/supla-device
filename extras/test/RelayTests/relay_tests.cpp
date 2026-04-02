@@ -25,6 +25,7 @@
 #include <supla/actions.h>
 #include <supla/channel.h>
 #include <supla/control/relay.h>
+#include <supla/control/light_relay.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
 #include <supla_io_mock.h>
@@ -71,6 +72,19 @@ class RelayFixture : public testing::Test {
     r->handleChannelConfig(&result, false);
   }
 };
+
+TEST_F(RelayFixture, LightRelayIoPinConstructorUsesConfiguredIoAndPolarity) {
+  SuplaIoMock outputIo;
+  Supla::Io::IoPin outputPin(11, &outputIo);
+  outputPin.setActiveHigh(false);
+  outputPin.setMode(OUTPUT);
+
+  EXPECT_CALL(outputIo, customPinMode(0, 11, OUTPUT));
+  EXPECT_CALL(outputIo, customDigitalWrite(0, 11, HIGH)).Times(2);
+
+  Supla::Control::LightRelay relay(outputPin);
+  relay.onInit();
+}
 
 TEST_F(RelayFixture, IoPinConstructorUsesConfiguredIoAndPolarity) {
   SuplaIoMock outputIo;

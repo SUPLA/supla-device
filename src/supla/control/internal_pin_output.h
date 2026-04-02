@@ -19,11 +19,12 @@
 #ifndef SRC_SUPLA_CONTROL_INTERNAL_PIN_OUTPUT_H_
 #define SRC_SUPLA_CONTROL_INTERNAL_PIN_OUTPUT_H_
 
+#include <supla/io.h>
+
 #include "../action_handler.h"
 #include "../element.h"
 #include "../local_action.h"
 #include "output_interface.h"
-#include <supla/io.h>
 
 #define STATE_ON_INIT_OFF 0
 #define STATE_ON_INIT_ON  1

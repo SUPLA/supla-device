@@ -121,11 +121,12 @@ TEST_F(Sd4linuxParserStateTests,
 }
 
 TEST_F(Sd4linuxParserStateTests,
-       MarksChannelOfflineImmediatelyWhenSourceDrops) {
+       KeepsChannelOfflineWhenStateIsInvalidButSourceStaysConnected) {
   SimpleTime time;
   FakeSd4linuxSource source;
   FakeSd4linuxParser parser(&source);
   parser.setRefreshTime(5000);
+  parser.stateValue = -1;
 
   Supla::Sensor::BinaryParsed sensor(&parser);
   sensor.setMapping(Supla::Parser::State, "state");
@@ -134,15 +135,36 @@ TEST_F(Sd4linuxParserStateTests,
   time.advance(101);
   sensor.iterateAlways();
 
-  ASSERT_TRUE(sensor.getChannel()->isStateOnline());
+  EXPECT_FALSE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(parser.refreshCount, 1);
 
-  source.connected = false;
+  sensor.getChannel()->sendUpdate();
 
   time.advance(101);
   sensor.iterateAlways();
 
   EXPECT_FALSE(sensor.getChannel()->isStateOnline());
+  EXPECT_FALSE(sensor.getChannel()->isUpdateReady());
   EXPECT_EQ(parser.refreshCount, 1);
+}
+
+TEST_F(
+    Sd4linuxParserStateTests,
+    KeepsOfflineWhenSourceBecomesUnavailableWithoutOfflineOnInvalidState) {
+  SimpleTime time;
+  FakeSd4linuxSource source;
+  source.connected = false;
+  FakeSd4linuxParser parser(&source);
+  parser.setRefreshTime(5000);
+
+  Supla::Sensor::BinaryParsed sensor(&parser);
+  sensor.setMapping(Supla::Parser::State, "state");
+
+  time.advance(101);
+  sensor.iterateAlways();
+
+  EXPECT_FALSE(sensor.getChannel()->isStateOnline());
+  EXPECT_EQ(parser.refreshCount, 0);
 }
 
 TEST_F(Sd4linuxParserStateTests, ReturnsChannelOnlineAfterSourceReconnects) {

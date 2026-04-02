@@ -32,7 +32,12 @@ void Supla::Control::RgbCctParsed::iterateAlways() {
   Supla::Control::LightingPwmBase::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
-    refreshParserSource();
+    if (!parser->isSourceConnected()) {
+      lastReadTime = millis();
+      channel.setStateOffline();
+      return;
+    }
+    refreshParserSource(false);
     lastReadTime = millis();
     if (isOffline()) {
       channel.setStateOffline();
@@ -44,7 +49,7 @@ void Supla::Control::RgbCctParsed::iterateAlways() {
 
 bool Supla::Control::RgbCctParsed::isOffline() {
   if (useOfflineOnInvalidState && parser) {
-    if (getStateValue() == -1) {
+    if (getStateValue(false) == -1) {
       return true;
     }
   }

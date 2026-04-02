@@ -75,7 +75,7 @@ std::variant<int, bool, std::string> SensorParsedBase::getStateParameterValue(
   return stateValue;
 }
 
-bool SensorParsedBase::refreshParserSource() {
+bool SensorParsedBase::refreshParserSource(bool updateChannelState) {
   if (parser) {
     if (!parser->isSourceConnected()) {
       if (auto channel = getChannel()) {
@@ -90,11 +90,13 @@ bool SensorParsedBase::refreshParserSource() {
       if (!parser->isValid()) {
         return false;
       }
-      if (auto channel = getChannel()) {
-        channel->setStateOnline();
-      }
-      if (auto secondaryChannel = getSecondaryChannel()) {
-        secondaryChannel->setStateOnline();
+      if (updateChannelState) {
+        if (auto channel = getChannel()) {
+          channel->setStateOnline();
+        }
+        if (auto secondaryChannel = getSecondaryChannel()) {
+          secondaryChannel->setStateOnline();
+        }
       }
       updateBatteryInfoFlags();
       return true;
@@ -107,7 +109,7 @@ bool SensorParsedBase::isParameterConfigured(const std::string &parameter) {
   return parameterToKey.count(parameter) > 0;
 }
 
-int SensorParsedBase::getStateValue() {
+int SensorParsedBase::getStateValue(bool updateChannelState) {
   std::variant<int, bool, std::string> value = -1;
   std::variant<int, bool, std::string> value1 = 1;
   std::variant<int, bool, std::string> valueTrue = true;
@@ -130,7 +132,7 @@ int SensorParsedBase::getStateValue() {
   int state = -1;
 
   if (isParameterConfigured(Supla::Parser::State)) {
-    if (refreshParserSource()) {
+    if (refreshParserSource(updateChannelState)) {
       std::variant<int, bool, std::string> result =
           getStateParameterValue(Supla::Parser::State);
 

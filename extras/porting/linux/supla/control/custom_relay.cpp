@@ -58,7 +58,7 @@ bool Supla::Control::CustomRelay::isOn() {
 
   int result = 0;
   if (parser) {
-    result = getStateValue();
+    result = getStateValue(false);
     if (result == 1) {
       newState = true;
     } else if (result != -1) {
@@ -77,6 +77,12 @@ void Supla::Control::CustomRelay::iterateAlways() {
   Supla::Control::Relay::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
+    if (!parser->isSourceConnected()) {
+      lastReadTime = millis();
+      channel.setStateOffline();
+      return;
+    }
+    refreshParserSource(false);
     lastReadTime = millis();
     channel.setNewValue(isOn());
     if (isOffline()) {
@@ -89,7 +95,7 @@ void Supla::Control::CustomRelay::iterateAlways() {
 
 bool Supla::Control::CustomRelay::isOffline() {
   if (useOfflineOnInvalidState && parser) {
-    if (getStateValue() == -1) {
+    if (getStateValue(false) == -1) {
       return true;
     }
   }

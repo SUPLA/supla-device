@@ -34,7 +34,7 @@ void Supla::Sensor::BinaryParsed::onInit() {
 bool Supla::Sensor::BinaryParsed::getValue() {
   bool value = false;
 
-  int result = getStateValue();
+  int result = getStateValue(false);
 
   if (result == 1) {
     value = true;
@@ -50,7 +50,12 @@ void Supla::Sensor::BinaryParsed::iterateAlways() {
   Supla::Sensor::VirtualBinary::iterateAlways();
 
   if (parser && (millis() - lastOfflineReadTime > 100)) {
-    refreshParserSource();
+    if (!parser->isSourceConnected()) {
+      lastOfflineReadTime = millis();
+      channel.setStateOffline();
+      return;
+    }
+    refreshParserSource(false);
     lastOfflineReadTime = millis();
     if (isOffline()) {
       channel.setStateOffline();
@@ -62,7 +67,7 @@ void Supla::Sensor::BinaryParsed::iterateAlways() {
 
 bool Supla::Sensor::BinaryParsed::isOffline() {
   if (useOfflineOnInvalidState && parser) {
-    if (getStateValue() == -1) {
+    if (getStateValue(false) == -1) {
       return true;
     }
   }
@@ -74,4 +79,3 @@ void Supla::Sensor::BinaryParsed::setUseOfflineOnInvalidState(
   this->useOfflineOnInvalidState = useOfflineOnInvalidState;
   SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }
-

@@ -107,11 +107,11 @@ Collaboration diagram for Supla::Sensor::ImpulseCounter:</div>
 <div class="dyncontent">
 <div class="center"><img src="classSupla_1_1Sensor_1_1ImpulseCounter__coll__graph.png" border="0" usemap="#aSupla_1_1Sensor_1_1ImpulseCounter_coll__map" loading="lazy" alt="Collaboration graph"/></div>
 <map name="aSupla_1_1Sensor_1_1ImpulseCounter_coll__map" id="aSupla_1_1Sensor_1_1ImpulseCounter_coll__map">
-<area shape="rect" title=" " alt="" coords="1109,269,1307,294"/>
-<area shape="rect" href="classSupla_1_1Sensor_1_1VirtualImpulseCounter.html" title=" " alt="" coords="853,209,1043,250"/>
-<area shape="poly" title=" " alt="" coords="1059,249,1141,265,1140,271,1058,254"/>
+<area shape="rect" title=" " alt="" coords="1180,227,1378,253"/>
+<area shape="rect" href="classSupla_1_1Sensor_1_1VirtualImpulseCounter.html" title=" " alt="" coords="869,181,1060,222"/>
+<area shape="poly" title=" " alt="" coords="1075,212,1179,225,1179,231,1075,218"/>
 <area shape="rect" href="classSupla_1_1ChannelElement.html" title=" " alt="" coords="649,189,803,214"/>
-<area shape="poly" title=" " alt="" coords="819,210,852,215,852,220,818,216"/>
+<area shape="poly" title=" " alt="" coords="818,199,869,199,869,204,818,204"/>
 <area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="368,129,548,170"/>
 <area shape="poly" title=" " alt="" coords="564,167,657,185,656,191,563,173"/>
 <area shape="rect" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="38,73,145,98"/>
@@ -129,16 +129,20 @@ Collaboration diagram for Supla::Sensor::ImpulseCounter:</div>
 <area shape="poly" title=" " alt="" coords="190,270,404,271,404,276,190,275"/>
 <area shape="rect" href="structTHVACValue.html" title=" " alt="" coords="42,313,141,338"/>
 <area shape="poly" title=" " alt="" coords="157,319,245,312,343,299,409,284,410,290,344,304,246,317,157,325"/>
-<area shape="rect" href="classSupla_1_1ActionHandler.html" title=" " alt="" coords="655,238,797,264"/>
-<area shape="poly" title=" " alt="" coords="813,240,852,236,852,241,813,245"/>
-<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="894,321,1002,346"/>
-<area shape="poly" title=" " alt="" coords="1016,317,1140,292,1141,298,1017,323"/>
-<area shape="poly" title=" " alt="" coords="925,303,933,297,948,294,962,296,971,303,973,312,969,321,964,319,968,312,966,306,960,301,948,299,935,302,928,307"/>
+<area shape="rect" href="classSupla_1_1ActionHandler.html" title=" " alt="" coords="655,139,797,165"/>
+<area shape="poly" title=" " alt="" coords="807,166,869,179,868,184,806,171"/>
+<area shape="rect" href="structSupla_1_1Io_1_1IoPin.html" title=" " alt="" coords="911,255,1018,281"/>
+<area shape="poly" title=" " alt="" coords="1033,263,1155,254,1182,251,1182,256,1156,259,1034,268"/>
+<area shape="rect" href="classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="672,286,780,312"/>
+<area shape="poly" title=" " alt="" coords="795,287,910,272,911,278,796,293"/>
+<area shape="poly" title=" " alt="" coords="705,269,712,262,726,259,739,262,747,268,749,277,746,287,741,285,744,277,743,271,737,267,726,265,715,267,708,273"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:aede359a65139eaf7fda1ff843edc6997" id="r_aede359a65139eaf7fda1ff843edc6997"><td class="memItemLeft"><a id="aede359a65139eaf7fda1ff843edc6997" name="aede359a65139eaf7fda1ff843edc6997"></a>
+&#160;</td><td class="memItemRight"><b>ImpulseCounter</b> (<a class="el" href="structSupla_1_1Io_1_1IoPin.html">Supla::Io::IoPin</a> impulsePin, bool _detectLowToHigh=false, bool inputPullup=true, uint16_t _debounceDelay=10, uint16_t minSignalTimeToCountMs=0)</td></tr>
 <tr class="memitem:a43193744d9ed1ddccfd23a75677023ca" id="r_a43193744d9ed1ddccfd23a75677023ca"><td class="memItemLeft"><a id="a43193744d9ed1ddccfd23a75677023ca" name="a43193744d9ed1ddccfd23a75677023ca"></a>
 &#160;</td><td class="memItemRight"><b>ImpulseCounter</b> (<a class="el" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a> *io, int _impulsePin, bool _detectLowToHigh=false, bool inputPullup=true, uint16_t _debounceDelay=10, uint16_t minSignalTimeToCountMs=0)</td></tr>
 <tr class="memitem:a920004be70ffc5a4d3084db6e37b222d" id="r_a920004be70ffc5a4d3084db6e37b222d"><td class="memItemLeft"><a id="a920004be70ffc5a4d3084db6e37b222d" name="a920004be70ffc5a4d3084db6e37b222d"></a>
@@ -278,21 +282,17 @@ virtual <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> 
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a0d0226f1dba224404f840eb6c1aa2161" id="r_a0d0226f1dba224404f840eb6c1aa2161"><td class="memItemLeft"><a id="a0d0226f1dba224404f840eb6c1aa2161" name="a0d0226f1dba224404f840eb6c1aa2161"></a>
-<a class="el" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a> *&#160;</td><td class="memItemRight"><b>io</b> = nullptr</td></tr>
 <tr class="memitem:ab87b5f59f87442c96288bdf9789c8081" id="r_ab87b5f59f87442c96288bdf9789c8081"><td class="memItemLeft">uint32_t&#160;</td><td class="memItemRight"><a class="el" href="#ab87b5f59f87442c96288bdf9789c8081">lastImpulseMillis</a></td></tr>
 <tr class="memitem:a59da418b19c033b6797613fd281300b1" id="r_a59da418b19c033b6797613fd281300b1"><td class="memItemLeft"><a id="a59da418b19c033b6797613fd281300b1" name="a59da418b19c033b6797613fd281300b1"></a>
 uint32_t&#160;</td><td class="memItemRight"><b>lastChangeMs</b> = 0</td></tr>
-<tr class="memitem:aa2a2c85047b139f69ee66ebbf8f4f20e" id="r_aa2a2c85047b139f69ee66ebbf8f4f20e"><td class="memItemLeft"><a id="aa2a2c85047b139f69ee66ebbf8f4f20e" name="aa2a2c85047b139f69ee66ebbf8f4f20e"></a>
-int16_t&#160;</td><td class="memItemRight"><b>impulsePin</b> = -1</td></tr>
+<tr class="memitem:a75129624be2b976eb7ff2c4375c87366" id="r_a75129624be2b976eb7ff2c4375c87366"><td class="memItemLeft"><a id="a75129624be2b976eb7ff2c4375c87366" name="a75129624be2b976eb7ff2c4375c87366"></a>
+<a class="el" href="structSupla_1_1Io_1_1IoPin.html">Supla::Io::IoPin</a>&#160;</td><td class="memItemRight"><b>impulsePin</b></td></tr>
 <tr class="memitem:a87b3e3518a330c22384cab1168b62803" id="r_a87b3e3518a330c22384cab1168b62803"><td class="memItemLeft"><a id="a87b3e3518a330c22384cab1168b62803" name="a87b3e3518a330c22384cab1168b62803"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>debounceDelayMs</b> = 10</td></tr>
 <tr class="memitem:a23b2d39640083626ef49de4bcef2c3d7" id="r_a23b2d39640083626ef49de4bcef2c3d7"><td class="memItemLeft"><a id="a23b2d39640083626ef49de4bcef2c3d7" name="a23b2d39640083626ef49de4bcef2c3d7"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>minSignalTimeToCountMs</b> = 10</td></tr>
 <tr class="memitem:a1ad9382fb15f654c383148e0d8ab1b4a" id="r_a1ad9382fb15f654c383148e0d8ab1b4a"><td class="memItemLeft"><a id="a1ad9382fb15f654c383148e0d8ab1b4a" name="a1ad9382fb15f654c383148e0d8ab1b4a"></a>
 bool&#160;</td><td class="memItemRight"><b>detectLowToHigh</b> = false</td></tr>
-<tr class="memitem:a73f96b70d01e4d8dea32e67b5965ba53" id="r_a73f96b70d01e4d8dea32e67b5965ba53"><td class="memItemLeft"><a id="a73f96b70d01e4d8dea32e67b5965ba53" name="a73f96b70d01e4d8dea32e67b5965ba53"></a>
-bool&#160;</td><td class="memItemRight"><b>inputPullup</b> = true</td></tr>
 <tr class="memitem:accb5f73ca83817ce5f45c1755db5b78d" id="r_accb5f73ca83817ce5f45c1755db5b78d"><td class="memItemLeft"><a id="accb5f73ca83817ce5f45c1755db5b78d" name="accb5f73ca83817ce5f45c1755db5b78d"></a>
 int8_t&#160;</td><td class="memItemRight"><b>prevState</b> = 0</td></tr>
 <tr class="memitem:a509cb0dd1ec35f4ec5fd242a0c22af3f" id="r_a509cb0dd1ec35f4ec5fd242a0c22af3f"><td class="memItemLeft"><a id="a509cb0dd1ec35f4ec5fd242a0c22af3f" name="a509cb0dd1ec35f4ec5fd242a0c22af3f"></a>

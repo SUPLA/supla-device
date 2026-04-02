@@ -36,6 +36,7 @@ class BlinkingLed : public Supla::Element {
                        uint8_t outPin,
                        bool invert = false);
   explicit BlinkingLed(uint8_t outPin, bool invert = false);
+  ~BlinkingLed() override;
 
   void onInit() override;
   void onTimer() override;

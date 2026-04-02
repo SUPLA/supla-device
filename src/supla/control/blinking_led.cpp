@@ -43,6 +43,10 @@ BlinkingLed::BlinkingLed(uint8_t outPin, bool invert)
     : BlinkingLed(Supla::Io::IoPin(outPin), invert) {
 }
 
+BlinkingLed::~BlinkingLed() {
+  delete mutex;
+}
+
 void BlinkingLed::onInit() {
   Supla::AutoLock autoLock(mutex);
   if (state == NOT_INITIALIZED) {

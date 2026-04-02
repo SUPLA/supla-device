@@ -16,8 +16,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef EXTRAS_ESP_IDF_RGBW_PWM_LEDC_IO_H_
-#define EXTRAS_ESP_IDF_RGBW_PWM_LEDC_IO_H_
+#ifndef EXTRAS_ESP_IDF_LEDC_IO_LEDC_IO_H_
+#define EXTRAS_ESP_IDF_LEDC_IO_LEDC_IO_H_
 
 #include <driver/ledc.h>
 
@@ -63,4 +63,4 @@ namespace Supla {
 using LedcIo = Io::LedcIo;
 }
 
-#endif  // EXTRAS_ESP_IDF_RGBW_PWM_LEDC_IO_H_
+#endif  // EXTRAS_ESP_IDF_LEDC_IO_LEDC_IO_H_

@@ -25,21 +25,6 @@
 using Supla::Control::SimpleButton;
 using Supla::Control::ButtonState;
 
-namespace {
-
-Supla::Io::IoPin MakeInputPin(Supla::Io::Base *io,
-                              int pin,
-                              bool pullUp,
-                              bool invertLogic) {
-  Supla::Io::IoPin inputPin(pin, io);
-  inputPin.setPullUp(pullUp);
-  inputPin.setActiveHigh(!invertLogic);
-  inputPin.setMode(INPUT);
-  return inputPin;
-}
-
-}  // namespace
-
 ButtonState::ButtonState(Supla::Io::IoPin inputPin)
     : inputPin(inputPin) {
   this->inputPin.setMode(INPUT);
@@ -49,11 +34,15 @@ ButtonState::ButtonState(Supla::Io::Base *io,
                          int pin,
                          bool pullUp,
                          bool invertLogic)
-    : ButtonState(MakeInputPin(io, pin, pullUp, invertLogic)) {
+    : ButtonState(Supla::Io::IoPin(pin, io)) {
+  this->inputPin.setPullUp(pullUp);
+  this->inputPin.setActiveHigh(!invertLogic);
 }
 
 ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
-    : ButtonState(MakeInputPin(nullptr, pin, pullUp, invertLogic)) {
+    : ButtonState(Supla::Io::IoPin(pin)) {
+  this->inputPin.setPullUp(pullUp);
+  this->inputPin.setActiveHigh(!invertLogic);
 }
 
 SimpleButton::SimpleButton(Supla::Io::IoPin inputPin)
@@ -118,13 +107,13 @@ SimpleButton::SimpleButton(Supla::Io::Base *io,
                            int pin,
                            bool pullUp,
                            bool invertLogic)
-    : state(MakeInputPin(io, pin, pullUp, invertLogic)) {
+    : state(io, pin, pullUp, invertLogic) {
 }
 
 SimpleButton::SimpleButton(int pin,
                            bool pullUp,
                            bool invertLogic)
-    : state(MakeInputPin(nullptr, pin, pullUp, invertLogic)) {
+    : state(pin, pullUp, invertLogic) {
 }
 
 void SimpleButton::onTimer() {

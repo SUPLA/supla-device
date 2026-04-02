@@ -30,15 +30,10 @@ class RgbCctParsed : public Sensor::SensorParsed<LightingPwmBase> {
 
   void iterateAlways() override;
 
-  bool isOffline();  // add override
-
-  void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
-
   void setRGBCCTValueOnDevice(uint32_t output[5], int usedOutputs) override;
 
  protected:
   uint32_t lastReadTime = 0;
-  bool useOfflineOnInvalidState = false;
 };
 
 };  // namespace Control

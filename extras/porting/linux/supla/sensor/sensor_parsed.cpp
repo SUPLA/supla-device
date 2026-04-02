@@ -105,6 +105,46 @@ bool SensorParsedBase::refreshParserSource(bool updateChannelState) {
   return false;
 }
 
+bool SensorParsedBase::setOfflineIfSourceDisconnected() {
+  if (!parser || parser->isSourceConnected()) {
+    return false;
+  }
+
+  setChannelStateOnline(false);
+  return true;
+}
+
+void SensorParsedBase::setChannelStateOnline(bool online) {
+  if (auto channel = getChannel()) {
+    if (online) {
+      channel->setStateOnline();
+    } else {
+      channel->setStateOffline();
+    }
+  }
+  if (auto secondaryChannel = getSecondaryChannel()) {
+    if (online) {
+      secondaryChannel->setStateOnline();
+    } else {
+      secondaryChannel->setStateOffline();
+    }
+  }
+}
+
+bool SensorParsedBase::isSourceStateOffline(bool useOfflineOnInvalidState) {
+  return useOfflineOnInvalidState && parser && getStateValue(false) == -1;
+}
+
+bool SensorParsedBase::isOffline() {
+  return isSourceStateOffline(useOfflineOnInvalidState);
+}
+
+void SensorParsedBase::setUseOfflineOnInvalidState(
+    bool useOfflineOnInvalidState) {
+  this->useOfflineOnInvalidState = useOfflineOnInvalidState;
+  SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
+}
+
 bool SensorParsedBase::isParameterConfigured(const std::string &parameter) {
   return parameterToKey.count(parameter) > 0;
 }

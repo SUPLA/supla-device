@@ -87,34 +87,13 @@ void Supla::Control::CmdRelay::iterateAlways() {
   Supla::Control::VirtualRelay::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
-    if (!parser->isSourceConnected()) {
+    if (setOfflineIfSourceDisconnected()) {
       lastReadTime = millis();
-      channel.setStateOffline();
       return;
     }
     refreshParserSource(false);
     lastReadTime = millis();
     setNewChannelValue(true);
-    if (isOffline()) {
-      channel.setStateOffline();
-    } else {
-      channel.setStateOnline();
-    }
+    setChannelStateOnline(!isOffline());
   }
-}
-
-bool Supla::Control::CmdRelay::isOffline() {
-  if (useOfflineOnInvalidState && parser) {
-    if (getStateValue(false) == -1) {
-      return true;
-    }
-  }
-  return false;
-  //    return Supla::Control::VirtualRelay::isOffline();
-}
-
-void Supla::Control::CmdRelay::setUseOfflineOnInvalidState(
-    bool useOfflineOnInvalidState) {
-  this->useOfflineOnInvalidState = useOfflineOnInvalidState;
-  SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }

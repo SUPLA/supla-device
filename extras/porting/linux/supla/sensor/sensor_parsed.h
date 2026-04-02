@@ -52,6 +52,11 @@ class SensorParsedBase {
   void setMultiplier(const std::string &parameter, double multiplier);
 
   bool refreshParserSource(bool updateChannelState = true);
+  bool setOfflineIfSourceDisconnected();
+  void setChannelStateOnline(bool online);
+  bool isSourceStateOffline(bool useOfflineOnInvalidState);
+  bool isOffline();
+  void setUseOfflineOnInvalidState(bool useOfflineOnInvalidState);
 
   bool isParameterConfigured(const std::string &parameter);
 
@@ -86,6 +91,7 @@ class SensorParsedBase {
   std::map<std::string, std::string> parameterToKey;
   std::map<std::string, double> parameterMultiplier;
   std::vector<std::variant<int, bool, std::string>> stateOnValues;
+  bool useOfflineOnInvalidState = false;
 
   // action trigger configuration
   std::string atName;

@@ -82,32 +82,12 @@ void Supla::Control::CmdRollerShutter::iterateAlways() {
   Supla::Control::RollerShutter::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
-    if (!parser->isSourceConnected()) {
+    if (setOfflineIfSourceDisconnected()) {
       lastReadTime = millis();
-      channel.setStateOffline();
       return;
     }
     refreshParserSource(false);
     lastReadTime = millis();
-    if (isOffline()) {
-      channel.setStateOffline();
-    } else {
-      channel.setStateOnline();
-    }
+    setChannelStateOnline(!isOffline());
   }
-}
-
-bool Supla::Control::CmdRollerShutter::isOffline() {
-  if (useOfflineOnInvalidState && parser) {
-    if (getStateValue(false) == -1) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void Supla::Control::CmdRollerShutter::setUseOfflineOnInvalidState(
-    bool useOfflineOnInvalidState) {
-  this->useOfflineOnInvalidState = useOfflineOnInvalidState;
-  SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }

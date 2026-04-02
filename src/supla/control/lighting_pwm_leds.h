@@ -54,6 +54,8 @@ class LightingPwmLeds : public LightingPwmBase {
 
  protected:
   void applyPwmFrequencyToOutputs();
+  void applyDefaultChannelFunctions();
+  int getConfiguredOutputsCount() const;
 
   struct OutputState {
     Supla::Io::IoPin pin;

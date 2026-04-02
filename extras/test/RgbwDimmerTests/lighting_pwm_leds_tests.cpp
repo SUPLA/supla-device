@@ -18,6 +18,9 @@
 
 #include <gtest/gtest.h>
 
+#include <array>
+#include <memory>
+
 #include <supla/control/lighting_pwm_leds.h>
 #include <supla/io.h>
 #include <simple_time.h>
@@ -38,6 +41,14 @@ class RgbwPwmBaseForTest : public Supla::Control::RGBWPwmBase {
                      Supla::Io::IoPin out4,
                      Supla::Io::IoPin out5)
       : LightingPwmLeds(nullptr, out1, out2, out3, out4, out5) {}
+};
+
+class LightingPwmLedsForTest : public Supla::Control::LightingPwmLeds {
+ public:
+  using Supla::Control::LightingPwmLeds::LightingPwmLeds;
+
+  bool isEnabledForTest() const { return enabled; }
+  int missingGpioCountForTest() const { return getMissingGpioCount(); }
 };
 
 class ResolvedPwmIo : public Supla::Io::Base {
@@ -86,6 +97,49 @@ TEST(RgbwPwmBaseTests, StoresPerOutputIoSeparately) {
   EXPECT_EQ(pwm.getOutputIo(1), nullptr);
   EXPECT_EQ(pwm.getOutputIo(3), &io2);
   EXPECT_EQ(pwm.getOutputIo(4), nullptr);
+}
+
+TEST(RgbwPwmBaseTests, DefaultFuncListMatchesConfiguredOutputCount) {
+  Supla::Channel::resetToDefaults();
+
+  const struct {
+    int outputs;
+    uint32_t expectedFuncList;
+    uint32_t expectedDefault;
+  } cases[] = {
+      {1, SUPLA_RGBW_BIT_FUNC_DIMMER, SUPLA_CHANNELFNC_DIMMER},
+      {2,
+       SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
+       SUPLA_CHANNELFNC_DIMMER_CCT},
+      {3,
+       SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+           SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING,
+       SUPLA_CHANNELFNC_RGBLIGHTING},
+      {4,
+       SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+           SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING,
+       SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING},
+      {5,
+       SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+           SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+       SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB},
+  };
+
+  for (const auto &testCase : cases) {
+    RgbwPwmBaseForTest pwm(1,
+                           testCase.outputs >= 2 ? 2 : -1,
+                           testCase.outputs >= 3 ? 3 : -1,
+                           testCase.outputs >= 4 ? 4 : -1,
+                           testCase.outputs >= 5 ? 5 : -1);
+
+    EXPECT_EQ(pwm.getChannel()->getFuncList(), testCase.expectedFuncList)
+        << "outputs=" << testCase.outputs;
+    EXPECT_EQ(pwm.getChannel()->getDefaultFunction(), testCase.expectedDefault)
+        << "outputs=" << testCase.outputs;
+  }
 }
 
 TEST(RgbwPwmBaseTests, IoPinConstructorStoresSeparateIoAndPins) {
@@ -317,6 +371,169 @@ TEST(RgbwPwmBaseTests, LoweringHwMaxClampsBrightnessLimits) {
   pwm.onFastTimer();
 
   EXPECT_EQ(io.lastValue, 511U);
+}
+
+TEST(RgbwPwmBaseTests, TenInstanceChainEnablesExpectedStartSlot) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  ResolvedPwmIo io(13, 8191);
+
+  std::array<std::unique_ptr<LightingPwmLedsForTest>, 10> lights;
+  lights[0] = std::make_unique<LightingPwmLedsForTest>(
+      nullptr,
+      Supla::Io::IoPin(1, &io),
+      Supla::Io::IoPin(2, &io),
+      Supla::Io::IoPin(3, &io),
+      Supla::Io::IoPin(4, &io),
+      Supla::Io::IoPin(5, &io));
+  lights[1] = std::make_unique<LightingPwmLedsForTest>(
+      lights[0].get(),
+      Supla::Io::IoPin(2, &io),
+      Supla::Io::IoPin(3, &io),
+      Supla::Io::IoPin(4, &io),
+      Supla::Io::IoPin(5, &io),
+      Supla::Io::IoPin(6, &io));
+  lights[2] = std::make_unique<LightingPwmLedsForTest>(
+      lights[1].get(),
+      Supla::Io::IoPin(3, &io),
+      Supla::Io::IoPin(4, &io),
+      Supla::Io::IoPin(5, &io),
+      Supla::Io::IoPin(6, &io),
+      Supla::Io::IoPin(7, &io));
+  lights[3] = std::make_unique<LightingPwmLedsForTest>(
+      lights[2].get(),
+      Supla::Io::IoPin(4, &io),
+      Supla::Io::IoPin(5, &io),
+      Supla::Io::IoPin(6, &io),
+      Supla::Io::IoPin(7, &io),
+      Supla::Io::IoPin(8, &io));
+  lights[4] = std::make_unique<LightingPwmLedsForTest>(
+      lights[3].get(),
+      Supla::Io::IoPin(5, &io),
+      Supla::Io::IoPin(6, &io),
+      Supla::Io::IoPin(7, &io),
+      Supla::Io::IoPin(8, &io),
+      Supla::Io::IoPin(9, &io));
+  lights[5] = std::make_unique<LightingPwmLedsForTest>(
+      lights[4].get(),
+      Supla::Io::IoPin(6, &io),
+      Supla::Io::IoPin(7, &io),
+      Supla::Io::IoPin(8, &io),
+      Supla::Io::IoPin(9, &io),
+      Supla::Io::IoPin(10, &io));
+  lights[6] = std::make_unique<LightingPwmLedsForTest>(
+      lights[5].get(),
+      Supla::Io::IoPin(7, &io),
+      Supla::Io::IoPin(8, &io),
+      Supla::Io::IoPin(9, &io),
+      Supla::Io::IoPin(10, &io));
+  lights[7] = std::make_unique<LightingPwmLedsForTest>(
+      lights[6].get(),
+      Supla::Io::IoPin(8, &io),
+      Supla::Io::IoPin(9, &io),
+      Supla::Io::IoPin(10, &io));
+  lights[8] = std::make_unique<LightingPwmLedsForTest>(
+      lights[7].get(),
+      Supla::Io::IoPin(9, &io),
+      Supla::Io::IoPin(10, &io));
+  lights[9] = std::make_unique<LightingPwmLedsForTest>(
+      lights[8].get(), Supla::Io::IoPin(10, &io));
+
+  const uint32_t expectedFuncLists[10] = {
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
+      SUPLA_RGBW_BIT_FUNC_DIMMER |
+          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+          SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
+      SUPLA_RGBW_BIT_FUNC_DIMMER,
+  };
+
+  const uint32_t expectedDefaultFunctions[10] = {
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING,
+      SUPLA_CHANNELFNC_RGBLIGHTING,
+      SUPLA_CHANNELFNC_DIMMER_CCT,
+      SUPLA_CHANNELFNC_DIMMER,
+  };
+
+  for (int i = 0; i < 10; ++i) {
+    EXPECT_EQ(lights[i]->getChannel()->getFuncList(), expectedFuncLists[i])
+        << "index " << i;
+    EXPECT_EQ(lights[i]->getChannel()->getDefaultFunction(),
+              expectedDefaultFunctions[i])
+        << "index " << i;
+  }
+
+  const uint32_t functions[10] = {
+      SUPLA_CHANNELFNC_DIMMER_CCT,
+      SUPLA_CHANNELFNC_DIMMER,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER,
+      SUPLA_CHANNELFNC_RGBLIGHTING,
+      SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB,
+      SUPLA_CHANNELFNC_DIMMER,
+  };
+
+  for (int i = 0; i < 10; ++i) {
+    lights[i]->getChannel()->setDefaultFunction(functions[i]);
+  }
+
+  time.advance(1000);
+  for (auto &light : lights) {
+    light->onInit();
+  }
+
+  EXPECT_TRUE(lights[0]->isEnabledForTest());
+  EXPECT_FALSE(lights[1]->isEnabledForTest());
+  EXPECT_TRUE(lights[2]->isEnabledForTest());
+  EXPECT_FALSE(lights[3]->isEnabledForTest());
+  EXPECT_FALSE(lights[4]->isEnabledForTest());
+  EXPECT_FALSE(lights[5]->isEnabledForTest());
+  EXPECT_FALSE(lights[6]->isEnabledForTest());
+  EXPECT_TRUE(lights[7]->isEnabledForTest());
+  EXPECT_FALSE(lights[8]->isEnabledForTest());
+  EXPECT_FALSE(lights[9]->isEnabledForTest());
 }
 
 TEST(RgbwPwmBaseTests, LoadConfigForwardsPwmFrequencyToIo) {

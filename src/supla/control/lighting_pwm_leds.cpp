@@ -34,6 +34,7 @@ LightingPwmLeds::LightingPwmLeds(
   for (auto &output : outputs) {
     output.pin.setMode(OUTPUT);
   }
+  applyDefaultChannelFunctions();
 }
 
 LightingPwmLeds::LightingPwmLeds(LightingPwmLeds *parent,
@@ -51,6 +52,44 @@ LightingPwmLeds::LightingPwmLeds(LightingPwmLeds *parent,
   for (auto &output : outputs) {
     output.pin.setMode(OUTPUT);
   }
+  applyDefaultChannelFunctions();
+}
+
+int LightingPwmLeds::getConfiguredOutputsCount() const {
+  int count = 0;
+  for (const auto &output : outputs) {
+    if (!output.pin.isSet()) {
+      break;
+    }
+    count++;
+  }
+  return count;
+}
+
+void LightingPwmLeds::applyDefaultChannelFunctions() {
+  const int outputsCount = getConfiguredOutputsCount();
+  uint32_t funcList = SUPLA_RGBW_BIT_FUNC_DIMMER;
+  uint32_t defaultFunction = SUPLA_CHANNELFNC_DIMMER;
+
+  if (outputsCount >= 2) {
+    funcList |= SUPLA_RGBW_BIT_FUNC_DIMMER_CCT;
+    defaultFunction = SUPLA_CHANNELFNC_DIMMER_CCT;
+  }
+  if (outputsCount >= 3) {
+    funcList |= SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING;
+    defaultFunction = SUPLA_CHANNELFNC_RGBLIGHTING;
+  }
+  if (outputsCount >= 4) {
+    funcList |= SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING;
+    defaultFunction = SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING;
+  }
+  if (outputsCount >= 5) {
+    funcList |= SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB;
+    defaultFunction = SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB;
+  }
+
+  getChannel()->setFuncList(funcList);
+  getChannel()->setDefaultFunction(defaultFunction);
 }
 
 void LightingPwmLeds::setOutputIo(int outputIndex, Supla::Io::Base *io) {

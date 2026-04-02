@@ -14,13 +14,13 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#include <gtest/gtest.h>
-#include <gmock/gmock.h>
-
-#include <supla/control/internal_pin_output.h>
 #include <arduino_mock.h>
-#include <supla/events.h>
+#include <gmock/gmock.h>
+#include <gtest/gtest.h>
 #include <supla/actions.h>
+#include <supla/control/internal_pin_output.h>
+#include <supla/events.h>
+#include <supla_io_mock.h>
 
 using ::testing::Return;
 
@@ -28,6 +28,34 @@ class ActionHandlerMock : public Supla::ActionHandler {
  public:
   MOCK_METHOD(void, handleAction, (int, int), (override));
 };
+
+TEST(InternalPinOutputTests, IoPinConstructorUsesSeparateIoAndPolarity) {
+  const int pin = 7;
+  SuplaIoMock ioMock;
+  TimeInterfaceMock timeMock;
+
+  EXPECT_CALL(timeMock, millis).WillRepeatedly(Return(0));
+
+  ::testing::InSequence seq;
+
+  EXPECT_CALL(ioMock, customDigitalWrite(-1, pin, HIGH)).Times(1);
+  EXPECT_CALL(ioMock, customPinMode(-1, pin, OUTPUT)).Times(1);
+  EXPECT_CALL(ioMock, customDigitalWrite(-1, pin, HIGH)).Times(1);
+  EXPECT_CALL(ioMock, customDigitalWrite(-1, pin, LOW)).Times(1);
+  EXPECT_CALL(ioMock, customDigitalWrite(-1, pin, HIGH)).Times(1);
+
+  Supla::Io::IoPin outPin(pin, &ioMock);
+  outPin.setActiveHigh(false);
+
+  Supla::Control::InternalPinOutput ipo(outPin);
+
+  EXPECT_EQ(ipo.pinOnValue(), LOW);
+  EXPECT_EQ(ipo.pinOffValue(), HIGH);
+
+  ipo.onInit();
+  ipo.turnOn();
+  ipo.turnOff();
+}
 
 TEST(InternalPinOutputTests, BasicMethodsTests) {
   const int pin = 5;
@@ -61,7 +89,6 @@ TEST(InternalPinOutputTests, BasicMethodsTests) {
 
   Supla::Control::InternalPinOutput ipo(pin);
   Supla::Control::InternalPinOutput ipo2(pin2, false);
-
 
   EXPECT_EQ(ipo.pinOnValue(), HIGH);
   EXPECT_EQ(ipo.pinOffValue(), LOW);
@@ -109,14 +136,12 @@ TEST(InternalPinOutputTests, DefaultInitialState) {
 
   ipo.onInit();
   ipo2.onInit();
-
 }
 
 TEST(InternalPinOutputTests, TurnOnWithIterations) {
   const int pin = 5;
   DigitalInterfaceMock ioMock;
   TimeInterfaceMock timeMock;
-
 
   ::testing::InSequence seq;
 
@@ -128,7 +153,6 @@ TEST(InternalPinOutputTests, TurnOnWithIterations) {
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
-
 
   Supla::Control::InternalPinOutput ipo(pin);
 
@@ -146,7 +170,6 @@ TEST(InternalPinOutputTests, TurnOnWithDuration) {
   const int pin = 5;
   DigitalInterfaceMock ioMock;
   TimeInterfaceMock timeMock;
-
 
   ::testing::InSequence seq;
 
@@ -168,7 +191,6 @@ TEST(InternalPinOutputTests, TurnOnWithDuration) {
   EXPECT_CALL(timeMock, millis).WillOnce(Return(201));
   EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);
 
-
   Supla::Control::InternalPinOutput ipo(pin);
 
   ipo.onInit();
@@ -177,10 +199,10 @@ TEST(InternalPinOutputTests, TurnOnWithDuration) {
   ipo.iterateAlways();
 
   ipo.turnOn(200);
-  ipo.iterateAlways(); // time 0
-  ipo.iterateAlways(); // time 100
-  ipo.iterateAlways(); // time 200
-  ipo.iterateAlways(); // time 201
+  ipo.iterateAlways();  // time 0
+  ipo.iterateAlways();  // time 100
+  ipo.iterateAlways();  // time 200
+  ipo.iterateAlways();  // time 201
 
   ipo.iterateAlways();
   ipo.iterateAlways();
@@ -191,7 +213,6 @@ TEST(InternalPinOutputTests, TurnOffWithDuration) {
   const int pin = 5;
   DigitalInterfaceMock ioMock;
   TimeInterfaceMock timeMock;
-
 
   ::testing::InSequence seq;
 
@@ -221,22 +242,20 @@ TEST(InternalPinOutputTests, TurnOffWithDuration) {
   ipo.iterateAlways();
 
   ipo.turnOff(200);
-  ipo.iterateAlways(); // time 0
-  ipo.iterateAlways(); // time 100
-  ipo.iterateAlways(); // time 200
-  ipo.iterateAlways(); // time 201
+  ipo.iterateAlways();  // time 0
+  ipo.iterateAlways();  // time 100
+  ipo.iterateAlways();  // time 200
+  ipo.iterateAlways();  // time 201
 
   ipo.iterateAlways();
   ipo.iterateAlways();
   ipo.iterateAlways();
 }
 
-
 TEST(InternalPinOutputTests, TurnOnWithStoredDuration) {
   const int pin = 5;
   DigitalInterfaceMock ioMock;
   TimeInterfaceMock timeMock;
-
 
   ::testing::InSequence seq;
 
@@ -276,10 +295,10 @@ TEST(InternalPinOutputTests, TurnOnWithStoredDuration) {
   ipo.setDurationMs(200);
 
   ipo.turnOn();
-  ipo.iterateAlways(); // time 0
-  ipo.iterateAlways(); // time 100
-  ipo.iterateAlways(); // time 200
-  ipo.iterateAlways(); // time 201
+  ipo.iterateAlways();  // time 0
+  ipo.iterateAlways();  // time 100
+  ipo.iterateAlways();  // time 200
+  ipo.iterateAlways();  // time 201
 
   ipo.iterateAlways();
   ipo.iterateAlways();
@@ -300,15 +319,15 @@ TEST(InternalPinOutputTests, HandleActionTests) {
 
   ::testing::InSequence seq;
 
-  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1); // onInit
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);  // onInit
   EXPECT_CALL(ioMock, pinMode(pin, OUTPUT)).Times(1);
-  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1); // onInit
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);  // onInit
 
-  EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1); // Turn on
+  EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);  // Turn on
 
-  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1); // Turn off
+  EXPECT_CALL(ioMock, digitalWrite(pin, LOW)).Times(1);  // Turn off
 
-  EXPECT_CALL(ioMock, digitalRead(pin)).WillOnce(Return(LOW)); // Toggle
+  EXPECT_CALL(ioMock, digitalRead(pin)).WillOnce(Return(LOW));  // Toggle
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
 
   Supla::Control::InternalPinOutput ipo(pin);
@@ -334,7 +353,6 @@ TEST(InternalPinOutputTests, TurnOnWithAction) {
   TimeInterfaceMock timeMock;
   ActionHandlerMock ahMock;
 
-
   ::testing::InSequence seq;
 
   EXPECT_CALL(timeMock, millis).WillOnce(Return(0));
@@ -352,7 +370,6 @@ TEST(InternalPinOutputTests, TurnOnWithAction) {
   EXPECT_CALL(ahMock, handleAction(Supla::ON_CHANGE, 33));
   EXPECT_CALL(ioMock, digitalWrite(pin, HIGH)).Times(1);
 
-
   Supla::Control::InternalPinOutput ipo(pin);
   ipo.addAction(Supla::TURN_ON, ahMock, Supla::ON_TURN_ON);
   ipo.addAction(Supla::TURN_OFF, ahMock, Supla::ON_TURN_OFF);
@@ -367,4 +384,3 @@ TEST(InternalPinOutputTests, TurnOnWithAction) {
   ipo.iterateAlways();
   ipo.iterateAlways();
 }
-

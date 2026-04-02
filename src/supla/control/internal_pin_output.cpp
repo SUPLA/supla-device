@@ -16,21 +16,32 @@
 
 #include "internal_pin_output.h"
 
-#include <supla/time.h>
-#include <supla/io.h>
 #include <supla/actions.h>
+#include <supla/io.h>
+#include <supla/time.h>
+
 #include "../events.h"
+
+Supla::Control::InternalPinOutput::InternalPinOutput(Supla::Io::IoPin outPin)
+    : outPin(outPin) {
+  this->outPin.setMode(OUTPUT);
+}
+
+Supla::Control::InternalPinOutput::InternalPinOutput(Supla::Io::IoPin outPin,
+                                                     bool highIsOn)
+    : outPin(outPin) {
+  this->outPin.setMode(OUTPUT);
+  this->outPin.setActiveHigh(highIsOn);
+}
 
 Supla::Control::InternalPinOutput::InternalPinOutput(Supla::Io::Base *io,
                                                      int pin,
                                                      bool highIsOn)
-    : InternalPinOutput(pin, highIsOn) {
-  this->io = io;
+    : InternalPinOutput(Supla::Io::IoPin(pin, io), highIsOn) {
 }
 
 Supla::Control::InternalPinOutput::InternalPinOutput(int pin, bool highIsOn)
-    : pin(pin),
-      highIsOn(highIsOn) {
+    : InternalPinOutput(Supla::Io::IoPin(pin), highIsOn) {
 }
 
 Supla::Control::InternalPinOutput &
@@ -45,11 +56,11 @@ Supla::Control::InternalPinOutput::setDefaultStateOff() {
 }
 
 uint8_t Supla::Control::InternalPinOutput::pinOnValue() {
-  return highIsOn ? HIGH : LOW;
+  return outPin.isActiveHigh() ? HIGH : LOW;
 }
 
 uint8_t Supla::Control::InternalPinOutput::pinOffValue() {
-  return highIsOn ? LOW : HIGH;
+  return outPin.isActiveHigh() ? LOW : HIGH;
 }
 
 void Supla::Control::InternalPinOutput::turnOn(_supla_int_t duration) {
@@ -62,7 +73,7 @@ void Supla::Control::InternalPinOutput::turnOn(_supla_int_t duration) {
   runAction(Supla::ON_TURN_ON);
   runAction(Supla::ON_CHANGE);
 
-  Supla::Io::digitalWrite(pin, pinOnValue(), io);
+  outPin.writeActive();
 }
 
 void Supla::Control::InternalPinOutput::turnOff(_supla_int_t duration) {
@@ -72,11 +83,11 @@ void Supla::Control::InternalPinOutput::turnOff(_supla_int_t duration) {
   runAction(Supla::ON_TURN_OFF);
   runAction(Supla::ON_CHANGE);
 
-  Supla::Io::digitalWrite(pin, pinOffValue(), io);
+  outPin.writeInactive();
 }
 
 bool Supla::Control::InternalPinOutput::isOn() {
-  return Supla::Io::digitalRead(pin, io) == pinOnValue();
+  return outPin.readActive();
 }
 
 void Supla::Control::InternalPinOutput::toggle(_supla_int_t duration) {
@@ -114,7 +125,7 @@ void Supla::Control::InternalPinOutput::onInit() {
 
   // pin mode is set after setting pin value in order to avoid problems with LOW
   // trigger relays
-  Supla::Io::pinMode(pin, OUTPUT, io);
+  outPin.pinMode();
   if (stateOnInit == STATE_ON_INIT_ON) {
     turnOn();
   } else {
@@ -151,4 +162,3 @@ void Supla::Control::InternalPinOutput::setOutputValue(int value) {
 bool Supla::Control::InternalPinOutput::isOnOffOnly() const {
   return true;
 }
-

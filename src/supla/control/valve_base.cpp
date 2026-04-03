@@ -18,15 +18,15 @@
 
 #include "valve_base.h"
 
+#include <string.h>
+#include <supla/actions.h>
+#include <supla/channel_function_string.h>
+#include <supla/log_wrapper.h>
 #include <supla/network/network.h>
+#include <supla/protocol/protocol_layer.h>
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
-#include <supla/log_wrapper.h>
 #include <supla/time.h>
-#include <supla/actions.h>
-#include <supla/protocol/protocol_layer.h>
-
-#include <string.h>
 
 using Supla::Control::ValveBase;
 
@@ -134,7 +134,8 @@ int32_t ValveBase::handleNewValueFromServer(
     TSD_SuplaChannelNewValue *newValue) {
   // TODO(klew): update below logic for percentage variant
   SUPLA_LOG_DEBUG("Valve[%d]: handleNewValueFromServer, value[0] %d",
-                  getChannelNumber(), newValue->value[0]);
+                  getChannelNumber(),
+                  newValue->value[0]);
   switch (newValue->value[0]) {
     case 0: {  // close
       closeValve();
@@ -183,12 +184,13 @@ void ValveBase::purgeConfig() {
   }
 }
 
-
 void ValveBase::printConfig() const {
-  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s (%d)", getChannelNumber(),
-            config.closeValveOnFloodType == 0 ? "N/A" :
-            config.closeValveOnFloodType == 1 ? "always" : "on change",
-            config.closeValveOnFloodType);
+  SUPLA_LOG_DEBUG("Valve[%d]: close on flood type: %s (%d)",
+                  getChannelNumber(),
+                  config.closeValveOnFloodType == 0   ? "N/A"
+                  : config.closeValveOnFloodType == 1 ? "always"
+                                                      : "on change",
+                  config.closeValveOnFloodType);
   for (auto const &sensor : config.sensorData) {
     if (sensor == 255) {
       continue;
@@ -199,15 +201,14 @@ void ValveBase::printConfig() const {
 
 void ValveBase::onLoadState() {
   uint8_t state = 0;
-  Supla::Storage::ReadState(
-      reinterpret_cast<unsigned char *>(&state),
-      sizeof(state));
+  Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(&state),
+                            sizeof(state));
   channel.setValveOpenState(state);
   lastOpenLevelState = state;
 
   uint8_t flags = 0;
   Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(&flags),
-      sizeof(flags));
+                            sizeof(flags));
   if (flags & SUPLA_VALVE_FLAG_FLOODING) {
     channel.setValveFloodingFlag(true);
   }
@@ -227,7 +228,7 @@ void ValveBase::onLoadState() {
 void ValveBase::onSaveState() {
   uint8_t state = channel.getValveOpenState();
   Supla::Storage::WriteState(reinterpret_cast<unsigned char *>(&state),
-      sizeof(state));
+                             sizeof(state));
   uint8_t flags = 0;
   if (channel.isValveFloodingFlagActive()) {
     flags |= SUPLA_VALVE_FLAG_FLOODING;
@@ -236,14 +237,16 @@ void ValveBase::onSaveState() {
     flags |= SUPLA_VALVE_FLAG_MANUALLY_CLOSED;
   }
   Supla::Storage::WriteState(reinterpret_cast<unsigned char *>(&flags),
-      sizeof(flags));
+                             sizeof(flags));
 }
 
 Supla::ApplyConfigResult ValveBase::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "Valve[%d]:applyChannelConfig, func %d, configtype %d, configsize %d",
+      "Valve[%d]:applyChannelConfig, func %s (%d), configtype %d, configsize "
+      "%d",
       getChannelNumber(),
+      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -261,8 +264,8 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
           result->ConfigSize == sizeof(TChannelConfig_Valve)) {
         auto cfg = reinterpret_cast<TChannelConfig_Valve *>(result->Config);
         for (unsigned int i = 0;
-            i < sizeof(cfg->SensorInfo) / sizeof(cfg->SensorInfo[0]);
-            i++) {
+             i < sizeof(cfg->SensorInfo) / sizeof(cfg->SensorInfo[0]);
+             i++) {
           if (cfg->SensorInfo[i].IsSet == 0) {
             config.sensorData[i] = 255;
           } else {
@@ -293,8 +296,9 @@ Supla::ApplyConfigResult ValveBase::applyChannelConfig(
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Valve[%d]: unsupported func %d",
+      SUPLA_LOG_WARNING("Valve[%d]: unsupported func %s (%d)",
                         getChannelNumber(),
+                        Supla::channelFunctionToString(result->Func),
                         result->Func);
       break;
     }
@@ -323,8 +327,7 @@ void ValveBase::fillChannelConfig(void *channelConfig,
   switch (channel.getDefaultFunction()) {
     case SUPLA_CHANNELFNC_VALVE_OPENCLOSE:
     case SUPLA_CHANNELFNC_VALVE_PERCENTAGE: {
-      auto cfg = reinterpret_cast<TChannelConfig_Valve *>(
-          channelConfig);
+      auto cfg = reinterpret_cast<TChannelConfig_Valve *>(channelConfig);
       *size = sizeof(TChannelConfig_Valve);
       int i = 0;
       for (const auto &sensor : config.sensorData) {
@@ -341,8 +344,9 @@ void ValveBase::fillChannelConfig(void *channelConfig,
     }
     default:
       SUPLA_LOG_WARNING(
-          "Valve[%d]: fill channel config for unknown function %d",
+          "Valve[%d]: fill channel config for unknown function %s (%d)",
           channel.getChannelNumber(),
+          Supla::channelFunctionToString(channel.getDefaultFunction()),
           channel.getDefaultFunction());
       return;
   }
@@ -357,8 +361,10 @@ void ValveBase::openValve() {
 }
 
 void ValveBase::setValve(uint8_t openLevel) {
-  SUPLA_LOG_INFO("Valve[%d]: setValve %d (%s)", getChannelNumber(), openLevel,
-      openLevel > 0 ? "open" : "close");
+  SUPLA_LOG_INFO("Valve[%d]: setValve %d (%s)",
+                 getChannelNumber(),
+                 openLevel,
+                 openLevel > 0 ? "open" : "close");
 
   if (openLevel > 0) {
     // when open, check sensors
@@ -397,18 +403,17 @@ void ValveBase::saveConfig(bool local) {
     saveConfigChangeFlag();
     cfg->saveWithDelay(5000);
   }
-  for (auto proto = Supla::Protocol::ProtocolLayer::first();
-      proto != nullptr; proto = proto->next()) {
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
     proto->notifyConfigChange(getChannelNumber());
   }
 }
 
 bool ValveBase::addSensor(uint8_t channelNumber) {
   if (channelNumber == 255) {
-    SUPLA_LOG_WARNING(
-        "Valve[%d] channel number %d is invalid",
-        getChannelNumber(),
-        channelNumber);
+    SUPLA_LOG_WARNING("Valve[%d] channel number %d is invalid",
+                      getChannelNumber(),
+                      channelNumber);
     return false;
   }
 
@@ -419,10 +424,9 @@ bool ValveBase::addSensor(uint8_t channelNumber) {
     return false;
   }
   if (ch->getChannelType() != SUPLA_CHANNELTYPE_BINARYSENSOR) {
-    SUPLA_LOG_WARNING(
-        "Valve[%d] channel %d is not a binary sensor",
-        getChannelNumber(),
-        channelNumber);
+    SUPLA_LOG_WARNING("Valve[%d] channel %d is not a binary sensor",
+                      getChannelNumber(),
+                      channelNumber);
     return false;
   }
 
@@ -439,19 +443,17 @@ bool ValveBase::addSensor(uint8_t channelNumber) {
       return true;
     }
   }
-  SUPLA_LOG_WARNING(
-      "Valve[%d] sensor list is full. Channel %d not added",
-      getChannelNumber(),
-      channelNumber);
+  SUPLA_LOG_WARNING("Valve[%d] sensor list is full. Channel %d not added",
+                    getChannelNumber(),
+                    channelNumber);
   return false;
 }
 
 bool ValveBase::removeSensor(uint8_t channelNumber) {
   if (channelNumber == 255) {
-    SUPLA_LOG_WARNING(
-        "Valve[%d] channel number %d is invalid",
-        getChannelNumber(),
-        channelNumber);
+    SUPLA_LOG_WARNING("Valve[%d] channel number %d is invalid",
+                      getChannelNumber(),
+                      channelNumber);
     return false;
   }
 
@@ -469,9 +471,8 @@ bool ValveBase::removeSensor(uint8_t channelNumber) {
 }
 
 uint8_t ValveBase::getValueOpenStateFromDevice() {
-  SUPLA_LOG_ERROR(
-      "Valve[%d]: getValueOpenStateFromDevice not implemented",
-      getChannelNumber());
+  SUPLA_LOG_ERROR("Valve[%d]: getValueOpenStateFromDevice not implemented",
+                  getChannelNumber());
   return 0;
 }
 

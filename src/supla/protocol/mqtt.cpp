@@ -18,6 +18,8 @@
 
 #include "mqtt.h"
 #include <stdio.h>
+
+#include <supla/channel_function_string.h>
 #include <ctype.h>
 #include <string.h>
 #include <supla/storage/config.h>
@@ -1243,7 +1245,8 @@ void Mqtt::publishHADiscoveryRelayImpulse(Supla::Element *element) {
       break;
     }
     default: {
-      SUPLA_LOG_WARNING("Mqtt: channel function %d not supported",
+      SUPLA_LOG_WARNING("Mqtt: channel function %s (%d) not supported",
+          Supla::channelFunctionToString(chFunction),
           chFunction);
       return;
     }
@@ -2854,4 +2857,3 @@ void Mqtt::notifyConfigChange(int channelNumber) {
     configChangedBit[channelNumber / 8] |= (1 << (channelNumber % 8));
   }
 }
-

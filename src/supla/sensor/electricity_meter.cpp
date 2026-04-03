@@ -17,6 +17,7 @@
 */
 
 #include <string.h>
+#include <supla/channel_function_string.h>
 #include <supla/time.h>
 #include <supla/log_wrapper.h>
 #include <supla/actions.h>
@@ -567,7 +568,10 @@ Supla::ApplyConfigResult Supla::Sensor::ElectricityMeter::applyChannelConfig(
 
   if (config->Func != SUPLA_CHANNELFNC_ELECTRICITY_METER) {
     SUPLA_LOG_DEBUG(
-        "EM[%d]: wrong function %d", getChannelNumber(), config->Func);
+        "EM[%d]: wrong function %s (%d)",
+        getChannelNumber(),
+        Supla::channelFunctionToString(config->Func),
+        config->Func);
     return Supla::ApplyConfigResult::Success;
   }
 

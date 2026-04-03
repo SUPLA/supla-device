@@ -255,7 +255,8 @@ uint8_t Element::handleChannelConfig(TSD_ChannelConfig *result, bool local) {
   (void)(result);
   (void)(local);
   SUPLA_LOG_ERROR(
-      "Element: received channel config reply, but handling is missing");
+      "Element[%d]: received channel config reply, but handling is missing",
+      getChannelNumber());
   return SUPLA_RESULTCODE_UNSUPORTED;
 }
 
@@ -266,7 +267,8 @@ uint8_t Element::handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
   (void)(altSchedule);
   (void)(local);
   SUPLA_LOG_ERROR(
-      "Element: received weekly schedly, but handling is missing");
+      "Element[%d]: received weekly schedule, but handling is missing",
+      getChannelNumber());
   return SUPLA_RESULTCODE_UNSUPORTED;
 }
 
@@ -274,12 +276,14 @@ void Element::handleSetChannelConfigResult(
     TSDS_SetChannelConfigResult *result) {
   (void)(result);
   SUPLA_LOG_ERROR(
-      "Element: received set channel config reply, but handling is missing");
+      "Element[%d]: received set channel config reply, but handling is missing",
+      getChannelNumber());
 }
 
 void Element::handleChannelConfigFinished() {
   SUPLA_LOG_ERROR(
-      "Element: received channel config finished, but handling is missing");
+      "Element[%d]: received channel config finished, but handling is missing",
+      getChannelNumber());
 }
 
 

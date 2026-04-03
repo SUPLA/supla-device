@@ -17,14 +17,16 @@
    */
 
 #include "element_with_channel_actions.h"
-#include <supla/events.h>
-#include <supla/log_wrapper.h>
-#include <supla/storage/config.h>
-#include <supla/storage/config_tags.h>
-#include <supla/protocol/protocol_layer.h>
+
+#include <supla/channel_function_string.h>
 #include <supla/channels/channel.h>
 #include <supla/condition.h>
 #include <supla/element.h>
+#include <supla/events.h>
+#include <supla/log_wrapper.h>
+#include <supla/protocol/protocol_layer.h>
+#include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 
 namespace Supla {
@@ -34,8 +36,29 @@ class SuplaSrpc;
 }  // namespace Protocol
 }  // namespace Supla
 
-using Supla::ConfigTypesBitmap;
 using Supla::ApplyConfigResult;
+using Supla::ConfigTypesBitmap;
+
+namespace {
+
+const char *configTypeToString(int configType) {
+  switch (configType) {
+    case SUPLA_CONFIG_TYPE_DEFAULT:
+      return "DEFAULT";
+    case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE:
+      return "WEEKLY_SCHEDULE";
+    case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE:
+      return "ALT_WEEKLY_SCHEDULE";
+    case SUPLA_CONFIG_TYPE_OCR:
+      return "OCR";
+    case SUPLA_CONFIG_TYPE_EXTENDED:
+      return "EXTENDED";
+    default:
+      return "UNKNOWN";
+  }
+}
+
+}  // namespace
 
 void ConfigTypesBitmap::clear(int configType) {
   set(configType, false);
@@ -67,8 +90,8 @@ bool ConfigTypesBitmap::isConfigFinishedReceived() const {
 }
 
 void ConfigTypesBitmap::set(int configType, bool value) {
-//  SUPLA_LOG_DEBUG(
-//      "ConfigTypesBitmap: Set config type %d to %d", configType, value);
+  //  SUPLA_LOG_DEBUG(
+  //      "ConfigTypesBitmap: Set config type %d to %d", configType, value);
   uint8_t v = value ? 1 : 0;
   switch (configType) {
     case SUPLA_CONFIG_TYPE_DEFAULT: {
@@ -132,9 +155,9 @@ bool ConfigTypesBitmap::operator!=(const ConfigTypesBitmap &other) const {
 }
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
-    Supla::ActionHandler &client,
-    uint16_t event,
-    bool alwaysEnabled) {
+                                                 Supla::ActionHandler &client,
+                                                 uint16_t event,
+                                                 bool alwaysEnabled) {
   auto channel = getChannel();
   if (channel) {
     channel->addAction(action, client, event, alwaysEnabled);
@@ -142,9 +165,9 @@ void Supla::ElementWithChannelActions::addAction(uint16_t action,
 }
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
-    Supla::ActionHandler *client,
-    uint16_t event,
-    bool alwaysEnabled) {
+                                                 Supla::ActionHandler *client,
+                                                 uint16_t event,
+                                                 bool alwaysEnabled) {
   ElementWithChannelActions::addAction(action, *client, event, alwaysEnabled);
 }
 
@@ -165,9 +188,9 @@ bool Supla::ElementWithChannelActions::isEventAlreadyUsed(
 }
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
-    Supla::ActionHandler &client,
-    Supla::Condition *condition,
-    bool alwaysEnabled) {
+                                                 Supla::ActionHandler &client,
+                                                 Supla::Condition *condition,
+                                                 bool alwaysEnabled) {
   condition->setClient(client);
   condition->setSource(this);
   auto channel = getChannel();
@@ -177,9 +200,9 @@ void Supla::ElementWithChannelActions::addAction(uint16_t action,
 }
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
-    Supla::ActionHandler *client,
-    Supla::Condition *condition,
-    bool alwaysEnabled) {
+                                                 Supla::ActionHandler *client,
+                                                 Supla::Condition *condition,
+                                                 bool alwaysEnabled) {
   ElementWithChannelActions::addAction(
       action, *client, condition, alwaysEnabled);
 }
@@ -191,19 +214,21 @@ bool Supla::ElementWithChannelActions::loadFunctionFromConfig() {
     int32_t channelFunc = cfg->getChannelFunction(getChannelNumber());
     if (channelFunc >= 0) {
       if (channel->isFunctionValid(channelFunc)) {
-        SUPLA_LOG_INFO("Channel[%d] loaded function: %d",
+        SUPLA_LOG_INFO("Channel[%d] loaded function: %s (%d)",
                        channel->getChannelNumber(),
+                       Supla::channelFunctionToString(channelFunc),
                        channelFunc);
         setFunction(channelFunc);
       } else {
-        SUPLA_LOG_INFO("Channel[%d] invalid function: %d",
+        SUPLA_LOG_INFO("Channel[%d] invalid function: %s (%d)",
                        channel->getChannelNumber(),
+                       Supla::channelFunctionToString(channelFunc),
                        channelFunc);
       }
       return true;
     } else {
       SUPLA_LOG_DEBUG("Channel[%d] function missing. Using SW defaults",
-                     channel->getChannelNumber());
+                      channel->getChannelNumber());
     }
   }
   return false;
@@ -352,8 +377,10 @@ bool Supla::ElementWithChannelActions::iterateConnected() {
 uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
     TSD_ChannelConfig *result, bool local) {
   SUPLA_LOG_DEBUG(
-      "Channel[%d] handleChannelConfig, func %d, configtype %d, configsize %d",
+      "Channel[%d] handleChannelConfig, func %s (%d), configtype %d, "
+      "configsize %d",
       getChannelNumber(),
+      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -361,12 +388,13 @@ uint8_t Supla::ElementWithChannelActions::handleChannelConfig(
   // Apply channel function setting
   auto newFunction = static_cast<uint32_t>(result->Func);
   if (newFunction != getChannel()->getDefaultFunction()) {
-    SUPLA_LOG_INFO("Channel[%d] function changed to %d",
+    SUPLA_LOG_INFO("Channel[%d] function changed to %s (%d)",
                    getChannelNumber(),
+                   Supla::channelFunctionToString(newFunction),
                    newFunction);
     setAndSaveFunction(newFunction);
-    for (auto proto = Supla::Protocol::ProtocolLayer::first();
-        proto != nullptr; proto = proto->next()) {
+    for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+         proto = proto->next()) {
       proto->notifyConfigChange(getChannelNumber());
     }
   }
@@ -440,8 +468,8 @@ ApplyConfigResult Supla::ElementWithChannelActions::applyChannelConfig(
 }
 
 void Supla::ElementWithChannelActions::fillChannelConfig(void *,
-                                                        int *size,
-                                                        uint8_t) {
+                                                         int *size,
+                                                         uint8_t) {
   if (size) {
     *size = 0;
   }
@@ -455,10 +483,11 @@ void Supla::ElementWithChannelActions::handleSetChannelConfigResult(
 
   bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
 
-  SUPLA_LOG_INFO("Channel[%d] Set channel config %s (%d) for config type %d",
+  SUPLA_LOG_INFO("Channel[%d] setChannelConfig %s (%d) for type %s (%d)",
                  getChannelNumber(),
                  success ? "succeeded" : "failed",
                  result->Result,
+                 configTypeToString(result->ConfigType),
                  result->ConfigType);
 
   receivedConfigTypes.set(result->ConfigType);
@@ -520,8 +549,9 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
       return true;
     }
     if (nextConfigType < 0 || nextConfigType > 255) {
-      SUPLA_LOG_ERROR("Channel[%d] unexepected config type %d",
+      SUPLA_LOG_ERROR("Channel[%d] unexpected config type %s (%d)",
                       getChannelNumber(),
+                      configTypeToString(nextConfigType),
                       nextConfigType);
       return true;
     }
@@ -531,8 +561,8 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
       int channelConfigSize = 0;
       setChannelConfigAttempts++;
       fillChannelConfig(reinterpret_cast<void *>(channelConfig),
-          &channelConfigSize,
-          nextConfigType);
+                        &channelConfigSize,
+                        nextConfigType);
       if (channelConfigSize > 0) {
         int defaultFunction = 0;
         if (getChannel()) {
@@ -548,9 +578,11 @@ bool Supla::ElementWithChannelActions::iterateConfigExchange() {
                                       channelConfigSize,
                                       nextConfigType)) {
             SUPLA_LOG_INFO(
-                "Channel[%d] SetChannelConfig send, func %d, type %d",
+                "Channel[%d] SetChannelConfig send, func %s (%d), type %s (%d)",
                 getChannelNumber(),
+                Supla::channelFunctionToString(defaultFunction),
                 defaultFunction,
+                configTypeToString(nextConfigType),
                 nextConfigType);
             if (channelConfigState ==
                 Supla::ChannelConfigState::LocalChangePending) {

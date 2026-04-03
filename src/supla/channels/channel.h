@@ -354,6 +354,10 @@ class Channel : public LocalAction {
   bool isRollerShutterRelayType() const;
   void setRelayOvercurrentCutOff(bool value);
   bool isRelayOvercurrentCutOff() const;
+  void setRelayMode(uint8_t mode);
+  uint8_t getRelayMode() const;
+  void setRelayWeeklyScheduleEnabled(bool enabled);
+  bool isRelayWeeklyScheduleEnabled() const;
 
   void onRegistered();
   void setSendGetConfig();

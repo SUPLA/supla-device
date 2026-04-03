@@ -14,10 +14,9 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <arduino_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-
-#include <arduino_mock.h>
 #include <supla/control/blinking_led.h>
 #include <supla_io_mock.h>
 
@@ -27,6 +26,9 @@ TEST(BlinkingLedTests, IoPinConstructorUsesSeparateIoAndOutputPolarity) {
   SuplaIoMock io;
   TimeInterfaceMock timeMock;
   TimeInterface::instance = &timeMock;
+  EXPECT_CALL(timeMock, millis())
+      .Times(::testing::AnyNumber())
+      .WillRepeatedly(Return(0));
 
   ::testing::InSequence seq;
   EXPECT_CALL(io, customDigitalWrite(-1, 7, LOW)).Times(1);
@@ -40,6 +42,9 @@ TEST(BlinkingLedTests, IoPinConstructorSupportsInputPolarityForLegacyInvert) {
   SuplaIoMock io;
   TimeInterfaceMock timeMock;
   TimeInterface::instance = &timeMock;
+  EXPECT_CALL(timeMock, millis())
+      .Times(::testing::AnyNumber())
+      .WillRepeatedly(Return(0));
 
   ::testing::InSequence seq;
   EXPECT_CALL(io, customDigitalWrite(-1, 7, HIGH)).Times(1);

@@ -34,11 +34,10 @@
 #define STATE_ON_INIT_OFF          0
 #define STATE_ON_INIT_ON           1
 
-#define RELAY_FLAGS_ON (1 << 0)
-#define RELAY_FLAGS_STAIRCASE (1 << 1)
+#define RELAY_FLAGS_ON               (1 << 0)
+#define RELAY_FLAGS_STAIRCASE        (1 << 1)
 #define RELAY_FLAGS_IMPULSE_FUNCTION (1 << 2)  // i.e. gate, door, gateway
-#define RELAY_FLAGS_OVERCURRENT (1 << 3)
-
+#define RELAY_FLAGS_OVERCURRENT      (1 << 3)
 
 namespace Supla {
 namespace Io {
@@ -51,17 +50,33 @@ class RelayWeeklySchedule;
 
 class Relay : public ChannelElement, public ActionHandler {
  public:
+  union RelayFlags {
+    struct {
+      uint8_t relayOn : 1;
+      uint8_t staircaseFunction : 1;
+      uint8_t impulseFunction : 1;
+      uint8_t overcurrent : 1;
+      uint8_t weeklySchedule : 1;
+      uint8_t reserved : 3;
+    } flags;
+    uint8_t rawValue = 0;
+  };
+
+  static_assert(sizeof(RelayFlags) == sizeof(uint8_t),
+                "Flags size must be 1 byte");
+
   explicit Relay(Supla::Io::IoPin outputPin,
                  _supla_int_t functions =
                      (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
-  explicit Relay(Supla::Io::Base *io, int pin,
-        bool highIsOn = true,
-        _supla_int_t functions = (0xFF ^
-                                  SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+  explicit Relay(Supla::Io::Base *io,
+                 int pin,
+                 bool highIsOn = true,
+                 _supla_int_t functions =
+                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
   explicit Relay(int pin,
-        bool highIsOn = true,
-        _supla_int_t functions = (0xFF ^
-                                  SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
+                 bool highIsOn = true,
+                 _supla_int_t functions =
+                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
 
   virtual ~Relay();
 
@@ -70,10 +85,10 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual Relay &setDefaultStateRestore();
   virtual Relay &keepTurnOnDuration(bool keep = true);  // DEPREACATED
 
-  [[deprecated("Use IoPin::writeActive/writeInactive instead")]]
-  virtual uint8_t pinOnValue();
-  [[deprecated("Use IoPin::writeActive/writeInactive instead")]]
-  virtual uint8_t pinOffValue();
+  [[deprecated("Use IoPin::writeActive/writeInactive instead")]] virtual uint8_t
+  pinOnValue();
+  [[deprecated("Use IoPin::writeActive/writeInactive instead")]] virtual uint8_t
+  pinOffValue();
   virtual void turnOn(_supla_int_t duration = 0);
   virtual void turnOff(_supla_int_t duration = 0);
   virtual bool isOn();
@@ -93,7 +108,7 @@ class Relay : public ChannelElement, public ActionHandler {
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
-                              bool local = false) override;
+                                              bool local = false) override;
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
@@ -132,7 +147,9 @@ class Relay : public ChannelElement, public ActionHandler {
    *
    * @return Value in 0.01 A
    */
-  uint32_t getOvercurrentThreshold() const { return overcurrentThreshold; }
+  uint32_t getOvercurrentThreshold() const {
+    return overcurrentThreshold;
+  }
 
   /**
    * Set overcurrent max level allowed
@@ -146,7 +163,9 @@ class Relay : public ChannelElement, public ActionHandler {
    *
    * @return Value in 0.01 A
    */
-  uint32_t getOvercurrentMaxAllowed() const { return overcurrentMaxAllowed; }
+  uint32_t getOvercurrentMaxAllowed() const {
+    return overcurrentMaxAllowed;
+  }
 
   /**
    * Set default duration for staircase timer function

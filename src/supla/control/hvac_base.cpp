@@ -18,6 +18,8 @@
 
 #include "hvac_base.h"
 
+#include <supla/channel_function_string.h>
+
 #include <stdint.h>
 #include <string.h>
 #include <supla/actions.h>
@@ -819,8 +821,9 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
   }
 
   if (channelFunction != getChannel()->getDefaultFunction()) {
-    SUPLA_LOG_INFO("HVAC[%d]: function changed to %d",
+    SUPLA_LOG_INFO("HVAC[%d]: function changed to %s (%d)",
                    getChannelNumber(),
+                   Supla::channelFunctionToString(channelFunction),
                    channelFunction);
     changeFunction(channelFunction, false);
     return SUPLA_CONFIG_RESULT_TRUE;
@@ -3514,9 +3517,11 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
     return;
   }
 
-  SUPLA_LOG_DEBUG("HVAC[%d]: changing function from %d to %d",
+  SUPLA_LOG_DEBUG("HVAC[%d]: changing function from %s (%d) to %s (%d)",
                   getChannelNumber(),
+                  Supla::channelFunctionToString(currentFunction),
                   currentFunction,
+                  Supla::channelFunctionToString(newFunction),
                   newFunction);
 
   if (newFunction == 0) {

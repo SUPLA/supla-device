@@ -19,6 +19,7 @@
 #include "roller_shutter_interface.h"
 
 #include <supla/actions.h>
+#include <supla/channel_function_string.h>
 #include <supla/control/button.h>
 #include <supla/io.h>
 #include <supla/local_action.h>
@@ -792,8 +793,9 @@ int RollerShutterInterface::handleCalcfgFromServer(
 Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     TSD_ChannelConfig *result, bool) {
   SUPLA_LOG_DEBUG(
-      "RS[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
+      "RS[%d] applyChannelConfig, func %s (%d), configtype %d, configsize %d",
       getChannelNumber(),
+      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -933,8 +935,9 @@ Supla::ApplyConfigResult RollerShutterInterface::applyChannelConfig(
     }
 
     default: {
-      SUPLA_LOG_WARNING("RS[%d] Ignoring unsupported channel function %d",
+      SUPLA_LOG_WARNING("RS[%d] Ignoring unsupported channel function %s (%d)",
                         getChannelNumber(),
+                        Supla::channelFunctionToString(result->Func),
                         result->Func);
       break;
     }
@@ -1109,9 +1112,11 @@ void RollerShutterInterface::fillChannelConfig(void *channelConfig,
       break;
     }
     default:
-      SUPLA_LOG_WARNING("RS[%d] fill channel config for unknown function %d",
-                        channel.getChannelNumber(),
-                        channel.getDefaultFunction());
+      SUPLA_LOG_WARNING(
+          "RS[%d] fill channel config for unknown function %s (%d)",
+          channel.getChannelNumber(),
+          Supla::channelFunctionToString(channel.getDefaultFunction()),
+          channel.getDefaultFunction());
       return;
   }
 }

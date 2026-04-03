@@ -18,6 +18,8 @@
 
 #include "supla_srpc.h"
 
+#include <supla/channel_function_string.h>
+
 #include <SuplaDevice.h>
 #include <stdio.h>
 #include <string.h>
@@ -434,9 +436,10 @@ void Supla::messageReceived(void *srpc,
           auto element =
               Supla::Element::getElementByChannelNumber(request->ChannelNumber);
           SUPLA_LOG_INFO(
-              "Channel[%d] Received SetChannelConfig: fnc %d"
+              "Channel[%d] Received SetChannelConfig: fnc %s (%d)"
               ", config type %d, config size %d",
               request->ChannelNumber,
+              Supla::channelFunctionToString(request->Func),
               request->Func,
               request->ConfigType,
               request->ConfigSize);

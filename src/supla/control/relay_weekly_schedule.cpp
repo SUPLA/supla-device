@@ -47,7 +47,36 @@ bool RelayWeeklySchedule::isConfigured() const {
   return isWeeklyScheduleConfigured_;
 }
 
+bool RelayWeeklySchedule::isWeeklyScheduleEnabled() const {
+  return weeklyScheduleEnabled_;
+}
+
+void RelayWeeklySchedule::setWeeklyScheduleEnabled(bool enabled) {
+  if (weeklyScheduleEnabled_ == enabled) {
+    return;
+  }
+  weeklyScheduleEnabled_ = enabled;
+  if (owner_ != nullptr) {
+    owner_->getChannel()->setRelayWeeklyScheduleEnabled(enabled);
+    if (!enabled) {
+      owner_->getChannel()->setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
+    }
+  }
+}
+
+void RelayWeeklySchedule::syncRelayMode(uint8_t programMode) {
+  if (owner_ == nullptr) {
+    return;
+  }
+  owner_->getChannel()->setRelayWeeklyScheduleEnabled(weeklyScheduleEnabled_);
+  owner_->getChannel()->setRelayMode(
+      weeklyScheduleEnabled_ ? programMode : SUPLA_RELAY_MODE_NOT_SET);
+}
+
 bool RelayWeeklySchedule::isManualActionAllowed(bool turnOn) const {
+  if (!weeklyScheduleEnabled_) {
+    return true;
+  }
   auto currentProgramMode = getCurrentProgramMode();
   if (turnOn) {
     return currentProgramMode != SUPLA_RELAY_MODE_FORCED_OFF;
@@ -173,9 +202,27 @@ void RelayWeeklySchedule::saveWeeklySchedule() {
   cfg->saveWithDelay(5000);
 }
 
+bool RelayWeeklySchedule::switchToWeeklySchedule() {
+  if (!isConfigured()) {
+    return false;
+  }
+  weeklyScheduleEnabled_ = true;
+  lastCurrentProgramId_ = -1;
+  syncRelayMode(getCurrentProgramMode());
+  applyCurrentState();
+  return true;
+}
+
+void RelayWeeklySchedule::switchToManualMode() {
+  weeklyScheduleEnabled_ = false;
+  lastCurrentProgramId_ = -1;
+  syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
+}
+
 void RelayWeeklySchedule::initDefaultWeeklySchedule() {
   isWeeklyScheduleConfigured_ = true;
   lastCurrentProgramId_ = -1;
+  weeklyScheduleEnabled_ = true;
 
   weeklyScheduleBuffer_.clearAll();
   weeklyScheduleBuffer_.set(false, new TChannelConfig_WeeklySchedule());
@@ -203,11 +250,14 @@ void RelayWeeklySchedule::onLoadConfig() {
 
   if (!loadSchedule()) {
     initDefaultWeeklySchedule();
+  } else {
+    weeklyScheduleEnabled_ = true;
   }
+  syncRelayMode(getCurrentProgramMode());
 }
 
 bool RelayWeeklySchedule::iterateAlways() {
-  if (!owner_ || !isWeeklyScheduleConfigured_) {
+  if (!owner_ || !isWeeklyScheduleConfigured_ || !weeklyScheduleEnabled_) {
     return false;
   }
 
@@ -220,6 +270,9 @@ bool RelayWeeklySchedule::iterateAlways() {
 }
 
 void RelayWeeklySchedule::applyCurrentState() {
+  if (!weeklyScheduleEnabled_) {
+    return;
+  }
   auto *schedule = getSchedule(true);
   if (schedule == nullptr) {
     return;
@@ -238,6 +291,8 @@ void RelayWeeklySchedule::applyCurrentState() {
 
   bool programChanged = currentProgramId != lastCurrentProgramId_;
   lastCurrentProgramId_ = currentProgramId;
+
+  syncRelayMode(currentProgramMode);
 
   if (currentProgramMode == SUPLA_RELAY_MODE_NOT_SET) {
     return;
@@ -307,6 +362,9 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
       initDefaultWeeklySchedule();
     }
     weeklyScheduleChangedOffline_ = 1;
+    if (weeklyScheduleEnabled_) {
+      applyCurrentState();
+    }
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
@@ -336,6 +394,9 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
     lastCurrentProgramId_ = -1;
     weeklyScheduleChangedOffline_ = 0;
     saveWeeklySchedule();
+    if (weeklyScheduleEnabled_) {
+      applyCurrentState();
+    }
   }
 
   return Supla::ApplyConfigResult::Success;

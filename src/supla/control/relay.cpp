@@ -22,6 +22,7 @@
 #include "relay.h"
 
 #include <supla/actions.h>
+#include <supla/channel_function_string.h>
 #include <supla/condition.h>
 #include <supla/condition_getter.h>
 #include <supla/control/button.h>
@@ -115,10 +116,18 @@ void Relay::onLoadConfig(SuplaDeviceClass *) {
   }
   if (isWeeklyScheduleSupported()) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+    channel.setFlag(SUPLA_CHANNEL_FLAG_MODE_SUPPORTED);
     usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_MODE_SUPPORTED);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+    if (weeklyScheduleHelper != nullptr) {
+      weeklyScheduleHelper->switchToManualMode();
+    } else {
+      channel.setRelayWeeklyScheduleEnabled(false);
+      channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
+    }
   }
   if (weeklyScheduleHelper != nullptr && isWeeklyScheduleSupported()) {
     weeklyScheduleHelper->onLoadConfig();
@@ -144,8 +153,10 @@ void Relay::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
 Supla::ApplyConfigResult Relay::applyChannelConfig(TSD_ChannelConfig *result,
                                                    bool) {
   SUPLA_LOG_DEBUG(
-      "Relay[%d] applyChannelConfig, func %d, configtype %d, configsize %d",
+      "Relay[%d] applyChannelConfig, func %s (%d), configtype %d, configsize "
+      "%d",
       getChannelNumber(),
+      Supla::channelFunctionToString(result->Func),
       result->Func,
       result->ConfigType,
       result->ConfigSize);
@@ -432,6 +443,7 @@ bool Relay::iterateConnected() {
 int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   auto channelFunction = getChannel()->getDefaultFunction();
   bool zeroDurationAllowed = false;
+  auto *relayValue = reinterpret_cast<TRelayChannel_Value *>(newValue->value);
   switch (channelFunction) {
     case SUPLA_CHANNELFNC_PUMPSWITCH:
     case SUPLA_CHANNELFNC_HEATORCOLDSOURCESWITCH: {
@@ -445,6 +457,23 @@ int32_t Relay::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
       break;
     }
     default: {
+    }
+  }
+
+  if (weeklyScheduleHelper != nullptr && isWeeklyScheduleSupported()) {
+    switch (relayValue->RelayMode) {
+      case SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE: {
+        if (weeklyScheduleHelper->switchToWeeklySchedule()) {
+          return 1;
+        }
+        return 0;
+      }
+      case SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL: {
+        weeklyScheduleHelper->switchToManualMode();
+        return 1;
+      }
+      default: {
+      }
     }
   }
 
@@ -675,14 +704,12 @@ void Relay::handleAction(int event, int action) {
 
 void Relay::onSaveState() {
   uint32_t durationForState = storedTurnOnDurationMs;
-  uint8_t relayFlags = 0;
-  if (channel.isRelayOvercurrentCutOff()) {
-    relayFlags |= RELAY_FLAGS_OVERCURRENT;
-  }
+  RelayFlags relayFlags;
+  relayFlags.flags.overcurrent = channel.isRelayOvercurrentCutOff();
   if (isStaircaseFunction()) {
-    relayFlags |= RELAY_FLAGS_STAIRCASE;
+    relayFlags.flags.staircaseFunction = 1;
   } else if (isImpulseFunction()) {
-    relayFlags |= RELAY_FLAGS_IMPULSE_FUNCTION;
+    relayFlags.flags.impulseFunction = 1;
   } else if (isCountdownTimerFunctionEnabled() && stateOnInit < 0) {
     // for other functions we store remaining countdown timer value
     durationForState = 0;
@@ -701,7 +728,7 @@ void Relay::onSaveState() {
       reinterpret_cast<unsigned char *>(&durationForState),
       sizeof(durationForState));
   if (stateOnInit < 0) {
-    relayFlags |= (isOn() ? RELAY_FLAGS_ON : 0);
+    relayFlags.flags.relayOn = isOn() ? 1 : 0;
   }
 
   Supla::Storage::WriteState(reinterpret_cast<unsigned char *>(&relayFlags),
@@ -715,27 +742,27 @@ void Relay::onLoadState() {
   if (!isCyclicMode()) {
     storedTurnOnDurationMs = storedDuration;
   }
-  uint8_t relayFlags = 0;
+  RelayFlags relayFlags;
   Supla::Storage::ReadState(reinterpret_cast<unsigned char *>(&relayFlags),
                             sizeof(relayFlags));
   if (stateOnInit < 0) {
     SUPLA_LOG_INFO("Relay[%d] restored relay state: %s",
                    channel.getChannelNumber(),
-                   (relayFlags & RELAY_FLAGS_ON) ? "ON" : "OFF");
-    if (relayFlags & RELAY_FLAGS_ON) {
+                   (relayFlags.flags.relayOn) ? "ON" : "OFF");
+    if (relayFlags.flags.relayOn) {
       stateOnInit = STATE_ON_INIT_RESTORED_ON;
     } else {
       stateOnInit = STATE_ON_INIT_RESTORED_OFF;
     }
   }
-  if (relayFlags & RELAY_FLAGS_STAIRCASE) {
+  if (relayFlags.flags.staircaseFunction) {
     SUPLA_LOG_INFO("Relay[%d] restored staircase function",
                    channel.getChannelNumber());
     auto cfg = Supla::Storage::ConfigInstance();
     if (!cfg) {
       setAndSaveFunction(SUPLA_CHANNELFNC_STAIRCASETIMER);
     }
-  } else if (relayFlags & RELAY_FLAGS_IMPULSE_FUNCTION) {
+  } else if (relayFlags.flags.impulseFunction) {
     SUPLA_LOG_INFO("Relay[%d] restored impulse function",
                    channel.getChannelNumber());
     // actual funciton may be different, but we only have 8 bit bitfiled to
@@ -746,7 +773,7 @@ void Relay::onLoadState() {
       setAndSaveFunction(SUPLA_CHANNELFNC_CONTROLLINGTHEGATE);
     }
   }
-  if (relayFlags & RELAY_FLAGS_OVERCURRENT) {
+  if (relayFlags.flags.overcurrent) {
     channel.setRelayOvercurrentCutOff(true);
   }
 
@@ -892,10 +919,18 @@ bool Relay::setAndSaveFunction(uint32_t newFunction) {
 
   if (isWeeklyScheduleSupported()) {
     channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+    channel.setFlag(SUPLA_CHANNEL_FLAG_MODE_SUPPORTED);
     usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
   } else {
     channel.unsetFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
+    channel.unsetFlag(SUPLA_CHANNEL_FLAG_MODE_SUPPORTED);
     usedConfigTypes.clear(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+    if (weeklyScheduleHelper != nullptr) {
+      weeklyScheduleHelper->switchToManualMode();
+    } else {
+      channel.setRelayWeeklyScheduleEnabled(false);
+      channel.setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
+    }
   }
 
   if (functionChanged && previousFunction != 0) {
@@ -1020,9 +1055,11 @@ void Relay::fillChannelConfig(void *channelConfig,
       config->DefaultRelatedMeterIsSet = 1;
     }
   } else {
-    SUPLA_LOG_WARNING("Relay[%d] fill channel config for unknown function %d",
-                      channel.getChannelNumber(),
-                      channel.getDefaultFunction());
+    SUPLA_LOG_WARNING(
+        "Relay[%d] fill channel config for unknown function %s (%d)",
+        channel.getChannelNumber(),
+        Supla::channelFunctionToString(channel.getDefaultFunction()),
+        channel.getDefaultFunction());
     return;
   }
 }

@@ -42,14 +42,19 @@ class RelayWeeklySchedule {
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType);
+  bool switchToWeeklySchedule();
+  void switchToManualMode();
 
   bool isConfigured() const;
+  bool isWeeklyScheduleEnabled() const;
   bool isManualActionAllowed(bool turnOn) const;
 
  private:
   bool loadSchedule();
   void initDefaultWeeklySchedule();
   void saveWeeklySchedule();
+  void syncRelayMode(uint8_t programMode);
+  void setWeeklyScheduleEnabled(bool enabled);
   const TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true)
       const;
   TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true);
@@ -64,6 +69,7 @@ class RelayWeeklySchedule {
   Relay *owner_ = nullptr;
   WeeklyScheduleBuffer weeklyScheduleBuffer_;
   bool isWeeklyScheduleConfigured_ = false;
+  bool weeklyScheduleEnabled_ = false;
   uint8_t weeklyScheduleChangedOffline_ = 0;
   int lastCurrentProgramId_ = -1;
 };

@@ -16,6 +16,7 @@
 
 #include "channel.h"
 
+#include <supla/channel_function_string.h>
 #include <supla/log_wrapper.h>
 #include <supla/protocol/protocol_layer.h>
 #include <supla-common/srpc.h>
@@ -319,10 +320,15 @@ void Channel::setType(uint32_t type) {
 }
 
 void Channel::setDefault(uint32_t value) {
-  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %d", channelNumber, value);
+  SUPLA_LOG_DEBUG("Channel[%d]: setDefaultFunction: %s (%d)",
+                  channelNumber,
+                  Supla::channelFunctionToString(value),
+                  value);
   if (value > UINT16_MAX) {
-    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %d",
-                    channelNumber, value);
+    SUPLA_LOG_ERROR("Channel[%d]: Invalid defaultFunction value %s (%d)",
+                    channelNumber,
+                    Supla::channelFunctionToString(value),
+                    value);
     value = 0;
   }
 
@@ -1558,13 +1564,14 @@ void Channel::fillDeviceChannelStruct(
   // on some ESP platforms, printf functions for 64 bits is not available
   // so we have to print it as two separate 32 bit values 0x%X%08X
   SUPLA_LOG_VERBOSE(
-      "CH[%i], type: %d, FuncList: 0x%X, function: %d, flags: 0x%X%08X, "
+      "CH[%i], type: %d, FuncList: 0x%X, fnc: %s (%d), flags: 0x%X%08X, "
       "%s, validityTimeSec: %d, icon: %d, "
       "value: "
       "[%02x %02x %02x %02x %02x %02x %02x %02x]",
       getChannelNumber(),
       getChannelType(),
       getFuncList(),
+      Supla::channelFunctionToString(getDefaultFunction()),
       getDefaultFunction(),
       PRINTF_UINT64_HEX(getFlags()),
       state == 0   ? "online"
@@ -1605,13 +1612,14 @@ void Channel::fillDeviceChannelStruct(
   memcpy(deviceChannelStruct->value, value, SUPLA_CHANNELVALUE_SIZE);
   // uint64_t printf is crashing on ESP32-C2 in method vnsnprintf
   SUPLA_LOG_VERBOSE(
-      "CH[%i], subDevId: %d, type: %d, FuncList: 0x%X, function: %d, flags: "
+      "CH[%i], subDevId: %d, type: %d, FuncList: 0x%X, fnc: %s (%d), flags: "
       "0x%X%08X, %s, validityTimeSec: %d, icon: %d, value: "
       "[%02x %02x %02x %02x %02x %02x %02x %02x]",
       getChannelNumber(),
       getSubDeviceId(),
       getChannelType(),
       getFuncList(),
+      Supla::channelFunctionToString(getDefaultFunction()),
       getDefaultFunction(),
       PRINTF_UINT64_HEX(getFlags()),
       state == SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE    ? "online"
@@ -2066,6 +2074,48 @@ bool Channel::isRelayOvercurrentCutOff() const {
   if (channelType == ChannelType::RELAY) {
     auto relay = reinterpret_cast<const TRelayChannel_Value *>(value);
     return relay->flags & SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF;
+  }
+  return false;
+}
+
+void Channel::setRelayMode(uint8_t mode) {
+  if (channelType != ChannelType::RELAY) {
+    return;
+  }
+  auto relay = reinterpret_cast<TRelayChannel_Value *>(value);
+  if (relay->RelayMode == mode) {
+    return;
+  }
+  relay->RelayMode = mode;
+  setSendValue();
+}
+
+uint8_t Channel::getRelayMode() const {
+  if (channelType == ChannelType::RELAY) {
+    auto relay = reinterpret_cast<const TRelayChannel_Value *>(value);
+    return relay->RelayMode;
+  }
+  return SUPLA_RELAY_MODE_NOT_SET;
+}
+
+void Channel::setRelayWeeklyScheduleEnabled(bool enabled) {
+  if (channelType != ChannelType::RELAY) {
+    return;
+  }
+  auto relay = reinterpret_cast<TRelayChannel_Value *>(value);
+  bool current = (relay->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED) != 0;
+  if (current == enabled) {
+    return;
+  }
+  relay->flags = (relay->flags & ~SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED) |
+                 (enabled ? SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED : 0);
+  setSendValue();
+}
+
+bool Channel::isRelayWeeklyScheduleEnabled() const {
+  if (channelType == ChannelType::RELAY) {
+    auto relay = reinterpret_cast<const TRelayChannel_Value *>(value);
+    return relay->flags & SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED;
   }
   return false;
 }

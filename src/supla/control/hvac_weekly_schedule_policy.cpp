@@ -19,6 +19,7 @@
 #include "hvac_weekly_schedule_policy.h"
 
 #include <string.h>
+#include <supla/channel_function_string.h>
 #include <supla/clock/clock.h>
 #include <supla/log_wrapper.h>
 
@@ -200,8 +201,10 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
     default: {
       SUPLA_LOG_WARNING(
           "HVAC[%d]: no default weekly schedule defined for "
-          "function %d",
+          "function %s (%d)",
           owner->getChannelNumber(),
+          Supla::channelFunctionToString(
+              owner->getChannel()->getDefaultFunction()),
           owner->getChannel()->getDefaultFunction());
       break;
     }

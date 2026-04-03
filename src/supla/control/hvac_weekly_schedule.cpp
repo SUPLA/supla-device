@@ -18,6 +18,7 @@
 
 #include "hvac_weekly_schedule.h"
 
+#include <string.h>
 #include <supla/clock/clock.h>
 #include <supla/events.h>
 #include <supla/log_wrapper.h>
@@ -26,8 +27,6 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-
-#include <string.h>
 
 #include "hvac_base.h"
 #include "weekly_schedule_common.h"
@@ -47,8 +46,6 @@ HvacWeeklySchedule::HvacWeeklySchedule(HvacBase *owner) : owner_(owner) {
 }
 
 HvacWeeklySchedule::~HvacWeeklySchedule() {
-  delete weeklySchedule_;
-  delete altWeeklySchedule_;
 }
 
 const char *HvacWeeklySchedule::getStorageTag(bool isAltWeeklySchedule) {
@@ -70,9 +67,10 @@ bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
     return false;
   }
 
-  auto &schedule = isAltWeeklySchedule ? altWeeklySchedule_ : weeklySchedule_;
-  if (!schedule) {
+  auto *schedule = weeklyScheduleBuffer_.get(isAltWeeklySchedule);
+  if (schedule == nullptr) {
     schedule = new TChannelConfig_WeeklySchedule();
+    weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
   }
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
@@ -84,8 +82,7 @@ bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
   }
 
   if (!isWeeklyScheduleValid(schedule, isAltWeeklySchedule)) {
-    delete schedule;
-    schedule = nullptr;
+    weeklyScheduleBuffer_.clear(isAltWeeklySchedule);
     return false;
   }
 
@@ -95,11 +92,12 @@ bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
 
 TChannelConfig_WeeklySchedule *HvacWeeklySchedule::getSchedule(
     bool isAltWeeklySchedule, bool loadIfMissing) {
-  auto &schedule = isAltWeeklySchedule ? altWeeklySchedule_ : weeklySchedule_;
-  if (!schedule && loadIfMissing) {
+  auto *schedule = weeklyScheduleBuffer_.get(isAltWeeklySchedule);
+  if (schedule == nullptr && loadIfMissing) {
     if (!loadSchedule(isAltWeeklySchedule)) {
       return nullptr;
     }
+    schedule = weeklyScheduleBuffer_.get(isAltWeeklySchedule);
   }
   return schedule;
 }
@@ -115,10 +113,7 @@ void HvacWeeklySchedule::unloadSchedulesIfPossible() {
     return;
   }
 
-  delete weeklySchedule_;
-  delete altWeeklySchedule_;
-  weeklySchedule_ = nullptr;
-  altWeeklySchedule_ = nullptr;
+  weeklyScheduleBuffer_.clearAll();
 }
 
 void HvacWeeklySchedule::markWeeklyScheduleReceived(bool isAltWeeklySchedule) {
@@ -451,13 +446,13 @@ int HvacWeeklySchedule::getWeeklyScheduleProgramId(
   if (schedule == nullptr) {
     schedule = getSchedule(false, true);
   }
-  return Supla::Control::getWeeklyScheduleProgramId(schedule, index);
+  return weeklyScheduleBuffer_.getProgramId(schedule, index);
 }
 
 int HvacWeeklySchedule::calculateIndex(enum DayOfWeek dayOfWeek,
                                        int hour,
                                        int quarter) const {
-  return Supla::Control::calculateWeeklyScheduleIndex(dayOfWeek, hour, quarter);
+  return weeklyScheduleBuffer_.calculateIndex(dayOfWeek, hour, quarter);
 }
 
 bool HvacWeeklySchedule::isProgramValid(const TWeeklyScheduleProgram &program,
@@ -545,13 +540,7 @@ bool HvacWeeklySchedule::setWeeklySchedule(int index,
     return false;
   }
 
-  if (index % 2) {
-    schedule->Quarters[index / 2] =
-        (schedule->Quarters[index / 2] & 0x0F) | (programId << 4);
-  } else {
-    schedule->Quarters[index / 2] =
-        (schedule->Quarters[index / 2] & 0xF0) | programId;
-  }
+  weeklyScheduleBuffer_.setWeeklySchedule(schedule, index, programId);
 
   if (owner_->initDone) {
     weeklyScheduleChangedOffline_ = 1;
@@ -618,12 +607,11 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getProgramById(
     return {};
   }
 
-  return schedule->Program[programId - 1];
+  return weeklyScheduleBuffer_.getProgramById(schedule, programId);
 }
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getProgramAt(
     int quarterIndex) const {
-  int programId = 1;
   auto schedule = getSchedule(false, true);
   if (owner_->getChannel()->getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
@@ -631,43 +619,25 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getProgramAt(
       schedule = getSchedule(true, true);
     }
   }
-
-  if (quarterIndex >= 0 && schedule != nullptr) {
-    programId = getWeeklyScheduleProgramId(schedule, quarterIndex);
-  }
-
-  TWeeklyScheduleProgram program = {};
-  program.SetpointTemperatureCool = INT16_MIN;
-  program.SetpointTemperatureHeat = INT16_MIN;
-
-  if (programId == 0) {
-    program.Mode = SUPLA_HVAC_MODE_OFF;
-    return program;
-  }
-  if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    return program;
-  }
-
-  return schedule->Program[programId - 1];
+  return weeklyScheduleBuffer_.getProgramAt(schedule, quarterIndex);
 }
 
 int HvacWeeklySchedule::getCurrentQuarter() const {
-  if (Supla::Clock::IsReady()) {
-    return calculateIndex(Supla::Clock::GetHvacDayOfWeek(),
-                          Supla::Clock::GetHour(),
-                          Supla::Clock::GetQuarter());
-  }
-  return -1;
+  return weeklyScheduleBuffer_.getCurrentQuarter();
 }
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getCurrentProgram() const {
-  return getProgramAt(getCurrentQuarter());
+  auto schedule = getSchedule(false, true);
+  if (owner_->getChannel()->getDefaultFunction() ==
+      SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
+    if (owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL) {
+      schedule = getSchedule(true, true);
+    }
+  }
+  return weeklyScheduleBuffer_.getCurrentProgram(schedule);
 }
 
 int HvacWeeklySchedule::getCurrentProgramId() const {
-  int quarterIndex = getCurrentQuarter();
-  int programId = 1;
-
   auto schedule = getSchedule(false, true);
   if (owner_->getChannel()->getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
@@ -676,11 +646,7 @@ int HvacWeeklySchedule::getCurrentProgramId() const {
     }
   }
 
-  if (quarterIndex >= 0 && schedule != nullptr) {
-    programId = getWeeklyScheduleProgramId(schedule, quarterIndex);
-  }
-
-  return programId;
+  return weeklyScheduleBuffer_.getCurrentProgramId(schedule);
 }
 
 bool HvacWeeklySchedule::turnOnWeeklySchedule() {
@@ -776,12 +742,15 @@ void HvacWeeklySchedule::initDefaultWeeklySchedule() {
     owner_->initDone = false;
   }
 
-  delete weeklySchedule_;
-  delete altWeeklySchedule_;
-  weeklySchedule_ = new TChannelConfig_WeeklySchedule();
-  altWeeklySchedule_ = new TChannelConfig_WeeklySchedule();
-  memset(weeklySchedule_, 0, sizeof(TChannelConfig_WeeklySchedule));
-  memset(altWeeklySchedule_, 0, sizeof(TChannelConfig_WeeklySchedule));
+  weeklyScheduleBuffer_.clearAll();
+  weeklyScheduleBuffer_.set(false, new TChannelConfig_WeeklySchedule());
+  weeklyScheduleBuffer_.set(true, new TChannelConfig_WeeklySchedule());
+  memset(weeklyScheduleBuffer_.get(false),
+         0,
+         sizeof(TChannelConfig_WeeklySchedule));
+  memset(weeklyScheduleBuffer_.get(true),
+         0,
+         sizeof(TChannelConfig_WeeklySchedule));
 
   switch (owner_->getChannel()->getDefaultFunction()) {
     default: {

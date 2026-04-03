@@ -142,6 +142,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/relay_hvac_aggregator.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/hvac_weekly_schedule.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/weekly_schedule_buffer.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/weekly_schedule_common.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_leds.cpp

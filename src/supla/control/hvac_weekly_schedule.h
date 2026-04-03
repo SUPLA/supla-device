@@ -22,6 +22,7 @@
 #include <supla-common/proto.h>
 
 #include "hvac_base.h"
+#include "weekly_schedule_buffer.h"
 
 namespace Supla {
 
@@ -88,8 +89,7 @@ class HvacWeeklySchedule {
   static const char *getStorageTag(bool isAltWeeklySchedule);
 
   HvacBase *owner_ = nullptr;
-  TChannelConfig_WeeklySchedule *weeklySchedule_ = nullptr;
-  TChannelConfig_WeeklySchedule *altWeeklySchedule_ = nullptr;
+  WeeklyScheduleBuffer weeklyScheduleBuffer_;
   bool isWeeklyScheduleConfigured_ = false;
   bool weeklyScheduleReceived_ = false;
   bool altWeeklyScheduleReceived_ = false;

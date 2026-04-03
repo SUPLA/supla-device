@@ -3254,6 +3254,66 @@ void HvacBase::addSecondaryOutput(Supla::Control::OutputInterface *output) {
   }
 }
 
+bool HvacBase::isWeeklyScheduleEnabled() const {
+  return channel.isHvacFlagWeeklySchedule();
+}
+
+void HvacBase::setWeeklyScheduleEnabled(bool enabled) {
+  channel.setHvacFlagWeeklySchedule(enabled);
+}
+
+bool HvacBase::isWeeklyScheduleClockError() const {
+  return channel.isHvacFlagClockError();
+}
+
+void HvacBase::setWeeklyScheduleClockError(bool enabled) {
+  channel.setHvacFlagClockError(enabled);
+}
+
+bool HvacBase::isWeeklyScheduleTemporalOverride() const {
+  return channel.isHvacFlagWeeklyScheduleTemporalOverride();
+}
+
+void HvacBase::setWeeklyScheduleTemporalOverride(bool enabled) {
+  channel.setHvacFlagWeeklyScheduleTemporalOverride(enabled);
+}
+
+bool HvacBase::isWeeklyScheduleStartupDelay() const {
+  return startupDelay;
+}
+
+void HvacBase::setWeeklyScheduleStartupDelay(bool enabled) {
+  startupDelay = enabled;
+}
+
+int8_t HvacBase::getWeeklyScheduleLastProgramManualOverride() const {
+  return lastProgramManualOverride;
+}
+
+void HvacBase::setWeeklyScheduleLastProgramManualOverride(int8_t programId) {
+  lastProgramManualOverride = programId;
+}
+
+uint8_t HvacBase::getWeeklyScheduleLastManualMode() const {
+  return lastManualMode;
+}
+
+void HvacBase::setWeeklyScheduleLastManualMode(uint8_t mode) {
+  lastManualMode = mode;
+}
+
+void HvacBase::applyWeeklyScheduleSetpoints(int16_t tHeat, int16_t tCool) {
+  setSetpointTemperaturesForCurrentMode(tHeat, tCool);
+}
+
+bool HvacBase::isInitDone() const {
+  return initDone;
+}
+
+void HvacBase::setInitDone(bool enabled) {
+  initDone = enabled;
+}
+
 bool HvacBase::isSensorTempValid(_supla_int16_t temperature) const {
   return temperature > INT16_MIN;
 }

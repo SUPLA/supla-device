@@ -682,8 +682,7 @@ extern char sproto_tag[SUPLA_TAG_SIZE];
 #define SUPLA_CHANNEL_FLAG_HAS_PARENT 0x20000000                   // ver. >= 21
 #define SUPLA_CHANNEL_FLAG_CALCFG_RESTART_SUBDEVICE 0x40000000     // ver. >= 25
 #define SUPLA_CHANNEL_FLAG_BATTERY_COVER_AVAILABLE 0x80000000      // ver. >= 25
-#define SUPLA_CHANNEL_FLAG_RELAY_MODE_AVAILABLE 0x100000000        // ver. >= 28
-#define SUPLA_CHANNEL_FLAG_BUTTON_MODE_AVAILABLE 0x200000000       // ver. >= 28
+#define SUPLA_CHANNEL_FLAG_MODE_SUPPORTED 0x100000000              // ver. >= 28
 #pragma pack(push, 1)
 
 typedef struct {
@@ -833,7 +832,7 @@ typedef struct {
 } TDS_SuplaDeviceChannel_B;  // ver. >= 2
 
 // Button lock mode definitions:
-#define SUPLA_BUTTON_MODE_DEFAULT 0        // default, all unlocked
+#define SUPLA_BUTTON_MODE_NOT_SET 0        // default, all unlocked
 #define SUPLA_BUTTON_MODE_LOCKED 1         // all locked
 #define SUPLA_BUTTON_MODE_REMOTE_LOCKED 2  // only remote locked, local
                                            // actions are allowed
@@ -845,13 +844,14 @@ typedef struct {
                                                   // manual mode
 
 // Action Trigger Flags definitions (bit positions):
-#define SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE (1 << 0)  // Weekly Schedule
+#define SUPLA_ACTION_TRIGGER_FLAG_WEEKLY_SCHEDULE_ENABLED (1 << 0)
 
 typedef struct {
   unsigned char relatedChannelNumber;  // ChannelNumber + 1.
   unsigned _supla_int_t disablesLocalOperation;
   unsigned char ButtonMode;  // see SUPLA_BUTTON_MODE_, v. >= 28,
-                             // only if channel Flag is set.
+                             // only if channel Flag:
+                             // SUPLA_CHANNEL_FLAG_MODE_SUPPORTED is set.
   unsigned char Flags;  // SUPLA_ACTION_TRIGGER_FLAG_
 } TActionTriggerProperties;
 
@@ -903,13 +903,6 @@ typedef struct {
 // It can be also used to switch to default manual mode, when no manual mode
 // was used earlier.
 #define SUPLA_HVAC_MODE_CMD_SWITCH_TO_MANUAL 10
-
-// Relay weekly schedule modes
-#define SUPLA_RELAY_MODE_NOT_SET 0
-#define SUPLA_RELAY_MODE_OFF_ONCE 1
-#define SUPLA_RELAY_MODE_ON_ONCE 2
-#define SUPLA_RELAY_MODE_FORCED_ON 3
-#define SUPLA_RELAY_MODE_FORCED_OFF 4
 
 typedef struct {
   unsigned char IsOn;  // DS: 0/1 (for off/on) or 2..102 (for 0-100%)
@@ -2418,11 +2411,27 @@ typedef struct {
   char whiteTemperature;  // v. >= 25, 0..100 (0 warm, 50 neutral, 100 cold)
 } TRGBW_Value;     // v. >= 10
 
-#define SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF 0x1
+// Relay flags definitions (bit positions):
+#define SUPLA_RELAY_FLAG_OVERCURRENT_RELAY_OFF (1 << 0)
+#define SUPLA_RELAY_FLAG_WEEKLY_SCHEDULE_ENABLED (1 << 1)
+
+// Relay modes and commands
+#define SUPLA_RELAY_MODE_NOT_SET 0
+#define SUPLA_RELAY_MODE_OFF_ONCE 1
+#define SUPLA_RELAY_MODE_ON_ONCE 2
+#define SUPLA_RELAY_MODE_FORCED_ON 3
+#define SUPLA_RELAY_MODE_FORCED_OFF 4
+#define SUPLA_RELAY_MODE_CMD_WEEKLY_SCHEDULE 5   // Command to switch to
+                                                 // weekly schedule mode
+#define SUPLA_RELAY_MODE_CMD_SWITCH_TO_MANUAL 6  // Command to switch to
+                                                 // manual mode
 
 typedef struct {
   char hi;  // actual state of relay  - 0 turned off, >= 1 - turned on
   unsigned _supla_int16_t flags;  // SUPLA_RELAY_FLAG_*
+  unsigned char RelayMode;  // see SUPLA_RELAY_MODE_, v. >= 28,
+                             // only if channel Flag:
+                             // SUPLA_CHANNEL_FLAG_MODE_SUPPORTED is set.
 } TRelayChannel_Value;            // v. >= 15
 
 #define DIGIGLASS_TOO_LONG_OPERATION_WARNING 0x1

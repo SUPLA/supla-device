@@ -19,10 +19,11 @@
 #ifndef SRC_SUPLA_CONTROL_HVAC_WEEKLY_SCHEDULE_H_
 #define SRC_SUPLA_CONTROL_HVAC_WEEKLY_SCHEDULE_H_
 
+#include <stdint.h>
 #include <supla-common/proto.h>
 
-#include "hvac_base.h"
 #include "weekly_schedule_buffer.h"
+#include "hvac_weekly_schedule_policy.h"
 
 namespace Supla {
 
@@ -76,6 +77,8 @@ class HvacWeeklySchedule {
   bool processWeeklySchedule();
   void initDefaultWeeklySchedule();
 
+  friend class HvacWeeklySchedulePolicy;
+
  private:
   TChannelConfig_WeeklySchedule *getSchedule(bool isAltWeeklySchedule,
                                              bool loadIfMissing = true);
@@ -89,6 +92,7 @@ class HvacWeeklySchedule {
   static const char *getStorageTag(bool isAltWeeklySchedule);
 
   HvacBase *owner_ = nullptr;
+  HvacWeeklySchedulePolicy policy_;
   WeeklyScheduleBuffer weeklyScheduleBuffer_;
   bool isWeeklyScheduleConfigured_ = false;
   bool weeklyScheduleReceived_ = false;

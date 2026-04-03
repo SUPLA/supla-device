@@ -47,6 +47,7 @@ struct IoPin;
 
 namespace Control {
 class Button;
+class RelayWeeklySchedule;
 
 class Relay : public ChannelElement, public ActionHandler {
  public:
@@ -187,6 +188,8 @@ class Relay : public ChannelElement, public ActionHandler {
   void disableCyclicMode();
   bool isCyclicMode() const;
 
+  bool isWeeklyScheduleSupported() const;
+
  protected:
   struct ButtonListElement {
     Supla::Control::Button *button = nullptr;
@@ -228,6 +231,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
   Supla::Io::IoPin outputPin;
+  RelayWeeklySchedule *weeklyScheduleHelper = nullptr;
 
   static int16_t relayStorageSaveDelay;
 };

@@ -41,6 +41,7 @@ namespace Control {
 
 class OutputInterface;
 class HvacWeeklySchedule;
+class HvacWeeklySchedulePolicy;
 class HvacBase;
 
 class HvacBase : public ChannelElement, public ActionHandler {
@@ -403,6 +404,22 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void addPrimaryOutput(Supla::Control::OutputInterface *output);
   void addSecondaryOutput(Supla::Control::OutputInterface *output);
 
+  bool isWeeklyScheduleEnabled() const;
+  void setWeeklyScheduleEnabled(bool enabled);
+  bool isWeeklyScheduleClockError() const;
+  void setWeeklyScheduleClockError(bool enabled);
+  bool isWeeklyScheduleTemporalOverride() const;
+  void setWeeklyScheduleTemporalOverride(bool enabled);
+  bool isWeeklyScheduleStartupDelay() const;
+  void setWeeklyScheduleStartupDelay(bool enabled);
+  int8_t getWeeklyScheduleLastProgramManualOverride() const;
+  void setWeeklyScheduleLastProgramManualOverride(int8_t programId);
+  uint8_t getWeeklyScheduleLastManualMode() const;
+  void setWeeklyScheduleLastManualMode(uint8_t mode);
+  void applyWeeklyScheduleSetpoints(int16_t tHeat, int16_t tCool);
+  bool isInitDone() const;
+  void setInitDone(bool enabled);
+
   void enableDifferentialFunctionSupport();
   bool isDifferentialFunctionSupported() const;
   void enableDomesticHotWaterFunctionSupport();
@@ -461,7 +478,6 @@ class HvacBase : public ChannelElement, public ActionHandler {
   HvacParameterFlags parameterFlags = {};
 
   friend class HvacWeeklySchedule;
-
  protected:
   // 0 = off, >= 1 enable heating, <= -1 enable cooling
   void setOutput(int value, bool force = false);

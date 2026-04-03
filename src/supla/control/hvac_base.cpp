@@ -20,31 +20,30 @@
 
 #include <stdint.h>
 #include <string.h>
+#include <supla/actions.h>
+#include <supla/channels/channel.h>
+#include <supla/clock/clock.h>
+#include <supla/events.h>
 #include <supla/log_wrapper.h>
+#include <supla/protocol/protocol_layer.h>
+#include <supla/sensor/thermometer.h>
 #include <supla/storage/config.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #include <supla/time.h>
-#include <supla/clock/clock.h>
-#include <supla/actions.h>
-#include <supla/sensor/thermometer.h>
-#include <supla/events.h>
-#include <supla/channels/channel.h>
-#include <supla/storage/config_tags.h>
-#include <supla/protocol/protocol_layer.h>
 
+#include "hvac_weekly_schedule.h"
 #include "output_interface.h"
 #include "relay_hvac_aggregator.h"
 
-#define SUPLA_HVAC_DEFAULT_TEMP_HEAT          2100  // 21.00 C
-#define SUPLA_HVAC_DEFAULT_TEMP_COOL          2500  // 25.00 C
-
-#define USE_MAIN_WEEKLYSCHEDULE (false)
-#define USE_ALT_WEEKLYSCHEDULE (true)
+#define SUPLA_HVAC_DEFAULT_TEMP_HEAT 2100  // 21.00 C
+#define SUPLA_HVAC_DEFAULT_TEMP_COOL 2500  // 25.00 C
 
 using Supla::Control::HvacBase;
 
 HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
                    Supla::Control::OutputInterface *secondaryOutput) {
+  weeklyScheduleHelper = new HvacWeeklySchedule(this);
   channel.setType(SUPLA_CHANNELTYPE_HVAC);
   channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
@@ -52,12 +51,12 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   addPrimaryOutput(primaryOutput);
   addSecondaryOutput(secondaryOutput);
 
-  setTemperatureHisteresisMin(20);  // 0.2 degree
-  setTemperatureHisteresisMax(1000);  // 10 degree
+  setTemperatureHisteresisMin(20);        // 0.2 degree
+  setTemperatureHisteresisMax(1000);      // 10 degree
   setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
   setTemperatureHeatCoolOffsetMax(1000);  // 10 degrees
-  setTemperatureAuxMin(500);  // 5 degrees
-  setTemperatureAuxMax(7500);  // 75 degrees
+  setTemperatureAuxMin(500);              // 5 degrees
+  setTemperatureAuxMax(7500);             // 75 degrees
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
   addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_AT_MOST);
 
@@ -66,6 +65,8 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
 }
 
 HvacBase::~HvacBase() {
+  delete weeklyScheduleHelper;
+  weeklyScheduleHelper = nullptr;
   Supla::Control::RelayHvacAggregator::UnregisterHvac(this);
 }
 
@@ -188,51 +189,8 @@ bool HvacBase::iterateConnected() {
   }
   lastConfigChangeTimestampMs = 0;
 
-  if (configFinishedReceived && serverChannelFunctionValid) {
-    if (channelConfigChangedOffline == 1) {
-      result = false;
-      for (auto proto = Supla::Protocol::ProtocolLayer::first();
-           proto != nullptr;
-           proto = proto->next()) {
-        config.ParameterFlags = parameterFlags;
-        if (proto->setChannelConfig(getChannelNumber(),
-                                    channel.getDefaultFunction(),
-                                    reinterpret_cast<void *>(&config),
-                                    sizeof(TChannelConfig_HVAC),
-                                    SUPLA_CONFIG_TYPE_DEFAULT)) {
-          SUPLA_LOG_INFO("HVAC[%d]: channel config send",
-                         getChannelNumber());
-          channelConfigChangedOffline = 2;
-        }
-      }
-    }
-    if (channelConfigChangedOffline == 0 && weeklyScheduleChangedOffline == 1) {
-      for (auto proto = Supla::Protocol::ProtocolLayer::first();
-           proto != nullptr;
-           proto = proto->next()) {
-        if (proto->setChannelConfig(getChannelNumber(),
-                                    channel.getDefaultFunction(),
-                                    reinterpret_cast<void *>(&weeklySchedule),
-                                    sizeof(weeklySchedule),
-                                    SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE)) {
-          SUPLA_LOG_INFO("HVAC[%d]: weekly schedule send",
-                         getChannelNumber());
-          result = false;
-          weeklyScheduleChangedOffline = 2;
-          if (isAltWeeklySchedulePossible()) {
-            if (proto->setChannelConfig(
-                    getChannelNumber(),
-                    channel.getDefaultFunction(),
-                    reinterpret_cast<void *>(&altWeeklySchedule),
-                    sizeof(altWeeklySchedule),
-                    SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE)) {
-              SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule send",
-                             getChannelNumber());
-            }
-          }
-        }
-      }
-    }
+  if (!weeklyScheduleHelper->iterateConfigExchange()) {
+    result = false;
   }
 
   return result;
@@ -240,7 +198,7 @@ bool HvacBase::iterateConnected() {
 
 bool HvacBase::isAltWeeklySchedulePossible() const {
   return (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
-      !(isHeatingSubfunction() && parameterFlags.SubfunctionReadonly));
+          !(isHeatingSubfunction() && parameterFlags.SubfunctionReadonly));
 }
 
 void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
@@ -257,8 +215,8 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     generateKey(key, Supla::ConfigTag::HvacCfgTag);
     TChannelConfig_HVAC storedConfig = {};
     if (cfg->getBlob(key,
-          reinterpret_cast<char *>(&storedConfig),
-          sizeof(TChannelConfig_HVAC))) {
+                     reinterpret_cast<char *>(&storedConfig),
+                     sizeof(TChannelConfig_HVAC))) {
       SUPLA_LOG_DEBUG("HVAC[%d]: config in storage:", getChannelNumber());
       debugPrintConfigStruct(&storedConfig, getChannelNumber());
       if (isConfigValid(&storedConfig)) {
@@ -267,7 +225,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
         applyConfigWithoutValidation(&storedConfig);
         fixTemperatureSetpoints();
         SUPLA_LOG_INFO("HVAC[%d]: config loaded successfully",
-            getChannelNumber());
+                       getChannelNumber());
       } else {
         SUPLA_LOG_WARNING(
             "HVAC[%d]: config invalid in storage. Using SW defaults",
@@ -275,75 +233,23 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
       }
     } else {
       SUPLA_LOG_INFO("HVAC[%d]: config missing. Using SW defaults",
-          getChannelNumber());
+                     getChannelNumber());
     }
 
-    // Weekly schedule configuration
-    generateKey(key, Supla::ConfigTag::HvacWeeklyCfgTag);
-    isWeeklyScheduleConfigured = false;
-    if (cfg->getBlob(key,
-          reinterpret_cast<char *>(&weeklySchedule),
-          sizeof(TChannelConfig_WeeklySchedule))) {
-      if (!isWeeklyScheduleValid(&weeklySchedule)) {
-        SUPLA_LOG_WARNING(
-            "HVAC[%d]: weekly schedule invalid in storage. Using SW "
-            "defaults", getChannelNumber());
-      } else {
-//        SUPLA_LOG_INFO("HVAC[%d]: weekly schedule loaded successfully",
-//                       getChannelNumber());
-        isWeeklyScheduleConfigured = true;
-      }
-    } else {
-      SUPLA_LOG_INFO("HVAC[%d]: weekly schedule missing. Using SW defaults",
-          getChannelNumber());
-    }
-
-    // Alt weekly schedule (only for HVAC_THERMOSTAT function)
-    if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-      generateKey(key, Supla::ConfigTag::HvacAltWeeklyCfgTag);
-      if (cfg->getBlob(key,
-            reinterpret_cast<char *>(&altWeeklySchedule),
-            sizeof(TChannelConfig_WeeklySchedule))) {
-        if (!isWeeklyScheduleValid(&altWeeklySchedule, true)) {
-          SUPLA_LOG_WARNING(
-              "HVAC[%d]: alt weekly schedule invalid in storage. Using SW "
-              "defaults", getChannelNumber());
-        } else {
-//          SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule loaded successfully",
-//                         getChannelNumber());
-          isWeeklyScheduleConfigured = true;
-        }
-      } else {
-        SUPLA_LOG_INFO(
-            "HVAC[%d]: alt weekly schedule missing. Using SW defaults",
-            getChannelNumber());
-      }
-    }
+    weeklyScheduleHelper->onLoadConfig();
 
     // load config changed offline flags
     if (cfg->isChannelConfigChangeFlagSet(getChannelNumber())) {
       SUPLA_LOG_INFO("HVAC[%d]: config changed offline flag is set",
-          getChannelNumber());
+                     getChannelNumber());
       channelConfigChangedOffline = 1;
     } else {
       channelConfigChangedOffline = 0;
     }
 
-    uint8_t flag = 0;
-    generateKey(key, "weekly_chng");
-    cfg->getUInt8(key, &flag);
-    SUPLA_LOG_INFO("HVAC[%d]: weekly schedule config changed offline flag %d",
-        getChannelNumber(),
-        flag);
-    if (flag) {
-      weeklyScheduleChangedOffline = 1;
-    } else {
-      weeklyScheduleChangedOffline = 0;
-    }
-
   } else {
     SUPLA_LOG_ERROR("HVAC[%d]: can't work without config storage",
-        getChannelNumber());
+                    getChannelNumber());
   }
 }
 
@@ -358,7 +264,7 @@ void HvacBase::onLoadState() {
     }
     if (!Supla::Channel::isHvacValueValid(hvacValue)) {
       SUPLA_LOG_WARNING("HVAC[%d]: invalid HVAC value in state",
-          getChannelNumber());
+                        getChannelNumber());
     }
 
     memset(&lastWorkingMode, 0, sizeof(lastWorkingMode));
@@ -477,8 +383,8 @@ void HvacBase::onInit() {
 
   initDefaultAlgorithm();
 
-  if (!isWeeklyScheduleConfigured) {
-    initDefaultWeeklySchedule();
+  if (!weeklyScheduleHelper->isConfigured()) {
+    weeklyScheduleHelper->initDefaultWeeklySchedule();
   }
 
   initDone = true;
@@ -514,7 +420,7 @@ void HvacBase::onInit() {
   previousSubfunction = config.Subfunction;
 
   if (channel.isHvacFlagWeeklySchedule()) {
-    if (!processWeeklySchedule()) {
+    if (!weeklyScheduleHelper->processWeeklySchedule()) {
       return;
     }
   } else {
@@ -527,7 +433,6 @@ void HvacBase::onInit() {
     setOutput(0, true);
   }
 }
-
 
 void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   SUPLA_LOG_DEBUG(
@@ -546,13 +451,9 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
   if (channelConfigChangedOffline) {
     channelConfigChangedOffline = 1;
   }
-  if (weeklyScheduleChangedOffline) {
-    weeklyScheduleChangedOffline = 1;
-  }
   defaultConfigReceived = false;
-  weeklyScheduleReceived = false;
-  altWeeklyScheduleReceived = false;
   timerUpdateTimestamp = 0;
+  weeklyScheduleHelper->onRegistered();
 }
 
 void HvacBase::handleChannelConfigFinished() {
@@ -561,14 +462,7 @@ void HvacBase::handleChannelConfigFinished() {
     // trigger sending channel config to server
     channelConfigChangedOffline = 1;
   }
-  if (!weeklyScheduleReceived) {
-    // trigger sending weekly schedule to server
-    weeklyScheduleChangedOffline = 1;
-  }
-  if (isAltWeeklySchedulePossible() && !altWeeklyScheduleReceived) {
-    // trigger sending weekly schedule to server
-    weeklyScheduleChangedOffline = 1;
-  }
+  weeklyScheduleHelper->handleChannelConfigFinished();
 }
 
 void HvacBase::iterateAlways() {
@@ -657,12 +551,16 @@ void HvacBase::iterateAlways() {
 
       if (myMode != masterMode || mySetpointHeat != masterSetpointHeat ||
           mySetpointCool != masterSetpointCool) {
-        SUPLA_LOG_INFO("HVAC[%d]: Master thermostat settings changed "
+        SUPLA_LOG_INFO(
+            "HVAC[%d]: Master thermostat settings changed "
             "mode %d->%d, heat %d->%d, cool %d->%d",
-                       getChannelNumber(),
-                       myMode, masterMode,
-                       mySetpointHeat, masterSetpointHeat,
-                       mySetpointCool, masterSetpointCool);
+            getChannelNumber(),
+            myMode,
+            masterMode,
+            mySetpointHeat,
+            masterSetpointHeat,
+            mySetpointCool,
+            masterSetpointCool);
         if (!applyNewRuntimeSettings(
                 masterMode, masterSetpointHeat, masterSetpointCool)) {
           setTargetMode(SUPLA_HVAC_MODE_OFF, false);
@@ -841,7 +739,7 @@ void HvacBase::iterateAlways() {
     default: {
       break;
     }
-    updateChannelState();
+      updateChannelState();
   }
 }
 
@@ -985,16 +883,15 @@ uint8_t HvacBase::handleChannelConfig(TSD_ChannelConfig *newConfig,
     if (local) {
       // when config was changed locally, we have to verify if there is no
       // master thermostat invlid config
-      for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
-          ch = ch->next()) {
+      for (Supla::Channel *ch = Supla::Channel::Begin(); ch != nullptr;
+           ch = ch->next()) {
         int channelNumber = ch->getChannelNumber();
         auto channelType = ch->getChannelType();
         if (channelType == SUPLA_CHANNELTYPE_HVAC &&
             channelNumber != getChannelNumber()) {
           auto el = Supla::Element::getElementByChannelNumber(channelNumber);
-          auto otherHvac = reinterpret_cast<Supla::Control::HvacBase*>(el);
-          if (otherHvac &&
-              otherHvac->isMasterThermostatSet() &&
+          auto otherHvac = reinterpret_cast<Supla::Control::HvacBase *>(el);
+          if (otherHvac && otherHvac->isMasterThermostatSet() &&
               otherHvac->getMasterThermostatChannelNo() == getChannelNumber()) {
             // don't allow to configure master thermostat on channel which
             // is master to another thermostat
@@ -1042,7 +939,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   config.BinarySensorChannelNo = hvacConfig->BinarySensorChannelNo;
   config.AuxThermometerType = hvacConfig->AuxThermometerType;
   config.AntiFreezeAndOverheatProtectionEnabled =
-    hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
+      hvacConfig->AntiFreezeAndOverheatProtectionEnabled;
   config.UsedAlgorithm = hvacConfig->UsedAlgorithm;
   config.MinOnTimeS = hvacConfig->MinOnTimeS;
   config.MinOffTimeS = hvacConfig->MinOffTimeS;
@@ -1068,50 +965,48 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_ECO)) {
     setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_ECO,
-        getTemperatureEco(&hvacConfig->Temperatures));
+                           TEMPERATURE_ECO,
+                           getTemperatureEco(&hvacConfig->Temperatures));
   } else {
     clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_ECO);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_COMFORT)) {
+                               TEMPERATURE_COMFORT)) {
     setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_COMFORT,
-        getTemperatureComfort(&hvacConfig->Temperatures));
+                           TEMPERATURE_COMFORT,
+                           getTemperatureComfort(&hvacConfig->Temperatures));
   } else {
     clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_COMFORT);
   }
 
-  if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_BOOST)) {
+  if (isTemperatureSetInStruct(&hvacConfig->Temperatures, TEMPERATURE_BOOST)) {
     setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_BOOST,
-        getTemperatureBoost(&hvacConfig->Temperatures));
+                           TEMPERATURE_BOOST,
+                           getTemperatureBoost(&hvacConfig->Temperatures));
   } else {
     clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_BOOST);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_FREEZE_PROTECTION)) {
+                               TEMPERATURE_FREEZE_PROTECTION)) {
     setTemperatureInStruct(
         &config.Temperatures,
         TEMPERATURE_FREEZE_PROTECTION,
         getTemperatureFreezeProtection(&hvacConfig->Temperatures));
   } else {
     clearTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_FREEZE_PROTECTION);
+                             TEMPERATURE_FREEZE_PROTECTION);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_HEAT_PROTECTION)) {
+                               TEMPERATURE_HEAT_PROTECTION)) {
     setTemperatureInStruct(
         &config.Temperatures,
         TEMPERATURE_HEAT_PROTECTION,
         getTemperatureHeatProtection(&hvacConfig->Temperatures));
   } else {
-    clearTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_HEAT_PROTECTION);
+    clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_HEAT_PROTECTION);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
@@ -1122,7 +1017,7 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_AUX_HISTERESIS)) {
+                               TEMPERATURE_AUX_HISTERESIS)) {
     setTemperatureInStruct(
         &config.Temperatures,
         TEMPERATURE_AUX_HISTERESIS,
@@ -1130,47 +1025,43 @@ void HvacBase::applyConfigWithoutValidation(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_BELOW_ALARM)) {
-    setTemperatureInStruct(
-        &config.Temperatures,
-        TEMPERATURE_BELOW_ALARM,
-        getTemperatureBelowAlarm(&hvacConfig->Temperatures));
+                               TEMPERATURE_BELOW_ALARM)) {
+    setTemperatureInStruct(&config.Temperatures,
+                           TEMPERATURE_BELOW_ALARM,
+                           getTemperatureBelowAlarm(&hvacConfig->Temperatures));
   } else {
-    clearTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_BELOW_ALARM);
+    clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_BELOW_ALARM);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_ABOVE_ALARM)) {
-    setTemperatureInStruct(
-        &config.Temperatures,
-        TEMPERATURE_ABOVE_ALARM,
-        getTemperatureAboveAlarm(&hvacConfig->Temperatures));
+                               TEMPERATURE_ABOVE_ALARM)) {
+    setTemperatureInStruct(&config.Temperatures,
+                           TEMPERATURE_ABOVE_ALARM,
+                           getTemperatureAboveAlarm(&hvacConfig->Temperatures));
   } else {
-    clearTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_ABOVE_ALARM);
+    clearTemperatureInStruct(&config.Temperatures, TEMPERATURE_ABOVE_ALARM);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_AUX_MIN_SETPOINT)) {
+                               TEMPERATURE_AUX_MIN_SETPOINT)) {
     setTemperatureInStruct(
         &config.Temperatures,
         TEMPERATURE_AUX_MIN_SETPOINT,
         getTemperatureAuxMinSetpoint(&hvacConfig->Temperatures));
   } else {
     clearTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_AUX_MIN_SETPOINT);
+                             TEMPERATURE_AUX_MIN_SETPOINT);
   }
 
   if (isTemperatureSetInStruct(&hvacConfig->Temperatures,
-        TEMPERATURE_AUX_MAX_SETPOINT)) {
+                               TEMPERATURE_AUX_MAX_SETPOINT)) {
     setTemperatureInStruct(
         &config.Temperatures,
         TEMPERATURE_AUX_MAX_SETPOINT,
         getTemperatureAuxMaxSetpoint(&hvacConfig->Temperatures));
   } else {
     clearTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_AUX_MAX_SETPOINT);
+                             TEMPERATURE_AUX_MAX_SETPOINT);
   }
 }
 
@@ -1192,7 +1083,7 @@ bool HvacBase::isConfigValid(TChannelConfig_HVAC *newConfig) const {
       return false;
     }
     if (newConfig->AuxThermometerChannelNo ==
-        newConfig->MainThermometerChannelNo &&
+            newConfig->MainThermometerChannelNo &&
         newConfig->AuxThermometerChannelNo != getChannelNumber()) {
       SUPLA_LOG_WARNING(
           "HVAC[%d]: aux thermometer channel %d is the same as main "
@@ -1367,8 +1258,7 @@ bool HvacBase::areTemperaturesValid(
     }
   }
 
-  if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_AUX_MIN_SETPOINT)) {
+  if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUX_MIN_SETPOINT)) {
     if (!isTemperatureAuxMinSetpointValid(temperatures)) {
       SUPLA_LOG_WARNING("HVAC[%d]: invalid aux min setpoint",
                         channel.getChannelNumber());
@@ -1376,8 +1266,7 @@ bool HvacBase::areTemperaturesValid(
     }
   }
 
-  if (isTemperatureSetInStruct(temperatures,
-                               TEMPERATURE_AUX_MAX_SETPOINT)) {
+  if (isTemperatureSetInStruct(temperatures, TEMPERATURE_AUX_MAX_SETPOINT)) {
     if (!isTemperatureAuxMaxSetpointValid(temperatures)) {
       SUPLA_LOG_WARNING("HVAC[%d]: invalid aux max setpoint",
                         channel.getChannelNumber());
@@ -1437,7 +1326,7 @@ bool HvacBase::isTemperatureInMainConstrain(_supla_int16_t temperature) const {
 }
 
 bool HvacBase::isTemperatureInHeatCoolConstrain(_supla_int16_t tHeat,
-                                            _supla_int16_t tCool) const {
+                                                _supla_int16_t tCool) const {
   auto offsetMin = getTemperatureHeatCoolOffsetMin();
   auto offsetMax = getTemperatureHeatCoolOffsetMax();
   return (tCool - tHeat >= offsetMin) && (tCool - tHeat <= offsetMax) &&
@@ -1445,16 +1334,15 @@ bool HvacBase::isTemperatureInHeatCoolConstrain(_supla_int16_t tHeat,
          isTemperatureInMainConstrain(tCool);
 }
 
-bool HvacBase::isTemperatureInAuxConstrain(
-    _supla_int16_t temperature) const {
+bool HvacBase::isTemperatureInAuxConstrain(_supla_int16_t temperature) const {
   if (temperature == SUPLA_TEMPERATURE_INVALID_INT16) {
     return false;
   }
 
-  auto tMin = getTemperatureFromStruct(&config.Temperatures,
-                                       TEMPERATURE_AUX_MIN);
-  auto tMax = getTemperatureFromStruct(&config.Temperatures,
-                                       TEMPERATURE_AUX_MAX);
+  auto tMin =
+      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_AUX_MIN);
+  auto tMax =
+      getTemperatureFromStruct(&config.Temperatures, TEMPERATURE_AUX_MAX);
 
   return temperature >= tMin && temperature <= tMax;
 }
@@ -1478,7 +1366,7 @@ bool HvacBase::isTemperatureHeatProtectionValid(
 
 bool HvacBase::isTemperatureHeatProtectionValid(
     const THVACTemperatureCfg *temperatures) const {
-  auto  t = getTemperatureFromStruct(temperatures, TEMPERATURE_HEAT_PROTECTION);
+  auto t = getTemperatureFromStruct(temperatures, TEMPERATURE_HEAT_PROTECTION);
   return isTemperatureInMainConstrain(t);
 }
 
@@ -1537,7 +1425,6 @@ bool HvacBase::isTemperatureAuxHisteresisValid(
       getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_HISTERESIS);
   return isTemperatureHisteresisValid(hist);
 }
-
 
 bool HvacBase::isTemperatureAuxMinSetpointValid(
     _supla_int16_t temperature) const {
@@ -1668,76 +1555,8 @@ bool HvacBase::isAlgorithmValid(unsigned _supla_int16_t algorithm) const {
 uint8_t HvacBase::handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
                                        bool isAltWeeklySchedule,
                                        bool local) {
-  SUPLA_LOG_DEBUG("HVAC[%d]: Handling weekly schedule",
-      getChannelNumber());
-  if (weeklyScheduleChangedOffline) {
-    SUPLA_LOG_INFO("HVAC[%d]: Ignoring%s weekly schedule",
-                   getChannelNumber(),
-                   isAltWeeklySchedule ? " alt" : "");
-    if (isAltWeeklySchedule) {
-      altWeeklyScheduleReceived = true;
-    } else {
-      weeklyScheduleReceived = true;
-    }
-    return SUPLA_CONFIG_RESULT_TRUE;
-  }
-
-  if (newWeeklySchedule == nullptr) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
-
-  if (newWeeklySchedule->ConfigSize == 0) {
-    // Empty config for weekly schedule means that no weekly schedule is
-    // configured
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d]: Missing weekly schedule on server. Sending local schedule",
-        getChannelNumber());
-    if (!isWeeklyScheduleConfigured) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d]: No weekly schedule configured. Using SW defaults.",
-          getChannelNumber());
-      initDefaultWeeklySchedule();
-    }
-    weeklyScheduleChangedOffline = 1;
-    return SUPLA_CONFIG_RESULT_TRUE;
-  }
-
-  if (newWeeklySchedule->ConfigSize < sizeof(TChannelConfig_WeeklySchedule)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: Invalid weekly schedule",
-                     getChannelNumber());
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
-
-  auto newSchedule = reinterpret_cast<TChannelConfig_WeeklySchedule *>(
-      newWeeklySchedule->Config);
-
-  if (!isWeeklyScheduleValid(newSchedule, isAltWeeklySchedule)) {
-    return SUPLA_CONFIG_RESULT_DATA_ERROR;
-  }
-
-  auto weeklySchedulePtr =
-      (isAltWeeklySchedule ? &altWeeklySchedule : &weeklySchedule);
-
-  if (isAltWeeklySchedule) {
-    altWeeklyScheduleReceived = true;
-  } else {
-    weeklyScheduleReceived = true;
-  }
-
-  if (!isWeeklyScheduleConfigured || memcmp(weeklySchedulePtr,
-             newSchedule,
-             sizeof(TChannelConfig_WeeklySchedule)) != 0) {
-    memcpy(weeklySchedulePtr,
-           newSchedule,
-           sizeof(TChannelConfig_WeeklySchedule));
-    isWeeklyScheduleConfigured = true;
-    if (!local) {
-      weeklyScheduleChangedOffline = 0;
-    }
-    saveWeeklySchedule();
-  }
-
-  return SUPLA_RESULT_TRUE;
+  return weeklyScheduleHelper->handleWeeklySchedule(
+      newWeeklySchedule, isAltWeeklySchedule, local);
 }
 
 bool HvacBase::isFunctionSupported(_supla_int_t channelFunction) const {
@@ -1792,9 +1611,9 @@ void HvacBase::setTemperatureInStruct(THVACTemperatureCfg *temperatures,
 }
 
 void HvacBase::clearTemperatureInStruct(THVACTemperatureCfg *temperatures,
-                              unsigned _supla_int_t index) {
-    if (temperatures == nullptr) {
-      return;
+                                        unsigned _supla_int_t index) {
+  if (temperatures == nullptr) {
+    return;
   }
 
   int32_t arrayIndex = getArrayIndex(index);
@@ -1808,7 +1627,7 @@ void HvacBase::clearTemperatureInStruct(THVACTemperatureCfg *temperatures,
 void HvacBase::setTemperatureRoomMin(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_ROOM_MIN, temperature);
+        &initialConfig->Temperatures, TEMPERATURE_ROOM_MIN, temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_ROOM_MIN, temperature);
@@ -1817,7 +1636,7 @@ void HvacBase::setTemperatureRoomMin(_supla_int16_t temperature) {
 void HvacBase::setTemperatureRoomMax(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_ROOM_MAX, temperature);
+        &initialConfig->Temperatures, TEMPERATURE_ROOM_MAX, temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_ROOM_MAX, temperature);
@@ -1826,7 +1645,7 @@ void HvacBase::setTemperatureRoomMax(_supla_int16_t temperature) {
 void HvacBase::setTemperatureAuxMin(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_AUX_MIN, temperature);
+        &initialConfig->Temperatures, TEMPERATURE_AUX_MIN, temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_AUX_MIN, temperature);
@@ -1835,7 +1654,7 @@ void HvacBase::setTemperatureAuxMin(_supla_int16_t temperature) {
 void HvacBase::setTemperatureAuxMax(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_AUX_MAX, temperature);
+        &initialConfig->Temperatures, TEMPERATURE_AUX_MAX, temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_AUX_MAX, temperature);
@@ -1844,7 +1663,7 @@ void HvacBase::setTemperatureAuxMax(_supla_int16_t temperature) {
 void HvacBase::setTemperatureHisteresisMin(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_HISTERESIS_MIN, temperature);
+        &initialConfig->Temperatures, TEMPERATURE_HISTERESIS_MIN, temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HISTERESIS_MIN, temperature);
@@ -1853,7 +1672,7 @@ void HvacBase::setTemperatureHisteresisMin(_supla_int16_t temperature) {
 void HvacBase::setTemperatureHisteresisMax(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_HISTERESIS_MAX, temperature);
+        &initialConfig->Temperatures, TEMPERATURE_HISTERESIS_MAX, temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HISTERESIS_MAX, temperature);
@@ -1861,9 +1680,9 @@ void HvacBase::setTemperatureHisteresisMax(_supla_int16_t temperature) {
 
 void HvacBase::setTemperatureHeatCoolOffsetMin(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MIN,
-      temperature);
+    setTemperatureInStruct(&initialConfig->Temperatures,
+                           TEMPERATURE_HEAT_COOL_OFFSET_MIN,
+                           temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MIN, temperature);
@@ -1871,14 +1690,13 @@ void HvacBase::setTemperatureHeatCoolOffsetMin(_supla_int16_t temperature) {
 
 void HvacBase::setTemperatureHeatCoolOffsetMax(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(
-      &initialConfig->Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MAX,
-      temperature);
+    setTemperatureInStruct(&initialConfig->Temperatures,
+                           TEMPERATURE_HEAT_COOL_OFFSET_MAX,
+                           temperature);
   }
   setTemperatureInStruct(
       &config.Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MAX, temperature);
 }
-
 
 bool HvacBase::setTemperatureFreezeProtection(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
@@ -1922,16 +1740,14 @@ bool HvacBase::setTemperatureHeatProtection(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureEco(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(&(initialConfig->Temperatures),
-                           TEMPERATURE_ECO,
-                           temperature);
+    setTemperatureInStruct(
+        &(initialConfig->Temperatures), TEMPERATURE_ECO, temperature);
   }
   if (!isTemperatureEcoValid(temperature)) {
     return false;
   }
   if (temperature != getTemperatureEco()) {
-    setTemperatureInStruct(
-        &config.Temperatures, TEMPERATURE_ECO, temperature);
+    setTemperatureInStruct(&config.Temperatures, TEMPERATURE_ECO, temperature);
     if (initDone) {
       channelConfigChangedOffline = 1;
       saveConfig();
@@ -1942,9 +1758,8 @@ bool HvacBase::setTemperatureEco(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureComfort(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(&(initialConfig->Temperatures),
-                           TEMPERATURE_COMFORT,
-                           temperature);
+    setTemperatureInStruct(
+        &(initialConfig->Temperatures), TEMPERATURE_COMFORT, temperature);
   }
   if (!isTemperatureComfortValid(temperature)) {
     return false;
@@ -1962,9 +1777,8 @@ bool HvacBase::setTemperatureComfort(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureBoost(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(&(initialConfig->Temperatures),
-                           TEMPERATURE_BOOST,
-                           temperature);
+    setTemperatureInStruct(
+        &(initialConfig->Temperatures), TEMPERATURE_BOOST, temperature);
   }
   if (!isTemperatureBoostValid(temperature)) {
     return false;
@@ -1982,9 +1796,8 @@ bool HvacBase::setTemperatureBoost(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureHisteresis(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(&(initialConfig->Temperatures),
-                           TEMPERATURE_HISTERESIS,
-                           temperature);
+    setTemperatureInStruct(
+        &(initialConfig->Temperatures), TEMPERATURE_HISTERESIS, temperature);
   }
   if (!isTemperatureHisteresisValid(temperature)) {
     return false;
@@ -2022,9 +1835,8 @@ bool HvacBase::setTemperatureAuxHisteresis(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(&(initialConfig->Temperatures),
-                           TEMPERATURE_BELOW_ALARM,
-                           temperature);
+    setTemperatureInStruct(
+        &(initialConfig->Temperatures), TEMPERATURE_BELOW_ALARM, temperature);
   }
   if (!isTemperatureBelowAlarmValid(temperature)) {
     return false;
@@ -2042,9 +1854,8 @@ bool HvacBase::setTemperatureBelowAlarm(_supla_int16_t temperature) {
 
 bool HvacBase::setTemperatureAboveAlarm(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
-    setTemperatureInStruct(&(initialConfig->Temperatures),
-                           TEMPERATURE_ABOVE_ALARM,
-                           temperature);
+    setTemperatureInStruct(
+        &(initialConfig->Temperatures), TEMPERATURE_ABOVE_ALARM, temperature);
   }
   if (!isTemperatureAboveAlarmValid(temperature)) {
     return false;
@@ -2060,8 +1871,7 @@ bool HvacBase::setTemperatureAboveAlarm(_supla_int16_t temperature) {
   return true;
 }
 
-bool HvacBase::setTemperatureAuxMinSetpoint(
-    _supla_int16_t temperature) {
+bool HvacBase::setTemperatureAuxMinSetpoint(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(&(initialConfig->Temperatures),
                            TEMPERATURE_AUX_MIN_SETPOINT,
@@ -2071,9 +1881,8 @@ bool HvacBase::setTemperatureAuxMinSetpoint(
     return false;
   }
   if (temperature != getTemperatureAuxMinSetpoint()) {
-    setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_AUX_MIN_SETPOINT,
-        temperature);
+    setTemperatureInStruct(
+        &config.Temperatures, TEMPERATURE_AUX_MIN_SETPOINT, temperature);
     if (initDone) {
       channelConfigChangedOffline = 1;
       saveConfig();
@@ -2082,8 +1891,7 @@ bool HvacBase::setTemperatureAuxMinSetpoint(
   return true;
 }
 
-bool HvacBase::setTemperatureAuxMaxSetpoint(
-    _supla_int16_t temperature) {
+bool HvacBase::setTemperatureAuxMaxSetpoint(_supla_int16_t temperature) {
   if (initialConfig && !initDone) {
     setTemperatureInStruct(&(initialConfig->Temperatures),
                            TEMPERATURE_AUX_MAX_SETPOINT,
@@ -2093,9 +1901,8 @@ bool HvacBase::setTemperatureAuxMaxSetpoint(
     return false;
   }
   if (temperature != getTemperatureAuxMaxSetpoint()) {
-    setTemperatureInStruct(&config.Temperatures,
-        TEMPERATURE_AUX_MAX_SETPOINT,
-        temperature);
+    setTemperatureInStruct(
+        &config.Temperatures, TEMPERATURE_AUX_MAX_SETPOINT, temperature);
     if (initDone) {
       channelConfigChangedOffline = 1;
       saveConfig();
@@ -2225,14 +2032,12 @@ _supla_int16_t HvacBase::getTemperatureAboveAlarm(
 
 _supla_int16_t HvacBase::getTemperatureAuxMinSetpoint(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures,
-                                  TEMPERATURE_AUX_MIN_SETPOINT);
+  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_MIN_SETPOINT);
 }
 
 _supla_int16_t HvacBase::getTemperatureAuxMaxSetpoint(
     const THVACTemperatureCfg *temperatures) const {
-  return getTemperatureFromStruct(temperatures,
-                                  TEMPERATURE_AUX_MAX_SETPOINT);
+  return getTemperatureFromStruct(temperatures, TEMPERATURE_AUX_MAX_SETPOINT);
 }
 
 _supla_int16_t HvacBase::getTemperatureFreezeProtection() const {
@@ -2343,8 +2148,7 @@ bool HvacBase::setMainThermometerChannelNo(int16_t newChannelNo) {
       }
     }
   } else if (isChannelThermometer(newChannelNo)) {
-    if (getAuxThermometerType() !=
-        SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
+    if (getAuxThermometerType() != SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
       if (channelNo == getAuxThermometerChannelNo()) {
         return false;
       }
@@ -2387,10 +2191,8 @@ bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
     }
     if (config.AuxThermometerChannelNo != channelNo) {
       config.AuxThermometerChannelNo = channelNo;
-      if (getAuxThermometerType() ==
-          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
-        setAuxThermometerType(
-            SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
+      if (getAuxThermometerType() == SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET) {
+        setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_DISABLED);
         if (initDone) {
           channelConfigChangedOffline = 1;
           saveConfig();
@@ -2403,8 +2205,7 @@ bool HvacBase::setAuxThermometerChannelNo(int16_t newChannelNo) {
   if (getChannelNumber() == channelNo) {
     if (config.AuxThermometerChannelNo != channelNo) {
       config.AuxThermometerChannelNo = channelNo;
-      setAuxThermometerType(
-          SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
+      setAuxThermometerType(SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET);
       if (initDone) {
         channelConfigChangedOffline = 1;
         saveConfig();
@@ -2623,50 +2424,14 @@ void HvacBase::saveConfig() {
 
     cfg->saveWithDelay(5000);
   }
-  for (auto proto = Supla::Protocol::ProtocolLayer::first();
-      proto != nullptr; proto = proto->next()) {
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
     proto->notifyConfigChange(getChannelNumber());
   }
 }
 
 void HvacBase::saveWeeklySchedule() {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg) {
-    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-    // Weekly schedule configuration
-    generateKey(key, "hvac_weekly");
-    if (cfg->setBlob(key,
-                     reinterpret_cast<char *>(&weeklySchedule),
-                     sizeof(TChannelConfig_WeeklySchedule))) {
-      SUPLA_LOG_INFO("HVAC[%d]: weekly schedule saved successfully",
-                     getChannelNumber());
-    } else {
-      SUPLA_LOG_WARNING("HVAC[%d]: failed to save weekly schedule",
-                     getChannelNumber());
-    }
-
-    // for standard thermosat function, save also alternative schedule
-    if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-      generateKey(key, "hvac_aweekly");
-      if (cfg->setBlob(key,
-                       reinterpret_cast<char *>(&altWeeklySchedule),
-                       sizeof(TChannelConfig_WeeklySchedule))) {
-        SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule saved successfully",
-                       getChannelNumber());
-      } else {
-        SUPLA_LOG_WARNING("HVAC[%d]: failed to save alt weekly schedule",
-                       getChannelNumber());
-      }
-    }
-
-    generateKey(key, "weekly_chng");
-    if (weeklyScheduleChangedOffline) {
-      cfg->setUInt8(key, 1);
-    } else {
-      cfg->setUInt8(key, 0);
-    }
-    cfg->saveWithDelay(5000);
-  }
+  weeklyScheduleHelper->saveWeeklySchedule();
 }
 
 void HvacBase::handleSetChannelConfigResult(
@@ -2675,37 +2440,17 @@ void HvacBase::handleSetChannelConfigResult(
     return;
   }
 
-  bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
-  (void)(success);
-
-  switch (result->ConfigType) {
-    case SUPLA_CONFIG_TYPE_DEFAULT: {
-      SUPLA_LOG_INFO("HVAC[%d]: set channel config %s (%d)",
-                     getChannelNumber(),
-                     success ? "succeeded" : "failed",
-                     result->Result);
-      clearChannelConfigChangedFlag();
-      break;
-    }
-    case SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE: {
-      SUPLA_LOG_INFO("HVAC[%d]: set weekly schedule config %s (%d)",
-                     getChannelNumber(),
-                     success ? "succeeded" : "failed",
-                     result->Result);
-      clearWeeklyScheduleChangedFlag();
-      break;
-    }
-    case SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE: {
-      SUPLA_LOG_INFO("HVAC[%d]: set alt weekly schedule config %s (%d)",
-                     getChannelNumber(),
-                     success ? "succeeded" : "failed",
-                     result->Result);
-      clearWeeklyScheduleChangedFlag();
-      break;
-    }
-    default:
-      break;
+  if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
+    bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
+    SUPLA_LOG_INFO("HVAC[%d]: set channel config %s (%d)",
+                   getChannelNumber(),
+                   success ? "succeeded" : "failed",
+                   result->Result);
+    clearChannelConfigChangedFlag();
+    return;
   }
+
+  weeklyScheduleHelper->handleSetChannelConfigResult(result);
 }
 
 void HvacBase::clearChannelConfigChangedFlag() {
@@ -2720,16 +2465,7 @@ void HvacBase::clearChannelConfigChangedFlag() {
 }
 
 void HvacBase::clearWeeklyScheduleChangedFlag() {
-  if (weeklyScheduleChangedOffline) {
-    weeklyScheduleChangedOffline = 0;
-    auto cfg = Supla::Storage::ConfigInstance();
-    if (cfg) {
-      char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-      generateKey(key, "weekly_chng");
-      cfg->setUInt8(key, 0);
-      cfg->saveWithDelay(1000);
-    }
-  }
+  weeklyScheduleHelper->clearWeeklyScheduleChangedFlag();
 }
 
 void HvacBase::debugPrintProgram(const TWeeklyScheduleProgram *program,
@@ -2743,123 +2479,24 @@ void HvacBase::debugPrintProgram(const TWeeklyScheduleProgram *program,
 
 bool HvacBase::isWeeklyScheduleValid(TChannelConfig_WeeklySchedule *newSchedule,
                                      bool isAltWeeklySchedule) const {
-  bool programIsUsed[SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE] = {};
-
-  // check if programs are valid
-  for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE; i++) {
-    debugPrintProgram(&(newSchedule->Program[i]), i);
-    if (!isProgramValid(newSchedule->Program[i], isAltWeeklySchedule)) {
-      SUPLA_LOG_WARNING(
-          "HVAC[%d]: weekly schedule validation failed: invalid program %d",
-          getChannelNumber(),
-          i);
-      return false;
-    }
-    if (newSchedule->Program[i].Mode != SUPLA_HVAC_MODE_NOT_SET) {
-      programIsUsed[i] = true;
-    }
-  }
-
-  // check if only used programs are configured in the schedule
-  for (int i = 0; i < SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE; i++) {
-    int programId = getWeeklyScheduleProgramId(newSchedule, i);
-    if (programId != 0 && !programIsUsed[programId - 1]) {
-      SUPLA_LOG_WARNING(
-          "HVAC[%d]: weekly schedule validation failed: not configured program "
-          "used in schedule %d",
-          getChannelNumber(),
-          i);
-      return false;
-    }
-  }
-
-  return true;
+  return weeklyScheduleHelper->isWeeklyScheduleValid(newSchedule,
+                                                     isAltWeeklySchedule);
 }
 
 int HvacBase::getWeeklyScheduleProgramId(
     const TChannelConfig_WeeklySchedule *schedule, int index) const {
-  if (schedule == nullptr) {
-    // use main weekly schedule
-    schedule = &weeklySchedule;
-  }
-  if (index < 0 || index > SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
-    return 0;
-  }
-
-  return (schedule->Quarters[index / 2] >> (index % 2 * 4)) & 0xF;
+  return weeklyScheduleHelper->getWeeklyScheduleProgramId(schedule, index);
 }
 
 int HvacBase::calculateIndex(enum DayOfWeek dayOfWeek,
                              int hour,
                              int quarter) const {
-  if (dayOfWeek < DayOfWeek_Sunday || dayOfWeek > DayOfWeek_Saturday) {
-    return -1;
-  }
-  if (hour < 0 || hour > 23) {
-    return -1;
-  }
-  if (quarter < 0 || quarter > 3) {
-    return -1;
-  }
-
-  return (dayOfWeek * 24 + hour) * 4 + quarter;
+  return weeklyScheduleHelper->calculateIndex(dayOfWeek, hour, quarter);
 }
 
 bool HvacBase::isProgramValid(const TWeeklyScheduleProgram &program,
-    bool isAltWeeklySchedule) const {
-  if (program.Mode == SUPLA_HVAC_MODE_NOT_SET) {
-    return true;
-  }
-
-  if (program.Mode != SUPLA_HVAC_MODE_COOL
-      && program.Mode != SUPLA_HVAC_MODE_HEAT
-      && program.Mode != SUPLA_HVAC_MODE_HEAT_COOL) {
-    return false;
-  }
-
-  auto channelFunction = channel.getDefaultFunction();
-//  SUPLA_LOG_DEBUG("HVAC: channel function %d", channelFunction);
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-    if (program.Mode == SUPLA_HVAC_MODE_HEAT) {
-      if (isAltWeeklySchedule) {
-        return false;
-      }
-      if (!isHeatingAndCoolingSupported()) {
-        return false;
-      }
-    } else if (program.Mode == SUPLA_HVAC_MODE_COOL) {
-      if (!isAltWeeklySchedule) {
-        return false;
-      }
-      if (!isHeatingAndCoolingSupported()) {
-        return false;
-      }
-    } else if (program.Mode != SUPLA_HVAC_MODE_NOT_SET &&
-               program.Mode != SUPLA_HVAC_MODE_OFF) {
-      return false;
-    }
-  } else if (!isModeSupported(program.Mode)) {
-    return false;
-  }
-
-  // check tempreatures
-  switch (program.Mode) {
-    case SUPLA_HVAC_MODE_HEAT: {
-      return isTemperatureInMainConstrain(program.SetpointTemperatureHeat);
-    }
-    case SUPLA_HVAC_MODE_COOL: {
-      return isTemperatureInMainConstrain(program.SetpointTemperatureCool);
-    }
-    case SUPLA_HVAC_MODE_HEAT_COOL: {
-      return isTemperatureInHeatCoolConstrain(program.SetpointTemperatureHeat,
-                                          program.SetpointTemperatureCool);
-    }
-    default: {
-      return false;
-    }
-  }
-
-  return true;
+                              bool isAltWeeklySchedule) const {
+  return weeklyScheduleHelper->isProgramValid(program, isAltWeeklySchedule);
 }
 
 bool HvacBase::isModeSupported(int mode) const {
@@ -2921,7 +2558,7 @@ bool HvacBase::isModeSupported(int mode) const {
       return onOffSupported;
     }
     case SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE: {
-      return isWeeklyScheduleConfigured;
+      return weeklyScheduleHelper->isConfigured();
     }
   }
 
@@ -2931,46 +2568,8 @@ bool HvacBase::isModeSupported(int mode) const {
 bool HvacBase::setWeeklySchedule(int index,
                                  int programId,
                                  bool isAltWeeklySchedule) {
-  if (index < 0 || index >= SUPLA_WEEKLY_SCHEDULE_VALUES_SIZE) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: invalid index %d", getChannelNumber(), index);
-    return false;
-  }
-  if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    SUPLA_LOG_DEBUG(
-        "HVAC[%d]: invalid programId %d", getChannelNumber(), programId);
-    return false;
-  }
-
-  auto weeklySchedulePtr =
-      (isAltWeeklySchedule ? &altWeeklySchedule : &weeklySchedule);
-
-  if (programId > 0 &&
-      (weeklySchedulePtr->Program[programId - 1].Mode ==
-           SUPLA_HVAC_MODE_NOT_SET ||
-       weeklySchedulePtr->Program[programId - 1].Mode > SUPLA_HVAC_MODE_DRY)) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: invalid mode %d for programId %d",
-                    getChannelNumber(),
-                    weeklySchedulePtr->Program[programId - 1].Mode,
-                    programId);
-    return false;
-  }
-
-  if (index % 2) {
-    weeklySchedulePtr->Quarters[index / 2] =
-        (weeklySchedulePtr->Quarters[index / 2] & 0x0F) | (programId << 4);
-  } else {
-    weeklySchedulePtr->Quarters[index / 2] =
-        (weeklySchedulePtr->Quarters[index / 2] & 0xF0) | programId;
-  }
-
-  if (initDone) {
-    weeklyScheduleChangedOffline = 1;
-    isWeeklyScheduleConfigured = true;
-    saveWeeklySchedule();
-  }
-
-  isWeeklyScheduleConfigured = true;
-  return true;
+  return weeklyScheduleHelper->setWeeklySchedule(
+      index, programId, isAltWeeklySchedule);
 }
 
 bool HvacBase::setWeeklySchedule(enum DayOfWeek dayOfWeek,
@@ -2983,33 +2582,7 @@ bool HvacBase::setWeeklySchedule(enum DayOfWeek dayOfWeek,
 }
 
 TWeeklyScheduleProgram HvacBase::getProgramAt(int quarterIndex) const {
-  int programId = 1;
-
-  auto weeklySchedulePtr = &weeklySchedule;
-  if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-    if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL) {
-      weeklySchedulePtr = &altWeeklySchedule;
-    }
-  }
-
-  if (quarterIndex >= 0) {
-    programId = getWeeklyScheduleProgramId(weeklySchedulePtr, quarterIndex);
-  }
-
-  TWeeklyScheduleProgram program = {};
-  program.SetpointTemperatureCool = INT16_MIN;
-  program.SetpointTemperatureHeat = INT16_MIN;
-
-  if (programId == 0) {
-    program.Mode = SUPLA_HVAC_MODE_OFF;
-    return program;
-  }
-  if (programId < 0 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    // return "NOT_SET", which will be considered as an error
-    return program;
-  }
-
-  return weeklySchedulePtr->Program[programId - 1];
+  return weeklyScheduleHelper->getProgramAt(quarterIndex);
 }
 
 int HvacBase::getCurrentQuarter() const {
@@ -3017,32 +2590,18 @@ int HvacBase::getCurrentQuarter() const {
 
   if (Supla::Clock::IsReady()) {
     quarterIndex = calculateIndex(Supla::Clock::GetHvacDayOfWeek(),
-        Supla::Clock::GetHour(), Supla::Clock::GetQuarter());
+                                  Supla::Clock::GetHour(),
+                                  Supla::Clock::GetQuarter());
   }
   return quarterIndex;
 }
 
 TWeeklyScheduleProgram HvacBase::getCurrentProgram() const {
-  return getProgramAt(getCurrentQuarter());
+  return weeklyScheduleHelper->getCurrentProgram();
 }
 
 int HvacBase::getCurrentProgramId() const {
-  int quarterIndex = getCurrentQuarter();
-
-  int programId = 1;
-
-  auto weeklySchedulePtr = &weeklySchedule;
-  if (channel.getDefaultFunction() == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-    if (config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL) {
-      weeklySchedulePtr = &altWeeklySchedule;
-    }
-  }
-
-  if (quarterIndex >= 0) {
-    programId = getWeeklyScheduleProgramId(weeklySchedulePtr, quarterIndex);
-  }
-
-  return programId;
+  return weeklyScheduleHelper->getCurrentProgramId();
 }
 
 bool HvacBase::setProgram(int programId,
@@ -3050,45 +2609,13 @@ bool HvacBase::setProgram(int programId,
                           _supla_int16_t tHeat,
                           _supla_int16_t tCool,
                           bool isAltWeeklySchedule) {
-  SUPLA_LOG_DEBUG("HVAC[%d]: set %s program(%d, %d, %d, %d)",
-                  channel.getChannelNumber(),
-                  isAltWeeklySchedule ? "Alt" : "Main",
-                  programId,
-                  mode,
-                  tHeat,
-                  tCool);
-
-  TWeeklyScheduleProgram program = {mode, {tHeat}, {tCool}};
-
-  if (!isProgramValid(program, isAltWeeklySchedule)) {
-    return false;
-  }
-
-  auto schedule = (isAltWeeklySchedule ? &altWeeklySchedule : &weeklySchedule);
-
-  schedule->Program[programId - 1].Mode = mode;
-  schedule->Program[programId - 1].SetpointTemperatureHeat = tHeat;
-  schedule->Program[programId - 1].SetpointTemperatureCool = tCool;
-
-  if (initDone) {
-    weeklyScheduleChangedOffline = 1;
-    isWeeklyScheduleConfigured = true;
-    saveWeeklySchedule();
-  }
-  return true;
+  return weeklyScheduleHelper->setProgram(
+      programId, mode, tHeat, tCool, isAltWeeklySchedule);
 }
 
 TWeeklyScheduleProgram HvacBase::getProgramById(
     int programId, bool isAltWeeklySchedule) const {
-  if (programId < 1 || programId > SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE) {
-    return {};
-  }
-
-  if (isAltWeeklySchedule) {
-    return altWeeklySchedule.Program[programId - 1];
-  } else {
-    return weeklySchedule.Program[programId - 1];
-  }
+  return weeklyScheduleHelper->getProgramById(programId, isAltWeeklySchedule);
 }
 
 _supla_int16_t HvacBase::getPrimaryTemp() {
@@ -3249,10 +2776,10 @@ void HvacBase::setOutput(int value, bool force) {
 }
 
 void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
-//  SUPLA_LOG_DEBUG("HVAC[%d]: set target mode %s, keepScheduleOn %d",
-//                  getChannelNumber(),
-//                  channel.getHvacModeCstr(mode),
-//                  keepScheduleOn);
+  //  SUPLA_LOG_DEBUG("HVAC[%d]: set target mode %s, keepScheduleOn %d",
+  //                  getChannelNumber(),
+  //                  channel.getHvacModeCstr(mode),
+  //                  keepScheduleOn);
   channel.setHvacFlagCountdownTimer(false);
   if (channel.getHvacMode() == mode) {
     if (!(!keepScheduleOn && channel.isHvacFlagWeeklySchedule())) {
@@ -3266,7 +2793,8 @@ void HvacBase::setTargetMode(int mode, bool keepScheduleOn) {
 
   SUPLA_LOG_INFO("HVAC[%d]: set target mode %s requested (%d)",
                  getChannelNumber(),
-                 channel.getHvacModeCstr(mode), mode);
+                 channel.getHvacModeCstr(mode),
+                 mode);
 
   if (isModeSupported(mode)) {
     if (mode == SUPLA_HVAC_MODE_OFF) {
@@ -3508,7 +3036,7 @@ bool HvacBase::applyNewRuntimeSettings(int mode,
   setTargetMode(mode, false);
 
   if ((mode != SUPLA_HVAC_MODE_CMD_WEEKLY_SCHEDULE &&
-        !isWeeklyScheduleEnabled()) ||
+       !isWeeklyScheduleEnabled()) ||
       isWeelkySchedulManualOverrideMode()) {
     setSetpointTemperaturesForCurrentMode(tHeat, tCool);
   }
@@ -3570,7 +3098,7 @@ int32_t HvacBase::handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) {
   }
 
   if (applyNewRuntimeSettings(
-      hvacValue->Mode, tHeat, tCool, newValue->DurationSec)) {
+          hvacValue->Mode, tHeat, tCool, newValue->DurationSec)) {
     // clear flag, so iterateAlways method will apply new config instantly
     // instead of waiting few seconds
     lastConfigChangeTimestampMs = 0;
@@ -3630,22 +3158,22 @@ int HvacBase::getTemperatureSetpointCool() {
 }
 
 int HvacBase::getDefaultManualMode() {
-    switch (channel.getDefaultFunction()) {
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
-        if (isHeatingSubfunction()) {
-          return SUPLA_HVAC_MODE_HEAT;
-        } else if (isCoolingSubfunction()) {
-          return SUPLA_HVAC_MODE_COOL;
-        }
-        break;
-      }
-      case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+  switch (channel.getDefaultFunction()) {
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
+      if (isHeatingSubfunction()) {
         return SUPLA_HVAC_MODE_HEAT;
+      } else if (isCoolingSubfunction()) {
+        return SUPLA_HVAC_MODE_COOL;
       }
-      case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
-        return SUPLA_HVAC_MODE_HEAT_COOL;
-      }
+      break;
     }
+    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
+      return SUPLA_HVAC_MODE_HEAT;
+    }
+    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
+      return SUPLA_HVAC_MODE_HEAT_COOL;
+    }
+  }
   return SUPLA_HVAC_MODE_OFF;
 }
 
@@ -3676,88 +3204,11 @@ void HvacBase::turnOn() {
 }
 
 bool HvacBase::turnOnWeeklySchedlue() {
-  if (!isWeeklyScheduleConfigured) {
-    return false;
-  }
-
-  channel.setHvacFlagWeeklySchedule(true);
-  return processWeeklySchedule();
+  return weeklyScheduleHelper->turnOnWeeklySchedule();
 }
 
 bool HvacBase::processWeeklySchedule() {
-  if (!channel.isHvacFlagWeeklySchedule()) {
-    SUPLA_LOG_WARNING(
-        "HVAC[%d]: processs weekly schedule failed - it is not enabled",
-        getChannelNumber());
-    return false;
-  }
-
-  if (!Supla::Clock::IsReady()) {
-    if (startupDelay) {
-      SUPLA_LOG_DEBUG(
-          "HVAC[%d]: Weekly schedule enabled, clock not ready -> startup "
-          "delay...",
-          getChannelNumber());
-      return false;
-    }
-
-    if (!channel.isHvacFlagClockError()) {
-      // print only on first error
-      SUPLA_LOG_WARNING(
-          "HVAC[%d]: processs weekly schedule failed - clock is not ready",
-          getChannelNumber());
-    }
-    channel.setHvacFlagClockError(true);
-  } else {
-    channel.setHvacFlagClockError(false);
-  }
-
-  TWeeklyScheduleProgram program = getCurrentProgram();
-  if (program.Mode == SUPLA_HVAC_MODE_NOT_SET) {
-    SUPLA_LOG_INFO(
-        "HVAC[%d]: Invalid program mode. Disabling schedule.",
-        getChannelNumber());
-    setTargetMode(SUPLA_HVAC_MODE_OFF, false);
-    return false;
-  } else {
-    if (isWeelkySchedulManualOverrideMode()) {
-      int currentProgramId = getCurrentProgramId();
-      if (currentProgramId != lastProgramManualOverride) {
-        SUPLA_LOG_DEBUG("HVAC[%d]: leaving manual override mode",
-                        getChannelNumber());
-        lastProgramManualOverride = -1;
-      } else {
-        if (getMode() == SUPLA_HVAC_MODE_OFF) {
-          int mode = lastManualMode;
-          if (mode == 0) {
-            mode = getDefaultManualMode();
-          }
-          SUPLA_LOG_DEBUG("HVAC[%d]: Manual override mode %d",
-                          getChannelNumber(),
-                          mode);
-          setTargetMode(mode, true);
-        }
-        if (!channel.isHvacFlagWeeklyScheduleTemporalOverride()) {
-          // print only on first entry
-          SUPLA_LOG_DEBUG("HVAC[%d]: Manual override mode", getChannelNumber());
-        }
-        channel.setHvacFlagWeeklyScheduleTemporalOverride(true);
-        return true;
-      }
-    }
-    channel.setHvacFlagWeeklyScheduleTemporalOverride(false);
-    setTargetMode(program.Mode, true);
-    int16_t tHeat = program.SetpointTemperatureHeat;
-    int16_t tCool = program.SetpointTemperatureCool;
-    if (program.Mode == SUPLA_HVAC_MODE_HEAT) {
-      tCool = INT16_MIN;
-    }
-    if (program.Mode == SUPLA_HVAC_MODE_COOL) {
-      tHeat = INT16_MIN;
-    }
-    setSetpointTemperaturesForCurrentMode(tHeat, tCool);
-  }
-  return true;
+  return weeklyScheduleHelper->processWeeklySchedule();
 }
 
 void HvacBase::setSetpointTemperaturesForCurrentMode(int16_t tHeat,
@@ -3852,7 +3303,8 @@ int16_t HvacBase::getCurrentHysteresis(bool forAux) const {
 }
 
 int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
-                                  _supla_int16_t tTarget, bool forAux) {
+                                      _supla_int16_t tTarget,
+                                      bool forAux) {
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: tMeasured not valid", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
@@ -3925,7 +3377,8 @@ int HvacBase::evaluateHeatOutputValue(_supla_int16_t tMeasured,
 }
 
 int HvacBase::evaluateCoolOutputValue(_supla_int16_t tMeasured,
-                                  _supla_int16_t tTarget, bool forAux) {
+                                      _supla_int16_t tTarget,
+                                      bool forAux) {
   if (!isSensorTempValid(tMeasured)) {
     SUPLA_LOG_DEBUG("HVAC[%d]: tMeasured not valid", getChannelNumber());
     channel.setHvacFlagThermometerError(true);
@@ -4171,7 +3624,8 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   config->AuxThermometerType);
   SUPLA_LOG_DEBUG("  AntiFreezeAndOverheatProtectionEnabled: %d",
                   config->AntiFreezeAndOverheatProtectionEnabled);
-  SUPLA_LOG_DEBUG("  Sensor: %d%s", config->BinarySensorChannelNo,
+  SUPLA_LOG_DEBUG("  Sensor: %d%s",
+                  config->BinarySensorChannelNo,
                   (config->BinarySensorChannelNo == id ? " (disabled)" : ""));
   SUPLA_LOG_DEBUG("  Algorithms: %d (used: %d)",
                   config->AvailableAlgorithms,
@@ -4181,8 +3635,9 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   config->MinOffTimeS);
   SUPLA_LOG_DEBUG("  OutputValueOnError: %d", config->OutputValueOnError);
   SUPLA_LOG_DEBUG("  Subfunction: %s (%d)",
-                  (config->Subfunction == 1) ? "HEAT" :
-                  (config->Subfunction == 2) ? "COOL" : "N/A",
+                  (config->Subfunction == 1)   ? "HEAT"
+                  : (config->Subfunction == 2) ? "COOL"
+                                               : "N/A",
                   config->Subfunction);
   SUPLA_LOG_DEBUG("  Setpoint change in weekly schedule: %s",
                   (config->TemperatureSetpointChangeSwitchesToManualMode == 1)
@@ -4192,14 +3647,15 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
                   config->UseSeparateHeatCoolOutputs);
   SUPLA_LOG_DEBUG("  AuxMinMaxSetpointEnabled: %d",
                   config->AuxMinMaxSetpointEnabled);
-  SUPLA_LOG_DEBUG("  Master thermostat: %d", config->MasterThermostatIsSet ?
-                  config->MasterThermostatChannelNo : -1);
+  SUPLA_LOG_DEBUG(
+      "  Master thermostat: %d",
+      config->MasterThermostatIsSet ? config->MasterThermostatChannelNo : -1);
   SUPLA_LOG_DEBUG("  Heat or cold source switch channel: %d",
                   config->HeatOrColdSourceSwitchIsSet
                       ? config->HeatOrColdSourceSwitchChannelNo
                       : -1);
-  SUPLA_LOG_DEBUG("  Pump switch channel: %d", config->PumpSwitchIsSet ?
-                  config->PumpSwitchChannelNo : -1);
+  SUPLA_LOG_DEBUG("  Pump switch channel: %d",
+                  config->PumpSwitchIsSet ? config->PumpSwitchChannelNo : -1);
   if (config->LocalUILockingCapabilities) {
     SUPLA_LOG_DEBUG(
         "  Local UI lock: 0x%X (capabilities: 0x%X), temp range: %d..%d",
@@ -4227,34 +3683,31 @@ void HvacBase::debugPrintConfigStruct(const TChannelConfig_HVAC *config,
 }
 
 void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
-                                   const TChannelConfig_HVAC *configNew,
-                                   int id) {
+                                    const TChannelConfig_HVAC *configNew,
+                                    int id) {
   SUPLA_LOG_DEBUG("HVAC[%d]: config diff:", id);
   bool changed = false;
   if (configCurrent->MainThermometerChannelNo !=
       configNew->MainThermometerChannelNo) {
-    SUPLA_LOG_DEBUG("  Main: %d%s -> %d%s",
-                    configCurrent->MainThermometerChannelNo,
-                    (configCurrent->MainThermometerChannelNo == id
-                     ? " (disabled)" : ""),
-                    configNew->MainThermometerChannelNo,
-                    (configNew->MainThermometerChannelNo == id
-                     ? " (disabled)" : ""));
+    SUPLA_LOG_DEBUG(
+        "  Main: %d%s -> %d%s",
+        configCurrent->MainThermometerChannelNo,
+        (configCurrent->MainThermometerChannelNo == id ? " (disabled)" : ""),
+        configNew->MainThermometerChannelNo,
+        (configNew->MainThermometerChannelNo == id ? " (disabled)" : ""));
     changed = true;
   }
   if (configCurrent->AuxThermometerChannelNo !=
       configNew->AuxThermometerChannelNo) {
-    SUPLA_LOG_DEBUG("  Aux: %d%s -> %d%s",
-                    configCurrent->AuxThermometerChannelNo,
-                    (configCurrent->AuxThermometerChannelNo == id
-                     ? " (disabled)" : ""),
-                    configNew->AuxThermometerChannelNo,
-                    (configNew->AuxThermometerChannelNo == id
-                     ? " (disabled)" : ""));
+    SUPLA_LOG_DEBUG(
+        "  Aux: %d%s -> %d%s",
+        configCurrent->AuxThermometerChannelNo,
+        (configCurrent->AuxThermometerChannelNo == id ? " (disabled)" : ""),
+        configNew->AuxThermometerChannelNo,
+        (configNew->AuxThermometerChannelNo == id ? " (disabled)" : ""));
     changed = true;
   }
-  if (configCurrent->AuxThermometerType !=
-      configNew->AuxThermometerType) {
+  if (configCurrent->AuxThermometerType != configNew->AuxThermometerType) {
     SUPLA_LOG_DEBUG("  Aux type: %d -> %d",
                     configCurrent->AuxThermometerType,
                     configNew->AuxThermometerType);
@@ -4269,13 +3722,12 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
   }
   if (configCurrent->BinarySensorChannelNo !=
       configNew->BinarySensorChannelNo) {
-    SUPLA_LOG_DEBUG("  BinarySensor: %d%s -> %d%s",
-                    configCurrent->BinarySensorChannelNo,
-                    (configCurrent->BinarySensorChannelNo == id
-                     ? " (disabled)" : ""),
-                    configNew->BinarySensorChannelNo,
-                    (configNew->BinarySensorChannelNo == id
-                     ? " (disabled)" : ""));
+    SUPLA_LOG_DEBUG(
+        "  BinarySensor: %d%s -> %d%s",
+        configCurrent->BinarySensorChannelNo,
+        (configCurrent->BinarySensorChannelNo == id ? " (disabled)" : ""),
+        configNew->BinarySensorChannelNo,
+        (configNew->BinarySensorChannelNo == id ? " (disabled)" : ""));
     changed = true;
   }
   if (configCurrent->AvailableAlgorithms != configNew->AvailableAlgorithms) {
@@ -4310,11 +3762,13 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
   }
   if (configCurrent->Subfunction != configNew->Subfunction) {
     SUPLA_LOG_DEBUG("  Subfunction: %s (%d) -> %s (%d)",
-                    (configCurrent->Subfunction == 1) ? "HEAT" :
-                    (configCurrent->Subfunction == 2) ? "COOL" : "N/A",
+                    (configCurrent->Subfunction == 1)   ? "HEAT"
+                    : (configCurrent->Subfunction == 2) ? "COOL"
+                                                        : "N/A",
                     configCurrent->Subfunction,
-                    (configNew->Subfunction == 1) ? "HEAT" :
-                    (configNew->Subfunction == 2) ? "COOL" : "N/A",
+                    (configNew->Subfunction == 1)   ? "HEAT"
+                    : (configNew->Subfunction == 2) ? "COOL"
+                                                    : "N/A",
                     configNew->Subfunction);
     changed = true;
   }
@@ -4345,42 +3799,35 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
     changed = true;
   }
   if (configCurrent->MasterThermostatIsSet !=
-      configNew->MasterThermostatIsSet ||
+          configNew->MasterThermostatIsSet ||
       configCurrent->MasterThermostatChannelNo !=
-      configNew->MasterThermostatChannelNo) {
+          configNew->MasterThermostatChannelNo) {
     SUPLA_LOG_DEBUG("  MasterThermostat: %d%s -> %d%s",
                     configCurrent->MasterThermostatChannelNo,
-                    (configCurrent->MasterThermostatIsSet ?
-                     "": " (disabled)"),
+                    (configCurrent->MasterThermostatIsSet ? "" : " (disabled)"),
                     configNew->MasterThermostatChannelNo,
-                    configNew->MasterThermostatIsSet ?
-                    "": " (disabled)");
+                    configNew->MasterThermostatIsSet ? "" : " (disabled)");
     changed = true;
   }
   if (configCurrent->HeatOrColdSourceSwitchIsSet !=
-      configNew->HeatOrColdSourceSwitchIsSet ||
+          configNew->HeatOrColdSourceSwitchIsSet ||
       configCurrent->HeatOrColdSourceSwitchChannelNo !=
-      configNew->HeatOrColdSourceSwitchChannelNo) {
-    SUPLA_LOG_DEBUG("  HeatOrColdSourceSwitch: %d%s -> %d%s",
-                    configCurrent->HeatOrColdSourceSwitchChannelNo,
-                    (configCurrent->HeatOrColdSourceSwitchIsSet ?
-                     "": " (disabled)"),
-                    configNew->HeatOrColdSourceSwitchChannelNo,
-                    configNew->HeatOrColdSourceSwitchIsSet ?
-                    "": " (disabled)");
+          configNew->HeatOrColdSourceSwitchChannelNo) {
+    SUPLA_LOG_DEBUG(
+        "  HeatOrColdSourceSwitch: %d%s -> %d%s",
+        configCurrent->HeatOrColdSourceSwitchChannelNo,
+        (configCurrent->HeatOrColdSourceSwitchIsSet ? "" : " (disabled)"),
+        configNew->HeatOrColdSourceSwitchChannelNo,
+        configNew->HeatOrColdSourceSwitchIsSet ? "" : " (disabled)");
     changed = true;
   }
-  if (configCurrent->PumpSwitchIsSet !=
-      configNew->PumpSwitchIsSet ||
-      configCurrent->PumpSwitchChannelNo !=
-      configNew->PumpSwitchChannelNo) {
+  if (configCurrent->PumpSwitchIsSet != configNew->PumpSwitchIsSet ||
+      configCurrent->PumpSwitchChannelNo != configNew->PumpSwitchChannelNo) {
     SUPLA_LOG_DEBUG("  PumpSwitch: %d%s -> %d%s",
                     configCurrent->PumpSwitchChannelNo,
-                    (configCurrent->PumpSwitchIsSet ?
-                     "": " (disabled)"),
+                    (configCurrent->PumpSwitchIsSet ? "" : " (disabled)"),
                     configNew->PumpSwitchChannelNo,
-                    configNew->PumpSwitchIsSet ?
-                    "": " (disabled)");
+                    configNew->PumpSwitchIsSet ? "" : " (disabled)");
     changed = true;
   }
 
@@ -4419,7 +3866,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
           (configCurrent->Temperatures.Index & (1 << i)) ? "" : " (not set)",
           configNew->Temperatures.Temperature[i],
           (configNew->Temperatures.Index & (1 << i)) ? "" : " (not set)");
-    changed = true;
+      changed = true;
     }
   }
   if (!changed) {
@@ -4427,7 +3874,7 @@ void HvacBase::debugPrintConfigDiff(const TChannelConfig_HVAC *configCurrent,
   }
 }
 
-const char* HvacBase::temperatureName(int32_t index) {
+const char *HvacBase::temperatureName(int32_t index) {
   switch (index) {
     case TEMPERATURE_FREEZE_PROTECTION: {
       return "Freeze protection setpoint";
@@ -4509,21 +3956,21 @@ int32_t HvacBase::channelFunctionToIndex(int32_t channelFunction) const {
 }
 
 void HvacBase::setDefaultTemperatureRoomMin(int32_t channelFunction,
-    _supla_int16_t temperature) {
+                                            _supla_int16_t temperature) {
   defaultTemperatureRoomMin[channelFunctionToIndex(channelFunction)] =
       temperature;
 }
 
 void HvacBase::setDefaultTemperatureRoomMax(int32_t channelFunction,
-                                    _supla_int16_t temperature) {
+                                            _supla_int16_t temperature) {
   defaultTemperatureRoomMax[channelFunctionToIndex(channelFunction)] =
       temperature;
 }
 
 _supla_int16_t HvacBase::getDefaultTemperatureRoomMin() const {
   auto channelFunction = channel.getDefaultFunction();
-  auto defaultTemperature = defaultTemperatureRoomMin[channelFunctionToIndex(
-      channelFunction)];
+  auto defaultTemperature =
+      defaultTemperatureRoomMin[channelFunctionToIndex(channelFunction)];
   if (defaultTemperature == INT16_MIN) {
     defaultTemperature = defaultTemperatureRoomMin[0];
   }
@@ -4535,8 +3982,8 @@ _supla_int16_t HvacBase::getDefaultTemperatureRoomMin() const {
 
 _supla_int16_t HvacBase::getDefaultTemperatureRoomMax() const {
   auto channelFunction = channel.getDefaultFunction();
-  auto defaultTemperature = defaultTemperatureRoomMax[channelFunctionToIndex(
-      channelFunction)];
+  auto defaultTemperature =
+      defaultTemperatureRoomMax[channelFunctionToIndex(channelFunction)];
   if (defaultTemperature == INT16_MIN) {
     defaultTemperature = defaultTemperatureRoomMax[0];
   }
@@ -4619,10 +4066,12 @@ void HvacBase::initDefaultConfig() {
   clearTemperatureInStruct(&newConfig.Temperatures, TEMPERATURE_ROOM_MIN);
   clearTemperatureInStruct(&newConfig.Temperatures, TEMPERATURE_ROOM_MAX);
 
-  setTemperatureInStruct(&newConfig.Temperatures, TEMPERATURE_ROOM_MIN,
-      getDefaultTemperatureRoomMin());
-  setTemperatureInStruct(&newConfig.Temperatures, TEMPERATURE_ROOM_MAX,
-      getDefaultTemperatureRoomMax());
+  setTemperatureInStruct(&newConfig.Temperatures,
+                         TEMPERATURE_ROOM_MIN,
+                         getDefaultTemperatureRoomMin());
+  setTemperatureInStruct(&newConfig.Temperatures,
+                         TEMPERATURE_ROOM_MAX,
+                         getDefaultTemperatureRoomMax());
 
   if (defaultMainThermometer >= 0 &&
       isChannelThermometer(defaultMainThermometer)) {
@@ -4640,8 +4089,7 @@ void HvacBase::initDefaultConfig() {
     newConfig.AuxThermometerChannelNo = getChannelNumber();
   }
 
-  if (defaultBinarySensor >= 0 &&
-      isChannelBinarySensor(defaultBinarySensor)) {
+  if (defaultBinarySensor >= 0 && isChannelBinarySensor(defaultBinarySensor)) {
     newConfig.BinarySensorChannelNo = defaultBinarySensor;
   } else {
     // disable
@@ -4682,123 +4130,7 @@ void HvacBase::initDefaultConfig() {
 }
 
 void HvacBase::initDefaultWeeklySchedule() {
-  isWeeklyScheduleConfigured = true;
-  // init weekly schedule to zeros. It will just have program "off" for whole
-  // time.
-  // We define default values for HEAT, COOL, HEAT_COOL, DOMESTIC_HOT_WATER
-  // later
-  memset(&weeklySchedule, 0, sizeof(weeklySchedule));
-  memset(&altWeeklySchedule, 0, sizeof(altWeeklySchedule));
-  bool prevInitDone = initDone;
-  if (initDone) {
-    weeklyScheduleChangedOffline = 1;
-    initDone = false;
-  }
-
-  // first we init Program in schedule
-  switch (getChannel()->getDefaultFunction()) {
-    default: {
-      SUPLA_LOG_WARNING(
-          "HVAC[%d]: no default weekly schedule defined for function %d",
-          getChannelNumber(),
-          getChannel()->getDefaultFunction());
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
-      setProgram(1, SUPLA_HVAC_MODE_HEAT, 1900, 0, USE_MAIN_WEEKLYSCHEDULE);
-      setProgram(2, SUPLA_HVAC_MODE_HEAT, 2100, 0, USE_MAIN_WEEKLYSCHEDULE);
-      setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0, USE_MAIN_WEEKLYSCHEDULE);
-      setProgram(4, SUPLA_HVAC_MODE_HEAT, 1200, 0, USE_MAIN_WEEKLYSCHEDULE);
-
-      setProgram(1, SUPLA_HVAC_MODE_COOL, 0, 2400, USE_ALT_WEEKLYSCHEDULE);
-      setProgram(2, SUPLA_HVAC_MODE_COOL, 0, 2100, USE_ALT_WEEKLYSCHEDULE);
-      setProgram(3, SUPLA_HVAC_MODE_COOL, 0, 1800, USE_ALT_WEEKLYSCHEDULE);
-      setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2800, USE_ALT_WEEKLYSCHEDULE);
-      break;
-    }
-
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
-      setProgram(1, SUPLA_HVAC_MODE_HEAT_COOL, 1800, 2500);
-      setProgram(2, SUPLA_HVAC_MODE_HEAT_COOL, 2100, 2400);
-      setProgram(3, SUPLA_HVAC_MODE_HEAT, 2300, 0);
-      setProgram(4, SUPLA_HVAC_MODE_COOL, 0, 2400);
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL: {
-      setProgram(1, SUPLA_HVAC_MODE_HEAT, -500, 0);
-      setProgram(2, SUPLA_HVAC_MODE_HEAT, -200, 0);
-      setProgram(3, SUPLA_HVAC_MODE_HEAT, -1000, 0);
-      setProgram(4, SUPLA_HVAC_MODE_HEAT, -1500, 0);
-      break;
-    }
-    case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
-      setProgram(1, SUPLA_HVAC_MODE_HEAT, 4000, 0);
-      setProgram(2, SUPLA_HVAC_MODE_HEAT, 5000, 0);
-      setProgram(3, SUPLA_HVAC_MODE_HEAT, 3000, 0);
-      setProgram(4, SUPLA_HVAC_MODE_HEAT, 6000, 0);
-      break;
-    }
-  }
-
-  // then we init Quarters in schedule
-  auto channelFunction = channel.getDefaultFunction();
-    // default schedule for heating mode
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT ||
-      channelFunction == SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER ||
-      channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL) {
-    for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
-      int program = 1;
-      for (int hour = 0; hour < 24; hour++) {
-        if (hour >= 6 && hour < 21) {
-          program = 2;
-        } else {
-          program = 1;
-        }
-        for (int quarter = 0; quarter < 4; quarter++) {
-          setWeeklySchedule(
-              static_cast<enum DayOfWeek>(dayOfAWeek), hour, quarter, program,
-              USE_MAIN_WEEKLYSCHEDULE);
-        }
-      }
-    }
-  }
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
-    for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
-      int program = 0;  // off
-      for (int hour = 0; hour < 24; hour++) {
-        if (hour >= 6 && hour < 21) {
-          program = 1;  // cool to 24.0
-        } else {
-          program = 0;
-        }
-        for (int quarter = 0; quarter < 4; quarter++) {
-          setWeeklySchedule(
-              static_cast<enum DayOfWeek>(dayOfAWeek), hour, quarter, program,
-              USE_ALT_WEEKLYSCHEDULE);
-        }
-      }
-    }
-  }
-  if (channelFunction == SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL) {
-    for (int dayOfAWeek = 0; dayOfAWeek < 7; dayOfAWeek++) {
-      int program = 1;
-      for (int hour = 0; hour < 24; hour++) {
-        if (hour >= 6 && hour < 21) {
-          program = 2;
-        } else {
-          program = 1;
-        }
-        for (int quarter = 0; quarter < 4; quarter++) {
-          setWeeklySchedule(
-              static_cast<enum DayOfWeek>(dayOfAWeek), hour, quarter, program,
-              USE_MAIN_WEEKLYSCHEDULE);
-        }
-      }
-    }
-  }
-
-  initDone = prevInitDone;
-  saveWeeklySchedule();
+  weeklyScheduleHelper->initDefaultWeeklySchedule();
 }
 
 void HvacBase::initDefaultAlgorithm() {
@@ -4916,28 +4248,20 @@ void HvacBase::changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool) {
   switch (function) {
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT: {
       if (isHeatingSubfunction()) {
-        applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                                newHeat,
-                                INT16_MIN);
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET, newHeat, INT16_MIN);
       }
       if (isCoolingSubfunction()) {
-        applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                                INT16_MIN,
-                                newCool);
+        applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET, INT16_MIN, newCool);
       }
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL:
     case SUPLA_CHANNELFNC_HVAC_DOMESTIC_HOT_WATER: {
-      applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                              newHeat,
-                              INT16_MIN);
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET, newHeat, INT16_MIN);
       break;
     }
     case SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL: {
-      applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET,
-                              newHeat,
-                              newCool);
+      applyNewRuntimeSettings(SUPLA_HVAC_MODE_NOT_SET, newHeat, newCool);
       break;
     }
   }
@@ -4963,9 +4287,9 @@ bool HvacBase::fixTempearturesConfig() {
           if (!setTemperatureAuxMinSetpoint(tAuxSetpointMax - tOffsetMin) &&
               !setTemperatureAuxMaxSetpoint(tAuxSetpointMin + tOffsetMin)) {
             clearTemperatureInStruct(&config.Temperatures,
-                TEMPERATURE_AUX_MIN_SETPOINT);
+                                     TEMPERATURE_AUX_MIN_SETPOINT);
             clearTemperatureInStruct(&config.Temperatures,
-                TEMPERATURE_AUX_MAX_SETPOINT);
+                                     TEMPERATURE_AUX_MAX_SETPOINT);
             setTemperatureAuxMinSetpoint(getTemperatureAuxMin());
             setTemperatureAuxMaxSetpoint(getTemperatureAuxMax());
             result = true;
@@ -4988,9 +4312,9 @@ bool HvacBase::fixTempearturesConfig() {
         if (!setTemperatureFreezeProtection(tOverheat - tOffsetMin) &&
             !setTemperatureHeatProtection(tAntiFreeze + tOffsetMin)) {
           clearTemperatureInStruct(&config.Temperatures,
-              TEMPERATURE_FREEZE_PROTECTION);
+                                   TEMPERATURE_FREEZE_PROTECTION);
           clearTemperatureInStruct(&config.Temperatures,
-              TEMPERATURE_HEAT_PROTECTION);
+                                   TEMPERATURE_HEAT_PROTECTION);
           setTemperatureFreezeProtection(getTemperatureMainMin());
           setTemperatureHeatProtection(getTemperatureMainMax());
           result = true;
@@ -5040,12 +4364,12 @@ void HvacBase::updateTimerValue() {
       countdownTimerEnds,
       now);
 
-  for (auto proto = Supla::Protocol::ProtocolLayer::first();
-      proto != nullptr; proto = proto->next()) {
+  for (auto proto = Supla::Protocol::ProtocolLayer::first(); proto != nullptr;
+       proto = proto->next()) {
     proto->sendRemainingTimeValue(
         getChannelNumber(),
         remainingTimeS,
-        reinterpret_cast<unsigned char*>(&lastWorkingMode),
+        reinterpret_cast<unsigned char *>(&lastWorkingMode),
         senderId,
         true);
   }
@@ -5088,7 +4412,7 @@ void HvacBase::enableInitialConfig() {
     }
     if (defaultHeatOrColdSourceSwitch >= 0) {
       initialConfig->HeatOrColdSourceSwitchChannelNo =
-        defaultHeatOrColdSourceSwitch;
+          defaultHeatOrColdSourceSwitch;
       if (defaultHeatOrColdSourceSwitch != getChannelNumber()) {
         initialConfig->HeatOrColdSourceSwitchIsSet = 1;
       }
@@ -5293,8 +4617,7 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (parameterFlags.AuxThermometerChannelNoReadonly) {
-    if (config.AuxThermometerChannelNo !=
-        hvacConfig->AuxThermometerChannelNo) {
+    if (config.AuxThermometerChannelNo != hvacConfig->AuxThermometerChannelNo) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] AuxThermometerChannelNo change from %d to %d not allowed "
           "(readonly)",
@@ -5354,7 +4677,7 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 
   if (parameterFlags.MasterThermostatChannelNoReadonly) {
     if (config.MasterThermostatChannelNo !=
-        hvacConfig->MasterThermostatChannelNo ||
+            hvacConfig->MasterThermostatChannelNo ||
         config.MasterThermostatIsSet != hvacConfig->MasterThermostatIsSet) {
       SUPLA_LOG_DEBUG(
           "HVAC[%d] MasterThermostatChannelNo change from %d to %d not "
@@ -5594,8 +4917,7 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
         getChannelNumber(),
         config.LocalUILockingCapabilities,
         hvacConfig->LocalUILockingCapabilities);
-    hvacConfig->LocalUILockingCapabilities =
-        config.LocalUILockingCapabilities;
+    hvacConfig->LocalUILockingCapabilities = config.LocalUILockingCapabilities;
     readonlyViolation = true;
   }
 
@@ -5645,9 +4967,9 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
 }
 
 bool HvacBase::fixReadonlyTemperature(int32_t temperatureIndex,
-                              THVACTemperatureCfg *newTemps) {
-  auto currentTemperature = getTemperatureFromStruct(&config.Temperatures,
-      temperatureIndex);
+                                      THVACTemperatureCfg *newTemps) {
+  auto currentTemperature =
+      getTemperatureFromStruct(&config.Temperatures, temperatureIndex);
   auto newTemperature = getTemperatureFromStruct(newTemps, temperatureIndex);
   if (currentTemperature != newTemperature) {
     SUPLA_LOG_DEBUG(
@@ -5849,8 +5171,7 @@ bool HvacBase::ignoreAggregatorForRelay(int32_t relayChannelNumber) const {
     return false;
   }
   if (defaultChannelsFlags & HVAC_BASE_FLAG_IGNORE_DEFAULT_PUMP &&
-      defaultPumpSwitch >= 0 &&
-      relayChannelNumber == defaultPumpSwitch) {
+      defaultPumpSwitch >= 0 && relayChannelNumber == defaultPumpSwitch) {
     return true;
   }
   if (defaultChannelsFlags & HVAC_BASE_FLAG_IGNORE_DEFAULT_HEAT_OR_COLD &&
@@ -5914,14 +5235,12 @@ void HvacBase::purgeConfig() {
   cfg->eraseKey(key);
 }
 
-
 void HvacBase::addLocalUILockCapability(enum LocalUILock capability) {
   config.LocalUILockingCapabilities |= static_cast<uint8_t>(capability);
 }
 
 void HvacBase::removeLocalUILockCapability(enum LocalUILock capability) {
-  config.LocalUILockingCapabilities &=
-      ~static_cast<uint8_t>(capability);
+  config.LocalUILockingCapabilities &= ~static_cast<uint8_t>(capability);
 }
 
 bool HvacBase::isLocalUILockCapabilitySupported(
@@ -5937,9 +5256,8 @@ bool HvacBase::isLocalUILockCapabilitySupported(
 
 bool HvacBase::setLocalUILock(enum LocalUILock lock) {
   if (!isLocalUILockCapabilitySupported(lock)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: LocalUILock 0x%X not supported",
-                      getChannelNumber(),
-                      lock);
+    SUPLA_LOG_WARNING(
+        "HVAC[%d]: LocalUILock 0x%X not supported", getChannelNumber(), lock);
     return false;
   }
 
@@ -6129,4 +5447,3 @@ int16_t HvacBase::getClosestValidTemperature(int16_t temperature) const {
 bool HvacBase::isHvacFlagForcedOffBySensor() const {
   return channel.isHvacFlagForcedOffBySensor();
 }
-

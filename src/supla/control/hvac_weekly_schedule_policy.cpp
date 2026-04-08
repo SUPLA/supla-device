@@ -300,7 +300,7 @@ void HvacWeeklySchedulePolicy::initDefaultWeeklySchedule(
   }
 
   owner->setInitDone(prevInitDone);
-  weeklySchedule.saveWeeklySchedule();
+  weeklySchedule.saveWeeklySchedule(true);
 }
 
 }  // namespace Control

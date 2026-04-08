@@ -68,6 +68,9 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void handleSetChannelConfigResult(
       TSDS_SetChannelConfigResult *result) override;
   void handleChannelConfigFinished() override;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         uint8_t configType) override;
 
   void handleAction(int event, int action) override;
 
@@ -87,6 +90,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
 
   void saveConfig();
   void saveWeeklySchedule();
+  void syncWeeklyScheduleConfigTypes();
 
   // Below functions are used to set device capabilities.
   void setHeatingAndCoolingSupported(bool supported);
@@ -466,6 +470,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void setIgnoreDefaultHeatOrColdSourceForAggregator(bool);
 
   bool isAltWeeklySchedulePossible() const;
+  void requestWeeklyScheduleResend(bool isAltWeeklySchedule = false);
 
   /**
    * Returns true if thermostat output is disabled by binary sensor state
@@ -513,6 +518,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int32_t channelFunctionToIndex(int32_t channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
+  void updateWeeklyScheduleConfigTypes();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
   bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);

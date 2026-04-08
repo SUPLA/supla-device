@@ -29,6 +29,7 @@
 
 #include "relay.h"
 #include "weekly_schedule_common.h"
+#include "weekly_schedule_storage.h"
 
 namespace Supla {
 namespace Control {
@@ -131,30 +132,31 @@ bool RelayWeeklySchedule::isWeeklyScheduleValid(
 }
 
 bool RelayWeeklySchedule::loadSchedule() {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg || owner_ == nullptr) {
+  if (owner_ == nullptr) {
     return false;
   }
 
   auto *schedule = weeklyScheduleBuffer_.get(false);
-  if (schedule == nullptr) {
-    schedule = new TChannelConfig_WeeklySchedule();
-    weeklyScheduleBuffer_.set(false, schedule);
-  }
-
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  owner_->generateKey(key, getStorageTag());
-  if (!cfg->getBlob(key,
-                    reinterpret_cast<char *>(schedule),
-                    sizeof(TChannelConfig_WeeklySchedule))) {
+  if (!WeeklyScheduleStorage::load(
+          owner_->getChannelNumber(),
+          "Relay",
+          "weekly schedule",
+          getStorageTag(),
+          false,
+          schedule,
+          [this](char *key, const char *storageTag) {
+            owner_->generateKey(key, storageTag);
+          },
+          [this](const TChannelConfig_WeeklySchedule *loadedSchedule) {
+            return isWeeklyScheduleValid(loadedSchedule);
+          })) {
+    if (schedule != nullptr) {
+      weeklyScheduleBuffer_.set(false, schedule);
+    }
     return false;
   }
 
-  if (!isWeeklyScheduleValid(schedule)) {
-    weeklyScheduleBuffer_.clear(false);
-    return false;
-  }
-
+  weeklyScheduleBuffer_.set(false, schedule);
   isWeeklyScheduleConfigured_ = true;
   cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
   return true;
@@ -178,8 +180,7 @@ TChannelConfig_WeeklySchedule *RelayWeeklySchedule::getSchedule(
 }
 
 void RelayWeeklySchedule::saveWeeklySchedule() {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg || owner_ == nullptr) {
+  if (owner_ == nullptr) {
     return;
   }
 
@@ -188,17 +189,20 @@ void RelayWeeklySchedule::saveWeeklySchedule() {
     return;
   }
 
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  owner_->generateKey(key, getStorageTag());
-  if (cfg->setBlob(key,
-                   reinterpret_cast<char *>(schedule),
-                   sizeof(TChannelConfig_WeeklySchedule))) {
-    SUPLA_LOG_INFO("Relay[%d]: weekly schedule saved successfully",
-                   owner_->getChannelNumber());
-  } else {
-    SUPLA_LOG_WARNING("Relay[%d]: failed to save weekly schedule",
-                      owner_->getChannelNumber());
+  WeeklyScheduleStorage::save(
+      owner_->getChannelNumber(),
+      "Relay",
+      "weekly schedule",
+      getStorageTag(),
+      schedule,
+      [this](char *key, const char *storageTag) {
+        owner_->generateKey(key, storageTag);
+      });
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return;
   }
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   owner_->generateKey(key, Supla::ConfigTag::WeeklyScheduleChangedFlagTag);
   cfg->setUInt8(key, weeklyScheduleChangedOffline_ ? 1 : 0);
   cfg->saveWithDelay(5000);

@@ -45,7 +45,7 @@ class HvacIntegrationF : public ::testing::Test {
   OutputSimulatorWithCheck primaryOutput;
   OutputSimulatorWithCheck secondaryOutput;
   SimpleTime time;
-  ProtocolLayerMock proto;
+  ::testing::NiceMock<ProtocolLayerMock> proto;
   ClockStub clock;
 
   Supla::Control::HvacBase *hvac = {};
@@ -136,6 +136,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeating) {
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
@@ -1847,6 +1849,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCool) {
 
 TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(cfg, init());
+  ProtocolLayerMock proto;
   EXPECT_EQ(hvac->getChannelNumber(), 0);
   EXPECT_EQ(hvac->getChannel()->getChannelType(), SUPLA_CHANNELTYPE_HVAC);
   EXPECT_EQ(hvac->getChannel()->getDefaultFunction(), 0);
@@ -1879,6 +1882,8 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setBlob(StrEq("0_hvac_aweekly"), _, _))
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(true));
   EXPECT_CALL(cfg, setUInt8(StrEq("0_weekly_chng"), _))
       .WillRepeatedly(Return(true));
@@ -1959,22 +1964,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   }
 
   hvac->handleChannelConfigFinished();
-
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL,
-                               _,
-                               sizeof(TChannelConfig_HVAC),
-                               SUPLA_CONFIG_TYPE_DEFAULT))
-      .Times(1)
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL,
-                               _,
-                               sizeof(TChannelConfig_WeeklySchedule),
-                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-      .Times(0);
 
   t1->setValue(10);
   for (int i = 0; i < 50; ++i) {
@@ -2365,14 +2354,6 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigDifferentialHeat) {
   EXPECT_CALL(cfg, setUInt8(StrEq("0_cfg_chng"), _))
       .WillRepeatedly(Return(false));
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT_DIFFERENTIAL,
-                               _,
-                               sizeof(TChannelConfig_HVAC),
-                               SUPLA_CONFIG_TYPE_DEFAULT))
-      .Times(1)
-      .WillRepeatedly(Return(true));
 
   hvac->setOutputValueOnError(100);  // change configuration on device
   EXPECT_CALL(primaryOutput, setOutputValueCheck(1)).Times(1).InSequence(seq1);
@@ -2661,6 +2642,7 @@ TEST_F(HvacIntegrationF, startupWithEmptyConfigHeatCoolSetpointTempCheck) {
 
 TEST_F(HvacIntegrationF, runtimeFunctionChange) {
   EXPECT_CALL(cfg, init());
+  ProtocolLayerMock proto;
   hvac->addSecondaryOutput(&secondaryOutput);
 
   EXPECT_EQ(hvac->getChannelNumber(), 0);
@@ -2782,7 +2764,18 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
                                sizeof(TChannelConfig_HVAC),
                                SUPLA_CONFIG_TYPE_DEFAULT))
       .Times(1)
-      .WillRepeatedly(Return(true));
+      .WillOnce([this](uint8_t channelNumber,
+                       _supla_int_t,
+                       void *,
+                       int,
+                       uint8_t configType) {
+        TSDS_SetChannelConfigResult result = {};
+        result.ChannelNumber = channelNumber;
+        result.ConfigType = configType;
+        result.Result = SUPLA_CONFIG_RESULT_TRUE;
+        hvac->handleSetChannelConfigResult(&result);
+        return true;
+      });
   EXPECT_CALL(proto,
               setChannelConfig(0,
                                SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL,
@@ -2855,32 +2848,6 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
         EXPECT_EQ(hvacValue->SetpointTemperatureCool, 2500);
       });
 
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               // cool
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                               _,
-                               sizeof(TChannelConfig_HVAC),
-                               SUPLA_CONFIG_TYPE_DEFAULT))
-      .Times(1)
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               // cool
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                               _,
-                               sizeof(TChannelConfig_WeeklySchedule),
-                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-      .Times(0);
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               // cool
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                               _,
-                               sizeof(TChannelConfig_WeeklySchedule),
-                               SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE))
-      .Times(0);
-
   // cool
   hvac->changeFunction(SUPLA_CHANNELFNC_HVAC_THERMOSTAT, true);
   hvac->setSubfunction(SUPLA_HVAC_SUBFUNCTION_COOL);
@@ -2935,22 +2902,6 @@ TEST_F(HvacIntegrationF, runtimeFunctionChange) {
     t1->iterateConnected();
     time.advance(100);
   }
-
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                               _,
-                               sizeof(TChannelConfig_HVAC),
-                               SUPLA_CONFIG_TYPE_DEFAULT))
-      .Times(1)
-      .WillRepeatedly(Return(true));
-  EXPECT_CALL(proto,
-              setChannelConfig(0,
-                               SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                               _,
-                               sizeof(TChannelConfig_WeeklySchedule),
-                               SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE))
-      .WillRepeatedly(Return(true));
 
   EXPECT_CALL(proto, sendChannelValueChanged(0, _, 0, 0))
       .WillOnce([](uint8_t, int8_t *value, unsigned char, uint32_t) {

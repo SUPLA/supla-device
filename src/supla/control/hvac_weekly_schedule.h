@@ -43,11 +43,12 @@ class HvacWeeklySchedule {
                                bool isAltWeeklySchedule,
                                bool local);
   void handleSetChannelConfigResult(TSDS_SetChannelConfigResult *result);
-  void saveWeeklySchedule();
+  void saveWeeklySchedule(bool requestResend = false);
   void clearWeeklyScheduleChangedFlag();
 
   bool isConfigured() const;
-  bool isWeeklyScheduleValid(TChannelConfig_WeeklySchedule *newSchedule,
+  bool isWeeklyScheduleChangedOffline() const;
+  bool isWeeklyScheduleValid(const TChannelConfig_WeeklySchedule *newSchedule,
                              bool isAltWeeklySchedule = false) const;
   int getWeeklyScheduleProgramId(const TChannelConfig_WeeklySchedule *schedule,
                                  int index) const;
@@ -73,6 +74,9 @@ class HvacWeeklySchedule {
   TWeeklyScheduleProgram getProgramAt(int quarterIndex) const;
   TWeeklyScheduleProgram getProgramById(int programId,
                                         bool isAltWeeklySchedule = false) const;
+  void fillChannelConfig(void *channelConfig,
+                         int *size,
+                         bool isAltWeeklySchedule) const;
   bool turnOnWeeklySchedule();
   bool processWeeklySchedule();
   void initDefaultWeeklySchedule();
@@ -88,17 +92,13 @@ class HvacWeeklySchedule {
       bool isAltWeeklySchedule, bool loadIfMissing = true) const;
   bool loadSchedule(bool isAltWeeklySchedule);
   void unloadSchedulesIfPossible();
-  void markWeeklyScheduleReceived(bool isAltWeeklySchedule);
   void markWeeklyScheduleChangedOffline();
-  bool isWeeklyScheduleChangedOffline() const;
   static const char *getStorageTag(bool isAltWeeklySchedule);
 
   HvacBase *owner_ = nullptr;
   HvacWeeklySchedulePolicy policy_;
   WeeklyScheduleBuffer weeklyScheduleBuffer_;
   bool isWeeklyScheduleConfigured_ = false;
-  bool weeklyScheduleReceived_ = false;
-  bool altWeeklyScheduleReceived_ = false;
   uint8_t weeklyScheduleChangedOffline_ = 0;
   WeeklyScheduleCacheRuntime cacheRuntime_;
 };

@@ -29,6 +29,7 @@
 
 #include "hvac_base.h"
 #include "weekly_schedule_common.h"
+#include "weekly_schedule_storage.h"
 
 namespace Supla {
 namespace Control {
@@ -68,43 +69,28 @@ bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
     return false;
   }
 
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg) {
-    return false;
-  }
-
   auto *schedule = weeklyScheduleBuffer_.get(isAltWeeklySchedule);
-  if (schedule == nullptr) {
-    schedule = new TChannelConfig_WeeklySchedule();
-    weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
-  }
-
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
-  owner_->generateKey(key, getStorageTag(isAltWeeklySchedule));
-  SUPLA_LOG_DEBUG("HVAC[%d]: loading%s weekly schedule from storage",
-                  owner_->getChannelNumber(),
-                  isAltWeeklySchedule ? " alt" : "");
-  if (!cfg->getBlob(key,
-                    reinterpret_cast<char *>(schedule),
-                    sizeof(TChannelConfig_WeeklySchedule))) {
-    SUPLA_LOG_DEBUG("HVAC[%d]: weekly schedule%s not found in storage",
-                    owner_->getChannelNumber(),
-                    isAltWeeklySchedule ? " alt" : "");
+  if (!WeeklyScheduleStorage::load(
+          owner_->getChannelNumber(),
+          "HVAC",
+          "weekly schedule",
+          getStorageTag(isAltWeeklySchedule),
+          isAltWeeklySchedule,
+          schedule,
+          [this](char *key, const char *storageTag) {
+            owner_->generateKey(key, storageTag);
+          },
+          [this, isAltWeeklySchedule](
+              const TChannelConfig_WeeklySchedule *loadedSchedule) {
+            return isWeeklyScheduleValid(loadedSchedule, isAltWeeklySchedule);
+          })) {
+    if (schedule != nullptr) {
+      weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
+    }
     return false;
   }
-
-  if (!isWeeklyScheduleValid(schedule, isAltWeeklySchedule)) {
-    SUPLA_LOG_WARNING("HVAC[%d]: loaded%s weekly schedule is invalid",
-                      owner_->getChannelNumber(),
-                      isAltWeeklySchedule ? " alt" : "");
-    weeklyScheduleBuffer_.clear(isAltWeeklySchedule);
-    return false;
-  }
-
+  weeklyScheduleBuffer_.set(isAltWeeklySchedule, schedule);
   isWeeklyScheduleConfigured_ = true;
-  SUPLA_LOG_DEBUG("HVAC[%d]: loaded%s weekly schedule successfully",
-                  owner_->getChannelNumber(),
-                  isAltWeeklySchedule ? " alt" : "");
   cacheRuntime_.touch(owner_->channel.isHvacFlagWeeklySchedule(), millis());
   return true;
 }
@@ -137,14 +123,6 @@ void HvacWeeklySchedule::unloadSchedulesIfPossible() {
   weeklyScheduleBuffer_.clearAll();
 }
 
-void HvacWeeklySchedule::markWeeklyScheduleReceived(bool isAltWeeklySchedule) {
-  if (isAltWeeklySchedule) {
-    altWeeklyScheduleReceived_ = true;
-  } else {
-    weeklyScheduleReceived_ = true;
-  }
-}
-
 void HvacWeeklySchedule::markWeeklyScheduleChangedOffline() {
   weeklyScheduleChangedOffline_ = 1;
 }
@@ -166,8 +144,6 @@ void HvacWeeklySchedule::onLoadConfig() {
   }
 
   isWeeklyScheduleConfigured_ = false;
-  weeklyScheduleReceived_ = false;
-  altWeeklyScheduleReceived_ = false;
   cacheRuntime_.reset();
 
   loadSchedule(false);
@@ -278,17 +254,11 @@ void HvacWeeklySchedule::onRegistered() {
   if (weeklyScheduleChangedOffline_) {
     weeklyScheduleChangedOffline_ = 1;
   }
-  weeklyScheduleReceived_ = false;
-  altWeeklyScheduleReceived_ = false;
 }
 
 void HvacWeeklySchedule::handleChannelConfigFinished() {
-  if (!weeklyScheduleReceived_) {
-    weeklyScheduleChangedOffline_ = 1;
-  }
-  if (owner_->isAltWeeklySchedulePossible() && !altWeeklyScheduleReceived_) {
-    weeklyScheduleChangedOffline_ = 1;
-  }
+  SUPLA_LOG_DEBUG("HVAC[%d]: channel config finished for weekly schedule",
+                  owner_->getChannelNumber());
 }
 
 uint8_t HvacWeeklySchedule::handleWeeklySchedule(
@@ -301,7 +271,6 @@ uint8_t HvacWeeklySchedule::handleWeeklySchedule(
     SUPLA_LOG_INFO("HVAC[%d]: Ignoring%s weekly schedule",
                    owner_->getChannelNumber(),
                    isAltWeeklySchedule ? " alt" : "");
-    markWeeklyScheduleReceived(isAltWeeklySchedule);
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
@@ -321,7 +290,6 @@ uint8_t HvacWeeklySchedule::handleWeeklySchedule(
       initDefaultWeeklySchedule();
     }
     markWeeklyScheduleChangedOffline();
-    markWeeklyScheduleReceived(isAltWeeklySchedule);
     return SUPLA_CONFIG_RESULT_TRUE;
   }
 
@@ -342,7 +310,6 @@ uint8_t HvacWeeklySchedule::handleWeeklySchedule(
     return SUPLA_CONFIG_RESULT_DATA_ERROR;
   }
 
-  markWeeklyScheduleReceived(isAltWeeklySchedule);
   if (!isConfigured() ||
       memcmp(schedule, newSchedule, sizeof(TChannelConfig_WeeklySchedule)) !=
           0) {
@@ -351,7 +318,7 @@ uint8_t HvacWeeklySchedule::handleWeeklySchedule(
     if (!local) {
       weeklyScheduleChangedOffline_ = 0;
     }
-    saveWeeklySchedule();
+    saveWeeklySchedule(local);
   }
 
   return SUPLA_CONFIG_RESULT_TRUE;
@@ -381,44 +348,53 @@ void HvacWeeklySchedule::handleSetChannelConfigResult(
   }
 }
 
-void HvacWeeklySchedule::saveWeeklySchedule() {
-  auto cfg = Supla::Storage::ConfigInstance();
-  if (!cfg || owner_ == nullptr) {
+void HvacWeeklySchedule::saveWeeklySchedule(bool requestResend) {
+  if (owner_ == nullptr) {
     return;
   }
 
-  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   auto schedule = getSchedule(false, true);
-  if (schedule) {
-    owner_->generateKey(key, Supla::ConfigTag::HvacWeeklyCfgTag);
-    if (cfg->setBlob(key,
-                     reinterpret_cast<char *>(schedule),
-                     sizeof(TChannelConfig_WeeklySchedule))) {
-      SUPLA_LOG_INFO("HVAC[%d]: weekly schedule saved successfully",
-                     owner_->getChannelNumber());
-    } else {
-      SUPLA_LOG_WARNING("HVAC[%d]: failed to save weekly schedule",
-                        owner_->getChannelNumber());
+  if (schedule != nullptr) {
+    WeeklyScheduleStorage::save(owner_->getChannelNumber(),
+                                "HVAC",
+                                "weekly schedule",
+                                Supla::ConfigTag::HvacWeeklyCfgTag,
+                                schedule,
+                                [this](char *key, const char *storageTag) {
+                                  owner_->generateKey(key, storageTag);
+                                });
+    if (requestResend && owner_->initDone) {
+      owner_->requestWeeklyScheduleResend(false);
     }
   }
 
   if (owner_->getChannel()->getDefaultFunction() ==
       SUPLA_CHANNELFNC_HVAC_THERMOSTAT) {
     auto alt = getSchedule(true, true);
-    if (alt) {
-      owner_->generateKey(key, Supla::ConfigTag::HvacAltWeeklyCfgTag);
-      if (cfg->setBlob(key,
-                       reinterpret_cast<char *>(alt),
-                       sizeof(TChannelConfig_WeeklySchedule))) {
-        SUPLA_LOG_INFO("HVAC[%d]: alt weekly schedule saved successfully",
-                       owner_->getChannelNumber());
-      } else {
-        SUPLA_LOG_WARNING("HVAC[%d]: failed to save alt weekly schedule",
-                          owner_->getChannelNumber());
+    if (alt != nullptr) {
+      WeeklyScheduleStorage::save(owner_->getChannelNumber(),
+                                  "HVAC",
+                                  "alt weekly schedule",
+                                  Supla::ConfigTag::HvacAltWeeklyCfgTag,
+                                  alt,
+                                  [this](char *key, const char *storageTag) {
+                                    owner_->generateKey(key, storageTag);
+                                  });
+      if (requestResend && owner_->initDone) {
+        owner_->requestWeeklyScheduleResend(true);
       }
     }
   }
 
+  if (requestResend && owner_->initDone) {
+    owner_->syncWeeklyScheduleConfigTypes();
+  }
+
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return;
+  }
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   owner_->generateKey(key, Supla::ConfigTag::WeeklyScheduleChangedFlagTag);
   cfg->setUInt8(key, weeklyScheduleChangedOffline_ ? 1 : 0);
   cfg->saveWithDelay(5000);
@@ -439,7 +415,7 @@ void HvacWeeklySchedule::clearWeeklyScheduleChangedFlag() {
 }
 
 bool HvacWeeklySchedule::isWeeklyScheduleValid(
-    TChannelConfig_WeeklySchedule *newSchedule,
+    const TChannelConfig_WeeklySchedule *newSchedule,
     bool isAltWeeklySchedule) const {
   bool programIsUsed[SUPLA_WEEKLY_SCHEDULE_PROGRAMS_MAX_SIZE] = {};
 
@@ -521,7 +497,7 @@ bool HvacWeeklySchedule::setWeeklySchedule(int index,
   if (owner_->initDone) {
     weeklyScheduleChangedOffline_ = 1;
     isWeeklyScheduleConfigured_ = true;
-    saveWeeklySchedule();
+    saveWeeklySchedule(true);
   }
 
   isWeeklyScheduleConfigured_ = true;
@@ -567,7 +543,7 @@ bool HvacWeeklySchedule::setProgram(int programId,
   if (owner_->initDone) {
     weeklyScheduleChangedOffline_ = 1;
     isWeeklyScheduleConfigured_ = true;
-    saveWeeklySchedule();
+    saveWeeklySchedule(true);
   }
   return true;
 }
@@ -584,6 +560,25 @@ TWeeklyScheduleProgram HvacWeeklySchedule::getProgramById(
   }
 
   return weeklyScheduleBuffer_.getProgramById(schedule, programId);
+}
+
+void HvacWeeklySchedule::fillChannelConfig(void *channelConfig,
+                                           int *size,
+                                           bool isAltWeeklySchedule) const {
+  if (size) {
+    *size = 0;
+  }
+  if (channelConfig == nullptr || size == nullptr) {
+    return;
+  }
+
+  auto schedule = getSchedule(isAltWeeklySchedule, true);
+  if (schedule == nullptr) {
+    return;
+  }
+
+  memcpy(channelConfig, schedule, sizeof(TChannelConfig_WeeklySchedule));
+  *size = sizeof(TChannelConfig_WeeklySchedule);
 }
 
 TWeeklyScheduleProgram HvacWeeklySchedule::getProgramAt(

@@ -50,6 +50,7 @@ HvacBase::HvacBase(Supla::Control::OutputInterface *primaryOutput,
   channel.setFlag(SUPLA_CHANNEL_FLAG_WEEKLY_SCHEDULE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_RUNTIME_CHANNEL_CONFIG_UPDATE);
   channel.setFlag(SUPLA_CHANNEL_FLAG_COUNTDOWN_TIMER_SUPPORTED);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
   addPrimaryOutput(primaryOutput);
   addSecondaryOutput(secondaryOutput);
 
@@ -170,7 +171,7 @@ bool HvacBase::iterateConnected() {
     updateTimerValue();
     return false;
   }
-  auto result = Element::iterateConnected();
+  auto result = Supla::ElementWithChannelActions::iterateConnected();
 
   if (!result) {
     SUPLA_LOG_DEBUG(
@@ -190,10 +191,6 @@ bool HvacBase::iterateConnected() {
     return result;
   }
   lastConfigChangeTimestampMs = 0;
-
-  if (!weeklyScheduleHelper->iterateConfigExchange()) {
-    result = false;
-  }
 
   return result;
 }
@@ -239,6 +236,7 @@ void HvacBase::onLoadConfig(SuplaDeviceClass *sdc) {
     }
 
     weeklyScheduleHelper->onLoadConfig();
+    updateWeeklyScheduleConfigTypes();
 
     // load config changed offline flags
     if (cfg->isChannelConfigChangeFlagSet(getChannelNumber())) {
@@ -389,6 +387,8 @@ void HvacBase::onInit() {
     weeklyScheduleHelper->initDefaultWeeklySchedule();
   }
 
+  updateWeeklyScheduleConfigTypes();
+
   initDone = true;
 
   // validate thermometers channel numbers
@@ -446,7 +446,7 @@ void HvacBase::onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) {
       channel.getHvacSetpointTemperatureHeat(),
       channel.getHvacSetpointTemperatureCool(),
       channel.getHvacFlags());
-  Supla::Element::onRegistered(suplaSrpc);
+  Supla::ElementWithChannelActions::onRegistered(suplaSrpc);
   configFixAttempt = 0;
   serverChannelFunctionValid = true;
   configFinishedReceived = false;
@@ -464,7 +464,40 @@ void HvacBase::handleChannelConfigFinished() {
     // trigger sending channel config to server
     channelConfigChangedOffline = 1;
   }
+  Supla::ElementWithChannelActions::handleChannelConfigFinished();
   weeklyScheduleHelper->handleChannelConfigFinished();
+}
+
+void HvacBase::fillChannelConfig(void *channelConfig,
+                                 int *size,
+                                 uint8_t configType) {
+  if (size) {
+    *size = 0;
+  } else {
+    return;
+  }
+
+  if (channelConfig == nullptr) {
+    return;
+  }
+
+  if (configType == SUPLA_CONFIG_TYPE_DEFAULT) {
+    *size = sizeof(TChannelConfig_HVAC);
+    auto *hvacConfig = reinterpret_cast<TChannelConfig_HVAC *>(channelConfig);
+    memcpy(hvacConfig, &config, sizeof(TChannelConfig_HVAC));
+    hvacConfig->ParameterFlags = parameterFlags;
+    return;
+  }
+
+  if (configType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE) {
+    weeklyScheduleHelper->fillChannelConfig(channelConfig, size, false);
+    return;
+  }
+
+  if (configType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE &&
+      isAltWeeklySchedulePossible()) {
+    weeklyScheduleHelper->fillChannelConfig(channelConfig, size, true);
+  }
 }
 
 void HvacBase::iterateAlways() {
@@ -2111,11 +2144,12 @@ void HvacBase::setSubfunction(uint8_t subfunction) {
   }
   if (config.Subfunction != subfunction) {
     config.Subfunction = subfunction;
-    if (initDone) {
+  if (initDone) {
       channelConfigChangedOffline = 1;
       saveConfig();
     }
   }
+  updateWeeklyScheduleConfigTypes();
 }
 
 unsigned _supla_int16_t HvacBase::getUsedAlgorithm(bool forAux) const {
@@ -2238,6 +2272,7 @@ void HvacBase::setAuxThermometerType(uint8_t type) {
       saveConfig();
     }
   }
+  updateWeeklyScheduleConfigTypes();
 }
 
 uint8_t HvacBase::getAuxThermometerType() const {
@@ -2444,6 +2479,8 @@ void HvacBase::handleSetChannelConfigResult(
     return;
   }
 
+  Supla::ElementWithChannelActions::handleSetChannelConfigResult(result);
+
   if (result->ConfigType == SUPLA_CONFIG_TYPE_DEFAULT) {
     bool success = (result->Result == SUPLA_CONFIG_RESULT_TRUE);
     SUPLA_LOG_INFO("HVAC[%d]: set channel config %s (%d)",
@@ -2453,8 +2490,11 @@ void HvacBase::handleSetChannelConfigResult(
     clearChannelConfigChangedFlag();
     return;
   }
-
   weeklyScheduleHelper->handleSetChannelConfigResult(result);
+  if (result->ConfigType == SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE ||
+      result->ConfigType == SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE) {
+    updateWeeklyScheduleConfigTypes();
+  }
 }
 
 void HvacBase::clearChannelConfigChangedFlag() {
@@ -3551,6 +3591,27 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
   clearLastOutputValue();
   setOutput(0, true);
   lastIterateTimestampMs = 0;
+  updateWeeklyScheduleConfigTypes();
+}
+
+void HvacBase::requestWeeklyScheduleResend(bool isAltWeeklySchedule) {
+  triggerSetChannelConfig(isAltWeeklySchedule
+                             ? SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE
+                             : SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+}
+
+void HvacBase::updateWeeklyScheduleConfigTypes() {
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  usedConfigTypes.set(SUPLA_CONFIG_TYPE_WEEKLY_SCHEDULE);
+  if (isAltWeeklySchedulePossible()) {
+    usedConfigTypes.set(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  } else {
+    usedConfigTypes.clear(SUPLA_CONFIG_TYPE_ALT_WEEKLY_SCHEDULE);
+  }
+}
+
+void HvacBase::syncWeeklyScheduleConfigTypes() {
+  updateWeeklyScheduleConfigTypes();
 }
 
 void HvacBase::enableDifferentialFunctionSupport() {

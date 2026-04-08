@@ -33,6 +33,12 @@
 namespace Supla {
 namespace Control {
 
+namespace {
+
+constexpr uint32_t kWeeklyScheduleCacheReleaseDelayMs = 15000;
+
+}  // namespace
+
 HvacWeeklySchedule::HvacWeeklySchedule(HvacBase *owner) : owner_(owner) {
 }
 
@@ -46,6 +52,10 @@ const char *HvacWeeklySchedule::getStorageTag(bool isAltWeeklySchedule) {
 
 bool HvacWeeklySchedule::isConfigured() const {
   return isWeeklyScheduleConfigured_;
+}
+
+bool HvacWeeklySchedule::ensureScheduleLoaded(bool isAltWeeklySchedule) {
+  return getSchedule(isAltWeeklySchedule, true) != nullptr;
 }
 
 bool HvacWeeklySchedule::isProgramValid(const TWeeklyScheduleProgram &program,
@@ -71,18 +81,31 @@ bool HvacWeeklySchedule::loadSchedule(bool isAltWeeklySchedule) {
 
   char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   owner_->generateKey(key, getStorageTag(isAltWeeklySchedule));
+  SUPLA_LOG_DEBUG("HVAC[%d]: loading%s weekly schedule from storage",
+                  owner_->getChannelNumber(),
+                  isAltWeeklySchedule ? " alt" : "");
   if (!cfg->getBlob(key,
                     reinterpret_cast<char *>(schedule),
                     sizeof(TChannelConfig_WeeklySchedule))) {
+    SUPLA_LOG_DEBUG("HVAC[%d]: weekly schedule%s not found in storage",
+                    owner_->getChannelNumber(),
+                    isAltWeeklySchedule ? " alt" : "");
     return false;
   }
 
   if (!isWeeklyScheduleValid(schedule, isAltWeeklySchedule)) {
+    SUPLA_LOG_WARNING("HVAC[%d]: loaded%s weekly schedule is invalid",
+                      owner_->getChannelNumber(),
+                      isAltWeeklySchedule ? " alt" : "");
     weeklyScheduleBuffer_.clear(isAltWeeklySchedule);
     return false;
   }
 
   isWeeklyScheduleConfigured_ = true;
+  SUPLA_LOG_DEBUG("HVAC[%d]: loaded%s weekly schedule successfully",
+                  owner_->getChannelNumber(),
+                  isAltWeeklySchedule ? " alt" : "");
+  cacheRuntime_.touch(owner_->channel.isHvacFlagWeeklySchedule(), millis());
   return true;
 }
 
@@ -109,6 +132,8 @@ void HvacWeeklySchedule::unloadSchedulesIfPossible() {
     return;
   }
 
+  SUPLA_LOG_DEBUG("HVAC[%d]: unloading weekly schedule cache",
+                  owner_->getChannelNumber());
   weeklyScheduleBuffer_.clearAll();
 }
 
@@ -143,6 +168,7 @@ void HvacWeeklySchedule::onLoadConfig() {
   isWeeklyScheduleConfigured_ = false;
   weeklyScheduleReceived_ = false;
   altWeeklyScheduleReceived_ = false;
+  cacheRuntime_.reset();
 
   loadSchedule(false);
   if (owner_->getChannel()->getDefaultFunction() ==
@@ -158,6 +184,7 @@ void HvacWeeklySchedule::onLoadConfig() {
                  owner_->getChannelNumber(),
                  flag);
   weeklyScheduleChangedOffline_ = flag ? 1 : 0;
+  cacheRuntime_.touch(owner_->channel.isHvacFlagWeeklySchedule(), millis());
 }
 
 bool HvacWeeklySchedule::iterateConfigExchange() {
@@ -236,8 +263,15 @@ bool HvacWeeklySchedule::iterateConfigExchange() {
   return true;
 }
 
-void HvacWeeklySchedule::releaseCacheIfPossible() {
-  unloadSchedulesIfPossible();
+void HvacWeeklySchedule::processCacheRelease() {
+  if (owner_ == nullptr) {
+    return;
+  }
+
+  if (cacheRuntime_.process(owner_->channel.isHvacFlagWeeklySchedule(),
+                            millis())) {
+    unloadSchedulesIfPossible();
+  }
 }
 
 void HvacWeeklySchedule::onRegistered() {
@@ -388,6 +422,7 @@ void HvacWeeklySchedule::saveWeeklySchedule() {
   owner_->generateKey(key, Supla::ConfigTag::WeeklyScheduleChangedFlagTag);
   cfg->setUInt8(key, weeklyScheduleChangedOffline_ ? 1 : 0);
   cfg->saveWithDelay(5000);
+  cacheRuntime_.touch(owner_->channel.isHvacFlagWeeklySchedule(), millis());
 }
 
 void HvacWeeklySchedule::clearWeeklyScheduleChangedFlag() {
@@ -591,10 +626,38 @@ int HvacWeeklySchedule::getCurrentProgramId() const {
 }
 
 bool HvacWeeklySchedule::turnOnWeeklySchedule() {
+  if (!ensureScheduleLoaded(false)) {
+    return false;
+  }
+  if (owner_->getChannel()->getDefaultFunction() ==
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+      owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL) {
+    if (!ensureScheduleLoaded(true)) {
+      return false;
+    }
+  }
+  if (!isConfigured()) {
+    initDefaultWeeklySchedule();
+  }
+  cacheRuntime_.touch(true, millis());
   return policy_.turnOnWeeklySchedule(*this);
 }
 
 bool HvacWeeklySchedule::processWeeklySchedule() {
+  if (!ensureScheduleLoaded(false)) {
+    return false;
+  }
+  if (owner_->getChannel()->getDefaultFunction() ==
+          SUPLA_CHANNELFNC_HVAC_THERMOSTAT &&
+      owner_->config.Subfunction == SUPLA_HVAC_SUBFUNCTION_COOL) {
+    if (!ensureScheduleLoaded(true)) {
+      return false;
+    }
+  }
+  if (!isConfigured()) {
+    initDefaultWeeklySchedule();
+  }
+  cacheRuntime_.touch(true, millis());
   return policy_.processWeeklySchedule(*this);
 }
 

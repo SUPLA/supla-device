@@ -421,6 +421,88 @@ TEST_F(HvacWeeklyScheduleTestsF, startupProcedureWithEmptyConfigForWeekly) {
 }
 
 TEST_F(HvacWeeklyScheduleTestsF,
+       weeklyScheduleCacheReleasesAfterDelayWhenInactive) {
+  EXPECT_CALL(cfg, init());
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(1);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_cfg_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getUInt8(StrEq("0_weekly_chng"), _))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, getBlob(StrEq("0_hvac_cfg"), _, sizeof(TChannelConfig_HVAC)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+  EXPECT_CALL(cfg, setUInt8(_, _))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(cfg, setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
+      .Times(1)
+      .WillOnce(Return(true));
+  EXPECT_CALL(
+      cfg,
+      setBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+  EXPECT_CALL(
+      cfg,
+      setBlob(
+          StrEq("0_hvac_aweekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(AnyNumber())
+      .WillRepeatedly(Return(true));
+
+  hvac->onLoadConfig(nullptr);
+  hvac->onLoadState();
+  hvac->onInit();
+  hvac->onRegistered(nullptr);
+
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    hvac->iterateConnected();
+  }
+
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
+                nullptr, hvac->calculateIndex(Supla::DayOfWeek_Sunday, 0, 0)),
+            1);
+
+  hvac->setWeeklyScheduleEnabled(true);
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    hvac->iterateConnected();
+    time.advance(100);
+  }
+
+  hvac->setWeeklyScheduleEnabled(false);
+  for (int i = 0; i < 10; ++i) {
+    hvac->iterateAlways();
+    hvac->iterateConnected();
+    time.advance(100);
+  }
+
+  EXPECT_CALL(
+      cfg,
+      getBlob(StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
+      .Times(1)
+      .WillOnce(Return(false));
+
+  time.advance(16000);
+  hvac->iterateAlways();
+
+  EXPECT_EQ(hvac->getWeeklyScheduleProgramId(
+                nullptr, hvac->calculateIndex(Supla::DayOfWeek_Sunday, 0, 0)),
+            0);
+}
+
+TEST_F(HvacWeeklyScheduleTestsF,
        startupProcedureWithScheduleChangedBeforeConnection) {
   EXPECT_CALL(cfg, init());
   ProtocolLayerMock proto;

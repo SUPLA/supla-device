@@ -62,6 +62,7 @@ void RelayWeeklySchedule::setWeeklyScheduleEnabled(bool enabled) {
       owner_->getChannel()->setRelayMode(SUPLA_RELAY_MODE_NOT_SET);
     }
   }
+  cacheRuntime_.touch(enabled, millis());
 }
 
 void RelayWeeklySchedule::syncRelayMode(uint8_t programMode) {
@@ -155,6 +156,7 @@ bool RelayWeeklySchedule::loadSchedule() {
   }
 
   isWeeklyScheduleConfigured_ = true;
+  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
   return true;
 }
 
@@ -200,6 +202,7 @@ void RelayWeeklySchedule::saveWeeklySchedule() {
   owner_->generateKey(key, Supla::ConfigTag::WeeklyScheduleChangedFlagTag);
   cfg->setUInt8(key, weeklyScheduleChangedOffline_ ? 1 : 0);
   cfg->saveWithDelay(5000);
+  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
 }
 
 bool RelayWeeklySchedule::switchToWeeklySchedule() {
@@ -208,6 +211,7 @@ bool RelayWeeklySchedule::switchToWeeklySchedule() {
   }
   weeklyScheduleEnabled_ = true;
   lastCurrentProgramId_ = -1;
+  cacheRuntime_.touch(true, millis());
   syncRelayMode(getCurrentProgramMode());
   applyCurrentState();
   return true;
@@ -216,6 +220,7 @@ bool RelayWeeklySchedule::switchToWeeklySchedule() {
 void RelayWeeklySchedule::switchToManualMode() {
   weeklyScheduleEnabled_ = false;
   lastCurrentProgramId_ = -1;
+  cacheRuntime_.touch(false, millis());
   syncRelayMode(SUPLA_RELAY_MODE_NOT_SET);
 }
 
@@ -247,19 +252,28 @@ void RelayWeeklySchedule::initDefaultWeeklySchedule() {
 void RelayWeeklySchedule::onLoadConfig() {
   isWeeklyScheduleConfigured_ = false;
   lastCurrentProgramId_ = -1;
+  cacheRuntime_.reset();
 
   if (!loadSchedule()) {
     initDefaultWeeklySchedule();
   } else {
     weeklyScheduleEnabled_ = true;
   }
+  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
   syncRelayMode(getCurrentProgramMode());
 }
 
 bool RelayWeeklySchedule::iterateAlways() {
-  if (!owner_ || !isWeeklyScheduleConfigured_ || !weeklyScheduleEnabled_) {
+  if (!owner_ || !isWeeklyScheduleConfigured_) {
     return false;
   }
+
+  if (!weeklyScheduleEnabled_) {
+    processCacheRelease();
+    return false;
+  }
+
+  cacheRuntime_.touch(true, millis());
 
   if (!Supla::Clock::IsReady()) {
     return false;
@@ -365,6 +379,7 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
     if (weeklyScheduleEnabled_) {
       applyCurrentState();
     }
+    cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
     return Supla::ApplyConfigResult::SetChannelConfigNeeded;
   }
 
@@ -399,6 +414,7 @@ Supla::ApplyConfigResult RelayWeeklySchedule::applyChannelConfig(
     }
   }
 
+  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
   return Supla::ApplyConfigResult::Success;
 }
 
@@ -435,6 +451,27 @@ void RelayWeeklySchedule::fillChannelConfig(void *channelConfig,
 
   *reinterpret_cast<TChannelConfig_WeeklySchedule *>(channelConfig) = *schedule;
   *size = sizeof(TChannelConfig_WeeklySchedule);
+  cacheRuntime_.touch(weeklyScheduleEnabled_, millis());
+}
+
+void RelayWeeklySchedule::unloadScheduleIfPossible() {
+  if (owner_ == nullptr || weeklyScheduleEnabled_) {
+    return;
+  }
+
+  SUPLA_LOG_DEBUG("Relay[%d]: unloading weekly schedule cache",
+                  owner_->getChannelNumber());
+  weeklyScheduleBuffer_.clearAll();
+}
+
+void RelayWeeklySchedule::processCacheRelease() {
+  if (owner_ == nullptr) {
+    return;
+  }
+
+  if (cacheRuntime_.process(weeklyScheduleEnabled_, millis())) {
+    unloadScheduleIfPossible();
+  }
 }
 
 }  // namespace Control

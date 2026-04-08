@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include <supla-common/proto.h>
 
+#include "weekly_schedule_cache_runtime.h"
 #include "weekly_schedule_buffer.h"
 #include "hvac_weekly_schedule_policy.h"
 
@@ -38,7 +39,6 @@ class HvacWeeklySchedule {
   void onRegistered();
   void handleChannelConfigFinished();
   bool iterateConfigExchange();
-  void releaseCacheIfPossible();
   uint8_t handleWeeklySchedule(TSD_ChannelConfig *newWeeklySchedule,
                                bool isAltWeeklySchedule,
                                bool local);
@@ -76,10 +76,12 @@ class HvacWeeklySchedule {
   bool turnOnWeeklySchedule();
   bool processWeeklySchedule();
   void initDefaultWeeklySchedule();
+  void processCacheRelease();
 
   friend class HvacWeeklySchedulePolicy;
 
  private:
+  bool ensureScheduleLoaded(bool isAltWeeklySchedule);
   TChannelConfig_WeeklySchedule *getSchedule(bool isAltWeeklySchedule,
                                              bool loadIfMissing = true);
   const TChannelConfig_WeeklySchedule *getSchedule(
@@ -98,6 +100,7 @@ class HvacWeeklySchedule {
   bool weeklyScheduleReceived_ = false;
   bool altWeeklyScheduleReceived_ = false;
   uint8_t weeklyScheduleChangedOffline_ = 0;
+  WeeklyScheduleCacheRuntime cacheRuntime_;
 };
 
 }  // namespace Control

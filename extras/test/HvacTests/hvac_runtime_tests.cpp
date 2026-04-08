@@ -112,6 +112,8 @@ TEST_F(HvacRuntimeF, antifreezeCheck) {
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  TChannelConfig_WeeklySchedule storedWeeklySchedule = {};
+  bool weeklyScheduleStored = false;
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -130,8 +132,18 @@ TEST_F(HvacRuntimeF, antifreezeCheck) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly([&](const char *,
+                         char *buf,
+                         int size) {
+        if (weeklyScheduleStored) {
+          memcpy(buf, &storedWeeklySchedule, size);
+          return true;
+        }
+        memset(buf, 0, size);
+        return false;
+      });
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
@@ -139,7 +151,11 @@ TEST_F(HvacRuntimeF, antifreezeCheck) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
-      .WillRepeatedly(Return(true));
+      .WillRepeatedly([&](const char *, const char *buf, int size) {
+        memcpy(&storedWeeklySchedule, buf, size);
+        weeklyScheduleStored = true;
+        return true;
+      });
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
@@ -367,6 +383,8 @@ TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  TChannelConfig_WeeklySchedule storedWeeklySchedule = {};
+  bool weeklyScheduleStored = false;
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -385,8 +403,18 @@ TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly([&](const char *,
+                         char *buf,
+                         int size) {
+        if (weeklyScheduleStored) {
+          memcpy(buf, &storedWeeklySchedule, size);
+          return true;
+        }
+        memset(buf, 0, size);
+        return false;
+      });
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
@@ -394,7 +422,11 @@ TEST_F(HvacRuntimeF, antifreezeCheckInCoolMode) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
-      .WillRepeatedly(Return(true));
+      .WillRepeatedly([&](const char *, const char *buf, int size) {
+        memcpy(&storedWeeklySchedule, buf, size);
+        weeklyScheduleStored = true;
+        return true;
+      });
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
@@ -634,6 +666,8 @@ TEST_F(HvacRuntimeF, antifreezeCheckWithProgramAndOffMode) {
   EXPECT_TRUE(hvac->getChannel()->isWeeklyScheduleAvailable());
 
   EXPECT_CALL(cfg, saveWithDelay(_)).Times(AtLeast(1));
+  TChannelConfig_WeeklySchedule storedWeeklySchedule = {};
+  bool weeklyScheduleStored = false;
 
   EXPECT_CALL(cfg, getInt32(StrEq("0_fnc"), _))
       .Times(1)
@@ -652,8 +686,18 @@ TEST_F(HvacRuntimeF, antifreezeCheckWithProgramAndOffMode) {
       cfg,
       getBlob(
           StrEq("0_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
-      .Times(1)
-      .WillOnce(Return(false));
+      .Times(AtLeast(1))
+      .WillOnce(Return(false))
+      .WillRepeatedly([&](const char *,
+                         char *buf,
+                         int size) {
+        if (weeklyScheduleStored) {
+          memcpy(buf, &storedWeeklySchedule, size);
+          return true;
+        }
+        memset(buf, 0, size);
+        return false;
+      });
   EXPECT_CALL(cfg,
               setInt32(StrEq("0_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
@@ -661,7 +705,11 @@ TEST_F(HvacRuntimeF, antifreezeCheckWithProgramAndOffMode) {
 
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_weekly"), _, _))
-      .WillRepeatedly(Return(true));
+      .WillRepeatedly([&](const char *, const char *buf, int size) {
+        memcpy(&storedWeeklySchedule, buf, size);
+        weeklyScheduleStored = true;
+        return true;
+      });
   EXPECT_CALL(cfg,
               setBlob(StrEq("0_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
@@ -953,4 +1001,3 @@ TEST_F(HvacRuntimeF, antifreezeCheckWithProgramAndOffMode) {
 
   iterateAndMoveTime(100);
 }
-

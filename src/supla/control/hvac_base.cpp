@@ -494,6 +494,7 @@ void HvacBase::iterateAlways() {
   }
 
   updateChannelState();
+  weeklyScheduleHelper->processCacheRelease();
 
   if (startupDelay && millis() > 30000) {
     startupDelay = false;
@@ -3541,8 +3542,6 @@ void HvacBase::changeFunction(uint32_t newFunction, bool changedLocally) {
   initDefaultConfig();
 
   channel.clearHvacState();
-
-  initDefaultWeeklySchedule();
 
   if (changedLocally) {
     channelConfigChangedOffline = 1;

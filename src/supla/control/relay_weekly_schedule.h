@@ -24,6 +24,7 @@
 
 #include "../element_with_channel_actions.h"
 #include "weekly_schedule_buffer.h"
+#include "weekly_schedule_cache_runtime.h"
 
 namespace Supla {
 namespace Control {
@@ -54,6 +55,8 @@ class RelayWeeklySchedule {
   void initDefaultWeeklySchedule();
   void saveWeeklySchedule();
   void syncRelayMode(uint8_t programMode);
+  void processCacheRelease();
+  void unloadScheduleIfPossible();
   void setWeeklyScheduleEnabled(bool enabled);
   const TChannelConfig_WeeklySchedule *getSchedule(bool loadIfMissing = true)
       const;
@@ -72,6 +75,7 @@ class RelayWeeklySchedule {
   bool weeklyScheduleEnabled_ = false;
   uint8_t weeklyScheduleChangedOffline_ = 0;
   int lastCurrentProgramId_ = -1;
+  WeeklyScheduleCacheRuntime cacheRuntime_;
 };
 
 }  // namespace Control

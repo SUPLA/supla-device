@@ -260,6 +260,8 @@ Supla::Sensor::MultiDsSensor *MultiDsHandlerBase::addDevice(
   }
   sensor->getChannel()->setChannelNumber(channelNumber);
   if (newDevice) {
+    sensor->onLoadConfig(sdc);
+    sensor->onInit();
     sensor->saveSensorConfig();
     SUPLA_LOG_INFO("MultiDS: Successfully added a new device");
   }

@@ -54,6 +54,72 @@ TEST(BinarySensorTests, VirtualBinaryValuesTest) {
   EXPECT_EQ(sensor.getChannel()->getValueBool(), true);
 }
 
+TEST(BinarySensorTests, VirtualBinaryTimeoutClearsLogicalState) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Sensor::VirtualBinary sensor;
+
+  sensor.setTimeoutDs(25);
+  sensor.onInit();
+  sensor.set();
+
+  for (int i = 0; i < 25; ++i) {
+    time.advance(100);
+    sensor.iterateAlways();
+  }
+
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+
+  time.advance(100);
+  sensor.iterateAlways();
+
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+  EXPECT_FALSE(sensor.getValue());
+}
+
+TEST(BinarySensorTests, VirtualBinaryTimeoutRespectsServerInvertLogic) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Sensor::VirtualBinary sensor;
+
+  sensor.setTimeoutDs(25);
+  sensor.setServerInvertLogic(true);
+  sensor.onInit();
+  sensor.clear();
+
+  for (int i = 0; i < 25; ++i) {
+    time.advance(100);
+    sensor.iterateAlways();
+  }
+
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+
+  time.advance(100);
+  sensor.iterateAlways();
+
+  EXPECT_FALSE(sensor.getChannel()->getValueBool());
+  EXPECT_TRUE(sensor.getValue());
+}
+
+TEST(BinarySensorTests, VirtualBinaryCanDisableConfiguredTimeout) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  Supla::Sensor::VirtualBinary sensor;
+
+  sensor.setTimeoutDs(25);
+  sensor.setUseConfiguredTimeout(false);
+  sensor.onInit();
+  sensor.set();
+
+  for (int i = 0; i < 26; ++i) {
+    time.advance(100);
+    sensor.iterateAlways();
+  }
+
+  EXPECT_TRUE(sensor.getChannel()->getValueBool());
+  EXPECT_TRUE(sensor.getValue());
+}
+
 TEST(BinarySensorTests, BinaryValuesTest) {
   Supla::Channel::resetToDefaults();
   DigitalInterfaceMock ioMock;

@@ -105,6 +105,6 @@ channels:
 
   - type: BinaryParsed
     state: 1
+    timeout_s: 2.5
     parser:
       use: parser_1
-

@@ -982,6 +982,10 @@ Mandatory parameter: `state` - defines key/index by which data is fetched
 from `parser`.
 Optional parameter: `multiplier` - defines multiplier for fetched value
 (you can put any floating point number).
+Optional parameter: `timeout_s` - default timeout in seconds. The value can be
+fractional, with 0.1 s resolution, for example `2.5`.
+Timeout is evaluated against the logical ON/OFF state, so it respects
+`serverInvertLogic`.
 
 Values equal to "1" (approx) are considered as on/1/true. All other values
 are considered as off/0/false.

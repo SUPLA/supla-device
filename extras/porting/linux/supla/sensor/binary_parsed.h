@@ -43,6 +43,7 @@ class BinaryParsed : public SensorParsed<VirtualBinary> {
 
  protected:
   uint32_t lastOfflineReadTime = 0;
+  bool lastSourceState = false;
 };
 };  // namespace Sensor
 };  // namespace Supla

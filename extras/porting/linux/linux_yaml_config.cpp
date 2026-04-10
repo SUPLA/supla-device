@@ -61,6 +61,7 @@
 #include <supla/tools.h>
 
 #include <algorithm>
+#include <cmath>
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
@@ -1614,6 +1615,20 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
                       channelNumber,
                       function.c_str());
       return false;
+    }
+  }
+
+  if (ch["timeout_s"]) {
+    paramCount++;
+    double timeoutS = ch["timeout_s"].as<double>();
+    if (timeoutS < 0.0 || timeoutS > 3600.0) {
+      SUPLA_LOG_ERROR("Channel[%d] config: timeout_s out of range",
+                      channelNumber);
+      return false;
+    }
+    int64_t timeoutDs = std::lround(timeoutS * 10.0);
+    if (timeoutDs > 0) {
+      binary->setTimeoutDs(static_cast<uint16_t>(timeoutDs), false);
     }
   }
 

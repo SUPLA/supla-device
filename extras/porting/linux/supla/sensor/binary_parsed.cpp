@@ -32,23 +32,23 @@ void Supla::Sensor::BinaryParsed::onInit() {
 }
 
 bool Supla::Sensor::BinaryParsed::getValue() {
-  bool value = false;
-
   int result = getStateValue(false);
-
-  if (result == 1) {
-    value = true;
+  if (lastState != result) {
+    clearedByTimeout = false;
+    if (result == 1) {
+      set();
+    } else if (result == 0) {
+      clear();
+    }
+  } else if (clearedByTimeout) {
+    return false;
   }
 
-//  setLastState(isOffline() ? -1 : (value ? 1 : 0));
-  setLastState(value ? 1 : 0);
-
-  return value;
+  setLastState(result == 1);
+  return result == 1;
 }
 
 void Supla::Sensor::BinaryParsed::iterateAlways() {
-  Supla::Sensor::VirtualBinary::iterateAlways();
-
   if (parser && (millis() - lastOfflineReadTime > 100)) {
     if (setOfflineIfSourceDisconnected()) {
       lastOfflineReadTime = millis();
@@ -58,4 +58,6 @@ void Supla::Sensor::BinaryParsed::iterateAlways() {
     lastOfflineReadTime = millis();
     setChannelStateOnline(!isOffline());
   }
+
+  VirtualBinary::iterateAlways();
 }

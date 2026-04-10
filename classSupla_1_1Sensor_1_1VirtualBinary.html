@@ -77,17 +77,23 @@ $(function() {
 <div class="header">
   <div class="summary">
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pro-methods">Protected Member Functions</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
 <a href="classSupla_1_1Sensor_1_1VirtualBinary-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Sensor::VirtualBinary Class Reference</div></div>
 </div><!--header-->
 <div class="contents">
+
+<p>Virtual binary sensor with explicit logical state control.  
+ <a href="#details">More...</a></p>
+
+<p><code>#include &lt;<a class="el" href="virtual__binary_8h_source.html">virtual_binary.h</a>&gt;</code></p>
 <div class="dynheader">
 Inheritance diagram for Supla::Sensor::VirtualBinary:</div>
 <div class="dyncontent">
 <div class="center"><img src="classSupla_1_1Sensor_1_1VirtualBinary__inherit__graph.png" border="0" usemap="#aSupla_1_1Sensor_1_1VirtualBinary_inherit__map" loading="lazy" alt="Inheritance graph"/></div>
 <map name="aSupla_1_1Sensor_1_1VirtualBinary_inherit__map" id="aSupla_1_1Sensor_1_1VirtualBinary_inherit__map">
-<area shape="rect" title=" " alt="" coords="130,241,310,267"/>
+<area shape="rect" title="Virtual binary sensor with explicit logical state control." alt="" coords="130,241,310,267"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1BinaryBase.html" title=" " alt="" coords="43,168,216,193"/>
 <area shape="poly" title=" " alt="" coords="158,201,207,239,204,243,155,205"/>
 <area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="40,79,220,120"/>
@@ -105,7 +111,7 @@ Collaboration diagram for Supla::Sensor::VirtualBinary:</div>
 <div class="dyncontent">
 <div class="center"><img src="classSupla_1_1Sensor_1_1VirtualBinary__coll__graph.png" border="0" usemap="#aSupla_1_1Sensor_1_1VirtualBinary_coll__map" loading="lazy" alt="Collaboration graph"/></div>
 <map name="aSupla_1_1Sensor_1_1VirtualBinary_coll__map" id="aSupla_1_1Sensor_1_1VirtualBinary_coll__map">
-<area shape="rect" title=" " alt="" coords="1105,266,1286,292"/>
+<area shape="rect" title="Virtual binary sensor with explicit logical state control." alt="" coords="1105,266,1286,292"/>
 <area shape="rect" href="classSupla_1_1Sensor_1_1BinaryBase.html" title=" " alt="" coords="883,233,1056,258"/>
 <area shape="poly" title=" " alt="" coords="1072,258,1105,263,1105,268,1071,263"/>
 <area shape="rect" href="classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="368,129,548,170"/>
@@ -141,6 +147,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:abd40ff2fde07106d537274edd3f97e80" id="r_abd40ff2fde07106d537274edd3f97e80"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#abd40ff2fde07106d537274edd3f97e80">getValue</a> () override</td></tr>
 <tr class="memitem:af6567772dfde736a90cee7f076de3700" id="r_af6567772dfde736a90cee7f076de3700"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af6567772dfde736a90cee7f076de3700">onInit</a> () override</td></tr>
 <tr class="memdesc:af6567772dfde736a90cee7f076de3700"><td class="mdescLeft">&#160;</td><td class="mdescRight">Third method called on element in SuplaDevice.begin().  <br /></td></tr>
+<tr class="memitem:aa0714a8521a348abce9879405ded0993" id="r_aa0714a8521a348abce9879405ded0993"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#aa0714a8521a348abce9879405ded0993">iterateAlways</a> () override</td></tr>
+<tr class="memdesc:aa0714a8521a348abce9879405ded0993"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
 <tr class="memitem:a4061d23968f0cdd22acde11ffe3949a7" id="r_a4061d23968f0cdd22acde11ffe3949a7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a4061d23968f0cdd22acde11ffe3949a7">handleAction</a> (int event, int action) override</td></tr>
 <tr class="memitem:ae5da746aadb3449cef95bf859526ba3d" id="r_ae5da746aadb3449cef95bf859526ba3d"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ae5da746aadb3449cef95bf859526ba3d">onLoadState</a> () override</td></tr>
 <tr class="memdesc:ae5da746aadb3449cef95bf859526ba3d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Second method called on element in SuplaDevice.begin().  <br /></td></tr>
@@ -148,15 +156,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a56da4fa6ec623e578e37eebb733f435b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called periodically during SuplaDevice iteration.  <br /></td></tr>
 <tr class="memitem:a084decd7c4d7cd07d217a4c2e26b1b18" id="r_a084decd7c4d7cd07d217a4c2e26b1b18"><td class="memItemLeft"><a id="a084decd7c4d7cd07d217a4c2e26b1b18" name="a084decd7c4d7cd07d217a4c2e26b1b18"></a>
 void&#160;</td><td class="memItemRight"><b>set</b> ()</td></tr>
+<tr class="memdesc:a084decd7c4d7cd07d217a4c2e26b1b18"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the logical state to ON. <br /></td></tr>
 <tr class="memitem:a3ec4fe20cd8622646cb01630ee5a9c48" id="r_a3ec4fe20cd8622646cb01630ee5a9c48"><td class="memItemLeft"><a id="a3ec4fe20cd8622646cb01630ee5a9c48" name="a3ec4fe20cd8622646cb01630ee5a9c48"></a>
 void&#160;</td><td class="memItemRight"><b>clear</b> ()</td></tr>
+<tr class="memdesc:a3ec4fe20cd8622646cb01630ee5a9c48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets the logical state to OFF. <br /></td></tr>
 <tr class="memitem:a852b5077163802e7193c18635c2a8d41" id="r_a852b5077163802e7193c18635c2a8d41"><td class="memItemLeft"><a id="a852b5077163802e7193c18635c2a8d41" name="a852b5077163802e7193c18635c2a8d41"></a>
 void&#160;</td><td class="memItemRight"><b>toggle</b> ()</td></tr>
-<tr class="memitem:a9a1bf083423ac83c004114a1fb5e1772" id="r_a9a1bf083423ac83c004114a1fb5e1772"><td class="memItemLeft"><a id="a9a1bf083423ac83c004114a1fb5e1772" name="a9a1bf083423ac83c004114a1fb5e1772"></a>
-void&#160;</td><td class="memItemRight"><b>setKeepStateInStorage</b> (bool)</td></tr>
+<tr class="memdesc:a852b5077163802e7193c18635c2a8d41"><td class="mdescLeft">&#160;</td><td class="mdescRight">Toggles the logical state. <br /></td></tr>
+<tr class="memitem:a16a1dbc49528e7897bc3f14aa37853ee" id="r_a16a1dbc49528e7897bc3f14aa37853ee"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a16a1dbc49528e7897bc3f14aa37853ee">setUseConfiguredTimeout</a> (bool useConfiguredTimeout)</td></tr>
+<tr class="memdesc:a16a1dbc49528e7897bc3f14aa37853ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables or disables timeout auto-application from the configured channel timeout value.  <br /></td></tr>
+<tr class="memitem:a9a1bf083423ac83c004114a1fb5e1772" id="r_a9a1bf083423ac83c004114a1fb5e1772"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a9a1bf083423ac83c004114a1fb5e1772">setKeepStateInStorage</a> (bool)</td></tr>
+<tr class="memdesc:a9a1bf083423ac83c004114a1fb5e1772"><td class="mdescLeft">&#160;</td><td class="mdescRight">Configures whether the logical state should be persisted in storage.  <br /></td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1Sensor_1_1BinaryBase')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html">Supla::Sensor::BinaryBase</a></td></tr>
-<tr class="memitem:a5cda81c50fd085078df6637a0236bbf5 inherit pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a5cda81c50fd085078df6637a0236bbf5"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#a5cda81c50fd085078df6637a0236bbf5">iterateAlways</a> () override</td></tr>
-<tr class="memdesc:a5cda81c50fd085078df6637a0236bbf5 inherit pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
 <tr class="memitem:a04cc8b3ecc2bcc032fd3be9a0c1773ca inherit pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a04cc8b3ecc2bcc032fd3be9a0c1773ca"><td class="memItemLeft"><a class="el" href="classChannel.html">Channel</a> *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#a04cc8b3ecc2bcc032fd3be9a0c1773ca">getChannel</a> () override</td></tr>
 <tr class="memitem:adcebee5e4d01c3b2ab580902cd6fee83 inherit pub_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_adcebee5e4d01c3b2ab580902cd6fee83"><td class="memItemLeft">const <a class="el" href="classChannel.html">Channel</a> *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#adcebee5e4d01c3b2ab580902cd6fee83">getChannel</a> () const override</td></tr>
 <tr class="memdesc:adcebee5e4d01c3b2ab580902cd6fee83 inherit pub_methods_classSupla_1_1Sensor_1_1BinaryBase"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns pointer to main channel.  <br /></td></tr>
@@ -288,12 +299,43 @@ virtual bool&#160;</td><td class="memItemRight"><b>deleteClient</b> ()</td></tr>
 <tr class="memitem:abc7c5a2d349b50712315a0e433f111ad inherit pub_methods_classSupla_1_1ActionHandler" id="r_abc7c5a2d349b50712315a0e433f111ad"><td class="memItemLeft">
 virtual <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *&#160;</td><td class="memItemRight"><b>getRealClient</b> ()</td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
+Protected Member Functions</h2></td></tr>
+<tr class="memitem:ad3f697f9538c038706f28a38790213e9" id="r_ad3f697f9538c038706f28a38790213e9"><td class="memItemLeft"><a id="ad3f697f9538c038706f28a38790213e9" name="ad3f697f9538c038706f28a38790213e9"></a>
+void&#160;</td><td class="memItemRight"><b>setLogicalState</b> (bool logicalState, bool fromTimeout=false)</td></tr>
+<tr class="inherit_header pro_methods_classSupla_1_1Sensor_1_1BinaryBase"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1Sensor_1_1BinaryBase')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Member Functions inherited from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html">Supla::Sensor::BinaryBase</a></td></tr>
+<tr class="memitem:a4a315a79dd72a5364b9b17e59f38bc71 inherit pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a4a315a79dd72a5364b9b17e59f38bc71"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>saveConfig</b> ()</td></tr>
+<tr class="memitem:a9974b32aea1ba07748877b551db48167 inherit pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a9974b32aea1ba07748877b551db48167"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>printConfig</b> ()</td></tr>
+<tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
+<tr class="memitem:ae380adb55e2757c1c4d4a8ec8919a4b5 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ae380adb55e2757c1c4d4a8ec8919a4b5"><td class="memItemLeft">
+virtual bool&#160;</td><td class="memItemRight"><b>setAndSaveFunction</b> (uint32_t channelFunction)</td></tr>
+<tr class="memitem:a98a63ff2a87cc055363607d0757d668d inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a98a63ff2a87cc055363607d0757d668d"><td class="memItemLeft">
+virtual bool&#160;</td><td class="memItemRight"><b>loadFunctionFromConfig</b> ()</td></tr>
+<tr class="memitem:a81a41daf44de6352c962632bfbfde6c4 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a81a41daf44de6352c962632bfbfde6c4"><td class="memItemLeft">
+virtual bool&#160;</td><td class="memItemRight"><b>saveConfigChangeFlag</b> () const</td></tr>
+<tr class="memitem:ae048b7ea35b92bcf6ba3c5ec42838677 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ae048b7ea35b92bcf6ba3c5ec42838677"><td class="memItemLeft">
+virtual bool&#160;</td><td class="memItemRight"><b>loadConfigChangeFlag</b> ()</td></tr>
+<tr class="memitem:aba3b92d1404370e5a595df8a22a0b12c inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_aba3b92d1404370e5a595df8a22a0b12c"><td class="memItemLeft">
+void&#160;</td><td class="memItemRight"><b>clearChannelConfigChangedFlag</b> ()</td></tr>
+<tr class="memitem:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a97016624bfef476ddd5a964b42bfc768"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>iterateConfigExchange</b> ()</td></tr>
+<tr class="memitem:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a7f1e8b7bd7ef2a97ab541647861a9e89"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a7f1e8b7bd7ef2a97ab541647861a9e89">getNextConfigType</a> () const</td></tr>
+<tr class="memdesc:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next config type to be sent.  <br /></td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
 <tr class="memitem:a087cce93219857e269d7f312ea3ad8dd" id="r_a087cce93219857e269d7f312ea3ad8dd"><td class="memItemLeft"><a id="a087cce93219857e269d7f312ea3ad8dd" name="a087cce93219857e269d7f312ea3ad8dd"></a>
 bool&#160;</td><td class="memItemRight"><b>state</b> = false</td></tr>
 <tr class="memitem:a3d8848c66c35eee2ef83f14edea13239" id="r_a3d8848c66c35eee2ef83f14edea13239"><td class="memItemLeft"><a id="a3d8848c66c35eee2ef83f14edea13239" name="a3d8848c66c35eee2ef83f14edea13239"></a>
 bool&#160;</td><td class="memItemRight"><b>keepStateInStorage</b> = false</td></tr>
+<tr class="memitem:a2b4a48e28785a13f308f0222efaff7fc" id="r_a2b4a48e28785a13f308f0222efaff7fc"><td class="memItemLeft"><a id="a2b4a48e28785a13f308f0222efaff7fc" name="a2b4a48e28785a13f308f0222efaff7fc"></a>
+uint32_t&#160;</td><td class="memItemRight"><b>stateChangeTimeMs</b> = 0</td></tr>
+<tr class="memitem:ae3e96fc6ac9d8177ce132d9175459c83" id="r_ae3e96fc6ac9d8177ce132d9175459c83"><td class="memItemLeft"><a id="ae3e96fc6ac9d8177ce132d9175459c83" name="ae3e96fc6ac9d8177ce132d9175459c83"></a>
+bool&#160;</td><td class="memItemRight"><b>clearedByTimeout</b> = false</td></tr>
+<tr class="memitem:adb02fc69f3ffa105a5b70fbc248a087f" id="r_adb02fc69f3ffa105a5b70fbc248a087f"><td class="memItemLeft"><a id="adb02fc69f3ffa105a5b70fbc248a087f" name="adb02fc69f3ffa105a5b70fbc248a087f"></a>
+bool&#160;</td><td class="memItemRight"><b>useConfiguredTimeout</b> = true</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Sensor_1_1BinaryBase"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1Sensor_1_1BinaryBase')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Attributes inherited from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html">Supla::Sensor::BinaryBase</a></td></tr>
 <tr class="memitem:a7cc55df6a5e9ec1d646278a6f406644d inherit pro_attribs_classSupla_1_1Sensor_1_1BinaryBase" id="r_a7cc55df6a5e9ec1d646278a6f406644d"><td class="memItemLeft">
 uint32_t&#160;</td><td class="memItemRight"><b>lastReadTime</b> = 0</td></tr>
@@ -344,33 +386,16 @@ static void&#160;</td><td class="memItemRight"><b>DeleteActionsTriggeredBy</b> (
 static void&#160;</td><td class="memItemRight"><b>NullifyActionsHandledBy</b> (const <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client)</td></tr>
 <tr class="memitem:a73c46eec44d1aae91a9de59aea0415be inherit pub_static_methods_classSupla_1_1LocalAction" id="r_a73c46eec44d1aae91a9de59aea0415be"><td class="memItemLeft">
 static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandlerClient</a> *&#160;</td><td class="memItemRight"><b>getClientListPtr</b> ()</td></tr>
-<tr class="inherit_header pro_methods_classSupla_1_1Sensor_1_1BinaryBase"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1Sensor_1_1BinaryBase')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Member Functions inherited from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html">Supla::Sensor::BinaryBase</a></td></tr>
-<tr class="memitem:a4a315a79dd72a5364b9b17e59f38bc71 inherit pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a4a315a79dd72a5364b9b17e59f38bc71"><td class="memItemLeft">
-void&#160;</td><td class="memItemRight"><b>saveConfig</b> ()</td></tr>
-<tr class="memitem:a9974b32aea1ba07748877b551db48167 inherit pro_methods_classSupla_1_1Sensor_1_1BinaryBase" id="r_a9974b32aea1ba07748877b551db48167"><td class="memItemLeft">
-void&#160;</td><td class="memItemRight"><b>printConfig</b> ()</td></tr>
-<tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
-<tr class="memitem:ae380adb55e2757c1c4d4a8ec8919a4b5 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ae380adb55e2757c1c4d4a8ec8919a4b5"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>setAndSaveFunction</b> (uint32_t channelFunction)</td></tr>
-<tr class="memitem:a98a63ff2a87cc055363607d0757d668d inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a98a63ff2a87cc055363607d0757d668d"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>loadFunctionFromConfig</b> ()</td></tr>
-<tr class="memitem:a81a41daf44de6352c962632bfbfde6c4 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a81a41daf44de6352c962632bfbfde6c4"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>saveConfigChangeFlag</b> () const</td></tr>
-<tr class="memitem:ae048b7ea35b92bcf6ba3c5ec42838677 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ae048b7ea35b92bcf6ba3c5ec42838677"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>loadConfigChangeFlag</b> ()</td></tr>
-<tr class="memitem:aba3b92d1404370e5a595df8a22a0b12c inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_aba3b92d1404370e5a595df8a22a0b12c"><td class="memItemLeft">
-void&#160;</td><td class="memItemRight"><b>clearChannelConfigChangedFlag</b> ()</td></tr>
-<tr class="memitem:a97016624bfef476ddd5a964b42bfc768 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a97016624bfef476ddd5a964b42bfc768"><td class="memItemLeft">
-bool&#160;</td><td class="memItemRight"><b>iterateConfigExchange</b> ()</td></tr>
-<tr class="memitem:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_a7f1e8b7bd7ef2a97ab541647861a9e89"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a7f1e8b7bd7ef2a97ab541647861a9e89">getNextConfigType</a> () const</td></tr>
-<tr class="memdesc:a7f1e8b7bd7ef2a97ab541647861a9e89 inherit pro_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the next config type to be sent.  <br /></td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Element')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:afc5f4790686c64e3f58e6000d62ec9de inherit pro_static_attribs_classSupla_1_1Element" id="r_afc5f4790686c64e3f58e6000d62ec9de"><td class="memItemLeft">
 static Element *&#160;</td><td class="memItemRight"><b>firstPtr</b> = nullptr</td></tr>
 <tr class="memitem:a59f474678e69e1fca9e7301290b10240 inherit pro_static_attribs_classSupla_1_1Element" id="r_a59f474678e69e1fca9e7301290b10240"><td class="memItemLeft">
 static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td></tr>
 </table>
-<a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a name="details" id="details"></a><h2 id="header-details" class="groupheader">Detailed Description</h2>
+<div class="textblock"><p>Virtual binary sensor with explicit logical state control. </p>
+<p>The class stores the logical state internally and mirrors it to the channel value taking server inverted logic into account. It can also auto-clear the state after the configured timeout, unless timeout handling is disabled with setUseConfiguredTimeout(false). </p>
+</div><a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
 <a id="abd40ff2fde07106d537274edd3f97e80" name="abd40ff2fde07106d537274edd3f97e80"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abd40ff2fde07106d537274edd3f97e80">&#9670;&#160;</a></span>getValue()</h2>
 
@@ -426,6 +451,36 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </div><div class="memdoc">
 
 <p>Implements <a class="el" href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a>.</p>
+
+</div>
+</div>
+<a id="aa0714a8521a348abce9879405ded0993" name="aa0714a8521a348abce9879405ded0993"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa0714a8521a348abce9879405ded0993">&#9670;&#160;</a></span>iterateAlways()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::VirtualBinary::iterateAlways </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Method called on each SuplaDevice iteration. </p>
+<p>It should provide all actions that have to be executed periodically regardless of network state. </p>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#a5cda81c50fd085078df6637a0236bbf5">Supla::Sensor::BinaryBase</a>.</p>
 
 </div>
 </div>
@@ -516,6 +571,46 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 <p>It should provide state saving for this elemnet to <a class="el" href="classSupla_1_1Storage.html">Storage</a> </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#ab9ebf45462dfe94c4b3c9c5797883604">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a9a1bf083423ac83c004114a1fb5e1772" name="a9a1bf083423ac83c004114a1fb5e1772"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a1bf083423ac83c004114a1fb5e1772">&#9670;&#160;</a></span>setKeepStateInStorage()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::VirtualBinary::setKeepStateInStorage </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>keepStateInStorage</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Configures whether the logical state should be persisted in storage. </p>
+<p>This should be set only before SuplaDevice.begin(). Changing it later can break the stored state layout. </p>
+
+</div>
+</div>
+<a id="a16a1dbc49528e7897bc3f14aa37853ee" name="a16a1dbc49528e7897bc3f14aa37853ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a16a1dbc49528e7897bc3f14aa37853ee">&#9670;&#160;</a></span>setUseConfiguredTimeout()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Sensor::VirtualBinary::setUseConfiguredTimeout </td>
+          <td>(</td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>useConfiguredTimeout</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Enables or disables timeout auto-application from the configured channel timeout value. </p>
+<p>When disabled, the timeout value is still available via getters, but the sensor will not auto-clear itself in <a class="el" href="#aa0714a8521a348abce9879405ded0993" title="Method called on each SuplaDevice iteration.">iterateAlways()</a>. </p>
 
 </div>
 </div>

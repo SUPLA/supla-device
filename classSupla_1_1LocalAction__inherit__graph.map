@@ -70,7 +70,7 @@
 <area shape="poly" id="edge18_Node000022_Node000024" title=" " alt="" coords="884,196,921,205,1000,223,999,229,920,210,883,202"/>
 <area shape="rect" id="Node000075" href="$classSupla_1_1Sensor_1_1Binary.html" title=" " alt="" coords="737,825,880,851"/>
 <area shape="poly" id="edge31_Node000074_Node000075" title=" " alt="" coords="634,848,736,841,737,846,635,853"/>
-<area shape="rect" id="Node000077" href="$classSupla_1_1Sensor_1_1VirtualBinary.html" title=" " alt="" coords="718,875,899,900"/>
+<area shape="rect" id="Node000077" href="$classSupla_1_1Sensor_1_1VirtualBinary.html" title="Virtual binary sensor with explicit logical state control." alt="" coords="718,875,899,900"/>
 <area shape="poly" id="edge32_Node000074_Node000077" title=" " alt="" coords="635,866,718,875,718,881,634,872"/>
 <area shape="rect" id="Node000079" href="$classSupla_1_1PV_1_1Fronius.html" title=" " alt="" coords="745,924,872,950"/>
 <area shape="poly" id="edge34_Node000078_Node000079" title=" " alt="" coords="629,934,744,934,744,940,629,940"/>

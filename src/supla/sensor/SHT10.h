@@ -20,6 +20,7 @@
 #define SRC_SUPLA_SENSOR_SHT10_H_
 
 #include <Arduino.h>
+#include <supla/sensor/therm_hygro_meter.h>
 #include <SHT1x-ESP.h>  // SHT1x sensor library for ESPx by beegee_tokyo
 // data pin pulled up with 10k resistor
 

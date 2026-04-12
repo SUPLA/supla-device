@@ -46,8 +46,8 @@ NTC10k::NTC10k(int pin, float seriesResistor,
                                nominalTemp(nominalTemp),
                                beta(beta),
                                samples(samples) {
+}
 
-                               }
 void NTC10k::onInit() {
 }
 
@@ -83,5 +83,5 @@ void NTC10k::iterateAlways() {
       channel.setNewValue(getValue());
     }
 }
-};  // Sensor
-};  // Supla
+};
+};

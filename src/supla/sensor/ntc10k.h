@@ -41,7 +41,6 @@ class NTC10k : public Thermometer {
   void readSensor();
 
  protected:
-  //int Analog_Read_;
   int pin;
   float seriesResistor;
   float nominalResistance;

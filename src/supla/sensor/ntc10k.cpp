@@ -83,5 +83,5 @@ void NTC10k::iterateAlways() {
       channel.setNewValue(getValue());
     }
 }
-}; "// namespace Sensor"
-}; "// namespace Supla"
+};
+}; 

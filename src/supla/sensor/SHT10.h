@@ -28,7 +28,7 @@ namespace Sensor {
 class SHT10 : public ThermHygroMeter {
  public:
   explicit SHT10(int data_pin_, int clock_pin_)
-    : sht1x(data_pin_, clock_pin_, SHT1x::Voltage::DC_3_3v){
+    : sht1x(data_pin_, clock_pin_, SHT1x::Voltage::DC_3_3v) {
   }
 
   double getTemp() {
@@ -47,7 +47,7 @@ class SHT10 : public ThermHygroMeter {
     return humidity;
   }
 
-private:
+ private:
   void iterateAlways() {
     if (millis() - lastReadTime > 10000) {
       lastReadTime = millis();
@@ -61,7 +61,7 @@ private:
     SHT1x::HumidityMeasurementResolution::Humidity_8bit;
   }
 
-protected:
+ protected:
   ::SHT1x sht1x;
   double temperature = TEMPERATURE_NOT_AVAILABLE;
   double humidity = HUMIDITY_NOT_AVAILABLE;

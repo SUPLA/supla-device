@@ -45,8 +45,7 @@ NTC10k::NTC10k(int pin, float seriesResistor,
                                nominalResistance(nominalResistance),
                                nominalTemp(nominalTemp),
                                beta(beta),
-                               samples(samples){
-}
+                               samples(samples){}
 
 void NTC10k::onInit() {
 }

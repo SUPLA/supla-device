@@ -25,7 +25,7 @@ namespace Supla {
 namespace Sensor {
 class NTC10k : public Thermometer {
  public:
-  NTC10k(int pin, 
+  NTC10k(int pin,
          float seriesResistor = 10000,
          float nominalResistance = 10000,
          float nominalTemp = 25,

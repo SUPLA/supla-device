@@ -86,5 +86,5 @@ void NTC10k::readSensor() {
       channel.setNewValue(getValue());
     }
 }
-}; //Sensor
-}; //Supla
+};  // Sensor
+};  // Supla

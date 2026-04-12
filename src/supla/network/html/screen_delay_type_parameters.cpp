@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "screen_delay_type_parameters.h"
 
 #include <supla/storage/config.h>
@@ -44,3 +45,5 @@ void ScreenDelayTypeParameters::onProcessingEnd() {
     }
   }
 }
+
+#endif  // ARDUINO_ARCH_AVR

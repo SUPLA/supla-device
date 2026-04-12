@@ -117,6 +117,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/hide_show_container.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/channel_correction.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/hvac_parameters.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/container_parameters.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html/pwm_frequency_parameters.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/client.cpp
@@ -143,7 +144,8 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_base.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_leds.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgbw_base.cpp
-  ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgb_cct_base.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/lighting_pwm_base.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/control/lighting_pwm_leds.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/rgbw_leds.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/roller_shutter.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/control/roller_shutter_interface.cpp
@@ -201,4 +203,3 @@ function(supla_device target_name)
 
   target_compile_definitions(${target_name} PUBLIC SUPLA_DEVICE)
 endfunction()
-

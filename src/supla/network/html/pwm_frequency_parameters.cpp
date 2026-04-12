@@ -16,13 +16,14 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "pwm_frequency_parameters.h"
 
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 #include <supla/clock/clock.h>
-#include <supla/control/rgb_cct_base.h>
+#include <supla/control/lighting_pwm_base.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/html_element.h>
 #include <supla/network/web_sender.h>
@@ -39,7 +40,7 @@ constexpr uint32_t PWM_FREQUENCY_STEP = 1;
 constexpr uint32_t PWM_FREQUENCY_DEFAULT = 500;
 
 PwmFrequencyParameters::PwmFrequencyParameters(
-    Supla::Control::RGBCCTBase* rgbCct)
+    Supla::Control::LightingPwmBase* rgbCct)
     : HtmlElement(HTML_SECTION_FORM), rgbCct(rgbCct) {
 }
 
@@ -57,24 +58,18 @@ void PwmFrequencyParameters::send(Supla::WebSender* sender) {
     frequency = rgbCct->getPwmFrequency();
     frequencyStep = rgbCct->getStepPwmFrequency();
   }
-
-  // form-field BEGIN
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(Supla::ConfigTag::PwmFrequencyTag,
-                       "PWM frequency [Hz] (reboot required to take effect)");
-  sender->send("<input type=\"number\" min=\"");
-  sender->send(minFrequency, 0);
-  sender->send("\"\" max=\"");
-  sender->send(maxFrequency, 0);
-  sender->send("\" step =\"");
-  sender->send(frequencyStep, 0);
-  sender->send("\" ");
-  sender->sendNameAndId(Supla::ConfigTag::PwmFrequencyTag);
-  sender->send(" value=\"");
-  sender->send(frequency, 0);
-  sender->send("\">");
-  sender->send("</div>");
-  // form-field END
+  sender->labeledField(
+      Supla::ConfigTag::PwmFrequencyTag,
+      "PWM frequency [Hz] (reboot required to take effect)", [&]() {
+        sender->numberInput(
+            Supla::ConfigTag::PwmFrequencyTag,
+            Supla::NumericInputSpec{
+                .min = static_cast<int>(minFrequency),
+                .max = static_cast<int>(maxFrequency),
+                .value = static_cast<int>(frequency),
+                .step = static_cast<int>(frequencyStep),
+            });
+      });
 }
 
 bool PwmFrequencyParameters::handleResponse(const char* key,
@@ -104,3 +99,5 @@ bool PwmFrequencyParameters::handleResponse(const char* key,
 
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

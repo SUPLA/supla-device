@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "volume_parameters.h"
 
 #include <string.h>
@@ -45,19 +46,20 @@ void VolumeParameters::send(Supla::WebSender* sender) {
       value = 100;
     }
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::VolumeCfgTag,
-                         "Button volume");
-    sender->send(
-        "<input type=\"range\" min=\"0\" max=\"100\" step=\"1\" "
-        "class=\"range-slider\" ");
-    sender->sendNameAndId(Supla::ConfigTag::VolumeCfgTag);
-    sender->send(" value=\"");
-    sender->send(value, 0);
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
+      sender->labeledField(
+        Supla::ConfigTag::VolumeCfgTag,
+        "Button volume",
+        [&]() {
+          sender->rangeInput(
+              Supla::ConfigTag::VolumeCfgTag,
+              {
+                  .min = 0,
+                  .max = 100,
+                  .value = value,
+                  .step = 1,
+              },
+              "range-slider");
+        });
   }
 }
 
@@ -91,3 +93,4 @@ bool VolumeParameters::handleResponse(const char* key,
   return false;
 }
 
+#endif  // ARDUINO_ARCH_AVR

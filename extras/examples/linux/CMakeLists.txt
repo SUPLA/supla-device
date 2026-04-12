@@ -56,3 +56,6 @@ endif()
 #supla_apply_warnings(supladevicelib)
 supla_apply_warnings(suplalinuxlib)
 supla_apply_warnings(supla-device-linux)
+
+# install binary
+install(TARGETS supla-device-linux)

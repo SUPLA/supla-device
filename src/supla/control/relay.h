@@ -26,6 +26,7 @@
 
 #include "../action_handler.h"
 #include "../channel_element.h"
+#include "../io.h"
 
 #define STATE_ON_INIT_RESTORED_OFF -3
 #define STATE_ON_INIT_RESTORED_ON  -2
@@ -41,7 +42,7 @@
 
 namespace Supla {
 namespace Io {
-class Base;
+struct IoPin;
 }
 
 namespace Control {
@@ -49,6 +50,9 @@ class Button;
 
 class Relay : public ChannelElement, public ActionHandler {
  public:
+  explicit Relay(Supla::Io::IoPin outputPin,
+                 _supla_int_t functions =
+                     (0xFF ^ SUPLA_BIT_FUNC_CONTROLLINGTHEROLLERSHUTTER));
   explicit Relay(Supla::Io::Base *io, int pin,
         bool highIsOn = true,
         _supla_int_t functions = (0xFF ^
@@ -65,7 +69,9 @@ class Relay : public ChannelElement, public ActionHandler {
   virtual Relay &setDefaultStateRestore();
   virtual Relay &keepTurnOnDuration(bool keep = true);  // DEPREACATED
 
+  [[deprecated("Use IoPin::writeActive/writeInactive instead")]]
   virtual uint8_t pinOnValue();
+  [[deprecated("Use IoPin::writeActive/writeInactive instead")]]
   virtual uint8_t pinOffValue();
   virtual void turnOn(_supla_int_t duration = 0);
   virtual void turnOff(_supla_int_t duration = 0);
@@ -209,14 +215,11 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t timerUpdateTimestamp = 0;
   uint32_t postponeCommTimestamp = 0;
 
-  Supla::Io::Base *io = nullptr;
   ButtonListElement *buttonList = nullptr;
 
   uint16_t minimumAllowedDurationMs = 0;
-  int16_t pin = -1;
   int16_t defaultRelatedMeterChannelNo = -1;
 
-  bool highIsOn = true;
   bool keepTurnOnDurationMs = false;
   bool turnOffWhenEmptyAggregator = true;
   bool initDone = false;
@@ -224,6 +227,7 @@ class Relay : public ChannelElement, public ActionHandler {
   bool skipInitialStateSetting = false;
 
   int8_t stateOnInit = STATE_ON_INIT_OFF;
+  Supla::Io::IoPin outputPin;
 
   static int16_t relayStorageSaveDelay;
 };

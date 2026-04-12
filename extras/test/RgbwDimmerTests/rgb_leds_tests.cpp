@@ -14,21 +14,22 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <arduino_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
-#include <arduino_mock.h>
-#include <supla/control/rgb_leds.h>
 #include <simple_time.h>
+#include <supla/control/rgb_leds.h>
+#include <supla_io_mock.h>
 
 using ::testing::Return;
 
 class TimeInterfaceStub : public TimeInterface {
-  public:
-    virtual uint32_t millis() override {
-      static uint32_t value = 0;
-      value += 1000;
-      return value;
-    }
+ public:
+  uint32_t millis() override {
+    static uint32_t value = 0;
+    value += 1000;
+    return value;
+  }
 };
 
 TEST(RgbLedsTests, SettingNewRGBValue) {
@@ -43,9 +44,9 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
   EXPECT_CALL(ioMock, analogWrite(2, 0));
   EXPECT_CALL(ioMock, analogWrite(3, 0));
 
-  EXPECT_CALL(ioMock, analogWrite(1, (1*1023/255)));
-  EXPECT_CALL(ioMock, analogWrite(2, (2*1023/255)));
-  EXPECT_CALL(ioMock, analogWrite(3, (3*1023/255)));
+  EXPECT_CALL(ioMock, analogWrite(1, (1 * 1023 / 255)));
+  EXPECT_CALL(ioMock, analogWrite(2, (2 * 1023 / 255)));
+  EXPECT_CALL(ioMock, analogWrite(3, (3 * 1023 / 255)));
 
   Supla::Control::RGBLeds rgb(1, 2, 3);
 
@@ -95,4 +96,44 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
   EXPECT_EQ(ch->getValueBrightness(), 0);
 }
 
+TEST(RgbLedsTests, IoPinConstructorUsesSeparateIoForOutputs) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  SuplaIoMock redIo;
+  SuplaIoMock greenIo;
+  SuplaIoMock blueIo;
 
+  EXPECT_CALL(redIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(redIo, customSetPwmFrequency(1000));
+  EXPECT_CALL(greenIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(greenIo, customSetPwmFrequency(1000));
+  EXPECT_CALL(blueIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(blueIo, customSetPwmFrequency(1000));
+  EXPECT_CALL(redIo, customConfigureAnalogOutput(-1, 11, false));
+  EXPECT_CALL(greenIo, customConfigureAnalogOutput(-1, 12, false));
+  EXPECT_CALL(blueIo, customConfigureAnalogOutput(-1, 13, false));
+  EXPECT_CALL(redIo, customPinMode(-1, 11, OUTPUT));
+  EXPECT_CALL(greenIo, customPinMode(-1, 12, OUTPUT));
+  EXPECT_CALL(blueIo, customPinMode(-1, 13, OUTPUT));
+
+  EXPECT_CALL(redIo, customAnalogWrite(-1, 11, 1));
+  EXPECT_CALL(greenIo, customAnalogWrite(-1, 12, 2));
+  EXPECT_CALL(blueIo, customAnalogWrite(-1, 13, 3));
+
+  Supla::Control::RGBLeds rgb(Supla::Io::IoPin(11, &redIo),
+                              Supla::Io::IoPin(12, &greenIo),
+                              Supla::Io::IoPin(13, &blueIo));
+
+  auto ch = rgb.getChannel();
+  rgb.setFadeEffectTime(0);
+
+  time.advance(1000);
+  rgb.onInit();
+  rgb.setRGBWValueOnDevice(1, 2, 3, 0);
+
+  EXPECT_EQ(ch->getValueRed(), 0);
+  EXPECT_EQ(ch->getValueGreen(), 0);
+  EXPECT_EQ(ch->getValueBlue(), 0);
+  EXPECT_EQ(ch->getValueColorBrightness(), 0);
+  EXPECT_EQ(ch->getValueBrightness(), 0);
+}

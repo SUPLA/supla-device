@@ -75,6 +75,136 @@ uint8_t digitalPinToInterrupt(uint8_t pin) {
 
 namespace Supla {
 namespace Io {
+void IoPin::configureAnalogOutput(int channelNumber) const {
+  if (!isSet()) {
+    return;
+  }
+
+  if (io != nullptr) {
+    io->customConfigureAnalogOutput(channelNumber,
+                                    static_cast<uint8_t>(pin),
+                                    !isActiveHigh());
+    return;
+  }
+
+  if (!isActiveHigh()) {
+    SUPLA_LOG_WARNING(
+        "Analog output invert is not supported for default IO, GPIO %d",
+        pin);
+  }
+
+#ifdef ARDUINO_ARCH_ESP32
+#elif defined(ARDUINO_ARCH_ESP8266)
+#endif
+}
+
+void IoPin::setAnalogOutputResolutionBits(uint8_t resolutionBits) {
+  if (io != nullptr) {
+    io->customSetPwmResolutionBits(resolutionBits);
+    return;
+  }
+
+  analogWriteResolutionBitsValue = resolutionBits;
+
+#ifdef ARDUINO_ARCH_ESP32
+  analogWriteResolution(static_cast<uint8_t>(pin), resolutionBits);
+#elif defined(ARDUINO_ARCH_ESP8266)
+  analogWriteRange(1UL << resolutionBits);
+#else
+  (void)(resolutionBits);
+#endif
+}
+
+void IoPin::setAnalogOutputFrequency(uint32_t frequencyHz) {
+  if (io != nullptr) {
+    io->customSetPwmFrequency(static_cast<uint16_t>(frequencyHz));
+    return;
+  }
+
+#ifdef ARDUINO_ARCH_ESP32
+  analogWriteFrequency(static_cast<uint8_t>(pin), frequencyHz);
+#elif defined(ARDUINO_ARCH_ESP8266)
+  analogWriteFreq(frequencyHz);
+#else
+  (void)(frequencyHz);
+#endif
+}
+
+void IoPin::pinMode(int channelNumber) const {
+  if (isSet()) {
+    uint8_t effectiveMode = mode;
+    if (effectiveMode == INPUT && isPullUp()) {
+      effectiveMode = INPUT_PULLUP;
+    }
+    Supla::Io::pinMode(channelNumber,
+                       static_cast<uint8_t>(pin),
+                       effectiveMode,
+                       io);
+  }
+}
+
+int IoPin::digitalRead(int channelNumber) const {
+  if (!isSet()) {
+    return 0;
+  }
+  return Supla::Io::digitalRead(channelNumber,
+                                static_cast<uint8_t>(pin),
+                                io);
+}
+
+void IoPin::digitalWrite(uint8_t value, int channelNumber) const {
+  if (isSet()) {
+    Supla::Io::digitalWrite(channelNumber,
+                            static_cast<uint8_t>(pin),
+                            value,
+                            io);
+  }
+}
+
+void IoPin::analogWrite(int value, int channelNumber) const {
+  if (isSet()) {
+#ifdef ARDUINO_ARCH_AVR
+    if (io == nullptr) {
+      value = map(value, 0, 1023, 0, 255);
+    }
+#endif
+    Supla::Io::analogWrite(channelNumber,
+                           static_cast<uint8_t>(pin),
+                           value,
+                           io);
+  }
+}
+
+uint8_t IoPin::analogWriteResolutionBits() const {
+  if (analogWriteResolutionBitsValue != 0) {
+    return analogWriteResolutionBitsValue;
+  }
+  if (io != nullptr) {
+    return io->customAnalogWriteResolutionBits();
+  }
+  return 0;
+}
+
+uint32_t IoPin::analogWriteMaxValue() const {
+  uint8_t bits = analogWriteResolutionBits();
+  if (bits == 0) {
+    return 0;
+  }
+  return (1UL << bits) - 1;
+}
+
+void IoPin::writeActive(int channelNumber) const {
+  digitalWrite(isActiveHigh() ? 1 : 0, channelNumber);
+}
+
+void IoPin::writeInactive(int channelNumber) const {
+  digitalWrite(isActiveHigh() ? 0 : 1, channelNumber);
+}
+
+bool IoPin::readActive(int channelNumber) const {
+  return digitalRead(channelNumber) == (isActiveHigh() ? 1 : 0);
+}
+
 void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io) {
   return pinMode(-1, pin, mode, io);
 }
@@ -222,6 +352,27 @@ void Base::customDigitalWrite(int, uint8_t, uint8_t) {
 }
 
 void Base::customAnalogWrite(int, uint8_t, int) {
+}
+
+void Base::customSetPwmResolutionBits(uint8_t) {
+}
+
+void Base::customConfigureAnalogOutput(int, uint8_t, bool) {
+}
+
+void Base::customSetPwmFrequency(uint16_t) {
+}
+
+uint8_t Base::customAnalogWriteResolutionBits() const {
+  return 0;
+}
+
+uint32_t Base::customAnalogWriteMaxValue() const {
+  uint8_t bits = customAnalogWriteResolutionBits();
+  if (bits == 0) {
+    return 0;
+  }
+  return (1UL << bits) - 1;
 }
 
 int Base::customAnalogRead(int, uint8_t) {

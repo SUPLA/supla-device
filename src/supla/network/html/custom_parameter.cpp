@@ -16,9 +16,13 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
+
 #include "custom_parameter.h"
 
 template class Supla::Html::CustomParameterTemplate<int32_t>;
 template class Supla::Html::CustomParameterTemplate<int16_t>;
 template class Supla::Html::CustomParameterTemplate<float>;
 template class Supla::Html::CustomParameterTemplate<double>;
+
+#endif

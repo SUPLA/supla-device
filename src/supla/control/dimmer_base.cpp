@@ -43,17 +43,17 @@ void Supla::Control::DimmerBase::setRGBCCT(int red,
 }
 
 void Supla::Control::DimmerBase::onLoadState() {
-  Supla::Storage::ReadState((unsigned char *)&curWhiteBrightness,
-                            sizeof(curWhiteBrightness));
-  Supla::Storage::ReadState((unsigned char *)&lastWhiteBrightness,
-                            sizeof(lastWhiteBrightness));
+  Supla::Storage::ReadState((unsigned char *)&requested.whiteBrightness,
+                            sizeof(requested.whiteBrightness));
+  Supla::Storage::ReadState((unsigned char *)&lastNonZero.whiteBrightness,
+                            sizeof(lastNonZero.whiteBrightness));
 }
 
 void Supla::Control::DimmerBase::onSaveState() {
-  Supla::Storage::WriteState((unsigned char *)&curWhiteBrightness,
-                             sizeof(curWhiteBrightness));
-  Supla::Storage::WriteState((unsigned char *)&lastWhiteBrightness,
-                             sizeof(lastWhiteBrightness));
+  Supla::Storage::WriteState((unsigned char *)&requested.whiteBrightness,
+                             sizeof(requested.whiteBrightness));
+  Supla::Storage::WriteState((unsigned char *)&lastNonZero.whiteBrightness,
+                             sizeof(lastNonZero.whiteBrightness));
 }
 
 void Supla::Control::DimmerBase::iterateDimmerRGBW(int rgbStep, int wStep) {

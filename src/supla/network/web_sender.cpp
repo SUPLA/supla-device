@@ -29,7 +29,288 @@
 
 namespace Supla {
 
+HtmlTag::HtmlTag(WebSender* sender, const char* tagName, bool paired)
+    : sender_(sender), tagName_(tagName), paired_(paired) {
+  if (sender_ && tagName_) {
+    sender_->send("<");
+    sender_->send(tagName_);
+  }
+}
+
+HtmlTag::~HtmlTag() {
+  release();
+}
+
+HtmlTag::HtmlTag(HtmlTag&& other) noexcept {
+  *this = static_cast<HtmlTag&&>(other);
+}
+
+HtmlTag& HtmlTag::operator=(HtmlTag&& other) noexcept {
+  if (this != &other) {
+    release();
+    sender_ = other.sender_;
+    tagName_ = other.tagName_;
+    paired_ = other.paired_;
+    closed_ = other.closed_;
+    finished_ = other.finished_;
+    other.sender_ = nullptr;
+    other.tagName_ = nullptr;
+    other.closed_ = true;
+    other.finished_ = true;
+  }
+  return *this;
+}
+
+HtmlTag& HtmlTag::attr(const char* name, const char* value) {
+  if (!finished_ && sender_ && name) {
+    sender_->send(" ");
+    sender_->send(name);
+    sender_->send("=\"");
+    sender_->sendSafe(value ? value : "");
+    sender_->send("\"");
+  }
+  return *this;
+}
+
+HtmlTag& HtmlTag::attr(const char* name, int value) {
+  if (!finished_ && sender_ && name) {
+    sender_->send(" ");
+    sender_->send(name);
+    sender_->send("=\"");
+    sender_->send(value);
+    sender_->send("\"");
+  }
+  return *this;
+}
+
+HtmlTag& HtmlTag::attr(const char* name, int value, int precision) {
+  if (!finished_ && sender_ && name) {
+    sender_->send(" ");
+    sender_->send(name);
+    sender_->send("=\"");
+    sender_->send(value, precision);
+    sender_->send("\"");
+  }
+  return *this;
+}
+
+HtmlTag& HtmlTag::attrIf(const char* name, bool enabled) {
+  if (enabled && sender_ && name && !finished_) {
+    sender_->send(" ");
+    sender_->send(name);
+  }
+  return *this;
+}
+
+HtmlTag& HtmlTag::close() {
+  if (!closed_ && sender_) {
+    sender_->send(">");
+    closed_ = true;
+  }
+  return *this;
+}
+
+HtmlTag& HtmlTag::finish() {
+  close();
+  finished_ = true;
+  return *this;
+}
+
+void HtmlTag::body(const char* text) {
+  close();
+  if (sender_) {
+    sender_->sendSafe(text ? text : "");
+  }
+  end();
+}
+
+void HtmlTag::body(char* text) {
+  body(static_cast<const char*>(text));
+}
+
+void HtmlTag::end() {
+  if (finished_ || !sender_) {
+    return;
+  }
+  close();
+  if (paired_ && tagName_) {
+    sender_->send("</");
+    sender_->send(tagName_);
+    sender_->send(">");
+  }
+  finished_ = true;
+}
+
+void HtmlTag::release() {
+  if (!finished_ && sender_) {
+    end();
+  }
+}
+
 WebSender::~WebSender() {}
+
+void WebSender::labelFor(const char* id, const char* text) {
+  auto label = tag("label");
+  label.attr("for", id ? id : "");
+  label.body(text ? text : "");
+}
+
+void WebSender::textInput(const char* name,
+                          const char* id,
+                          const char* value,
+                          int maxLength) {
+  auto input = voidTag("input");
+  input.attr("type", "text");
+  if (maxLength >= 0) {
+    input.attr("maxlength", maxLength);
+  }
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  if (value) {
+    input.attr("value", value);
+  }
+  input.finish();
+}
+
+void WebSender::passwordInput(const char* name, const char* id) {
+  auto input = voidTag("input");
+  input.attr("type", "password");
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  input.finish();
+}
+
+void WebSender::checkboxInput(const char* name,
+                              const char* id,
+                              bool checked,
+                              const char* value) {
+  auto input = voidTag("input");
+  input.attr("type", "checkbox");
+  input.attr("value", value ? value : "");
+  input.attrIf("checked", checked);
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  input.finish();
+}
+
+void WebSender::numberInput(const char* key,
+                            const NumericInputSpec& spec,
+                            const char* cssClass) {
+  numberInput(key, key, spec, cssClass);
+}
+
+void WebSender::rangeInput(const char* key,
+                           const NumericInputSpec& spec,
+                           const char* cssClass) {
+  rangeInput(key, key, spec, cssClass);
+}
+
+void WebSender::numberInput(const char* name,
+                            const char* id,
+                            const NumericInputSpec& spec,
+                            const char* cssClass) {
+  auto input = voidTag("input");
+  input.attr("type", "number");
+  if (cssClass) {
+    input.attr("class", cssClass);
+  }
+  input.attr("min", spec.min.raw, spec.min.precision);
+  input.attr("max", spec.max.raw, spec.max.precision);
+  input.attr("step", spec.step.raw, spec.step.precision);
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  input.attr("value", spec.value.raw, spec.value.precision);
+  input.finish();
+}
+
+void WebSender::rangeInput(const char* name,
+                           const char* id,
+                           const NumericInputSpec& spec,
+                           const char* cssClass) {
+  auto input = voidTag("input");
+  input.attr("type", "range");
+  if (cssClass) {
+    input.attr("class", cssClass);
+  }
+  input.attr("min", spec.min.raw, spec.min.precision);
+  input.attr("max", spec.max.raw, spec.max.precision);
+  input.attr("step", spec.step.raw, spec.step.precision);
+  if (name) {
+    input.attr("name", name);
+  }
+  if (id) {
+    input.attr("id", id);
+  }
+  input.attr("value", spec.value.raw, spec.value.precision);
+  input.finish();
+}
+
+void WebSender::selectOption(const char* value,
+                             int text,
+                             bool selected) {
+  char textBuf[32];
+  int size = snprintf(textBuf, sizeof(textBuf), "%d", text);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(textBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  selectOption(value, textBuf, selected);
+}
+
+void WebSender::selectOption(int value,
+                             const char* text,
+                             bool selected) {
+  char valueBuf[32];
+  int size = snprintf(valueBuf, sizeof(valueBuf), "%d", value);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(valueBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  selectOption(valueBuf, text, selected);
+}
+
+void WebSender::selectOption(int value,
+                             int text,
+                             bool selected) {
+  char valueBuf[32];
+  char textBuf[32];
+  int size = snprintf(valueBuf, sizeof(valueBuf), "%d", value);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(valueBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  size = snprintf(textBuf, sizeof(textBuf), "%d", text);
+  if (size < 0 || static_cast<size_t>(size) >= sizeof(textBuf)) {
+    SUPLA_LOG_WARNING("WebSender error - snprintf failed");
+    return;
+  }
+  selectOption(valueBuf, textBuf, selected);
+}
+
+void WebSender::selectOption(const char* value,
+                             const char* text,
+                             bool selected) {
+  auto option = tag("option");
+  option.attr("value", value ? value : "");
+  option.attrIf("selected", selected);
+  option.body(text ? text : "");
+}
 
 void WebSender::send(int number) {
   char buf[100];

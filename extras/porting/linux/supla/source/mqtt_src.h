@@ -38,6 +38,7 @@ class Mqtt : public Source {
   ~Mqtt();
 
   std::string getContent() override;
+  bool isConnected() override;
 
  protected:
   std::shared_ptr<Supla::LinuxMqttClient> client;

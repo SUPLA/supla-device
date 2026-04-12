@@ -22,6 +22,10 @@
 
 #include "sequence_button.h"
 
+Supla::Control::SequenceButton::SequenceButton(Supla::Io::IoPin inputPin)
+    : SimpleButton(inputPin) {
+}
+
 Supla::Control::SequenceButton::SequenceButton(Supla::Io::Base *io,
                                                int pin,
                                                bool pullUp,
@@ -143,4 +147,3 @@ void Supla::Control::SequenceButton::getLastRecordedSequence(
     uint16_t *sequence) const {
   memcpy(sequence, currentSequence.data, sizeof(uint16_t[SEQUENCE_MAX_SIZE]));
 }
-

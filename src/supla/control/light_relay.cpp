@@ -27,6 +27,19 @@
 namespace Supla {
 namespace Control {
 
+namespace {
+
+Supla::Io::IoPin MakeOutputPin(Supla::Io::Base *io,
+                               int pin,
+                               bool highIsOn) {
+  Supla::Io::IoPin outputPin(pin, io);
+  outputPin.setActiveHigh(highIsOn);
+  outputPin.setMode(OUTPUT);
+  return outputPin;
+}
+
+}  // namespace
+
 #pragma pack(push, 1)
 struct LightRelayStateData {
   uint16_t lifespan;
@@ -34,14 +47,16 @@ struct LightRelayStateData {
 };
 #pragma pack(pop)
 
-LightRelay::LightRelay(int pin, bool highIsOn)
-    : Relay(pin,
-            highIsOn,
+LightRelay::LightRelay(Supla::Io::IoPin outputPin)
+    : Relay(outputPin,
             SUPLA_BIT_FUNC_LIGHTSWITCH | SUPLA_BIT_FUNC_STAIRCASETIMER),
       lifespan(10000),
       turnOnSecondsCumulative(0) {
   channel.setFlag(SUPLA_CHANNEL_FLAG_LIGHTSOURCELIFESPAN_SETTABLE);
 }
+
+LightRelay::LightRelay(int pin, bool highIsOn)
+    : LightRelay(MakeOutputPin(nullptr, pin, highIsOn)) {}
 
 void LightRelay::handleGetChannelState(TDSC_ChannelState *channelState) {
   Supla::Control::Relay::handleGetChannelState(channelState);

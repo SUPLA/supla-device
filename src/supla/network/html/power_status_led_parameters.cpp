@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "power_status_led_parameters.h"
 
 #include <string.h>
@@ -41,27 +42,16 @@ void PowerStatusLedParameters::send(Supla::WebSender* sender) {
   if (cfg) {
     int8_t value = 0;
     cfg->getInt8(Supla::ConfigTag::PowerStatusLedCfgTag, &value);
-
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::PowerStatusLedCfgTag,
-                         "Power Status LED");
-    sender->send("<div>");
-    sender->send(
-        "<select ");
-    sender->sendNameAndId(Supla::ConfigTag::PowerStatusLedCfgTag);
-    sender->send(">"
-        "<option value=\"0\"");
-    sender->send(selected(value == 0));
-    sender->send(
-        ">Enabled</option>"
-        "<option value=\"1\"");
-    sender->send(selected(value == 1));
-    sender->send(
-        ">Disabled</option></select>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(Supla::ConfigTag::PowerStatusLedCfgTag,
+                         "Power Status LED", [&]() {
+                           auto select = sender->selectTag(
+                               Supla::ConfigTag::PowerStatusLedCfgTag,
+                               Supla::ConfigTag::PowerStatusLedCfgTag);
+                           select.body([&]() {
+                             sender->selectOption(0, "Enabled", value == 0);
+                             sender->selectOption(1, "Disabled", value == 1);
+                           });
+                         });
   }
 }
 
@@ -92,3 +82,5 @@ bool PowerStatusLedParameters::handleResponse(const char* key,
   }
   return false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

@@ -18,6 +18,7 @@
 #define SRC_SUPLA_CONTROL_PIN_STATUS_LED_H_
 
 #include "../element.h"
+#include "../io.h"
 
 namespace Supla {
 
@@ -28,6 +29,10 @@ class Base;
 namespace Control {
 class PinStatusLed : public Element {
  public:
+  explicit PinStatusLed(Supla::Io::IoPin srcPin, Supla::Io::IoPin outPin);
+  explicit PinStatusLed(Supla::Io::IoPin srcPin,
+                        Supla::Io::IoPin outPin,
+                        bool invert);
   PinStatusLed(Supla::Io::Base *ioSrc,
                Supla::Io::Base *ioOut,
                uint8_t srcPin,
@@ -45,12 +50,9 @@ class PinStatusLed : public Element {
  protected:
   void updatePin();
 
-  uint8_t srcPin = 0;
-  uint8_t outPin = 0;
-  bool invert = false;
+  Supla::Io::IoPin srcPin;
+  Supla::Io::IoPin outPin;
   bool workOnTimer = false;
-  Supla::Io::Base *ioSrc = nullptr;
-  Supla::Io::Base *ioOut = nullptr;
 };
 
 }  // namespace Control

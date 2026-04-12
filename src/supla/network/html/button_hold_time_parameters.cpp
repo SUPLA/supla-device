@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "button_hold_time_parameters.h"
 
 #include <string.h>
@@ -42,17 +43,19 @@ void ButtonHoldTimeParameters::send(Supla::WebSender* sender) {
       value = 10000;
     }
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::BtnHoldTag,
-                         "Hold detection time [s]");
-    sender->send("<input type=\"number\" min=\"0.2\" max=\"10\" step=\"0.1\" ");
-    sender->sendNameAndId(Supla::ConfigTag::BtnHoldTag);
-    sender->send(" value=\"");
-    sender->send(value, 3);
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(
+        Supla::ConfigTag::BtnHoldTag,
+        "Hold detection time [s]",
+        [&]() {
+          sender->numberInput(
+              Supla::ConfigTag::BtnHoldTag,
+              {
+                  .min = fixed(200, 3),
+                  .max = fixed(10000, 3),
+                  .value = fixed(static_cast<int>(value), 3),
+                  .step = fixed(100, 3),
+              });
+        });
   }
 }
 
@@ -69,3 +72,4 @@ bool ButtonHoldTimeParameters::handleResponse(const char* key,
   return false;
 }
 
+#endif  // ARDUINO_ARCH_AVR

@@ -19,12 +19,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef SRC_SUPLA_CONTROL_RGBW_LEDS_H_
 #define SRC_SUPLA_CONTROL_RGBW_LEDS_H_
 
+#include <supla/io.h>
+
 #include "rgbw_base.h"
 
 namespace Supla {
-namespace Io {
-class Base;
-}
 namespace Control {
 class RGBWLeds : public RGBWBase {
  public:
@@ -34,6 +33,10 @@ class RGBWLeds : public RGBWBase {
            int bluePin,
            int brightnessPin);
   RGBWLeds(int redPin, int greenPin, int bluePin, int brightnessPin);
+  RGBWLeds(Supla::Io::IoPin redPin,
+           Supla::Io::IoPin greenPin,
+           Supla::Io::IoPin bluePin,
+           Supla::Io::IoPin brightnessPin);
 
   void setRGBWValueOnDevice(uint32_t red,
                             uint32_t green,
@@ -43,11 +46,10 @@ class RGBWLeds : public RGBWBase {
   void onInit() override;
 
  protected:
-  Supla::Io::Base *io = nullptr;
-  int redPin;
-  int greenPin;
-  int bluePin;
-  int brightnessPin;
+  Supla::Io::IoPin redPin;
+  Supla::Io::IoPin greenPin;
+  Supla::Io::IoPin bluePin;
+  Supla::Io::IoPin brightnessPin;
 };
 
 };  // namespace Control

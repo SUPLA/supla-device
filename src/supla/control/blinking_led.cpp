@@ -19,21 +19,32 @@
 #include "blinking_led.h"
 
 #include <supla/auto_lock.h>
-#include <supla/io.h>
 #include <supla/log_wrapper.h>
 #include <supla/mutex.h>
 #include <supla/time.h>
 
 using Supla::Control::BlinkingLed;
 
+BlinkingLed::BlinkingLed(Supla::Io::IoPin outPin) : outPin(outPin) {
+  this->outPin.setMode(OUTPUT);
+  mutex = Supla::Mutex::Create();
+}
+
+BlinkingLed::BlinkingLed(Supla::Io::IoPin outPin, bool invert)
+    : BlinkingLed(outPin) {
+  this->outPin.setActiveHigh(!invert);
+}
+
 BlinkingLed::BlinkingLed(Supla::Io::Base *io, uint8_t outPin, bool invert)
-    : BlinkingLed(outPin, invert) {
-  this->io = io;
+    : BlinkingLed(Supla::Io::IoPin(outPin, io), invert) {
 }
 
 BlinkingLed::BlinkingLed(uint8_t outPin, bool invert)
-    : outPin(outPin), invert(invert) {
-  mutex = Supla::Mutex::Create();
+    : BlinkingLed(Supla::Io::IoPin(outPin), invert) {
+}
+
+BlinkingLed::~BlinkingLed() {
+  delete mutex;
 }
 
 void BlinkingLed::onInit() {
@@ -41,7 +52,7 @@ void BlinkingLed::onInit() {
   if (state == NOT_INITIALIZED) {
     turnOff();
   }
-  Supla::Io::pinMode(outPin, OUTPUT, io);
+  outPin.pinMode();
   lastUpdate = 0;
   updatePin();
 }
@@ -53,7 +64,7 @@ void BlinkingLed::onTimer() {
 
 void BlinkingLed::setInvertedLogic(bool invertedLogic) {
   Supla::AutoLock autoLock(mutex);
-  invert = invertedLogic;
+  outPin.setActiveHigh(!invertedLogic);
   updatePin();
 }
 
@@ -68,7 +79,7 @@ void BlinkingLed::setAlwaysOnSequence() {
 void BlinkingLed::turnOn() {
   lastUpdate = millis();
   state = ON;
-  Supla::Io::digitalWrite(outPin, invert ? 0 : 1, io);
+  outPin.writeActive();
   auto copy = copyStateTo;
   if (copy) {
     copy->turnOn();
@@ -78,7 +89,7 @@ void BlinkingLed::turnOn() {
 void BlinkingLed::turnOff() {
   lastUpdate = millis();
   state = OFF;
-  Supla::Io::digitalWrite(outPin, invert ? 1 : 0, io);
+  outPin.writeInactive();
   auto copy = copyStateTo;
   if (copy) {
     copy->turnOff();
@@ -171,6 +182,5 @@ void BlinkingLed::enable() {
 }
 
 void BlinkingLed::setInvert(bool newInvert) {
-  invert = newInvert;
+  outPin.setActiveHigh(!newInvert);
 }
-

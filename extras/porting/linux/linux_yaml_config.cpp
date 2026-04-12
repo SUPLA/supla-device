@@ -61,6 +61,7 @@
 #include <supla/tools.h>
 
 #include <algorithm>
+#include <cmath>
 #include <chrono>  // NOLINT(build/c++11)
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
@@ -212,6 +213,34 @@ bool Supla::LinuxYamlConfig::isVerbose() {
     if (config["log_level"]) {
       auto logLevel = config["log_level"].as<std::string>();
       if (logLevel == "verbose") {
+        return true;
+      }
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
+bool Supla::LinuxYamlConfig::isWarning() {
+  try {
+    if (config["log_level"]) {
+      auto logLevel = config["log_level"].as<std::string>();
+      if (logLevel == "warning") {
+        return true;
+      }
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
+bool Supla::LinuxYamlConfig::isError() {
+  try {
+    if (config["log_level"]) {
+      auto logLevel = config["log_level"].as<std::string>();
+      if (logLevel == "error") {
         return true;
       }
     }
@@ -951,6 +980,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
                                         int channelNumber) {
   int port = 80;
   int deviceId = 1;
+  int deviceType = 0;
   if (ch["port"]) {
     paramCount++;
     port = ch["port"].as<int>();
@@ -958,6 +988,10 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
   if (ch["device_id"]) {
     paramCount++;
     deviceId = ch["device_id"].as<int>();
+  }
+  if (ch["device_type"]) {
+    paramCount++;
+    deviceType = ch["device_type"].as<int>();
   }
 
   if (ch["ip"]) {  // mandatory
@@ -971,7 +1005,7 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
         deviceId);
 
     IPAddress ipAddr(ip);
-    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId);
+    auto fronius = new Supla::PV::Fronius(ipAddr, port, deviceId, deviceType);
     return addCommonParameters(ch, fronius);
   } else {
     SUPLA_LOG_ERROR("Channel[%d] config: missing mandatory \"ip\" parameter",
@@ -1218,6 +1252,7 @@ bool Supla::LinuxYamlConfig::addThermometerParsed(
     const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
   SUPLA_LOG_INFO("Channel[%d] config: adding ThremometerParsed", channelNumber);
   auto therm = new Supla::Sensor::ThermometerParsed(parser);
+  therm->setRefreshIntervalMs(200);
   if (ch[Supla::Parser::Temperature]) {
     paramCount++;
     if (parser->isBasedOnIndex()) {
@@ -1580,6 +1615,20 @@ bool Supla::LinuxYamlConfig::addBinaryParsed(const YAML::Node& ch,
                       channelNumber,
                       function.c_str());
       return false;
+    }
+  }
+
+  if (ch["timeout_s"]) {
+    paramCount++;
+    double timeoutS = ch["timeout_s"].as<double>();
+    if (timeoutS < 0.0 || timeoutS > 3600.0) {
+      SUPLA_LOG_ERROR("Channel[%d] config: timeout_s out of range",
+                      channelNumber);
+      return false;
+    }
+    int64_t timeoutDs = std::lround(timeoutS * 10.0);
+    if (timeoutDs > 0) {
+      binary->setTimeoutDs(static_cast<uint16_t>(timeoutDs), false);
     }
   }
 

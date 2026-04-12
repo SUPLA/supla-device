@@ -194,9 +194,9 @@ void FactoryTest::onInit() {
   }
 
   if (cfg && !cfg->isEncryptionEnabled()) {
-    SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
 #ifndef SUPLA_DEBUG
     if (ensureAdvancedSecurity) {
+      SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
       testFailed = true;
       failReason = 16;
       if (!selfTestMode) {
@@ -218,15 +218,15 @@ void FactoryTest::onInit() {
     }
   }
   if (webServer && !webServer->verifyCertificatesFormat()) {
-    SUPLA_LOG_ERROR("TEST failed: invalid certificates format");
     if (ensureAdvancedSecurity) {
+      SUPLA_LOG_ERROR("TEST failed: invalid certificates format");
       testFailed = true;
       failReason = 18;
       if (!selfTestMode) {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip check: invalid certificates format");
+      SUPLA_LOG_WARNING("TEST skip failed check: invalid certificates format");
     }
   }
 
@@ -240,24 +240,29 @@ void FactoryTest::onInit() {
   }
 
   if (!sdc->isSecurityLogEnabled()) {
-    SUPLA_LOG_ERROR("TEST failed: security log is disabled");
     if (ensureAdvancedSecurity) {
+      SUPLA_LOG_ERROR("TEST failed: security log is disabled");
       testFailed = true;
       failReason = 20;
       if (!selfTestMode) {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip check: security log is disabled");
+      SUPLA_LOG_WARNING("TEST skip failed check: security log is disabled");
     }
   }
 
   if (sdc->getInitialMode() == Supla::InitialMode::StartInCfgMode) {
-    SUPLA_LOG_ERROR("TEST failed: initial mode is set to config mode");
-    testFailed = true;
-    failReason = 21;
-    if (!selfTestMode) {
-      return;
+    if (ensureAdvancedSecurity) {
+      SUPLA_LOG_ERROR("TEST failed: initial mode is set to config mode");
+      testFailed = true;
+      failReason = 21;
+      if (!selfTestMode) {
+        return;
+      }
+    } else {
+      SUPLA_LOG_WARNING(
+          "TEST skip failed check: initial mode is set to config mode");
     }
   }
 }

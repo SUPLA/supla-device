@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "channel_correction.h"
 
 #include <string.h>
@@ -62,19 +63,19 @@ void ChannelCorrection::send(Supla::WebSender* sender) {
     snprintf(label, sizeof(label), "#%d%s%s correction",
         channelNumber, displayName ? " " : "", displayName ? displayName : "");
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(key, label);
+    sender->formField([&]() {
+      sender->labelFor(key, label);
 
-    sender->send(
-        "<input type=\"number\" min=\"-50\" max=\"50\" step=\"0.1\" ");
-    sender->sendNameAndId(key);
-    sender->send(" value=\"");
-    sender->send(value, 1);
-    sender->send(
-      "\">");
-    sender->send("</div>");
-    // form-field END
+      sender->voidTag("input")
+          .attr("type", "number")
+          .attr("min", -50)
+          .attr("max", 50)
+          .attr("step", 1, 1)
+          .attr("name", key)
+          .attr("id", key)
+          .attr("value", value, 1)
+          .finish();
+    });
   }
 }
 
@@ -102,3 +103,4 @@ bool ChannelCorrection::handleResponse(const char* key, const char* value) {
 };  // namespace Html
 };  // namespace Supla
 
+#endif  // ARDUINO_ARCH_AVR

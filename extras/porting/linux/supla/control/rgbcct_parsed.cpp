@@ -25,36 +25,21 @@
 #include <cstdio>
 
 Supla::Control::RgbCctParsed::RgbCctParsed(Supla::Parser::Parser *parser)
-    : Supla::Sensor::SensorParsed<Supla::Control::RGBCCTBase>(parser) {
+    : Supla::Sensor::SensorParsed<Supla::Control::LightingPwmBase>(parser) {
 }
 
 void Supla::Control::RgbCctParsed::iterateAlways() {
-  Supla::Control::RGBCCTBase::iterateAlways();
+  Supla::Control::LightingPwmBase::iterateAlways();
 
   if (parser && (millis() - lastReadTime > 100)) {
-    refreshParserSource();
+    if (setOfflineIfSourceDisconnected()) {
+      lastReadTime = millis();
+      return;
+    }
+    refreshParserSource(false);
     lastReadTime = millis();
-    if (isOffline()) {
-      channel.setStateOffline();
-    } else {
-      channel.setStateOnline();
-    }
+    setChannelStateOnline(!isOffline());
   }
-}
-
-bool Supla::Control::RgbCctParsed::isOffline() {
-  if (useOfflineOnInvalidState && parser) {
-    if (getStateValue() == -1) {
-      return true;
-    }
-  }
-  return false;
-}
-
-void Supla::Control::RgbCctParsed::setUseOfflineOnInvalidState(
-    bool useOfflineOnInvalidState) {
-  this->useOfflineOnInvalidState = useOfflineOnInvalidState;
-  SUPLA_LOG_INFO("useOfflineOnInvalidState = %d", useOfflineOnInvalidState);
 }
 
 void Supla::Control::RgbCctParsed::setRGBCCTValueOnDevice(uint32_t output[5],

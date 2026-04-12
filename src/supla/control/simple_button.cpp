@@ -25,26 +25,38 @@
 using Supla::Control::SimpleButton;
 using Supla::Control::ButtonState;
 
+ButtonState::ButtonState(Supla::Io::IoPin inputPin)
+    : inputPin(inputPin) {
+  this->inputPin.setMode(INPUT);
+}
+
 ButtonState::ButtonState(Supla::Io::Base *io,
                          int pin,
                          bool pullUp,
                          bool invertLogic)
-    : ButtonState(pin, pullUp, invertLogic) {
-  this->io = io;
+    : ButtonState(Supla::Io::IoPin(pin, io)) {
+  this->inputPin.setPullUp(pullUp);
+  this->inputPin.setActiveHigh(!invertLogic);
 }
 
 ButtonState::ButtonState(int pin, bool pullUp, bool invertLogic)
-    : pin(pin), pullUp(pullUp), invertLogic(invertLogic) {
+    : ButtonState(Supla::Io::IoPin(pin)) {
+  this->inputPin.setPullUp(pullUp);
+  this->inputPin.setActiveHigh(!invertLogic);
+}
+
+SimpleButton::SimpleButton(Supla::Io::IoPin inputPin)
+    : state(inputPin) {
 }
 
 enum Supla::Control::StateResults ButtonState::update() {
-  if (pin == -1) {
+  if (!inputPin.isSet()) {
     return RELEASED;
   }
   uint32_t curMillis = millis();
   if (debounceDelayMs == 0 ||
       curMillis - debounceTimestampMs > debounceDelayMs) {
-    int currentState = Supla::Io::digitalRead(pin, io);
+    int currentState = inputPin.digitalRead();
     if (currentState != prevState) {
       // If status is changed, then make sure that it will be kept at
       // least swNoiseFilterDelayMs ms to avoid noise
@@ -85,22 +97,22 @@ enum Supla::Control::StateResults ButtonState::getLastState()
 }
 
 bool ButtonState::isReady() const {
-  if (io && !io->isReady()) {
+  if (inputPin.io && !inputPin.io->isReady()) {
     return false;
   }
   return true;
 }
 
-SimpleButton::SimpleButton(Supla::Io::Base  *io,
-                                           int pin,
-                                           bool pullUp,
-                                           bool invertLogic)
+SimpleButton::SimpleButton(Supla::Io::Base *io,
+                           int pin,
+                           bool pullUp,
+                           bool invertLogic)
     : state(io, pin, pullUp, invertLogic) {
 }
 
 SimpleButton::SimpleButton(int pin,
-                                           bool pullUp,
-                                           bool invertLogic)
+                           bool pullUp,
+                           bool invertLogic)
     : state(pin, pullUp, invertLogic) {
 }
 
@@ -124,23 +136,23 @@ void SimpleButton::onInit() {
 
 void ButtonState::init(int buttonNumber) {
   if (prevState == -1) {
-    if (pin >= 0) {
-      Supla::Io::pinMode(pin, pullUp ? INPUT_PULLUP : INPUT, io);
-      prevState = Supla::Io::digitalRead(pin, io);
+    if (inputPin.isSet()) {
+      inputPin.pinMode(buttonNumber);
+      prevState = inputPin.digitalRead(buttonNumber);
     }
     newStatusCandidate = prevState;
     SUPLA_LOG_DEBUG(
-        "Button[%d]: Initialized: pin %d, pullUp %d, invertLogic %d, state %d",
+        "Button[%d]: Initialized: pin %d, pullUp %d, activeHigh %d, state %d",
         buttonNumber,
-        pin,
-        pullUp,
-        invertLogic,
+        inputPin.getPin(),
+        inputPin.isPullUp(),
+        inputPin.isActiveHigh(),
         prevState);
   }
 }
 
 int ButtonState::valueOnPress() const {
-  return invertLogic ? LOW : HIGH;
+  return inputPin.isActiveHigh() ? HIGH : LOW;
 }
 
 void SimpleButton::setSwNoiseFilterDelay(
@@ -165,7 +177,7 @@ int8_t SimpleButton::getButtonNumber() const {
 }
 
 int ButtonState::getGpio() const {
-  return pin;
+  return inputPin.getPin();
 }
 
 enum Supla::Control::StateResults SimpleButton::getLastState() const {
@@ -175,4 +187,3 @@ enum Supla::Control::StateResults SimpleButton::getLastState() const {
 bool SimpleButton::isReady() const {
   return state.isReady();
 }
-

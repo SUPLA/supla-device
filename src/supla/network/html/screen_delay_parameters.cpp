@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "screen_delay_parameters.h"
 
 #include <string.h>
@@ -47,19 +48,17 @@ void ScreenDelayParameters::send(Supla::WebSender* sender) {
     if (value > 65535) {
       value = 65535;
     }
-
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(Supla::ConfigTag::ScreenDelayCfgTag,
-                         "Turn screen off after [sec]");
-    sender->send(
-        "<input type=\"number\" min=\"0\" max=\"65535\" step=\"1\" ");
-    sender->sendNameAndId(Supla::ConfigTag::ScreenDelayCfgTag);
-    sender->send(" value=\"");
-    sender->send(value, 0);
-    sender->send("\">");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(Supla::ConfigTag::ScreenDelayCfgTag,
+                         "Turn screen off after [sec]", [&]() {
+                           sender->numberInput(
+                               Supla::ConfigTag::ScreenDelayCfgTag,
+                               Supla::NumericInputSpec{
+                                   .min = 0,
+                                   .max = 65535,
+                                   .value = value,
+                                   .step = 1,
+                               });
+                         });
   }
 }
 
@@ -95,3 +94,4 @@ bool ScreenDelayParameters::handleResponse(const char* key,
   return false;
 }
 
+#endif  // ARDUINO_ARCH_AVR

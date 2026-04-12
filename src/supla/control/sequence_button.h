@@ -38,6 +38,7 @@ struct ClickSequence {
 
 class SequenceButton : public SimpleButton {
  public:
+  explicit SequenceButton(Supla::Io::IoPin inputPin);
   explicit SequenceButton(Supla::Io::Base *io,
                           int pin,
                           bool pullUp = false,

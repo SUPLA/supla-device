@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "custom_text_parameter.h"
 
 #include <stdio.h>
@@ -60,23 +61,14 @@ void CustomTextParameter::send(Supla::WebSender* sender) {
       memset(value, 0, size + 1);
       cfg->getString(tag, value, size);
     }
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
-    sender->sendLabelFor(tag, label);
-    sender->send("<input type=\"text\" maxlength=\"");
-    sender->send(maxSize);
-    sender->send("\"");
-    sender->sendNameAndId(tag);
+    sender->labeledField(tag, label, [&]() {
+      sender->textInput(tag, tag, value, maxSize);
+    });
+
     if (value) {
-      sender->send(" value=\"");
-      sender->sendSafe(value);
-      sender->send("\"");
       delete[] value;
       value = nullptr;
     }
-    sender->send(">");
-    sender->send("</div>");
-    // form-field END
   }
 }
 bool CustomTextParameter::handleResponse(const char* key, const char* value) {
@@ -112,3 +104,4 @@ void CustomTextParameter::setParameterValue(const char *newValue) {
 };  // namespace Html
 };  // namespace Supla
 
+#endif  // ARDUINO_ARCH_AVR

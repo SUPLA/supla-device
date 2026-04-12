@@ -15,20 +15,26 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "dimmer_leds.h"
-#include <supla/io.h>
-#include <supla/log_wrapper.h>
 
-#ifdef ARDUINO_ARCH_ESP32
-extern int esp32PwmChannelCounter;
-#endif
+namespace {
+constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
+constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
+
+void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
+  pin.setAnalogOutputResolutionBits(LegacyAnalogWriteResolutionBits);
+  pin.setAnalogOutputFrequency(LegacyAnalogWriteFrequencyHz);
+}
+}  // namespace
 
 Supla::Control::DimmerLeds::DimmerLeds(Supla::Io::Base *io, int brightnessPin)
-    : DimmerLeds(brightnessPin) {
-  this->io = io;
-}
+    : DimmerLeds(Supla::Io::IoPin(brightnessPin, io)) {}
 
 Supla::Control::DimmerLeds::DimmerLeds(int brightnessPin)
+    : DimmerLeds(Supla::Io::IoPin(brightnessPin)) {}
+
+Supla::Control::DimmerLeds::DimmerLeds(Supla::Io::IoPin brightnessPin)
     : brightnessPin(brightnessPin) {
+  this->brightnessPin.setMode(OUTPUT);
 }
 
 void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
@@ -38,56 +44,13 @@ void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
   (void)(red);
   (void)(green);
   (void)(blue);
-
-  uint32_t brightnessAdj = brightness;
-
-#ifdef ARDUINO_ARCH_AVR
-  brightnessAdj = map(brightnessAdj, 0, 1023, 0, 255);
-#endif
-
-#ifdef ARDUINO_ARCH_ESP32
-  if (io) {
-    Supla::Io::analogWrite(brightnessPin, brightnessAdj, io);
-  } else {
-    // TODO(klew): move to IO for ESP32
-    ledcWrite(brightnessPin, brightnessAdj);
-  }
-#else
-  Supla::Io::analogWrite(brightnessPin, brightnessAdj, io);
-#endif
+  brightnessPin.analogWrite(brightness);
 }
 
 void Supla::Control::DimmerLeds::onInit() {
-#ifdef ARDUINO_ARCH_ESP32
-  if (io) {
-    Supla::Io::pinMode(brightnessPin, OUTPUT, io);
-  } else {
-    // TODO(klew): move to IO for ESP32
-#ifdef ESP_ARDUINO_VERSION_MAJOR
-#if ESP_ARDUINO_VERSION >= ESP_ARDUINO_VERSION_VAL(3, 0, 0)
-    // Code for version 3.x
-    ledcAttach(brightnessPin, 1000, 10);
-#else
-    // Code for version 2.x
-    SUPLA_LOG_DEBUG("Dimmer[%d]: attaching pin %d to PWM channel %d",
-        getChannelNumber(),
-        brightnessPin, esp32PwmChannelCounter);
-    ledcSetup(esp32PwmChannelCounter, 1000, 10);
-    ledcAttachPin(brightnessPin, esp32PwmChannelCounter);
-    // on ESP32 we write to PWM channels instead of pins, so we copy channel
-    // number as pin in order to reuse variable
-    brightnessPin = esp32PwmChannelCounter;
-    esp32PwmChannelCounter++;
-#endif
-#endif
-  }
-#else
-  Supla::Io::pinMode(brightnessPin, OUTPUT, io);
-
-#ifdef ARDUINO_ARCH_ESP8266
-  analogWriteRange(1024);
-#endif
-#endif
+  ConfigureLegacyAnalogOutput(brightnessPin);
+  brightnessPin.configureAnalogOutput();
+  brightnessPin.pinMode();
 
   Supla::Control::DimmerBase::onInit();
 }

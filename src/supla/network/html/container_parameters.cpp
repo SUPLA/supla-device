@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "container_parameters.h"
 
 #include <supla/storage/config.h>
@@ -69,104 +70,141 @@ void ContainerParameters::send(Supla::WebSender* sender) {
   }
 
   char key[16] = {};
-  char tmp[100] = {};
-  snprintf(tmp, sizeof(tmp), "Container #%d", container->getChannelNumber());
+  auto emitNumericField = [&](const char* fieldKey,
+                              const char* label,
+                              int value) {
+    Supla::NumericInputSpec spec;
+    spec.min = 0;
+    spec.max = 100;
+    spec.step = 1;
+    spec.value = value;
+    sender->labeledField(
+        fieldKey,
+        label,
+        [&]() {
+          auto input = sender->voidTag("input");
+          input.attr("type", "number");
+          input.attr("step", 1);
+          input.attr("min", 0);
+          input.attr("max", 100);
+          input.attr("name", fieldKey);
+          input.attr("id", fieldKey);
+          input.attr("placeholder", "not set");
+          input.attr("value", value);
+          input.finish();
+        });
+  };
 
   sender->send("</div><div class=\"box\">");
-  sender->send("<h3>");
-  sender->send(tmp);
-  sender->send("</h3>");
+  sender->tag("h3").body([&]() {
+    char tmp[32] = {};
+    snprintf(tmp, sizeof(tmp), "Container #%d", container->getChannelNumber());
+    sender->send(tmp);
+  });
 
-  // form-field BEGIN
   container->generateKey(key, WarningAboveKey);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Warning above level");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"1\" min=\"0\" max=\"100\" ");
-  sender->sendNameAndId(key);
-  sender->send(" placeholder=\"not set\"");
-  sender->send(" value=\"");
-  auto warningAbove = container->getWarningAboveLevel();
-  if (warningAbove >= 0 && warningAbove <= 100) {
-    sender->send(warningAbove);
-  }
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END
+  emitNumericField(
+      key, "Warning above level",
+      (container->getWarningAboveLevel() >= 0 &&
+       container->getWarningAboveLevel() <= 100)
+          ? container->getWarningAboveLevel()
+          : 0);
 
-  // form-field BEGIN
   container->generateKey(key, AlarmAboveKey);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Alarm above level");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"1\" min=\"0\" max=\"100\" ");
-  sender->sendNameAndId(key);
-  sender->send(" placeholder=\"not set\"");
-  sender->send(" value=\"");
-  auto alarmAbove = container->getAlarmAboveLevel();
-  if (alarmAbove >= 0 && alarmAbove <= 100) {
-    sender->send(alarmAbove);
-  }
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END
+  emitNumericField(
+      key, "Alarm above level",
+      (container->getAlarmAboveLevel() >= 0 &&
+       container->getAlarmAboveLevel() <= 100)
+          ? container->getAlarmAboveLevel()
+          : 0);
 
-  // form-field BEGIN
   container->generateKey(key, WarningBelowKey);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Warning below level");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"1\" min=\"0\" max=\"100\" ");
-  sender->sendNameAndId(key);
-  sender->send(" placeholder=\"not set\"");
-  sender->send(" value=\"");
-  auto warningBelow = container->getWarningBelowLevel();
-  if (warningBelow >= 0 && warningBelow <= 100) {
-    sender->send(warningBelow);
-  }
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END
+  emitNumericField(
+      key, "Warning below level",
+      (container->getWarningBelowLevel() >= 0 &&
+       container->getWarningBelowLevel() <= 100)
+          ? container->getWarningBelowLevel()
+          : 0);
 
-    // form-field BEGIN
   container->generateKey(key, AlarmBelowKey);
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(key, "Alarm below level");
-  sender->send("<div>");
-  sender->send("<input type=\"number\" step=\"1\" min=\"0\" max=\"100\" ");
-  sender->sendNameAndId(key);
-  sender->send(" placeholder=\"not set\"");
-  sender->send(" value=\"");
-  auto alarmBelow = container->getAlarmBelowLevel();
-  if (alarmBelow >= 0 && alarmBelow <= 100) {
-    sender->send(alarmBelow);
-  }
-  sender->send("\">");
-  sender->send("</div>");
-  sender->send("</div>");
-  // form-field END
+  emitNumericField(
+      key, "Alarm below level",
+      (container->getAlarmBelowLevel() >= 0 &&
+       container->getAlarmBelowLevel() <= 100)
+          ? container->getAlarmBelowLevel()
+          : 0);
 
-  // form-field BEGIN
   container->generateKey(key, MuteKey);
-  sender->send("<div class=\"form-field right-checkbox\">");
-  sender->sendLabelFor(key, "Mute alarm sound without additional auth");
-  sender->send("<label>");
-  sender->send("<span class=\"switch\">");
-  sender->send("<input type=\"checkbox\" value=\"on\" ");
-  sender->send(
-      checked(container->isMuteAlarmSoundWithoutAdditionalAuth()));
-  sender->sendNameAndId(key);
-  sender->send(">");
-  sender->send("<span class=\"slider\"></span>");
-  sender->send("</span>");
-  sender->send("</label>");
-  sender->send("</div>");
-  // form-field END
+  sender->labeledField(
+      key,
+      "Mute alarm sound without additional auth",
+      [&]() {
+        sender->tag("label").body([&]() {
+          sender->tag("span").attr("class", "switch").body([&]() {
+            auto input = sender->voidTag("input");
+            input.attr("type", "checkbox");
+            input.attr("value", "on");
+            input.attrIf("checked",
+                         container->isMuteAlarmSoundWithoutAdditionalAuth());
+            input.attr("name", key);
+            input.attr("id", key);
+            input.finish();
+            sender->tag("span").attr("class", "slider").body([]() {});
+          });
+        });
+      },
+      "form-field right-checkbox");
 
   if (allowSensors) {
+    auto emitSensorSelectField = [&](const char* fieldKey,
+                                     const char* label,
+                                     const char* cssClass,
+                                     int selectedChannel) {
+      sender->labeledField(fieldKey, label, [&]() {
+        auto select = sender->selectTag(fieldKey, fieldKey);
+        if (cssClass) {
+          select.attr("class", cssClass);
+        }
+        select.body([&]() {
+          sender->selectOption("", "Not used", selectedChannel == 255);
+          for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
+               ch = ch->next()) {
+            if (ch->getChannelType() == SUPLA_CHANNELTYPE_BINARYSENSOR) {
+              char buf[100] = {};
+              auto channelNumber = ch->getChannelNumber();
+              snprintf(buf, sizeof(buf), "Use sensor #%d", channelNumber);
+              sender->selectOption(
+                  channelNumber, buf, selectedChannel == channelNumber);
+            }
+          }
+        });
+      });
+    };
+
+    auto emitSensorLevelField = [&](const char* fieldKey, int fillLevel) {
+      fillLevel = fillLevel > 100 ? 100 : fillLevel;
+      Supla::NumericInputSpec spec;
+      spec.min = 0;
+      spec.max = 100;
+      spec.step = 1;
+      spec.value = fillLevel;
+      sender->labeledField(
+          fieldKey,
+          "Sensor level",
+          [&]() {
+            auto input = sender->voidTag("input");
+            input.attr("type", "number");
+            input.attr("step", 1);
+            input.attr("min", 0);
+            input.attr("max", 100);
+            input.attr("required", true);
+            input.attr("name", fieldKey);
+            input.attr("id", fieldKey);
+            input.attr("value", fillLevel);
+            input.finish();
+          });
+    };
+
     int countSensors = 0;
     for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
         ch = ch->next()) {
@@ -175,7 +213,7 @@ void ContainerParameters::send(Supla::WebSender* sender) {
         countSensors++;
       }
     }
-    if (countSensors > 0 || container->isSensorDataUsed()) {
+      if (countSensors > 0 || container->isSensorDataUsed()) {
       char containerClassId[32] = {};
       snprintf(containerClassId,
                32,
@@ -212,67 +250,22 @@ void ContainerParameters::send(Supla::WebSender* sender) {
           continue;
         }
         if (i > 0) {
-          sender->send("<hr>");
+          sender->voidTag("hr").finish();
         }
         char buffer[100] = {};
+        char sensorIdKey[16] = {};
+        char sensorLevelKey[16] = {};
         snprintf(buffer, sizeof(buffer), "Sensor %d", i + 1);
-        sender->send("<h3>");
-        sender->send(buffer);
-        sender->send("</h3>");
-
-        // form-field BEGIN
-        sender->send("<div class=\"form-field\">");
-        generateSensorKey(key, SensorIdKey, i);
-        sender->sendLabelFor(key, "Sensor channel");
-        sender->send("<div>");
-        sender->send("<select ");
-        sender->sendNameAndId(key);
-        sender->send(" class='");
-        sender->send(containerClassId);
-        sender->send("'>");
-        sender->sendSelectItem(
-            0,
-            "Not used",
-            container->config.sensorData[i].channelNumber == 255,
-            true);
-        for (Supla::Channel* ch = Supla::Channel::Begin(); ch != nullptr;
-            ch = ch->next()) {
-          auto channelType = ch->getChannelType();
-          if (channelType == SUPLA_CHANNELTYPE_BINARYSENSOR) {
-            char buf[100] = {};
-            auto channelNumber = ch->getChannelNumber();
-            snprintf(buf, sizeof(buf), "Use sensor #%d", channelNumber);
-            sender->sendSelectItem(
-                channelNumber,
-                buf,
-                container->config.sensorData[i].channelNumber ==
-                    channelNumber);
-          }
-        }
-        sender->send("</select>");
-        sender->send("</div>");
-        sender->send("</div>");
-        // form-field END
-
-        // form-field BEGIN
-        generateSensorKey(key, SensorLevelKey, i);
-        sender->send("<div class=\"form-field\">");
-        sender->sendLabelFor(key, "Sensor level");
-        sender->send("<div>");
-        sender->send(
-            "<input type=\"number\" step=\"1\" min=\"0\" max=\"100\" "
-            "required ");
-        sender->sendNameAndId(key);
-        sender->send(" value=\"");
-        auto fillLevel = container->config.sensorData[i].fillLevel;
-        if (fillLevel > 100) {
-          fillLevel = 100;
-        }
-        sender->send(fillLevel);
-        sender->send("\">");
-        sender->send("</div>");
-        sender->send("</div>");
-        // form-field END
+        sender->tag("h3").body(buffer);
+        generateSensorKey(sensorIdKey, SensorIdKey, i);
+        generateSensorKey(sensorLevelKey, SensorLevelKey, i);
+        emitSensorSelectField(
+            sensorIdKey,
+            "Sensor channel",
+            containerClassId,
+            container->config.sensorData[i].channelNumber);
+        emitSensorLevelField(sensorLevelKey,
+                             container->config.sensorData[i].fillLevel);
       }
     }
   }
@@ -402,3 +395,5 @@ void ContainerParameters::onProcessingEnd() {
     container->printConfig();
   }
 }
+
+#endif  // ARDUINO_ARCH_AVR

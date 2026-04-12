@@ -34,6 +34,7 @@ class File : public Source {
   explicit File(const char *filePath, int expirationSec = 10 * 60);
   virtual ~File();
   std::string getContent() override;
+  bool isConnected() override;
 
   void setExpirationTime(int timeSec);
 

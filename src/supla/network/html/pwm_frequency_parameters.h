@@ -25,20 +25,20 @@ namespace Supla {
 class WebSender;
 
 namespace Control {
-class RGBCCTBase;
+class LightingPwmBase;
 }  // namespace Control
 
 namespace Html {
 
 class PwmFrequencyParameters : public HtmlElement {
  public:
-  explicit PwmFrequencyParameters(Supla::Control::RGBCCTBase *rgbCct);
+  explicit PwmFrequencyParameters(Supla::Control::LightingPwmBase *rgbCct);
   virtual ~PwmFrequencyParameters();
   void send(Supla::WebSender* sender) override;
   bool handleResponse(const char* key, const char* value) override;
 
  private:
-  Supla::Control::RGBCCTBase *rgbCct = nullptr;
+  Supla::Control::LightingPwmBase *rgbCct = nullptr;
 };
 
 }  // namespace Html

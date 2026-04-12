@@ -48,6 +48,13 @@ class Base {
                                      uint64_t timeoutMicro);
   virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
   virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
+  virtual void customSetPwmResolutionBits(uint8_t resolutionBits);
+  virtual void customConfigureAnalogOutput(int channelNumber,
+                                           uint8_t pin,
+                                           bool outputInvert = false);
+  virtual void customSetPwmFrequency(uint16_t pwmFrequency);
+  virtual uint8_t customAnalogWriteResolutionBits() const;
+  virtual uint32_t customAnalogWriteMaxValue() const;
   virtual int customAnalogRead(int channelNumber, uint8_t pin);
   virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
   virtual void customDetachInterrupt(uint8_t pin);
@@ -55,6 +62,77 @@ class Base {
 
  private:
   bool useAsSingleton = true;
+};
+
+struct IoPin {
+  enum Flag : uint8_t {
+    IsSet = 1 << 0,
+    PullUp = 1 << 1,
+    ActiveHigh = 1 << 2,
+  };
+
+  uint8_t pin = 0;
+  uint8_t flags = ActiveHigh;
+  uint8_t mode = 0;
+  mutable uint8_t analogWriteResolutionBitsValue = 0;
+  Base *io = nullptr;
+
+  IoPin() = default;
+  explicit IoPin(int pin, Base *io = nullptr) : io(io) { setPin(pin); }
+
+  bool isSet() const { return (flags & IsSet) != 0; }
+  void setIsSet(bool value) {
+    if (value) {
+      flags |= IsSet;
+    } else {
+      flags &= ~IsSet;
+    }
+  }
+
+  int getPin() const { return isSet() ? static_cast<int>(pin) : -1; }
+  void setPin(int value) {
+    if (value < 0) {
+      pin = 0;
+      setIsSet(false);
+    } else {
+      pin = static_cast<uint8_t>(value);
+      setIsSet(true);
+    }
+  }
+
+  bool isPullUp() const { return (flags & PullUp) != 0; }
+  void setPullUp(bool value) {
+    if (value) {
+      flags |= PullUp;
+    } else {
+      flags &= ~PullUp;
+    }
+  }
+
+  bool isActiveHigh() const { return (flags & ActiveHigh) != 0; }
+  void setActiveHigh(bool value) {
+    if (value) {
+      flags |= ActiveHigh;
+    } else {
+      flags &= ~ActiveHigh;
+    }
+  }
+
+  void setMode(uint8_t value) { mode = value; }
+  uint8_t getMode() const { return mode; }
+
+  void setAnalogOutputResolutionBits(uint8_t resolutionBits);
+  void setAnalogOutputFrequency(uint32_t frequencyHz);
+  void configureAnalogOutput(int channelNumber = -1) const;
+  void pinMode(int channelNumber = -1) const;
+  int digitalRead(int channelNumber = -1) const;
+  void digitalWrite(uint8_t value, int channelNumber = -1) const;
+  void analogWrite(int value, int channelNumber = -1) const;
+  uint8_t analogWriteResolutionBits() const;
+  uint32_t analogWriteMaxValue() const;
+  void writeActive(int channelNumber = -1) const;
+  void writeInactive(int channelNumber = -1) const;
+  bool readActive(int channelNumber = -1) const;
 };
 
 void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io = Base::ioInstance);

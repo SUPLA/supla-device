@@ -16,6 +16,7 @@
  * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
  */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "text_cmd_input_parameter.h"
 
 #include <stdio.h>
@@ -72,14 +73,9 @@ TextCmdInputParameter::~TextCmdInputParameter() {
 }
 
 void TextCmdInputParameter::send(Supla::WebSender* sender) {
-  // form-field BEGIN
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(tag, label);
-  sender->send("<input type=\"text\" ");
-  sender->sendNameAndId(tag);
-  sender->send(">");
-  sender->send("</div>");
-  // form-field END
+  sender->labeledField(tag, label, [&]() {
+    sender->textInput(tag, tag);
+  });
 }
 
 bool TextCmdInputParameter::handleResponse(const char* key, const char* value) {
@@ -119,4 +115,4 @@ void TextCmdInputParameter::registerCmd(const char* cmd, int eventId) {
 };  // namespace Html
 };  // namespace Supla
 
-
+#endif  // ARDUINO_ARCH_AVR

@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "em_ct_type.h"
 
 #include <supla/sensor/electricity_meter.h>
@@ -59,3 +60,5 @@ void EmCtTypeParameters::onProcessingEnd() {
   }
   configChanged = false;
 }
+
+#endif  // ARDUINO_ARCH_AVR

@@ -115,6 +115,10 @@ void Supla::LinuxMqttClient::publishCallback(void**,
                   topic_name_string.c_str(),
                   application_message_string.c_str());
 }
+bool Supla::LinuxMqttClient::isConnected() const {
+  return mq_client != nullptr && mq_client->error == MQTT_OK;
+}
+
 enum MQTTErrors Supla::LinuxMqttClient::publish(const std::string& topic,
                                                 const std::string& payload,
                                                 int qos = MQTT_PUBLISH_QOS_0) {

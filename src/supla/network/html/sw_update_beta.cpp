@@ -16,6 +16,7 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#ifndef ARDUINO_ARCH_AVR
 #include <string.h>
 #include <supla/device/sw_update.h>
 #include <supla/network/web_sender.h>
@@ -41,33 +42,18 @@ void SwUpdateBeta::send(Supla::WebSender* sender) {
     bool update = (cfg->getDeviceMode() == DEVICE_MODE_SW_UPDATE);
     bool beta = cfg->isSwUpdateBeta();
 
-    // form-field BEGIN
-    sender->send("<div class=\"form-field\">");
     const char key[] = "updbeta";
-    sender->sendLabelFor(key, "Firmware update");
-    sender->send("<div>");
-    sender->send("<select ");
-    sender->sendNameAndId(key);
-    sender->send(">"
-        "<option value=\"0\"");
-    sender->send(selected(!update));
-    sender->send(
-        ">NO</option>"
-        "<option value=\"1\"");
-    sender->send(selected(update && !beta));
-    sender->send(
-        ">YES</option>"
-        "<option value=\"2\"");
-    sender->send(selected(update && beta));
-    sender->send(
-        ">YES - BETA</option></select>");
-    sender->send(
-        "<div class=\"hint\">"
-        "Warning: beta SW versions may contain bugs and your device may not "
-        "work properly.</div>");
-    sender->send("</div>");
-    sender->send("</div>");
-    // form-field END
+    sender->labeledField(key, "Firmware update", [&]() {
+      auto select = sender->selectTag(key, key);
+      select.body([&]() {
+        sender->selectOption(0, "NO", !update);
+        sender->selectOption(1, "YES", update && !beta);
+        sender->selectOption(2, "YES - BETA", update && beta);
+      });
+      sender->tag("div").attr("class", "hint").body(
+          "Warning: beta SW versions may contain bugs and your device may not "
+          "work properly.");
+    });
   }
 }
 
@@ -100,3 +86,5 @@ bool SwUpdateBeta::handleResponse(const char* key, const char* value) {
 
 };  // namespace Html
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR

@@ -80,8 +80,6 @@ class CustomParameterTemplate : public HtmlElement {
 
   int32_t encodeValue(T value) const;
   T decodeValue(int32_t value) const;
-  void formatValue(char* buffer, size_t bufferSize, int32_t value) const;
-  void sendStepAttribute(Supla::WebSender* sender) const;
   void setStoredValue(int32_t newValue, bool saveToConfig);
 };
 
@@ -190,36 +188,6 @@ T CustomParameterTemplate<T>::decodeValue(int32_t value) const {
 }
 
 template <typename T>
-void CustomParameterTemplate<T>::formatValue(char* buffer,
-                                             size_t bufferSize,
-                                             int32_t value) const {
-  if (std::is_integral<T>::value) {
-    snprintf(buffer, bufferSize, "%" PRId32, static_cast<int32_t>(value));
-    return;
-  }
-
-  snprintf(buffer,
-           bufferSize,
-           "%.*f",
-           decimalPlaces,
-           static_cast<double>(decodeValue(value)));
-}
-
-template <typename T>
-void CustomParameterTemplate<T>::sendStepAttribute(
-    Supla::WebSender* sender) const {
-  sender->send(" step=\"");
-  if (std::is_integral<T>::value || decimalPlaces == 0) {
-    sender->send("1");
-  } else {
-    char buf[16] = {};
-    snprintf(buf, sizeof(buf), "0.%0*d", decimalPlaces, 1);
-    sender->send(buf);
-  }
-  sender->send("\"");
-}
-
-template <typename T>
 void CustomParameterTemplate<T>::setStoredValue(int32_t newValue,
                                                 bool saveToConfig) {
   if (newValue < minStoredValue) {
@@ -248,25 +216,19 @@ void CustomParameterTemplate<T>::send(Supla::WebSender* sender) {
     }
   }
 
-  sender->send("<div class=\"form-field\">");
-  sender->sendLabelFor(tag, label);
-  sender->send("<input type=\"number\"");
-  sendStepAttribute(sender);
+  sender->formField([&]() {
+    sender->labelFor(tag, label);
 
-  char buf[100] = {};
-  sender->send(" min=\"");
-  formatValue(buf, sizeof(buf), minStoredValue);
-  sender->send(buf);
-  sender->send("\" max=\"");
-  formatValue(buf, sizeof(buf), maxStoredValue);
-  sender->send(buf);
-  sender->send("\" ");
-  sender->sendNameAndId(tag);
-  sender->send(" value=\"");
-  formatValue(buf, sizeof(buf), parameterValue);
-  sender->send(buf);
-  sender->send("\">");
-  sender->send("</div>");
+    sender->voidTag("input")
+        .attr("type", "number")
+        .attr("step", 1, decimalPlaces)
+        .attr("min", minStoredValue, decimalPlaces)
+        .attr("max", maxStoredValue, decimalPlaces)
+        .attr("name", tag)
+        .attr("id", tag)
+        .attr("value", parameterValue, decimalPlaces)
+        .finish();
+  });
 }
 
 template <typename T>

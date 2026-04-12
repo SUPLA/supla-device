@@ -16,6 +16,7 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
+#ifndef ARDUINO_ARCH_AVR
 #include "h3_tag.h"
 
 #include <supla/network/web_sender.h>
@@ -42,8 +43,8 @@ H3Tag::~H3Tag() {
 
 void H3Tag::send(Supla::WebSender* sender) {
   // form-field BEGIN
-  sender->send("<h3>");
-  sender->send(text);
-  sender->send("</h3>");
+  sender->tag("h3").body(text);
   // form-field END
 }
+
+#endif  // ARDUINO_ARCH_AVR

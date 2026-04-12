@@ -45,7 +45,9 @@ NTC10k::NTC10k(int pin, float seriesResistor,
                                nominalResistance(nominalResistance),
                                nominalTemp(nominalTemp),
                                beta(beta),
-                               samples(samples) {}
+                               samples(samples) {
+
+                               }
 void NTC10k::onInit() {
 }
 
@@ -64,18 +66,18 @@ void NTC10k::readSensor() {
     temperature_ = 1/temperature_;
     temperature_ -= 273.15;
     lastValidTemp = temperature_;
-  }
+}
 
-  double NTC10k::getValue() {
+double NTC10k::getValue() {
     readSensor();
-    return lastValidTemp; 
-  }
+    return lastValidTemp;
+}
 
-  void NTC10k::set(double val) {
+void NTC10k::set(double val) {
     lastValidTemp = val;
-  }
+}
 
-  void NTC10k::iterateAlways() {
+void NTC10k::iterateAlways() {
     if (millis() - lastReadTime > 2000) {
       lastReadTime = millis();
       channel.setNewValue(getValue());

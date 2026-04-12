@@ -45,8 +45,8 @@ NTC10k::NTC10k(int pin, float seriesResistor,
                                nominalResistance(nominalResistance),
                                nominalTemp(nominalTemp),
                                beta(beta),
-                               samples(samples){}
-
+                               samples(samples){
+                               }
 void NTC10k::onInit() {
 }
 
@@ -57,7 +57,8 @@ void NTC10k::readSensor() {
   }
     Analog_Read_Value /= samples;
 
-    float temperature_ = (seriesResistor * (1 / (Analog_Read_Value/Analog_Read_) - 1))/nominalResistance;
+    float temperature_ = (seriesResistor * (1 / (Analog_Read_Value/Analog_Read_) - 1));
+    temperature /= nominalResistance;
     temperature_ = log(temperature_);
     temperature_ /= beta;
     temperature_ += 1/(nominalTemp + 273.15);

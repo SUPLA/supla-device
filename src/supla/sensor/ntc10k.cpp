@@ -84,4 +84,4 @@ void NTC10k::iterateAlways() {
     }
 }
 };
-}; 
+};

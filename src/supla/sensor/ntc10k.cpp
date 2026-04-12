@@ -28,36 +28,35 @@
 #endif
 
 #ifdef ARDUINO_ARCH_ESP32
- #define Analog_Read_ 4095
+#define Analog_Read_ 4095
 #else
- #define Analog_Read_ 1023
+#define Analog_Read_ 1023
 #endif
 
 namespace Supla {
 namespace Sensor {
-  NTC10k::NTC10k(int pin, float seriesResistor,
+NTC10k::NTC10k(int pin, float seriesResistor,
                                float nominalResistance,
                                float nominalTemp,
                                float beta,
-                               int samples) 
+                               int samples)
                                : pin(pin),
                                seriesResistor(seriesResistor),
                                nominalResistance(nominalResistance),
                                nominalTemp(nominalTemp),
                                beta(beta),
                                samples(samples)
-                               { 
-  }
+                               {
+}
 
-  void NTC10k::onInit() {
-  }
+void NTC10k::onInit() {
+}
 
-  void NTC10k::readSensor() {
-    for(int i=0; i < samples; i++)
-    {
-      Analog_Read_Value += analogRead(pin);
-      delay(2);
-    }
+void NTC10k::readSensor() {
+  for(int i=0; i < samples; i++){
+    Analog_Read_Value += analogRead(pin);
+    delay(2);
+  }
     Analog_Read_Value /= samples;
 
     float temperature_ = (seriesResistor * (1 / (Analog_Read_Value/Analog_Read_) - 1))/nominalResistance;

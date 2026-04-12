@@ -20,16 +20,15 @@
 #define SRC_SUPLA_SENSOR_SHT10_H_
 
 #include <Arduino.h>
-#include <SHT1x-ESP.h> // SHT1x sensor library for ESPx by beegee_tokyo
+#include <SHT1x-ESP.h>  // SHT1x sensor library for ESPx by beegee_tokyo
 // data pin pulled up with 10k resistor
 
 namespace Supla {
 namespace Sensor {
 class SHT10 : public ThermHygroMeter {
-public:
-  explicit SHT10(int data_pin_, int clock_pin_)  
-    : sht1x(data_pin_, clock_pin_, SHT1x::Voltage::DC_3_3v)
-  {
+ public:
+  explicit SHT10(int data_pin_, int clock_pin_)
+    : sht1x(data_pin_, clock_pin_, SHT1x::Voltage::DC_3_3v){
   }
 
   double getTemp() {

@@ -50,24 +50,20 @@ void NTC10k::onInit() {
 }
 
 void NTC10k::readSensor() {
-  for(int i = 0; i < samples; i++){
+  for (int i = 0; i < samples; i++) {
     Analog_Read_Value += analogRead(pin);
     delay(2);
   }
     Analog_Read_Value /= samples;
-
-    float temperature_ = (seriesResistor * (1 / (Analog_Read_Value/Analog_Read_) - 1));
+    float voltage_ = Analog_Read_Value/Analog_Read_;
+    float temperature_ = (seriesResistor * (1 /voltege_  - 1));
     temperature /= nominalResistance;
     temperature_ = log(temperature_);
     temperature_ /= beta;
     temperature_ += 1/(nominalTemp + 273.15);
     temperature_ = 1/temperature_;
     temperature_ -= 273.15;
-  
-  
-  //  double temperature = 0;
-  //  SUPLA_LOG_DEBUG("NTC10k: temp: %.2f", temperature);
-    lastValidTemp = temperature_;  
+    lastValidTemp = temperature_;
   }
 
   double NTC10k::getValue() {

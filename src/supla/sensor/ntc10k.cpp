@@ -21,30 +21,72 @@
 
 #include "ntc10k.h"
 
-Supla::Sensor::NTC10k::NTC10k() {
-}
+#if defined(PANSTAMP_NRG) || defined(ESP_PLATFORM)
+#define ADC_RESOLUTION 0xFFF
+#else
+#define ADC_RESOLUTION 1023
+#endif
 
-void Supla::Sensor::NTC10k::onInit() {
-}
+#ifdef ARDUINO_ARCH_ESP32
+ #define Analog_Read_ 4095
+#else
+ #define Analog_Read_ 1023
+#endif
 
-void Supla::Sensor::NTC10k::readSensor() {
-//  double temperature = 0;
-//  SUPLA_LOG_DEBUG("NTC10k: temp: %.2f", temperature);
-//  lastValidTemp = temperature;
-}
-
-double Supla::Sensor::NTC10k::getValue() {
-  readSensor();
-  return lastValidTemp;
-}
-
-void Supla::Sensor::NTC10k::set(double val) {
-  lastValidTemp = val;
-}
-
-void Supla::Sensor::NTC10k::iterateAlways() {
-  if (millis() - lastReadTime > 2000) {
-    lastReadTime = millis();
-    channel.setNewValue(getValue());
+namespace Supla {
+namespace Sensor {
+  NTC10k::NTC10k(int pin, float seriesResistor,
+                               float nominalResistance,
+                               float nominalTemp,
+                               float beta,
+                               int samples) 
+                               : pin(pin),
+                               seriesResistor(seriesResistor),
+                               nominalResistance(nominalResistance),
+                               nominalTemp(nominalTemp),
+                               beta(beta),
+                               samples(samples)
+                               { 
   }
+
+  void NTC10k::onInit() {
+  }
+
+  void NTC10k::readSensor() {
+    for(int i=0; i < samples; i++)
+    {
+      Analog_Read_Value += analogRead(pin);
+      delay(2);
+    }
+    Analog_Read_Value /= samples;
+
+    float temperature_ = (seriesResistor * (1 / (Analog_Read_Value/Analog_Read_) - 1))/nominalResistance;
+    temperature_ = log(temperature_);
+    temperature_ /= beta;
+    temperature_ += 1/(nominalTemp + 273.15);
+    temperature_ = 1/temperature_;
+    temperature_ -= 273.15;
+  
+  
+  //  double temperature = 0;
+  //  SUPLA_LOG_DEBUG("NTC10k: temp: %.2f", temperature);
+    lastValidTemp = temperature_;  
+  }
+
+  double NTC10k::getValue() {
+    readSensor();
+    return lastValidTemp; 
+  }
+
+  void NTC10k::set(double val) {
+    lastValidTemp = val;
+  }
+
+  void NTC10k::iterateAlways() {
+    if (millis() - lastReadTime > 2000) {
+      lastReadTime = millis();
+      channel.setNewValue(getValue());
+    }
 }
+}; //Sensor
+}; //Supla

@@ -70,5 +70,4 @@ protected:
 };  // namespace Sensor
 };  // namespace Supla
 
-Supla::Sensor::SHT10* Czujniki = nullptr;
 #endif  // SRC_SUPLA_SENSOR_SHT10_H_

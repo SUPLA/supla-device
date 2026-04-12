@@ -45,15 +45,14 @@ NTC10k::NTC10k(int pin, float seriesResistor,
                                nominalResistance(nominalResistance),
                                nominalTemp(nominalTemp),
                                beta(beta),
-                               samples(samples)
-                               {
+                               samples(samples){
 }
 
 void NTC10k::onInit() {
 }
 
 void NTC10k::readSensor() {
-  for(int i=0; i < samples; i++){
+  for(int i = 0; i < samples; i++){
     Analog_Read_Value += analogRead(pin);
     delay(2);
   }

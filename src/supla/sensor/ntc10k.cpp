@@ -57,9 +57,9 @@ void NTC10k::readSensor() {
     delay(2);
   }
     Analog_Read_Value /= samples;
-    float voltage_ = Analog_Read_Value/Analog_Read_;
-    float temperature_ = (seriesResistor * (1 /voltege_  - 1));
-    temperature /= nominalResistance;
+    float voltage_ = (Analog_Read_Value/Analog_Read_);
+    float temperature_ = (seriesResistor * ((1 /voltage_) - 1));
+    temperature_ /= nominalResistance;
     temperature_ = log(temperature_);
     temperature_ /= beta;
     temperature_ += 1/(nominalTemp + 273.15);

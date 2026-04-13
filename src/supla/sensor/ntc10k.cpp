@@ -17,7 +17,7 @@
  */
 
  #include <math.h>
-#include <Arduino.h>
+#include "Arduino.h"
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
 #include "ntc10k.h"

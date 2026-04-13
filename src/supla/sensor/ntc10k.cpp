@@ -18,6 +18,7 @@
 
 #include <supla/log_wrapper.h>
 #include <supla/time.h>
+#include <math.h>
 
 #include "ntc10k.h"
 

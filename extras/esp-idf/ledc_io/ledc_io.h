@@ -44,7 +44,7 @@ class LedcIo : public Supla::Io::Base {
   void customAnalogWrite(int channelNumber, uint8_t pin, int val) override;
 
  private:
-  void ensureTimerConfigured();
+  bool ensureTimerConfigured();
   int ensureChannelConfigured(uint8_t pin, bool outputInvert);
   int getConfiguredChannel(uint8_t pin) const;
   uint32_t getMaxDuty() const;

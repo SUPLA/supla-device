@@ -22,8 +22,10 @@
 #include <supla/log_wrapper.h>
 
 namespace {
-constexpr int MaxLedcChannels = 16;
+constexpr int MaxLedcChannels = LEDC_CHANNEL_MAX;
+constexpr int MaxLedcTimers = LEDC_TIMER_MAX;
 constexpr int MaxPins = 256;
+constexpr ledc_mode_t kLedcSpeedMode = LEDC_LOW_SPEED_MODE;
 
 int &LedcTimerCounter() {
   static int counter = 0;
@@ -35,10 +37,16 @@ namespace Supla::Io {
 
 LedcIo::LedcIo() : Base(false), ledcTimerId(LedcTimerCounter()++) {
   memset(pinToChannel, -1, sizeof(pinToChannel));
+  if (ledcTimerId < 0 || ledcTimerId >= MaxLedcTimers) {
+    SUPLA_LOG_ERROR("[LEDC] timer %d out of range", ledcTimerId);
+  }
 }
 
 LedcIo::LedcIo(int ledcTimerId) : Base(false), ledcTimerId(ledcTimerId) {
   memset(pinToChannel, -1, sizeof(pinToChannel));
+  if (ledcTimerId < 0 || ledcTimerId >= MaxLedcTimers) {
+    SUPLA_LOG_ERROR("[LEDC] timer %d out of range", ledcTimerId);
+  }
 }
 
 void LedcIo::setPwmFrequency(uint16_t pwmFrequency) {
@@ -73,26 +81,39 @@ uint32_t LedcIo::getMaxDuty() const {
   return (1UL << resolutionBits) - 1;
 }
 
-void LedcIo::ensureTimerConfigured() {
+bool LedcIo::ensureTimerConfigured() {
   if (timerConfigured) {
-    return;
+    return true;
   }
+
+  if (ledcTimerId < 0 || ledcTimerId >= MaxLedcTimers) {
+    SUPLA_LOG_ERROR("[LEDC] timer %d out of range", ledcTimerId);
+    return false;
+  }
+
   SUPLA_LOG_DEBUG("[LEDC] configuring timer %d, freq %d, res %d",
                   ledcTimerId,
                   pwmFrequency,
                   resolutionBits);
 
   ledc_timer_config_t ledcTimer = {};
-  ledcTimer.speed_mode = LEDC_HIGH_SPEED_MODE;
+  ledcTimer.speed_mode = kLedcSpeedMode;
   ledcTimer.duty_resolution = static_cast<ledc_timer_bit_t>(resolutionBits);
   ledcTimer.timer_num = static_cast<ledc_timer_t>(ledcTimerId);
   ledcTimer.freq_hz = pwmFrequency;
   ledcTimer.clk_cfg = LEDC_AUTO_CLK;
   ledcTimer.deconfigure = false;
 
-  ESP_ERROR_CHECK(ledc_timer_config(&ledcTimer));
+  esp_err_t err = ledc_timer_config(&ledcTimer);
+  if (err != ESP_OK) {
+    SUPLA_LOG_ERROR("[LEDC] timer %d configuration failed: %d",
+                    ledcTimerId,
+                    static_cast<int>(err));
+    return false;
+  }
   timerConfigured = true;
   SUPLA_LOG_DEBUG("[LEDC] timer %d configured", ledcTimerId);
+  return true;
 }
 
 int LedcIo::getConfiguredChannel(uint8_t pin) const {
@@ -126,24 +147,34 @@ int LedcIo::ensureChannelConfigured(uint8_t pin, bool outputInvert) {
     return -1;
   }
 
-  ensureTimerConfigured();
+  if (!ensureTimerConfigured()) {
+    return -1;
+  }
 
   ledc_channel_config_t ledcChannel = {};
   ledcChannel.gpio_num = pin;
-  ledcChannel.speed_mode = LEDC_HIGH_SPEED_MODE;
+  ledcChannel.speed_mode = kLedcSpeedMode;
   ledcChannel.channel = static_cast<ledc_channel_t>(channel);
   ledcChannel.timer_sel = static_cast<ledc_timer_t>(ledcTimerId);
   ledcChannel.duty = 0;
   ledcChannel.hpoint = 0;
   ledcChannel.flags.output_invert = outputInvert ? 1 : 0;
 
-  ESP_ERROR_CHECK(ledc_channel_config(&ledcChannel));
-  ESP_ERROR_CHECK(ledc_set_duty(
-      LEDC_HIGH_SPEED_MODE, static_cast<ledc_channel_t>(channel), 0));
-  ESP_ERROR_CHECK(ledc_update_duty(LEDC_HIGH_SPEED_MODE,
+  esp_err_t err = ledc_channel_config(&ledcChannel);
+  if (err != ESP_OK) {
+    SUPLA_LOG_ERROR("[LEDC] channel %d configuration failed for GPIO %d: %d",
+                    channel,
+                    pin,
+                    static_cast<int>(err));
+    return -1;
+  }
+  ESP_ERROR_CHECK(ledc_set_duty(kLedcSpeedMode,
+                                static_cast<ledc_channel_t>(channel),
+                                0));
+  ESP_ERROR_CHECK(ledc_update_duty(kLedcSpeedMode,
                                    static_cast<ledc_channel_t>(channel)));
   ESP_ERROR_CHECK(
-      ledc_stop(LEDC_HIGH_SPEED_MODE, static_cast<ledc_channel_t>(channel), 0));
+      ledc_stop(kLedcSpeedMode, static_cast<ledc_channel_t>(channel), 0));
 
   SUPLA_LOG_DEBUG("[LEDC] channel %d initialized for GPIO %d", channel, pin);
   return channel;
@@ -169,7 +200,9 @@ void LedcIo::customConfigureAnalogOutput(int channelNumber,
                                          uint8_t pin,
                                          bool outputInvert) {
   (void)(channelNumber);
-  ensureTimerConfigured();
+  if (!ensureTimerConfigured()) {
+    return;
+  }
   ensureChannelConfigured(pin, outputInvert);
 }
 
@@ -199,10 +232,10 @@ void LedcIo::customAnalogWrite(int channelNumber, uint8_t pin, int val) {
   const uint32_t duty = static_cast<uint32_t>(val);
 
   auto channelId = static_cast<ledc_channel_t>(channel);
-  ledc_set_duty(LEDC_HIGH_SPEED_MODE, channelId, duty);
-  ledc_update_duty(LEDC_HIGH_SPEED_MODE, channelId);
+  ledc_set_duty(kLedcSpeedMode, channelId, duty);
+  ledc_update_duty(kLedcSpeedMode, channelId);
   if (duty == 0) {
-    ledc_stop(LEDC_HIGH_SPEED_MODE, channelId, 0);
+    ledc_stop(kLedcSpeedMode, channelId, 0);
   }
 }
 

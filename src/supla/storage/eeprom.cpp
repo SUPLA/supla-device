@@ -58,7 +58,7 @@ int Eeprom::readStorage(unsigned int offset,
                         unsigned char *buf,
                         unsigned int size,
                         bool logs) {
-  for (int i = 0; i < size; i++) {
+  for (unsigned int i = 0; i < size; i++) {
     buf[i] = EEPROM.read(offset + i);
   }
   if (logs) {
@@ -86,7 +86,7 @@ int Eeprom::writeStorage(unsigned int offset,
                          const unsigned char *buf,
                          unsigned int size) {
   dataChanged = true;
-  for (int i = 0; i < size; i++) {
+  for (unsigned int i = 0; i < size; i++) {
     EEPROM.write(offset + i, buf[i]);
   }
   SUPLA_LOG_INFO("EEPROM: Wrote %d bytes (offset %d)", size, offset);

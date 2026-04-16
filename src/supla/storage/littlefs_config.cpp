@@ -343,7 +343,7 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
 
   file.close();
   LittleFS.end();
-  return bytesRead == fileSize;
+  return (bytesRead < 0) ? false : static_cast<size_t>(bytesRead) == fileSize;
 }
 
 int Supla::LittleFsConfig::getBlobSize(const char* key) {

@@ -220,6 +220,7 @@ void setPwmFrequency(uint8_t pin, uint16_t pwmFrequency, Io::Base *io) {
     return;
   }
 #if defined(ARDUINO_ARCH_ESP8266)
+  (void)(pin);
   analogWriteFreq(pwmFrequency);
 #elif defined(ARDUINO_ARCH_ESP32)
   analogWriteFrequency(pin, pwmFrequency);

@@ -49,7 +49,7 @@ MultiDsHandlerBase::~MultiDsHandlerBase() {
   }
 }
 
-void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *sdc) {
+void MultiDsHandlerBase::onLoadConfig(SuplaDeviceClass *) {
   auto config = Supla::Storage::ConfigInstance();
   if (!config) {
     return;

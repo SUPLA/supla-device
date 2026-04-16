@@ -67,11 +67,15 @@ class ResolvedPwmIo : public Supla::Io::Base {
     lastFrequency = pwmFrequency;
   }
 
-  uint8_t customAnalogWriteResolutionBits() const override {
+  uint8_t customPwmResolutionBits(uint8_t pin) const override {
+    (void)(pin);
     return resolutionBits;
   }
 
-  uint32_t customAnalogWriteMaxValue() const override { return maxDuty; }
+  uint32_t customPwmMaxValue(uint8_t pin) const override {
+    (void)(pin);
+    return maxDuty;
+  }
 
   uint8_t resolutionBits = 0;
   uint32_t maxDuty = 0;
@@ -299,7 +303,7 @@ TEST(RgbwPwmBaseTests, DimmerUsesNineBitDutyRange) {
   ResolvedPwmIo io(9, 511);
 
   Supla::Io::IoPin pin(21, &io);
-  EXPECT_EQ(pin.analogWriteMaxValue(), 511U);
+  EXPECT_EQ(pin.pwmMaxValue(), 511U);
 
   Supla::Control::LightingPwmLeds pwm(nullptr, pin);
   ASSERT_NE(pwm.getChannel(), nullptr);
@@ -330,7 +334,7 @@ TEST(RgbwPwmBaseTests, DimmerUsesNineBitDutyRange) {
   EXPECT_EQ(io.lastValue, 0U);
 
   sendAndFlush(50);
-  EXPECT_EQ(io.lastValue, 254U);
+  EXPECT_EQ(io.lastValue, 255U);
 
   sendAndFlush(100);
   EXPECT_EQ(io.lastValue, 511U);
@@ -342,7 +346,7 @@ TEST(RgbwPwmBaseTests, LoweringHwMaxClampsBrightnessLimits) {
   ResolvedPwmIo io(9, 511);
 
   Supla::Io::IoPin pin(21, &io);
-  EXPECT_EQ(pin.analogWriteMaxValue(), 511U);
+  EXPECT_EQ(pin.pwmMaxValue(), 511U);
 
   Supla::Control::LightingPwmLeds pwm(nullptr, pin);
   ASSERT_NE(pwm.getChannel(), nullptr);

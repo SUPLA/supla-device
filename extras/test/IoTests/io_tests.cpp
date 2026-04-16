@@ -15,9 +15,61 @@
 */
 
 #include <arduino_mock.h>
+#include <array>
 #include <gtest/gtest.h>
 #include <supla/io.h>
 #include <supla_io_mock.h>
+
+namespace {
+constexpr uint8_t ExpectedDefaultAnalogWriteResolutionBits() {
+  return 10;
+}
+
+constexpr uint32_t ExpectedDefaultAnalogWriteMaxValue() {
+  return (1UL << ExpectedDefaultAnalogWriteResolutionBits()) - 1;
+}
+
+constexpr uint16_t ExpectedDefaultPwmFrequencyHz() {
+  return 1000;
+}
+
+class PwmStateIo : public Supla::Io::Base {
+ public:
+  PwmStateIo(uint8_t defaultResolutionBits, uint16_t defaultFrequencyHz)
+      : Base(false),
+        frequencyHz(defaultFrequencyHz) {
+    resolutionBits.fill(defaultResolutionBits);
+  }
+
+  void customSetPwmResolutionBits(uint8_t pin,
+                                  uint8_t resolutionBits) override {
+    this->resolutionBits[pin] = resolutionBits;
+  }
+
+  void customSetPwmFrequency(uint16_t pwmFrequency) override {
+    frequencyHz = pwmFrequency;
+  }
+
+  uint8_t customPwmResolutionBits(uint8_t pin) const override {
+    return resolutionBits[pin];
+  }
+
+  uint32_t customPwmMaxValue(uint8_t pin) const override {
+    uint8_t bits = resolutionBits[pin];
+    if (bits == 0) {
+      return 0;
+    }
+    return (1UL << bits) - 1;
+  }
+
+  uint16_t customPwmFrequency() const override {
+    return frequencyHz;
+  }
+
+  std::array<uint8_t, 256> resolutionBits{};
+  uint16_t frequencyHz = 0;
+};
+}  // namespace
 
 using ::testing::Return;
 
@@ -186,6 +238,86 @@ TEST(IoTests, IoPinActiveLowInvertsReadAndWriteLevels) {
   EXPECT_FALSE(pin.readActive(9));
   pin.writeActive(9);
   pin.writeInactive(9);
+}
+
+TEST(IoTests, BasePwmDefaultsAreNonZero) {
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21),
+            ExpectedDefaultAnalogWriteResolutionBits());
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21),
+            ExpectedDefaultAnalogWriteMaxValue());
+  EXPECT_EQ(Supla::Io::pwmFrequency(), ExpectedDefaultPwmFrequencyHz());
+}
+
+TEST(IoTests, BasePwmStateCanBeUpdatedWithoutIoPin) {
+  PwmStateIo io(9, 600);
+
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21, &io), 9);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21, &io), 511);
+  EXPECT_EQ(Supla::Io::pwmFrequency(&io), 600);
+
+  // default io
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(), 10);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(), 1023);
+  EXPECT_EQ(Supla::Io::pwmFrequency(), 1000);
+
+  Supla::Io::setPwmResolutionBits(21, 10, &io);
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21, &io), 10U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21, &io), 1023U);
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(22, &io), 9U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(22, &io), 511U);
+
+  Supla::Io::setPwmFrequency(21, 1234, &io);
+
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21, &io), 10U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21, &io), 1023U);
+  EXPECT_EQ(Supla::Io::pwmFrequency(&io), 1234U);
+
+  // default io shouldn't change
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(), 10);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(), 1023);
+  EXPECT_EQ(Supla::Io::pwmFrequency(), 1000);
+}
+
+TEST(IoTests, IoPinUsesBasePwmDefaultsAndCanOverrideThem) {
+  Supla::Io::IoPin pin(21);
+
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21),
+            ExpectedDefaultAnalogWriteResolutionBits());
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21),
+            ExpectedDefaultAnalogWriteMaxValue());
+  EXPECT_EQ(Supla::Io::pwmFrequency(), ExpectedDefaultPwmFrequencyHz());
+  EXPECT_EQ(pin.pwmResolutionBits(),
+            ExpectedDefaultAnalogWriteResolutionBits());
+  EXPECT_EQ(pin.pwmMaxValue(), ExpectedDefaultAnalogWriteMaxValue());
+
+  pin.setPwmResolutionBits(10);
+  EXPECT_EQ(pin.pwmResolutionBits(),
+            ExpectedDefaultAnalogWriteResolutionBits());
+  EXPECT_EQ(pin.pwmMaxValue(), ExpectedDefaultAnalogWriteMaxValue());
+}
+
+TEST(IoTests, IoPinUsesCustomIoPwmDefaultsAndCanOverrideThem) {
+  PwmStateIo io(9, 500);
+  Supla::Io::IoPin pin(21, &io);
+
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21, &io), 9U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21, &io), 511U);
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(22, &io), 9U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(22, &io), 511U);
+  EXPECT_EQ(Supla::Io::pwmFrequency(&io), 500U);
+  EXPECT_EQ(pin.pwmResolutionBits(), 9U);
+  EXPECT_EQ(pin.pwmMaxValue(), 511U);
+
+  pin.setPwmResolutionBits(10);
+  pin.setPwmFrequency(1234);
+
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(21, &io), 10U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(21, &io), 1023U);
+  EXPECT_EQ(Supla::Io::pwmResolutionBits(22, &io), 9U);
+  EXPECT_EQ(Supla::Io::pwmMaxValue(22, &io), 511U);
+  EXPECT_EQ(Supla::Io::pwmFrequency(&io), 1234U);
+  EXPECT_EQ(pin.pwmResolutionBits(), 10U);
+  EXPECT_EQ(pin.pwmMaxValue(), 1023U);
 }
 
 TEST(IoTests, OperationsWithCustomIoInteface) {

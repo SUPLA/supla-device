@@ -95,7 +95,7 @@ TEST(DimmerLedsTests, IoPinConstructorUsesSeparateIoForBrightness) {
   SimpleTime time;
   SuplaIoMock brightnessIo;
 
-  EXPECT_CALL(brightnessIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(brightnessIo, customSetPwmResolutionBits(7, 10));
   EXPECT_CALL(brightnessIo, customSetPwmFrequency(1000));
   EXPECT_CALL(brightnessIo, customConfigureAnalogOutput(-1, 7, false));
   EXPECT_CALL(brightnessIo, customPinMode(-1, 7, OUTPUT));

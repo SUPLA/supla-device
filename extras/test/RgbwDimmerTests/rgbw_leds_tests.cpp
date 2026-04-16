@@ -109,13 +109,13 @@ TEST(RgbwLedsTests, IoPinConstructorUsesSeparateIoForOutputs) {
   SuplaIoMock blueIo;
   SuplaIoMock brightnessIo;
 
-  EXPECT_CALL(redIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(redIo, customSetPwmResolutionBits(1, 10));
   EXPECT_CALL(redIo, customSetPwmFrequency(1000));
-  EXPECT_CALL(greenIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(greenIo, customSetPwmResolutionBits(2, 10));
   EXPECT_CALL(greenIo, customSetPwmFrequency(1000));
-  EXPECT_CALL(blueIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(blueIo, customSetPwmResolutionBits(3, 10));
   EXPECT_CALL(blueIo, customSetPwmFrequency(1000));
-  EXPECT_CALL(brightnessIo, customSetPwmResolutionBits(10));
+  EXPECT_CALL(brightnessIo, customSetPwmResolutionBits(4, 10));
   EXPECT_CALL(brightnessIo, customSetPwmFrequency(1000));
   EXPECT_CALL(redIo, customConfigureAnalogOutput(-1, 1, false));
   EXPECT_CALL(greenIo, customConfigureAnalogOutput(-1, 2, false));

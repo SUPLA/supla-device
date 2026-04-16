@@ -73,6 +73,28 @@ uint8_t digitalPinToInterrupt(uint8_t pin) {
 }
 #endif
 
+namespace {
+constexpr uint8_t DefaultAnalogWriteResolutionBits() {
+#if defined(ARDUINO_ARCH_AVR)
+  return 8;
+#elif defined(ARDUINO_ARCH_ESP8266)
+  return 10;
+#elif defined(ARDUINO_ARCH_ESP32)
+  return 8;
+#else
+  return 10;
+#endif
+}
+
+constexpr uint16_t DefaultPwmFrequencyHz() {
+#if defined(ARDUINO_ARCH_AVR)
+  return 490;
+#else
+  return 1000;
+#endif
+}
+}  // namespace
+
 namespace Supla {
 namespace Io {
 void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io) {
@@ -197,9 +219,7 @@ void setPwmFrequency(uint8_t pin, uint16_t pwmFrequency, Io::Base *io) {
     io->customSetPwmFrequency(pwmFrequency);
     return;
   }
-#ifdef ARDUINO
-  analogWriteFrequency(pin, pwmFrequency);
-#elif defined(ESP_PLATFORM)
+#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
   analogWriteFrequency(pin, pwmFrequency);
 #else
   (void)(pin);
@@ -209,7 +229,7 @@ void setPwmFrequency(uint8_t pin, uint16_t pwmFrequency, Io::Base *io) {
 
 void setPwmResolutionBits(uint8_t pin, uint8_t resolutionBits, Io::Base *io) {
   if (io) {
-    io->customSetPwmResolutionBits(resolutionBits);
+    io->customSetPwmResolutionBits(pin, resolutionBits);
     return;
   }
 #ifdef ARDUINO_ARCH_ESP32
@@ -225,7 +245,40 @@ void setPwmResolutionBits(uint8_t pin, uint8_t resolutionBits, Io::Base *io) {
 #endif
 }
 
-Base::Base(bool useAsSingleton) : useAsSingleton(useAsSingleton) {
+uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io) {
+  if (io != nullptr) {
+    return io->customPwmResolutionBits(pin);
+  }
+  return DefaultAnalogWriteResolutionBits();
+}
+
+uint32_t pwmMaxValue(uint8_t pin, Io::Base *io) {
+  uint8_t bits = pwmResolutionBits(pin, io);
+  if (bits == 0) {
+    return 0;
+  }
+  return (1UL << bits) - 1;
+}
+
+uint8_t pwmResolutionBits(Io::Base *io) {
+  return pwmResolutionBits(0, io);
+}
+
+uint32_t pwmMaxValue(Io::Base *io) {
+  return pwmMaxValue(0, io);
+}
+
+uint16_t pwmFrequency(Io::Base *io) {
+  if (io != nullptr) {
+    return io->customPwmFrequency();
+  }
+  return DefaultPwmFrequencyHz();
+}
+
+Base::Base(bool useAsSingleton)
+    : useAsSingleton(useAsSingleton),
+      pwmResolutionBitsValue(DefaultAnalogWriteResolutionBits()),
+      pwmFrequencyHzValue(DefaultPwmFrequencyHz()) {
   if (useAsSingleton) {
     if (ioInstance != nullptr) {
       delete ioInstance;
@@ -257,8 +310,9 @@ void Base::customDigitalWrite(int, uint8_t, uint8_t) {
 void Base::customAnalogWrite(int, uint8_t, int) {
 }
 
-void Base::customSetPwmResolutionBits(uint8_t resolutionBits) {
-  analogWriteResolutionBitsValue = resolutionBits;
+void Base::customSetPwmResolutionBits(uint8_t pin, uint8_t resolutionBits) {
+  (void)(pin);
+  pwmResolutionBitsValue = resolutionBits;
 }
 
 void Base::customConfigureAnalogOutput(int, uint8_t, bool) {
@@ -268,12 +322,13 @@ void Base::customSetPwmFrequency(uint16_t freq) {
   pwmFrequencyHzValue = freq;
 }
 
-uint8_t Base::customAnalogWriteResolutionBits() const {
-  return analogWriteResolutionBitsValue;
+uint8_t Base::customPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
+  return pwmResolutionBitsValue;
 }
 
-uint32_t Base::customAnalogWriteMaxValue() const {
-  uint8_t bits = customAnalogWriteResolutionBits();
+uint32_t Base::customPwmMaxValue(uint8_t pin) const {
+  uint8_t bits = customPwmResolutionBits(pin);
   if (bits == 0) {
     return 0;
   }

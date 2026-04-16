@@ -35,12 +35,12 @@ class LedcIo : public Supla::Io::Base {
 
   void customPinMode(int channelNumber, uint8_t pin, uint8_t mode) override;
   void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val) override;
-  void customSetPwmResolutionBits(uint8_t resolutionBits) override;
+  void customSetPwmResolutionBits(uint8_t pin, uint8_t resolutionBits) override;
   void customConfigureAnalogOutput(int channelNumber,
                                    uint8_t pin,
                                    bool outputInvert) override;
   void customSetPwmFrequency(uint16_t pwmFrequency) override;
-  uint8_t customAnalogWriteResolutionBits() const override;
+  uint8_t customPwmResolutionBits(uint8_t pin) const override;
   void customAnalogWrite(int channelNumber, uint8_t pin, int val) override;
 
  private:

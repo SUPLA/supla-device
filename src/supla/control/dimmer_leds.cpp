@@ -21,8 +21,8 @@ constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
 constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
 
 void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
-  pin.setAnalogOutputResolutionBits(LegacyAnalogWriteResolutionBits);
-  pin.setAnalogOutputFrequency(LegacyAnalogWriteFrequencyHz);
+  pin.setPwmResolutionBits(LegacyAnalogWriteResolutionBits);
+  pin.setPwmFrequency(LegacyAnalogWriteFrequencyHz);
 }
 }  // namespace
 

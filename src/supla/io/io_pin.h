@@ -35,7 +35,6 @@ struct IoPin {
   uint8_t pin = 0;
   uint8_t flags = ActiveHigh;
   uint8_t mode = 0;
-  uint8_t analogWriteResolutionBitsValue = 0;
   Base *io = nullptr;
 
   IoPin() = default;
@@ -96,15 +95,15 @@ struct IoPin {
     return mode;
   }
 
-  void setAnalogOutputResolutionBits(uint8_t resolutionBits);
-  void setAnalogOutputFrequency(uint32_t frequencyHz);
+  void setPwmResolutionBits(uint8_t resolutionBits);
+  void setPwmFrequency(uint32_t frequencyHz);
   void configureAnalogOutput(int channelNumber = -1) const;
   void pinMode(int channelNumber = -1) const;
   int digitalRead(int channelNumber = -1) const;
   void digitalWrite(uint8_t value, int channelNumber = -1) const;
   void analogWrite(int value, int channelNumber = -1) const;
-  uint8_t analogWriteResolutionBits() const;
-  uint32_t analogWriteMaxValue() const;
+  uint8_t pwmResolutionBits() const;
+  uint32_t pwmMaxValue() const;
   void writeActive(int channelNumber = -1) const;
   void writeInactive(int channelNumber = -1) const;
   bool readActive(int channelNumber = -1) const;

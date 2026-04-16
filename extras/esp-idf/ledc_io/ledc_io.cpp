@@ -192,7 +192,8 @@ void LedcIo::customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val) {
   (void)(val);
 }
 
-void LedcIo::customSetPwmResolutionBits(uint8_t resolutionBits) {
+void LedcIo::customSetPwmResolutionBits(uint8_t pin, uint8_t resolutionBits) {
+  (void)(pin);
   setResolutionBits(resolutionBits);
 }
 
@@ -210,7 +211,8 @@ void LedcIo::customSetPwmFrequency(uint16_t pwmFrequency) {
   setPwmFrequency(pwmFrequency);
 }
 
-uint8_t LedcIo::customAnalogWriteResolutionBits() const {
+uint8_t LedcIo::customPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
   return resolutionBits;
 }
 

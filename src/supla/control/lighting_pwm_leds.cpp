@@ -138,7 +138,7 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
   for (int i = 0; i < usedOutputs; i++) {
     outputs[i].lastSourceValue = static_cast<int32_t>(output[i]);
     uint32_t value = output[i];
-    uint32_t outputMax = outputs[i].pin.analogWriteMaxValue();
+    uint32_t outputMax = outputs[i].pin.pwmMaxValue();
     if (outputMax > 0 && outputMax != maxHwValue) {
       value = static_cast<uint32_t>(
           (static_cast<uint64_t>(value) * outputMax + maxHwValue / 2) /
@@ -167,7 +167,7 @@ void LightingPwmLeds::applyPwmFrequencyToOutputs() {
       }
       if (!alreadyConfigured) {
         configuredIo[configuredIoCount++] = output.pin.io;
-        output.pin.setAnalogOutputFrequency(frequency);
+        output.pin.setPwmFrequency(frequency);
       }
     }
   }
@@ -185,7 +185,7 @@ void LightingPwmLeds::onInit() {
 
   uint32_t outputMaxValue = 0;
   for (const auto &output : outputs) {
-    uint32_t value = output.pin.analogWriteMaxValue();
+    uint32_t value = output.pin.pwmMaxValue();
     if (value > outputMaxValue) {
       outputMaxValue = value;
     }

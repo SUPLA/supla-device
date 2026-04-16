@@ -49,13 +49,14 @@ class Base {
                                      uint64_t timeoutMicro);
   virtual void customDigitalWrite(int channelNumber, uint8_t pin, uint8_t val);
   virtual void customAnalogWrite(int channelNumber, uint8_t pin, int val);
-  virtual void customSetPwmResolutionBits(uint8_t resolutionBits);
+  virtual void customSetPwmResolutionBits(uint8_t pin,
+                                          uint8_t resolutionBits);
   virtual void customConfigureAnalogOutput(int channelNumber,
                                            uint8_t pin,
                                            bool outputInvert = false);
   virtual void customSetPwmFrequency(uint16_t pwmFrequency);
-  virtual uint8_t customAnalogWriteResolutionBits() const;
-  virtual uint32_t customAnalogWriteMaxValue() const;
+  virtual uint8_t customPwmResolutionBits(uint8_t pin) const;
+  virtual uint32_t customPwmMaxValue(uint8_t pin) const;
   virtual uint16_t customPwmFrequency() const;
   virtual int customAnalogRead(int channelNumber, uint8_t pin);
   virtual void customAttachInterrupt(uint8_t pin, void (*func)(void), int mode);
@@ -64,8 +65,8 @@ class Base {
 
  private:
   bool useAsSingleton = true;
-  mutable uint8_t analogWriteResolutionBitsValue = 0;
-  mutable uint16_t pwmFrequencyHzValue = 0;
+  mutable uint8_t pwmResolutionBitsValue;
+  mutable uint16_t pwmFrequencyHzValue;
 };
 
 void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io = Base::ioInstance);
@@ -119,6 +120,11 @@ void setPwmFrequency(uint8_t pin,
 void setPwmResolutionBits(uint8_t pin,
                           uint8_t resolutionBits,
                           Io::Base *io = Base::ioInstance);
+uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io = Base::ioInstance);
+uint32_t pwmMaxValue(uint8_t pin, Io::Base *io = Base::ioInstance);
+uint8_t pwmResolutionBits(Io::Base *io = Base::ioInstance);
+uint32_t pwmMaxValue(Io::Base *io = Base::ioInstance);
+uint16_t pwmFrequency(Io::Base *io = Base::ioInstance);
 }  // namespace Io
 };  // namespace Supla
 

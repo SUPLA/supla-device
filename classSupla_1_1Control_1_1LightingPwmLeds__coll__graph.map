@@ -1,9 +1,9 @@
 <map id="Supla::Control::LightingPwmLeds" name="Supla::Control::LightingPwmLeds">
 <area shape="rect" id="Node000001" title=" " alt="" coords="1617,487,1770,527"/>
-<area shape="poly" id="edge31_Node000001_Node000001" title=" " alt="" coords="1675,469,1682,463,1694,460,1705,462,1712,469,1714,486,1709,486,1708,471,1702,467,1694,465,1684,467,1679,473"/>
+<area shape="poly" id="edge30_Node000001_Node000001" title=" " alt="" coords="1675,469,1682,463,1694,460,1705,462,1712,469,1714,486,1709,486,1708,471,1702,467,1694,465,1684,467,1679,473"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1LightingPwmBase.html" title=" " alt="" coords="1414,244,1568,285"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="1521,295,1677,484,1673,488,1517,299"/>
-<area shape="poly" id="edge28_Node000002_Node000002" title=" " alt="" coords="1472,227,1479,220,1491,217,1502,220,1510,226,1512,243,1506,244,1505,228,1500,224,1491,223,1482,225,1476,230"/>
+<area shape="poly" id="edge27_Node000002_Node000002" title=" " alt="" coords="1472,227,1479,220,1491,217,1502,220,1510,226,1512,243,1506,244,1505,228,1500,224,1491,223,1482,225,1476,230"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="1076,301,1230,327"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="1245,298,1414,273,1414,278,1246,303"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1ElementWithChannelActions.html" title=" " alt="" coords="772,303,952,343"/>
@@ -29,7 +29,7 @@
 <area shape="rect" id="Node000011" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="791,194,934,220"/>
 <area shape="poly" id="edge13_Node000002_Node000011" title=" " alt="" coords="949,203,1151,209,1271,218,1391,234,1423,241,1422,246,1390,239,1271,223,1151,214,949,209"/>
 <area shape="rect" id="Node000017" href="$classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="1080,252,1226,277"/>
-<area shape="poly" id="edge27_Node000017_Node000011" title=" " alt="" coords="947,221,1085,248,1084,254,946,226"/>
+<area shape="poly" id="edge26_Node000017_Node000011" title=" " alt="" coords="947,221,1085,248,1084,254,946,226"/>
 <area shape="rect" id="Node000012" href="$structSupla_1_1Control_1_1LightingPwmBase_1_1RequestedState.html" title=" " alt="" coords="1063,351,1243,391"/>
 <area shape="poly" id="edge14_Node000002_Node000012" title=" " alt="" coords="1258,355,1324,341,1389,321,1426,303,1459,283,1462,287,1429,308,1391,326,1325,346,1259,360"/>
 <area shape="rect" id="Node000013" href="$structSupla_1_1Control_1_1LightingPwmBase_1_1LastNonZeroState.html" title=" " alt="" coords="1056,416,1250,457"/>
@@ -47,9 +47,8 @@
 <area shape="rect" id="Node000020" href="$structSupla_1_1Io_1_1IoPin.html" title=" " alt="" coords="179,533,286,559"/>
 <area shape="poly" id="edge24_Node000019_Node000020" title=" " alt="" coords="235,517,250,451,277,363,297,317,322,272,352,230,387,193,406,181,409,185,391,197,356,233,327,275,302,319,282,365,255,452,241,518"/>
 <area shape="rect" id="Node000022" href="$structSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState.html" title=" " alt="" coords="589,552,746,593"/>
-<area shape="poly" id="edge30_Node000022_Node000020" title=" " alt="" coords="301,547,589,565,589,570,301,553"/>
+<area shape="poly" id="edge29_Node000022_Node000020" title=" " alt="" coords="301,547,589,565,589,570,301,553"/>
 <area shape="rect" id="Node000021" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="5,533,113,559"/>
 <area shape="poly" id="edge25_Node000020_Node000021" title=" " alt="" coords="128,543,178,543,178,548,128,548"/>
-<area shape="poly" id="edge26_Node000021_Node000021" title=" " alt="" coords="42,515,48,509,59,506,70,509,76,515,75,533,70,532,71,517,67,513,59,512,50,513,46,519"/>
-<area shape="poly" id="edge29_Node000001_Node000022" title=" " alt="" coords="761,549,876,530,940,523,1004,520,1492,520,1616,513,1617,519,1492,526,1004,526,941,528,877,535,761,554"/>
+<area shape="poly" id="edge28_Node000001_Node000022" title=" " alt="" coords="761,549,876,530,940,523,1004,520,1492,520,1616,513,1617,519,1492,526,1004,526,941,528,877,535,761,554"/>
 </map>

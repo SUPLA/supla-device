@@ -1,12 +1,11 @@
 <map id="Supla::Io::MCP23017" name="Supla::Io::MCP23017">
-<area shape="rect" id="Node000001" title=" " alt="" coords="212,120,354,145"/>
-<area shape="poly" id="edge5_Node000001_Node000001" title=" " alt="" coords="371,124,380,132,372,141,354,144,354,139,370,136,375,133,367,128"/>
+<area shape="rect" id="Node000001" title=" " alt="" coords="120,120,262,145"/>
+<area shape="poly" id="edge4_Node000001_Node000001" title=" " alt="" coords="279,124,288,132,280,141,262,144,262,139,278,136,283,133,275,128"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="5,14,113,40"/>
-<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="100,44,258,117,256,122,98,49"/>
-<area shape="poly" id="edge2_Node000002_Node000002" title=" " alt="" coords="129,16,136,20,139,27,131,37,114,40,113,35,129,32,134,27,132,24,127,21"/>
-<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="229,14,337,40"/>
-<area shape="poly" id="edge3_Node000001_Node000003" title=" " alt="" coords="286,55,286,120,280,120,280,55"/>
-<area shape="poly" id="edge4_Node000003_Node000003" title=" " alt="" coords="353,16,360,20,363,27,355,37,338,40,337,35,353,32,358,27,356,24,351,21"/>
-<area shape="rect" id="Node000004" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="434,14,529,40"/>
-<area shape="poly" id="edge6_Node000001_Node000004" title=" " alt="" coords="446,50,307,122,305,117,444,45"/>
+<area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="88,47,177,117,174,121,85,52"/>
+<area shape="rect" id="Node000003" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="137,14,245,40"/>
+<area shape="poly" id="edge2_Node000001_Node000003" title=" " alt="" coords="194,55,194,120,188,120,188,55"/>
+<area shape="poly" id="edge3_Node000003_Node000003" title=" " alt="" coords="261,16,268,20,271,27,263,37,246,40,245,35,261,32,266,27,264,24,259,21"/>
+<area shape="rect" id="Node000004" href="$classSupla_1_1Mutex.html" title=" " alt="" coords="342,14,437,40"/>
+<area shape="poly" id="edge5_Node000001_Node000004" title=" " alt="" coords="354,50,215,122,213,117,352,45"/>
 </map>

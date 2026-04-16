@@ -119,7 +119,7 @@ $(function() {
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>  <span class="keyword">explicit</span> PCA9685(uint8_t address = 0x40,</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>                   <a class="code hl_class" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *mutex = <span class="keyword">nullptr</span>,</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                   TwoWire *wire = &amp;Wire)</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>      : <a class="code hl_class" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a>(<span class="keyword">false</span>), pca_(address, wire), mutex_(mutex) {</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>      : <a class="code hl_class" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a>(), pca_(address, wire), mutex_(mutex) {</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">if</span> (!pca_.begin()) {</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>      SUPLA_LOG_ERROR(<span class="stringliteral">&quot;Unable to find PCA9685 at address 0x%x&quot;</span>, address);</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    } <span class="keywordflow">else</span> {</div>

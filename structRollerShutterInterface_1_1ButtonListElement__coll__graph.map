@@ -3,7 +3,7 @@
 <area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="296,388,441,414"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="367,429,362,485,363,545,368,596,363,596,357,546,356,485,362,428"/>
 <area shape="rect" id="Node000010" href="$structSupla_1_1Control_1_1RollerShutterInterface_1_1ButtonListElement.html" title=" " alt="" coords="416,485,601,525"/>
-<area shape="poly" id="edge12_Node000010_Node000002" title=" " alt="" coords="399,421,483,482,480,487,396,425"/>
+<area shape="poly" id="edge11_Node000010_Node000002" title=" " alt="" coords="399,421,483,482,480,487,396,425"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="182,313,368,339"/>
 <area shape="poly" id="edge2_Node000002_Node000003" title=" " alt="" coords="304,346,355,386,352,390,301,350"/>
 <area shape="rect" id="Node000004" href="$classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice." alt="" coords="5,208,113,233"/>
@@ -17,9 +17,8 @@
 <area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="455,143,455,207,450,207,450,143"/>
 <area shape="rect" id="Node000008" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="399,5,506,31"/>
 <area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="455,46,455,101,450,101,450,46"/>
-<area shape="poly" id="edge9_Node000008_Node000008" title=" " alt="" coords="523,9,533,18,524,27,507,30,506,24,522,22,527,18,520,13"/>
 <area shape="rect" id="Node000009" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="392,313,534,339"/>
-<area shape="poly" id="edge10_Node000002_Node000009" title=" " alt="" coords="437,350,385,390,382,386,434,346"/>
-<area shape="poly" id="edge11_Node000001_Node000010" title=" " alt="" coords="473,537,395,598,392,594,470,533"/>
-<area shape="poly" id="edge13_Node000010_Node000010" title=" " alt="" coords="618,496,628,505,620,513,602,517,601,512,617,509,622,505,614,500"/>
+<area shape="poly" id="edge9_Node000002_Node000009" title=" " alt="" coords="437,350,385,390,382,386,434,346"/>
+<area shape="poly" id="edge10_Node000001_Node000010" title=" " alt="" coords="473,537,395,598,392,594,470,533"/>
+<area shape="poly" id="edge12_Node000010_Node000010" title=" " alt="" coords="618,496,628,505,620,513,602,517,601,512,617,509,622,505,614,500"/>
 </map>

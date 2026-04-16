@@ -119,7 +119,7 @@ $(function() {
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>                   <a class="code hl_class" href="classSupla_1_1Mutex.html">Supla::Mutex</a> *mutex = <span class="keyword">nullptr</span>,</div>
 <div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>                   uint8_t initialPinState = 0xFF,</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                   TwoWire *wire = &amp;Wire)</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>      : <a class="code hl_class" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a>(<span class="keyword">false</span>), pcf_(address, wire), mutex_(mutex) {</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>      : <a class="code hl_class" href="classSupla_1_1Io_1_1Base.html">Supla::Io::Base</a>(), pcf_(address, wire), mutex_(mutex) {</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordflow">if</span> (!pcf_.begin(initialPinState)) {</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>      SUPLA_LOG_ERROR(<span class="stringliteral">&quot;Unable to find PCF8574 at address 0x%x&quot;</span>, address);</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    } <span class="keywordflow">else</span> {</div>

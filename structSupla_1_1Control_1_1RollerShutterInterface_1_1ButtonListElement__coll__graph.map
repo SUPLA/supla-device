@@ -1,6 +1,6 @@
 <map id="Supla::Control::RollerShutterInterface::ButtonListElement" name="Supla::Control::RollerShutterInterface::ButtonListElement">
 <area shape="rect" id="Node000001" title=" " alt="" coords="276,485,461,525"/>
-<area shape="poly" id="edge11_Node000001_Node000001" title=" " alt="" coords="478,496,488,505,480,513,462,517,461,512,477,509,482,505,474,500"/>
+<area shape="poly" id="edge10_Node000001_Node000001" title=" " alt="" coords="478,496,488,505,480,513,462,517,461,512,477,509,482,505,474,500"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1Button.html" title=" " alt="" coords="296,388,441,414"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="371,429,371,484,366,484,366,429"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1Control_1_1SimpleButton.html" title=" " alt="" coords="182,313,368,339"/>
@@ -16,7 +16,6 @@
 <area shape="poly" id="edge7_Node000006_Node000007" title=" " alt="" coords="455,143,455,207,450,207,450,143"/>
 <area shape="rect" id="Node000008" href="$classSupla_1_1Io_1_1Base.html" title=" " alt="" coords="399,5,506,31"/>
 <area shape="poly" id="edge8_Node000007_Node000008" title=" " alt="" coords="455,46,455,101,450,101,450,46"/>
-<area shape="poly" id="edge9_Node000008_Node000008" title=" " alt="" coords="523,9,533,18,524,27,507,30,506,24,522,22,527,18,520,13"/>
 <area shape="rect" id="Node000009" href="$classSupla_1_1ActionHandler.html" title=" " alt="" coords="392,313,534,339"/>
-<area shape="poly" id="edge10_Node000002_Node000009" title=" " alt="" coords="437,350,385,390,382,386,434,346"/>
+<area shape="poly" id="edge9_Node000002_Node000009" title=" " alt="" coords="437,350,385,390,382,386,434,346"/>
 </map>

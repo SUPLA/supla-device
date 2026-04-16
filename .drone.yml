@@ -119,6 +119,7 @@ steps:
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./Fronius/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./GarageParkingAssistLight/
   - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./HX711_Weight_sensor/
+  - arduino-cli compile --fqbn esp8266:esp8266:generic --optimize-for-debug --export-binaries --warnings all ./SimpleRelay/
 
 - name: arduino_esp8266_compilation_check_part_2
   image: devel/arduino-cli
@@ -205,6 +206,7 @@ steps:
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./DHT/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./Fronius/
   - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./HX711_Weight_sensor/
+  - arduino-cli compile --fqbn esp32:esp32:esp32wrover --optimize-for-debug --build-path /drone/arduino_cache  --board-options PartitionScheme=huge_app --export-binaries --warnings all ./SimpleRelay/
 
 - name: arduino_esp32_compilation_check_part_5
   image: devel/arduino-cli

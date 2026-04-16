@@ -39,7 +39,7 @@ class MCP23017 : public Supla::Io::Base, Supla::Element {
                     Supla::Mutex *mutex = nullptr,
                     TwoWire *wire = &Wire,
                     bool pullUp = false)
-      : Supla::Io::Base(false), mcp_(address, wire), mutex_(mutex) {
+      : Supla::Io::Base(), mcp_(address, wire), mutex_(mutex) {
     if (!mcp_.begin(pullUp)) {
       SUPLA_LOG_ERROR("Unable to find MCP23017 at address: 0x%x", address);
     } else {

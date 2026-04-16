@@ -43,7 +43,7 @@ class MultiDsSensor : public Thermometer {
   explicit MultiDsSensor(int subDeviceId,
       uint8_t *deviceAddress, bool useSubDevices,
       Supla::Sensor::MultiDsHandlerBase *handler) :
-          subDeviceId(subDeviceId), handler(handler) {
+          handler(handler), subDeviceId(subDeviceId) {
     if (useSubDevices) {
       channel.setSubDeviceId(subDeviceId);
     }
@@ -55,7 +55,7 @@ class MultiDsSensor : public Thermometer {
   double getValue() override;
 
   void saveSensorConfig();
-  void purgeConfig();
+  void purgeConfig() override;
 
   uint8_t *getAddress() {
     return address;
@@ -74,7 +74,7 @@ class MultiDsSensor : public Thermometer {
 
  protected:
   Supla::Sensor::MultiDsHandlerBase *handler;
-  DeviceAddress address;
+  DeviceAddress address = {};
 
  private:
   int subDeviceId = -1;

@@ -35,14 +35,14 @@ int &LedcTimerCounter() {
 
 namespace Supla::Io {
 
-LedcIo::LedcIo() : Base(false), ledcTimerId(LedcTimerCounter()++) {
+LedcIo::LedcIo() : Base(), ledcTimerId(LedcTimerCounter()++) {
   memset(pinToChannel, -1, sizeof(pinToChannel));
   if (ledcTimerId < 0 || ledcTimerId >= MaxLedcTimers) {
     SUPLA_LOG_ERROR("[LEDC] timer %d out of range", ledcTimerId);
   }
 }
 
-LedcIo::LedcIo(int ledcTimerId) : Base(false), ledcTimerId(ledcTimerId) {
+LedcIo::LedcIo(int ledcTimerId) : Base(), ledcTimerId(ledcTimerId) {
   memset(pinToChannel, -1, sizeof(pinToChannel));
   if (ledcTimerId < 0 || ledcTimerId >= MaxLedcTimers) {
     SUPLA_LOG_ERROR("[LEDC] timer %d out of range", ledcTimerId);

@@ -38,7 +38,7 @@ class PCF8574 : public Supla::Io::Base {
                    Supla::Mutex *mutex = nullptr,
                    uint8_t initialPinState = 0xFF,
                    TwoWire *wire = &Wire)
-      : Supla::Io::Base(false), pcf_(address, wire), mutex_(mutex) {
+      : Supla::Io::Base(), pcf_(address, wire), mutex_(mutex) {
     if (!pcf_.begin(initialPinState)) {
       SUPLA_LOG_ERROR("Unable to find PCF8574 at address 0x%x", address);
     } else {

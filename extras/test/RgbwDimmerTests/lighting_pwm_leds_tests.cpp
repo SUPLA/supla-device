@@ -54,7 +54,7 @@ class LightingPwmLedsForTest : public Supla::Control::LightingPwmLeds {
 class ResolvedPwmIo : public Supla::Io::Base {
  public:
   ResolvedPwmIo(uint8_t resolutionBits, uint32_t maxDuty)
-      : Base(false), resolutionBits(resolutionBits), maxDuty(maxDuty) {}
+      : Base(), resolutionBits(resolutionBits), maxDuty(maxDuty) {}
 
   void customPinMode(int, uint8_t, uint8_t) override {}
   void customDigitalWrite(int, uint8_t, uint8_t) override {}

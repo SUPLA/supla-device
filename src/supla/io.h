@@ -35,9 +35,7 @@ namespace Io {
 
 class Base {
  public:
-  static Base *ioInstance;
-
-  explicit Base(bool useAsSingleton = true);
+  Base();
   virtual ~Base();
   virtual bool isReady() const;
 
@@ -64,67 +62,66 @@ class Base {
   virtual uint8_t customPinToInterrupt(uint8_t pin);
 
  private:
-  bool useAsSingleton = true;
   mutable uint8_t pwmResolutionBitsValue;
   mutable uint16_t pwmFrequencyHzValue;
 };
 
-void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io = Base::ioInstance);
-int digitalRead(uint8_t pin, Supla::Io::Base *io = Base::ioInstance);
+void pinMode(uint8_t pin, uint8_t mode, Supla::Io::Base *io = nullptr);
+int digitalRead(uint8_t pin, Supla::Io::Base *io = nullptr);
 void digitalWrite(uint8_t pin,
                   uint8_t val,
-                  Supla::Io::Base *io = Base::ioInstance);
+                  Supla::Io::Base *io = nullptr);
 void analogWrite(uint8_t pin,
                  int value,
-                 Supla::Io::Base *io = Base::ioInstance);
-int analogRead(uint8_t pin, Supla::Io::Base *io = Base::ioInstance);
+                 Supla::Io::Base *io = nullptr);
+int analogRead(uint8_t pin, Supla::Io::Base *io = nullptr);
 unsigned int pulseIn(uint8_t pin,
                      uint8_t value,
                      uint64_t timeoutMicro,
-                     Supla::Io::Base *io = Base::ioInstance);
+                     Supla::Io::Base *io = nullptr);
 
 void pinMode(int channelNumber,
              uint8_t pin,
              uint8_t mode,
-             Supla::Io::Base *io = Base::ioInstance);
+             Supla::Io::Base *io = nullptr);
 int digitalRead(int channelNumber,
                 uint8_t pin,
-                Supla::Io::Base *io = Base::ioInstance);
+                Supla::Io::Base *io = nullptr);
 void digitalWrite(int channelNumber,
                   uint8_t pin,
                   uint8_t val,
-                  Supla::Io::Base *io = Base::ioInstance);
+                  Supla::Io::Base *io = nullptr);
 void analogWrite(int channelNumber,
                  uint8_t pin,
                  int value,
-                 Supla::Io::Base *io = Base::ioInstance);
+                 Supla::Io::Base *io = nullptr);
 int analogRead(int channelNumber,
                uint8_t pin,
-               Supla::Io::Base *io = Base::ioInstance);
+               Supla::Io::Base *io = nullptr);
 unsigned int pulseIn(int channelNumber,
                      uint8_t pin,
                      uint8_t value,
                      uint64_t timeoutMicro,
-                     Supla::Io::Base *io = Base::ioInstance);
+                     Supla::Io::Base *io = nullptr);
 
 void attachInterrupt(uint8_t pin,
                      void (*func)(void),
                      int mode,
-                     Io::Base *io = Base::ioInstance);
-void detachInterrupt(uint8_t pin, Io::Base *io = Base::ioInstance);
-uint8_t pinToInterrupt(uint8_t pin, Io::Base *io = Base::ioInstance);
+                     Io::Base *io = nullptr);
+void detachInterrupt(uint8_t pin, Io::Base *io = nullptr);
+uint8_t pinToInterrupt(uint8_t pin, Io::Base *io = nullptr);
 
 void setPwmFrequency(uint8_t pin,
                      uint16_t pwmFrequency,
-                     Io::Base *io = Base::ioInstance);
+                     Io::Base *io = nullptr);
 void setPwmResolutionBits(uint8_t pin,
                           uint8_t resolutionBits,
-                          Io::Base *io = Base::ioInstance);
-uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io = Base::ioInstance);
-uint32_t pwmMaxValue(uint8_t pin, Io::Base *io = Base::ioInstance);
-uint8_t pwmResolutionBits(Io::Base *io = Base::ioInstance);
-uint32_t pwmMaxValue(Io::Base *io = Base::ioInstance);
-uint16_t pwmFrequency(Io::Base *io = Base::ioInstance);
+                          Io::Base *io = nullptr);
+uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io = nullptr);
+uint32_t pwmMaxValue(uint8_t pin, Io::Base *io = nullptr);
+uint8_t pwmResolutionBits(Io::Base *io = nullptr);
+uint32_t pwmMaxValue(Io::Base *io = nullptr);
+uint16_t pwmFrequency(Io::Base *io = nullptr);
 }  // namespace Io
 };  // namespace Supla
 

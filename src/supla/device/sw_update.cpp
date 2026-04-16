@@ -28,6 +28,7 @@ Supla::Device::SwUpdate *Supla::Device::SwUpdate::Create(
     SuplaDeviceClass *sdc, const char *newUrl, Supla::SwUpdateMode mode) {
   (void)(newUrl);
   (void)(sdc);
+  (void)(mode);
   return nullptr;
 }
 #endif

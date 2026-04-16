@@ -131,7 +131,6 @@ void Supla::LittleFsConfig::commit() {
   }
 
   auto files = {ConfigFileName, BackupConfigFileName};
-  bool result = false;
 
   for (auto file : files) {
     SUPLA_LOG_DEBUG("LittleFsConfig: writing to file \"%s\"", file);

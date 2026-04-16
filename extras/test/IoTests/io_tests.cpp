@@ -36,7 +36,7 @@ constexpr uint16_t ExpectedDefaultPwmFrequencyHz() {
 class PwmStateIo : public Supla::Io::Base {
  public:
   PwmStateIo(uint8_t defaultResolutionBits, uint16_t defaultFrequencyHz)
-      : Base(false),
+      : Base(),
         frequencyHz(defaultFrequencyHz) {
     resolutionBits.fill(defaultResolutionBits);
   }
@@ -178,7 +178,7 @@ TEST(IoTests, IoPinDefaultsAndFlags) {
 }
 
 TEST(IoTests, IoPinDelegatesToCustomIo) {
-  SuplaIoMock ioMock(true);
+  SuplaIoMock ioMock;
   ::testing::InSequence seq;
   Supla::Io::IoPin pin(12, &ioMock);
 
@@ -203,7 +203,7 @@ TEST(IoTests, IoPinDelegatesToCustomIo) {
 }
 
 TEST(IoTests, IoPinConfigureAnalogOutputDelegatesToCustomIo) {
-  SuplaIoMock ioMock(true);
+  SuplaIoMock ioMock;
   Supla::Io::IoPin pin(15, &ioMock);
 
   EXPECT_CALL(ioMock, customConfigureAnalogOutput(5, 15, false));
@@ -212,7 +212,7 @@ TEST(IoTests, IoPinConfigureAnalogOutputDelegatesToCustomIo) {
 }
 
 TEST(IoTests, IoPinConfigureAnalogOutputPassesInvertFlag) {
-  SuplaIoMock ioMock(true);
+  SuplaIoMock ioMock;
   Supla::Io::IoPin pin(15, &ioMock);
   pin.setActiveHigh(false);
 
@@ -222,7 +222,7 @@ TEST(IoTests, IoPinConfigureAnalogOutputPassesInvertFlag) {
 }
 
 TEST(IoTests, IoPinActiveLowInvertsReadAndWriteLevels) {
-  SuplaIoMock ioMock(true);
+  SuplaIoMock ioMock;
   ::testing::InSequence seq;
   Supla::Io::IoPin pin(13, &ioMock);
 
@@ -322,7 +322,7 @@ TEST(IoTests, IoPinUsesCustomIoPwmDefaultsAndCanOverrideThem) {
 
 TEST(IoTests, OperationsWithCustomIoInteface) {
   DigitalInterfaceMock hwInterfaceMock;
-  SuplaIoMock ioMock(true);
+  SuplaIoMock ioMock;
 
   EXPECT_CALL(hwInterfaceMock, pinMode).Times(0);
   EXPECT_CALL(hwInterfaceMock, digitalWrite).Times(0);
@@ -332,14 +332,14 @@ TEST(IoTests, OperationsWithCustomIoInteface) {
   EXPECT_CALL(ioMock, customDigitalRead(-1, 11)).WillOnce(Return(HIGH));
   EXPECT_CALL(ioMock, customDigitalWrite(-1, 13, HIGH));
 
-  Supla::Io::pinMode(12, INPUT);
-  EXPECT_EQ(Supla::Io::digitalRead(11), HIGH);
-  Supla::Io::digitalWrite(13, HIGH);
+  Supla::Io::pinMode(12, INPUT, &ioMock);
+  EXPECT_EQ(Supla::Io::digitalRead(11, &ioMock), HIGH);
+  Supla::Io::digitalWrite(13, HIGH, &ioMock);
 }
 
 TEST(IoTests, OperationsWithCustomIoIntefaceWithChannel) {
   DigitalInterfaceMock hwInterfaceMock;
-  SuplaIoMock ioMock(true);
+  SuplaIoMock ioMock;
 
   // Custom io interface should not call arduino's methods
   EXPECT_CALL(hwInterfaceMock, pinMode).Times(0);
@@ -350,7 +350,7 @@ TEST(IoTests, OperationsWithCustomIoIntefaceWithChannel) {
   EXPECT_CALL(ioMock, customDigitalRead(6, 11)).WillOnce(Return(HIGH));
   EXPECT_CALL(ioMock, customDigitalWrite(6, 13, HIGH));
 
-  Supla::Io::pinMode(6, 12, INPUT);
-  EXPECT_EQ(Supla::Io::digitalRead(6, 11), HIGH);
-  Supla::Io::digitalWrite(6, 13, HIGH);
+  Supla::Io::pinMode(6, 12, INPUT, &ioMock);
+  EXPECT_EQ(Supla::Io::digitalRead(6, 11, &ioMock), HIGH);
+  Supla::Io::digitalWrite(6, 13, HIGH, &ioMock);
 }

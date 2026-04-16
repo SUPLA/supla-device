@@ -19,11 +19,12 @@
 #include "supla_mcp23008.h"
 
 #include <supla/log_wrapper.h>
+#include <stdio.h>
 
 using Supla::MCP23008;
 
 MCP23008::MCP23008(Supla::I2CDriver *driver, uint8_t address, bool initDefaults)
-    : Supla::Io::Base(false),
+    : Supla::Io::Base(),
       driver(driver),
       address(address),
       initDefaults(initDefaults) {

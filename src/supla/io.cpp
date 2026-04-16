@@ -219,7 +219,9 @@ void setPwmFrequency(uint8_t pin, uint16_t pwmFrequency, Io::Base *io) {
     io->customSetPwmFrequency(pwmFrequency);
     return;
   }
-#if defined(ARDUINO_ARCH_ESP8266) || defined(ARDUINO_ARCH_ESP32)
+#if defined(ARDUINO_ARCH_ESP8266)
+  analogWriteFreq(pwmFrequency);
+#elif defined(ARDUINO_ARCH_ESP32)
   analogWriteFrequency(pin, pwmFrequency);
 #else
   (void)(pin);
@@ -275,22 +277,12 @@ uint16_t pwmFrequency(Io::Base *io) {
   return DefaultPwmFrequencyHz();
 }
 
-Base::Base(bool useAsSingleton)
-    : useAsSingleton(useAsSingleton),
-      pwmResolutionBitsValue(DefaultAnalogWriteResolutionBits()),
+Base::Base()
+    : pwmResolutionBitsValue(DefaultAnalogWriteResolutionBits()),
       pwmFrequencyHzValue(DefaultPwmFrequencyHz()) {
-  if (useAsSingleton) {
-    if (ioInstance != nullptr) {
-      delete ioInstance;
-    }
-    ioInstance = this;
-  }
 }
 
 Base::~Base() {
-  if (useAsSingleton) {
-    ioInstance = nullptr;
-  }
 }
 
 bool Base::isReady() const {
@@ -356,8 +348,6 @@ void Base::customDetachInterrupt(uint8_t) {
 uint8_t Base::customPinToInterrupt(uint8_t) {
   return 0;
 }
-
-Base *Base::ioInstance = nullptr;
 
 }  // namespace Io
 }  // namespace Supla

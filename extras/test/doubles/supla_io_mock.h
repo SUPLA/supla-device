@@ -22,8 +22,7 @@
 
 class SuplaIoMock : public Supla::Io::Base {
  public:
-  explicit SuplaIoMock(bool useAsSingleton = false)
-      : Supla::Io::Base(useAsSingleton) {
+  SuplaIoMock() : Supla::Io::Base() {
     EXPECT_CALL(*this, customPwmResolutionBits(testing::_))
         .Times(testing::AnyNumber())
         .WillRepeatedly(testing::Return(10));

@@ -38,7 +38,7 @@ class PCA9685 : public Supla::Io::Base {
   explicit PCA9685(uint8_t address = 0x40,
                    Supla::Mutex *mutex = nullptr,
                    TwoWire *wire = &Wire)
-      : Supla::Io::Base(false), pca_(address, wire), mutex_(mutex) {
+      : Supla::Io::Base(), pca_(address, wire), mutex_(mutex) {
     if (!pca_.begin()) {
       SUPLA_LOG_ERROR("Unable to find PCA9685 at address 0x%x", address);
     } else {

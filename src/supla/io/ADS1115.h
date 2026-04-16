@@ -39,7 +39,7 @@ class ADS1115 : public Supla::Io::Base {
                    Supla::Mutex *mutex = nullptr,
                    TwoWire *wire = &Wire,
                    uint8_t dataRrate = 7)
-      : Supla::Io::Base(false), ads_(address, wire), mutex_(mutex) {
+      : Supla::Io::Base(), ads_(address, wire), mutex_(mutex) {
     if (!ads_.begin()) {
       SUPLA_LOG_ERROR("Unable to find ADS1115 at address 0x%x", address);
     } else {

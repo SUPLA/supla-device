@@ -16,8 +16,8 @@
 
 #include "virtual_binary.h"
 
-#include <supla/storage/storage.h>
 #include <supla/actions.h>
+#include <supla/storage/storage.h>
 #include <supla/time.h>
 
 namespace Supla {
@@ -46,11 +46,13 @@ void VirtualBinary::onInit() {
 }
 
 void VirtualBinary::iterateAlways() {
-  uint16_t timeoutDs = getTimeoutDs();
-  if (useConfiguredTimeout && channel.getValueBool() && timeoutDs > 0) {
-    uint32_t timeoutMs = static_cast<uint32_t>(timeoutDs) * 100;
-    if (millis() - stateChangeTimeMs > timeoutMs) {
-      setLogicalState(false, true);
+  if (useConfiguredTimeout) {
+    uint16_t timeoutDs = getTimeoutDs();
+    if (timeoutDs > 0 && channel.getValueBool()) {
+      uint32_t timeoutMs = static_cast<uint32_t>(timeoutDs) * 100;
+      if (millis() - stateChangeTimeMs > timeoutMs) {
+        setLogicalState(false, true);
+      }
     }
   }
   BinaryBase::iterateAlways();

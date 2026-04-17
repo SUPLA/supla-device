@@ -19,10 +19,10 @@
 #ifndef SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_
 #define SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_
 
-#include "lighting_pwm_base.h"
-
 #include <stdint.h>
 #include <supla/io.h>
+
+#include "lighting_pwm_base.h"
 
 namespace Supla {
 namespace Control {
@@ -59,6 +59,7 @@ class LightingPwmLeds : public LightingPwmBase {
     int32_t lastSourceValue = -1;
     int32_t lastDutyValue = -1;
   };
+  bool isOutputSharedWithParent(const OutputState &output) const;
 
   OutputState outputs[kMaxOutputs];
   int tryCounter = 0;

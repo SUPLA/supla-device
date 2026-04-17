@@ -135,9 +135,23 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
   }
 }
 
+bool LightingPwmLeds::isOutputSharedWithParent(
+    const OutputState &output) const {
+  if (!hasParent() || parentPwm == nullptr || !output.pin.isSet()) {
+    return false;
+  }
+
+  for (const auto &parentOutput : parentPwm->outputs) {
+    if (parentOutput.pin.isSet() && parentOutput.pin == output.pin) {
+      return true;
+    }
+  }
+  return false;
+}
+
 void LightingPwmLeds::applyPwmResolutionBitsToOutputs() {
   for (auto &output : outputs) {
-    if (output.pin.isSet()) {
+    if (output.pin.isSet() && !isOutputSharedWithParent(output)) {
       output.pin.setPwmResolutionBits(DefaultPwmResolutionBits);
     }
   }
@@ -148,7 +162,7 @@ void LightingPwmLeds::applyPwmFrequencyToOutputs() {
   Supla::Io::Base *configuredIo[kMaxOutputs] = {};
   int configuredIoCount = 0;
   for (auto &output : outputs) {
-    if (output.pin.isSet()) {
+    if (output.pin.isSet() && !isOutputSharedWithParent(output)) {
       bool alreadyConfigured = false;
       for (int i = 0; i < configuredIoCount; i++) {
         if (configuredIo[i] == output.pin.io) {
@@ -191,15 +205,15 @@ void LightingPwmLeds::onInit() {
   if (hasParent()) {
     SUPLA_LOG_DEBUG("Light[%d]: initialize parent PWM", getChannelNumber());
     parentPwm->onInit();
-    LightingPwmBase::onInit();
-    return;
   }
 
   applyPwmFrequencyToOutputs();
 
   for (auto &output : outputs) {
-    output.pin.configureAnalogOutput();
-    output.pin.pinMode();
+    if (output.pin.isSet() && !isOutputSharedWithParent(output)) {
+      output.pin.configureAnalogOutput();
+      output.pin.pinMode();
+    }
   }
 
   LightingPwmBase::onInit();

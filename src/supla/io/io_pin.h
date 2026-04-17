@@ -95,6 +95,13 @@ struct IoPin {
     return mode;
   }
 
+  bool operator==(const IoPin &other) const {
+    return io == other.io && getPin() == other.getPin();
+  }
+  bool operator!=(const IoPin &other) const {
+    return !(*this == other);
+  }
+
   void setPwmResolutionBits(uint8_t resolutionBits);
   void setPwmFrequency(uint32_t frequencyHz);
   void configureAnalogOutput(int channelNumber = -1) const;

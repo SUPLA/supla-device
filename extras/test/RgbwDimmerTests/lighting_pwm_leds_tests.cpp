@@ -273,6 +273,63 @@ TEST(RgbwPwmBaseTests,
   pwm.onInit();
 }
 
+TEST(RgbwPwmBaseTests, ParentChildMixesCustomAndDefaultIoPerPin) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  DigitalInterfaceMock hwInterfaceMock;
+  SuplaIoMock io1;
+  SuplaIoMock io2;
+  SuplaIoMock io3;
+  SuplaIoMock io4;
+  SuplaIoMock io5;
+
+  EXPECT_CALL(io1, customSetPwmResolutionBits(1, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(2, 10)).Times(1);
+  EXPECT_CALL(io3, customSetPwmResolutionBits(3, 10)).Times(1);
+  EXPECT_CALL(io4, customSetPwmResolutionBits(4, 10)).Times(1);
+  EXPECT_CALL(io5, customSetPwmResolutionBits(5, 10)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(6, 10)).Times(1);
+
+  EXPECT_CALL(io1, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io2, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io3, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io4, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io5, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteFrequency(6, 500)).Times(1);
+
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 1, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 2, false)).Times(1);
+  EXPECT_CALL(io3, customConfigureAnalogOutput(-1, 3, false)).Times(1);
+  EXPECT_CALL(io4, customConfigureAnalogOutput(-1, 4, false)).Times(1);
+  EXPECT_CALL(io5, customConfigureAnalogOutput(-1, 5, false)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, pinMode(6, OUTPUT)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 1, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 2, OUTPUT)).Times(1);
+  EXPECT_CALL(io3, customPinMode(-1, 3, OUTPUT)).Times(1);
+  EXPECT_CALL(io4, customPinMode(-1, 4, OUTPUT)).Times(1);
+  EXPECT_CALL(io5, customPinMode(-1, 5, OUTPUT)).Times(1);
+
+  LightingPwmLedsForTest parent(nullptr,
+                                Supla::Io::IoPin(1, &io1),
+                                Supla::Io::IoPin(2, &io2),
+                                Supla::Io::IoPin(3, &io3),
+                                Supla::Io::IoPin(4, &io4),
+                                Supla::Io::IoPin(5, &io5));
+  LightingPwmLedsForTest child(&parent,
+                               Supla::Io::IoPin(2, &io2),
+                               Supla::Io::IoPin(3, &io3),
+                               Supla::Io::IoPin(4, &io4),
+                               Supla::Io::IoPin(5, &io5),
+                               Supla::Io::IoPin(6));
+
+  parent.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
+  child.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
+
+  time.advance(1000);
+  parent.onInit();
+  child.onInit();
+}
+
 TEST(RgbwPwmBaseTests, InitWithoutCustomIoKeepsDefaultPwmState) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;
@@ -326,9 +383,9 @@ TEST(RgbwPwmBaseTests, DisabledChildDoesNotReconfigureParentOutputs) {
   child.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
 
   EXPECT_CALL(io, customSetPwmResolutionBits(27, 10)).Times(1);
-  EXPECT_CALL(io, customSetPwmResolutionBits(26, 10)).Times(2);
-  EXPECT_CALL(io, customSetPwmResolutionBits(13, 10)).Times(2);
-  EXPECT_CALL(io, customSetPwmResolutionBits(14, 10)).Times(2);
+  EXPECT_CALL(io, customSetPwmResolutionBits(26, 10)).Times(1);
+  EXPECT_CALL(io, customSetPwmResolutionBits(13, 10)).Times(1);
+  EXPECT_CALL(io, customSetPwmResolutionBits(14, 10)).Times(1);
   EXPECT_CALL(io, customSetPwmFrequency(500)).Times(1);
   EXPECT_CALL(io, customConfigureAnalogOutput(-1, 27, false)).Times(1);
   EXPECT_CALL(io, customConfigureAnalogOutput(-1, 26, false)).Times(1);

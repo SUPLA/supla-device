@@ -99,10 +99,10 @@ $(function() {
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#ifndef SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_</span></div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#define SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &quot;lighting_pwm_base.h&quot;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;stdint.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;supla/io.h&gt;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;stdint.h&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;supla/io.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &quot;lighting_pwm_base.h&quot;</span></div>
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span>Supla {</div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span>Control {</div>
@@ -142,24 +142,25 @@ $(function() {
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    int32_t lastDutyValue = -1;</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>  };</div>
 </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>  <a class="code hl_struct" href="structSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState.html">OutputState</a> outputs[kMaxOutputs];</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>  <span class="keywordtype">int</span> tryCounter = 0;</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>  LightingPwmLeds *parentPwm = <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>};</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>  <span class="keywordtype">bool</span> isOutputSharedWithParent(<span class="keyword">const</span> <a class="code hl_struct" href="structSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState.html">OutputState</a> &amp;output) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>  <a class="code hl_struct" href="structSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState.html">OutputState</a> outputs[kMaxOutputs];</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>  <span class="keywordtype">int</span> tryCounter = 0;</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>  LightingPwmLeds *parentPwm = <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>};</div>
 </div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="keyword">using </span>RGBWPwmBase = <a class="code hl_class" href="classSupla_1_1Control_1_1LightingPwmLeds.html">LightingPwmLeds</a>;</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>}  <span class="comment">// namespace Control</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>}  <span class="comment">// namespace Supla</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_</span></div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="keyword">using </span>RGBWPwmBase = <a class="code hl_class" href="classSupla_1_1Control_1_1LightingPwmLeds.html">LightingPwmLeds</a>;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>}  <span class="comment">// namespace Control</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>}  <span class="comment">// namespace Supla</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="preprocessor">#endif  </span><span class="comment">// SRC_SUPLA_CONTROL_LIGHTING_PWM_LEDS_H_</span></div>
 <div class="ttc" id="aclassSuplaDeviceClass_html"><div class="ttname"><a href="classSuplaDeviceClass.html">SuplaDeviceClass</a></div><div class="ttdef"><b>Definition</b> SuplaDevice.h:162</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1LightingPwmBase_html_a336c27c93866604ee8d1422a6148ada0"><div class="ttname"><a href="classSupla_1_1Control_1_1LightingPwmBase.html#a336c27c93866604ee8d1422a6148ada0">Supla::Control::LightingPwmBase::LightingPwmBase</a></div><div class="ttdeci">LightingPwmBase(LightingPwmBase *parent=nullptr)</div><div class="ttdoc">Constructor.</div><div class="ttdef"><b>Definition</b> lighting_pwm_base.cpp:101</div></div>
 <div class="ttc" id="aclassSupla_1_1Control_1_1LightingPwmLeds_html"><div class="ttname"><a href="classSupla_1_1Control_1_1LightingPwmLeds.html">Supla::Control::LightingPwmLeds</a></div><div class="ttdef"><b>Definition</b> lighting_pwm_leds.h:30</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1LightingPwmLeds_html_a90d2b720ab4309d0dd4bf4a889e4caa1"><div class="ttname"><a href="classSupla_1_1Control_1_1LightingPwmLeds.html#a90d2b720ab4309d0dd4bf4a889e4caa1">Supla::Control::LightingPwmLeds::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *sdc) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> lighting_pwm_leds.cpp:167</div></div>
-<div class="ttc" id="aclassSupla_1_1Control_1_1LightingPwmLeds_html_ad5660e10dacdf6cd29228dde7bb77630"><div class="ttname"><a href="classSupla_1_1Control_1_1LightingPwmLeds.html#ad5660e10dacdf6cd29228dde7bb77630">Supla::Control::LightingPwmLeds::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> lighting_pwm_leds.cpp:173</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1LightingPwmLeds_html_a90d2b720ab4309d0dd4bf4a889e4caa1"><div class="ttname"><a href="classSupla_1_1Control_1_1LightingPwmLeds.html#a90d2b720ab4309d0dd4bf4a889e4caa1">Supla::Control::LightingPwmLeds::onLoadConfig</a></div><div class="ttdeci">void onLoadConfig(SuplaDeviceClass *sdc) override</div><div class="ttdoc">First method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> lighting_pwm_leds.cpp:181</div></div>
+<div class="ttc" id="aclassSupla_1_1Control_1_1LightingPwmLeds_html_ad5660e10dacdf6cd29228dde7bb77630"><div class="ttname"><a href="classSupla_1_1Control_1_1LightingPwmLeds.html#ad5660e10dacdf6cd29228dde7bb77630">Supla::Control::LightingPwmLeds::onInit</a></div><div class="ttdeci">void onInit() override</div><div class="ttdoc">Third method called on element in SuplaDevice.begin().</div><div class="ttdef"><b>Definition</b> lighting_pwm_leds.cpp:187</div></div>
 <div class="ttc" id="astructSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState_html"><div class="ttname"><a href="structSupla_1_1Control_1_1LightingPwmLeds_1_1OutputState.html">Supla::Control::LightingPwmLeds::OutputState</a></div><div class="ttdef"><b>Definition</b> lighting_pwm_leds.h:57</div></div>
 <div class="ttc" id="astructSupla_1_1Io_1_1IoPin_html"><div class="ttname"><a href="structSupla_1_1Io_1_1IoPin.html">Supla::Io::IoPin</a></div><div class="ttdef"><b>Definition</b> io_pin.h:28</div></div>
 </div><!-- fragment --></div><!-- contents -->

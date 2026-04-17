@@ -23,6 +23,10 @@
 namespace Supla {
 namespace Control {
 
+namespace {
+constexpr uint8_t DefaultPwmResolutionBits = 10;
+}  // namespace
+
 LightingPwmLeds::LightingPwmLeds(
     LightingPwmLeds *parent, int out1, int out2, int out3, int out4, int out5)
     : LightingPwmBase(parent), parentPwm(parent) {
@@ -92,27 +96,6 @@ void LightingPwmLeds::applyDefaultChannelFunctions() {
   getChannel()->setDefaultFunction(defaultFunction);
 }
 
-void LightingPwmLeds::setOutputIo(int outputIndex, Supla::Io::Base *io) {
-  if (outputIndex < 0 || outputIndex >= kMaxOutputs) {
-    return;
-  }
-  outputs[outputIndex].pin.io = io;
-}
-
-Supla::Io::Base *LightingPwmLeds::getOutputIo(int outputIndex) const {
-  if (outputIndex < 0 || outputIndex >= kMaxOutputs) {
-    return nullptr;
-  }
-  return outputs[outputIndex].pin.io;
-}
-
-int LightingPwmLeds::getOutputPin(int outputIndex) const {
-  if (outputIndex < 0 || outputIndex >= kMaxOutputs) {
-    return -1;
-  }
-  return outputs[outputIndex].pin.getPin();
-}
-
 void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
                                              int usedOutputs) {
   if (!initDone || !enabled) {
@@ -152,12 +135,20 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
   }
 }
 
+void LightingPwmLeds::applyPwmResolutionBitsToOutputs() {
+  for (auto &output : outputs) {
+    if (output.pin.isSet()) {
+      output.pin.setPwmResolutionBits(DefaultPwmResolutionBits);
+    }
+  }
+}
+
 void LightingPwmLeds::applyPwmFrequencyToOutputs() {
   const uint16_t frequency = getPwmFrequency();
   Supla::Io::Base *configuredIo[kMaxOutputs] = {};
   int configuredIoCount = 0;
   for (auto &output : outputs) {
-    if (output.pin.io != nullptr) {
+    if (output.pin.isSet()) {
       bool alreadyConfigured = false;
       for (int i = 0; i < configuredIoCount; i++) {
         if (configuredIo[i] == output.pin.io) {
@@ -175,6 +166,7 @@ void LightingPwmLeds::applyPwmFrequencyToOutputs() {
 
 void LightingPwmLeds::onLoadConfig(SuplaDeviceClass *sdc) {
   LightingPwmBase::onLoadConfig(sdc);
+  applyPwmResolutionBitsToOutputs();
   applyPwmFrequencyToOutputs();
 }
 
@@ -182,6 +174,8 @@ void LightingPwmLeds::onInit() {
   if (initDone) {
     return;
   }
+
+  applyPwmResolutionBitsToOutputs();
 
   uint32_t outputMaxValue = 0;
   for (const auto &output : outputs) {

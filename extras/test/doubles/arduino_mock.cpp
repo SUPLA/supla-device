@@ -47,6 +47,11 @@ void analogWrite(uint8_t pin, int val) {
   DigitalInterface::instance->analogWrite(pin, val);
 }
 
+int analogRead(uint8_t pin) {
+  (void)(pin);
+  return 0;
+}
+
 void digitalWrite(uint8_t pin, uint8_t val) {
   assert(DigitalInterface::instance);
   DigitalInterface::instance->digitalWrite(pin, val);
@@ -80,6 +85,27 @@ void analogWriteFreq(uint32_t frequencyHz) {
 void analogWriteRange(uint32_t range) {
   assert(DigitalInterface::instance);
   DigitalInterface::instance->analogWriteRange(range);
+}
+
+unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro) {
+  (void)(pin);
+  (void)(val);
+  (void)(timeoutMicro);
+  return 0;
+}
+
+void attachInterrupt(uint8_t pin, void (*func)(void), int mode) {
+  (void)(pin);
+  (void)(func);
+  (void)(mode);
+}
+
+void detachInterrupt(uint8_t pin) {
+  (void)(pin);
+}
+
+uint8_t digitalPinToInterrupt(uint8_t pin) {
+  return pin;
 }
 
 uint32_t millis() {

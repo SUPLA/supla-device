@@ -40,12 +40,17 @@ typedef std::string String;
 
 void digitalWrite(uint8_t pin, uint8_t val);
 int digitalRead(uint8_t pin);
+int analogRead(uint8_t pin);
 void analogWrite(uint8_t pin, int val);
 void pinMode(uint8_t pin, uint8_t mode);
 void analogWriteResolution(uint8_t pin, uint8_t bits);
 void analogWriteFrequency(uint8_t pin, uint32_t frequencyHz);
 void analogWriteFreq(uint32_t frequencyHz);
 void analogWriteRange(uint32_t range);
+unsigned int pulseIn(uint8_t pin, uint8_t val, uint64_t timeoutMicro);
+void attachInterrupt(uint8_t pin, void (*func)(void), int mode);
+void detachInterrupt(uint8_t pin);
+uint8_t digitalPinToInterrupt(uint8_t pin);
 uint32_t millis();
 void delay(uint64_t ms);
 long map(long, long, long, long, long);  // NOLINT

@@ -20,7 +20,7 @@
 
 #include <supla/log_wrapper.h>
 
-#ifdef ARDUINO
+#if defined(ARDUINO) || defined(SUPLA_TEST)
 #include <Arduino.h>
 #elif defined(ESP_PLATFORM)
 #include <esp_idf_gpio.h>
@@ -222,7 +222,7 @@ void setPwmFrequency(uint8_t pin, uint16_t pwmFrequency, Io::Base *io) {
 #if defined(ARDUINO_ARCH_ESP8266)
   (void)(pin);
   analogWriteFreq(pwmFrequency);
-#elif defined(ARDUINO_ARCH_ESP32)
+#elif defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_TEST)
   analogWriteFrequency(pin, pwmFrequency);
 #else
   (void)(pin);
@@ -235,7 +235,7 @@ void setPwmResolutionBits(uint8_t pin, uint8_t resolutionBits, Io::Base *io) {
     io->customSetPwmResolutionBits(pin, resolutionBits);
     return;
   }
-#ifdef ARDUINO_ARCH_ESP32
+#if defined(ARDUINO_ARCH_ESP32) || defined(SUPLA_TEST)
   analogWriteResolution(pin, resolutionBits);
 #elif defined(ARDUINO_ARCH_ESP8266)
   analogWriteRange(1UL << resolutionBits);

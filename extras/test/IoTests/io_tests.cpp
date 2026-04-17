@@ -279,6 +279,7 @@ TEST(IoTests, BasePwmStateCanBeUpdatedWithoutIoPin) {
 }
 
 TEST(IoTests, IoPinUsesBasePwmDefaultsAndCanOverrideThem) {
+  DigitalInterfaceMock hwInterfaceMock;
   Supla::Io::IoPin pin(21);
 
   EXPECT_EQ(Supla::Io::pwmResolutionBits(21),
@@ -290,6 +291,7 @@ TEST(IoTests, IoPinUsesBasePwmDefaultsAndCanOverrideThem) {
             ExpectedDefaultAnalogWriteResolutionBits());
   EXPECT_EQ(pin.pwmMaxValue(), ExpectedDefaultAnalogWriteMaxValue());
 
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(21, 10)).Times(1);
   pin.setPwmResolutionBits(10);
   EXPECT_EQ(pin.pwmResolutionBits(),
             ExpectedDefaultAnalogWriteResolutionBits());

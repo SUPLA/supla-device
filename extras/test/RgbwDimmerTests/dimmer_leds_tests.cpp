@@ -37,6 +37,8 @@ TEST(DimmerLedsTests, SettingNewDimValue) {
   SimpleTime time;
   DigitalInterfaceMock ioMock;
 
+  EXPECT_CALL(ioMock, analogWriteResolution(1, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(1, 1000)).Times(1);
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
   EXPECT_CALL(ioMock, analogWrite(1, 0)).Times(1);
 

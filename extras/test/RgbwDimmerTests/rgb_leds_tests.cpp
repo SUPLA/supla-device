@@ -37,6 +37,12 @@ TEST(RgbLedsTests, SettingNewRGBValue) {
   SimpleTime time;
   DigitalInterfaceMock ioMock;
 
+  EXPECT_CALL(ioMock, analogWriteResolution(1, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(1, 1000)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteResolution(2, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(2, 1000)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteResolution(3, 10)).Times(1);
+  EXPECT_CALL(ioMock, analogWriteFrequency(3, 1000)).Times(1);
   EXPECT_CALL(ioMock, pinMode(1, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(2, OUTPUT));
   EXPECT_CALL(ioMock, pinMode(3, OUTPUT));

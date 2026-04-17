@@ -17,52 +17,60 @@
 */
 
 #include <gtest/gtest.h>
+#include <simple_time.h>
+#include <supla/control/lighting_pwm_leds.h>
+#include <supla/io.h>
+#include <supla_io_mock.h>
 
 #include <array>
 #include <memory>
 
-#include <supla/control/lighting_pwm_leds.h>
-#include <supla/io.h>
-#include <simple_time.h>
-#include <supla_io_mock.h>
-
 class RgbwPwmBaseForTest : public Supla::Control::RGBWPwmBase {
  public:
-  RgbwPwmBaseForTest(int out1,
-                     int out2,
-                     int out3,
-                     int out4,
-                     int out5)
-      : LightingPwmLeds(nullptr, out1, out2, out3, out4, out5) {}
+  RgbwPwmBaseForTest(int out1, int out2, int out3, int out4, int out5)
+      : LightingPwmLeds(nullptr, out1, out2, out3, out4, out5) {
+  }
 
   RgbwPwmBaseForTest(Supla::Io::IoPin out1,
                      Supla::Io::IoPin out2,
                      Supla::Io::IoPin out3,
                      Supla::Io::IoPin out4,
                      Supla::Io::IoPin out5)
-      : LightingPwmLeds(nullptr, out1, out2, out3, out4, out5) {}
+      : LightingPwmLeds(nullptr, out1, out2, out3, out4, out5) {
+  }
 };
 
 class LightingPwmLedsForTest : public Supla::Control::LightingPwmLeds {
  public:
   using Supla::Control::LightingPwmLeds::LightingPwmLeds;
 
-  bool isEnabledForTest() const { return enabled; }
-  int missingGpioCountForTest() const { return getMissingGpioCount(); }
+  bool isEnabledForTest() const {
+    return enabled;
+  }
+  int missingGpioCountForTest() const {
+    return getMissingGpioCount();
+  }
+  const Supla::Io::IoPin &outputPinForTest(int index) const {
+    return outputs[index].pin;
+  }
 };
 
 class ResolvedPwmIo : public Supla::Io::Base {
  public:
   ResolvedPwmIo(uint8_t resolutionBits, uint32_t maxDuty)
-      : Base(), resolutionBits(resolutionBits), maxDuty(maxDuty) {}
+      : Base(), resolutionBits(resolutionBits), maxDuty(maxDuty) {
+  }
 
-  void customPinMode(int, uint8_t, uint8_t) override {}
-  void customDigitalWrite(int, uint8_t, uint8_t) override {}
+  void customPinMode(int, uint8_t, uint8_t) override {
+  }
+  void customDigitalWrite(int, uint8_t, uint8_t) override {
+  }
   void customAnalogWrite(int, uint8_t, int val) override {
     lastValue = static_cast<uint32_t>(val);
     writeCount++;
   }
-  void customConfigureAnalogOutput(int, uint8_t, bool) override {}
+  void customConfigureAnalogOutput(int, uint8_t, bool) override {
+  }
   void customSetPwmFrequency(uint16_t pwmFrequency) override {
     lastFrequency = pwmFrequency;
   }
@@ -84,23 +92,38 @@ class ResolvedPwmIo : public Supla::Io::Base {
   uint16_t lastFrequency = 0;
 };
 
-TEST(RgbwPwmBaseTests, StoresPerOutputIoSeparately) {
-  RgbwPwmBaseForTest pwm(11, 12, 13, 14, 15);
+TEST(RgbwPwmBaseTests, ConstructorUsesSeparateIoForOutputs) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
   SuplaIoMock io1;
   SuplaIoMock io2;
 
-  EXPECT_EQ(pwm.getOutputPin(0), 11);
-  EXPECT_EQ(pwm.getOutputPin(4), 15);
-  EXPECT_EQ(pwm.getOutputIo(0), nullptr);
-  EXPECT_EQ(pwm.getOutputIo(4), nullptr);
+  EXPECT_CALL(io1, customSetPwmResolutionBits(21, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(22, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmResolutionBits(23, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(24, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmResolutionBits(25, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io2, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 21, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 22, false)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 21, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 22, OUTPUT)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 23, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 24, false)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 25, false)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 23, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 24, OUTPUT)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 25, OUTPUT)).Times(1);
 
-  pwm.setOutputIo(0, &io1);
-  pwm.setOutputIo(3, &io2);
+  RgbwPwmBaseForTest pwm(Supla::Io::IoPin(21, &io1),
+                         Supla::Io::IoPin(22, &io2),
+                         Supla::Io::IoPin(23, &io1),
+                         Supla::Io::IoPin(24, &io2),
+                         Supla::Io::IoPin(25, &io1));
 
-  EXPECT_EQ(pwm.getOutputIo(0), &io1);
-  EXPECT_EQ(pwm.getOutputIo(1), nullptr);
-  EXPECT_EQ(pwm.getOutputIo(3), &io2);
-  EXPECT_EQ(pwm.getOutputIo(4), nullptr);
+  time.advance(1000);
+  pwm.onInit();
 }
 
 TEST(RgbwPwmBaseTests, DefaultFuncListMatchesConfiguredOutputCount) {
@@ -146,32 +169,54 @@ TEST(RgbwPwmBaseTests, DefaultFuncListMatchesConfiguredOutputCount) {
   }
 }
 
-TEST(RgbwPwmBaseTests, IoPinConstructorStoresSeparateIoAndPins) {
+TEST(RgbwPwmBaseTests, ConstructorInitializesConfiguredOutputs) {
+  SimpleTime time;
   SuplaIoMock io1;
   SuplaIoMock io2;
 
+  EXPECT_CALL(io1, customSetPwmResolutionBits(21, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(22, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmResolutionBits(23, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(24, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmResolutionBits(25, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io2, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 21, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 22, false)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 23, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 24, false)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 25, false)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 21, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 22, OUTPUT)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 23, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 24, OUTPUT)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 25, OUTPUT)).Times(1);
+
   RgbwPwmBaseForTest pwm(Supla::Io::IoPin(21, &io1),
                          Supla::Io::IoPin(22, &io2),
-                         Supla::Io::IoPin(23),
-                         Supla::Io::IoPin(),
+                         Supla::Io::IoPin(23, &io1),
+                         Supla::Io::IoPin(24, &io2),
                          Supla::Io::IoPin(25, &io1));
 
-  EXPECT_EQ(pwm.getOutputPin(0), 21);
-  EXPECT_EQ(pwm.getOutputPin(1), 22);
-  EXPECT_EQ(pwm.getOutputPin(2), 23);
-  EXPECT_EQ(pwm.getOutputPin(3), -1);
-  EXPECT_EQ(pwm.getOutputPin(4), 25);
-  EXPECT_EQ(pwm.getOutputIo(0), &io1);
-  EXPECT_EQ(pwm.getOutputIo(1), &io2);
-  EXPECT_EQ(pwm.getOutputIo(2), nullptr);
-  EXPECT_EQ(pwm.getOutputIo(3), nullptr);
-  EXPECT_EQ(pwm.getOutputIo(4), &io1);
+  time.advance(1000);
+  pwm.onInit();
+
+  EXPECT_CALL(io1, customAnalogWrite(-1, 21, 1)).Times(1);
+  EXPECT_CALL(io2, customAnalogWrite(-1, 22, 2)).Times(1);
+  EXPECT_CALL(io1, customAnalogWrite(-1, 23, 3)).Times(1);
+  EXPECT_CALL(io2, customAnalogWrite(-1, 24, 4)).Times(1);
+  EXPECT_CALL(io1, customAnalogWrite(-1, 25, 5)).Times(1);
+
+  uint32_t output[5] = {1, 2, 3, 4, 5};
+  pwm.setRGBCCTValueOnDevice(output, 5);
 }
 
 TEST(RgbwPwmBaseTests, InitAndWriteUseInjectedIoPerOutput) {
   SimpleTime time;
   SuplaIoMock io;
 
+  EXPECT_CALL(io, customSetPwmResolutionBits(21, 10)).Times(1);
+  EXPECT_CALL(io, customSetPwmResolutionBits(22, 10)).Times(1);
   RgbwPwmBaseForTest pwm(Supla::Io::IoPin(21, &io),
                          Supla::Io::IoPin(22, &io),
                          Supla::Io::IoPin(),
@@ -192,6 +237,76 @@ TEST(RgbwPwmBaseTests, InitAndWriteUseInjectedIoPerOutput) {
   pwm.setRGBCCTValueOnDevice(output, 2);
 }
 
+TEST(RgbwPwmBaseTests,
+     InitUsesEachIoOnceForFrequencyAndEachPinForResolutionBits) {
+  SimpleTime time;
+  SuplaIoMock io1;
+  SuplaIoMock io2;
+  SuplaIoMock io3;
+
+  EXPECT_CALL(io1, customSetPwmResolutionBits(21, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(22, 10)).Times(1);
+  EXPECT_CALL(io3, customSetPwmResolutionBits(23, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmResolutionBits(24, 10)).Times(1);
+  EXPECT_CALL(io2, customSetPwmResolutionBits(25, 10)).Times(1);
+  EXPECT_CALL(io1, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io2, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io3, customSetPwmFrequency(500)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 21, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 22, false)).Times(1);
+  EXPECT_CALL(io3, customConfigureAnalogOutput(-1, 23, false)).Times(1);
+  EXPECT_CALL(io1, customConfigureAnalogOutput(-1, 24, false)).Times(1);
+  EXPECT_CALL(io2, customConfigureAnalogOutput(-1, 25, false)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 21, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 22, OUTPUT)).Times(1);
+  EXPECT_CALL(io3, customPinMode(-1, 23, OUTPUT)).Times(1);
+  EXPECT_CALL(io1, customPinMode(-1, 24, OUTPUT)).Times(1);
+  EXPECT_CALL(io2, customPinMode(-1, 25, OUTPUT)).Times(1);
+
+  RgbwPwmBaseForTest pwm(Supla::Io::IoPin(21, &io1),
+                         Supla::Io::IoPin(22, &io2),
+                         Supla::Io::IoPin(23, &io3),
+                         Supla::Io::IoPin(24, &io1),
+                         Supla::Io::IoPin(25, &io2));
+
+  time.advance(1000);
+  pwm.onInit();
+}
+
+TEST(RgbwPwmBaseTests, InitWithoutCustomIoKeepsDefaultPwmState) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  DigitalInterfaceMock hwInterfaceMock;
+
+  LightingPwmLedsForTest pwm(nullptr,
+                             Supla::Io::IoPin(21),
+                             Supla::Io::IoPin(22),
+                             Supla::Io::IoPin(23));
+  ASSERT_NE(pwm.getChannel(), nullptr);
+  pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_RGBLIGHTING);
+
+  EXPECT_CALL(hwInterfaceMock, pinMode(21, OUTPUT)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, pinMode(22, OUTPUT)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, pinMode(23, OUTPUT)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(21, 10)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(22, 10)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(23, 10)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteFrequency(21, 500)).Times(1);
+  EXPECT_EQ(pwm.outputPinForTest(0).io, nullptr);
+  EXPECT_EQ(pwm.outputPinForTest(1).io, nullptr);
+  EXPECT_EQ(pwm.outputPinForTest(2).io, nullptr);
+
+  time.advance(1000);
+  pwm.onInit();
+
+  EXPECT_EQ(pwm.outputPinForTest(0).pwmResolutionBits(), 10U);
+  EXPECT_EQ(pwm.outputPinForTest(1).pwmResolutionBits(), 10U);
+  EXPECT_EQ(pwm.outputPinForTest(2).pwmResolutionBits(), 10U);
+  EXPECT_EQ(pwm.outputPinForTest(0).pwmMaxValue(), 1023U);
+  EXPECT_EQ(pwm.outputPinForTest(1).pwmMaxValue(), 1023U);
+  EXPECT_EQ(pwm.outputPinForTest(2).pwmMaxValue(), 1023U);
+}
+
 TEST(RgbwPwmBaseTests, DisabledChildDoesNotReconfigureParentOutputs) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;
@@ -210,6 +325,10 @@ TEST(RgbwPwmBaseTests, DisabledChildDoesNotReconfigureParentOutputs) {
   parent.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_RGBLIGHTING);
   child.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
 
+  EXPECT_CALL(io, customSetPwmResolutionBits(27, 10)).Times(1);
+  EXPECT_CALL(io, customSetPwmResolutionBits(26, 10)).Times(2);
+  EXPECT_CALL(io, customSetPwmResolutionBits(13, 10)).Times(2);
+  EXPECT_CALL(io, customSetPwmResolutionBits(14, 10)).Times(2);
   EXPECT_CALL(io, customSetPwmFrequency(500)).Times(1);
   EXPECT_CALL(io, customConfigureAnalogOutput(-1, 27, false)).Times(1);
   EXPECT_CALL(io, customConfigureAnalogOutput(-1, 26, false)).Times(1);
@@ -230,12 +349,11 @@ TEST(RgbwPwmBaseTests, ChildUsesHardwareMaxValueForDutyScaling) {
   SimpleTime time;
   ResolvedPwmIo io(13, 8191);
 
-  Supla::Control::LightingPwmLeds parent(
-      nullptr,
-      Supla::Io::IoPin(21, &io),
-      Supla::Io::IoPin(22, &io),
-      Supla::Io::IoPin(23, &io),
-      Supla::Io::IoPin(24, &io));
+  Supla::Control::LightingPwmLeds parent(nullptr,
+                                         Supla::Io::IoPin(21, &io),
+                                         Supla::Io::IoPin(22, &io),
+                                         Supla::Io::IoPin(23, &io),
+                                         Supla::Io::IoPin(24, &io));
   Supla::Control::LightingPwmLeds child(&parent,
                                         Supla::Io::IoPin(22, &io),
                                         Supla::Io::IoPin(23, &io),
@@ -383,103 +501,93 @@ TEST(RgbwPwmBaseTests, TenInstanceChainEnablesExpectedStartSlot) {
   ResolvedPwmIo io(13, 8191);
 
   std::array<std::unique_ptr<LightingPwmLedsForTest>, 10> lights;
-  lights[0] = std::make_unique<LightingPwmLedsForTest>(
-      nullptr,
-      Supla::Io::IoPin(1, &io),
-      Supla::Io::IoPin(2, &io),
-      Supla::Io::IoPin(3, &io),
-      Supla::Io::IoPin(4, &io),
-      Supla::Io::IoPin(5, &io));
-  lights[1] = std::make_unique<LightingPwmLedsForTest>(
-      lights[0].get(),
-      Supla::Io::IoPin(2, &io),
-      Supla::Io::IoPin(3, &io),
-      Supla::Io::IoPin(4, &io),
-      Supla::Io::IoPin(5, &io),
-      Supla::Io::IoPin(6, &io));
-  lights[2] = std::make_unique<LightingPwmLedsForTest>(
-      lights[1].get(),
-      Supla::Io::IoPin(3, &io),
-      Supla::Io::IoPin(4, &io),
-      Supla::Io::IoPin(5, &io),
-      Supla::Io::IoPin(6, &io),
-      Supla::Io::IoPin(7, &io));
-  lights[3] = std::make_unique<LightingPwmLedsForTest>(
-      lights[2].get(),
-      Supla::Io::IoPin(4, &io),
-      Supla::Io::IoPin(5, &io),
-      Supla::Io::IoPin(6, &io),
-      Supla::Io::IoPin(7, &io),
-      Supla::Io::IoPin(8, &io));
-  lights[4] = std::make_unique<LightingPwmLedsForTest>(
-      lights[3].get(),
-      Supla::Io::IoPin(5, &io),
-      Supla::Io::IoPin(6, &io),
-      Supla::Io::IoPin(7, &io),
-      Supla::Io::IoPin(8, &io),
-      Supla::Io::IoPin(9, &io));
-  lights[5] = std::make_unique<LightingPwmLedsForTest>(
-      lights[4].get(),
-      Supla::Io::IoPin(6, &io),
-      Supla::Io::IoPin(7, &io),
-      Supla::Io::IoPin(8, &io),
-      Supla::Io::IoPin(9, &io),
-      Supla::Io::IoPin(10, &io));
-  lights[6] = std::make_unique<LightingPwmLedsForTest>(
-      lights[5].get(),
-      Supla::Io::IoPin(7, &io),
-      Supla::Io::IoPin(8, &io),
-      Supla::Io::IoPin(9, &io),
-      Supla::Io::IoPin(10, &io));
-  lights[7] = std::make_unique<LightingPwmLedsForTest>(
-      lights[6].get(),
-      Supla::Io::IoPin(8, &io),
-      Supla::Io::IoPin(9, &io),
-      Supla::Io::IoPin(10, &io));
+  lights[0] =
+      std::make_unique<LightingPwmLedsForTest>(nullptr,
+                                               Supla::Io::IoPin(1, &io),
+                                               Supla::Io::IoPin(2, &io),
+                                               Supla::Io::IoPin(3, &io),
+                                               Supla::Io::IoPin(4, &io),
+                                               Supla::Io::IoPin(5, &io));
+  lights[1] =
+      std::make_unique<LightingPwmLedsForTest>(lights[0].get(),
+                                               Supla::Io::IoPin(2, &io),
+                                               Supla::Io::IoPin(3, &io),
+                                               Supla::Io::IoPin(4, &io),
+                                               Supla::Io::IoPin(5, &io),
+                                               Supla::Io::IoPin(6, &io));
+  lights[2] =
+      std::make_unique<LightingPwmLedsForTest>(lights[1].get(),
+                                               Supla::Io::IoPin(3, &io),
+                                               Supla::Io::IoPin(4, &io),
+                                               Supla::Io::IoPin(5, &io),
+                                               Supla::Io::IoPin(6, &io),
+                                               Supla::Io::IoPin(7, &io));
+  lights[3] =
+      std::make_unique<LightingPwmLedsForTest>(lights[2].get(),
+                                               Supla::Io::IoPin(4, &io),
+                                               Supla::Io::IoPin(5, &io),
+                                               Supla::Io::IoPin(6, &io),
+                                               Supla::Io::IoPin(7, &io),
+                                               Supla::Io::IoPin(8, &io));
+  lights[4] =
+      std::make_unique<LightingPwmLedsForTest>(lights[3].get(),
+                                               Supla::Io::IoPin(5, &io),
+                                               Supla::Io::IoPin(6, &io),
+                                               Supla::Io::IoPin(7, &io),
+                                               Supla::Io::IoPin(8, &io),
+                                               Supla::Io::IoPin(9, &io));
+  lights[5] =
+      std::make_unique<LightingPwmLedsForTest>(lights[4].get(),
+                                               Supla::Io::IoPin(6, &io),
+                                               Supla::Io::IoPin(7, &io),
+                                               Supla::Io::IoPin(8, &io),
+                                               Supla::Io::IoPin(9, &io),
+                                               Supla::Io::IoPin(10, &io));
+  lights[6] =
+      std::make_unique<LightingPwmLedsForTest>(lights[5].get(),
+                                               Supla::Io::IoPin(7, &io),
+                                               Supla::Io::IoPin(8, &io),
+                                               Supla::Io::IoPin(9, &io),
+                                               Supla::Io::IoPin(10, &io));
+  lights[7] =
+      std::make_unique<LightingPwmLedsForTest>(lights[6].get(),
+                                               Supla::Io::IoPin(8, &io),
+                                               Supla::Io::IoPin(9, &io),
+                                               Supla::Io::IoPin(10, &io));
   lights[8] = std::make_unique<LightingPwmLedsForTest>(
-      lights[7].get(),
-      Supla::Io::IoPin(9, &io),
-      Supla::Io::IoPin(10, &io));
+      lights[7].get(), Supla::Io::IoPin(9, &io), Supla::Io::IoPin(10, &io));
   lights[9] = std::make_unique<LightingPwmLedsForTest>(
       lights[8].get(), Supla::Io::IoPin(10, &io));
 
   const uint32_t expectedFuncLists[10] = {
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_AND_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
-      SUPLA_RGBW_BIT_FUNC_DIMMER |
-          SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
+      SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_RGB_LIGHTING |
           SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
       SUPLA_RGBW_BIT_FUNC_DIMMER | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT,
       SUPLA_RGBW_BIT_FUNC_DIMMER,
@@ -540,18 +648,19 @@ TEST(RgbwPwmBaseTests, TenInstanceChainEnablesExpectedStartSlot) {
   EXPECT_FALSE(lights[9]->isEnabledForTest());
 }
 
-TEST(RgbwPwmBaseTests, LoadConfigForwardsPwmFrequencyToIo) {
+TEST(RgbwPwmBaseTests, LoadConfigForwardsPwmResolutionBitsAndFrequencyToIo) {
   SimpleTime time;
-  ResolvedPwmIo io(9, 511);
+  SuplaIoMock io;
 
   Supla::Control::LightingPwmLeds pwm(
-      nullptr, Supla::Io::IoPin(21, &io), Supla::Io::IoPin());
+      nullptr, Supla::Io::IoPin(21, &io), Supla::Io::IoPin(22, &io));
   pwm.setPwmFrequency(2345);
 
   time.advance(1000);
+  EXPECT_CALL(io, customSetPwmResolutionBits(21, 10)).Times(1);
+  EXPECT_CALL(io, customSetPwmResolutionBits(22, 10)).Times(1);
+  EXPECT_CALL(io, customSetPwmFrequency(2345)).Times(1);
   pwm.onLoadConfig(nullptr);
-
-  EXPECT_EQ(io.lastFrequency, 2345U);
 }
 
 TEST(RgbwPwmBaseTests, TinyTimerStepsAccumulateIntoDutyUpdates) {
@@ -592,9 +701,7 @@ TEST(RgbwPwmBaseTests, CctOutputsRespectConfiguredBrightnessFloor) {
   ResolvedPwmIo coldIo(13, 8191);
 
   Supla::Control::LightingPwmLeds pwm(
-      nullptr,
-      Supla::Io::IoPin(21, &warmIo),
-      Supla::Io::IoPin(22, &coldIo));
+      nullptr, Supla::Io::IoPin(21, &warmIo), Supla::Io::IoPin(22, &coldIo));
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT);
   pwm.setBrightnessRatioLimits(100.0f / 8191.0f, 1.0f);

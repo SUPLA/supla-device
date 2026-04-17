@@ -48,11 +48,8 @@ class LightingPwmLeds : public LightingPwmBase {
   void onInit() override;
   void onLoadConfig(SuplaDeviceClass *sdc) override;
 
-  void setOutputIo(int outputIndex, Supla::Io::Base *io);
-  Supla::Io::Base *getOutputIo(int outputIndex) const;
-  int getOutputPin(int outputIndex) const;
-
  protected:
+  void applyPwmResolutionBitsToOutputs();
   void applyPwmFrequencyToOutputs();
   void applyDefaultChannelFunctions();
   int getConfiguredOutputsCount() const;

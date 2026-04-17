@@ -95,6 +95,7 @@ supla_device(supladevicelib)
 
 target_include_directories(supladevicelib PUBLIC
   ${SUPLA_DEVICE_SRC_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/doubles
 )
 
 add_executable(supladevicetests ${TEST_SRC} ${DOUBLE_SRC})

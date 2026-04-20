@@ -53,6 +53,8 @@ class Base {
                                            uint8_t pin,
                                            bool outputInvert = false);
   virtual void customSetPwmFrequency(uint16_t pwmFrequency);
+  virtual uint8_t customDefaultPwmResolutionBits(uint8_t pin) const;
+  virtual bool customCanSetPwmResolutionBits(uint8_t pin) const;
   virtual uint8_t customPwmResolutionBits(uint8_t pin) const;
   virtual uint32_t customPwmMaxValue(uint8_t pin) const;
   virtual uint16_t customPwmFrequency() const;
@@ -117,6 +119,8 @@ void setPwmFrequency(uint8_t pin,
 void setPwmResolutionBits(uint8_t pin,
                           uint8_t resolutionBits,
                           Io::Base *io = nullptr);
+uint8_t defaultPwmResolutionBits(uint8_t pin, Io::Base *io = nullptr);
+bool canSetPwmResolutionBits(uint8_t pin, Io::Base *io = nullptr);
 uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io = nullptr);
 uint32_t pwmMaxValue(uint8_t pin, Io::Base *io = nullptr);
 uint8_t pwmResolutionBits(Io::Base *io = nullptr);

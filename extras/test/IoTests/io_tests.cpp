@@ -54,6 +54,14 @@ class PwmStateIo : public Supla::Io::Base {
     return resolutionBits[pin];
   }
 
+  uint8_t customDefaultPwmResolutionBits(uint8_t pin) const override {
+    return resolutionBits[pin];
+  }
+
+  bool customCanSetPwmResolutionBits(uint8_t) const override {
+    return true;
+  }
+
   uint32_t customPwmMaxValue(uint8_t pin) const override {
     uint8_t bits = resolutionBits[pin];
     if (bits == 0) {
@@ -246,6 +254,15 @@ TEST(IoTests, BasePwmDefaultsAreNonZero) {
   EXPECT_EQ(Supla::Io::pwmMaxValue(21),
             ExpectedDefaultAnalogWriteMaxValue());
   EXPECT_EQ(Supla::Io::pwmFrequency(), ExpectedDefaultPwmFrequencyHz());
+}
+
+TEST(IoTests, DefaultPwmResolutionBitsAndCapabilityAreExposed) {
+  PwmStateIo io(9, 600);
+
+  EXPECT_EQ(Supla::Io::defaultPwmResolutionBits(21), 10U);
+  EXPECT_TRUE(Supla::Io::canSetPwmResolutionBits(21));
+  EXPECT_EQ(Supla::Io::defaultPwmResolutionBits(21, &io), 9U);
+  EXPECT_TRUE(Supla::Io::canSetPwmResolutionBits(21, &io));
 }
 
 TEST(IoTests, BasePwmStateCanBeUpdatedWithoutIoPin) {

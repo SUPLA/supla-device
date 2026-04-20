@@ -1623,6 +1623,20 @@ void LightingPwmBase::setStepPwmFrequency(uint16_t stepPwmFrequency) {
   this->stepPwmFrequency = stepPwmFrequency;
 }
 
+void LightingPwmBase::setPwmResolutionBits(uint8_t resolutionBits) {
+  pwmResolutionBits = resolutionBits;
+
+  uint32_t hwMax = 0;
+  if (resolutionBits > 0) {
+    hwMax = (1UL << resolutionBits) - 1;
+  }
+  if (hwMax > UINT16_MAX) {
+    hwMax = UINT16_MAX;
+  }
+
+  setMaxHwValue(static_cast<int>(hwMax));
+}
+
 void LightingPwmBase::setPwmFrequency(uint16_t frequency) {
   if (frequency < minPwmFrequency) {
     frequency = minPwmFrequency;
@@ -1655,6 +1669,10 @@ uint16_t LightingPwmBase::getPwmFrequency() const {
 
 uint16_t LightingPwmBase::getStepPwmFrequency() const {
   return stepPwmFrequency;
+}
+
+uint8_t LightingPwmBase::getPwmResolutionBits() const {
+  return pwmResolutionBits;
 }
 
 };  // namespace Control

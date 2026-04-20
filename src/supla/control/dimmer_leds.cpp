@@ -20,9 +20,12 @@ namespace {
 constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
 constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
 
-void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
-  pin.setPwmResolutionBits(LegacyAnalogWriteResolutionBits);
-  pin.setPwmFrequency(LegacyAnalogWriteFrequencyHz);
+void ConfigureLegacyAnalogOutput(Supla::Control::DimmerBase &lighting,
+                                 Supla::Io::IoPin &pin) {
+  lighting.setPwmResolutionBits(LegacyAnalogWriteResolutionBits);
+  lighting.setPwmFrequency(LegacyAnalogWriteFrequencyHz);
+  pin.setPwmResolutionBits(lighting.getPwmResolutionBits());
+  pin.setPwmFrequency(lighting.getPwmFrequency());
 }
 }  // namespace
 
@@ -48,7 +51,7 @@ void Supla::Control::DimmerLeds::setRGBWValueOnDevice(uint32_t red,
 }
 
 void Supla::Control::DimmerLeds::onInit() {
-  ConfigureLegacyAnalogOutput(brightnessPin);
+  ConfigureLegacyAnalogOutput(*this, brightnessPin);
   brightnessPin.configureAnalogOutput();
   brightnessPin.pinMode();
 

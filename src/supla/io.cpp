@@ -93,6 +93,14 @@ constexpr uint16_t DefaultPwmFrequencyHz() {
   return 1000;
 #endif
 }
+
+bool DefaultPwmResolutionBitsMutable() {
+#if defined(ARDUINO_ARCH_AVR)
+  return false;
+#else
+  return true;
+#endif
+}
 }  // namespace
 
 namespace Supla {
@@ -248,6 +256,20 @@ void setPwmResolutionBits(uint8_t pin, uint8_t resolutionBits, Io::Base *io) {
 #endif
 }
 
+uint8_t defaultPwmResolutionBits(uint8_t pin, Io::Base *io) {
+  if (io != nullptr) {
+    return io->customDefaultPwmResolutionBits(pin);
+  }
+  return DefaultAnalogWriteResolutionBits();
+}
+
+bool canSetPwmResolutionBits(uint8_t pin, Io::Base *io) {
+  if (io != nullptr) {
+    return io->customCanSetPwmResolutionBits(pin);
+  }
+  return DefaultPwmResolutionBitsMutable();
+}
+
 uint8_t pwmResolutionBits(uint8_t pin, Io::Base *io) {
   if (io != nullptr) {
     return io->customPwmResolutionBits(pin);
@@ -313,6 +335,16 @@ void Base::customConfigureAnalogOutput(int, uint8_t, bool) {
 
 void Base::customSetPwmFrequency(uint16_t freq) {
   pwmFrequencyHzValue = freq;
+}
+
+uint8_t Base::customDefaultPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
+  return pwmResolutionBitsValue;
+}
+
+bool Base::customCanSetPwmResolutionBits(uint8_t pin) const {
+  (void)(pin);
+  return true;
 }
 
 uint8_t Base::customPwmResolutionBits(uint8_t pin) const {

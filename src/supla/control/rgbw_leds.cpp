@@ -20,9 +20,12 @@ namespace {
 constexpr uint8_t LegacyAnalogWriteResolutionBits = 10;
 constexpr uint32_t LegacyAnalogWriteFrequencyHz = 1000;
 
-void ConfigureLegacyAnalogOutput(Supla::Io::IoPin &pin) {
-  pin.setPwmResolutionBits(LegacyAnalogWriteResolutionBits);
-  pin.setPwmFrequency(LegacyAnalogWriteFrequencyHz);
+void ConfigureLegacyAnalogOutput(Supla::Control::RGBWBase &lighting,
+                                 Supla::Io::IoPin &pin) {
+  lighting.setPwmResolutionBits(LegacyAnalogWriteResolutionBits);
+  lighting.setPwmFrequency(LegacyAnalogWriteFrequencyHz);
+  pin.setPwmResolutionBits(lighting.getPwmResolutionBits());
+  pin.setPwmFrequency(lighting.getPwmFrequency());
 }
 }  // namespace
 
@@ -70,10 +73,10 @@ void Supla::Control::RGBWLeds::setRGBWValueOnDevice(uint32_t red,
 }
 
 void Supla::Control::RGBWLeds::onInit() {
-  ConfigureLegacyAnalogOutput(redPin);
-  ConfigureLegacyAnalogOutput(greenPin);
-  ConfigureLegacyAnalogOutput(bluePin);
-  ConfigureLegacyAnalogOutput(brightnessPin);
+  ConfigureLegacyAnalogOutput(*this, redPin);
+  ConfigureLegacyAnalogOutput(*this, greenPin);
+  ConfigureLegacyAnalogOutput(*this, bluePin);
+  ConfigureLegacyAnalogOutput(*this, brightnessPin);
   redPin.configureAnalogOutput();
   greenPin.configureAnalogOutput();
   bluePin.configureAnalogOutput();

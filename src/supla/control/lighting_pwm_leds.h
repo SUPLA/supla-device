@@ -49,16 +49,18 @@ class LightingPwmLeds : public LightingPwmBase {
   void onLoadConfig(SuplaDeviceClass *sdc) override;
 
  protected:
-  void applyPwmResolutionBitsToOutputs();
-  void applyPwmFrequencyToOutputs();
-  void applyDefaultChannelFunctions();
-  int getConfiguredOutputsCount() const;
-
   struct OutputState {
     Supla::Io::IoPin pin;
     int32_t lastSourceValue = -1;
     int32_t lastDutyValue = -1;
   };
+
+  void applyPwmResolutionBitsToOutputs();
+  void applyPwmFrequencyToOutputs();
+  void applyDefaultChannelFunctions();
+  int getConfiguredOutputsCount() const;
+  uint8_t getPwmResolutionBitsForOutput(const OutputState &output) const;
+  uint32_t getPwmMaxValueForOutput(const OutputState &output) const;
   bool isOutputSharedWithParent(const OutputState &output) const;
 
   OutputState outputs[kMaxOutputs];

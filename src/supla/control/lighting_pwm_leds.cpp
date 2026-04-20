@@ -24,7 +24,12 @@ namespace Supla {
 namespace Control {
 
 namespace {
-constexpr uint8_t DefaultPwmResolutionBits = 10;
+uint32_t PwmMaxValueForBits(uint8_t bits) {
+  if (bits == 0) {
+    return 0;
+  }
+  return (1UL << bits) - 1;
+}
 }  // namespace
 
 LightingPwmLeds::LightingPwmLeds(
@@ -121,7 +126,7 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
   for (int i = 0; i < usedOutputs; i++) {
     outputs[i].lastSourceValue = static_cast<int32_t>(output[i]);
     uint32_t value = output[i];
-    uint32_t outputMax = outputs[i].pin.pwmMaxValue();
+    uint32_t outputMax = getPwmMaxValueForOutput(outputs[i]);
     if (outputMax > 0 && outputMax != maxHwValue) {
       value = static_cast<uint32_t>(
           (static_cast<uint64_t>(value) * outputMax + maxHwValue / 2) /
@@ -149,10 +154,31 @@ bool LightingPwmLeds::isOutputSharedWithParent(
   return false;
 }
 
+uint8_t LightingPwmLeds::getPwmResolutionBitsForOutput(
+    const OutputState &output) const {
+  if (!output.pin.isSet() || isOutputSharedWithParent(output)) {
+    return 0;
+  }
+
+  if (Supla::Io::canSetPwmResolutionBits(
+          static_cast<uint8_t>(output.pin.getPin()), output.pin.io)) {
+    return getPwmResolutionBits();
+  }
+  return Supla::Io::defaultPwmResolutionBits(
+      static_cast<uint8_t>(output.pin.getPin()), output.pin.io);
+}
+
+uint32_t LightingPwmLeds::getPwmMaxValueForOutput(
+    const OutputState &output) const {
+  return PwmMaxValueForBits(getPwmResolutionBitsForOutput(output));
+}
+
 void LightingPwmLeds::applyPwmResolutionBitsToOutputs() {
   for (auto &output : outputs) {
-    if (output.pin.isSet() && !isOutputSharedWithParent(output)) {
-      output.pin.setPwmResolutionBits(DefaultPwmResolutionBits);
+    if (output.pin.isSet() && !isOutputSharedWithParent(output) &&
+        Supla::Io::canSetPwmResolutionBits(
+            static_cast<uint8_t>(output.pin.getPin()), output.pin.io)) {
+      output.pin.setPwmResolutionBits(getPwmResolutionBits());
     }
   }
 }
@@ -189,11 +215,9 @@ void LightingPwmLeds::onInit() {
     return;
   }
 
-  applyPwmResolutionBitsToOutputs();
-
   uint32_t outputMaxValue = 0;
   for (const auto &output : outputs) {
-    uint32_t value = output.pin.pwmMaxValue();
+    uint32_t value = getPwmMaxValueForOutput(output);
     if (value > outputMaxValue) {
       outputMaxValue = value;
     }
@@ -201,6 +225,8 @@ void LightingPwmLeds::onInit() {
   if (outputMaxValue > 0) {
     setMaxHwValue(static_cast<int>(outputMaxValue));
   }
+
+  applyPwmResolutionBitsToOutputs();
 
   if (hasParent()) {
     SUPLA_LOG_DEBUG("Light[%d]: initialize parent PWM", getChannelNumber());

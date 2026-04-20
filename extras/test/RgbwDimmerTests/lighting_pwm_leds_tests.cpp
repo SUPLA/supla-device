@@ -47,6 +47,9 @@ class LightingPwmLedsForTest : public Supla::Control::LightingPwmLeds {
   bool isEnabledForTest() const {
     return enabled;
   }
+  int maxHwValueForTest() const {
+    return maxHwValue;
+  }
   int missingGpioCountForTest() const {
     return getMissingGpioCount();
   }
@@ -80,6 +83,16 @@ class ResolvedPwmIo : public Supla::Io::Base {
     return resolutionBits;
   }
 
+  uint8_t customDefaultPwmResolutionBits(uint8_t pin) const override {
+    (void)(pin);
+    return resolutionBits;
+  }
+
+  bool customCanSetPwmResolutionBits(uint8_t pin) const override {
+    (void)(pin);
+    return true;
+  }
+
   uint32_t customPwmMaxValue(uint8_t pin) const override {
     (void)(pin);
     return maxDuty;
@@ -87,6 +100,50 @@ class ResolvedPwmIo : public Supla::Io::Base {
 
   uint8_t resolutionBits = 0;
   uint32_t maxDuty = 0;
+  uint32_t lastValue = 0;
+  uint32_t writeCount = 0;
+  uint16_t lastFrequency = 0;
+};
+
+class NonMutableDefaultPwmIo : public Supla::Io::Base {
+ public:
+  NonMutableDefaultPwmIo() : Base() {
+  }
+
+  void customPinMode(int, uint8_t, uint8_t) override {
+  }
+  void customDigitalWrite(int, uint8_t, uint8_t) override {
+  }
+  void customAnalogWrite(int, uint8_t, int val) override {
+    lastValue = static_cast<uint32_t>(val);
+    writeCount++;
+  }
+  void customConfigureAnalogOutput(int, uint8_t, bool) override {
+  }
+  void customSetPwmFrequency(uint16_t pwmFrequency) override {
+    lastFrequency = pwmFrequency;
+  }
+
+  uint8_t customDefaultPwmResolutionBits(uint8_t pin) const override {
+    (void)(pin);
+    return 8;
+  }
+
+  bool customCanSetPwmResolutionBits(uint8_t pin) const override {
+    (void)(pin);
+    return false;
+  }
+
+  uint8_t customPwmResolutionBits(uint8_t pin) const override {
+    (void)(pin);
+    return 8;
+  }
+
+  uint32_t customPwmMaxValue(uint8_t pin) const override {
+    (void)(pin);
+    return 255;
+  }
+
   uint32_t lastValue = 0;
   uint32_t writeCount = 0;
   uint16_t lastFrequency = 0;
@@ -328,6 +385,19 @@ TEST(RgbwPwmBaseTests, ParentChildMixesCustomAndDefaultIoPerPin) {
   time.advance(1000);
   parent.onInit();
   child.onInit();
+
+  EXPECT_EQ(parent.maxHwValueForTest(), 1023);
+  EXPECT_EQ(child.maxHwValueForTest(), 1023);
+  EXPECT_EQ(parent.outputPinForTest(0).pwmMaxValue(), 1023U);
+  EXPECT_EQ(parent.outputPinForTest(1).pwmMaxValue(), 1023U);
+  EXPECT_EQ(parent.outputPinForTest(2).pwmMaxValue(), 1023U);
+  EXPECT_EQ(parent.outputPinForTest(3).pwmMaxValue(), 1023U);
+  EXPECT_EQ(parent.outputPinForTest(4).pwmMaxValue(), 1023U);
+  EXPECT_EQ(child.outputPinForTest(0).pwmMaxValue(), 1023U);
+  EXPECT_EQ(child.outputPinForTest(1).pwmMaxValue(), 1023U);
+  EXPECT_EQ(child.outputPinForTest(2).pwmMaxValue(), 1023U);
+  EXPECT_EQ(child.outputPinForTest(3).pwmMaxValue(), 1023U);
+  EXPECT_EQ(child.outputPinForTest(4).pwmMaxValue(), 1023U);
 }
 
 TEST(RgbwPwmBaseTests, InitWithoutCustomIoKeepsDefaultPwmState) {
@@ -362,6 +432,68 @@ TEST(RgbwPwmBaseTests, InitWithoutCustomIoKeepsDefaultPwmState) {
   EXPECT_EQ(pwm.outputPinForTest(0).pwmMaxValue(), 1023U);
   EXPECT_EQ(pwm.outputPinForTest(1).pwmMaxValue(), 1023U);
   EXPECT_EQ(pwm.outputPinForTest(2).pwmMaxValue(), 1023U);
+}
+
+TEST(RgbwPwmBaseTests, LightingCanLowerPwmResolutionBitsToEight) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  DigitalInterfaceMock hwInterfaceMock;
+
+  LightingPwmLedsForTest pwm(nullptr,
+                             Supla::Io::IoPin(21),
+                             Supla::Io::IoPin(22),
+                             Supla::Io::IoPin(23));
+  ASSERT_NE(pwm.getChannel(), nullptr);
+  pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_RGBLIGHTING);
+  pwm.setPwmResolutionBits(8);
+
+  EXPECT_CALL(hwInterfaceMock, pinMode(21, OUTPUT)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, pinMode(22, OUTPUT)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, pinMode(23, OUTPUT)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(21, 8)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(22, 8)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteResolution(23, 8)).Times(1);
+  EXPECT_CALL(hwInterfaceMock, analogWriteFrequency(21, 500)).Times(1);
+
+  time.advance(1000);
+  pwm.onInit();
+
+  EXPECT_EQ(pwm.maxHwValueForTest(), 255);
+}
+
+TEST(RgbwPwmBaseTests,
+     LightingUsesIoDefaultResolutionWhenPwmBitsAreNotMutable) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  NonMutableDefaultPwmIo io;
+
+  LightingPwmLedsForTest pwm(nullptr, Supla::Io::IoPin(21, &io));
+  ASSERT_NE(pwm.getChannel(), nullptr);
+  pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  pwm.setFadeEffectTime(0);
+
+  time.advance(1000);
+  pwm.onInit();
+
+  EXPECT_EQ(pwm.maxHwValueForTest(), 255);
+  EXPECT_EQ(pwm.outputPinForTest(0).pwmResolutionBits(), 8U);
+  EXPECT_EQ(pwm.outputPinForTest(0).pwmMaxValue(), 255U);
+
+  TSD_SuplaChannelNewValue msg = {};
+  msg.value[0] = 100;
+  msg.value[5] = 0;
+
+  pwm.handleNewValueFromServer(&msg);
+  time.advance(1000);
+  pwm.iterateAlways();
+  time.advance(1);
+  pwm.onFastTimer();
+  time.advance(1000);
+  pwm.iterateAlways();
+  time.advance(1);
+  pwm.onFastTimer();
+
+  EXPECT_EQ(io.lastValue, 255U);
 }
 
 TEST(RgbwPwmBaseTests, DisabledChildDoesNotReconfigureParentOutputs) {
@@ -418,6 +550,8 @@ TEST(RgbwPwmBaseTests, ChildUsesHardwareMaxValueForDutyScaling) {
 
   parent.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
   child.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  parent.setPwmResolutionBits(13);
+  child.setPwmResolutionBits(13);
   child.setBrightnessRatioLimits(0.0f, 1.0f);
   child.setColorBrightnessRatioLimits(0.0f, 1.0f);
 
@@ -440,6 +574,7 @@ TEST(RgbwPwmBaseTests, IdenticalScaledWritesAreSuppressed) {
       nullptr, Supla::Io::IoPin(21, &io), Supla::Io::IoPin());
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  pwm.setPwmResolutionBits(13);
 
   time.advance(1000);
   pwm.onInit();
@@ -462,6 +597,7 @@ TEST(RgbwPwmBaseTests, UsesIoResolutionAsHardwareMax) {
                          Supla::Io::IoPin(),
                          Supla::Io::IoPin(),
                          Supla::Io::IoPin());
+  pwm.setPwmResolutionBits(13);
 
   time.advance(1000);
   pwm.onInit();
@@ -483,6 +619,7 @@ TEST(RgbwPwmBaseTests, DimmerUsesNineBitDutyRange) {
   Supla::Control::LightingPwmLeds pwm(nullptr, pin);
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  pwm.setPwmResolutionBits(9);
   pwm.setFadeEffectTime(0);
 
   time.advance(1000);
@@ -509,7 +646,7 @@ TEST(RgbwPwmBaseTests, DimmerUsesNineBitDutyRange) {
   EXPECT_EQ(io.lastValue, 0U);
 
   sendAndFlush(50);
-  EXPECT_EQ(io.lastValue, 255U);
+  EXPECT_EQ(io.lastValue, 254U);
 
   sendAndFlush(100);
   EXPECT_EQ(io.lastValue, 511U);
@@ -526,13 +663,13 @@ TEST(RgbwPwmBaseTests, LoweringHwMaxClampsBrightnessLimits) {
   Supla::Control::LightingPwmLeds pwm(nullptr, pin);
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  pwm.setPwmResolutionBits(9);
   pwm.setFadeEffectTime(0);
 
   time.advance(1000);
   pwm.onInit();
 
   pwm.setBrightnessRatioLimits(0.0f, 1.0f);
-  pwm.setMaxHwValue(255);
 
   TSD_SuplaChannelNewValue msg = {};
   msg.value[0] = 100;
@@ -729,6 +866,7 @@ TEST(RgbwPwmBaseTests, TinyTimerStepsAccumulateIntoDutyUpdates) {
       nullptr, Supla::Io::IoPin(21, &io), Supla::Io::IoPin());
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER);
+  pwm.setPwmResolutionBits(9);
   pwm.setFadeEffectTime(1000);
 
   time.advance(1000);
@@ -761,6 +899,7 @@ TEST(RgbwPwmBaseTests, CctOutputsRespectConfiguredBrightnessFloor) {
       nullptr, Supla::Io::IoPin(21, &warmIo), Supla::Io::IoPin(22, &coldIo));
   ASSERT_NE(pwm.getChannel(), nullptr);
   pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT);
+  pwm.setPwmResolutionBits(13);
   pwm.setBrightnessRatioLimits(100.0f / 8191.0f, 1.0f);
   pwm.setColorBrightnessRatioLimits(100.0f / 8191.0f, 1.0f);
   pwm.setFadeEffectTime(0);

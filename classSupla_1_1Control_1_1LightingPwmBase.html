@@ -273,8 +273,6 @@ void&#160;</td><td class="memItemRight"><b>setBrightnessAdjuster</b> (<a class="
 int&#160;</td><td class="memItemRight"><b>getCurrentDimmerBrightness</b> () const</td></tr>
 <tr class="memitem:ad080d39e83eea325411dc6745814c3c7" id="r_ad080d39e83eea325411dc6745814c3c7"><td class="memItemLeft"><a id="ad080d39e83eea325411dc6745814c3c7" name="ad080d39e83eea325411dc6745814c3c7"></a>
 int&#160;</td><td class="memItemRight"><b>getCurrentRGBBrightness</b> () const</td></tr>
-<tr class="memitem:aed6bfcfe6a9ed567cc71d854175855ea" id="r_aed6bfcfe6a9ed567cc71d854175855ea"><td class="memItemLeft"><a id="aed6bfcfe6a9ed567cc71d854175855ea" name="aed6bfcfe6a9ed567cc71d854175855ea"></a>
-void&#160;</td><td class="memItemRight"><b>setMaxHwValue</b> (int newMaxHwValue)</td></tr>
 <tr class="memitem:a2d5027e4b7c5fe6706ef544f3a44b6c7" id="r_a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2d5027e4b7c5fe6706ef544f3a44b6c7">setMinPwmFrequency</a> (uint16_t minPwmFrequency)</td></tr>
 <tr class="memdesc:a2d5027e4b7c5fe6706ef544f3a44b6c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets minimum PWM frequency.  <br /></td></tr>
 <tr class="memitem:a2a529cd97bf0c7ce64990122caf239aa" id="r_a2a529cd97bf0c7ce64990122caf239aa"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2a529cd97bf0c7ce64990122caf239aa">setMaxPwmFrequency</a> (uint16_t maxPwmFrequency)</td></tr>
@@ -283,6 +281,8 @@ void&#160;</td><td class="memItemRight"><b>setMaxHwValue</b> (int newMaxHwValue)
 <tr class="memdesc:a93971acd32a846f2801f7ab455e6610b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency and applies validation.  <br /></td></tr>
 <tr class="memitem:a41c38f3173f22ad0fac394ec6fc1aa3e" id="r_a41c38f3173f22ad0fac394ec6fc1aa3e"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a41c38f3173f22ad0fac394ec6fc1aa3e">setStepPwmFrequency</a> (uint16_t stepPwmFrequency)</td></tr>
 <tr class="memdesc:a41c38f3173f22ad0fac394ec6fc1aa3e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM frequency step.  <br /></td></tr>
+<tr class="memitem:a5764354627157483b73d178ed0388c23" id="r_a5764354627157483b73d178ed0388c23"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5764354627157483b73d178ed0388c23">setPwmResolutionBits</a> (uint8_t pwmResolutionBits)</td></tr>
+<tr class="memdesc:a5764354627157483b73d178ed0388c23"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets PWM resolution bits and updates the remembered hardware max value.  <br /></td></tr>
 <tr class="memitem:aedac22f5d3cbaf955077af45ed4c7cf5" id="r_aedac22f5d3cbaf955077af45ed4c7cf5"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#aedac22f5d3cbaf955077af45ed4c7cf5">getMinPwmFrequency</a> () const</td></tr>
 <tr class="memdesc:aedac22f5d3cbaf955077af45ed4c7cf5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns minimum PWM frequency.  <br /></td></tr>
 <tr class="memitem:a3a39c0146829804c5b5d2d554e584066" id="r_a3a39c0146829804c5b5d2d554e584066"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#a3a39c0146829804c5b5d2d554e584066">getMaxPwmFrequency</a> () const</td></tr>
@@ -291,6 +291,9 @@ void&#160;</td><td class="memItemRight"><b>setMaxHwValue</b> (int newMaxHwValue)
 <tr class="memdesc:a62c15fc88e28c8fc34b5d0717851dc3b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current PWM frequency.  <br /></td></tr>
 <tr class="memitem:ae49ea0891526e76231b8b9a4034a79da" id="r_ae49ea0891526e76231b8b9a4034a79da"><td class="memItemLeft">uint16_t&#160;</td><td class="memItemRight"><a class="el" href="#ae49ea0891526e76231b8b9a4034a79da">getStepPwmFrequency</a> () const</td></tr>
 <tr class="memdesc:ae49ea0891526e76231b8b9a4034a79da"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns PWM frequency step.  <br /></td></tr>
+<tr class="memitem:acf48ce1143a00468ea280e6f3bf15776" id="r_acf48ce1143a00468ea280e6f3bf15776"><td class="memItemLeft"><a id="acf48ce1143a00468ea280e6f3bf15776" name="acf48ce1143a00468ea280e6f3bf15776"></a>
+uint8_t&#160;</td><td class="memItemRight"><b>getPwmResolutionBits</b> () const</td></tr>
+<tr class="memdesc:acf48ce1143a00468ea280e6f3bf15776"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current PWM resolution bits remembered by this lighting instance. <br /></td></tr>
 <tr class="memitem:ab1f50e4ae718b43d970533040d953078" id="r_ab1f50e4ae718b43d970533040d953078"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ab1f50e4ae718b43d970533040d953078">hasParent</a> () const</td></tr>
 <tr class="memdesc:ab1f50e4ae718b43d970533040d953078"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if this instance has parent.  <br /></td></tr>
 <tr class="memitem:a2070780094b7e949c7523710d8d69b00" id="r_a2070780094b7e949c7523710d8d69b00"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a2070780094b7e949c7523710d8d69b00">getAncestorCount</a> () const</td></tr>
@@ -398,6 +401,8 @@ virtual <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> 
 Protected Member Functions</h2></td></tr>
 <tr class="memitem:ac2867d9300d6b6a2b66234721e7313f8" id="r_ac2867d9300d6b6a2b66234721e7313f8"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#ac2867d9300d6b6a2b66234721e7313f8">getMissingGpioCount</a> () const</td></tr>
 <tr class="memdesc:ac2867d9300d6b6a2b66234721e7313f8"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns number of GPIO pins that are required to control this channel.  <br /></td></tr>
+<tr class="memitem:aed6bfcfe6a9ed567cc71d854175855ea" id="r_aed6bfcfe6a9ed567cc71d854175855ea"><td class="memItemLeft"><a id="aed6bfcfe6a9ed567cc71d854175855ea" name="aed6bfcfe6a9ed567cc71d854175855ea"></a>
+void&#160;</td><td class="memItemRight"><b>setMaxHwValue</b> (int newMaxHwValue)</td></tr>
 <tr class="memitem:ad41638addc65f7a951ac93df116025d2" id="r_ad41638addc65f7a951ac93df116025d2"><td class="memItemLeft"><a id="ad41638addc65f7a951ac93df116025d2" name="ad41638addc65f7a951ac93df116025d2"></a>
 void&#160;</td><td class="memItemRight"><b>enableChannel</b> ()</td></tr>
 <tr class="memitem:ab43fa7ecbfd5cc686d7bfa4ce897d089" id="r_ab43fa7ecbfd5cc686d7bfa4ce897d089"><td class="memItemLeft"><a id="ab43fa7ecbfd5cc686d7bfa4ce897d089" name="ab43fa7ecbfd5cc686d7bfa4ce897d089"></a>
@@ -470,8 +475,6 @@ LegacyChannelFunction&#160;</td><td class="memItemRight"><b>legacyChannelFunctio
 enum ButtonControlType&#160;</td><td class="memItemRight"><b>buttonControlType</b> = BUTTON_FOR_RGBW</td></tr>
 <tr class="memitem:a69b8300ed58f8b9e409ead4c640edbd7" id="r_a69b8300ed58f8b9e409ead4c640edbd7"><td class="memItemLeft"><a id="a69b8300ed58f8b9e409ead4c640edbd7" name="a69b8300ed58f8b9e409ead4c640edbd7"></a>
 enum AutoIterateMode&#160;</td><td class="memItemRight"><b>autoIterateMode</b> = AutoIterateMode::OFF</td></tr>
-<tr class="memitem:aa04de0a1af7306be81df64c57e763bb4" id="r_aa04de0a1af7306be81df64c57e763bb4"><td class="memItemLeft"><a id="aa04de0a1af7306be81df64c57e763bb4" name="aa04de0a1af7306be81df64c57e763bb4"></a>
-uint16_t&#160;</td><td class="memItemRight"><b>maxHwValue</b> = 1023</td></tr>
 <tr class="memitem:a2aae6f306447a9989f786ce1e3e24b14" id="r_a2aae6f306447a9989f786ce1e3e24b14"><td class="memItemLeft"><a id="a2aae6f306447a9989f786ce1e3e24b14" name="a2aae6f306447a9989f786ce1e3e24b14"></a>
 float&#160;</td><td class="memItemRight"><b>minBrightnessRatio</b> = 0.0f</td></tr>
 <tr class="memitem:a749199fc58f1560a7d035ddc3e1933ce" id="r_a749199fc58f1560a7d035ddc3e1933ce"><td class="memItemLeft"><a id="a749199fc58f1560a7d035ddc3e1933ce" name="a749199fc58f1560a7d035ddc3e1933ce"></a>
@@ -492,6 +495,10 @@ uint16_t&#160;</td><td class="memItemRight"><b>maxPwmFrequency</b> = 9000</td></
 uint16_t&#160;</td><td class="memItemRight"><b>pwmFrequency</b> = 500</td></tr>
 <tr class="memitem:ae62d6efe4c5e9c054e9fb703a1bafec2" id="r_ae62d6efe4c5e9c054e9fb703a1bafec2"><td class="memItemLeft"><a id="ae62d6efe4c5e9c054e9fb703a1bafec2" name="ae62d6efe4c5e9c054e9fb703a1bafec2"></a>
 uint16_t&#160;</td><td class="memItemRight"><b>stepPwmFrequency</b> = 1</td></tr>
+<tr class="memitem:aa04de0a1af7306be81df64c57e763bb4" id="r_aa04de0a1af7306be81df64c57e763bb4"><td class="memItemLeft"><a id="aa04de0a1af7306be81df64c57e763bb4" name="aa04de0a1af7306be81df64c57e763bb4"></a>
+uint16_t&#160;</td><td class="memItemRight"><b>maxHwValue</b> = 1023</td></tr>
+<tr class="memitem:a758d24c657caf885222e493c86bad676" id="r_a758d24c657caf885222e493c86bad676"><td class="memItemLeft"><a id="a758d24c657caf885222e493c86bad676" name="a758d24c657caf885222e493c86bad676"></a>
+uint8_t&#160;</td><td class="memItemRight"><b>pwmResolutionBits</b> = 10</td></tr>
 <tr class="memitem:af5da8b216c6ebec2549803b3c243fcb5" id="r_af5da8b216c6ebec2549803b3c243fcb5"><td class="memItemLeft"><a id="af5da8b216c6ebec2549803b3c243fcb5" name="af5da8b216c6ebec2549803b3c243fcb5"></a>
 uint32_t&#160;</td><td class="memItemRight"><b>previousChannelFunction</b> = 0</td></tr>
 <tr class="memitem:a9a5385fcd1b5769ef764a500931b7b03" id="r_a9a5385fcd1b5769ef764a500931b7b03"><td class="memItemLeft"><a id="a9a5385fcd1b5769ef764a500931b7b03" name="a9a5385fcd1b5769ef764a500931b7b03"></a>
@@ -1262,6 +1269,26 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a5764354627157483b73d178ed0388c23" name="a5764354627157483b73d178ed0388c23"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5764354627157483b73d178ed0388c23">&#9670;&#160;</a></span>setPwmResolutionBits()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::Control::LightingPwmBase::setPwmResolutionBits </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>pwmResolutionBits</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets PWM resolution bits and updates the remembered hardware max value. </p>
+<p>This value is owned by the lighting instance and later applied to outputs. </p>
 
 </div>
 </div>

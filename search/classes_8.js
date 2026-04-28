@@ -11,10 +11,11 @@ var searchData=
   ['htmlgenerator_8',['HtmlGenerator',['../classSupla_1_1HtmlGenerator.html',1,'Supla']]],
   ['htmltag_9',['HtmlTag',['../classSupla_1_1HtmlTag.html',1,'Supla']]],
   ['hvacbase_10',['HvacBase',['../classHvacBase.html',1,'HvacBase'],['../classSupla_1_1Control_1_1HvacBase.html',1,'Supla::Control::HvacBase']]],
-  ['hvacparameterflags_11',['HvacParameterFlags',['../structHvacParameterFlags.html',1,'']]],
-  ['hvacparameters_12',['HvacParameters',['../classHvacParameters.html',1,'HvacParameters'],['../classSupla_1_1Html_1_1HvacParameters.html',1,'Supla::Html::HvacParameters']]],
-  ['hvacptr_13',['HvacPtr',['../structRelayHvacAggregator_1_1HvacPtr.html',1,'RelayHvacAggregator::HvacPtr'],['../structSupla_1_1Control_1_1RelayHvacAggregator_1_1HvacPtr.html',1,'Supla::Control::RelayHvacAggregator::HvacPtr']]],
-  ['hx711_14',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
-  ['hx711configdata_15',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
-  ['hygrometer_16',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
+  ['hvacmqtthandler_11',['HvacMqttHandler',['../classSupla_1_1Protocol_1_1HvacMqttHandler.html',1,'Supla::Protocol']]],
+  ['hvacparameterflags_12',['HvacParameterFlags',['../structHvacParameterFlags.html',1,'']]],
+  ['hvacparameters_13',['HvacParameters',['../classHvacParameters.html',1,'HvacParameters'],['../classSupla_1_1Html_1_1HvacParameters.html',1,'Supla::Html::HvacParameters']]],
+  ['hvacptr_14',['HvacPtr',['../structRelayHvacAggregator_1_1HvacPtr.html',1,'RelayHvacAggregator::HvacPtr'],['../structSupla_1_1Control_1_1RelayHvacAggregator_1_1HvacPtr.html',1,'Supla::Control::RelayHvacAggregator::HvacPtr']]],
+  ['hx711_15',['HX711',['../classSupla_1_1Sensor_1_1HX711.html',1,'Supla::Sensor']]],
+  ['hx711configdata_16',['HX711ConfigData',['../structSupla_1_1Sensor_1_1HX711ConfigData.html',1,'Supla::Sensor']]],
+  ['hygrometer_17',['HygroMeter',['../classSupla_1_1Sensor_1_1HygroMeter.html',1,'Supla::Sensor']]]
 ];

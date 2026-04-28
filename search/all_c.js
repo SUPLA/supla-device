@@ -16,10 +16,11 @@ var searchData=
   ['modbusparameters_13',['ModbusParameters',['../classModbusParameters.html',1,'ModbusParameters'],['../classSupla_1_1Html_1_1ModbusParameters.html',1,'Supla::Html::ModbusParameters']]],
   ['modbusserialconfig_14',['ModbusSerialConfig',['../structModbusSerialConfig.html',1,'']]],
   ['mqtt_15',['Mqtt',['../classMqtt.html',1,'Mqtt'],['../classSupla_1_1Protocol_1_1Mqtt.html',1,'Supla::Protocol::Mqtt']]],
-  ['mqtttopic_16',['MqttTopic',['../classSupla_1_1Protocol_1_1MqttTopic.html',1,'Supla::Protocol']]],
-  ['multidshandler_17',['MultiDsHandler',['../classSupla_1_1Sensor_1_1MultiDsHandler.html',1,'Supla::Sensor']]],
-  ['multidshandlerbase_18',['MultiDsHandlerBase',['../classMultiDsHandlerBase.html',1,'MultiDsHandlerBase'],['../classSupla_1_1Sensor_1_1MultiDsHandlerBase.html',1,'Supla::Sensor::MultiDsHandlerBase']]],
-  ['multidssensor_19',['MultiDsSensor',['../classMultiDsSensor.html',1,'MultiDsSensor'],['../classSupla_1_1Sensor_1_1MultiDsSensor.html',1,'Supla::Sensor::MultiDsSensor']]],
-  ['mutesoundalarm_20',['muteSoundAlarm',['../classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1',1,'Supla::Sensor::Container::muteSoundAlarm()'],['../classContainer.html#af517e3d07f9510982baff2f37e99acf1',1,'Container::muteSoundAlarm()']]],
-  ['mutex_21',['Mutex',['../classSupla_1_1Mutex.html',1,'Supla']]]
+  ['mqttchannelhandler_16',['MqttChannelHandler',['../classSupla_1_1Protocol_1_1MqttChannelHandler.html',1,'Supla::Protocol']]],
+  ['mqtttopic_17',['MqttTopic',['../classSupla_1_1Protocol_1_1MqttTopic.html',1,'Supla::Protocol']]],
+  ['multidshandler_18',['MultiDsHandler',['../classSupla_1_1Sensor_1_1MultiDsHandler.html',1,'Supla::Sensor']]],
+  ['multidshandlerbase_19',['MultiDsHandlerBase',['../classMultiDsHandlerBase.html',1,'MultiDsHandlerBase'],['../classSupla_1_1Sensor_1_1MultiDsHandlerBase.html',1,'Supla::Sensor::MultiDsHandlerBase']]],
+  ['multidssensor_20',['MultiDsSensor',['../classMultiDsSensor.html',1,'MultiDsSensor'],['../classSupla_1_1Sensor_1_1MultiDsSensor.html',1,'Supla::Sensor::MultiDsSensor']]],
+  ['mutesoundalarm_21',['muteSoundAlarm',['../classSupla_1_1Sensor_1_1Container.html#af517e3d07f9510982baff2f37e99acf1',1,'Supla::Sensor::Container::muteSoundAlarm()'],['../classContainer.html#af517e3d07f9510982baff2f37e99acf1',1,'Container::muteSoundAlarm()']]],
+  ['mutex_22',['Mutex',['../classSupla_1_1Mutex.html',1,'Supla']]]
 ];

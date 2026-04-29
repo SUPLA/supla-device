@@ -157,6 +157,10 @@ virtual bool&#160;</td><td class="memItemRight"><b>getValue</b> ()=0</td></tr>
 <tr class="memdesc:a7262f59202cf8feb848de2a32b638d77"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the sensitivity.  <br /></td></tr>
 <tr class="memitem:a063afb99658ded818126a60bf6e93fb6" id="r_a063afb99658ded818126a60bf6e93fb6"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a063afb99658ded818126a60bf6e93fb6">setSensitivity</a> (uint8_t sensitivity, bool local=true)</td></tr>
 <tr class="memdesc:a063afb99658ded818126a60bf6e93fb6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the sensitivity.  <br /></td></tr>
+<tr class="memitem:ad66758688a7ef793ab332475f76fb60a" id="r_ad66758688a7ef793ab332475f76fb60a"><td class="memItemLeft">uint8_t&#160;</td><td class="memItemRight"><a class="el" href="#ad66758688a7ef793ab332475f76fb60a">getAlarmMuted</a> () const</td></tr>
+<tr class="memdesc:ad66758688a7ef793ab332475f76fb60a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Get the alarm muted state.  <br /></td></tr>
+<tr class="memitem:a7eaba69dbf644733d47ffde738e8ebec" id="r_a7eaba69dbf644733d47ffde738e8ebec"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a7eaba69dbf644733d47ffde738e8ebec">setAlarmMuted</a> (uint8_t alarmMuted, bool local=true)</td></tr>
+<tr class="memdesc:a7eaba69dbf644733d47ffde738e8ebec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the alarm muted state.  <br /></td></tr>
 <tr class="memitem:a5fdbfc49e4f69a5714f5af65f84cd0f2" id="r_a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5fdbfc49e4f69a5714f5af65f84cd0f2">setReadIntervalMs</a> (uint32_t intervalMs)</td></tr>
 <tr class="memdesc:a5fdbfc49e4f69a5714f5af65f84cd0f2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the read interval in ms.  <br /></td></tr>
 <tr class="memitem:a1f50f2e805721a933a7211d892c3e77f" id="r_a1f50f2e805721a933a7211d892c3e77f"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a1f50f2e805721a933a7211d892c3e77f">purgeConfig</a> () override</td></tr>
@@ -271,6 +275,8 @@ Protected Member Functions</h2></td></tr>
 void&#160;</td><td class="memItemRight"><b>saveConfig</b> ()</td></tr>
 <tr class="memitem:a9974b32aea1ba07748877b551db48167" id="r_a9974b32aea1ba07748877b551db48167"><td class="memItemLeft"><a id="a9974b32aea1ba07748877b551db48167" name="a9974b32aea1ba07748877b551db48167"></a>
 void&#160;</td><td class="memItemRight"><b>printConfig</b> ()</td></tr>
+<tr class="memitem:ab22df9f4a0a458bd14e09e1a551e2373" id="r_ab22df9f4a0a458bd14e09e1a551e2373"><td class="memItemLeft"><a id="ab22df9f4a0a458bd14e09e1a551e2373" name="ab22df9f4a0a458bd14e09e1a551e2373"></a>
+void&#160;</td><td class="memItemRight"><b>printConfig</b> (const <a class="el" href="structTChannelConfig__BinarySensor.html">TChannelConfig_BinarySensor</a> *serverConfig)</td></tr>
 <tr class="inherit_header pro_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_methods_classSupla_1_1ElementWithChannelActions')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:ae380adb55e2757c1c4d4a8ec8919a4b5 inherit pro_methods_classSupla_1_1ElementWithChannelActions" id="r_ae380adb55e2757c1c4d4a8ec8919a4b5"><td class="memItemLeft">
 virtual bool&#160;</td><td class="memItemRight"><b>setAndSaveFunction</b> (uint32_t channelFunction)</td></tr>
@@ -419,6 +425,27 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </dl>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a>.</p>
+
+</div>
+</div>
+<a id="ad66758688a7ef793ab332475f76fb60a" name="ad66758688a7ef793ab332475f76fb60a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad66758688a7ef793ab332475f76fb60a">&#9670;&#160;</a></span>getAlarmMuted()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint8_t <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#ad66758688a7ef793ab332475f76fb60a">BinaryBase::getAlarmMuted</a> </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Get the alarm muted state. </p>
+<p>0 - not used, 1 - muted, 2 - not muted.</p>
+<dl class="section return"><dt>Returns</dt><dd>alarm muted state </dd></dl>
 
 </div>
 </div>
@@ -654,6 +681,38 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 <p>Purge the configuration. </p>
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#af0ae5094b287518c30d0c3361f19500b">Supla::Element</a>.</p>
+
+</div>
+</div>
+<a id="a7eaba69dbf644733d47ffde738e8ebec" name="a7eaba69dbf644733d47ffde738e8ebec"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7eaba69dbf644733d47ffde738e8ebec">&#9670;&#160;</a></span>setAlarmMuted()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classSupla_1_1Sensor_1_1BinaryBase.html#a7eaba69dbf644733d47ffde738e8ebec">BinaryBase::setAlarmMuted</a> </td>
+          <td>(</td>
+          <td class="paramtype">uint8_t</td>          <td class="paramname"><span class="paramname"><em>alarmMuted</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>local</em></span><span class="paramdefsep"> = </span><span class="paramdefval">true</span>&#160;)</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Set the alarm muted state. </p>
+<p>0 - not used, 1 - muted, 2 - not muted. Parameter is synchronized with the server.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">alarmMuted</td><td></td></tr>
+    <tr><td class="paramname">local</td><td>use true if change originates locally from the device (i.e. from config mode)</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true if alarm muted state was changed </dd></dl>
 
 </div>
 </div>

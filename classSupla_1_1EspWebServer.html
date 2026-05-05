@@ -186,6 +186,10 @@ void&#160;</td><td class="memItemRight"><b>notifyClientConnected</b> (bool isPos
 virtual void&#160;</td><td class="memItemRight"><b>parsePost</b> (const char *postContent, int size, bool lastChunk=true)</td></tr>
 <tr class="memitem:ad916f080ee4b3d47dfb0ad8c66a6e16c inherit pub_methods_classSupla_1_1WebServer" id="r_ad916f080ee4b3d47dfb0ad8c66a6e16c"><td class="memItemLeft">
 virtual void&#160;</td><td class="memItemRight"><b>resetParser</b> ()</td></tr>
+<tr class="memitem:a644e2af9b85407c54d4d8e4707915595 inherit pub_methods_classSupla_1_1WebServer" id="r_a644e2af9b85407c54d4d8e4707915595"><td class="memItemLeft">
+const char *&#160;</td><td class="memItemRight"><b>getCsrfToken</b> ()</td></tr>
+<tr class="memitem:a3191034a9f72b95ca9b1c0bcb01c7548 inherit pub_methods_classSupla_1_1WebServer" id="r_a3191034a9f72b95ca9b1c0bcb01c7548"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>isCsrfTokenValid</b> (const char *token)</td></tr>
 <tr class="memitem:a3469cd794853ef76c901a419109ede01 inherit pub_methods_classSupla_1_1WebServer" id="r_a3469cd794853ef76c901a419109ede01"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>setBetaProcessing</b> ()</td></tr>
 <tr class="memitem:a060563def42005321bcad749b2278845 inherit pub_methods_classSupla_1_1WebServer" id="r_a060563def42005321bcad749b2278845"><td class="memItemLeft">
@@ -297,6 +301,14 @@ char&#160;</td><td class="memItemRight"><b>key</b> [HTML_KEY_LENGTH] = {}</td></
 char *&#160;</td><td class="memItemRight"><b>value</b> = nullptr</td></tr>
 <tr class="memitem:a5d28394be2e4fb3b0ef3831306b32e6c inherit pro_attribs_classSupla_1_1WebServer" id="r_a5d28394be2e4fb3b0ef3831306b32e6c"><td class="memItemLeft">
 bool&#160;</td><td class="memItemRight"><b>betaProcessing</b> = false</td></tr>
+<tr class="memitem:a723bdebc62267dfcaa83137cee4f0dfb inherit pro_attribs_classSupla_1_1WebServer" id="r_a723bdebc62267dfcaa83137cee4f0dfb"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>csrfValidated</b> = false</td></tr>
+<tr class="memitem:abbba8fd882f811d54585e777f07f28e3 inherit pro_attribs_classSupla_1_1WebServer" id="r_abbba8fd882f811d54585e777f07f28e3"><td class="memItemLeft">
+bool&#160;</td><td class="memItemRight"><b>csrfRejected</b> = false</td></tr>
+<tr class="memitem:afd959bc71f2154eafcf66701445ef6e8 inherit pro_attribs_classSupla_1_1WebServer" id="r_afd959bc71f2154eafcf66701445ef6e8"><td class="memItemLeft">
+uint8_t&#160;</td><td class="memItemRight"><b>csrfSecret</b> [16] = {}</td></tr>
+<tr class="memitem:a720dfbec574d3708d22732535eb0b6e4 inherit pro_attribs_classSupla_1_1WebServer" id="r_a720dfbec574d3708d22732535eb0b6e4"><td class="memItemLeft">
+char&#160;</td><td class="memItemRight"><b>csrfToken</b> [33] = {}</td></tr>
 <tr class="inherit_header pro_attribs_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_attribs_classSupla_1_1Element')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Protected Attributes inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:a2123c86524145b71a5fad034147dbf6f inherit pro_attribs_classSupla_1_1Element" id="r_a2123c86524145b71a5fad034147dbf6f"><td class="memItemLeft">
 Element *&#160;</td><td class="memItemRight"><b>nextPtr</b> = nullptr</td></tr>

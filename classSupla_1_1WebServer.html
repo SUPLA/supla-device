@@ -177,6 +177,10 @@ void&#160;</td><td class="memItemRight"><b>notifyClientConnected</b> (bool isPos
 virtual void&#160;</td><td class="memItemRight"><b>parsePost</b> (const char *postContent, int size, bool lastChunk=true)</td></tr>
 <tr class="memitem:ad916f080ee4b3d47dfb0ad8c66a6e16c" id="r_ad916f080ee4b3d47dfb0ad8c66a6e16c"><td class="memItemLeft"><a id="ad916f080ee4b3d47dfb0ad8c66a6e16c" name="ad916f080ee4b3d47dfb0ad8c66a6e16c"></a>
 virtual void&#160;</td><td class="memItemRight"><b>resetParser</b> ()</td></tr>
+<tr class="memitem:a644e2af9b85407c54d4d8e4707915595" id="r_a644e2af9b85407c54d4d8e4707915595"><td class="memItemLeft"><a id="a644e2af9b85407c54d4d8e4707915595" name="a644e2af9b85407c54d4d8e4707915595"></a>
+const char *&#160;</td><td class="memItemRight"><b>getCsrfToken</b> ()</td></tr>
+<tr class="memitem:a3191034a9f72b95ca9b1c0bcb01c7548" id="r_a3191034a9f72b95ca9b1c0bcb01c7548"><td class="memItemLeft"><a id="a3191034a9f72b95ca9b1c0bcb01c7548" name="a3191034a9f72b95ca9b1c0bcb01c7548"></a>
+bool&#160;</td><td class="memItemRight"><b>isCsrfTokenValid</b> (const char *token)</td></tr>
 <tr class="memitem:a3469cd794853ef76c901a419109ede01" id="r_a3469cd794853ef76c901a419109ede01"><td class="memItemLeft"><a id="a3469cd794853ef76c901a419109ede01" name="a3469cd794853ef76c901a419109ede01"></a>
 void&#160;</td><td class="memItemRight"><b>setBetaProcessing</b> ()</td></tr>
 <tr class="memitem:a060563def42005321bcad749b2278845" id="r_a060563def42005321bcad749b2278845"><td class="memItemLeft"><a id="a060563def42005321bcad749b2278845" name="a060563def42005321bcad749b2278845"></a>
@@ -217,6 +221,14 @@ char&#160;</td><td class="memItemRight"><b>key</b> [HTML_KEY_LENGTH] = {}</td></
 char *&#160;</td><td class="memItemRight"><b>value</b> = nullptr</td></tr>
 <tr class="memitem:a5d28394be2e4fb3b0ef3831306b32e6c" id="r_a5d28394be2e4fb3b0ef3831306b32e6c"><td class="memItemLeft"><a id="a5d28394be2e4fb3b0ef3831306b32e6c" name="a5d28394be2e4fb3b0ef3831306b32e6c"></a>
 bool&#160;</td><td class="memItemRight"><b>betaProcessing</b> = false</td></tr>
+<tr class="memitem:a723bdebc62267dfcaa83137cee4f0dfb" id="r_a723bdebc62267dfcaa83137cee4f0dfb"><td class="memItemLeft"><a id="a723bdebc62267dfcaa83137cee4f0dfb" name="a723bdebc62267dfcaa83137cee4f0dfb"></a>
+bool&#160;</td><td class="memItemRight"><b>csrfValidated</b> = false</td></tr>
+<tr class="memitem:abbba8fd882f811d54585e777f07f28e3" id="r_abbba8fd882f811d54585e777f07f28e3"><td class="memItemLeft"><a id="abbba8fd882f811d54585e777f07f28e3" name="abbba8fd882f811d54585e777f07f28e3"></a>
+bool&#160;</td><td class="memItemRight"><b>csrfRejected</b> = false</td></tr>
+<tr class="memitem:afd959bc71f2154eafcf66701445ef6e8" id="r_afd959bc71f2154eafcf66701445ef6e8"><td class="memItemLeft"><a id="afd959bc71f2154eafcf66701445ef6e8" name="afd959bc71f2154eafcf66701445ef6e8"></a>
+uint8_t&#160;</td><td class="memItemRight"><b>csrfSecret</b> [16] = {}</td></tr>
+<tr class="memitem:a720dfbec574d3708d22732535eb0b6e4" id="r_a720dfbec574d3708d22732535eb0b6e4"><td class="memItemLeft"><a id="a720dfbec574d3708d22732535eb0b6e4" name="a720dfbec574d3708d22732535eb0b6e4"></a>
+char&#160;</td><td class="memItemRight"><b>csrfToken</b> [33] = {}</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-static-attribs" class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
 Static Protected Attributes</h2></td></tr>

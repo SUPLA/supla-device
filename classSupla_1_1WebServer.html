@@ -76,6 +76,7 @@ $(function() {
 <div id="doc-content">
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-static-methods">Static Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
@@ -161,6 +162,13 @@ Collaboration diagram for Supla::WebServer:</div>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-types" class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a806b89d21fbae16aee0ec4a83c6c9192" id="r_a806b89d21fbae16aee0ec4a83c6c9192"><td class="memItemLeft"><a id="a806b89d21fbae16aee0ec4a83c6c9192" name="a806b89d21fbae16aee0ec4a83c6c9192"></a>enum class &#160;</td><td class="memItemRight"><b>WebServerMode</b> { <b>HttpOnly</b>
+, <b>HttpsOnly</b>
+, <b>Auto</b>
+ }</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a1b79dad32295ebdca7c00742b29ed4b2" id="r_a1b79dad32295ebdca7c00742b29ed4b2"><td class="memItemLeft"><a id="a1b79dad32295ebdca7c00742b29ed4b2" name="a1b79dad32295ebdca7c00742b29ed4b2"></a>
@@ -169,6 +177,12 @@ Public Member Functions</h2></td></tr>
 virtual void&#160;</td><td class="memItemRight"><b>start</b> ()=0</td></tr>
 <tr class="memitem:aa322b7ce86d2d987a0638f01ce468ef1" id="r_aa322b7ce86d2d987a0638f01ce468ef1"><td class="memItemLeft"><a id="aa322b7ce86d2d987a0638f01ce468ef1" name="aa322b7ce86d2d987a0638f01ce468ef1"></a>
 virtual void&#160;</td><td class="memItemRight"><b>stop</b> ()=0</td></tr>
+<tr class="memitem:a44ba62f685a84991755e60abeed109d3" id="r_a44ba62f685a84991755e60abeed109d3"><td class="memItemLeft"><a id="a44ba62f685a84991755e60abeed109d3" name="a44ba62f685a84991755e60abeed109d3"></a>
+virtual void&#160;</td><td class="memItemRight"><b>setWebServerMode</b> (WebServerMode mode)</td></tr>
+<tr class="memitem:a03dde4120d8d9365e198f1265691e852" id="r_a03dde4120d8d9365e198f1265691e852"><td class="memItemLeft"><a id="a03dde4120d8d9365e198f1265691e852" name="a03dde4120d8d9365e198f1265691e852"></a>
+virtual WebServerMode&#160;</td><td class="memItemRight"><b>getWebServerMode</b> () const</td></tr>
+<tr class="memitem:a9dfe6b650ebaf474f01eb17fb957fe94" id="r_a9dfe6b650ebaf474f01eb17fb957fe94"><td class="memItemLeft"><a id="a9dfe6b650ebaf474f01eb17fb957fe94" name="a9dfe6b650ebaf474f01eb17fb957fe94"></a>
+virtual WebServerMode&#160;</td><td class="memItemRight"><b>resolveWebServerMode</b> () const</td></tr>
 <tr class="memitem:a7353daba52d926068d67a5c890803280" id="r_a7353daba52d926068d67a5c890803280"><td class="memItemLeft"><a id="a7353daba52d926068d67a5c890803280" name="a7353daba52d926068d67a5c890803280"></a>
 void&#160;</td><td class="memItemRight"><b>setSuplaDeviceClass</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *)</td></tr>
 <tr class="memitem:a16c2c8bcae00bf9b6df4e06bbd1975a8" id="r_a16c2c8bcae00bf9b6df4e06bbd1975a8"><td class="memItemLeft"><a id="a16c2c8bcae00bf9b6df4e06bbd1975a8" name="a16c2c8bcae00bf9b6df4e06bbd1975a8"></a>
@@ -183,8 +197,8 @@ const char *&#160;</td><td class="memItemRight"><b>getCsrfToken</b> ()</td></tr>
 bool&#160;</td><td class="memItemRight"><b>isCsrfTokenValid</b> (const char *token)</td></tr>
 <tr class="memitem:a3469cd794853ef76c901a419109ede01" id="r_a3469cd794853ef76c901a419109ede01"><td class="memItemLeft"><a id="a3469cd794853ef76c901a419109ede01" name="a3469cd794853ef76c901a419109ede01"></a>
 void&#160;</td><td class="memItemRight"><b>setBetaProcessing</b> ()</td></tr>
-<tr class="memitem:a060563def42005321bcad749b2278845" id="r_a060563def42005321bcad749b2278845"><td class="memItemLeft"><a id="a060563def42005321bcad749b2278845" name="a060563def42005321bcad749b2278845"></a>
-virtual bool&#160;</td><td class="memItemRight"><b>verifyCertificatesFormat</b> ()</td></tr>
+<tr class="memitem:ae491a8981efb1ebfa7553e7cf2c45102" id="r_ae491a8981efb1ebfa7553e7cf2c45102"><td class="memItemLeft"><a id="ae491a8981efb1ebfa7553e7cf2c45102" name="ae491a8981efb1ebfa7553e7cf2c45102"></a>
+virtual bool&#160;</td><td class="memItemRight"><b>verifyEmbeddedHttpsCertificates</b> ()</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>

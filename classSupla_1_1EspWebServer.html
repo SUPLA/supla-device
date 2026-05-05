@@ -178,6 +178,12 @@ bool&#160;</td><td class="memItemRight"><b>handlePost</b> (bool beta=false)</td>
 <tr class="inherit_header pub_methods_classSupla_1_1WebServer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1WebServer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classSupla_1_1WebServer.html">Supla::WebServer</a></td></tr>
 <tr class="memitem:a1b79dad32295ebdca7c00742b29ed4b2 inherit pub_methods_classSupla_1_1WebServer" id="r_a1b79dad32295ebdca7c00742b29ed4b2"><td class="memItemLeft">
 &#160;</td><td class="memItemRight"><b>WebServer</b> (<a class="el" href="classSupla_1_1HtmlGenerator.html">Supla::HtmlGenerator</a> *)</td></tr>
+<tr class="memitem:a44ba62f685a84991755e60abeed109d3 inherit pub_methods_classSupla_1_1WebServer" id="r_a44ba62f685a84991755e60abeed109d3"><td class="memItemLeft">
+virtual void&#160;</td><td class="memItemRight"><b>setWebServerMode</b> (WebServerMode mode)</td></tr>
+<tr class="memitem:a03dde4120d8d9365e198f1265691e852 inherit pub_methods_classSupla_1_1WebServer" id="r_a03dde4120d8d9365e198f1265691e852"><td class="memItemLeft">
+virtual WebServerMode&#160;</td><td class="memItemRight"><b>getWebServerMode</b> () const</td></tr>
+<tr class="memitem:a9dfe6b650ebaf474f01eb17fb957fe94 inherit pub_methods_classSupla_1_1WebServer" id="r_a9dfe6b650ebaf474f01eb17fb957fe94"><td class="memItemLeft">
+virtual WebServerMode&#160;</td><td class="memItemRight"><b>resolveWebServerMode</b> () const</td></tr>
 <tr class="memitem:a7353daba52d926068d67a5c890803280 inherit pub_methods_classSupla_1_1WebServer" id="r_a7353daba52d926068d67a5c890803280"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>setSuplaDeviceClass</b> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *)</td></tr>
 <tr class="memitem:a16c2c8bcae00bf9b6df4e06bbd1975a8 inherit pub_methods_classSupla_1_1WebServer" id="r_a16c2c8bcae00bf9b6df4e06bbd1975a8"><td class="memItemLeft">
@@ -192,8 +198,8 @@ const char *&#160;</td><td class="memItemRight"><b>getCsrfToken</b> ()</td></tr>
 bool&#160;</td><td class="memItemRight"><b>isCsrfTokenValid</b> (const char *token)</td></tr>
 <tr class="memitem:a3469cd794853ef76c901a419109ede01 inherit pub_methods_classSupla_1_1WebServer" id="r_a3469cd794853ef76c901a419109ede01"><td class="memItemLeft">
 void&#160;</td><td class="memItemRight"><b>setBetaProcessing</b> ()</td></tr>
-<tr class="memitem:a060563def42005321bcad749b2278845 inherit pub_methods_classSupla_1_1WebServer" id="r_a060563def42005321bcad749b2278845"><td class="memItemLeft">
-virtual bool&#160;</td><td class="memItemRight"><b>verifyCertificatesFormat</b> ()</td></tr>
+<tr class="memitem:ae491a8981efb1ebfa7553e7cf2c45102 inherit pub_methods_classSupla_1_1WebServer" id="r_ae491a8981efb1ebfa7553e7cf2c45102"><td class="memItemLeft">
+virtual bool&#160;</td><td class="memItemRight"><b>verifyEmbeddedHttpsCertificates</b> ()</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_methods_classSupla_1_1Element')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Member Functions inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:ab9d7ce67058db644bbdf3e6e8dac91c4 inherit pub_methods_classSupla_1_1Element" id="r_ab9d7ce67058db644bbdf3e6e8dac91c4"><td class="memItemLeft">Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#ab9d7ce67058db644bbdf3e6e8dac91c4">next</a> ()</td></tr>
 <tr class="memdesc:ab9d7ce67058db644bbdf3e6e8dac91c4 inherit pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns next <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> from the list.  <br /></td></tr>
@@ -315,6 +321,11 @@ Element *&#160;</td><td class="memItemRight"><b>nextPtr</b> = nullptr</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-inherited" class="groupheader"><a id="inherited" name="inherited"></a>
 Additional Inherited Members</h2></td></tr>
+<tr class="inherit_header pub_types_classSupla_1_1WebServer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_types_classSupla_1_1WebServer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Public Types inherited from <a class="el" href="classSupla_1_1WebServer.html">Supla::WebServer</a></td></tr>
+<tr class="memitem:a806b89d21fbae16aee0ec4a83c6c9192 inherit pub_types_classSupla_1_1WebServer" id="r_a806b89d21fbae16aee0ec4a83c6c9192"><td class="memItemLeft"><a id="a806b89d21fbae16aee0ec4a83c6c9192" name="a806b89d21fbae16aee0ec4a83c6c9192"></a>enum class &#160;</td><td class="memItemRight"><b>WebServerMode</b> { <b>HttpOnly</b>
+, <b>HttpsOnly</b>
+, <b>Auto</b>
+ }</td></tr>
 <tr class="inherit_header pub_static_methods_classSupla_1_1WebServer"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_static_methods_classSupla_1_1WebServer')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Static Public Member Functions inherited from <a class="el" href="classSupla_1_1WebServer.html">Supla::WebServer</a></td></tr>
 <tr class="memitem:afd6f36afb807aa9999b6ddeff4eb53c6 inherit pub_static_methods_classSupla_1_1WebServer" id="r_afd6f36afb807aa9999b6ddeff4eb53c6"><td class="memItemLeft">
 static WebServer *&#160;</td><td class="memItemRight"><b>Instance</b> ()</td></tr>

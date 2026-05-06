@@ -981,6 +981,13 @@ bool Supla::LinuxYamlConfig::addFronius(const YAML::Node& ch,
   if (ch["device_type"]) {
     paramCount++;
     deviceType = ch["device_type"].as<int>();
+    if (!Supla::PV::Fronius::isDeviceTypeSupported(deviceType)) {
+      SUPLA_LOG_ERROR(
+          "Channel[%d] config: unsupported Fronius device_type: %d",
+          channelNumber,
+          deviceType);
+      return false;
+    }
   }
 
   if (ch["ip"]) {  // mandatory

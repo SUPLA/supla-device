@@ -33,9 +33,22 @@
 namespace Supla {
 namespace PV {
 
+bool Fronius::isDeviceTypeSupported(int deviceType) {
+  return deviceType == FRONIUS_SINGLE_PHASE_INVERTER ||
+         deviceType == FRONIUS_THREE_PHASE_INVERTER ||
+         deviceType == FRONIUS_THREE_PHASE_METER;
+}
+
 Fronius::Fronius(IPAddress ip, int port, int deviceId, int deviceType)
-    : ip(ip), port(port), deviceType(deviceType), deviceId(deviceId) {
-  if (deviceType == FRONIUS_SINGLE_PHASE_INVERTER) {
+    : ip(ip), port(port),
+      deviceType(isDeviceTypeSupported(deviceType)
+                     ? deviceType
+                     : FRONIUS_SINGLE_PHASE_INVERTER),
+      deviceId(deviceId) {
+  if (!isDeviceTypeSupported(deviceType)) {
+    SUPLA_LOG_ERROR("Unsupported Fronius device type: %d", deviceType);
+  }
+  if (this->deviceType == FRONIUS_SINGLE_PHASE_INVERTER) {
     extChannel.setFlag(SUPLA_CHANNEL_FLAG_PHASE2_UNSUPPORTED);
     extChannel.setFlag(SUPLA_CHANNEL_FLAG_PHASE3_UNSUPPORTED);
   }
@@ -433,13 +446,18 @@ bool Fronius::iterateConnected() {
 
         char idBuf[20];
         snprintf(idBuf, sizeof(idBuf), "%d", deviceId);
-        char buf[200];
+        char buf[200] = {};
         if (deviceType == FRONIUS_SINGLE_PHASE_INVERTER) {
           Fronius::getSinglePhaseInverterURL(buf, idBuf);
         } else if (deviceType == FRONIUS_THREE_PHASE_INVERTER) {
           Fronius::getThreePhaseInverterURL(buf, idBuf);
         } else if (deviceType == FRONIUS_THREE_PHASE_METER) {
           Fronius::getThreePhaseMeterURL(buf, idBuf);
+        } else {
+          SUPLA_LOG_ERROR("Unsupported Fronius device type: %d", deviceType);
+          client->stop();
+          dataFetchInProgress = false;
+          return Element::iterateConnected();
         }
         SUPLA_LOG_VERBOSE("Fronius query: %s", buf);
         client->println(buf);

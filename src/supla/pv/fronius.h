@@ -38,6 +38,7 @@ class Fronius : public Supla::Sensor::ElectricityMeter {
     int deviceId = 1,
     int deviceType = 0);
   ~Fronius();
+  static bool isDeviceTypeSupported(int deviceType);
   void readValuesFromDevice();
   void iterateAlways();
   bool iterateConnected();

@@ -75,6 +75,10 @@ void PwmFrequencyParameters::send(Supla::WebSender* sender) {
 bool PwmFrequencyParameters::handleResponse(const char* key,
                                             const char* value) {
   if (strcmp(key, Supla::ConfigTag::PwmFrequencyTag) == 0) {
+    if (!rgbCct) {
+      return false;
+    }
+
     uint32_t pwmFrequency = stringToUInt(value);
     // setPwmFrequency() will apply validation and will correct pwmFrequency
     // to allowed value

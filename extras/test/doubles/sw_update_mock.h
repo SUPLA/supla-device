@@ -38,6 +38,7 @@ class SwUpdateMock : public Supla::Device::SwUpdate {
   void setFacade(SwUpdateFacade *facade) { this->facade = facade; }
   void setNewVersion(const char *version);
   bool isSecurityOnlyOnFacade();
+  bool isSkipCertOnFacade();
 };
 
 

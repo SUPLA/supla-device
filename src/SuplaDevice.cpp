@@ -599,6 +599,7 @@ void SuplaDeviceClass::iterate(void) {
         deviceMode = Supla::DEVICE_MODE_NORMAL;
         if (cfg) {
           cfg->setDeviceMode(Supla::DEVICE_MODE_NORMAL);
+          cfg->setSwUpdateSkipCert(false);
           cfg->setSwUpdateBeta(false);
           cfg->commit();
         }
@@ -679,8 +680,11 @@ bool SuplaDeviceClass::initSwUpdateInstance(Supla::SwUpdateMode mode,
     if (cfg->isSwUpdateBeta()) {
       swUpdate->useBeta();
     }
-    if (cfg->isSwUpdateSkipCert()) {
-      // Recovery-only fallback; the OTA flow clears this after use.
+    if (deviceMode == Supla::DEVICE_MODE_SW_UPDATE &&
+        cfg->isSwUpdateSkipCert()) {
+      // Recovery-only fallback for a locally requested SW update.
+      // Automatic and remotely triggered OTA checks must keep certificate
+      // verification enabled even if an old recovery flag remains in storage.
       swUpdate->setSkipCert();
     }
   }
@@ -748,6 +752,11 @@ void SuplaDeviceClass::iterateSwUpdate() {
       //      }
     } else if (swUpdate->isFinished()) {
       SUPLA_LOG_INFO("Finished SW update, restarting...");
+      auto cfg = Supla::Storage::ConfigInstance();
+      if (cfg) {
+        cfg->setSwUpdateSkipCert(false);
+        cfg->commit();
+      }
       delete swUpdate;
       swUpdate = nullptr;
       scheduleSoftRestart();

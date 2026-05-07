@@ -52,6 +52,10 @@ class SwUpdateFacade : public Supla::Device::SwUpdate {
     snprintf(newVersion, strlen(version) + 1, "%s", version);
   }
 
+  bool isSkipCert() const {
+    return skipCert;
+  }
+
   SwUpdateMock *mock;
 };
 
@@ -83,4 +87,8 @@ void SwUpdateMock::setNewVersion(const char *version) {
 
 bool SwUpdateMock::isSecurityOnlyOnFacade() {
   return facade->isSecurityOnly();
+}
+
+bool SwUpdateMock::isSkipCertOnFacade() {
+  return facade->isSkipCert();
 }

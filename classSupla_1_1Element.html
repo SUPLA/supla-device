@@ -245,6 +245,8 @@ virtual void&#160;</td><td class="memItemRight"><b>onSoftReset</b> ()</td></tr>
 <tr class="memdesc:ae53a2eb3a88cf0e340764c4353523d0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "get channel state (i)" request from server.  <br /></td></tr>
 <tr class="memitem:a2d845b3d202dd86530cfa81b116bc60b" id="r_a2d845b3d202dd86530cfa81b116bc60b"><td class="memItemLeft">virtual int&#160;</td><td class="memItemRight"><a class="el" href="#a2d845b3d202dd86530cfa81b116bc60b">handleCalcfgFromServer</a> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request)</td></tr>
 <tr class="memdesc:a2d845b3d202dd86530cfa81b116bc60b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles CALCFG requests from server.  <br /></td></tr>
+<tr class="memitem:a0a09b342f7750965685138964b198ce1" id="r_a0a09b342f7750965685138964b198ce1"><td class="memItemLeft">virtual uint32_t&#160;</td><td class="memItemRight"><a class="el" href="#a0a09b342f7750965685138964b198ce1">getCalcfgPendingTimeoutMs</a> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request) const</td></tr>
+<tr class="memdesc:a0a09b342f7750965685138964b198ce1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns timeout in milliseconds for CALCFG requests that become pending.  <br /></td></tr>
 <tr class="memitem:a16a04e25ff6700e5c6f8896eb8dc060e" id="r_a16a04e25ff6700e5c6f8896eb8dc060e"><td class="memItemLeft">virtual uint8_t&#160;</td><td class="memItemRight"><a class="el" href="#a16a04e25ff6700e5c6f8896eb8dc060e">handleChannelConfig</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *newChannelConfig, bool local=false)</td></tr>
 <tr class="memdesc:a16a04e25ff6700e5c6f8896eb8dc060e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "set channel config" request from server.  <br /></td></tr>
 <tr class="memitem:a07dde521f9b2be63fcfc0d4fa210d906" id="r_a07dde521f9b2be63fcfc0d4fa210d906"><td class="memItemLeft">virtual uint8_t&#160;</td><td class="memItemRight"><a class="el" href="#a07dde521f9b2be63fcfc0d4fa210d906">handleWeeklySchedule</a> (<a class="el" href="structTSD__ChannelConfig.html">TSD_ChannelConfig</a> *newWeeklySchedule, bool altSchedule=false, bool local=false)</td></tr>
@@ -438,6 +440,34 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   </table>
   </dd>
 </dl>
+
+</div>
+</div>
+<a id="a0a09b342f7750965685138964b198ce1" name="a0a09b342f7750965685138964b198ce1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a09b342f7750965685138964b198ce1">&#9670;&#160;</a></span>getCalcfgPendingTimeoutMs()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint32_t Supla::Element::getCalcfgPendingTimeoutMs </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *</td>          <td class="paramname"><span class="paramname"><em>request</em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns timeout in milliseconds for CALCFG requests that become pending. </p>
+<p>Zero means no timeout. </p>
 
 </div>
 </div>

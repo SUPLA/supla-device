@@ -19,6 +19,7 @@
 #ifndef SRC_SUPLA_NETWORK_ENC28J60_H_
 #define SRC_SUPLA_NETWORK_ENC28J60_H_
 
+#ifdef ARDUINO_ARCH_AVR
 #include <Arduino.h>
 #include <EthernetENC.h>
 
@@ -67,5 +68,7 @@ class ENC28J60 : public Supla::Network {
 };
 
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_NETWORK_ENC28J60_H_

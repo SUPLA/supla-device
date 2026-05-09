@@ -173,7 +173,7 @@ Parameter is optional. Default value 0.
 
 Example:
 
-    security_level: 2
+    security_level: 0
 
 ### Supla server connection
 

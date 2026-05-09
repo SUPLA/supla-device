@@ -4,7 +4,7 @@
 name: Airly integration
 log_level: debug
 state_files_path: "/var/local/supla-device/airly"
-security_level: 2
+security_level: 0
 
 supla:
   server: svr123.supla.org

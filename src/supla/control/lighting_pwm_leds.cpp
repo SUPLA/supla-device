@@ -138,6 +138,16 @@ void LightingPwmLeds::setRGBCCTValueOnDevice(uint32_t output[5],
     outputs[i].lastDutyValue = static_cast<int32_t>(value);
     outputs[i].pin.analogWrite(value);
   }
+
+  for (int i = usedOutputs; i < lastUsedOutputs; i++) {
+    if (outputs[i].pin.isSet() && outputs[i].lastDutyValue != 0) {
+      outputs[i].lastSourceValue = 0;
+      outputs[i].lastDutyValue = 0;
+      outputs[i].pin.analogWrite(0);
+    }
+  }
+
+  lastUsedOutputs = usedOutputs;
 }
 
 bool LightingPwmLeds::isOutputSharedWithParent(

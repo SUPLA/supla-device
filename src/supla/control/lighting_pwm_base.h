@@ -30,6 +30,9 @@
 #define RGBW_STATE_ON_INIT_ON      1
 
 namespace Supla {
+
+class Mutex;
+
 namespace Control {
 
 class BrightnessAdjuster {
@@ -76,7 +79,7 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
    * handle channel disabling based on parent's function.
    */
   explicit LightingPwmBase(LightingPwmBase *parent = nullptr);
-  virtual ~LightingPwmBase() = default;
+  virtual ~LightingPwmBase();
 
   void purgeConfig() override;
   Supla::ApplyConfigResult applyChannelConfig(TSD_ChannelConfig *result,
@@ -389,6 +392,7 @@ class LightingPwmBase : public ChannelElement, public ActionHandler {
   BrightnessAdjuster *brightnessAdjuster = nullptr;
   Supla::Control::Button *attachedButton = nullptr;
   LightingPwmBase *parent = nullptr;
+  Supla::Mutex *mutex = nullptr;
 };
 
 using RGBCCTBase = LightingPwmBase;

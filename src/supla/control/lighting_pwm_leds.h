@@ -64,6 +64,7 @@ class LightingPwmLeds : public LightingPwmBase {
   bool isOutputSharedWithParent(const OutputState &output) const;
 
   OutputState outputs[kMaxOutputs];
+  int lastUsedOutputs = 0;
   int tryCounter = 0;
   LightingPwmLeds *parentPwm = nullptr;
 };

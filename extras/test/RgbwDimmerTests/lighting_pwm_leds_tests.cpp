@@ -565,6 +565,38 @@ TEST(RgbwPwmBaseTests, ChildUsesHardwareMaxValueForDutyScaling) {
   EXPECT_EQ(io.lastValue, 100U);
 }
 
+TEST(RgbwPwmBaseTests, FunctionChangeShrinksActiveOutputsAndTurnsOffTailPins) {
+  Supla::Channel::resetToDefaults();
+  SimpleTime time;
+  ResolvedPwmIo io0(10, 1023);
+  ResolvedPwmIo io1(10, 1023);
+
+  Supla::Control::LightingPwmLeds pwm(nullptr,
+                                      Supla::Io::IoPin(21, &io0),
+                                      Supla::Io::IoPin(22, &io1));
+  ASSERT_NE(pwm.getChannel(), nullptr);
+  pwm.getChannel()->setDefaultFunction(SUPLA_CHANNELFNC_DIMMER_CCT);
+  pwm.setPwmResolutionBits(10);
+
+  time.advance(1000);
+  pwm.onInit();
+
+  uint32_t cctOutput[5] = {0, 0, 0, 0, 0};
+  cctOutput[0] = 0;
+  cctOutput[1] = 511;
+  pwm.setRGBCCTValueOnDevice(cctOutput, 2);
+
+  EXPECT_EQ(io0.lastValue, 0U);
+  EXPECT_EQ(io1.lastValue, 511U);
+
+  uint32_t dimmerOutput[5] = {0, 0, 0, 0, 0};
+  dimmerOutput[0] = 511;
+  pwm.setRGBCCTValueOnDevice(dimmerOutput, 1);
+
+  EXPECT_EQ(io0.lastValue, 511U);
+  EXPECT_EQ(io1.lastValue, 0U);
+}
+
 TEST(RgbwPwmBaseTests, IdenticalScaledWritesAreSuppressed) {
   Supla::Channel::resetToDefaults();
   SimpleTime time;

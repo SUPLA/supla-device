@@ -21,8 +21,10 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <supla/auto_lock.h>
 #include <supla/control/button.h>
 #include <supla/log_wrapper.h>
+#include <supla/mutex.h>
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
 
@@ -108,6 +110,15 @@ LightingPwmBase::LightingPwmBase(LightingPwmBase *parent) : parent(parent) {
       SUPLA_RGBW_BIT_FUNC_DIMMER_CCT | SUPLA_RGBW_BIT_FUNC_DIMMER_CCT_AND_RGB);
   channel.setDefault(SUPLA_CHANNELFNC_DIMMER_CCT_AND_RGB);
   usedConfigTypes.set(SUPLA_CONFIG_TYPE_DEFAULT);
+  mutex = Supla::Mutex::Create();
+}
+
+LightingPwmBase::~LightingPwmBase() {
+  if (brightnessAdjuster) {
+    delete brightnessAdjuster;
+    brightnessAdjuster = nullptr;
+  }
+  delete mutex;
 }
 
 void LightingPwmBase::setBrightnessAdjuster(BrightnessAdjuster *adjuster) {
@@ -137,6 +148,9 @@ void LightingPwmBase::setRGBCCT(int red,
                                 int whiteTemperature,
                                 bool toggle,
                                 bool instant) {
+  SUPLA_LOG_DEBUG("Light[%d] entering setRGBCCT", getChannelNumber());
+  Supla::AutoLock autoLock(mutex);
+  SUPLA_LOG_DEBUG("Light[%d] setRGBCCT entered", getChannelNumber());
   if (!instant) {
     // Stop brightness adjustment when some command is received
     autoIterateMode = AutoIterateMode::OFF;
@@ -193,6 +207,7 @@ void LightingPwmBase::setRGBCCT(int red,
 
   // Schedule save in 5 s after state change
   Supla::Storage::ScheduleSave(5000, 2000);
+  SUPLA_LOG_DEBUG("Light[%d] setRGBCCT leaving", getChannelNumber());
 }
 
 void LightingPwmBase::iterateAlways() {
@@ -207,11 +222,19 @@ void LightingPwmBase::iterateAlways() {
                         requested.whiteBrightness,
                         requested.whiteTemperature);
   }
+
+  auto fn = getChannel()->getDefaultFunction();
+  if (fn != previousChannelFunction) {
+    autoIterateMode = AutoIterateMode::OFF;
+    previousChannelFunction = fn;
+    setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
+  }
   updateEnabledState();
 }
 
 void LightingPwmBase::updateEnabledState() {
-  if (hasParent() && parent->getMissingGpioCount() > 0) {
+  if ((hasParent() && parent->getMissingGpioCount() > 0) ||
+      getChannel()->getDefaultFunction() == SUPLA_CHANNELFNC_NONE) {
     disableChannel();
   } else {
     enableChannel();
@@ -330,6 +353,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_DIMMER_START: {
+      Supla::AutoLock lock(mutex);
       timing.lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::DIMMER;
@@ -339,6 +363,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_COLOR_START: {
+      Supla::AutoLock lock(mutex);
       timing.lastAutoIterateStartTimestamp = millis();
       if (autoIterateMode == AutoIterateMode::OFF) {
         autoIterateMode = AutoIterateMode::RGB;
@@ -348,11 +373,13 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_ALL_START: {
+      Supla::AutoLock lock(mutex);
       autoIterateMode = AutoIterateMode::ALL;
       timing.lastAutoIterateStartTimestamp = millis();
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_DIMMER_STOP: {
+      Supla::AutoLock lock(mutex);
       if (autoIterateMode == AutoIterateMode::DIMMER) {
         autoIterateMode = AutoIterateMode::OFF;
       } else if (autoIterateMode == AutoIterateMode::ALL) {
@@ -361,6 +388,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_COLOR_STOP: {
+      Supla::AutoLock lock(mutex);
       if (autoIterateMode == AutoIterateMode::RGB) {
         autoIterateMode = AutoIterateMode::OFF;
       } else if (autoIterateMode == AutoIterateMode::ALL) {
@@ -369,6 +397,7 @@ int32_t LightingPwmBase::handleNewValueFromServer(
       break;
     }
     case RGBW_COMMAND_BRIGHTNESS_ADJUSTMENT_ALL_STOP: {
+      Supla::AutoLock lock(mutex);
       autoIterateMode = AutoIterateMode::OFF;
       break;
     }
@@ -768,14 +797,9 @@ void LightingPwmBase::onFastTimer() {
   }
   uint32_t now = millis();
 
-  uint32_t fn = getChannel()->getDefaultFunction();
-  if (fn != previousChannelFunction) {
-    autoIterateMode = AutoIterateMode::OFF;
-    auto fnCopy = previousChannelFunction;
-    previousChannelFunction = fn;
-    fn = fnCopy;
-    setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
-  }
+  int autoIterateAction = 0;
+
+  Supla::AutoLock autoLock(mutex);
 
   if (timing.lastTick == 0) {
     timing.lastTick = now;
@@ -788,22 +812,25 @@ void LightingPwmBase::onFastTimer() {
     return;
   }
 
+  uint32_t timeDiff = now - timing.lastTick;
+  if (timeDiff == 0) {
+    return;
+  }
+
   if (autoIterateMode != AutoIterateMode::OFF &&
       now - timing.lastAutoIterateStartTimestamp < 10000) {
     if (now - timing.lastIterateDimmerTimestamp >= 35) {
-      // timing.lastIterateDimmerTimestamp is updated in handleAction calls
-      // below
       switch (autoIterateMode) {
         case AutoIterateMode::DIMMER: {
-          handleAction(0, Supla::ITERATE_DIM_W);
+          autoIterateAction = Supla::ITERATE_DIM_W;
           break;
         }
         case AutoIterateMode::RGB: {
-          handleAction(0, Supla::ITERATE_DIM_RGB);
+          autoIterateAction = Supla::ITERATE_DIM_RGB;
           break;
         }
         case AutoIterateMode::ALL: {
-          handleAction(0, Supla::ITERATE_DIM_ALL);
+          autoIterateAction = Supla::ITERATE_DIM_ALL;
           break;
         }
         default:
@@ -811,14 +838,7 @@ void LightingPwmBase::onFastTimer() {
       }
     }
   } else {
-    // disable auto iterate after 10 s timeout
     autoIterateMode = AutoIterateMode::OFF;
-  }
-
-  uint32_t timeDiff = now - timing.lastTick;
-
-  if (timeDiff == 0) {
-    return;
   }
 
   timing.lastTick = now;
@@ -833,6 +853,8 @@ void LightingPwmBase::onFastTimer() {
     hardware.whiteTemperature = 0;
     valueChanged = true;
   }
+
+  auto fn = getChannel()->getDefaultFunction();
 
   const bool useRGB = (fn == SUPLA_CHANNELFNC_RGBLIGHTING) ||
                       (fn == SUPLA_CHANNELFNC_DIMMERANDRGBLIGHTING) ||
@@ -1043,11 +1065,18 @@ void LightingPwmBase::onFastTimer() {
     valueAdj[usedChannels++] = white2Brightness;
   }
 
-  if (usedChannels > 0) {
-    setRGBCCTValueOnDevice(valueAdj, usedChannels);
-    for (int i = 0; i < usedChannels; i++) {
+  auto usedChannelsCopy = usedChannels;
+
+  autoLock.unlock();
+  if (usedChannelsCopy > 0) {
+    setRGBCCTValueOnDevice(valueAdj, usedChannelsCopy);
+    for (int i = 0; i < usedChannelsCopy; i++) {
       valueAdj[i] = valueAdj[i] * 100.0 / maxHwValue;
     }
+  }
+
+  if (autoIterateAction != 0) {
+    handleAction(0, autoIterateAction);
   }
 }
 
@@ -1570,6 +1599,7 @@ void LightingPwmBase::enableChannel() {
   timing.lastTick = 0;
   enabled = true;
   getChannel()->setStateOnline();
+  setRGBCCT(0, 255, 0, 0, 0, -1, 0, 1);
 }
 
 void LightingPwmBase::disableChannel() {
@@ -1579,6 +1609,8 @@ void LightingPwmBase::disableChannel() {
 
   uint32_t valueAdj[SUPLA_MAX_OUTPUT_COUNT] = {0};
   setRGBCCTValueOnDevice(valueAdj, usedChannels);
+
+  Supla::AutoLock lock(mutex);
   hardware.red = 0;
   hardware.green = 0;
   hardware.blue = 0;
@@ -1588,6 +1620,7 @@ void LightingPwmBase::disableChannel() {
   usedChannels = 0;
 
   enabled = false;
+  lock.unlock();
   getChannel()->setStateOnlineAndNotAvailable();
 }
 

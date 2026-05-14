@@ -39,11 +39,21 @@
 namespace Supla {
 namespace Device {
 
+FactoryTest::InsecureOptions FactoryTest::insecureOptions = 0;
+
 FactoryTest::FactoryTest(SuplaDeviceClass *sdc, uint32_t timeoutS)
     : sdc(sdc), timeoutS(timeoutS) {
 }
 
 FactoryTest::~FactoryTest() {
+}
+
+void FactoryTest::setInsecureOptions(InsecureOptions options) {
+  insecureOptions = options;
+}
+
+FactoryTest::InsecureOptions FactoryTest::getInsecureOptions() {
+  return insecureOptions;
 }
 
 int16_t FactoryTest::getManufacturerId() {
@@ -194,8 +204,7 @@ void FactoryTest::onInit() {
   }
 
   if (cfg && !cfg->isEncryptionEnabled()) {
-#ifndef SUPLA_DEBUG
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowConfigEncryptionDisabled) == 0) {
       SUPLA_LOG_ERROR("TEST failed: config encryption is disabled");
       testFailed = true;
       failReason = 16;
@@ -203,9 +212,9 @@ void FactoryTest::onInit() {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip check: config encryption is disabled");
+      SUPLA_LOG_WARNING(
+          "INSECURE PRODUCT PROFILE: config encryption is disabled");
     }
-#endif
   }
 
   auto webServer = Supla::WebServer::Instance();
@@ -218,7 +227,7 @@ void FactoryTest::onInit() {
     }
   }
   if (webServer && !webServer->verifyEmbeddedHttpsCertificates()) {
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowMissingHttpsCertificates) == 0) {
       SUPLA_LOG_ERROR("TEST failed: missing or invalid HTTPS certificates");
       testFailed = true;
       failReason = 18;
@@ -227,8 +236,7 @@ void FactoryTest::onInit() {
       }
     } else {
       SUPLA_LOG_WARNING(
-          "TEST skip failed check: missing or invalid HTTPS "
-          "certificates");
+          "INSECURE PRODUCT PROFILE: missing or invalid HTTPS certificates");
     }
   }
 
@@ -242,7 +250,7 @@ void FactoryTest::onInit() {
   }
 
   if (!sdc->isSecurityLogEnabled()) {
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowSecurityLogDisabled) == 0) {
       SUPLA_LOG_ERROR("TEST failed: security log is disabled");
       testFailed = true;
       failReason = 20;
@@ -250,12 +258,13 @@ void FactoryTest::onInit() {
         return;
       }
     } else {
-      SUPLA_LOG_WARNING("TEST skip failed check: security log is disabled");
+      SUPLA_LOG_WARNING(
+          "INSECURE PRODUCT PROFILE: security log is disabled");
     }
   }
 
   if (sdc->getInitialMode() == Supla::InitialMode::StartInCfgMode) {
-    if (ensureAdvancedSecurity) {
+    if ((insecureOptions & AllowStartInCfgMode) == 0) {
       SUPLA_LOG_ERROR("TEST failed: initial mode is set to config mode");
       testFailed = true;
       failReason = 21;
@@ -264,7 +273,7 @@ void FactoryTest::onInit() {
       }
     } else {
       SUPLA_LOG_WARNING(
-          "TEST skip failed check: initial mode is set to config mode");
+          "INSECURE PRODUCT PROFILE: StartInCfgMode allowed");
     }
   }
 }

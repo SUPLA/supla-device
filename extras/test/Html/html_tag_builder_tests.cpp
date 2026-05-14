@@ -60,6 +60,14 @@ class DummyWebServer : public Supla::WebServer {
   DummyWebServer() : WebServer(nullptr) {}
   void start() override {}
   void stop() override {}
+
+  bool csrfValidatedState() const {
+    return csrfValidated;
+  }
+
+  bool csrfRejectedState() const {
+    return csrfRejected;
+  }
 };
 
 class CountingHtmlElement : public Supla::HtmlElement {
@@ -249,6 +257,31 @@ TEST_F(HtmlTagBuilderTests, ParsePostRequiresValidCsrfFirstField) {
   server.parsePost(validBody.c_str(), validBody.size(), true);
   EXPECT_EQ(element.handledCount, 1);
   EXPECT_EQ(element.lastKey, "foo");
+  server.resetParser();
+}
+
+TEST_F(HtmlTagBuilderTests, ParsePostRejectsWhenCsrfIsNotFirstField) {
+  NetworkStateResetter::reset();
+
+  ConfigMock cfg;
+  DummyWebServer server;
+  Supla::Html::WifiParameters wifi;
+
+  EXPECT_CALL(cfg, init()).WillRepeatedly(Return(false));
+  EXPECT_CALL(cfg, setUInt8(StrEq(Supla::WifiDisableTag), _)).Times(0);
+  EXPECT_CALL(cfg, saveWithDelay(_)).Times(0);
+  EXPECT_CALL(cfg, commit()).Times(0);
+
+  NetworkMock net1;
+  NetworkMock net2;
+  (void)net1;
+  (void)net2;
+
+  const std::string validToken = server.getCsrfToken();
+  const std::string body = "sid=beta&csrf=" + validToken;
+  server.parsePost(body.c_str(), body.size(), true);
+  EXPECT_FALSE(server.csrfValidatedState());
+  EXPECT_TRUE(server.csrfRejectedState());
   server.resetParser();
 }
 

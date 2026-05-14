@@ -127,20 +127,13 @@ bool Supla::EspWebServer::handlePost(bool beta) {
     setBetaProcessing();
   }
 
-  int csrfArg = -1;
-  for (int i = 0; i < server.args(); i++) {
-    if (strcmp(server.argName(i).c_str(), "csrf") == 0) {
-      csrfArg = i;
-      break;
-    }
-  }
-
-  if (csrfArg < 0 || !isCsrfTokenValid(server.arg(csrfArg).c_str())) {
+  if (server.args() <= 0 || strcmp(server.argName(0).c_str(), "csrf") != 0 ||
+      !isCsrfTokenValid(server.arg(0).c_str())) {
     SUPLA_LOG_WARNING("SERVER: invalid CSRF token");
     return false;
   }
 
-  for (int i = 0; i < server.args(); i++) {
+  for (int i = 1; i < server.args(); i++) {
     if (strcmp(server.argName(i).c_str(), "csrf") == 0) {
       continue;
     }

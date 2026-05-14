@@ -305,6 +305,15 @@ void Supla::WebServer::parsePost(const char *postContent,
             memset(value, 0, HTML_VAL_LENGTH);
             continue;
           }
+
+          if (csrfFirstFieldRequired) {
+            SUPLA_LOG_WARNING("SERVER: CSRF token is not the first field");
+            csrfRejected = true;
+            delete[] value;
+            value = nullptr;
+            break;
+          }
+
           partialSize = 0;
           memset(key, 0, HTML_KEY_LENGTH);
           memset(value, 0, HTML_VAL_LENGTH);
@@ -354,16 +363,16 @@ void Supla::WebServer::parsePost(const char *postContent,
   }
 
   if (lastChunk) {
+    if (csrfRejected || !csrfValidated) {
+      cleanupParser();
+      return;
+    }
+
     for (auto htmlElement = Supla::HtmlElement::begin(); htmlElement;
          htmlElement = htmlElement->next()) {
       if (isSectionAllowed(htmlElement->section)) {
         htmlElement->onProcessingEnd();
       }
-    }
-
-    if (csrfRejected || !csrfValidated) {
-      cleanupParser();
-      return;
     }
 
     if (Supla::Storage::ConfigInstance()) {
@@ -382,6 +391,7 @@ void Supla::WebServer::resetParser() {
   delete[] value;
   value = nullptr;
   betaProcessing = false;
+  csrfFirstFieldRequired = true;
   csrfValidated = false;
   csrfRejected = false;
 }
@@ -404,6 +414,10 @@ bool Supla::WebServer::isSectionAllowed(Supla::HtmlSection section) const {
 
 void Supla::WebServer::setBetaProcessing() {
   betaProcessing = true;
+}
+
+void Supla::WebServer::setCsrfFirstFieldRequired(bool required) {
+  csrfFirstFieldRequired = required;
 }
 
 void Supla::WebServer::setWebServerMode(WebServerMode mode) {

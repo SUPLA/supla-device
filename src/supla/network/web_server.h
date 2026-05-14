@@ -66,6 +66,7 @@ class WebServer {
   const char *getCsrfToken();
   bool isCsrfTokenValid(const char *token);
   void setBetaProcessing();
+  void setCsrfFirstFieldRequired(bool required);
 
   virtual bool verifyEmbeddedHttpsCertificates();
 
@@ -93,6 +94,7 @@ class WebServer {
   char key[HTML_KEY_LENGTH] = {};
   char *value = nullptr;
   bool betaProcessing = false;
+  bool csrfFirstFieldRequired = true;
   bool csrfValidated = false;
   bool csrfRejected = false;
   uint8_t csrfSecret[16] = {};

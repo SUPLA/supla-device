@@ -39,22 +39,6 @@ class SenderMock : public Supla::WebSender {
   MOCK_METHOD(void, send, (const char*, int), (override));
 };
 
-class NetworkStateResetter : public Supla::Network {
- public:
-  static void reset() {
-    firstNetIntf = nullptr;
-    netIntf = nullptr;
-  }
-
-  void setup() override {
-  }
-  void disable() override {
-  }
-  bool isReady() override {
-    return false;
-  }
-};
-
 class DummyWebServer : public Supla::WebServer {
  public:
   DummyWebServer() : WebServer(nullptr) {}
@@ -91,6 +75,11 @@ class CountingHtmlElement : public Supla::HtmlElement {
 
 class HtmlTagBuilderTests : public ::testing::Test {
  protected:
+  void TearDown() override {
+    EXPECT_EQ(Supla::HtmlElement::begin(), nullptr);
+    EXPECT_EQ(Supla::Network::FirstInstance(), nullptr);
+  }
+
   void appendSentHtml(const char* data, int size) {
     if (size < 0) {
       sendHtml.append(data);
@@ -261,33 +250,19 @@ TEST_F(HtmlTagBuilderTests, ParsePostRequiresValidCsrfFirstField) {
 }
 
 TEST_F(HtmlTagBuilderTests, ParsePostRejectsWhenCsrfIsNotFirstField) {
-  NetworkStateResetter::reset();
-
-  ConfigMock cfg;
   DummyWebServer server;
-  Supla::Html::WifiParameters wifi;
-
-  EXPECT_CALL(cfg, init()).WillRepeatedly(Return(false));
-  EXPECT_CALL(cfg, setUInt8(StrEq(Supla::WifiDisableTag), _)).Times(0);
-  EXPECT_CALL(cfg, saveWithDelay(_)).Times(0);
-  EXPECT_CALL(cfg, commit()).Times(0);
-
-  NetworkMock net1;
-  NetworkMock net2;
-  (void)net1;
-  (void)net2;
+  CountingHtmlElement element;
 
   const std::string validToken = server.getCsrfToken();
   const std::string body = "sid=beta&csrf=" + validToken;
   server.parsePost(body.c_str(), body.size(), true);
   EXPECT_FALSE(server.csrfValidatedState());
   EXPECT_TRUE(server.csrfRejectedState());
+  EXPECT_EQ(element.handledCount, 0);
   server.resetParser();
 }
 
 TEST_F(HtmlTagBuilderTests, WifiParametersRegressionBeforeRefactor) {
-  NetworkStateResetter::reset();
-
   ConfigMock cfg;
   SenderMock sender;
   sendHtml.clear();
@@ -315,8 +290,6 @@ TEST_F(HtmlTagBuilderTests, WifiParametersRegressionBeforeRefactor) {
     Supla::Html::WifiParameters params;
     params.send(&sender);
   }
-
-  NetworkStateResetter::reset();
 
   EXPECT_EQ(sendHtml,
             "<h3>Wi-Fi Settings</h3>"

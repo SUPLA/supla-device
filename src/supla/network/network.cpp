@@ -316,8 +316,8 @@ Network::~Network() {
   if (firstNetIntf == this) {
     firstNetIntf = nextNetIntf;
   } else {
-    auto ptr = firstNetIntf->nextNetIntf;
-    auto prev = ptr;
+    auto prev = firstNetIntf;
+    auto ptr = firstNetIntf ? firstNetIntf->nextNetIntf : nullptr;
     while (ptr && ptr != this) {
       prev = ptr;
       ptr = ptr->nextNetIntf;

@@ -76,8 +76,12 @@ $(function() {
 <div id="doc-content">
 <div class="header">
   <div class="summary">
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
+<a href="#pub-static-methods">Static Public Member Functions</a> &#124;
+<a href="#pub-static-attribs">Static Public Attributes</a> &#124;
 <a href="#pro-attribs">Protected Attributes</a> &#124;
+<a href="#pro-static-attribs">Static Protected Attributes</a> &#124;
 <a href="classSupla_1_1Device_1_1FactoryTest-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">Supla::Device::FactoryTest Class Reference</div></div>
 </div><!--header-->
@@ -158,6 +162,11 @@ Collaboration diagram for Supla::Device::FactoryTest:</div>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-types" class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:ae2312706c82b8c4a4f0a4ce0bf1dbd12" id="r_ae2312706c82b8c4a4f0a4ce0bf1dbd12"><td class="memItemLeft"><a id="ae2312706c82b8c4a4f0a4ce0bf1dbd12" name="ae2312706c82b8c4a4f0a4ce0bf1dbd12"></a>
+using&#160;</td><td class="memItemRight"><b>InsecureOptions</b> = uint32_t</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pub-methods" class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9471e910d4dff52be26760df7f524904" id="r_a9471e910d4dff52be26760df7f524904"><td class="memItemLeft">&#160;</td><td class="memItemRight"><a class="el" href="#a9471e910d4dff52be26760df7f524904">FactoryTest</a> (<a class="el" href="classSuplaDeviceClass.html">SuplaDeviceClass</a> *sdc, uint32_t timeoutS)</td></tr>
@@ -266,10 +275,44 @@ virtual <a class="el" href="classChannel.html">Channel</a> *&#160;</td><td class
 <tr class="memitem:a0221bc2346873fca90d653197bc0b30a inherit pub_methods_classSupla_1_1Element" id="r_a0221bc2346873fca90d653197bc0b30a"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a0221bc2346873fca90d653197bc0b30a">onFunctionChange</a> (uint32_t currentFunction, uint32_t newFunction)</td></tr>
 <tr class="memdesc:a0221bc2346873fca90d653197bc0b30a inherit pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Called when channel function changes.  <br /></td></tr>
 </table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-static-methods" class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
+Static Public Member Functions</h2></td></tr>
+<tr class="memitem:acd066004d5efeca4dc366dd9bbc44d32" id="r_acd066004d5efeca4dc366dd9bbc44d32"><td class="memItemLeft"><a id="acd066004d5efeca4dc366dd9bbc44d32" name="acd066004d5efeca4dc366dd9bbc44d32"></a>
+static void&#160;</td><td class="memItemRight"><b>setInsecureOptions</b> (InsecureOptions options)</td></tr>
+<tr class="memitem:a8e999544bf245bb648dd9a66c948f859" id="r_a8e999544bf245bb648dd9a66c948f859"><td class="memItemLeft"><a id="a8e999544bf245bb648dd9a66c948f859" name="a8e999544bf245bb648dd9a66c948f859"></a>
+static InsecureOptions&#160;</td><td class="memItemRight"><b>getInsecureOptions</b> ()</td></tr>
+<tr class="inherit_header pub_static_methods_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_static_methods_classSupla_1_1Element')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Static Public Member Functions inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
+<tr class="memitem:aa91805a1d7d949293dd84f6d61833028 inherit pub_static_methods_classSupla_1_1Element" id="r_aa91805a1d7d949293dd84f6d61833028"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028">begin</a> ()</td></tr>
+<tr class="memdesc:aa91805a1d7d949293dd84f6d61833028 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns first <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> (based on creation order).  <br /></td></tr>
+<tr class="memitem:aaec1dc5dacef4aad5ff1a27544c6de4d inherit pub_static_methods_classSupla_1_1Element" id="r_aaec1dc5dacef4aad5ff1a27544c6de4d"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#aaec1dc5dacef4aad5ff1a27544c6de4d">last</a> ()</td></tr>
+<tr class="memdesc:aaec1dc5dacef4aad5ff1a27544c6de4d inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns last <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> (based on creation order).  <br /></td></tr>
+<tr class="memitem:a9822374a2d6f7a48fc0b8ef502a8d2fc inherit pub_static_methods_classSupla_1_1Element" id="r_a9822374a2d6f7a48fc0b8ef502a8d2fc"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a9822374a2d6f7a48fc0b8ef502a8d2fc">getElementByChannelNumber</a> (int channelNumber)</td></tr>
+<tr class="memdesc:a9822374a2d6f7a48fc0b8ef502a8d2fc inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> by channel number.  <br /></td></tr>
+<tr class="memitem:a149ba37de8118b80cf15373a8675a564 inherit pub_static_methods_classSupla_1_1Element" id="r_a149ba37de8118b80cf15373a8675a564"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a149ba37de8118b80cf15373a8675a564">getOwnerOfSubDeviceId</a> (int subDeviceId)</td></tr>
+<tr class="memdesc:a149ba37de8118b80cf15373a8675a564 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> which owns given subDeviceId.  <br /></td></tr>
+<tr class="memitem:a0a9b20dc181a9d7d08ff58c9156098ba inherit pub_static_methods_classSupla_1_1Element" id="r_a0a9b20dc181a9d7d08ff58c9156098ba"><td class="memItemLeft">static bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a0a9b20dc181a9d7d08ff58c9156098ba">IsAnyUpdatePending</a> ()</td></tr>
+<tr class="memdesc:a0a9b20dc181a9d7d08ff58c9156098ba inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if any element has pending update for remote server.  <br /></td></tr>
+<tr class="memitem:ad7e52c7c63e007e33b840e85d90c2f78 inherit pub_static_methods_classSupla_1_1Element" id="r_ad7e52c7c63e007e33b840e85d90c2f78"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#ad7e52c7c63e007e33b840e85d90c2f78">NotifyElementsAboutConfigChange</a> (uint64_t fieldBit)</td></tr>
+<tr class="memdesc:ad7e52c7c63e007e33b840e85d90c2f78 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notifies all elements about device config change.  <br /></td></tr>
+<tr class="memitem:a480b77bb1ea2c7d2dfbf601554c95112 inherit pub_static_methods_classSupla_1_1Element" id="r_a480b77bb1ea2c7d2dfbf601554c95112"><td class="memItemLeft">static bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a480b77bb1ea2c7d2dfbf601554c95112">IsInvalidPtrSet</a> ()</td></tr>
+<tr class="memdesc:a480b77bb1ea2c7d2dfbf601554c95112 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">When "invalid pointer" is set, previously obtained <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> pointer may be invalid.  <br /></td></tr>
+<tr class="memitem:a59b914551b75cc301fb47dfc2c9f4115 inherit pub_static_methods_classSupla_1_1Element" id="r_a59b914551b75cc301fb47dfc2c9f4115"><td class="memItemLeft">
+static void&#160;</td><td class="memItemRight"><b>ClearInvalidPtr</b> ()</td></tr>
+<tr class="memdesc:a59b914551b75cc301fb47dfc2c9f4115 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clears "invalid pointer" flag. <br /></td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 id="header-pub-static-attribs" class="groupheader"><a id="pub-static-attribs" name="pub-static-attribs"></a>
+Static Public Attributes</h2></td></tr>
+<tr class="memitem:add89ade387330baf8b52e0db64b81f92" id="r_add89ade387330baf8b52e0db64b81f92"><td class="memItemLeft"><a id="add89ade387330baf8b52e0db64b81f92" name="add89ade387330baf8b52e0db64b81f92"></a>
+static constexpr InsecureOptions&#160;</td><td class="memItemRight"><b>AllowStartInCfgMode</b> = 1u &lt;&lt; 0</td></tr>
+<tr class="memitem:a9587f7df7560ed153ec01cafee0fe8d6" id="r_a9587f7df7560ed153ec01cafee0fe8d6"><td class="memItemLeft"><a id="a9587f7df7560ed153ec01cafee0fe8d6" name="a9587f7df7560ed153ec01cafee0fe8d6"></a>
+static constexpr InsecureOptions&#160;</td><td class="memItemRight"><b>AllowConfigEncryptionDisabled</b> = 1u &lt;&lt; 1</td></tr>
+<tr class="memitem:ab6186f493dd23b3bacb77ca222849515" id="r_ab6186f493dd23b3bacb77ca222849515"><td class="memItemLeft"><a id="ab6186f493dd23b3bacb77ca222849515" name="ab6186f493dd23b3bacb77ca222849515"></a>
+static constexpr InsecureOptions&#160;</td><td class="memItemRight"><b>AllowMissingHttpsCertificates</b> = 1u &lt;&lt; 2</td></tr>
+<tr class="memitem:ab9d780570e73c0a16823027e87e73061" id="r_ab9d780570e73c0a16823027e87e73061"><td class="memItemLeft"><a id="ab9d780570e73c0a16823027e87e73061" name="ab9d780570e73c0a16823027e87e73061"></a>
+static constexpr InsecureOptions&#160;</td><td class="memItemRight"><b>AllowSecurityLogDisabled</b> = 1u &lt;&lt; 3</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-attribs" class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a009eae73ea9ce09beb17feaffa33217f" id="r_a009eae73ea9ce09beb17feaffa33217f"><td class="memItemLeft"><a id="a009eae73ea9ce09beb17feaffa33217f" name="a009eae73ea9ce09beb17feaffa33217f"></a>
-bool&#160;</td><td class="memItemRight"><b>ensureAdvancedSecurity</b> = true</td></tr>
 <tr class="memitem:ad1245326de6622cfcc587a3d8237d2f8" id="r_ad1245326de6622cfcc587a3d8237d2f8"><td class="memItemLeft"><a id="ad1245326de6622cfcc587a3d8237d2f8" name="ad1245326de6622cfcc587a3d8237d2f8"></a>
 bool&#160;</td><td class="memItemRight"><b>testFailed</b> = false</td></tr>
 <tr class="memitem:a0680e61697244c83aa1dce75f0ae3115" id="r_a0680e61697244c83aa1dce75f0ae3115"><td class="memItemLeft"><a id="a0680e61697244c83aa1dce75f0ae3115" name="a0680e61697244c83aa1dce75f0ae3115"></a>
@@ -296,26 +339,10 @@ bool&#160;</td><td class="memItemRight"><b>checkAutomaticFirmwareUpdate</b> = tr
 <tr class="memitem:a2123c86524145b71a5fad034147dbf6f inherit pro_attribs_classSupla_1_1Element" id="r_a2123c86524145b71a5fad034147dbf6f"><td class="memItemLeft">
 Element *&#160;</td><td class="memItemRight"><b>nextPtr</b> = nullptr</td></tr>
 </table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 id="header-inherited" class="groupheader"><a id="inherited" name="inherited"></a>
-Additional Inherited Members</h2></td></tr>
-<tr class="inherit_header pub_static_methods_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pub_static_methods_classSupla_1_1Element')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Static Public Member Functions inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
-<tr class="memitem:aa91805a1d7d949293dd84f6d61833028 inherit pub_static_methods_classSupla_1_1Element" id="r_aa91805a1d7d949293dd84f6d61833028"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#aa91805a1d7d949293dd84f6d61833028">begin</a> ()</td></tr>
-<tr class="memdesc:aa91805a1d7d949293dd84f6d61833028 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns first <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> (based on creation order).  <br /></td></tr>
-<tr class="memitem:aaec1dc5dacef4aad5ff1a27544c6de4d inherit pub_static_methods_classSupla_1_1Element" id="r_aaec1dc5dacef4aad5ff1a27544c6de4d"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#aaec1dc5dacef4aad5ff1a27544c6de4d">last</a> ()</td></tr>
-<tr class="memdesc:aaec1dc5dacef4aad5ff1a27544c6de4d inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns last <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> (based on creation order).  <br /></td></tr>
-<tr class="memitem:a9822374a2d6f7a48fc0b8ef502a8d2fc inherit pub_static_methods_classSupla_1_1Element" id="r_a9822374a2d6f7a48fc0b8ef502a8d2fc"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a9822374a2d6f7a48fc0b8ef502a8d2fc">getElementByChannelNumber</a> (int channelNumber)</td></tr>
-<tr class="memdesc:a9822374a2d6f7a48fc0b8ef502a8d2fc inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> by channel number.  <br /></td></tr>
-<tr class="memitem:a149ba37de8118b80cf15373a8675a564 inherit pub_static_methods_classSupla_1_1Element" id="r_a149ba37de8118b80cf15373a8675a564"><td class="memItemLeft">static Element *&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a149ba37de8118b80cf15373a8675a564">getOwnerOfSubDeviceId</a> (int subDeviceId)</td></tr>
-<tr class="memdesc:a149ba37de8118b80cf15373a8675a564 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> which owns given subDeviceId.  <br /></td></tr>
-<tr class="memitem:a0a9b20dc181a9d7d08ff58c9156098ba inherit pub_static_methods_classSupla_1_1Element" id="r_a0a9b20dc181a9d7d08ff58c9156098ba"><td class="memItemLeft">static bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a0a9b20dc181a9d7d08ff58c9156098ba">IsAnyUpdatePending</a> ()</td></tr>
-<tr class="memdesc:a0a9b20dc181a9d7d08ff58c9156098ba inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if any element has pending update for remote server.  <br /></td></tr>
-<tr class="memitem:ad7e52c7c63e007e33b840e85d90c2f78 inherit pub_static_methods_classSupla_1_1Element" id="r_ad7e52c7c63e007e33b840e85d90c2f78"><td class="memItemLeft">static void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#ad7e52c7c63e007e33b840e85d90c2f78">NotifyElementsAboutConfigChange</a> (uint64_t fieldBit)</td></tr>
-<tr class="memdesc:ad7e52c7c63e007e33b840e85d90c2f78 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Notifies all elements about device config change.  <br /></td></tr>
-<tr class="memitem:a480b77bb1ea2c7d2dfbf601554c95112 inherit pub_static_methods_classSupla_1_1Element" id="r_a480b77bb1ea2c7d2dfbf601554c95112"><td class="memItemLeft">static bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a480b77bb1ea2c7d2dfbf601554c95112">IsInvalidPtrSet</a> ()</td></tr>
-<tr class="memdesc:a480b77bb1ea2c7d2dfbf601554c95112 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">When "invalid pointer" is set, previously obtained <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> pointer may be invalid.  <br /></td></tr>
-<tr class="memitem:a59b914551b75cc301fb47dfc2c9f4115 inherit pub_static_methods_classSupla_1_1Element" id="r_a59b914551b75cc301fb47dfc2c9f4115"><td class="memItemLeft">
-static void&#160;</td><td class="memItemRight"><b>ClearInvalidPtr</b> ()</td></tr>
-<tr class="memdesc:a59b914551b75cc301fb47dfc2c9f4115 inherit pub_static_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Clears "invalid pointer" flag. <br /></td></tr>
+<tr class="heading"><td colspan="2"><h2 id="header-pro-static-attribs" class="groupheader"><a id="pro-static-attribs" name="pro-static-attribs"></a>
+Static Protected Attributes</h2></td></tr>
+<tr class="memitem:a4abeaaac31944d8e9b9f4842b59554d6" id="r_a4abeaaac31944d8e9b9f4842b59554d6"><td class="memItemLeft"><a id="a4abeaaac31944d8e9b9f4842b59554d6" name="a4abeaaac31944d8e9b9f4842b59554d6"></a>
+static InsecureOptions&#160;</td><td class="memItemRight"><b>insecureOptions</b> = 0</td></tr>
 <tr class="inherit_header pro_static_attribs_classSupla_1_1Element"><td colspan="2" onclick="javascript:dynsection.toggleInherit('pro_static_attribs_classSupla_1_1Element')"><span class="dynarrow"><span class="arrowhead closed"></span></span>Static Protected Attributes inherited from <a class="el" href="classSupla_1_1Element.html">Supla::Element</a></td></tr>
 <tr class="memitem:afc5f4790686c64e3f58e6000d62ec9de inherit pro_static_attribs_classSupla_1_1Element" id="r_afc5f4790686c64e3f58e6000d62ec9de"><td class="memItemLeft">
 static Element *&#160;</td><td class="memItemRight"><b>firstPtr</b> = nullptr</td></tr>

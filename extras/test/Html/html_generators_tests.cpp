@@ -25,8 +25,8 @@
 #include <simple_time.h>
 #include <supla-common/proto.h>
 #include <supla/control/hvac_base.h>
-#include <supla/control/relay.h>
 #include <supla/control/lighting_pwm_base.h>
+#include <supla/control/relay.h>
 #include <supla/control/roller_shutter.h>
 #include <supla/device/register_device.h>
 #include <supla/device/security_logger.h>
@@ -88,8 +88,8 @@
 using ::testing::_;
 using ::testing::EndsWith;
 using ::testing::HasSubstr;
-using ::testing::Not;
 using ::testing::NiceMock;
+using ::testing::Not;
 using ::testing::Return;
 using ::testing::StartsWith;
 using ::testing::StrEq;
@@ -1375,12 +1375,10 @@ TEST_F(HtmlCaptureTest, HvacParametersUsesUniqueAuxSectionIdsPerChannel) {
   EXPECT_THAT(sendHtml, HasSubstr("function auxSetpointEnabledChange_1()"));
   EXPECT_THAT(sendHtml, HasSubstr("id=\"0_af_box\""));
   EXPECT_THAT(sendHtml, HasSubstr("id=\"1_af_box\""));
-  EXPECT_THAT(
-      sendHtml,
-      HasSubstr("function antiFreezeAndHeatProtectionChange_0()"));
-  EXPECT_THAT(
-      sendHtml,
-      HasSubstr("function antiFreezeAndHeatProtectionChange_1()"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("function antiFreezeAndHeatProtectionChange_0()"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("function antiFreezeAndHeatProtectionChange_1()"));
 }
 
 TEST_F(HtmlCaptureTest, ContainerParametersRendersBasicFields) {
@@ -1440,4 +1438,25 @@ TEST_F(HtmlCaptureTest, DeviceInfoRendersRegisterDeviceAndMainMac) {
             "</span><span>"
             "<br>Uptime: 0 s"
             "</span>");
+}
+
+TEST_F(HtmlCaptureTest, HeaderBeginEscapesDeviceNameInTitle) {
+  resetRegisterDevice();
+
+  SenderMock sender;
+  expectAllSendCalls(sender);
+
+  Supla::RegisterDevice::setName(
+      "Device </title><script>alert('x')</script> & \"quote\"");
+
+  Supla::HtmlGenerator generator;
+  generator.sendHeaderBegin(&sender);
+
+  resetRegisterDevice();
+
+  EXPECT_THAT(
+      sendHtml,
+      HasSubstr("<title>Device &lt;/title&gt;&lt;script&gt;alert(&apos;x&apos;)"
+                "&lt;/script&gt; &amp; &quot;quote&quot;</title>"));
+  EXPECT_THAT(sendHtml, Not(HasSubstr("<script>alert('x')</script>")));
 }

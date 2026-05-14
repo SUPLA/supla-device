@@ -466,7 +466,7 @@ void Supla::HtmlGenerator::sendHeaderBegin(Supla::WebSender *sender) {
 
 void Supla::HtmlGenerator::sendTitle(Supla::WebSender *sender) {
   sender->send("<title>");
-  sender->send(Supla::RegisterDevice::getName());
+  sender->sendSafe(Supla::RegisterDevice::getName());
   sender->send("</title>");
 }
 

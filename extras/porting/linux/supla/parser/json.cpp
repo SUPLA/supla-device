@@ -18,6 +18,7 @@
 
 #include <supla/log_wrapper.h>
 
+#include <cmath>
 #include <stdexcept>
 #include <string>
 
@@ -79,13 +80,27 @@ double Supla::Parser::Json::getValue(const std::string& key) {
     }
 
     if (valuePtr->is_number()) {
-      return valuePtr->get<double>();
+      double value = valuePtr->get<double>();
+      if (!std::isfinite(value)) {
+        SUPLA_LOG_ERROR("JSON key \"%s\" has non-finite numeric value",
+                        key.c_str());
+        valid = false;
+        return 0;
+      }
+      return value;
     }
 
     if (valuePtr->is_string()) {
       // Try to convert string to double
       try {
-        return std::stod(valuePtr->get<std::string>());
+        double value = std::stod(valuePtr->get<std::string>());
+        if (!std::isfinite(value)) {
+          SUPLA_LOG_ERROR("JSON key \"%s\" has non-finite numeric value",
+                          key.c_str());
+          valid = false;
+          return 0;
+        }
+        return value;
       } catch (...) {
         SUPLA_LOG_ERROR("JSON key \"%s\" string cannot be converted to double",
                         key.c_str());

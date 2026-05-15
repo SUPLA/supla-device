@@ -5281,6 +5281,11 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     return false;
   }
   bool readonlyViolation = false;
+  auto fixReadonlyTemp = [&](int32_t temperatureIndex) {
+    if (fixReadonlyTemperature(temperatureIndex, &hvacConfig->Temperatures)) {
+      readonlyViolation = true;
+    }
+  };
 
   if (parameterFlags.MainThermometerChannelNoReadonly) {
     if (config.MainThermometerChannelNo !=
@@ -5514,69 +5519,47 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
   }
 
   if (parameterFlags.TemperaturesFreezeProtectionReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_FREEZE_PROTECTION,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_FREEZE_PROTECTION);
   }
 
   if (parameterFlags.TemperaturesEcoReadonly) {
-    readonlyViolation =
-        (readonlyViolation ||
-         fixReadonlyTemperature(TEMPERATURE_ECO, &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_ECO);
   }
 
   if (parameterFlags.TemperaturesComfortReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_COMFORT,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_COMFORT);
   }
 
   if (parameterFlags.TemperaturesBoostReadonly) {
-    readonlyViolation =
-        (readonlyViolation ||
-         fixReadonlyTemperature(TEMPERATURE_BOOST, &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_BOOST);
   }
 
   if (parameterFlags.TemperaturesHeatProtectionReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_HEAT_PROTECTION,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_HEAT_PROTECTION);
   }
 
   if (parameterFlags.TemperaturesHisteresisReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_HISTERESIS,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_HISTERESIS);
   }
 
   if (parameterFlags.TemperaturesAuxHisteresisReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_AUX_HISTERESIS,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_AUX_HISTERESIS);
   }
 
   if (parameterFlags.TemperaturesAboveAlarmReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_ABOVE_ALARM,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_ABOVE_ALARM);
   }
 
   if (parameterFlags.TemperaturesBelowAlarmReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_BELOW_ALARM,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_BELOW_ALARM);
   }
 
   if (parameterFlags.TemperaturesAuxMinSetpointReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_AUX_MIN_SETPOINT,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_AUX_MIN_SETPOINT);
   }
 
   if (parameterFlags.TemperaturesAuxMaxSetpointReadonly) {
-    readonlyViolation = (readonlyViolation ||
-                         fixReadonlyTemperature(TEMPERATURE_AUX_MAX_SETPOINT,
-                                                &hvacConfig->Temperatures));
+    fixReadonlyTemp(TEMPERATURE_AUX_MAX_SETPOINT);
   }
 
   if (hvacConfig->AvailableAlgorithms != config.AvailableAlgorithms) {
@@ -5617,20 +5600,14 @@ bool HvacBase::fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig) {
     readonlyViolation = true;
   }
 
-  if (fixReadonlyTemperature(TEMPERATURE_ROOM_MIN, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_ROOM_MAX, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_AUX_MIN, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_AUX_MAX, &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MIN,
-                             &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HISTERESIS_MAX,
-                             &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MIN,
-                             &hvacConfig->Temperatures) ||
-      fixReadonlyTemperature(TEMPERATURE_HEAT_COOL_OFFSET_MAX,
-                             &hvacConfig->Temperatures)) {
-    readonlyViolation = true;
-  }
+  fixReadonlyTemp(TEMPERATURE_ROOM_MIN);
+  fixReadonlyTemp(TEMPERATURE_ROOM_MAX);
+  fixReadonlyTemp(TEMPERATURE_AUX_MIN);
+  fixReadonlyTemp(TEMPERATURE_AUX_MAX);
+  fixReadonlyTemp(TEMPERATURE_HISTERESIS_MIN);
+  fixReadonlyTemp(TEMPERATURE_HISTERESIS_MAX);
+  fixReadonlyTemp(TEMPERATURE_HEAT_COOL_OFFSET_MIN);
+  fixReadonlyTemp(TEMPERATURE_HEAT_COOL_OFFSET_MAX);
 
   if (memcmp(&(hvacConfig->ParameterFlags),
              &parameterFlags,

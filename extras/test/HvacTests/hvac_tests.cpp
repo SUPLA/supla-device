@@ -2220,6 +2220,79 @@ TEST_F(HvacTestsF, handleChannelConfigAndReadonlyParameters) {
   hvac.clearChannelConfigChangedFlag();
 }
 
+TEST_F(HvacTestsF, readonlyTemperatureFixesDoNotShortCircuit) {
+  OutputSimulatorWithCheck output;
+  Supla::Control::HvacBase hvac(&output);
+
+  Supla::Sensor::Thermometer t1;
+  Supla::Sensor::ThermHygroMeter t2;
+  EXPECT_CALL(output, setOutputValueCheck(0)).Times(AtLeast(1));
+
+  ASSERT_EQ(hvac.getChannelNumber(), 0);
+  ASSERT_EQ(t1.getChannelNumber(), 1);
+  ASSERT_EQ(t2.getChannelNumber(), 2);
+
+  hvac.setTemperatureRoomMin(500);
+  hvac.setTemperatureRoomMax(5000);
+  hvac.setTemperatureHisteresisMin(20);
+  hvac.setTemperatureHisteresisMax(1000);
+  hvac.setTemperatureHeatCoolOffsetMin(200);
+  hvac.setTemperatureHeatCoolOffsetMax(1000);
+  hvac.setTemperatureAuxMin(500);
+  hvac.setTemperatureAuxMax(7500);
+  hvac.setSubfunction(SUPLA_HVAC_SUBFUNCTION_HEAT);
+
+  TSD_ChannelConfig configFromServer = {};
+  configFromServer.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  configFromServer.Func = SUPLA_CHANNELFNC_HVAC_THERMOSTAT;
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+
+  configFromServer.ConfigSize = sizeof(TChannelConfig_HVAC);
+
+  TChannelConfig_HVAC *hvacConfig =
+      reinterpret_cast<TChannelConfig_HVAC *>(&configFromServer.Config);
+
+  hvacConfig->Subfunction = SUPLA_HVAC_SUBFUNCTION_HEAT;
+  hvacConfig->MainThermometerChannelNo = 1;
+  hvacConfig->AuxThermometerType =
+      SUPLA_HVAC_AUX_THERMOMETER_TYPE_NOT_SET;
+  hvacConfig->UsedAlgorithm = SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE;
+
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_ECO, 1600);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_COMFORT, 2200);
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  hvac.clearChannelConfigChangedFlag();
+
+  hvac.parameterFlags.TemperaturesEcoReadonly = 1;
+  hvac.parameterFlags.TemperaturesComfortReadonly = 1;
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_ECO, 1700);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_COMFORT, 2300);
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac.getTemperatureEco(), 1600);
+  EXPECT_EQ(hvac.getTemperatureComfort(), 2200);
+  hvac.clearChannelConfigChangedFlag();
+
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MIN, 300);
+  Supla::Control::HvacBase::setTemperatureInStruct(
+      &hvacConfig->Temperatures, TEMPERATURE_HEAT_COOL_OFFSET_MAX, 1200);
+
+  EXPECT_EQ(hvac.handleChannelConfig(&configFromServer),
+            SUPLA_CONFIG_RESULT_TRUE);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMin(), 200);
+  EXPECT_EQ(hvac.getTemperatureHeatCoolOffsetMax(), 1000);
+}
+
 TEST_F(HvacTestsF, PumpHeatSourceMasterNotSetCheck) {
   OutputSimulatorWithCheck output;
 

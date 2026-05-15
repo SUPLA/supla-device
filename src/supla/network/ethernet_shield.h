@@ -19,6 +19,7 @@
 #ifndef SRC_SUPLA_NETWORK_ETHERNET_SHIELD_H_
 #define SRC_SUPLA_NETWORK_ETHERNET_SHIELD_H_
 
+#ifdef ARDUINO_ARCH_AVR
 #include <Arduino.h>
 #include <Ethernet.h>
 
@@ -86,5 +87,7 @@ class EthernetShield : public Supla::Network {
 };
 
 };  // namespace Supla
+
+#endif  // ARDUINO_ARCH_AVR
 
 #endif  // SRC_SUPLA_NETWORK_ETHERNET_SHIELD_H_

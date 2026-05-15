@@ -198,6 +198,24 @@ TEST_F(RollerShutterInterfaceFixture, rsLocalMovement) {
             static_cast<int>(Supla::Control::Directions::STOP_DIR));
 }
 
+TEST_F(RollerShutterInterfaceFixture, setOpenCloseTimeClampsUnsafeValues) {
+  Supla::Control::RollerShutterInterface rs;
+
+  rs.setOpenCloseTime(RS_MAX_OPERATION_TIME_MS + 1,
+                      RS_MAX_OPERATION_TIME_MS + 1234);
+
+  EXPECT_EQ(rs.getClosingTimeMs(), RS_MAX_OPERATION_TIME_MS);
+  EXPECT_EQ(rs.getOpeningTimeMs(), RS_MAX_OPERATION_TIME_MS);
+}
+
+TEST_F(RollerShutterInterfaceFixture, setTiltingTimeClampsUnsafeValues) {
+  Supla::Control::RollerShutterInterface rs(true);
+
+  rs.setTiltingTime(RS_MAX_OPERATION_TIME_MS + 1, false);
+
+  EXPECT_EQ(rs.getTiltingTimeMs(), RS_MAX_OPERATION_TIME_MS);
+}
+
 TEST_F(RollerShutterInterfaceFixture, facadeBlindBasicTests) {
   Supla::Control::RollerShutterInterface rs(true);
 

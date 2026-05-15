@@ -647,3 +647,80 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
 
   EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(0)[0], 22);
 }
+
+TEST_F(RollerShutterFixture, onLoadStateClampsUnsafeTimes) {
+  StorageMock storage;
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+
+  storage.defaultInitialization(9);
+  EXPECT_CALL(storage, scheduleSave(_, 1000)).Times(AtLeast(0));
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
+
+  EXPECT_CALL(
+      storage, readStorage(_, _, /* sizeof(RollerShutterStateData) */ 9, _))
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+        RollerShutterStateDataTests rsData = {
+            .closingTimeMs = RS_MAX_OPERATION_TIME_MS + 1,
+            .openingTimeMs = RS_MAX_OPERATION_TIME_MS + 1234,
+            .currentPosition = 0};
+        EXPECT_EQ(9, sizeof(rsData));
+        memcpy(data, &rsData, sizeof(RollerShutterStateDataTests));
+        return 9;
+      });
+
+  EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+  EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+  EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
+
+  Supla::Storage::LoadStateStorage();
+  rs.onInit();
+
+  EXPECT_EQ(rs.getClosingTimeMs(), RS_MAX_OPERATION_TIME_MS);
+  EXPECT_EQ(rs.getOpeningTimeMs(), RS_MAX_OPERATION_TIME_MS);
+}
+
+TEST_F(RollerShutterFixture, applyChannelConfigAcceptsMaximumSafeTimes) {
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+  TSD_ChannelConfig channelConfig = {};
+  channelConfig.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
+  channelConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  channelConfig.ConfigSize = sizeof(TChannelConfig_RollerShutter);
+
+  auto config =
+      reinterpret_cast<TChannelConfig_RollerShutter *>(channelConfig.Config);
+  config->ClosingTimeMS = RS_MAX_OPERATION_TIME_MS;
+  config->OpeningTimeMS = RS_MAX_OPERATION_TIME_MS;
+  config->MotorUpsideDown = 1;
+  config->ButtonsUpsideDown = 1;
+  config->TimeMargin = -1;
+
+  EXPECT_EQ(rs.applyChannelConfig(&channelConfig),
+            Supla::ApplyConfigResult::Success);
+  EXPECT_EQ(rs.getClosingTimeMs(), RS_MAX_OPERATION_TIME_MS);
+  EXPECT_EQ(rs.getOpeningTimeMs(), RS_MAX_OPERATION_TIME_MS);
+}
+
+TEST_F(RollerShutterFixture, applyChannelConfigClampsUnsafeTimes) {
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+  rs.setOpenCloseTime(10000, 11000);
+
+  TSD_ChannelConfig channelConfig = {};
+  channelConfig.Func = SUPLA_CHANNELFNC_CONTROLLINGTHEROLLERSHUTTER;
+  channelConfig.ConfigType = SUPLA_CONFIG_TYPE_DEFAULT;
+  channelConfig.ConfigSize = sizeof(TChannelConfig_RollerShutter);
+
+  auto config =
+      reinterpret_cast<TChannelConfig_RollerShutter *>(channelConfig.Config);
+  config->ClosingTimeMS = RS_MAX_OPERATION_TIME_MS + 1;
+  config->OpeningTimeMS = RS_MAX_OPERATION_TIME_MS + 1234;
+  config->MotorUpsideDown = 1;
+  config->ButtonsUpsideDown = 1;
+  config->TimeMargin = -1;
+
+  EXPECT_EQ(rs.applyChannelConfig(&channelConfig),
+            Supla::ApplyConfigResult::Success);
+  EXPECT_EQ(rs.getClosingTimeMs(), RS_MAX_OPERATION_TIME_MS);
+  EXPECT_EQ(rs.getOpeningTimeMs(), RS_MAX_OPERATION_TIME_MS);
+}

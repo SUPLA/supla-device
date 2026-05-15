@@ -39,6 +39,27 @@ int16_t RollerShutterInterface::rsStorageSaveDelay = 5000;
 #define RS_FLAG_CALIBRATION_FAILED (1 << 2)
 #define RS_FLAG_MOTOR_PROBLEM      (1 << 3)
 
+namespace {
+
+uint32_t ClampRsMotionTime(uint32_t requestedTimeMs,
+                           const char *timeLabel,
+                           int channelNumber) {
+  (void)(timeLabel);
+  (void)(channelNumber);
+  if (requestedTimeMs > RS_MAX_OPERATION_TIME_MS) {
+    SUPLA_LOG_WARNING(
+        "RS[%d] %s %u ms exceeds maximum %u ms, clamping",
+        channelNumber,
+        timeLabel,
+        static_cast<unsigned>(requestedTimeMs),
+        static_cast<unsigned>(RS_MAX_OPERATION_TIME_MS));
+    return RS_MAX_OPERATION_TIME_MS;
+  }
+  return requestedTimeMs;
+}
+
+}  // namespace
+
 #pragma pack(push, 1)
 struct RollerShutterStateData {
   uint32_t closingTimeMs = 0;
@@ -222,6 +243,10 @@ int32_t RollerShutterInterface::handleNewValueFromServer(
 void RollerShutterInterface::setOpenCloseTime(uint32_t newClosingTimeMs,
                                               uint32_t newOpeningTimeMs) {
   if (isTimeSettingAvailable()) {
+    newClosingTimeMs = ClampRsMotionTime(
+        newClosingTimeMs, "closing time", channel.getChannelNumber());
+    newOpeningTimeMs = ClampRsMotionTime(
+        newOpeningTimeMs, "opening time", channel.getChannelNumber());
     if (newClosingTimeMs != closingTimeMs ||
         newOpeningTimeMs != openingTimeMs) {
       closingTimeMs = newClosingTimeMs;
@@ -240,6 +265,8 @@ void RollerShutterInterface::setOpenCloseTime(uint32_t newClosingTimeMs,
 void RollerShutterInterface::setTiltingTime(uint32_t newTiltingTimeMs,
                                             bool local) {
   if (isTimeSettingAvailable()) {
+    newTiltingTimeMs = ClampRsMotionTime(
+        newTiltingTimeMs, "tilting time", channel.getChannelNumber());
     if (newTiltingTimeMs != tiltConfig.tiltingTime) {
       tiltConfig.tiltingTime = newTiltingTimeMs;
       SUPLA_LOG_DEBUG("FB[%d] new tilting time received. Tilting time: %d ms. ",
@@ -634,8 +661,10 @@ void RollerShutterInterface::onLoadState() {
   if (isTiltFunctionsSupported()) {
     RollerShutterWithTiltStateData data;
     if (Supla::Storage::ReadState((unsigned char *)&data, sizeof(data))) {
-      closingTimeMs = data.closingTimeMs;
-      openingTimeMs = data.openingTimeMs;
+      closingTimeMs = ClampRsMotionTime(
+          data.closingTimeMs, "closing time", channel.getChannelNumber());
+      openingTimeMs = ClampRsMotionTime(
+          data.openingTimeMs, "opening time", channel.getChannelNumber());
       currentPosition = data.currentPosition * 100;
       if (currentPosition >= 0) {
         setCalibrate(false);
@@ -654,8 +683,10 @@ void RollerShutterInterface::onLoadState() {
   } else {
     RollerShutterStateData data;
     if (Supla::Storage::ReadState((unsigned char *)&data, sizeof(data))) {
-      closingTimeMs = data.closingTimeMs;
-      openingTimeMs = data.openingTimeMs;
+      closingTimeMs = ClampRsMotionTime(
+          data.closingTimeMs, "closing time", channel.getChannelNumber());
+      openingTimeMs = ClampRsMotionTime(
+          data.openingTimeMs, "opening time", channel.getChannelNumber());
       currentPosition = data.currentPosition * 100;
       if (currentPosition >= 0) {
         setCalibrate(false);
@@ -978,6 +1009,8 @@ void RollerShutterInterface::onLoadConfig(SuplaDeviceClass *) {
       generateKey(key, Supla::ConfigTag::TiltConfigTag);
       if (cfg->getBlob(
               key, reinterpret_cast<char *>(&tiltConfig), sizeof(TiltConfig))) {
+        tiltConfig.tiltingTime = ClampRsMotionTime(
+            tiltConfig.tiltingTime, "tilting time", channel.getChannelNumber());
         print = true;
       } else {
         SUPLA_LOG_DEBUG("FB[%d] using default config", getChannelNumber());

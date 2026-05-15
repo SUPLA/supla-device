@@ -153,6 +153,8 @@ bool StateWearLevelingSector::tryLoadPreamblesFrom(uint32_t offset) {
           (availableSize > 2 * getSectorSize())
               ? availableSize - 2 * getSectorSize()
               : 0;
+      (void)(slotStorageBytes);
+      (void)(partitionSlotAreaBytes);
       SUPLA_LOG_INFO(
           "Storage state sector layout: partition=%u B, slot area=%u B, "
           "slot size=%u B, bitmap slots=%u, physical slots=%u, usable=%u",

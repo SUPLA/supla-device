@@ -32,6 +32,11 @@
 
 #define DEV_NAME "LaskaKit VINDRIKTNING"
 
+// Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+// Do not use it on real devices or untrusted networks.
+// Uncomment the following line to enable it.
+// #define ADD_INSECURE_BUTTON_UPDATE
+
 #define PM_RX_PIN  16
 #define PM_TX_PIN  17
 #define FAN_PIN    12
@@ -87,9 +92,11 @@ void setup() {
   new Supla::Html::DeviceInfo(&SuplaDevice);
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
+#ifdef ADD_INSECURE_BUTTON_UPDATE
   // Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
   // Do not use it on real devices or untrusted networks.
   new Supla::Html::ButtonUpdate(&suplaServer);
+#endif  // ADD_INSECURE_BUTTON_UPDATE
 
   // I2C start & scan
   Wire.begin(SDA_PIN, SCL_PIN);

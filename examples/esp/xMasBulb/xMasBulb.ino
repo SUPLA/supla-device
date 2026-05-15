@@ -19,6 +19,11 @@
 #define DEV_NAME "Malarz Bombka"
 #define DEV_VERSION "2025.12.28"
 
+// Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+// Do not use it on real devices or untrusted networks.
+// Uncomment the following line to enable it.
+// #define ADD_INSECURE_BUTTON_UPDATE
+
 #define STATUS_LED_GPIO 2
 #define RGB_GPIO 14
 #define RGB_RING_NUM_LEDS 24
@@ -67,9 +72,11 @@ void setup() {
   new Supla::Html::DeviceInfo(&SuplaDevice);
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
+#ifdef ADD_INSECURE_BUTTON_UPDATE
   // Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
   // Do not use it on real devices or untrusted networks.
   new Supla::Html::ButtonUpdate(&suplaServer);
+#endif  // ADD_INSECURE_BUTTON_UPDATE
 
   // WS2812b LEDs strip
   auto strip = new Supla::Control::AddressableLEDs(RGB_RING_NUM_LEDS, RGB_GPIO);

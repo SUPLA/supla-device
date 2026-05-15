@@ -19,6 +19,11 @@
 #define NAM_VERSION "0.5"
 #define DEV_NAME "NAM 0.3.3"
 
+// Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+// Do not use it on real devices or untrusted networks.
+// Uncomment the following line to enable it.
+// #define ADD_INSECURE_BUTTON_UPDATE
+
 #ifdef ARDUINO_ARCH_ESP32
 
 // PINs of Wemos D1 mini ESP32
@@ -82,7 +87,12 @@ void setup() {
   new Supla::Html::WifiParameters;
   new Supla::Html::ProtocolParameters;
   new Supla::Html::StatusLedParameters;
+
+#ifdef ADD_INSECURE_BUTTON_UPDATE
+  // Debug/DIY only: ButtonUpdate exposes an unauthenticated OTA endpoint.
+  // Do not use it on real devices or untrusted networks.
   new Supla::Html::ButtonUpdate(&suplaServer);
+#endif  // ADD_INSECURE_BUTTON_UPDATE
 
   // start parameters from memory
   Supla::Storage::Init();

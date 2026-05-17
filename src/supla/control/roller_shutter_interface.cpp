@@ -565,11 +565,11 @@ bool RollerShutterInterface::isCalibrationRequested() const {
 }
 
 bool RollerShutterInterface::isCalibrated() const {
-  if (isTimeSettingAvailable()) {
-    return !getCalibrate() && openingTimeMs != 0 && closingTimeMs != 0;
-  } else {
-    return !getCalibrate() && currentPosition != UNKNOWN_POSITION;
+  if (getCalibrate() || getCurrentPosition() == UNKNOWN_POSITION) {
+    return false;
   }
+  return !isTimeSettingAvailable() ||
+         (openingTimeMs != 0 && closingTimeMs != 0);
 }
 
 bool RollerShutterInterface::isCalibrationInProgress() const {

@@ -648,6 +648,60 @@ TEST_F(RollerShutterFixture, movementByServerTests) {
   EXPECT_EQ(Supla::RegisterDevice::getChannelValuePtr(0)[0], 22);
 }
 
+TEST_F(RollerShutterFixture, loadedUnknownPositionIsNotCalibrated) {
+  StorageMock storage;
+  Supla::Control::RollerShutter rs(gpioUp, gpioDown);
+
+  storage.defaultInitialization(9);
+  EXPECT_CALL(storage, scheduleSave(_, 1000)).Times(AtLeast(0));
+  EXPECT_CALL(storage, writeStorage(8, _, 7)).WillRepeatedly(Return(7));
+  EXPECT_CALL(storage, commit()).WillRepeatedly(Return());
+
+  EXPECT_CALL(
+      storage, readStorage(_, _, /* sizeof(RollerShutterStateData) */ 9, _))
+      .WillOnce([](uint32_t, unsigned char *data, int, bool) {
+        RollerShutterStateDataTests rsData = {.closingTimeMs = 10000,
+                                              .openingTimeMs = 10000,
+                                              .currentPosition =
+                                                  UNKNOWN_POSITION};
+        EXPECT_EQ(9, sizeof(rsData));
+        memcpy(data, &rsData, sizeof(RollerShutterStateDataTests));
+        return 9;
+      });
+
+  {
+    ::testing::InSequence seq;
+    EXPECT_CALL(ioMock, digitalWrite(gpioUp, 0));
+    EXPECT_CALL(ioMock, pinMode(gpioUp, OUTPUT));
+    EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+    EXPECT_CALL(ioMock, pinMode(gpioDown, OUTPUT));
+
+    // An absolute open target with unknown current position must open, not
+    // close due to target-position arithmetic against UNKNOWN_POSITION.
+    EXPECT_CALL(ioMock, digitalWrite(gpioDown, 0));
+    EXPECT_CALL(ioMock, digitalWrite(gpioUp, 1));
+  }
+
+  Supla::Storage::LoadStateStorage();
+  rs.onInit();
+
+  EXPECT_EQ(rs.getCurrentPosition(), UNKNOWN_POSITION);
+  EXPECT_FALSE(rs.isCalibrated());
+
+  TSD_SuplaChannelNewValue newValueFromServer = {};
+  auto value =
+      reinterpret_cast<TCSD_RollerShutterValue *>(newValueFromServer.value);
+  newValueFromServer.DurationMS = (100 << 16) | 100;
+  newValueFromServer.ChannelNumber = 0;
+  value->position = 10;  // absolute open target (0%)
+
+  rs.handleNewValueFromServer(&newValueFromServer);
+  rs.onTimer();
+
+  EXPECT_EQ(rs.getCurrentDirection(),
+            static_cast<int>(Supla::Control::Directions::UP_DIR));
+}
+
 TEST_F(RollerShutterFixture, onLoadStateClampsUnsafeTimes) {
   StorageMock storage;
   Supla::Control::RollerShutter rs(gpioUp, gpioDown);

@@ -105,12 +105,12 @@ class VarilightDimmer : public Supla::ChannelElement {
   static uint16_t clampLevel(uint16_t value);
   static uint8_t clampBrightness(uint8_t value);
   static uint8_t clampLed(uint8_t value);
-  static uint16_t readUint16(const char *data);
 
   void resetToDefaults();
   void startConfiguration();
   Varilight::Configuration &currentConfig();
   const Varilight::Configuration &currentConfig() const;
+  void sendConfigurationAck();
   void sendConfigurationReport();
   void completeConfiguration(bool save);
 
@@ -122,7 +122,9 @@ class VarilightDimmer : public Supla::ChannelElement {
   uint8_t workingLedConfig = Varilight::DefaultLedConfig;
   char picInstalledHexVer[Varilight::PicHexVersionMaxSize] = {};
   bool configurationActive = false;
+  bool configurationAckPending = false;
   bool configurationReportPending = false;
+  int32_t configurationReceiverId = 0;
 };
 
 }  // namespace Control

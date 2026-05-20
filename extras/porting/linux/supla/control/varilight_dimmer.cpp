@@ -91,6 +91,45 @@ const char *CalcfgResultToCStr(int result) {
   }
 }
 
+const char *VarilightResultToCStr(int result) {
+  switch (result) {
+    case SUPLA_RESULTCODE_FALSE:
+      return "RESULTCODE_FALSE";
+    case SUPLA_RESULTCODE_TRUE:
+      return "RESULTCODE_TRUE";
+    default:
+      return CalcfgResultToCStr(result);
+  }
+}
+
+void LogConfigurationDump(
+    int channelNo,
+    const Supla::Control::Varilight::SuplaConfiguration &config) {
+  SUPLA_LOG_INFO(
+      "Varilight[%d] CALCFG report dump: cfgVersion=%u led=%u "
+      "edgeMin=%u edgeMax=%u opMin=%u opMax=%u mode=%u boost=%u "
+      "boostLevel=%u childLock=%u modeMask=%u boostMask=%u picVer=%s",
+      channelNo,
+      static_cast<unsigned int>(config.cfgVersion),
+      static_cast<unsigned int>(config.led),
+      static_cast<unsigned int>(config.mainConfig.edgeMinimum),
+      static_cast<unsigned int>(config.mainConfig.edgeMaximum),
+      static_cast<unsigned int>(config.mainConfig.operatingMinimum),
+      static_cast<unsigned int>(config.mainConfig.operatingMaximum),
+      static_cast<unsigned int>(config.mainConfig.mode),
+      static_cast<unsigned int>(config.mainConfig.boost),
+      static_cast<unsigned int>(config.mainConfig.boostLevel),
+      static_cast<unsigned int>(config.mainConfig.childLock),
+      static_cast<unsigned int>(config.mainConfig.modeMask),
+      static_cast<unsigned int>(config.mainConfig.boostMask),
+      config.picInstalledHexVer);
+}
+
+uint16_t ReadUint16LE(const char *data) {
+  return static_cast<uint16_t>(static_cast<uint8_t>(data[0])) |
+         static_cast<uint16_t>(static_cast<uint8_t>(data[1]) << 8);
+}
+
 }  // namespace
 
 Supla::Control::VarilightDimmer::VarilightDimmer(int channelNumber)
@@ -106,6 +145,11 @@ void Supla::Control::VarilightDimmer::onRegistered(
 }
 
 void Supla::Control::VarilightDimmer::iterateAlways() {
+  if (configurationAckPending) {
+    sendConfigurationAck();
+    configurationAckPending = false;
+    return;
+  }
   if (configurationReportPending) {
     sendConfigurationReport();
   }
@@ -118,8 +162,8 @@ int32_t Supla::Control::VarilightDimmer::handleNewValueFromServer(
   }
 
   uint8_t toggle = static_cast<uint8_t>(newValue->value[5]);
-  uint8_t requestedBrightness = clampBrightness(
-      static_cast<uint8_t>(newValue->value[0]));
+  uint8_t requestedBrightness =
+      clampBrightness(static_cast<uint8_t>(newValue->value[0]));
 
   if (toggle && requestedBrightness == 0) {
     setBrightness(0);
@@ -143,9 +187,23 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
                  CalcfgCommandToCStr(request->Command),
                  request->Command,
                  request->DataSize);
+  if (request->DataSize > 0) {
+    SUPLA_LOG_INFO(
+        "Varilight[%d] CALCFG data bytes: %02X %02X %02X %02X",
+        getChannelNumber(),
+        static_cast<unsigned char>(request->Data[0]),
+        request->DataSize > 1 ? static_cast<unsigned char>(request->Data[1])
+                              : 0,
+        request->DataSize > 2 ? static_cast<unsigned char>(request->Data[2])
+                              : 0,
+        request->DataSize > 3 ? static_cast<unsigned char>(request->Data[3])
+                              : 0);
+  }
 
   switch (request->Command) {
     case Varilight::MsgRestoreDefaults: {
+      SUPLA_LOG_INFO("Varilight[%d] CALCFG command value: restore defaults",
+                     getChannelNumber());
       resetToDefaults();
       SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                      getChannelNumber(),
@@ -153,7 +211,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
       return SUPLA_CALCFG_RESULT_DONE;
     }
     case Varilight::MsgConfigurationMode: {
+      SUPLA_LOG_INFO("Varilight[%d] CALCFG command value: configuration mode",
+                     getChannelNumber());
       startConfiguration();
+      configurationReceiverId = request->SenderID;
+      configurationAckPending = true;
       configurationReportPending = true;
       SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s (%s)",
                      getChannelNumber(),
@@ -163,6 +225,10 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::MsgConfigComplete: {
       if (request->DataSize == 1) {
+        SUPLA_LOG_INFO(
+            "Varilight[%d] CALCFG command value: config complete=%d",
+            getChannelNumber(),
+            static_cast<int>(static_cast<uint8_t>(request->Data[0])));
         completeConfiguration(request->Data[0] != 0);
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
@@ -173,8 +239,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::MsgSetMinimum: {
       if (request->DataSize == 2) {
-        currentConfig().operatingMinimum = clampLevel(
-            readUint16(request->Data));
+        auto value = ReadUint16LE(request->Data);
+        SUPLA_LOG_INFO("Varilight[%d] CALCFG command value: set minimum=%u",
+                       getChannelNumber(),
+                       value);
+        setOperatingMinimum(value);
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
                        CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE));
@@ -184,8 +253,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::MsgSetMaximum: {
       if (request->DataSize == 2) {
-        currentConfig().operatingMaximum = clampLevel(
-            readUint16(request->Data));
+        auto value = ReadUint16LE(request->Data);
+        SUPLA_LOG_INFO("Varilight[%d] CALCFG command value: set maximum=%u",
+                       getChannelNumber(),
+                       value);
+        setOperatingMaximum(value);
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
                        CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE));
@@ -195,7 +267,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::MsgSetMode: {
       if (request->DataSize == 1) {
-        currentConfig().mode = static_cast<uint8_t>(request->Data[0]);
+        SUPLA_LOG_INFO(
+            "Varilight[%d] CALCFG command value: set mode=%u",
+            getChannelNumber(),
+            static_cast<unsigned int>(static_cast<uint8_t>(request->Data[0])));
+        setMode(static_cast<uint8_t>(request->Data[0]));
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
                        CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE));
@@ -205,7 +281,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::MsgSetBoost: {
       if (request->DataSize == 1) {
-        currentConfig().boost = static_cast<uint8_t>(request->Data[0]);
+        SUPLA_LOG_INFO(
+            "Varilight[%d] CALCFG command value: set boost=%u",
+            getChannelNumber(),
+            static_cast<unsigned int>(static_cast<uint8_t>(request->Data[0])));
+        setBoost(static_cast<uint8_t>(request->Data[0]));
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
                        CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE));
@@ -215,7 +295,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::MsgSetBoostLevel: {
       if (request->DataSize == 2) {
-        currentConfig().boostLevel = clampLevel(readUint16(request->Data));
+        auto value = ReadUint16LE(request->Data);
+        SUPLA_LOG_INFO("Varilight[%d] CALCFG command value: set boost level=%u",
+                       getChannelNumber(),
+                       value);
+        setBoostLevel(value);
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
                        CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE));
@@ -225,10 +309,11 @@ int Supla::Control::VarilightDimmer::handleCalcfgFromServer(
     }
     case Varilight::CalcfgSetLedConfig: {
       if (request->DataSize == 1) {
-        workingLedConfig = clampLed(static_cast<uint8_t>(request->Data[0]));
-        if (!configurationActive) {
-          ledConfig = workingLedConfig;
-        }
+        auto value = static_cast<uint8_t>(request->Data[0]);
+        SUPLA_LOG_INFO("Varilight[%d] CALCFG command value: set LED config=%u",
+                       getChannelNumber(),
+                       static_cast<unsigned int>(value));
+        setLedConfig(value);
         SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s",
                        getChannelNumber(),
                        CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE));
@@ -367,18 +452,15 @@ uint8_t Supla::Control::VarilightDimmer::clampLed(uint8_t value) {
   return std::min<uint8_t>(value, 2);
 }
 
-uint16_t Supla::Control::VarilightDimmer::readUint16(const char *data) {
-  return static_cast<uint16_t>(static_cast<uint8_t>(data[0])) |
-         static_cast<uint16_t>(static_cast<uint8_t>(data[1]) << 8);
-}
-
 void Supla::Control::VarilightDimmer::resetToDefaults() {
   config = MakeDefaultConfig();
   workingConfig = config;
   ledConfig = Varilight::DefaultLedConfig;
   workingLedConfig = ledConfig;
   configurationActive = false;
+  configurationAckPending = false;
   configurationReportPending = false;
+  configurationReceiverId = 0;
 }
 
 void Supla::Control::VarilightDimmer::startConfiguration() {
@@ -408,17 +490,36 @@ void Supla::Control::VarilightDimmer::sendConfigurationReport() {
 
   SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s (%s)",
                  getChannelNumber(),
-                 CalcfgResultToCStr(SUPLA_CALCFG_RESULT_TRUE),
+                 VarilightResultToCStr(SUPLA_RESULTCODE_TRUE),
                  CalcfgCommandToCStr(Varilight::MsgConfigurationReport));
   auto suplaConfig = getSuplaConfiguration();
-  suplaSrpc->sendPendingCalCfgResultForCommand(
-      getChannelNumber(),
-      SUPLA_CALCFG_RESULT_TRUE,
-      Varilight::MsgConfigurationMode,
-      Varilight::MsgConfigurationReport,
-      sizeof(suplaConfig),
-      &suplaConfig);
+  LogConfigurationDump(getChannelNumber(), suplaConfig);
+  suplaSrpc->sendCalCfgResult(configurationReceiverId,
+                              getChannelNumber(),
+                              SUPLA_RESULTCODE_TRUE,
+                              Varilight::MsgConfigurationReport,
+                              sizeof(suplaConfig),
+                              &suplaConfig);
   configurationReportPending = false;
+}
+
+void Supla::Control::VarilightDimmer::sendConfigurationAck() {
+  if (!suplaSrpc) {
+    configurationAckPending = false;
+    return;
+  }
+
+  SUPLA_LOG_INFO("Varilight[%d] CALCFG response: %s (%s)",
+                 getChannelNumber(),
+                 VarilightResultToCStr(SUPLA_RESULTCODE_TRUE),
+                 CalcfgCommandToCStr(Varilight::MsgConfigurationAck));
+  suplaSrpc->sendPendingCalCfgResultForCommand(getChannelNumber(),
+                                               SUPLA_RESULTCODE_TRUE,
+                                               Varilight::MsgConfigurationMode,
+                                               Varilight::MsgConfigurationAck);
+  suplaSrpc->clearPendingCalCfgTimeout(getChannelNumber(),
+                                       Varilight::MsgConfigurationMode);
+  configurationAckPending = false;
 }
 
 void Supla::Control::VarilightDimmer::completeConfiguration(bool save) {
@@ -433,7 +534,9 @@ void Supla::Control::VarilightDimmer::completeConfiguration(bool save) {
   workingConfig = config;
   workingLedConfig = ledConfig;
   configurationActive = false;
+  configurationReceiverId = 0;
   configurationReportPending = false;
+  configurationAckPending = false;
 
   if (suplaSrpc) {
     suplaSrpc->clearPendingCalCfgResult(getChannelNumber());

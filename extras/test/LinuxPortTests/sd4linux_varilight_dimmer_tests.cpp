@@ -116,8 +116,13 @@ class Sd4linuxVarilightDimmerSrpcTests : public ::testing::Test {
     srpcLayer->initializeSrpc();
 
     dimmer = new Supla::Control::VarilightDimmer(0);
+    dimmer->setEdgeMinimum(11);
+    dimmer->setEdgeMaximum(999);
     dimmer->setOperatingMinimum(123);
     dimmer->setOperatingMaximum(987);
+    dimmer->setMode(2);
+    dimmer->setBoost(1);
+    dimmer->setBoostLevel(250);
     dimmer->setLedConfig(2);
     dimmer->setPicInstalledHexVersion("1.2.3");
     dimmer->onRegistered(srpcLayer);
@@ -280,8 +285,20 @@ TEST_F(Sd4linuxVarilightDimmerSrpcTests,
         EXPECT_EQ(result->ChannelNumber, 0);
         EXPECT_EQ(result->ReceiverID, 1234);
         EXPECT_EQ(result->Command,
+                  Supla::Control::Varilight::MsgConfigurationAck);
+        EXPECT_EQ(result->Result, SUPLA_RESULTCODE_TRUE);
+        EXPECT_EQ(result->DataSize, 0);
+        return 0;
+      });
+  dimmer->iterateAlways();
+
+  EXPECT_CALL(srpc, srpc_ds_async_device_calcfg_result(_, _))
+      .WillOnce([](void *, TDS_DeviceCalCfgResult *result) -> _supla_int_t {
+        EXPECT_EQ(result->ChannelNumber, 0);
+        EXPECT_EQ(result->ReceiverID, 1234);
+        EXPECT_EQ(result->Command,
                   Supla::Control::Varilight::MsgConfigurationReport);
-        EXPECT_EQ(result->Result, SUPLA_CALCFG_RESULT_TRUE);
+        EXPECT_EQ(result->Result, SUPLA_RESULTCODE_TRUE);
         EXPECT_EQ(result->DataSize,
                   sizeof(Supla::Control::Varilight::SuplaConfiguration));
 
@@ -291,8 +308,13 @@ TEST_F(Sd4linuxVarilightDimmerSrpcTests,
           memcpy(&config, result->Data, sizeof(config));
           EXPECT_EQ(config.cfgVersion,
                     Supla::Control::Varilight::ConfigVersion);
+          EXPECT_EQ(config.mainConfig.edgeMinimum, 11);
+          EXPECT_EQ(config.mainConfig.edgeMaximum, 999);
           EXPECT_EQ(config.mainConfig.operatingMinimum, 123);
           EXPECT_EQ(config.mainConfig.operatingMaximum, 987);
+          EXPECT_EQ(config.mainConfig.mode, 2);
+          EXPECT_EQ(config.mainConfig.boost, 1);
+          EXPECT_EQ(config.mainConfig.boostLevel, 250);
           EXPECT_EQ(config.led, 2);
           EXPECT_STREQ(config.picInstalledHexVer, "1.2.3");
         }

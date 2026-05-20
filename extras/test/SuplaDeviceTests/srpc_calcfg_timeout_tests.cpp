@@ -138,3 +138,21 @@ TEST_F(SrpcCalcfgTimeoutTests, DisconnectClearsPendingCalcfg) {
                 0, SUPLA_CALCFG_CMD_IDENTIFY_SUBDEVICE),
             nullptr);
 }
+
+TEST_F(SrpcCalcfgTimeoutTests, ClearPendingCalcfgTimeoutDisablesExpiry) {
+  srpcLayer->calCfgResultPending.set(
+      0, 1234, SUPLA_CALCFG_CMD_IDENTIFY_SUBDEVICE, 5000);
+  ASSERT_NE(srpcLayer->calCfgResultPending.get(
+                0, SUPLA_CALCFG_CMD_IDENTIFY_SUBDEVICE),
+            nullptr);
+
+  srpcLayer->clearPendingCalCfgTimeout(0, SUPLA_CALCFG_CMD_IDENTIFY_SUBDEVICE);
+
+  time.advance(6000);
+  EXPECT_CALL(srpc, srpc_ds_async_device_calcfg_result(_, _)).Times(0);
+
+  srpcLayer->iterate(time.value);
+  ASSERT_NE(srpcLayer->calCfgResultPending.get(
+                0, SUPLA_CALCFG_CMD_IDENTIFY_SUBDEVICE),
+            nullptr);
+}

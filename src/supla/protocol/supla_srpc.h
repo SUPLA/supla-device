@@ -47,6 +47,7 @@ class CalCfgResultPending {
            int32_t command,
            uint32_t timeoutMs = 0);
   void clear(int16_t channelNo, int32_t command = -1);
+  void clearTimeout(int16_t channelNo, int32_t command = -1);
   void clearAll();
   CalCfgResultPendingItem *get(int16_t channelNo, int32_t command = -1);
 
@@ -142,8 +143,15 @@ class SuplaSrpc : public ProtocolLayer {
                                          int32_t responseCommand,
                                          int dataSize = 0,
                                          void *data = nullptr);
+  void sendCalCfgResult(int32_t receiverId,
+                        int16_t channelNo,
+                        int32_t result,
+                        int32_t command,
+                        int dataSize = 0,
+                        void *data = nullptr);
 
   void clearPendingCalCfgResult(int16_t channelNo, int32_t command = -1);
+  void clearPendingCalCfgTimeout(int16_t channelNo, int32_t command = -1);
 
   static const char *configResultToCStr(int result);
 

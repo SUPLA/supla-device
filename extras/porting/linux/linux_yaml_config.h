@@ -155,6 +155,7 @@ class LinuxYamlConfig : public KeyValue {
   bool addRgbCctParsed(const YAML::Node& ch,
                        int channelNumber,
                        Supla::Parser::Parser*);
+  bool addVarilightDimmer(const YAML::Node& ch, int channelNumber);
   bool addCustomRelay(const YAML::Node& ch,
                       int channelNumber,
                       Parser::Parser* parser,

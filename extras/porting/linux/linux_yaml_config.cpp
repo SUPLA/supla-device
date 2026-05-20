@@ -26,8 +26,10 @@
 #include <supla/control/control_payload.h>
 #include <supla/control/custom_relay.h>
 #include <supla/control/rgbcct_parsed.h>
+#include <supla/control/varilight_dimmer.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/custom_channel.h>
+#include <supla/device/register_device.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
 #include <supla/output/cmd.h>
@@ -67,6 +69,7 @@
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -86,6 +89,8 @@ const char ChannelType[] = "channel_type";
 const char DefaultFunction[] = "default_function";
 const char DefaultFunctionNumber[] = "default_function_number";
 const char Value[] = "value";
+const char ManufacturerId[] = "manufacturer_id";
+const char ProductId[] = "product_id";
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
 const char ReadWriteConfigStorage[] = "/config_storage.bin";
@@ -144,6 +149,24 @@ bool Supla::LinuxYamlConfig::init() {
   if (config.size() == 0) {
     try {
       config = YAML::LoadFile(file);
+      if (config[Supla::ManufacturerId]) {
+        auto manufacturerId = config[Supla::ManufacturerId].as<int>();
+        if (manufacturerId < 0 ||
+            manufacturerId > std::numeric_limits<int16_t>::max()) {
+          SUPLA_LOG_ERROR("Config: manufacturer_id out of range");
+          return false;
+        }
+        Supla::RegisterDevice::setManufacturerId(
+            static_cast<int16_t>(manufacturerId));
+      }
+      if (config[Supla::ProductId]) {
+        auto productId = config[Supla::ProductId].as<int>();
+        if (productId < 0 || productId > std::numeric_limits<int16_t>::max()) {
+          SUPLA_LOG_ERROR("Config: product_id out of range");
+          return false;
+        }
+        Supla::RegisterDevice::setProductId(static_cast<int16_t>(productId));
+      }
       loadGuidAuthFromPath(getStateFilesPath());
     } catch (const YAML::Exception& ex) {
       logError(file, ex);
@@ -650,6 +673,8 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
       return addCmdRollerShutter(ch, channelNumber, parser);
     } else if (type == "RgbCctParsed") {
       return addRgbCctParsed(ch, channelNumber, parser);
+    } else if (type == "varilight") {
+      return addVarilightDimmer(ch, channelNumber);
     } else if (type == "Fronius") {
       return addFronius(ch, channelNumber);
     } else if (type == "SolarEdge") {
@@ -877,6 +902,80 @@ bool Supla::LinuxYamlConfig::addRgbCctParsed(const YAML::Node& ch,
     rgb->setFadeEffectTime(fadeEffectMs);
   }
   return addCommonParameters(ch, rgb);
+}
+
+bool Supla::LinuxYamlConfig::addVarilightDimmer(const YAML::Node& ch,
+                                                int channelNumber) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding varilight", channelNumber);
+  auto dimmer = new Supla::Control::VarilightDimmer(channelNumber);
+
+  if (ch["brightness"]) {
+    paramCount++;
+    dimmer->setBrightness(static_cast<uint8_t>(
+        std::clamp(ch["brightness"].as<int>(), 0, 100)));
+  }
+  if (ch["edge_minimum"]) {
+    paramCount++;
+    dimmer->setEdgeMinimum(static_cast<uint16_t>(
+        std::clamp(ch["edge_minimum"].as<int>(), 0, 1000)));
+  }
+  if (ch["edge_maximum"]) {
+    paramCount++;
+    dimmer->setEdgeMaximum(static_cast<uint16_t>(
+        std::clamp(ch["edge_maximum"].as<int>(), 0, 1000)));
+  }
+  if (ch["operating_minimum"]) {
+    paramCount++;
+    dimmer->setOperatingMinimum(static_cast<uint16_t>(
+        std::clamp(ch["operating_minimum"].as<int>(), 0, 1000)));
+  }
+  if (ch["operating_maximum"]) {
+    paramCount++;
+    dimmer->setOperatingMaximum(static_cast<uint16_t>(
+        std::clamp(ch["operating_maximum"].as<int>(), 0, 1000)));
+  }
+  if (ch["mode"]) {
+    paramCount++;
+    dimmer->setMode(static_cast<uint8_t>(
+        std::clamp(ch["mode"].as<int>(), 0, 255)));
+  }
+  if (ch["boost"]) {
+    paramCount++;
+    dimmer->setBoost(static_cast<uint8_t>(
+        std::clamp(ch["boost"].as<int>(), 0, 255)));
+  }
+  if (ch["boost_level"]) {
+    paramCount++;
+    dimmer->setBoostLevel(static_cast<uint16_t>(
+        std::clamp(ch["boost_level"].as<int>(), 0, 1000)));
+  }
+  if (ch["child_lock"]) {
+    paramCount++;
+    dimmer->setChildLock(static_cast<uint8_t>(
+        std::clamp(ch["child_lock"].as<int>(), 0, 255)));
+  }
+  if (ch["mode_mask"]) {
+    paramCount++;
+    dimmer->setModeMask(static_cast<uint8_t>(
+        std::clamp(ch["mode_mask"].as<int>(), 0, 255)));
+  }
+  if (ch["boost_mask"]) {
+    paramCount++;
+    dimmer->setBoostMask(static_cast<uint8_t>(
+        std::clamp(ch["boost_mask"].as<int>(), 0, 255)));
+  }
+  if (ch["led"]) {
+    paramCount++;
+    dimmer->setLedConfig(static_cast<uint8_t>(
+        std::clamp(ch["led"].as<int>(), 0, 2)));
+  }
+  if (ch["pic_installed_hex_ver"]) {
+    paramCount++;
+    dimmer->setPicInstalledHexVersion(
+        ch["pic_installed_hex_ver"].as<std::string>().c_str());
+  }
+
+  return addCommonParameters(ch, dimmer);
 }
 
 bool Supla::LinuxYamlConfig::addCmdRollerShutter(

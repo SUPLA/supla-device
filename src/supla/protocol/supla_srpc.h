@@ -136,6 +136,12 @@ class SuplaSrpc : public ProtocolLayer {
                                int32_t command,
                                int dataSize = 0,
                                void *data = nullptr);
+  void sendPendingCalCfgResultForCommand(int16_t channelNo,
+                                         int32_t result,
+                                         int32_t pendingCommand,
+                                         int32_t responseCommand,
+                                         int dataSize = 0,
+                                         void *data = nullptr);
 
   void clearPendingCalCfgResult(int16_t channelNo, int32_t command = -1);
 

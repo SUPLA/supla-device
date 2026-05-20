@@ -91,6 +91,7 @@ set(SUPLA_DEVICE_LINUX_SRCS
   ${SUPLA_LINUX_PORT_DIR}/supla/control/custom_hvac.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/custom_relay.cpp
   ${SUPLA_LINUX_PORT_DIR}/supla/control/control_payload.cpp
+  ${SUPLA_LINUX_PORT_DIR}/supla/control/varilight_dimmer.cpp
 
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/fronius.cpp
   ${_SUPLA_ROOT_FROM_LINUX}/src/supla/pv/solaredge.cpp

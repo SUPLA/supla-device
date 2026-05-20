@@ -692,6 +692,10 @@ bool Supla::Config::isEncryptionEnabled() {
   return false;
 }
 
+bool Supla::Config::isDeviceDataPartitionDeclared() {
+  return false;
+}
+
 bool Supla::Config::isDeviceDataPartitionAvailable() {
   return false;
 }

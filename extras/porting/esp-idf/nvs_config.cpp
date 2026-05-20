@@ -420,7 +420,7 @@ bool NvsConfig::readDataPartitionImp(int address, char* buf, int size) {
   return true;
 }
 
-bool NvsConfig::isDeviceDataPartitionAvailable() {
+bool NvsConfig::isDeviceDataPartitionDeclared() {
   if (!dataPartitionInitiazlied) {
     dataPartitionInitiazlied = true;
     dataPartition = esp_partition_find_first(
@@ -429,28 +429,43 @@ bool NvsConfig::isDeviceDataPartitionAvailable() {
         SUPLA_DEVICE_DATA_PARTITION_NAME);
 
     if (dataPartition == nullptr) {
-      SUPLA_LOG_ERROR("Data partition partition not found");
-      return false;
-    }
-
-    if (dataPartition->size < 8192) {
-      SUPLA_LOG_ERROR("Data partition too small");
-      dataPartition = nullptr;
-      return false;
-    }
-
-    char buf[16] = {};
-    if (!readDataPartitionImp(0, buf, 16)) {
-      dataPartition = nullptr;
-      return false;
-    }
-    if (!initDeviceDataPartitionCopyAndChecksum()) {
-      dataPartition = nullptr;
+      SUPLA_LOG_INFO("Data partition not found");
       return false;
     }
   }
 
   return dataPartition != nullptr;
+}
+
+bool NvsConfig::isDeviceDataPartitionAvailable() {
+  if (!isDeviceDataPartitionDeclared()) {
+    return false;
+  }
+
+  if (dataPartitionValidated) {
+    return dataPartitionValid;
+  }
+
+  dataPartitionValidated = true;
+  dataPartitionValid = false;
+
+  if (dataPartition->size < 8192) {
+    SUPLA_LOG_ERROR("Data partition too small");
+    return false;
+  }
+
+  char buf[16] = {};
+  if (!readDataPartitionImp(0, buf, 16)) {
+    SUPLA_LOG_ERROR("Data partition declared but not readable");
+    return false;
+  }
+  if (!initDeviceDataPartitionCopyAndChecksum()) {
+    SUPLA_LOG_ERROR("Data partition declared but not usable");
+    return false;
+  }
+
+  dataPartitionValid = true;
+  return true;
 }
 
 bool NvsConfig::isDeviceDataValid(const DeviceDataBuf &buf) const {

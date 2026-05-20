@@ -1048,13 +1048,11 @@ Supla::WebServer::WebServerMode Supla::EspIdfWebServer::resolveWebServerMode()
   // - Older devices may not have a device-data partition and do not support
   //   HTTPS private-key decryption.
   // - Newer devices include device-data and must run with HTTPS in Auto mode.
-  // This split behavior is intentional and validated in factory tests.
+  // Auto only falls back to HTTP when the partition is genuinely absent.
   auto cfg = Supla::Storage::ConfigInstance();
-  if (cfg && cfg->isDeviceDataPartitionAvailable()) {
-    return WebServerMode::HttpsOnly;
-  }
-
-  return WebServerMode::HttpOnly;
+  return cfg && cfg->isDeviceDataPartitionDeclared()
+             ? WebServerMode::HttpsOnly
+             : WebServerMode::HttpOnly;
 }
 
 bool Supla::EspIdfWebServer::loadEmbeddedHttpsCertificates(bool storeActive) {

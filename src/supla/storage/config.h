@@ -66,6 +66,9 @@ class Config {
   virtual bool isMinimalConfigReady(bool showLogs = true);
   virtual bool isConfigModeSupported();
   virtual bool isEncryptionEnabled();
+  // Returns true when the device-data partition is present in the partition
+  // table, regardless of whether its contents are usable.
+  virtual bool isDeviceDataPartitionDeclared();
   virtual bool isDeviceDataPartitionAvailable();
 
   // Override this method and setup all default value if needed

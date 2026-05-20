@@ -28,6 +28,7 @@
 #include <supla/control/rgbcct_parsed.h>
 #include <supla/control/virtual_relay.h>
 #include <supla/custom_channel.h>
+#include <supla/device/register_device.h>
 #include <supla/log_wrapper.h>
 #include <supla/network/ip_address.h>
 #include <supla/output/cmd.h>
@@ -67,6 +68,7 @@
 #include <cstring>
 #include <filesystem>  // NOLINT(build/c++17)
 #include <fstream>
+#include <limits>
 #include <map>
 #include <string>
 #include <vector>
@@ -86,6 +88,8 @@ const char ChannelType[] = "channel_type";
 const char DefaultFunction[] = "default_function";
 const char DefaultFunctionNumber[] = "default_function_number";
 const char Value[] = "value";
+const char ManufacturerId[] = "manufacturer_id";
+const char ProductId[] = "product_id";
 
 const char GuidAuthFileName[] = "/guid_auth.yaml";
 const char ReadWriteConfigStorage[] = "/config_storage.bin";
@@ -144,6 +148,24 @@ bool Supla::LinuxYamlConfig::init() {
   if (config.size() == 0) {
     try {
       config = YAML::LoadFile(file);
+      if (config[Supla::ManufacturerId]) {
+        auto manufacturerId = config[Supla::ManufacturerId].as<int>();
+        if (manufacturerId < 0 ||
+            manufacturerId > std::numeric_limits<int16_t>::max()) {
+          SUPLA_LOG_ERROR("Config: manufacturer_id out of range");
+          return false;
+        }
+        Supla::RegisterDevice::setManufacturerId(
+            static_cast<int16_t>(manufacturerId));
+      }
+      if (config[Supla::ProductId]) {
+        auto productId = config[Supla::ProductId].as<int>();
+        if (productId < 0 || productId > std::numeric_limits<int16_t>::max()) {
+          SUPLA_LOG_ERROR("Config: product_id out of range");
+          return false;
+        }
+        Supla::RegisterDevice::setProductId(static_cast<int16_t>(productId));
+      }
       loadGuidAuthFromPath(getStateFilesPath());
     } catch (const YAML::Exception& ex) {
       logError(file, ex);

@@ -1633,12 +1633,23 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(int16_t channelNo,
                                                          int32_t command,
                                                          int dataSize,
                                                          void *data) {
+  sendPendingCalCfgResultForCommand(
+      channelNo, resultId, command, command, dataSize, data);
+}
+
+void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResultForCommand(
+    int16_t channelNo,
+    int32_t resultId,
+    int32_t pendingCommand,
+    int32_t responseCommand,
+    int dataSize,
+    void *data) {
   if (srpc == nullptr) {
     SUPLA_LOG_WARNING("No active SRPC for CALCFG response on channel %d",
                       channelNo);
     return;
   }
-  auto pendingResponse = calCfgResultPending.get(channelNo, command);
+  auto pendingResponse = calCfgResultPending.get(channelNo, pendingCommand);
   if (pendingResponse == nullptr) {
     SUPLA_LOG_WARNING("No pending response for channel %d", channelNo);
     return;
@@ -1648,8 +1659,8 @@ void Supla::Protocol::SuplaSrpc::sendPendingCalCfgResult(int16_t channelNo,
   result.ReceiverID = pendingResponse->receiverId;
   result.ChannelNumber = channelNo;
   result.Command = pendingResponse->command;
-  if (command >= 0) {
-    result.Command = command;
+  if (responseCommand >= 0) {
+    result.Command = responseCommand;
   }
 
   result.Result = resultId;

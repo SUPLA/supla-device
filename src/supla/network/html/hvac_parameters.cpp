@@ -398,16 +398,18 @@ void HvacParameters::send(Supla::WebSender* sender) {
   if (!hvac->parameterFlags.AuxMinMaxSetpointEnabledHidden) {
     hvac->generateKey(key, "aux_ctrl");
     char auxChangeFn[48] = {};
+    char auxOnChange[52] = {};
     snprintf(auxChangeFn,
              sizeof(auxChangeFn),
              "auxSetpointEnabledChange_%d",
              hvac->getChannelNumber());
+    snprintf(auxOnChange, sizeof(auxOnChange), "%s()", auxChangeFn);
     emitSwitchField(sender,
                     key,
                     "Enable auxiliary min. and max. setpoints",
                     hvac->isAuxMinMaxSetpointEnabled(),
                     hvac->parameterFlags.AuxMinMaxSetpointEnabledReadonly,
-                    auxChangeFn);
+                    auxOnChange);
 
     sender->send(
         "<script>"
@@ -458,17 +460,20 @@ void HvacParameters::send(Supla::WebSender* sender) {
     sender->tag("h2").body("Anti freeze and overheat protection");
     hvac->generateKey(key, "anti_freeze");
     char antiFreezeChangeFn[48] = {};
+    char antiFreezeOnChange[52] = {};
     snprintf(antiFreezeChangeFn,
              sizeof(antiFreezeChangeFn),
              "antiFreezeAndHeatProtectionChange_%d",
              hvac->getChannelNumber());
+    snprintf(
+        antiFreezeOnChange, sizeof(antiFreezeOnChange), "%s()", antiFreezeChangeFn);
     emitSwitchField(
         sender,
         key,
         "Enable anti-freeze and overheat protection",
         hvac->isAntiFreezeAndHeatProtectionEnabled(),
         hvac->parameterFlags.AntiFreezeAndOverheatProtectionEnabledReadonly,
-        antiFreezeChangeFn);
+        antiFreezeOnChange);
 
     sender->send(
         "<script>"

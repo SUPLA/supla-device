@@ -313,6 +313,7 @@ TEST_F(HtmlCaptureTest, HideShowContainerGeneratesToggledSection) {
 
   Supla::Html::HideShowContainerBegin begin("Hidden section");
   begin.send(&sender);
+  sender.send("<input id=\"hidden_payload\" />", -1);
   Supla::Html::HideShowContainerEnd end;
   end.send(&sender);
 
@@ -334,8 +335,9 @@ TEST_F(HtmlCaptureTest, HideShowContainerGeneratesToggledSection) {
   EXPECT_THAT(
       sendHtml,
       HasSubstr("document.getElementById(&quot;" + id + "_link&quot;)"));
-  EXPECT_THAT(sendHtml,
-              HasSubstr("<div id=\"" + id + "\" style=\"display:none\">"));
+  EXPECT_THAT(sendHtml, HasSubstr("<div id=\"" + id +
+                                  "\" style=\"display:none\"><input "
+                                  "id=\"hidden_payload\" /></div>"));
 }
 
 TEST_F(HtmlCaptureTest, SecurityLogListWithoutLoggerShowsEmptyState) {

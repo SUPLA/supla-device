@@ -75,7 +75,9 @@ void HideShowContainerBegin::send(Supla::WebSender* sender) {
     });
   });
 
-  sender->tag("div").attr("id", idStr).attr("style", "display:none").body("");
+  auto box = sender->tag("div", false);
+  box.attr("id", idStr).attr("style", "display:none");
+  box.close();
 }
 
 void HideShowContainerEnd::send(Supla::WebSender* sender) {

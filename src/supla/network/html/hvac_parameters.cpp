@@ -465,8 +465,10 @@ void HvacParameters::send(Supla::WebSender* sender) {
              sizeof(antiFreezeChangeFn),
              "antiFreezeAndHeatProtectionChange_%d",
              hvac->getChannelNumber());
-    snprintf(
-        antiFreezeOnChange, sizeof(antiFreezeOnChange), "%s()", antiFreezeChangeFn);
+    snprintf(antiFreezeOnChange,
+             sizeof(antiFreezeOnChange),
+             "%s()",
+             antiFreezeChangeFn);
     emitSwitchField(
         sender,
         key,

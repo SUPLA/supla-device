@@ -136,6 +136,10 @@ class LinuxYamlConfig : public KeyValue {
   bool getMqttClientVerifyCA() const;
   bool getMqttClientFileCA(char* result) const;
 
+  void markChannelParameterUsed();
+  bool addCommonChannelParameters(const YAML::Node& ch,
+                                  Supla::Element* element);
+
  protected:
   bool parseChannel(const YAML::Node& ch, int channelNumber);
   Supla::Parser::Parser* addParser(const YAML::Node& parser,

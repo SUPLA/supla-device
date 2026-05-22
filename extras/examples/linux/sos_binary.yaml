@@ -1,0 +1,17 @@
+# Example sd4linux config for the sample sos_binary extension.
+
+name: SOS binary example
+log_level: debug
+state_files_path: "/var/local/user/supla-device-sos-binary"
+security_level: 0
+
+supla:
+  server: svrXyz.supla.org
+  mail: user@mail.com
+
+channels:
+  - type: sos_binary
+    initial_caption: SOS in Morse
+    short_ms: 1000
+    long_ms: 3000
+    pause_ms: 200

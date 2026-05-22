@@ -85,6 +85,7 @@ list(APPEND TEST_SRC ../../src/supla-common/proto_check.cpp)
 file(GLOB DOUBLE_SRC CONFIGURE_DEPENDS doubles/*.cpp)
 
 set(SD4LINUX_PORT_SRC
+  ../porting/linux/linux_channel_factory.cpp
   ../porting/linux/supla/control/cmd_relay.cpp
   ../porting/linux/supla/control/control_payload.cpp
   ../porting/linux/supla/control/custom_relay.cpp

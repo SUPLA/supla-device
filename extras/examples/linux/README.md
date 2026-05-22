@@ -40,6 +40,47 @@ It should produce `supla-device-linux` binary file. Check if it is working:
 
     ./supla-device-linux --version
 
+## Build with extensions
+
+sd4linux can be built with additional channel implementations from external
+repositories. Pass extension directories with `SUPLA_LINUX_EXTENSION_DIRS`.
+Each directory has to provide `supla_linux_extension.cmake`.
+
+Example:
+
+    cmake .. -DSUPLA_LINUX_EXTENSION_DIRS=/path/to/private/custom-extension
+    make
+
+An extension declares its sources with:
+
+    supla_linux_register_extension(
+      NAME custom_extension
+      INIT_FUNCTION initCustomExtension
+      SOURCES /path/to/source.cpp
+      INCLUDE_DIRS /path/to/include
+    )
+
+The channel type provided by an extension is selected directly in
+`supla-device.yaml`:
+
+    channels:
+      - type: custom_extension_channel
+
+This repository also includes a public example extension:
+
+    cmake .. -DSUPLA_LINUX_EXTENSION_DIRS=../../../porting/linux/extensions/sos_binary
+    make
+    ./supla-device-linux -c ../sos_binary.yaml
+
+The `sos_binary` example publishes a binary sensor that blinks `SOS` in Morse
+code. Timings are configured in YAML with:
+
+    channels:
+      - type: sos_binary
+        short_ms: 200
+        long_ms: 600
+        pause_ms: 200
+
 # Usage
 
 Currently, there is no automated installation available. So please follow below

@@ -73,6 +73,8 @@
 #include <string>
 #include <vector>
 
+#include "linux_channel_factory.h"
+#include "linux_extension_init.h"
 #include "supla/control/custom_hvac.h"
 #include "supla/control/hvac_parsed.h"
 #include "supla/sensor/sensor_parsed.h"
@@ -103,6 +105,16 @@ Supla::LinuxYamlConfig::LinuxYamlConfig(const std::string& file) : file(file) {
 }
 
 Supla::LinuxYamlConfig::~LinuxYamlConfig() {
+}
+
+void Supla::LinuxYamlConfig::markChannelParameterUsed() {
+  paramCount++;
+}
+
+bool Supla::LinuxYamlConfig::addCommonChannelParameters(
+    const YAML::Node& ch,
+    Supla::Element* element) {
+  return addCommonParameters(ch, element);
 }
 
 void Supla::LinuxYamlConfig::logError(const std::string& filename,
@@ -562,6 +574,7 @@ bool Supla::LinuxYamlConfig::getMqttClientFileCA(char* result) const {
 
 bool Supla::LinuxYamlConfig::loadChannels() {
   try {
+    Supla::Linux::initExtensions();
     if (config["channels"]) {
       auto channels = config["channels"];
       int channelCount = 0;
@@ -771,6 +784,20 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
     } else if (type == "CustomChannel") {
       return addCustomChannel(ch, channelNumber, parser);
     } else {
+      auto factory =
+          Supla::Linux::ChannelFactoryRegistry::instance().findByType(type);
+      if (factory) {
+        Supla::Linux::ChannelFactoryContext context{
+            *this,
+            ch,
+            channelNumber,
+            source,
+            parser,
+            output,
+            payload,
+        };
+        return factory->factory(context);
+      }
       SUPLA_LOG_ERROR("Channel[%d] config: unknown type \"%s\"",
                       channelNumber,
                       type.c_str());

@@ -279,6 +279,10 @@ bool&#160;</td><td class="memItemRight"><b>isSleepingAllowed</b> ()</td></tr>
 <tr class="memdesc:addf72c3deb17f202728b702b39a06908"><td class="mdescLeft">&#160;</td><td class="mdescRight">Checks if remote device configuration is enabled.  <br /></td></tr>
 <tr class="memitem:a2c45c2bc19c9a6794a7d12d21a77d3f6" id="r_a2c45c2bc19c9a6794a7d12d21a77d3f6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a2c45c2bc19c9a6794a7d12d21a77d3f6">setShowUptimeInChannelState</a> (bool value)</td></tr>
 <tr class="memdesc:a2c45c2bc19c9a6794a7d12d21a77d3f6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets if "uptime" should be added to channel state (i).  <br /></td></tr>
+<tr class="memitem:ac3f40fae7767c5ba938dcd1cfffad9a4" id="r_ac3f40fae7767c5ba938dcd1cfffad9a4"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac3f40fae7767c5ba938dcd1cfffad9a4">setLogLevel</a> (int level)</td></tr>
+<tr class="memdesc:ac3f40fae7767c5ba938dcd1cfffad9a4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Sets global Supla log level.  <br /></td></tr>
+<tr class="memitem:a2fad37ae494d2ff1de5ddaa6999d4392" id="r_a2fad37ae494d2ff1de5ddaa6999d4392"><td class="memItemLeft">int&#160;</td><td class="memItemRight"><a class="el" href="#a2fad37ae494d2ff1de5ddaa6999d4392">getLogLevel</a> ()</td></tr>
+<tr class="memdesc:a2fad37ae494d2ff1de5ddaa6999d4392"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns current global Supla log level.  <br /></td></tr>
 <tr class="memitem:a5c3f2a7fe315961ac8c0ba41e898650a" id="r_a5c3f2a7fe315961ac8c0ba41e898650a"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a5c3f2a7fe315961ac8c0ba41e898650a">setProtoVerboseLog</a> (bool value)</td></tr>
 <tr class="memdesc:a5c3f2a7fe315961ac8c0ba41e898650a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Enables/disables verbose logging of Supla protocol.  <br /></td></tr>
 <tr class="memitem:af889dce60fd819b8564924ee4e5f8bcd" id="r_af889dce60fd819b8564924ee4e5f8bcd"><td class="memItemLeft"><a id="af889dce60fd819b8564924ee4e5f8bcd" name="af889dce60fd819b8564924ee4e5f8bcd"></a>
@@ -589,6 +593,26 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 
 </div>
 </div>
+<a id="a2fad37ae494d2ff1de5ddaa6999d4392" name="a2fad37ae494d2ff1de5ddaa6999d4392"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2fad37ae494d2ff1de5ddaa6999d4392">&#9670;&#160;</a></span>getLogLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">int SuplaDeviceClass::getLogLevel </td>
+          <td>(</td>
+          <td class="paramname"><span class="paramname"><em></em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns current global Supla log level. </p>
+<dl class="section return"><dt>Returns</dt><dd>current maximum log level emitted </dd></dl>
+
+</div>
+</div>
 <a id="abd7be7f117d9370103f372301b073dfc" name="abd7be7f117d9370103f372301b073dfc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#abd7be7f117d9370103f372301b073dfc">&#9670;&#160;</a></span>handleAction()</h2>
 
@@ -869,6 +893,32 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
 
 </div>
 </div>
+<a id="ac3f40fae7767c5ba938dcd1cfffad9a4" name="ac3f40fae7767c5ba938dcd1cfffad9a4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3f40fae7767c5ba938dcd1cfffad9a4">&#9670;&#160;</a></span>setLogLevel()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void SuplaDeviceClass::setLogLevel </td>
+          <td>(</td>
+          <td class="paramtype">int</td>          <td class="paramname"><span class="paramname"><em>level</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Sets global Supla log level. </p>
+<p>Messages with priority higher than provided level are filtered out before formatting. Use LOG_INFO, LOG_DEBUG, LOG_VERBOSE, etc.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">level</td><td>maximum log level to emit </td></tr>
+  </table>
+  </dd>
+</dl>
+
+</div>
+</div>
 <a id="a7c21a9aab048406454e78f5382d5b5f4" name="a7c21a9aab048406454e78f5382d5b5f4"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a7c21a9aab048406454e78f5382d5b5f4">&#9670;&#160;</a></span>setMacLengthInHostname()</h2>
 
@@ -917,6 +967,7 @@ static <a class="el" href="classSupla_1_1ActionHandlerClient.html">ActionHandler
   </table>
   </dd>
 </dl>
+<dl class="section warning"><dt>Warning</dt><dd>Enabling verbose logging is insecure. It may expose raw protocol payloads and secrets such as GUIDs, auth keys, and registration data in logs. </dd></dl>
 
 </div>
 </div>

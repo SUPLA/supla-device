@@ -142,15 +142,18 @@ $(function() {
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="keywordtype">void</span> LOG_ICACHE_FLASH supla_log_set_callback(_supla_log_callback callback);</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#endif </span><span class="comment">/*__LOG_CALLBACK*/</span><span class="preprocessor"></span></div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="keywordtype">void</span> LOG_ICACHE_FLASH supla_log(<span class="keywordtype">int</span> __pri, <span class="keyword">const</span> <span class="keywordtype">char</span> *__fmt, ...);</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="keywordtype">void</span> LOG_ICACHE_FLASH supla_write_state_file(<span class="keyword">const</span> <span class="keywordtype">char</span> *file, <span class="keywordtype">int</span> __pri,</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                                             <span class="keyword">const</span> <span class="keywordtype">char</span> *__fmt, ...);</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="preprocessor">#ifdef __cplusplus</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>}</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="preprocessor">#endif </span><span class="comment">/*__cplusplus*/</span><span class="preprocessor"></span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><span class="preprocessor">#endif </span><span class="comment">/* suplalog_H_ */</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="keywordtype">void</span> LOG_ICACHE_FLASH supla_log_set_level(<span class="keywordtype">int</span> level);</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="keywordtype">int</span> LOG_ICACHE_FLASH supla_log_get_level(<span class="keywordtype">void</span>);</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><span class="keywordtype">char</span> LOG_ICACHE_FLASH supla_log_is_enabled(<span class="keywordtype">int</span> level);</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><span class="keywordtype">void</span> LOG_ICACHE_FLASH supla_log(<span class="keywordtype">int</span> __pri, <span class="keyword">const</span> <span class="keywordtype">char</span> *__fmt, ...);</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><span class="keywordtype">void</span> LOG_ICACHE_FLASH supla_write_state_file(<span class="keyword">const</span> <span class="keywordtype">char</span> *file, <span class="keywordtype">int</span> __pri,</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>                                             <span class="keyword">const</span> <span class="keywordtype">char</span> *__fmt, ...);</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="preprocessor">#ifdef __cplusplus</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>}</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="preprocessor">#endif </span><span class="comment">/*__cplusplus*/</span><span class="preprocessor"></span></div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span><span class="preprocessor">#endif </span><span class="comment">/* suplalog_H_ */</span><span class="preprocessor"></span></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -16,7 +16,22 @@
 
 #include <supla-common/log.h>
 
+namespace {
+int logLevel = LOG_VERBOSE;
+}
+
+void supla_log_set_level(int level) {
+  logLevel = level;
+}
+
+int supla_log_get_level() {
+  return logLevel;
+}
+
+char supla_log_is_enabled(int level) {
+  return level <= logLevel;
+}
+
 void supla_log(int, const char *, ...) {
   return;
 }
-

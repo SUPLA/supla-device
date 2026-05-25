@@ -1800,10 +1800,24 @@ void SuplaDeviceClass::setShowUptimeInChannelState(bool value) {
   showUptimeInChannelState = value;
 }
 
+void SuplaDeviceClass::setLogLevel(int level) {
+  supla_log_set_level(level);
+}
+
+int SuplaDeviceClass::getLogLevel() {
+  return supla_log_get_level();
+}
+
 void SuplaDeviceClass::setProtoVerboseLog(bool value) {
   createSrpcLayerIfNeeded();
   if (srpcLayer) {
+    if (value) {
+      SUPLA_LOG_WARNING(
+          "Protocol verbose logging enabled (INSECURE): may expose secrets "
+          "and raw protocol payloads");
+    }
     srpcLayer->setVerboseLog(value);
+    srpcLayer->setLowLevelDebugLogs(value);
   }
 }
 

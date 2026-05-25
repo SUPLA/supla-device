@@ -25,7 +25,7 @@ error=0
 echo "🔍 Checking for forbidden printf formats (%ll, PRIxx64)..."
 
 # Lista plików staged z rozszerzeniami C/C++
-files=$(git diff --name-only --diff-filter=ACM | grep -E '\.(c|cpp|h|hpp)$' || true)
+files=$(git diff --name-only --staged --diff-filter=ACM | grep -E '\.(c|cpp|h|hpp)$' || true)
 
 # Sprawdzenie dla %ll
 for file in $files; do
@@ -55,4 +55,11 @@ if [ $error -eq 1 ]; then
 fi
 
 echo "✅ No forbidden printf formats found."
+
+if git diff --cached --unified=0 -- '*.c' '*.cpp' '*.h' '*.hpp' \
+  | grep -E '^\+.*%ll' >/dev/null; then
+  echo "❌ Found forbidden '%ll' usage in staged changes"
+  exit 1
+fi
+
 exit 0

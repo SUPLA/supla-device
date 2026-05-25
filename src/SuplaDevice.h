@@ -17,6 +17,7 @@
 #ifndef SRC_SUPLADEVICE_H_
 #define SRC_SUPLADEVICE_H_
 
+#include <supla-common/log.h>
 #include <supla-common/proto.h>
 #include <supla/action_handler.h>
 #include <supla/device/device_mode.h>
@@ -316,9 +317,29 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void setShowUptimeInChannelState(bool value);
 
   /**
+   * Sets global Supla log level.
+   *
+   * Messages with priority higher than provided level are filtered out before
+   * formatting. Use LOG_INFO, LOG_DEBUG, LOG_VERBOSE, etc.
+   *
+   * @param level maximum log level to emit
+   */
+  void setLogLevel(int level);
+
+  /**
+   * Returns current global Supla log level.
+   *
+   * @return current maximum log level emitted
+   */
+  int getLogLevel();
+
+  /**
    * Enables/disables verbose logging of Supla protocol
    *
    * @param value true to enable verbose logging
+   * @warning Enabling verbose logging is insecure. It may expose raw protocol
+   * payloads and secrets such as GUIDs, auth keys, and registration data in
+   * logs.
    */
   void setProtoVerboseLog(bool value);
 

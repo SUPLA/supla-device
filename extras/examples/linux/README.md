@@ -190,6 +190,16 @@ Example:
 
     log_level: debug
 
+#### Parameter `proto_verbose_log`
+
+Enables insecure low-level SRPC packet logging.
+When turned on, protocol dumps may include secrets and raw payloads.
+Parameter is optional. Default value is `false`.
+
+Example:
+
+    proto_verbose_log: true
+
 #### Parameter `state_files_path`
 
 Defines location where supla-device will read/write GUID, AUTHKEY and

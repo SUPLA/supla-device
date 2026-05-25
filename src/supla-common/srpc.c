@@ -827,6 +827,16 @@ char SRPC_ICACHE_FLASH srpc_getdata(void *_srpc, TsrpcReceivedData *rd,
     rd->call_id = srpc->sdp.call_id;
     rd->rr_id = srpc->sdp.rr_id;
 
+#ifdef SRPC_WITH_PACKET_LOG_HOOKS
+    if (srpc->params.on_packet_received != NULL) {
+      srpc->params.on_packet_received(_srpc,
+                                      rd->call_id,
+                                      srpc->sdp.data,
+                                      srpc->sdp.data_size,
+                                      srpc->params.user_params);
+    }
+#endif
+
     // first one
     rd->data.dcs_ping = NULL;
 
@@ -1908,6 +1918,15 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_async__call(void *_srpc,
   if (SUPLA_RESULT_TRUE ==
           sproto_set_data(&srpc->sdp, data, data_size, call_id) &&
       srpc_out_queue_push(srpc, &srpc->sdp)) {
+#ifdef SRPC_WITH_PACKET_LOG_HOOKS
+    if (srpc->params.on_packet_sent != NULL) {
+      srpc->params.on_packet_sent(_srpc,
+                                  call_id,
+                                  data,
+                                  data_size,
+                                  srpc->params.user_params);
+    }
+#endif
 #ifndef __EH_DISABLED
     if (srpc->params.eh != 0) {
       eh_raise_event(srpc->params.eh);
@@ -2219,6 +2238,15 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
     header_size += sizeof(TDS_SuplaRegisterDeviceHeader);
     srpc->params.data_write((char *)&srpc->sdp, header_size,
                             srpc->params.user_params);
+#ifdef SRPC_WITH_PACKET_LOG_HOOKS
+    if (srpc->params.on_packet_sent != NULL) {
+      srpc->params.on_packet_sent(_srpc,
+                                  call_id,
+                                  (char *)&srpc->sdp,
+                                  header_size,
+                                  srpc->params.user_params);
+    }
+#endif
     // send channels here
     const unsigned _supla_int_t channel_size = sizeof(TDS_SuplaDeviceChannel_D);
     for (int i = 0; i < registerdevice->channel_count; i++) {
@@ -2226,6 +2254,15 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks(
       if (data == NULL) continue;
       srpc->params.data_write((char *)data, channel_size,
                               srpc->params.user_params);
+#ifdef SRPC_WITH_PACKET_LOG_HOOKS
+      if (srpc->params.on_packet_sent != NULL) {
+        srpc->params.on_packet_sent(_srpc,
+                                    call_id,
+                                    (char *)data,
+                                    channel_size,
+                                    srpc->params.user_params);
+      }
+#endif
     }
     srpc->params.data_write(sproto_tag, SUPLA_TAG_SIZE,
                             srpc->params.user_params);
@@ -2276,6 +2313,15 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks_g(
     header_size += sizeof(TDS_SuplaRegisterDeviceHeader);
     srpc->params.data_write((char *)&srpc->sdp, header_size,
                             srpc->params.user_params);
+#ifdef SRPC_WITH_PACKET_LOG_HOOKS
+    if (srpc->params.on_packet_sent != NULL) {
+      srpc->params.on_packet_sent(_srpc,
+                                  call_id,
+                                  (char *)&srpc->sdp,
+                                  header_size,
+                                  srpc->params.user_params);
+    }
+#endif
     // send channels here
     const unsigned _supla_int_t channel_size = sizeof(TDS_SuplaDeviceChannel_E);
     for (int i = 0; i < registerdevice->channel_count; i++) {
@@ -2283,6 +2329,15 @@ _supla_int_t SRPC_ICACHE_FLASH srpc_ds_async_registerdevice_in_chunks_g(
       if (data == NULL) continue;
       srpc->params.data_write((char *)data, channel_size,
                               srpc->params.user_params);
+#ifdef SRPC_WITH_PACKET_LOG_HOOKS
+      if (srpc->params.on_packet_sent != NULL) {
+        srpc->params.on_packet_sent(_srpc,
+                                    call_id,
+                                    (char *)data,
+                                    channel_size,
+                                    srpc->params.user_params);
+      }
+#endif
     }
     srpc->params.data_write(sproto_tag, SUPLA_TAG_SIZE,
                             srpc->params.user_params);

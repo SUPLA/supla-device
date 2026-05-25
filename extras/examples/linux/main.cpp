@@ -169,6 +169,7 @@ int main(int argc, char* argv[]) {
     if (result.count("error") || config->isError()) {
       logLevel = LOG_ERR;
     }
+    SuplaDevice.setLogLevel(logLevel);
 
     SUPLA_LOG_INFO(" *** Starting supla-device ***");
     SUPLA_LOG_INFO("Using config file %s", cfgFile.c_str());
@@ -189,6 +190,7 @@ int main(int argc, char* argv[]) {
         new Supla::Device::FileStateLogger(config->getStateFilesPath()));
     Supla::LinuxNetwork network;
 
+    SuplaDevice.setProtoVerboseLog(config->isProtoVerboseLog());
     SuplaDevice.begin(config->getProtoVersion());
 
     if (SuplaDevice.getCurrentStatus() != STATUS_INITIALIZED) {

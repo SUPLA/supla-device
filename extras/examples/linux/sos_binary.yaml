@@ -2,6 +2,7 @@
 
 name: SOS binary example
 log_level: debug
+proto_verbose_log: false
 state_files_path: "/var/local/user/supla-device-sos-binary"
 security_level: 0
 

@@ -284,6 +284,17 @@ bool Supla::LinuxYamlConfig::isError() {
   return false;
 }
 
+bool Supla::LinuxYamlConfig::isProtoVerboseLog() {
+  try {
+    if (config["proto_verbose_log"]) {
+      return config["proto_verbose_log"].as<bool>();
+    }
+  } catch (const YAML::Exception& ex) {
+    logError(file, ex);
+  }
+  return false;
+}
+
 bool Supla::LinuxYamlConfig::generateGuidAndAuthkey() {
   char guid[SUPLA_GUID_SIZE] = {};
   char authkey[SUPLA_AUTHKEY_SIZE] = {};

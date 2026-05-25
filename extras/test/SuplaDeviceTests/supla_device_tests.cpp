@@ -22,6 +22,7 @@
 #include <gtest/gtest.h>
 #include <network_with_mac_mock.h>
 #include <srpc_mock.h>
+#include <supla-common/log.h>
 #include <supla/clock/clock.h>
 #include <supla/protocol/supla_srpc.h>
 #include <supla/storage/storage.h>
@@ -65,6 +66,21 @@ TEST_F(SuplaDeviceTests, DefaultValuesTest) {
 
   EXPECT_EQ(sd.getCurrentStatus(), STATUS_UNKNOWN);
   EXPECT_EQ(sd.getClock(), nullptr);
+}
+
+TEST_F(SuplaDeviceTests, SetLogLevelUpdatesGlobalFilter) {
+  SuplaDeviceClass sd;
+  int oldLevel = supla_log_get_level();
+
+  sd.setLogLevel(LOG_DEBUG);
+  EXPECT_EQ(sd.getLogLevel(), LOG_DEBUG);
+  EXPECT_TRUE(supla_log_is_enabled(LOG_DEBUG));
+  EXPECT_FALSE(supla_log_is_enabled(LOG_VERBOSE));
+
+  sd.setLogLevel(LOG_VERBOSE);
+  EXPECT_TRUE(supla_log_is_enabled(LOG_VERBOSE));
+
+  supla_log_set_level(oldLevel);
 }
 
 TEST_F(SuplaDeviceTests, ClockMethods) {

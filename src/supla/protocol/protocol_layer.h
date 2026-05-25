@@ -96,7 +96,7 @@ class ProtocolLayer {
   ProtocolLayer *nextPtr = nullptr;
   SuplaDeviceClass *sdc = nullptr;
   bool configEmpty = true;
-  bool verboseLog = true;
+  bool verboseLog = false;
 };
 
 }  // namespace Protocol

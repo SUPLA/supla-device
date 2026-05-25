@@ -35,7 +35,7 @@ void supla_logf(int __pri, const __FlashStringHelper *__fmt, ...) {
   char *buffer = NULL;
   int size = 0;
 
-  if (__fmt == NULL) return;
+  if (__fmt == NULL || !supla_log_is_enabled(__pri)) return;
 
   String fmt(__fmt);
 

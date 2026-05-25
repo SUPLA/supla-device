@@ -34,6 +34,9 @@
 name: Device name
 # log_level - optional, values: info (default), debug, verbose, warning, error
 log_level: debug
+# proto_verbose_log - optional, defaults to false; enables insecure low-level
+# protocol dumps that may expose secrets
+proto_verbose_log: false
 
 supla:
   server: svrXYZ.supla.org
@@ -86,6 +89,7 @@ class LinuxYamlConfig : public KeyValue {
   bool isVerbose();
   bool isWarning();
   bool isError();
+  bool isProtoVerboseLog();
 
   bool loadChannels();
 

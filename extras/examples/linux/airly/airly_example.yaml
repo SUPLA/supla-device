@@ -3,6 +3,7 @@
 
 name: Airly integration
 log_level: debug
+proto_verbose_log: false
 state_files_path: "/var/local/supla-device/airly"
 security_level: 0
 
@@ -54,5 +55,4 @@ channels:
     parser:
       use: p1
     value: "/current/values/2/value"
-
 

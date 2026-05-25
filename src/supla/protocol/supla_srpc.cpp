@@ -565,6 +565,72 @@ void logSetChannelCaptionResult(int callId,
       escapedCaption);
 }
 
+void logDeviceCalCfgRequest(int callId,
+                            const TSD_DeviceCalCfgRequest *request,
+                            const char *direction,
+                            const char *callName,
+                            size_t size) {
+  if (request == nullptr) {
+    return;
+  }
+
+  if (request->Command == SUPLA_CALCFG_CMD_SET_CFG_MODE_PASSWORD) {
+    SUPLA_LOG_DEBUG(
+        "SRPC %s call=%s(%d) size=%zu payload={SenderID=%d, "
+        "ChannelNumber=%d, Command=%d, SuperUserAuthorized=%u, DataType=%d, "
+        "DataSize=%u, Data=<redacted>}",
+        direction,
+        callName,
+        callId,
+        size,
+        static_cast<int>(request->SenderID),
+        static_cast<int>(request->ChannelNumber),
+        static_cast<int>(request->Command));
+    return;
+  }
+
+  SUPLA_LOG_DEBUG(
+      "SRPC %s call=%s(%d) size=%zu payload={SenderID=%d, "
+      "ChannelNumber=%d, Command=%d, SuperUserAuthorized=%u, DataType=%d, "
+      "DataSize=%u}",
+      direction,
+      callName,
+      callId,
+      size,
+      static_cast<int>(request->SenderID),
+      static_cast<int>(request->ChannelNumber),
+      static_cast<int>(request->Command),
+      static_cast<unsigned int>(request->SuperUserAuthorized),
+      static_cast<int>(request->DataType),
+      static_cast<unsigned int>(request->DataSize));
+
+  const size_t headerSize = offsetof(TSD_DeviceCalCfgRequest, Data);
+  const size_t dataSize = static_cast<size_t>(request->DataSize);
+  if (dataSize == 0) {
+    SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) payload={Data=<empty>}",
+                    direction,
+                    callName,
+                    callId);
+    return;
+  }
+  if (size < headerSize + dataSize) {
+    SUPLA_LOG_DEBUG(
+        "SRPC %s call=%s(%d) payload={Data=<truncated>, expected=%zu}",
+        direction,
+        callName,
+        callId,
+        headerSize + dataSize);
+    return;
+  }
+
+  logRawHexDump(direction,
+                callId,
+                callName,
+                reinterpret_cast<const uint8_t *>(request->Data),
+                dataSize,
+                false);
+}
+
 void logChannelConfigRawPayload(int callId,
                                 const TSD_ChannelConfig *request,
                                 const char *direction,
@@ -1005,6 +1071,13 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
       logSetChannelCaptionResult(callId, caption, direction, callName, size);
       return;
     }
+  }
+
+  if (callId == SUPLA_SD_CALL_DEVICE_CALCFG_REQUEST &&
+      size >= offsetof(TSD_DeviceCalCfgRequest, Data)) {
+    auto *request = reinterpret_cast<const TSD_DeviceCalCfgRequest *>(buf);
+    logDeviceCalCfgRequest(callId, request, direction, callName, size);
+    return;
   }
 
   if (callId == SUPLA_DS_CALL_DEVICE_CHANNEL_VALUE_CHANGED_C &&

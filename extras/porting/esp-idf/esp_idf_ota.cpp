@@ -272,10 +272,10 @@ void Supla::EspIdfOta::iterate() {
     return;
   }
 
-  SUPLA_LOG_INFO(
-      "SW update: checking updates from url: \"%s\", with query: \"%s\"",
-      url,
-      queryParams);
+//  SUPLA_LOG_INFO(
+//      "SW update: checking updates from url: \"%s\", with query: \"%s\"",
+//      url,
+//      queryParams);
 
   int querySize = strlen(queryParams);
 

@@ -328,6 +328,9 @@ const char *registerDeviceChannelFuncFieldName(int callId, int channelType) {
   return "FuncList";
 }
 
+#if __cplusplus >= 201703L
+[[maybe_unused]]
+#endif
 const char *offlineFlagName(unsigned char offline) {
   switch (offline) {
     case SUPLA_CHANNEL_OFFLINE_FLAG_ONLINE:
@@ -705,6 +708,7 @@ void logSetChannelConfigRequest(int callId,
   const size_t headerSize = offsetof(TSD_ChannelConfig, Config);
   const size_t configSize = static_cast<size_t>(request->ConfigSize);
   const char *configTypeName = channelConfigTypeName(request->ConfigType);
+  (void)configTypeName;
 
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, Func=%d, "
@@ -768,9 +772,11 @@ void logRegisterDeviceChannelChunk(int callId,
 
   const char *funcFieldName =
       registerDeviceChannelFuncFieldName(callId, channel->Type);
+  (void)funcFieldName;
   uint32_t funcFieldValue = (channel->Type == SUPLA_CHANNELTYPE_ACTIONTRIGGER)
           ? static_cast<uint32_t>(channel->ActionTriggerCaps)
           : static_cast<uint32_t>(channel->FuncList);
+  (void)funcFieldValue;
 
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu payload={Number=%u, Type=%d, %s=0x%X, "
@@ -805,7 +811,9 @@ void logRegisterDeviceChannelChunk(int callId,
 
   const char *funcFieldName =
       registerDeviceChannelFuncFieldName(callId, channel->Type);
+  (void)funcFieldName;
   uint32_t funcFieldValue = 0;
+  (void)funcFieldValue;
   if (channel->Type == SUPLA_CHANNELTYPE_ACTIONTRIGGER) {
     funcFieldValue = channel->ActionTriggerCaps;
   } else if (callId == SUPLA_DS_CALL_REGISTER_DEVICE_G &&

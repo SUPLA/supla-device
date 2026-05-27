@@ -18,8 +18,20 @@
 
 #include "netif_lan.h"
 
+#include <supla/storage/config_tags.h>
+#include <supla/storage/storage.h>
+
 Supla::LAN::LAN() {
   intfType = IntfType::Ethernet;
+}
+
+void Supla::LAN::onLoadConfig() {
+  Network::onLoadConfig();
+  auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return;
+  }
+  cfg->loadNetifConfig(Supla::ConfigTag::EthNetifCfgTag, &netifConfig);
 }
 
 const char* Supla::LAN::getIntfName() const {

@@ -17,21 +17,26 @@
 */
 
 #ifndef ARDUINO_ARCH_AVR
+#include "wifi_parameters.h"
+
 #include <string.h>
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
-
-#include "wifi_parameters.h"
 
 namespace Supla {
 
 namespace Html {
 
-WifiParameters::WifiParameters() : HtmlElement(HTML_SECTION_NETWORK) {
+WifiParameters::WifiParameters()
+    : HtmlElement(HTML_SECTION_NETWORK),
+      netifParameters(Supla::ConfigTag::WifiNetifCfgTag, "wifi") {
 }
+
 WifiParameters::~WifiParameters() {
 }
+
 void WifiParameters::send(Supla::WebSender* sender) {
   auto cfg = Supla::Storage::ConfigInstance();
   if (cfg) {
@@ -47,19 +52,19 @@ void WifiParameters::send(Supla::WebSender* sender) {
           wifiEn,
           "Enable Wi-Fi",
           [&]() {
-        auto switchLabel = sender->tag("label");
-        switchLabel.body([&]() {
-          auto sw = sender->tag("span");
-          sw.attr("class", "switch");
-          sw.body([&]() {
-            sender->checkboxInput(wifiEn, wifiEn, wifiDisabled == 0);
+            auto switchLabel = sender->tag("label");
+            switchLabel.body([&]() {
+              auto sw = sender->tag("span");
+              sw.attr("class", "switch");
+              sw.body([&]() {
+                sender->checkboxInput(wifiEn, wifiEn, wifiDisabled == 0);
 
-            auto slider = sender->tag("span");
-            slider.attr("class", "slider");
-            slider.body("");
-          });
-        });
-      },
+                auto slider = sender->tag("span");
+                slider.attr("class", "slider");
+                slider.body("");
+              });
+            });
+          },
           "form-field right-checkbox");
     }
 
@@ -76,11 +81,16 @@ void WifiParameters::send(Supla::WebSender* sender) {
     sender->labeledField(keyPass, "Password", [&]() {
       sender->passwordInput(keyPass, keyPass);
     });
+
+    netifParameters.send(sender);
   }
 }
 
 bool WifiParameters::handleResponse(const char* key, const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return netifParameters.handleResponse(key, value);
+  }
   if (strcmp(key, "sid") == 0) {
     cfg->setWiFiSSID(value);
     return true;
@@ -96,7 +106,7 @@ bool WifiParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  return false;
+  return netifParameters.handleResponse(key, value);
 }
 
 void WifiParameters::onProcessingEnd() {
@@ -106,6 +116,7 @@ void WifiParameters::onProcessingEnd() {
     handleResponse("wifi_en", "off");
   }
   checkboxFound = false;
+  netifParameters.onProcessingEnd();
 }
 
 };  // namespace Html

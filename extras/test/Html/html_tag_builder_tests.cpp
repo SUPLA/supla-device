@@ -22,15 +22,17 @@
 #include <network_mock.h>
 #include <supla/network/html/custom_text_parameter.h>
 #include <supla/network/html/select_input_parameter.h>
-#include <supla/network/web_server.h>
 #include <supla/network/html/wifi_parameters.h>
 #include <supla/network/web_sender.h>
+#include <supla/network/web_server.h>
+#include <supla/storage/config_tags.h>
 
-#include <cstring>
 #include <cstdio>
+#include <cstring>
 #include <string>
 
 using ::testing::_;
+using ::testing::HasSubstr;
 using ::testing::Return;
 using ::testing::StrEq;
 
@@ -41,9 +43,12 @@ class SenderMock : public Supla::WebSender {
 
 class DummyWebServer : public Supla::WebServer {
  public:
-  DummyWebServer() : WebServer(nullptr) {}
-  void start() override {}
-  void stop() override {}
+  DummyWebServer() : WebServer(nullptr) {
+  }
+  void start() override {
+  }
+  void stop() override {
+  }
 
   bool csrfValidatedState() const {
     return csrfValidated;
@@ -56,12 +61,13 @@ class DummyWebServer : public Supla::WebServer {
 
 class CountingHtmlElement : public Supla::HtmlElement {
  public:
-  CountingHtmlElement() : Supla::HtmlElement(Supla::HTML_SECTION_FORM) {}
-
-  void send(Supla::WebSender *) override {
+  CountingHtmlElement() : Supla::HtmlElement(Supla::HTML_SECTION_FORM) {
   }
 
-  bool handleResponse(const char *key, const char *value) override {
+  void send(Supla::WebSender*) override {
+  }
+
+  bool handleResponse(const char* key, const char* value) override {
     lastKey = key ? key : "";
     lastValue = value ? value : "";
     handledCount++;
@@ -277,6 +283,8 @@ TEST_F(HtmlTagBuilderTests, WifiParametersRegressionBeforeRefactor) {
     std::memcpy(ssid, "ssid_test", sizeof("ssid_test"));
     return true;
   });
+  EXPECT_CALL(cfg, loadNetifConfig(StrEq(Supla::ConfigTag::WifiNetifCfgTag), _))
+      .WillOnce(Return(false));
   EXPECT_CALL(sender, send(_, _))
       .WillRepeatedly(
           [this](const char* data, int size) { appendSentHtml(data, size); });
@@ -291,24 +299,23 @@ TEST_F(HtmlTagBuilderTests, WifiParametersRegressionBeforeRefactor) {
     params.send(&sender);
   }
 
-  EXPECT_EQ(sendHtml,
-            "<h3>Wi-Fi Settings</h3>"
-            "<div class=\"form-field right-checkbox\">"
-            "<label for=\"wifi_en\">Enable Wi-Fi</label>"
-            "<label>"
-            "<span class=\"switch\">"
-            "<input type=\"checkbox\" value=\"on\" checked name=\"wifi_en\" "
-            "id=\"wifi_en\">"
-            "<span class=\"slider\"></span>"
-            "</span>"
-            "</label>"
-            "</div>"
-            "<div class=\"form-field\">"
-            "<label for=\"sid\">Network name</label>"
-            "<input type=\"text\" name=\"sid\" id=\"sid\" value=\"ssid_test\">"
-            "</div>"
-            "<div class=\"form-field\">"
-            "<label for=\"wpw\">Password</label>"
-            "<input type=\"password\" name=\"wpw\" id=\"wpw\">"
-            "</div>");
+  EXPECT_THAT(sendHtml, HasSubstr("<h3>Wi-Fi Settings</h3>"));
+  EXPECT_THAT(sendHtml, HasSubstr("for=\"wifi_en\">Enable Wi-Fi"));
+  EXPECT_THAT(sendHtml,
+              HasSubstr("name=\"sid\" id=\"sid\" value=\"ssid_test\""));
+  EXPECT_THAT(sendHtml, HasSubstr("name=\"wpw\" id=\"wpw\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"wifi_mode\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"wifi_static_box\""));
+  EXPECT_THAT(sendHtml, HasSubstr("showHideNetifStaticSettings"));
+  EXPECT_THAT(sendHtml, HasSubstr("setAttribute(\"required\""));
+  EXPECT_THAT(sendHtml, HasSubstr("removeAttribute(\"required\")"));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"wifi_ip\" maxlength=\"15\""));
+  EXPECT_THAT(sendHtml, HasSubstr("inputmode=\"decimal\""));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"192.168.1.100\""));
+  EXPECT_THAT(sendHtml, HasSubstr("pattern=\"^((25[0-5]"));
+  EXPECT_THAT(sendHtml, HasSubstr("data-static-required=\"1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("for=\"wifi_mask\">Subnet mask</label>"));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"255.255.255.0 or /24\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"wifi_dns2\" maxlength=\"15\""));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"8.8.4.4\""));
 }

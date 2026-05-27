@@ -943,6 +943,8 @@ TEST_F(HtmlCaptureTest, EthernetParametersRendersCheckbox) {
         *value = 0;
         return true;
       });
+  EXPECT_CALL(cfg, loadNetifConfig(StrEq(Supla::ConfigTag::EthNetifCfgTag), _))
+      .WillOnce(Return(false));
   EXPECT_CALL(cfg, init()).WillOnce(Return(false));
   EXPECT_CALL(sender, send(_, _))
       .WillRepeatedly(
@@ -951,18 +953,17 @@ TEST_F(HtmlCaptureTest, EthernetParametersRendersCheckbox) {
   Supla::Html::EthernetParameters param;
   param.send(&sender);
 
-  EXPECT_EQ(sendHtml,
-            "<h3>Ethernet Settings</h3>"
-            "<div class=\"form-field right-checkbox\">"
-            "<label for=\"eth_en\">Enable Ethernet</label>"
-            "<label>"
-            "<span class=\"switch\">"
-            "<input type=\"checkbox\" value=\"on\" checked name=\"eth_en\" "
-            "id=\"eth_en\">"
-            "<span class=\"slider\"></span>"
-            "</span>"
-            "</label>"
-            "</div>");
+  EXPECT_THAT(sendHtml, HasSubstr("<h3>Ethernet Settings</h3>"));
+  EXPECT_THAT(sendHtml, HasSubstr("for=\"eth_en\">Enable Ethernet"));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"eth_mode\""));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"eth_static_box\""));
+  EXPECT_THAT(sendHtml, HasSubstr("showHideNetifStaticSettings"));
+  EXPECT_THAT(sendHtml, HasSubstr("id=\"eth_ip\" maxlength=\"15\""));
+  EXPECT_THAT(sendHtml, HasSubstr("inputmode=\"decimal\""));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"192.168.1.100\""));
+  EXPECT_THAT(sendHtml, HasSubstr("data-static-required=\"1\""));
+  EXPECT_THAT(sendHtml, HasSubstr("for=\"eth_mask\">Subnet mask</label>"));
+  EXPECT_THAT(sendHtml, HasSubstr("placeholder=\"255.255.255.0 or /24\""));
 }
 
 TEST_F(HtmlCaptureTest, PwmFrequencyParametersRendersDefaultRange) {

@@ -22,11 +22,14 @@
 #include <string.h>
 #include <supla/network/network.h>
 #include <supla/network/web_sender.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 
 using Supla::Html::EthernetParameters;
 
-EthernetParameters::EthernetParameters() : HtmlElement(HTML_SECTION_NETWORK) {
+EthernetParameters::EthernetParameters()
+    : HtmlElement(HTML_SECTION_NETWORK),
+      netifParameters(Supla::ConfigTag::EthNetifCfgTag, "eth") {
 }
 EthernetParameters::~EthernetParameters() {
 }
@@ -56,11 +59,16 @@ void EthernetParameters::send(Supla::WebSender* sender) {
           });
         },
         "form-field right-checkbox");
+
+    netifParameters.send(sender);
   }
 }
 
 bool EthernetParameters::handleResponse(const char* key, const char* value) {
   auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return netifParameters.handleResponse(key, value);
+  }
   if (strcmp(key, "eth_en") == 0) {
     checkboxFound = true;
     uint8_t ethDisVale = (strncmp(value, "on", 3) == 0 ? 0 : 1);
@@ -68,7 +76,7 @@ bool EthernetParameters::handleResponse(const char* key, const char* value) {
     return true;
   }
 
-  return false;
+  return netifParameters.handleResponse(key, value);
 }
 
 void EthernetParameters::onProcessingEnd() {
@@ -78,6 +86,7 @@ void EthernetParameters::onProcessingEnd() {
     handleResponse("eth_en", "off");
   }
   checkboxFound = false;
+  netifParameters.onProcessingEnd();
 }
 
 #endif  // ARDUINO_ARCH_AVR

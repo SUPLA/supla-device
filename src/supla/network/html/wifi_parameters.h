@@ -19,6 +19,7 @@
 #ifndef SRC_SUPLA_NETWORK_HTML_WIFI_PARAMETERS_H_
 #define SRC_SUPLA_NETWORK_HTML_WIFI_PARAMETERS_H_
 
+#include <supla/network/html/network_address_parameters.h>
 #include <supla/network/html_element.h>
 
 class SuplaDeviceClass;
@@ -37,6 +38,7 @@ class WifiParameters : public HtmlElement {
 
  protected:
   bool checkboxFound = false;
+  NetworkAddressParameters netifParameters;
 };
 
 };  // namespace Html

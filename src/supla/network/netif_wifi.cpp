@@ -17,6 +17,7 @@
 #include "netif_wifi.h"
 
 #include <string.h>
+#include <supla/storage/config_tags.h>
 #include <supla/storage/config.h>
 #include <supla/storage/storage.h>
 
@@ -51,6 +52,10 @@ bool Wifi::isWifiConfigRequired() {
 void Wifi::onLoadConfig() {
   Network::onLoadConfig();
   auto cfg = Supla::Storage::ConfigInstance();
+  if (!cfg) {
+    return;
+  }
+  cfg->loadNetifConfig(Supla::ConfigTag::WifiNetifCfgTag, &netifConfig);
   char buf[100] = {};
   memset(buf, 0, sizeof(buf));
   if (cfg->getWiFiSSID(buf) && strlen(buf) > 0) {

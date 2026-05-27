@@ -84,6 +84,8 @@ class Network {
   void generateHostname(const char *prefix, int macSize, char *output);
   virtual bool isIpSetupTimeout();
   virtual uint32_t getIP();
+  bool hasStaticIpConfig() const;
+  const NetifConfigBlob& getNetifConfig() const;
 
   virtual Supla::Client *createClient();
 
@@ -129,6 +131,7 @@ class Network {
   bool useLocalIp = false;
   bool intfDisabledInConfig = false;
   bool testMode = false;
+  NetifConfigBlob netifConfig = {};
 };
 
 };  // namespace Supla

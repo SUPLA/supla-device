@@ -218,6 +218,14 @@ void Network::SetHostname(const char *buf, int macSize) {
   }
 }
 
+bool Network::hasStaticIpConfig() const {
+  return netifConfig.ipMode == static_cast<uint8_t>(NetifIpMode::Static);
+}
+
+const NetifConfigBlob& Network::getNetifConfig() const {
+  return netifConfig;
+}
+
 bool Network::IsIpSetupTimeout() {
   bool result = true;
   auto ptr = firstNetIntf;
@@ -295,6 +303,7 @@ Network::Network(unsigned char *ip) : Network() {
 }
 
 Network::Network() {
+  normalizeDhcpNetifConfig(&netifConfig);
   mode = DEVICE_MODE_NORMAL;
   setSSLEnabled(true);
   if (netIntf == nullptr) {

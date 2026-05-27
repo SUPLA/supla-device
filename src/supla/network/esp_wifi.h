@@ -61,7 +61,6 @@ class ESPWifi : public Supla::Wifi {
     SUPLA_LOG_INFO("Signal strength (RSSI): %d dBm", rssi);
   }
 
-  // TODO(klew): add handling of custom local ip
   void setup() override {
     // ESP8266: for some reason when hostname is longer than 30 bytes, Wi-Fi
     // connection can't be esablished. So as a workaround, we truncate hostname
@@ -120,6 +119,31 @@ class ESPWifi : public Supla::Wifi {
     } else {
       SUPLA_LOG_INFO("WiFi: establishing connection with SSID: \"%s\"", ssid);
       WiFi.mode(WIFI_MODE_STA);
+      if (hasStaticIpConfig()) {
+        IPAddress localIp((getNetifConfig().ip >> 24) & 0xFF,
+                          (getNetifConfig().ip >> 16) & 0xFF,
+                          (getNetifConfig().ip >> 8) & 0xFF,
+                          getNetifConfig().ip & 0xFF);
+        IPAddress gateway((getNetifConfig().gateway >> 24) & 0xFF,
+                          (getNetifConfig().gateway >> 16) & 0xFF,
+                          (getNetifConfig().gateway >> 8) & 0xFF,
+                          getNetifConfig().gateway & 0xFF);
+        IPAddress subnet((getNetifConfig().netmask >> 24) & 0xFF,
+                         (getNetifConfig().netmask >> 16) & 0xFF,
+                         (getNetifConfig().netmask >> 8) & 0xFF,
+                         getNetifConfig().netmask & 0xFF);
+        IPAddress dns1((getNetifConfig().dns1 >> 24) & 0xFF,
+                       (getNetifConfig().dns1 >> 16) & 0xFF,
+                       (getNetifConfig().dns1 >> 8) & 0xFF,
+                       getNetifConfig().dns1 & 0xFF);
+        IPAddress dns2((getNetifConfig().dns2 >> 24) & 0xFF,
+                       (getNetifConfig().dns2 >> 16) & 0xFF,
+                       (getNetifConfig().dns2 >> 8) & 0xFF,
+                       getNetifConfig().dns2 & 0xFF);
+        if (!WiFi.config(localIp, gateway, subnet, dns1, dns2)) {
+          SUPLA_LOG_WARNING("WiFi static IP config failed, continuing");
+        }
+      }
       WiFi.begin(ssid, password);
       // ESP8266 requires setHostname to be called after begin...
       WiFi.setHostname(hostname);

@@ -43,10 +43,35 @@
 #include <supla/time.h>
 
 #include <cstring>
+#include <arpa/inet.h>
 
 #include "esp_idf_network_common.h"
 
 static Supla::EspIdfLan8720 *thisNetIntfPtr = nullptr;
+
+namespace {
+
+esp_netif_ip_info_t makeIpInfo(const Supla::NetifConfigBlob& cfg) {
+  esp_netif_ip_info_t ipInfo = {};
+  ipInfo.ip.addr = htonl(cfg.ip);
+  ipInfo.netmask.addr = htonl(cfg.netmask);
+  ipInfo.gw.addr = htonl(cfg.gateway);
+  return ipInfo;
+}
+
+void setDnsInfo(esp_netif_t* netIf,
+                esp_netif_dns_type_t dnsType,
+                uint32_t value) {
+  if (netIf == nullptr || value == 0) {
+    return;
+  }
+  esp_netif_dns_info_t dns = {};
+  dns.ip.type = IPADDR_TYPE_V4;
+  dns.ip.u_addr.ip4.addr = htonl(value);
+  esp_netif_set_dns_info(netIf, dnsType, &dns);
+}
+
+}  // namespace
 
 Supla::EspIdfLan8720::EspIdfLan8720(int mdcGpio, int mdioGpio) :
   mdcGpio(mdcGpio), mdioGpio(mdioGpio) {
@@ -55,6 +80,10 @@ Supla::EspIdfLan8720::EspIdfLan8720(int mdcGpio, int mdioGpio) :
 
 Supla::EspIdfLan8720::~EspIdfLan8720() {
   thisNetIntfPtr = nullptr;
+}
+
+bool Supla::EspIdfLan8720::isStaticIpConfigured() const {
+  return staticIpConfigured;
 }
 
 static void eventHandler(void *arg,
@@ -96,6 +125,17 @@ static void eventHandler(void *arg,
       case ETHERNET_EVENT_CONNECTED: {
         SUPLA_LOG_INFO("[%s] Ethernet connected",
                        thisNetIntfPtr->getIntfName());
+        if (thisNetIntfPtr->isStaticIpConfigured()) {
+          thisNetIntfPtr->setIpv4Addr(
+              htonl(thisNetIntfPtr->getNetifConfig().ip));
+          char ipBuf[32] = {};
+          Supla::formatIpv4Address(thisNetIntfPtr->getNetifConfig().ip,
+                                   ipBuf,
+                                   sizeof(ipBuf));
+          SUPLA_LOG_INFO("[%s] Ethernet static IP %s",
+                         thisNetIntfPtr->getIntfName(),
+                         ipBuf);
+        }
         break;
       }
       case ETHERNET_EVENT_DISCONNECTED: {
@@ -116,6 +156,7 @@ static void eventHandler(void *arg,
 
 void Supla::EspIdfLan8720::setup() {
   setIpReady(false);
+  staticIpConfigured = false;
   if (!initDone) {
     Supla::initEspNetif();
 
@@ -169,6 +210,33 @@ void Supla::EspIdfLan8720::setup() {
     ESP_ERROR_CHECK(esp_event_handler_register(
           IP_EVENT, IP_EVENT_ETH_LOST_IP, &eventHandler, NULL));
 
+    if (hasStaticIpConfig()) {
+      esp_err_t dhcpStopResult = esp_netif_dhcpc_stop(netIf);
+      if (dhcpStopResult != ESP_OK) {
+        SUPLA_LOG_WARNING("[%s] failed to stop DHCP client (%d)",
+                          getIntfName(),
+                          dhcpStopResult);
+      }
+      esp_netif_ip_info_t ipInfo = makeIpInfo(getNetifConfig());
+      esp_err_t ipResult = esp_netif_set_ip_info(netIf, &ipInfo);
+      if (ipResult != ESP_OK) {
+        SUPLA_LOG_WARNING("[%s] failed to set static IP info (%d)",
+                          getIntfName(),
+                          ipResult);
+        esp_err_t dhcpStartResult = esp_netif_dhcpc_start(netIf);
+        if (dhcpStartResult != ESP_OK) {
+          SUPLA_LOG_WARNING("[%s] failed to restart DHCP client (%d)",
+                            getIntfName(),
+                            dhcpStartResult);
+        }
+      } else {
+        setDnsInfo(netIf, ESP_NETIF_DNS_MAIN, getNetifConfig().dns1);
+        setDnsInfo(netIf, ESP_NETIF_DNS_BACKUP, getNetifConfig().dns2);
+        staticIpConfigured = true;
+        SUPLA_LOG_INFO("[%s] static IP configured", getIntfName());
+      }
+    }
+
     esp_eth_start(ethHandle);
   }
 
@@ -183,6 +251,7 @@ void Supla::EspIdfLan8720::disable() {
   }
 
   allowDisable = false;
+  staticIpConfigured = false;
   SUPLA_LOG_DEBUG("[%s] disabling ETH connection", getIntfName());
   DisconnectProtocols();
   ESP_ERROR_CHECK(esp_eth_stop(ethHandle));
@@ -190,6 +259,7 @@ void Supla::EspIdfLan8720::disable() {
 
 void Supla::EspIdfLan8720::uninit() {
   setIpReady(false);
+  staticIpConfigured = false;
   DisconnectProtocols();
   if (initDone) {
     SUPLA_LOG_DEBUG("[%s] stopping ETH driver", getIntfName());

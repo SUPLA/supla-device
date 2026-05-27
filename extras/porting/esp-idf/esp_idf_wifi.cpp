@@ -51,6 +51,30 @@ constexpr int SUPLA_MAX_AP_TX_POWER = 60;
 
 static Supla::EspIdfWifi *thisNetIntfPtr = nullptr;
 
+namespace {
+
+esp_netif_ip_info_t makeIpInfo(const Supla::NetifConfigBlob& cfg) {
+  esp_netif_ip_info_t ipInfo = {};
+  ipInfo.ip.addr = htonl(cfg.ip);
+  ipInfo.netmask.addr = htonl(cfg.netmask);
+  ipInfo.gw.addr = htonl(cfg.gateway);
+  return ipInfo;
+}
+
+void setDnsInfo(esp_netif_t* netIf,
+                esp_netif_dns_type_t dnsType,
+                uint32_t value) {
+  if (netIf == nullptr || value == 0) {
+    return;
+  }
+  esp_netif_dns_info_t dns = {};
+  dns.ip.type = IPADDR_TYPE_V4;
+  dns.ip.u_addr.ip4.addr = htonl(value);
+  esp_netif_set_dns_info(netIf, dnsType, &dns);
+}
+
+}  // namespace
+
 Supla::EspIdfWifi::EspIdfWifi(const char *wifiSsid,
                               const char *wifiPassword,
                               unsigned char *ip)
@@ -66,15 +90,19 @@ bool Supla::EspIdfWifi::isReady() {
   return isWifiConnected && isIpReady;
 }
 
+bool Supla::EspIdfWifi::isStaticIpConfigured() const {
+  return staticIpConfigured;
+}
+
 static void eventHandler(void *arg,
                          esp_event_base_t eventBase,
                          int32_t eventId,
                          void *eventData) {
   static bool firstWiFiScanDone = false;
-  SUPLA_LOG_DEBUG("[%s] Got Event: %d", thisNetIntfPtr->getIntfName(), eventId);
   if (thisNetIntfPtr == nullptr) {
     return;
   }
+  SUPLA_LOG_DEBUG("[%s] Got Event: %d", thisNetIntfPtr->getIntfName(), eventId);
 
   if (eventBase == WIFI_EVENT) {
     switch (eventId) {
@@ -93,6 +121,18 @@ static void eventHandler(void *arg,
         firstWiFiScanDone = true;
         if (thisNetIntfPtr) {
           thisNetIntfPtr->setWifiConnected(true);
+          if (thisNetIntfPtr->isStaticIpConfigured()) {
+            thisNetIntfPtr->setIpv4Addr(
+                htonl(thisNetIntfPtr->getConfiguredStaticIp()));
+            thisNetIntfPtr->setIpReady(true);
+            char ipBuf[32] = {};
+            Supla::formatIpv4Address(thisNetIntfPtr->getConfiguredStaticIp(),
+                                     ipBuf,
+                                     sizeof(ipBuf));
+            SUPLA_LOG_INFO("[%s] Connected to AP with static IP %s",
+                           thisNetIntfPtr->getIntfName(),
+                           ipBuf);
+          }
         }
         SUPLA_LOG_DEBUG("[%s] Connected to AP", thisNetIntfPtr->getIntfName());
         break;
@@ -174,6 +214,7 @@ uint32_t Supla::EspIdfWifi::getIP() {
 
 void Supla::EspIdfWifi::setup() {
   setIpReady(false);
+  staticIpConfigured = false;
   delay(50);
   int txPower = maxTxPower;
   if (txPower < 0) {
@@ -263,6 +304,35 @@ void Supla::EspIdfWifi::setup() {
 
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
+#ifdef SUPLA_DEVICE_ESP32
+    if (hasStaticIpConfig() && staNetIf != nullptr) {
+      esp_err_t dhcpStopResult = esp_netif_dhcpc_stop(staNetIf);
+      if (dhcpStopResult != ESP_OK) {
+        SUPLA_LOG_WARNING("[%s] failed to stop DHCP client (%d)",
+                          getIntfName(),
+                          dhcpStopResult);
+      }
+
+      esp_netif_ip_info_t ipInfo = makeIpInfo(getNetifConfig());
+      esp_err_t ipResult = esp_netif_set_ip_info(staNetIf, &ipInfo);
+      if (ipResult != ESP_OK) {
+        SUPLA_LOG_WARNING("[%s] failed to set static IP info (%d)",
+                          getIntfName(),
+                          ipResult);
+        esp_err_t dhcpStartResult = esp_netif_dhcpc_start(staNetIf);
+        if (dhcpStartResult != ESP_OK) {
+          SUPLA_LOG_WARNING("[%s] failed to restart DHCP client (%d)",
+                            getIntfName(),
+                            dhcpStartResult);
+        }
+      } else {
+        setDnsInfo(staNetIf, ESP_NETIF_DNS_MAIN, getNetifConfig().dns1);
+        setDnsInfo(staNetIf, ESP_NETIF_DNS_BACKUP, getNetifConfig().dns2);
+        staticIpConfigured = true;
+        SUPLA_LOG_INFO("[%s] static IP configured", getIntfName());
+      }
+    }
+#endif
   }
   delay(50);
 
@@ -288,6 +358,7 @@ void Supla::EspIdfWifi::disable() {
   }
 
   allowDisable = false;
+  staticIpConfigured = false;
   SUPLA_LOG_DEBUG("[%s] disabling WiFi connection", getIntfName());
   DisconnectProtocols();
   uint8_t channel = 0;
@@ -306,6 +377,7 @@ void Supla::EspIdfWifi::disable() {
 void Supla::EspIdfWifi::uninit() {
   setWifiConnected(false);
   setIpReady(false);
+  staticIpConfigured = false;
   DisconnectProtocols();
   if (initDone) {
     SUPLA_LOG_DEBUG("[%s] stopping WiFi connection", getIntfName());
@@ -482,6 +554,10 @@ bool Supla::EspIdfWifi::isIpSetupTimeout() {
 
 void Supla::EspIdfWifi::setMaxTxPower(int power) {
   maxTxPower = power;
+}
+
+uint32_t Supla::EspIdfWifi::getConfiguredStaticIp() const {
+  return getNetifConfig().ip;
 }
 
 #ifdef SUPLA_DEVICE_ESP32

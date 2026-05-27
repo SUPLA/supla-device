@@ -82,6 +82,8 @@ const char BinarySensorCfgTag[] = "bs_cfg";
 const char ContainerTag[] = "container";
 
 const char ValveCfgTag[] = "valve_cfg";
+const char WifiNetifCfgTag[] = "wifi_cfg";
+const char EthNetifCfgTag[] = "eth_cfg";
 
 const char ModbusCfgTag[] = "modbus_cfg";
 
@@ -133,6 +135,8 @@ static_assert(sizeof(BinarySensorServerInvertedLogicTag) < 12);
 static_assert(sizeof(BinarySensorCfgTag) < 12);
 static_assert(sizeof(ContainerTag) < 12);
 static_assert(sizeof(ValveCfgTag) < 12);
+static_assert(sizeof(WifiNetifCfgTag) < 12);
+static_assert(sizeof(EthNetifCfgTag) < 12);
 static_assert(sizeof(ModbusCfgTag) < 16);
 static_assert(sizeof(OtaModeTag) < 16);
 static_assert(sizeof(PwmFrequencyTag) < 16);

@@ -21,6 +21,7 @@
 
 #include <supla/device/device_mode.h>
 #include <supla/device/auto_update_policy.h>
+#include <supla/network/netif_config.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -117,6 +118,11 @@ class Config {
   virtual int getCustomCASize();
   virtual bool setCustomCA(const char* customCA);
   virtual bool getAESKey(uint8_t* result);
+
+  virtual bool loadNetifConfig(const char* blobName, NetifConfigBlob* cfg);
+  virtual bool saveNetifConfig(const char* blobName,
+                               const NetifConfigBlob& cfg);
+  virtual bool removeNetifConfig(const char* blobName);
 
 #ifndef ARDUINO_ARCH_AVR
   static void generateSaltPassword(const char* password,

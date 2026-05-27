@@ -18,6 +18,11 @@
 
 #include "supla_srpc.h"
 
+#ifndef __STDC_FORMAT_MACROS
+#define __STDC_FORMAT_MACROS
+#endif
+
+#include <inttypes.h>
 #include <SuplaDevice.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -468,7 +473,8 @@ void logRegisterDeviceHeader(int callId,
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu payload={Email=<redacted>, "
       "AuthKey=<redacted>, GUID=<redacted>, Name=\"%s\", SoftVer=\"%s\", "
-      "ServerName=\"%s\", Flags=0x%X, ManufacturerID=%d, ProductID=%d, "
+      "ServerName=\"%s\", Flags=0x%" PRIX32
+      ", ManufacturerID=%d, ProductID=%d, "
       "channel_count=%u}",
       direction,
       callName,
@@ -478,9 +484,9 @@ void logRegisterDeviceHeader(int callId,
       escapedSoftVer,
       escapedServerName,
       static_cast<uint32_t>(header.Flags),
-      static_cast<int32_t>(header.ManufacturerID),
-      static_cast<int32_t>(header.ProductID),
-      static_cast<uint32_t>(header.channel_count));
+      static_cast<int16_t>(header.ManufacturerID),
+      static_cast<int16_t>(header.ProductID),
+      static_cast<unsigned int>(header.channel_count));
 }
 
 void logSubdeviceDetails(int callId,
@@ -534,13 +540,13 @@ void logSetChannelCaption(int callId,
 
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, "
-      "CaptionSize=%u, Caption=\"%s\"}",
+      "CaptionSize=%" PRIu32 ", Caption=\"%s\"}",
       direction,
       callName,
       callId,
       size,
       static_cast<unsigned int>(caption->ChannelNumber),
-      static_cast<unsigned int>(caption->CaptionSize),
+      static_cast<uint32_t>(caption->CaptionSize),
       escapedCaption);
 }
 
@@ -557,14 +563,14 @@ void logSetChannelCaptionResult(int callId,
 
   SUPLA_LOG_DEBUG(
       "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, "
-      "ResultCode=%u, CaptionSize=%u, Caption=\"%s\"}",
+      "ResultCode=%u, CaptionSize=%" PRIu32 ", Caption=\"%s\"}",
       direction,
       callName,
       callId,
       size,
       static_cast<unsigned int>(caption->ChannelNumber),
       static_cast<unsigned int>(caption->ResultCode),
-      static_cast<unsigned int>(caption->CaptionSize),
+      static_cast<uint32_t>(caption->CaptionSize),
       escapedCaption);
 }
 
@@ -579,33 +585,38 @@ void logDeviceCalCfgRequest(int callId,
 
   if (request->Command == SUPLA_CALCFG_CMD_SET_CFG_MODE_PASSWORD) {
     SUPLA_LOG_DEBUG(
-        "SRPC %s call=%s(%d) size=%zu payload={SenderID=%d, "
-        "ChannelNumber=%d, Command=%d, SuperUserAuthorized=%u, DataType=%d, "
-        "DataSize=%u, Data=<redacted>}",
+        "SRPC %s call=%s(%d) size=%zu payload={SenderID=%" PRId32
+        ", ChannelNumber=%" PRId32 ", Command=%" PRId32
+        ", SuperUserAuthorized=%u, DataType=%" PRId32 ", DataSize=%" PRIu32
+        ", Data=<redacted>}",
         direction,
         callName,
         callId,
         size,
-        static_cast<int>(request->SenderID),
-        static_cast<int>(request->ChannelNumber),
-        static_cast<int>(request->Command));
+        static_cast<int32_t>(request->SenderID),
+        static_cast<int32_t>(request->ChannelNumber),
+        static_cast<int32_t>(request->Command),
+        static_cast<unsigned int>(request->SuperUserAuthorized),
+        static_cast<int32_t>(request->DataType),
+        static_cast<uint32_t>(request->DataSize));
     return;
   }
 
   SUPLA_LOG_DEBUG(
-      "SRPC %s call=%s(%d) size=%zu payload={SenderID=%d, "
-      "ChannelNumber=%d, Command=%d, SuperUserAuthorized=%u, DataType=%d, "
-      "DataSize=%u}",
+      "SRPC %s call=%s(%d) size=%zu payload={SenderID=%" PRId32
+      ", ChannelNumber=%" PRId32 ", Command=%" PRId32
+      ", SuperUserAuthorized=%u, DataType=%" PRId32 ", DataSize=%" PRIu32
+      "}",
       direction,
       callName,
       callId,
       size,
-      static_cast<int>(request->SenderID),
-      static_cast<int>(request->ChannelNumber),
-      static_cast<int>(request->Command),
+      static_cast<int32_t>(request->SenderID),
+      static_cast<int32_t>(request->ChannelNumber),
+      static_cast<int32_t>(request->Command),
       static_cast<unsigned int>(request->SuperUserAuthorized),
-      static_cast<int>(request->DataType),
-      static_cast<unsigned int>(request->DataSize));
+      static_cast<int32_t>(request->DataType),
+      static_cast<uint32_t>(request->DataSize));
 
   const size_t headerSize = offsetof(TSD_DeviceCalCfgRequest, Data);
   const size_t dataSize = static_cast<size_t>(request->DataSize);
@@ -616,13 +627,25 @@ void logDeviceCalCfgRequest(int callId,
                     callId);
     return;
   }
-  if (size < headerSize + dataSize) {
+  if (dataSize > SUPLA_CALCFG_DATA_MAXSIZE) {
     SUPLA_LOG_DEBUG(
-        "SRPC %s call=%s(%d) payload={Data=<truncated>, expected=%zu}",
+        "SRPC %s call=%s(%d) payload={Data=<invalid-size>, DataSize=%zu}",
         direction,
         callName,
         callId,
-        headerSize + dataSize);
+        dataSize);
+    return;
+  }
+  if (size < headerSize || dataSize > size - headerSize) {
+    const size_t availableSize = size > headerSize ? size - headerSize : 0;
+    SUPLA_LOG_DEBUG(
+        "SRPC %s call=%s(%d) payload={Data=<truncated>, DataSize=%zu, "
+        "Available=%zu}",
+        direction,
+        callName,
+        callId,
+        dataSize,
+        availableSize);
     return;
   }
 
@@ -652,13 +675,13 @@ void logChannelConfigOcrPayload(int callId,
                                 const char *callName) {
   if (request->ConfigSize < sizeof(TChannelConfig_OCR)) {
     SUPLA_LOG_DEBUG(
-        "SRPC %s call=%s(%d) payload={ChannelNumber=%u, Func=%d, "
+        "SRPC %s call=%s(%d) payload={ChannelNumber=%u, Func=%" PRId32 ", "
         "ConfigType=%u(%s), ConfigSize=%u, OCR=<truncated>}",
         direction,
         callName,
         callId,
         static_cast<unsigned int>(request->ChannelNumber),
-        static_cast<int>(request->Func),
+        static_cast<int32_t>(request->Func),
         static_cast<unsigned int>(request->ConfigType),
         channelConfigTypeName(request->ConfigType),
         static_cast<unsigned int>(request->ConfigSize));
@@ -675,21 +698,21 @@ void logChannelConfigOcrPayload(int callId,
       ocrConfig.Host, sizeof(ocrConfig.Host), escapedHost, sizeof(escapedHost));
 
   SUPLA_LOG_DEBUG(
-      "SRPC %s call=%s(%d) payload={ChannelNumber=%u, Func=%d, "
+      "SRPC %s call=%s(%d) payload={ChannelNumber=%u, Func=%" PRId32 ", "
       "ConfigType=%u(%s), ConfigSize=%u, OCR={AuthKey=<redacted>, "
-      "Host=\"%s\", PhotoIntervalSec=%d, LightingMode=0x%X%08X, "
-      "LightingLevel=%u, MaximumIncrement=0x%X%08X, "
-      "AvailableLightingModes=0x%X%08X}}",
+      "Host=\"%s\", PhotoIntervalSec=%" PRIu32 ", LightingMode=0x%" PRIX32
+      "%08" PRIX32 ", LightingLevel=%u, MaximumIncrement=0x%" PRIX32
+      "%08" PRIX32 ", AvailableLightingModes=0x%" PRIX32 "%08" PRIX32 "}}",
       direction,
       callName,
       callId,
       static_cast<unsigned int>(request->ChannelNumber),
-      static_cast<int>(request->Func),
+      static_cast<int32_t>(request->Func),
       static_cast<unsigned int>(request->ConfigType),
       channelConfigTypeName(request->ConfigType),
       static_cast<unsigned int>(request->ConfigSize),
       escapedHost,
-      static_cast<int>(ocrConfig.PhotoIntervalSec),
+      static_cast<uint32_t>(ocrConfig.PhotoIntervalSec),
       PRINTF_UINT64_HEX(ocrConfig.LightingMode),
       static_cast<unsigned int>(ocrConfig.LightingLevel),
       PRINTF_UINT64_HEX(ocrConfig.MaximumIncrement),
@@ -711,14 +734,15 @@ void logSetChannelConfigRequest(int callId,
   (void)configTypeName;
 
   SUPLA_LOG_DEBUG(
-      "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, Func=%d, "
+      "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, Func=%" PRId32
+      ", "
       "ConfigType=%u(%s), ConfigSize=%u}",
       direction,
       callName,
       callId,
       size,
       static_cast<unsigned int>(request->ChannelNumber),
-      static_cast<int>(request->Func),
+      static_cast<int32_t>(request->Func),
       static_cast<unsigned int>(request->ConfigType),
       configTypeName,
       static_cast<unsigned int>(request->ConfigSize));
@@ -773,30 +797,32 @@ void logRegisterDeviceChannelChunk(int callId,
   const char *funcFieldName =
       registerDeviceChannelFuncFieldName(callId, channel->Type);
   (void)funcFieldName;
-  uint32_t funcFieldValue = (channel->Type == SUPLA_CHANNELTYPE_ACTIONTRIGGER)
+  uint32_t funcFieldValue =
+      (channel->Type == SUPLA_CHANNELTYPE_ACTIONTRIGGER)
           ? static_cast<uint32_t>(channel->ActionTriggerCaps)
           : static_cast<uint32_t>(channel->FuncList);
   (void)funcFieldValue;
 
   SUPLA_LOG_DEBUG(
-      "SRPC %s call=%s(%d) size=%zu payload={Number=%u, Type=%d, %s=0x%X, "
-      "Default=%d, Flags=0x%X%08X, Offline=%u(%s), ValueValidityTimeSec=%u, "
+      "SRPC %s call=%s(%d) size=%zu payload={Number=%u, Type=%" PRId32
+      ", %s=0x%" PRIX32 ", Default=%" PRId32 ", Flags=0x%" PRIX32 "%08" PRIX32
+      ", Offline=%u(%s), ValueValidityTimeSec=%" PRIu32 ", "
       "value[8]=%s, DefaultIcon=%u}",
       direction,
       callName,
       callId,
       size,
-      static_cast<uint32_t>(channel->Number),
+      static_cast<unsigned int>(channel->Number),
       static_cast<int32_t>(channel->Type),
       funcFieldName,
       funcFieldValue,
       static_cast<int32_t>(channel->Default),
       PRINTF_UINT64_HEX(static_cast<uint64_t>(channel->Flags)),
-      static_cast<uint32_t>(channel->Offline),
+      static_cast<unsigned int>(channel->Offline),
       offlineFlagName(channel->Offline),
       static_cast<uint32_t>(channel->ValueValidityTimeSec),
       valueHex,
-      static_cast<uint32_t>(channel->DefaultIcon));
+      static_cast<unsigned int>(channel->DefaultIcon));
 }
 
 void logRegisterDeviceChannelChunk(int callId,
@@ -826,25 +852,26 @@ void logRegisterDeviceChannelChunk(int callId,
   }
 
   SUPLA_LOG_DEBUG(
-      "SRPC %s call=%s(%d) size=%zu payload={Number=%u, Type=%d, %s=0x%X, "
-      "Default=%d, Flags=0x%X%08X, Offline=%u(%s), ValueValidityTimeSec=%u, "
+      "SRPC %s call=%s(%d) size=%zu payload={Number=%u, Type=%" PRId32
+      ", %s=0x%" PRIX32 ", Default=%" PRId32 ", Flags=0x%" PRIX32 "%08" PRIX32
+      ", Offline=%u(%s), ValueValidityTimeSec=%" PRIu32 ", "
       "value[8]=%s, DefaultIcon=%u, SubDeviceId=%u}",
       direction,
       callName,
       callId,
       size,
-      static_cast<uint32_t>(channel->Number),
+      static_cast<unsigned int>(channel->Number),
       static_cast<int32_t>(channel->Type),
       funcFieldName,
       funcFieldValue,
       static_cast<int32_t>(channel->Default),
       PRINTF_UINT64_HEX(static_cast<uint64_t>(channel->Flags)),
-      static_cast<uint32_t>(channel->Offline),
+      static_cast<unsigned int>(channel->Offline),
       offlineFlagName(channel->Offline),
       static_cast<uint32_t>(channel->ValueValidityTimeSec),
       valueHex,
-      static_cast<uint32_t>(channel->DefaultIcon),
-      static_cast<uint32_t>(channel->SubDeviceId));
+      static_cast<unsigned int>(channel->DefaultIcon),
+      static_cast<unsigned int>(channel->SubDeviceId));
 }
 
 void logDeviceChannelValueChanged(int callId,
@@ -859,14 +886,14 @@ void logDeviceChannelValueChanged(int callId,
 
   SUPLA_LOG_VERBOSE(
       "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, Offline=%u, "
-      "ValidityTimeSec=%u, value[8]=%s}",
+      "ValidityTimeSec=%" PRIu32 ", value[8]=%s}",
       direction,
       callName,
       callId,
       size,
       static_cast<unsigned int>(value->ChannelNumber),
       static_cast<unsigned int>(value->Offline),
-      static_cast<unsigned int>(value->ValidityTimeSec),
+      static_cast<uint32_t>(value->ValidityTimeSec),
       valueHex);
 }
 
@@ -1042,13 +1069,14 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
       } else {
         SUPLA_LOG_DEBUG(
             "SRPC %s call=%s(%d) size=%zu payload={ChannelNumber=%u, "
-            "Func=%d, ConfigType=%u(%s), ConfigSize=%u, Config=<redacted>}",
+            "Func=%" PRId32
+            ", ConfigType=%u(%s), ConfigSize=%u, Config=<redacted>}",
             direction,
             callName,
             callId,
             size,
             static_cast<unsigned int>(request->ChannelNumber),
-            static_cast<int>(request->Func),
+            static_cast<int32_t>(request->Func),
             static_cast<unsigned int>(request->ConfigType),
             channelConfigTypeName(request->ConfigType),
             static_cast<unsigned int>(request->ConfigSize));

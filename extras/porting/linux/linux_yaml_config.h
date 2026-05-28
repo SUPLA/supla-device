@@ -252,6 +252,9 @@ class LinuxYamlConfig : public KeyValue {
   bool addGeneralPurposeMeterParsed(const YAML::Node& ch,
                                     int channelNumber,
                                     Supla::Parser::Parser* parser);
+  bool addGeneralPurposeTextParsed(const YAML::Node& ch,
+                                   int channelNumber,
+                                   Supla::Parser::Parser* parser);
 
   void logError(const std::string& filename, const YAML::Exception& ex) const;
 

@@ -36,6 +36,7 @@
 #include <supla/sensor/electricity_meter_parsed.h>
 #include <supla/sensor/general_purpose_measurement_parsed.h>
 #include <supla/sensor/general_purpose_meter_parsed.h>
+#include <supla/sensor/general_purpose_text_parsed.h>
 #include <supla/sensor/humidity_parsed.h>
 #include <supla/sensor/impulse_counter_parsed.h>
 #include <supla/sensor/pressure_parsed.h>
@@ -925,6 +926,12 @@ bool Supla::LinuxYamlConfig::parseChannel(const YAML::Node& ch,
         return false;
       }
       return addGeneralPurposeMeterParsed(ch, channelNumber, parser);
+    } else if (type == "GeneralPurposeTextParsed") {
+      if (!parser) {
+        SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
+        return false;
+      }
+      return addGeneralPurposeTextParsed(ch, channelNumber, parser);
     } else if (type == "ImpulseCounterParsed") {
       if (!parser) {
         SUPLA_LOG_ERROR("Channel[%d] config: missing parser", channelNumber);
@@ -1842,6 +1849,30 @@ bool Supla::LinuxYamlConfig::addGeneralPurposeMeterParsed(
   }
 
   return addCommonParametersParsed(ch, gpm, parser);
+}
+
+bool Supla::LinuxYamlConfig::addGeneralPurposeTextParsed(
+    const YAML::Node& ch, int channelNumber, Supla::Parser::Parser* parser) {
+  SUPLA_LOG_INFO("Channel[%d] config: adding GeneralPurposeText",
+                 channelNumber);
+  auto gpt = new Supla::Sensor::GeneralPurposeTextParsed(parser);
+  if (ch[Supla::Parser::Value]) {
+    paramCount++;
+    if (parser->isBasedOnIndex()) {
+      int index = ch[Supla::Parser::Value].as<int>();
+      gpt->setMapping(Supla::Parser::Value, index);
+    } else {
+      std::string key = ch[Supla::Parser::Value].as<std::string>();
+      gpt->setMapping(Supla::Parser::Value, key);
+    }
+  } else {
+    SUPLA_LOG_ERROR("Channel[%d] config: missing \"%s\" parameter",
+                    channelNumber,
+                    Supla::Parser::Value);
+    return false;
+  }
+
+  return addCommonParametersParsed(ch, gpt, parser);
 }
 
 bool Supla::LinuxYamlConfig::addImpulseCounterParsed(

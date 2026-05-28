@@ -97,11 +97,9 @@ ApplyConfigResult GeneralPurposeText::applyChannelConfig(
   }
   auto cfg = reinterpret_cast<TChannelConfig_GeneralPurposeText *>(
       newConfig->Config);
-  keepHistory = cfg->KeepHistory;
   refreshIntervalMs = cfg->RefreshIntervalMs;
-  SUPLA_LOG_INFO(
-      "GPT[%d]: config applied: keepHistory=%u refreshIntervalMs=%u",
-      getChannelNumber(), keepHistory, refreshIntervalMs);
+  SUPLA_LOG_INFO("GPT[%d]: config applied: refreshIntervalMs=%u",
+                 getChannelNumber(), refreshIntervalMs);
   return ApplyConfigResult::Success;
 }
 

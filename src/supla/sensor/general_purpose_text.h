@@ -62,7 +62,6 @@ class GeneralPurposeText : public ElementWithChannelActions {
   ChannelExtended channel;
   char text[SUPLA_GENERAL_PURPOSE_TEXT_MAX_SIZE + 1] = {};
   bool valueChanged = false;
-  uint32_t keepHistory = 0;
   uint16_t refreshIntervalMs = 0;
   uint64_t seqCounter = 0;
 };

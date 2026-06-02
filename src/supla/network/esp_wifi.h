@@ -22,6 +22,7 @@
 #include <Arduino.h>
 
 #include <supla/log_wrapper.h>
+#include <supla/network/arduino_netif_config.h>
 #include <supla/tools.h>
 
 #ifdef ARDUINO_ARCH_ESP8266
@@ -120,26 +121,12 @@ class ESPWifi : public Supla::Wifi {
       SUPLA_LOG_INFO("WiFi: establishing connection with SSID: \"%s\"", ssid);
       WiFi.mode(WIFI_MODE_STA);
       if (hasStaticIpConfig()) {
-        IPAddress localIp((getNetifConfig().ip >> 24) & 0xFF,
-                          (getNetifConfig().ip >> 16) & 0xFF,
-                          (getNetifConfig().ip >> 8) & 0xFF,
-                          getNetifConfig().ip & 0xFF);
-        IPAddress gateway((getNetifConfig().gateway >> 24) & 0xFF,
-                          (getNetifConfig().gateway >> 16) & 0xFF,
-                          (getNetifConfig().gateway >> 8) & 0xFF,
-                          getNetifConfig().gateway & 0xFF);
-        IPAddress subnet((getNetifConfig().netmask >> 24) & 0xFF,
-                         (getNetifConfig().netmask >> 16) & 0xFF,
-                         (getNetifConfig().netmask >> 8) & 0xFF,
-                         getNetifConfig().netmask & 0xFF);
-        IPAddress dns1((getNetifConfig().dns1 >> 24) & 0xFF,
-                       (getNetifConfig().dns1 >> 16) & 0xFF,
-                       (getNetifConfig().dns1 >> 8) & 0xFF,
-                       getNetifConfig().dns1 & 0xFF);
-        IPAddress dns2((getNetifConfig().dns2 >> 24) & 0xFF,
-                       (getNetifConfig().dns2 >> 16) & 0xFF,
-                       (getNetifConfig().dns2 >> 8) & 0xFF,
-                       getNetifConfig().dns2 & 0xFF);
+        const auto &cfg = getNetifConfig();
+        IPAddress localIp = toArduinoIpAddress(cfg.ip);
+        IPAddress gateway = toArduinoIpAddress(cfg.gateway);
+        IPAddress subnet = toArduinoIpAddress(cfg.netmask);
+        IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
+        IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
         if (!WiFi.config(localIp, gateway, subnet, dns1, dns2)) {
           SUPLA_LOG_WARNING("WiFi static IP config failed, continuing");
         }

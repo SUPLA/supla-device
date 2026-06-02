@@ -36,6 +36,7 @@
 
 #include <Arduino.h>
 #include <ETH.h>
+#include <supla/network/arduino_netif_config.h>
 #include <supla/network/netif_lan.h>
 #include <supla/supla_lib_config.h>
 #include <supla/log_wrapper.h>
@@ -147,6 +148,17 @@ class ESPETH : public Supla::LAN {
         powerPin,
         clkMode);
     ETH.begin(ethType, ethAddress, mdcPin, mdioPin, powerPin, clkMode);
+    if (hasStaticIpConfig()) {
+      const auto &cfg = getNetifConfig();
+      IPAddress localIp = toArduinoIpAddress(cfg.ip);
+      IPAddress gateway = toArduinoIpAddress(cfg.gateway);
+      IPAddress subnet = toArduinoIpAddress(cfg.netmask);
+      IPAddress dns1 = toArduinoIpAddress(cfg.dns1);
+      IPAddress dns2 = toArduinoIpAddress(cfg.dns2);
+      if (!ETH.config(localIp, gateway, subnet, dns1, dns2)) {
+        SUPLA_LOG_WARNING("ETH static IP config failed, continuing");
+      }
+    }
 
     initDone = true;
 

@@ -67,7 +67,7 @@ void Button::onTimer() {
     return;
   }
   if (stateResult == TO_PRESSED) {
-    SUPLA_LOG_VERBOSE("Button[%d] pressed", getButtonNumber());
+    SUPLA_LOG_DEBUG("Button[%d] pressed", getButtonNumber());
     stateChanged = true;
     runAction(ON_PRESS);
     runAction(ON_CHANGE);
@@ -76,7 +76,7 @@ void Button::onTimer() {
       runAction(CONDITIONAL_ON_CHANGE);
     }
   } else if (stateResult == TO_RELEASED) {
-    SUPLA_LOG_VERBOSE("Button[%d] released", getButtonNumber());
+    SUPLA_LOG_DEBUG("Button[%d] released", getButtonNumber());
     stateChanged = true;
     runAction(ON_RELEASE);
     runAction(ON_CHANGE);

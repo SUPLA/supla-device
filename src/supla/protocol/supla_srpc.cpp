@@ -638,6 +638,7 @@ void logDeviceCalCfgRequest(int callId,
   }
   if (size < headerSize || dataSize > size - headerSize) {
     const size_t availableSize = size > headerSize ? size - headerSize : 0;
+    (void)(availableSize);
     SUPLA_LOG_DEBUG(
         "SRPC %s call=%s(%d) payload={Data=<truncated>, DataSize=%zu, "
         "Available=%zu}",

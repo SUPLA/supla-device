@@ -17,8 +17,6 @@
 #ifndef SRC_SUPLA_SHA256_H_
 #define SRC_SUPLA_SHA256_H_
 
-#ifndef SUPLA_TEST
-
 #include <stdint.h>
 
 /*
@@ -35,10 +33,14 @@ class Sha256 {
   void digest(uint8_t *output, int length = 32);
 
  protected:
+#ifndef SUPLA_TEST
   void *ctx;
+#else
+  uint8_t state[32];
+  uint32_t offset;
+#endif
 };
 
 };  // namespace Supla
 
-#endif  // SUPLA_TEST
 #endif  // SRC_SUPLA_SHA256_H_

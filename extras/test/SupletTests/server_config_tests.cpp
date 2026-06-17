@@ -414,6 +414,11 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
                                         strlen(changedEditable),
                                         occupied),
             Supla::Suplet::ServerConfigResult::Applied);
+  auto record = manager.getInstanceTable()->findByInstanceId(80);
+  ASSERT_NE(record, nullptr);
+  ASSERT_EQ(record->configSize, strlen(changedEditable));
+  ASSERT_EQ(memcmp(record->config, changedEditable, strlen(changedEditable)),
+            0);
 
   const char changedCreateOnly[] =
       "{\"relay.count\":5,\"mode\":\"avg\",\"host\":\"192.168.1.50\"}";

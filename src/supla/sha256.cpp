@@ -14,13 +14,41 @@
  Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-#ifndef SUPLA_TEST
-
 #include "sha256.h"
 
 #include <string.h>
 
-#if defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
+#if defined(SUPLA_TEST)
+
+Supla::Sha256::Sha256() : state{}, offset(0) {
+}
+
+Supla::Sha256::~Sha256() {
+}
+
+void Supla::Sha256::update(const uint8_t *data, const int size) {
+  if (data == nullptr || size <= 0) {
+    return;
+  }
+  for (int i = 0; i < size; i++) {
+    uint32_t index = offset + static_cast<uint32_t>(i);
+    state[index % 32] = static_cast<uint8_t>(
+        state[index % 32] + data[i] + static_cast<uint8_t>(index));
+  }
+  offset += static_cast<uint32_t>(size);
+}
+
+void Supla::Sha256::digest(uint8_t *output, int length) {
+  if (output == nullptr || length <= 0) {
+    return;
+  }
+  if (length > 32) {
+    length = 32;
+  }
+  memcpy(output, state, length);
+}
+
+#elif defined(ESP32) || defined(SUPLA_DEVICE_ESP32)
 
 #include <mbedtls/md.h>
 
@@ -177,4 +205,3 @@ void Supla::Sha256::digest(uint8_t *output, int length) {
 }
 
 #endif  // ESP32/SUPLA_DEVICE_ESP32/ESP8266/SUPLA_LINUX
-#endif  // SUPLA_TEST

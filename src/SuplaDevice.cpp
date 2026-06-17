@@ -47,9 +47,7 @@
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
 #if SUPLA_SUPLET_ENABLED
-#ifndef SUPLA_TEST
 #include <supla/sha256.h>
-#endif
 #include <supla/suplet/capability_registry.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/registry.h>
@@ -1218,18 +1216,11 @@ void calculateSha256(const uint8_t *data, uint16_t size, uint8_t *output) {
   if (output == nullptr) {
     return;
   }
-#ifndef SUPLA_TEST
   Supla::Sha256 sha256;
   if (size > 0 && data != nullptr) {
     sha256.update(data, size);
   }
   sha256.digest(output, 32);
-#else
-  memset(output, 0, 32);
-  for (uint16_t i = 0; i < size; i++) {
-    output[i % 32] = static_cast<uint8_t>(output[i % 32] + data[i] + i);
-  }
-#endif
 }
 
 }  // namespace

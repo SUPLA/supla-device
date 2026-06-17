@@ -21,9 +21,9 @@
 
 #if SUPLA_SUPLET_ENABLED
 
+#include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
-#include <inttypes.h>
 #include <supla/suplet/server_config.h>
 
 namespace {
@@ -487,10 +487,7 @@ bool writeDefaultParameterValueNormalized(
     case Supla::Suplet::ParameterType::UInt16:
     case Supla::Suplet::ParameterType::Int16: {
       char buffer[16] = {};
-      snprintf(buffer,
-               sizeof(buffer),
-               "%" PRId32,
-               parameter.defaultNumber);
+      snprintf(buffer, sizeof(buffer), "%" PRId32, parameter.defaultNumber);
       return appendText(output, outputSize, buffer);
     }
     case Supla::Suplet::ParameterType::String:
@@ -541,7 +538,7 @@ bool readParameterValueNormalized(
         return false;
       }
       char buffer[16] = {};
-      snprintf(buffer, sizeof(buffer), PRId32, value);
+      snprintf(buffer, sizeof(buffer), "%" PRId32, value);
       return appendText(output, outputSize, buffer);
     }
     case Supla::Suplet::ParameterType::String:
@@ -596,22 +593,25 @@ bool getParameterValueNormalized(
     return writeDefaultParameterValueNormalized(parameter, output, outputSize);
   }
 
+  bool found = false;
   while (true) {
     char key[SUPLA_SUPLET_MAX_PARAMETER_KEY_SIZE] = {};
     if (!reader.readString(key, sizeof(key)) || !reader.consume(':')) {
       return false;
     }
     if (strcmp(key, parameter.key) == 0) {
-      return readParameterValueNormalized(
-          &reader, parameter, output, outputSize);
-    }
-    if (!reader.skipValue()) {
+      if (!readParameterValueNormalized(
+              &reader, parameter, output, outputSize)) {
+        return false;
+      }
+      found = true;
+    } else if (!reader.skipValue()) {
       return false;
     }
     reader.skipWhitespace();
     if (reader.consume('}')) {
-      return writeDefaultParameterValueNormalized(
-          parameter, output, outputSize);
+      return found || writeDefaultParameterValueNormalized(
+                          parameter, output, outputSize);
     }
     if (!reader.consume(',')) {
       return false;

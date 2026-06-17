@@ -16,6 +16,7 @@
 
 #include "SuplaDevice.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 #include <supla/actions.h>
@@ -23,6 +24,7 @@
 #include <supla/channel.h>
 #include <supla/clock/clock.h>
 #include <supla/device/auto_update_policy.h>
+#include <supla/device/channel_conflict_resolver.h>
 #include <supla/device/device_mode.h>
 #include <supla/device/factory_test.h>
 #include <supla/device/last_state_logger.h>
@@ -44,6 +46,15 @@
 #include <supla/storage/config.h>
 #include <supla/storage/config_tags.h>
 #include <supla/storage/storage.h>
+#if SUPLA_SUPLET_ENABLED
+#ifndef SUPLA_TEST
+#include <supla/sha256.h>
+#endif
+#include <supla/suplet/capability_registry.h>
+#include <supla/suplet/manager.h>
+#include <supla/suplet/registry.h>
+#include <supla/suplet/server_config.h>
+#endif
 #include <supla/time.h>
 #include <supla/timer.h>
 #include <supla/tools.h>
@@ -112,6 +123,7 @@ SuplaDeviceClass::SuplaDeviceClass() {
 }
 
 SuplaDeviceClass::~SuplaDeviceClass() {
+  deleteSupletRuntimeElements();
   if (srpcLayer) {
     delete srpcLayer;
     srpcLayer = nullptr;
@@ -123,6 +135,10 @@ SuplaDeviceClass::~SuplaDeviceClass() {
   if (lastStateLogger) {
     delete lastStateLogger;
     lastStateLogger = nullptr;
+  }
+  if (channelConflictResolvers) {
+    delete channelConflictResolvers;
+    channelConflictResolvers = nullptr;
   }
   if (timerAccessMutex) {
     delete timerAccessMutex;
@@ -228,6 +244,8 @@ bool SuplaDeviceClass::begin(unsigned char protoVersion) {
         configurationState.configNotComplete = 1;
       }
     }
+
+    loadSupletRuntime();
 
     SUPLA_LOG_INFO("");
     SUPLA_LOG_INFO(" *** Supla - Config load for elements");
@@ -499,6 +517,7 @@ void SuplaDeviceClass::iterate(void) {
 
   checkIfLeaveCfgModeOrRestartIsNeeded();
   handleLocalActionTriggers();
+  handleSupletRuntimeRefresh();
   iterateAlwaysElements(_millis);
 
   if (forceRestartTimeMs) {
@@ -1092,6 +1111,130 @@ void SuplaDeviceClass::removeFlags(int32_t flags) {
   Supla::RegisterDevice::removeFlags(flags);
 }
 
+#if SUPLA_SUPLET_ENABLED
+namespace {
+
+uint8_t supletStateToCalcfg(Supla::Suplet::InstanceState state) {
+  switch (state) {
+    case Supla::Suplet::InstanceState::Active:
+      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
+    case Supla::Suplet::InstanceState::Staged:
+      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED;
+    case Supla::Suplet::InstanceState::DeletePending:
+      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING;
+    case Supla::Suplet::InstanceState::Disabled:
+    default:
+      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED;
+  }
+}
+
+Supla::Suplet::InstanceState supletStateFromCalcfg(uint8_t state) {
+  switch (state) {
+    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE:
+      return Supla::Suplet::InstanceState::Active;
+    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED:
+      return Supla::Suplet::InstanceState::Staged;
+    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING:
+      return Supla::Suplet::InstanceState::DeletePending;
+    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED:
+    default:
+      return Supla::Suplet::InstanceState::Disabled;
+  }
+}
+
+uint8_t supletDetailFromServerResult(Supla::Suplet::ServerConfigResult result) {
+  switch (result) {
+    case Supla::Suplet::ServerConfigResult::Applied:
+    case Supla::Suplet::ServerConfigResult::Removed:
+      return SUPLA_CALCFG_SUPLET_RESULT_OK;
+    case Supla::Suplet::ServerConfigResult::InvalidArgument:
+      return SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST;
+    case Supla::Suplet::ServerConfigResult::DefinitionNotSupported:
+      return SUPLA_CALCFG_SUPLET_RESULT_UNSUPPORTED_DEFINITION;
+    case Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged:
+      return SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_CANNOT_BE_CHANGED;
+    case Supla::Suplet::ServerConfigResult::InvalidDefinition:
+      return SUPLA_CALCFG_SUPLET_RESULT_INVALID_DEFINITION;
+    case Supla::Suplet::ServerConfigResult::DefinitionNotFound:
+      return SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_NOT_FOUND;
+    case Supla::Suplet::ServerConfigResult::InvalidConfig:
+      return SUPLA_CALCFG_SUPLET_RESULT_INVALID_CONFIG;
+    case Supla::Suplet::ServerConfigResult::ResourceLimitExceeded:
+    case Supla::Suplet::ServerConfigResult::InstanceLimitExceeded:
+      return SUPLA_CALCFG_SUPLET_RESULT_INSTANCE_LIMIT_EXCEEDED;
+    case Supla::Suplet::ServerConfigResult::ChannelLimitExceeded:
+      return SUPLA_CALCFG_SUPLET_RESULT_CHANNEL_LIMIT_EXCEEDED;
+    case Supla::Suplet::ServerConfigResult::CreateOnlyParamChanged:
+      return SUPLA_CALCFG_SUPLET_RESULT_CREATE_ONLY_PARAM_CHANGED;
+    case Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed:
+      return SUPLA_CALCFG_SUPLET_RESULT_TOPOLOGY_CHANGE_NOT_ALLOWED;
+    case Supla::Suplet::ServerConfigResult::Busy:
+      return SUPLA_CALCFG_SUPLET_RESULT_BUSY;
+    case Supla::Suplet::ServerConfigResult::StorageError:
+    default:
+      return SUPLA_CALCFG_SUPLET_RESULT_STORAGE_ERROR;
+  }
+}
+
+int calcfgResultFromServerResult(Supla::Suplet::ServerConfigResult result) {
+  switch (result) {
+    case Supla::Suplet::ServerConfigResult::Applied:
+    case Supla::Suplet::ServerConfigResult::Removed:
+      return SUPLA_CALCFG_RESULT_DONE;
+    case Supla::Suplet::ServerConfigResult::DefinitionNotFound:
+      return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
+    case Supla::Suplet::ServerConfigResult::DefinitionNotSupported:
+      return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+    default:
+      return SUPLA_CALCFG_RESULT_FALSE;
+  }
+}
+
+void fillSupletResult(TDS_DeviceCalCfgResult *result,
+                      uint8_t detailCode,
+                      uint8_t phase,
+                      uint8_t instanceId = 0,
+                      uint32_t definitionId = 0,
+                      uint16_t definitionVersion = 0,
+                      uint16_t required = 0,
+                      uint16_t available = 0) {
+  if (result == nullptr) {
+    return;
+  }
+  TCalCfg_SupletResult payload = {};
+  payload.Version = 1;
+  payload.DetailCode = detailCode;
+  payload.Phase = phase;
+  payload.InstanceId = instanceId;
+  payload.DefinitionId = definitionId;
+  payload.DefinitionVersion = definitionVersion;
+  payload.Required = required;
+  payload.Available = available;
+  memcpy(result->Data, &payload, sizeof(payload));
+  result->DataSize = sizeof(payload);
+}
+
+void calculateSha256(const uint8_t *data, uint16_t size, uint8_t *output) {
+  if (output == nullptr) {
+    return;
+  }
+#ifndef SUPLA_TEST
+  Supla::Sha256 sha256;
+  if (size > 0 && data != nullptr) {
+    sha256.update(data, size);
+  }
+  sha256.digest(output, 32);
+#else
+  memset(output, 0, 32);
+  for (uint16_t i = 0; i < size; i++) {
+    output[i % 32] = static_cast<uint8_t>(output[i % 32] + data[i] + i);
+  }
+#endif
+}
+
+}  // namespace
+#endif
+
 int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
                                              TDS_DeviceCalCfgResult *result) {
   if (request) {
@@ -1154,6 +1297,24 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
         SUPLA_LOG_INFO("CALCFG IDENTIFY DEVICE received");
         identifyStatusLed();
         return SUPLA_CALCFG_RESULT_DONE;
+      }
+      case SUPLA_CALCFG_CMD_SUPLET_GET_CAPABILITIES:
+      case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_COUNT:
+      case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_LIST:
+      case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_INFO:
+      case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_CONFIG:
+      case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN:
+      case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK:
+      case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_COMMIT:
+      case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_ABORT:
+      case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_REMOVE:
+      case SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_LIST:
+      case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN:
+      case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK:
+      case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT:
+      case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_REMOVE:
+      case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_ABORT: {
+        return handleSupletCalcfg(request, result);
       }
       case SUPLA_CALCFG_CMD_CHECK_FIRMWARE_UPDATE: {
         SUPLA_LOG_INFO("CALCFG CHECK FIRMWARE UPDATE received");
@@ -1311,6 +1472,646 @@ int SuplaDeviceClass::handleCalcfgFromServer(TSD_DeviceCalCfgRequest *request,
     }
   }
   return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+}
+
+int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
+                                         TDS_DeviceCalCfgResult *result) {
+#if SUPLA_SUPLET_ENABLED
+  if (request == nullptr || result == nullptr || supletManager == nullptr ||
+      supletRegistry == nullptr || supletServerConfigHandler == nullptr) {
+    fillSupletResult(result,
+                     SUPLA_CALCFG_SUPLET_RESULT_UNSUPPORTED_DEFINITION,
+                     SUPLA_CALCFG_SUPLET_PHASE_NONE);
+    return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+  }
+
+  auto table = supletManager->getInstanceTable();
+  if (table == nullptr) {
+    fillSupletResult(result,
+                     SUPLA_CALCFG_SUPLET_RESULT_STORAGE_ERROR,
+                     SUPLA_CALCFG_SUPLET_PHASE_NONE);
+    return SUPLA_CALCFG_RESULT_FALSE;
+  }
+
+  switch (request->Command) {
+    case SUPLA_CALCFG_CMD_SUPLET_GET_CAPABILITIES: {
+      if (supletCapabilityRegistry == nullptr) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_UNSUPPORTED_DEFINITION,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+      }
+
+      TCalCfg_SupletListRequest listRequest = {};
+      listRequest.Limit = SUPLA_CALCFG_SUPLET_CAPABILITY_MAX_ITEMS;
+      if (request->DataSize != 0) {
+        if (request->DataSize != sizeof(listRequest)) {
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        memcpy(&listRequest, request->Data, sizeof(listRequest));
+      }
+
+      TCalCfg_SupletCapabilityList output = {};
+      output.Offset = listRequest.Offset;
+      uint8_t total = supletCapabilityRegistry->getCount();
+      output.Total = total;
+      uint8_t limit = listRequest.Limit;
+      if (limit == 0 || limit > SUPLA_CALCFG_SUPLET_CAPABILITY_MAX_ITEMS) {
+        limit = SUPLA_CALCFG_SUPLET_CAPABILITY_MAX_ITEMS;
+      }
+      for (uint8_t i = 0; i < limit && listRequest.Offset + i < total; i++) {
+        Supla::Suplet::Capability capability = {};
+        if (!supletCapabilityRegistry->getCapability(listRequest.Offset + i,
+                                                     &capability)) {
+          break;
+        }
+        auto &item = output.Items[output.Count++];
+        item.Category = static_cast<uint8_t>(capability.category);
+        item.Kind = static_cast<uint8_t>(capability.kind);
+        item.MinSchemaVersion = capability.minSchemaVersion;
+        item.MaxSchemaVersion = capability.maxSchemaVersion;
+        item.HandlerVersion = capability.handlerVersion;
+        item.MaxInstances = capability.maxInstances;
+        item.SupportsDownloadedDefinition =
+            capability.supportsDownloadedDefinition;
+        item.DefinitionId = capability.definitionId;
+        item.MinDefinitionVersion = capability.minDefinitionVersion;
+        item.MaxDefinitionVersion = capability.maxDefinitionVersion;
+      }
+      memcpy(result->Data, &output, sizeof(output));
+      result->DataSize = sizeof(output);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_LIST: {
+      TCalCfg_SupletListRequest listRequest = {};
+      listRequest.Limit = SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS;
+      if (request->DataSize != 0) {
+        if (request->DataSize != sizeof(listRequest)) {
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        memcpy(&listRequest, request->Data, sizeof(listRequest));
+      }
+
+      TCalCfg_SupletDefinitionList output = {};
+      output.Offset = listRequest.Offset;
+      const uint8_t total =
+          supletServerConfigHandler->getCachedDefinitionCount();
+      output.Total = total;
+      uint8_t limit = listRequest.Limit;
+      if (limit == 0 || limit > SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS) {
+        limit = SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS;
+      }
+      for (uint8_t i = 0; i < limit && listRequest.Offset + i < total; i++) {
+        Supla::Suplet::CachedDefinitionDetails details = {};
+        if (!supletServerConfigHandler->getCachedDefinitionDetails(
+                listRequest.Offset + i, &details)) {
+          break;
+        }
+        auto &item = output.Items[output.Count++];
+        item.Category = static_cast<uint8_t>(details.category);
+        item.Kind = static_cast<uint8_t>(details.kind);
+        item.SchemaVersion = details.schemaVersion;
+        item.HandlerVersion = details.handlerVersion;
+        item.MaxInstances = details.maxInstances;
+        item.DefinitionId = details.cache.definitionId;
+        item.DefinitionVersion = details.cache.definitionVersion;
+        item.JsonSize = details.cache.jsonSize;
+        memcpy(item.JsonSha256, details.cache.sha256, sizeof(item.JsonSha256));
+      }
+      memcpy(result->Data, &output, sizeof(output));
+      result->DataSize = sizeof(output);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_COUNT: {
+      if (request->DataSize != 0) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceCount output = {};
+      output.Count = table->getCount();
+      output.MaxInstances = SUPLA_SUPLET_MAX_INSTANCES;
+      output.MaxChannelsPerInstance = SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE;
+      output.MaxCachedDefinitions = SUPLA_SUPLET_MAX_CACHED_DEFINITIONS;
+      memcpy(result->Data, &output, sizeof(output));
+      result->DataSize = sizeof(output);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_LIST: {
+      if (request->DataSize != sizeof(TCalCfg_SupletListRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletListRequest listRequest = {};
+      memcpy(&listRequest, request->Data, sizeof(listRequest));
+      TCalCfg_SupletInstanceList output = {};
+      output.Offset = listRequest.Offset;
+      output.Total = table->getCount();
+      uint8_t limit = listRequest.Limit;
+      if (limit == 0 || limit > SUPLA_CALCFG_SUPLET_INSTANCE_LIST_MAX_ITEMS) {
+        limit = SUPLA_CALCFG_SUPLET_INSTANCE_LIST_MAX_ITEMS;
+      }
+      for (uint8_t i = 0;
+           i < limit && listRequest.Offset + i < table->getCount();
+           i++) {
+        auto record = table->getRecord(listRequest.Offset + i);
+        if (record == nullptr) {
+          break;
+        }
+        auto &item = output.Items[output.Count++];
+        item.InstanceId = record->instanceId;
+        item.DefinitionId = record->definitionId;
+        item.DefinitionVersion = record->definitionVersion;
+        item.State = supletStateToCalcfg(record->state);
+        item.SubDeviceId = record->subDeviceId;
+        uint8_t channelCount = 0;
+        const auto *definition = supletRegistry->findDefinition(
+            record->definitionId, record->definitionVersion);
+        if (definition != nullptr) {
+          channelCount = definition->channelCount;
+        }
+        item.ChannelCount = channelCount;
+      }
+      memcpy(result->Data, &output, sizeof(output));
+      result->DataSize = sizeof(output);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_INFO: {
+      if (request->DataSize != sizeof(TCalCfg_SupletInstanceRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceRequest instanceRequest = {};
+      memcpy(&instanceRequest, request->Data, sizeof(instanceRequest));
+      auto record = table->findByInstanceId(instanceRequest.InstanceId);
+      if (record == nullptr) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_NOT_FOUND,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                         instanceRequest.InstanceId);
+        return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
+      }
+
+      TCalCfg_SupletInstanceInfo output = {};
+      output.InstanceId = record->instanceId;
+      output.DefinitionId = record->definitionId;
+      output.DefinitionVersion = record->definitionVersion;
+      output.State = supletStateToCalcfg(record->state);
+      output.SubDeviceId = record->subDeviceId;
+      output.ParamsSize = record->configSize;
+      calculateSha256(record->config, record->configSize, output.ParamsSha256);
+      const auto *definition = supletRegistry->findDefinition(
+          record->definitionId, record->definitionVersion);
+      if (definition != nullptr) {
+        output.ChannelCount = definition->channelCount;
+      }
+      memcpy(result->Data, &output, sizeof(output));
+      result->DataSize = sizeof(output);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_GET_INSTANCE_CONFIG: {
+      if (request->DataSize != sizeof(TCalCfg_SupletInstanceConfigRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceConfigRequest configRequest = {};
+      memcpy(&configRequest, request->Data, sizeof(configRequest));
+      auto record = table->findByInstanceId(configRequest.InstanceId);
+      if (record == nullptr) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_NOT_FOUND,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                         configRequest.InstanceId);
+        return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
+      }
+      if (configRequest.Offset > record->configSize) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                         record->instanceId);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceConfigChunk output = {};
+      output.InstanceId = record->instanceId;
+      output.Offset = configRequest.Offset;
+      output.TotalSize = record->configSize;
+      uint16_t left = record->configSize - configRequest.Offset;
+      uint8_t maxSize = configRequest.MaxSize;
+      if (maxSize == 0 || maxSize > SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE) {
+        maxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+      }
+      output.Size = left > maxSize ? maxSize : static_cast<uint8_t>(left);
+      if (output.Size > 0) {
+        memcpy(output.Data, record->config + configRequest.Offset, output.Size);
+      }
+      result->DataSize =
+          offsetof(TCalCfg_SupletInstanceConfigChunk, Data) + output.Size;
+      memcpy(result->Data, &output, result->DataSize);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN: {
+      if (request->DataSize != sizeof(TCalCfg_SupletDefinitionBegin)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      if (supletDefinitionCalcfgSession.active) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_BUSY,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletDefinitionBegin begin = {};
+      memcpy(&begin, request->Data, sizeof(begin));
+      if (begin.SessionId == 0 || begin.DefinitionId == 0 ||
+          begin.DefinitionVersion == 0 || begin.JsonSize == 0 ||
+          begin.JsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                         0,
+                         begin.DefinitionId,
+                         begin.DefinitionVersion,
+                         begin.JsonSize,
+                         SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      supletDefinitionCalcfgSession = SupletDefinitionCalcfgSession();
+      supletDefinitionCalcfgSession.active = true;
+      supletDefinitionCalcfgSession.sessionId = begin.SessionId;
+      supletDefinitionCalcfgSession.definitionId = begin.DefinitionId;
+      supletDefinitionCalcfgSession.definitionVersion = begin.DefinitionVersion;
+      supletDefinitionCalcfgSession.jsonSize = begin.JsonSize;
+      memcpy(supletDefinitionCalcfgSession.expectedSha256,
+             begin.JsonSha256,
+             sizeof(supletDefinitionCalcfgSession.expectedSha256));
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                       0,
+                       begin.DefinitionId,
+                       begin.DefinitionVersion);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK: {
+      const size_t headerSize = offsetof(TCalCfg_SupletDefinitionChunk, Data);
+      if (request->DataSize < headerSize ||
+          request->DataSize > sizeof(TCalCfg_SupletDefinitionChunk)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_TRANSFER_TEMPLATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletDefinitionChunk chunk = {};
+      memcpy(&chunk, request->Data, request->DataSize);
+      if (!supletDefinitionCalcfgSession.active ||
+          chunk.SessionId != supletDefinitionCalcfgSession.sessionId ||
+          chunk.Size > SUPLA_CALCFG_SUPLET_DEFINITION_CHUNK_MAXSIZE ||
+          request->DataSize != headerSize + chunk.Size ||
+          static_cast<uint32_t>(chunk.Offset) + chunk.Size >
+              supletDefinitionCalcfgSession.jsonSize) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_TRANSFER_TEMPLATE,
+                         0,
+                         supletDefinitionCalcfgSession.definitionId,
+                         supletDefinitionCalcfgSession.definitionVersion);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      memcpy(supletDefinitionCalcfgSession.json + chunk.Offset,
+             chunk.Data,
+             chunk.Size);
+      for (uint8_t i = 0; i < chunk.Size; i++) {
+        uint16_t index = chunk.Offset + i;
+        if (!supletDefinitionCalcfgSession.received[index]) {
+          supletDefinitionCalcfgSession.received[index] = 1;
+          supletDefinitionCalcfgSession.receivedSize++;
+        }
+      }
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_TRANSFER_TEMPLATE,
+                       0,
+                       supletDefinitionCalcfgSession.definitionId,
+                       supletDefinitionCalcfgSession.definitionVersion,
+                       supletDefinitionCalcfgSession.jsonSize,
+                       supletDefinitionCalcfgSession.receivedSize);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_COMMIT: {
+      if (request->DataSize != sizeof(TCalCfg_SupletSessionRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_PARSE_TEMPLATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletSessionRequest sessionRequest = {};
+      memcpy(&sessionRequest, request->Data, sizeof(sessionRequest));
+      if (!supletDefinitionCalcfgSession.active ||
+          sessionRequest.SessionId != supletDefinitionCalcfgSession.sessionId ||
+          supletDefinitionCalcfgSession.receivedSize !=
+              supletDefinitionCalcfgSession.jsonSize) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_PARSE_TEMPLATE,
+                         0,
+                         supletDefinitionCalcfgSession.definitionId,
+                         supletDefinitionCalcfgSession.definitionVersion,
+                         supletDefinitionCalcfgSession.jsonSize,
+                         supletDefinitionCalcfgSession.receivedSize);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      uint8_t calculatedSha[32] = {};
+      calculateSha256(
+          reinterpret_cast<const uint8_t *>(supletDefinitionCalcfgSession.json),
+          supletDefinitionCalcfgSession.jsonSize,
+          calculatedSha);
+      if (memcmp(calculatedSha,
+                 supletDefinitionCalcfgSession.expectedSha256,
+                 sizeof(calculatedSha)) != 0) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_SHA_MISMATCH,
+                         SUPLA_CALCFG_SUPLET_PHASE_PARSE_TEMPLATE,
+                         0,
+                         supletDefinitionCalcfgSession.definitionId,
+                         supletDefinitionCalcfgSession.definitionVersion);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      supletDefinitionCalcfgSession
+          .json[supletDefinitionCalcfgSession.jsonSize] = '\0';
+      auto serverResult = supletServerConfigHandler->saveDownloadedDefinition(
+          supletDefinitionCalcfgSession.definitionId,
+          supletDefinitionCalcfgSession.definitionVersion,
+          supletDefinitionCalcfgSession.json,
+          supletDefinitionCalcfgSession.expectedSha256);
+      fillSupletResult(result,
+                       supletDetailFromServerResult(serverResult),
+                       SUPLA_CALCFG_SUPLET_PHASE_PARSE_TEMPLATE,
+                       0,
+                       supletDefinitionCalcfgSession.definitionId,
+                       supletDefinitionCalcfgSession.definitionVersion);
+      supletDefinitionCalcfgSession = SupletDefinitionCalcfgSession();
+      return calcfgResultFromServerResult(serverResult);
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_ABORT: {
+      if (request->DataSize != sizeof(TCalCfg_SupletSessionRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletSessionRequest sessionRequest = {};
+      memcpy(&sessionRequest, request->Data, sizeof(sessionRequest));
+      if (supletDefinitionCalcfgSession.active &&
+          sessionRequest.SessionId == supletDefinitionCalcfgSession.sessionId) {
+        supletDefinitionCalcfgSession = SupletDefinitionCalcfgSession();
+      }
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_NONE);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_DEFINITION_REMOVE: {
+      if (request->DataSize != sizeof(TCalCfg_SupletDefinitionRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletDefinitionRequest definitionRequest = {};
+      memcpy(&definitionRequest, request->Data, sizeof(definitionRequest));
+      auto serverResult = supletServerConfigHandler->removeDownloadedDefinition(
+          definitionRequest.DefinitionId, definitionRequest.DefinitionVersion);
+      fillSupletResult(result,
+                       supletDetailFromServerResult(serverResult),
+                       SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                       0,
+                       definitionRequest.DefinitionId,
+                       definitionRequest.DefinitionVersion);
+      return calcfgResultFromServerResult(serverResult);
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN: {
+      if (request->DataSize != sizeof(TCalCfg_SupletInstanceBegin)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      if (supletCalcfgSession.active) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_BUSY,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceBegin begin = {};
+      memcpy(&begin, request->Data, sizeof(begin));
+      if (begin.SessionId == 0 || begin.InstanceId == 0 ||
+          begin.DefinitionId == 0 || begin.DefinitionVersion == 0 ||
+          begin.ParamsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                         begin.InstanceId,
+                         begin.DefinitionId,
+                         begin.DefinitionVersion,
+                         begin.ParamsSize,
+                         SUPLA_SUPLET_MAX_CONFIG_SIZE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      supletCalcfgSession = SupletCalcfgSession();
+      supletCalcfgSession.active = true;
+      supletCalcfgSession.sessionId = begin.SessionId;
+      supletCalcfgSession.instanceId = begin.InstanceId;
+      supletCalcfgSession.definitionId = begin.DefinitionId;
+      supletCalcfgSession.definitionVersion = begin.DefinitionVersion;
+      supletCalcfgSession.paramsSize = begin.ParamsSize;
+      supletCalcfgSession.state = supletStateFromCalcfg(begin.State);
+      memcpy(supletCalcfgSession.expectedSha256,
+             begin.ParamsSha256,
+             sizeof(supletCalcfgSession.expectedSha256));
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_VALIDATE,
+                       begin.InstanceId,
+                       begin.DefinitionId,
+                       begin.DefinitionVersion);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK: {
+      const size_t headerSize = offsetof(TCalCfg_SupletInstanceChunk, Data);
+      if (request->DataSize < headerSize ||
+          request->DataSize > sizeof(TCalCfg_SupletInstanceChunk)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE_CONFIG);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceChunk chunk = {};
+      memcpy(&chunk, request->Data, request->DataSize);
+      if (!supletCalcfgSession.active ||
+          chunk.SessionId != supletCalcfgSession.sessionId ||
+          chunk.Size > SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE ||
+          request->DataSize != headerSize + chunk.Size ||
+          static_cast<uint32_t>(chunk.Offset) + chunk.Size >
+              supletCalcfgSession.paramsSize) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE_CONFIG,
+                         supletCalcfgSession.instanceId,
+                         supletCalcfgSession.definitionId,
+                         supletCalcfgSession.definitionVersion);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      memcpy(supletCalcfgSession.params + chunk.Offset, chunk.Data, chunk.Size);
+      for (uint8_t i = 0; i < chunk.Size; i++) {
+        uint16_t index = chunk.Offset + i;
+        if (!supletCalcfgSession.received[index]) {
+          supletCalcfgSession.received[index] = 1;
+          supletCalcfgSession.receivedSize++;
+        }
+      }
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_VALIDATE_CONFIG,
+                       supletCalcfgSession.instanceId,
+                       supletCalcfgSession.definitionId,
+                       supletCalcfgSession.definitionVersion,
+                       supletCalcfgSession.paramsSize,
+                       supletCalcfgSession.receivedSize);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT: {
+      if (request->DataSize != sizeof(TCalCfg_SupletSessionRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletSessionRequest sessionRequest = {};
+      memcpy(&sessionRequest, request->Data, sizeof(sessionRequest));
+      if (!supletCalcfgSession.active ||
+          sessionRequest.SessionId != supletCalcfgSession.sessionId ||
+          supletCalcfgSession.receivedSize != supletCalcfgSession.paramsSize) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE,
+                         supletCalcfgSession.instanceId,
+                         supletCalcfgSession.definitionId,
+                         supletCalcfgSession.definitionVersion,
+                         supletCalcfgSession.paramsSize,
+                         supletCalcfgSession.receivedSize);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      uint8_t calculatedSha[32] = {};
+      calculateSha256(supletCalcfgSession.params,
+                      supletCalcfgSession.paramsSize,
+                      calculatedSha);
+      if (memcmp(calculatedSha,
+                 supletCalcfgSession.expectedSha256,
+                 sizeof(calculatedSha)) != 0) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_SHA_MISMATCH,
+                         SUPLA_CALCFG_SUPLET_PHASE_VALIDATE_CONFIG,
+                         supletCalcfgSession.instanceId,
+                         supletCalcfgSession.definitionId,
+                         supletCalcfgSession.definitionVersion);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      Supla::Suplet::ChannelAllocator occupied;
+      fillSupletOccupiedChannels(&occupied);
+      supletCalcfgSession.params[supletCalcfgSession.paramsSize] = '\0';
+      auto serverResult = supletServerConfigHandler->applyInstanceParams(
+          supletCalcfgSession.instanceId,
+          supletCalcfgSession.definitionId,
+          supletCalcfgSession.definitionVersion,
+          supletCalcfgSession.state,
+          reinterpret_cast<const char *>(supletCalcfgSession.params),
+          supletCalcfgSession.paramsSize,
+          occupied);
+      fillSupletResult(result,
+                       supletDetailFromServerResult(serverResult),
+                       SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE,
+                       supletCalcfgSession.instanceId,
+                       supletCalcfgSession.definitionId,
+                       supletCalcfgSession.definitionVersion);
+      supletCalcfgSession = SupletCalcfgSession();
+      return calcfgResultFromServerResult(serverResult);
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_REMOVE: {
+      if (request->DataSize != sizeof(TCalCfg_SupletInstanceRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletInstanceRequest instanceRequest = {};
+      memcpy(&instanceRequest, request->Data, sizeof(instanceRequest));
+      auto serverResult = supletServerConfigHandler->removeAssignment(
+          instanceRequest.InstanceId);
+      fillSupletResult(result,
+                       supletDetailFromServerResult(serverResult),
+                       SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE,
+                       instanceRequest.InstanceId);
+      return calcfgResultFromServerResult(serverResult);
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_INSTANCE_ABORT: {
+      if (request->DataSize != sizeof(TCalCfg_SupletSessionRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletSessionRequest sessionRequest = {};
+      memcpy(&sessionRequest, request->Data, sizeof(sessionRequest));
+      if (supletCalcfgSession.active &&
+          sessionRequest.SessionId == supletCalcfgSession.sessionId) {
+        supletCalcfgSession = SupletCalcfgSession();
+      }
+      fillSupletResult(result,
+                       SUPLA_CALCFG_SUPLET_RESULT_OK,
+                       SUPLA_CALCFG_SUPLET_PHASE_NONE);
+      return SUPLA_CALCFG_RESULT_DONE;
+    }
+  }
+
+  fillSupletResult(result,
+                   SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                   SUPLA_CALCFG_SUPLET_PHASE_NONE);
+  return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+#else
+  (void)(request);
+  (void)(result);
+  return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
+#endif
 }
 
 void SuplaDeviceClass::saveStateToStorage() {
@@ -1828,7 +2629,222 @@ Supla::Mutex *SuplaDeviceClass::getTimerAccessMutex() {
 void SuplaDeviceClass::setChannelConflictResolver(
     Supla::Device::ChannelConflictResolver *resolver) {
   createSrpcLayerIfNeeded();
-  srpcLayer->setChannelConflictResolver(resolver);
+  if (channelConflictResolvers == nullptr) {
+    channelConflictResolvers = new Supla::Device::ChannelConflictResolverList;
+  }
+  if (channelConflictResolvers != nullptr) {
+    channelConflictResolvers->clear();
+    channelConflictResolvers->add(resolver);
+    srpcLayer->setChannelConflictResolver(channelConflictResolvers->isEmpty()
+                                              ? nullptr
+                                              : channelConflictResolvers);
+  } else {
+    srpcLayer->setChannelConflictResolver(resolver);
+  }
+}
+
+void SuplaDeviceClass::setSupletRuntime(Supla::Suplet::Manager *manager,
+                                        Supla::Suplet::Registry *registry) {
+#if SUPLA_SUPLET_ENABLED
+  supletManager = manager;
+  supletRegistry = registry;
+  if (supletManager != nullptr && supletRegistry != nullptr &&
+      supletServerConfigHandler != nullptr) {
+    addFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
+  } else {
+    removeFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
+  }
+#else
+  (void)(manager);
+  (void)(registry);
+#endif
+}
+
+void SuplaDeviceClass::setSupletCapabilityRegistry(
+    Supla::Suplet::CapabilityRegistry *registry) {
+#if SUPLA_SUPLET_ENABLED
+  supletCapabilityRegistry = registry;
+#else
+  (void)(registry);
+#endif
+}
+
+void SuplaDeviceClass::setSupletServerConfigHandler(
+    Supla::Suplet::ServerConfigHandler *handler) {
+#if SUPLA_SUPLET_ENABLED
+  supletServerConfigHandler = handler;
+  if (supletManager != nullptr && supletRegistry != nullptr &&
+      supletServerConfigHandler != nullptr) {
+    addFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
+  } else {
+    removeFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
+  }
+#else
+  (void)(handler);
+#endif
+}
+
+Supla::Suplet::ServerConfigResult SuplaDeviceClass::applySupletCommandJson(
+    const char *commandJson) {
+#if SUPLA_SUPLET_ENABLED
+  if (supletServerConfigHandler == nullptr) {
+    return Supla::Suplet::ServerConfigResult::InvalidArgument;
+  }
+  Supla::Suplet::ChannelAllocator occupied;
+  if (!fillSupletOccupiedChannels(&occupied)) {
+    return Supla::Suplet::ServerConfigResult::InvalidArgument;
+  }
+  return supletServerConfigHandler->applyCommandJson(commandJson, occupied);
+#else
+  (void)(commandJson);
+  return static_cast<Supla::Suplet::ServerConfigResult>(2);
+#endif
+}
+
+Supla::Suplet::ServerConfigResult SuplaDeviceClass::validateSupletCommandJson(
+    const char *commandJson) const {
+#if SUPLA_SUPLET_ENABLED
+  if (supletServerConfigHandler == nullptr) {
+    return Supla::Suplet::ServerConfigResult::InvalidArgument;
+  }
+  Supla::Suplet::ChannelAllocator occupied;
+  if (!fillSupletOccupiedChannels(&occupied)) {
+    return Supla::Suplet::ServerConfigResult::InvalidArgument;
+  }
+  return supletServerConfigHandler->validateCommandJson(commandJson, occupied);
+#else
+  (void)(commandJson);
+  return static_cast<Supla::Suplet::ServerConfigResult>(2);
+#endif
+}
+
+bool SuplaDeviceClass::loadSupletRuntime() {
+#if SUPLA_SUPLET_ENABLED
+  if (supletManager == nullptr || supletRegistry == nullptr) {
+    return true;
+  }
+
+  addChannelConflictResolver(supletManager);
+  deleteSupletRuntimeElements();
+
+  if (!supletManager->load()) {
+    SUPLA_LOG_DEBUG("Suplet runtime: no stored instance table");
+    supletCreatedElementCount = 0;
+    return true;
+  }
+
+  supletCreatedElementCount = 0;
+  if (!supletManager->createElementsFromRegistry(
+          *supletRegistry,
+          supletCreatedElements,
+          sizeof(supletCreatedElements) / sizeof(supletCreatedElements[0]),
+          &supletCreatedElementCount)) {
+    SUPLA_LOG_WARNING("Suplet runtime: failed to create stored elements");
+    supletCreatedElementCount = 0;
+    return false;
+  }
+
+  if (supletCreatedElementCount > 0) {
+    SUPLA_LOG_INFO("Suplet runtime: created %u element(s)",
+                   supletCreatedElementCount);
+  }
+  return true;
+#else
+  return true;
+#endif
+}
+
+bool SuplaDeviceClass::handleSupletRuntimeRefresh() {
+#if SUPLA_SUPLET_ENABLED
+  if (supletServerConfigHandler == nullptr ||
+      !supletServerConfigHandler->isRuntimeRefreshRequired()) {
+    return false;
+  }
+
+  SUPLA_LOG_INFO("Suplet runtime: refreshing elements after config change");
+  bool result = loadSupletRuntime();
+  if (result) {
+    for (uint16_t i = 0; i < supletCreatedElementCount; i++) {
+      if (supletCreatedElements[i] != nullptr) {
+        if (Supla::Storage::IsConfigStorageAvailable()) {
+          supletCreatedElements[i]->onLoadConfig(this);
+        }
+        supletCreatedElements[i]->onInit();
+      }
+      delay(0);
+    }
+    iterateConnectedPtr = nullptr;
+    Supla::Network::DisconnectProtocols();
+  }
+  supletServerConfigHandler->clearRuntimeRefreshRequired();
+  return result;
+#else
+  return false;
+#endif
+}
+
+void SuplaDeviceClass::deleteSupletRuntimeElements() {
+#if SUPLA_SUPLET_ENABLED
+  for (uint16_t i = 0; i < supletCreatedElementCount; i++) {
+    delete supletCreatedElements[i];
+    supletCreatedElements[i] = nullptr;
+  }
+  supletCreatedElementCount = 0;
+#endif
+}
+
+bool SuplaDeviceClass::fillSupletOccupiedChannels(
+    Supla::Suplet::ChannelAllocator *allocator) const {
+#if SUPLA_SUPLET_ENABLED
+  if (allocator == nullptr) {
+    return false;
+  }
+  allocator->clearOccupied();
+  for (auto element = Supla::Element::begin(); element != nullptr;
+       element = element->next()) {
+    int channelNumber = element->getChannelNumber();
+    if (channelNumber >= 0 && !allocator->markOccupied(channelNumber)) {
+      return false;
+    }
+    channelNumber = element->getSecondaryChannelNumber();
+    if (channelNumber >= 0 && !allocator->markOccupied(channelNumber)) {
+      return false;
+    }
+  }
+  return true;
+#else
+  (void)(allocator);
+  return false;
+#endif
+}
+
+bool SuplaDeviceClass::addChannelConflictResolver(
+    Supla::Device::ChannelConflictResolver *resolver) {
+  if (resolver == nullptr) {
+    return false;
+  }
+  createSrpcLayerIfNeeded();
+  if (channelConflictResolvers == nullptr) {
+    channelConflictResolvers = new Supla::Device::ChannelConflictResolverList;
+  }
+  if (channelConflictResolvers == nullptr) {
+    return false;
+  }
+  bool result = channelConflictResolvers->add(resolver);
+  srpcLayer->setChannelConflictResolver(channelConflictResolvers);
+  return result;
+}
+
+bool SuplaDeviceClass::removeChannelConflictResolver(
+    Supla::Device::ChannelConflictResolver *resolver) {
+  if (channelConflictResolvers == nullptr || resolver == nullptr) {
+    return false;
+  }
+  bool result = channelConflictResolvers->remove(resolver);
+  if (srpcLayer != nullptr && channelConflictResolvers->isEmpty()) {
+    srpcLayer->setChannelConflictResolver(nullptr);
+  }
+  return result;
 }
 
 void SuplaDeviceClass::setSubdevicePairingHandler(

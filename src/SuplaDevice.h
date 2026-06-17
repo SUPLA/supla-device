@@ -22,6 +22,11 @@
 #include <supla/action_handler.h>
 #include <supla/device/device_mode.h>
 #include <supla/local_action.h>
+#include <supla/suplet/config.h>
+#if SUPLA_SUPLET_ENABLED
+#include <supla/suplet/definition_cache.h>
+#include <supla/suplet/storage.h>
+#endif
 #include <supla/uptime.h>
 
 #include "supla/device/security_logger.h"
@@ -147,6 +152,7 @@ const char *getInitialModeName(const InitialMode mode);
 namespace Device {
 class SwUpdate;
 class ChannelConflictResolver;
+class ChannelConflictResolverList;
 class SubdevicePairingHandler;
 class StatusLed;
 class LastStateLogger;
@@ -156,6 +162,15 @@ class SecurityLogger;
 namespace Protocol {
 class SuplaSrpc;
 }  // namespace Protocol
+
+namespace Suplet {
+class CapabilityRegistry;
+class ChannelAllocator;
+class Manager;
+class Registry;
+class ServerConfigHandler;
+enum class ServerConfigResult : uint8_t;
+}  // namespace Suplet
 
 }  // namespace Supla
 
@@ -347,6 +362,19 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   void setChannelConflictResolver(
       Supla::Device::ChannelConflictResolver *resolver);
+  bool addChannelConflictResolver(
+      Supla::Device::ChannelConflictResolver *resolver);
+  bool removeChannelConflictResolver(
+      Supla::Device::ChannelConflictResolver *resolver);
+  void setSupletRuntime(Supla::Suplet::Manager *manager,
+                        Supla::Suplet::Registry *registry);
+  void setSupletCapabilityRegistry(Supla::Suplet::CapabilityRegistry *registry);
+  void setSupletServerConfigHandler(
+      Supla::Suplet::ServerConfigHandler *handler);
+  Supla::Suplet::ServerConfigResult applySupletCommandJson(
+      const char *commandJson);
+  Supla::Suplet::ServerConfigResult validateSupletCommandJson(
+      const char *commandJson) const;
   void setSubdevicePairingHandler(
       Supla::Device::SubdevicePairingHandler *handler);
 
@@ -479,6 +507,13 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void handleLocalActionTriggers();
   void checkIfLeaveCfgModeOrRestartIsNeeded();
   void createSrpcLayerIfNeeded();
+  bool loadSupletRuntime();
+  bool handleSupletRuntimeRefresh();
+  void deleteSupletRuntimeElements();
+  bool fillSupletOccupiedChannels(
+      Supla::Suplet::ChannelAllocator *allocator) const;
+  int handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
+                         TDS_DeviceCalCfgResult *result);
   void setupDeviceMode();
 
   uint32_t networkIsNotReadyCounter = 0;
@@ -519,6 +554,44 @@ class SuplaDeviceClass : public Supla::ActionHandler,
 
   Supla::Protocol::SuplaSrpc *srpcLayer = nullptr;
   Supla::Device::SwUpdate *swUpdate = nullptr;
+  Supla::Device::ChannelConflictResolverList *channelConflictResolvers =
+      nullptr;
+#if SUPLA_SUPLET_ENABLED
+  struct SupletCalcfgSession {
+    bool active = false;
+    uint32_t sessionId = 0;
+    uint8_t instanceId = 0;
+    uint32_t definitionId = 0;
+    uint16_t definitionVersion = 0;
+    Supla::Suplet::InstanceState state = Supla::Suplet::InstanceState::Active;
+    uint16_t paramsSize = 0;
+    uint16_t receivedSize = 0;
+    uint8_t expectedSha256[32] = {};
+    uint8_t params[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
+    uint8_t received[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
+  };
+
+  struct SupletDefinitionCalcfgSession {
+    bool active = false;
+    uint32_t sessionId = 0;
+    uint32_t definitionId = 0;
+    uint16_t definitionVersion = 0;
+    uint16_t jsonSize = 0;
+    uint16_t receivedSize = 0;
+    uint8_t expectedSha256[32] = {};
+    char json[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
+    uint8_t received[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE] = {};
+  };
+
+  Supla::Suplet::Manager *supletManager = nullptr;
+  Supla::Suplet::Registry *supletRegistry = nullptr;
+  Supla::Suplet::CapabilityRegistry *supletCapabilityRegistry = nullptr;
+  Supla::Suplet::ServerConfigHandler *supletServerConfigHandler = nullptr;
+  SupletCalcfgSession supletCalcfgSession = {};
+  SupletDefinitionCalcfgSession supletDefinitionCalcfgSession = {};
+  Supla::Element *supletCreatedElements[SUPLA_CHANNELMAXCOUNT] = {};
+  uint16_t supletCreatedElementCount = 0;
+#endif
   Supla::Element *iterateConnectedPtr = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;
   Supla::Mutex *timerAccessMutex = nullptr;

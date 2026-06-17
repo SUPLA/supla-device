@@ -35,6 +35,32 @@ class ChannelConflictResolver {
       bool hasConflictChannelMissingOnDevice) = 0;
 };
 
+struct ChannelConflictResolverListItem {
+  ChannelConflictResolver *resolver = nullptr;
+  ChannelConflictResolverListItem *next = nullptr;
+};
+
+class ChannelConflictResolverList : public ChannelConflictResolver {
+ public:
+  ~ChannelConflictResolverList() override;
+
+  bool add(ChannelConflictResolver *resolver);
+  bool remove(ChannelConflictResolver *resolver);
+  void clear();
+  bool contains(ChannelConflictResolver *resolver) const;
+  bool isEmpty() const;
+
+  bool onChannelConflictReport(
+      uint8_t *channelReport,
+      uint8_t channelReportSize,
+      bool hasConfilictInvalidType,
+      bool hasConfilictChannelMissingOnServer,
+      bool hasConflictChannelMissingOnDevice) override;
+
+ private:
+  ChannelConflictResolverListItem *first = nullptr;
+};
+
 }  // namespace Device
 }  // namespace Supla
 

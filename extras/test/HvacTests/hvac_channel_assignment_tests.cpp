@@ -16,26 +16,26 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
+#include <clock_stub.h>
 #include <config_mock.h>
 #include <gmock/gmock.h>
 #include <gtest/gtest.h>
+#include <output_mock.h>
 #include <protocol_layer_mock.h>
 #include <simple_time.h>
-#include <string.h>
-#include <supla/control/hvac_base.h>
-#include <supla/sensor/virtual_thermometer.h>
-#include <supla/sensor/virtual_binary.h>
-#include <output_mock.h>
 #include <storage_mock.h>
-#include <clock_stub.h>
+#include <string.h>
 #include <supla/actions.h>
+#include <supla/control/hvac_base.h>
+#include <supla/sensor/virtual_binary.h>
+#include <supla/sensor/virtual_thermometer.h>
 
 using ::testing::_;
-using ::testing::DoAll;
-using ::testing::SetArgPointee;
 using ::testing::AtLeast;
-using ::testing::StrEq;
+using ::testing::DoAll;
 using ::testing::Return;
+using ::testing::SetArgPointee;
+using ::testing::StrEq;
 // using ::testing::Args;
 // using ::testing::ElementsAre;
 
@@ -72,13 +72,13 @@ TEST_F(HvacChannelAssignmentTests, binarySensorAsChannelZero) {
   // init min max ranges for tempreatures setting and check again setters
   // for temperatures
   hvac.setDefaultTemperatureRoomMin(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL,
-                                     500);  // 5 degrees
+                                    500);  // 5 degrees
   hvac.setDefaultTemperatureRoomMin(SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                                     500);  // 5 degrees
+                                    500);  // 5 degrees
   hvac.setDefaultTemperatureRoomMax(SUPLA_CHANNELFNC_HVAC_THERMOSTAT_HEAT_COOL,
-                                     5000);  // 50 degrees
+                                    5000);  // 50 degrees
   hvac.setDefaultTemperatureRoomMax(SUPLA_CHANNELFNC_HVAC_THERMOSTAT,
-                                     5000);     // 50 degrees
+                                    5000);     // 50 degrees
   hvac.setTemperatureHisteresisMin(20);        // 0.2 degree
   hvac.setTemperatureHisteresisMax(1000);      // 10 degree
   hvac.setTemperatureHeatCoolOffsetMin(200);   // 2 degrees
@@ -106,41 +106,34 @@ TEST_F(HvacChannelAssignmentTests, binarySensorAsChannelZero) {
       getBlob(StrEq("1_hvac_weekly"), _, sizeof(TChannelConfig_WeeklySchedule)))
       .Times(1)
       .WillOnce(Return(false));
-  EXPECT_CALL(cfg,
-              setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
+  EXPECT_CALL(cfg, setInt32(StrEq("1_fnc"), SUPLA_CHANNELFNC_HVAC_THERMOSTAT))
       .Times(1)
       .WillOnce(Return(true));
 
-  EXPECT_CALL(cfg,
-              setBlob(StrEq("1_hvac_weekly"), _, _))
+  EXPECT_CALL(cfg, setBlob(StrEq("1_hvac_weekly"), _, _))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(cfg,
-              setBlob(StrEq("1_hvac_aweekly"), _, _))
+  EXPECT_CALL(cfg, setBlob(StrEq("1_hvac_aweekly"), _, _))
       .WillRepeatedly(Return(true));
-  EXPECT_CALL(cfg,
-              setUInt8(StrEq("1_weekly_chng"), _))
+  EXPECT_CALL(cfg, setUInt8(StrEq("1_weekly_chng"), _))
       .WillRepeatedly(Return(true));
 
   EXPECT_CALL(storage, readStorage(_, _, sizeof(THVACValue), _))
-      .WillRepeatedly(
-          [](uint32_t, unsigned char *data, int, bool) {
-            THVACValue hvacValue = {};
-            memcpy(data, &hvacValue, sizeof(THVACValue));
-            return sizeof(THVACValue);
-          });
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        THVACValue hvacValue = {};
+        memcpy(data, &hvacValue, sizeof(THVACValue));
+        return sizeof(THVACValue);
+      });
   EXPECT_CALL(storage, readStorage(_, _, sizeof(int16_t), _))
-      .WillRepeatedly(
-          [](uint32_t, unsigned char *data, int, bool) {
-            int16_t value = INT16_MIN;
-            memcpy(data, &value, sizeof(int16_t));
-            return sizeof(int16_t);
-          });
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        int16_t value = INT16_MIN;
+        memcpy(data, &value, sizeof(int16_t));
+        return sizeof(int16_t);
+      });
   EXPECT_CALL(storage, readStorage(_, _, sizeof(uint8_t), _))
-      .WillRepeatedly(
-          [](uint32_t, unsigned char *data, int, bool) {
-            *data = 0;
-            return sizeof(uint8_t);
-          });
+      .WillRepeatedly([](uint32_t, unsigned char *data, int, bool) {
+        *data = 0;
+        return sizeof(uint8_t);
+      });
 
   // ignore channel value changed from thermometer
   EXPECT_CALL(proto, sendChannelValueChanged(1, _, 0, 0)).Times(AtLeast(1));
@@ -150,7 +143,7 @@ TEST_F(HvacChannelAssignmentTests, binarySensorAsChannelZero) {
   t1.setValue(23.5);
   t1.setRefreshIntervalMs(100);
 
-//  hvac.setMainThermometerChannelNo(1);
+  //  hvac.setMainThermometerChannelNo(1);
   hvac.setTemperatureHisteresis(40);  // 0.4 C
 
   hvac.onLoadConfig(nullptr);
@@ -179,4 +172,3 @@ TEST_F(HvacChannelAssignmentTests, binarySensorAsChannelZero) {
   EXPECT_EQ(hvac.getMainThermometerChannelNo(), -1);
   EXPECT_EQ(hvac.getAuxThermometerChannelNo(), -1);
 }
-

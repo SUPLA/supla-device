@@ -1273,4 +1273,3 @@ void RemoteDeviceConfig::processFirmwareUpdateConfig(
     }
   }
 }
-

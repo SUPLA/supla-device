@@ -57,7 +57,7 @@ add_prefix(priv_include_dirs "${CMAKE_CURRENT_LIST_DIR}/modbus/" ${priv_include_
 
 message(STATUS "DEBUG: Use esp-modbus component folder: ${CMAKE_CURRENT_LIST_DIR}.")
 
-set(requires driver)
+set(requires esp_driver_uart)
 set(priv_requires esp_netif esp_event vfs)
 
 # esp_timer component was introduced in v4.2

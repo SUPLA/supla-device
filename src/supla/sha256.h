@@ -22,7 +22,7 @@
 #include <stdint.h>
 
 /*
- * Simple wrapper for mbedTLS SHA256 methods without exposing mbedTLS types.
+ * Simple platform SHA256 wrapper without exposing platform-specific types.
  */
 
 namespace Supla {

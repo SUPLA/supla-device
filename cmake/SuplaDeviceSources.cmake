@@ -47,6 +47,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/clock/clock.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/last_state_logger.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/device/channel_conflict_resolver.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/status_led.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/sw_update.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/device/remote_device_config.cpp
@@ -68,6 +69,21 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/storage/state_storage_interface.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/storage/state_wear_leveling_byte.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/storage/state_wear_leveling_sector.cpp
+
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/assignment_applier.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/capability_registry.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/channel_allocator.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/definition.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/definition_cache.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/json_definition.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/json_instance_config.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/manager.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/registry.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/runtime.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/server_config.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/storage.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/thermometer_group.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/virtual_channel.cpp
 
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/network.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/network/html_element.cpp

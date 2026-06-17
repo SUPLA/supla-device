@@ -74,9 +74,9 @@ const char *safeCallName(int callId) {
     case SUPLA_SDC_CALL_VERSIONERROR:
       return "VERSIONERROR";
     case SUPLA_DCS_CALL_PING_SERVER:
-      return "PING_SERVER";
+      return "PING";
     case SUPLA_SDC_CALL_PING_SERVER_RESULT:
-      return "PING_SERVER_RESULT";
+      return "PONG";
     case SUPLA_DCS_CALL_SET_ACTIVITY_TIMEOUT:
       return "SET_ACTIVITY_TIMEOUT";
     case SUPLA_SDC_CALL_SET_ACTIVITY_TIMEOUT_RESULT:
@@ -1125,6 +1125,18 @@ void Supla::Protocol::SuplaSrpc::logSrpcPacket(bool send,
         direction,
         callName,
         size);
+    return;
+  }
+
+  if (callId == SUPLA_DCS_CALL_PING_SERVER) {
+    SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) size=%zu", direction, callName, callId,
+                    size);
+    return;
+  }
+
+  if (callId == SUPLA_SDC_CALL_PING_SERVER_RESULT) {
+    SUPLA_LOG_DEBUG("SRPC %s call=%s(%d) size=%zu", direction, callName, callId,
+                    size);
     return;
   }
 

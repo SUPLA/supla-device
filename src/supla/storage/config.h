@@ -82,6 +82,7 @@ class Config {
 
   virtual bool setBlob(const char* key, const char* value, size_t blobSize) = 0;
   virtual bool getBlob(const char* key, char* value, size_t blobSize) = 0;
+  virtual int getBlobSize(const char* key) = 0;
 
   virtual bool getInt8(const char* key, int8_t* result) = 0;
   virtual bool getUInt8(const char* key, uint8_t* result) = 0;
@@ -232,7 +233,6 @@ class Config {
   bool isConfigInitDone() const { return configInitDone; }
 
  protected:
-  virtual int getBlobSize(const char* key) = 0;
   void setConfigInitDone(bool done) { configInitDone = done; }
 
   uint32_t saveDelayTimestamp = 0;

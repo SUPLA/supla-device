@@ -101,7 +101,8 @@ class ServerConfigHandler {
                                          InstanceState state,
                                          const char *paramsJson,
                                          uint16_t paramsSize,
-                                         const ChannelAllocator &occupied);
+                                         const ChannelAllocator &occupied,
+                                         uint8_t *appliedInstanceId = nullptr);
   ServerConfigResult validateAssignmentJson(
       const char *assignmentJson,
       uint32_t definitionId,

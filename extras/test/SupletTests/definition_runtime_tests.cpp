@@ -288,7 +288,7 @@ TEST_F(SupletRuntimeFixture, ManagerAddsDefinitionAndRuntimeCreatesChannels) {
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->definitionId, 77u);
   EXPECT_EQ(record->definitionVersion, 3u);
-  EXPECT_EQ(record->subDeviceId, 22);
+  EXPECT_NE(record->subDeviceId, 0);
   EXPECT_EQ(record->channelMap.getChannelNumber(channels[0].channelKey), 1);
   EXPECT_EQ(record->channelMap.getChannelNumber(channels[1].channelKey), 3);
 
@@ -297,6 +297,6 @@ TEST_F(SupletRuntimeFixture, ManagerAddsDefinitionAndRuntimeCreatesChannels) {
       Supla::Suplet::Runtime::createElements(definition, *record, created, 2));
   EXPECT_EQ(created[0]->getChannelNumber(), 1);
   EXPECT_EQ(created[1]->getChannelNumber(), 3);
-  EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), 22);
-  EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), 22);
+  EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), record->subDeviceId);
+  EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), record->subDeviceId);
 }

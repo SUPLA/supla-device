@@ -1080,12 +1080,23 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
     InstanceState state,
     const char *paramsJson,
     uint16_t paramsSize,
-    const ChannelAllocator &occupied) {
-  if (manager == nullptr || registry == nullptr || instanceId == 0 ||
+    const ChannelAllocator &occupied,
+    uint8_t *appliedInstanceId) {
+  if (appliedInstanceId != nullptr) {
+    *appliedInstanceId = 0;
+  }
+  if (manager == nullptr || registry == nullptr ||
       definitionId == 0 || definitionVersion == 0 ||
       paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       (paramsSize > 0 && paramsJson == nullptr)) {
     return ServerConfigResult::InvalidArgument;
+  }
+
+  if (instanceId == 0) {
+    instanceId = manager->getFirstFreeSubDeviceId();
+    if (instanceId == 0) {
+      return ServerConfigResult::ChannelLimitExceeded;
+    }
   }
 
   auto table = manager->getInstanceTable();
@@ -1134,6 +1145,9 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
     return ServerConfigResult::StorageError;
   }
 
+  if (appliedInstanceId != nullptr) {
+    *appliedInstanceId = record.instanceId;
+  }
   runtimeRefreshRequired = true;
   return ServerConfigResult::Applied;
 }
@@ -1157,11 +1171,18 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
     uint16_t paramsSize,
     const ChannelAllocator &occupied) const {
   (void)(state);
-  if (manager == nullptr || registry == nullptr || instanceId == 0 ||
+  if (manager == nullptr || registry == nullptr ||
       definitionId == 0 || definitionVersion == 0 ||
       paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       (paramsSize > 0 && paramsJson == nullptr)) {
     return ServerConfigResult::InvalidArgument;
+  }
+
+  if (instanceId == 0) {
+    instanceId = manager->getFirstFreeSubDeviceId();
+    if (instanceId == 0) {
+      return ServerConfigResult::ChannelLimitExceeded;
+    }
   }
 
   auto table = manager->getInstanceTable();

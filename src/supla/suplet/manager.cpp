@@ -20,6 +20,7 @@
 
 #if SUPLA_SUPLET_ENABLED
 
+#include <supla/channels/channel.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/runtime.h>
 
@@ -40,6 +41,52 @@ bool channelMapsEqual(const ChannelMap &a, const ChannelMap &b) {
     }
   }
   return true;
+}
+
+bool isSubDeviceIdUsedByChannel(uint8_t subDeviceId) {
+  for (auto channel = Supla::Channel::Begin(); channel != nullptr;
+       channel = channel->next()) {
+    if (channel->getSubDeviceId() == subDeviceId) {
+      return true;
+    }
+  }
+  return false;
+}
+
+uint8_t findFirstFreeInstanceId(const InstanceTable &table) {
+  for (int i = 1; i <= 255; i++) {
+    uint8_t instanceId = static_cast<uint8_t>(i);
+    if (table.findByInstanceId(instanceId) == nullptr &&
+        table.findBySubDeviceId(instanceId) == nullptr &&
+        !isSubDeviceIdUsedByChannel(instanceId)) {
+      return instanceId;
+    }
+  }
+  return 0;
+}
+
+bool normalizeInstanceSlot(InstanceRecord *record,
+                           const InstanceRecord *existing,
+                           const InstanceTable &table) {
+  if (record == nullptr) {
+    return false;
+  }
+
+  if (existing != nullptr) {
+    record->instanceId = existing->instanceId;
+    record->subDeviceId = existing->instanceId;
+    return true;
+  }
+
+  if (record->instanceId == 0) {
+    record->instanceId = findFirstFreeInstanceId(table);
+  }
+
+  record->subDeviceId = record->instanceId;
+  return record->instanceId != 0 &&
+         table.findByInstanceId(record->instanceId) == nullptr &&
+         table.findBySubDeviceId(record->instanceId) == nullptr &&
+         !isSubDeviceIdUsedByChannel(record->instanceId);
 }
 
 }  // namespace
@@ -70,7 +117,9 @@ const InstanceTable *Manager::getInstanceTable() const {
 
 bool Manager::addInstance(const InstanceRecord &record) {
   InstanceRecord normalized = record;
-  normalized.subDeviceId = normalized.instanceId;
+  if (!normalizeInstanceSlot(&normalized, nullptr, table)) {
+    return false;
+  }
   if (!table.add(normalized)) {
     return false;
   }
@@ -86,8 +135,8 @@ bool Manager::addInstanceWithAllocatedChannels(
     const uint32_t *requiredChannelKeys,
     uint8_t requiredChannelKeyCount,
     const ChannelAllocator &occupied) {
-  record.subDeviceId = record.instanceId;
-  if (record.subDeviceId == 0) {
+  if (!normalizeInstanceSlot(&record, table.findByInstanceId(record.instanceId),
+                             table)) {
     return false;
   }
 
@@ -126,7 +175,7 @@ bool Manager::canUpsertInstanceFromDefinition(
     InstanceRecord record,
     const Definition &definition,
     const ChannelAllocator &occupied) const {
-  if (!Runtime::validateDefinition(definition) || record.instanceId == 0) {
+  if (!Runtime::validateDefinition(definition)) {
     return false;
   }
 
@@ -142,17 +191,8 @@ bool Manager::canUpsertInstanceFromDefinition(
   if (existing != nullptr) {
     oldRecord = *existing;
     hadOldRecord = true;
-    record.subDeviceId = record.instanceId;
-  } else {
-    record.subDeviceId = record.instanceId;
   }
-  if (record.subDeviceId == 0) {
-    return false;
-  }
-
-  auto subdeviceOwner = table.findBySubDeviceId(record.subDeviceId);
-  if (subdeviceOwner != nullptr &&
-      subdeviceOwner->instanceId != record.instanceId) {
+  if (!normalizeInstanceSlot(&record, existing, table)) {
     return false;
   }
 
@@ -212,11 +252,8 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
   if (existing != nullptr) {
     oldRecord = *existing;
     hadOldRecord = true;
-    record.subDeviceId = record.instanceId;
-  } else {
-    record.subDeviceId = record.instanceId;
   }
-  if (record.subDeviceId == 0) {
+  if (!normalizeInstanceSlot(&record, existing, table)) {
     return false;
   }
 
@@ -331,12 +368,7 @@ bool Manager::removeInstance(uint8_t instanceId) {
 }
 
 uint8_t Manager::getFirstFreeSubDeviceId() const {
-  for (int i = 1; i <= 255; i++) {
-    if (table.findBySubDeviceId(static_cast<uint8_t>(i)) == nullptr) {
-      return static_cast<uint8_t>(i);
-    }
-  }
-  return 0;
+  return findFirstFreeInstanceId(table);
 }
 
 bool Manager::onChannelConflictReport(uint8_t *channelReport,

@@ -1086,7 +1086,7 @@ class SupletFifoInput {
 
   void processCalcfgUpsertInstance(const FifoCalcfgCommand &command) {
     const uint16_t paramsSize = strlen(command.paramsJson);
-    if (command.instanceId == 0 || command.definitionId == 0 ||
+    if (command.definitionId == 0 ||
         command.definitionVersion == 0 || command.instanceId > UINT8_MAX ||
         command.definitionVersion > UINT16_MAX) {
       SUPLA_LOG_WARNING("Suplet FIFO CALCFG upsertInstance invalid arguments");

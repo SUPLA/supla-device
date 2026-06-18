@@ -22,18 +22,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <supla/suplet/channel_allocator.h>
-
-#ifndef SUPLA_SUPLET_MAX_INSTANCES
-#define SUPLA_SUPLET_MAX_INSTANCES 8
-#endif
-
-#ifndef SUPLA_SUPLET_MAX_INSTANCE_ID
-#define SUPLA_SUPLET_MAX_INSTANCE_ID 255
-#endif
-
-#ifndef SUPLA_SUPLET_MAX_CONFIG_SIZE
-#define SUPLA_SUPLET_MAX_CONFIG_SIZE 512
-#endif
+#include <supla/suplet/config.h>
 
 namespace Supla {
 

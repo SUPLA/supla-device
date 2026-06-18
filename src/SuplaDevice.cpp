@@ -1921,7 +1921,7 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       TCalCfg_SupletInstanceBegin begin = {};
       memcpy(&begin, request->Data, sizeof(begin));
-      if (begin.SessionId == 0 || begin.InstanceId == 0 ||
+      if (begin.SessionId == 0 ||
           begin.DefinitionId == 0 || begin.DefinitionVersion == 0 ||
           begin.ParamsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE) {
         fillSupletResult(result,
@@ -2038,6 +2038,7 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
       Supla::Suplet::ChannelAllocator occupied;
       fillSupletOccupiedChannels(&occupied);
       supletCalcfgSession.params[supletCalcfgSession.paramsSize] = '\0';
+      uint8_t appliedInstanceId = supletCalcfgSession.instanceId;
       auto serverResult = supletServerConfigHandler->applyInstanceParams(
           supletCalcfgSession.instanceId,
           supletCalcfgSession.definitionId,
@@ -2045,11 +2046,12 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
           supletCalcfgSession.state,
           reinterpret_cast<const char *>(supletCalcfgSession.params),
           supletCalcfgSession.paramsSize,
-          occupied);
+          occupied,
+          &appliedInstanceId);
       fillSupletResult(result,
                        supletDetailFromServerResult(serverResult),
                        SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE,
-                       supletCalcfgSession.instanceId,
+                       appliedInstanceId,
                        supletCalcfgSession.definitionId,
                        supletCalcfgSession.definitionVersion);
       supletCalcfgSession = SupletCalcfgSession();

@@ -255,8 +255,8 @@ TEST_F(SupletJsonFixture, CreatesRuntimeElementsFromJsonDefinition) {
 
   EXPECT_EQ(created[0]->getChannelNumber(), 1);
   EXPECT_EQ(created[1]->getChannelNumber(), 2);
-  EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), 55);
-  EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), 55);
+  EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), record->subDeviceId);
+  EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), record->subDeviceId);
 
   auto thermometer =
       reinterpret_cast<Supla::Sensor::VirtualThermometer *>(created[1]);

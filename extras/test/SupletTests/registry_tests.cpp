@@ -61,6 +61,21 @@ TEST(SupletRegistryTests, AddsAndFindsDefinitions) {
   EXPECT_EQ(registry.findDefinition(20), &def2);
 }
 
+TEST(SupletRegistryTests, RejectsSameIdAndVersionForDifferentKind) {
+  Supla::Suplet::ChannelDefinition relayChannel = {};
+  Supla::Suplet::ChannelDefinition binaryChannel = {};
+  auto relay = makeDefinition(
+      10, 1, Supla::Suplet::Kind::VirtualRelay, &relayChannel);
+  auto binary = makeDefinition(
+      10, 1, Supla::Suplet::Kind::VirtualBinarySensor, &binaryChannel);
+  Supla::Suplet::Registry registry;
+
+  EXPECT_TRUE(registry.add(&relay, 4));
+  EXPECT_FALSE(registry.add(&binary, 4));
+  EXPECT_EQ(registry.getCount(), 1);
+  EXPECT_EQ(registry.findDefinition(10, 1), &relay);
+}
+
 TEST(SupletRegistryTests, RemovesSingleVersionOrAllVersions) {
   Supla::Suplet::ChannelDefinition ch1 = {};
   Supla::Suplet::ChannelDefinition ch2 = {};

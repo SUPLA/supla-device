@@ -119,6 +119,15 @@ class InMemoryConfig : public Supla::Config {
   int commitCount = 0;
 };
 
+class SubDeviceChannelOwner {
+ public:
+  explicit SubDeviceChannelOwner(uint8_t subDeviceId) {
+    channel.setSubDeviceId(subDeviceId);
+  }
+
+  Supla::Channel channel;
+};
+
 Supla::Suplet::InstanceRecord makeRecord(uint32_t instanceId,
                                          uint8_t subDeviceId,
                                          int channelA,
@@ -183,6 +192,25 @@ TEST(SupletManagerTests,
   EXPECT_EQ(record->channelMap.getChannelNumber(3001), 9);
   EXPECT_EQ(record->channelMap.getChannelNumber(3002), 10);
   EXPECT_EQ(record->channelMap.getChannelNumber(3003), 11);
+}
+
+TEST(SupletManagerTests, SubDeviceAllocationSkipsExistingChannelSubdevices) {
+  Supla::Channel::resetToDefaults();
+  SubDeviceChannelOwner owner1(1);
+  SubDeviceChannelOwner owner3(3);
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+
+  EXPECT_EQ(manager.getFirstFreeSubDeviceId(), 2);
+
+  Supla::Suplet::InstanceRecord record = makeRecord(0, 0, 4, 8);
+  EXPECT_TRUE(manager.addInstance(record));
+
+  auto stored = manager.getInstanceTable()->findByInstanceId(2);
+  ASSERT_NE(stored, nullptr);
+  EXPECT_EQ(stored->subDeviceId, 2);
+  EXPECT_EQ(manager.getFirstFreeSubDeviceId(), 4);
+  Supla::Channel::resetToDefaults();
 }
 
 TEST(SupletManagerTests, ConflictMissingAllSubdeviceChannelsRemovesSuplet) {
@@ -282,7 +310,25 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   ASSERT_TRUE(disabled.channelMap.add(channels[1].channelKey, 13));
   ASSERT_TRUE(manager.addInstance(disabled));
 
-  Supla::Element *created[4] = {};
+  Supla::Suplet::InstanceRecord staged = active;
+  staged.instanceId = 3;
+  staged.subDeviceId = 12;
+  staged.state = Supla::Suplet::InstanceState::Staged;
+  staged.channelMap.clear();
+  ASSERT_TRUE(staged.channelMap.add(channels[0].channelKey, 14));
+  ASSERT_TRUE(staged.channelMap.add(channels[1].channelKey, 15));
+  ASSERT_TRUE(manager.addInstance(staged));
+
+  Supla::Suplet::InstanceRecord deletePending = active;
+  deletePending.instanceId = 4;
+  deletePending.subDeviceId = 13;
+  deletePending.state = Supla::Suplet::InstanceState::DeletePending;
+  deletePending.channelMap.clear();
+  ASSERT_TRUE(deletePending.channelMap.add(channels[0].channelKey, 16));
+  ASSERT_TRUE(deletePending.channelMap.add(channels[1].channelKey, 17));
+  ASSERT_TRUE(manager.addInstance(deletePending));
+
+  Supla::Element *created[8] = {};
   uint16_t createdCount = 0;
   EXPECT_TRUE(manager.createElementsFromRegistry(
       registry, created, sizeof(created) / sizeof(created[0]), &createdCount));

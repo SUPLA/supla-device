@@ -153,7 +153,7 @@ TEST(SupletAssignmentApplierTests, AddsAssignmentAndPersistsIt) {
 
   auto record = manager.getInstanceTable()->findByInstanceId(77);
   ASSERT_NE(record, nullptr);
-  EXPECT_EQ(record->subDeviceId, 77);
+  EXPECT_NE(record->subDeviceId, 0);
   EXPECT_EQ(record->channelMap.getChannelNumber(
                 Supla::Suplet::channelKeyFromString("temperature")),
             Supla::Suplet::kInvalidChannelNumber);

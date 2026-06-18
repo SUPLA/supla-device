@@ -329,7 +329,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   ASSERT_NE(element->getChannel(), nullptr);
   EXPECT_EQ(element->getChannel()->getDefaultFunction(),
             SUPLA_CHANNELFNC_POWERSWITCH);
-  EXPECT_EQ(Supla::Element::getOwnerOfSubDeviceId(123), element);
+  EXPECT_EQ(element->getChannel()->getSubDeviceId(), 123);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,
@@ -1017,6 +1017,44 @@ TEST_F(SuplaDeviceSupletStartupTests,
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->configSize, SUPLA_SUPLET_MAX_CONFIG_SIZE);
   EXPECT_EQ(memcmp(record->config, params.data(), params.size()), 0);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgInstanceIdZeroAllocatesFirstFreeSlot) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  auto definition = makeParameterizedRelayDefinition(6007);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  Supla::Channel existingChannel;
+  existingChannel.setSubDeviceId(1);
+
+  const char params[] = "{\"relay.count\":1,\"host\":\"192.168.1.50\"}";
+  TDS_DeviceCalCfgResult result = {};
+  EXPECT_EQ(sendSupletInstanceParamsCalcfg(&sd,
+                                           0,
+                                           definition.definitionId,
+                                           definition.definitionVersion,
+                                           params,
+                                           strlen(params),
+                                           &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  ASSERT_EQ(result.DataSize, sizeof(TCalCfg_SupletResult));
+  TCalCfg_SupletResult supletResult = {};
+  memcpy(&supletResult, result.Data, sizeof(supletResult));
+  EXPECT_EQ(supletResult.InstanceId, 2);
+
+  EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(0), nullptr);
+  auto record = manager.getInstanceTable()->findByInstanceId(2);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->subDeviceId, 2);
+  EXPECT_EQ(record->configSize, strlen(params));
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

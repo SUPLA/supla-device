@@ -26,6 +26,7 @@
 #include <supla/suplet/manager.h>
 #include <supla/suplet/registry.h>
 #include <supla/suplet/server_config.h>
+#include <storage_mock.h>
 #include <timer_mock.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -424,6 +425,55 @@ TEST_F(SuplaDeviceSupletStartupTests,
   record = manager.getInstanceTable()->findByInstanceId(125);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->channelMap.getChannelNumber(relayKey), 1);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       RuntimeRefreshRewritesInvalidStateStorageLayout) {
+  ConfigSimulator config;
+  StorageMockSimulator storage;
+  EXPECT_CALL(storage, commit()).Times(::testing::AnyNumber());
+  storage.enableChannelNumbers();
+  TimerMock timer;
+  SuplaDeviceClass sd;
+  Supla::ChannelElement regularElement(0);
+
+  setRequiredSuplaConfig(&config);
+
+  auto definition = makeRelayDefinition(1005);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  EXPECT_CALL(timer, initTimers());
+  EXPECT_FALSE(sd.begin());
+
+  ASSERT_FALSE(Supla::Storage::IsStateStorageValid());
+  Supla::Storage::WriteStateStorage();
+  ASSERT_TRUE(Supla::Storage::IsStateStorageValid());
+
+  const char command[] =
+      "{"
+      "\"op\":\"upsert\","
+      "\"instanceId\":127,"
+      "\"definitionId\":1005,"
+      "\"definitionVersion\":1"
+      "}";
+  ASSERT_EQ(sd.applySupletCommandJson(command),
+            Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_TRUE(Supla::Storage::IsStateStorageValid());
+
+  sd.iterate();
+
+  EXPECT_EQ(Supla::Element::getElementByChannelNumber(0), &regularElement);
+  auto supletElement = Supla::Element::getElementByChannelNumber(1);
+  ASSERT_NE(supletElement, nullptr);
+  ASSERT_NE(supletElement->getChannel(), nullptr);
+  EXPECT_EQ(supletElement->getChannel()->getDefaultFunction(),
+            SUPLA_CHANNELFNC_POWERSWITCH);
+  EXPECT_TRUE(Supla::Storage::IsStateStorageValid());
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

@@ -510,6 +510,7 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void createSrpcLayerIfNeeded();
   bool loadSupletRuntime();
   bool handleSupletRuntimeRefresh();
+  void rewriteStateStorageIfInvalidAfterTopologyChange();
   int handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
                          TDS_DeviceCalCfgResult *result);
   void setupDeviceMode();

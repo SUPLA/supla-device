@@ -2817,10 +2817,11 @@ bool SuplaDeviceClass::handleSupletRuntimeRefresh() {
     return false;
   }
 
-  SUPLA_LOG_INFO("Suplet runtime: refreshing elements after config change");
+  SUPLA_LOG_INFO("Suplet: refreshing elements after config change");
   bool result = loadSupletRuntime();
   if (result) {
     supletManager->initRuntimeElements(this);
+    rewriteStateStorageIfInvalidAfterTopologyChange();
     iterateConnectedPtr = nullptr;
     Supla::Network::DisconnectProtocols();
   }
@@ -2829,6 +2830,16 @@ bool SuplaDeviceClass::handleSupletRuntimeRefresh() {
 #else
   return false;
 #endif
+}
+
+void SuplaDeviceClass::rewriteStateStorageIfInvalidAfterTopologyChange() {
+  if (Supla::Storage::Instance() &&
+      !Supla::Storage::IsStateStorageValid()) {
+    SUPLA_LOG_INFO(
+        "SD: rewriting state storage after topology change");
+    Supla::Storage::WriteStateStorage();
+    SUPLA_LOG_INFO("SD: rewriting state storage completed");
+  }
 }
 
 bool SuplaDeviceClass::addChannelConflictResolver(

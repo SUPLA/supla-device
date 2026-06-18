@@ -21,6 +21,7 @@
 
 #include <stdint.h>
 #include <supla/device/channel_conflict_resolver.h>
+#include <supla-common/proto.h>
 #include <supla/suplet/definition.h>
 #include <supla/suplet/registry.h>
 #include <supla/suplet/storage.h>
@@ -35,6 +36,8 @@ class Element;
 namespace Suplet {
 
 class CapabilityRegistry;
+struct DefinitionCalcfgSession;
+struct InstanceCalcfgSession;
 class ServerConfigHandler;
 enum class ServerConfigResult : uint8_t;
 
@@ -88,6 +91,16 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   bool fillOccupiedChannels(ChannelAllocator *allocator) const;
   ServerConfigResult applyCommandJson(const char *commandJson);
   ServerConfigResult validateCommandJson(const char *commandJson) const;
+  int handleCalcfg(TSD_DeviceCalCfgRequest *request,
+                   TDS_DeviceCalCfgResult *result);
+  InstanceCalcfgSession *getInstanceCalcfgSession();
+  const InstanceCalcfgSession *getInstanceCalcfgSession() const;
+  InstanceCalcfgSession *beginInstanceCalcfgSession();
+  void clearInstanceCalcfgSession();
+  DefinitionCalcfgSession *getDefinitionCalcfgSession();
+  const DefinitionCalcfgSession *getDefinitionCalcfgSession() const;
+  DefinitionCalcfgSession *beginDefinitionCalcfgSession();
+  void clearDefinitionCalcfgSession();
   bool removeInstance(uint8_t instanceId);
   uint8_t getFirstFreeSubDeviceId() const;
 
@@ -114,6 +127,8 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   ServerConfigHandler *serverConfigHandler = nullptr;
   Supla::Element **runtimeElements = nullptr;
   uint16_t runtimeElementCount = 0;
+  InstanceCalcfgSession *instanceCalcfgSession = nullptr;
+  DefinitionCalcfgSession *definitionCalcfgSession = nullptr;
 };
 
 }  // namespace Suplet

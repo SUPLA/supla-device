@@ -24,6 +24,7 @@
 #include <supla/element.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
+#include <supla/suplet/calcfg_session.h>
 #include <supla/suplet/capability_registry.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/runtime.h>
@@ -102,6 +103,8 @@ Manager::Manager(Supla::Config *config) : storage(config) {
 
 Manager::~Manager() {
   deleteRuntimeElements();
+  clearInstanceCalcfgSession();
+  clearDefinitionCalcfgSession();
 }
 
 bool Manager::load() {
@@ -543,6 +546,48 @@ ServerConfigResult Manager::validateCommandJson(const char *commandJson) const {
     return ServerConfigResult::InvalidArgument;
   }
   return serverConfigHandler->validateCommandJson(commandJson, occupied);
+}
+
+InstanceCalcfgSession *Manager::getInstanceCalcfgSession() {
+  return instanceCalcfgSession;
+}
+
+const InstanceCalcfgSession *Manager::getInstanceCalcfgSession() const {
+  return instanceCalcfgSession;
+}
+
+InstanceCalcfgSession *Manager::beginInstanceCalcfgSession() {
+  clearInstanceCalcfgSession();
+  instanceCalcfgSession = new InstanceCalcfgSession();
+  return instanceCalcfgSession;
+}
+
+void Manager::clearInstanceCalcfgSession() {
+  if (instanceCalcfgSession != nullptr) {
+    delete instanceCalcfgSession;
+    instanceCalcfgSession = nullptr;
+  }
+}
+
+DefinitionCalcfgSession *Manager::getDefinitionCalcfgSession() {
+  return definitionCalcfgSession;
+}
+
+const DefinitionCalcfgSession *Manager::getDefinitionCalcfgSession() const {
+  return definitionCalcfgSession;
+}
+
+DefinitionCalcfgSession *Manager::beginDefinitionCalcfgSession() {
+  clearDefinitionCalcfgSession();
+  definitionCalcfgSession = new DefinitionCalcfgSession();
+  return definitionCalcfgSession;
+}
+
+void Manager::clearDefinitionCalcfgSession() {
+  if (definitionCalcfgSession != nullptr) {
+    delete definitionCalcfgSession;
+    definitionCalcfgSession = nullptr;
+  }
 }
 
 bool Manager::removeInstance(uint8_t instanceId) {

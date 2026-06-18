@@ -24,7 +24,6 @@
 #include <supla/local_action.h>
 #include <supla/suplet/config.h>
 #if SUPLA_SUPLET_ENABLED
-#include <supla/suplet/calcfg_session.h>
 #include <supla/suplet/definition_cache.h>
 #include <supla/suplet/storage.h>
 #endif
@@ -511,8 +510,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   bool loadSupletRuntime();
   bool handleSupletRuntimeRefresh();
   void rewriteStateStorageIfInvalidAfterTopologyChange();
-  int handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
-                         TDS_DeviceCalCfgResult *result);
   void setupDeviceMode();
 
   uint32_t networkIsNotReadyCounter = 0;
@@ -557,9 +554,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
       nullptr;
 #if SUPLA_SUPLET_ENABLED
   Supla::Suplet::Manager *supletManager = nullptr;
-  Supla::Suplet::InstanceCalcfgSession *supletCalcfgSession = nullptr;
-  Supla::Suplet::DefinitionCalcfgSession *supletDefinitionCalcfgSession =
-      nullptr;
 #endif
   Supla::Element *iterateConnectedPtr = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;

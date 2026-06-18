@@ -24,6 +24,7 @@
 #include <supla/local_action.h>
 #include <supla/suplet/config.h>
 #if SUPLA_SUPLET_ENABLED
+#include <supla/suplet/calcfg_session.h>
 #include <supla/suplet/definition_cache.h>
 #include <supla/suplet/storage.h>
 #endif
@@ -557,38 +558,13 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   Supla::Device::ChannelConflictResolverList *channelConflictResolvers =
       nullptr;
 #if SUPLA_SUPLET_ENABLED
-  struct SupletCalcfgSession {
-    bool active = false;
-    uint32_t sessionId = 0;
-    uint8_t instanceId = 0;
-    uint32_t definitionId = 0;
-    uint16_t definitionVersion = 0;
-    Supla::Suplet::InstanceState state = Supla::Suplet::InstanceState::Active;
-    uint16_t paramsSize = 0;
-    uint16_t receivedSize = 0;
-    uint8_t expectedSha256[32] = {};
-    uint8_t params[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
-    uint8_t received[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
-  };
-
-  struct SupletDefinitionCalcfgSession {
-    bool active = false;
-    uint32_t sessionId = 0;
-    uint32_t definitionId = 0;
-    uint16_t definitionVersion = 0;
-    uint16_t jsonSize = 0;
-    uint16_t receivedSize = 0;
-    uint8_t expectedSha256[32] = {};
-    char json[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
-    uint8_t received[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE] = {};
-  };
-
   Supla::Suplet::Manager *supletManager = nullptr;
   Supla::Suplet::Registry *supletRegistry = nullptr;
   Supla::Suplet::CapabilityRegistry *supletCapabilityRegistry = nullptr;
   Supla::Suplet::ServerConfigHandler *supletServerConfigHandler = nullptr;
-  SupletCalcfgSession supletCalcfgSession = {};
-  SupletDefinitionCalcfgSession supletDefinitionCalcfgSession = {};
+  Supla::Suplet::InstanceCalcfgSession *supletCalcfgSession = nullptr;
+  Supla::Suplet::DefinitionCalcfgSession *supletDefinitionCalcfgSession =
+      nullptr;
   Supla::Element *supletCreatedElements[SUPLA_CHANNELMAXCOUNT] = {};
   uint16_t supletCreatedElementCount = 0;
 #endif

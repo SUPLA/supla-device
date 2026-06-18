@@ -735,6 +735,20 @@ bool validateParamsJson(const char *json,
   return true;
 }
 
+const Supla::Suplet::InstanceRecord *loadExistingConfigIfNeeded(
+    Supla::Suplet::Manager *manager,
+    const Supla::Suplet::InstanceRecord *existing,
+    Supla::Suplet::InstanceRecord *loaded) {
+  if (manager == nullptr || existing == nullptr || loaded == nullptr ||
+      existing->config != nullptr || existing->configSize == 0) {
+    return existing;
+  }
+  if (!manager->loadInstance(existing->instanceId, loaded)) {
+    return nullptr;
+  }
+  return loaded;
+}
+
 bool isInstanceLimitAvailable(const Supla::Suplet::Manager *manager,
                               const Supla::Suplet::Registry *registry,
                               const Supla::Suplet::InstanceRecord &record,
@@ -1115,6 +1129,12 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
   }
 
   bool createOnlyChanged = false;
+  InstanceRecord existingWithConfig = {};
+  bool hadExisting = existing != nullptr;
+  existing = loadExistingConfigIfNeeded(manager, existing, &existingWithConfig);
+  if (hadExisting && existing == nullptr) {
+    return ServerConfigResult::StorageError;
+  }
   if (!validateParamsJson(
           paramsJson, paramsSize, *definition, existing, &createOnlyChanged)) {
     return createOnlyChanged ? ServerConfigResult::CreateOnlyParamChanged
@@ -1126,9 +1146,9 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
   record.definitionId = definitionId;
   record.definitionVersion = definitionVersion;
   record.state = state;
-  record.configSize = paramsSize;
-  if (paramsSize > 0) {
-    memcpy(record.config, paramsJson, paramsSize);
+  if (!record.setConfig(reinterpret_cast<const uint8_t *>(paramsJson),
+                        paramsSize)) {
+    return ServerConfigResult::InvalidArgument;
   }
 
   if (!isInstanceLimitAvailable(
@@ -1201,6 +1221,12 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
   }
 
   bool createOnlyChanged = false;
+  InstanceRecord existingWithConfig = {};
+  bool hadExisting = existing != nullptr;
+  existing = loadExistingConfigIfNeeded(manager, existing, &existingWithConfig);
+  if (hadExisting && existing == nullptr) {
+    return ServerConfigResult::StorageError;
+  }
   if (!validateParamsJson(
           paramsJson, paramsSize, *definition, existing, &createOnlyChanged)) {
     return createOnlyChanged ? ServerConfigResult::CreateOnlyParamChanged
@@ -1212,9 +1238,9 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
   record.definitionId = definitionId;
   record.definitionVersion = definitionVersion;
   record.state = state;
-  record.configSize = paramsSize;
-  if (paramsSize > 0) {
-    memcpy(record.config, paramsJson, paramsSize);
+  if (!record.setConfig(reinterpret_cast<const uint8_t *>(paramsJson),
+                        paramsSize)) {
+    return ServerConfigResult::InvalidArgument;
   }
 
   if (!isInstanceLimitAvailable(

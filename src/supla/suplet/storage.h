@@ -38,6 +38,14 @@ enum class InstanceState : uint8_t {
 };
 
 struct InstanceRecord {
+  InstanceRecord();
+  InstanceRecord(const InstanceRecord &other);
+  InstanceRecord &operator=(const InstanceRecord &other);
+  ~InstanceRecord();
+
+  bool setConfig(const uint8_t *data, uint16_t size);
+  void clearConfig();
+
   uint8_t instanceId = 0;
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
@@ -45,11 +53,16 @@ struct InstanceRecord {
   InstanceState state = InstanceState::Disabled;
   uint16_t configSize = 0;
   ChannelMap channelMap = {};
-  uint8_t config[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
+  uint8_t *config = nullptr;
 };
 
 class InstanceTable {
  public:
+  InstanceTable();
+  InstanceTable(const InstanceTable &) = delete;
+  InstanceTable &operator=(const InstanceTable &) = delete;
+  ~InstanceTable();
+
   uint8_t getCount() const;
   void clear();
 
@@ -63,7 +76,9 @@ class InstanceTable {
   const InstanceRecord *getRecord(uint8_t index) const;
 
  private:
-  InstanceRecord records[SUPLA_SUPLET_MAX_INSTANCES] = {};
+  bool resize(uint8_t newCount);
+
+  InstanceRecord *records = nullptr;
   uint8_t count = 0;
 };
 
@@ -72,6 +87,8 @@ class Storage {
   explicit Storage(Supla::Config *config);
 
   bool load(InstanceTable *table);
+  bool loadIndex(InstanceTable *table);
+  bool loadInstance(uint8_t instanceId, InstanceRecord *record);
   bool save(const InstanceTable &table);
   bool erase();
 
@@ -92,9 +109,16 @@ class Storage {
   };
 #pragma pack(pop)
 
-  bool loadInstance(uint8_t instanceId, InstanceRecord *record);
   bool loadVariant(uint8_t instanceId, uint8_t variant, InstanceRecord *record)
       const;
+  bool loadVariant(uint8_t instanceId,
+                   uint8_t variant,
+                   InstanceRecord *record,
+                   bool loadConfig) const;
+  bool loadActiveVariant(uint8_t instanceId,
+                         uint8_t *activeVariant,
+                         InstanceRecord *record,
+                         bool loadConfig);
   bool saveVariant(const InstanceRecord &record, uint8_t variant);
   bool eraseVariant(uint8_t instanceId, uint8_t variant);
   bool eraseInstance(uint8_t instanceId);

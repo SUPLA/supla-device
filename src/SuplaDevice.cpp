@@ -121,7 +121,6 @@ SuplaDeviceClass::SuplaDeviceClass() {
 }
 
 SuplaDeviceClass::~SuplaDeviceClass() {
-  deleteSupletRuntimeElements();
 #if SUPLA_SUPLET_ENABLED
   if (supletCalcfgSession) {
     delete supletCalcfgSession;
@@ -1479,13 +1478,15 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
                                          TDS_DeviceCalCfgResult *result) {
 #if SUPLA_SUPLET_ENABLED
   if (request == nullptr || result == nullptr || supletManager == nullptr ||
-      supletRegistry == nullptr || supletServerConfigHandler == nullptr) {
+      !supletManager->isServerConfigReady()) {
     fillSupletResult(result,
                      SUPLA_CALCFG_SUPLET_RESULT_UNSUPPORTED_DEFINITION,
                      SUPLA_CALCFG_SUPLET_PHASE_NONE);
     return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
   }
 
+  auto supletRegistry = supletManager->getRegistry();
+  auto supletServerConfigHandler = supletManager->getServerConfigHandler();
   auto table = supletManager->getInstanceTable();
   if (table == nullptr) {
     fillSupletResult(result,
@@ -1496,6 +1497,7 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
 
   switch (request->Command) {
     case SUPLA_CALCFG_CMD_SUPLET_GET_CAPABILITIES: {
+      auto supletCapabilityRegistry = supletManager->getCapabilityRegistry();
       if (supletCapabilityRegistry == nullptr) {
         fillSupletResult(result,
                          SUPLA_CALCFG_SUPLET_RESULT_UNSUPPORTED_DEFINITION,
@@ -1675,7 +1677,20 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
       output.State = supletStateToCalcfg(record->state);
       output.SubDeviceId = record->subDeviceId;
       output.ParamsSize = record->configSize;
-      calculateSha256(record->config, record->configSize, output.ParamsSha256);
+      Supla::Suplet::InstanceRecord fullRecord = {};
+      const Supla::Suplet::InstanceRecord *configRecord = record;
+      if (record->config == nullptr && record->configSize > 0) {
+        if (!supletManager->loadInstance(record->instanceId, &fullRecord)) {
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_STORAGE_ERROR,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                           record->instanceId);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        configRecord = &fullRecord;
+      }
+      calculateSha256(
+          configRecord->config, configRecord->configSize, output.ParamsSha256);
       const auto *definition = supletRegistry->findDefinition(
           record->definitionId, record->definitionVersion);
       if (definition != nullptr) {
@@ -1703,6 +1718,18 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
                          configRequest.InstanceId);
         return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
       }
+      Supla::Suplet::InstanceRecord fullRecord = {};
+      const Supla::Suplet::InstanceRecord *configRecord = record;
+      if (record->config == nullptr && record->configSize > 0) {
+        if (!supletManager->loadInstance(record->instanceId, &fullRecord)) {
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_STORAGE_ERROR,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                           record->instanceId);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        configRecord = &fullRecord;
+      }
       if (configRequest.Offset > record->configSize) {
         fillSupletResult(result,
                          SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
@@ -1721,7 +1748,9 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       output.Size = left > maxSize ? maxSize : static_cast<uint8_t>(left);
       if (output.Size > 0) {
-        memcpy(output.Data, record->config + configRequest.Offset, output.Size);
+        memcpy(output.Data,
+               configRecord->config + configRequest.Offset,
+               output.Size);
       }
       result->DataSize =
           offsetof(TCalCfg_SupletInstanceConfigChunk, Data) + output.Size;
@@ -2090,7 +2119,7 @@ int SuplaDeviceClass::handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
         return SUPLA_CALCFG_RESULT_FALSE;
       }
       Supla::Suplet::ChannelAllocator occupied;
-      fillSupletOccupiedChannels(&occupied);
+      supletManager->fillOccupiedChannels(&occupied);
       supletCalcfgSession->params[supletCalcfgSession->paramsSize] = '\0';
       uint8_t appliedInstanceId = supletCalcfgSession->instanceId;
       auto serverResult = supletServerConfigHandler->applyInstanceParams(
@@ -2695,10 +2724,14 @@ void SuplaDeviceClass::setChannelConflictResolver(
 void SuplaDeviceClass::setSupletRuntime(Supla::Suplet::Manager *manager,
                                         Supla::Suplet::Registry *registry) {
 #if SUPLA_SUPLET_ENABLED
+  if (supletManager != nullptr && supletManager != manager) {
+    supletManager->deleteRuntimeElements();
+  }
   supletManager = manager;
-  supletRegistry = registry;
-  if (supletManager != nullptr && supletRegistry != nullptr &&
-      supletServerConfigHandler != nullptr) {
+  if (supletManager != nullptr) {
+    supletManager->setRegistry(registry);
+  }
+  if (supletManager != nullptr && supletManager->isServerConfigReady()) {
     addFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
   } else {
     removeFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
@@ -2712,7 +2745,9 @@ void SuplaDeviceClass::setSupletRuntime(Supla::Suplet::Manager *manager,
 void SuplaDeviceClass::setSupletCapabilityRegistry(
     Supla::Suplet::CapabilityRegistry *registry) {
 #if SUPLA_SUPLET_ENABLED
-  supletCapabilityRegistry = registry;
+  if (supletManager != nullptr) {
+    supletManager->setCapabilityRegistry(registry);
+  }
 #else
   (void)(registry);
 #endif
@@ -2721,9 +2756,10 @@ void SuplaDeviceClass::setSupletCapabilityRegistry(
 void SuplaDeviceClass::setSupletServerConfigHandler(
     Supla::Suplet::ServerConfigHandler *handler) {
 #if SUPLA_SUPLET_ENABLED
-  supletServerConfigHandler = handler;
-  if (supletManager != nullptr && supletRegistry != nullptr &&
-      supletServerConfigHandler != nullptr) {
+  if (supletManager != nullptr) {
+    supletManager->setServerConfigHandler(handler);
+  }
+  if (supletManager != nullptr && supletManager->isServerConfigReady()) {
     addFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
   } else {
     removeFlags(SUPLA_DEVICE_FLAG_SUPLET_SUPPORTED);
@@ -2736,14 +2772,10 @@ void SuplaDeviceClass::setSupletServerConfigHandler(
 Supla::Suplet::ServerConfigResult SuplaDeviceClass::applySupletCommandJson(
     const char *commandJson) {
 #if SUPLA_SUPLET_ENABLED
-  if (supletServerConfigHandler == nullptr) {
+  if (supletManager == nullptr) {
     return Supla::Suplet::ServerConfigResult::InvalidArgument;
   }
-  Supla::Suplet::ChannelAllocator occupied;
-  if (!fillSupletOccupiedChannels(&occupied)) {
-    return Supla::Suplet::ServerConfigResult::InvalidArgument;
-  }
-  return supletServerConfigHandler->applyCommandJson(commandJson, occupied);
+  return supletManager->applyCommandJson(commandJson);
 #else
   (void)(commandJson);
   return static_cast<Supla::Suplet::ServerConfigResult>(2);
@@ -2753,14 +2785,10 @@ Supla::Suplet::ServerConfigResult SuplaDeviceClass::applySupletCommandJson(
 Supla::Suplet::ServerConfigResult SuplaDeviceClass::validateSupletCommandJson(
     const char *commandJson) const {
 #if SUPLA_SUPLET_ENABLED
-  if (supletServerConfigHandler == nullptr) {
+  if (supletManager == nullptr) {
     return Supla::Suplet::ServerConfigResult::InvalidArgument;
   }
-  Supla::Suplet::ChannelAllocator occupied;
-  if (!fillSupletOccupiedChannels(&occupied)) {
-    return Supla::Suplet::ServerConfigResult::InvalidArgument;
-  }
-  return supletServerConfigHandler->validateCommandJson(commandJson, occupied);
+  return supletManager->validateCommandJson(commandJson);
 #else
   (void)(commandJson);
   return static_cast<Supla::Suplet::ServerConfigResult>(2);
@@ -2769,35 +2797,12 @@ Supla::Suplet::ServerConfigResult SuplaDeviceClass::validateSupletCommandJson(
 
 bool SuplaDeviceClass::loadSupletRuntime() {
 #if SUPLA_SUPLET_ENABLED
-  if (supletManager == nullptr || supletRegistry == nullptr) {
+  if (supletManager == nullptr) {
     return true;
   }
 
   addChannelConflictResolver(supletManager);
-  deleteSupletRuntimeElements();
-
-  if (!supletManager->load()) {
-    SUPLA_LOG_DEBUG("Suplet runtime: no stored instance table");
-    supletCreatedElementCount = 0;
-    return true;
-  }
-
-  supletCreatedElementCount = 0;
-  if (!supletManager->createElementsFromRegistry(
-          *supletRegistry,
-          supletCreatedElements,
-          sizeof(supletCreatedElements) / sizeof(supletCreatedElements[0]),
-          &supletCreatedElementCount)) {
-    SUPLA_LOG_WARNING("Suplet runtime: failed to create stored elements");
-    supletCreatedElementCount = 0;
-    return false;
-  }
-
-  if (supletCreatedElementCount > 0) {
-    SUPLA_LOG_INFO("Suplet runtime: created %u element(s)",
-                   supletCreatedElementCount);
-  }
-  return true;
+  return supletManager->loadRuntimeElements();
 #else
   return true;
 #endif
@@ -2805,6 +2810,8 @@ bool SuplaDeviceClass::loadSupletRuntime() {
 
 bool SuplaDeviceClass::handleSupletRuntimeRefresh() {
 #if SUPLA_SUPLET_ENABLED
+  auto supletServerConfigHandler =
+      supletManager ? supletManager->getServerConfigHandler() : nullptr;
   if (supletServerConfigHandler == nullptr ||
       !supletServerConfigHandler->isRuntimeRefreshRequired()) {
     return false;
@@ -2813,56 +2820,13 @@ bool SuplaDeviceClass::handleSupletRuntimeRefresh() {
   SUPLA_LOG_INFO("Suplet runtime: refreshing elements after config change");
   bool result = loadSupletRuntime();
   if (result) {
-    for (uint16_t i = 0; i < supletCreatedElementCount; i++) {
-      if (supletCreatedElements[i] != nullptr) {
-        if (Supla::Storage::IsConfigStorageAvailable()) {
-          supletCreatedElements[i]->onLoadConfig(this);
-        }
-        supletCreatedElements[i]->onInit();
-      }
-      delay(0);
-    }
+    supletManager->initRuntimeElements(this);
     iterateConnectedPtr = nullptr;
     Supla::Network::DisconnectProtocols();
   }
   supletServerConfigHandler->clearRuntimeRefreshRequired();
   return result;
 #else
-  return false;
-#endif
-}
-
-void SuplaDeviceClass::deleteSupletRuntimeElements() {
-#if SUPLA_SUPLET_ENABLED
-  for (uint16_t i = 0; i < supletCreatedElementCount; i++) {
-    delete supletCreatedElements[i];
-    supletCreatedElements[i] = nullptr;
-  }
-  supletCreatedElementCount = 0;
-#endif
-}
-
-bool SuplaDeviceClass::fillSupletOccupiedChannels(
-    Supla::Suplet::ChannelAllocator *allocator) const {
-#if SUPLA_SUPLET_ENABLED
-  if (allocator == nullptr) {
-    return false;
-  }
-  allocator->clearOccupied();
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    int channelNumber = element->getChannelNumber();
-    if (channelNumber >= 0 && !allocator->markOccupied(channelNumber)) {
-      return false;
-    }
-    channelNumber = element->getSecondaryChannelNumber();
-    if (channelNumber >= 0 && !allocator->markOccupied(channelNumber)) {
-      return false;
-    }
-  }
-  return true;
-#else
-  (void)(allocator);
   return false;
 #endif
 }

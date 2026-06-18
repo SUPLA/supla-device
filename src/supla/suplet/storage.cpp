@@ -41,20 +41,113 @@ uint8_t otherVariant(uint8_t variant) {
 
 }  // namespace
 
+InstanceRecord::InstanceRecord() {
+}
+
+InstanceRecord::InstanceRecord(const InstanceRecord &other) {
+  *this = other;
+}
+
+InstanceRecord &InstanceRecord::operator=(const InstanceRecord &other) {
+  if (this == &other) {
+    return *this;
+  }
+
+  clearConfig();
+  instanceId = other.instanceId;
+  definitionId = other.definitionId;
+  definitionVersion = other.definitionVersion;
+  subDeviceId = other.subDeviceId;
+  state = other.state;
+  configSize = 0;
+  channelMap = other.channelMap;
+  if (other.config == nullptr) {
+    configSize = other.configSize;
+  } else if (!setConfig(other.config, other.configSize)) {
+    clearConfig();
+  }
+  return *this;
+}
+
+InstanceRecord::~InstanceRecord() {
+  clearConfig();
+}
+
+bool InstanceRecord::setConfig(const uint8_t *data, uint16_t size) {
+  if (size > SUPLA_SUPLET_MAX_CONFIG_SIZE || (size > 0 && data == nullptr)) {
+    return false;
+  }
+
+  clearConfig();
+  if (size == 0) {
+    return true;
+  }
+
+  config = new uint8_t[size];
+  if (config == nullptr) {
+    return false;
+  }
+  memcpy(config, data, size);
+  configSize = size;
+  return true;
+}
+
+void InstanceRecord::clearConfig() {
+  if (config != nullptr) {
+    delete[] config;
+    config = nullptr;
+  }
+  configSize = 0;
+}
+
+InstanceTable::InstanceTable() {
+}
+
+InstanceTable::~InstanceTable() {
+  clear();
+}
+
 uint8_t InstanceTable::getCount() const {
   return count;
 }
 
 void InstanceTable::clear() {
-  for (uint8_t i = 0; i < count; i++) {
-    records[i] = {};
+  if (records != nullptr) {
+    delete[] records;
+    records = nullptr;
   }
   count = 0;
 }
 
+bool InstanceTable::resize(uint8_t newCount) {
+  if (newCount > SUPLA_SUPLET_MAX_INSTANCES) {
+    return false;
+  }
+  if (newCount == count) {
+    return true;
+  }
+  if (newCount == 0) {
+    clear();
+    return true;
+  }
+
+  InstanceRecord *newRecords = new InstanceRecord[newCount];
+  if (newRecords == nullptr) {
+    return false;
+  }
+
+  uint8_t copyCount = count < newCount ? count : newCount;
+  for (uint8_t i = 0; i < copyCount; i++) {
+    newRecords[i] = records[i];
+  }
+  delete[] records;
+  records = newRecords;
+  count = newCount;
+  return true;
+}
+
 bool InstanceTable::add(const InstanceRecord &record) {
-  if (record.instanceId == 0 ||
-      record.subDeviceId == 0 ||
+  if (record.instanceId == 0 || record.subDeviceId == 0 ||
       record.subDeviceId != record.instanceId ||
       record.configSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       count >= SUPLA_SUPLET_MAX_INSTANCES ||
@@ -63,8 +156,11 @@ bool InstanceTable::add(const InstanceRecord &record) {
     return false;
   }
 
-  records[count] = record;
-  count++;
+  uint8_t oldCount = count;
+  if (!resize(count + 1)) {
+    return false;
+  }
+  records[oldCount] = record;
   return true;
 }
 
@@ -74,9 +170,7 @@ bool InstanceTable::removeByInstanceId(uint8_t instanceId) {
       for (uint8_t j = i; j + 1 < count; j++) {
         records[j] = records[j + 1];
       }
-      count--;
-      records[count] = {};
-      return true;
+      return resize(count - 1);
     }
   }
   return false;
@@ -157,6 +251,28 @@ bool Storage::load(InstanceTable *table) {
   return loadedAny;
 }
 
+bool Storage::loadIndex(InstanceTable *table) {
+  if (config == nullptr || table == nullptr) {
+    return false;
+  }
+
+  table->clear();
+  bool loadedAny = false;
+  for (uint16_t i = 1; i <= SUPLA_SUPLET_MAX_INSTANCE_ID; i++) {
+    InstanceRecord record = {};
+    uint8_t activeVariant = kDeletedSlot;
+    if (loadActiveVariant(
+            static_cast<uint8_t>(i), &activeVariant, &record, false)) {
+      if (!table->add(record)) {
+        table->clear();
+        return false;
+      }
+      loadedAny = true;
+    }
+  }
+  return loadedAny;
+}
+
 bool Storage::save(const InstanceTable &table) {
   if (config == nullptr) {
     return false;
@@ -165,8 +281,7 @@ bool Storage::save(const InstanceTable &table) {
   bool present[SUPLA_SUPLET_MAX_INSTANCE_ID + 1] = {};
   for (uint8_t i = 0; i < table.getCount(); i++) {
     auto record = table.getRecord(i);
-    if (record == nullptr ||
-        record->instanceId == 0 ||
+    if (record == nullptr || record->instanceId == 0 ||
         record->subDeviceId != record->instanceId ||
         record->configSize > SUPLA_SUPLET_MAX_CONFIG_SIZE) {
       return false;
@@ -175,12 +290,10 @@ bool Storage::save(const InstanceTable &table) {
     char actKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
     makeActKey(record->instanceId, actKey);
     config->getUInt8(actKey, &activeVariant);
-    uint8_t targetVariant =
-        activeVariant == kVariantA ? kVariantB : kVariantA;
+    uint8_t targetVariant = activeVariant == kVariantA ? kVariantB : kVariantA;
     uint8_t oldVariant =
-        activeVariant == kVariantA || activeVariant == kVariantB
-            ? activeVariant
-            : kDeletedSlot;
+        activeVariant == kVariantA || activeVariant == kVariantB ? activeVariant
+                                                                 : kDeletedSlot;
 
     if (!saveVariant(*record, targetVariant)) {
       return false;
@@ -222,40 +335,63 @@ bool Storage::erase() {
 }
 
 bool Storage::loadInstance(uint8_t instanceId, InstanceRecord *record) {
+  uint8_t activeVariant = kDeletedSlot;
+  return loadActiveVariant(instanceId, &activeVariant, record, true);
+}
+
+bool Storage::loadActiveVariant(uint8_t instanceId,
+                                uint8_t *activeVariant,
+                                InstanceRecord *record,
+                                bool loadConfig) {
   if (record == nullptr) {
     return false;
   }
 
   char actKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   makeActKey(instanceId, actKey);
-  uint8_t activeVariant = kDeletedSlot;
-  if (!config->getUInt8(actKey, &activeVariant) ||
-      activeVariant == kDeletedSlot ||
-      (activeVariant != kVariantA && activeVariant != kVariantB)) {
+  uint8_t currentActiveVariant = kDeletedSlot;
+  if (!config->getUInt8(actKey, &currentActiveVariant) ||
+      currentActiveVariant == kDeletedSlot ||
+      (currentActiveVariant != kVariantA &&
+       currentActiveVariant != kVariantB)) {
     if (slotExists(instanceId)) {
       cleanupLoadedInstance(instanceId, kDeletedSlot, kDeletedSlot);
     }
     return false;
   }
 
-  if (loadVariant(instanceId, activeVariant, record)) {
-    cleanupLoadedInstance(instanceId, activeVariant, activeVariant);
+  if (loadVariant(instanceId, currentActiveVariant, record, loadConfig)) {
+    cleanupLoadedInstance(
+        instanceId, currentActiveVariant, currentActiveVariant);
+    if (activeVariant != nullptr) {
+      *activeVariant = currentActiveVariant;
+    }
     return true;
   }
 
-  uint8_t fallbackVariant = otherVariant(activeVariant);
-  if (loadVariant(instanceId, fallbackVariant, record)) {
-    cleanupLoadedInstance(instanceId, activeVariant, fallbackVariant);
+  uint8_t fallbackVariant = otherVariant(currentActiveVariant);
+  if (loadVariant(instanceId, fallbackVariant, record, loadConfig)) {
+    cleanupLoadedInstance(instanceId, currentActiveVariant, fallbackVariant);
+    if (activeVariant != nullptr) {
+      *activeVariant = fallbackVariant;
+    }
     return true;
   }
 
-  cleanupLoadedInstance(instanceId, activeVariant, kDeletedSlot);
+  cleanupLoadedInstance(instanceId, currentActiveVariant, kDeletedSlot);
   return false;
 }
 
 bool Storage::loadVariant(uint8_t instanceId,
                           uint8_t variant,
                           InstanceRecord *record) const {
+  return loadVariant(instanceId, variant, record, true);
+}
+
+bool Storage::loadVariant(uint8_t instanceId,
+                          uint8_t variant,
+                          InstanceRecord *record,
+                          bool loadConfig) const {
   if (config == nullptr || record == nullptr ||
       (variant != kVariantA && variant != kVariantB)) {
     return false;
@@ -269,8 +405,7 @@ bool Storage::loadVariant(uint8_t instanceId,
     return false;
   }
 
-  if (header.version != kSupletStorageVersion ||
-      header.definitionId == 0 ||
+  if (header.version != kSupletStorageVersion || header.definitionId == 0 ||
       header.definitionVersion == 0 ||
       header.channelCount > SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE ||
       header.configSize > SUPLA_SUPLET_MAX_CONFIG_SIZE) {
@@ -302,9 +437,7 @@ bool Storage::loadVariant(uint8_t instanceId,
   if (channelMapSize > 0) {
     StoredChannelMapping stored[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
     if (!config->getBlob(
-            channelMapKey,
-            reinterpret_cast<char *>(stored),
-            channelMapSize)) {
+            channelMapKey, reinterpret_cast<char *>(stored), channelMapSize)) {
       return false;
     }
     for (uint8_t i = 0; i < header.channelCount; i++) {
@@ -316,11 +449,15 @@ bool Storage::loadVariant(uint8_t instanceId,
     }
   }
 
-  if (header.configSize > 0 &&
-      !config->getBlob(
-          configKey, reinterpret_cast<char *>(loaded.config),
-          header.configSize)) {
-    return false;
+  if (loadConfig && header.configSize > 0) {
+    uint8_t buffer[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
+    if (!config->getBlob(
+            configKey, reinterpret_cast<char *>(buffer), header.configSize) ||
+        !loaded.setConfig(buffer, header.configSize)) {
+      return false;
+    }
+  } else if (!loadConfig) {
+    loaded.configSize = header.configSize;
   }
 
   *record = loaded;
@@ -328,10 +465,8 @@ bool Storage::loadVariant(uint8_t instanceId,
 }
 
 bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
-  if (config == nullptr ||
-      (variant != kVariantA && variant != kVariantB) ||
-      record.instanceId == 0 ||
-      record.subDeviceId != record.instanceId ||
+  if (config == nullptr || (variant != kVariantA && variant != kVariantB) ||
+      record.instanceId == 0 || record.subDeviceId != record.instanceId ||
       record.configSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       record.channelMap.getCount() > SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE) {
     return false;
@@ -340,10 +475,8 @@ bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
   StoredChannelMapping stored[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
   for (uint8_t i = 0; i < record.channelMap.getCount(); i++) {
     auto mapping = record.channelMap.getMapping(i);
-    if (mapping == nullptr ||
-        mapping->channelKey == kInvalidChannelKey ||
-        mapping->channelNumber < 0 ||
-        mapping->channelNumber > 255) {
+    if (mapping == nullptr || mapping->channelKey == kInvalidChannelKey ||
+        mapping->channelNumber < 0 || mapping->channelNumber > 255) {
       return false;
     }
     stored[i].channelKey = mapping->channelKey;
@@ -354,17 +487,33 @@ bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
   makeChannelMapKey(record.instanceId, variant, channelMapKey);
   size_t channelMapSize =
       record.channelMap.getCount() * sizeof(StoredChannelMapping);
-  if (!config->setBlob(
-          channelMapKey, reinterpret_cast<const char *>(stored),
-          channelMapSize)) {
+  if (!config->setBlob(channelMapKey,
+                       reinterpret_cast<const char *>(stored),
+                       channelMapSize)) {
     return false;
   }
 
   char configKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   makeConfigKey(record.instanceId, variant, configKey);
-  if (!config->setBlob(
-          configKey, reinterpret_cast<const char *>(record.config),
-          record.configSize)) {
+  uint8_t emptyConfig = 0;
+  const uint8_t *configData = record.config;
+  InstanceRecord loadedConfig = {};
+  if (configData == nullptr && record.configSize > 0) {
+    uint8_t activeVariant = kDeletedSlot;
+    if (!loadActiveVariant(
+            record.instanceId, &activeVariant, &loadedConfig, true) ||
+        loadedConfig.config == nullptr ||
+        loadedConfig.configSize != record.configSize) {
+      return false;
+    }
+    configData = loadedConfig.config;
+  }
+  if (configData == nullptr) {
+    configData = &emptyConfig;
+  }
+  if (!config->setBlob(configKey,
+                       reinterpret_cast<const char *>(configData),
+                       record.configSize)) {
     return false;
   }
 
@@ -496,9 +645,7 @@ void Storage::makeConfigKey(uint8_t instanceId,
 bool Storage::readBlobExact(const char *key,
                             char *output,
                             size_t expectedSize) const {
-  if (config == nullptr ||
-      key == nullptr ||
-      output == nullptr ||
+  if (config == nullptr || key == nullptr || output == nullptr ||
       config->getBlobSize(key) != static_cast<int>(expectedSize)) {
     return false;
   }

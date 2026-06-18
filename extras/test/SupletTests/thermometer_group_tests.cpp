@@ -184,8 +184,11 @@ TEST_F(SupletThermometerGroupFixture,
   ASSERT_TRUE(instance.channelMap.add(channel.channelKey, 8));
 
   auto config = makeConfig(Supla::Suplet::ThermometerGroupMode::Avg);
+  uint8_t buffer[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
+  uint16_t configSize = 0;
   ASSERT_TRUE(Supla::Suplet::serializeThermometerGroupConfig(
-      config, instance.config, sizeof(instance.config), &instance.configSize));
+      config, buffer, sizeof(buffer), &configSize));
+  ASSERT_TRUE(instance.setConfig(buffer, configSize));
 
   Supla::Element *created[1] = {};
   ASSERT_TRUE(

@@ -25,6 +25,8 @@
 #include <supla/suplet/registry.h>
 #include <supla/suplet/storage.h>
 
+class SuplaDeviceClass;
+
 namespace Supla {
 
 class Config;
@@ -32,16 +34,33 @@ class Element;
 
 namespace Suplet {
 
+class CapabilityRegistry;
+class ServerConfigHandler;
+enum class ServerConfigResult : uint8_t;
+
 class Manager : public Supla::Device::ChannelConflictResolver {
  public:
   explicit Manager(Supla::Config *config);
+  ~Manager();
 
   bool load();
+  bool loadInstance(uint8_t instanceId, InstanceRecord *record);
   bool save();
   bool erase();
 
   InstanceTable *getInstanceTable();
   const InstanceTable *getInstanceTable() const;
+
+  void setRegistry(Registry *registry);
+  Registry *getRegistry();
+  const Registry *getRegistry() const;
+  void setCapabilityRegistry(CapabilityRegistry *registry);
+  CapabilityRegistry *getCapabilityRegistry();
+  const CapabilityRegistry *getCapabilityRegistry() const;
+  void setServerConfigHandler(ServerConfigHandler *handler);
+  ServerConfigHandler *getServerConfigHandler();
+  const ServerConfigHandler *getServerConfigHandler() const;
+  bool isServerConfigReady() const;
 
   bool addInstance(const InstanceRecord &record);
   bool addInstanceWithAllocatedChannels(InstanceRecord record,
@@ -61,6 +80,14 @@ class Manager : public Supla::Device::ChannelConflictResolver {
                                   Supla::Element **created,
                                   uint16_t createdSize,
                                   uint16_t *createdCount = nullptr);
+  bool loadRuntimeElements();
+  bool loadRuntimeElementsFromRegistry(const Registry &registry);
+  void deleteRuntimeElements();
+  bool initRuntimeElements(SuplaDeviceClass *device);
+  uint16_t getRuntimeElementCount() const;
+  bool fillOccupiedChannels(ChannelAllocator *allocator) const;
+  ServerConfigResult applyCommandJson(const char *commandJson);
+  ServerConfigResult validateCommandJson(const char *commandJson) const;
   bool removeInstance(uint8_t instanceId);
   uint8_t getFirstFreeSubDeviceId() const;
 
@@ -77,9 +104,16 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   bool markExistingSupletChannels(ChannelAllocator *allocator) const;
   bool markExistingSupletChannelsExcept(ChannelAllocator *allocator,
                                         uint8_t instanceId) const;
+  bool getRequiredRuntimeElementCount(const Registry &registry,
+                                      uint16_t *count) const;
 
   Supla::Suplet::Storage storage;
   InstanceTable table;
+  Registry *registry = nullptr;
+  CapabilityRegistry *capabilityRegistry = nullptr;
+  ServerConfigHandler *serverConfigHandler = nullptr;
+  Supla::Element **runtimeElements = nullptr;
+  uint16_t runtimeElementCount = 0;
 };
 
 }  // namespace Suplet

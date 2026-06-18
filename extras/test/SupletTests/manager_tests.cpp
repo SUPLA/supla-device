@@ -161,6 +161,35 @@ TEST(SupletManagerTests, AddInstancePersistsTable) {
   EXPECT_EQ(record->channelMap.getChannelNumber(2001), 8);
 }
 
+TEST(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::InstanceRecord record = {};
+  record.instanceId = 1;
+  record.definitionId = 1000;
+  record.definitionVersion = 1;
+  record.subDeviceId = 1;
+  record.state = Supla::Suplet::InstanceState::Active;
+  const uint8_t params[] = {'{', '}'};
+  ASSERT_TRUE(record.setConfig(params, sizeof(params)));
+  ASSERT_TRUE(manager.addInstance(record));
+
+  Supla::Suplet::Manager loadedManager(&config);
+  ASSERT_TRUE(loadedManager.load());
+  auto table = loadedManager.getInstanceTable();
+  ASSERT_NE(table, nullptr);
+  auto loaded = table->findByInstanceId(1);
+  ASSERT_NE(loaded, nullptr);
+  EXPECT_EQ(loaded->configSize, sizeof(params));
+  EXPECT_EQ(loaded->config, nullptr);
+
+  Supla::Suplet::InstanceRecord fullRecord;
+  ASSERT_TRUE(loadedManager.loadInstance(1, &fullRecord));
+  ASSERT_NE(fullRecord.config, nullptr);
+  EXPECT_EQ(fullRecord.configSize, sizeof(params));
+  EXPECT_EQ(memcmp(fullRecord.config, params, sizeof(params)), 0);
+}
+
 TEST(SupletManagerTests,
      AddInstanceWithAllocatedChannelsUsesFreeSubdeviceAndChannels) {
   InMemoryConfig config;
@@ -341,6 +370,54 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   while (Supla::Element::begin() != nullptr) {
     delete Supla::Element::begin();
   }
+  Supla::Channel::resetToDefaults();
+}
+
+TEST(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
+  SimpleTime time;
+  Supla::Channel::resetToDefaults();
+  InMemoryConfig config;
+  Supla::Suplet::Manager manager(&config);
+
+  Supla::Suplet::ChannelDefinition channels[] = {
+      {Supla::Suplet::channelKeyFromString("relay"),
+       Supla::Suplet::ChannelKind::VirtualRelay,
+       SUPLA_CHANNELFNC_POWERSWITCH,
+       nullptr},
+      {Supla::Suplet::channelKeyFromString("binary"),
+       Supla::Suplet::ChannelKind::VirtualBinarySensor,
+       SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR,
+       nullptr},
+  };
+  Supla::Suplet::Definition definition = {};
+  definition.definitionId = 501;
+  definition.definitionVersion = 1;
+  definition.category = Supla::Suplet::Category::Virtual;
+  definition.kind = Supla::Suplet::Kind::VirtualRelay;
+  definition.channels = channels;
+  definition.channelCount = 2;
+
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+
+  Supla::Suplet::InstanceRecord active = {};
+  active.instanceId = 1;
+  active.definitionId = 501;
+  active.definitionVersion = 1;
+  active.subDeviceId = 1;
+  active.state = Supla::Suplet::InstanceState::Active;
+  ASSERT_TRUE(active.channelMap.add(channels[0].channelKey, 4));
+  ASSERT_TRUE(active.channelMap.add(channels[1].channelKey, 8));
+  ASSERT_TRUE(manager.addInstance(active));
+
+  ASSERT_TRUE(manager.loadRuntimeElementsFromRegistry(registry));
+  EXPECT_EQ(manager.getRuntimeElementCount(), 2);
+  EXPECT_NE(Supla::Element::begin(), nullptr);
+
+  manager.deleteRuntimeElements();
+  EXPECT_EQ(manager.getRuntimeElementCount(), 0);
+  EXPECT_EQ(Supla::Element::begin(), nullptr);
+
   Supla::Channel::resetToDefaults();
 }
 

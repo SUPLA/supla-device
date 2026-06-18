@@ -378,8 +378,13 @@ bool readThermometerGroupConfig(JsonReader *reader,
     }
   }
 
-  return Supla::Suplet::serializeThermometerGroupConfig(
-      config, output->config, sizeof(output->config), &output->configSize);
+  uint8_t buffer[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
+  uint16_t configSize = 0;
+  if (!Supla::Suplet::serializeThermometerGroupConfig(
+          config, buffer, sizeof(buffer), &configSize)) {
+    return false;
+  }
+  return output->setConfig(buffer, configSize);
 }
 
 bool readTypedConfig(JsonReader *reader,

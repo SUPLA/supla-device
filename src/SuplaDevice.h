@@ -510,9 +510,6 @@ class SuplaDeviceClass : public Supla::ActionHandler,
   void createSrpcLayerIfNeeded();
   bool loadSupletRuntime();
   bool handleSupletRuntimeRefresh();
-  void deleteSupletRuntimeElements();
-  bool fillSupletOccupiedChannels(
-      Supla::Suplet::ChannelAllocator *allocator) const;
   int handleSupletCalcfg(TSD_DeviceCalCfgRequest *request,
                          TDS_DeviceCalCfgResult *result);
   void setupDeviceMode();
@@ -559,14 +556,9 @@ class SuplaDeviceClass : public Supla::ActionHandler,
       nullptr;
 #if SUPLA_SUPLET_ENABLED
   Supla::Suplet::Manager *supletManager = nullptr;
-  Supla::Suplet::Registry *supletRegistry = nullptr;
-  Supla::Suplet::CapabilityRegistry *supletCapabilityRegistry = nullptr;
-  Supla::Suplet::ServerConfigHandler *supletServerConfigHandler = nullptr;
   Supla::Suplet::InstanceCalcfgSession *supletCalcfgSession = nullptr;
   Supla::Suplet::DefinitionCalcfgSession *supletDefinitionCalcfgSession =
       nullptr;
-  Supla::Element *supletCreatedElements[SUPLA_CHANNELMAXCOUNT] = {};
-  uint16_t supletCreatedElementCount = 0;
 #endif
   Supla::Element *iterateConnectedPtr = nullptr;
   Supla::Device::LastStateLogger *lastStateLogger = nullptr;

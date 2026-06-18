@@ -152,10 +152,8 @@ Supla::Suplet::InstanceRecord makeRecord(uint8_t instanceId,
   record.definitionVersion = 0x0102;
   record.subDeviceId = instanceId;
   record.state = Supla::Suplet::InstanceState::Active;
-  record.configSize = 3;
-  record.config[0] = 9;
-  record.config[1] = 8;
-  record.config[2] = 7;
+  const uint8_t config[] = {9, 8, 7};
+  record.setConfig(config, sizeof(config));
   record.channelMap.add(0xA0 + instanceId, firstChannel);
   record.channelMap.add(0xB0 + instanceId, firstChannel + 1);
   return record;
@@ -211,6 +209,31 @@ TEST(SupletStorageTests, SavesAndLoadsInstanceTable) {
   EXPECT_NE(loaded.findByInstanceId(5), nullptr);
 }
 
+TEST(SupletStorageTests, LoadsIndexWithoutConfigPayload) {
+  InMemoryConfig config;
+  Supla::Suplet::InstanceTable table;
+  ASSERT_TRUE(table.add(makeRecord(1, 10)));
+
+  Supla::Suplet::Storage storage(&config);
+  ASSERT_TRUE(storage.save(table));
+
+  Supla::Suplet::InstanceTable index;
+  ASSERT_TRUE(storage.loadIndex(&index));
+
+  ASSERT_EQ(index.getCount(), 1);
+  auto record = index.findByInstanceId(1);
+  ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->configSize, 3);
+  EXPECT_EQ(record->config, nullptr);
+  EXPECT_EQ(record->channelMap.getChannelNumber(0xA1), 10);
+
+  Supla::Suplet::InstanceRecord fullRecord;
+  ASSERT_TRUE(storage.loadInstance(1, &fullRecord));
+  ASSERT_NE(fullRecord.config, nullptr);
+  EXPECT_EQ(fullRecord.configSize, 3);
+  EXPECT_EQ(fullRecord.config[0], 9);
+}
+
 TEST(SupletStorageTests, UpsertAlternatesVariantsAndDeletesOldVariant) {
   InMemoryConfig config;
   Supla::Suplet::Storage storage(&config);
@@ -224,7 +247,8 @@ TEST(SupletStorageTests, UpsertAlternatesVariantsAndDeletesOldVariant) {
 
   table.clear();
   auto updated = makeRecord(1, 30);
-  updated.config[0] = 4;
+  const uint8_t updatedConfig[] = {4, 8, 7};
+  ASSERT_TRUE(updated.setConfig(updatedConfig, sizeof(updatedConfig)));
   ASSERT_TRUE(table.add(updated));
   ASSERT_TRUE(storage.save(table));
   EXPECT_EQ(config.uint8Values["1_splt_act"], 2);

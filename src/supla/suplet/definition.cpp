@@ -25,9 +25,9 @@
 namespace Supla {
 namespace Suplet {
 
-bool getRequiredChannelIds(const Definition &definition,
-                           uint8_t *output,
-                           uint8_t outputSize) {
+bool getDefinitionChannelIds(const Definition &definition,
+                             uint8_t *output,
+                             uint8_t outputSize) {
   if (definition.channelCount > 0 &&
       (definition.channels == nullptr || output == nullptr)) {
     return false;

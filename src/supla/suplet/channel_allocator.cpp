@@ -41,9 +41,14 @@ bool ChannelMap::add(uint8_t channelId, int channelNumber) {
       channelNumber < 0 ||
       channelNumber >= SUPLA_CHANNELMAXCOUNT ||
       count >= SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE ||
-      containsId(channelId) ||
-      containsChannelNumber(channelNumber)) {
+      containsId(channelId)) {
     return false;
+  }
+
+  for (uint8_t i = 0; i < count; i++) {
+    if (mappings[i].channelNumber == channelNumber) {
+      return false;
+    }
   }
 
   mappings[count].channelId = channelId;
@@ -52,31 +57,8 @@ bool ChannelMap::add(uint8_t channelId, int channelNumber) {
   return true;
 }
 
-bool ChannelMap::remove(uint8_t channelId) {
-  for (uint8_t i = 0; i < count; i++) {
-    if (mappings[i].channelId == channelId) {
-      for (uint8_t j = i; j + 1 < count; j++) {
-        mappings[j] = mappings[j + 1];
-      }
-      count--;
-      mappings[count] = {};
-      return true;
-    }
-  }
-  return false;
-}
-
 bool ChannelMap::containsId(uint8_t channelId) const {
   return getChannelNumber(channelId) != kInvalidChannelNumber;
-}
-
-bool ChannelMap::containsChannelNumber(int channelNumber) const {
-  for (uint8_t i = 0; i < count; i++) {
-    if (mappings[i].channelNumber == channelNumber) {
-      return true;
-    }
-  }
-  return false;
 }
 
 int ChannelMap::getChannelNumber(uint8_t channelId) const {

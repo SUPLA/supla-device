@@ -43,9 +43,7 @@ class ChannelMap {
   void clear();
 
   bool add(uint8_t channelId, int channelNumber);
-  bool remove(uint8_t channelId);
   bool containsId(uint8_t channelId) const;
-  bool containsChannelNumber(int channelNumber) const;
   int getChannelNumber(uint8_t channelId) const;
   const ChannelMapping *getMapping(uint8_t index) const;
 

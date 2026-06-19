@@ -118,9 +118,9 @@ struct Definition {
   uint8_t parameterCount = 0;
 };
 
-bool getRequiredChannelIds(const Definition &definition,
-                            uint8_t *output,
-                            uint8_t outputSize);
+bool getDefinitionChannelIds(const Definition &definition,
+                             uint8_t *output,
+                             uint8_t outputSize);
 
 }  // namespace Suplet
 }  // namespace Supla

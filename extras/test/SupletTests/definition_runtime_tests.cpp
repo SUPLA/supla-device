@@ -45,7 +45,7 @@ class SupletRuntimeFixture : public testing::Test {
 
 }  // namespace
 
-TEST(SupletDefinitionTests, ExtractsAndValidatesRequiredChannelIds) {
+TEST(SupletDefinitionTests, ExtractsAndValidatesDefinitionChannelIds) {
   Supla::Suplet::ChannelDefinition channels[] = {
       {10, Supla::Suplet::ChannelKind::VirtualRelay, 0, nullptr},
       {20, Supla::Suplet::ChannelKind::VirtualBinarySensor, 0, nullptr},
@@ -57,12 +57,12 @@ TEST(SupletDefinitionTests, ExtractsAndValidatesRequiredChannelIds) {
   definition.kind = Supla::Suplet::Kind::VirtualRelay;
   definition.channels = channels;
   definition.channelCount = 2;
-  uint8_t keys[2] = {};
+  uint8_t ids[2] = {};
 
   EXPECT_TRUE(Supla::Suplet::Runtime::validateDefinition(definition));
-  EXPECT_TRUE(Supla::Suplet::getRequiredChannelIds(definition, keys, 2));
-  EXPECT_EQ(keys[0], 10u);
-  EXPECT_EQ(keys[1], 20u);
+  EXPECT_TRUE(Supla::Suplet::getDefinitionChannelIds(definition, ids, 2));
+  EXPECT_EQ(ids[0], 10u);
+  EXPECT_EQ(ids[1], 20u);
 
   channels[1].channelId = 10;
   EXPECT_FALSE(Supla::Suplet::Runtime::validateDefinition(definition));

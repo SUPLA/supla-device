@@ -37,21 +37,6 @@ TEST(SupletChannelMapTests, RejectsInvalidAndDuplicateMappings) {
   EXPECT_EQ(map.getChannelNumber(11), kInvalidChannelNumber);
 }
 
-TEST(SupletChannelMapTests, RemoveKeepsRemainingMappings) {
-  ChannelMap map;
-  ASSERT_TRUE(map.add(10, 1));
-  ASSERT_TRUE(map.add(20, 5));
-  ASSERT_TRUE(map.add(30, 8));
-
-  EXPECT_TRUE(map.remove(20));
-  EXPECT_FALSE(map.remove(20));
-
-  EXPECT_EQ(map.getCount(), 2);
-  EXPECT_EQ(map.getChannelNumber(10), 1);
-  EXPECT_EQ(map.getChannelNumber(30), 8);
-  EXPECT_FALSE(map.containsChannelNumber(5));
-}
-
 TEST(SupletChannelAllocatorTests, PreservesExistingMappings) {
   ChannelMap map;
   ASSERT_TRUE(map.add(100, 7));
@@ -116,7 +101,7 @@ TEST(SupletChannelAllocatorTests, DoesNotModifyMapWhenAllocationFails) {
   EXPECT_EQ(map.getChannelNumber(101), kInvalidChannelNumber);
 }
 
-TEST(SupletChannelAllocatorTests, RejectsDuplicateRequiredKeysAtomically) {
+TEST(SupletChannelAllocatorTests, RejectsDuplicateRequiredIdsAtomically) {
   ChannelMap map;
   ChannelAllocator allocator;
   uint8_t required[] = {100, 100};

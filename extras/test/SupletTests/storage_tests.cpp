@@ -293,6 +293,43 @@ TEST(SupletStorageTests, UpsertAlternatesVariantsAndDeletesOldVariant) {
   EXPECT_EQ(record->channelMap.getChannelNumber(0xA1), 30);
 }
 
+TEST(SupletStorageTests, SavingIndexRecordWithoutConfigDoesNotEraseTargetSlot) {
+  InMemoryConfig config;
+  Supla::Suplet::Storage storage(&config);
+  Supla::Suplet::InstanceTable table;
+
+  ASSERT_TRUE(table.add(makeRecord(1, 10)));
+  ASSERT_TRUE(storage.save(table));
+
+  Supla::Suplet::InstanceTable index;
+  ASSERT_TRUE(storage.loadIndex(&index));
+  auto indexed = index.findByInstanceId(1);
+  ASSERT_NE(indexed, nullptr);
+  ASSERT_EQ(indexed->config, nullptr);
+  ASSERT_EQ(indexed->configSize, 3);
+  indexed->channelMap.clear();
+  ASSERT_TRUE(indexed->channelMap.add(0xA1, 30));
+  ASSERT_TRUE(indexed->channelMap.add(0xB1, 31));
+
+  ASSERT_TRUE(storage.save(index));
+  EXPECT_EQ(config.uint8Values["1_splt_act"], 2);
+  EXPECT_FALSE(hasBlob(config, "1_splt_1"));
+  EXPECT_TRUE(hasBlob(config, "1_splt_2"));
+  EXPECT_TRUE(hasBlob(config, "1_splt_2_ch"));
+  EXPECT_TRUE(hasBlob(config, "1_splt_2_cfg"));
+
+  Supla::Suplet::InstanceTable loaded;
+  ASSERT_TRUE(storage.load(&loaded));
+
+  ASSERT_EQ(loaded.getCount(), 1);
+  auto record = loaded.findByInstanceId(1);
+  ASSERT_NE(record, nullptr);
+  ASSERT_NE(record->config, nullptr);
+  EXPECT_EQ(record->configSize, 3);
+  EXPECT_EQ(record->config[0], 9);
+  EXPECT_EQ(record->channelMap.getChannelNumber(0xA1), 30);
+}
+
 TEST(SupletStorageTests, IgnoresInactiveVariantWhenActWasNotUpdated) {
   InMemoryConfig config;
   Supla::Suplet::Storage storage(&config);

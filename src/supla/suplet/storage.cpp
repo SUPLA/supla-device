@@ -472,6 +472,29 @@ bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
     return false;
   }
 
+  const uint8_t *configData = record.config;
+  InstanceRecord loadedConfig = {};
+  if (configData == nullptr && record.configSize > 0) {
+    char actKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    makeActKey(record.instanceId, actKey);
+    uint8_t activeVariant = kDeletedSlot;
+    if (config->getUInt8(actKey, &activeVariant) &&
+        (activeVariant == kVariantA || activeVariant == kVariantB)) {
+      if (!loadVariant(record.instanceId, activeVariant, &loadedConfig, true)) {
+        loadVariant(record.instanceId,
+                    otherVariant(activeVariant),
+                    &loadedConfig,
+                    true);
+      }
+    }
+
+    if (loadedConfig.config == nullptr ||
+        loadedConfig.configSize != record.configSize) {
+      return false;
+    }
+    configData = loadedConfig.config;
+  }
+
   StoredChannelMapping stored[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
   for (uint8_t i = 0; i < record.channelMap.getCount(); i++) {
     auto mapping = record.channelMap.getMapping(i);
@@ -496,18 +519,6 @@ bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
   char configKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
   makeConfigKey(record.instanceId, variant, configKey);
   uint8_t emptyConfig = 0;
-  const uint8_t *configData = record.config;
-  InstanceRecord loadedConfig = {};
-  if (configData == nullptr && record.configSize > 0) {
-    uint8_t activeVariant = kDeletedSlot;
-    if (!loadActiveVariant(
-            record.instanceId, &activeVariant, &loadedConfig, true) ||
-        loadedConfig.config == nullptr ||
-        loadedConfig.configSize != record.configSize) {
-      return false;
-    }
-    configData = loadedConfig.config;
-  }
   if (configData == nullptr) {
     configData = &emptyConfig;
   }

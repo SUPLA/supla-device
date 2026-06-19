@@ -40,9 +40,9 @@ bool Runtime::validateDefinition(const Definition &definition) {
     return false;
   }
 
-  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelIds(
-          definition, keys, sizeof(keys) / sizeof(keys[0]))) {
+  uint8_t ids[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getDefinitionChannelIds(
+          definition, ids, sizeof(ids) / sizeof(ids[0]))) {
     return false;
   }
 

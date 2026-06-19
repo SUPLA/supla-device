@@ -189,8 +189,8 @@ bool Manager::addInstance(const InstanceRecord &record) {
 
 bool Manager::addInstanceWithAllocatedChannels(
     InstanceRecord record,
-    const uint8_t *requiredChannelIds,
-    uint8_t requiredChannelIdCount,
+    const uint8_t *definitionChannelIds,
+    uint8_t definitionChannelIdCount,
     const ChannelAllocator &occupied) {
   if (!normalizeInstanceSlot(&record, table.findByInstanceId(record.instanceId),
                              table)) {
@@ -202,7 +202,7 @@ bool Manager::addInstanceWithAllocatedChannels(
     return false;
   }
   if (!allocator.allocateMissing(
-          &record.channelMap, requiredChannelIds, requiredChannelIdCount)) {
+          &record.channelMap, definitionChannelIds, definitionChannelIdCount)) {
     return false;
   }
 
@@ -216,16 +216,16 @@ bool Manager::addInstanceFromDefinition(InstanceRecord record,
     return false;
   }
 
-  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelIds(
-          definition, keys, sizeof(keys) / sizeof(keys[0]))) {
+  uint8_t ids[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getDefinitionChannelIds(
+          definition, ids, sizeof(ids) / sizeof(ids[0]))) {
     return false;
   }
 
   record.definitionId = definition.definitionId;
   record.definitionVersion = definition.definitionVersion;
   return addInstanceWithAllocatedChannels(
-      record, keys, definition.channelCount, occupied);
+      record, ids, definition.channelCount, occupied);
 }
 
 bool Manager::canUpsertInstanceFromDefinition(
@@ -236,9 +236,9 @@ bool Manager::canUpsertInstanceFromDefinition(
     return false;
   }
 
-  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelIds(
-          definition, keys, sizeof(keys) / sizeof(keys[0]))) {
+  uint8_t ids[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getDefinitionChannelIds(
+          definition, ids, sizeof(ids) / sizeof(ids[0]))) {
     return false;
   }
 
@@ -256,7 +256,7 @@ bool Manager::canUpsertInstanceFromDefinition(
   ChannelMap inputMap = record.channelMap;
   if (hadOldRecord) {
     for (uint8_t i = 0; i < definition.channelCount; i++) {
-      uint8_t channelId = keys[i];
+      uint8_t channelId = ids[i];
       if (!inputMap.containsId(channelId)) {
         int channelNumber = oldRecord.channelMap.getChannelNumber(channelId);
         if (channelNumber != kInvalidChannelNumber &&
@@ -278,7 +278,7 @@ bool Manager::canUpsertInstanceFromDefinition(
 
   uint8_t missingChannelCount = 0;
   for (uint8_t i = 0; i < definition.channelCount; i++) {
-    if (!record.channelMap.containsId(keys[i])) {
+    if (!record.channelMap.containsId(ids[i])) {
       missingChannelCount++;
     }
   }
@@ -297,9 +297,9 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
     return false;
   }
 
-  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelIds(
-          definition, keys, sizeof(keys) / sizeof(keys[0]))) {
+  uint8_t ids[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getDefinitionChannelIds(
+          definition, ids, sizeof(ids) / sizeof(ids[0]))) {
     return false;
   }
 
@@ -317,7 +317,7 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
   ChannelMap inputMap = record.channelMap;
   if (hadOldRecord) {
     for (uint8_t i = 0; i < definition.channelCount; i++) {
-      uint8_t channelId = keys[i];
+      uint8_t channelId = ids[i];
       if (!inputMap.containsId(channelId)) {
         int channelNumber = oldRecord.channelMap.getChannelNumber(channelId);
         if (channelNumber != kInvalidChannelNumber &&

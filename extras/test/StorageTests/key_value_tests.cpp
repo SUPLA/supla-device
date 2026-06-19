@@ -30,6 +30,9 @@ class KeyValueTest : public Supla::KeyValue {
     return true;
   };
   void removeAll() override {};
+  int getBlobSizeForTest(const char* key) {
+    return getBlobSize(key);
+  }
 };
 
 TEST(KeyValueElementTests, isKeyEqualTest) {
@@ -253,7 +256,9 @@ TEST(KeyValueElementTests, blobTest) {
   int32_t result32 = 4;
 
   // UINT 8
+  EXPECT_EQ(kve1.getBlobSize(), -1);
   EXPECT_TRUE(kve1.setBlob("testing", 4));
+  EXPECT_EQ(kve1.getBlobSize(), 4);
 
   char temp[10] = {};
 
@@ -272,6 +277,7 @@ TEST(KeyValueElementTests, blobTest) {
   EXPECT_FALSE(kve1.setUInt8(25));
 
   EXPECT_TRUE(kve1.setBlob("1234567890", 10));
+  EXPECT_EQ(kve1.getBlobSize(), 10);
   EXPECT_FALSE(kve1.getBlob(temp, 9));
   EXPECT_TRUE(kve1.getBlob(temp, 10));
   EXPECT_EQ(strncmp(temp, "1234567890", 10), 0);
@@ -314,6 +320,16 @@ TEST(KeyValueElementTests, blobTest) {
   EXPECT_FALSE(kve1.serialize(serializedData, 10));
 }
 
+TEST(KeyValueElementTests, blobSizeDistinguishesMissingTypeAndEmptyBlob) {
+  Supla::KeyValueElement intElement("int");
+  EXPECT_TRUE(intElement.setUInt8(1));
+  EXPECT_EQ(intElement.getBlobSize(), -1);
+
+  Supla::KeyValueElement emptyBlob("empty");
+  EXPECT_TRUE(emptyBlob.setBlob("", 0));
+  EXPECT_EQ(emptyBlob.getBlobSize(), 0);
+}
+
 TEST(KeyValueTests, integrationTest) {
   KeyValueTest kvStorage;
 
@@ -330,8 +346,10 @@ TEST(KeyValueTests, integrationTest) {
   EXPECT_FALSE(kvStorage.getUInt32("test", &resultU32));
   EXPECT_FALSE(kvStorage.getString("test", temp, 20));
   EXPECT_FALSE(kvStorage.getBlob("test", temp, 25));
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("test"), -1);
 
   EXPECT_TRUE(kvStorage.setString("wifissid", "MY wiFi SSID"));
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("wifissid"), -1);
   EXPECT_FALSE(kvStorage.getString("wifissid2", temp, 50));
   EXPECT_TRUE(kvStorage.getString("wifissid", temp, 50));
   EXPECT_STREQ(temp, "MY wiFi SSID");
@@ -347,6 +365,7 @@ TEST(KeyValueTests, integrationTest) {
   EXPECT_STREQ(temp, "secret");
 
   EXPECT_TRUE(kvStorage.setUInt32("suplaport", 2019));
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("suplaport"), -1);
   EXPECT_TRUE(kvStorage.getUInt32("suplaport", &resultU32));
   EXPECT_EQ(resultU32, 2019);
 
@@ -378,6 +397,18 @@ TEST(KeyValueTests, integrationTest) {
   // make sure that serialized data is the same after serialization ->
   // deserialization -> serialization
   EXPECT_EQ(memcmp(buffer, secondBuffer, 1024), 0);
+}
+
+TEST(KeyValueTests, blobSizeReturnsExactPayloadSize) {
+  KeyValueTest kvStorage;
+
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("missing"), -1);
+  EXPECT_TRUE(kvStorage.setBlob("empty", "", 0));
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("empty"), 0);
+  EXPECT_TRUE(kvStorage.setBlob("payload", "abc", 3));
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("payload"), 3);
+  EXPECT_TRUE(kvStorage.setString("text", "abc"));
+  EXPECT_EQ(kvStorage.getBlobSizeForTest("text"), -1);
 }
 
 TEST(KeyValueTests, variousKVChecks) {

@@ -285,10 +285,24 @@ void Supla::LittleFsConfig::removeAll() {
 bool Supla::LittleFsConfig::setBlob(const char* key,
                                     const char* value,
                                     size_t blobSize) {
-  if (blobSize < BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE) {
-    return Supla::KeyValue::setBlob(key, value, blobSize);
+  if (key == nullptr || value == nullptr) {
+    return false;
   }
 
+  if (blobSize < BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE) {
+    bool result = Supla::KeyValue::setBlob(key, value, blobSize);
+    if (result && initLittleFs()) {
+      char filename[50] = {};
+      snprintf(filename, sizeof(filename), "/supla/%s", key);
+      if (LittleFS.exists(filename)) {
+        LittleFS.remove(filename);
+      }
+      LittleFS.end();
+    }
+    return result;
+  }
+
+  Supla::KeyValue::eraseKey(key);
   SUPLA_LOG_DEBUG("LittleFS: writing file %s", key);
   if (!initLittleFs()) {
     return false;
@@ -315,7 +329,11 @@ bool Supla::LittleFsConfig::setBlob(const char* key,
 bool Supla::LittleFsConfig::getBlob(const char* key,
                                     char* value,
                                     size_t blobSize) {
-  if (blobSize < BIG_BLOG_SIZE_TO_BE_STORED_IN_FILE) {
+  if (key == nullptr || value == nullptr) {
+    return false;
+  }
+
+  if (Supla::KeyValue::getBlobSize(key) == static_cast<int>(blobSize)) {
     return Supla::KeyValue::getBlob(key, value, blobSize);
   }
 
@@ -335,8 +353,8 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
     return false;
   }
   size_t fileSize = file.size();
-  if (fileSize > blobSize) {
-    SUPLA_LOG_ERROR("LittleFsConfig: blob file is too big");
+  if (fileSize != blobSize) {
+    SUPLA_LOG_ERROR("LittleFsConfig: blob file has invalid size");
     file.close();
     LittleFS.end();
     return false;
@@ -350,6 +368,15 @@ bool Supla::LittleFsConfig::getBlob(const char* key,
 }
 
 int Supla::LittleFsConfig::getBlobSize(const char* key) {
+  if (key == nullptr) {
+    return -1;
+  }
+
+  int keyValueBlobSize = Supla::KeyValue::getBlobSize(key);
+  if (keyValueBlobSize >= 0) {
+    return keyValueBlobSize;
+  }
+
   if (!initLittleFs()) {
     return -1;
   }
@@ -368,6 +395,26 @@ int Supla::LittleFsConfig::getBlobSize(const char* key) {
   file.close();
   LittleFS.end();
   return fileSize;
+}
+
+bool Supla::LittleFsConfig::eraseKey(const char* key) {
+  if (key == nullptr) {
+    return false;
+  }
+
+  bool removed = Supla::KeyValue::eraseKey(key);
+
+  if (!initLittleFs()) {
+    return removed;
+  }
+
+  char filename[50] = {};
+  snprintf(filename, sizeof(filename), "/supla/%s", key);
+  if (LittleFS.exists(filename) && LittleFS.remove(filename)) {
+    removed = true;
+  }
+  LittleFS.end();
+  return removed;
 }
 
 #endif  // !defined(ARDUINO_ARCH_AVR)

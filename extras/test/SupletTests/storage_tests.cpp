@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 #include <supla/storage/config.h>
+#include <supla/storage/key_value.h>
 #include <supla/suplet/storage.h>
 
 namespace {
@@ -144,6 +145,23 @@ class InMemoryConfig : public Supla::Config {
   int commitCount = 0;
 };
 
+class KeyValueConfig : public Supla::KeyValue {
+ public:
+  bool init() override {
+    return true;
+  }
+
+  void removeAll() override {
+    removeAllMemory();
+  }
+
+  void commit() override {
+    commitCount++;
+  }
+
+  int commitCount = 0;
+};
+
 Supla::Suplet::InstanceRecord makeRecord(uint8_t instanceId,
                                          int firstChannel) {
   Supla::Suplet::InstanceRecord record = {};
@@ -176,6 +194,16 @@ TEST(SupletInstanceTableTests, RejectsDuplicateInstanceAndSubdevice) {
   EXPECT_FALSE(table.add(duplicateInstance));
   EXPECT_FALSE(table.add(duplicateSubdevice));
   EXPECT_EQ(table.getCount(), 1);
+}
+
+TEST(SupletStorageTests, EmptyKeyValueStorageDoesNotCleanupMissingSlots) {
+  KeyValueConfig config;
+  Supla::Suplet::Storage storage(&config);
+  Supla::Suplet::InstanceTable loaded;
+
+  EXPECT_FALSE(storage.loadIndex(&loaded));
+  EXPECT_EQ(loaded.getCount(), 0);
+  EXPECT_EQ(config.commitCount, 0);
 }
 
 TEST(SupletStorageTests, SavesAndLoadsInstanceTable) {

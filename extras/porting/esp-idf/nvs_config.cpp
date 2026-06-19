@@ -311,7 +311,15 @@ bool NvsConfig::getBlob(const char* key, char* value, size_t blobSize) {
 }
 
 int NvsConfig::getBlobSize(const char* key) {
-  return -1;
+  if (key == nullptr) {
+    return -1;
+  }
+  size_t size = 0;
+  esp_err_t err = nvs_get_blob(nvsHandle, key, nullptr, &size);
+  if (err != ESP_OK || size > static_cast<size_t>(INT32_MAX)) {
+    return -1;
+  }
+  return static_cast<int>(size);
 }
 
 bool NvsConfig::getInt8(const char* key, int8_t* result) {

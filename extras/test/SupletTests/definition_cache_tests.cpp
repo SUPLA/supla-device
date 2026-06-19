@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <string.h>
 #include <supla/storage/config.h>
+#include <supla/storage/key_value.h>
 #include <supla/suplet/definition_cache.h>
 
 #include <map>
@@ -114,6 +115,17 @@ class InMemoryConfig : public Supla::Config {
   int commitCount = 0;
 };
 
+class KeyValueConfig : public Supla::KeyValue {
+ public:
+  bool init() override {
+    return true;
+  }
+
+  void removeAll() override {
+    removeAllMemory();
+  }
+};
+
 class FakeSha256Provider : public Supla::Suplet::Sha256Provider {
  public:
   bool calculate(const uint8_t *data,
@@ -171,6 +183,14 @@ TEST(SupletDefinitionCacheTests, SavesLoadsAndReportsInfo) {
   Supla::Suplet::CachedDefinitionInfo slotInfo = {};
   ASSERT_TRUE(cache.getInfo(0, &slotInfo));
   EXPECT_EQ(slotInfo.definitionId, 10u);
+}
+
+TEST(SupletDefinitionCacheTests, MissingKeyValueSlotIsNotAnEmptyBlob) {
+  KeyValueConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+
+  EXPECT_FALSE(cache.contains(0x2010, 1));
 }
 
 TEST(SupletDefinitionCacheTests, StoresVariableSizeBlobs) {

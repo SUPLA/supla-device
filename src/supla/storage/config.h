@@ -82,6 +82,8 @@ class Config {
 
   virtual bool setBlob(const char* key, const char* value, size_t blobSize) = 0;
   virtual bool getBlob(const char* key, char* value, size_t blobSize) = 0;
+  // Returns exact blob payload size, or -1 when the key is missing, invalid, or
+  // stores a non-blob value.
   virtual int getBlobSize(const char* key) = 0;
 
   virtual bool getInt8(const char* key, int8_t* result) = 0;

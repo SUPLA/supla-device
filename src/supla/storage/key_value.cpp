@@ -252,9 +252,12 @@ bool KeyValue::getBlob(const char* key, char* value, size_t blobSize) {
 }
 
 int KeyValue::getBlobSize(const char* key) {
+  if (key == nullptr) {
+    return -1;
+  }
   auto element = find(key);
   if (!element) {
-    return 0;
+    return -1;
   }
   return element->getBlobSize();
 }
@@ -439,7 +442,7 @@ bool KeyValueElement::getBlob(char* value, size_t blobSize) {
 
 int KeyValueElement::getBlobSize() {
   if (dataType != DATA_TYPE_BLOB) {
-    return 0;
+    return -1;
   }
   return size;
 }

@@ -42,6 +42,7 @@ class LittleFsConfig : public KeyValue {
   // override blob storage to use separate file for each value
   bool setBlob(const char* key, const char* value, size_t blobSize) override;
   bool getBlob(const char* key, char* value, size_t blobSize) override;
+  bool eraseKey(const char* key) override;
 
  protected:
   int getBlobSize(const char* key) override;

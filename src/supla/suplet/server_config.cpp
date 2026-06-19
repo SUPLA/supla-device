@@ -24,6 +24,7 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <string.h>
+#include <supla/suplet/json_instance_config.h>
 #include <supla/suplet/server_config.h>
 
 namespace {
@@ -280,13 +281,58 @@ bool equalText(const char *a, const char *b) {
   return a != nullptr && b != nullptr && strcmp(a, b) == 0;
 }
 
+class ScopedJsonDefinition {
+ public:
+  ScopedJsonDefinition() = default;
+  ScopedJsonDefinition(const ScopedJsonDefinition &) = delete;
+  ScopedJsonDefinition &operator=(const ScopedJsonDefinition &) = delete;
+
+  ~ScopedJsonDefinition() {
+    delete definition;
+  }
+
+  bool allocate() {
+    if (definition == nullptr) {
+      definition = new Supla::Suplet::JsonDefinition();
+    }
+    return definition != nullptr;
+  }
+
+  Supla::Suplet::JsonDefinition *get() {
+    return definition;
+  }
+
+ private:
+  Supla::Suplet::JsonDefinition *definition = nullptr;
+};
+
 struct Command {
+  Command() = default;
+  Command(const Command &) = delete;
+  Command &operator=(const Command &) = delete;
+
+  ~Command() {
+    clear();
+  }
+
+  void clear() {
+    if (definitionJson != nullptr) {
+      delete[] definitionJson;
+      definitionJson = nullptr;
+    }
+    operation[0] = '\0';
+    instanceId = 0;
+    definitionId = 0;
+    definitionVersion = 0;
+    sha256Hex[0] = '\0';
+  }
+
   char operation[20] = {};
   uint32_t instanceId = 0;
   uint32_t definitionId = 0;
   uint32_t definitionVersion = 0;
   char sha256Hex[65] = {};
-  char definitionJson[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
+  char *definitionJson = nullptr;
 };
 
 bool parseCommand(const char *json, Command *command) {
@@ -294,7 +340,7 @@ bool parseCommand(const char *json, Command *command) {
     return false;
   }
 
-  *command = Command();
+  command->clear();
   JsonCommandReader reader(json);
   if (!reader.consume('{')) {
     return false;
@@ -332,8 +378,14 @@ bool parseCommand(const char *json, Command *command) {
         return false;
       }
     } else if (equalText(key, "definitionJson")) {
-      if (!reader.readString(command->definitionJson,
-                             sizeof(command->definitionJson))) {
+      if (command->definitionJson != nullptr) {
+        return false;
+      }
+      command->definitionJson =
+          new char[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1];
+      if (command->definitionJson == nullptr ||
+          !reader.readString(command->definitionJson,
+                             SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1)) {
         return false;
       }
     } else if (!reader.skipValue()) {
@@ -560,8 +612,15 @@ bool readParameterValueNormalized(
 bool validateParameterValue(
     JsonCommandReader *reader,
     const Supla::Suplet::ParameterDefinition &parameter) {
-  char value[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
-  return readParameterValueNormalized(reader, parameter, value, sizeof(value));
+  char *value = new char[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1];
+  if (value == nullptr) {
+    return false;
+  }
+  value[0] = '\0';
+  bool result = readParameterValueNormalized(
+      reader, parameter, value, SUPLA_SUPLET_MAX_CONFIG_SIZE + 1);
+  delete[] value;
+  return result;
 }
 
 bool getParameterValueNormalized(
@@ -581,39 +640,53 @@ bool getParameterValueNormalized(
   if (json == nullptr) {
     return false;
   }
-  char jsonCopy[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
+  char *jsonCopy = new char[static_cast<size_t>(jsonSize) + 1];
+  if (jsonCopy == nullptr) {
+    return false;
+  }
   memcpy(jsonCopy, json, jsonSize);
+  jsonCopy[jsonSize] = '\0';
 
   JsonCommandReader reader(jsonCopy);
   if (!reader.consume('{')) {
+    delete[] jsonCopy;
     return false;
   }
   reader.skipWhitespace();
   if (reader.consume('}')) {
-    return writeDefaultParameterValueNormalized(parameter, output, outputSize);
+    bool result =
+        writeDefaultParameterValueNormalized(parameter, output, outputSize);
+    delete[] jsonCopy;
+    return result;
   }
 
   bool found = false;
   while (true) {
     char key[SUPLA_SUPLET_MAX_PARAMETER_KEY_SIZE] = {};
     if (!reader.readString(key, sizeof(key)) || !reader.consume(':')) {
+      delete[] jsonCopy;
       return false;
     }
     if (strcmp(key, parameter.key) == 0) {
       if (!readParameterValueNormalized(
               &reader, parameter, output, outputSize)) {
+        delete[] jsonCopy;
         return false;
       }
       found = true;
     } else if (!reader.skipValue()) {
+      delete[] jsonCopy;
       return false;
     }
     reader.skipWhitespace();
     if (reader.consume('}')) {
-      return found || writeDefaultParameterValueNormalized(
-                          parameter, output, outputSize);
+      bool result = found || writeDefaultParameterValueNormalized(
+                                 parameter, output, outputSize);
+      delete[] jsonCopy;
+      return result;
     }
     if (!reader.consume(',')) {
+      delete[] jsonCopy;
       return false;
     }
   }
@@ -631,19 +704,33 @@ bool createOnlyParamsChanged(const char *json,
     if (parameter.lifecycle != Supla::Suplet::ParameterLifecycle::CreateOnly) {
       continue;
     }
-    char oldValue[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
-    char newValue[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
+    char *oldValue = new char[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1];
+    char *newValue = new char[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1];
+    if (oldValue == nullptr || newValue == nullptr) {
+      delete[] oldValue;
+      delete[] newValue;
+      return true;
+    }
+    oldValue[0] = '\0';
+    newValue[0] = '\0';
     if (!getParameterValueNormalized(
             reinterpret_cast<const char *>(existing->config),
             existing->configSize,
             parameter,
             oldValue,
-            sizeof(oldValue)) ||
-        !getParameterValueNormalized(
-            json, jsonSize, parameter, newValue, sizeof(newValue)) ||
+            SUPLA_SUPLET_MAX_CONFIG_SIZE + 1) ||
+        !getParameterValueNormalized(json,
+                                     jsonSize,
+                                     parameter,
+                                     newValue,
+                                     SUPLA_SUPLET_MAX_CONFIG_SIZE + 1) ||
         strcmp(oldValue, newValue) != 0) {
+      delete[] oldValue;
+      delete[] newValue;
       return true;
     }
+    delete[] oldValue;
+    delete[] newValue;
   }
   return false;
 }
@@ -749,23 +836,17 @@ const Supla::Suplet::InstanceRecord *loadExistingConfigIfNeeded(
   return loaded;
 }
 
-bool isInstanceLimitAvailable(const Supla::Suplet::Manager *manager,
-                              const Supla::Suplet::Registry *registry,
-                              const Supla::Suplet::InstanceRecord &record,
-                              uint32_t definitionId,
-                              uint16_t definitionVersion) {
-  if (manager == nullptr || registry == nullptr || record.instanceId == 0) {
-    return false;
-  }
-
-  Supla::Suplet::Capability capability = {};
-  if (!registry->getCapability(definitionId, definitionVersion, &capability)) {
-    return false;
+uint8_t countInstancesForDefinition(const Supla::Suplet::Manager *manager,
+                                    const Supla::Suplet::InstanceRecord &record,
+                                    uint32_t definitionId,
+                                    uint16_t definitionVersion) {
+  if (manager == nullptr || record.instanceId == 0) {
+    return UINT8_MAX;
   }
 
   const auto *table = manager->getInstanceTable();
   if (table == nullptr) {
-    return false;
+    return UINT8_MAX;
   }
 
   uint8_t count = 0;
@@ -777,8 +858,80 @@ bool isInstanceLimitAvailable(const Supla::Suplet::Manager *manager,
       count++;
     }
   }
+  return count;
+}
 
-  return count < capability.maxInstances;
+bool isInstanceLimitAvailable(const Supla::Suplet::Manager *manager,
+                              const Supla::Suplet::InstanceRecord &record,
+                              uint32_t definitionId,
+                              uint16_t definitionVersion,
+                              uint8_t maxInstances) {
+  if (maxInstances == 0) {
+    return false;
+  }
+
+  uint8_t count = countInstancesForDefinition(
+      manager, record, definitionId, definitionVersion);
+  if (count == UINT8_MAX) {
+    return false;
+  }
+
+  return count < maxInstances;
+}
+
+const Supla::Suplet::Definition *findDefinitionOnDemand(
+    const Supla::Suplet::Registry *registry,
+    const Supla::Suplet::DownloadedDefinitionStore *downloadedDefinitions,
+    const Supla::Suplet::DefinitionCache *definitionCache,
+    uint32_t definitionId,
+    uint16_t definitionVersion,
+    ScopedJsonDefinition *downloadedDefinition,
+    bool *ramError,
+    uint8_t *maxInstances) {
+  if (maxInstances != nullptr) {
+    *maxInstances = 0;
+  }
+  if (ramError != nullptr) {
+    *ramError = false;
+  }
+
+  if (registry != nullptr) {
+    const auto *definition =
+        registry->findDefinition(definitionId, definitionVersion);
+    if (definition != nullptr) {
+      Supla::Suplet::Capability capability = {};
+      if (maxInstances != nullptr &&
+          registry->getCapability(
+              definitionId, definitionVersion, &capability)) {
+        *maxInstances = capability.maxInstances;
+      }
+      return definition;
+    }
+  }
+
+  if (downloadedDefinitions == nullptr || definitionCache == nullptr ||
+      downloadedDefinition == nullptr) {
+    return nullptr;
+  }
+  if (!downloadedDefinition->allocate()) {
+    if (ramError != nullptr) {
+      *ramError = true;
+    }
+    return nullptr;
+  }
+  if (downloadedDefinition->get() == nullptr ||
+      !downloadedDefinitions->load(*definitionCache,
+                                   definitionId,
+                                   definitionVersion,
+                                   downloadedDefinition->get())) {
+    return nullptr;
+  }
+
+  const auto *definition = downloadedDefinition->get()->getDefinition();
+  if (maxInstances != nullptr && definition != nullptr) {
+    *maxInstances = definition->maxInstances;
+  }
+  return definition;
 }
 
 bool isDefinitionUsed(const Supla::Suplet::Manager *manager,
@@ -806,73 +959,95 @@ bool isDefinitionUsed(const Supla::Suplet::Manager *manager,
 namespace Supla {
 namespace Suplet {
 
-DownloadedDefinitionStore::DownloadedDefinitionStore() {
-  clear();
-}
-
-void DownloadedDefinitionStore::clear() {
-  for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
-    definitions[i].clear();
-  }
-  count = 0;
-}
-
-uint8_t DownloadedDefinitionStore::getCount() const {
-  return count;
-}
-
-const Definition *DownloadedDefinitionStore::getDefinition(
-    uint8_t index) const {
-  if (index >= count) {
-    return nullptr;
-  }
-  return definitions[index].getDefinition();
-}
-
-bool DownloadedDefinitionStore::loadFromCache(const DefinitionCache &cache,
-                                              Registry *registry) {
-  if (registry == nullptr) {
+bool DownloadedDefinitionStore::load(const DefinitionCache &cache,
+                                     uint32_t definitionId,
+                                     uint16_t definitionVersion,
+                                     JsonDefinition *definition,
+                                     CachedDefinitionInfo *info) const {
+  if (definition == nullptr || definitionId == 0 || definitionVersion == 0) {
     return false;
   }
 
-  removeFromRegistry(registry);
-  clear();
-  char json[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
+  CachedDefinitionInfo loadedInfo = {};
+  CachedDefinitionInfo *infoOutput = info == nullptr ? &loadedInfo : info;
+  uint16_t jsonSize = 0;
   for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
-    CachedDefinitionInfo info = {};
-    if (!cache.getInfo(i, &info)) {
+    CachedDefinitionInfo current = {};
+    if (!cache.getInfo(i, &current) || current.definitionId != definitionId ||
+        current.definitionVersion != definitionVersion) {
       continue;
     }
-    if (count >= SUPLA_SUPLET_MAX_CACHED_DEFINITIONS ||
-        !cache.load(
-            info.definitionId, info.definitionVersion, json, sizeof(json)) ||
-        !JsonDefinitionParser::parse(json, &definitions[count]) ||
-        !Runtime::validateDefinition(*definitions[count].getDefinition())) {
-      removeFromRegistry(registry);
-      clear();
-      return false;
-    }
-    const Definition *definition = definitions[count].getDefinition();
-    if (!registry->add(definition, definition->maxInstances, true)) {
-      removeFromRegistry(registry);
-      clear();
-      return false;
-    }
-    count++;
+    jsonSize = current.jsonSize;
+    *infoOutput = current;
+    break;
   }
-  return true;
+  if (jsonSize == 0 || jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE) {
+    return false;
+  }
+
+  char *json = new char[static_cast<size_t>(jsonSize) + 1];
+  if (json == nullptr) {
+    return false;
+  }
+
+  bool result = cache.load(definitionId,
+                           definitionVersion,
+                           json,
+                           static_cast<size_t>(jsonSize) + 1,
+                           infoOutput) &&
+                JsonDefinitionParser::parse(json, definition) &&
+                Runtime::validateDefinition(*definition->getDefinition());
+  delete[] json;
+  return result;
 }
 
-void DownloadedDefinitionStore::removeFromRegistry(Registry *registry) {
-  if (registry == nullptr) {
-    return;
-  }
-  for (uint8_t i = 0; i < count; i++) {
-    const Definition *definition = definitions[i].getDefinition();
-    if (definition != nullptr && definition->definitionId != 0) {
-      registry->remove(definition->definitionId, definition->definitionVersion);
+uint8_t DownloadedDefinitionStore::getCount(
+    const DefinitionCache &cache) const {
+  uint8_t count = 0;
+  for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
+    CachedDefinitionInfo info = {};
+    if (cache.getInfo(i, &info)) {
+      count++;
     }
   }
+  return count;
+}
+
+bool ServerConfigHandler::loadDownloadedDefinition(
+    uint32_t definitionId,
+    uint16_t definitionVersion,
+    JsonDefinition *definition,
+    CachedDefinitionInfo *info) const {
+  return definitionCache != nullptr && downloadedDefinitions != nullptr &&
+         downloadedDefinitions->load(*definitionCache,
+                                     definitionId,
+                                     definitionVersion,
+                                     definition,
+                                     info);
+}
+
+ServerConfigResult ServerConfigHandler::loadDownloadedDefinitions() {
+  if (definitionCache == nullptr || downloadedDefinitions == nullptr) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
+    CachedDefinitionInfo info = {};
+    if (!definitionCache->getInfo(i, &info)) {
+      continue;
+    }
+    ScopedJsonDefinition definition;
+    if (!definition.allocate()) {
+      return ServerConfigResult::StorageError;
+    }
+    if (!downloadedDefinitions->load(*definitionCache,
+                                     info.definitionId,
+                                     info.definitionVersion,
+                                     definition.get())) {
+      return ServerConfigResult::InvalidDefinition;
+    }
+  }
+  return ServerConfigResult::Applied;
 }
 
 ServerConfigHandler::ServerConfigHandler(
@@ -886,43 +1061,42 @@ ServerConfigHandler::ServerConfigHandler(
       downloadedDefinitions(downloadedDefinitions) {
 }
 
-ServerConfigResult ServerConfigHandler::loadDownloadedDefinitions() {
-  if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      registry == nullptr) {
-    return ServerConfigResult::InvalidArgument;
-  }
-  return downloadedDefinitions->loadFromCache(*definitionCache, registry)
-             ? ServerConfigResult::Applied
-             : ServerConfigResult::InvalidDefinition;
-}
-
 ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
     uint32_t definitionId,
     uint16_t definitionVersion,
     const char *definitionJson,
     const uint8_t *sha256) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      registry == nullptr || definitionJson == nullptr || sha256 == nullptr ||
-      definitionId == 0 || definitionVersion == 0) {
+      definitionJson == nullptr || sha256 == nullptr || definitionId == 0 ||
+      definitionVersion == 0) {
     return ServerConfigResult::InvalidArgument;
   }
 
-  JsonDefinition parsed;
-  if (!JsonDefinitionParser::parse(definitionJson, &parsed) ||
-      parsed.getDefinition()->definitionId != definitionId ||
-      parsed.getDefinition()->definitionVersion != definitionVersion ||
-      !Runtime::validateDefinition(*parsed.getDefinition())) {
+  ScopedJsonDefinition parsed;
+  if (!parsed.allocate()) {
+    return ServerConfigResult::StorageError;
+  }
+  if (!JsonDefinitionParser::parse(definitionJson, parsed.get()) ||
+      parsed.get()->getDefinition()->definitionId != definitionId ||
+      parsed.get()->getDefinition()->definitionVersion != definitionVersion ||
+      !Runtime::validateDefinition(*parsed.get()->getDefinition())) {
     return ServerConfigResult::InvalidDefinition;
   }
 
   if (definitionCache->contains(definitionId, definitionVersion)) {
     CachedDefinitionInfo info = {};
-    char existingJson[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
-    if (!definitionCache->load(definitionId,
-                               definitionVersion,
-                               existingJson,
-                               sizeof(existingJson),
-                               &info)) {
+    bool foundInfo = false;
+    for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
+      CachedDefinitionInfo current = {};
+      if (definitionCache->getInfo(i, &current) &&
+          current.definitionId == definitionId &&
+          current.definitionVersion == definitionVersion) {
+        info = current;
+        foundInfo = true;
+        break;
+      }
+    }
+    if (!foundInfo) {
       return ServerConfigResult::StorageError;
     }
     if (memcmp(info.sha256, sha256, sizeof(info.sha256)) != 0) {
@@ -936,17 +1110,11 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
               definitionId, definitionVersion, definitionJson, sha256)) {
         return ServerConfigResult::StorageError;
       }
-      ServerConfigResult result = loadDownloadedDefinitions();
-      if (result == ServerConfigResult::Applied) {
-        runtimeRefreshRequired = true;
-      }
-      return result;
-    }
-    ServerConfigResult result = loadDownloadedDefinitions();
-    if (result == ServerConfigResult::Applied) {
       runtimeRefreshRequired = true;
+      return ServerConfigResult::Applied;
     }
-    return result;
+    runtimeRefreshRequired = true;
+    return ServerConfigResult::Applied;
   }
 
   if (!definitionCache->save(
@@ -954,18 +1122,14 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
     return ServerConfigResult::StorageError;
   }
 
-  ServerConfigResult result = loadDownloadedDefinitions();
-  if (result == ServerConfigResult::Applied) {
-    runtimeRefreshRequired = true;
-  }
-  return result;
+  runtimeRefreshRequired = true;
+  return ServerConfigResult::Applied;
 }
 
 ServerConfigResult ServerConfigHandler::removeDownloadedDefinition(
     uint32_t definitionId, uint16_t definitionVersion) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      registry == nullptr || manager == nullptr || definitionId == 0 ||
-      definitionVersion == 0) {
+      manager == nullptr || definitionId == 0 || definitionVersion == 0) {
     return ServerConfigResult::InvalidArgument;
   }
 
@@ -983,12 +1147,8 @@ ServerConfigResult ServerConfigHandler::removeDownloadedDefinition(
     return ServerConfigResult::StorageError;
   }
 
-  ServerConfigResult result = loadDownloadedDefinitions();
-  if (result == ServerConfigResult::Applied) {
-    runtimeRefreshRequired = true;
-    return ServerConfigResult::Removed;
-  }
-  return result;
+  runtimeRefreshRequired = true;
+  return ServerConfigResult::Removed;
 }
 
 uint8_t ServerConfigHandler::getCachedDefinitionCount() const {
@@ -1023,27 +1183,25 @@ bool ServerConfigHandler::getCachedDefinitionDetails(
       continue;
     }
 
-    char json[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
-    if (!definitionCache->load(info.definitionId,
-                               info.definitionVersion,
-                               json,
-                               sizeof(json),
-                               &info)) {
+    ScopedJsonDefinition parsed;
+    if (!parsed.allocate()) {
       return false;
     }
-
-    JsonDefinition parsed;
-    if (!JsonDefinitionParser::parse(json, &parsed) ||
-        parsed.getDefinition() == nullptr) {
+    if (!downloadedDefinitions->load(*definitionCache,
+                                     info.definitionId,
+                                     info.definitionVersion,
+                                     parsed.get(),
+                                     &info) ||
+        parsed.get()->getDefinition() == nullptr) {
       return false;
     }
 
     details->cache = info;
-    details->category = parsed.getDefinition()->category;
-    details->kind = parsed.getDefinition()->kind;
-    details->schemaVersion = parsed.getDefinition()->schemaVersion;
-    details->handlerVersion = parsed.getDefinition()->handlerVersion;
-    details->maxInstances = parsed.getDefinition()->maxInstances;
+    details->category = parsed.get()->getDefinition()->category;
+    details->kind = parsed.get()->getDefinition()->kind;
+    details->schemaVersion = parsed.get()->getDefinition()->schemaVersion;
+    details->handlerVersion = parsed.get()->getDefinition()->handlerVersion;
+    details->maxInstances = parsed.get()->getDefinition()->maxInstances;
     return true;
   }
 
@@ -1054,7 +1212,7 @@ ServerConfigResult ServerConfigHandler::garbageCollectUnusedDefinitions() {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr) {
     return ServerConfigResult::Applied;
   }
-  if (registry == nullptr || manager == nullptr) {
+  if (manager == nullptr) {
     return ServerConfigResult::InvalidArgument;
   }
   if (manager->getInstanceTable() == nullptr) {
@@ -1080,11 +1238,8 @@ ServerConfigResult ServerConfigHandler::garbageCollectUnusedDefinitions() {
     return ServerConfigResult::Applied;
   }
 
-  ServerConfigResult result = loadDownloadedDefinitions();
-  if (result == ServerConfigResult::Applied) {
-    runtimeRefreshRequired = true;
-  }
-  return result;
+  runtimeRefreshRequired = true;
+  return ServerConfigResult::Applied;
 }
 
 ServerConfigResult ServerConfigHandler::applyAssignmentJson(
@@ -1092,13 +1247,50 @@ ServerConfigResult ServerConfigHandler::applyAssignmentJson(
     uint32_t definitionId,
     uint16_t definitionVersion,
     const ChannelAllocator &occupied) {
-  AssignmentApplier applier(manager, registry);
-  ServerConfigResult result = fromAssignmentResult(applier.applyJson(
-      assignmentJson, definitionId, definitionVersion, occupied));
-  if (result == ServerConfigResult::Applied) {
-    runtimeRefreshRequired = true;
+  if (manager == nullptr || assignmentJson == nullptr || definitionId == 0 ||
+      definitionVersion == 0) {
+    return ServerConfigResult::InvalidArgument;
   }
-  return result;
+
+  ScopedJsonDefinition downloadedDefinition;
+  bool ramError = false;
+  uint8_t maxInstances = 0;
+  const Definition *definition = findDefinitionOnDemand(registry,
+                                                        downloadedDefinitions,
+                                                        definitionCache,
+                                                        definitionId,
+                                                        definitionVersion,
+                                                        &downloadedDefinition,
+                                                        &ramError,
+                                                        &maxInstances);
+  if (definition == nullptr) {
+    if (ramError) {
+      return ServerConfigResult::StorageError;
+    }
+    return ServerConfigResult::DefinitionNotSupported;
+  }
+
+  InstanceRecord record = {};
+  if (!JsonInstanceConfigParser::parse(assignmentJson, *definition, &record)) {
+    return ServerConfigResult::InvalidConfig;
+  }
+
+  if (!isInstanceLimitAvailable(
+          manager, record, definitionId, definitionVersion, maxInstances)) {
+    return ServerConfigResult::InstanceLimitExceeded;
+  }
+
+  if (!manager->canUpsertInstanceFromDefinition(
+          record, *definition, occupied)) {
+    return ServerConfigResult::ChannelLimitExceeded;
+  }
+
+  if (!manager->upsertInstanceFromDefinition(record, *definition, occupied)) {
+    return ServerConfigResult::StorageError;
+  }
+
+  runtimeRefreshRequired = true;
+  return ServerConfigResult::Applied;
 }
 
 ServerConfigResult ServerConfigHandler::applyInstanceParams(
@@ -1113,8 +1305,7 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
   if (appliedInstanceId != nullptr) {
     *appliedInstanceId = 0;
   }
-  if (manager == nullptr || registry == nullptr ||
-      definitionId == 0 || definitionVersion == 0 ||
+  if (manager == nullptr || definitionId == 0 || definitionVersion == 0 ||
       paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       (paramsSize > 0 && paramsJson == nullptr)) {
     return ServerConfigResult::InvalidArgument;
@@ -1136,9 +1327,21 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
     return ServerConfigResult::TopologyChangeNotAllowed;
   }
 
-  const Definition *definition =
-      registry->findDefinition(definitionId, definitionVersion);
+  ScopedJsonDefinition downloadedDefinition;
+  bool ramError = false;
+  uint8_t maxInstances = 0;
+  const Definition *definition = findDefinitionOnDemand(registry,
+                                                        downloadedDefinitions,
+                                                        definitionCache,
+                                                        definitionId,
+                                                        definitionVersion,
+                                                        &downloadedDefinition,
+                                                        &ramError,
+                                                        &maxInstances);
   if (definition == nullptr) {
+    if (ramError) {
+      return ServerConfigResult::StorageError;
+    }
     return ServerConfigResult::DefinitionNotSupported;
   }
 
@@ -1166,7 +1369,7 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
   }
 
   if (!isInstanceLimitAvailable(
-          manager, registry, record, definitionId, definitionVersion)) {
+          manager, record, definitionId, definitionVersion, maxInstances)) {
     return ServerConfigResult::InstanceLimitExceeded;
   }
 
@@ -1191,9 +1394,45 @@ ServerConfigResult ServerConfigHandler::validateAssignmentJson(
     uint32_t definitionId,
     uint16_t definitionVersion,
     const ChannelAllocator &occupied) const {
-  AssignmentApplier applier(manager, registry);
-  return fromAssignmentResult(applier.validateJson(
-      assignmentJson, definitionId, definitionVersion, occupied));
+  if (manager == nullptr || assignmentJson == nullptr || definitionId == 0 ||
+      definitionVersion == 0) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  ScopedJsonDefinition downloadedDefinition;
+  bool ramError = false;
+  uint8_t maxInstances = 0;
+  const Definition *definition = findDefinitionOnDemand(registry,
+                                                        downloadedDefinitions,
+                                                        definitionCache,
+                                                        definitionId,
+                                                        definitionVersion,
+                                                        &downloadedDefinition,
+                                                        &ramError,
+                                                        &maxInstances);
+  if (definition == nullptr) {
+    if (ramError) {
+      return ServerConfigResult::StorageError;
+    }
+    return ServerConfigResult::DefinitionNotSupported;
+  }
+
+  InstanceRecord record = {};
+  if (!JsonInstanceConfigParser::parse(assignmentJson, *definition, &record)) {
+    return ServerConfigResult::InvalidConfig;
+  }
+
+  if (!isInstanceLimitAvailable(
+          manager, record, definitionId, definitionVersion, maxInstances)) {
+    return ServerConfigResult::InstanceLimitExceeded;
+  }
+
+  if (!manager->canUpsertInstanceFromDefinition(
+          record, *definition, occupied)) {
+    return ServerConfigResult::ChannelLimitExceeded;
+  }
+
+  return ServerConfigResult::Applied;
 }
 
 ServerConfigResult ServerConfigHandler::validateInstanceParams(
@@ -1205,8 +1444,7 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
     uint16_t paramsSize,
     const ChannelAllocator &occupied) const {
   (void)(state);
-  if (manager == nullptr || registry == nullptr ||
-      definitionId == 0 || definitionVersion == 0 ||
+  if (manager == nullptr || definitionId == 0 || definitionVersion == 0 ||
       paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       (paramsSize > 0 && paramsJson == nullptr)) {
     return ServerConfigResult::InvalidArgument;
@@ -1228,9 +1466,21 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
     return ServerConfigResult::TopologyChangeNotAllowed;
   }
 
-  const Definition *definition =
-      registry->findDefinition(definitionId, definitionVersion);
+  ScopedJsonDefinition downloadedDefinition;
+  bool ramError = false;
+  uint8_t maxInstances = 0;
+  const Definition *definition = findDefinitionOnDemand(registry,
+                                                        downloadedDefinitions,
+                                                        definitionCache,
+                                                        definitionId,
+                                                        definitionVersion,
+                                                        &downloadedDefinition,
+                                                        &ramError,
+                                                        &maxInstances);
   if (definition == nullptr) {
+    if (ramError) {
+      return ServerConfigResult::StorageError;
+    }
     return ServerConfigResult::DefinitionNotSupported;
   }
 
@@ -1258,7 +1508,7 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
   }
 
   if (!isInstanceLimitAvailable(
-          manager, registry, record, definitionId, definitionVersion)) {
+          manager, record, definitionId, definitionVersion, maxInstances)) {
     return ServerConfigResult::InstanceLimitExceeded;
   }
 
@@ -1300,7 +1550,8 @@ ServerConfigResult ServerConfigHandler::applyCommandJson(
   if (equalText(command.operation, "saveDefinition")) {
     if (command.definitionId == 0 || command.definitionVersion == 0 ||
         command.definitionVersion > UINT16_MAX ||
-        command.sha256Hex[0] == '\0' || command.definitionJson[0] == '\0') {
+        command.sha256Hex[0] == '\0' || command.definitionJson == nullptr ||
+        command.definitionJson[0] == '\0') {
       return ServerConfigResult::InvalidArgument;
     }
 
@@ -1359,19 +1610,23 @@ ServerConfigResult ServerConfigHandler::validateCommandJson(
   if (equalText(command.operation, "saveDefinition")) {
     if (command.definitionId == 0 || command.definitionVersion == 0 ||
         command.definitionVersion > UINT16_MAX ||
-        command.sha256Hex[0] == '\0' || command.definitionJson[0] == '\0') {
+        command.sha256Hex[0] == '\0' || command.definitionJson == nullptr ||
+        command.definitionJson[0] == '\0') {
       return ServerConfigResult::InvalidArgument;
     }
     uint8_t sha256[32] = {};
     if (!parseSha256(command.sha256Hex, sha256)) {
       return ServerConfigResult::InvalidArgument;
     }
-    JsonDefinition parsed;
-    if (!JsonDefinitionParser::parse(command.definitionJson, &parsed) ||
-        parsed.getDefinition()->definitionId != command.definitionId ||
-        parsed.getDefinition()->definitionVersion !=
+    ScopedJsonDefinition parsed;
+    if (!parsed.allocate()) {
+      return ServerConfigResult::StorageError;
+    }
+    if (!JsonDefinitionParser::parse(command.definitionJson, parsed.get()) ||
+        parsed.get()->getDefinition()->definitionId != command.definitionId ||
+        parsed.get()->getDefinition()->definitionVersion !=
             command.definitionVersion ||
-        !Runtime::validateDefinition(*parsed.getDefinition())) {
+        !Runtime::validateDefinition(*parsed.get()->getDefinition())) {
       return ServerConfigResult::InvalidDefinition;
     }
     return ServerConfigResult::Applied;

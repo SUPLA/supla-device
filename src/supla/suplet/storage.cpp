@@ -450,10 +450,16 @@ bool Storage::loadVariant(uint8_t instanceId,
   }
 
   if (loadConfig && header.configSize > 0) {
-    uint8_t buffer[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
-    if (!config->getBlob(
-            configKey, reinterpret_cast<char *>(buffer), header.configSize) ||
-        !loaded.setConfig(buffer, header.configSize)) {
+    uint8_t *buffer = new uint8_t[header.configSize];
+    if (buffer == nullptr) {
+      return false;
+    }
+    bool loadedConfig =
+        config->getBlob(
+            configKey, reinterpret_cast<char *>(buffer), header.configSize) &&
+        loaded.setConfig(buffer, header.configSize);
+    delete[] buffer;
+    if (!loadedConfig) {
       return false;
     }
   } else if (!loadConfig) {

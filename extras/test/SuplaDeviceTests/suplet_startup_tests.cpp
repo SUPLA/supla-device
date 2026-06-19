@@ -699,7 +699,12 @@ TEST_F(SuplaDeviceSupletStartupTests,
   TCalCfg_SupletResult supletResult = {};
   memcpy(&supletResult, result.Data, sizeof(supletResult));
   EXPECT_EQ(supletResult.DetailCode, SUPLA_CALCFG_SUPLET_RESULT_OK);
-  EXPECT_NE(registry.findDefinition(5002, 1), nullptr);
+  EXPECT_EQ(registry.findDefinition(5002, 1), nullptr);
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 5002, 1, &loadedDefinition));
+  ASSERT_NE(loadedDefinition.getDefinition(), nullptr);
+  EXPECT_EQ(loadedDefinition.getDefinition()->definitionId, 5002u);
+  EXPECT_EQ(loadedDefinition.getDefinition()->definitionVersion, 1);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
 
   const char command[] =

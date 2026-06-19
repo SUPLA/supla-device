@@ -57,19 +57,12 @@ struct CachedDefinitionDetails {
 
 class DownloadedDefinitionStore {
  public:
-  DownloadedDefinitionStore();
-
-  void clear();
-  uint8_t getCount() const;
-  const Definition *getDefinition(uint8_t index) const;
-
-  bool loadFromCache(const DefinitionCache &cache, Registry *registry);
-
- private:
-  void removeFromRegistry(Registry *registry);
-
-  JsonDefinition definitions[SUPLA_SUPLET_MAX_CACHED_DEFINITIONS];
-  uint8_t count = 0;
+  bool load(const DefinitionCache &cache,
+            uint32_t definitionId,
+            uint16_t definitionVersion,
+            JsonDefinition *definition,
+            CachedDefinitionInfo *info = nullptr) const;
+  uint8_t getCount(const DefinitionCache &cache) const;
 };
 
 class ServerConfigHandler {
@@ -121,6 +114,10 @@ class ServerConfigHandler {
   ServerConfigResult validateCommandJson(
       const char *commandJson, const ChannelAllocator &occupied) const;
   ServerConfigResult removeAssignment(uint8_t instanceId);
+  bool loadDownloadedDefinition(uint32_t definitionId,
+                                uint16_t definitionVersion,
+                                JsonDefinition *definition,
+                                CachedDefinitionInfo *info = nullptr) const;
 
   bool isRuntimeRefreshRequired() const;
   void clearRuntimeRefreshRequired();

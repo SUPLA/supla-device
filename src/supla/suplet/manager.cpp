@@ -96,6 +96,66 @@ bool normalizeInstanceSlot(InstanceRecord *record,
          !isSubDeviceIdUsedByChannel(record->instanceId);
 }
 
+class ScopedJsonDefinition {
+ public:
+  ScopedJsonDefinition() = default;
+  ScopedJsonDefinition(const ScopedJsonDefinition &) = delete;
+  ScopedJsonDefinition &operator=(const ScopedJsonDefinition &) = delete;
+
+  ~ScopedJsonDefinition() {
+    delete definition;
+  }
+
+  bool allocate() {
+    if (definition == nullptr) {
+      definition = new JsonDefinition();
+    }
+    return definition != nullptr;
+  }
+
+  JsonDefinition *get() {
+    return definition;
+  }
+
+ private:
+  JsonDefinition *definition = nullptr;
+};
+
+const Definition *findDefinitionForRecord(
+    const Registry &registry,
+    const ServerConfigHandler *serverConfigHandler,
+    const InstanceRecord &record,
+    ScopedJsonDefinition *downloadedDefinition,
+    bool *ramError) {
+  if (ramError != nullptr) {
+    *ramError = false;
+  }
+
+  const Definition *definition =
+      registry.findDefinition(record.definitionId, record.definitionVersion);
+  if (definition != nullptr) {
+    return definition;
+  }
+
+  if (serverConfigHandler == nullptr || downloadedDefinition == nullptr) {
+    return nullptr;
+  }
+  if (!downloadedDefinition->allocate()) {
+    if (ramError != nullptr) {
+      *ramError = true;
+    }
+    return nullptr;
+  }
+  if (downloadedDefinition->get() == nullptr ||
+      !serverConfigHandler->loadDownloadedDefinition(
+          record.definitionId,
+          record.definitionVersion,
+          downloadedDefinition->get())) {
+    return nullptr;
+  }
+  return downloadedDefinition->get()->getDefinition();
+}
+
 }  // namespace
 
 Manager::Manager(Supla::Config *config) : storage(config) {
@@ -368,8 +428,9 @@ bool Manager::createElementsFromRegistry(const Registry &registry,
       continue;
     }
 
-    const Definition *definition = registry.findDefinition(
-        record->definitionId, record->definitionVersion);
+    ScopedJsonDefinition downloadedDefinition;
+    const Definition *definition = findDefinitionForRecord(
+        registry, serverConfigHandler, *record, &downloadedDefinition, nullptr);
     if (definition == nullptr ||
         count + definition->channelCount > createdSize) {
       if (createdCount != nullptr) {
@@ -682,8 +743,9 @@ bool Manager::getRequiredRuntimeElementCount(const Registry &registry,
       continue;
     }
 
-    const Definition *definition = registry.findDefinition(
-        record->definitionId, record->definitionVersion);
+    ScopedJsonDefinition downloadedDefinition;
+    const Definition *definition = findDefinitionForRecord(
+        registry, serverConfigHandler, *record, &downloadedDefinition, nullptr);
     if (definition == nullptr) {
       return false;
     }

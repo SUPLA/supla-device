@@ -19,6 +19,8 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
+#include <supla/channels/channel.h>
+#include <supla/element.h>
 #include <supla/storage/config.h>
 #include <supla/suplet/server_config.h>
 
@@ -650,11 +652,11 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionAndAppliesAssignment) {
   EXPECT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-  EXPECT_EQ(downloadedDefinitions.getCount(), 1);
-  EXPECT_NE(registry.findDefinition(701, 1), nullptr);
-  Supla::Suplet::Capability capability = {};
-  ASSERT_TRUE(registry.getCapability(701, 1, &capability));
-  EXPECT_EQ(capability.maxInstances, 3);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 1);
+  EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 701, 1, &loadedDefinition));
+  EXPECT_EQ(loadedDefinition.getDefinition()->maxInstances, 3);
 
   Supla::Suplet::ChannelAllocator occupied;
   EXPECT_EQ(
@@ -705,8 +707,10 @@ TEST(SupletServerConfigTests, ReplacesUnusedConflictingDownloadedDefinition) {
   char storedJson[1024] = {};
   ASSERT_TRUE(cache.load(701, 1, storedJson, sizeof(storedJson)));
   EXPECT_STREQ(storedJson, conflictingJson);
-  ASSERT_NE(registry.findDefinition(701, 1), nullptr);
-  EXPECT_STREQ(registry.findDefinition(701, 1)->channels[0].caption, "Changed");
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 701, 1, &loadedDefinition));
+  EXPECT_STREQ(loadedDefinition.getDefinition()->channels[0].caption,
+               "Changed");
 }
 
 TEST(SupletServerConfigTests,
@@ -809,12 +813,14 @@ TEST(SupletServerConfigTests, LoadsMultipleDownloadedDefinitionVersions) {
   ASSERT_EQ(handler.saveDownloadedDefinition(701, 2, v2, sha),
             Supla::Suplet::ServerConfigResult::Applied);
 
-  EXPECT_EQ(downloadedDefinitions.getCount(), 2);
-  ASSERT_NE(registry.findDefinition(701, 1), nullptr);
-  ASSERT_NE(registry.findDefinition(701, 2), nullptr);
-  EXPECT_STREQ(registry.findDefinition(701, 1)->channels[0].caption,
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 2);
+  Supla::Suplet::JsonDefinition loadedV1;
+  Supla::Suplet::JsonDefinition loadedV2;
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 701, 1, &loadedV1));
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 701, 2, &loadedV2));
+  EXPECT_STREQ(loadedV1.getDefinition()->channels[0].caption,
                "Param relay v1");
-  EXPECT_STREQ(registry.findDefinition(701, 2)->channels[0].caption,
+  EXPECT_STREQ(loadedV2.getDefinition()->channels[0].caption,
                "Param relay v2");
 }
 
@@ -834,12 +840,12 @@ TEST(SupletServerConfigTests, RemovesDownloadedDefinitionWhenUnused) {
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_TRUE(cache.contains(701, 1));
-  ASSERT_NE(registry.findDefinition(701, 1), nullptr);
+  EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 
   EXPECT_EQ(handler.removeDownloadedDefinition(701, 1),
             Supla::Suplet::ServerConfigResult::Removed);
   EXPECT_FALSE(cache.contains(701, 1));
-  EXPECT_EQ(downloadedDefinitions.getCount(), 0);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 0);
   EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
 
@@ -870,7 +876,7 @@ TEST(SupletServerConfigTests, RejectsRemovingDefinitionUsedByInstance) {
   EXPECT_EQ(handler.removeDownloadedDefinition(701, 1),
             Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);
   EXPECT_TRUE(cache.contains(701, 1));
-  EXPECT_NE(registry.findDefinition(701, 1), nullptr);
+  EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 }
 
 TEST(SupletServerConfigTests, RemoveAssignmentGarbageCollectsUnusedDefinition) {
@@ -897,7 +903,7 @@ TEST(SupletServerConfigTests, RemoveAssignmentGarbageCollectsUnusedDefinition) {
   EXPECT_EQ(handler.removeAssignment(71),
             Supla::Suplet::ServerConfigResult::Removed);
   EXPECT_FALSE(cache.contains(701, 1));
-  EXPECT_EQ(downloadedDefinitions.getCount(), 0);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 0);
   EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 }
 
@@ -936,8 +942,8 @@ TEST(SupletServerConfigTests,
   EXPECT_EQ(handler.removeAssignment(71),
             Supla::Suplet::ServerConfigResult::Removed);
   EXPECT_TRUE(cache.contains(701, 1));
-  EXPECT_EQ(downloadedDefinitions.getCount(), 1);
-  EXPECT_NE(registry.findDefinition(701, 1), nullptr);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 1);
+  EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 }
 
 TEST(SupletServerConfigTests,
@@ -951,11 +957,9 @@ TEST(SupletServerConfigTests,
   makeSha(&shaProvider, downloadedDefinitionJson, sha);
   ASSERT_TRUE(cache.save(701, 1, downloadedDefinitionJson, sha));
 
-  ASSERT_TRUE(downloadedDefinitions.loadFromCache(cache, &registry));
-
-  Supla::Suplet::Capability capability = {};
-  ASSERT_TRUE(registry.getCapability(701, 1, &capability));
-  EXPECT_EQ(capability.maxInstances, 3);
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 701, 1, &loadedDefinition));
+  EXPECT_EQ(loadedDefinition.getDefinition()->maxInstances, 3);
 }
 
 TEST(SupletServerConfigTests, DownloadedDefinitionMaxInstancesIsEnforced) {
@@ -1006,6 +1010,41 @@ TEST(SupletServerConfigTests, DownloadedDefinitionMaxInstancesIsEnforced) {
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(74), nullptr);
 }
 
+TEST(SupletServerConfigTests, RuntimeLoadsDownloadedDefinitionOnDemand) {
+  Supla::Channel::resetToDefaults();
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  manager.setRegistry(&registry);
+  manager.setServerConfigHandler(&handler);
+
+  uint8_t sha[32] = {};
+  makeSha(&shaProvider, downloadedDefinitionJson, sha);
+  ASSERT_EQ(
+      handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
+      Supla::Suplet::ServerConfigResult::Applied);
+
+  Supla::Suplet::ChannelAllocator occupied;
+  ASSERT_EQ(
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      Supla::Suplet::ServerConfigResult::Applied);
+  ASSERT_EQ(registry.findDefinition(701, 1), nullptr);
+
+  ASSERT_TRUE(manager.loadRuntimeElements());
+  EXPECT_EQ(manager.getRuntimeElementCount(), 1);
+
+  manager.deleteRuntimeElements();
+  while (Supla::Element::begin() != nullptr) {
+    delete Supla::Element::begin();
+  }
+  Supla::Channel::resetToDefaults();
+}
+
 TEST(SupletServerConfigTests, SavesDownloadedDefinitionFromCommandJson) {
   InMemoryConfig config;
   FakeSha256Provider shaProvider;
@@ -1040,15 +1079,15 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionFromCommandJson) {
   EXPECT_EQ(
       handler.applyCommandJson(command, Supla::Suplet::ChannelAllocator()),
       Supla::Suplet::ServerConfigResult::Applied);
-  EXPECT_EQ(downloadedDefinitions.getCount(), 1);
-  EXPECT_NE(registry.findDefinition(701, 1), nullptr);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 1);
+  EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 
   EXPECT_EQ(handler.applyCommandJson(
                 "{\"op\":\"removeDefinition\",\"definitionId\":701,"
                 "\"definitionVersion\":1}",
                 Supla::Suplet::ChannelAllocator()),
             Supla::Suplet::ServerConfigResult::Removed);
-  EXPECT_EQ(downloadedDefinitions.getCount(), 0);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 0);
   EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 }
 
@@ -1067,7 +1106,7 @@ TEST(SupletServerConfigTests, RejectsInvalidDownloadedDefinition) {
 
   EXPECT_EQ(handler.saveDownloadedDefinition(701, 1, badJson, sha),
             Supla::Suplet::ServerConfigResult::InvalidDefinition);
-  EXPECT_EQ(downloadedDefinitions.getCount(), 0);
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 0);
 }
 
 TEST(SupletServerConfigTests,
@@ -1094,8 +1133,9 @@ TEST(SupletServerConfigTests,
   makeSha(&shaProvider, badJson, sha);
   ASSERT_TRUE(cache.save(702, 1, badJson, sha));
 
-  EXPECT_FALSE(downloadedDefinitions.loadFromCache(cache, &registry));
-  EXPECT_EQ(downloadedDefinitions.getCount(), 0);
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  EXPECT_FALSE(downloadedDefinitions.load(cache, 702, 1, &loadedDefinition));
+  EXPECT_EQ(downloadedDefinitions.getCount(cache), 2);
   EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
   EXPECT_EQ(registry.findDefinition(702, 1), nullptr);
 }

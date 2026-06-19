@@ -56,7 +56,7 @@ TEST(SupletChannelAllocatorTests, PreservesExistingMappings) {
   ChannelMap map;
   ASSERT_TRUE(map.add(100, 7));
   ChannelAllocator allocator;
-  uint32_t required[] = {100};
+  uint8_t required[] = {100};
 
   EXPECT_TRUE(allocator.allocateMissing(&map, required, 1));
 
@@ -74,7 +74,7 @@ TEST(SupletChannelAllocatorTests, AllocatesFirstFreeGapsForNewSuplet) {
   ASSERT_TRUE(allocator.markOccupied(5));
   ASSERT_TRUE(allocator.markOccupied(6));
   ASSERT_TRUE(allocator.markOccupied(7));
-  uint32_t required[] = {100, 101, 102, 103};
+  uint8_t required[] = {100, 101, 102, 103};
 
   EXPECT_TRUE(allocator.allocateMissing(&map, required, 4));
 
@@ -91,7 +91,7 @@ TEST(SupletChannelAllocatorTests, KeepsOldAndAllocatesOnlyNewChannels) {
   ChannelAllocator allocator;
   ASSERT_TRUE(allocator.markOccupied(0));
   ASSERT_TRUE(allocator.markOccupied(1));
-  uint32_t required[] = {100, 101, 102};
+  uint8_t required[] = {100, 101, 102};
 
   EXPECT_TRUE(allocator.allocateMissing(&map, required, 3));
 
@@ -107,7 +107,7 @@ TEST(SupletChannelAllocatorTests, DoesNotModifyMapWhenAllocationFails) {
   for (int i = 0; i < SUPLA_CHANNELMAXCOUNT; i++) {
     ASSERT_TRUE(allocator.markOccupied(i));
   }
-  uint32_t required[] = {100, 101};
+  uint8_t required[] = {100, 101};
 
   EXPECT_FALSE(allocator.allocateMissing(&map, required, 2));
 
@@ -119,7 +119,7 @@ TEST(SupletChannelAllocatorTests, DoesNotModifyMapWhenAllocationFails) {
 TEST(SupletChannelAllocatorTests, RejectsDuplicateRequiredKeysAtomically) {
   ChannelMap map;
   ChannelAllocator allocator;
-  uint32_t required[] = {100, 100};
+  uint8_t required[] = {100, 100};
 
   EXPECT_FALSE(allocator.allocateMissing(&map, required, 2));
   EXPECT_EQ(map.getCount(), 0);

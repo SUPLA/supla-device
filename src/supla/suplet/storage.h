@@ -104,7 +104,7 @@ class Storage {
   };
 
   struct StoredChannelMapping {
-    uint32_t channelKey = 0;
+    uint8_t channelId = 0;
     uint8_t channelNumber = 0;
   };
 #pragma pack(pop)

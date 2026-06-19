@@ -199,8 +199,9 @@ TEST(SupletDefinitionCacheTests, StoresVariableSizeBlobs) {
   Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
   const char shortJson[] = "{\"definitionId\":20,\"definitionVersion\":1}";
   const char longJson[] =
-      "{\"definitionId\":21,\"definitionVersion\":1,\"channels\":[{\"key\":"
-      "\"relay\",\"kind\":\"virtualRelay\",\"function\":\"powerSwitch\"}]}";
+      "{\"definitionId\":21,\"definitionVersion\":1,\"channels\":[{"
+      "\"channelId\":1,\"key\":\"relay\",\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\"}]}";
   uint8_t sha[32] = {};
 
   makeSha(&shaProvider, shortJson, sha);

@@ -114,7 +114,7 @@ const char thermometerGroupDefinitionJson[] =
 "\"category\":\"aggregate\","
 "\"kind\":\"thermometerGroup\","
 "\"channels\":["
-"{\"key\":\"temperature\",\"kind\":\"virtualThermometer\","
+"{\"channelId\":1,\"key\":\"temperature\",\"kind\":\"virtualThermometer\","
 "\"function\":\"thermometer\"}"
 "]"
 "}";
@@ -223,7 +223,7 @@ TEST_F(SupletJsonInstanceFixture, BuildsRuntimeFromDefinitionAndInstanceJson) {
   ASSERT_NE(record, nullptr);
   EXPECT_NE(record->subDeviceId, 0);
   EXPECT_EQ(record->channelMap.getChannelNumber(
-                Supla::Suplet::channelKeyFromString("temperature")),
+                1),
             1);
 
   Supla::Element *created[1] = {};

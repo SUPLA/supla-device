@@ -83,7 +83,7 @@ struct Capability {
 };
 
 struct ChannelDefinition {
-  uint32_t channelKey = kInvalidChannelKey;
+  uint8_t channelId = kInvalidChannelId;
   ChannelKind kind = ChannelKind::Unknown;
   int32_t defaultFunction = 0;
   const char *caption = nullptr;
@@ -118,9 +118,8 @@ struct Definition {
   uint8_t parameterCount = 0;
 };
 
-uint32_t channelKeyFromString(const char *value);
-bool getRequiredChannelKeys(const Definition &definition,
-                            uint32_t *output,
+bool getRequiredChannelIds(const Definition &definition,
+                            uint8_t *output,
                             uint8_t outputSize);
 
 }  // namespace Suplet

@@ -43,7 +43,7 @@ bool channelMapsEqual(const ChannelMap &a, const ChannelMap &b) {
   for (uint8_t i = 0; i < a.getCount(); i++) {
     auto mapping = a.getMapping(i);
     if (mapping == nullptr ||
-        b.getChannelNumber(mapping->channelKey) != mapping->channelNumber) {
+        b.getChannelNumber(mapping->channelId) != mapping->channelNumber) {
       return false;
     }
   }
@@ -189,8 +189,8 @@ bool Manager::addInstance(const InstanceRecord &record) {
 
 bool Manager::addInstanceWithAllocatedChannels(
     InstanceRecord record,
-    const uint32_t *requiredChannelKeys,
-    uint8_t requiredChannelKeyCount,
+    const uint8_t *requiredChannelIds,
+    uint8_t requiredChannelIdCount,
     const ChannelAllocator &occupied) {
   if (!normalizeInstanceSlot(&record, table.findByInstanceId(record.instanceId),
                              table)) {
@@ -202,7 +202,7 @@ bool Manager::addInstanceWithAllocatedChannels(
     return false;
   }
   if (!allocator.allocateMissing(
-          &record.channelMap, requiredChannelKeys, requiredChannelKeyCount)) {
+          &record.channelMap, requiredChannelIds, requiredChannelIdCount)) {
     return false;
   }
 
@@ -216,8 +216,8 @@ bool Manager::addInstanceFromDefinition(InstanceRecord record,
     return false;
   }
 
-  uint32_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelKeys(
+  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getRequiredChannelIds(
           definition, keys, sizeof(keys) / sizeof(keys[0]))) {
     return false;
   }
@@ -236,8 +236,8 @@ bool Manager::canUpsertInstanceFromDefinition(
     return false;
   }
 
-  uint32_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelKeys(
+  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getRequiredChannelIds(
           definition, keys, sizeof(keys) / sizeof(keys[0]))) {
     return false;
   }
@@ -256,11 +256,11 @@ bool Manager::canUpsertInstanceFromDefinition(
   ChannelMap inputMap = record.channelMap;
   if (hadOldRecord) {
     for (uint8_t i = 0; i < definition.channelCount; i++) {
-      uint32_t channelKey = keys[i];
-      if (!inputMap.containsKey(channelKey)) {
-        int channelNumber = oldRecord.channelMap.getChannelNumber(channelKey);
+      uint8_t channelId = keys[i];
+      if (!inputMap.containsId(channelId)) {
+        int channelNumber = oldRecord.channelMap.getChannelNumber(channelId);
         if (channelNumber != kInvalidChannelNumber &&
-            !inputMap.add(channelKey, channelNumber)) {
+            !inputMap.add(channelId, channelNumber)) {
           return false;
         }
       }
@@ -278,7 +278,7 @@ bool Manager::canUpsertInstanceFromDefinition(
 
   uint8_t missingChannelCount = 0;
   for (uint8_t i = 0; i < definition.channelCount; i++) {
-    if (!record.channelMap.containsKey(keys[i])) {
+    if (!record.channelMap.containsId(keys[i])) {
       missingChannelCount++;
     }
   }
@@ -297,8 +297,8 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
     return false;
   }
 
-  uint32_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelKeys(
+  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getRequiredChannelIds(
           definition, keys, sizeof(keys) / sizeof(keys[0]))) {
     return false;
   }
@@ -317,11 +317,11 @@ bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
   ChannelMap inputMap = record.channelMap;
   if (hadOldRecord) {
     for (uint8_t i = 0; i < definition.channelCount; i++) {
-      uint32_t channelKey = keys[i];
-      if (!inputMap.containsKey(channelKey)) {
-        int channelNumber = oldRecord.channelMap.getChannelNumber(channelKey);
+      uint8_t channelId = keys[i];
+      if (!inputMap.containsId(channelId)) {
+        int channelNumber = oldRecord.channelMap.getChannelNumber(channelId);
         if (channelNumber != kInvalidChannelNumber &&
-            !inputMap.add(channelKey, channelNumber)) {
+            !inputMap.add(channelId, channelNumber)) {
           return false;
         }
       }
@@ -434,13 +434,13 @@ bool Manager::loadRuntimeElementsFromRegistry(const Registry &registry) {
   deleteRuntimeElements();
 
   if (!load()) {
-    SUPLA_LOG_DEBUG("Suplet runtime: no stored instance table");
+    SUPLA_LOG_DEBUG("Suplet: no stored instance table");
     return true;
   }
 
   uint16_t requiredCount = 0;
   if (!getRequiredRuntimeElementCount(registry, &requiredCount)) {
-    SUPLA_LOG_WARNING("Suplet runtime: failed to count stored elements");
+    SUPLA_LOG_WARNING("Suplet: failed to count stored elements");
     return false;
   }
   if (requiredCount == 0) {
@@ -449,19 +449,19 @@ bool Manager::loadRuntimeElementsFromRegistry(const Registry &registry) {
 
   runtimeElements = new Supla::Element *[requiredCount]();
   if (runtimeElements == nullptr) {
-    SUPLA_LOG_WARNING("Suplet runtime: failed to allocate element table");
+    SUPLA_LOG_WARNING("Suplet: failed to allocate element table");
     return false;
   }
 
   if (!createElementsFromRegistry(
           registry, runtimeElements, requiredCount, &runtimeElementCount)) {
-    SUPLA_LOG_WARNING("Suplet runtime: failed to create stored elements");
+    SUPLA_LOG_WARNING("Suplet: failed to create stored elements");
     deleteRuntimeElements();
     return false;
   }
 
   if (runtimeElementCount > 0) {
-    SUPLA_LOG_INFO("Suplet runtime: created %u element(s)",
+    SUPLA_LOG_INFO("Suplet: created %u element(s)",
                    runtimeElementCount);
   }
   return true;

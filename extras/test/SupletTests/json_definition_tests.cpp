@@ -15,6 +15,7 @@
 */
 
 #include <gtest/gtest.h>
+#include <simple_time.h>
 #include <supla/channels/channel.h>
 #include <supla/element.h>
 #include <supla/sensor/virtual_thermometer.h>
@@ -22,29 +23,61 @@
 #include <supla/suplet/json_definition.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/runtime.h>
-#include <simple_time.h>
 
 namespace {
 
 class NoopConfig : public Supla::Config {
  public:
-  bool init() override { return true; }
-  void removeAll() override {}
-  bool setString(const char *, const char *) override { return false; }
-  bool getString(const char *, char *, size_t) override { return false; }
-  int getStringSize(const char *) override { return -1; }
-  bool setBlob(const char *, const char *, size_t) override { return true; }
-  bool getBlob(const char *, char *, size_t) override { return false; }
-  int getBlobSize(const char *) override { return -1; }
-  bool getInt8(const char *, int8_t *) override { return false; }
-  bool getUInt8(const char *, uint8_t *) override { return false; }
-  bool getInt32(const char *, int32_t *) override { return false; }
-  bool getUInt32(const char *, uint32_t *) override { return false; }
-  bool setInt8(const char *, const int8_t) override { return false; }
-  bool setUInt8(const char *, const uint8_t) override { return true; }
-  bool setInt32(const char *, const int32_t) override { return false; }
-  bool setUInt32(const char *, const uint32_t) override { return false; }
-  bool eraseKey(const char *) override { return true; }
+  bool init() override {
+    return true;
+  }
+  void removeAll() override {
+  }
+  bool setString(const char *, const char *) override {
+    return false;
+  }
+  bool getString(const char *, char *, size_t) override {
+    return false;
+  }
+  int getStringSize(const char *) override {
+    return -1;
+  }
+  bool setBlob(const char *, const char *, size_t) override {
+    return true;
+  }
+  bool getBlob(const char *, char *, size_t) override {
+    return false;
+  }
+  int getBlobSize(const char *) override {
+    return -1;
+  }
+  bool getInt8(const char *, int8_t *) override {
+    return false;
+  }
+  bool getUInt8(const char *, uint8_t *) override {
+    return false;
+  }
+  bool getInt32(const char *, int32_t *) override {
+    return false;
+  }
+  bool getUInt32(const char *, uint32_t *) override {
+    return false;
+  }
+  bool setInt8(const char *, const int8_t) override {
+    return false;
+  }
+  bool setUInt8(const char *, const uint8_t) override {
+    return true;
+  }
+  bool setInt32(const char *, const int32_t) override {
+    return false;
+  }
+  bool setUInt32(const char *, const uint32_t) override {
+    return false;
+  }
+  bool eraseKey(const char *) override {
+    return true;
+  }
 };
 
 class SupletJsonFixture : public testing::Test {
@@ -87,11 +120,11 @@ TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
       "\"lifecycle\":\"secret\"}"
       "],"
       "\"channels\":["
-      "{\"key\":\"relay_main\",\"kind\":\"virtualRelay\","
+      "{\"channelId\":1,\"key\":\"relay_main\",\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\",\"caption\":\"Main relay\"},"
-      "{\"key\":\"door\",\"kind\":\"virtualBinarySensor\","
+      "{\"channelId\":2,\"key\":\"door\",\"kind\":\"virtualBinarySensor\","
       "\"function\":\"openingSensorDoor\"},"
-      "{\"key\":\"temp\",\"kind\":\"virtualThermometer\","
+      "{\"channelId\":3,\"key\":\"temp\",\"kind\":\"virtualThermometer\","
       "\"function\":\"thermometer\"}"
       "]"
       "}";
@@ -120,8 +153,7 @@ TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
   EXPECT_EQ(definition->parameters[0].max, 16);
   EXPECT_EQ(definition->parameters[0].affectsTopology, 1);
   EXPECT_STREQ(definition->parameters[1].key, "mode");
-  EXPECT_EQ(definition->parameters[1].type,
-            Supla::Suplet::ParameterType::Enum);
+  EXPECT_EQ(definition->parameters[1].type, Supla::Suplet::ParameterType::Enum);
   EXPECT_STREQ(definition->parameters[1].defaultText, "avg");
   EXPECT_STREQ(definition->parameters[1].enumValues, "avg,min,max");
   EXPECT_EQ(definition->parameters[1].required, 1);
@@ -131,8 +163,7 @@ TEST(SupletJsonDefinitionTests, ParsesVirtualDefinition) {
             Supla::Suplet::ParameterLifecycle::Secret);
   ASSERT_EQ(definition->channelCount, 3);
 
-  EXPECT_EQ(definition->channels[0].channelKey,
-            Supla::Suplet::channelKeyFromString("relay_main"));
+  EXPECT_EQ(definition->channels[0].channelId, 1);
   EXPECT_EQ(definition->channels[0].kind,
             Supla::Suplet::ChannelKind::VirtualRelay);
   EXPECT_EQ(definition->channels[0].defaultFunction,
@@ -163,6 +194,7 @@ TEST(SupletJsonDefinitionTests, ParsesVersionedParameterizedRelayDefinition) {
       "{\"key\":\"host\",\"type\":\"string\",\"required\":true}"
       "],"
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","
@@ -193,30 +225,45 @@ TEST(SupletJsonDefinitionTests, RejectsInvalidDefinitions) {
   EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
       "{\"definitionId\":1,\"definitionVersion\":1,"
       "\"kind\":\"virtualRelay\","
-      "\"channels\":[{\"key\":\"a\",\"kind\":\"virtualRelay\"}]}",
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
       &parsed));
   EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
       "{\"definitionId\":1,\"definitionVersion\":1,"
       "\"category\":\"virtual\","
-      "\"channels\":[{\"key\":\"a\",\"kind\":\"virtualRelay\"}]}",
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
       &parsed));
   EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
       "{\"definitionId\":1,\"definitionVersion\":1,"
       "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
       "\"channels\":["
-      "{\"key\":\"same\",\"kind\":\"virtualRelay\"},"
-      "{\"key\":\"same\",\"kind\":\"virtualRelay\"}]}",
+      "{\"channelId\":1,\"key\":\"first\",\"kind\":\"virtualRelay\"},"
+      "{\"channelId\":1,\"key\":\"second\",\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"key\":\"a\",\"kind\":\"virtualRelay\"}]}",
+      &parsed));
+  EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
+      "{\"definitionId\":1,\"definitionVersion\":1,"
+      "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
+      "\"channels\":[{\"channelId\":0,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
       &parsed));
   EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
       "{\"definitionId\":1,\"definitionVersion\":1,"
       "\"category\":\"bad\",\"kind\":\"virtualRelay\","
-      "\"channels\":[{\"key\":\"a\",\"kind\":\"virtualRelay\"}]}",
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
       &parsed));
   EXPECT_FALSE(Supla::Suplet::JsonDefinitionParser::parse(
       "{\"definitionId\":1,\"definitionVersion\":1,"
       "\"maxInstances\":0,"
       "\"category\":\"virtual\",\"kind\":\"virtualRelay\","
-      "\"channels\":[{\"key\":\"a\",\"kind\":\"virtualRelay\"}]}",
+      "\"channels\":[{\"channelId\":1,\"key\":\"a\","
+      "\"kind\":\"virtualRelay\"}]}",
       &parsed));
 }
 
@@ -228,9 +275,10 @@ TEST_F(SupletJsonFixture, CreatesRuntimeElementsFromJsonDefinition) {
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":["
-      "{\"key\":\"relay\",\"kind\":\"virtualRelay\","
+      "{\"channelId\":1,\"key\":\"relay\",\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\"},"
-      "{\"key\":\"temperature\",\"kind\":\"virtualThermometer\","
+      "{\"channelId\":2,\"key\":\"temperature\",\"kind\":"
+      "\"virtualThermometer\","
       "\"function\":\"thermometer\"}"
       "]"
       "}";

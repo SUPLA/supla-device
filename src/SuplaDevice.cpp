@@ -1960,6 +1960,7 @@ bool SuplaDeviceClass::loadSupletRuntime() {
     return true;
   }
 
+  SUPLA_LOG_INFO("Suplet: loading configuration...");
   addChannelConflictResolver(supletManager);
   return supletManager->loadRuntimeElements();
 #else

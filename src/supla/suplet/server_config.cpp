@@ -926,7 +926,21 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
       return ServerConfigResult::StorageError;
     }
     if (memcmp(info.sha256, sha256, sizeof(info.sha256)) != 0) {
-      return ServerConfigResult::DefinitionCannotBeChanged;
+      if (manager == nullptr || manager->getInstanceTable() == nullptr) {
+        return ServerConfigResult::DefinitionCannotBeChanged;
+      }
+      if (isDefinitionUsed(manager, definitionId, definitionVersion)) {
+        return ServerConfigResult::DefinitionCannotBeChanged;
+      }
+      if (!definitionCache->save(
+              definitionId, definitionVersion, definitionJson, sha256)) {
+        return ServerConfigResult::StorageError;
+      }
+      ServerConfigResult result = loadDownloadedDefinitions();
+      if (result == ServerConfigResult::Applied) {
+        runtimeRefreshRequired = true;
+      }
+      return result;
     }
     ServerConfigResult result = loadDownloadedDefinitions();
     if (result == ServerConfigResult::Applied) {

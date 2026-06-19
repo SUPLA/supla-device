@@ -67,8 +67,8 @@ class Manager : public Supla::Device::ChannelConflictResolver {
 
   bool addInstance(const InstanceRecord &record);
   bool addInstanceWithAllocatedChannels(InstanceRecord record,
-                                        const uint32_t *requiredChannelKeys,
-                                        uint8_t requiredChannelKeyCount,
+                                        const uint8_t *requiredChannelIds,
+                                        uint8_t requiredChannelIdCount,
                                         const ChannelAllocator &occupied);
   bool addInstanceFromDefinition(InstanceRecord record,
                                  const Definition &definition,

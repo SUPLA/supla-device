@@ -286,7 +286,7 @@ bool readChannel(JsonReader *reader,
   }
 
   auto channel = output->getChannel(index);
-  channel->channelKey = Supla::Suplet::kInvalidChannelKey;
+  channel->channelId = Supla::Suplet::kInvalidChannelId;
   channel->kind = Supla::Suplet::ChannelKind::Unknown;
   channel->defaultFunction = 0;
   channel->caption = nullptr;
@@ -303,11 +303,11 @@ bool readChannel(JsonReader *reader,
       return false;
     }
 
-    if (equalText(key, "key")) {
-      if (!reader->readString(tmp, sizeof(tmp))) {
+    if (equalText(key, "channelId")) {
+      if (!readUInt8(reader, &channel->channelId) ||
+          channel->channelId == Supla::Suplet::kInvalidChannelId) {
         return false;
       }
-      channel->channelKey = Supla::Suplet::channelKeyFromString(tmp);
     } else if (equalText(key, "kind")) {
       if (!reader->readString(tmp, sizeof(tmp)) ||
           !Supla::Suplet::JsonDefinitionParser::parseChannelKind(
@@ -350,7 +350,7 @@ bool readChannel(JsonReader *reader,
     }
   }
 
-  return channel->channelKey != Supla::Suplet::kInvalidChannelKey &&
+  return channel->channelId != Supla::Suplet::kInvalidChannelId &&
          channel->kind != Supla::Suplet::ChannelKind::Unknown;
 }
 

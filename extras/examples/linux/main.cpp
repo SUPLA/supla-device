@@ -688,9 +688,8 @@ bool setupSupletRuntime(Supla::Config *config) {
   static Supla::Suplet::ServerConfigHandler serverConfigHandler(
       &manager, &registry, &definitionCache, &downloadedDefinitions);
 
-  const uint32_t relayKey = Supla::Suplet::channelKeyFromString("relay");
   static Supla::Suplet::ChannelDefinition relayChannels[1] = {};
-  relayChannels[0].channelKey = relayKey;
+  relayChannels[0].channelId = 1;
   relayChannels[0].kind = Supla::Suplet::ChannelKind::VirtualRelay;
   relayChannels[0].defaultFunction = SUPLA_CHANNELFNC_POWERSWITCH;
   relayChannels[0].caption = "Suplet virtual relay";
@@ -725,9 +724,8 @@ bool setupSupletRuntime(Supla::Config *config) {
     return false;
   }
 
-  const uint32_t binaryKey = Supla::Suplet::channelKeyFromString("binary");
   static Supla::Suplet::ChannelDefinition binaryChannels[1] = {};
-  binaryChannels[0].channelKey = binaryKey;
+  binaryChannels[0].channelId = 1;
   binaryChannels[0].kind = Supla::Suplet::ChannelKind::VirtualBinarySensor;
   binaryChannels[0].defaultFunction = SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR;
   binaryChannels[0].caption = "Suplet virtual binary";
@@ -762,10 +760,8 @@ bool setupSupletRuntime(Supla::Config *config) {
     return false;
   }
 
-  const uint32_t temperatureKey =
-      Supla::Suplet::channelKeyFromString("temperature");
   static Supla::Suplet::ChannelDefinition thermometerGroupChannels[1] = {};
-  thermometerGroupChannels[0].channelKey = temperatureKey;
+  thermometerGroupChannels[0].channelId = 1;
   thermometerGroupChannels[0].kind =
       Supla::Suplet::ChannelKind::VirtualThermometer;
   thermometerGroupChannels[0].defaultFunction = SUPLA_CHANNELFNC_THERMOMETER;
@@ -1397,9 +1393,6 @@ int main(int argc, char *argv[]) {
     SuplaDevice.setLastStateLogger(
         new Supla::Device::FileStateLogger(config->getStateFilesPath()));
     Supla::LinuxNetwork network;
-
-    SUPLA_LOG_INFO(
-        "Initializing Suplet runtime *********************************");
 
     if (!setupSupletRuntime(config.get())) {
       SUPLA_LOG_ERROR("Suplet runtime setup failed. Exit");

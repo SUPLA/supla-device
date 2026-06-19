@@ -91,7 +91,7 @@ class InMemoryConfig : public Supla::Config {
 };
 
 Supla::Suplet::ChannelDefinition thermometerGroupChannel[] = {
-    {Supla::Suplet::channelKeyFromString("temperature"),
+    {1,
      Supla::Suplet::ChannelKind::VirtualThermometer,
      SUPLA_CHANNELFNC_THERMOMETER,
      nullptr},
@@ -155,7 +155,7 @@ TEST(SupletAssignmentApplierTests, AddsAssignmentAndPersistsIt) {
   ASSERT_NE(record, nullptr);
   EXPECT_NE(record->subDeviceId, 0);
   EXPECT_EQ(record->channelMap.getChannelNumber(
-                Supla::Suplet::channelKeyFromString("temperature")),
+                1),
             Supla::Suplet::kInvalidChannelNumber);
 
   Supla::Suplet::Manager loaded(&config);
@@ -181,7 +181,7 @@ TEST(SupletAssignmentApplierTests, UpdatesAssignmentWithoutChangingChannelMap) {
   auto firstRecord = manager.getInstanceTable()->findByInstanceId(77);
   ASSERT_NE(firstRecord, nullptr);
   int firstChannel = firstRecord->channelMap.getChannelNumber(
-      Supla::Suplet::channelKeyFromString("temperature"));
+      1);
   uint8_t firstSubdevice = firstRecord->subDeviceId;
 
   EXPECT_EQ(applier.applyJson(instanceJsonMax, 900, 4, occupied),
@@ -191,7 +191,7 @@ TEST(SupletAssignmentApplierTests, UpdatesAssignmentWithoutChangingChannelMap) {
   ASSERT_NE(updatedRecord, nullptr);
   EXPECT_EQ(updatedRecord->subDeviceId, firstSubdevice);
   EXPECT_EQ(updatedRecord->channelMap.getChannelNumber(
-                Supla::Suplet::channelKeyFromString("temperature")),
+                1),
             firstChannel);
 
   Supla::Suplet::ThermometerGroupConfig parsed = {};

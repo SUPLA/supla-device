@@ -162,7 +162,7 @@ TEST_F(SupletThermometerGroupFixture,
   addSource(6, 22.0);
 
   Supla::Suplet::ChannelDefinition channel = {
-      Supla::Suplet::channelKeyFromString("avg_temperature"),
+      1,
       Supla::Suplet::ChannelKind::VirtualThermometer,
       SUPLA_CHANNELFNC_THERMOMETER,
       nullptr};
@@ -181,7 +181,7 @@ TEST_F(SupletThermometerGroupFixture,
   instance.definitionVersion = definition.definitionVersion;
   instance.subDeviceId = 3;
   instance.state = Supla::Suplet::InstanceState::Active;
-  ASSERT_TRUE(instance.channelMap.add(channel.channelKey, 8));
+  ASSERT_TRUE(instance.channelMap.add(channel.channelId, 8));
 
   auto config = makeConfig(Supla::Suplet::ThermometerGroupMode::Avg);
   uint8_t buffer[SUPLA_SUPLET_MAX_CONFIG_SIZE] = {};
@@ -204,7 +204,7 @@ TEST_F(SupletThermometerGroupFixture,
 
 TEST_F(SupletThermometerGroupFixture, RuntimeRejectsMissingGroupConfig) {
   Supla::Suplet::ChannelDefinition channel = {
-      Supla::Suplet::channelKeyFromString("avg_temperature"),
+      1,
       Supla::Suplet::ChannelKind::VirtualThermometer,
       SUPLA_CHANNELFNC_THERMOMETER,
       nullptr};
@@ -219,7 +219,7 @@ TEST_F(SupletThermometerGroupFixture, RuntimeRejectsMissingGroupConfig) {
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 1;
   instance.subDeviceId = 3;
-  ASSERT_TRUE(instance.channelMap.add(channel.channelKey, 8));
+  ASSERT_TRUE(instance.channelMap.add(channel.channelId, 8));
 
   Supla::Element *created[1] = {};
   EXPECT_FALSE(

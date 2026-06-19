@@ -25,24 +25,9 @@
 namespace Supla {
 namespace Suplet {
 
-uint32_t channelKeyFromString(const char *value) {
-  if (value == nullptr || value[0] == 0) {
-    return kInvalidChannelKey;
-  }
-
-  uint32_t hash = 2166136261u;
-  while (*value) {
-    hash ^= static_cast<uint8_t>(*value);
-    hash *= 16777619u;
-    value++;
-  }
-
-  return hash == kInvalidChannelKey ? 1 : hash;
-}
-
-bool getRequiredChannelKeys(const Definition &definition,
-                            uint32_t *output,
-                            uint8_t outputSize) {
+bool getRequiredChannelIds(const Definition &definition,
+                           uint8_t *output,
+                           uint8_t outputSize) {
   if (definition.channelCount > 0 &&
       (definition.channels == nullptr || output == nullptr)) {
     return false;
@@ -52,16 +37,16 @@ bool getRequiredChannelKeys(const Definition &definition,
   }
 
   for (uint8_t i = 0; i < definition.channelCount; i++) {
-    if (definition.channels[i].channelKey == kInvalidChannelKey) {
+    if (definition.channels[i].channelId == kInvalidChannelId) {
       return false;
     }
     for (uint8_t j = i + 1; j < definition.channelCount; j++) {
-      if (definition.channels[i].channelKey ==
-          definition.channels[j].channelKey) {
+      if (definition.channels[i].channelId ==
+          definition.channels[j].channelId) {
         return false;
       }
     }
-    output[i] = definition.channels[i].channelKey;
+    output[i] = definition.channels[i].channelId;
   }
 
   return true;

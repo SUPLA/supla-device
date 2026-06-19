@@ -45,19 +45,7 @@ class SupletRuntimeFixture : public testing::Test {
 
 }  // namespace
 
-TEST(SupletDefinitionTests, ChannelKeyFromStringIsStableAndRejectsEmpty) {
-  uint32_t key = Supla::Suplet::channelKeyFromString("relay_4");
-
-  EXPECT_NE(key, Supla::Suplet::kInvalidChannelKey);
-  EXPECT_EQ(key, Supla::Suplet::channelKeyFromString("relay_4"));
-  EXPECT_NE(key, Supla::Suplet::channelKeyFromString("relay_5"));
-  EXPECT_EQ(Supla::Suplet::channelKeyFromString(nullptr),
-            Supla::Suplet::kInvalidChannelKey);
-  EXPECT_EQ(Supla::Suplet::channelKeyFromString(""),
-            Supla::Suplet::kInvalidChannelKey);
-}
-
-TEST(SupletDefinitionTests, ExtractsAndValidatesRequiredChannelKeys) {
+TEST(SupletDefinitionTests, ExtractsAndValidatesRequiredChannelIds) {
   Supla::Suplet::ChannelDefinition channels[] = {
       {10, Supla::Suplet::ChannelKind::VirtualRelay, 0, nullptr},
       {20, Supla::Suplet::ChannelKind::VirtualBinarySensor, 0, nullptr},
@@ -69,20 +57,20 @@ TEST(SupletDefinitionTests, ExtractsAndValidatesRequiredChannelKeys) {
   definition.kind = Supla::Suplet::Kind::VirtualRelay;
   definition.channels = channels;
   definition.channelCount = 2;
-  uint32_t keys[2] = {};
+  uint8_t keys[2] = {};
 
   EXPECT_TRUE(Supla::Suplet::Runtime::validateDefinition(definition));
-  EXPECT_TRUE(Supla::Suplet::getRequiredChannelKeys(definition, keys, 2));
+  EXPECT_TRUE(Supla::Suplet::getRequiredChannelIds(definition, keys, 2));
   EXPECT_EQ(keys[0], 10u);
   EXPECT_EQ(keys[1], 20u);
 
-  channels[1].channelKey = 10;
+  channels[1].channelId = 10;
   EXPECT_FALSE(Supla::Suplet::Runtime::validateDefinition(definition));
 }
 
 TEST_F(SupletRuntimeFixture, CreatesVirtualRelayWithStableChannelAndSubdevice) {
   Supla::Suplet::ChannelDefinition channel = {
-      Supla::Suplet::channelKeyFromString("relay"),
+      1,
       Supla::Suplet::ChannelKind::VirtualRelay,
       SUPLA_CHANNELFNC_POWERSWITCH,
       nullptr};
@@ -96,7 +84,7 @@ TEST_F(SupletRuntimeFixture, CreatesVirtualRelayWithStableChannelAndSubdevice) {
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 11;
   instance.subDeviceId = 7;
-  ASSERT_TRUE(instance.channelMap.add(channel.channelKey, 4));
+  ASSERT_TRUE(instance.channelMap.add(channel.channelId, 4));
 
   Supla::Element *created[1] = {};
   ASSERT_TRUE(
@@ -116,7 +104,7 @@ TEST_F(SupletRuntimeFixture, CreatesVirtualRelayWithStableChannelAndSubdevice) {
 
 TEST_F(SupletRuntimeFixture, AppliesChannelCaptionFromDefinition) {
   Supla::Suplet::ChannelDefinition channel = {
-      Supla::Suplet::channelKeyFromString("relay"),
+      1,
       Supla::Suplet::ChannelKind::VirtualRelay,
       SUPLA_CHANNELFNC_POWERSWITCH,
       "Suplet relay"};
@@ -130,7 +118,7 @@ TEST_F(SupletRuntimeFixture, AppliesChannelCaptionFromDefinition) {
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 15;
   instance.subDeviceId = 10;
-  ASSERT_TRUE(instance.channelMap.add(channel.channelKey, 8));
+  ASSERT_TRUE(instance.channelMap.add(channel.channelId, 8));
 
   Supla::Element *created[1] = {};
   ASSERT_TRUE(
@@ -144,7 +132,7 @@ TEST_F(SupletRuntimeFixture, AppliesChannelCaptionFromDefinition) {
 TEST_F(SupletRuntimeFixture,
        CreatesVirtualBinaryWithStableChannelAndSubdevice) {
   Supla::Suplet::ChannelDefinition channel = {
-      Supla::Suplet::channelKeyFromString("binary"),
+      2,
       Supla::Suplet::ChannelKind::VirtualBinarySensor,
       SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR,
       nullptr};
@@ -158,7 +146,7 @@ TEST_F(SupletRuntimeFixture,
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 12;
   instance.subDeviceId = 8;
-  ASSERT_TRUE(instance.channelMap.add(channel.channelKey, 6));
+  ASSERT_TRUE(instance.channelMap.add(channel.channelId, 6));
 
   Supla::Element *created[1] = {};
   ASSERT_TRUE(
@@ -203,11 +191,11 @@ TEST_F(SupletRuntimeFixture, CreateElementsRollsBackOnUnsupportedChannelKind) {
 
 TEST_F(SupletRuntimeFixture, ManagerAddsDefinitionAndRuntimeCreatesChannels) {
   Supla::Suplet::ChannelDefinition channels[] = {
-      {Supla::Suplet::channelKeyFromString("relay"),
+      {1,
        Supla::Suplet::ChannelKind::VirtualRelay,
        SUPLA_CHANNELFNC_POWERSWITCH,
        nullptr},
-      {Supla::Suplet::channelKeyFromString("binary"),
+      {2,
        Supla::Suplet::ChannelKind::VirtualBinarySensor,
        SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR,
        nullptr},
@@ -289,8 +277,8 @@ TEST_F(SupletRuntimeFixture, ManagerAddsDefinitionAndRuntimeCreatesChannels) {
   EXPECT_EQ(record->definitionId, 77u);
   EXPECT_EQ(record->definitionVersion, 3u);
   EXPECT_NE(record->subDeviceId, 0);
-  EXPECT_EQ(record->channelMap.getChannelNumber(channels[0].channelKey), 1);
-  EXPECT_EQ(record->channelMap.getChannelNumber(channels[1].channelKey), 3);
+  EXPECT_EQ(record->channelMap.getChannelNumber(channels[0].channelId), 1);
+  EXPECT_EQ(record->channelMap.getChannelNumber(channels[1].channelId), 3);
 
   Supla::Element *created[2] = {};
   ASSERT_TRUE(

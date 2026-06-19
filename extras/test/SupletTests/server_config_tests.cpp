@@ -175,14 +175,14 @@ void escapeJsonString(const char *input, char *output, size_t outputSize) {
 }
 
 Supla::Suplet::ChannelDefinition relayChannels[] = {
-    {Supla::Suplet::channelKeyFromString("relay"),
+    {1,
      Supla::Suplet::ChannelKind::VirtualRelay,
      SUPLA_CHANNELFNC_POWERSWITCH,
      nullptr},
 };
 
 Supla::Suplet::ChannelDefinition binaryChannels[] = {
-    {Supla::Suplet::channelKeyFromString("binary"),
+    {2,
      Supla::Suplet::ChannelKind::VirtualBinarySensor,
      SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR,
      nullptr},
@@ -270,6 +270,7 @@ const char downloadedDefinitionJson[] =
 "\"category\":\"virtual\","
 "\"kind\":\"virtualRelay\","
 "\"channels\":[{"
+"\"channelId\":1,"
 "\"key\":\"relay\","
 "\"kind\":\"virtualRelay\","
 "\"function\":\"powerSwitch\""
@@ -302,8 +303,7 @@ TEST(SupletServerConfigTests, AppliesBuiltInAssignmentAndRequestsRefresh) {
 
   auto record = manager.getInstanceTable()->findByInstanceId(70);
   ASSERT_NE(record, nullptr);
-  EXPECT_EQ(record->channelMap.getChannelNumber(
-                Supla::Suplet::channelKeyFromString("relay")),
+  EXPECT_EQ(record->channelMap.getChannelNumber(1),
             Supla::Suplet::kInvalidChannelNumber);
 }
 
@@ -666,7 +666,7 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionAndAppliesAssignment) {
   EXPECT_EQ(record->definitionId, 701u);
 }
 
-TEST(SupletServerConfigTests, RejectsConflictingDownloadedDefinition) {
+TEST(SupletServerConfigTests, ReplacesUnusedConflictingDownloadedDefinition) {
   InMemoryConfig config;
   FakeSha256Provider shaProvider;
   Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
@@ -691,6 +691,56 @@ TEST(SupletServerConfigTests, RejectsConflictingDownloadedDefinition) {
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":[{"
+      "\"channelId\":1,"
+      "\"key\":\"relay\","
+      "\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\","
+      "\"caption\":\"Changed\""
+      "}]"
+      "}";
+  makeSha(&shaProvider, conflictingJson, sha);
+  EXPECT_EQ(handler.saveDownloadedDefinition(701, 1, conflictingJson, sha),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  char storedJson[1024] = {};
+  ASSERT_TRUE(cache.load(701, 1, storedJson, sizeof(storedJson)));
+  EXPECT_STREQ(storedJson, conflictingJson);
+  ASSERT_NE(registry.findDefinition(701, 1), nullptr);
+  EXPECT_STREQ(registry.findDefinition(701, 1)->channels[0].caption, "Changed");
+}
+
+TEST(SupletServerConfigTests,
+     RejectsChangingDownloadedDefinitionUsedByInstance) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  uint8_t sha[32] = {};
+  makeSha(&shaProvider, downloadedDefinitionJson, sha);
+  ASSERT_EQ(
+      handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
+      Supla::Suplet::ServerConfigResult::Applied);
+
+  Supla::Suplet::ChannelAllocator occupied;
+  ASSERT_EQ(
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      Supla::Suplet::ServerConfigResult::Applied);
+
+  const char conflictingJson[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":1,"
+      "\"definitionId\":701,"
+      "\"definitionVersion\":1,"
+      "\"maxInstances\":3,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","
@@ -726,6 +776,7 @@ TEST(SupletServerConfigTests, LoadsMultipleDownloadedDefinitionVersions) {
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","
@@ -742,6 +793,7 @@ TEST(SupletServerConfigTests, LoadsMultipleDownloadedDefinitionVersions) {
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","

@@ -138,8 +138,8 @@ Supla::Suplet::InstanceRecord makeRecord(uint32_t instanceId,
   record.definitionVersion = 1;
   record.subDeviceId = subDeviceId;
   record.state = Supla::Suplet::InstanceState::Active;
-  record.channelMap.add(1000 + instanceId, channelA);
-  record.channelMap.add(2000 + instanceId, channelB);
+  record.channelMap.add(1, channelA);
+  record.channelMap.add(2, channelB);
   return record;
 }
 
@@ -157,8 +157,8 @@ TEST(SupletManagerTests, AddInstancePersistsTable) {
   auto record = loaded.getInstanceTable()->findByInstanceId(1);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->subDeviceId, 1);
-  EXPECT_EQ(record->channelMap.getChannelNumber(1001), 4);
-  EXPECT_EQ(record->channelMap.getChannelNumber(2001), 8);
+  EXPECT_EQ(record->channelMap.getChannelNumber(1), 4);
+  EXPECT_EQ(record->channelMap.getChannelNumber(2), 8);
 }
 
 TEST(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
@@ -210,7 +210,7 @@ TEST(SupletManagerTests,
   newRecord.definitionId = 102;
   newRecord.definitionVersion = 1;
   newRecord.state = Supla::Suplet::InstanceState::Active;
-  uint32_t required[] = {3001, 3002, 3003};
+  uint8_t required[] = {1, 2, 3};
 
   EXPECT_TRUE(manager.addInstanceWithAllocatedChannels(
       newRecord, required, 3, occupied));
@@ -218,9 +218,9 @@ TEST(SupletManagerTests,
   auto record = manager.getInstanceTable()->findByInstanceId(2);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->subDeviceId, 2);
-  EXPECT_EQ(record->channelMap.getChannelNumber(3001), 9);
-  EXPECT_EQ(record->channelMap.getChannelNumber(3002), 10);
-  EXPECT_EQ(record->channelMap.getChannelNumber(3003), 11);
+  EXPECT_EQ(record->channelMap.getChannelNumber(1), 9);
+  EXPECT_EQ(record->channelMap.getChannelNumber(2), 10);
+  EXPECT_EQ(record->channelMap.getChannelNumber(3), 11);
 }
 
 TEST(SupletManagerTests, SubDeviceAllocationSkipsExistingChannelSubdevices) {
@@ -300,11 +300,11 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   Supla::Suplet::Manager manager(&config);
 
   Supla::Suplet::ChannelDefinition channels[] = {
-      {Supla::Suplet::channelKeyFromString("relay"),
+      {1,
        Supla::Suplet::ChannelKind::VirtualRelay,
        SUPLA_CHANNELFNC_POWERSWITCH,
        nullptr},
-      {Supla::Suplet::channelKeyFromString("binary"),
+      {2,
        Supla::Suplet::ChannelKind::VirtualBinarySensor,
        SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR,
        nullptr},
@@ -326,8 +326,8 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   active.definitionVersion = 2;
   active.subDeviceId = 10;
   active.state = Supla::Suplet::InstanceState::Active;
-  ASSERT_TRUE(active.channelMap.add(channels[0].channelKey, 4));
-  ASSERT_TRUE(active.channelMap.add(channels[1].channelKey, 8));
+  ASSERT_TRUE(active.channelMap.add(channels[0].channelId, 4));
+  ASSERT_TRUE(active.channelMap.add(channels[1].channelId, 8));
   ASSERT_TRUE(manager.addInstance(active));
 
   Supla::Suplet::InstanceRecord disabled = active;
@@ -335,8 +335,8 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   disabled.subDeviceId = 11;
   disabled.state = Supla::Suplet::InstanceState::Disabled;
   disabled.channelMap.clear();
-  ASSERT_TRUE(disabled.channelMap.add(channels[0].channelKey, 12));
-  ASSERT_TRUE(disabled.channelMap.add(channels[1].channelKey, 13));
+  ASSERT_TRUE(disabled.channelMap.add(channels[0].channelId, 12));
+  ASSERT_TRUE(disabled.channelMap.add(channels[1].channelId, 13));
   ASSERT_TRUE(manager.addInstance(disabled));
 
   Supla::Suplet::InstanceRecord staged = active;
@@ -344,8 +344,8 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   staged.subDeviceId = 12;
   staged.state = Supla::Suplet::InstanceState::Staged;
   staged.channelMap.clear();
-  ASSERT_TRUE(staged.channelMap.add(channels[0].channelKey, 14));
-  ASSERT_TRUE(staged.channelMap.add(channels[1].channelKey, 15));
+  ASSERT_TRUE(staged.channelMap.add(channels[0].channelId, 14));
+  ASSERT_TRUE(staged.channelMap.add(channels[1].channelId, 15));
   ASSERT_TRUE(manager.addInstance(staged));
 
   Supla::Suplet::InstanceRecord deletePending = active;
@@ -353,8 +353,8 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   deletePending.subDeviceId = 13;
   deletePending.state = Supla::Suplet::InstanceState::DeletePending;
   deletePending.channelMap.clear();
-  ASSERT_TRUE(deletePending.channelMap.add(channels[0].channelKey, 16));
-  ASSERT_TRUE(deletePending.channelMap.add(channels[1].channelKey, 17));
+  ASSERT_TRUE(deletePending.channelMap.add(channels[0].channelId, 16));
+  ASSERT_TRUE(deletePending.channelMap.add(channels[1].channelId, 17));
   ASSERT_TRUE(manager.addInstance(deletePending));
 
   Supla::Element *created[8] = {};
@@ -380,11 +380,11 @@ TEST(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
   Supla::Suplet::Manager manager(&config);
 
   Supla::Suplet::ChannelDefinition channels[] = {
-      {Supla::Suplet::channelKeyFromString("relay"),
+      {1,
        Supla::Suplet::ChannelKind::VirtualRelay,
        SUPLA_CHANNELFNC_POWERSWITCH,
        nullptr},
-      {Supla::Suplet::channelKeyFromString("binary"),
+      {2,
        Supla::Suplet::ChannelKind::VirtualBinarySensor,
        SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR,
        nullptr},
@@ -406,8 +406,8 @@ TEST(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
   active.definitionVersion = 1;
   active.subDeviceId = 1;
   active.state = Supla::Suplet::InstanceState::Active;
-  ASSERT_TRUE(active.channelMap.add(channels[0].channelKey, 4));
-  ASSERT_TRUE(active.channelMap.add(channels[1].channelKey, 8));
+  ASSERT_TRUE(active.channelMap.add(channels[0].channelId, 4));
+  ASSERT_TRUE(active.channelMap.add(channels[1].channelId, 8));
   ASSERT_TRUE(manager.addInstance(active));
 
   ASSERT_TRUE(manager.loadRuntimeElementsFromRegistry(registry));

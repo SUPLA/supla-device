@@ -36,25 +36,25 @@ void ChannelMap::clear() {
   count = 0;
 }
 
-bool ChannelMap::add(uint32_t channelKey, int channelNumber) {
-  if (channelKey == kInvalidChannelKey ||
+bool ChannelMap::add(uint8_t channelId, int channelNumber) {
+  if (channelId == kInvalidChannelId ||
       channelNumber < 0 ||
       channelNumber >= SUPLA_CHANNELMAXCOUNT ||
       count >= SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE ||
-      containsKey(channelKey) ||
+      containsId(channelId) ||
       containsChannelNumber(channelNumber)) {
     return false;
   }
 
-  mappings[count].channelKey = channelKey;
+  mappings[count].channelId = channelId;
   mappings[count].channelNumber = channelNumber;
   count++;
   return true;
 }
 
-bool ChannelMap::remove(uint32_t channelKey) {
+bool ChannelMap::remove(uint8_t channelId) {
   for (uint8_t i = 0; i < count; i++) {
-    if (mappings[i].channelKey == channelKey) {
+    if (mappings[i].channelId == channelId) {
       for (uint8_t j = i; j + 1 < count; j++) {
         mappings[j] = mappings[j + 1];
       }
@@ -66,8 +66,8 @@ bool ChannelMap::remove(uint32_t channelKey) {
   return false;
 }
 
-bool ChannelMap::containsKey(uint32_t channelKey) const {
-  return getChannelNumber(channelKey) != kInvalidChannelNumber;
+bool ChannelMap::containsId(uint8_t channelId) const {
+  return getChannelNumber(channelId) != kInvalidChannelNumber;
 }
 
 bool ChannelMap::containsChannelNumber(int channelNumber) const {
@@ -79,9 +79,9 @@ bool ChannelMap::containsChannelNumber(int channelNumber) const {
   return false;
 }
 
-int ChannelMap::getChannelNumber(uint32_t channelKey) const {
+int ChannelMap::getChannelNumber(uint8_t channelId) const {
   for (uint8_t i = 0; i < count; i++) {
-    if (mappings[i].channelKey == channelKey) {
+    if (mappings[i].channelId == channelId) {
       return mappings[i].channelNumber;
     }
   }
@@ -137,19 +137,19 @@ void ChannelAllocator::clearOccupied() {
 }
 
 bool ChannelAllocator::allocateMissing(ChannelMap *map,
-                                       const uint32_t *requiredChannelKeys,
-                                       uint8_t requiredChannelKeyCount) {
+                                       const uint8_t *requiredChannelIds,
+                                       uint8_t requiredChannelIdCount) {
   if (map == nullptr ||
-      (requiredChannelKeyCount > 0 && requiredChannelKeys == nullptr)) {
+      (requiredChannelIdCount > 0 && requiredChannelIds == nullptr)) {
     return false;
   }
 
-  for (uint8_t i = 0; i < requiredChannelKeyCount; i++) {
-    if (requiredChannelKeys[i] == kInvalidChannelKey) {
+  for (uint8_t i = 0; i < requiredChannelIdCount; i++) {
+    if (requiredChannelIds[i] == kInvalidChannelId) {
       return false;
     }
-    for (uint8_t j = i + 1; j < requiredChannelKeyCount; j++) {
-      if (requiredChannelKeys[i] == requiredChannelKeys[j]) {
+    for (uint8_t j = i + 1; j < requiredChannelIdCount; j++) {
+      if (requiredChannelIds[i] == requiredChannelIds[j]) {
         return false;
       }
     }
@@ -161,15 +161,15 @@ bool ChannelAllocator::allocateMissing(ChannelMap *map,
     return false;
   }
 
-  for (uint8_t i = 0; i < requiredChannelKeyCount; i++) {
-    uint32_t channelKey = requiredChannelKeys[i];
-    if (result.containsKey(channelKey)) {
+  for (uint8_t i = 0; i < requiredChannelIdCount; i++) {
+    uint8_t channelId = requiredChannelIds[i];
+    if (result.containsId(channelId)) {
       continue;
     }
 
     int channelNumber = allocationState.findFirstFreeChannel();
     if (channelNumber == kInvalidChannelNumber ||
-        !result.add(channelKey, channelNumber) ||
+        !result.add(channelId, channelNumber) ||
         !allocationState.markOccupied(channelNumber)) {
       return false;
     }

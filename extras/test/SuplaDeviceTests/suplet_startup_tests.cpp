@@ -237,14 +237,14 @@ int sendSupletInstanceParamsCalcfg(SuplaDeviceClass *sd,
   return sd->handleCalcfgFromServer(&request, result);
 }
 
-const uint32_t relayKey = Supla::Suplet::channelKeyFromString("relay");
+const uint8_t relayId = 1;
 
 Supla::Suplet::Definition makeRelayDefinition(
     uint32_t definitionId,
     const char *name = "Runtime virtual relay",
     const char *caption = "Virtual relay") {
   static Supla::Suplet::ChannelDefinition channels[1] = {};
-  channels[0].channelKey = relayKey;
+  channels[0].channelId = relayId;
   channels[0].kind = Supla::Suplet::ChannelKind::VirtualRelay;
   channels[0].defaultFunction = SUPLA_CHANNELFNC_POWERSWITCH;
   channels[0].caption = caption;
@@ -315,7 +315,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   record.definitionVersion = definition.definitionVersion;
   record.subDeviceId = 7;
   record.state = Supla::Suplet::InstanceState::Active;
-  ASSERT_TRUE(record.channelMap.add(relayKey, 4));
+  ASSERT_TRUE(record.channelMap.add(relayId, 4));
   ASSERT_TRUE(manager.addInstance(record));
 
   sd.setSupletRuntime(&manager, &registry);
@@ -409,7 +409,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   auto record = manager.getInstanceTable()->findByInstanceId(125);
   ASSERT_NE(record, nullptr);
-  EXPECT_EQ(record->channelMap.getChannelNumber(relayKey),
+  EXPECT_EQ(record->channelMap.getChannelNumber(relayId),
             Supla::Suplet::kInvalidChannelNumber);
 
   sd.iterate();
@@ -424,7 +424,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   record = manager.getInstanceTable()->findByInstanceId(125);
   ASSERT_NE(record, nullptr);
-  EXPECT_EQ(record->channelMap.getChannelNumber(relayKey), 1);
+  EXPECT_EQ(record->channelMap.getChannelNumber(relayId), 1);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,
@@ -513,7 +513,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
     ASSERT_NE(supletElement, nullptr);
     auto record = manager.getInstanceTable()->findByInstanceId(126);
     ASSERT_NE(record, nullptr);
-    EXPECT_EQ(record->channelMap.getChannelNumber(relayKey), 1);
+    EXPECT_EQ(record->channelMap.getChannelNumber(relayId), 1);
   }
 
   {
@@ -536,7 +536,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
     auto record = restartedManager.getInstanceTable()->findByInstanceId(126);
     ASSERT_NE(record, nullptr);
-    EXPECT_EQ(record->channelMap.getChannelNumber(relayKey), 1);
+    EXPECT_EQ(record->channelMap.getChannelNumber(relayId), 1);
   }
 }
 
@@ -555,7 +555,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
   record.definitionVersion = 1;
   record.subDeviceId = 9;
   record.state = Supla::Suplet::InstanceState::Active;
-  ASSERT_TRUE(record.channelMap.add(relayKey, 3));
+  ASSERT_TRUE(record.channelMap.add(relayId, 3));
   ASSERT_TRUE(manager.addInstance(record));
 
   Supla::Suplet::Registry registry;
@@ -580,6 +580,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","
@@ -635,6 +636,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"kind\":\"virtualRelay\","
       "\"maxInstances\":2,"
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","
@@ -804,6 +806,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","
@@ -870,6 +873,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"category\":\"virtual\","
       "\"kind\":\"virtualRelay\","
       "\"channels\":[{"
+      "\"channelId\":1,"
       "\"key\":\"relay\","
       "\"kind\":\"virtualRelay\","
       "\"function\":\"powerSwitch\","

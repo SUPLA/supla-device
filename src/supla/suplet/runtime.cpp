@@ -40,8 +40,8 @@ bool Runtime::validateDefinition(const Definition &definition) {
     return false;
   }
 
-  uint32_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getRequiredChannelKeys(
+  uint8_t keys[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
+  if (!getRequiredChannelIds(
           definition, keys, sizeof(keys) / sizeof(keys[0]))) {
     return false;
   }
@@ -99,7 +99,7 @@ Supla::Element *Runtime::createElement(const ChannelDefinition &channel,
 Supla::Element *Runtime::createElement(const Definition &definition,
                                        const ChannelDefinition &channel,
                                        const InstanceRecord &instance) {
-  int channelNumber = instance.channelMap.getChannelNumber(channel.channelKey);
+  int channelNumber = instance.channelMap.getChannelNumber(channel.channelId);
   if (instance.subDeviceId == 0) {
     return nullptr;
   }
@@ -178,7 +178,7 @@ bool Runtime::createElements(const Definition &definition,
   if (createdChannelMap != nullptr) {
     ChannelMap map;
     for (uint8_t i = 0; i < definition.channelCount; i++) {
-      if (!map.add(definition.channels[i].channelKey,
+      if (!map.add(definition.channels[i].channelId,
                    created[i]->getChannel()->getChannelNumber())) {
         for (uint8_t j = 0; j < definition.channelCount; j++) {
           delete created[j];

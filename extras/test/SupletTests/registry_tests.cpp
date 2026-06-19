@@ -23,7 +23,7 @@ Supla::Suplet::Definition makeDefinition(uint32_t id,
                                          uint32_t version,
                                          Supla::Suplet::Kind kind,
                                          Supla::Suplet::ChannelDefinition *ch) {
-  ch->channelKey = id + 1000;
+  ch->channelId = 1;
   ch->kind = Supla::Suplet::ChannelKind::VirtualRelay;
   Supla::Suplet::Definition definition = {};
   definition.definitionId = id;

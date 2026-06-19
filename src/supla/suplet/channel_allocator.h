@@ -30,10 +30,10 @@ namespace Supla {
 namespace Suplet {
 
 constexpr int kInvalidChannelNumber = -1;
-constexpr uint32_t kInvalidChannelKey = 0;
+constexpr uint8_t kInvalidChannelId = 0;
 
 struct ChannelMapping {
-  uint32_t channelKey = kInvalidChannelKey;
+  uint8_t channelId = kInvalidChannelId;
   int16_t channelNumber = kInvalidChannelNumber;
 };
 
@@ -42,11 +42,11 @@ class ChannelMap {
   uint8_t getCount() const;
   void clear();
 
-  bool add(uint32_t channelKey, int channelNumber);
-  bool remove(uint32_t channelKey);
-  bool containsKey(uint32_t channelKey) const;
+  bool add(uint8_t channelId, int channelNumber);
+  bool remove(uint8_t channelId);
+  bool containsId(uint8_t channelId) const;
   bool containsChannelNumber(int channelNumber) const;
-  int getChannelNumber(uint32_t channelKey) const;
+  int getChannelNumber(uint8_t channelId) const;
   const ChannelMapping *getMapping(uint8_t index) const;
 
  private:
@@ -63,8 +63,8 @@ class ChannelAllocator {
   void clearOccupied();
 
   bool allocateMissing(ChannelMap *map,
-                       const uint32_t *requiredChannelKeys,
-                       uint8_t requiredChannelKeyCount);
+                       const uint8_t *requiredChannelIds,
+                       uint8_t requiredChannelIdCount);
 
  private:
   int findFirstFreeChannel() const;

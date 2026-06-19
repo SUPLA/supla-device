@@ -30,7 +30,7 @@ namespace Suplet {
 
 namespace {
 
-constexpr uint8_t kSupletStorageVersion = 1;
+constexpr uint8_t kSupletStorageVersion = 2;
 constexpr uint8_t kDeletedSlot = 0;
 constexpr uint8_t kVariantA = 1;
 constexpr uint8_t kVariantB = 2;
@@ -441,8 +441,8 @@ bool Storage::loadVariant(uint8_t instanceId,
       return false;
     }
     for (uint8_t i = 0; i < header.channelCount; i++) {
-      if (stored[i].channelKey == kInvalidChannelKey ||
-          !loaded.channelMap.add(stored[i].channelKey,
+      if (stored[i].channelId == kInvalidChannelId ||
+          !loaded.channelMap.add(stored[i].channelId,
                                  stored[i].channelNumber)) {
         return false;
       }
@@ -475,11 +475,11 @@ bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
   StoredChannelMapping stored[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
   for (uint8_t i = 0; i < record.channelMap.getCount(); i++) {
     auto mapping = record.channelMap.getMapping(i);
-    if (mapping == nullptr || mapping->channelKey == kInvalidChannelKey ||
+    if (mapping == nullptr || mapping->channelId == kInvalidChannelId ||
         mapping->channelNumber < 0 || mapping->channelNumber > 255) {
       return false;
     }
-    stored[i].channelKey = mapping->channelKey;
+    stored[i].channelId = mapping->channelId;
     stored[i].channelNumber = static_cast<uint8_t>(mapping->channelNumber);
   }
 

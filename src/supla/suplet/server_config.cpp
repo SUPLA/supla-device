@@ -973,7 +973,8 @@ bool DownloadedDefinitionStore::load(const DefinitionCache &cache,
   uint16_t jsonSize = 0;
   for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
     CachedDefinitionInfo current = {};
-    if (!cache.getInfo(i, &current) || current.definitionId != definitionId ||
+    if (!cache.getInfoAndRepair(i, &current) ||
+        current.definitionId != definitionId ||
         current.definitionVersion != definitionVersion) {
       continue;
     }
@@ -1033,7 +1034,7 @@ ServerConfigResult ServerConfigHandler::loadDownloadedDefinitions() {
 
   for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
     CachedDefinitionInfo info = {};
-    if (!definitionCache->getInfo(i, &info)) {
+    if (!definitionCache->getInfoAndRepair(i, &info)) {
       continue;
     }
     ScopedJsonDefinition definition;

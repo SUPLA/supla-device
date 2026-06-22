@@ -77,6 +77,7 @@ class DefinitionCache {
   bool contains(uint32_t definitionId, uint16_t definitionVersion) const;
   bool erase(uint32_t definitionId, uint16_t definitionVersion);
   bool getInfo(uint8_t index, CachedDefinitionInfo *info) const;
+  bool getInfoAndRepair(uint8_t index, CachedDefinitionInfo *info) const;
   bool beginStagedSave(uint32_t definitionId,
                        uint16_t definitionVersion,
                        uint16_t jsonSize,
@@ -104,11 +105,16 @@ class DefinitionCache {
                           uint16_t jsonSize,
                           const uint8_t *expectedSha256,
                           uint8_t *calculatedSha256) const;
-  bool loadActiveHeader(uint8_t index,
+  bool readActiveHeader(uint8_t index,
                         CachedDefinitionInfo *info,
                         uint8_t *activeVariant = nullptr,
                         uint16_t *chunkCount = nullptr,
                         uint16_t *chunkSize = nullptr) const;
+  bool loadAndRepairActiveHeader(uint8_t index,
+                                 CachedDefinitionInfo *info,
+                                 uint8_t *activeVariant = nullptr,
+                                 uint16_t *chunkCount = nullptr,
+                                 uint16_t *chunkSize = nullptr) const;
   bool loadHeader(uint8_t index,
                   uint8_t variant,
                   CachedDefinitionInfo *info,
@@ -139,7 +145,9 @@ class DefinitionCache {
   bool setActiveVariant(uint8_t index, uint8_t variant);
   bool variantExists(uint8_t index, uint8_t variant) const;
   bool slotExists(uint8_t index) const;
-  int findSlot(uint32_t definitionId, uint16_t definitionVersion) const;
+  int findSlot(uint32_t definitionId,
+               uint16_t definitionVersion,
+               bool repair) const;
   int findFreeSlot() const;
   static uint8_t otherVariant(uint8_t variant);
   static bool isValidVariant(uint8_t variant);

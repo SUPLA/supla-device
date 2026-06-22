@@ -118,7 +118,7 @@ bool DefinitionCache::save(uint32_t definitionId,
     return false;
   }
 
-  int slot = findSlot(definitionId, definitionVersion);
+  int slot = findSlot(definitionId, definitionVersion, true);
   if (slot < 0) {
     slot = findFreeSlot();
   }
@@ -170,7 +170,7 @@ bool DefinitionCache::load(uint32_t definitionId,
     return false;
   }
 
-  int slot = findSlot(definitionId, definitionVersion);
+  int slot = findSlot(definitionId, definitionVersion, true);
   if (slot < 0) {
     return false;
   }
@@ -179,11 +179,11 @@ bool DefinitionCache::load(uint32_t definitionId,
   uint16_t chunkCount = 0;
   uint16_t chunkSize = 0;
   uint8_t activeVariant = kDeletedVariant;
-  if (!loadActiveHeader(static_cast<uint8_t>(slot),
-                        &loadedInfo,
-                        &activeVariant,
-                        &chunkCount,
-                        &chunkSize) ||
+  if (!loadAndRepairActiveHeader(static_cast<uint8_t>(slot),
+                                 &loadedInfo,
+                                 &activeVariant,
+                                 &chunkCount,
+                                 &chunkSize) ||
       jsonSize <= loadedInfo.jsonSize ||
       !loadPayload(static_cast<uint8_t>(slot),
                    activeVariant,
@@ -204,7 +204,7 @@ bool DefinitionCache::load(uint32_t definitionId,
 }
 
 bool DefinitionCache::erase(uint32_t definitionId, uint16_t definitionVersion) {
-  int slot = findSlot(definitionId, definitionVersion);
+  int slot = findSlot(definitionId, definitionVersion, true);
   if (slot < 0) {
     return false;
   }
@@ -213,11 +213,16 @@ bool DefinitionCache::erase(uint32_t definitionId, uint16_t definitionVersion) {
 
 bool DefinitionCache::contains(uint32_t definitionId,
                                uint16_t definitionVersion) const {
-  return findSlot(definitionId, definitionVersion) >= 0;
+  return findSlot(definitionId, definitionVersion, false) >= 0;
 }
 
 bool DefinitionCache::getInfo(uint8_t index, CachedDefinitionInfo *info) const {
-  return loadActiveHeader(index, info);
+  return readActiveHeader(index, info);
+}
+
+bool DefinitionCache::getInfoAndRepair(uint8_t index,
+                                       CachedDefinitionInfo *info) const {
+  return loadAndRepairActiveHeader(index, info);
 }
 
 bool DefinitionCache::beginStagedSave(uint32_t definitionId,
@@ -231,7 +236,7 @@ bool DefinitionCache::beginStagedSave(uint32_t definitionId,
     return false;
   }
 
-  int targetSlot = findSlot(definitionId, definitionVersion);
+  int targetSlot = findSlot(definitionId, definitionVersion, true);
   if (targetSlot < 0) {
     targetSlot = findFreeSlot();
   }
@@ -241,7 +246,8 @@ bool DefinitionCache::beginStagedSave(uint32_t definitionId,
 
   uint8_t activeVariant = kDeletedVariant;
   CachedDefinitionInfo info = {};
-  loadActiveHeader(static_cast<uint8_t>(targetSlot), &info, &activeVariant);
+  loadAndRepairActiveHeader(
+      static_cast<uint8_t>(targetSlot), &info, &activeVariant);
 
   handle->slot = static_cast<uint8_t>(targetSlot);
   handle->variant =
@@ -343,6 +349,7 @@ bool DefinitionCache::commitStaged(DefinitionCacheHandle handle,
     return false;
   }
 
+  config->commit();
   eraseVariant(handle.slot, otherVariant(handle.variant));
   eraseLegacySlot(handle.slot);
   config->commit();
@@ -384,11 +391,35 @@ bool DefinitionCache::calculateAndVerify(const char *json,
   return true;
 }
 
-bool DefinitionCache::loadActiveHeader(uint8_t index,
+bool DefinitionCache::readActiveHeader(uint8_t index,
                                        CachedDefinitionInfo *info,
                                        uint8_t *activeVariant,
                                        uint16_t *chunkCount,
                                        uint16_t *chunkSize) const {
+  if (config == nullptr || info == nullptr || index >= kMaxCacheSlots) {
+    return false;
+  }
+
+  char actKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  uint8_t currentVariant = kDeletedVariant;
+  if (!makeActKey(index, actKey, sizeof(actKey)) ||
+      !config->getUInt8(actKey, &currentVariant) ||
+      !isValidVariant(currentVariant) ||
+      !loadHeader(index, currentVariant, info, chunkCount, chunkSize)) {
+    return false;
+  }
+
+  if (activeVariant != nullptr) {
+    *activeVariant = currentVariant;
+  }
+  return true;
+}
+
+bool DefinitionCache::loadAndRepairActiveHeader(uint8_t index,
+                                                CachedDefinitionInfo *info,
+                                                uint8_t *activeVariant,
+                                                uint16_t *chunkCount,
+                                                uint16_t *chunkSize) const {
   if (config == nullptr || info == nullptr || index >= kMaxCacheSlots) {
     return false;
   }
@@ -685,10 +716,13 @@ bool DefinitionCache::slotExists(uint8_t index) const {
 }
 
 int DefinitionCache::findSlot(uint32_t definitionId,
-                              uint16_t definitionVersion) const {
+                              uint16_t definitionVersion,
+                              bool repair) const {
   for (uint8_t i = 0; i < kMaxCacheSlots; i++) {
     CachedDefinitionInfo info = {};
-    if (loadActiveHeader(i, &info) && info.definitionId == definitionId &&
+    const bool loaded = repair ? loadAndRepairActiveHeader(i, &info)
+                               : readActiveHeader(i, &info);
+    if (loaded && info.definitionId == definitionId &&
         info.definitionVersion == definitionVersion) {
       return i;
     }
@@ -699,7 +733,7 @@ int DefinitionCache::findSlot(uint32_t definitionId,
 int DefinitionCache::findFreeSlot() const {
   for (uint8_t i = 0; i < kMaxCacheSlots; i++) {
     CachedDefinitionInfo info = {};
-    if (!loadActiveHeader(i, &info)) {
+    if (!readActiveHeader(i, &info)) {
       return i;
     }
   }

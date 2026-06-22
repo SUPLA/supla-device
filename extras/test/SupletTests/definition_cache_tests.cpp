@@ -21,6 +21,7 @@
 #include <supla/storage/key_value.h>
 #include <supla/suplet/definition_cache.h>
 
+#include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
@@ -49,6 +50,7 @@ class InMemoryConfig : public Supla::Config {
     if (key == nullptr || value == nullptr) {
       return false;
     }
+    operations.push_back(std::string("blob:") + key);
     blobs[key] = std::vector<char>(value, value + blobSize);
     return true;
   }
@@ -89,6 +91,8 @@ class InMemoryConfig : public Supla::Config {
     if (key == nullptr) {
       return false;
     }
+    operations.push_back(std::string("u8:") + key + "=" +
+                         std::to_string(value));
     uint8Values[key] = value;
     return true;
   }
@@ -102,16 +106,19 @@ class InMemoryConfig : public Supla::Config {
     if (key == nullptr) {
       return false;
     }
+    operations.push_back(std::string("erase:") + key);
     bool erased = blobs.erase(key) > 0;
     erased = (uint8Values.erase(key) > 0) || erased;
     return erased;
   }
   void commit() override {
+    operations.push_back("commit");
     commitCount++;
   }
 
   std::map<std::string, std::vector<char>> blobs;
   std::map<std::string, uint8_t> uint8Values;
+  std::vector<std::string> operations;
   int commitCount = 0;
 };
 
@@ -385,6 +392,55 @@ TEST(SupletDefinitionCacheTests, UpdatesExistingSlotAndErasesIt) {
   EXPECT_TRUE(config.uint8Values.empty());
 }
 
+TEST(SupletDefinitionCacheTests, CommitsActivationBeforeErasingOldVariant) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  const char jsonA[] = "{\"definitionId\":17,\"definitionVersion\":1}";
+  const char jsonB[] = "{\"definitionId\":17,\"definitionVersion\":1,\"x\":2}";
+  uint8_t sha[32] = {};
+
+  makeSha(&shaProvider, jsonA, sha);
+  ASSERT_TRUE(cache.save(17, 1, jsonA, sha));
+  config.operations.clear();
+
+  makeSha(&shaProvider, jsonB, sha);
+  ASSERT_TRUE(cache.save(17, 1, jsonB, sha));
+
+  auto setActive = std::find(config.operations.begin(),
+                             config.operations.end(),
+                             "u8:spld0_act=2");
+  ASSERT_NE(setActive, config.operations.end());
+  auto activationCommit =
+    std::find(setActive, config.operations.end(), "commit");
+  ASSERT_NE(activationCommit, config.operations.end());
+  auto eraseOldHeader = std::find(config.operations.begin(),
+                                  config.operations.end(),
+                                  "erase:spld0_1");
+  ASSERT_NE(eraseOldHeader, config.operations.end());
+  EXPECT_LT(activationCommit, eraseOldHeader);
+}
+
+TEST(SupletDefinitionCacheTests, GetInfoDoesNotRepairOrCleanupVariants) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  const char json[] = "{\"definitionId\":18,\"definitionVersion\":1}";
+  uint8_t sha[32] = {};
+
+  makeSha(&shaProvider, json, sha);
+  ASSERT_TRUE(cache.save(18, 1, json, sha));
+  config.blobs["spld0_2"] = config.blobs["spld0_1"];
+  config.blobs["spld0_2c0"] = config.blobs["spld0_1c0"];
+  config.operations.clear();
+
+  Supla::Suplet::CachedDefinitionInfo info = {};
+  ASSERT_TRUE(cache.getInfo(0, &info));
+  EXPECT_EQ(config.blobs.count("spld0_2"), 1);
+  EXPECT_EQ(config.blobs.count("spld0_2c0"), 1);
+  EXPECT_TRUE(config.operations.empty());
+}
+
 TEST(SupletDefinitionCacheTests, FallsBackToOtherVariantWhenActiveIsCorrupted) {
   InMemoryConfig config;
   FakeSha256Provider shaProvider;
@@ -427,7 +483,8 @@ TEST(SupletDefinitionCacheTests, OrphanedSlotWithoutActiveMarkerIsCleaned) {
   ASSERT_FALSE(config.uint8Values.empty());
 
   config.uint8Values.erase("spld0_act");
-  EXPECT_FALSE(cache.contains(16, 1));
+  Supla::Suplet::CachedDefinitionInfo info = {};
+  EXPECT_FALSE(cache.getInfoAndRepair(0, &info));
   EXPECT_TRUE(config.blobs.empty());
   EXPECT_TRUE(config.uint8Values.empty());
 }

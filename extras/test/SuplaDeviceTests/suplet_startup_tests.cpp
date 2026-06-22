@@ -739,7 +739,11 @@ TEST_F(SuplaDeviceSupletStartupTests,
 
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
-  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
   sd.setSupletRuntime(&manager, &registry);
   sd.setSupletServerConfigHandler(&handler);
 
@@ -772,6 +776,63 @@ TEST_F(SuplaDeviceSupletStartupTests,
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
             SUPLA_CALCFG_RESULT_DONE);
   expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgDefinitionChunkRequiresSequentialOffset) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const char definitionJson[] =
+      "{\"schemaVersion\":1,\"handlerVersion\":1,\"definitionId\":5200,"
+      "\"definitionVersion\":1,\"maxInstances\":1,\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\",\"channels\":[{\"channelId\":1,"
+      "\"key\":\"relay\",\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\"}]}";
+  uint8_t sha[32] = {};
+  makeDeviceTestSha(definitionJson, strlen(definitionJson), sha);
+
+  TSD_DeviceCalCfgRequest request = {};
+  TDS_DeviceCalCfgResult result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
+  TCalCfg_SupletDefinitionBegin begin = {};
+  begin.SessionId = 777;
+  begin.DefinitionId = 5200;
+  begin.DefinitionVersion = 1;
+  begin.JsonSize = strlen(definitionJson);
+  memcpy(begin.JsonSha256, sha, sizeof(sha));
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
+  ASSERT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_DONE);
+
+  request = {};
+  result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_CHUNK;
+  TCalCfg_SupletDefinitionChunk chunk = {};
+  chunk.SessionId = begin.SessionId;
+  chunk.Offset = 1;
+  chunk.Size = 3;
+  memcpy(chunk.Data, definitionJson, chunk.Size);
+  request.DataSize = offsetof(TCalCfg_SupletDefinitionChunk, Data) + chunk.Size;
+  memcpy(request.Data, &chunk, request.DataSize);
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

@@ -1126,6 +1126,121 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
   return ServerConfigResult::Applied;
 }
 
+ServerConfigResult ServerConfigHandler::beginStagedDownloadedDefinition(
+    uint32_t definitionId,
+    uint16_t definitionVersion,
+    uint16_t jsonSize,
+    const uint8_t *sha256,
+    uint8_t *slot) {
+  if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
+      definitionId == 0 || definitionVersion == 0 || jsonSize == 0 ||
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr ||
+      slot == nullptr) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  if (!definitionCache->beginStagedSave(
+          definitionId, definitionVersion, jsonSize, sha256, slot)) {
+    return ServerConfigResult::StorageError;
+  }
+  return ServerConfigResult::Applied;
+}
+
+ServerConfigResult ServerConfigHandler::writeStagedDownloadedDefinitionChunk(
+    uint8_t slot,
+    uint16_t chunkIndex,
+    const uint8_t *data,
+    uint16_t size) {
+  if (definitionCache == nullptr || data == nullptr || size == 0) {
+    return ServerConfigResult::InvalidArgument;
+  }
+  if (!definitionCache->writeStagedChunk(slot, chunkIndex, data, size)) {
+    return ServerConfigResult::StorageError;
+  }
+  return ServerConfigResult::Applied;
+}
+
+ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
+    uint8_t slot,
+    uint32_t definitionId,
+    uint16_t definitionVersion,
+    uint16_t jsonSize,
+    const uint8_t *sha256) {
+  if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
+      definitionId == 0 || definitionVersion == 0 || jsonSize == 0 ||
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
+    return ServerConfigResult::InvalidArgument;
+  }
+
+  char *definitionJson = new char[static_cast<size_t>(jsonSize) + 1];
+  if (definitionJson == nullptr) {
+    return ServerConfigResult::StorageError;
+  }
+
+  bool loaded = definitionCache->loadStaged(slot,
+                                            definitionId,
+                                            definitionVersion,
+                                            definitionJson,
+                                            static_cast<size_t>(jsonSize) + 1);
+  if (!loaded) {
+    delete[] definitionJson;
+    return ServerConfigResult::StorageError;
+  }
+
+  ScopedJsonDefinition parsed;
+  if (!parsed.allocate()) {
+    delete[] definitionJson;
+    return ServerConfigResult::StorageError;
+  }
+
+  if (!JsonDefinitionParser::parse(definitionJson, parsed.get()) ||
+      parsed.get()->getDefinition()->definitionId != definitionId ||
+      parsed.get()->getDefinition()->definitionVersion != definitionVersion ||
+      !Runtime::validateDefinition(*parsed.get()->getDefinition())) {
+    delete[] definitionJson;
+    return ServerConfigResult::InvalidDefinition;
+  }
+  delete[] definitionJson;
+
+  if (definitionCache->contains(definitionId, definitionVersion)) {
+    CachedDefinitionInfo info = {};
+    bool foundInfo = false;
+    for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
+      CachedDefinitionInfo current = {};
+      if (definitionCache->getInfo(i, &current) &&
+          current.definitionId == definitionId &&
+          current.definitionVersion == definitionVersion) {
+        info = current;
+        foundInfo = true;
+        break;
+      }
+    }
+    if (!foundInfo) {
+      return ServerConfigResult::StorageError;
+    }
+    if (memcmp(info.sha256, sha256, sizeof(info.sha256)) != 0) {
+      if (manager == nullptr || manager->getInstanceTable() == nullptr ||
+          isDefinitionUsed(manager, definitionId, definitionVersion)) {
+        return ServerConfigResult::DefinitionCannotBeChanged;
+      }
+    }
+  }
+
+  if (!definitionCache->commitStaged(
+          slot, definitionId, definitionVersion, jsonSize, sha256)) {
+    return ServerConfigResult::StorageError;
+  }
+
+  runtimeRefreshRequired = true;
+  return ServerConfigResult::Applied;
+}
+
+void ServerConfigHandler::abortStagedDownloadedDefinition(uint8_t slot) {
+  if (definitionCache != nullptr) {
+    definitionCache->abortStaged(slot);
+  }
+}
+
 ServerConfigResult ServerConfigHandler::removeDownloadedDefinition(
     uint32_t definitionId, uint16_t definitionVersion) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||

@@ -21,14 +21,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
-#ifndef SUPLA_SUPLET_MAX_CACHED_DEFINITIONS
-#define SUPLA_SUPLET_MAX_CACHED_DEFINITIONS 4
-#endif
-
-#ifndef SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE
-#define SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE 2048
-#endif
+#include <supla/suplet/config.h>
 
 namespace Supla {
 
@@ -79,32 +72,64 @@ class DefinitionCache {
   bool contains(uint32_t definitionId, uint16_t definitionVersion) const;
   bool erase(uint32_t definitionId, uint16_t definitionVersion);
   bool getInfo(uint8_t index, CachedDefinitionInfo *info) const;
+  bool beginStagedSave(uint32_t definitionId,
+                       uint16_t definitionVersion,
+                       uint16_t jsonSize,
+                       const uint8_t *sha256,
+                       uint8_t *slot);
+  bool writeStagedChunk(uint8_t slot,
+                        uint16_t chunkIndex,
+                        const uint8_t *data,
+                        uint16_t size);
+  bool loadStaged(uint8_t slot,
+                  uint32_t definitionId,
+                  uint16_t definitionVersion,
+                  char *json,
+                  size_t jsonSize,
+                  CachedDefinitionInfo *info = nullptr) const;
+  bool commitStaged(uint8_t slot,
+                    uint32_t definitionId,
+                    uint16_t definitionVersion,
+                    uint16_t jsonSize,
+                    const uint8_t *sha256);
+  bool abortStaged(uint8_t slot);
 
  private:
-  struct SlotData {
-    uint32_t definitionId = 0;
-    uint16_t definitionVersion = 0;
-    uint16_t jsonSize = 0;
-    uint8_t sha256[32] = {};
-    char *json = nullptr;
-  };
-
   bool calculateAndVerify(const char *json,
                           uint16_t jsonSize,
                           const uint8_t *expectedSha256,
                           uint8_t *calculatedSha256) const;
-  bool loadSlot(uint8_t index, SlotData *slot) const;
+  bool loadHeader(uint8_t index,
+                  CachedDefinitionInfo *info,
+                  uint16_t *chunkCount = nullptr,
+                  uint16_t *chunkSize = nullptr) const;
   bool saveSlot(uint8_t index,
                 uint32_t definitionId,
                 uint16_t definitionVersion,
                 const char *json,
                 uint16_t jsonSize,
                 const uint8_t *sha256);
-  static void clearSlot(SlotData *slot);
+  bool saveHeader(uint8_t index,
+                  const CachedDefinitionInfo &info,
+                  uint16_t chunkCount,
+                  uint16_t chunkSize);
+  bool loadPayload(uint8_t slot,
+                   bool staged,
+                   const CachedDefinitionInfo &info,
+                   uint16_t chunkCount,
+                   uint16_t chunkSize,
+                   char *json,
+                   size_t jsonSize) const;
+  bool eraseChunks(uint8_t index, bool staged);
   bool eraseSlot(uint8_t index);
   int findSlot(uint32_t definitionId, uint16_t definitionVersion) const;
   int findFreeSlot() const;
-  static const char *slotKey(uint8_t index);
+  static bool makeHeaderKey(uint8_t index, char *output, size_t outputSize);
+  static bool makeChunkKey(uint8_t index,
+                           uint16_t chunkIndex,
+                           bool staged,
+                           char *output,
+                           size_t outputSize);
 
   Supla::Config *config = nullptr;
   Sha256Provider *sha256Provider = nullptr;

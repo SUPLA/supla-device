@@ -19,6 +19,7 @@
 
 #include <stdint.h>
 
+#include <supla/sha256.h>
 #include <supla/suplet/config.h>
 #include <supla/suplet/definition_cache.h>
 #include <supla/suplet/storage.h>
@@ -48,9 +49,12 @@ struct DefinitionCalcfgSession {
   uint16_t definitionVersion = 0;
   uint16_t jsonSize = 0;
   uint16_t receivedSize = 0;
+  uint8_t cacheSlot = 0;
+  uint16_t currentChunkIndex = 0;
+  uint16_t currentChunkSize = 0;
   uint8_t expectedSha256[32] = {};
-  char json[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
-  uint8_t received[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE] = {};
+  uint8_t currentChunk[SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE] = {};
+  Supla::Sha256 sha256 = {};
 };
 
 }  // namespace Suplet

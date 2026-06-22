@@ -576,6 +576,10 @@ DefinitionCalcfgSession *Manager::beginDefinitionCalcfgSession() {
 
 void Manager::clearDefinitionCalcfgSession() {
   if (definitionCalcfgSession != nullptr) {
+    if (serverConfigHandler != nullptr && definitionCalcfgSession->active) {
+      serverConfigHandler->abortStagedDownloadedDefinition(
+          definitionCalcfgSession->cacheSlot);
+    }
     delete definitionCalcfgSession;
     definitionCalcfgSession = nullptr;
   }

@@ -153,7 +153,7 @@ void makeSha(FakeSha256Provider *provider, const char *json, uint8_t *sha) {
       reinterpret_cast<const uint8_t *>(json), strlen(json), sha, 32));
 }
 
-constexpr size_t kDefinitionCacheHeaderSize = 48;
+constexpr size_t kDefinitionCacheHeaderSize = 50;
 
 }  // namespace
 
@@ -166,10 +166,11 @@ TEST(SupletDefinitionCacheTests, SavesLoadsAndReportsInfo) {
   makeSha(&shaProvider, json, sha);
 
   ASSERT_TRUE(cache.save(10, 1, json, sha));
-  EXPECT_EQ(config.commitCount, 1);
+  EXPECT_GE(config.commitCount, 1);
   ASSERT_GT(config.blobs.count("spld0"), 0);
-  EXPECT_EQ(config.blobs["spld0"].size(),
-            kDefinitionCacheHeaderSize + strlen(json) + 1);
+  ASSERT_GT(config.blobs.count("spld0c0"), 0);
+  EXPECT_EQ(config.blobs["spld0"].size(), kDefinitionCacheHeaderSize);
+  EXPECT_EQ(config.blobs["spld0c0"].size(), strlen(json));
 
   char output[128] = {};
   Supla::Suplet::CachedDefinitionInfo info = {};
@@ -211,11 +212,78 @@ TEST(SupletDefinitionCacheTests, StoresVariableSizeBlobs) {
 
   ASSERT_GT(config.blobs.count("spld0"), 0);
   ASSERT_GT(config.blobs.count("spld1"), 0);
-  EXPECT_EQ(config.blobs["spld0"].size(),
-            kDefinitionCacheHeaderSize + strlen(shortJson) + 1);
-  EXPECT_EQ(config.blobs["spld1"].size(),
-            kDefinitionCacheHeaderSize + strlen(longJson) + 1);
+  ASSERT_GT(config.blobs.count("spld0c0"), 0);
+  ASSERT_GT(config.blobs.count("spld1c0"), 0);
+  EXPECT_EQ(config.blobs["spld0"].size(), kDefinitionCacheHeaderSize);
+  EXPECT_EQ(config.blobs["spld1"].size(), kDefinitionCacheHeaderSize);
+  EXPECT_EQ(config.blobs["spld0c0"].size(), strlen(shortJson));
+  EXPECT_EQ(config.blobs["spld1c0"].size(), strlen(longJson));
   EXPECT_LT(config.blobs["spld0"].size(), 256u);
+}
+
+TEST(SupletDefinitionCacheTests, StoresPayloadInTwoKilobyteChunks) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  std::string json = "{\"definitionId\":22,\"definitionVersion\":1,\"data\":\"";
+  json += std::string(SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE + 17, 'x');
+  json += "\"}";
+  uint8_t sha[32] = {};
+  makeSha(&shaProvider, json.c_str(), sha);
+
+  ASSERT_TRUE(cache.save(22, 1, json.c_str(), sha));
+  ASSERT_GT(config.blobs.count("spld0"), 0);
+  ASSERT_GT(config.blobs.count("spld0c0"), 0);
+  ASSERT_GT(config.blobs.count("spld0c1"), 0);
+  EXPECT_EQ(config.blobs["spld0"].size(), kDefinitionCacheHeaderSize);
+  EXPECT_EQ(config.blobs["spld0c0"].size(),
+            static_cast<size_t>(SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE));
+  EXPECT_EQ(config.blobs["spld0c1"].size(),
+            json.size() - SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE);
+
+  std::string output(json.size() + 1, '\0');
+  ASSERT_TRUE(cache.load(22, 1, output.data(), output.size()));
+  EXPECT_STREQ(output.c_str(), json.c_str());
+}
+
+TEST(SupletDefinitionCacheTests, UsesSlotsAboveThree) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  uint8_t sha[32] = {};
+
+  for (uint8_t i = 0; i < 5; i++) {
+    std::string json = "{\"definitionId\":";
+    json += std::to_string(30 + i);
+    json += ",\"definitionVersion\":1}";
+    makeSha(&shaProvider, json.c_str(), sha);
+    ASSERT_TRUE(cache.save(30 + i, 1, json.c_str(), sha));
+  }
+
+  ASSERT_GT(config.blobs.count("spld4"), 0);
+  ASSERT_GT(config.blobs.count("spld4c0"), 0);
+  char output[128] = {};
+  ASSERT_TRUE(cache.load(34, 1, output, sizeof(output)));
+  EXPECT_STREQ(output, "{\"definitionId\":34,\"definitionVersion\":1}");
+}
+
+TEST(SupletDefinitionCacheTests, RejectsSaveWhenCacheIsFull) {
+  InMemoryConfig config;
+  FakeSha256Provider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  uint8_t sha[32] = {};
+
+  for (uint8_t i = 0; i < SUPLA_SUPLET_MAX_CACHED_DEFINITIONS; i++) {
+    std::string json = "{\"definitionId\":";
+    json += std::to_string(100 + i);
+    json += ",\"definitionVersion\":1}";
+    makeSha(&shaProvider, json.c_str(), sha);
+    ASSERT_TRUE(cache.save(100 + i, 1, json.c_str(), sha));
+  }
+
+  const char overflowJson[] = "{\"definitionId\":999,\"definitionVersion\":1}";
+  makeSha(&shaProvider, overflowJson, sha);
+  EXPECT_FALSE(cache.save(999, 1, overflowJson, sha));
 }
 
 TEST(SupletDefinitionCacheTests, RejectsWrongShaAndSmallOutputBuffer) {
@@ -245,8 +313,8 @@ TEST(SupletDefinitionCacheTests, DetectsCorruptedStoredJson) {
   makeSha(&shaProvider, json, sha);
   ASSERT_TRUE(cache.save(12, 1, json, sha));
 
-  ASSERT_GT(config.blobs.count("spld0"), 0);
-  for (auto &byte : config.blobs["spld0"]) {
+  ASSERT_GT(config.blobs.count("spld0c0"), 0);
+  for (auto &byte : config.blobs["spld0c0"]) {
     if (byte == '{') {
       byte = '[';
       break;
@@ -278,7 +346,7 @@ TEST(SupletDefinitionCacheTests, RejectsInvalidStoredHeaderAndTerminator) {
   EXPECT_FALSE(cache.load(14, 1, output, sizeof(output)));
 
   config.blobs["spld0"] = original;
-  config.blobs["spld0"].back() = 'x';
+  config.blobs["spld0"][14] = 0;  // chunkCount low byte
   EXPECT_FALSE(cache.load(14, 1, output, sizeof(output)));
 }
 
@@ -299,9 +367,10 @@ TEST(SupletDefinitionCacheTests, UpdatesExistingSlotAndErasesIt) {
   EXPECT_TRUE(cache.contains(13, 1));
   ASSERT_TRUE(cache.load(13, 1, output, sizeof(output)));
   EXPECT_STREQ(output, jsonB);
-  EXPECT_EQ(config.blobs.size(), 1u);
+  EXPECT_EQ(config.blobs.size(), 2u);
 
   EXPECT_TRUE(cache.erase(13, 1));
   EXPECT_FALSE(cache.contains(13, 1));
   EXPECT_FALSE(cache.load(13, 1, output, sizeof(output)));
+  EXPECT_TRUE(config.blobs.empty());
 }

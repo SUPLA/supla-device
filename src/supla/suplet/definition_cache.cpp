@@ -25,6 +25,7 @@
 #if SUPLA_SUPLET_ENABLED
 
 #include <limits.h>
+#include <stdio.h>
 #include <string.h>
 #include <supla/suplet/definition_cache.h>
 
@@ -34,11 +35,13 @@ namespace Suplet {
 namespace {
 
 constexpr uint32_t kCacheMagic = 0x5344504C;  // SDPL
-constexpr uint8_t kCacheVersion = 2;
-constexpr uint8_t kMaxCacheSlots = SUPLA_SUPLET_MAX_CACHED_DEFINITIONS < 4
-? SUPLA_SUPLET_MAX_CACHED_DEFINITIONS
-: 4;
+constexpr uint8_t kCacheVersion = 3;
+constexpr uint16_t kChunkSize = SUPLA_SUPLET_DEFINITION_CACHE_CHUNK_SIZE;
+constexpr uint8_t kMaxCacheSlots = SUPLA_SUPLET_MAX_CACHED_DEFINITIONS;
+constexpr uint16_t kMaxChunkCount =
+(SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + kChunkSize - 1) / kChunkSize;
 
+#pragma pack(push, 1)
 struct BlobHeader {
   uint32_t magic = 0;
   uint8_t version = 0;
@@ -46,8 +49,24 @@ struct BlobHeader {
   uint16_t jsonSize = 0;
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
+  uint16_t chunkCount = 0;
+  uint16_t chunkSize = 0;
   uint8_t sha256[32] = {};
 };
+#pragma pack(pop)
+
+uint16_t chunkCountForSize(uint16_t size) {
+  return (size + kChunkSize - 1) / kChunkSize;
+}
+
+uint16_t chunkPayloadSize(uint16_t jsonSize, uint16_t chunkIndex) {
+  const uint32_t offset = static_cast<uint32_t>(chunkIndex) * kChunkSize;
+  if (offset >= jsonSize) {
+    return 0;
+  }
+  const uint32_t remaining = jsonSize - offset;
+  return remaining > kChunkSize ? kChunkSize : static_cast<uint16_t>(remaining);
+}
 
 }  // namespace
 
@@ -83,7 +102,8 @@ bool DefinitionCache::save(uint32_t definitionId,
   }
 
   size_t jsonSize = strlen(json);
-  if (jsonSize == 0 || jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE) {
+  if (jsonSize == 0 || jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE ||
+      jsonSize > UINT16_MAX) {
     return false;
   }
 
@@ -125,24 +145,27 @@ bool DefinitionCache::load(uint32_t definitionId,
     return false;
   }
 
-  SlotData slotData = {};
-  if (!loadSlot(static_cast<uint8_t>(slot), &slotData) ||
-      jsonSize <= slotData.jsonSize ||
+  CachedDefinitionInfo loadedInfo = {};
+  uint16_t chunkCount = 0;
+  uint16_t chunkSize = 0;
+  if (!loadHeader(
+          static_cast<uint8_t>(slot), &loadedInfo, &chunkCount, &chunkSize) ||
+      jsonSize <= loadedInfo.jsonSize ||
+      !loadPayload(static_cast<uint8_t>(slot),
+                   false,
+                   loadedInfo,
+                   chunkCount,
+                   chunkSize,
+                   json,
+                   jsonSize) ||
       !calculateAndVerify(
-          slotData.json, slotData.jsonSize, slotData.sha256, nullptr)) {
-    clearSlot(&slotData);
+          json, loadedInfo.jsonSize, loadedInfo.sha256, nullptr)) {
     return false;
   }
 
-  memcpy(json, slotData.json, slotData.jsonSize);
-  json[slotData.jsonSize] = '\0';
   if (info != nullptr) {
-    info->definitionId = slotData.definitionId;
-    info->definitionVersion = slotData.definitionVersion;
-    info->jsonSize = slotData.jsonSize;
-    memcpy(info->sha256, slotData.sha256, sizeof(info->sha256));
+    *info = loadedInfo;
   }
-  clearSlot(&slotData);
   return true;
 }
 
@@ -160,19 +183,140 @@ bool DefinitionCache::contains(uint32_t definitionId,
 }
 
 bool DefinitionCache::getInfo(uint8_t index, CachedDefinitionInfo *info) const {
-  if (info == nullptr) {
+  return loadHeader(index, info);
+}
+
+bool DefinitionCache::beginStagedSave(uint32_t definitionId,
+                                      uint16_t definitionVersion,
+                                      uint16_t jsonSize,
+                                      const uint8_t *sha256,
+                                      uint8_t *slot) {
+  if (config == nullptr || slot == nullptr || definitionId == 0 ||
+      definitionVersion == 0 || jsonSize == 0 ||
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
     return false;
   }
-  SlotData slotData = {};
-  if (!loadSlot(index, &slotData)) {
+
+  int targetSlot = findSlot(definitionId, definitionVersion);
+  if (targetSlot < 0) {
+    targetSlot = findFreeSlot();
+  }
+  if (targetSlot < 0) {
     return false;
   }
-  info->definitionId = slotData.definitionId;
-  info->definitionVersion = slotData.definitionVersion;
-  info->jsonSize = slotData.jsonSize;
-  memcpy(info->sha256, slotData.sha256, sizeof(info->sha256));
-  clearSlot(&slotData);
+
+  *slot = static_cast<uint8_t>(targetSlot);
+  eraseChunks(*slot, true);
   return true;
+}
+
+bool DefinitionCache::writeStagedChunk(uint8_t slot,
+                                       uint16_t chunkIndex,
+                                       const uint8_t *data,
+                                       uint16_t size) {
+  if (config == nullptr || slot >= kMaxCacheSlots || data == nullptr ||
+      size == 0 || size > kChunkSize || chunkIndex >= kMaxChunkCount) {
+    return false;
+  }
+
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  if (!makeChunkKey(slot, chunkIndex, true, key, sizeof(key))) {
+    return false;
+  }
+  return config->setBlob(key, reinterpret_cast<const char *>(data), size);
+}
+
+bool DefinitionCache::loadStaged(uint8_t slot,
+                                 uint32_t definitionId,
+                                 uint16_t definitionVersion,
+                                 char *json,
+                                 size_t jsonSize,
+                                 CachedDefinitionInfo *info) const {
+  if (slot >= kMaxCacheSlots || definitionId == 0 || definitionVersion == 0 ||
+      json == nullptr || jsonSize == 0) {
+    return false;
+  }
+
+  CachedDefinitionInfo stagedInfo = {};
+  stagedInfo.definitionId = definitionId;
+  stagedInfo.definitionVersion = definitionVersion;
+  stagedInfo.jsonSize = static_cast<uint16_t>(jsonSize - 1);
+  uint16_t chunkCount = chunkCountForSize(stagedInfo.jsonSize);
+  if (!loadPayload(
+          slot, true, stagedInfo, chunkCount, kChunkSize, json, jsonSize)) {
+    return false;
+  }
+
+  if (info != nullptr) {
+    *info = stagedInfo;
+  }
+  return true;
+}
+
+bool DefinitionCache::commitStaged(uint8_t slot,
+                                   uint32_t definitionId,
+                                   uint16_t definitionVersion,
+                                   uint16_t jsonSize,
+                                   const uint8_t *sha256) {
+  if (config == nullptr || slot >= kMaxCacheSlots || definitionId == 0 ||
+      definitionVersion == 0 || jsonSize == 0 ||
+      jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
+    return false;
+  }
+
+  CachedDefinitionInfo stagedInfo = {};
+  stagedInfo.definitionId = definitionId;
+  stagedInfo.definitionVersion = definitionVersion;
+  stagedInfo.jsonSize = jsonSize;
+  memcpy(stagedInfo.sha256, sha256, sizeof(stagedInfo.sha256));
+  uint16_t stagedChunkCount = chunkCountForSize(jsonSize);
+  uint16_t stagedChunkSize = kChunkSize;
+
+  if (!eraseSlot(slot)) {
+    return false;
+  }
+
+  uint8_t *buffer = new uint8_t[kChunkSize];
+  if (buffer == nullptr) {
+    return false;
+  }
+
+  bool copied = true;
+  for (uint16_t i = 0; copied && i < stagedChunkCount; i++) {
+    const uint16_t expectedSize = chunkPayloadSize(stagedInfo.jsonSize, i);
+    char srcKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    char dstKey[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    copied = expectedSize > 0 &&
+             makeChunkKey(slot, i, true, srcKey, sizeof(srcKey)) &&
+             makeChunkKey(slot, i, false, dstKey, sizeof(dstKey)) &&
+             config->getBlobSize(srcKey) == expectedSize &&
+             config->getBlob(
+                 srcKey, reinterpret_cast<char *>(buffer), expectedSize) &&
+             config->setBlob(
+                 dstKey, reinterpret_cast<const char *>(buffer), expectedSize);
+  }
+  delete[] buffer;
+
+  if (!copied ||
+      !saveHeader(slot, stagedInfo, stagedChunkCount, stagedChunkSize)) {
+    eraseSlot(slot);
+    return false;
+  }
+
+  eraseChunks(slot, true);
+  config->commit();
+  return true;
+}
+
+bool DefinitionCache::abortStaged(uint8_t slot) {
+  if (config == nullptr || slot >= kMaxCacheSlots) {
+    return false;
+  }
+  bool result = eraseChunks(slot, true);
+  if (result) {
+    config->commit();
+  }
+  return result;
 }
 
 bool DefinitionCache::calculateAndVerify(const char *json,
@@ -199,60 +343,46 @@ bool DefinitionCache::calculateAndVerify(const char *json,
   return true;
 }
 
-bool DefinitionCache::loadSlot(uint8_t index, SlotData *slot) const {
-  if (config == nullptr || slot == nullptr || index >= kMaxCacheSlots) {
-    return false;
-  }
-  clearSlot(slot);
-  int blobSize = config->getBlobSize(slotKey(index));
-  if (blobSize <= static_cast<int>(sizeof(BlobHeader)) ||
-      blobSize > static_cast<int>(sizeof(BlobHeader) +
-                                  SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1)) {
+bool DefinitionCache::loadHeader(uint8_t index,
+                                 CachedDefinitionInfo *info,
+                                 uint16_t *chunkCount,
+                                 uint16_t *chunkSize) const {
+  if (config == nullptr || info == nullptr || index >= kMaxCacheSlots) {
     return false;
   }
 
-  uint8_t *buffer = new uint8_t[blobSize];
-  if (buffer == nullptr) {
-    return false;
-  }
-
-  bool loaded = config->getBlob(
-      slotKey(index), reinterpret_cast<char *>(buffer), blobSize);
-  if (!loaded) {
-    delete[] buffer;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  if (!makeHeaderKey(index, key, sizeof(key)) ||
+      config->getBlobSize(key) != static_cast<int>(sizeof(BlobHeader))) {
     return false;
   }
 
   BlobHeader header = {};
-  memcpy(&header, buffer, sizeof(header));
+  if (!config->getBlob(
+          key, reinterpret_cast<char *>(&header), sizeof(header))) {
+    return false;
+  }
+
   if (header.magic != kCacheMagic || header.version != kCacheVersion ||
       header.definitionId == 0 || header.definitionVersion == 0 ||
       header.jsonSize == 0 ||
       header.jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE ||
-      blobSize != static_cast<int>(sizeof(BlobHeader) + header.jsonSize + 1)) {
-    delete[] buffer;
+      header.chunkSize != kChunkSize ||
+      header.chunkCount != chunkCountForSize(header.jsonSize) ||
+      header.chunkCount == 0 || header.chunkCount > kMaxChunkCount) {
     return false;
   }
 
-  const char *json =
-      reinterpret_cast<const char *>(buffer + sizeof(BlobHeader));
-  if (json[header.jsonSize] != '\0') {
-    delete[] buffer;
-    return false;
+  info->definitionId = header.definitionId;
+  info->definitionVersion = header.definitionVersion;
+  info->jsonSize = header.jsonSize;
+  memcpy(info->sha256, header.sha256, sizeof(info->sha256));
+  if (chunkCount != nullptr) {
+    *chunkCount = header.chunkCount;
   }
-
-  slot->json = new char[header.jsonSize + 1];
-  if (slot->json == nullptr) {
-    delete[] buffer;
-    return false;
+  if (chunkSize != nullptr) {
+    *chunkSize = header.chunkSize;
   }
-
-  slot->definitionId = header.definitionId;
-  slot->definitionVersion = header.definitionVersion;
-  slot->jsonSize = header.jsonSize;
-  memcpy(slot->sha256, header.sha256, sizeof(slot->sha256));
-  memcpy(slot->json, json, header.jsonSize + 1);
-  delete[] buffer;
   return true;
 }
 
@@ -268,61 +398,124 @@ bool DefinitionCache::saveSlot(uint8_t index,
     return false;
   }
 
-  const size_t blobSize = sizeof(BlobHeader) + jsonSize + 1;
-  uint8_t *buffer = new uint8_t[blobSize];
-  if (buffer == nullptr) {
+  if (!eraseSlot(index)) {
+    return false;
+  }
+
+  const uint16_t chunkCount = chunkCountForSize(jsonSize);
+  for (uint16_t i = 0; i < chunkCount; i++) {
+    const uint16_t offset = i * kChunkSize;
+    const uint16_t size = chunkPayloadSize(jsonSize, i);
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    if (!makeChunkKey(index, i, false, key, sizeof(key)) ||
+        !config->setBlob(key, json + offset, size)) {
+      eraseSlot(index);
+      return false;
+    }
+  }
+
+  CachedDefinitionInfo info = {};
+  info.definitionId = definitionId;
+  info.definitionVersion = definitionVersion;
+  info.jsonSize = jsonSize;
+  memcpy(info.sha256, sha256, sizeof(info.sha256));
+  if (!saveHeader(index, info, chunkCount, kChunkSize)) {
+    eraseSlot(index);
+    return false;
+  }
+  config->commit();
+  return true;
+}
+
+bool DefinitionCache::saveHeader(uint8_t index,
+                                 const CachedDefinitionInfo &info,
+                                 uint16_t chunkCount,
+                                 uint16_t chunkSize) {
+  if (config == nullptr || index >= kMaxCacheSlots || info.definitionId == 0 ||
+      info.definitionVersion == 0 || info.jsonSize == 0 ||
+      info.jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE ||
+      chunkCount == 0 || chunkCount > kMaxChunkCount ||
+      chunkSize != kChunkSize) {
     return false;
   }
 
   BlobHeader header = {};
   header.magic = kCacheMagic;
   header.version = kCacheVersion;
-  header.definitionId = definitionId;
-  header.definitionVersion = definitionVersion;
-  header.jsonSize = jsonSize;
-  memcpy(header.sha256, sha256, sizeof(header.sha256));
-  memcpy(buffer, &header, sizeof(header));
-  memcpy(buffer + sizeof(header), json, jsonSize);
-  buffer[blobSize - 1] = '\0';
+  header.definitionId = info.definitionId;
+  header.definitionVersion = info.definitionVersion;
+  header.jsonSize = info.jsonSize;
+  header.chunkCount = chunkCount;
+  header.chunkSize = chunkSize;
+  memcpy(header.sha256, info.sha256, sizeof(header.sha256));
 
-  bool result = config->setBlob(
-      slotKey(index), reinterpret_cast<const char *>(buffer), blobSize);
-  delete[] buffer;
-  if (result) {
-    config->commit();
-  }
-  return result;
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  return makeHeaderKey(index, key, sizeof(key)) &&
+         config->setBlob(
+             key, reinterpret_cast<const char *>(&header), sizeof(header));
 }
 
-void DefinitionCache::clearSlot(SlotData *slot) {
-  if (slot == nullptr) {
-    return;
+bool DefinitionCache::loadPayload(uint8_t slot,
+                                  bool staged,
+                                  const CachedDefinitionInfo &info,
+                                  uint16_t chunkCount,
+                                  uint16_t chunkSize,
+                                  char *json,
+                                  size_t jsonSize) const {
+  if (config == nullptr || slot >= kMaxCacheSlots || json == nullptr ||
+      jsonSize <= info.jsonSize || info.jsonSize == 0 ||
+      info.jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE ||
+      chunkSize != kChunkSize ||
+      chunkCount != chunkCountForSize(info.jsonSize)) {
+    return false;
   }
-  if (slot->json != nullptr) {
-    delete[] slot->json;
+
+  for (uint16_t i = 0; i < chunkCount; i++) {
+    const uint16_t expectedSize = chunkPayloadSize(info.jsonSize, i);
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    if (expectedSize == 0 || !makeChunkKey(slot, i, staged, key, sizeof(key)) ||
+        config->getBlobSize(key) != expectedSize ||
+        !config->getBlob(
+            key, json + static_cast<size_t>(i) * kChunkSize, expectedSize)) {
+      return false;
+    }
   }
-  *slot = SlotData();
+  json[info.jsonSize] = '\0';
+  return true;
+}
+
+bool DefinitionCache::eraseChunks(uint8_t index, bool staged) {
+  if (config == nullptr || index >= kMaxCacheSlots) {
+    return false;
+  }
+  for (uint16_t i = 0; i < kMaxChunkCount; i++) {
+    char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+    if (makeChunkKey(index, i, staged, key, sizeof(key))) {
+      config->eraseKey(key);
+    }
+  }
+  return true;
 }
 
 bool DefinitionCache::eraseSlot(uint8_t index) {
   if (config == nullptr || index >= kMaxCacheSlots) {
     return false;
   }
-  bool result = config->eraseKey(slotKey(index));
-  if (result) {
-    config->commit();
+  char key[SUPLA_CONFIG_MAX_KEY_SIZE] = {};
+  if (makeHeaderKey(index, key, sizeof(key))) {
+    config->eraseKey(key);
   }
-  return result;
+  eraseChunks(index, false);
+  config->commit();
+  return true;
 }
 
 int DefinitionCache::findSlot(uint32_t definitionId,
                               uint16_t definitionVersion) const {
   for (uint8_t i = 0; i < kMaxCacheSlots; i++) {
-    SlotData slot = {};
-    bool found = loadSlot(i, &slot) && slot.definitionId == definitionId &&
-                 slot.definitionVersion == definitionVersion;
-    clearSlot(&slot);
-    if (found) {
+    CachedDefinitionInfo info = {};
+    if (loadHeader(i, &info) && info.definitionId == definitionId &&
+        info.definitionVersion == definitionVersion) {
       return i;
     }
   }
@@ -331,29 +524,39 @@ int DefinitionCache::findSlot(uint32_t definitionId,
 
 int DefinitionCache::findFreeSlot() const {
   for (uint8_t i = 0; i < kMaxCacheSlots; i++) {
-    SlotData slot = {};
-    bool used = loadSlot(i, &slot);
-    clearSlot(&slot);
-    if (!used) {
+    CachedDefinitionInfo info = {};
+    if (!loadHeader(i, &info)) {
       return i;
     }
   }
   return -1;
 }
 
-const char *DefinitionCache::slotKey(uint8_t index) {
-  switch (index) {
-    case 0:
-      return "spld0";
-    case 1:
-      return "spld1";
-    case 2:
-      return "spld2";
-    case 3:
-      return "spld3";
-    default:
-      return "";
+bool DefinitionCache::makeHeaderKey(uint8_t index,
+                                    char *output,
+                                    size_t outputSize) {
+  if (output == nullptr || outputSize == 0 || index >= kMaxCacheSlots) {
+    return false;
   }
+  int written = snprintf(output, outputSize, "spld%u", index);
+  return written > 0 && static_cast<size_t>(written) < outputSize;
+}
+
+bool DefinitionCache::makeChunkKey(uint8_t index,
+                                   uint16_t chunkIndex,
+                                   bool staged,
+                                   char *output,
+                                   size_t outputSize) {
+  if (output == nullptr || outputSize == 0 || index >= kMaxCacheSlots ||
+      chunkIndex >= kMaxChunkCount) {
+    return false;
+  }
+  int written = snprintf(output,
+                         outputSize,
+                         staged ? "splds%uc%u" : "spld%uc%u",
+                         index,
+                         chunkIndex);
+  return written > 0 && static_cast<size_t>(written) < outputSize;
 }
 
 }  // namespace Suplet

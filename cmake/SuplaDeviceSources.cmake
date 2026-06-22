@@ -73,7 +73,7 @@ set(SUPLA_DEVICE_SRCS
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/assignment_applier.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/calcfg_handler.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/capability_registry.cpp
-  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/channel_allocator.cpp
+  ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/channel_map.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/definition.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/definition_cache.cpp
   ${SUPLA_DEVICE_SRC_DIR}/supla/suplet/json_definition.cpp

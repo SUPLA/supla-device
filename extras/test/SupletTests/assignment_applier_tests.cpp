@@ -20,6 +20,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <supla/channels/channel.h>
 #include <supla/storage/config.h>
 #include <supla/suplet/assignment_applier.h>
 #include <supla/suplet/thermometer_group.h>
@@ -142,13 +143,12 @@ TEST(SupletAssignmentApplierTests, AddsAssignmentAndPersistsIt) {
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::AssignmentApplier applier(&manager, &registry);
 
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
-  ASSERT_TRUE(occupied.markOccupied(2));
-  ASSERT_TRUE(occupied.markOccupied(4));
-  ASSERT_TRUE(occupied.markOccupied(6));
+  Supla::Channel occupied0(0);
+  Supla::Channel occupied2(2);
+  Supla::Channel occupied4(4);
+  Supla::Channel occupied6(6);
 
-  EXPECT_EQ(applier.applyJson(instanceJsonAvg, 900, 4, occupied),
+  EXPECT_EQ(applier.applyJson(instanceJsonAvg, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
 
   auto record = manager.getInstanceTable()->findByInstanceId(77);
@@ -170,13 +170,12 @@ TEST(SupletAssignmentApplierTests, UpdatesAssignmentWithoutChangingChannelMap) {
   auto definition = makeThermometerGroupDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::AssignmentApplier applier(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
-  ASSERT_TRUE(occupied.markOccupied(2));
-  ASSERT_TRUE(occupied.markOccupied(4));
-  ASSERT_TRUE(occupied.markOccupied(6));
+  Supla::Channel occupied0(0);
+  Supla::Channel occupied2(2);
+  Supla::Channel occupied4(4);
+  Supla::Channel occupied6(6);
 
-  ASSERT_EQ(applier.applyJson(instanceJsonAvg, 900, 4, occupied),
+  ASSERT_EQ(applier.applyJson(instanceJsonAvg, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
   auto firstRecord = manager.getInstanceTable()->findByInstanceId(77);
   ASSERT_NE(firstRecord, nullptr);
@@ -184,7 +183,7 @@ TEST(SupletAssignmentApplierTests, UpdatesAssignmentWithoutChangingChannelMap) {
       1);
   uint8_t firstSubdevice = firstRecord->subDeviceId;
 
-  EXPECT_EQ(applier.applyJson(instanceJsonMax, 900, 4, occupied),
+  EXPECT_EQ(applier.applyJson(instanceJsonMax, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
 
   auto updatedRecord = manager.getInstanceTable()->findByInstanceId(77);
@@ -208,18 +207,17 @@ TEST(SupletAssignmentApplierTests,
   auto definition = makeThermometerGroupDefinition();
   ASSERT_TRUE(registry.add(&definition, 1));
   Supla::Suplet::AssignmentApplier applier(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
 
-  EXPECT_EQ(applier.applyJson(instanceJsonAvg, 900, 4, occupied),
+  EXPECT_EQ(applier.applyJson(instanceJsonAvg, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
-  EXPECT_EQ(applier.validateJson(instanceJsonSecond, 900, 4, occupied),
+  EXPECT_EQ(applier.validateJson(instanceJsonSecond, 900, 4),
             Supla::Suplet::AssignmentResult::InstanceLimitExceeded);
-  EXPECT_EQ(applier.applyJson(instanceJsonSecond, 900, 4, occupied),
+  EXPECT_EQ(applier.applyJson(instanceJsonSecond, 900, 4),
             Supla::Suplet::AssignmentResult::InstanceLimitExceeded);
 
-  EXPECT_EQ(applier.validateJson(instanceJsonMax, 900, 4, occupied),
+  EXPECT_EQ(applier.validateJson(instanceJsonMax, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
-  EXPECT_EQ(applier.applyJson(instanceJsonMax, 900, 4, occupied),
+  EXPECT_EQ(applier.applyJson(instanceJsonMax, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
 }
 
@@ -230,17 +228,15 @@ TEST(SupletAssignmentApplierTests, RejectsUnsupportedDefinitionAndBadJson) {
   auto definition = makeThermometerGroupDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::AssignmentApplier applier(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
 
-  EXPECT_EQ(applier.applyJson(instanceJsonAvg, 901, 4, occupied),
+  EXPECT_EQ(applier.applyJson(instanceJsonAvg, 901, 4),
             Supla::Suplet::AssignmentResult::DefinitionNotSupported);
   EXPECT_EQ(applier.applyJson(
                 "{\"instanceId\":77,\"definitionId\":900,"
                 "\"definitionVersion\":4,"
                 "\"config\":{\"mode\":\"bad\",\"sourceChannels\":[2]}}",
                 900,
-                4,
-                occupied),
+                4),
             Supla::Suplet::AssignmentResult::InvalidConfig);
 }
 
@@ -251,10 +247,9 @@ TEST(SupletAssignmentApplierTests, RemovesAssignment) {
   auto definition = makeThermometerGroupDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::AssignmentApplier applier(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
+  Supla::Channel occupied0(0);
 
-  ASSERT_EQ(applier.applyJson(instanceJsonAvg, 900, 4, occupied),
+  ASSERT_EQ(applier.applyJson(instanceJsonAvg, 900, 4),
             Supla::Suplet::AssignmentResult::Applied);
   ASSERT_NE(manager.getInstanceTable()->findByInstanceId(77), nullptr);
 

@@ -165,7 +165,6 @@ class SuplaSrpc;
 
 namespace Suplet {
 class CapabilityRegistry;
-class ChannelAllocator;
 class Manager;
 class Registry;
 class ServerConfigHandler;

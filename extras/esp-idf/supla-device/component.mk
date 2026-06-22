@@ -154,7 +154,7 @@ COMPONENT_OBJS := \
 	\
 	../../../src/supla/suplet/assignment_applier.o \
 	../../../src/supla/suplet/capability_registry.o \
-	../../../src/supla/suplet/channel_allocator.o \
+	../../../src/supla/suplet/channel_map.o \
 	../../../src/supla/suplet/definition.o \
 	../../../src/supla/suplet/definition_cache.o \
 	../../../src/supla/suplet/json_definition.o \

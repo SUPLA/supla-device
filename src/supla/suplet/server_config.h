@@ -86,33 +86,27 @@ class ServerConfigHandler {
   ServerConfigResult garbageCollectUnusedDefinitions();
   ServerConfigResult applyAssignmentJson(const char *assignmentJson,
                                          uint32_t definitionId,
-                                         uint16_t definitionVersion,
-                                         const ChannelAllocator &occupied);
+                                         uint16_t definitionVersion);
   ServerConfigResult applyInstanceParams(uint8_t instanceId,
                                          uint32_t definitionId,
                                          uint16_t definitionVersion,
                                          InstanceState state,
                                          const char *paramsJson,
                                          uint16_t paramsSize,
-                                         const ChannelAllocator &occupied,
                                          uint8_t *appliedInstanceId = nullptr);
   ServerConfigResult validateAssignmentJson(
       const char *assignmentJson,
       uint32_t definitionId,
-      uint16_t definitionVersion,
-      const ChannelAllocator &occupied) const;
+      uint16_t definitionVersion) const;
   ServerConfigResult validateInstanceParams(
       uint8_t instanceId,
       uint32_t definitionId,
       uint16_t definitionVersion,
       InstanceState state,
       const char *paramsJson,
-      uint16_t paramsSize,
-      const ChannelAllocator &occupied) const;
-  ServerConfigResult applyCommandJson(const char *commandJson,
-                                      const ChannelAllocator &occupied);
-  ServerConfigResult validateCommandJson(
-      const char *commandJson, const ChannelAllocator &occupied) const;
+      uint16_t paramsSize) const;
+  ServerConfigResult applyCommandJson(const char *commandJson);
+  ServerConfigResult validateCommandJson(const char *commandJson) const;
   ServerConfigResult removeAssignment(uint8_t instanceId);
   bool loadDownloadedDefinition(uint32_t definitionId,
                                 uint16_t definitionVersion,

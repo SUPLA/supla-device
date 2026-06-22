@@ -296,10 +296,7 @@ TEST(SupletServerConfigTests, AppliesBuiltInAssignmentAndRequestsRefresh) {
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
 
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
-
-  EXPECT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2, occupied),
+  EXPECT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2),
             Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
 
@@ -316,8 +313,7 @@ TEST(SupletServerConfigTests, RemovesAssignmentAndRequestsRefresh) {
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2, occupied),
+  ASSERT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2),
             Supla::Suplet::ServerConfigResult::Applied);
   handler.clearRuntimeRefreshRequired();
 
@@ -337,14 +333,12 @@ TEST(SupletServerConfigTests, AppliesPrivateInstanceParams) {
 
   const char params[] =
       "{\"relay.count\":4,\"mode\":\"avg\",\"host\":\"192.168.1.50\"}";
-  Supla::Suplet::ChannelAllocator occupied;
   EXPECT_EQ(handler.applyInstanceParams(80,
                                         definition.definitionId,
                                         definition.definitionVersion,
                                         Supla::Suplet::InstanceState::Active,
                                         params,
-                                        strlen(params),
-                                        occupied),
+                                        strlen(params)),
             Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
 
@@ -364,14 +358,12 @@ TEST(SupletServerConfigTests, RejectsInvalidPrivateInstanceParams) {
 
   const char badRange[] =
       "{\"relay.count\":40,\"mode\":\"avg\",\"host\":\"192.168.1.50\"}";
-  Supla::Suplet::ChannelAllocator occupied;
   EXPECT_EQ(handler.validateInstanceParams(80,
                                            definition.definitionId,
                                            definition.definitionVersion,
                                            Supla::Suplet::InstanceState::Active,
                                            badRange,
-                                           strlen(badRange),
-                                           occupied),
+                                           strlen(badRange)),
             Supla::Suplet::ServerConfigResult::InvalidConfig);
 
   const char badEnum[] =
@@ -381,8 +373,7 @@ TEST(SupletServerConfigTests, RejectsInvalidPrivateInstanceParams) {
                                            definition.definitionVersion,
                                            Supla::Suplet::InstanceState::Active,
                                            badEnum,
-                                           strlen(badEnum),
-                                           occupied),
+                                           strlen(badEnum)),
             Supla::Suplet::ServerConfigResult::InvalidConfig);
 }
 
@@ -396,14 +387,12 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
 
   const char firstParams[] =
       "{\"relay.count\":4,\"mode\":\"avg\",\"host\":\"192.168.1.50\"}";
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(handler.applyInstanceParams(80,
                                         definition.definitionId,
                                         definition.definitionVersion,
                                         Supla::Suplet::InstanceState::Active,
                                         firstParams,
-                                        strlen(firstParams),
-                                        occupied),
+                                        strlen(firstParams)),
             Supla::Suplet::ServerConfigResult::Applied);
 
   const char changedEditable[] =
@@ -413,8 +402,7 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
                                         definition.definitionVersion,
                                         Supla::Suplet::InstanceState::Active,
                                         changedEditable,
-                                        strlen(changedEditable),
-                                        occupied),
+                                        strlen(changedEditable)),
             Supla::Suplet::ServerConfigResult::Applied);
   auto record = manager.getInstanceTable()->findByInstanceId(80);
   ASSERT_NE(record, nullptr);
@@ -429,8 +417,7 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
                                            definition.definitionVersion,
                                            Supla::Suplet::InstanceState::Active,
                                            changedCreateOnly,
-                                           strlen(changedCreateOnly),
-                                           occupied),
+                                           strlen(changedCreateOnly)),
             Supla::Suplet::ServerConfigResult::CreateOnlyParamChanged);
 }
 
@@ -446,14 +433,12 @@ TEST(SupletServerConfigTests, RejectsDefinitionChangeOnUpdate) {
 
   const char params[] =
       "{\"relay.count\":2,\"mode\":\"max\",\"host\":\"192.168.1.50\"}";
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(handler.applyInstanceParams(80,
                                         relayDefinition.definitionId,
                                         relayDefinition.definitionVersion,
                                         Supla::Suplet::InstanceState::Active,
                                         params,
-                                        strlen(params),
-                                        occupied),
+                                        strlen(params)),
             Supla::Suplet::ServerConfigResult::Applied);
 
   EXPECT_EQ(handler.validateInstanceParams(80,
@@ -461,8 +446,7 @@ TEST(SupletServerConfigTests, RejectsDefinitionChangeOnUpdate) {
                                            binaryDefinition.definitionVersion,
                                            Supla::Suplet::InstanceState::Active,
                                            "{}",
-                                           2,
-                                           occupied),
+                                           2),
             Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);
 
   EXPECT_EQ(
@@ -471,8 +455,7 @@ TEST(SupletServerConfigTests, RejectsDefinitionChangeOnUpdate) {
                                      relayDefinition.definitionVersion + 1,
                                      Supla::Suplet::InstanceState::Active,
                                      params,
-                                     strlen(params),
-                                     occupied),
+                                     strlen(params)),
       Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);
 }
 
@@ -483,7 +466,6 @@ TEST(SupletServerConfigTests, AppliesUpsertCommandJson) {
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
 
   const char commandJson[] =
       "{"
@@ -493,7 +475,7 @@ TEST(SupletServerConfigTests, AppliesUpsertCommandJson) {
       "\"definitionVersion\":2"
       "}";
 
-  EXPECT_EQ(handler.applyCommandJson(commandJson, occupied),
+  EXPECT_EQ(handler.applyCommandJson(commandJson),
             Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
   ASSERT_NE(manager.getInstanceTable()->findByInstanceId(70), nullptr);
@@ -506,7 +488,6 @@ TEST(SupletServerConfigTests, RejectsUpsertCommandWhenInstanceLimitExceeded) {
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 1));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
 
   const char commandJson[] =
       "{"
@@ -523,15 +504,15 @@ TEST(SupletServerConfigTests, RejectsUpsertCommandWhenInstanceLimitExceeded) {
       "\"definitionVersion\":2"
       "}";
 
-  ASSERT_EQ(handler.applyCommandJson(commandJson, occupied),
+  ASSERT_EQ(handler.applyCommandJson(commandJson),
             Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_TRUE(handler.isRuntimeRefreshRequired());
   handler.clearRuntimeRefreshRequired();
 
-  EXPECT_EQ(handler.validateCommandJson(secondCommandJson, occupied),
+  EXPECT_EQ(handler.validateCommandJson(secondCommandJson),
             Supla::Suplet::ServerConfigResult::InstanceLimitExceeded);
   EXPECT_FALSE(handler.isRuntimeRefreshRequired());
-  EXPECT_EQ(handler.applyCommandJson(secondCommandJson, occupied),
+  EXPECT_EQ(handler.applyCommandJson(secondCommandJson),
             Supla::Suplet::ServerConfigResult::InstanceLimitExceeded);
   EXPECT_FALSE(handler.isRuntimeRefreshRequired());
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(71), nullptr);
@@ -544,8 +525,6 @@ TEST(SupletServerConfigTests, ValidatesUpsertCommandWithoutPersisting) {
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
 
   const char commandJson[] =
       "{"
@@ -555,7 +534,7 @@ TEST(SupletServerConfigTests, ValidatesUpsertCommandWithoutPersisting) {
       "\"definitionVersion\":2"
       "}";
 
-  EXPECT_EQ(handler.validateCommandJson(commandJson, occupied),
+  EXPECT_EQ(handler.validateCommandJson(commandJson),
             Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_FALSE(handler.isRuntimeRefreshRequired());
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(70), nullptr);
@@ -570,7 +549,6 @@ TEST(SupletServerConfigTests, ValidateUpsertCommandFailsWhenNoChannelIsFree) {
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
   std::vector<Supla::Channel> channels(SUPLA_CHANNELMAXCOUNT);
-  Supla::Suplet::ChannelAllocator occupied;
 
   const char commandJson[] =
       "{"
@@ -580,7 +558,7 @@ TEST(SupletServerConfigTests, ValidateUpsertCommandFailsWhenNoChannelIsFree) {
       "\"definitionVersion\":2"
       "}";
 
-  EXPECT_EQ(handler.validateCommandJson(commandJson, occupied),
+  EXPECT_EQ(handler.validateCommandJson(commandJson),
             Supla::Suplet::ServerConfigResult::ChannelLimitExceeded);
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(70), nullptr);
 }
@@ -592,8 +570,7 @@ TEST(SupletServerConfigTests, AppliesRemoveCommandJson) {
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2, occupied),
+  ASSERT_EQ(handler.applyAssignmentJson(relayAssignment, 700, 2),
             Supla::Suplet::ServerConfigResult::Applied);
   handler.clearRuntimeRefreshRequired();
 
@@ -603,7 +580,7 @@ TEST(SupletServerConfigTests, AppliesRemoveCommandJson) {
       "\"instanceId\":70"
       "}";
 
-  EXPECT_EQ(handler.applyCommandJson(commandJson, occupied),
+  EXPECT_EQ(handler.applyCommandJson(commandJson),
             Supla::Suplet::ServerConfigResult::Removed);
   EXPECT_TRUE(handler.isRuntimeRefreshRequired());
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(70), nullptr);
@@ -616,20 +593,16 @@ TEST(SupletServerConfigTests, RejectsInvalidCommandJson) {
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
-  Supla::Suplet::ChannelAllocator occupied;
 
-  EXPECT_EQ(handler.applyCommandJson("{\"op\":\"upsert\",\"instanceId\":70}",
-                                     occupied),
+  EXPECT_EQ(handler.applyCommandJson("{\"op\":\"upsert\",\"instanceId\":70}"),
             Supla::Suplet::ServerConfigResult::InvalidArgument);
-  EXPECT_EQ(handler.applyCommandJson("{\"op\":\"unknown\",\"instanceId\":70}",
-                                     occupied),
+  EXPECT_EQ(handler.applyCommandJson("{\"op\":\"unknown\",\"instanceId\":70}"),
             Supla::Suplet::ServerConfigResult::InvalidArgument);
-  EXPECT_EQ(handler.applyCommandJson("{}", occupied),
+  EXPECT_EQ(handler.applyCommandJson("{}"),
             Supla::Suplet::ServerConfigResult::InvalidArgument);
   EXPECT_EQ(handler.applyCommandJson(
                 "{\"op\":\"saveDefinition\",\"definitionId\":701,"
-                "\"definitionVersion\":1,\"sha256\":\"xyz\"}",
-                occupied),
+                "\"definitionVersion\":1,\"sha256\":\"xyz\"}"),
             Supla::Suplet::ServerConfigResult::InvalidArgument);
 }
 
@@ -656,10 +629,8 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionAndAppliesAssignment) {
   Supla::Suplet::JsonDefinition loadedDefinition;
   ASSERT_TRUE(downloadedDefinitions.load(cache, 701, 1, &loadedDefinition));
   EXPECT_EQ(loadedDefinition.getDefinition()->maxInstances, 3);
-
-  Supla::Suplet::ChannelAllocator occupied;
   EXPECT_EQ(
-      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
 
   auto record = manager.getInstanceTable()->findByInstanceId(71);
@@ -727,10 +698,8 @@ TEST(SupletServerConfigTests,
   ASSERT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(
-      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
 
   const char conflictingJson[] =
@@ -866,10 +835,8 @@ TEST(SupletServerConfigTests, RejectsRemovingDefinitionUsedByInstance) {
   ASSERT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(
-      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
 
   EXPECT_EQ(handler.removeDownloadedDefinition(701, 1),
@@ -892,10 +859,8 @@ TEST(SupletServerConfigTests, RemoveAssignmentGarbageCollectsUnusedDefinition) {
   ASSERT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(
-      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_TRUE(cache.contains(701, 1));
 
@@ -921,21 +886,17 @@ TEST(SupletServerConfigTests,
   ASSERT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":71,\"definitionId\":701,"
                                   "\"definitionVersion\":1}",
                                   701,
-                                  1,
-                                  occupied),
+                                  1),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":72,\"definitionId\":701,"
                                   "\"definitionVersion\":1}",
                                   701,
-                                  1,
-                                  occupied),
+                                  1),
       Supla::Suplet::ServerConfigResult::Applied);
 
   EXPECT_EQ(handler.removeAssignment(71),
@@ -975,36 +936,30 @@ TEST(SupletServerConfigTests, DownloadedDefinitionMaxInstancesIsEnforced) {
   ASSERT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":71,\"definitionId\":701,"
                                   "\"definitionVersion\":1}",
                                   701,
-                                  1,
-                                  occupied),
+                                  1),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":72,\"definitionId\":701,"
                                   "\"definitionVersion\":1}",
                                   701,
-                                  1,
-                                  occupied),
+                                  1),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":73,\"definitionId\":701,"
                                   "\"definitionVersion\":1}",
                                   701,
-                                  1,
-                                  occupied),
+                                  1),
       Supla::Suplet::ServerConfigResult::Applied);
 
   EXPECT_EQ(
       handler.applyAssignmentJson("{\"instanceId\":74,\"definitionId\":701,"
                                   "\"definitionVersion\":1}",
                                   701,
-                                  1,
-                                  occupied),
+                                  1),
       Supla::Suplet::ServerConfigResult::InstanceLimitExceeded);
   EXPECT_EQ(manager.getInstanceTable()->findByInstanceId(74), nullptr);
 }
@@ -1027,10 +982,8 @@ TEST(SupletServerConfigTests, RuntimeLoadsDownloadedDefinitionOnDemand) {
   ASSERT_EQ(
       handler.saveDownloadedDefinition(701, 1, downloadedDefinitionJson, sha),
       Supla::Suplet::ServerConfigResult::Applied);
-
-  Supla::Suplet::ChannelAllocator occupied;
   ASSERT_EQ(
-      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1, occupied),
+      handler.applyAssignmentJson(downloadedAssignmentJson, 701, 1),
       Supla::Suplet::ServerConfigResult::Applied);
   ASSERT_EQ(registry.findDefinition(701, 1), nullptr);
 
@@ -1076,15 +1029,14 @@ TEST(SupletServerConfigTests, SavesDownloadedDefinitionFromCommandJson) {
            escapedDefinitionJson);
 
   EXPECT_EQ(
-      handler.applyCommandJson(command, Supla::Suplet::ChannelAllocator()),
+      handler.applyCommandJson(command),
       Supla::Suplet::ServerConfigResult::Applied);
   EXPECT_EQ(downloadedDefinitions.getCount(cache), 1);
   EXPECT_EQ(registry.findDefinition(701, 1), nullptr);
 
   EXPECT_EQ(handler.applyCommandJson(
                 "{\"op\":\"removeDefinition\",\"definitionId\":701,"
-                "\"definitionVersion\":1}",
-                Supla::Suplet::ChannelAllocator()),
+                "\"definitionVersion\":1}"),
             Supla::Suplet::ServerConfigResult::Removed);
   EXPECT_EQ(downloadedDefinitions.getCount(cache), 0);
   EXPECT_EQ(registry.findDefinition(701, 1), nullptr);

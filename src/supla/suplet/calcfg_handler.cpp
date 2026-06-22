@@ -796,8 +796,6 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
                          supletCalcfgSession->definitionVersion);
         return SUPLA_CALCFG_RESULT_FALSE;
       }
-      Supla::Suplet::ChannelAllocator occupied;
-      fillOccupiedChannels(&occupied);
       supletCalcfgSession->params[supletCalcfgSession->paramsSize] = '\0';
       uint8_t appliedInstanceId = supletCalcfgSession->instanceId;
       auto serverResult = supletServerConfigHandler->applyInstanceParams(
@@ -807,7 +805,6 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
           supletCalcfgSession->state,
           reinterpret_cast<const char *>(supletCalcfgSession->params),
           supletCalcfgSession->paramsSize,
-          occupied,
           &appliedInstanceId);
       fillSupletResult(result,
                        supletDetailFromServerResult(serverResult),

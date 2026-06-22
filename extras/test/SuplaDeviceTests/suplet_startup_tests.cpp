@@ -368,8 +368,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
       "\"definitionId\":1002,"
       "\"definitionVersion\":1"
       "}";
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_EQ(handler.applyAssignmentJson(assignment, 1002, 1, occupied),
+  ASSERT_EQ(handler.applyAssignmentJson(assignment, 1002, 1),
             Supla::Suplet::ServerConfigResult::Applied);
 
   sd.iterate();
@@ -383,7 +382,7 @@ TEST_F(SuplaDeviceSupletStartupTests,
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,
-       AppliesSupletCommandThroughDeviceUsingOccupiedChannels) {
+       AppliesSupletCommandAfterExistingChannel) {
   ConfigSimulator config;
   TimerMock timer;
   SuplaDeviceClass sd;

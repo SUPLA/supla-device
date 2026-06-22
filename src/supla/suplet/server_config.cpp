@@ -1245,8 +1245,7 @@ ServerConfigResult ServerConfigHandler::garbageCollectUnusedDefinitions() {
 ServerConfigResult ServerConfigHandler::applyAssignmentJson(
     const char *assignmentJson,
     uint32_t definitionId,
-    uint16_t definitionVersion,
-    const ChannelAllocator &occupied) {
+    uint16_t definitionVersion) {
   if (manager == nullptr || assignmentJson == nullptr || definitionId == 0 ||
       definitionVersion == 0) {
     return ServerConfigResult::InvalidArgument;
@@ -1280,12 +1279,11 @@ ServerConfigResult ServerConfigHandler::applyAssignmentJson(
     return ServerConfigResult::InstanceLimitExceeded;
   }
 
-  if (!manager->canUpsertInstanceFromDefinition(
-          record, *definition, occupied)) {
+  if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
     return ServerConfigResult::ChannelLimitExceeded;
   }
 
-  if (!manager->upsertInstanceFromDefinition(record, *definition, occupied)) {
+  if (!manager->upsertInstanceFromDefinition(record, *definition)) {
     return ServerConfigResult::StorageError;
   }
 
@@ -1300,7 +1298,6 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
     InstanceState state,
     const char *paramsJson,
     uint16_t paramsSize,
-    const ChannelAllocator &occupied,
     uint8_t *appliedInstanceId) {
   if (appliedInstanceId != nullptr) {
     *appliedInstanceId = 0;
@@ -1373,12 +1370,11 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
     return ServerConfigResult::InstanceLimitExceeded;
   }
 
-  if (!manager->canUpsertInstanceFromDefinition(
-          record, *definition, occupied)) {
+  if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
     return ServerConfigResult::ChannelLimitExceeded;
   }
 
-  if (!manager->upsertInstanceFromDefinition(record, *definition, occupied)) {
+  if (!manager->upsertInstanceFromDefinition(record, *definition)) {
     return ServerConfigResult::StorageError;
   }
 
@@ -1392,8 +1388,7 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
 ServerConfigResult ServerConfigHandler::validateAssignmentJson(
     const char *assignmentJson,
     uint32_t definitionId,
-    uint16_t definitionVersion,
-    const ChannelAllocator &occupied) const {
+    uint16_t definitionVersion) const {
   if (manager == nullptr || assignmentJson == nullptr || definitionId == 0 ||
       definitionVersion == 0) {
     return ServerConfigResult::InvalidArgument;
@@ -1427,8 +1422,7 @@ ServerConfigResult ServerConfigHandler::validateAssignmentJson(
     return ServerConfigResult::InstanceLimitExceeded;
   }
 
-  if (!manager->canUpsertInstanceFromDefinition(
-          record, *definition, occupied)) {
+  if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
     return ServerConfigResult::ChannelLimitExceeded;
   }
 
@@ -1441,8 +1435,7 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
     uint16_t definitionVersion,
     InstanceState state,
     const char *paramsJson,
-    uint16_t paramsSize,
-    const ChannelAllocator &occupied) const {
+    uint16_t paramsSize) const {
   (void)(state);
   if (manager == nullptr || definitionId == 0 || definitionVersion == 0 ||
       paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
@@ -1512,8 +1505,7 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
     return ServerConfigResult::InstanceLimitExceeded;
   }
 
-  if (!manager->canUpsertInstanceFromDefinition(
-          record, *definition, occupied)) {
+  if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
     return ServerConfigResult::ChannelLimitExceeded;
   }
 
@@ -1521,7 +1513,7 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
 }
 
 ServerConfigResult ServerConfigHandler::applyCommandJson(
-    const char *commandJson, const ChannelAllocator &occupied) {
+    const char *commandJson) {
   Command command;
   if (!parseCommand(commandJson, &command)) {
     return ServerConfigResult::InvalidArgument;
@@ -1535,8 +1527,8 @@ ServerConfigResult ServerConfigHandler::applyCommandJson(
     }
     return applyAssignmentJson(commandJson,
                                command.definitionId,
-                               static_cast<uint16_t>(command.definitionVersion),
-                               occupied);
+                               static_cast<uint16_t>(
+                                   command.definitionVersion));
   }
 
   if (equalText(command.operation, "remove") ||
@@ -1581,7 +1573,7 @@ ServerConfigResult ServerConfigHandler::applyCommandJson(
 }
 
 ServerConfigResult ServerConfigHandler::validateCommandJson(
-    const char *commandJson, const ChannelAllocator &occupied) const {
+    const char *commandJson) const {
   Command command;
   if (!parseCommand(commandJson, &command)) {
     return ServerConfigResult::InvalidArgument;
@@ -1596,8 +1588,7 @@ ServerConfigResult ServerConfigHandler::validateCommandJson(
     return validateAssignmentJson(
         commandJson,
         command.definitionId,
-        static_cast<uint16_t>(command.definitionVersion),
-        occupied);
+        static_cast<uint16_t>(command.definitionVersion));
   }
 
   if (equalText(command.operation, "remove") ||

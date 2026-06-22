@@ -21,7 +21,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include <supla/suplet/channel_allocator.h>
+#include <supla/suplet/channel_map.h>
 #include <supla/suplet/config.h>
 
 namespace Supla {

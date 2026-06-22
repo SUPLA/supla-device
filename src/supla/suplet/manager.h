@@ -66,19 +66,12 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   bool isServerConfigReady() const;
 
   bool addInstance(const InstanceRecord &record);
-  bool addInstanceWithAllocatedChannels(InstanceRecord record,
-                                        const uint8_t *requiredChannelIds,
-                                        uint8_t requiredChannelIdCount,
-                                        const ChannelAllocator &occupied);
   bool addInstanceFromDefinition(InstanceRecord record,
-                                 const Definition &definition,
-                                 const ChannelAllocator &occupied);
+                                 const Definition &definition);
   bool canUpsertInstanceFromDefinition(InstanceRecord record,
-                                       const Definition &definition,
-                                       const ChannelAllocator &occupied) const;
+                                       const Definition &definition) const;
   bool upsertInstanceFromDefinition(InstanceRecord record,
-                                    const Definition &definition,
-                                    const ChannelAllocator &occupied);
+                                    const Definition &definition);
   bool createElementsFromRegistry(const Registry &registry,
                                   Supla::Element **created,
                                   uint16_t createdSize,
@@ -88,7 +81,6 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   void deleteRuntimeElements();
   bool initRuntimeElements(SuplaDeviceClass *device);
   uint16_t getRuntimeElementCount() const;
-  bool fillOccupiedChannels(ChannelAllocator *allocator) const;
   ServerConfigResult applyCommandJson(const char *commandJson);
   ServerConfigResult validateCommandJson(const char *commandJson) const;
   int handleCalcfg(TSD_DeviceCalCfgRequest *request,
@@ -115,9 +107,6 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   bool isChannelMissingOnServer(uint8_t *channelReport,
                                 uint8_t channelReportSize,
                                 int channelNumber) const;
-  bool markExistingSupletChannels(ChannelAllocator *allocator) const;
-  bool markExistingSupletChannelsExcept(ChannelAllocator *allocator,
-                                        uint8_t instanceId) const;
   bool getRequiredRuntimeElementCount(const Registry &registry,
                                       uint16_t *count) const;
 

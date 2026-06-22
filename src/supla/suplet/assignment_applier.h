@@ -20,7 +20,6 @@
 #define SRC_SUPLA_SUPLET_ASSIGNMENT_APPLIER_H_
 
 #include <stdint.h>
-#include <supla/suplet/channel_allocator.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/registry.h>
 
@@ -45,12 +44,10 @@ class AssignmentApplier {
 
   AssignmentResult applyJson(const char *json,
                              uint32_t definitionId,
-                             uint16_t definitionVersion,
-                             const ChannelAllocator &occupied);
+                             uint16_t definitionVersion);
   AssignmentResult validateJson(const char *json,
                                 uint32_t definitionId,
-                                uint16_t definitionVersion,
-                                const ChannelAllocator &occupied) const;
+                                uint16_t definitionVersion) const;
   AssignmentResult remove(uint8_t instanceId);
 
  private:

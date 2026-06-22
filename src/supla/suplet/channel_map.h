@@ -16,8 +16,8 @@
    Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
    */
 
-#ifndef SRC_SUPLA_SUPLET_CHANNEL_ALLOCATOR_H_
-#define SRC_SUPLA_SUPLET_CHANNEL_ALLOCATOR_H_
+#ifndef SRC_SUPLA_SUPLET_CHANNEL_MAP_H_
+#define SRC_SUPLA_SUPLET_CHANNEL_MAP_H_
 
 #include <stdint.h>
 #include <supla-common/proto.h>
@@ -52,24 +52,7 @@ class ChannelMap {
   uint8_t count = 0;
 };
 
-class ChannelAllocator {
- public:
-  bool markOccupied(int channelNumber);
-  bool markFromMap(const ChannelMap &map);
-  bool isOccupied(int channelNumber) const;
-  uint8_t getFreeChannelCount() const;
-  void clearOccupied();
-
-  bool allocateMissing(ChannelMap *map,
-                       const uint8_t *requiredChannelIds,
-                       uint8_t requiredChannelIdCount);
-
- private:
-  int findFirstFreeChannel() const;
-  bool occupied[SUPLA_CHANNELMAXCOUNT] = {};
-};
-
 }  // namespace Suplet
 }  // namespace Supla
 
-#endif  // SRC_SUPLA_SUPLET_CHANNEL_ALLOCATOR_H_
+#endif  // SRC_SUPLA_SUPLET_CHANNEL_MAP_H_

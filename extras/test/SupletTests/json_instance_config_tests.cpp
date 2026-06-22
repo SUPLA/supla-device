@@ -214,8 +214,7 @@ TEST_F(SupletJsonInstanceFixture, BuildsRuntimeFromDefinitionAndInstanceJson) {
   Supla::Channel occupied0(0);
   ASSERT_TRUE(manager.addInstanceFromDefinition(
       instance,
-      *jsonDefinition.getDefinition(),
-      Supla::Suplet::ChannelAllocator()));
+      *jsonDefinition.getDefinition()));
 
   const auto *record = manager.getInstanceTable()->findByInstanceId(77);
   ASSERT_NE(record, nullptr);

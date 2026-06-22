@@ -190,37 +190,37 @@ TEST(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
   EXPECT_EQ(memcmp(fullRecord.config, params, sizeof(params)), 0);
 }
 
-TEST(SupletManagerTests,
-     AddInstanceWithAllocatedChannelsUsesFreeSubdeviceAndChannels) {
+TEST(SupletManagerTests, AddInstanceFromDefinitionDoesNotPreallocateChannels) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
-  ASSERT_TRUE(manager.addInstance(makeRecord(1, 2, 4, 8)));
+  Supla::Channel occupied0(0);
 
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
-  ASSERT_TRUE(occupied.markOccupied(1));
-  ASSERT_TRUE(occupied.markOccupied(2));
-  ASSERT_TRUE(occupied.markOccupied(3));
-  ASSERT_TRUE(occupied.markOccupied(5));
-  ASSERT_TRUE(occupied.markOccupied(6));
-  ASSERT_TRUE(occupied.markOccupied(7));
-
+  Supla::Suplet::ChannelDefinition channels[] = {
+      {1, Supla::Suplet::ChannelKind::VirtualRelay},
+      {2, Supla::Suplet::ChannelKind::VirtualBinarySensor},
+  };
+  Supla::Suplet::Definition definition = {};
+  definition.category = Supla::Suplet::Category::Virtual;
+  definition.kind = Supla::Suplet::Kind::VirtualRelay;
+  definition.definitionId = 102;
+  definition.definitionVersion = 1;
+  definition.channels = channels;
+  definition.channelCount = 2;
   Supla::Suplet::InstanceRecord newRecord = {};
   newRecord.instanceId = 2;
-  newRecord.definitionId = 102;
-  newRecord.definitionVersion = 1;
   newRecord.state = Supla::Suplet::InstanceState::Active;
-  uint8_t required[] = {1, 2, 3};
 
-  EXPECT_TRUE(manager.addInstanceWithAllocatedChannels(
-      newRecord, required, 3, occupied));
+  EXPECT_TRUE(manager.addInstanceFromDefinition(newRecord, definition));
 
   auto record = manager.getInstanceTable()->findByInstanceId(2);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->subDeviceId, 2);
-  EXPECT_EQ(record->channelMap.getChannelNumber(1), 9);
-  EXPECT_EQ(record->channelMap.getChannelNumber(2), 10);
-  EXPECT_EQ(record->channelMap.getChannelNumber(3), 11);
+  EXPECT_EQ(record->definitionId, 102u);
+  EXPECT_EQ(record->definitionVersion, 1u);
+  EXPECT_EQ(record->channelMap.getChannelNumber(1),
+            Supla::Suplet::kInvalidChannelNumber);
+  EXPECT_EQ(record->channelMap.getChannelNumber(2),
+            Supla::Suplet::kInvalidChannelNumber);
 }
 
 TEST(SupletManagerTests, SubDeviceAllocationSkipsExistingChannelSubdevices) {

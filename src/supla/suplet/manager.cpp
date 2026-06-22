@@ -248,40 +248,14 @@ bool Manager::addInstance(const InstanceRecord &record) {
   return true;
 }
 
-bool Manager::addInstanceWithAllocatedChannels(
-    InstanceRecord record,
-    const uint8_t *definitionChannelIds,
-    uint8_t definitionChannelIdCount,
-    const ChannelAllocator &occupied) {
-  if (!normalizeInstanceSlot(&record, table.findByInstanceId(record.instanceId),
-                             table)) {
-    return false;
-  }
-
-  ChannelAllocator allocator = occupied;
-  if (!markExistingSupletChannels(&allocator)) {
-    return false;
-  }
-  if (!allocator.allocateMissing(
-          &record.channelMap, definitionChannelIds, definitionChannelIdCount)) {
-    return false;
-  }
-
-  return addInstance(record);
-}
-
 bool Manager::addInstanceFromDefinition(InstanceRecord record,
-                                        const Definition &definition,
-                                        const ChannelAllocator &occupied) {
-  return upsertInstanceFromDefinition(record, definition, occupied);
+                                        const Definition &definition) {
+  return upsertInstanceFromDefinition(record, definition);
 }
 
 bool Manager::canUpsertInstanceFromDefinition(
     InstanceRecord record,
-    const Definition &definition,
-    const ChannelAllocator &occupied) const {
-  (void)(occupied);
-
+    const Definition &definition) const {
   if (!Runtime::validateDefinition(definition)) {
     return false;
   }
@@ -335,9 +309,8 @@ bool Manager::canUpsertInstanceFromDefinition(
 }
 
 bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
-                                           const Definition &definition,
-                                           const ChannelAllocator &occupied) {
-  if (!canUpsertInstanceFromDefinition(record, definition, occupied)) {
+                                           const Definition &definition) {
+  if (!canUpsertInstanceFromDefinition(record, definition)) {
     return false;
   }
 
@@ -552,45 +525,18 @@ uint16_t Manager::getRuntimeElementCount() const {
   return runtimeElementCount;
 }
 
-bool Manager::fillOccupiedChannels(ChannelAllocator *allocator) const {
-  if (allocator == nullptr) {
-    return false;
-  }
-  allocator->clearOccupied();
-  for (auto element = Supla::Element::begin(); element != nullptr;
-       element = element->next()) {
-    int channelNumber = element->getChannelNumber();
-    if (channelNumber >= 0 && !allocator->markOccupied(channelNumber)) {
-      return false;
-    }
-    channelNumber = element->getSecondaryChannelNumber();
-    if (channelNumber >= 0 && !allocator->markOccupied(channelNumber)) {
-      return false;
-    }
-  }
-  return true;
-}
-
 ServerConfigResult Manager::applyCommandJson(const char *commandJson) {
   if (serverConfigHandler == nullptr) {
     return ServerConfigResult::InvalidArgument;
   }
-  ChannelAllocator occupied;
-  if (!fillOccupiedChannels(&occupied)) {
-    return ServerConfigResult::InvalidArgument;
-  }
-  return serverConfigHandler->applyCommandJson(commandJson, occupied);
+  return serverConfigHandler->applyCommandJson(commandJson);
 }
 
 ServerConfigResult Manager::validateCommandJson(const char *commandJson) const {
   if (serverConfigHandler == nullptr) {
     return ServerConfigResult::InvalidArgument;
   }
-  ChannelAllocator occupied;
-  if (!fillOccupiedChannels(&occupied)) {
-    return ServerConfigResult::InvalidArgument;
-  }
-  return serverConfigHandler->validateCommandJson(commandJson, occupied);
+  return serverConfigHandler->validateCommandJson(commandJson);
 }
 
 InstanceCalcfgSession *Manager::getInstanceCalcfgSession() {
@@ -712,25 +658,6 @@ bool Manager::isChannelMissingOnServer(uint8_t *channelReport,
   }
   return channelNumber >= channelReportSize ||
          channelReport[channelNumber] == 0;
-}
-
-bool Manager::markExistingSupletChannels(ChannelAllocator *allocator) const {
-  return markExistingSupletChannelsExcept(allocator, 0);
-}
-
-bool Manager::markExistingSupletChannelsExcept(ChannelAllocator *allocator,
-                                               uint8_t instanceId) const {
-  if (allocator == nullptr) {
-    return false;
-  }
-  for (uint8_t i = 0; i < table.getCount(); i++) {
-    auto record = table.getRecord(i);
-    if (record != nullptr && record->instanceId != instanceId &&
-        !allocator->markFromMap(record->channelMap)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 bool Manager::getRequiredRuntimeElementCount(const Registry &registry,

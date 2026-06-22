@@ -270,7 +270,7 @@ TEST_F(SupletRuntimeFixture, ManagerAddsDefinitionAndRuntimeCreatesChannels) {
   instance.instanceId = 22;
   ASSERT_TRUE(
       manager.addInstanceFromDefinition(
-          instance, definition, Supla::Suplet::ChannelAllocator()));
+          instance, definition));
 
   auto record = manager.getInstanceTable()->findByInstanceId(22);
   ASSERT_NE(record, nullptr);

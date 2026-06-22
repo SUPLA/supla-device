@@ -292,7 +292,7 @@ TEST_F(SupletJsonFixture, CreatesRuntimeElementsFromJsonDefinition) {
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 55;
   ASSERT_TRUE(manager.addInstanceFromDefinition(
-      instance, *parsed.getDefinition(), Supla::Suplet::ChannelAllocator()));
+      instance, *parsed.getDefinition()));
   const auto *record = manager.getInstanceTable()->findByInstanceId(55);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->channelMap.getChannelNumber(1),

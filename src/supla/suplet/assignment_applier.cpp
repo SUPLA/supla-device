@@ -69,8 +69,7 @@ AssignmentApplier::AssignmentApplier(Manager *manager, const Registry *registry)
 AssignmentResult AssignmentApplier::applyJson(
     const char *json,
     uint32_t definitionId,
-    uint16_t definitionVersion,
-    const ChannelAllocator &occupied) {
+    uint16_t definitionVersion) {
   if (manager == nullptr || registry == nullptr || json == nullptr ||
       definitionId == 0 || definitionVersion == 0) {
     return AssignmentResult::InvalidArgument;
@@ -92,12 +91,11 @@ AssignmentResult AssignmentApplier::applyJson(
     return AssignmentResult::InstanceLimitExceeded;
   }
 
-  if (!manager->canUpsertInstanceFromDefinition(
-          record, *definition, occupied)) {
+  if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
     return AssignmentResult::ChannelLimitExceeded;
   }
 
-  if (!manager->upsertInstanceFromDefinition(record, *definition, occupied)) {
+  if (!manager->upsertInstanceFromDefinition(record, *definition)) {
     return AssignmentResult::StorageError;
   }
 
@@ -107,8 +105,7 @@ AssignmentResult AssignmentApplier::applyJson(
 AssignmentResult AssignmentApplier::validateJson(
     const char *json,
     uint32_t definitionId,
-    uint16_t definitionVersion,
-    const ChannelAllocator &occupied) const {
+    uint16_t definitionVersion) const {
   if (manager == nullptr || registry == nullptr || json == nullptr ||
       definitionId == 0 || definitionVersion == 0) {
     return AssignmentResult::InvalidArgument;
@@ -130,8 +127,7 @@ AssignmentResult AssignmentApplier::validateJson(
     return AssignmentResult::InstanceLimitExceeded;
   }
 
-  if (!manager->canUpsertInstanceFromDefinition(
-          record, *definition, occupied)) {
+  if (!manager->canUpsertInstanceFromDefinition(record, *definition)) {
     return AssignmentResult::ChannelLimitExceeded;
   }
 

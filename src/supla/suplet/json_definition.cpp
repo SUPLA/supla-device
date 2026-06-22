@@ -269,6 +269,44 @@ bool equalText(const char *a, const char *b) {
   return a != nullptr && b != nullptr && strcmp(a, b) == 0;
 }
 
+bool equalText(const char *value, const char *verbose, const char *compact) {
+  return equalText(value, verbose) || equalText(value, compact);
+}
+
+/**
+ * Suplet definition JSON accepts two equivalent naming styles:
+ *
+ * Top-level fields:
+ * - schemaVersion/sv, handlerVersion/hv, definitionId/di,
+ *   definitionVersion/dv, maxInstances/mi, category/c, kind/k, name/n,
+ *   parameters/p, channels/ch.
+ *
+ * Channel fields:
+ * - channelId/id, kind/k, function/fn, defaultFunction/df, caption/cap.
+ *
+ * Parameter fields:
+ * - key/key, type/t, default/d, min/min, max/max, lifecycle/lc,
+ *   required/r, affectsTopology/at, values/v.
+ *
+ * Category values:
+ * - virtual/virt, aggregate/aggr, modbus/modbus, httpIntegration/http.
+ *
+ * Definition and channel kind values:
+ * - virtualRelay/virtRelay, virtualBinarySensor/virtBinSensor,
+ *   thermometerGroup/thermoGroup, modbusRtu/modbusRtu,
+ *   httpInverter/httpInverter, virtualThermometer/virtThermo.
+ *
+ * Parameter type values:
+ * - bool/b, uint8/u8, uint16/u16, int16/i16, string/s, secret/sec,
+ *   enum/e, channelList/cl.
+ *
+ * Parameter lifecycle values:
+ * - editable/ed, createOnly/co, readonly/ro, secret/sec.
+ *
+ * Channel function values:
+ * - powerSwitch/ps, lightSwitch/ls, openingSensorDoor/osd, thermometer/th.
+ */
+
 bool readUInt8(JsonReader *reader, uint8_t *value) {
   uint32_t tmp = 0;
   if (!reader->readUInt32(&tmp) || tmp > UINT8_MAX) {
@@ -303,18 +341,18 @@ bool readChannel(JsonReader *reader,
       return false;
     }
 
-    if (equalText(key, "channelId")) {
+    if (equalText(key, "channelId", "id")) {
       if (!readUInt8(reader, &channel->channelId) ||
           channel->channelId == Supla::Suplet::kInvalidChannelId) {
         return false;
       }
-    } else if (equalText(key, "kind")) {
+    } else if (equalText(key, "kind", "k")) {
       if (!reader->readString(tmp, sizeof(tmp)) ||
           !Supla::Suplet::JsonDefinitionParser::parseChannelKind(
               tmp, &channel->kind)) {
         return false;
       }
-    } else if (equalText(key, "defaultFunction")) {
+    } else if (equalText(key, "defaultFunction", "df")) {
       if (reader->nextIs('"')) {
         return false;
       }
@@ -323,13 +361,13 @@ bool readChannel(JsonReader *reader,
         return false;
       }
       channel->defaultFunction = value;
-    } else if (equalText(key, "function")) {
+    } else if (equalText(key, "function", "fn")) {
       if (!reader->readString(tmp, sizeof(tmp)) ||
           !Supla::Suplet::JsonDefinitionParser::parseDefaultFunction(
               tmp, &channel->defaultFunction)) {
         return false;
       }
-    } else if (equalText(key, "caption")) {
+    } else if (equalText(key, "caption", "cap")) {
       char *caption = output->getCaptionBuffer(index);
       if (!reader->readString(caption, SUPLA_SUPLET_MAX_CAPTION_SIZE)) {
         return false;
@@ -456,25 +494,25 @@ bool readParameter(JsonReader *reader,
         return false;
       }
       parameter->key = keyBuffer;
-    } else if (equalText(key, "type")) {
+    } else if (equalText(key, "type", "t")) {
       if (!reader->readString(tmp, sizeof(tmp)) ||
           !Supla::Suplet::JsonDefinitionParser::parseParameterType(
               tmp, &parameter->type)) {
         return false;
       }
-    } else if (equalText(key, "lifecycle")) {
+    } else if (equalText(key, "lifecycle", "lc")) {
       if (!reader->readString(tmp, sizeof(tmp)) ||
           !Supla::Suplet::JsonDefinitionParser::parseParameterLifecycle(
               tmp, &parameter->lifecycle)) {
         return false;
       }
-    } else if (equalText(key, "required")) {
+    } else if (equalText(key, "required", "r")) {
       bool value = false;
       if (!reader->readBool(&value)) {
         return false;
       }
       parameter->required = value ? 1 : 0;
-    } else if (equalText(key, "affectsTopology")) {
+    } else if (equalText(key, "affectsTopology", "at")) {
       bool value = false;
       if (!reader->readBool(&value)) {
         return false;
@@ -488,7 +526,7 @@ bool readParameter(JsonReader *reader,
       if (!reader->readInt32(&parameter->max)) {
         return false;
       }
-    } else if (equalText(key, "default")) {
+    } else if (equalText(key, "default", "d")) {
       parameter->hasDefault = 1;
       if (reader->nextIs('"')) {
         char *buffer = output->getParameterDefaultTextBuffer(index);
@@ -508,7 +546,7 @@ bool readParameter(JsonReader *reader,
           return false;
         }
       }
-    } else if (equalText(key, "values")) {
+    } else if (equalText(key, "values", "v")) {
       char *buffer = output->getParameterEnumValuesBuffer(index);
       if (!readEnumValues(reader, buffer,
                           SUPLA_SUPLET_MAX_PARAMETER_TEXT_SIZE)) {
@@ -677,49 +715,49 @@ bool JsonDefinitionParser::parse(const char *json, JsonDefinition *output) {
       return false;
     }
 
-    if (equalText(key, "schemaVersion")) {
+    if (equalText(key, "schemaVersion", "sv")) {
       if (!readUInt8(&reader, &definition->schemaVersion)) {
         return false;
       }
-    } else if (equalText(key, "handlerVersion")) {
+    } else if (equalText(key, "handlerVersion", "hv")) {
       if (!readUInt8(&reader, &definition->handlerVersion)) {
         return false;
       }
-    } else if (equalText(key, "definitionId")) {
+    } else if (equalText(key, "definitionId", "di")) {
       if (!reader.readUInt32(&definition->definitionId)) {
         return false;
       }
-    } else if (equalText(key, "definitionVersion")) {
+    } else if (equalText(key, "definitionVersion", "dv")) {
       uint32_t value = 0;
       if (!reader.readUInt32(&value) || value > UINT16_MAX) {
         return false;
       }
       definition->definitionVersion = static_cast<uint16_t>(value);
-    } else if (equalText(key, "maxInstances")) {
+    } else if (equalText(key, "maxInstances", "mi")) {
       if (!readUInt8(&reader, &definition->maxInstances) ||
           definition->maxInstances == 0) {
         return false;
       }
-    } else if (equalText(key, "category")) {
+    } else if (equalText(key, "category", "c")) {
       if (!reader.readString(tmp, sizeof(tmp)) ||
           !parseCategory(tmp, &definition->category)) {
         return false;
       }
-    } else if (equalText(key, "kind")) {
+    } else if (equalText(key, "kind", "k")) {
       if (!reader.readString(tmp, sizeof(tmp)) ||
           !parseKind(tmp, &definition->kind)) {
         return false;
       }
-    } else if (equalText(key, "name")) {
+    } else if (equalText(key, "name", "n")) {
       if (!reader.readString(output->getNameBuffer(),
                              SUPLA_SUPLET_MAX_NAME_SIZE)) {
         return false;
       }
-    } else if (equalText(key, "channels")) {
+    } else if (equalText(key, "channels", "ch")) {
       if (!readChannels(&reader, output)) {
         return false;
       }
-    } else if (equalText(key, "parameters")) {
+    } else if (equalText(key, "parameters", "p")) {
       if (!readParameters(&reader, output)) {
         return false;
       }
@@ -749,13 +787,13 @@ bool JsonDefinitionParser::parseCategory(const char *value,
   if (category == nullptr) {
     return false;
   }
-  if (equalText(value, "virtual")) {
+  if (equalText(value, "virtual", "virt")) {
     *category = Category::Virtual;
-  } else if (equalText(value, "aggregate")) {
+  } else if (equalText(value, "aggregate", "aggr")) {
     *category = Category::Aggregate;
   } else if (equalText(value, "modbus")) {
     *category = Category::Modbus;
-  } else if (equalText(value, "httpIntegration")) {
+  } else if (equalText(value, "httpIntegration", "http")) {
     *category = Category::HttpIntegration;
   } else {
     return false;
@@ -767,11 +805,11 @@ bool JsonDefinitionParser::parseKind(const char *value, Kind *kind) {
   if (kind == nullptr) {
     return false;
   }
-  if (equalText(value, "virtualRelay")) {
+  if (equalText(value, "virtualRelay", "virtRelay")) {
     *kind = Kind::VirtualRelay;
-  } else if (equalText(value, "virtualBinarySensor")) {
+  } else if (equalText(value, "virtualBinarySensor", "virtBinSensor")) {
     *kind = Kind::VirtualBinarySensor;
-  } else if (equalText(value, "thermometerGroup")) {
+  } else if (equalText(value, "thermometerGroup", "thermoGroup")) {
     *kind = Kind::ThermometerGroup;
   } else if (equalText(value, "modbusRtu")) {
     *kind = Kind::ModbusRtu;
@@ -788,11 +826,11 @@ bool JsonDefinitionParser::parseChannelKind(const char *value,
   if (kind == nullptr) {
     return false;
   }
-  if (equalText(value, "virtualRelay")) {
+  if (equalText(value, "virtualRelay", "virtRelay")) {
     *kind = ChannelKind::VirtualRelay;
-  } else if (equalText(value, "virtualBinarySensor")) {
+  } else if (equalText(value, "virtualBinarySensor", "virtBinSensor")) {
     *kind = ChannelKind::VirtualBinarySensor;
-  } else if (equalText(value, "virtualThermometer")) {
+  } else if (equalText(value, "virtualThermometer", "virtThermo")) {
     *kind = ChannelKind::VirtualThermometer;
   } else {
     return false;
@@ -805,21 +843,21 @@ bool JsonDefinitionParser::parseParameterType(const char *value,
   if (type == nullptr) {
     return false;
   }
-  if (equalText(value, "bool")) {
+  if (equalText(value, "bool", "b")) {
     *type = ParameterType::Bool;
-  } else if (equalText(value, "uint8")) {
+  } else if (equalText(value, "uint8", "u8")) {
     *type = ParameterType::UInt8;
-  } else if (equalText(value, "uint16")) {
+  } else if (equalText(value, "uint16", "u16")) {
     *type = ParameterType::UInt16;
-  } else if (equalText(value, "int16")) {
+  } else if (equalText(value, "int16", "i16")) {
     *type = ParameterType::Int16;
-  } else if (equalText(value, "string")) {
+  } else if (equalText(value, "string", "s")) {
     *type = ParameterType::String;
-  } else if (equalText(value, "secret")) {
+  } else if (equalText(value, "secret", "sec")) {
     *type = ParameterType::Secret;
-  } else if (equalText(value, "enum")) {
+  } else if (equalText(value, "enum", "e")) {
     *type = ParameterType::Enum;
-  } else if (equalText(value, "channelList")) {
+  } else if (equalText(value, "channelList", "cl")) {
     *type = ParameterType::ChannelList;
   } else {
     *type = ParameterType::Unknown;
@@ -834,13 +872,13 @@ bool JsonDefinitionParser::parseParameterLifecycle(
   if (lifecycle == nullptr) {
     return false;
   }
-  if (equalText(value, "editable")) {
+  if (equalText(value, "editable", "ed")) {
     *lifecycle = ParameterLifecycle::Editable;
-  } else if (equalText(value, "createOnly")) {
+  } else if (equalText(value, "createOnly", "co")) {
     *lifecycle = ParameterLifecycle::CreateOnly;
-  } else if (equalText(value, "readonly")) {
+  } else if (equalText(value, "readonly", "ro")) {
     *lifecycle = ParameterLifecycle::ReadOnly;
-  } else if (equalText(value, "secret")) {
+  } else if (equalText(value, "secret", "sec")) {
     *lifecycle = ParameterLifecycle::Secret;
   } else {
     return false;
@@ -853,13 +891,13 @@ bool JsonDefinitionParser::parseDefaultFunction(const char *value,
   if (function == nullptr) {
     return false;
   }
-  if (equalText(value, "powerSwitch")) {
+  if (equalText(value, "powerSwitch", "ps")) {
     *function = SUPLA_CHANNELFNC_POWERSWITCH;
-  } else if (equalText(value, "lightSwitch")) {
+  } else if (equalText(value, "lightSwitch", "ls")) {
     *function = SUPLA_CHANNELFNC_LIGHTSWITCH;
-  } else if (equalText(value, "openingSensorDoor")) {
+  } else if (equalText(value, "openingSensorDoor", "osd")) {
     *function = SUPLA_CHANNELFNC_OPENINGSENSOR_DOOR;
-  } else if (equalText(value, "thermometer")) {
+  } else if (equalText(value, "thermometer", "th")) {
     *function = SUPLA_CHANNELFNC_THERMOMETER;
   } else {
     return false;

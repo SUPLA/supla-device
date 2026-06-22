@@ -29,6 +29,7 @@ namespace Suplet {
 struct InstanceCalcfgSession {
   bool active = false;
   uint32_t sessionId = 0;
+  uint32_t lastActivityMs = 0;
   uint8_t instanceId = 0;
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
@@ -43,6 +44,7 @@ struct InstanceCalcfgSession {
 struct DefinitionCalcfgSession {
   bool active = false;
   uint32_t sessionId = 0;
+  uint32_t lastActivityMs = 0;
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
   uint16_t jsonSize = 0;

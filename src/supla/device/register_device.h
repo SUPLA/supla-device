@@ -77,6 +77,8 @@ void removeFlags(int32_t removedFlags);
 // Channel operations
 int getNextFreeChannelNumber();
 bool isChannelNumberFree(int channelNumber);
+int getFreeChannelCount();
+bool hasFreeChannelCount(uint8_t requiredCount);
 void addChannel(int channelNumber);
 void removeChannel(int channelNumber);
 int getChannelCount();

@@ -562,16 +562,15 @@ TEST(SupletServerConfigTests, ValidatesUpsertCommandWithoutPersisting) {
 }
 
 TEST(SupletServerConfigTests, ValidateUpsertCommandFailsWhenNoChannelIsFree) {
+  Supla::Channel::resetToDefaults();
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::Registry registry;
   auto definition = makeRelayDefinition();
   ASSERT_TRUE(registry.add(&definition, 4));
   Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  std::vector<Supla::Channel> channels(SUPLA_CHANNELMAXCOUNT);
   Supla::Suplet::ChannelAllocator occupied;
-  for (int i = 0; i < SUPLA_CHANNELMAXCOUNT; i++) {
-    ASSERT_TRUE(occupied.markOccupied(i));
-  }
 
   const char commandJson[] =
       "{"

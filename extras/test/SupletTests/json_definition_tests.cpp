@@ -287,22 +287,28 @@ TEST_F(SupletJsonFixture, CreatesRuntimeElementsFromJsonDefinition) {
 
   NoopConfig config;
   Supla::Suplet::Manager manager(&config);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
+  Supla::Channel occupied0(0);
 
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 55;
   ASSERT_TRUE(manager.addInstanceFromDefinition(
-      instance, *parsed.getDefinition(), occupied));
+      instance, *parsed.getDefinition(), Supla::Suplet::ChannelAllocator()));
   const auto *record = manager.getInstanceTable()->findByInstanceId(55);
   ASSERT_NE(record, nullptr);
+  EXPECT_EQ(record->channelMap.getChannelNumber(1),
+            Supla::Suplet::kInvalidChannelNumber);
+  EXPECT_EQ(record->channelMap.getChannelNumber(2),
+            Supla::Suplet::kInvalidChannelNumber);
 
   Supla::Element *created[2] = {};
+  Supla::Suplet::ChannelMap createdChannelMap;
   ASSERT_TRUE(Supla::Suplet::Runtime::createElements(
-      *parsed.getDefinition(), *record, created, 2));
+      *parsed.getDefinition(), *record, created, 2, &createdChannelMap));
 
   EXPECT_EQ(created[0]->getChannelNumber(), 1);
   EXPECT_EQ(created[1]->getChannelNumber(), 2);
+  EXPECT_EQ(createdChannelMap.getChannelNumber(1), 1);
+  EXPECT_EQ(createdChannelMap.getChannelNumber(2), 2);
   EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), record->subDeviceId);
   EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), record->subDeviceId);
 

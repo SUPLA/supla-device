@@ -101,6 +101,7 @@ class Manager : public Supla::Device::ChannelConflictResolver {
   const DefinitionCalcfgSession *getDefinitionCalcfgSession() const;
   DefinitionCalcfgSession *beginDefinitionCalcfgSession();
   void clearDefinitionCalcfgSession();
+  void cleanupExpiredCalcfgSessions(uint32_t nowMs);
   bool removeInstance(uint8_t instanceId);
   uint8_t getFirstFreeSubDeviceId() const;
 

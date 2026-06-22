@@ -21,6 +21,7 @@
 #if SUPLA_SUPLET_ENABLED
 
 #include <supla/channels/channel.h>
+#include <supla/device/register_device.h>
 #include <supla/element.h>
 #include <supla/log_wrapper.h>
 #include <supla/storage/storage.h>
@@ -272,26 +273,15 @@ bool Manager::addInstanceWithAllocatedChannels(
 bool Manager::addInstanceFromDefinition(InstanceRecord record,
                                         const Definition &definition,
                                         const ChannelAllocator &occupied) {
-  if (!Runtime::validateDefinition(definition)) {
-    return false;
-  }
-
-  uint8_t ids[SUPLA_SUPLET_MAX_CHANNELS_PER_INSTANCE] = {};
-  if (!getDefinitionChannelIds(
-          definition, ids, sizeof(ids) / sizeof(ids[0]))) {
-    return false;
-  }
-
-  record.definitionId = definition.definitionId;
-  record.definitionVersion = definition.definitionVersion;
-  return addInstanceWithAllocatedChannels(
-      record, ids, definition.channelCount, occupied);
+  return upsertInstanceFromDefinition(record, definition, occupied);
 }
 
 bool Manager::canUpsertInstanceFromDefinition(
     InstanceRecord record,
     const Definition &definition,
     const ChannelAllocator &occupied) const {
+  (void)(occupied);
+
   if (!Runtime::validateDefinition(definition)) {
     return false;
   }
@@ -331,18 +321,13 @@ bool Manager::canUpsertInstanceFromDefinition(
   record.definitionVersion = definition.definitionVersion;
   record.channelMap = inputMap;
 
-  ChannelAllocator allocator = occupied;
-  if (!markExistingSupletChannelsExcept(&allocator, record.instanceId)) {
-    return false;
-  }
-
   uint8_t missingChannelCount = 0;
   for (uint8_t i = 0; i < definition.channelCount; i++) {
     if (!record.channelMap.containsId(ids[i])) {
       missingChannelCount++;
     }
   }
-  if (allocator.getFreeChannelCount() < missingChannelCount) {
+  if (!Supla::RegisterDevice::hasFreeChannelCount(missingChannelCount)) {
     return false;
   }
 
@@ -352,7 +337,6 @@ bool Manager::canUpsertInstanceFromDefinition(
 bool Manager::upsertInstanceFromDefinition(InstanceRecord record,
                                            const Definition &definition,
                                            const ChannelAllocator &occupied) {
-  (void)(occupied);
   if (!canUpsertInstanceFromDefinition(record, definition, occupied)) {
     return false;
   }
@@ -648,6 +632,24 @@ void Manager::clearDefinitionCalcfgSession() {
   if (definitionCalcfgSession != nullptr) {
     delete definitionCalcfgSession;
     definitionCalcfgSession = nullptr;
+  }
+}
+
+void Manager::cleanupExpiredCalcfgSessions(uint32_t nowMs) {
+  if (instanceCalcfgSession != nullptr && instanceCalcfgSession->active &&
+      nowMs - instanceCalcfgSession->lastActivityMs >
+          SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS) {
+    SUPLA_LOG_WARNING("Suplet CALCFG instance session timeout: session=%u",
+                      instanceCalcfgSession->sessionId);
+    clearInstanceCalcfgSession();
+  }
+
+  if (definitionCalcfgSession != nullptr && definitionCalcfgSession->active &&
+      nowMs - definitionCalcfgSession->lastActivityMs >
+          SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS) {
+    SUPLA_LOG_WARNING("Suplet CALCFG definition session timeout: session=%u",
+                      definitionCalcfgSession->sessionId);
+    clearDefinitionCalcfgSession();
   }
 }
 

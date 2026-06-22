@@ -25,6 +25,7 @@
 #include <supla/suplet/capability_registry.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/server_config.h>
+#include <supla/time.h>
 
 namespace {
 
@@ -152,6 +153,9 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
                      SUPLA_CALCFG_SUPLET_PHASE_NONE);
     return SUPLA_CALCFG_RESULT_NOT_SUPPORTED;
   }
+
+  const uint32_t nowMs = millis();
+  cleanupExpiredCalcfgSessions(nowMs);
 
   auto supletRegistry = getRegistry();
   auto supletServerConfigHandler = getServerConfigHandler();
@@ -470,6 +474,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       supletDefinitionCalcfgSession->active = true;
       supletDefinitionCalcfgSession->sessionId = begin.SessionId;
+      supletDefinitionCalcfgSession->lastActivityMs = nowMs;
       supletDefinitionCalcfgSession->definitionId = begin.DefinitionId;
       supletDefinitionCalcfgSession->definitionVersion =
           begin.DefinitionVersion;
@@ -519,6 +524,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       memcpy(supletDefinitionCalcfgSession->json + chunk.Offset,
              chunk.Data,
              chunk.Size);
+      supletDefinitionCalcfgSession->lastActivityMs = nowMs;
       for (uint8_t i = 0; i < chunk.Size; i++) {
         uint16_t index = chunk.Offset + i;
         if (!supletDefinitionCalcfgSession->received[index]) {
@@ -686,6 +692,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       supletCalcfgSession->active = true;
       supletCalcfgSession->sessionId = begin.SessionId;
+      supletCalcfgSession->lastActivityMs = nowMs;
       supletCalcfgSession->instanceId = begin.InstanceId;
       supletCalcfgSession->definitionId = begin.DefinitionId;
       supletCalcfgSession->definitionVersion = begin.DefinitionVersion;
@@ -731,6 +738,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       }
       memcpy(
           supletCalcfgSession->params + chunk.Offset, chunk.Data, chunk.Size);
+      supletCalcfgSession->lastActivityMs = nowMs;
       for (uint8_t i = 0; i < chunk.Size; i++) {
         uint16_t index = chunk.Offset + i;
         if (!supletCalcfgSession->received[index]) {

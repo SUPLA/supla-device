@@ -286,7 +286,7 @@ int Supla::RegisterDevice::getNextFreeChannelNumber() {
 
 // TODO(klew) move to channel
 bool Supla::RegisterDevice::isChannelNumberFree(int channelNumber) {
-  if (channelNumber >= SUPLA_CHANNELMAXCOUNT) {
+  if (channelNumber < 0 || channelNumber >= SUPLA_CHANNELMAXCOUNT) {
     return false;
   }
 
@@ -298,6 +298,38 @@ bool Supla::RegisterDevice::isChannelNumberFree(int channelNumber) {
   }
 
   return true;
+}
+
+int Supla::RegisterDevice::getFreeChannelCount() {
+  int result = 0;
+  for (int candidate = Supla::Channel::getStartingChannelNumber();
+       candidate < SUPLA_CHANNELMAXCOUNT;
+       candidate++) {
+    if (isChannelNumberFree(candidate)) {
+      result++;
+    }
+  }
+  return result;
+}
+
+bool Supla::RegisterDevice::hasFreeChannelCount(uint8_t requiredCount) {
+  if (requiredCount == 0) {
+    return true;
+  }
+
+  int freeCount = 0;
+  for (int candidate = Supla::Channel::getStartingChannelNumber();
+       candidate < SUPLA_CHANNELMAXCOUNT;
+       candidate++) {
+    if (isChannelNumberFree(candidate)) {
+      freeCount++;
+      if (freeCount >= requiredCount) {
+        return true;
+      }
+    }
+  }
+
+  return false;
 }
 
 void Supla::RegisterDevice::addChannel(int channelNumber) {

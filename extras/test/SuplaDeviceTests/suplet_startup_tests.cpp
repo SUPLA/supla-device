@@ -23,6 +23,7 @@
 #include <supla/clock/clock.h>
 #include <supla/element.h>
 #include <supla/suplet/capability_registry.h>
+#include <supla/suplet/config.h>
 #include <supla/suplet/manager.h>
 #include <supla/suplet/registry.h>
 #include <supla/suplet/server_config.h>
@@ -292,6 +293,14 @@ void setRequiredSuplaConfig(ConfigSimulator *config) {
   ASSERT_TRUE(config->setAuthKey(authkey));
   ASSERT_TRUE(config->setSuplaServer("supla.example.org"));
   ASSERT_TRUE(config->setEmail("user@supla.org"));
+}
+
+void expectSupletResult(const TDS_DeviceCalCfgResult &result,
+                        uint8_t detailCode) {
+  ASSERT_EQ(result.DataSize, sizeof(TCalCfg_SupletResult));
+  TCalCfg_SupletResult supletResult = {};
+  memcpy(&supletResult, result.Data, sizeof(supletResult));
+  EXPECT_EQ(supletResult.DetailCode, detailCode);
 }
 
 }  // namespace
@@ -725,6 +734,94 @@ TEST_F(SuplaDeviceSupletStartupTests,
   EXPECT_EQ(element->getChannel()->getDefaultFunction(),
             SUPLA_CHANNELFNC_POWERSWITCH);
   EXPECT_STREQ(element->getChannel()->getInitialCaption(), "CALCFG relay");
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgDefinitionBeginExpiresStaleTransferSession) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::Registry registry;
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  TSD_DeviceCalCfgRequest request = {};
+  TDS_DeviceCalCfgResult result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
+  TCalCfg_SupletDefinitionBegin begin = {};
+  begin.SessionId = 100;
+  begin.DefinitionId = 5100;
+  begin.DefinitionVersion = 1;
+  begin.JsonSize = 2;
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
+
+  result = {};
+  begin.SessionId = 101;
+  memcpy(request.Data, &begin, sizeof(begin));
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_BUSY);
+
+  time.advance(SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS + 1);
+
+  result = {};
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgInstanceBeginExpiresStaleTransferSession) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  auto definition = makeParameterizedRelayDefinition(6100);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&definition, 4));
+  Supla::Suplet::Manager manager(&config);
+  Supla::Suplet::ServerConfigHandler handler(&manager, &registry);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  TSD_DeviceCalCfgRequest request = {};
+  TDS_DeviceCalCfgResult result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN;
+  TCalCfg_SupletInstanceBegin begin = {};
+  begin.SessionId = 200;
+  begin.InstanceId = 88;
+  begin.DefinitionId = definition.definitionId;
+  begin.DefinitionVersion = definition.definitionVersion;
+  begin.ParamsSize = 2;
+  begin.State = SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
+
+  result = {};
+  begin.SessionId = 201;
+  memcpy(request.Data, &begin, sizeof(begin));
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_BUSY);
+
+  time.advance(SUPLA_SUPLET_CALCFG_SESSION_TIMEOUT_MS + 1);
+
+  result = {};
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_DONE);
+  expectSupletResult(result, SUPLA_CALCFG_SUPLET_RESULT_OK);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

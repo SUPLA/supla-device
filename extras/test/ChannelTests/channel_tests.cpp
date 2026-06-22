@@ -100,12 +100,29 @@ TEST_F(ChannelTestsFixture, ChannelNumberOffset) {
   Supla::Channel::setStartingChannelNumber(10);
 
   EXPECT_EQ(Supla::RegisterDevice::getNextFreeChannelNumber(), 10);
+  EXPECT_EQ(Supla::RegisterDevice::getFreeChannelCount(),
+            SUPLA_CHANNELMAXCOUNT - 10);
+  EXPECT_TRUE(Supla::RegisterDevice::hasFreeChannelCount(2));
 
   Supla::Channel first;
   Supla::Channel second;
 
   EXPECT_EQ(first.getChannelNumber(), 10);
   EXPECT_EQ(second.getChannelNumber(), 11);
+  EXPECT_EQ(Supla::RegisterDevice::getFreeChannelCount(),
+            SUPLA_CHANNELMAXCOUNT - 12);
+}
+
+TEST_F(ChannelTestsFixture, FreeChannelCountUsesGaps) {
+  Supla::Channel first(0);
+  Supla::Channel second(2);
+
+  EXPECT_EQ(Supla::RegisterDevice::getFreeChannelCount(),
+            SUPLA_CHANNELMAXCOUNT - 2);
+  EXPECT_TRUE(Supla::RegisterDevice::hasFreeChannelCount(
+      SUPLA_CHANNELMAXCOUNT - 2));
+  EXPECT_FALSE(Supla::RegisterDevice::hasFreeChannelCount(
+      SUPLA_CHANNELMAXCOUNT - 1));
 }
 
 TEST_F(ChannelTestsFixture, SetNewValue) {

@@ -211,24 +211,28 @@ TEST_F(SupletJsonInstanceFixture, BuildsRuntimeFromDefinitionAndInstanceJson) {
 
   NoopConfig config;
   Supla::Suplet::Manager manager(&config);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
-  ASSERT_TRUE(occupied.markOccupied(2));
-  ASSERT_TRUE(occupied.markOccupied(4));
-  ASSERT_TRUE(occupied.markOccupied(6));
+  Supla::Channel occupied0(0);
   ASSERT_TRUE(manager.addInstanceFromDefinition(
-      instance, *jsonDefinition.getDefinition(), occupied));
+      instance,
+      *jsonDefinition.getDefinition(),
+      Supla::Suplet::ChannelAllocator()));
 
   const auto *record = manager.getInstanceTable()->findByInstanceId(77);
   ASSERT_NE(record, nullptr);
   EXPECT_NE(record->subDeviceId, 0);
   EXPECT_EQ(record->channelMap.getChannelNumber(
                 1),
-            1);
+            Supla::Suplet::kInvalidChannelNumber);
 
   Supla::Element *created[1] = {};
+  Supla::Suplet::ChannelMap createdChannelMap;
   ASSERT_TRUE(Supla::Suplet::Runtime::createElements(
-      *jsonDefinition.getDefinition(), *record, created, 1));
+      *jsonDefinition.getDefinition(),
+      *record,
+      created,
+      1,
+      &createdChannelMap));
+  EXPECT_EQ(createdChannelMap.getChannelNumber(1), 1);
 
   time.advance(101);
   created[0]->iterateAlways();

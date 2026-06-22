@@ -263,28 +263,35 @@ TEST_F(SupletRuntimeFixture, ManagerAddsDefinitionAndRuntimeCreatesChannels) {
   } config;
 
   Supla::Suplet::Manager manager(&config);
-  Supla::Suplet::ChannelAllocator occupied;
-  ASSERT_TRUE(occupied.markOccupied(0));
-  ASSERT_TRUE(occupied.markOccupied(2));
+  Supla::Channel occupied0(0);
+  Supla::Channel occupied2(2);
 
   Supla::Suplet::InstanceRecord instance = {};
   instance.instanceId = 22;
   ASSERT_TRUE(
-      manager.addInstanceFromDefinition(instance, definition, occupied));
+      manager.addInstanceFromDefinition(
+          instance, definition, Supla::Suplet::ChannelAllocator()));
 
   auto record = manager.getInstanceTable()->findByInstanceId(22);
   ASSERT_NE(record, nullptr);
   EXPECT_EQ(record->definitionId, 77u);
   EXPECT_EQ(record->definitionVersion, 3u);
   EXPECT_NE(record->subDeviceId, 0);
-  EXPECT_EQ(record->channelMap.getChannelNumber(channels[0].channelId), 1);
-  EXPECT_EQ(record->channelMap.getChannelNumber(channels[1].channelId), 3);
+  EXPECT_EQ(record->channelMap.getChannelNumber(channels[0].channelId),
+            Supla::Suplet::kInvalidChannelNumber);
+  EXPECT_EQ(record->channelMap.getChannelNumber(channels[1].channelId),
+            Supla::Suplet::kInvalidChannelNumber);
 
   Supla::Element *created[2] = {};
-  ASSERT_TRUE(
-      Supla::Suplet::Runtime::createElements(definition, *record, created, 2));
+  Supla::Suplet::ChannelMap createdChannelMap;
+  ASSERT_TRUE(Supla::Suplet::Runtime::createElements(
+      definition, *record, created, 2, &createdChannelMap));
   EXPECT_EQ(created[0]->getChannelNumber(), 1);
   EXPECT_EQ(created[1]->getChannelNumber(), 3);
+  EXPECT_EQ(createdChannelMap.getChannelNumber(channels[0].channelId), 1);
+  EXPECT_EQ(createdChannelMap.getChannelNumber(channels[1].channelId), 3);
   EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), record->subDeviceId);
   EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), record->subDeviceId);
+  delete created[0];
+  delete created[1];
 }

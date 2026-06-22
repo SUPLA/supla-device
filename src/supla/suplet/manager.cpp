@@ -381,7 +381,7 @@ bool Manager::createElementsFromRegistry(const Registry &registry,
   bool tableChanged = false;
   for (uint8_t i = 0; i < table.getCount(); i++) {
     auto record = table.getRecord(i);
-    if (record == nullptr || record->state != InstanceState::Active) {
+    if (record == nullptr) {
       continue;
     }
 
@@ -668,7 +668,7 @@ bool Manager::getRequiredRuntimeElementCount(const Registry &registry,
   *count = 0;
   for (uint8_t i = 0; i < table.getCount(); i++) {
     auto record = table.getRecord(i);
-    if (record == nullptr || record->state != InstanceState::Active) {
+    if (record == nullptr) {
       continue;
     }
 

@@ -263,24 +263,6 @@ bool readUInt16(JsonReader *reader, uint16_t *value) {
   return true;
 }
 
-bool parseState(const char *value, Supla::Suplet::InstanceState *state) {
-  if (state == nullptr) {
-    return false;
-  }
-  if (equalText(value, "active")) {
-    *state = Supla::Suplet::InstanceState::Active;
-  } else if (equalText(value, "disabled")) {
-    *state = Supla::Suplet::InstanceState::Disabled;
-  } else if (equalText(value, "staged")) {
-    *state = Supla::Suplet::InstanceState::Staged;
-  } else if (equalText(value, "deletePending")) {
-    *state = Supla::Suplet::InstanceState::DeletePending;
-  } else {
-    return false;
-  }
-  return true;
-}
-
 bool parseThermometerMode(
     const char *value,
     Supla::Suplet::ThermometerGroupMode *mode) {
@@ -412,7 +394,6 @@ bool JsonInstanceConfigParser::parse(const char *json,
   InstanceRecord record = {};
   record.definitionId = definition.definitionId;
   record.definitionVersion = definition.definitionVersion;
-  record.state = InstanceState::Active;
 
   JsonReader reader(json);
   if (!reader.consume('{')) {
@@ -426,7 +407,6 @@ bool JsonInstanceConfigParser::parse(const char *json,
 
   while (true) {
     char key[24] = {};
-    char text[16] = {};
     if (!reader.readString(key, sizeof(key)) || !reader.consume(':')) {
       return false;
     }
@@ -449,11 +429,6 @@ bool JsonInstanceConfigParser::parse(const char *json,
       }
     } else if (equalText(key, "subDeviceId")) {
       if (!readUInt8(&reader, &record.subDeviceId)) {
-        return false;
-      }
-    } else if (equalText(key, "state")) {
-      if (!reader.readString(text, sizeof(text)) ||
-          !parseState(text, &record.state)) {
         return false;
       }
     } else if (equalText(key, "config")) {

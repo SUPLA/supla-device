@@ -1295,7 +1295,6 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
     uint8_t instanceId,
     uint32_t definitionId,
     uint16_t definitionVersion,
-    InstanceState state,
     const char *paramsJson,
     uint16_t paramsSize,
     uint8_t *appliedInstanceId) {
@@ -1359,7 +1358,6 @@ ServerConfigResult ServerConfigHandler::applyInstanceParams(
   record.instanceId = instanceId;
   record.definitionId = definitionId;
   record.definitionVersion = definitionVersion;
-  record.state = state;
   if (!record.setConfig(reinterpret_cast<const uint8_t *>(paramsJson),
                         paramsSize)) {
     return ServerConfigResult::InvalidArgument;
@@ -1433,10 +1431,8 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
     uint8_t instanceId,
     uint32_t definitionId,
     uint16_t definitionVersion,
-    InstanceState state,
     const char *paramsJson,
     uint16_t paramsSize) const {
-  (void)(state);
   if (manager == nullptr || definitionId == 0 || definitionVersion == 0 ||
       paramsSize > SUPLA_SUPLET_MAX_CONFIG_SIZE ||
       (paramsSize > 0 && paramsJson == nullptr)) {
@@ -1494,7 +1490,6 @@ ServerConfigResult ServerConfigHandler::validateInstanceParams(
   record.instanceId = instanceId;
   record.definitionId = definitionId;
   record.definitionVersion = definitionVersion;
-  record.state = state;
   if (!record.setConfig(reinterpret_cast<const uint8_t *>(paramsJson),
                         paramsSize)) {
     return ServerConfigResult::InvalidArgument;

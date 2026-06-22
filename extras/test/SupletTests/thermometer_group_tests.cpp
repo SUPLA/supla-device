@@ -180,7 +180,6 @@ TEST_F(SupletThermometerGroupFixture,
   instance.definitionId = definition.definitionId;
   instance.definitionVersion = definition.definitionVersion;
   instance.subDeviceId = 3;
-  instance.state = Supla::Suplet::InstanceState::Active;
   ASSERT_TRUE(instance.channelMap.add(channel.channelId, 8));
 
   auto config = makeConfig(Supla::Suplet::ThermometerGroupMode::Avg);

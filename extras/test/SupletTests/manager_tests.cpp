@@ -137,7 +137,6 @@ Supla::Suplet::InstanceRecord makeRecord(uint32_t instanceId,
   record.definitionId = 100 + instanceId;
   record.definitionVersion = 1;
   record.subDeviceId = subDeviceId;
-  record.state = Supla::Suplet::InstanceState::Active;
   record.channelMap.add(1, channelA);
   record.channelMap.add(2, channelB);
   return record;
@@ -169,7 +168,6 @@ TEST(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
   record.definitionId = 1000;
   record.definitionVersion = 1;
   record.subDeviceId = 1;
-  record.state = Supla::Suplet::InstanceState::Active;
   const uint8_t params[] = {'{', '}'};
   ASSERT_TRUE(record.setConfig(params, sizeof(params)));
   ASSERT_TRUE(manager.addInstance(record));
@@ -208,7 +206,6 @@ TEST(SupletManagerTests, AddInstanceFromDefinitionDoesNotPreallocateChannels) {
   definition.channelCount = 2;
   Supla::Suplet::InstanceRecord newRecord = {};
   newRecord.instanceId = 2;
-  newRecord.state = Supla::Suplet::InstanceState::Active;
 
   EXPECT_TRUE(manager.addInstanceFromDefinition(newRecord, definition));
 
@@ -293,7 +290,7 @@ TEST(SupletManagerTests, InvalidTypeAndMissingOnDeviceDoNotRemoveSuplets) {
   EXPECT_NE(manager.getInstanceTable()->findByInstanceId(1), nullptr);
 }
 
-TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
+TEST(SupletManagerTests, CreatesRuntimeElementsForStoredInstances) {
   SimpleTime time;
   Supla::Channel::resetToDefaults();
   InMemoryConfig config;
@@ -320,52 +317,30 @@ TEST(SupletManagerTests, CreatesActiveRuntimeElementsFromRegistry) {
   Supla::Suplet::Registry registry;
   ASSERT_TRUE(registry.add(&definition, 4));
 
-  Supla::Suplet::InstanceRecord active = {};
-  active.instanceId = 1;
-  active.definitionId = 500;
-  active.definitionVersion = 2;
-  active.subDeviceId = 10;
-  active.state = Supla::Suplet::InstanceState::Active;
-  ASSERT_TRUE(active.channelMap.add(channels[0].channelId, 4));
-  ASSERT_TRUE(active.channelMap.add(channels[1].channelId, 8));
-  ASSERT_TRUE(manager.addInstance(active));
-
-  Supla::Suplet::InstanceRecord disabled = active;
-  disabled.instanceId = 2;
-  disabled.subDeviceId = 11;
-  disabled.state = Supla::Suplet::InstanceState::Disabled;
-  disabled.channelMap.clear();
-  ASSERT_TRUE(disabled.channelMap.add(channels[0].channelId, 12));
-  ASSERT_TRUE(disabled.channelMap.add(channels[1].channelId, 13));
-  ASSERT_TRUE(manager.addInstance(disabled));
-
-  Supla::Suplet::InstanceRecord staged = active;
-  staged.instanceId = 3;
-  staged.subDeviceId = 12;
-  staged.state = Supla::Suplet::InstanceState::Staged;
-  staged.channelMap.clear();
-  ASSERT_TRUE(staged.channelMap.add(channels[0].channelId, 14));
-  ASSERT_TRUE(staged.channelMap.add(channels[1].channelId, 15));
-  ASSERT_TRUE(manager.addInstance(staged));
-
-  Supla::Suplet::InstanceRecord deletePending = active;
-  deletePending.instanceId = 4;
-  deletePending.subDeviceId = 13;
-  deletePending.state = Supla::Suplet::InstanceState::DeletePending;
-  deletePending.channelMap.clear();
-  ASSERT_TRUE(deletePending.channelMap.add(channels[0].channelId, 16));
-  ASSERT_TRUE(deletePending.channelMap.add(channels[1].channelId, 17));
-  ASSERT_TRUE(manager.addInstance(deletePending));
+  for (uint8_t i = 0; i < 4; i++) {
+    Supla::Suplet::InstanceRecord record = {};
+    record.instanceId = i + 1;
+    record.definitionId = 500;
+    record.definitionVersion = 2;
+    record.subDeviceId = i + 1;
+    ASSERT_TRUE(record.channelMap.add(channels[0].channelId, 4 + i * 2));
+    ASSERT_TRUE(record.channelMap.add(channels[1].channelId, 5 + i * 2));
+    ASSERT_TRUE(manager.addInstance(record));
+  }
 
   Supla::Element *created[8] = {};
   uint16_t createdCount = 0;
   EXPECT_TRUE(manager.createElementsFromRegistry(
       registry, created, sizeof(created) / sizeof(created[0]), &createdCount));
-  ASSERT_EQ(createdCount, 2);
+  ASSERT_EQ(createdCount, 8);
   EXPECT_EQ(created[0]->getChannelNumber(), 4);
-  EXPECT_EQ(created[1]->getChannelNumber(), 8);
+  EXPECT_EQ(created[1]->getChannelNumber(), 5);
+  EXPECT_EQ(created[6]->getChannelNumber(), 10);
+  EXPECT_EQ(created[7]->getChannelNumber(), 11);
   EXPECT_EQ(created[0]->getChannel()->getSubDeviceId(), 1);
   EXPECT_EQ(created[1]->getChannel()->getSubDeviceId(), 1);
+  EXPECT_EQ(created[6]->getChannel()->getSubDeviceId(), 4);
+  EXPECT_EQ(created[7]->getChannel()->getSubDeviceId(), 4);
 
   while (Supla::Element::begin() != nullptr) {
     delete Supla::Element::begin();
@@ -405,7 +380,6 @@ TEST(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
   active.definitionId = 501;
   active.definitionVersion = 1;
   active.subDeviceId = 1;
-  active.state = Supla::Suplet::InstanceState::Active;
   ASSERT_TRUE(active.channelMap.add(channels[0].channelId, 4));
   ASSERT_TRUE(active.channelMap.add(channels[1].channelId, 8));
   ASSERT_TRUE(manager.addInstance(active));

@@ -90,7 +90,6 @@ class ServerConfigHandler {
   ServerConfigResult applyInstanceParams(uint8_t instanceId,
                                          uint32_t definitionId,
                                          uint16_t definitionVersion,
-                                         InstanceState state,
                                          const char *paramsJson,
                                          uint16_t paramsSize,
                                          uint8_t *appliedInstanceId = nullptr);
@@ -102,7 +101,6 @@ class ServerConfigHandler {
       uint8_t instanceId,
       uint32_t definitionId,
       uint16_t definitionVersion,
-      InstanceState state,
       const char *paramsJson,
       uint16_t paramsSize) const;
   ServerConfigResult applyCommandJson(const char *commandJson);

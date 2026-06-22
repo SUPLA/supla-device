@@ -29,34 +29,6 @@
 
 namespace {
 
-uint8_t supletStateToCalcfg(Supla::Suplet::InstanceState state) {
-  switch (state) {
-    case Supla::Suplet::InstanceState::Active:
-      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
-    case Supla::Suplet::InstanceState::Staged:
-      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED;
-    case Supla::Suplet::InstanceState::DeletePending:
-      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING;
-    case Supla::Suplet::InstanceState::Disabled:
-    default:
-      return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED;
-  }
-}
-
-Supla::Suplet::InstanceState supletStateFromCalcfg(uint8_t state) {
-  switch (state) {
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE:
-      return Supla::Suplet::InstanceState::Active;
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED:
-      return Supla::Suplet::InstanceState::Staged;
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING:
-      return Supla::Suplet::InstanceState::DeletePending;
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED:
-    default:
-      return Supla::Suplet::InstanceState::Disabled;
-  }
-}
-
 uint8_t supletDetailFromServerResult(Supla::Suplet::ServerConfigResult result) {
   switch (result) {
     case Supla::Suplet::ServerConfigResult::Applied:
@@ -311,7 +283,6 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
         item.InstanceId = record->instanceId;
         item.DefinitionId = record->definitionId;
         item.DefinitionVersion = record->definitionVersion;
-        item.State = supletStateToCalcfg(record->state);
         item.SubDeviceId = record->subDeviceId;
         uint8_t channelCount = 0;
         const auto *definition = supletRegistry->findDefinition(
@@ -348,7 +319,6 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       output.InstanceId = record->instanceId;
       output.DefinitionId = record->definitionId;
       output.DefinitionVersion = record->definitionVersion;
-      output.State = supletStateToCalcfg(record->state);
       output.SubDeviceId = record->subDeviceId;
       output.ParamsSize = record->configSize;
       Supla::Suplet::InstanceRecord fullRecord = {};
@@ -697,7 +667,6 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       supletCalcfgSession->definitionId = begin.DefinitionId;
       supletCalcfgSession->definitionVersion = begin.DefinitionVersion;
       supletCalcfgSession->paramsSize = begin.ParamsSize;
-      supletCalcfgSession->state = supletStateFromCalcfg(begin.State);
       memcpy(supletCalcfgSession->expectedSha256,
              begin.ParamsSha256,
              sizeof(supletCalcfgSession->expectedSha256));
@@ -802,7 +771,6 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
           supletCalcfgSession->instanceId,
           supletCalcfgSession->definitionId,
           supletCalcfgSession->definitionVersion,
-          supletCalcfgSession->state,
           reinterpret_cast<const char *>(supletCalcfgSession->params),
           supletCalcfgSession->paramsSize,
           &appliedInstanceId);

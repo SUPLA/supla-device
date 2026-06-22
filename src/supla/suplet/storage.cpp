@@ -30,7 +30,7 @@ namespace Suplet {
 
 namespace {
 
-constexpr uint8_t kSupletStorageVersion = 2;
+constexpr uint8_t kSupletStorageVersion = 3;
 constexpr uint8_t kDeletedSlot = 0;
 constexpr uint8_t kVariantA = 1;
 constexpr uint8_t kVariantB = 2;
@@ -58,7 +58,6 @@ InstanceRecord &InstanceRecord::operator=(const InstanceRecord &other) {
   definitionId = other.definitionId;
   definitionVersion = other.definitionVersion;
   subDeviceId = other.subDeviceId;
-  state = other.state;
   configSize = 0;
   channelMap = other.channelMap;
   if (other.config == nullptr) {
@@ -431,7 +430,6 @@ bool Storage::loadVariant(uint8_t instanceId,
   loaded.subDeviceId = instanceId;
   loaded.definitionId = header.definitionId;
   loaded.definitionVersion = header.definitionVersion;
-  loaded.state = static_cast<InstanceState>(header.state);
   loaded.configSize = header.configSize;
 
   if (channelMapSize > 0) {
@@ -536,7 +534,6 @@ bool Storage::saveVariant(const InstanceRecord &record, uint8_t variant) {
 
   StoredInstanceHeader header = {};
   header.version = kSupletStorageVersion;
-  header.state = static_cast<uint8_t>(record.state);
   header.definitionId = record.definitionId;
   header.definitionVersion = record.definitionVersion;
   header.channelCount = record.channelMap.getCount();

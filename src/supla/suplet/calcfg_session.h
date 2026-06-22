@@ -33,7 +33,6 @@ struct InstanceCalcfgSession {
   uint8_t instanceId = 0;
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
-  InstanceState state = InstanceState::Active;
   uint16_t paramsSize = 0;
   uint16_t receivedSize = 0;
   uint8_t expectedSha256[32] = {};

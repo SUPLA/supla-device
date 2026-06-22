@@ -147,7 +147,6 @@ TEST(SupletJsonInstanceConfigTests, ParsesThermometerGroupInstanceConfig) {
   EXPECT_EQ(record.instanceId, 123u);
   EXPECT_EQ(record.definitionId, 900u);
   EXPECT_EQ(record.definitionVersion, 4u);
-  EXPECT_EQ(record.state, Supla::Suplet::InstanceState::Active);
   EXPECT_EQ(record.subDeviceId, 17);
   EXPECT_GT(record.configSize, 0);
 

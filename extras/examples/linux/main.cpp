@@ -476,7 +476,6 @@ struct FifoCalcfgCommand {
   uint32_t instanceId = 0;
   uint32_t definitionId = 0;
   uint32_t definitionVersion = 0;
-  char state[16] = {};
   char definitionJson[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1] = {};
   char paramsJson[SUPLA_SUPLET_MAX_CONFIG_SIZE + 1] = {};
 };
@@ -539,10 +538,6 @@ bool parseFifoCalcfgCommand(const char *json, FifoCalcfgCommand *command) {
       if (!reader.readUInt32(&command->definitionVersion)) {
         return false;
       }
-    } else if (equalText(key, "state")) {
-      if (!reader.readString(command->state, sizeof(command->state))) {
-        return false;
-      }
     } else if (equalText(key, "definitionJson")) {
       if (!reader.readString(command->definitionJson,
                              sizeof(command->definitionJson))) {
@@ -578,33 +573,6 @@ void calculateSha256(const char *data, uint16_t dataSize, uint8_t *output) {
     sha256.update(reinterpret_cast<const uint8_t *>(data), dataSize);
   }
   sha256.digest(output, 32);
-}
-
-uint8_t supletStateFromText(const char *state) {
-  if (equalText(state, "disabled")) {
-    return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED;
-  }
-  if (equalText(state, "staged")) {
-    return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED;
-  }
-  if (equalText(state, "deletePending")) {
-    return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING;
-  }
-  return SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
-}
-
-const char *supletStateToString(uint8_t state) {
-  switch (state) {
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED:
-      return "disabled";
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE:
-      return "active";
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED:
-      return "staged";
-    case SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING:
-      return "deletePending";
-  }
-  return "unknown";
 }
 
 uint32_t nextFifoCalcfgSessionId() {
@@ -942,7 +910,7 @@ class SupletFifoInput {
     // {"calcfg":"removeDefinition","definitionId":2000,
     //  "definitionVersion":1}
     // {"calcfg":"upsertInstance","instanceId":1,"definitionId":2000,
-    //  "definitionVersion":1,"paramsJson":"{}","state":"active"}
+    //  "definitionVersion":1,"paramsJson":"{}"}
     // {"calcfg":"getInstanceCount"}
     // {"calcfg":"getInstanceList"}
     // {"calcfg":"getInstanceInfo","instanceId":1}
@@ -1100,7 +1068,6 @@ class SupletFifoInput {
     begin.DefinitionId = command.definitionId;
     begin.DefinitionVersion = static_cast<uint16_t>(command.definitionVersion);
     begin.ParamsSize = paramsSize;
-    begin.State = supletStateFromText(command.state);
     memcpy(begin.ParamsSha256, sha256, sizeof(sha256));
     if (sendLocalCalcfg(SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN,
                         &begin,
@@ -1187,13 +1154,11 @@ class SupletFifoInput {
       const auto &item = list.Items[i];
       SUPLA_LOG_INFO(
           "Suplet FIFO CALCFG instance.list[%u]: instance=%u, "
-          "definition=%u/%u, state=%s(%u), subDeviceId=%u, channelCount=%u",
+          "definition=%u/%u, subDeviceId=%u, channelCount=%u",
           i,
           item.InstanceId,
           item.DefinitionId,
           item.DefinitionVersion,
-          supletStateToString(item.State),
-          item.State,
           item.SubDeviceId,
           item.ChannelCount);
     }
@@ -1220,13 +1185,10 @@ class SupletFifoInput {
     memcpy(&info, result.Data, sizeof(info));
     SUPLA_LOG_INFO(
         "Suplet FIFO CALCFG instance.info data: instance=%u, "
-        "definition=%u/%u, state=%s(%u), subDeviceId=%u, channelCount=%u, "
-        "paramsSize=%u",
+        "definition=%u/%u, subDeviceId=%u, channelCount=%u, paramsSize=%u",
         info.InstanceId,
         info.DefinitionId,
         info.DefinitionVersion,
-        supletStateToString(info.State),
-        info.State,
         info.SubDeviceId,
         info.ChannelCount,
         info.ParamsSize);

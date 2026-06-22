@@ -336,7 +336,6 @@ TEST(SupletServerConfigTests, AppliesPrivateInstanceParams) {
   EXPECT_EQ(handler.applyInstanceParams(80,
                                         definition.definitionId,
                                         definition.definitionVersion,
-                                        Supla::Suplet::InstanceState::Active,
                                         params,
                                         strlen(params)),
             Supla::Suplet::ServerConfigResult::Applied);
@@ -361,7 +360,6 @@ TEST(SupletServerConfigTests, RejectsInvalidPrivateInstanceParams) {
   EXPECT_EQ(handler.validateInstanceParams(80,
                                            definition.definitionId,
                                            definition.definitionVersion,
-                                           Supla::Suplet::InstanceState::Active,
                                            badRange,
                                            strlen(badRange)),
             Supla::Suplet::ServerConfigResult::InvalidConfig);
@@ -371,7 +369,6 @@ TEST(SupletServerConfigTests, RejectsInvalidPrivateInstanceParams) {
   EXPECT_EQ(handler.validateInstanceParams(80,
                                            definition.definitionId,
                                            definition.definitionVersion,
-                                           Supla::Suplet::InstanceState::Active,
                                            badEnum,
                                            strlen(badEnum)),
             Supla::Suplet::ServerConfigResult::InvalidConfig);
@@ -390,7 +387,6 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
   ASSERT_EQ(handler.applyInstanceParams(80,
                                         definition.definitionId,
                                         definition.definitionVersion,
-                                        Supla::Suplet::InstanceState::Active,
                                         firstParams,
                                         strlen(firstParams)),
             Supla::Suplet::ServerConfigResult::Applied);
@@ -400,7 +396,6 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
   EXPECT_EQ(handler.applyInstanceParams(80,
                                         definition.definitionId,
                                         definition.definitionVersion,
-                                        Supla::Suplet::InstanceState::Active,
                                         changedEditable,
                                         strlen(changedEditable)),
             Supla::Suplet::ServerConfigResult::Applied);
@@ -415,7 +410,6 @@ TEST(SupletServerConfigTests, RejectsCreateOnlyParamChangeOnUpdate) {
   EXPECT_EQ(handler.validateInstanceParams(80,
                                            definition.definitionId,
                                            definition.definitionVersion,
-                                           Supla::Suplet::InstanceState::Active,
                                            changedCreateOnly,
                                            strlen(changedCreateOnly)),
             Supla::Suplet::ServerConfigResult::CreateOnlyParamChanged);
@@ -436,7 +430,6 @@ TEST(SupletServerConfigTests, RejectsDefinitionChangeOnUpdate) {
   ASSERT_EQ(handler.applyInstanceParams(80,
                                         relayDefinition.definitionId,
                                         relayDefinition.definitionVersion,
-                                        Supla::Suplet::InstanceState::Active,
                                         params,
                                         strlen(params)),
             Supla::Suplet::ServerConfigResult::Applied);
@@ -444,7 +437,6 @@ TEST(SupletServerConfigTests, RejectsDefinitionChangeOnUpdate) {
   EXPECT_EQ(handler.validateInstanceParams(80,
                                            binaryDefinition.definitionId,
                                            binaryDefinition.definitionVersion,
-                                           Supla::Suplet::InstanceState::Active,
                                            "{}",
                                            2),
             Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);
@@ -453,7 +445,6 @@ TEST(SupletServerConfigTests, RejectsDefinitionChangeOnUpdate) {
       handler.validateInstanceParams(80,
                                      relayDefinition.definitionId,
                                      relayDefinition.definitionVersion + 1,
-                                     Supla::Suplet::InstanceState::Active,
                                      params,
                                      strlen(params)),
       Supla::Suplet::ServerConfigResult::TopologyChangeNotAllowed);

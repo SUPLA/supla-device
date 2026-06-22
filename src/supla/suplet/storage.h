@@ -30,13 +30,6 @@ class Config;
 
 namespace Suplet {
 
-enum class InstanceState : uint8_t {
-  Disabled = 0,
-  Active = 1,
-  Staged = 2,
-  DeletePending = 3,
-};
-
 struct InstanceRecord {
   InstanceRecord();
   InstanceRecord(const InstanceRecord &other);
@@ -50,7 +43,6 @@ struct InstanceRecord {
   uint32_t definitionId = 0;
   uint16_t definitionVersion = 0;
   uint8_t subDeviceId = 0;
-  InstanceState state = InstanceState::Disabled;
   uint16_t configSize = 0;
   ChannelMap channelMap = {};
   uint8_t *config = nullptr;
@@ -96,7 +88,7 @@ class Storage {
 #pragma pack(push, 1)
   struct StoredInstanceHeader {
     uint8_t version = 0;
-    uint8_t state = 0;
+    uint8_t reserved = 0;
     uint32_t definitionId = 0;
     uint16_t definitionVersion = 0;
     uint8_t channelCount = 0;

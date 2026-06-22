@@ -169,7 +169,6 @@ Supla::Suplet::InstanceRecord makeRecord(uint8_t instanceId,
   record.definitionId = 0x1000 + instanceId;
   record.definitionVersion = 0x0102;
   record.subDeviceId = instanceId;
-  record.state = Supla::Suplet::InstanceState::Active;
   const uint8_t config[] = {9, 8, 7};
   record.setConfig(config, sizeof(config));
   record.channelMap.add(0xA0 + instanceId, firstChannel);

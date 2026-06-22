@@ -192,7 +192,6 @@ int sendSupletInstanceParamsCalcfg(SuplaDeviceClass *sd,
   begin.DefinitionId = definitionId;
   begin.DefinitionVersion = definitionVersion;
   begin.ParamsSize = paramsSize;
-  begin.State = SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
   memcpy(begin.ParamsSha256, sha, sizeof(sha));
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
@@ -323,7 +322,6 @@ TEST_F(SuplaDeviceSupletStartupTests,
   record.definitionId = definition.definitionId;
   record.definitionVersion = definition.definitionVersion;
   record.subDeviceId = 7;
-  record.state = Supla::Suplet::InstanceState::Active;
   ASSERT_TRUE(record.channelMap.add(relayId, 4));
   ASSERT_TRUE(manager.addInstance(record));
 
@@ -562,7 +560,6 @@ TEST_F(SuplaDeviceSupletStartupTests,
   record.definitionId = 5001;
   record.definitionVersion = 1;
   record.subDeviceId = 9;
-  record.state = Supla::Suplet::InstanceState::Active;
   ASSERT_TRUE(record.channelMap.add(relayId, 3));
   ASSERT_TRUE(manager.addInstance(record));
 
@@ -801,7 +798,6 @@ TEST_F(SuplaDeviceSupletStartupTests,
   begin.DefinitionId = definition.definitionId;
   begin.DefinitionVersion = definition.definitionVersion;
   begin.ParamsSize = 2;
-  begin.State = SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));
   EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
@@ -1022,7 +1018,6 @@ TEST_F(SuplaDeviceSupletStartupTests,
   begin.DefinitionId = definition.definitionId;
   begin.DefinitionVersion = definition.definitionVersion;
   begin.ParamsSize = strlen(params);
-  begin.State = SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE;
   memcpy(begin.ParamsSha256, sha, sizeof(sha));
   request.DataSize = sizeof(begin);
   memcpy(request.Data, &begin, sizeof(begin));

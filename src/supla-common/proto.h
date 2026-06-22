@@ -2327,11 +2327,6 @@ typedef struct {
 #define SUPLA_CALCFG_SUPLET_PHASE_SAVE_INSTANCE 6
 #define SUPLA_CALCFG_SUPLET_PHASE_RUNTIME_REFRESH 7
 
-#define SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DISABLED 0
-#define SUPLA_CALCFG_SUPLET_INSTANCE_STATE_ACTIVE 1
-#define SUPLA_CALCFG_SUPLET_INSTANCE_STATE_STAGED 2
-#define SUPLA_CALCFG_SUPLET_INSTANCE_STATE_DELETE_PENDING 3
-
 #define SUPLA_CALCFG_SUPLET_CAPABILITY_MAX_ITEMS 4
 #define SUPLA_CALCFG_SUPLET_INSTANCE_LIST_MAX_ITEMS 5
 #define SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS 2
@@ -2418,10 +2413,10 @@ typedef struct {
   unsigned char Reserved3;
   unsigned _supla_int_t DefinitionId;
   unsigned _supla_int16_t DefinitionVersion;
-  unsigned char State;
   unsigned char SubDeviceId;
   unsigned char ChannelCount;
-  unsigned char Reserved;
+  unsigned char Reserved4;
+  unsigned char Reserved5;
 } TCalCfg_SupletInstanceListItem;  // FDEV
 
 typedef struct {
@@ -2447,10 +2442,10 @@ typedef struct {
   unsigned char Reserved3;
   unsigned _supla_int_t DefinitionId;
   unsigned _supla_int16_t DefinitionVersion;
-  unsigned char State;
   unsigned char SubDeviceId;
   unsigned char ChannelCount;
-  unsigned char Reserved;
+  unsigned char Reserved4;
+  unsigned char Reserved5;
   unsigned _supla_int16_t ParamsSize;
   unsigned char ParamsSha256[32];
 } TCalCfg_SupletInstanceInfo;  // FDEV
@@ -2509,8 +2504,8 @@ typedef struct {
   unsigned _supla_int16_t DefinitionVersion;
   unsigned _supla_int16_t ParamsSize;
   unsigned char ParamsSha256[32];
-  unsigned char State;
   unsigned char Flags;
+  unsigned char Reserved4;
 } TCalCfg_SupletInstanceBegin;  // FDEV
 
 typedef struct {

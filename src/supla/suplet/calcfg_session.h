@@ -49,7 +49,7 @@ struct DefinitionCalcfgSession {
   uint16_t definitionVersion = 0;
   uint16_t jsonSize = 0;
   uint16_t receivedSize = 0;
-  uint8_t cacheSlot = 0;
+  DefinitionCacheHandle cacheHandle = {};
   uint16_t currentChunkIndex = 0;
   uint16_t currentChunkSize = 0;
   uint8_t expectedSha256[32] = {};

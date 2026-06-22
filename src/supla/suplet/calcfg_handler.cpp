@@ -73,7 +73,7 @@ Supla::Suplet::ServerConfigResult flushDefinitionCalcfgChunk(
     return Supla::Suplet::ServerConfigResult::Applied;
   }
   auto result = handler->writeStagedDownloadedDefinitionChunk(
-      session->cacheSlot,
+      session->cacheHandle,
       session->currentChunkIndex,
       session->currentChunk,
       session->currentChunkSize);
@@ -453,14 +453,14 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
                          SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE);
         return SUPLA_CALCFG_RESULT_FALSE;
       }
-      uint8_t cacheSlot = 0;
+      Supla::Suplet::DefinitionCacheHandle cacheHandle = {};
       auto serverResult =
           supletServerConfigHandler->beginStagedDownloadedDefinition(
               begin.DefinitionId,
               begin.DefinitionVersion,
               begin.JsonSize,
               begin.JsonSha256,
-              &cacheSlot);
+              &cacheHandle);
       if (serverResult != Supla::Suplet::ServerConfigResult::Applied) {
         fillSupletResult(result,
                          supletDetailFromServerResult(serverResult),
@@ -490,7 +490,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
       supletDefinitionCalcfgSession->definitionVersion =
           begin.DefinitionVersion;
       supletDefinitionCalcfgSession->jsonSize = begin.JsonSize;
-      supletDefinitionCalcfgSession->cacheSlot = cacheSlot;
+      supletDefinitionCalcfgSession->cacheHandle = cacheHandle;
       memcpy(supletDefinitionCalcfgSession->expectedSha256,
              begin.JsonSha256,
              sizeof(supletDefinitionCalcfgSession->expectedSha256));
@@ -638,14 +638,14 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
                          supletDefinitionCalcfgSession->definitionId,
                          supletDefinitionCalcfgSession->definitionVersion);
         supletServerConfigHandler->abortStagedDownloadedDefinition(
-            supletDefinitionCalcfgSession->cacheSlot);
+            supletDefinitionCalcfgSession->cacheHandle);
         clearDefinitionCalcfgSession();
         supletDefinitionCalcfgSession = nullptr;
         return SUPLA_CALCFG_RESULT_FALSE;
       }
       auto serverResult =
           supletServerConfigHandler->commitStagedDownloadedDefinition(
-          supletDefinitionCalcfgSession->cacheSlot,
+          supletDefinitionCalcfgSession->cacheHandle,
           supletDefinitionCalcfgSession->definitionId,
           supletDefinitionCalcfgSession->definitionVersion,
           supletDefinitionCalcfgSession->jsonSize,
@@ -656,6 +656,9 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
                        0,
                        supletDefinitionCalcfgSession->definitionId,
                        supletDefinitionCalcfgSession->definitionVersion);
+      if (serverResult == Supla::Suplet::ServerConfigResult::Applied) {
+        supletDefinitionCalcfgSession->active = false;
+      }
       clearDefinitionCalcfgSession();
       supletDefinitionCalcfgSession = nullptr;
       return calcfgResultFromServerResult(serverResult);
@@ -675,7 +678,7 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
           sessionRequest.SessionId ==
               supletDefinitionCalcfgSession->sessionId) {
         supletServerConfigHandler->abortStagedDownloadedDefinition(
-            supletDefinitionCalcfgSession->cacheSlot);
+            supletDefinitionCalcfgSession->cacheHandle);
         clearDefinitionCalcfgSession();
         supletDefinitionCalcfgSession = nullptr;
       }

@@ -1131,37 +1131,37 @@ ServerConfigResult ServerConfigHandler::beginStagedDownloadedDefinition(
     uint16_t definitionVersion,
     uint16_t jsonSize,
     const uint8_t *sha256,
-    uint8_t *slot) {
+    DefinitionCacheHandle *handle) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
       definitionId == 0 || definitionVersion == 0 || jsonSize == 0 ||
       jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr ||
-      slot == nullptr) {
+      handle == nullptr) {
     return ServerConfigResult::InvalidArgument;
   }
 
   if (!definitionCache->beginStagedSave(
-          definitionId, definitionVersion, jsonSize, sha256, slot)) {
+          definitionId, definitionVersion, jsonSize, sha256, handle)) {
     return ServerConfigResult::StorageError;
   }
   return ServerConfigResult::Applied;
 }
 
 ServerConfigResult ServerConfigHandler::writeStagedDownloadedDefinitionChunk(
-    uint8_t slot,
+    DefinitionCacheHandle handle,
     uint16_t chunkIndex,
     const uint8_t *data,
     uint16_t size) {
   if (definitionCache == nullptr || data == nullptr || size == 0) {
     return ServerConfigResult::InvalidArgument;
   }
-  if (!definitionCache->writeStagedChunk(slot, chunkIndex, data, size)) {
+  if (!definitionCache->writeStagedChunk(handle, chunkIndex, data, size)) {
     return ServerConfigResult::StorageError;
   }
   return ServerConfigResult::Applied;
 }
 
 ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
-    uint8_t slot,
+    DefinitionCacheHandle handle,
     uint32_t definitionId,
     uint16_t definitionVersion,
     uint16_t jsonSize,
@@ -1177,7 +1177,7 @@ ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
     return ServerConfigResult::StorageError;
   }
 
-  bool loaded = definitionCache->loadStaged(slot,
+  bool loaded = definitionCache->loadStaged(handle,
                                             definitionId,
                                             definitionVersion,
                                             definitionJson,
@@ -1227,7 +1227,7 @@ ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
   }
 
   if (!definitionCache->commitStaged(
-          slot, definitionId, definitionVersion, jsonSize, sha256)) {
+          handle, definitionId, definitionVersion, jsonSize, sha256)) {
     return ServerConfigResult::StorageError;
   }
 
@@ -1235,9 +1235,10 @@ ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
   return ServerConfigResult::Applied;
 }
 
-void ServerConfigHandler::abortStagedDownloadedDefinition(uint8_t slot) {
+void ServerConfigHandler::abortStagedDownloadedDefinition(
+    DefinitionCacheHandle handle) {
   if (definitionCache != nullptr) {
-    definitionCache->abortStaged(slot);
+    definitionCache->abortStaged(handle);
   }
 }
 

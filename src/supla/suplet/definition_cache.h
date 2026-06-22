@@ -56,6 +56,11 @@ struct CachedDefinitionInfo {
   uint8_t sha256[32] = {};
 };
 
+struct DefinitionCacheHandle {
+  uint8_t slot = 255;
+  uint8_t variant = 0;
+};
+
 class DefinitionCache {
  public:
   DefinitionCache(Supla::Config *config, Sha256Provider *sha256Provider);
@@ -76,30 +81,36 @@ class DefinitionCache {
                        uint16_t definitionVersion,
                        uint16_t jsonSize,
                        const uint8_t *sha256,
-                       uint8_t *slot);
-  bool writeStagedChunk(uint8_t slot,
+                       DefinitionCacheHandle *handle);
+  bool writeStagedChunk(DefinitionCacheHandle handle,
                         uint16_t chunkIndex,
                         const uint8_t *data,
                         uint16_t size);
-  bool loadStaged(uint8_t slot,
+  bool loadStaged(DefinitionCacheHandle handle,
                   uint32_t definitionId,
                   uint16_t definitionVersion,
                   char *json,
                   size_t jsonSize,
                   CachedDefinitionInfo *info = nullptr) const;
-  bool commitStaged(uint8_t slot,
+  bool commitStaged(DefinitionCacheHandle handle,
                     uint32_t definitionId,
                     uint16_t definitionVersion,
                     uint16_t jsonSize,
                     const uint8_t *sha256);
-  bool abortStaged(uint8_t slot);
+  bool abortStaged(DefinitionCacheHandle handle);
 
  private:
   bool calculateAndVerify(const char *json,
                           uint16_t jsonSize,
                           const uint8_t *expectedSha256,
                           uint8_t *calculatedSha256) const;
+  bool loadActiveHeader(uint8_t index,
+                        CachedDefinitionInfo *info,
+                        uint8_t *activeVariant = nullptr,
+                        uint16_t *chunkCount = nullptr,
+                        uint16_t *chunkSize = nullptr) const;
   bool loadHeader(uint8_t index,
+                  uint8_t variant,
                   CachedDefinitionInfo *info,
                   uint16_t *chunkCount = nullptr,
                   uint16_t *chunkSize = nullptr) const;
@@ -110,26 +121,46 @@ class DefinitionCache {
                 uint16_t jsonSize,
                 const uint8_t *sha256);
   bool saveHeader(uint8_t index,
+                  uint8_t variant,
                   const CachedDefinitionInfo &info,
                   uint16_t chunkCount,
                   uint16_t chunkSize);
   bool loadPayload(uint8_t slot,
-                   bool staged,
+                   uint8_t variant,
                    const CachedDefinitionInfo &info,
                    uint16_t chunkCount,
                    uint16_t chunkSize,
                    char *json,
                    size_t jsonSize) const;
-  bool eraseChunks(uint8_t index, bool staged);
+  bool eraseChunks(uint8_t index, uint8_t variant);
+  bool eraseVariant(uint8_t index, uint8_t variant);
+  bool eraseLegacySlot(uint8_t index);
   bool eraseSlot(uint8_t index);
+  bool setActiveVariant(uint8_t index, uint8_t variant);
+  bool variantExists(uint8_t index, uint8_t variant) const;
+  bool slotExists(uint8_t index) const;
   int findSlot(uint32_t definitionId, uint16_t definitionVersion) const;
   int findFreeSlot() const;
-  static bool makeHeaderKey(uint8_t index, char *output, size_t outputSize);
+  static uint8_t otherVariant(uint8_t variant);
+  static bool isValidVariant(uint8_t variant);
+  static bool isValidHandle(DefinitionCacheHandle handle);
+  static bool makeActKey(uint8_t index, char *output, size_t outputSize);
+  static bool makeHeaderKey(uint8_t index,
+                            uint8_t variant,
+                            char *output,
+                            size_t outputSize);
   static bool makeChunkKey(uint8_t index,
+                           uint8_t variant,
                            uint16_t chunkIndex,
-                           bool staged,
                            char *output,
                            size_t outputSize);
+  static bool makeLegacyHeaderKey(uint8_t index,
+                                  char *output,
+                                  size_t outputSize);
+  static bool makeLegacyChunkKey(uint8_t index,
+                                 uint16_t chunkIndex,
+                                 char *output,
+                                 size_t outputSize);
 
   Supla::Config *config = nullptr;
   Sha256Provider *sha256Provider = nullptr;

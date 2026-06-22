@@ -83,19 +83,19 @@ class ServerConfigHandler {
       uint16_t definitionVersion,
       uint16_t jsonSize,
       const uint8_t *sha256,
-      uint8_t *slot);
+      DefinitionCacheHandle *handle);
   ServerConfigResult writeStagedDownloadedDefinitionChunk(
-      uint8_t slot,
+      DefinitionCacheHandle handle,
       uint16_t chunkIndex,
       const uint8_t *data,
       uint16_t size);
   ServerConfigResult commitStagedDownloadedDefinition(
-      uint8_t slot,
+      DefinitionCacheHandle handle,
       uint32_t definitionId,
       uint16_t definitionVersion,
       uint16_t jsonSize,
       const uint8_t *sha256);
-  void abortStagedDownloadedDefinition(uint8_t slot);
+  void abortStagedDownloadedDefinition(DefinitionCacheHandle handle);
   ServerConfigResult removeDownloadedDefinition(uint32_t definitionId,
                                                 uint16_t definitionVersion);
   uint8_t getCachedDefinitionCount() const;

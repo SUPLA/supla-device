@@ -578,7 +578,7 @@ void Manager::clearDefinitionCalcfgSession() {
   if (definitionCalcfgSession != nullptr) {
     if (serverConfigHandler != nullptr && definitionCalcfgSession->active) {
       serverConfigHandler->abortStagedDownloadedDefinition(
-          definitionCalcfgSession->cacheSlot);
+          definitionCalcfgSession->cacheHandle);
     }
     delete definitionCalcfgSession;
     definitionCalcfgSession = nullptr;

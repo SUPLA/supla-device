@@ -163,6 +163,11 @@ bool Runtime::createElements(const Definition &definition,
     created[i] = nullptr;
   }
 
+  if (definition.runtimeHandler != nullptr) {
+    return definition.runtimeHandler->createElements(
+        definition, instance, created, createdSize, createdChannelMap);
+  }
+
   for (uint8_t i = 0; i < definition.channelCount; i++) {
     created[i] = createElement(definition, definition.channels[i], instance);
     if (created[i] == nullptr || created[i]->getChannel() == nullptr ||

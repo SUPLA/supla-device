@@ -24,7 +24,23 @@
 #include <supla/suplet/channel_map.h>
 
 namespace Supla {
+class Element;
+
 namespace Suplet {
+
+struct Definition;
+struct InstanceRecord;
+
+class RuntimeHandler {
+ public:
+  virtual ~RuntimeHandler() = default;
+
+  virtual bool createElements(const Definition &definition,
+                              const InstanceRecord &instance,
+                              Supla::Element **created,
+                              uint8_t createdSize,
+                              ChannelMap *createdChannelMap) = 0;
+};
 
 enum class Category : uint8_t {
   Unknown = 0,
@@ -116,6 +132,7 @@ struct Definition {
   uint8_t channelCount = 0;
   const ParameterDefinition *parameters = nullptr;
   uint8_t parameterCount = 0;
+  RuntimeHandler *runtimeHandler = nullptr;
 };
 
 bool getDefinitionChannelIds(const Definition &definition,

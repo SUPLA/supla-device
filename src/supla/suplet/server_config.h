@@ -128,6 +128,12 @@ class ServerConfigHandler {
                                 uint16_t definitionVersion,
                                 JsonDefinition *definition,
                                 CachedDefinitionInfo *info = nullptr) const;
+  bool loadDownloadedDefinitionJson(
+      uint32_t definitionId,
+      uint16_t definitionVersion,
+      char *definitionJson,
+      size_t definitionJsonSize,
+      CachedDefinitionInfo *info = nullptr) const;
 
   bool isRuntimeRefreshRequired() const;
   void clearRuntimeRefreshRequired();

@@ -134,6 +134,18 @@ void calculateSha256(const uint8_t *data, uint16_t size, uint8_t *output) {
   sha256.digest(output, 32);
 }
 
+uint16_t getBuiltinDefinitionJsonSize(
+    const Supla::Suplet::Definition *definition) {
+  if (definition == nullptr || definition->definitionJson == nullptr) {
+    return 0;
+  }
+  if (definition->definitionJsonSize != 0) {
+    return definition->definitionJsonSize;
+  }
+  size_t size = strlen(definition->definitionJson);
+  return size > UINT16_MAX ? 0 : static_cast<uint16_t>(size);
+}
+
 }  // namespace
 
 namespace Supla {
@@ -232,32 +244,166 @@ int Manager::handleCalcfg(TSD_DeviceCalCfgRequest *request,
 
       TCalCfg_SupletDefinitionList output = {};
       output.Offset = listRequest.Offset;
-      const uint8_t total =
+      const uint8_t builtinCount = supletRegistry->getCount();
+      const uint8_t cachedCount =
           supletServerConfigHandler->getCachedDefinitionCount();
+      const uint16_t combinedTotal = builtinCount + cachedCount;
+      const uint8_t total = combinedTotal > UINT8_MAX
+                                ? UINT8_MAX
+                                : static_cast<uint8_t>(combinedTotal);
       output.Total = total;
       uint8_t limit = listRequest.Limit;
       if (limit == 0 || limit > SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS) {
         limit = SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS;
       }
       for (uint8_t i = 0; i < limit && listRequest.Offset + i < total; i++) {
-        Supla::Suplet::CachedDefinitionDetails details = {};
-        if (!supletServerConfigHandler->getCachedDefinitionDetails(
-                listRequest.Offset + i, &details)) {
-          break;
-        }
+        const uint8_t listIndex = listRequest.Offset + i;
         auto &item = output.Items[output.Count++];
-        item.Category = static_cast<uint8_t>(details.category);
-        item.Kind = static_cast<uint8_t>(details.kind);
-        item.SchemaVersion = details.schemaVersion;
-        item.HandlerVersion = details.handlerVersion;
-        item.MaxInstances = details.maxInstances;
-        item.DefinitionId = details.cache.definitionId;
-        item.DefinitionVersion = details.cache.definitionVersion;
-        item.JsonSize = details.cache.jsonSize;
-        memcpy(item.JsonSha256, details.cache.sha256, sizeof(item.JsonSha256));
+        if (listIndex < builtinCount) {
+          Supla::Suplet::Capability capability = {};
+          if (!supletRegistry->getCapability(listIndex, &capability)) {
+            output.Count--;
+            break;
+          }
+          const auto *definition = supletRegistry->findDefinition(
+              capability.definitionId, capability.minDefinitionVersion);
+          item.Category = static_cast<uint8_t>(capability.category);
+          item.Kind = static_cast<uint8_t>(capability.kind);
+          item.SchemaVersion = capability.minSchemaVersion;
+          item.HandlerVersion = capability.handlerVersion;
+          item.MaxInstances = capability.maxInstances;
+          item.Source = SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_BUILTIN;
+          item.DefinitionId = capability.definitionId;
+          item.DefinitionVersion = capability.minDefinitionVersion;
+          item.JsonSize = getBuiltinDefinitionJsonSize(definition);
+          if (definition != nullptr && item.JsonSize > 0) {
+            calculateSha256(
+                reinterpret_cast<const uint8_t *>(definition->definitionJson),
+                item.JsonSize,
+                item.JsonSha256);
+          }
+        } else {
+          Supla::Suplet::CachedDefinitionDetails details = {};
+          if (!supletServerConfigHandler->getCachedDefinitionDetails(
+                  listIndex - builtinCount, &details)) {
+            output.Count--;
+            break;
+          }
+          item.Category = static_cast<uint8_t>(details.category);
+          item.Kind = static_cast<uint8_t>(details.kind);
+          item.SchemaVersion = details.schemaVersion;
+          item.HandlerVersion = details.handlerVersion;
+          item.MaxInstances = details.maxInstances;
+          item.Source = SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED;
+          item.DefinitionId = details.cache.definitionId;
+          item.DefinitionVersion = details.cache.definitionVersion;
+          item.JsonSize = details.cache.jsonSize;
+          memcpy(item.JsonSha256,
+                 details.cache.sha256,
+                 sizeof(item.JsonSha256));
+        }
       }
       memcpy(result->Data, &output, sizeof(output));
       result->DataSize = sizeof(output);
+      return SUPLA_CALCFG_RESULT_TRUE;
+    }
+
+    case SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_CONFIG: {
+      if (request->DataSize !=
+          sizeof(TCalCfg_SupletDefinitionConfigRequest)) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+      TCalCfg_SupletDefinitionConfigRequest configRequest = {};
+      memcpy(&configRequest, request->Data, sizeof(configRequest));
+      if (configRequest.DefinitionId == 0 ||
+          configRequest.DefinitionVersion == 0) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE);
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+
+      const char *builtinJson = nullptr;
+      char *cachedJson = nullptr;
+      uint16_t totalSize = 0;
+      uint8_t source = SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_BUILTIN;
+      const auto *definition = supletRegistry->findDefinition(
+          configRequest.DefinitionId, configRequest.DefinitionVersion);
+      if (definition != nullptr) {
+        builtinJson = definition->definitionJson;
+        totalSize = getBuiltinDefinitionJsonSize(definition);
+        if (builtinJson == nullptr || totalSize == 0) {
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_NOT_FOUND,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE);
+          return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
+        }
+      } else {
+        source = SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED;
+        Supla::Suplet::CachedDefinitionInfo info = {};
+        cachedJson = new char[SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1];
+        if (cachedJson == nullptr) {
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_RAM_LIMIT_EXCEEDED,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE);
+          return SUPLA_CALCFG_RESULT_FALSE;
+        }
+        if (!supletServerConfigHandler->loadDownloadedDefinitionJson(
+                configRequest.DefinitionId,
+                configRequest.DefinitionVersion,
+                cachedJson,
+                SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE + 1,
+                &info)) {
+          delete[] cachedJson;
+          fillSupletResult(result,
+                           SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_NOT_FOUND,
+                           SUPLA_CALCFG_SUPLET_PHASE_NONE);
+          return SUPLA_CALCFG_RESULT_ID_NOT_EXISTS;
+        }
+        totalSize = info.jsonSize;
+      }
+
+      if (configRequest.Offset >= totalSize) {
+        fillSupletResult(result,
+                         SUPLA_CALCFG_SUPLET_RESULT_INVALID_REQUEST,
+                         SUPLA_CALCFG_SUPLET_PHASE_NONE,
+                         0,
+                         configRequest.DefinitionId,
+                         configRequest.DefinitionVersion,
+                         totalSize,
+                         configRequest.Offset);
+        delete[] cachedJson;
+        return SUPLA_CALCFG_RESULT_FALSE;
+      }
+
+      uint8_t maxSize = configRequest.MaxSize;
+      if (maxSize == 0 ||
+          maxSize > SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE) {
+        maxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+      }
+      const uint16_t remaining = totalSize - configRequest.Offset;
+      const uint8_t chunkSize =
+          remaining > maxSize ? maxSize : static_cast<uint8_t>(remaining);
+
+      TCalCfg_SupletDefinitionConfigChunk output = {};
+      output.DefinitionId = configRequest.DefinitionId;
+      output.DefinitionVersion = configRequest.DefinitionVersion;
+      output.Offset = configRequest.Offset;
+      output.TotalSize = totalSize;
+      output.Source = source;
+      output.Size = chunkSize;
+      if (source == SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_BUILTIN) {
+        memcpy(output.Data, builtinJson + configRequest.Offset, chunkSize);
+      } else {
+        memcpy(output.Data, cachedJson + configRequest.Offset, chunkSize);
+      }
+      delete[] cachedJson;
+      memcpy(result->Data, &output, sizeof(output));
+      result->DataSize =
+          offsetof(TCalCfg_SupletDefinitionConfigChunk, Data) + output.Size;
       return SUPLA_CALCFG_RESULT_TRUE;
     }
 

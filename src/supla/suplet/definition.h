@@ -119,6 +119,22 @@ struct ParameterDefinition {
   uint8_t affectsTopology = 0;
 };
 
+constexpr uint32_t kInvalidDefinitionId = 0;
+constexpr uint32_t kServerDefinitionIdMin = 1000;
+
+inline bool isValidDefinitionId(uint32_t definitionId) {
+  return definitionId != kInvalidDefinitionId;
+}
+
+inline bool isServerDefinitionId(uint32_t definitionId) {
+  return definitionId >= kServerDefinitionIdMin;
+}
+
+inline bool isFirmwarePrivateDefinitionId(uint32_t definitionId) {
+  return definitionId > kInvalidDefinitionId &&
+         definitionId < kServerDefinitionIdMin;
+}
+
 struct Definition {
   Category category = Category::Unknown;
   Kind kind = Kind::Unknown;
@@ -133,6 +149,8 @@ struct Definition {
   const ParameterDefinition *parameters = nullptr;
   uint8_t parameterCount = 0;
   RuntimeHandler *runtimeHandler = nullptr;
+  const char *definitionJson = nullptr;
+  uint16_t definitionJsonSize = 0;
 };
 
 bool getDefinitionChannelIds(const Definition &definition,

@@ -987,18 +987,27 @@ TEST_F(SuplaDeviceSupletStartupTests,
   ASSERT_EQ(result.DataSize, sizeof(TCalCfg_SupletDefinitionList));
   TCalCfg_SupletDefinitionList output = {};
   memcpy(&output, result.Data, sizeof(output));
-  ASSERT_EQ(output.Count, 1);
-  EXPECT_EQ(output.Total, 1);
-  EXPECT_EQ(output.Items[0].DefinitionId, 8002u);
-  EXPECT_EQ(output.Items[0].DefinitionVersion, 1);
-  EXPECT_EQ(output.Items[0].JsonSize, strlen(definitionJson));
-  EXPECT_EQ(output.Items[0].Category,
+  ASSERT_EQ(output.Count, 2);
+  EXPECT_EQ(output.Total, 2);
+  const TCalCfg_SupletDefinitionListItem *cachedItem = nullptr;
+  for (uint8_t i = 0; i < output.Count; i++) {
+    if (output.Items[i].DefinitionId == 8002u) {
+      cachedItem = &output.Items[i];
+      break;
+    }
+  }
+  ASSERT_NE(cachedItem, nullptr);
+  EXPECT_EQ(cachedItem->Source,
+            SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED);
+  EXPECT_EQ(cachedItem->DefinitionVersion, 1);
+  EXPECT_EQ(cachedItem->JsonSize, strlen(definitionJson));
+  EXPECT_EQ(cachedItem->Category,
             static_cast<uint8_t>(Supla::Suplet::Category::Virtual));
-  EXPECT_EQ(output.Items[0].Kind,
+  EXPECT_EQ(cachedItem->Kind,
             static_cast<uint8_t>(Supla::Suplet::Kind::VirtualRelay));
-  EXPECT_EQ(output.Items[0].SchemaVersion, 1);
-  EXPECT_EQ(output.Items[0].HandlerVersion, 1);
-  EXPECT_EQ(output.Items[0].MaxInstances, 3);
+  EXPECT_EQ(cachedItem->SchemaVersion, 1);
+  EXPECT_EQ(cachedItem->HandlerVersion, 1);
+  EXPECT_EQ(cachedItem->MaxInstances, 3);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,
@@ -1049,6 +1058,237 @@ TEST_F(SuplaDeviceSupletStartupTests,
             SUPLA_CALCFG_SUPLET_RESULT_INVALID_DEFINITION);
   EXPECT_EQ(registry.findDefinition(5003, 1), nullptr);
   EXPECT_EQ(registry.findDefinition(5003, 2), nullptr);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       SaveDefinitionRejectsCachedVersionAlreadyProvidedByBuiltin) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  auto builtin = makeRelayDefinition(3001);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&builtin));
+  Supla::Suplet::Manager manager(&config);
+  DeviceTestShaProvider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const char sameVersionJson[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":1,"
+      "\"definitionId\":3001,"
+      "\"definitionVersion\":1,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":[{"
+      "\"channelId\":1,"
+      "\"key\":\"relay\","
+      "\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\","
+      "\"caption\":\"Cached relay\""
+      "}]"
+      "}";
+  uint8_t sha[32] = {};
+  makeDeviceTestSha(sameVersionJson, strlen(sameVersionJson), sha);
+
+  EXPECT_EQ(handler.saveDownloadedDefinition(3001, 1, sameVersionJson, sha),
+            Supla::Suplet::ServerConfigResult::DefinitionCannotBeChanged);
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  EXPECT_FALSE(downloadedDefinitions.load(cache, 3001, 1, &loadedDefinition));
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       SaveDefinitionAllowsNewCachedVersionForBuiltinDefinitionId) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  auto builtin = makeRelayDefinition(3001);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&builtin));
+  Supla::Suplet::Manager manager(&config);
+  DeviceTestShaProvider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const char newVersionJson[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":1,"
+      "\"definitionId\":3001,"
+      "\"definitionVersion\":2,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":[{"
+      "\"channelId\":1,"
+      "\"key\":\"relay\","
+      "\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\","
+      "\"caption\":\"Cached relay v2\""
+      "}]"
+      "}";
+  uint8_t sha[32] = {};
+  makeDeviceTestSha(newVersionJson, strlen(newVersionJson), sha);
+
+  EXPECT_EQ(handler.saveDownloadedDefinition(3001, 2, newVersionJson, sha),
+            Supla::Suplet::ServerConfigResult::Applied);
+  Supla::Suplet::JsonDefinition loadedDefinition;
+  ASSERT_TRUE(downloadedDefinitions.load(cache, 3001, 2, &loadedDefinition));
+  ASSERT_NE(loadedDefinition.getDefinition(), nullptr);
+  EXPECT_EQ(loadedDefinition.getDefinition()->definitionId, 3001u);
+  EXPECT_EQ(loadedDefinition.getDefinition()->definitionVersion, 2);
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgDefinitionConfigReadsBuiltinAndCachedVersionsOfSameId) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  const char builtinJson[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":1,"
+      "\"definitionId\":3001,"
+      "\"definitionVersion\":1,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":[{"
+      "\"channelId\":1,"
+      "\"key\":\"relay\","
+      "\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\","
+      "\"caption\":\"Builtin relay\""
+      "}]"
+      "}";
+  auto builtin = makeRelayDefinition(3001);
+  builtin.definitionJson = builtinJson;
+  builtin.definitionJsonSize = strlen(builtinJson);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&builtin));
+
+  Supla::Suplet::Manager manager(&config);
+  DeviceTestShaProvider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  const char cachedJson[] =
+      "{"
+      "\"schemaVersion\":1,"
+      "\"handlerVersion\":1,"
+      "\"definitionId\":3001,"
+      "\"definitionVersion\":2,"
+      "\"category\":\"virtual\","
+      "\"kind\":\"virtualRelay\","
+      "\"channels\":[{"
+      "\"channelId\":1,"
+      "\"key\":\"relay\","
+      "\"kind\":\"virtualRelay\","
+      "\"function\":\"powerSwitch\","
+      "\"caption\":\"Cached relay v2\""
+      "}]"
+      "}";
+  uint8_t sha[32] = {};
+  makeDeviceTestSha(cachedJson, strlen(cachedJson), sha);
+  ASSERT_EQ(handler.saveDownloadedDefinition(3001, 2, cachedJson, sha),
+            Supla::Suplet::ServerConfigResult::Applied);
+
+  TSD_DeviceCalCfgRequest request = {};
+  TDS_DeviceCalCfgResult result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_CONFIG;
+  TCalCfg_SupletDefinitionConfigRequest configRequest = {};
+  configRequest.DefinitionId = 3001;
+  configRequest.DefinitionVersion = 1;
+  configRequest.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+  request.DataSize = sizeof(configRequest);
+  memcpy(request.Data, &configRequest, sizeof(configRequest));
+
+  ASSERT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_TRUE);
+  ASSERT_GE(result.DataSize,
+            offsetof(TCalCfg_SupletDefinitionConfigChunk, Data));
+  TCalCfg_SupletDefinitionConfigChunk chunk = {};
+  memcpy(&chunk, result.Data, result.DataSize);
+  EXPECT_EQ(chunk.Source, SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_BUILTIN);
+  EXPECT_EQ(chunk.DefinitionId, 3001u);
+  EXPECT_EQ(chunk.DefinitionVersion, 1);
+  EXPECT_EQ(chunk.TotalSize, strlen(builtinJson));
+  EXPECT_EQ(std::string(chunk.Data, chunk.Size),
+            std::string(builtinJson, chunk.Size));
+
+  request = {};
+  result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_CONFIG;
+  configRequest = {};
+  configRequest.DefinitionId = 3001;
+  configRequest.DefinitionVersion = 2;
+  configRequest.MaxSize = SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE;
+  request.DataSize = sizeof(configRequest);
+  memcpy(request.Data, &configRequest, sizeof(configRequest));
+
+  ASSERT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_TRUE);
+  ASSERT_GE(result.DataSize,
+            offsetof(TCalCfg_SupletDefinitionConfigChunk, Data));
+  chunk = {};
+  memcpy(&chunk, result.Data, result.DataSize);
+  EXPECT_EQ(chunk.Source, SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED);
+  EXPECT_EQ(chunk.DefinitionId, 3001u);
+  EXPECT_EQ(chunk.DefinitionVersion, 2);
+  EXPECT_EQ(chunk.TotalSize, strlen(cachedJson));
+  EXPECT_EQ(std::string(chunk.Data, chunk.Size),
+            std::string(cachedJson, chunk.Size));
+}
+
+TEST_F(SuplaDeviceSupletStartupTests,
+       CalcfgDefinitionBeginRejectsCachedVersionAlreadyProvidedByBuiltin) {
+  ConfigSimulator config;
+  SuplaDeviceClass sd;
+
+  auto builtin = makeRelayDefinition(3001);
+  Supla::Suplet::Registry registry;
+  ASSERT_TRUE(registry.add(&builtin));
+  Supla::Suplet::Manager manager(&config);
+  DeviceTestShaProvider shaProvider;
+  Supla::Suplet::DefinitionCache cache(&config, &shaProvider);
+  Supla::Suplet::DownloadedDefinitionStore downloadedDefinitions;
+  Supla::Suplet::ServerConfigHandler handler(
+      &manager, &registry, &cache, &downloadedDefinitions);
+  sd.setSupletRuntime(&manager, &registry);
+  sd.setSupletServerConfigHandler(&handler);
+
+  TSD_DeviceCalCfgRequest request = {};
+  TDS_DeviceCalCfgResult result = {};
+  request.ChannelNumber = -1;
+  request.SuperUserAuthorized = 1;
+  request.Command = SUPLA_CALCFG_CMD_SUPLET_DEFINITION_BEGIN;
+  TCalCfg_SupletDefinitionBegin begin = {};
+  begin.SessionId = 2233;
+  begin.DefinitionId = 3001;
+  begin.DefinitionVersion = 1;
+  begin.JsonSize = 128;
+  request.DataSize = sizeof(begin);
+  memcpy(request.Data, &begin, sizeof(begin));
+
+  EXPECT_EQ(sd.handleCalcfgFromServer(&request, &result),
+            SUPLA_CALCFG_RESULT_FALSE);
+  expectSupletResult(result,
+                     SUPLA_CALCFG_SUPLET_RESULT_DEFINITION_CANNOT_BE_CHANGED);
 }
 
 TEST_F(SuplaDeviceSupletStartupTests,

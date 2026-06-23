@@ -2217,6 +2217,7 @@ typedef struct {
 #define SUPLA_CALCFG_CMD_SUPLET_DEFINITION_ABORT 9580   // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_DEFINITION_REMOVE 9585  // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_LIST 9586  // FDEV
+#define SUPLA_CALCFG_CMD_SUPLET_GET_DEFINITION_CONFIG 9587  // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_BEGIN 9590     // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_CHUNK 9600     // FDEV
 #define SUPLA_CALCFG_CMD_SUPLET_INSTANCE_COMMIT 9610    // FDEV
@@ -2334,6 +2335,9 @@ typedef struct {
 #define SUPLA_CALCFG_SUPLET_DEFINITION_CHUNK_MAXSIZE 112
 #define SUPLA_CALCFG_SUPLET_INSTANCE_CHUNK_MAXSIZE 112
 
+#define SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_BUILTIN 1
+#define SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_CACHED 2
+
 typedef struct {
   unsigned char Version;
   unsigned char DetailCode;  // SUPLA_CALCFG_SUPLET_RESULT_*
@@ -2383,7 +2387,7 @@ typedef struct {
   unsigned char SchemaVersion;
   unsigned char HandlerVersion;
   unsigned char MaxInstances;
-  unsigned char Reserved1;
+  unsigned char Source;  // SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_*
   unsigned _supla_int_t DefinitionId;
   unsigned _supla_int16_t DefinitionVersion;
   unsigned _supla_int16_t JsonSize;
@@ -2398,6 +2402,24 @@ typedef struct {
   TCalCfg_SupletDefinitionListItem
       Items[SUPLA_CALCFG_SUPLET_DEFINITION_LIST_MAX_ITEMS];
 } TCalCfg_SupletDefinitionList;  // FDEV
+
+typedef struct {
+  unsigned _supla_int_t DefinitionId;
+  unsigned _supla_int16_t DefinitionVersion;
+  unsigned _supla_int16_t Offset;
+  unsigned char MaxSize;
+  unsigned char Reserved;
+} TCalCfg_SupletDefinitionConfigRequest;  // FDEV
+
+typedef struct {
+  unsigned _supla_int_t DefinitionId;
+  unsigned _supla_int16_t DefinitionVersion;
+  unsigned _supla_int16_t Offset;
+  unsigned _supla_int16_t TotalSize;
+  unsigned char Source;  // SUPLA_CALCFG_SUPLET_DEFINITION_SOURCE_*
+  unsigned char Size;
+  char Data[SUPLA_CALCFG_SUPLET_CONFIG_CHUNK_MAXSIZE];
+} TCalCfg_SupletDefinitionConfigChunk;  // FDEV
 
 typedef struct {
   unsigned char Count;

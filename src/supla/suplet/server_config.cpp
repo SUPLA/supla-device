@@ -1027,6 +1027,20 @@ bool ServerConfigHandler::loadDownloadedDefinition(
                                      info);
 }
 
+bool ServerConfigHandler::loadDownloadedDefinitionJson(
+    uint32_t definitionId,
+    uint16_t definitionVersion,
+    char *definitionJson,
+    size_t definitionJsonSize,
+    CachedDefinitionInfo *info) const {
+  return definitionCache != nullptr &&
+         definitionCache->load(definitionId,
+                               definitionVersion,
+                               definitionJson,
+                               definitionJsonSize,
+                               info);
+}
+
 ServerConfigResult ServerConfigHandler::loadDownloadedDefinitions() {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr) {
     return ServerConfigResult::InvalidArgument;
@@ -1068,7 +1082,8 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
     const char *definitionJson,
     const uint8_t *sha256) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      definitionJson == nullptr || sha256 == nullptr || definitionId == 0 ||
+      definitionJson == nullptr || sha256 == nullptr ||
+      !isServerDefinitionId(definitionId) ||
       definitionVersion == 0) {
     return ServerConfigResult::InvalidArgument;
   }
@@ -1082,6 +1097,11 @@ ServerConfigResult ServerConfigHandler::saveDownloadedDefinition(
       parsed.get()->getDefinition()->definitionVersion != definitionVersion ||
       !Runtime::validateDefinition(*parsed.get()->getDefinition())) {
     return ServerConfigResult::InvalidDefinition;
+  }
+
+  if (registry != nullptr &&
+      registry->findDefinition(definitionId, definitionVersion) != nullptr) {
+    return ServerConfigResult::DefinitionCannotBeChanged;
   }
 
   if (definitionCache->contains(definitionId, definitionVersion)) {
@@ -1134,10 +1154,16 @@ ServerConfigResult ServerConfigHandler::beginStagedDownloadedDefinition(
     const uint8_t *sha256,
     DefinitionCacheHandle *handle) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      definitionId == 0 || definitionVersion == 0 || jsonSize == 0 ||
+      !isServerDefinitionId(definitionId) || definitionVersion == 0 ||
+      jsonSize == 0 ||
       jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr ||
       handle == nullptr) {
     return ServerConfigResult::InvalidArgument;
+  }
+
+  if (registry != nullptr &&
+      registry->findDefinition(definitionId, definitionVersion) != nullptr) {
+    return ServerConfigResult::DefinitionCannotBeChanged;
   }
 
   if (!definitionCache->beginStagedSave(
@@ -1168,9 +1194,15 @@ ServerConfigResult ServerConfigHandler::commitStagedDownloadedDefinition(
     uint16_t jsonSize,
     const uint8_t *sha256) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      definitionId == 0 || definitionVersion == 0 || jsonSize == 0 ||
+      !isServerDefinitionId(definitionId) || definitionVersion == 0 ||
+      jsonSize == 0 ||
       jsonSize > SUPLA_SUPLET_MAX_DEFINITION_JSON_SIZE || sha256 == nullptr) {
     return ServerConfigResult::InvalidArgument;
+  }
+
+  if (registry != nullptr &&
+      registry->findDefinition(definitionId, definitionVersion) != nullptr) {
+    return ServerConfigResult::DefinitionCannotBeChanged;
   }
 
   char *definitionJson = new char[static_cast<size_t>(jsonSize) + 1];
@@ -1246,7 +1278,8 @@ void ServerConfigHandler::abortStagedDownloadedDefinition(
 ServerConfigResult ServerConfigHandler::removeDownloadedDefinition(
     uint32_t definitionId, uint16_t definitionVersion) {
   if (definitionCache == nullptr || downloadedDefinitions == nullptr ||
-      manager == nullptr || definitionId == 0 || definitionVersion == 0) {
+      manager == nullptr || !isServerDefinitionId(definitionId) ||
+      definitionVersion == 0) {
     return ServerConfigResult::InvalidArgument;
   }
 

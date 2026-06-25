@@ -347,6 +347,7 @@ void Relay::iterateAlways() {
   if (durationMs && millis() - durationTimestamp > durationMs) {
     toggle();
   }
+  emitCountdownTimerActionIfNeeded();
 
   if (overcurrentThreshold > 0 && isOn()) {
     if (millis() - overcurrentCheckTimestamp > 500) {
@@ -391,6 +392,39 @@ void Relay::iterateAlways() {
   } else {
     overcurrentCheckTimestamp = 0;
     overcurrentActiveTimestamp = 0;
+  }
+}
+
+bool Relay::getRemainingCountdownTimerSec(uint32_t *remainingSec) const {
+  if (remainingSec) {
+    *remainingSec = 0;
+  }
+  if (!isCountdownTimerFunctionEnabled() || durationMs == 0 ||
+      durationTimestamp == 0) {
+    return false;
+  }
+
+  uint32_t elapsedMs = millis() - durationTimestamp;
+  if (elapsedMs >= durationMs) {
+    return false;
+  }
+
+  uint32_t remainingMs = durationMs - elapsedMs;
+  if (remainingSec) {
+    *remainingSec = (remainingMs + 999) / 1000;
+  }
+  return true;
+}
+
+void Relay::emitCountdownTimerActionIfNeeded() {
+  uint32_t remainingSec = UINT32_MAX;
+  uint32_t currentRemainingSec = 0;
+  if (getRemainingCountdownTimerSec(&currentRemainingSec)) {
+    remainingSec = currentRemainingSec;
+  }
+  if (remainingSec != lastCountdownTimerRemainingSec) {
+    lastCountdownTimerRemainingSec = remainingSec;
+    runAction(Supla::ON_COUNTDOWN_TIMER);
   }
 }
 

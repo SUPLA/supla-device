@@ -21,8 +21,13 @@
 #include <gtest/gtest.h>
 #include <protocol_layer_mock.h>
 #include <simple_time.h>
+#include <clock_stub.h>
 #include <string.h>
+#include <supla/actions.h>
+#include <supla/condition.h>
+#include <supla/condition_getter.h>
 #include <supla/control/hvac_base.h>
+#include <supla/events.h>
 #include <supla/sensor/therm_hygro_meter.h>
 #include <supla/sensor/thermometer.h>
 #include <output_mock.h>
@@ -33,6 +38,23 @@ using ::testing::StrEq;
 using ::testing::Return;
 // using ::testing::Args;
 // using ::testing::ElementsAre;
+
+namespace {
+
+class CountingActionHandler : public Supla::ActionHandler {
+ public:
+  void handleAction(int event, int action) override {
+    lastEvent = event;
+    lastAction = action;
+    count++;
+  }
+
+  int count = 0;
+  int lastEvent = -1;
+  int lastAction = -1;
+};
+
+}  // namespace
 
 class HvacTestsF : public ::testing::Test {
  protected:
@@ -169,6 +191,73 @@ TEST_F(HvacTestsF, BasicChannelSetup) {
             SUPLA_BIT_FUNC_HVAC_THERMOSTAT |
                 SUPLA_BIT_FUNC_HVAC_THERMOSTAT_HEAT_COOL |
                 SUPLA_BIT_FUNC_HVAC_THERMOSTAT_DIFFERENTIAL);
+}
+
+TEST_F(HvacTestsF, CountdownTimerRemainingConditionFiresOnThreshold) {
+  OutputSimulatorWithCheck output;
+  EXPECT_CALL(output, setOutputValueCheck(_)).Times(::testing::AnyNumber());
+  ClockStub clock;
+  Supla::Control::HvacBase hvac(&output);
+  hvac.setTemperatureRoomMin(500);
+  hvac.setTemperatureRoomMax(5000);
+  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+  hvac.onInit();
+
+  time.advance(1);
+
+  CountingActionHandler actionCounter;
+  hvac.addAction(Supla::TURN_OFF,
+                 actionCounter,
+                 Supla::ON_COUNTDOWN_TIMER,
+                 OnLessEq(300, CountdownTimerRemainingSec()));
+
+  ASSERT_TRUE(hvac.applyNewRuntimeSettings(
+      SUPLA_HVAC_MODE_HEAT, 2100, INT16_MIN, 301));
+
+  hvac.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 0);
+
+  time.advance(1000);
+  hvac.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+  EXPECT_EQ(actionCounter.lastEvent, Supla::ON_COUNTDOWN_TIMER);
+  EXPECT_EQ(actionCounter.lastAction, Supla::TURN_OFF);
+
+  time.advance(1000);
+  hvac.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+}
+
+TEST_F(HvacTestsF, CountdownTimerRemainingEmitsDuringConfigChangeWait) {
+  OutputSimulatorWithCheck output;
+  EXPECT_CALL(output, setOutputValueCheck(_)).Times(::testing::AnyNumber());
+  ClockStub clock;
+  Supla::Control::HvacBase hvac(&output);
+  hvac.setTemperatureRoomMin(500);
+  hvac.setTemperatureRoomMax(5000);
+  hvac.addAvailableAlgorithm(SUPLA_HVAC_ALGORITHM_ON_OFF_SETPOINT_MIDDLE);
+  hvac.onInit();
+
+  time.advance(1);
+
+  CountingActionHandler actionCounter;
+  hvac.addAction(Supla::TURN_OFF,
+                 actionCounter,
+                 Supla::ON_COUNTDOWN_TIMER,
+                 OnLessEq(5, CountdownTimerRemainingSec()));
+
+  ASSERT_TRUE(hvac.applyNewRuntimeSettings(
+      SUPLA_HVAC_MODE_HEAT, 2100, INT16_MIN, 6));
+  hvac.saveConfig();
+
+  hvac.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 0);
+
+  time.advance(1000);
+  hvac.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+  EXPECT_EQ(actionCounter.lastEvent, Supla::ON_COUNTDOWN_TIMER);
+  EXPECT_EQ(actionCounter.lastAction, Supla::TURN_OFF);
 }
 
 TEST_F(HvacTestsF, checkDefaultFunctionInitizedByOnInit) {

@@ -276,6 +276,19 @@ class TotalPowerReactiveVarGetter : public ConditionGetter {
   }
 };
 
+class CountdownTimerRemainingSecGetter : public ConditionGetter {
+ public:
+  double getValue(Supla::Element *element, bool *isValid) override {
+    *isValid = false;
+    uint32_t remainingSec = 0;
+    if (element && element->getRemainingCountdownTimerSec(&remainingSec)) {
+      *isValid = true;
+      return remainingSec;
+    }
+    return 0;
+  }
+};
+
 };  // namespace Supla
 
 Supla::ConditionGetter *EmVoltage(int8_t phase) {
@@ -312,4 +325,8 @@ Supla::ConditionGetter *EmPowerReactiveVar(int8_t phase) {
 
 Supla::ConditionGetter *EmTotalPowerReactiveVar() {
   return new Supla::TotalPowerReactiveVarGetter();
+}
+
+Supla::ConditionGetter *CountdownTimerRemainingSec() {
+  return new Supla::CountdownTimerRemainingSecGetter();
 }

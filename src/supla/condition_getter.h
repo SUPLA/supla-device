@@ -46,4 +46,14 @@ Supla::ConditionGetter *EmTotalPowerApparentVA();
 Supla::ConditionGetter *EmPowerReactiveVar(int8_t phase = 0);
 Supla::ConditionGetter *EmTotalPowerReactiveVar();
 
+/**
+ * Returns a getter for the remaining countdown timer time, in seconds.
+ *
+ * The getter is valid only while the source element has an active countdown
+ * timer. Inactive or expired timers are reported as invalid instead of 0, so
+ * threshold conditions like OnLess(60, CountdownTimerRemainingSec()) do not
+ * fire when no timer is running.
+ */
+Supla::ConditionGetter *CountdownTimerRemainingSec();
+
 #endif  // SRC_SUPLA_CONDITION_GETTER_H_

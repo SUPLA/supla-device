@@ -40,7 +40,8 @@ Supla::Condition::~Condition() {
 
 void Supla::Condition::handleAction(int event, int action) {
   if (event == Supla::ON_CHANGE ||
-      event == Supla::ON_SECONDARY_CHANNEL_CHANGE) {
+      event == Supla::ON_SECONDARY_CHANNEL_CHANGE ||
+      event == Supla::ON_COUNTDOWN_TIMER) {
     if (!source->getChannel()) {
       return;
     }

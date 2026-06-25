@@ -96,6 +96,14 @@ class Relay : public ChannelElement, public ActionHandler {
   void fillChannelConfig(void *channelConfig,
                          int *size,
                          uint8_t configType) override;
+  /**
+   * Returns remaining countdown timer time in seconds for an active relay
+   * countdown timer.
+   *
+   * Returns false when countdown timer support is disabled or the timer is not
+   * active.
+   */
+  bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const override;
 
   // Method is used by external integrations to prepare TSD_SuplaChannelNewValue
   // value for specific channel type (i.e. to prefill durationMS field when
@@ -199,6 +207,7 @@ class Relay : public ChannelElement, public ActionHandler {
 
   void saveConfig() const;
   void updateTimerValue();
+  void emitCountdownTimerActionIfNeeded();
   void updateRelayHvacAggregator();
   uint32_t durationMs = 0;
   uint32_t storedTurnOnDurationMs = 0;
@@ -213,6 +222,7 @@ class Relay : public ChannelElement, public ActionHandler {
   uint32_t overcurrentCheckTimestamp = 0;
 
   uint32_t timerUpdateTimestamp = 0;
+  uint32_t lastCountdownTimerRemainingSec = UINT32_MAX;
   uint32_t postponeCommTimestamp = 0;
 
   ButtonListElement *buttonList = nullptr;

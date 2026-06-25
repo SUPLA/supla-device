@@ -166,14 +166,32 @@ bool Supla::ElementWithChannelActions::isEventAlreadyUsed(
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,
     Supla::ActionHandler &client,
+    uint16_t event,
     Supla::Condition *condition,
     bool alwaysEnabled) {
   condition->setClient(client);
   condition->setSource(this);
   auto channel = getChannel();
   if (channel) {
-    channel->addAction(action, condition, Supla::ON_CHANGE, alwaysEnabled);
+    channel->addAction(action, condition, event, alwaysEnabled);
   }
+}
+
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
+    Supla::ActionHandler *client,
+    uint16_t event,
+    Supla::Condition *condition,
+    bool alwaysEnabled) {
+  ElementWithChannelActions::addAction(
+      action, *client, event, condition, alwaysEnabled);
+}
+
+void Supla::ElementWithChannelActions::addAction(uint16_t action,
+    Supla::ActionHandler &client,
+    Supla::Condition *condition,
+    bool alwaysEnabled) {
+  ElementWithChannelActions::addAction(
+      action, client, Supla::ON_CHANGE, condition, alwaysEnabled);
 }
 
 void Supla::ElementWithChannelActions::addAction(uint16_t action,

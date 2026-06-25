@@ -690,6 +690,8 @@ void HvacBase::iterateAlways() {
         HvacCoolSubfunctionFlag::HeatSubfunctionOrNotUsed);
   }
 
+  emitCountdownTimerActionIfNeeded();
+
   // wait with reaction to new settings
   if (lastConfigChangeTimestampMs &&
       millis() - lastConfigChangeTimestampMs < 5000) {
@@ -5055,6 +5057,38 @@ void HvacBase::updateTimerValue() {
   }
 }
 
+bool HvacBase::getRemainingCountdownTimerSec(uint32_t *remainingSec) const {
+  if (remainingSec) {
+    *remainingSec = 0;
+  }
+  if (!Supla::Clock::IsReady() || !channel.isHvacFlagCountdownTimer() ||
+      countdownTimerEnds <= 1) {
+    return false;
+  }
+
+  time_t now = Supla::Clock::GetTimeStamp();
+  if (countdownTimerEnds <= now) {
+    return false;
+  }
+
+  if (remainingSec) {
+    *remainingSec = countdownTimerEnds - now;
+  }
+  return true;
+}
+
+void HvacBase::emitCountdownTimerActionIfNeeded() {
+  uint32_t remainingSec = UINT32_MAX;
+  uint32_t currentRemainingSec = 0;
+  if (getRemainingCountdownTimerSec(&currentRemainingSec)) {
+    remainingSec = currentRemainingSec;
+  }
+  if (remainingSec != lastCountdownTimerRemainingSec) {
+    lastCountdownTimerRemainingSec = remainingSec;
+    runAction(Supla::ON_COUNTDOWN_TIMER);
+  }
+}
+
 void HvacBase::clearWaitingFlags() {
   lastConfigChangeTimestampMs = 0;
   lastIterateTimestampMs = 0;
@@ -5677,17 +5711,14 @@ void HvacBase::stopCountDownTimer() {
 }
 
 int32_t HvacBase::getRemainingCountDownTimeSec() const {
-  if (countdownTimerEnds <= 1) {
-    return 0;
-  }
+  uint32_t remainingSec = 0;
   if (!Supla::Clock::IsReady()) {
     return -1;
   }
-  int32_t remainingTimeSec = countdownTimerEnds - Supla::Clock::GetTimeStamp();
-  if (remainingTimeSec < 0) {
-    remainingTimeSec = 0;
+  if (!getRemainingCountdownTimerSec(&remainingSec)) {
+    return 0;
   }
-  return remainingTimeSec;
+  return remainingSec;
 }
 
 bool HvacBase::setPumpSwitchChannelNo(uint8_t channelNo) {

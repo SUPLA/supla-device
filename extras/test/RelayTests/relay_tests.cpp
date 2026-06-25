@@ -24,8 +24,11 @@
 #include <storage_mock.h>
 #include <supla/actions.h>
 #include <supla/channel.h>
+#include <supla/condition.h>
+#include <supla/condition_getter.h>
 #include <supla/control/relay.h>
 #include <supla/control/light_relay.h>
+#include <supla/events.h>
 #include <supla/device/register_device.h>
 #include <supla/io.h>
 #include <supla_io_mock.h>
@@ -36,6 +39,23 @@ using ::testing::DoAll;
 using ::testing::Pointee;
 using ::testing::Return;
 using ::testing::SetArgPointee;
+
+namespace {
+
+class CountingActionHandler : public Supla::ActionHandler {
+ public:
+  void handleAction(int event, int action) override {
+    lastEvent = event;
+    lastAction = action;
+    count++;
+  }
+
+  int count = 0;
+  int lastEvent = -1;
+  int lastAction = -1;
+};
+
+}  // namespace
 
 class RelayFixture : public testing::Test {
  public:
@@ -1115,6 +1135,102 @@ TEST_F(RelayFixture, durationMsTests) {
     time.advance(100);
   }
   EXPECT_EQ(gpioValue, 0);
+}
+
+TEST_F(RelayFixture, CountdownTimerRemainingConditionFiresOnceOnThreshold) {
+  int gpio = 1;
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+
+  Supla::Control::Relay relay(gpio);
+  relay.onInit();
+
+  CountingActionHandler actionCounter;
+  relay.addAction(Supla::TURN_ON,
+                  actionCounter,
+                  Supla::ON_COUNTDOWN_TIMER,
+                  OnLessEq(2, CountdownTimerRemainingSec()));
+
+  time.advance(1);
+  relay.turnOn(3000);
+
+  relay.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 0);
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+  EXPECT_EQ(actionCounter.lastEvent, Supla::ON_COUNTDOWN_TIMER);
+  EXPECT_EQ(actionCounter.lastAction, Supla::TURN_ON);
+
+  time.advance(1000);
+  relay.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+}
+
+TEST_F(RelayFixture, InactiveCountdownTimerDoesNotFireCondition) {
+  int gpio = 1;
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+
+  Supla::Control::Relay relay(gpio);
+  relay.onInit();
+
+  CountingActionHandler actionCounter;
+  relay.addAction(Supla::TURN_ON,
+                  actionCounter,
+                  Supla::ON_COUNTDOWN_TIMER,
+                  OnLess(60, CountdownTimerRemainingSec()));
+
+  for (int i = 0; i < 3; i++) {
+    relay.iterateAlways();
+    time.advance(1000);
+  }
+
+  EXPECT_EQ(actionCounter.count, 0);
+}
+
+TEST_F(RelayFixture, CountdownTimerConditionResetsAfterInactiveTransition) {
+  int gpio = 1;
+  int gpioValue = 0;
+  EXPECT_CALL(ioMock, digitalRead(gpio))
+      .WillRepeatedly(::testing::ReturnPointee(&gpioValue));
+  EXPECT_CALL(ioMock, digitalWrite(gpio, _))
+      .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
+  EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
+
+  Supla::Control::Relay relay(gpio);
+  relay.onInit();
+
+  CountingActionHandler actionCounter;
+  relay.addAction(Supla::TURN_ON,
+                  actionCounter,
+                  Supla::ON_COUNTDOWN_TIMER,
+                  OnLessEq(1, CountdownTimerRemainingSec()));
+
+  time.advance(1);
+  relay.turnOn(1500);
+  time.advance(600);
+  relay.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+
+  relay.turnOff();
+  relay.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 1);
+
+  time.advance(1);
+  relay.turnOn(1500);
+  time.advance(600);
+  relay.iterateAlways();
+  EXPECT_EQ(actionCounter.count, 2);
 }
 
 TEST_F(RelayFixture, keepTurnOnDurationRestoreOnTests) {

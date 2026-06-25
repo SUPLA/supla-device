@@ -174,6 +174,13 @@ void Element::fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value) {
   (void)(value);
 }
 
+bool Element::getRemainingCountdownTimerSec(uint32_t *remainingSec) const {
+  if (remainingSec) {
+    *remainingSec = 0;
+  }
+  return false;
+}
+
 int Element::getChannelNumber() const {
   int result = -1;
   auto channel = getChannel();

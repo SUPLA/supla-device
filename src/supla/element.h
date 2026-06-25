@@ -237,6 +237,17 @@ class Element {
    */
   virtual void fillSuplaChannelNewValue(TSD_SuplaChannelNewValue *value);
 
+  /**
+   * Returns active countdown timer remaining time in seconds.
+   *
+   * @param remainingSec output pointer for remaining seconds. It is set to 0
+   *                     when the countdown timer is not available or inactive.
+   *
+   * @return true when remainingSec contains a valid active timer value, false
+   *         otherwise.
+   */
+  virtual bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const;
+
   // Handles "get channel state" request from server
   // channelState is prefilled with network and device status informations
   /**

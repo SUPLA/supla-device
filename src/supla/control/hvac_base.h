@@ -62,6 +62,14 @@ class HvacBase : public ChannelElement, public ActionHandler {
   void onRegistered(Supla::Protocol::SuplaSrpc *suplaSrpc) override;
   void iterateAlways() override;
   bool iterateConnected() override;
+  /**
+   * Returns remaining countdown timer time in seconds for an active HVAC
+   * countdown timer.
+   *
+   * Returns false when the clock is not ready or the HVAC countdown timer is
+   * not active.
+   */
+  bool getRemainingCountdownTimerSec(uint32_t *remainingSec) const override;
   void purgeConfig() override;
 
   int32_t handleNewValueFromServer(TSD_SuplaChannelNewValue *newValue) override;
@@ -505,6 +513,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   int32_t channelFunctionToIndex(int32_t channelFunction) const;
   void changeTemperatureSetpointsBy(int16_t tHeat, int16_t tCool);
   void updateTimerValue();
+  void emitCountdownTimerActionIfNeeded();
   bool fixReadonlyParameters(TChannelConfig_HVAC *hvacConfig);
   bool fixReadonlyTemperature(int32_t temperatureIndex,
                               THVACTemperatureCfg *newTemp);
@@ -566,6 +575,7 @@ class HvacBase : public ChannelElement, public ActionHandler {
   uint32_t lastIterateTimestampMs = 0;
   uint32_t lastOutputStateChangeTimestampMs = 0;
   uint32_t timerUpdateTimestamp = 0;
+  uint32_t lastCountdownTimerRemainingSec = UINT32_MAX;
 
   time_t countdownTimerEnds = 1;
 

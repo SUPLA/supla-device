@@ -145,6 +145,8 @@ enum Event {
   // Impulse counter
   ON_IMPULSE,
 
+  ON_COUNTDOWN_TIMER,
+
   // Keep it as last item
   EVENT_ID_MAX
 };

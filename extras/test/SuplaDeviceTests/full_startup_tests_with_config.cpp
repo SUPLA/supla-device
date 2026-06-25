@@ -105,6 +105,9 @@ class FullStartupWithConfig : public ::testing::Test {
   }
 
   virtual void TearDown() {
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     Supla::Channel::resetToDefaults();
     client = nullptr;
   }

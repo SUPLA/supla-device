@@ -32,8 +32,8 @@ steps:
   pull: never
   commands:
   - cd extras/test/build
-  - ./supladevicetests --gtest_repeat=50 --gtest_shuffle
-  - ./sd4linuxtests --gtest_repeat=50 --gtest_shuffle
+  - ./supladevicetests --gtest_repeat=50 --gtest_shuffle --gtest_brief
+  - ./sd4linuxtests --gtest_repeat=50 --gtest_shuffle --gtest_brief
   depends_on:
   - tests_compilation
 
@@ -43,8 +43,8 @@ steps:
   commands:
   - cd extras/test/build
   - ulimit -n 8192
-  - valgrind --error-exitcode=1 --leak-check=full ./supladevicetests
-  - valgrind --error-exitcode=1 --leak-check=full ./sd4linuxtests
+  - valgrind --error-exitcode=1 --leak-check=full ./supladevicetests --gtest_brief
+  - valgrind --error-exitcode=1 --leak-check=full ./sd4linuxtests --gtest_brief
   depends_on:
   - tests_compilation
 

@@ -128,6 +128,25 @@ class SubDeviceChannelOwner {
   Supla::Channel channel;
 };
 
+class SupletManagerTests : public testing::Test {
+ protected:
+  void SetUp() override {
+    cleanupElementsAndChannels();
+  }
+
+  void TearDown() override {
+    cleanupElementsAndChannels();
+  }
+
+ private:
+  void cleanupElementsAndChannels() {
+    while (Supla::Element::begin() != nullptr) {
+      delete Supla::Element::begin();
+    }
+    Supla::Channel::resetToDefaults();
+  }
+};
+
 Supla::Suplet::InstanceRecord makeRecord(uint32_t instanceId,
                                          uint8_t subDeviceId,
                                          int channelA,
@@ -144,7 +163,7 @@ Supla::Suplet::InstanceRecord makeRecord(uint32_t instanceId,
 
 }  // namespace
 
-TEST(SupletManagerTests, AddInstancePersistsTable) {
+TEST_F(SupletManagerTests, AddInstancePersistsTable) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
 
@@ -160,7 +179,7 @@ TEST(SupletManagerTests, AddInstancePersistsTable) {
   EXPECT_EQ(record->channelMap.getChannelNumber(2), 8);
 }
 
-TEST(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
+TEST_F(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
   Supla::Suplet::InstanceRecord record = {};
@@ -188,7 +207,8 @@ TEST(SupletManagerTests, LoadKeepsInstanceConfigOutOfIndexTable) {
   EXPECT_EQ(memcmp(fullRecord.config, params, sizeof(params)), 0);
 }
 
-TEST(SupletManagerTests, AddInstanceFromDefinitionDoesNotPreallocateChannels) {
+TEST_F(SupletManagerTests,
+       AddInstanceFromDefinitionDoesNotPreallocateChannels) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
   Supla::Channel occupied0(0);
@@ -220,7 +240,7 @@ TEST(SupletManagerTests, AddInstanceFromDefinitionDoesNotPreallocateChannels) {
             Supla::Suplet::kInvalidChannelNumber);
 }
 
-TEST(SupletManagerTests, SubDeviceAllocationSkipsExistingChannelSubdevices) {
+TEST_F(SupletManagerTests, SubDeviceAllocationSkipsExistingChannelSubdevices) {
   Supla::Channel::resetToDefaults();
   SubDeviceChannelOwner owner1(1);
   SubDeviceChannelOwner owner3(3);
@@ -239,7 +259,7 @@ TEST(SupletManagerTests, SubDeviceAllocationSkipsExistingChannelSubdevices) {
   Supla::Channel::resetToDefaults();
 }
 
-TEST(SupletManagerTests, ConflictMissingAllSubdeviceChannelsRemovesSuplet) {
+TEST_F(SupletManagerTests, ConflictMissingAllSubdeviceChannelsRemovesSuplet) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
   ASSERT_TRUE(manager.addInstance(makeRecord(1, 2, 4, 8)));
@@ -261,7 +281,7 @@ TEST(SupletManagerTests, ConflictMissingAllSubdeviceChannelsRemovesSuplet) {
   EXPECT_NE(loaded.getInstanceTable()->findByInstanceId(2), nullptr);
 }
 
-TEST(SupletManagerTests, ConflictMissingPartialSubdeviceDoesNotRemoveSuplet) {
+TEST_F(SupletManagerTests, ConflictMissingPartialSubdeviceDoesNotRemoveSuplet) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
   ASSERT_TRUE(manager.addInstance(makeRecord(1, 2, 4, 8)));
@@ -275,7 +295,7 @@ TEST(SupletManagerTests, ConflictMissingPartialSubdeviceDoesNotRemoveSuplet) {
   EXPECT_NE(manager.getInstanceTable()->findByInstanceId(1), nullptr);
 }
 
-TEST(SupletManagerTests, InvalidTypeAndMissingOnDeviceDoNotRemoveSuplets) {
+TEST_F(SupletManagerTests, InvalidTypeAndMissingOnDeviceDoNotRemoveSuplets) {
   InMemoryConfig config;
   Supla::Suplet::Manager manager(&config);
   ASSERT_TRUE(manager.addInstance(makeRecord(1, 2, 4, 8)));
@@ -290,7 +310,7 @@ TEST(SupletManagerTests, InvalidTypeAndMissingOnDeviceDoNotRemoveSuplets) {
   EXPECT_NE(manager.getInstanceTable()->findByInstanceId(1), nullptr);
 }
 
-TEST(SupletManagerTests, CreatesRuntimeElementsForStoredInstances) {
+TEST_F(SupletManagerTests, CreatesRuntimeElementsForStoredInstances) {
   SimpleTime time;
   Supla::Channel::resetToDefaults();
   InMemoryConfig config;
@@ -348,7 +368,7 @@ TEST(SupletManagerTests, CreatesRuntimeElementsForStoredInstances) {
   Supla::Channel::resetToDefaults();
 }
 
-TEST(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
+TEST_F(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
   SimpleTime time;
   Supla::Channel::resetToDefaults();
   InMemoryConfig config;
@@ -395,7 +415,7 @@ TEST(SupletManagerTests, OwnsRuntimeElementsAndDeletesThem) {
   Supla::Channel::resetToDefaults();
 }
 
-TEST(SupletManagerTests, RuntimeCreationRollsBackWhenDefinitionIsMissing) {
+TEST_F(SupletManagerTests, RuntimeCreationRollsBackWhenDefinitionIsMissing) {
   SimpleTime time;
   Supla::Channel::resetToDefaults();
   InMemoryConfig config;

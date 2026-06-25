@@ -1146,10 +1146,10 @@ TEST_F(RelayFixture, CountdownTimerRemainingConditionFiresOnceOnThreshold) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
 
+  CountingActionHandler actionCounter;
   Supla::Control::Relay relay(gpio);
   relay.onInit();
 
-  CountingActionHandler actionCounter;
   relay.addAction(Supla::TURN_ON,
                   actionCounter,
                   Supla::ON_COUNTDOWN_TIMER,
@@ -1181,10 +1181,10 @@ TEST_F(RelayFixture, InactiveCountdownTimerDoesNotFireCondition) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
 
+  CountingActionHandler actionCounter;
   Supla::Control::Relay relay(gpio);
   relay.onInit();
 
-  CountingActionHandler actionCounter;
   relay.addAction(Supla::TURN_ON,
                   actionCounter,
                   Supla::ON_COUNTDOWN_TIMER,
@@ -1207,10 +1207,10 @@ TEST_F(RelayFixture, CountdownTimerConditionResetsAfterInactiveTransition) {
       .WillRepeatedly(::testing::SaveArg<1>(&gpioValue));
   EXPECT_CALL(ioMock, pinMode(gpio, OUTPUT));
 
+  CountingActionHandler actionCounter;
   Supla::Control::Relay relay(gpio);
   relay.onInit();
 
-  CountingActionHandler actionCounter;
   relay.addAction(Supla::TURN_ON,
                   actionCounter,
                   Supla::ON_COUNTDOWN_TIMER,

@@ -197,6 +197,7 @@ TEST_F(HvacTestsF, CountdownTimerRemainingConditionFiresOnThreshold) {
   OutputSimulatorWithCheck output;
   EXPECT_CALL(output, setOutputValueCheck(_)).Times(::testing::AnyNumber());
   ClockStub clock;
+  CountingActionHandler actionCounter;
   Supla::Control::HvacBase hvac(&output);
   hvac.setTemperatureRoomMin(500);
   hvac.setTemperatureRoomMax(5000);
@@ -205,7 +206,6 @@ TEST_F(HvacTestsF, CountdownTimerRemainingConditionFiresOnThreshold) {
 
   time.advance(1);
 
-  CountingActionHandler actionCounter;
   hvac.addAction(Supla::TURN_OFF,
                  actionCounter,
                  Supla::ON_COUNTDOWN_TIMER,
@@ -232,6 +232,7 @@ TEST_F(HvacTestsF, CountdownTimerRemainingEmitsDuringConfigChangeWait) {
   OutputSimulatorWithCheck output;
   EXPECT_CALL(output, setOutputValueCheck(_)).Times(::testing::AnyNumber());
   ClockStub clock;
+  CountingActionHandler actionCounter;
   Supla::Control::HvacBase hvac(&output);
   hvac.setTemperatureRoomMin(500);
   hvac.setTemperatureRoomMax(5000);
@@ -240,7 +241,6 @@ TEST_F(HvacTestsF, CountdownTimerRemainingEmitsDuringConfigChangeWait) {
 
   time.advance(1);
 
-  CountingActionHandler actionCounter;
   hvac.addAction(Supla::TURN_OFF,
                  actionCounter,
                  Supla::ON_COUNTDOWN_TIMER,

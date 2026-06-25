@@ -130,6 +130,7 @@ void Supla::LittleFsConfig::commit() {
   size_t dataSize = serializeToMemory(buf, configMaxSize);
 
   if (!initLittleFs()) {
+    delete[] buf;
     return;
   }
 
@@ -142,6 +143,7 @@ void Supla::LittleFsConfig::commit() {
       SUPLA_LOG_ERROR(
           "LittleFsConfig: failed to open config file \"%s\" for write", file);
       LittleFS.end();
+      delete[] buf;
       return;
     }
 
@@ -212,6 +214,7 @@ int Supla::LittleFsConfig::getCustomCASize() {
     LittleFS.end();
     return fileSize;
   }
+  LittleFS.end();
   return 0;
 }
 

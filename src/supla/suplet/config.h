@@ -20,10 +20,10 @@
 #define SRC_SUPLA_SUPLET_CONFIG_H_
 
 #ifndef SUPLA_SUPLET_ENABLED
-#if defined(ARDUINO_ARCH_AVR)
-#define SUPLA_SUPLET_ENABLED 0
-#else
+#if defined(SUPLA_TEST)
 #define SUPLA_SUPLET_ENABLED 1
+#else
+#define SUPLA_SUPLET_ENABLED 0
 #endif
 #endif
 

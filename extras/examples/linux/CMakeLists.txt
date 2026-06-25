@@ -26,14 +26,14 @@ include(${SUPLA_DEVICE_PATH}/extras/porting/linux/SuplaLinux.cmake)
 
 add_library(supladevicelib STATIC)
 add_library(suplalinuxlib STATIC)
-add_executable(supla-device-linux main.cpp)
+add_executable(supla-device-linux main.cpp suplet_fifo.cpp)
 
 supla_device(supladevicelib)
 supla_common(supladevicelib)
 supla_linux(suplalinuxlib)
 
-target_compile_definitions(supladevicelib PRIVATE SUPLA_LINUX)
-target_compile_definitions(supla-device-linux PRIVATE MQTT_USE_BIO)
+target_compile_definitions(supladevicelib PRIVATE SUPLA_LINUX SUPLA_SUPLET_ENABLED=1)
+target_compile_definitions(supla-device-linux PRIVATE MQTT_USE_BIO SUPLA_SUPLET_ENABLED=1)
 
 target_include_directories(supladevicelib PUBLIC
   "${SUPLA_DEVICE_PATH}/src"

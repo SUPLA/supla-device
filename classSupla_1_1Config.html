@@ -153,6 +153,8 @@ virtual int&#160;</td><td class="memItemRight"><b>getStringSize</b> (const char 
 virtual bool&#160;</td><td class="memItemRight"><b>setBlob</b> (const char *key, const char *value, size_t blobSize)=0</td></tr>
 <tr class="memitem:ac8de834af18565be2802ff286e00148f" id="r_ac8de834af18565be2802ff286e00148f"><td class="memItemLeft"><a id="ac8de834af18565be2802ff286e00148f" name="ac8de834af18565be2802ff286e00148f"></a>
 virtual bool&#160;</td><td class="memItemRight"><b>getBlob</b> (const char *key, char *value, size_t blobSize)=0</td></tr>
+<tr class="memitem:a7293859e0a8e88d1ea56f26420fbcfa5" id="r_a7293859e0a8e88d1ea56f26420fbcfa5"><td class="memItemLeft"><a id="a7293859e0a8e88d1ea56f26420fbcfa5" name="a7293859e0a8e88d1ea56f26420fbcfa5"></a>
+virtual int&#160;</td><td class="memItemRight"><b>getBlobSize</b> (const char *key)=0</td></tr>
 <tr class="memitem:af5df82711cb0d582d19c04656140c745" id="r_af5df82711cb0d582d19c04656140c745"><td class="memItemLeft"><a id="af5df82711cb0d582d19c04656140c745" name="af5df82711cb0d582d19c04656140c745"></a>
 virtual bool&#160;</td><td class="memItemRight"><b>getInt8</b> (const char *key, int8_t *result)=0</td></tr>
 <tr class="memitem:a6537da80949f11122429605e384624fa" id="r_a6537da80949f11122429605e384624fa"><td class="memItemLeft"><a id="a6537da80949f11122429605e384624fa" name="a6537da80949f11122429605e384624fa"></a>
@@ -333,8 +335,6 @@ static void&#160;</td><td class="memItemRight"><b>generateSaltPassword</b> (cons
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 id="header-pro-methods" class="groupheader"><a id="pro-methods" name="pro-methods"></a>
 Protected Member Functions</h2></td></tr>
-<tr class="memitem:a7293859e0a8e88d1ea56f26420fbcfa5" id="r_a7293859e0a8e88d1ea56f26420fbcfa5"><td class="memItemLeft"><a id="a7293859e0a8e88d1ea56f26420fbcfa5" name="a7293859e0a8e88d1ea56f26420fbcfa5"></a>
-virtual int&#160;</td><td class="memItemRight"><b>getBlobSize</b> (const char *key)=0</td></tr>
 <tr class="memitem:a69a45a5b63685f76b23c0fb28e245643" id="r_a69a45a5b63685f76b23c0fb28e245643"><td class="memItemLeft"><a id="a69a45a5b63685f76b23c0fb28e245643" name="a69a45a5b63685f76b23c0fb28e245643"></a>
 void&#160;</td><td class="memItemRight"><b>setConfigInitDone</b> (bool done)</td></tr>
 </table><table class="memberdecls">
@@ -510,7 +510,7 @@ class&#160;</td><td class="memItemRight"><b>Storage</b></td></tr>
 </div>
 </div>
 <hr/>The documentation for this class was generated from the following files:<ul>
-<li>src/supla/storage/<a class="el" href="config_8h_source.html">config.h</a></li>
+<li>src/supla/storage/<a class="el" href="storage_2config_8h_source.html">config.h</a></li>
 <li>src/supla/storage/<b>config.cpp</b></li>
 </ul>
 </div><!-- contents -->

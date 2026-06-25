@@ -150,6 +150,7 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ae5a5994ac89d86e2b3ed3e387859a9c5" id="r_ae5a5994ac89d86e2b3ed3e387859a9c5"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae5a5994ac89d86e2b3ed3e387859a9c5">setCustomCA</a> (const char *customCA) override</td></tr>
 <tr class="memitem:a9afc281345b4b8ab4147daa2809829b4" id="r_a9afc281345b4b8ab4147daa2809829b4"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a9afc281345b4b8ab4147daa2809829b4">setBlob</a> (const char *key, const char *value, size_t blobSize) override</td></tr>
 <tr class="memitem:ab43f27736c1629339bd867003c7592a2" id="r_ab43f27736c1629339bd867003c7592a2"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ab43f27736c1629339bd867003c7592a2">getBlob</a> (const char *key, char *value, size_t blobSize) override</td></tr>
+<tr class="memitem:ae0fbb6c51acdcf54f75dd2633d4176d9" id="r_ae0fbb6c51acdcf54f75dd2633d4176d9"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#ae0fbb6c51acdcf54f75dd2633d4176d9">eraseKey</a> (const char *key) override</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1KeyValue"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1KeyValue.html">Supla::KeyValue</a></td></tr>
 <tr class="memitem:ab468a2713b8d629ad66e6233a4d6fc09 pub_methods_classSupla_1_1KeyValue" id="r_ab468a2713b8d629ad66e6233a4d6fc09"><td class="memItemLeft">
 bool&#160;</td><td class="memItemRight"><b>initFromMemory</b> (uint8_t *input, size_t inputSize)</td></tr>
@@ -169,7 +170,6 @@ void&#160;</td><td class="memItemRight"><b>removeAllMemory</b> ()</td></tr>
 <tr class="memitem:ac9a253d81dd3f90613c02fae2a4a5667 pub_methods_classSupla_1_1KeyValue" id="r_ac9a253d81dd3f90613c02fae2a4a5667"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1KeyValue.html#ac9a253d81dd3f90613c02fae2a4a5667">setUInt8</a> (const char *key, const uint8_t value) override</td></tr>
 <tr class="memitem:a2ce3038747437b76518858a857791b31 pub_methods_classSupla_1_1KeyValue" id="r_a2ce3038747437b76518858a857791b31"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1KeyValue.html#a2ce3038747437b76518858a857791b31">setInt32</a> (const char *key, const int32_t value) override</td></tr>
 <tr class="memitem:abad14e8cd8b2105752754f1ef459aa8e pub_methods_classSupla_1_1KeyValue" id="r_abad14e8cd8b2105752754f1ef459aa8e"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1KeyValue.html#abad14e8cd8b2105752754f1ef459aa8e">setUInt32</a> (const char *key, const uint32_t value) override</td></tr>
-<tr class="memitem:ae2b4057fd748848dfd1f835370ecfa35 pub_methods_classSupla_1_1KeyValue" id="r_ae2b4057fd748848dfd1f835370ecfa35"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1KeyValue.html#ae2b4057fd748848dfd1f835370ecfa35">eraseKey</a> (const char *key) override</td></tr>
 <tr class="inherit_header pub_methods_classSupla_1_1Config"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1Config.html">Supla::Config</a></td></tr>
 <tr class="memitem:add1ac7b63f474279035f7d871b97a55f pub_methods_classSupla_1_1Config" id="r_add1ac7b63f474279035f7d871b97a55f"><td class="memItemLeft">
 virtual bool&#160;</td><td class="memItemRight"><b>isMinimalConfigReady</b> (bool showLogs=true)</td></tr>
@@ -394,6 +394,33 @@ static void&#160;</td><td class="memItemRight"><b>generateSaltPassword</b> (cons
 </div><div class="memdoc">
 
 <p>Reimplemented from <a class="el" href="classSupla_1_1Config.html">Supla::Config</a>.</p>
+
+</div>
+</div>
+<a id="ae0fbb6c51acdcf54f75dd2633d4176d9" name="ae0fbb6c51acdcf54f75dd2633d4176d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae0fbb6c51acdcf54f75dd2633d4176d9">&#9670;&#160;</a></span>eraseKey()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::LittleFsConfig::eraseKey </td>
+          <td>(</td>
+          <td class="paramtype">const char *</td>          <td class="paramname"><span class="paramname"><em>key</em></span></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1KeyValue.html">Supla::KeyValue</a>.</p>
 
 </div>
 </div>

@@ -1,5 +1,7 @@
 <map id="Supla::Control::VirtualRelay" name="Supla::Control::VirtualRelay">
 <area shape="rect" id="Node000001" title=" " alt="" coords="127,315,303,341"/>
+<area shape="rect" id="Node000008" href="$classSupla_1_1Suplet_1_1VirtualRelay.html" title=" " alt="" coords="129,389,301,414"/>
+<area shape="poly" id="edge7_Node000001_Node000008" title=" " alt="" coords="218,356,218,388,212,388,212,356"/>
 <area shape="rect" id="Node000002" href="$classSupla_1_1Control_1_1Relay.html" title=" " alt="" coords="145,241,285,267"/>
 <area shape="poly" id="edge1_Node000001_Node000002" title=" " alt="" coords="218,282,218,315,212,315,212,282"/>
 <area shape="rect" id="Node000003" href="$classSupla_1_1ChannelElement.html" title=" " alt="" coords="52,168,207,193"/>

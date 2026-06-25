@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="Node000000" href="$classSupla_1_1Protocol_1_1MqttTopic.html" title=" " alt="" coords="5,5,178,31"/>
+<area shape="rect" id="Node000000" href="$classSupla_1_1Protocol_1_1MqttChannelHandler.html" title=" " alt="" coords="5,5,193,46"/>
+<area shape="rect" id="Node000001" href="$classSupla_1_1Protocol_1_1HvacMqttHandler.html" title=" " alt="" coords="241,5,412,46"/>
+<area shape="poly" id="edge236_Node000000_Node000001" title=" " alt="" coords="208,23,240,23,240,28,208,28"/>
 </map>

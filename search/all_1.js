@@ -15,8 +15,9 @@ var searchData=
   ['applycorrections_12',['applyCorrections',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a1c2119eb738ac047405a2337f3339e3c',1,'Supla::Sensor::ThermHygroMeter']]],
   ['applycorrectionsandstoreit_13',['applyCorrectionsAndStoreIt',['../classSupla_1_1Sensor_1_1ThermHygroMeter.html#a37fe739927b270a3adfc6e17792e0aec',1,'Supla::Sensor::ThermHygroMeter']]],
   ['aqieco_14',['AQIECO',['../classSupla_1_1Protocol_1_1AQIECO.html',1,'Supla::Protocol']]],
-  ['atchannel_15',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
-  ['attr_16',['attr',['../classSupla_1_1HtmlTag.html#a96fd2a63ba84b169aaccaf1fe2e68d37',1,'Supla::HtmlTag::attr(const char *name, const char *value)'],['../classSupla_1_1HtmlTag.html#a6c0b7ba3dcf3cb73c17082e0e5aa98ac',1,'Supla::HtmlTag::attr(const char *name, int value)'],['../classSupla_1_1HtmlTag.html#a322be605c1d799edbe49d4049ea27e3c',1,'Supla::HtmlTag::attr(const char *name, int value, int precision)']]],
-  ['attrif_17',['attrIf',['../classSupla_1_1HtmlTag.html#af40942a31cea4e011b92657e500d7716',1,'Supla::HtmlTag']]],
-  ['autolock_18',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
+  ['assignmentapplier_15',['AssignmentApplier',['../classSupla_1_1Suplet_1_1AssignmentApplier.html',1,'Supla::Suplet']]],
+  ['atchannel_16',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
+  ['attr_17',['attr',['../classSupla_1_1HtmlTag.html#a96fd2a63ba84b169aaccaf1fe2e68d37',1,'Supla::HtmlTag::attr(const char *name, const char *value)'],['../classSupla_1_1HtmlTag.html#a6c0b7ba3dcf3cb73c17082e0e5aa98ac',1,'Supla::HtmlTag::attr(const char *name, int value)'],['../classSupla_1_1HtmlTag.html#a322be605c1d799edbe49d4049ea27e3c',1,'Supla::HtmlTag::attr(const char *name, int value, int precision)']]],
+  ['attrif_18',['attrIf',['../classSupla_1_1HtmlTag.html#af40942a31cea4e011b92657e500d7716',1,'Supla::HtmlTag']]],
+  ['autolock_19',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
 ];

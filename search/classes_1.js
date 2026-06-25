@@ -8,6 +8,7 @@ var searchData=
   ['afore_5',['Afore',['../classSupla_1_1PV_1_1Afore.html',1,'Supla::PV']]],
   ['aht_6',['AHT',['../classSupla_1_1Sensor_1_1AHT.html',1,'Supla::Sensor']]],
   ['aqieco_7',['AQIECO',['../classSupla_1_1Protocol_1_1AQIECO.html',1,'Supla::Protocol']]],
-  ['atchannel_8',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
-  ['autolock_9',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
+  ['assignmentapplier_8',['AssignmentApplier',['../classSupla_1_1Suplet_1_1AssignmentApplier.html',1,'Supla::Suplet']]],
+  ['atchannel_9',['AtChannel',['../classSupla_1_1AtChannel.html',1,'Supla']]],
+  ['autolock_10',['AutoLock',['../classSupla_1_1AutoLock.html',1,'Supla']]]
 ];

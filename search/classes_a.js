@@ -1,5 +1,6 @@
 var searchData=
 [
-  ['keyvalue_0',['KeyValue',['../classSupla_1_1KeyValue.html',1,'Supla']]],
-  ['keyvalueelement_1',['KeyValueElement',['../classSupla_1_1KeyValueElement.html',1,'Supla']]]
+  ['jsondefinition_0',['JsonDefinition',['../classSupla_1_1Suplet_1_1JsonDefinition.html',1,'Supla::Suplet']]],
+  ['jsondefinitionparser_1',['JsonDefinitionParser',['../classSupla_1_1Suplet_1_1JsonDefinitionParser.html',1,'Supla::Suplet']]],
+  ['jsoninstanceconfigparser_2',['JsonInstanceConfigParser',['../classSupla_1_1Suplet_1_1JsonInstanceConfigParser.html',1,'Supla::Suplet']]]
 ];

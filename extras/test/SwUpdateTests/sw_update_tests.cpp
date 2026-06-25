@@ -67,6 +67,9 @@ class SwUpdateTests : public ::testing::Test {
 
   virtual void TearDown() {
     Supla::Channel::resetToDefaults();
+    if (SuplaDevice.getClock()) {
+      delete SuplaDevice.getClock();
+    }
     client = nullptr;
   }
 

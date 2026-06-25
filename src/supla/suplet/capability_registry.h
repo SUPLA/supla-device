@@ -27,6 +27,8 @@ namespace Suplet {
 
 class CapabilityRegistry {
  public:
+  ~CapabilityRegistry();
+
   bool add(const Capability &capability);
   void clear();
 

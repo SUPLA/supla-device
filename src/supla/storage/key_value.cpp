@@ -408,10 +408,13 @@ int KeyValueElement::getStringSize() {
 }
 
 bool KeyValueElement::setBlob(const char* value, size_t blobSize) {
+  if (value == nullptr && blobSize > 0) {
+    return false;
+  }
   if (dataType == DATA_TYPE_NOT_SET) {
     dataType = DATA_TYPE_BLOB;
     size = blobSize;
-    data.uint8ptr = new uint8_t[size];
+    data.uint8ptr = size > 0 ? new uint8_t[size] : nullptr;
   }
   if (dataType != DATA_TYPE_BLOB) {
     return false;
@@ -419,12 +422,14 @@ bool KeyValueElement::setBlob(const char* value, size_t blobSize) {
   if (blobSize != size) {
     delete[] data.uint8ptr;
     size = blobSize;
-    data.uint8ptr = new uint8_t[size];
+    data.uint8ptr = size > 0 ? new uint8_t[size] : nullptr;
   }
-  if (data.uint8ptr == nullptr) {
+  if (data.uint8ptr == nullptr && size > 0) {
     return false;
   }
-  memcpy(data.uint8ptr, value, blobSize);
+  if (blobSize > 0) {
+    memcpy(data.uint8ptr, value, blobSize);
+  }
   return true;
 }
 
@@ -434,7 +439,9 @@ bool KeyValueElement::getBlob(char* value, size_t blobSize) {
   }
 
   if (size == blobSize) {
-    memcpy(value, data.uint8ptr, blobSize);
+    if (blobSize > 0) {
+      memcpy(value, data.uint8ptr, blobSize);
+    }
     return true;
   }
   return false;

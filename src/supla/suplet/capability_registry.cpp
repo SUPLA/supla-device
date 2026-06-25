@@ -25,6 +25,10 @@
 namespace Supla {
 namespace Suplet {
 
+CapabilityRegistry::~CapabilityRegistry() {
+  clear();
+}
+
 bool CapabilityRegistry::add(const Capability &capability) {
   if (capability.category == Category::Unknown ||
       capability.kind == Kind::Unknown || capability.minSchemaVersion == 0 ||

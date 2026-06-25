@@ -26,6 +26,10 @@
 namespace Supla {
 namespace Suplet {
 
+Registry::~Registry() {
+  clear();
+}
+
 bool Registry::add(const Definition *definition,
                    uint8_t maxInstances,
                    bool supportsDownloadedDefinition) {

@@ -27,6 +27,8 @@ namespace Suplet {
 
 class Registry {
  public:
+  ~Registry();
+
   bool add(const Definition *definition,
            uint8_t maxInstances = 1,
            bool supportsDownloadedDefinition = false);

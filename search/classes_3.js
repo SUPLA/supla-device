@@ -30,10 +30,11 @@ var searchData=
   ['containerconfig_27',['ContainerConfig',['../structSupla_1_1Sensor_1_1ContainerConfig.html',1,'Supla::Sensor']]],
   ['containerparameters_28',['ContainerParameters',['../classContainerParameters.html',1,'ContainerParameters'],['../classSupla_1_1Html_1_1ContainerParameters.html',1,'Supla::Html::ContainerParameters']]],
   ['correction_29',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
-  ['currentgetter_30',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
-  ['customcheckboxparameter_31',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
-  ['customparametertemplate_32',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
-  ['customparametertemplate_3c_20int32_5ft_20_3e_33',['CustomParameterTemplate&lt; int32_t &gt;',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
-  ['customswupdate_34',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_35',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
+  ['countdowntimerremainingsecgetter_30',['CountdownTimerRemainingSecGetter',['../classSupla_1_1CountdownTimerRemainingSecGetter.html',1,'Supla']]],
+  ['currentgetter_31',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
+  ['customcheckboxparameter_32',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
+  ['customparametertemplate_33',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customparametertemplate_3c_20int32_5ft_20_3e_34',['CustomParameterTemplate&lt; int32_t &gt;',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customswupdate_35',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
+  ['customtextparameter_36',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html']]]
 ];

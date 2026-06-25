@@ -179,6 +179,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memdesc:a2ae72a3c8bfa99540681d5a65ed5ee9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration.  <br /></td></tr>
 <tr class="memitem:a6566ab590d6b30390a42595fce511a4f" id="r_a6566ab590d6b30390a42595fce511a4f"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a6566ab590d6b30390a42595fce511a4f">iterateConnected</a> () override</td></tr>
 <tr class="memdesc:a6566ab590d6b30390a42595fce511a4f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Method called on each SuplaDevice iteration when device is connected and registered to Supla server or other protocol.  <br /></td></tr>
+<tr class="memitem:a1e0b4d95307a4939707fc5017939cc4a" id="r_a1e0b4d95307a4939707fc5017939cc4a"><td class="memItemLeft">bool&#160;</td><td class="memItemRight"><a class="el" href="#a1e0b4d95307a4939707fc5017939cc4a">getRemainingCountdownTimerSec</a> (uint32_t *remainingSec) const override</td></tr>
+<tr class="memdesc:a1e0b4d95307a4939707fc5017939cc4a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns remaining countdown timer time in seconds for an active HVAC countdown timer.  <br /></td></tr>
 <tr class="memitem:af858aaa0ca49a52c6586dc7a3bf8bda6" id="r_af858aaa0ca49a52c6586dc7a3bf8bda6"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#af858aaa0ca49a52c6586dc7a3bf8bda6">purgeConfig</a> () override</td></tr>
 <tr class="memdesc:af858aaa0ca49a52c6586dc7a3bf8bda6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Removes all configration data related to the element from Storage::Config.  <br /></td></tr>
 <tr class="memitem:a710a3126fb073563798ff0840eef3727" id="r_a710a3126fb073563798ff0840eef3727"><td class="memItemLeft">int32_t&#160;</td><td class="memItemRight"><a class="el" href="#a710a3126fb073563798ff0840eef3727">handleNewValueFromServer</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *newValue) override</td></tr>
@@ -655,6 +657,11 @@ bool&#160;</td><td class="memItemRight"><b>isAltWeeklySchedulePossible</b> () co
 <tr class="inherit_header pub_methods_classSupla_1_1ElementWithChannelActions"><td colspan="2">Public Member Functions inherited from <a class="el" href="classSupla_1_1ElementWithChannelActions.html">Supla::ElementWithChannelActions</a></td></tr>
 <tr class="memitem:ac2b448728b19af200f4e53ccb6461e3b pub_methods_classSupla_1_1ElementWithChannelActions" id="r_ac2b448728b19af200f4e53ccb6461e3b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#ac2b448728b19af200f4e53ccb6461e3b">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, uint16_t event, bool alwaysEnabled=false) override</td></tr>
 <tr class="memitem:a3ed21c6f1274ce91540f2d0e9a12b7e3 pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a3ed21c6f1274ce91540f2d0e9a12b7e3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#a3ed21c6f1274ce91540f2d0e9a12b7e3">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client, uint16_t event, bool alwaysEnabled=false) override</td></tr>
+<tr class="memitem:ae5d7c332cc29bdeea52770d920ff2985 pub_methods_classSupla_1_1ElementWithChannelActions" id="r_ae5d7c332cc29bdeea52770d920ff2985"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1ElementWithChannelActions.html#ae5d7c332cc29bdeea52770d920ff2985">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, uint16_t event, <a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *condition, bool alwaysEnabled=false)</td></tr>
+<tr class="memdesc:ae5d7c332cc29bdeea52770d920ff2985 pub_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a conditional local action for a specific event.  <br /></td></tr>
+<tr class="memitem:a77e0a3fe7382fe14dbf673a16040c814 pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a77e0a3fe7382fe14dbf673a16040c814"><td class="memItemLeft">
+virtual void&#160;</td><td class="memItemRight"><b>addAction</b> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client, uint16_t event, <a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *condition, bool alwaysEnabled=false)</td></tr>
+<tr class="memdesc:a77e0a3fe7382fe14dbf673a16040c814 pub_methods_classSupla_1_1ElementWithChannelActions"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer variant of addAction(action, client, event, condition). <br /></td></tr>
 <tr class="memitem:a8044a596e472f46112777da2ec07ad19 pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a8044a596e472f46112777da2ec07ad19"><td class="memItemLeft">
 virtual void&#160;</td><td class="memItemRight"><b>addAction</b> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, <a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *condition, bool alwaysEnabled=false)</td></tr>
 <tr class="memitem:a7660c9b7073fe9ed76e5bfacf85cbe32 pub_methods_classSupla_1_1ElementWithChannelActions" id="r_a7660c9b7073fe9ed76e5bfacf85cbe32"><td class="memItemLeft">
@@ -845,6 +852,36 @@ static Element *&#160;</td><td class="memItemRight"><b>firstPtr</b> = nullptr</t
 static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td></tr>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
+<a id="a1e0b4d95307a4939707fc5017939cc4a" name="a1e0b4d95307a4939707fc5017939cc4a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1e0b4d95307a4939707fc5017939cc4a">&#9670;&#160;</a></span>getRemainingCountdownTimerSec()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool HvacBase::getRemainingCountdownTimerSec </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t *</td>          <td class="paramname"><span class="paramname"><em>remainingSec</em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel override">override</span><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns remaining countdown timer time in seconds for an active HVAC countdown timer. </p>
+<p>Returns false when the clock is not ready or the HVAC countdown timer is not active. </p>
+
+<p>Reimplemented from <a class="el" href="classSupla_1_1Element.html#adce218bb19cbdbf02ea1e0b41335dc9c">Supla::Element</a>.</p>
+
+</div>
+</div>
 <a id="a65d80343d6849560edbe41fa9456982e" name="a65d80343d6849560edbe41fa9456982e"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a65d80343d6849560edbe41fa9456982e">&#9670;&#160;</a></span>handleAction()</h2>
 

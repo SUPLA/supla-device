@@ -268,6 +268,8 @@ virtual void&#160;</td><td class="memItemRight"><b>onSoftReset</b> ()</td></tr>
 <tr class="memdesc:a998771d553560a52ca8c5db274cad837"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "new value" request from server.  <br /></td></tr>
 <tr class="memitem:aed458ad3458006b93a5a7ed4d79f77bc" id="r_aed458ad3458006b93a5a7ed4d79f77bc"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#aed458ad3458006b93a5a7ed4d79f77bc">fillSuplaChannelNewValue</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *value)</td></tr>
 <tr class="memdesc:aed458ad3458006b93a5a7ed4d79f77bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills <a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> based on current state.  <br /></td></tr>
+<tr class="memitem:adce218bb19cbdbf02ea1e0b41335dc9c" id="r_adce218bb19cbdbf02ea1e0b41335dc9c"><td class="memItemLeft">virtual bool&#160;</td><td class="memItemRight"><a class="el" href="#adce218bb19cbdbf02ea1e0b41335dc9c">getRemainingCountdownTimerSec</a> (uint32_t *remainingSec) const</td></tr>
+<tr class="memdesc:adce218bb19cbdbf02ea1e0b41335dc9c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns active countdown timer remaining time in seconds.  <br /></td></tr>
 <tr class="memitem:ae53a2eb3a88cf0e340764c4353523d0f" id="r_ae53a2eb3a88cf0e340764c4353523d0f"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#ae53a2eb3a88cf0e340764c4353523d0f">handleGetChannelState</a> (<a class="el" href="structTDSC__ChannelState.html">TDSC_ChannelState</a> *channelState)</td></tr>
 <tr class="memdesc:ae53a2eb3a88cf0e340764c4353523d0f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "get channel state (i)" request from server.  <br /></td></tr>
 <tr class="memitem:a2d845b3d202dd86530cfa81b116bc60b" id="r_a2d845b3d202dd86530cfa81b116bc60b"><td class="memItemLeft">virtual int&#160;</td><td class="memItemRight"><a class="el" href="#a2d845b3d202dd86530cfa81b116bc60b">handleCalcfgFromServer</a> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request)</td></tr>
@@ -613,6 +615,42 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
   </dd>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>pointer to <a class="el" href="classSupla_1_1Element.html" title="Base class for all elements of SuplaDevice.">Element</a> which owns given subDeviceId </dd></dl>
+
+</div>
+</div>
+<a id="adce218bb19cbdbf02ea1e0b41335dc9c" name="adce218bb19cbdbf02ea1e0b41335dc9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adce218bb19cbdbf02ea1e0b41335dc9c">&#9670;&#160;</a></span>getRemainingCountdownTimerSec()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool Supla::Element::getRemainingCountdownTimerSec </td>
+          <td>(</td>
+          <td class="paramtype">uint32_t *</td>          <td class="paramname"><span class="paramname"><em>remainingSec</em></span></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Returns active countdown timer remaining time in seconds. </p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">remainingSec</td><td>output pointer for remaining seconds. It is set to 0 when the countdown timer is not available or inactive.</td></tr>
+  </table>
+  </dd>
+</dl>
+<dl class="section return"><dt>Returns</dt><dd>true when remainingSec contains a valid active timer value, false otherwise. </dd></dl>
+
+<p>Reimplemented in <a class="el" href="classHvacBase.html#a1e0b4d95307a4939707fc5017939cc4a">HvacBase</a>, <a class="el" href="classRelay.html#a03f238c408e02aeaf0f606fd76ab971f">Relay</a>, <a class="el" href="classSupla_1_1Control_1_1HvacBase.html#a1e0b4d95307a4939707fc5017939cc4a">Supla::Control::HvacBase</a>, and <a class="el" href="classSupla_1_1Control_1_1Relay.html#a03f238c408e02aeaf0f606fd76ab971f">Supla::Control::Relay</a>.</p>
 
 </div>
 </div>

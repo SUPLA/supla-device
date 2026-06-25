@@ -39,10 +39,11 @@ var searchData=
   ['containerparameters_36',['ContainerParameters',['../classContainerParameters.html',1,'ContainerParameters'],['../classSupla_1_1Html_1_1ContainerParameters.html',1,'Supla::Html::ContainerParameters']]],
   ['convertstoragefromlegacychannel_37',['convertStorageFromLegacyChannel',['../classSupla_1_1Control_1_1LightingPwmBase.html#a61e8b252f9d73a5b0ed35e3068cc2985',1,'Supla::Control::LightingPwmBase']]],
   ['correction_38',['Correction',['../classCorrection.html',1,'Correction'],['../classSupla_1_1Correction.html',1,'Supla::Correction']]],
-  ['currentgetter_39',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
-  ['customcheckboxparameter_40',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
-  ['customparametertemplate_41',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
-  ['customparametertemplate_3c_20int32_5ft_20_3e_42',['CustomParameterTemplate&lt; int32_t &gt;',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
-  ['customswupdate_43',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
-  ['customtextparameter_44',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
+  ['countdowntimerremainingsecgetter_39',['CountdownTimerRemainingSecGetter',['../classSupla_1_1CountdownTimerRemainingSecGetter.html',1,'Supla']]],
+  ['currentgetter_40',['CurrentGetter',['../classSupla_1_1CurrentGetter.html',1,'Supla']]],
+  ['customcheckboxparameter_41',['CustomCheckboxParameter',['../classCustomCheckboxParameter.html',1,'CustomCheckboxParameter'],['../classSupla_1_1Html_1_1CustomCheckboxParameter.html',1,'Supla::Html::CustomCheckboxParameter']]],
+  ['customparametertemplate_42',['CustomParameterTemplate',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customparametertemplate_3c_20int32_5ft_20_3e_43',['CustomParameterTemplate&lt; int32_t &gt;',['../classSupla_1_1Html_1_1CustomParameterTemplate.html',1,'Supla::Html']]],
+  ['customswupdate_44',['CustomSwUpdate',['../classSupla_1_1Html_1_1CustomSwUpdate.html',1,'Supla::Html']]],
+  ['customtextparameter_45',['CustomTextParameter',['../classSupla_1_1Html_1_1CustomTextParameter.html',1,'Supla::Html::CustomTextParameter'],['../classSupla_1_1Html_1_1CustomTextParameter.html#af91fc4f710d12371213d779804cd2928',1,'Supla::Html::CustomTextParameter::CustomTextParameter()']]]
 ];

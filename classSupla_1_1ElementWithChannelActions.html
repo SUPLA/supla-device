@@ -234,6 +234,11 @@ Collaboration diagram for Supla::ElementWithChannelActions:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:ac2b448728b19af200f4e53ccb6461e3b" id="r_ac2b448728b19af200f4e53ccb6461e3b"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#ac2b448728b19af200f4e53ccb6461e3b">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, uint16_t event, bool alwaysEnabled=false) override</td></tr>
 <tr class="memitem:a3ed21c6f1274ce91540f2d0e9a12b7e3" id="r_a3ed21c6f1274ce91540f2d0e9a12b7e3"><td class="memItemLeft">void&#160;</td><td class="memItemRight"><a class="el" href="#a3ed21c6f1274ce91540f2d0e9a12b7e3">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client, uint16_t event, bool alwaysEnabled=false) override</td></tr>
+<tr class="memitem:ae5d7c332cc29bdeea52770d920ff2985" id="r_ae5d7c332cc29bdeea52770d920ff2985"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="#ae5d7c332cc29bdeea52770d920ff2985">addAction</a> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, uint16_t event, <a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *condition, bool alwaysEnabled=false)</td></tr>
+<tr class="memdesc:ae5d7c332cc29bdeea52770d920ff2985"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds a conditional local action for a specific event.  <br /></td></tr>
+<tr class="memitem:a77e0a3fe7382fe14dbf673a16040c814" id="r_a77e0a3fe7382fe14dbf673a16040c814"><td class="memItemLeft"><a id="a77e0a3fe7382fe14dbf673a16040c814" name="a77e0a3fe7382fe14dbf673a16040c814"></a>
+virtual void&#160;</td><td class="memItemRight"><b>addAction</b> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> *client, uint16_t event, <a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *condition, bool alwaysEnabled=false)</td></tr>
+<tr class="memdesc:a77e0a3fe7382fe14dbf673a16040c814"><td class="mdescLeft">&#160;</td><td class="mdescRight">Pointer variant of addAction(action, client, event, condition). <br /></td></tr>
 <tr class="memitem:a8044a596e472f46112777da2ec07ad19" id="r_a8044a596e472f46112777da2ec07ad19"><td class="memItemLeft"><a id="a8044a596e472f46112777da2ec07ad19" name="a8044a596e472f46112777da2ec07ad19"></a>
 virtual void&#160;</td><td class="memItemRight"><b>addAction</b> (uint16_t action, <a class="el" href="classSupla_1_1ActionHandler.html">ActionHandler</a> &amp;client, <a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *condition, bool alwaysEnabled=false)</td></tr>
 <tr class="memitem:a7660c9b7073fe9ed76e5bfacf85cbe32" id="r_a7660c9b7073fe9ed76e5bfacf85cbe32"><td class="memItemLeft"><a id="a7660c9b7073fe9ed76e5bfacf85cbe32" name="a7660c9b7073fe9ed76e5bfacf85cbe32"></a>
@@ -289,6 +294,8 @@ virtual void&#160;</td><td class="memItemRight"><b>onSoftReset</b> ()</td></tr>
 <tr class="memdesc:a998771d553560a52ca8c5db274cad837 pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "new value" request from server.  <br /></td></tr>
 <tr class="memitem:aed458ad3458006b93a5a7ed4d79f77bc pub_methods_classSupla_1_1Element" id="r_aed458ad3458006b93a5a7ed4d79f77bc"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#aed458ad3458006b93a5a7ed4d79f77bc">fillSuplaChannelNewValue</a> (<a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> *value)</td></tr>
 <tr class="memdesc:aed458ad3458006b93a5a7ed4d79f77bc pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fills <a class="el" href="structTSD__SuplaChannelNewValue.html">TSD_SuplaChannelNewValue</a> based on current state.  <br /></td></tr>
+<tr class="memitem:adce218bb19cbdbf02ea1e0b41335dc9c pub_methods_classSupla_1_1Element" id="r_adce218bb19cbdbf02ea1e0b41335dc9c"><td class="memItemLeft">virtual bool&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#adce218bb19cbdbf02ea1e0b41335dc9c">getRemainingCountdownTimerSec</a> (uint32_t *remainingSec) const</td></tr>
+<tr class="memdesc:adce218bb19cbdbf02ea1e0b41335dc9c pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns active countdown timer remaining time in seconds.  <br /></td></tr>
 <tr class="memitem:ae53a2eb3a88cf0e340764c4353523d0f pub_methods_classSupla_1_1Element" id="r_ae53a2eb3a88cf0e340764c4353523d0f"><td class="memItemLeft">virtual void&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#ae53a2eb3a88cf0e340764c4353523d0f">handleGetChannelState</a> (<a class="el" href="structTDSC__ChannelState.html">TDSC_ChannelState</a> *channelState)</td></tr>
 <tr class="memdesc:ae53a2eb3a88cf0e340764c4353523d0f pub_methods_classSupla_1_1Element"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handles "get channel state (i)" request from server.  <br /></td></tr>
 <tr class="memitem:a2d845b3d202dd86530cfa81b116bc60b pub_methods_classSupla_1_1Element" id="r_a2d845b3d202dd86530cfa81b116bc60b"><td class="memItemLeft">virtual int&#160;</td><td class="memItemRight"><a class="el" href="classSupla_1_1Element.html#a2d845b3d202dd86530cfa81b116bc60b">handleCalcfgFromServer</a> (<a class="el" href="structTSD__DeviceCalCfgRequest.html">TSD_DeviceCalCfgRequest</a> *request)</td></tr>
@@ -412,7 +419,7 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 </table>
 <a name="doc-func-members" id="doc-func-members"></a><h2 id="header-doc-func-members" class="groupheader">Member Function Documentation</h2>
 <a id="ac2b448728b19af200f4e53ccb6461e3b" name="ac2b448728b19af200f4e53ccb6461e3b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac2b448728b19af200f4e53ccb6461e3b">&#9670;&#160;</a></span>addAction() <span class="overload">[1/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac2b448728b19af200f4e53ccb6461e3b">&#9670;&#160;</a></span>addAction() <span class="overload">[1/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -452,8 +459,55 @@ static bool&#160;</td><td class="memItemRight"><b>invalidatePtr</b> = false</td>
 
 </div>
 </div>
+<a id="ae5d7c332cc29bdeea52770d920ff2985" name="ae5d7c332cc29bdeea52770d920ff2985"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae5d7c332cc29bdeea52770d920ff2985">&#9670;&#160;</a></span>addAction() <span class="overload">[2/3]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void Supla::ElementWithChannelActions::addAction </td>
+          <td>(</td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>action</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classSupla_1_1ActionHandler.html">Supla::ActionHandler</a> &amp;</td>          <td class="paramname"><span class="paramname"><em>client</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t</td>          <td class="paramname"><span class="paramname"><em>event</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classSupla_1_1Condition.html">Supla::Condition</a> *</td>          <td class="paramname"><span class="paramname"><em>condition</em></span>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool</td>          <td class="paramname"><span class="paramname"><em>alwaysEnabled</em></span><span class="paramdefsep"> = </span><span class="paramdefval">false</span>&#160;)</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel virtual">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Adds a conditional local action for a specific event. </p>
+<p>The condition source is this element and the condition client is the provided action handler. The existing addAction(action, client, condition) overload remains a shorthand for ON_CHANGE. </p>
+
+</div>
+</div>
 <a id="a3ed21c6f1274ce91540f2d0e9a12b7e3" name="a3ed21c6f1274ce91540f2d0e9a12b7e3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3ed21c6f1274ce91540f2d0e9a12b7e3">&#9670;&#160;</a></span>addAction() <span class="overload">[2/2]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ed21c6f1274ce91540f2d0e9a12b7e3">&#9670;&#160;</a></span>addAction() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
